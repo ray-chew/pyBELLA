@@ -1,0 +1,33 @@
+\begin{thebibliography}{}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+
+\bibitem[{Benacchio et~al.(2014)Benacchio, O'Neill \&
+  Klein}]{BenacchioEtAl2014}
+Benacchio T, O'Neill W, Klein R. 2014.
+\newblock A blended soundproof-to-compressible model for atmospheric dynamcis.
+\newblock \textit{Mon. Wea. Rev.} 142:4416--4438
+
+\bibitem[{Durran(1989)}]{Durran1989}
+Durran DR. 1989.
+\newblock Improving the anelastic approximation.
+\newblock \textit{Journal of Atmosphere Sciences} 46:1453--1461
+
+\bibitem[{Klein(2009)}]{KleinTCFD2009}
+Klein R. 2009.
+\newblock Asymptotics, {S}tructure, and {I}ntegration of {S}ound-{P}roof
+  {A}tmospheric flow {E}quations.
+\newblock \textit{Theoretical and Computational Fluid Dynamics} 23:161--195
+
+\bibitem[{Smolarkiewicz et~al.(2014)Smolarkiewicz, K{\"u}hnlein \&
+  Wedi}]{SmolarkiewiczEtAl2014}
+Smolarkiewicz P, K{\"u}hnlein C, Wedi N. 2014.
+\newblock A consistent framework for discrete integrations of soundproof and
+  compressible {P}{D}{E}s of atmospheric dynamics.
+\newblock \textit{J. Comput. Phys.} 263:185--205
+
+\bibitem[{Smolarkiewicz \& Margolin(1998)}]{SmolarkiewiczMargolin1998}
+Smolarkiewicz PK, Margolin LG. 1998.
+\newblock Mpdata: A finite-difference solver for geophysical flows.
+\newblock \textit{J. Comp. Phys.} 140:459--480
+
+\end{thebibliography}
