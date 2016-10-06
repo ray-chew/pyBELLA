@@ -56,8 +56,7 @@ void User_Data_init(User_Data* ud) {
     double R_vap = 461.00;           /* [J/kg/K]                        */
     double Q_vap = 2.53e+06;         /* [J]                             */
     double gamma = 1.4;              /* dimensionless                   */
-    ud->gamm = gamma;
-    double Nsq_ref = 6.666e-4;           /* [1/s^2]                         */
+    double Nsq_ref = 6.666e-4;       /* [1/s^2]                         */
     
     ud->h_ref       = h_ref;
     ud->t_ref       = t_ref;
@@ -74,7 +73,7 @@ void User_Data_init(User_Data* ud) {
     ud->nspec       = NSPEC;
     
     /* Low Mach */
-    ud->is_compressible   = 0;   /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_compressible   = 0;   /* 0:psinc; 1:comp;  -1:psinc-comp-trans -> compressibility() */
     ud->acoustic_timestep = 0; /* 0;  1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
     

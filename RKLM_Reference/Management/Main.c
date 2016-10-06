@@ -173,7 +173,7 @@ int main( void )
                 for (int n=0; n<elem->nc; n++) {
                     Sol->rhoZ[n] = Zaux[n]*Sol->rho[n];
                 }
-                if (step == 10) {
+                if (step == 0) {
                     reset_init_data = WRONG;
                     step = 0;
                     t = 0.0;

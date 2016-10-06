@@ -248,7 +248,7 @@ void putout(
             sprintf(fieldname, "drhoY_%s_%s", field_name, step_string);
             WriteHDF(pdrhoYfile, icx, icy, icz, ndim, var, fn, fieldname);
             
-			/* Species mass fraction */
+            /* Species mass fraction */
 			MassFrac_Y(var, Sol, 0, nc);
 			sprintf(fn, "%s/Y/Y_%s.hdf", dir_name, step_string);
 			if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
@@ -262,7 +262,13 @@ void putout(
 			sprintf(fieldname, "dY_%s_%s", field_name, step_string);
 			WriteHDF(pdYfile, icx, icy, icz, ndim, var, fn, fieldname);
 			
-			/* Mixture massfraction */
+            /* rho Z */
+            sprintf(fn, "%s/rhoZ/rhoZ_%s.hdf", dir_name, step_string);
+            if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
+            sprintf(fieldname, "rhoZ_%s_%s", field_name, step_string);
+            WriteHDF(prhoYfile, icx, icy, icz, ndim, Sol->rhoZ, fn, fieldname);
+
+            /* auxiliary Scalar Z */
 			MassFrac_Z(var, Sol, 0, nc);
 			sprintf(fn, "%s/Z/Z_%s.hdf", dir_name, step_string);
 			if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
