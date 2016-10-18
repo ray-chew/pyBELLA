@@ -384,7 +384,7 @@ void Absorber(
 				const double rhoY_outer    = mpv->HydroState->rho0[j]*mpv->HydroState->Y0[j];
 				double Yinvold, Yinvnew, uold, unew, vold, vnew, wold, wnew; 
 				
-				Yinvold = Sol->rho[nijk] / Sol->rhoY[nijk];
+				Yinvold = Sol->rho[nijk]  / Sol->rhoY[nijk];
 				uold    = Sol->rhou[nijk] / Sol->rho[nijk];
 				vold    = Sol->rhov[nijk] / Sol->rho[nijk];
 				wold    = Sol->rhow[nijk] / Sol->rho[nijk];
@@ -394,7 +394,7 @@ void Absorber(
 				vnew    = v_outer    + decay * (vold     - v_outer);
 				wnew    = w_outer    + decay * (wold     - w_outer);
 				
-				Sol->rhoY[nijk] = rhoY_outer + decay * (Sol->rhoY[nijk] - rhoY_outer);  
+				// Sol->rhoY[nijk] = rhoY_outer + decay * (Sol->rhoY[nijk] - rhoY_outer);  
 				Sol->rho[nijk]  = Sol->rhoY[nijk]*Yinvnew;  
 				Sol->rhou[nijk] = Sol->rho[nijk] * unew;  
 				Sol->rhov[nijk] = Sol->rho[nijk] * vnew;  

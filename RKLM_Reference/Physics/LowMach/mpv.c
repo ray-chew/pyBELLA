@@ -110,6 +110,7 @@ void initialize_HydroState(
     mpv->HydroState->pi0    = (double*)malloc(nc*sizeof(double));
     mpv->HydroState->p20    = (double*)malloc(nc*sizeof(double));
     mpv->HydroState->rho0   = (double*)malloc(nc*sizeof(double));
+    mpv->HydroState->rhoY0  = (double*)malloc(nc*sizeof(double));
     mpv->HydroState->S0     = (double*)malloc(nc*sizeof(double));
     mpv->HydroState->S10    = (double*)malloc(nc*sizeof(double));
     mpv->HydroState->Y0     = (double*)malloc(nc*sizeof(double));
@@ -122,6 +123,7 @@ void initialize_HydroState(
     mpv->HydroState_n->pi0    = (double*)malloc(nn*sizeof(double));
     mpv->HydroState_n->p20    = (double*)malloc(nn*sizeof(double));
     mpv->HydroState_n->rho0   = (double*)malloc(nn*sizeof(double));
+    mpv->HydroState_n->rhoY0  = (double*)malloc(nn*sizeof(double));
     mpv->HydroState_n->S0     = (double*)malloc(nn*sizeof(double));
     mpv->HydroState_n->S10    = (double*)malloc(nn*sizeof(double));
     mpv->HydroState_n->Y0     = (double*)malloc(nn*sizeof(double));

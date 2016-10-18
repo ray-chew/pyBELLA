@@ -205,7 +205,7 @@ int main( void )
             
 			printf("\nnonlinear fluxes ---------------------------- \n");
 			
-            /* if (ud.absorber) Absorber(Sol, t, 0.5*dt);   */
+            if (ud.absorber) Absorber(Sol, t, 0.5*dt);   
             /* if (ud.absorber) Absorber(Sol, t, dt); */
 			/* Explicit_Source(Sol, t, 0.5*lambda); */
 				
@@ -316,7 +316,7 @@ int main( void )
             Explicit_Buoyancy(Sol, buoy, mpv, elem, node, t, 0.5*dt);
 #endif
             /* Explicit_Source(Sol, t, 0.5*lambda); */
-            /* if(ud.absorber) Absorber(Sol, t, 0.5*dt); */
+            if(ud.absorber) Absorber(Sol, t, 0.5*dt); 
 
 #if OUTPUT_SUBSTEPS
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);

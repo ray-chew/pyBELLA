@@ -2395,7 +2395,7 @@ void second_projection(
 	
 	variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, hgrav, rhs, x_periodic, y_periodic, z_periodic, dt);
     
-#if 0
+#if 1
     rhs_max = 0.0;
     double rhs_min = 100000.0;
     double hx_max  = 0.0;
@@ -2425,15 +2425,20 @@ void second_projection(
         }
     }
     printf("rhs_max, rhs_min, h1_max, h1_min, h2_max, h2_max, p2_min, p2_max = %e, %e, %e, %e, %e, %e, %e, %e\n", rhs_max, rhs_min, hx_max, hx_min, hy_max, hy_min, p2_min, p2_max);
+
+    sprintf(fn, "%s/rhs_nodes/rhs_nodes_001.hdf", ud.file_name);
+    sprintf(fieldname, "rhs-nodes");
+    WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+
 #endif
         
 #if 1
     extern double *W0;
     int imax, jmax;
     rhs_max = 0.0;
-    for (int jn=node->igy+1; jn<node->icy-node->igy-1; jn++) {
+    for (int jn=node->igy; jn<node->icy-node->igy; jn++) {
         int mn = jn*node->icx;
-        for (int in=node->igx+1; in<node->icx-node->igx-1; in++) {
+        for (int in=node->igx; in<node->icx-node->igx; in++) {
             int nn = mn+in;
             if (rhs_max < fabs(rhs[nn])) {
                 rhs_max = fabs(rhs[nn]);
@@ -2453,10 +2458,10 @@ void second_projection(
 #if 1
     FILE *prhs2file = NULL;
     char fn2[120], fieldname2[90];
-    sprintf(fn2, "%s/rhs_nodes/rhs_nodes_001.hdf", ud.file_name);
+    sprintf(fn2, "%s/rhs_nodes/rhs_nodes_002.hdf", ud.file_name);
     sprintf(fieldname2, "rhs-nodes-post");
     WriteHDF(prhs2file, node->icx, node->icy, node->icz, node->ndim, rhs, fn2, fieldname2);
-    sprintf(fn2, "%s/rhs_nodes/rhs_nodes_002.hdf", ud.file_name);
+    sprintf(fn2, "%s/rhs_nodes/rhs_nodes_003.hdf", ud.file_name);
     sprintf(fieldname2, "lap-final");
     WriteHDF(prhs2file, node->icx, node->icy, node->icz, node->ndim, W0, fn2, fieldname2);
 #endif

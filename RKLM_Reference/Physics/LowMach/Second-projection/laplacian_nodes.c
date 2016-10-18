@@ -14,6 +14,7 @@
 #include "ProjectionType.h"
 #include "enumerator.h"
 #include "ThomasAlgorithmus.h"
+#include "mpv.h"
 
 
 #ifdef PRECON /* ============================================================================= */
@@ -43,7 +44,8 @@ void precon_prepare(
      */
     
     extern User_Data ud;
-    
+    extern MPV* mpv;
+        
     if (diaginv_is_allocated == WRONG) {
         diag    = (double*)malloc(node->nc*sizeof(double));
         diaginv = (double*)malloc(node->nc*sizeof(double));
@@ -187,9 +189,8 @@ void precon_prepare(
                 break;
             }
                 
-                
             default: ERROR("ndim not in {1, 2, 3}");
-        }   
+        }  
     }
 }
 

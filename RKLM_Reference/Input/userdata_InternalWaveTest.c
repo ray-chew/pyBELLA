@@ -115,9 +115,9 @@ void User_Data_init(User_Data* ud) {
     ud->zmax =   1.0;
     
     /* boundary/initial conditions */
-    ud->wind_speed  =  0.0 * 20.0/u_ref;
-    ud->wind_shear  = -0.0;              /* velocity in [u_ref/h_ref] */
-    ud->hill_height = 0.0 * 0.096447; /* 0.096447; */ /* hill_height * l_ref = 0.628319 km *//*  BREAKING WAVE CHANGE */
+    ud->wind_speed        =  0.0 * 20.0/u_ref;
+    ud->wind_shear        = -0.0;              /* velocity in [u_ref/h_ref] */
+    ud->hill_height       = 0.0 * 0.096447; 
     ud->hill_length_scale = 0.1535;   /* hill_length * l_ref = 1.0 km */
     
     ud->bdrytype_min[0] = PERIODIC; /* DIRICHLET; PERIODIC; WALL; */
@@ -134,11 +134,11 @@ void User_Data_init(User_Data* ud) {
     /* ================================================================================== */
     
     /* time discretization */
-    ud->time_integrator      = OP_SPLIT_MD_UPDATE;  /* OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT */
-    ud->CFL                  = 0.98; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0             = 38.0 / ud->t_ref;
-    ud->dtfixed              = 38.0 / ud->t_ref;
-    ud->no_of_steps_to_CFL   = 1;
+    ud->time_integrator        = OP_SPLIT_MD_UPDATE; /* OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT */
+    ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
+    ud->dtfixed0               = 38.0 / ud->t_ref;
+    ud->dtfixed                = 38.0 / ud->t_ref;
+    ud->no_of_steps_to_CFL     = 1;
     ud->no_of_steps_to_dtfixed = 1;
 
 #ifdef NODAL_PROJECTION_ONLY
@@ -156,8 +156,16 @@ void User_Data_init(User_Data* ud) {
     /* explicit predictor step */
     /* Recovery */
     ud->recovery_order = SECOND; /* FIRST, SECOND */ 
-    ud->limiter_type_scalars  = NONE; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
-    ud->limiter_type_velocity = NONE; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
+    ud->limiter_type_scalars  = NONE; 
+    ud->limiter_type_velocity = NONE; 
+    /* Limiter options:  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
+        
+    /* parameters for SWEBY_MUNZ limiter family */
+    ud->kp = 1.4;
+    ud->kz = 1.4; /* Entro abused for velocity in split-step-aligned velocity ! */
+    ud->km = 1.4;
+    ud->kY = 1.4;
+    ud->kZ = 1.4; /* 2.0 */
     
     /* first correction */
     ud->p_flux_correction = CORRECT; /* CORRECT, WRONG; */
@@ -175,14 +183,7 @@ void User_Data_init(User_Data* ud) {
         /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25;*/
         ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.5;
     }
-    
-    /* parameters for SWEBY_MUNZ limiter family */
-    ud->kp = 1.4;
-    ud->kz = 1.4; /* Entro abused for velocity in split-step-aligned velocity ! */
-    ud->km = 1.4;
-    ud->kY = 1.4;
-    ud->kZ = 1.4; /* 2.0 */
-    
+
     ud->ncache = 48; /* 604*44; (ud->inx+3); */
     
     /* linear solver-stuff */

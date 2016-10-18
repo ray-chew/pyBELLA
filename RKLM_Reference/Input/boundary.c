@@ -418,7 +418,7 @@ void Bound(
 						/* double Yinv = (2.0*Sol->rho[nimage+1]/Sol->rhoY[nimage+1] - Sol->rho[nimage+2]/Sol->rhoY[nimage+2]); */
                         double Yinv = 1./stratification(elem->x[iimage]); 
                         double dpi  = (th.Gamma*g) * 0.5*dh*(1.0/Y_last + Yinv);
-						double Z    = pow(pow(Z_last*M_LH_sq,th.Gamma) +dpi,1.0/th.Gamma)/M_LH_sq;
+						double Z    = pow(pow(Z_last*M_LH_sq,th.Gamma) + dpi, 1.0/th.Gamma)/M_LH_sq;
                         double rhoY = pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv);
                         double rho  = rhoY * Yinv;
                         double p    = pow(rhoY, th.gamm);
@@ -464,6 +464,7 @@ void Bound(
 					{				    
 						int iimage  = ix - elem->igx + i; 
                         double Yinv = 1./stratification(elem->x[iimage]); 
+                        /* double Yinv = (2.0*Sol->rho[nlast]/Sol->rhoY[nlast] - Sol->rho[nlast-1]/Sol->rhoY[nlast-1]); */
                         double dpi  = -(th.Gamma*g) * 0.5*dh*(1.0/Y_last + Yinv);
                         double Z    = pow(pow(Z_last*M_LH_sq,th.Gamma) + dpi,1.0/th.Gamma)/M_LH_sq;
                         double rhoY = pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv);

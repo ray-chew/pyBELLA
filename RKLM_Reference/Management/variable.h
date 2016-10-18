@@ -143,6 +143,7 @@ typedef struct {
     double* pi0;
 	double* p20;
 	double* rho0;
+    double* rhoY0;
 	double* S0;
 	double* S10;
 	double* Y0;

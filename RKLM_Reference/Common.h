@@ -51,6 +51,7 @@
 #define GRAVITY_1
 */
    
+#define THERMCON
 
 /*
  #define NO_UPWIND_PROJ1          IMPORTANT: Upwinding in the correction induces NOISE  
@@ -62,9 +63,9 @@
 /* Output parameters */
 #define HDFFORMAT
 #define MATLAB_OUTPUT
-#define OUTPUT_SUBSTEPS_PREDICTOR 0
-#define OUTPUT_SUBSTEPS 0
-#define OUTPUT_SPLITSTEPS 0
+#define OUTPUT_SUBSTEPS_PREDICTOR 1
+#define OUTPUT_SUBSTEPS 1
+#define OUTPUT_SPLITSTEPS 1
 
 
 #include <assert.h> 

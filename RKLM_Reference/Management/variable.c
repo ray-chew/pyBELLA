@@ -204,6 +204,7 @@ States* States_new(const int size) {
     var->pi0  = (double*)malloc(size * sizeof(double));
 	var->p20  = (double*)malloc(size * sizeof(double));
 	var->rho0 = (double*)malloc(size * sizeof(double));
+    var->rhoY0 = (double*)malloc(size * sizeof(double));
 	var->S0   = (double*)malloc(size * sizeof(double));
 	var->S10  = (double*)malloc(size * sizeof(double));
 	var->Y0  = (double*)malloc(size * sizeof(double));
