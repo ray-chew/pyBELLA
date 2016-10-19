@@ -674,7 +674,7 @@ static void operator_coefficients_nodes(
                                         
                     hplusx[n]  = theta * gimpx;
                     hplusy[n]  = theta * gimpy;
-                    hg[n]      = impl_grav_pr2 * th.gamminv * pow(0.5*(Sol->rhoY[n]+Sol0->rhoY[n]),cexp) * ud.gravity_strength[1] * gimpy * 0.5;
+                    hg[n]      = 0.0;
 				}
 			}
 									

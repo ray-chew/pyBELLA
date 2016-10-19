@@ -43,7 +43,7 @@ void Hydrostatics_State(MPV* mpv, const ElemSpaceDiscr* elem) {
     /* Hydrostates in bottom dummy cells */
     y_p          = elem->y[igy];
     S_p          = 1.0/stratification(y_p);
-    S_integral_p = 0.5 * elem->dy * (S_m + 1.0/stratification(0.0));
+    S_integral_p = 0.5 * elem->dy * 0.5*(S_p + 1.0/stratification(0.0));
     p0           = pow(rho0 * stratification(0.0), gamm);
     
     for(j = igy; j >= 0; j--) {
@@ -64,6 +64,7 @@ void Hydrostatics_State(MPV* mpv, const ElemSpaceDiscr* elem) {
         y_p           = y_m - elem->dy;
         S_m           = S_p;
         S_p           = 1.0/stratification(y_p);
+        S_integral_m  = S_integral_p;
         S_integral_p -= 0.5*elem->dy*(S_m + S_p);
         S_integral_n  = 0.5*(S_integral_m + S_integral_p);
         
@@ -71,6 +72,11 @@ void Hydrostatics_State(MPV* mpv, const ElemSpaceDiscr* elem) {
         mpv->HydroState_n->rhoY0[j] = rhoY_hydro_n;
     }
     
+    /* Hydrostates in bulk of domain */
+    y_p          = elem->y[igy];
+    S_p          = 1.0/stratification(y_p);
+    S_integral_p = 0.5 * elem->dy * 0.5*(S_p + 1.0/stratification(0.0));
+
     for(j = igy; j < icy - igy; j++) {
         
         p_hydro     = pow( pow(p0,Gamma) - Gamma*g*S_integral_p ,  Gamma_inv);
@@ -89,11 +95,12 @@ void Hydrostatics_State(MPV* mpv, const ElemSpaceDiscr* elem) {
         y_p           = y_m + elem->dy;
         S_m           = S_p;
         S_p           = 1.0/stratification(y_p);
+        S_integral_m  = S_integral_p;
         S_integral_p += 0.5*elem->dy*(S_m + S_p);
         S_integral_n  = 0.5*(S_integral_m + S_integral_p);
         
         rhoY_hydro_n  = pow( pow(p0,Gamma) - Gamma*g*S_integral_n ,  th.gm1inv);
-        mpv->HydroState_n->rhoY0[j] = rhoY_hydro_n;
+        mpv->HydroState_n->rhoY0[j+1] = rhoY_hydro_n;
         
     }
     
@@ -116,10 +123,11 @@ void Hydrostatics_State(MPV* mpv, const ElemSpaceDiscr* elem) {
         y_p           = y_m + elem->dy;
         S_m           = S_p;
         S_p           = 1.0/stratification(y_p);
+        S_integral_m  = S_integral_p;
         S_integral_p += 0.5*elem->dy*(S_m + S_p);
         S_integral_n  = 0.5*(S_integral_m + S_integral_p);
         
         rhoY_hydro_n  = pow( pow(p0,Gamma) - Gamma*g*S_integral_n ,  th.gm1inv);
-        mpv->HydroState_n->rhoY0[j] = rhoY_hydro_n;
+        mpv->HydroState_n->rhoY0[j+1] = rhoY_hydro_n;
     }
 }

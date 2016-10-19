@@ -956,7 +956,6 @@ static void operator_coefficients(
     
     const int impl_grav_th = ud.implicit_gravity_theta;
     const int impl_grav_pr = ud.implicit_gravity_press;
-    const int thermcon     = ud.thermcon;
     
     const double implicitness = ud.implicitness;
     const double ccw = 2.0; /* ccenterweight   4.0 */
@@ -1034,8 +1033,7 @@ static void operator_coefficients(
                     
                     hy[m] = 0.5 * (hj + hjm) * implicitness * gimp;
                     
-                    hg[m] = th.gamminv * pow(0.5*(Sol->rhoY[jc]+Sol->rhoY[jcm]),cexp) * g * impl_grav_pr * thermcon * gimp;
-                    /* hg[m] = th.gamminv * pow(0.5*(Sol->rhoY[jc]+Sol->rhoY[jcm]),cexp) * (g/Msq) * impl_grav_pr * gimp;  */
+                    hg[m] = 0.0;
                     
                     assert(hy[m] > 0.0);
                 }

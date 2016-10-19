@@ -163,27 +163,24 @@ Nothing defined yet
 #endif /* PRECON_VERTICAL_COLUMN */
 
 #else  /* PRECON */
-static void precon_prepare(
-                           const NodeSpaceDiscr* node,
-                           const ElemSpaceDiscr* elem,
-                           const double* hplus[3],
-                           const double* wcenter,
-                           const double* wgravb,
-                           const int x_periodic,
-                           const int y_periodic,
-                           const int z_periodic) {
+void precon_c_prepare(
+                      const NodeSpaceDiscr* node,
+                      const ElemSpaceDiscr* elem,
+                      const double* hplus[3],
+                      const double* hcenter,
+                      const double* hgrav) {
 }
 
-static void precon_apply(
-                         double* vec_out,
-                         double* vec_in,
-                         const NodeSpaceDiscr *node) {
+void precon_c_apply(
+                    double* vec_out,
+                    const double* vec_in,
+                    const ElemSpaceDiscr *elem) {
 }
 
-static void precon_invert(
-                          double* vec_out,
-                          double* vec_in,
-                          const NodeSpaceDiscr *node) {
+void precon_c_invert(
+                     double* vec_out,
+                     const double* vec_in,
+                     const ElemSpaceDiscr *elem) {
 }
 #endif /* PRECON */
 

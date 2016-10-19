@@ -409,7 +409,7 @@ void precon_invert(
 #endif /* PRECON_VERTICAL_COLUMN_2ND_PROJ ==================================================== */
 
 #else  /* PRECON ============================================================================= */
-static void precon_prepare(
+void precon_prepare(
                            const NodeSpaceDiscr* node,
                            const ElemSpaceDiscr* elem,
                            const double* hplus[3],
@@ -422,13 +422,13 @@ static void precon_prepare(
 
 void precon_apply(
                   double* vec_out,
-                  double* vec_in,
+                  const double* vec_in,
                   const NodeSpaceDiscr *node) {
 }
 
 void precon_invert(
                    double* vec_out,
-                   double* vec_in,
+                   const double* vec_in,
                    const NodeSpaceDiscr *node) {
 }
 #endif /* PRECON ============================================================================= */
@@ -515,9 +515,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                 }
             }
             
-#ifdef PRECON
             precon_invert(lap, lap, node);
-#endif
             
             if (x_periodic) {
                 for(j=igyn; j<icyn-igyn; j++) {

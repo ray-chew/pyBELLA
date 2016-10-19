@@ -118,7 +118,6 @@ typedef struct {
     int implicit_gravity_press;
     int implicit_gravity_theta2;
     int implicit_gravity_press2;
-    int thermcon;
 
     double coriolis_strength[3];
 	int i_coriolis[3];

@@ -104,7 +104,6 @@ void User_Data_init(User_Data* ud) {
     ud->implicit_gravity_press  = 0; /* should be on for compressible option */
     ud->implicit_gravity_theta2 = 0;
     ud->implicit_gravity_press2 = 0; /* should this, too, be on for compressible option ?  */
-    ud->thermcon = 0;
     	 
 	/* flow domain */
 	ud->xmin = - 60000/h_ref;  
@@ -239,102 +238,110 @@ void User_Data_init(User_Data* ud) {
 
 /* ================================================================================== */
 
-void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr* node) {
-	
-	extern Thermodynamic th;
-	extern User_Data ud;
+void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr* node) 
+{
+    
+    extern Thermodynamic th;
+    extern User_Data ud;
     extern MPV* mpv;
     
-	const double u0 = ud.wind_speed;
-	const double v0 = 0.0;
-	const double w0 = 0.0;
-	const double rho0 = 1.0;
+    const double u0 = ud.wind_speed;
+    const double v0 = 0.0;
+    const double w0 = 0.0;
     const double delth = 0.0;
-	
-	const double Gamma = th.gm1 / th.gamm;
-	const double gamm  = th.gamm;
-    const double Gamma_inv = 1.0/Gamma;
-	
-	const double M_LH_sq = ud.Msq;
-	
-	const int icx = elem->icx;
-	const int icy = elem->icy;
-	const int icz = elem->icz;
-	const int igy = elem->igy;
-	const int igz = elem->igz;
-	
-	int i, j, k, l, m, n;
-	double x, y, z, y_p, y_m;
-	double rho, u, v, w, p, rhoY, p0;
-	
-    double S_integral_m, S_integral_n, S_integral_p, p2_o, g;
-	double S_m, S_p, p_hydro, rhoY_hydro, rhoY_hydro_n;
-	        
-	g = ud.gravity_strength[1];
-	
+    
+    const int icxe = elem->icx;
+    const int icye = elem->icy;
+    const int icze = elem->icz;
+    const int igye = elem->igy;
+    const int igze = elem->igz;
+    
+    const int icxn = node->icx;
+    const int icyn = node->icy;
+    const int iczn = node->icz;
+    
+    int i, j, k, l, m, n;
+    double x, y, z;
+    double rho, u, v, w, p, rhoY;	
+    
+    double g = ud.gravity_strength[1];
+    
     Hydrostatics_State(mpv, elem);
-
-	for(k = igz; k < icz - igz; k++) {l = k * icx * icy; 
-		z = elem->z[k];
+    
+    for(k = igze; k < icze - igze; k++) {l = k * icxe * icye; 
+        z = elem->z[k];
         
-        for(j = igy; j < icy - igy; j++) {m = l + j * icx;
-			            
-			/*
-            mpv->HydroState->geopot[j]
-            mpv->HydroState->rho0[j]  
-            mpv->HydroState->p0[j]    
-            mpv->HydroState->S0[j]    
-            mpv->HydroState->S10[j]   
-            mpv->HydroState->Y0[j]    
-            mpv->HydroState->rhoY0[j] 
-            */
-            
+        for(j = igye; j < icye - igye; j++) {m = l + j * icxe;
+                        
             y = elem->y[j];
-
-			for(i = 0; i < icx; i++) {n = m + i;
+            
+            for(i = 0; i < icxe; i++) {n = m + i;
                 double r;
                 
-				x = elem->x[i];
-				
+                x = elem->x[i];
+                
                 u     = u0;
                 v     = v0;
                 w     = w0;
-				r     = sqrt(x*x + (y-0.2)*(y-0.2)) / 0.2;
+                r     = sqrt(x*x + (y-0.2)*(y-0.2)) / 0.2;
                 p     = mpv->HydroState->p0[j];
                 rhoY  = mpv->HydroState->rhoY0[j];
-				rho   = mpv->HydroState->rhoY0[j] / (stratification(y) + (r >= 1.0 ? 0.0 : (delth/300.0)*cos(0.5*PI*r)*cos(0.5*PI*r)));
-				
-				Sol->rho[n]  = rho;
-				Sol->rhou[n] = rho * u;
-				Sol->rhov[n] = rho * v;
-				Sol->rhow[n] = rho * w;
-				Sol->rhoe[n] = rhoe(rho, u, v, w, p, g*y);
-				Sol->rhoY[n] = rhoY;
-				Sol->geopot[n] = g*y;
-
+                rho   = mpv->HydroState->rhoY0[j] / (stratification(y) + (r >= 1.0 ? 0.0 : (delth/300.0)*cos(0.5*PI*r)*cos(0.5*PI*r)));
+                
+                Sol->rho[n]  = rho;
+                Sol->rhou[n] = rho * u;
+                Sol->rhov[n] = rho * v;
+                Sol->rhow[n] = rho * w;
+                Sol->rhoe[n] = rhoe(rho, u, v, w, p, g*y);
+                Sol->rhoY[n] = rhoY;
+                Sol->geopot[n] = g*y;
+                
+#ifdef THERMCON
+                mpv->p2_cells[n] = (p/rhoY) / ud.Msq;
+#else
                 mpv->p2_cells[n] = p / ud.Msq;
-				Sol->rhoZ[n]     = rho * mpv->p2_cells[n];				
-			}			
-		}
-						                
-		/* set all dummy cells */
-		/* geopotential in bottom and top dummy cells */
-		for(j = 0; j < igy; j++) {m = l + j * icx;  
-			y = elem->y[j];
-			for(i = 0; i < icx; i++) {n = m + i;
-				Sol->geopot[n] = g * y;
-			}
-		}
-		
-		for(j = icy-igy; j < icy; j++) {m = l + j * icx;  
-			y = elem->y[j];
-			for(i = 0; i < icx; i++) {n = m + i;
-				Sol->geopot[n] = g * y;
-			}
-		}
-	}  
-}
+#endif
+                Sol->rhoZ[n]     = rho * mpv->p2_cells[n];				
+            }			
+        }
+                
+        /* set all dummy cells */
+        /* geopotential in bottom and top dummy cells */            
+        for(j = 0; j < igye; j++) {m = l + j * icxe;  
+            y = elem->y[j];
+            for(i = 0; i < icxe; i++) {n = m + i;
+                Sol->geopot[n] = g * y;
+            }
+        }
+        
+        for(j = icye-igye; j < icye; j++) {m = l + j * icxe;  
+            y = elem->y[j];
+            for(i = 0; i < icxe; i++) {n = m + i;
+                Sol->geopot[n] = g * y;
+            }
+        }
+    }  
 
+    /*set nodal pressures */
+    for(k = 0; k < iczn; k++) {l = k * icxn * icyn;   
+        
+        for(j = 0; j < icyn; j++) {m = l + j * icxn;                
+#ifdef THERMCON
+            double p    = mpv->HydroState->p0[j];
+            double rhoY = mpv->HydroState->rhoY0[j];
+            
+            for(i = 0; i < icxn; i++) {n = m + i;
+                mpv->p2_nodes[n] = (p/rhoY) / ud.Msq;
+            }
+#else
+            double p    = mpv->HydroState->p0[j];
+            for(i = 0; i < icxn; i++) {n = m + i;
+                mpv->p2_nodes[n] = p / ud.Msq;
+            }
+#endif
+        }
+    }                  
+}
 
 double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma){
 	return pow((pow(p0,Gamma) + Gamma*S0*Msq*u_theta*u_theta*(1.0 - pow((1.0-r),5.0)*(5.0*r+1.0))/30.0), (1.0/Gamma));
