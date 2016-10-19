@@ -250,42 +250,6 @@ int main( void )
 #endif
                 }
             }
-            else {
-                
-                /* Runge Kutta stages for advection/gasdynamics */
-                for (stage = 0; stage < ud.tips.no_of_stages; stage++) {
-                    
-                    for(i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
-                        lambda = ud.tips.dt_frac*dt/elem->dx;
-                        Split = sequence * i_OpSplit + (1 - sequence) * ((elem->ndim - 1) - i_OpSplit);
-                        Explicit_step_and_flux(Sol, flux[Split], buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage);
-                        
-#if OUTPUT_SUBSTEPS_PREDICTOR
-                        if (i_OpSplit == 1)  {
-                            (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, BACKWARD);
-                        }
-                        putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
-                        if (i_OpSplit == 1)  {
-                            (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, FORWARD);
-                        }
-#endif
-                        
-                        if(i_OpSplit < elem->ndim - 1) {
-                            (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, FORWARD);
-                        }
-                    }
-                    
-                    for (i_OpSplit = 0; i_OpSplit < elem->ndim-1; i_OpSplit++) {
-                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, BACKWARD);
-                    }
-                    fullD_explicit_updates(Sol, Sol0, flux, buoy, elem, dt, stage);
-                }
-                
-                
-#if OUTPUT_SUBSTEPS_PREDICTOR
-                putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
-#endif
-            }
           
 #if OUTPUT_SUBSTEPS
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
@@ -318,7 +282,7 @@ int main( void )
                                 if(PROJECTION1) {
                                     
                                     flux_correction(flux, buoy, elem, Sol, Sol0, t, dt, ud.implicitness, step);
-                                    update(Sol, flux, buoy, elem, dt);
+                                    update(Sol, (const ConsVars**)flux, buoy, elem, dt);
                                     which_projection = 2;
                                     Set_Explicit_Boundary_Data(Sol, elem, mpv);
 #if OUTPUT_SUBSTEPS

@@ -22,7 +22,7 @@
 
 void update(
 			ConsVars* sol, 
-			const ConsVars* flux[3], 
+			const ConsVars *flux[3], 
 			const VectorField* buoy,
 			const ElemSpaceDiscr* elem, 
 			const double dt) {

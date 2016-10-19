@@ -1843,7 +1843,10 @@ static void flux_correction_due_to_pressure_values(
 												   const double dt) {
 	
 	extern User_Data ud;
+    extern Thermodynamic th;
 	
+    const double Gammainv = th.Gammainv;
+    
 	const int ndim = elem->ndim;
 	    
 	switch(ndim) {
@@ -1853,6 +1856,7 @@ static void flux_correction_due_to_pressure_values(
 		}
 			
 		case 2: {
+            double coeff;
 			int i, j, m, n, ic, icm, jc, jcm;
 			const int igx = elem->igx;
 			const int icx = elem->icx;
@@ -1877,15 +1881,17 @@ static void flux_correction_due_to_pressure_values(
 					ic  = n - j;
 					icm = ic - 1;
 					
-					f->rhou[n] += ud.p_extrapol*0.5*(
+#ifdef THERMCON
+                    coeff = Gammainv * 0.5 * (Sol->rhoY[ic]*Sol->rhoY[ic]/Sol->rho[ic] + Sol->rhoY[icm]*Sol->rhoY[icm]/Sol->rho[icm]);
+#else
+                    coeff = 1.0;
+#endif
+                    f->rhou[n] += ud.p_extrapol*0.5*coeff*(
                                               (ud.latw[0]*dp2[ic+icx]  + ud.latw[1]*dp2[ic]  + ud.latw[2]*dp2[ic-icx]) 
                                             + (ud.latw[0]*dp2[icm+icx] + ud.latw[1]*dp2[icm] + ud.latw[2]*dp2[icm-icx]) 
                                                );
 				}
 			}  
-			
-			
-            /* flux_post_correction    change from   flux ... +=  corr    to    flux ... = corr */
 			
 			/* fluxes in the y-direction */
 			for(i = igx; i < icx - igx; i++) {
@@ -1898,8 +1904,14 @@ static void flux_correction_due_to_pressure_values(
 					jc  = j * icx + i;
 					jcm = jc - icx;
 					
-					g->rhov[m] += ud.p_extrapol*0.5*(  (ud.latw[0]*dp2[jc+1]  + ud.latw[1]*dp2[jc]  + ud.latw[2]*dp2[jc-1])  
-                                                     + (ud.latw[0]*dp2[jcm+1] + ud.latw[1]*dp2[jcm] + ud.latw[2]*dp2[jcm-1])
+#ifdef THERMCON
+                    coeff = Gammainv * 0.5 * (Sol->rhoY[jc]*Sol->rhoY[jc]/Sol->rho[jc] + Sol->rhoY[jcm]*Sol->rhoY[jcm]/Sol->rho[jcm]);
+#else
+                    coeff = 1.0;
+#endif
+					g->rhov[m] += ud.p_extrapol*0.5*coeff*(  
+                                                     (ud.latw[0]*dp2[jc+1]  + ud.latw[1]*dp2[jc]  + ud.latw[2]*dp2[jc-1])  
+                                                   + (ud.latw[0]*dp2[jcm+1] + ud.latw[1]*dp2[jcm] + ud.latw[2]*dp2[jcm-1])
                                                   );
 				}   
 			}

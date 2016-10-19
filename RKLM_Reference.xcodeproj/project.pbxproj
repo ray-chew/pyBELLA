@@ -42,7 +42,6 @@
 		9AC4F9AC1DA3F06F00AED455 /* laplacian_nodes.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9781DA3F06F00AED455 /* laplacian_nodes.c */; };
 		9AC4F9AE1DA3F06F00AED455 /* second_projection_bilinear_p_WITH_HYPRE.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F97C1DA3F06F00AED455 /* second_projection_bilinear_p_WITH_HYPRE.c */; };
 		9AC4F9AF1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F97D1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c */; };
-		9AC4F9B01DA3F06F00AED455 /* wallPoisson_aux.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9801DA3F06F00AED455 /* wallPoisson_aux.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -143,8 +142,6 @@
 		9AC4F97C1DA3F06F00AED455 /* second_projection_bilinear_p_WITH_HYPRE.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = second_projection_bilinear_p_WITH_HYPRE.c; sourceTree = "<group>"; };
 		9AC4F97D1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = variable_coefficient_poisson_nodes.c; sourceTree = "<group>"; };
 		9AC4F97E1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = variable_coefficient_poisson_nodes.h; sourceTree = "<group>"; };
-		9AC4F9801DA3F06F00AED455 /* wallPoisson_aux.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = wallPoisson_aux.c; sourceTree = "<group>"; };
-		9AC4F9811DA3F06F00AED455 /* wallPoisson_aux.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wallPoisson_aux.h; sourceTree = "<group>"; };
 		9AC4F9821DA3F06F00AED455 /* ProjectionType.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProjectionType.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -360,7 +357,6 @@
 				9AC4F9751DA3F06F00AED455 /* mpv.c */,
 				9AC4F9761DA3F06F00AED455 /* mpv.h */,
 				9AC4F9771DA3F06F00AED455 /* Second-projection */,
-				9AC4F97F1DA3F06F00AED455 /* wallPoisson */,
 			);
 			path = LowMach;
 			sourceTree = "<group>";
@@ -389,15 +385,6 @@
 				9AC4F97E1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.h */,
 			);
 			path = "Second-projection";
-			sourceTree = "<group>";
-		};
-		9AC4F97F1DA3F06F00AED455 /* wallPoisson */ = {
-			isa = PBXGroup;
-			children = (
-				9AC4F9801DA3F06F00AED455 /* wallPoisson_aux.c */,
-				9AC4F9811DA3F06F00AED455 /* wallPoisson_aux.h */,
-			);
-			path = wallPoisson;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -465,7 +452,6 @@
 				9AC4F9871DA3F06F00AED455 /* set_ghostfaces_h_over_rho.c in Sources */,
 				9AC4F98A1DA3F06F00AED455 /* space_discretization.c in Sources */,
 				9AC4F9971DA3F06F00AED455 /* time_discretization.c in Sources */,
-				9AC4F9B01DA3F06F00AED455 /* wallPoisson_aux.c in Sources */,
 				9AC4F9841DA3F06F00AED455 /* boundary.c in Sources */,
 				9AC4F9951DA3F06F00AED455 /* variable.c in Sources */,
 				9A4BD9851DA90DA2006A9D99 /* userdata_BreakingWave.c in Sources */,

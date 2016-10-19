@@ -313,7 +313,6 @@ void Absorber(
      	        const double decay   = 1.0 / (1.0 + alpha * dt); 
 				
 				const double Yinv_outer    = 1.0/mpv->HydroState->Y0[j];
-				const double rhoY_outer    = mpv->HydroState->rho0[j]*mpv->HydroState->Y0[j];
 				double Yinvold, Yinvnew, uold, unew, vold, vnew, wold, wnew; 
 				
 				Yinvold = Sol->rho[nijk]  / Sol->rhoY[nijk];
