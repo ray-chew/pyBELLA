@@ -333,10 +333,6 @@ static double BiCGSTAB_MG_nodes(
     precon_prepare(node, elem, hplus, hcenter, hgrav, x_periodic, y_periodic, z_periodic);
     
     set_periodic_data(solution_io,	node, x_periodic, y_periodic, z_periodic);
-
-#ifndef NO_BDRYCONDS_PROJ2
-    set_ghostnodes_p(solution_io, node, 1);
-#endif
     
     EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, solution_io, hplus, hcenter, hgrav, x_periodic, y_periodic, z_periodic, v_j);
 
@@ -419,10 +415,6 @@ static double BiCGSTAB_MG_nodes(
 		}
 		
         set_periodic_data(p_j,	node, x_periodic, y_periodic, z_periodic);
-
-#ifndef NO_BDRYCONDS_PROJ2
-        set_ghostnodes_p(p_j, node, 1);
-#endif
         
         EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, p_j, hplus, hcenter, hgrav, x_periodic, y_periodic, z_periodic, v_j);
 
@@ -447,10 +439,6 @@ static double BiCGSTAB_MG_nodes(
 		
         set_periodic_data(s_j,	node, x_periodic, y_periodic, z_periodic);
 
-#ifndef NO_BDRYCONDS_PROJ2
-        set_ghostnodes_p(s_j, node, 1);
-#endif
-        
         EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, s_j, hplus, hcenter, hgrav, x_periodic, y_periodic, z_periodic, t_j);
 
 		omega = 0.0; 

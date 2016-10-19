@@ -12,7 +12,6 @@
  #define SOLVER_HYPRE
 
  #define MICHAEL_CORRECTION
- #define INITIALIZE_PI2_HYDROSTATICALLY
 
  #define SHIFTED_COEFFICIENTS_PROJ1
  #define NEWTON_FOR_EQ_OF_STATE
@@ -21,14 +20,11 @@
 */
 
 /*         
- #define NODAL_PROJECTION_ONLY
  #define SECOND_ORDER_ADVECTING_FLUX 1
   */ 
 
 #define PROJECTION1 1
 #define SHIFTED_COEFFICIENTS_PROJ1
-#define INITIALIZE_PI2
-#define INITIALIZE_PI2_HYDROSTATICALLY
 
 #define SOLVER_1_CR2
 #define SOLVER_2_BICGSTAB
@@ -50,7 +46,6 @@
  #define STANDARD_STENCIL_PROJ1
  */
 
-#define NO_BDRYCONDS_PROJ2
 
 /*
  #define DP_AVERAGE      (used and needed with first GRESHO CFL 0.99 run on 400x400
@@ -77,7 +72,6 @@
 
 
 /* cell-centered velocity projection 
- #define SECOND_CORRECTION_IS_A_PROJECTION
  #define SECOND_CORRECTION_IS_EXACT
 */
 #define PROJECTION2 1
@@ -86,6 +80,5 @@
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0 */
 
 /*
- #define P2_EXACT_PROJECTION_VK
  #define HYP_UPDATE_ETA 1
  */

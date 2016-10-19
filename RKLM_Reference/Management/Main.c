@@ -126,27 +126,9 @@ int main( void )
 		while( t < *tout && step < ud.stepmax ) { 
 			            
             /* initialize fluxes in preparation of explicit predictor */
-#ifdef NODAL_PROJECTION_ONLY
-            /* try leaving this and using result from last projection */
-            // Advective_Fluxes(adv_flux, Sol, elem);        /* TODO: should I really call this fctn here? */  
-
-            ConsVars_setzero(flux[0], elem->nfx);
-            scalar_set(flux[0]->rhoY, adv_flux->x, elem->nfx);
-            
-            if(elem->ndim > 1) {
-                ConsVars_setzero(flux[1], elem->nfy);   
-                scalar_set(flux[1]->rhoY, adv_flux->y, elem->nfy);
-            }
-            
-            if(elem->ndim > 2) {
-                ConsVars_setzero(flux[2], elem->nfz);
-                scalar_set(flux[2]->rhoY, adv_flux->z, elem->nfz);
-            }
-#else /* NODAL_PROJECTION_ONLY */
             ConsVars_setzero(flux[0], elem->nfx);
             if(elem->ndim > 1) ConsVars_setzero(flux[1], elem->nfy);
             if(elem->ndim > 2) ConsVars_setzero(flux[2], elem->nfz);            
-#endif /* NODAL_PROJECTION_ONLY */
 
 			/* Timestep computation */
 			if(time_step_switch) {
@@ -322,9 +304,6 @@ int main( void )
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
 
-#ifdef NODAL_PROJECTION_ONLY
-            Divergence_Control(Sol, flux, adv_flux, buoy, mpv, Sol0, elem, node, t, dt, *tout, step);
-#else /* NODAL_PROJECTION_ONLY */
 			{
 				int corrections_iterations;
                 
@@ -380,7 +359,6 @@ int main( void )
 					if (ud.absorber) Absorber(Sol, t, dt); 					
 				}
             }
-#endif /* NODAL_PROJECTION_ONLY */
             			
 #endif /* PERTURBATION_POTENTIAL_TEMPERATURE */
             

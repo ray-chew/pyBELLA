@@ -34,24 +34,6 @@ void Bound(
 		   const int n, 
 		   const int SplitStep);
 
-#ifdef NODAL_PROJECTION_ONLY
-void Bound_adv_flux(VectorField* adv_flux, 
-                    const ElemSpaceDiscr* elem);
-
-void Bound_adv_flux_x(double* rhoYu, 
-                      const ElemSpaceDiscr* elem, 
-                      const int SplitStep);
-#endif
-
-#ifndef NO_BDRYCONDS_PROJ2
-void Bound_p_nodes(
-                   MPV* mpv,
-                   const ConsVars* Sol,
-                   const ElemSpaceDiscr* elem,
-                   const NodeSpaceDiscr* node,
-                   const int no_of_rows);
-#endif
-
 void set_wall_massflux(
 					   BDRY* bdry, 
 					   const ConsVars* Sol0, 

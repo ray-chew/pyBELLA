@@ -51,8 +51,9 @@
 #define GRAVITY_1
 */
    
+/*
 #define THERMCON
-
+*/
 /*
  #define NO_UPWIND_PROJ1          IMPORTANT: Upwinding in the correction induces NOISE  
  */

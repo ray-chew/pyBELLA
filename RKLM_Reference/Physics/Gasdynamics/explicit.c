@@ -168,33 +168,6 @@ void Explicit_step_and_flux(
     }
 #endif /* P_AVERAGE */ 
     		
-#ifdef NODAL_PROJECTION_ONLY
-    double *fluxSol = W2;
-    double *pfluxSol, *ppfluxSol;
-    pfluxSol = fluxSol;
-    
-    Advective_Fluxes_x(fluxSol, Sol, elem, SplitStep);
-    
-#if 1
-    /* I want to see the flux */
-    static FILE* pfluxfile = NULL;
-    extern User_Data ud;
-    char fn[200], fieldname[90], step_string[30];
-    sprintf(step_string, "000");
-    if (SplitStep == 0) {
-        sprintf(fn, "%s/advflux/advflux_x_%s.hdf", ud.file_name, step_string);
-        sprintf(fieldname, "advflux_x_%s", step_string);
-        WriteHDF(pfluxfile, elem->ifx, elem->icy, elem->icz, elem->ndim, fluxSol, fn, fieldname);
-    } else if (SplitStep == 1) {
-        sprintf(fn, "%s/advflux/advflux_y_%s.hdf", ud.file_name, step_string);
-        sprintf(fieldname, "advflux_y_%s", step_string);
-        WriteHDF(pfluxfile, elem->ifx, elem->icy, elem->icz, elem->ndim, fluxSol, fn, fieldname);
-    }
-    
-#endif
-
-#endif /* NODAL_PROJECTION_ONLY */    
-    
 	States_setp(Solk, Sol, 0);
 	nmax = MIN_own(ncache, n);
 	States_HydroState(Solk, HydroState, elem, 0, nmax, 0, SplitStep);
@@ -211,11 +184,7 @@ void Explicit_step_and_flux(
 		
 		nmax = MIN_own(ncache, n - kcache * njump);
 		const enum Boolean last = ((kcache + 1) * njump < n - elem->igx) ? WRONG : CORRECT;
-		        
-#ifdef NODAL_PROJECTION_ONLY
-        copy_fluxes(Fluxes->rhoY, &pfluxSol[1], kcache, nmax, njump, elem);
-#endif
-        
+		                
 		/* flux computation*/
         recovery_gravity(Lefts, Rights, gravity_source, pbuoy, pYinv, pYinvbg, gravity_strength, Solk, Solk->Y, Solk->Z, dp2, lambda, nmax, RK_stage);
         check_flux_bcs(Lefts, Rights, nmax, kcache, njump, elem, SplitStep);
@@ -278,25 +247,15 @@ void Explicit_step_and_flux(
 			count++;
 			ConsVars_addp(&ppdSol, 1);
 			ConsVars_addp(&ppflux, 1);
-#ifdef NODAL_PROJECTION_ONLY
-            ppfluxSol++;
-#endif
             ppbuoy++;
 			if(count % icx == 0) {
 				ConsVars_addp(&ppflux, 1);
 				ConsVars_addp(&pflux, 1);
-#ifdef NODAL_PROJECTION_ONLY
-                ppfluxSol++;
-                pfluxSol++;
-#endif
 			}
 		}
 		if(last == WRONG) {
 			ConsVars_addp(&pdSol, njump);
 			ConsVars_addp(&pflux, njump); 
-#ifdef NODAL_PROJECTION_ONLY
-            pfluxSol+=njump;
-#endif
             pbuoy+=njump;
             pYinv+=njump;
             pYinvbg+=njump;

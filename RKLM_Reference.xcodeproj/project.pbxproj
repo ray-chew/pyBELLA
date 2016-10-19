@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		9A21BF821DA58470006A6F34 /* libmfhdf.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A21BF811DA58470006A6F34 /* libmfhdf.dylib */; };
 		9A21BF841DA5847F006A6F34 /* libdf.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A21BF831DA5847F006A6F34 /* libdf.dylib */; };
+		9A35833A1DB7388D00A73EC1 /* Hydrostatics.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A3583381DB7388D00A73EC1 /* Hydrostatics.c */; };
 		9A4BD9851DA90DA2006A9D99 /* userdata_BreakingWave.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A4BD9841DA90DA2006A9D99 /* userdata_BreakingWave.c */; };
 		9AC4F9841DA3F06F00AED455 /* boundary.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9231DA3F06F00AED455 /* boundary.c */; };
 		9AC4F9861DA3F06F00AED455 /* set_ghostcells_p.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9271DA3F06F00AED455 /* set_ghostcells_p.c */; };
@@ -60,6 +61,8 @@
 /* Begin PBXFileReference section */
 		9A21BF811DA58470006A6F34 /* libmfhdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmfhdf.dylib; path = ../../../../../opt/local/lib/libmfhdf.dylib; sourceTree = "<group>"; };
 		9A21BF831DA5847F006A6F34 /* libdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libdf.dylib; path = ../../../../../opt/local/lib/libdf.dylib; sourceTree = "<group>"; };
+		9A3583381DB7388D00A73EC1 /* Hydrostatics.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Hydrostatics.c; path = Hydrostatics/Hydrostatics.c; sourceTree = "<group>"; };
+		9A3583391DB7388D00A73EC1 /* Hydrostatics.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Hydrostatics.h; path = Hydrostatics/Hydrostatics.h; sourceTree = "<group>"; };
 		9A4BD9841DA90DA2006A9D99 /* userdata_BreakingWave.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_BreakingWave.c; sourceTree = "<group>"; };
 		9AC4F90B1DA3F02D00AED455 /* RKLM_Reference */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = RKLM_Reference; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AC4F9151DA3F06F00AED455 /* Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
@@ -169,6 +172,15 @@
 			);
 			name = HDF;
 			path = ..;
+			sourceTree = "<group>";
+		};
+		9A3583371DB7385600A73EC1 /* Hydrostatics */ = {
+			isa = PBXGroup;
+			children = (
+				9A3583381DB7388D00A73EC1 /* Hydrostatics.c */,
+				9A3583391DB7388D00A73EC1 /* Hydrostatics.h */,
+			);
+			name = Hydrostatics;
 			sourceTree = "<group>";
 		};
 		9AC4F9021DA3F02D00AED455 = {
@@ -314,6 +326,7 @@
 		9AC4F9551DA3F06F00AED455 /* Physics */ = {
 			isa = PBXGroup;
 			children = (
+				9A3583371DB7385600A73EC1 /* Hydrostatics */,
 				9AC4F9561DA3F06F00AED455 /* Gasdynamics */,
 				9AC4F9671DA3F06F00AED455 /* LowMach */,
 			);
@@ -469,6 +482,7 @@
 				9AC4F9981DA3F06F00AED455 /* BiCGSTAB.c in Sources */,
 				9AC4F9AF1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c in Sources */,
 				9AC4F9931DA3F06F00AED455 /* Main.c in Sources */,
+				9A35833A1DB7388D00A73EC1 /* Hydrostatics.c in Sources */,
 				9AC4F9A31DA3F06F00AED455 /* thermodynamic.c in Sources */,
 				9AC4F9861DA3F06F00AED455 /* set_ghostcells_p.c in Sources */,
 				9AC4F9A41DA3F06F00AED455 /* FastSubsystem.c in Sources */,
