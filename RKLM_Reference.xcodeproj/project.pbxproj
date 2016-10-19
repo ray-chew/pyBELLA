@@ -34,7 +34,6 @@
 		9AC4F9A01DA3F06F00AED455 /* numerical_flux.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9601DA3F06F00AED455 /* numerical_flux.c */; };
 		9AC4F9A21DA3F06F00AED455 /* recovery.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9631DA3F06F00AED455 /* recovery.c */; };
 		9AC4F9A31DA3F06F00AED455 /* thermodynamic.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9651DA3F06F00AED455 /* thermodynamic.c */; };
-		9AC4F9A41DA3F06F00AED455 /* FastSubsystem.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9681DA3F06F00AED455 /* FastSubsystem.c */; };
 		9AC4F9A51DA3F06F00AED455 /* hypreInterface.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F96A1DA3F06F00AED455 /* hypreInterface.c */; };
 		9AC4F9A71DA3F06F00AED455 /* flux_correction_pckg_WITH_HYPRE.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F96F1DA3F06F00AED455 /* flux_correction_pckg_WITH_HYPRE.c */; };
 		9AC4F9A81DA3F06F00AED455 /* laplacian_cells.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9701DA3F06F00AED455 /* laplacian_cells.c */; };
@@ -128,8 +127,6 @@
 		9AC4F9641DA3F06F00AED455 /* recovery.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = recovery.h; sourceTree = "<group>"; };
 		9AC4F9651DA3F06F00AED455 /* thermodynamic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = thermodynamic.c; sourceTree = "<group>"; };
 		9AC4F9661DA3F06F00AED455 /* thermodynamic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = thermodynamic.h; sourceTree = "<group>"; };
-		9AC4F9681DA3F06F00AED455 /* FastSubsystem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = FastSubsystem.c; sourceTree = "<group>"; };
-		9AC4F9691DA3F06F00AED455 /* FastSubsystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FastSubsystem.h; sourceTree = "<group>"; };
 		9AC4F96A1DA3F06F00AED455 /* hypreInterface.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hypreInterface.c; sourceTree = "<group>"; };
 		9AC4F96B1DA3F06F00AED455 /* hypreInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hypreInterface.h; sourceTree = "<group>"; };
 		9AC4F96D1DA3F06F00AED455 /* flux_correction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = flux_correction.h; sourceTree = "<group>"; };
@@ -357,8 +354,6 @@
 		9AC4F9671DA3F06F00AED455 /* LowMach */ = {
 			isa = PBXGroup;
 			children = (
-				9AC4F9681DA3F06F00AED455 /* FastSubsystem.c */,
-				9AC4F9691DA3F06F00AED455 /* FastSubsystem.h */,
 				9AC4F96A1DA3F06F00AED455 /* hypreInterface.c */,
 				9AC4F96B1DA3F06F00AED455 /* hypreInterface.h */,
 				9AC4F96C1DA3F06F00AED455 /* MAC-projection */,
@@ -485,7 +480,6 @@
 				9A35833A1DB7388D00A73EC1 /* Hydrostatics.c in Sources */,
 				9AC4F9A31DA3F06F00AED455 /* thermodynamic.c in Sources */,
 				9AC4F9861DA3F06F00AED455 /* set_ghostcells_p.c in Sources */,
-				9AC4F9A41DA3F06F00AED455 /* FastSubsystem.c in Sources */,
 				9AC4F9A01DA3F06F00AED455 /* numerical_flux.c in Sources */,
 				9AC4F9A21DA3F06F00AED455 /* recovery.c in Sources */,
 				9AC4F9AE1DA3F06F00AED455 /* second_projection_bilinear_p_WITH_HYPRE.c in Sources */,

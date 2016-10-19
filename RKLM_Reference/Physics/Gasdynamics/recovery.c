@@ -75,56 +75,47 @@ static void HydroStates(Hydro* Hydros,
     Sc = Hydros[ic].Yinv[2];
     Sr = Hydros[ic].Yinv[4];
     
-    double p   = Hydros[ic].p2[2]*Msq;
-    double pi  = pow(p, th.Gamma);
     Hydros[ic].p2c[2] = Hydros[ic].p2[2];
     
-#ifdef HYDROSTATIC_RHOY_INTERPOLATION
-    double P   = Hydros[ic].rhoY[2]*Msq;
-    double piP = pow(P, th.gm1);
-    
-    for(k=0; k<2; k++) {
-        double dhk         = (k-2) * 0.5 * dh; 
-        double dpi         = - (th.Gamma*strength) * dhk * 0.5 * ((1+0.5*k)*Sc + (1-0.5*k)*Sl);
-        double dp          = pow(pi+dpi,th.Gammainv) - p;
-        double dP          = pow(piP+dpi,th.gm1inv) - P;
-        Hydros[ic].p2[k]   = Hydros[ic].p2[2] + dp/Msq;
-        Hydros[ic].rhoY[k] = Hydros[ic].rhoY[2] + dP;
-    }
-    for(k=3; k<5; k++) {
-        double dhk         = (k-2) * 0.5 * dh; 
-        double dpi         = - (th.Gamma*strength) * dhk * 0.5 * ((1+0.5*(4-k))*Sc + (1-0.5*(4-k))*Sr);
-        double dp          = pow(pi+dpi,th.Gammainv) - p;
-        double dP          = pow(piP+dpi,th.gm1inv) - P;
-        Hydros[ic].p2[k]   = Hydros[ic].p2[2] + dp/Msq;
-        Hydros[ic].rhoY[k] = Hydros[ic].rhoY[2] + dP;
-    }
-#else
     for(k=0; k<2; k++) {
         double dhk = (k-2) * 0.5 * dh; 
         double dpi = - (th.Gamma*strength) * dhk * 0.5 * ((1+0.5*k)*Sc + (1-0.5*k)*Sl);
-        double dp  = pow(pi+dpi,th.Gammainv) - p;
+#ifdef THERMCON
+        Hydros[ic].p2[k] = Hydros[ic].p2[2] + dpi/Msq;
+#else
+        double dp  = pow(pi+dpi,th.Gammainv) - Hydros[ic].p2[2]*Msq;
         Hydros[ic].p2[k] = Hydros[ic].p2[2] + dp/Msq;
+#endif
     }
     for(k=3; k<5; k++) {
         double dhk  = (k-2) * 0.5 * dh; 
         double dpi = - (th.Gamma*strength) * dhk * 0.5 * ((1+0.5*(4-k))*Sc + (1-0.5*(4-k))*Sr);
-        double dp  = pow(pi+dpi,th.Gammainv) - p;
+#ifdef THERMCON
+        Hydros[ic].p2[k] = Hydros[ic].p2[2] + dpi/Msq;
+#else
+        double dp  = pow(pi+dpi,th.Gammainv) - Hydros[ic].p2[2]*Msq;
         Hydros[ic].p2[k] = Hydros[ic].p2[2] + dp/Msq;
-    }
 #endif
+    }
     
     /* hydrostatic p-difference from cell-centered theta for stronger feedback on cell-centered momentum */
     {
-        double dp, dpi;
         
-        dpi = - (th.Gamma*strength) * 0.5 * dh * Sc;
-        dp  = pow(pi+dpi,th.Gammainv) - p;
+        double dpi = - (th.Gamma*strength) * 0.5 * dh * Sc;
+#ifdef THERMCON
+        Hydros[ic].p2c[3] = Hydros[ic].p2c[2] + dpi/Msq;
+#else
+        double dp  = pow(pi+dpi,th.Gammainv) - Hydros[ic].p2[2]*Msq;
         Hydros[ic].p2c[3] = Hydros[ic].p2c[2] + dp/Msq;
+#endif
         
         dpi = (th.Gamma*strength) * 0.5 * dh * Sc;
-        dp  = pow(pi+dpi,th.Gammainv) - p;
-        Hydros[ic].p2c[1] = Hydros[ic].p2c[2] + dp/Msq;                
+#ifdef THERMCON
+        Hydros[ic].p2c[1] = Hydros[ic].p2c[2] + dpi/Msq;  
+#else
+        dp  = pow(pi+dpi,th.Gammainv) - Hydros[ic].p2[2]*Msq;
+        Hydros[ic].p2c[1] = Hydros[ic].p2c[2] + dp/Msq;  
+#endif
     }
 }
 
@@ -275,27 +266,22 @@ void recovery_gravity(
     conservatives_from_uvwYZ(Rights, 1, nmax-1); 
     conservatives_from_uvwYZ(Lefts, 1, nmax-1);
     
-#ifdef BUOYANCY_VIA_OPSPLIT
-    for( i = 1; i < nmax; i++ ) {
-            gravity_source[i] = 0.0;
-    }
-#else /* BUOYANCY_VIA_OPSPLIT */
 	/* pressure gradient and gravity terms */
-    double gss  = 1.0;    
-    double gps  = 1.0;
-    double gths = THETA_EXP_AT_TIME_LEVEL;
-
-#ifdef EDGE_FOCUSED_BUOYANCY
     for( i = 1; i < nmax; i++ ) {
         double drhou, drhou_left, drhou_right, du;
         
         double u    = 0.5*(Sol->u[i]+Sol->u[i-1]);
-        
+#ifdef THERMCON
+        double gps  = th.Gammainv * 0.5 * (Sol->rhoY[i]*Sol->rhoY[i]/Sol->rho[i] + Sol->rhoY[i-1]*Sol->rhoY[i-1]/Sol->rho[i-1]);  
+#else
+        double gps  = 1.0;  
+#endif
+
         {            
             double SlopeY     = (1.0/Sol->Y[i] - 1.0/Sol->Y[i-1]); 
             double uSlopeY    = u*SlopeY;
             double rhoYc      = 0.5 * (Rights->rhoY[i]+Lefts->rhoY[i]);
-            double dbuoy_adv  = 0.5 * rhoYc*lambda*dh * (strength/Msq) * uSlopeY * gths;
+            double dbuoy_adv  = 0.5 * rhoYc*lambda*dh * (strength/Msq) * uSlopeY * 0.5;
             
             double dp2hydro_l = 0.5 * ((Hydros[i-1].p2[4]-Hydros[i-1].p2[2]) + (Hydros[i].p2[2]-Hydros[i].p2[0]));
             du                = - 0.5 * (Sol->Z[i] - Sol->Z[i-1] - dp2hydro_l) * gps;
@@ -309,38 +295,10 @@ void recovery_gravity(
             
             // Try building advective update of Yinv already into the hydrostatic computations
             
-            gravity_source[i]    = gss * drhou + dbuoy_adv; /* switch grav indep of gss ! */
-            gravity_source[i-1] += gss * drhou + dbuoy_adv;            
+            gravity_source[i]    = drhou + dbuoy_adv; /* switch grav indep of gss ! */
+            gravity_source[i-1] += drhou + dbuoy_adv;            
         }
     }
-#else
-    for( i = 1; i < nmax; i++ ) {
-		double drhou, drhou_left, drhou_right, du;
-		
-		double u    = Sol->u[i];
-		
-		{            
-            double SlopeY     = 0.5 * (1.0/Sol->Y[i+1] - 1.0/Sol->Y[i-1]); 
-            double uSlopeY    = u*SlopeY;
-			double rhoYc      = 0.5 * (Rights->rhoY[i]+Lefts->rhoY[i]); 
-            double dp2hydro_l = 0.5 * ((Hydros[i-1].p2[4]-Hydros[i-1].p2[2]) + (Hydros[i].p2[2]-Hydros[i].p2[0]));
-            du                = - 0.5 * (Sol->Z[i] - Sol->Z[i-1] - dp2hydro_l) * gps;
-			drhou_right       = du;
-			drhou_left        = du;
-			drhou             = 0.5*(drhou_right+drhou_left);
-			Rights->u[i]     += lambda  * du / Rights->rho[i];
-			Lefts->u[i-1]    += lambda  * du / Lefts->rho[i-1];
-			Rights->rhou[i]  += lambda  * drhou_right;
-			Lefts->rhou[i-1] += lambda  * drhou_left;
-
-            // Try building advective update of Yinv already into the hydrostatic computations
-            
-            gravity_source[i]    = gss * drhou + rhoYc*lambda*dh * (strength/Msq) *uSlopeY * gths; /* switch grav indep of gss ! */
-			gravity_source[i-1] += gss * drhou;            
-		}
-	}
-#endif
-#endif /* BUOYANCY_VIA_OPSPLIT */
 }
 
 /* ========================================================================== */

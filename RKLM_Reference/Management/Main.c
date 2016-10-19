@@ -191,9 +191,6 @@ int main( void )
             /* if (ud.absorber) Absorber(Sol, t, dt); */
 			/* Explicit_Source(Sol, t, 0.5*lambda); */
 				
-#ifdef BUOYANCY_VIA_OPSPLIT
-            Explicit_Buoyancy(Sol, buoy, mpv, elem, node, t, 0.5*dt);
-#endif
 #if OUTPUT_SUBSTEPS
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
@@ -294,9 +291,6 @@ int main( void )
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
 
-#ifdef BUOYANCY_VIA_OPSPLIT
-            Explicit_Buoyancy(Sol, buoy, mpv, elem, node, t, 0.5*dt);
-#endif
             /* Explicit_Source(Sol, t, 0.5*lambda); */
             if(ud.absorber) Absorber(Sol, t, 0.5*dt); 
 
@@ -323,11 +317,7 @@ int main( void )
                                 
                                 if(PROJECTION1) {
                                     
-#ifdef SOLVER_1_HYPRE
-                                    flux_correction(flux, buoy, elem, node, Sol, Sol0, mpv, t, dt, ud.implicitness);
-#else
                                     flux_correction(flux, buoy, elem, Sol, Sol0, t, dt, ud.implicitness, step);
-#endif
                                     update(Sol, flux, buoy, elem, dt);
                                     which_projection = 2;
                                     Set_Explicit_Boundary_Data(Sol, elem, mpv);

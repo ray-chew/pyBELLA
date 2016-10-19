@@ -63,11 +63,7 @@ void variable_coefficient_poisson_cells(
 	tmp = SOLVER(data, elem, node, hplus, hcenter, hgrav, Sol, mpv, mpv->dt, theta, rhs, p2);
     
     printf("residual 1st projection = %e * tol\n", tmp);
-	
-#ifdef NEWTON_FOR_EQ_OF_STATE
-    for (int ic=0; ic < elem->nc; ic++) rhs[ic] = data->help_vec2[ic];
-#endif
-    
+	    
 	BiCGSTABData_free(data); 
 }
 

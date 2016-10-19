@@ -1,7 +1,6 @@
 /* solver options ==============================
  #define SOLVER_1_CR2
  #define SOLVER_1_BICGSTAB
- #define SOLVER_1_HYPRE
 
  #define SOLVER_2_CR2
  #define SOLVER_2_BICGSTAB
@@ -14,9 +13,7 @@
  #define MICHAEL_CORRECTION
 
  #define SHIFTED_COEFFICIENTS_PROJ1
- #define NEWTON_FOR_EQ_OF_STATE
 
- #define OLD_TIME_COEFFS
 */
 
 /*         

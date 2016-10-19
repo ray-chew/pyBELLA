@@ -620,7 +620,10 @@ static void operator_coefficients_nodes(
 	extern User_Data ud;
 	extern Thermodynamic th;
 	
-	const int ndim = node->ndim;
+    const double Msq = ud.Msq;
+    const double Gammainv = th.Gammainv;
+    
+    const int ndim = node->ndim;
     
     const int impl_grav_th2 = ud.implicit_gravity_theta2;
     const int impl_grav_pr2 = ud.implicit_gravity_press2;
@@ -640,8 +643,6 @@ static void operator_coefficients_nodes(
 
             const double dx = elem->dx;
             const double dy = elem->dy;
-
-            double Msq = ud.Msq;
 			
 			double* hplusx  = hplus[0];
 			double* hplusy  = hplus[1];
@@ -662,7 +663,7 @@ static void operator_coefficients_nodes(
                     n = m + i;     
                     
 #ifdef THERMCON
-                    double theta   = Sol->rhoY[n]*Sol->rhoY[n] / Sol->rho[n] ;
+                    double theta   = Gammainv * Sol->rhoY[n]*Sol->rhoY[n] / Sol->rho[n] ;
 #else
                     double theta   = Sol->rhoY[n] / Sol->rho[n] ;
 #endif               
@@ -719,7 +720,11 @@ static void operator_coefficients_nodes(
                 for(j = igy; j < icy - igy; j++) {m = l + j * icx;
                     for(i = igx; i < icx - igx; i++) {n = m + i;
                         {
+#ifdef THERMCON
+                            double theta   = Gammainv * Sol->rhoY[n]*Sol->rhoY[n] / Sol->rho[n] ;
+#else
                             double theta   = Sol->rhoY[n] / Sol->rho[n] ;
+#endif               
                             
                             double dthetax = ((Sol->rhoY[n+dix]  / Sol->rho[n+dix]) - (Sol->rhoY[n-dix]  / Sol->rho[n-dix])) / (2.0*dx);
                             double gimpx   = 1.0 / (1.0 + impl_grav_th2*0.25*dt*dt*(ud.gravity_strength[0]/Msq)*dthetax/theta);
@@ -929,7 +934,6 @@ void correction_nodes(
 
 					Sol->rhou[ne] += - dtowdx * thinv * hplusx[ne] * Dpx;
 					Sol->rhov[ne] += - dtowdy * thinv * hplusy[ne] * Dpy;
-                    Sol->rhov[ne] += - 0.5*dt * hgrav[ne] * (Sol->rho[ne]/Sol->rhoY[ne]) * 0.25 * (p[n] + p[n1] + p[n1icx] + p[nicx]);
 				}
 			} 
 			

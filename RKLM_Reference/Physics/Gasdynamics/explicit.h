@@ -101,16 +101,6 @@ void fullD_explicit_updates(ConsVars* Sol,
  Computes updates from full-dimensional flux balances
  ------------------------------------------------------------------------------*/
 
-#ifdef BUOYANCY_VIA_OPSPLIT
-void Explicit_Buoyancy(ConsVars* Sol, 
-                       VectorField* buoy, 
-                       const MPV* mpv, 
-                       const ElemSpaceDiscr* elem, 
-                       const NodeSpaceDiscr* node, 
-                       const double t, 
-                       const double dt);
-#endif
-
 #endif /* EXPLICIT_H */
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL

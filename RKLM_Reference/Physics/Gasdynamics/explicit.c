@@ -21,10 +21,6 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef VORTICITY_TRANSPORT
-#include "recovery_vorticity_transport.h"
-#endif
-
 static enum Boolean allocated = WRONG;
 
 static int arraysize = 0;
@@ -60,26 +56,6 @@ void Explicit_free() {
     free(gravity_source);
 	allocated = WRONG;
 	arraysize = 0;
-}
-
-/* ================================================================================ */
-
-void copy_fluxes(double *F, 
-                 const double *f, 
-                 const int kcache,
-                 const int nmax, 
-                 const int njump, 
-                 const ElemSpaceDiscr* elem)
-{
-    const int n0 = kcache*njump;
-    const int k0 = n0/(elem->icy*elem->icx);
-    const int j0 = (n0-k0*(elem->icy*elem->icx))/elem->icx;
-    const int i0 = n0-k0*(elem->icy*elem->icx)-j0*elem->icx;
-    
-    for (int i=0; i<nmax; i++) {
-        int m = (i0+i)/elem->icx;
-        F[i] = f[i+m];
-    }
 }
 
 /* ================================================================================ */
@@ -131,7 +107,6 @@ void Explicit_step_and_flux(
             for (int ic=0; ic<elem->nc; ic++) {
                 p2_store[ic] = Sol->rhoZ[ic]/Sol->rho[ic];
             }
-            /* set_ghostcells_p2(p2_store, elem, elem->igx); */
 
             for(int j=1; j<elem->icy-1; j++) {
                 int njk = j*elem->icx;
@@ -216,9 +191,7 @@ void Explicit_step_and_flux(
             }
 			
 			/* pressure gradient and gravity source terms */
-#ifndef BUOYANCY_VIA_OPSPLIT
             *ppbuoy      = flux_weight_old * *ppbuoy + flux_weight_new * gravity_source[i];
-#endif
 			*ppdSol.rhou += lambda * gravity_source[i];
 
             *ppdSol.rho  += lambda * (*pFluxes.rho  - pFluxes.rho[1]);  
@@ -639,165 +612,6 @@ void fullD_explicit_updates(ConsVars* Sol,
 			ERROR("\n\nwe are not doing string theory");;
 	}
 }
-
-
-#ifdef BUOYANCY_VIA_OPSPLIT
-void Explicit_Buoyancy(ConsVars* Sol, 
-                       VectorField* buoy, 
-                       const MPV* mpv, 
-                       const ElemSpaceDiscr* elem, 
-                       const NodeSpaceDiscr* node, 
-                       const double t, 
-                       const double dt)
-{
-    extern User_Data ud;
-    extern Thermodynamic th;
-    
-    double g   = ud.gravity_strength[1];
-    double Msq = ud.Msq;
-    double Gamma = th.Gamma;
-    double Gammainv = th.Gammainv;
-    
-    double* p2 = mpv->p2_nodes;
-    
-    const int icxe = elem->icx;
-    const int icye = elem->icy;
-    const int icze = elem->icz;
-
-    const int igx = elem->igx;
-    const int igy = elem->igy;
-    const int igz = elem->igz;
-
-    const int icxn = node->icx;
-    const int icyn = node->icy;
-    
-    const double dx = elem->dx;
-    const double dy = elem->dy;
-    
-    const int kkmax = (elem->ndim > 2 ? 2 : 1);
-    const int jjmax = (elem->ndim > 1 ? 2 : 1);
-    const int iimax = (elem->ndim > 0 ? 2 : 1);
-    
-    const int strkn = icyn*icxn;
-    const int strjn = icxn;
-    const int strin = 1;
-
-    double dpdx_max = 0.0;
-    
-    assert(elem->ndim == 2);
-
-    for (int k=igz; k<icze-igz; k++) {
-        int nck = k*icye*icxe;
-        int nnk = k*icyn*icxn;
-        
-        for (int j=igy; j<icye-igy; j++) {
-            int nckj   = nck + j*icxe;
-            int nckj_y = nck + j;
-            int nnkj   = nnk + j*icxn;
-            
-            for (int i=igx; i<icxe-igx; i++) {
-                int nckji   = nckj + i;
-                int nckji_y = nckj_y + i*icye;
-                int nnkji   = nnkj + i;
-                
-                int nc_n = nckji + icxe;
-                int nc_c = nckji;
-                int nc_s = nckji - icxe;
-                int nc_e = nckji + 1;
-                int nc_w = nckji - 1;
-                
-                int nn_sw = nnkji;
-                int nn_se = nnkji + 1;
-                int nn_ne = nnkji + 1 + icxn;
-                int nn_nw = nnkji + icxn;
-                
-                double dpdx = 0.0;
-                double dpdy = 0.0;
-                double dpdy_hy = 0.0;
-                double thetainv_p, thetainv_c, thetainv_m, thetainv_e, thetainv_w;
-                double pihy_p, pihy_c, pihy_m, phy_p, phy_c, phy_m;
-                
-                /* vertical pressure gradient */
-                int cnt = 0;
-                for (int kk=0; kk<kkmax; kk++) {
-                    for (int ii=0; ii<iimax; ii++) {
-                        int nnkji_m = nnkji + kk*strkn + ii*strin;
-                        int nnkji_p = nnkji + kk*strkn + ii*strin + strjn;
-                        
-                        dpdy += p2[nnkji_p] - p2[nnkji_m];
-                        cnt++;
-                    }
-                }
-                dpdy /= (cnt*dy);
-
-                /* horizontal pressure gradient */
-                cnt = 0;
-                for (int kk=0; kk<kkmax; kk++) {
-                    for (int jj=0; jj<jjmax; jj++) {
-                        int nnkji_l = nnkji + kk*strkn + jj*strjn;
-                        int nnkji_r = nnkji + kk*strkn + jj*strjn + strin;
-                        
-                        dpdx += p2[nnkji_r] - p2[nnkji_l];
-                        cnt++;
-                    }
-                }
-                dpdx /= (cnt*dx);
-                dpdx_max = MAX_own(dpdx_max, fabs(dpdx));
-
-                
-                /* hydrostatic pressure gradient */
-#define WELL_BALANCED_BUOYANCY
-#ifdef WELL_BALANCED_BUOYANCY
-#ifdef GRAVITY_1
-                thetainv_e = Sol->rho[nc_e]/Sol->rhoY[nc_e]; 
-                thetainv_c = Sol->rho[nc_c]/Sol->rhoY[nc_c]; 
-                thetainv_w = Sol->rho[nc_w]/Sol->rhoY[nc_w]; 
-                
-                double dpi_e = -Gamma*g*dy*0.5*(thetainv_c+thetainv_e);
-                double dpi_w = -Gamma*g*dy*0.5*(thetainv_c+thetainv_w);
-                
-                double pi_sw = pow(p2[nn_sw]*Msq,Gamma);
-                double pi_se = pow(p2[nn_se]*Msq,Gamma);
-                double pi_ne = pow(p2[nn_ne]*Msq,Gamma);
-                double pi_nw = pow(p2[nn_nw]*Msq,Gamma);
-                
-                double dphy_sw = pow(pi_sw + dpi_w, Gammainv)/Msq - p2[nn_sw];
-                double dphy_se = pow(pi_se + dpi_e, Gammainv)/Msq - p2[nn_se];
-                double dphy_ne = p2[nn_ne] - pow(pi_ne - dpi_e, Gammainv)/Msq;
-                double dphy_nw = p2[nn_nw] - pow(pi_nw - dpi_w, Gammainv)/Msq;
-                
-                dpdy_hy    = 0.25*(dphy_sw + dphy_se + dphy_ne + dphy_nw)/dy;                 
-#else /* GRAVITY_1 */
-                thetainv_p = Sol->rho[nc_n]/Sol->rhoY[nc_n]; 
-                thetainv_c = Sol->rho[nc_c]/Sol->rhoY[nc_c]; 
-                thetainv_m = Sol->rho[nc_s]/Sol->rhoY[nc_s]; 
-                                
-                phy_c      = Sol->rhoZ[nc_c]/Sol->rho[nc_c];
-                pihy_c     = pow(phy_c*Msq,th.Gamma);
-                pihy_p     = pihy_c - th.Gamma*g*(0.5*dy)*0.5*(thetainv_c + 0.5*(thetainv_c+thetainv_p));
-                pihy_m     = pihy_c + th.Gamma*g*(0.5*dy)*0.5*(thetainv_c + 0.5*(thetainv_c+thetainv_m));
-                
-                phy_p      = pow(pihy_p, th.Gammainv);
-                phy_m      = pow(pihy_m, th.Gammainv);
-                dpdy_hy    = (phy_p-phy_m)/(Msq*dy); 
-#endif /* GRAVITY_1 */
-#else /* WELL_BALANCED_BUOYANCY */
-                dpdy_hy    = - Sol->rho[nc_c] * (g/Msq);
-#endif /* WELL_BALANCED_BUOYANCY */ 
-                Sol->rhou[nckji] -= dt*dpdx;
-                Sol->rhov[nckji] -= dt*(dpdy-dpdy_hy);                    
-
-                buoy->x[nckji]    = -0.5*dx*dpdx;
-                buoy->y[nckji_y]  = -0.5*dy*(dpdy-dpdy_hy);
-            }
-        }
-    }
-    
-    /* printf("dpdx_Max = %e\n", dpdx_max); */
-    
-}
-#endif
-
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log: explicit.c,v $

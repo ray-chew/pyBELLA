@@ -26,22 +26,6 @@
  
  ------------------------------------------------------------------------------*/
 
-#ifdef SOLVER_1_HYPRE
-
-void flux_correction(
-                     ConsVars* flux[3],
-                     VectorField* buoy,
-                     const ElemSpaceDiscr* elem,
-                     const NodeSpaceDiscr* node,
-                     ConsVars* Sol,
-                     ConsVars* Sol0,
-                     MPV* mpv,
-                     const double t,
-                     const double dt,
-                     const double theta);
-
-#else  /* SOLVER_1_HYPRE */
-
 void flux_correction(
 					 ConsVars* flux[3],
 					 VectorField* buoy,
@@ -52,8 +36,6 @@ void flux_correction(
 					 const double dt,
 					 const double theta,
                      const int step);
-
-#endif /* SOLVER_1_HYPRE */
 
 void operator_coefficients(
                            double* hplus[3], 

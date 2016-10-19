@@ -8,10 +8,6 @@
 #define SCND_PROJ_OLDP_WEIGHT 1.0
 #define SCND_PROJ_DELP_WEIGHT 1.0
 
-/*
- */
-#define THETA_EXP_AT_TIME_LEVEL 0.5 /* 0.5 is theoretical value */
-
 #define NSPEC 1
 #define QV    0   /* water vapor */
 #define QC    1   /* cloud water */
@@ -41,13 +37,11 @@
 #define LIMITER_Z VANLEER_LIM
 #endif
 
-/* #define HYDROSTATIC_RHOY_INTERPOLATION 
+/* 
  #define Y_BUOY_FROM_LEFTS_RIGHTS
  */
-#define EDGE_FOCUSED_BUOYANCY
 
 /*  
-#define BUOYANCY_VIA_OPSPLIT
 #define GRAVITY_1
 */
    
