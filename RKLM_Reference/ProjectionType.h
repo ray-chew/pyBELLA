@@ -68,7 +68,7 @@
  #define SECOND_ORDER_CENTRAL_CORRECTION
  #define FIRST_ORDER_UPWIND_CORRECTION
  */
-#define FIRST_ORDER_UPWIND_CORRECTION
+#define SECOND_ORDER_CENTRAL_CORRECTION
 
 
 /* cell-centered velocity projection 

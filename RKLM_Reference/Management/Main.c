@@ -256,7 +256,7 @@ int main( void )
 #endif
 
             /* Explicit_Source(Sol, t, 0.5*lambda); */
-            if(ud.absorber) Absorber(Sol, t, 0.5*dt); 
+            /* if(ud.absorber) Absorber(Sol, t, 0.5*dt); */
 
 #if OUTPUT_SUBSTEPS
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
