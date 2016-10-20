@@ -272,7 +272,7 @@ void recovery_gravity(
         
         double u    = 0.5*(Sol->u[i]+Sol->u[i-1]);
 #ifdef THERMCON
-        double gps  = th.Gammainv * 0.5 * (Sol->rhoY[i]*Sol->rhoY[i]/Sol->rho[i] + Sol->rhoY[i-1]*Sol->rhoY[i-1]/Sol->rho[i-1]);  
+        double gps  = th.Gammainv * 0.5 * (Sol->rhoY[i] + Sol->rhoY[i-1]);  
 #else
         double gps  = 1.0;  
 #endif

@@ -24,6 +24,121 @@ static enum Boolean diaginv_is_allocated = WRONG;
 static double *diaginv;
 static double *diag;
 
+#ifdef PRECON_LEGACY
+void precon_prepare(
+                    const NodeSpaceDiscr* node,
+                    const ElemSpaceDiscr* elem,
+                    const double* hplus[3],
+                    const double* wcenter,
+                    const double* wgrav,
+                    const int x_periodic,
+                    const int y_periodic,
+                    const int z_periodic) 
+{
+    
+    /*
+     the following defines diag/diaginv directly through the calculations in
+     EnthalpyWeightedLap_Node_bilinear_p_scatter()
+     As a consequence, also the boundary elements have the real diagonal values,
+     as opposed to what I did previously, when all the elements received the
+     diagonal value from a full stencil.
+     */
+    
+    extern User_Data ud;
+    extern MPV* mpv;
+    
+    if (diaginv_is_allocated == WRONG) {
+        diag    = (double*)malloc(node->nc*sizeof(double));
+        diaginv = (double*)malloc(node->nc*sizeof(double));
+        diaginv_is_allocated = CORRECT;
+    }
+    
+    const int ndim = node->ndim;
+    
+    if (ud.precondition == WRONG) {
+        for(int nn=0; nn<node->nc; nn++) diag[nn] = diaginv[nn] = 1.0;
+    }
+    else {
+        switch(ndim) {
+            case 1: {
+                ERROR("function not available");
+                break;
+            }
+            case 2: {
+                const int igxn = node->igx;
+                const int icxn = node->icx;
+                const int igyn = node->igy;
+                const int icyn = node->icy;
+                
+                const int igxe = elem->igx;
+                const int icxe = elem->icx;
+                const int igye = elem->igy;
+                const int icye = elem->icy;
+                
+                const double dx = node->dx;
+                const double dy = node->dy;
+                
+                const double* hplusx   = hplus[0];
+                const double* hplusy   = hplus[1];
+                const double* hcenter  = wcenter;
+                const double* hgrav    = wgrav;
+                
+                const double oody  = 0.5 / dy;
+                
+                const double oodx2 = 0.5 / (dx * dx);
+                const double oody2 = 0.5 / (dy * dy);
+                const double nine_pt = (0.25 * (1.0 + P2_DIAGONAL_FIVE_POINT)) * P2_FULL_STENCIL;
+                
+                double flux_x_lower, flux_x_upper, flux_y_left, flux_y_right, hc, hg;
+                double dsq_p_dxdy;
+                
+                double pnn      = 1.0;
+                double pnn1     = 1.0;
+                double pnnicxn  = 1.0;
+                double pnn1icxn = 1.0;
+                
+                int i, j, me, mn, ne, nn, nn1, nnicxn, nn1icxn;
+                
+                for(nn=0; nn<node->nc; nn++) diag[nn] = diaginv[nn] = 0.0;
+                
+                for(j = 0; j < icye; j++) {
+                    me   = j * icxe;
+                    mn   = j * icxn;
+                    
+                    for(i = 0; i < icxe; i++) {
+                        ne       = me + i;
+                        
+                        nn       = mn + i;
+                        nn1      = nn + 1;
+                        nnicxn   = nn + icxn;
+                        nn1icxn  = nn + 1 + icxn;
+                        
+                        /* location nn */
+                        diag[nn]      += 0.125 * (hplusx[ne]+hplusy[ne]);
+                        diag[nn1]     += 0.125 * (hplusx[ne]+hplusy[ne]);
+                        diag[nnicxn]  += 0.125 * (hplusx[ne]+hplusy[ne]);
+                        diag[nn1icxn] += 0.125 * (hplusx[ne]+hplusy[ne]);
+                    }
+                }
+                
+                for (j = igyn; j < icyn-igyn; j++) {mn = j*icxn;
+                    for (i = igxn; i < icxn-igxn; i++) {nn = mn + i;
+                        diaginv[nn] = 1.0/diag[nn];
+                    }
+                }
+                
+                break;
+            }
+            case 3: {
+                ERROR("function not available");
+                break;
+            }
+                
+            default: ERROR("ndim not in {1, 2, 3}");
+        }  
+    }
+}
+#else /* PRECON_LEGACY */
 void precon_prepare(
                     const NodeSpaceDiscr* node,
                     const ElemSpaceDiscr* elem,
@@ -193,6 +308,8 @@ void precon_prepare(
         }  
     }
 }
+#endif /* PRECON_LEGACY */
+
 
 void precon_apply(
                   double* vec_out,

@@ -39,6 +39,7 @@
 #ifdef PRECON
 #define PRECON_DIAGONAL_1ST_PROJ
 #define PRECON_DIAGONAL_2ND_PROJ
+#define PRECON_LEGACY
 #endif
 
 /*
@@ -67,7 +68,7 @@
  #define SECOND_ORDER_CENTRAL_CORRECTION
  #define FIRST_ORDER_UPWIND_CORRECTION
  */
-#define SECOND_ORDER_CENTRAL_CORRECTION
+#define FIRST_ORDER_UPWIND_CORRECTION
 
 
 /* cell-centered velocity projection 

@@ -283,11 +283,11 @@ void Absorber(
     const int igz = elem->igz;
     
 	const double dy_b = 0.0 * (ud.ymax-ud.ymin);
-	const double dy_t = (9.0/24.0) * (ud.ymax-ud.ymin);  
+	const double dy_t = (9.0/27.0) * (ud.ymax-ud.ymin);  
 	const double om_y = ud.t_ref/600.0;                   
-	const double dx_l = (20.0/240.0) * (ud.xmax-ud.xmin);  
-	const double dx_r = (20.0/240.0) * (ud.xmax-ud.xmin);
-	const double om_x = ud.t_ref/600.0;                    
+	const double dx_l = (10.0/240.0) * (ud.xmax-ud.xmin);  
+	const double dx_r = (10.0/240.0) * (ud.xmax-ud.xmin);
+	const double om_x = ud.t_ref/120.0;                    
 	
     int k, j, i, nk, njk, nijk;
 	

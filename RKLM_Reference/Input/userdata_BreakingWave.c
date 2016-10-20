@@ -126,7 +126,7 @@ void User_Data_init(User_Data* ud) {
 	ud->bdrytype_max[1] = WALL;  
 	ud->bdrytype_max[2] = WALL;
 	
-    ud->absorber = WRONG; /* CORRECT; */ 
+    ud->absorber = CORRECT; /* CORRECT; */ 
 	
 	/* ================================================================================== */
 	/* =====  NUMERICS  ================================================================= */
@@ -163,7 +163,7 @@ void User_Data_init(User_Data* ud) {
 	ud->kZ = 1.4; /* 2.0 */
 	
     /* first correction */
-    ud->p_flux_correction = CORRECT; /* CORRECT, WRONG; */
+    ud->p_flux_correction = WRONG; /* CORRECT, WRONG; */
     if (ud->time_integrator == OP_SPLIT || ud->time_integrator == OP_SPLIT_MD_UPDATE) {
         ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.0; /* REFERENCE */
         /* ud->latw[0] = ud->latw[2] = 0.0; ud->latw[1] = 1.0; ud->p_extrapol = 1.0; */   
@@ -183,7 +183,7 @@ void User_Data_init(User_Data* ud) {
     ud->which_projection_first = 1;
     ud->Solver = BICGSTAB_PRECON;        /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->Solver_Node = BICGSTAB_PRECON;   /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
-    ud->precondition = WRONG;            /* options:   CORRECT, WRONG */
+    ud->precondition = CORRECT;            /* options:   CORRECT, WRONG */
     double tol = 1.e-8;
     ud->flux_correction_precision = tol;
     ud->flux_correction_local_precision = tol;   /* 1.e-05 should be enough */
@@ -210,7 +210,7 @@ void User_Data_init(User_Data* ud) {
 
     /* output times  */
     ud->tout[0] =  9000.0/t_ref;             /* times in [s]    */
-    ud->tout[1] =  9900.0/t_ref;
+    ud->tout[1] = -9900.0/t_ref;
     ud->tout[2] = 10800.0/t_ref;
     ud->tout[3] = 11700.0/t_ref;
     ud->tout[4] = 12600.0/t_ref;
@@ -221,7 +221,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 100000;
+    ud->write_file_period = 20;
     ud->file_format = HDF;
     
     {

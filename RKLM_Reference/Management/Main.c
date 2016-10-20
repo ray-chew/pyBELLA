@@ -187,8 +187,8 @@ int main( void )
             
 			printf("\nnonlinear fluxes ---------------------------- \n");
 			
-            if (ud.absorber) Absorber(Sol, t, 0.5*dt);   
-            /* if (ud.absorber) Absorber(Sol, t, dt); */
+            /* if (ud.absorber) Absorber(Sol, t, 0.5*dt);  */   
+            /* if (ud.absorber) Absorber(Sol, t, dt);
 			/* Explicit_Source(Sol, t, 0.5*lambda); */
 				
 #if OUTPUT_SUBSTEPS
