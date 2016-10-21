@@ -34,7 +34,6 @@
 		9AC4F9A01DA3F06F00AED455 /* numerical_flux.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9601DA3F06F00AED455 /* numerical_flux.c */; };
 		9AC4F9A21DA3F06F00AED455 /* recovery.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9631DA3F06F00AED455 /* recovery.c */; };
 		9AC4F9A31DA3F06F00AED455 /* thermodynamic.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9651DA3F06F00AED455 /* thermodynamic.c */; };
-		9AC4F9A51DA3F06F00AED455 /* hypreInterface.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F96A1DA3F06F00AED455 /* hypreInterface.c */; };
 		9AC4F9A71DA3F06F00AED455 /* flux_correction_pckg_WITH_HYPRE.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F96F1DA3F06F00AED455 /* flux_correction_pckg_WITH_HYPRE.c */; };
 		9AC4F9A81DA3F06F00AED455 /* laplacian_cells.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9701DA3F06F00AED455 /* laplacian_cells.c */; };
 		9AC4F9AA1DA3F06F00AED455 /* variable_coefficient_poisson_cells.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9731DA3F06F00AED455 /* variable_coefficient_poisson_cells.c */; };
@@ -126,8 +125,6 @@
 		9AC4F9641DA3F06F00AED455 /* recovery.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = recovery.h; sourceTree = "<group>"; };
 		9AC4F9651DA3F06F00AED455 /* thermodynamic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = thermodynamic.c; sourceTree = "<group>"; };
 		9AC4F9661DA3F06F00AED455 /* thermodynamic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = thermodynamic.h; sourceTree = "<group>"; };
-		9AC4F96A1DA3F06F00AED455 /* hypreInterface.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hypreInterface.c; sourceTree = "<group>"; };
-		9AC4F96B1DA3F06F00AED455 /* hypreInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hypreInterface.h; sourceTree = "<group>"; };
 		9AC4F96D1DA3F06F00AED455 /* flux_correction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = flux_correction.h; sourceTree = "<group>"; };
 		9AC4F96F1DA3F06F00AED455 /* flux_correction_pckg_WITH_HYPRE.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = flux_correction_pckg_WITH_HYPRE.c; sourceTree = "<group>"; };
 		9AC4F9701DA3F06F00AED455 /* laplacian_cells.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = laplacian_cells.c; sourceTree = "<group>"; };
@@ -351,8 +348,6 @@
 		9AC4F9671DA3F06F00AED455 /* LowMach */ = {
 			isa = PBXGroup;
 			children = (
-				9AC4F96A1DA3F06F00AED455 /* hypreInterface.c */,
-				9AC4F96B1DA3F06F00AED455 /* hypreInterface.h */,
 				9AC4F96C1DA3F06F00AED455 /* MAC-projection */,
 				9AC4F9751DA3F06F00AED455 /* mpv.c */,
 				9AC4F9761DA3F06F00AED455 /* mpv.h */,
@@ -446,7 +441,6 @@
 				9AC4F9891DA3F06F00AED455 /* set_ghostnodes_rhs.c in Sources */,
 				9AC4F9911DA3F06F00AED455 /* data.c in Sources */,
 				9AC4F9A71DA3F06F00AED455 /* flux_correction_pckg_WITH_HYPRE.c in Sources */,
-				9AC4F9A51DA3F06F00AED455 /* hypreInterface.c in Sources */,
 				9AC4F9991DA3F06F00AED455 /* SimpleUtilities.c in Sources */,
 				9AC4F9AB1DA3F06F00AED455 /* mpv.c in Sources */,
 				9AC4F9871DA3F06F00AED455 /* set_ghostfaces_h_over_rho.c in Sources */,

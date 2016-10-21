@@ -425,14 +425,11 @@ static void slopes_gravity(
     /* User data */
     extern User_Data ud;
 	
-#ifndef LIMITER_FROM_MACROS
     const enum LimiterType limiter_type_velocity = ud.limiter_type_velocity;
     const enum LimiterType limiter_type_scalars  = ud.limiter_type_scalars;
     double kp = ud.kp;
     double kz = ud.kz;
     double kY = ud.kY;  
-    double kZ = ud.kZ;
-#endif
     
     double aul, aur, avl, avr, awl, awr, aYl, aYr; 
     double aXl[NSPEC], aXr[NSPEC];
@@ -480,16 +477,6 @@ static void slopes_gravity(
         }                                
         aYr    = dY;
 		
-#ifdef LIMITER_FROM_MACROS
-        Slopes->entro[i] = LIMITER_U(aul, aur, kp);  
-        Slopes->v[i]     = LIMITER_V(avl, avr, kz);
-        Slopes->w[i]     = LIMITER_W(awl, awr, kz);
-        for (nsp = 0; nsp < ud.nspec; nsp++) {
-            Slopes->X[nsp][i] = LIMITER_X(aXl[nsp], aXr[nsp], kz);
-        }                                
-        Slopes->Y[i]     = LIMITER_Y(aYl, aYr, kY);
-
-#else /* LIMITER_FROM_MACROS */ 
         /* limited slopes */
         Slopes->entro[i] = (*limiter[limiter_type_velocity])(aul, aur, kp);  /* entro abused for u */
         Slopes->v[i] = (*limiter[limiter_type_velocity])(avl, avr, kz);
@@ -498,7 +485,6 @@ static void slopes_gravity(
             Slopes->X[nsp][i] = (*limiter[limiter_type_scalars])(aXl[nsp], aXr[nsp], kz);
         }                                
         Slopes->Y[i] = (*limiter[limiter_type_scalars])(aYl, aYr, kY);
-#endif  /* LIMITER_FROM_MACROS */
     }
 }
 

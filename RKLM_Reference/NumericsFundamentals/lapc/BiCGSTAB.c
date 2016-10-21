@@ -126,20 +126,12 @@ double SOLVER(
     set_ghostcells_p2(p2, hplus, hgrav, elem, 1);
     EnthalpyWeightedLap_bilinear_p(elem, node, p2, hplus, hcenter, hgrav, Sol, mpv, dt, theta, r_0);
     
-#ifdef TEST_SOLVER
-    double rhsmax = 0.0;
-    double diamax = 0.0;
-#endif
     for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
         for(j = igy; j < icy - igy; j++) {m = l + j * icx;
             for(i = igx; i < icx - igx; i++) {n = m + i;
                 r_0[n]  -= rhs[n]*diaginv[n];
                 phi_0[n] = p2[n];
                 r_m[n]   = phi_m[n] = 0.0;
-#ifdef TEST_SOLVER
-                rhsmax = MAX_own(rhsmax,rhs[n]);
-                diamax = MAX_own(diamax,diaginv[n]);
-#endif
             }
         }
     }
@@ -356,7 +348,6 @@ double SOLVER(
         for(j = igy; j < icy - igy; j++) {m = l + j * icx;
             for(i = igx; i < icx - igx; i++) {n = m + i;
                 r_j[n]  = r_0[n]  = rhs_prec[n]   - v_j[n];
-                tmp_local = MAX_own(tmp_local, fabs(r_j[n]));
                 p_j[n]  = 0.0;
                 v_j[n]  = 0.0;
                 cell_cnt++;
@@ -371,20 +362,25 @@ double SOLVER(
         for(j = igy; j < icy - igy; j++) {m = l + j * icx;
             for(i = igx; i < icx - igx; i++) {n = m + i;
                 tmp += r_j_unprec[n] * r_j_unprec[n];
+                tmp_local = MAX_own(tmp_local, fabs(r_j_unprec[n]));
             }
         }
     }
 
     alpha = omega = rho1 = 1.;
-    tmp_local *= (dt*dt/local_precision);
+    tmp_local *= 0.5*dt/local_precision;
     tmp = 0.5*dt*sqrt(tmp/cell_cnt)/precision;
     
     cnt = 0;
     printf(" iter = 0,  residual = %e,  local residual = %e,  gridsize = %d\n", tmp, tmp_local, nc);
     
-    /* while(tmp > 1.0 && tmp_local > 1.0 && cnt < max_iterations) */
+#ifdef DIV_CONTROL_LOCAL
+    while(tmp > 1.0 && tmp_local > 1.0 && cnt < max_iterations)
+    {
+#else
     while(tmp > 1.0 && cnt < max_iterations)
     {
+#endif
         rho2 = 0.0;
         for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
             for(j = igy; j < icy - igy; j++) {m = l + j * icx;
@@ -442,30 +438,30 @@ double SOLVER(
         
         omega /= tmp;
         
-        tmp_local = 0.0;
         for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
             for(j = igy; j < icy - igy; j++) {m = l + j * icx;
                 for(i = igx; i < icx - igx; i++) {n = m + i;
                     p2[n]    += alpha * p_j[n]  + omega * s_j[n];
                     r_j[n]    = s_j[n] - omega * t_j[n];
-                    tmp_local = MAX_own(tmp_local, fabs(r_j[n])); 
                 }
             }
         }
 
         precon_c_apply(r_j_unprec, r_j, elem);
 
-        tmp = 0.0;
+        tmp       = 0.0;
+        tmp_local = 0.0;
         for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
             for(j = igy; j < icy - igy; j++) {m = l + j * icx;
                 for(i = igx; i < icx - igx; i++) {n = m + i;
-                    tmp += r_j_unprec[n] * r_j_unprec[n];
+                    tmp      += r_j_unprec[n] * r_j_unprec[n];
+                    tmp_local = MAX_own(tmp_local, fabs(r_j_unprec[n])); 
                 }
             }
         }
 
         rho1 = rho2;
-        tmp_local *= (dt*dt/local_precision);
+        tmp_local *= 0.5*dt/local_precision;
         tmp = 0.5*dt*sqrt(tmp/cell_cnt)/precision;
         
         cnt++;

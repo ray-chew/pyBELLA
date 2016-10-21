@@ -246,13 +246,7 @@ void second_projection(
     
     for(ii=0; ii<nc; ii++) {
         /* hunt down factor of 0.5 in the next line !! */
-        mpv->p2_nodes[ii]  = SCND_PROJ_OLDP_WEIGHT*mpv->p2_nodes[ii] + p_update*SCND_PROJ_DELP_WEIGHT*0.5*p2[ii];
-        mpv->dp2_nodes[ii] = p2[ii];
-    }
-
-    for(ii=0; ii<nc; ii++) {
-        /* hunt down factor of 0.5 in the next line !! */
-        mpv->p2_nodes[ii]  = SCND_PROJ_OLDP_WEIGHT*mpv->p2_nodes[ii] + p_update*SCND_PROJ_DELP_WEIGHT*0.5*p2[ii];        
+        mpv->p2_nodes[ii]  = mpv->p2_nodes[ii] + p_update*0.5*p2[ii];
         mpv->dp2_nodes[ii] = p2[ii];
     }
 }

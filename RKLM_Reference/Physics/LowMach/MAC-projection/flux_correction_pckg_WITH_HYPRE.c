@@ -225,7 +225,7 @@ void flux_correction(
     memcpy(mpv->dp2_cells, dp2, elem->nc*sizeof(double));
 
     /* store results in mpv-fields */        
-    for(n=0; n<elem->nc; n++) mpv->p2_cells[n] = MAC_PROJ_OLDP_WEIGHT*mpv->p2_cells[n] + MAC_PROJ_DELP_WEIGHT*dp2[n];
+    for(n=0; n<elem->nc; n++) mpv->p2_cells[n] = mpv->p2_cells[n] + dp2[n];
     
 	set_ghostcells_p2(mpv->p2_cells, (const double **)hplus, hgrav, elem, elem->igx);
 }
@@ -662,7 +662,6 @@ void operator_coefficients(
 #define INTERPOL(l,c,cr) (c)
 #endif
 
-#ifdef SHIFTED_COEFFICIENTS_PROJ1
 
 static void flux_correction_due_to_pressure_gradients(
                                                       ConsVars* flux[3],
@@ -759,15 +758,11 @@ static void flux_correction_due_to_pressure_gradients(
                     Zim     = oorhoim * INTERPOL(Sol->rhoZ[icmm], Sol->rhoZ[icm], Sol->rhoZ[ic]);
                     Him     = oorhoim * (INTERPOL(Sol->rhoe[icmm], Sol->rhoe[icm], Sol->rhoe[ic]) + p0_c);
                     
-#ifdef STANDARD_STENCIL_PROJ1
-                    tmpx = - dto2dx * ( hplusx[nc] * (dp2[ic] - dp2[icm]) );
-#else
                     tmpx = - dto2dx * (  0.75  *   hplusx[nc] * (dp2[ic]     - dp2[icm]    )  
                                        + 0.125 * ( hplusx[nn] * (dp2[ic+icx] - dp2[icm+icx])  
                                                  + hplusx[ns] * (dp2[ic-icx] - dp2[icm-icx])  
                                                   ) 
                                        );
-#endif
                     
                     frhoY = f->rhoY[nc] + tmpx;
                     
@@ -841,15 +836,11 @@ static void flux_correction_due_to_pressure_gradients(
                     Zjm = oorhojm * INTERPOL(Sol->rhoZ[jcmm], Sol->rhoZ[jcm], Sol->rhoZ[jc]);
                     Hjm = oorhojm * (INTERPOL(Sol->rhoe[jcmm], Sol->rhoe[jcm], Sol->rhoe[jc]) + p0_s);
                     
-#ifdef STANDARD_STENCIL_PROJ1
-                    tmpy = - dto2dy * ( hplusy[mc] * (dp2[jc] - dp2[jcm] ) );
-#else
                     tmpy = - dto2dy * (  0.75  *   hplusy[mc] * (dp2[jc]   - dp2[jcm]  ) 
                                        + 0.125 * ( hplusy[me] * (dp2[jc+1] - dp2[jcm+1]) 
                                                  + hplusy[mw] * (dp2[jc-1] - dp2[jcm-1]) 
                                                   ) 
                                        );
-#endif					
                     
                     tmpy += - 0.5 * dt * hgrav[mc] * 0.5 * (dp2[jc]+dp2[jcm]); /* implicit gravity contribution */                    
                     grhoY       = g->rhoY[mc] + tmpy;
@@ -906,13 +897,8 @@ static void flux_correction_due_to_pressure_gradients(
             const int dix = 1;
             const int diy = icx; 
             const int diz = icx*icy;            
-            
-            
-#ifdef STANDARD_STENCIL_PROJ1
-            const double cstencil  = 1.0;
-#else
+                        
             const double cstencil  = 1.0/64.0;
-#endif
             
             ConsVars* fx = flux[0];
             ConsVars* fy = flux[1];
@@ -981,9 +967,6 @@ static void flux_correction_due_to_pressure_gradients(
                         Zim     = oorhoim * INTERPOL(Sol->rhoZ[icmm], Sol->rhoZ[icm], Sol->rhoZ[ic]);
                         Him     = oorhoim * (INTERPOL(Sol->rhoe[icmm], Sol->rhoe[icm], Sol->rhoe[ic]) + p0_c);
                         
-#ifdef STANDARD_STENCIL_PROJ1
-                        tmpx = - dto2dx * hplusx[n] * cstencil * (dp2[ic] - dp2[icm]);  
-#else
                         tmpx = - dto2dx * hplusx[n] * cstencil *
                         (  36.0 *  (dp2[ic] - dp2[icm])  
                          +  6.0 * (  (dp2[ic+diy] - dp2[icm+diy]) 
@@ -997,7 +980,6 @@ static void flux_correction_due_to_pressure_gradients(
                                    + (dp2[ic-diy-diz] - dp2[icm-diy-diz])
                                    )
                          );
-#endif
                         
                         frhoY = fx->rhoY[n] + tmpx;
                         
@@ -1068,9 +1050,6 @@ static void flux_correction_due_to_pressure_gradients(
                         Zjm = oorhojm * INTERPOL(Sol->rhoZ[jcmm], Sol->rhoZ[jcm], Sol->rhoZ[jc]);
                         Hjm = oorhojm * (INTERPOL(Sol->rhoe[jcmm], Sol->rhoe[jcm], Sol->rhoe[jc]) + p0_s);
                         
-#ifdef STANDARD_STENCIL_PROJ1
-                        tmpy = - dto2dy * hplusy[n] * cstencil * (dp2[jc] - dp2[jcm]);  
-#else
                         tmpy = - dto2dy * hplusy[n] * cstencil *
                         (  36.0 *    (dp2[jc] - dp2[jcm])  
                          +  6.0 * (  (dp2[jc+diz] - dp2[jcm+diz]) 
@@ -1084,7 +1063,7 @@ static void flux_correction_due_to_pressure_gradients(
                                    + (dp2[jc-diz-dix] - dp2[jcm-diz-dix])
                                    )
                          );
-#endif                                                
+
                         frhoY       = fy->rhoY[n] + tmpy;
                         
 #ifdef NO_UPWIND_PROJ1
@@ -1150,9 +1129,6 @@ static void flux_correction_due_to_pressure_gradients(
                         Zkm = oorhokm * INTERPOL(Sol->rhoZ[kcmm], Sol->rhoZ[kcm], Sol->rhoZ[kc]);
                         Hkm = oorhokm * (INTERPOL(Sol->rhoe[kcmm], Sol->rhoe[kcm], Sol->rhoe[kc]) + p0_c);
                         
-#ifdef STANDARD_STENCIL_PROJ1
-                        tmpz = - dto2dz * hplusz[n] * cstencil * (dp2[kc] - dp2[kcm]);  
-#else
                         tmpz = - dto2dz * hplusz[n] * cstencil *
                         (  36.0 *    (dp2[kc] - dp2[kcm])  
                          +  6.0 * (  (dp2[kc+diz] - dp2[kcm+diz]) 
@@ -1166,7 +1142,7 @@ static void flux_correction_due_to_pressure_gradients(
                                    + (dp2[kc-diz-dix] - dp2[kcm-diz-dix])
                                    )
                          );
-#endif                        
+
                         frhoY       = fz->rhoY[n] + tmpz;
                         
 #ifdef NO_UPWIND_PROJ1
@@ -1203,541 +1179,6 @@ static void flux_correction_due_to_pressure_gradients(
         default: ERROR("ndim not in {1, 2, 3}");
     }
 }
-
-#else /* SHIFTED_COEFFICIENTS_PROJ1 */
-static void flux_correction_due_to_pressure_gradients(
-													  ConsVars* flux[3],
-													  VectorField* buoy,
-													  const ElemSpaceDiscr* elem,
-													  ConsVars* Sol,
-													  ConsVars* Sol0,
-													  const MPV* mpv, 
-													  double* hplus[3],
-													  double* hgrav,
-													  double* dp2,
-													  const double t,
-													  const double dt,
-													  const double implicitness) {
-	
-	extern User_Data ud;
-	
-	const int ndim = elem->ndim;
-        
-    int nsp;
-	
-	switch(ndim) {
-		case 1: {
-			ERROR("function not available");
-			break;
-		}
-			
-		case 2: {
-
-			const int igx = elem->igx;
-			const int icx = elem->icx;
-			const int ifx = elem->ifx;
-			const int igy = elem->igy;
-			const int icy = elem->icy;
-			const int ify = elem->ify;
-			
-			const double dto2dx = implicitness * 0.5 * dt / elem->dx;
-			const double dto2dy = implicitness * 0.5 * dt / elem->dy;
-            
-			ConsVars* f = flux[0];
-			ConsVars* g = flux[1];
-			
-			const double* hplusx   = hplus[0];
-			const double* hplusy   = hplus[1];
-			
-			double oorhoi, ui, vi, wi, Yi, Zi, Hi, oorhoim, uim, vim, wim, Yim, Zim, Him;
-            double Xi[NSPEC], Xim[NSPEC];
-			double oorhoj, uj, vj, wj, Yj, Zj, Hj, oorhojm, ujm, vjm, wjm, Yjm, Zjm, Hjm;
-            double Xj[NSPEC], Xjm[NSPEC];
-			double us, vs, ws, Hs, Ys, Zs;
-            double Xs[NSPEC];
-			double tmpx, tmpy, frhoY, grhoY;
-			
-			double p0_c, p0_s;
-			double upwind;
-            
-            int i, j, m, n, ic, icm, icmm, icp, jc, jcm, jcmm, jcp;
-			
-			for(j = igy; j < icy - igy; j++) {
-                m    = j * ifx;
-				p0_c = mpv->HydroState->p0[j];
-								
-				for(i = igx; i < ifx - igx; i++) {
-                    n    = m + i;
-					ic   = j*icx + i;
-					icp  = ic + 1;
-					icm  = ic - 1;
-					icmm = ic - 2;
-                    
-                    buoy->x[ic] = 0.0;
-										
-					/* compute interface values of u, v, Y, Z, H */
-					oorhoi  = 1.0 / INTERPOL(Sol->rhoY[icp],  Sol->rhoY[ic],  Sol->rhoY[icm]); 
-					ui      = oorhoi * INTERPOL(Sol->rhou[icp], Sol->rhou[ic], Sol->rhou[icm]);
-					vi      = oorhoi * INTERPOL(Sol->rhov[icp], Sol->rhov[ic], Sol->rhov[icm]);
-					wi      = oorhoi * INTERPOL(Sol->rhow[icp], Sol->rhow[ic], Sol->rhow[icm]);
-                    for (nsp = 0; nsp < ud.nspec; nsp++) {
-                        Xi[nsp]      = oorhoi * INTERPOL(Sol->rhoX[nsp][icp], Sol->rhoX[nsp][ic], Sol->rhoX[nsp][icm]);
-                    }
-					Yi      = oorhoi * INTERPOL(Sol->rho[icp], Sol->rho[ic], Sol->rho[icm]);
-					Zi      = oorhoi * INTERPOL(Sol->rhoZ[icp], Sol->rhoZ[ic], Sol->rhoZ[icm]);
-					Hi      = oorhoi * (INTERPOL(Sol->rhoe[icp], Sol->rhoe[ic], Sol->rhoe[icm]) + p0_c);
-					
-					oorhoim = 1.0 / INTERPOL(Sol->rhoY[icmm], Sol->rhoY[icm], Sol->rhoY[ic]); 
-					uim     = oorhoim * INTERPOL(Sol->rhou[icmm], Sol->rhou[icm], Sol->rhou[ic]);
-					vim     = oorhoim * INTERPOL(Sol->rhov[icmm], Sol->rhov[icm], Sol->rhov[ic]);
-					wim     = oorhoim * INTERPOL(Sol->rhow[icmm], Sol->rhow[icm], Sol->rhow[ic]);
-                    for (nsp = 0; nsp < ud.nspec; nsp++) {
-                        Xim[nsp]      = oorhoim * INTERPOL(Sol->rhoX[nsp][icmm], Sol->rhoX[nsp][icm], Sol->rhoX[nsp][ic]);
-                    }
-					Yim     = oorhoim * INTERPOL(Sol->rho[icmm], Sol->rho[icm], Sol->rho[ic]);
-					Zim     = oorhoim * INTERPOL(Sol->rhoZ[icmm], Sol->rhoZ[icm], Sol->rhoZ[ic]);
-					Him     = oorhoim * (INTERPOL(Sol->rhoe[icmm], Sol->rhoe[icm], Sol->rhoe[ic]) + p0_c);
-						
-#ifdef STANDARD_STENCIL_PROJ1
-                    tmpx = - dto2dx * ( hplusx[n] * (dp2[ic] - dp2[icm]) );
-#else
-                    tmpx = - dto2dx * (  hplusx[n] * (dp2[ic] - dp2[icm] )  
-                                       + 0.125 * ( hplusx[n] * ((dp2[ic+icx] - dp2[icm+icx] ) - (dp2[ic] - dp2[icm]))  
-                                                  - hplusx[n] * ((dp2[ic] - dp2[icm] ) - (dp2[ic-icx] - dp2[icm-icx]))  
-                                                  ) 
-                                       );
-#endif
-                    
-					frhoY = f->rhoY[n] + tmpx;
-                    
-#ifdef NO_UPWIND_PROJ1
-                    upwind = 0.5; 
-#else
-                    upwind = 0.5 * ( 1.0 + SMOOTHSIGN(frhoY, 0.01) ); 
-#endif
-					
-					us = upwind * uim + (1.0 - upwind) * ui;
-					vs = upwind * vim + (1.0 - upwind) * vi;  
-					ws = upwind * wim + (1.0 - upwind) * wi;  
-                    for (nsp = 0; nsp < ud.nspec; nsp++) {
-                        Xs[nsp]      = upwind * Xim[nsp] + (1.0 - upwind) * Xi[nsp];
-                    }
-					Ys = upwind * Yim + (1.0 - upwind) * Yi;
-					Zs = upwind * Zim + (1.0 - upwind) * Zi;
-					Hs = upwind * Him + (1.0 - upwind) * Hi;
-					
-					f->rho[n]  = Ys * tmpx;
-					f->rhou[n] = us * tmpx + us * tmpx;
-					f->rhov[n] = vs * tmpx;  
-					f->rhow[n] = ws * tmpx;  
-                    for (nsp = 0; nsp < ud.nspec; nsp++) {
-                        f->rhoX[nsp][n] = Xs[nsp] * tmpx; 
-                    }
-					f->rhoe[n] = 0.0 * Hs * tmpx;
-					f->rhoY[n] = tmpx;
-					f->rhoZ[n] = Zs * tmpx;
-				}
-			}  
-			
-			
-			/* fluxes in the y-direction */
-			for(i = igx; i < icx - igx; i++) {n = i * ify;
-				for(j = igy; j < ify - igy; j++) {m = n + j;
-					jc   = j * icx + i;
-					jcp  = jc + icx;
-					jcm  = jc - icx;
-					jcmm = jc - 2*icx;
-										
-					p0_c = mpv->HydroState->p0[j];
-					p0_s = mpv->HydroState->p0[j-1];
-					
-                    buoy->y[jc] = 0.0;
-                    
-					oorhoj = 1.0 / INTERPOL(Sol->rhoY[jcp], Sol->rhoY[jc], Sol->rhoY[jcm]);
-					uj = oorhoj * INTERPOL(Sol->rhou[jcp], Sol->rhou[jc], Sol->rhou[jcm]);
-					vj = oorhoj * INTERPOL(Sol->rhov[jcp], Sol->rhov[jc], Sol->rhov[jcm]);
-					wj = oorhoj * INTERPOL(Sol->rhow[jcp], Sol->rhow[jc], Sol->rhow[jcm]);
-                    for (nsp = 0; nsp < ud.nspec; nsp++) {
-                        Xj[nsp]      = oorhoj * INTERPOL(Sol->rhoX[nsp][jcp], Sol->rhoX[nsp][jc], Sol->rhoX[nsp][jcm]);
-                    }
-					Yj = oorhoj * INTERPOL(Sol->rho[jcp], Sol->rho[jc], Sol->rho[jcm]);
-					Zj = oorhoj * INTERPOL(Sol->rhoZ[jcp], Sol->rhoZ[jc], Sol->rhoZ[jcm]);
-					Hj = oorhoj * (INTERPOL(Sol->rhoe[jcp], Sol->rhoe[jc], Sol->rhoe[jcm]) + p0_c);
-					
-					oorhojm = 1.0 / INTERPOL(Sol->rhoY[jcmm], Sol->rhoY[jcm], Sol->rhoY[jc]);
-					ujm = oorhojm * INTERPOL(Sol->rhou[jcmm], Sol->rhou[jcm], Sol->rhou[jc]);
-					vjm = oorhojm * INTERPOL(Sol->rhov[jcmm], Sol->rhov[jcm], Sol->rhov[jc]);
-					wjm = oorhojm * INTERPOL(Sol->rhow[jcmm], Sol->rhow[jcm], Sol->rhow[jc]);
-                    for (nsp = 0; nsp < ud.nspec; nsp++) {
-                        Xjm[nsp]      = oorhojm * INTERPOL(Sol->rhoX[nsp][jcmm], Sol->rhoX[nsp][jcm], Sol->rhoX[nsp][jc]);
-                    }
-					Yjm = oorhojm * INTERPOL(Sol->rho[jcmm], Sol->rho[jcm], Sol->rho[jc]);
-					Zjm = oorhojm * INTERPOL(Sol->rhoZ[jcmm], Sol->rhoZ[jcm], Sol->rhoZ[jc]);
-					Hjm = oorhojm * (INTERPOL(Sol->rhoe[jcmm], Sol->rhoe[jcm], Sol->rhoe[jc]) + p0_s);
-					
-#ifdef STANDARD_STENCIL_PROJ1
-					tmpy = - dto2dy * ( hplusy[m] * (dp2[jc] - dp2[jcm] ) );
-#else
-					tmpy = - dto2dy * (   hplusy[m] * (dp2[jc]   - dp2[jcm] ) 
-									   + 0.125 * ( hplusy[m] * ((dp2[jc+1] - dp2[jcm+1] ) - (dp2[jc  ] - dp2[jcm  ] )) 
-                                                 - hplusy[m] * ((dp2[jc  ] - dp2[jcm  ] ) - (dp2[jc-1] - dp2[jcm-1] )) 
-												  ) 
-									   );
-#endif					
-                    
-                    tmpy += - 0.5 * dt * hgrav[m] * 0.5 * (dp2[jc]+dp2[jcm]); /* implicit gravity contribution */                    
-					grhoY       = g->rhoY[m] + tmpy;
-                    
-                    
-                    
-#ifdef NO_UPWIND_PROJ1
-					upwind = 0.5; 
-#else
-					upwind = 0.5 * ( 1.0 + SMOOTHSIGN(grhoY, 0.01) ); 
-#endif
-					
-					us = upwind * ujm + (1.0 - upwind) * uj;
-					vs = upwind * vjm + (1.0 - upwind) * vj;
-					ws = upwind * wjm + (1.0 - upwind) * wj;
-                    for (nsp = 0; nsp < ud.nspec; nsp++) {
-                        Xs[nsp]      = upwind * Xjm[nsp] + (1.0 - upwind) * Xj[nsp];
-                    }
-					Ys = upwind * Yjm + (1.0 - upwind) * Yj;
-					Zs = upwind * Zjm + (1.0 - upwind) * Zj;
-					Hs = upwind * Hjm + (1.0 - upwind) * Hj;
-					
-					g->rho[m]  = Ys * tmpy;
-					g->rhou[m] = us * tmpy;  
-					g->rhov[m] = vs * tmpy + vs * tmpy; 
-					g->rhow[m] = ws * tmpy; 
-                    for (nsp = 0; nsp < ud.nspec; nsp++) {
-                        g->rhoX[nsp][m] = Xs[nsp] * tmpy; 
-                    }
-					g->rhoe[m] = 0.0 * Hs * tmpy;
-					g->rhoY[m] = tmpy;
-					g->rhoZ[m] = Zs * tmpy;
-				}   
-			}
-             
-			break;
-		}
-		case 3: {
-            
-			const int igx = elem->igx;
-			const int icx = elem->icx;
-			const int ifx = elem->ifx;
-			const int igy = elem->igy;
-			const int icy = elem->icy;
-			const int ify = elem->ify;
-			const int igz = elem->igz;
-			const int icz = elem->icz;
-			const int ifz = elem->ifz;
-			
-			const double dto2dx = implicitness * 0.5 * dt / elem->dx;
-			const double dto2dy = implicitness * 0.5 * dt / elem->dy;
-			const double dto2dz = implicitness * 0.5 * dt / elem->dz;
-
-            const int dix = 1;
-            const int diy = icx; 
-            const int diz = icx*icy;            
-            
-			
-#ifdef STANDARD_STENCIL_PROJ1
-            const double cstencil  = 1.0;
-#else
-            const double cstencil  = 1.0/64.0;
-#endif
-
-			ConsVars* fx = flux[0];
-			ConsVars* fy = flux[1];
-			ConsVars* fz = flux[2];
-			
-			const double* hplusx   = hplus[0];
-			const double* hplusy   = hplus[1];
-			const double* hplusz   = hplus[2];
-			
-			double oorhoi, ui, vi, wi, Yi, Zi, Hi; 
-            double oorhoim, uim, vim, wim, Yim, Zim, Him;
-            double Xi[NSPEC], Xim[NSPEC];
-
-            double oorhoj, uj, vj, wj, Yj, Zj, Hj; 
-            double oorhojm, ujm, vjm, wjm, Yjm, Zjm, Hjm;
-            double Xj[NSPEC], Xjm[NSPEC];
-
-            double oorhok, uk, vk, wk, Yk, Zk, Hk; 
-            double oorhokm, ukm, vkm, wkm, Ykm, Zkm, Hkm;
-            double Xk[NSPEC], Xkm[NSPEC];
-
-            double us, vs, ws, Hs, Ys, Zs;
-            double Xs[NSPEC];
-            
-			double tmpx, tmpy, tmpz, frhoY;
-			
-			double p0_c, p0_s;
-			double upwind;
-			
-            int i, j, k, l, m, n;
-            
-            int ic, icm, icmm, icp;
-            int jc, jcm, jcmm, jcp;
-            int kc, kcm, kcmm, kcp;
-
-			for(k = igz; k < icz - igz; k++) {l = k * ifx*icy;
-                for(j = igy; j < icy - igy; j++) {m = l + j * ifx;
-                    p0_c = mpv->HydroState->p0[j];
-                    for(i = igx; i < ifx - igx; i++) {n = m + i;
-                        ic   = k*diz + j*diy + i*dix;
-                        icp  = ic + dix; /* these appear unused as they only are accessed in macro INTERPOL() */
-                        icm  = ic - dix;
-                        icmm = ic - 2*dix; /* these appear unused as they only are accessed in macro INTERPOL() */
-                                                
-                        /* compute interface values of u, v, Y, Z, H */
-                        
-                        oorhoi  = 1.0 / INTERPOL(Sol->rhoY[icp],  Sol->rhoY[ic],  Sol->rhoY[icm]); 
-                        ui      = oorhoi * INTERPOL(Sol->rhou[icp], Sol->rhou[ic], Sol->rhou[icm]);
-                        vi      = oorhoi * INTERPOL(Sol->rhov[icp], Sol->rhov[ic], Sol->rhov[icm]);
-                        wi      = oorhoi * INTERPOL(Sol->rhow[icp], Sol->rhow[ic], Sol->rhow[icm]);
-                        for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            Xi[nsp]      = oorhoi * INTERPOL(Sol->rhoX[nsp][icp], Sol->rhoX[nsp][ic], Sol->rhoX[nsp][icm]);
-                        }
-                        Yi      = oorhoi * INTERPOL(Sol->rho[icp], Sol->rho[ic], Sol->rho[icm]);
-                        Zi      = oorhoi * INTERPOL(Sol->rhoZ[icp], Sol->rhoZ[ic], Sol->rhoZ[icm]);
-                        Hi      = oorhoi * (INTERPOL(Sol->rhoe[icp], Sol->rhoe[ic], Sol->rhoe[icm]) + p0_c);
-                        
-                        oorhoim = 1.0 / INTERPOL(Sol->rhoY[icmm], Sol->rhoY[icm], Sol->rhoY[ic]); 
-                        uim     = oorhoim * INTERPOL(Sol->rhou[icmm], Sol->rhou[icm], Sol->rhou[ic]);
-                        vim     = oorhoim * INTERPOL(Sol->rhov[icmm], Sol->rhov[icm], Sol->rhov[ic]);
-                        wim     = oorhoim * INTERPOL(Sol->rhow[icmm], Sol->rhow[icm], Sol->rhow[ic]);
-                        for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            Xim[nsp]      = oorhoim * INTERPOL(Sol->rhoX[nsp][icmm], Sol->rhoX[nsp][icm], Sol->rhoX[nsp][ic]);
-                        }
-                        Yim     = oorhoim * INTERPOL(Sol->rho[icmm], Sol->rho[icm], Sol->rho[ic]);
-                        Zim     = oorhoim * INTERPOL(Sol->rhoZ[icmm], Sol->rhoZ[icm], Sol->rhoZ[ic]);
-                        Him     = oorhoim * (INTERPOL(Sol->rhoe[icmm], Sol->rhoe[icm], Sol->rhoe[ic]) + p0_c);
-                                        
-#ifdef STANDARD_STENCIL_PROJ1
-                        tmpx = - dto2dx * hplusx[n] * cstencil * (dp2[ic] - dp2[icm]);  
-#else
-                        tmpx = - dto2dx * hplusx[n] * cstencil *
-                        (  36.0 *  (dp2[ic] - dp2[icm])  
-                         +  6.0 * (  (dp2[ic+diy] - dp2[icm+diy]) 
-                                   + (dp2[ic-diy] - dp2[icm-diy])  
-                                   + (dp2[ic+diz] - dp2[icm+diz])  
-                                   + (dp2[ic-diz] - dp2[icm-diz])
-                                   )
-                         +  1.0 * (  (dp2[ic+diy+diz] - dp2[icm+diy+diz]) 
-                                   + (dp2[ic-diy+diz] - dp2[icm-diy+diz])  
-                                   + (dp2[ic+diy-diz] - dp2[icm+diy-diz])  
-                                   + (dp2[ic-diy-diz] - dp2[icm-diy-diz])
-                                   )
-                         );
-#endif
-                                                
-                        frhoY = fx->rhoY[n] + tmpx;
-                        
-#ifdef NO_UPWIND_PROJ1
-                        upwind = 0.5; 
-#else
-                        upwind = 0.5 * ( 1.0 + SMOOTHSIGN(frhoY, 0.01) ); 
-#endif
-                        
-                        us = upwind * uim + (1.0 - upwind) * ui;
-                        vs = upwind * vim + (1.0 - upwind) * vi;  
-                        ws = upwind * wim + (1.0 - upwind) * wi;  
-                        for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            Xs[nsp]      = upwind * Xim[nsp] + (1.0 - upwind) * Xi[nsp];
-                        }
-                        Ys = upwind * Yim + (1.0 - upwind) * Yi;
-                        Zs = upwind * Zim + (1.0 - upwind) * Zi;
-                        Hs = upwind * Him + (1.0 - upwind) * Hi;
-                        
-                        fx->rho[n]  = Ys * tmpx;
-                        fx->rhou[n] = us * tmpx + us * tmpx;
-                        fx->rhov[n] = vs * tmpx;  
-                        fx->rhow[n] = ws * tmpx;  
-                        for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            fx->rhoX[nsp][n] = Xs[nsp] * tmpx; 
-                        }
-                        fx->rhoe[n] = 0.0 * Hs * tmpx;
-                        fx->rhoY[n] = tmpx;
-                        fx->rhoZ[n] = Zs * tmpx;
-                    }
-                } 
-            }
-			
-			
-			/* fluxes in the y-direction */
-            for(i = igx; i < icx - igx; i++) {l = i * ify*icz;
-                for(k = igz; k < icz - igz; k++) {m = l + k * ify;
-                    for(j = igy; j < ify - igy; j++) {n = m + j;
-                        jc   = k*diz + j*diy + i*dix;
-                        jcp  = jc + diy;  
-                        jcm  = jc - diy;
-                        jcmm = jc - 2*diy; 
-                                                
-                        p0_c = mpv->HydroState->p0[j];
-                        p0_s = mpv->HydroState->p0[j-1];
-                        
-                        buoy->y[jc] = 0.0;
-
-                        oorhoj = 1.0 / INTERPOL(Sol->rhoY[jcp], Sol->rhoY[jc], Sol->rhoY[jcm]);
-                        uj = oorhoj  * INTERPOL(Sol->rhou[jcp], Sol->rhou[jc], Sol->rhou[jcm]);
-                        vj = oorhoj  * INTERPOL(Sol->rhov[jcp], Sol->rhov[jc], Sol->rhov[jcm]);
-                        wj = oorhoj  * INTERPOL(Sol->rhow[jcp], Sol->rhow[jc], Sol->rhow[jcm]);
-                        for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            Xj[nsp]      = oorhoj * INTERPOL(Sol->rhoX[nsp][jcp], Sol->rhoX[nsp][jc], Sol->rhoX[nsp][jcm]);
-                        }
-                        Yj = oorhoj * INTERPOL(Sol->rho[jcp], Sol->rho[jc], Sol->rho[jcm]);
-                        Zj = oorhoj * INTERPOL(Sol->rhoZ[jcp], Sol->rhoZ[jc], Sol->rhoZ[jcm]);
-                        Hj = oorhoj * (INTERPOL(Sol->rhoe[jcp], Sol->rhoe[jc], Sol->rhoe[jcm]) + p0_c);
-                        
-                        oorhojm = 1.0 / INTERPOL(Sol->rhoY[jcmm], Sol->rhoY[jcm], Sol->rhoY[jc]);
-                        ujm = oorhojm * INTERPOL(Sol->rhou[jcmm], Sol->rhou[jcm], Sol->rhou[jc]);
-                        vjm = oorhojm * INTERPOL(Sol->rhov[jcmm], Sol->rhov[jcm], Sol->rhov[jc]);
-                        wjm = oorhojm * INTERPOL(Sol->rhow[jcmm], Sol->rhow[jcm], Sol->rhow[jc]);
-                        for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            Xjm[nsp]      = oorhojm * INTERPOL(Sol->rhoX[nsp][jcmm], Sol->rhoX[nsp][jcm], Sol->rhoX[nsp][jc]);
-                        }
-                        Yjm = oorhojm * INTERPOL(Sol->rho[jcmm], Sol->rho[jcm], Sol->rho[jc]);
-                        Zjm = oorhojm * INTERPOL(Sol->rhoZ[jcmm], Sol->rhoZ[jcm], Sol->rhoZ[jc]);
-                        Hjm = oorhojm * (INTERPOL(Sol->rhoe[jcmm], Sol->rhoe[jcm], Sol->rhoe[jc]) + p0_s);
-                       
-#ifdef STANDARD_STENCIL_PROJ1
-                        tmpy = - dto2dy * hplusy[n] * cstencil * (dp2[jc] - dp2[jcm]);  
-#else
-                        tmpy = - dto2dy * hplusy[n] * cstencil *
-                        (  36.0 *    (dp2[jc] - dp2[jcm])  
-                         +  6.0 * (  (dp2[jc+diz] - dp2[jcm+diz]) 
-                                   + (dp2[jc-diz] - dp2[jcm-diz])  
-                                   + (dp2[jc+dix] - dp2[jcm+dix])  
-                                   + (dp2[jc-dix] - dp2[jcm-dix])
-                                   )
-                         +  1.0 * (  (dp2[jc+diz+dix] - dp2[jcm+diz+dix]) 
-                                   + (dp2[jc-diz+dix] - dp2[jcm-diz+dix])  
-                                   + (dp2[jc+diz-dix] - dp2[jcm+diz-dix])  
-                                   + (dp2[jc-diz-dix] - dp2[jcm-diz-dix])
-                                   )
-                         );
-#endif                                                
-                        frhoY       = fy->rhoY[n] + tmpy;
-                        
-#ifdef NO_UPWIND_PROJ1
-                        upwind = 0.5; 
-#else
-                        upwind = 0.5 * ( 1.0 + SMOOTHSIGN(frhoY, 0.01) ); 
-#endif
-                        
-                        us = upwind * ujm + (1.0 - upwind) * uj;
-                        vs = upwind * vjm + (1.0 - upwind) * vj;
-                        ws = upwind * wjm + (1.0 - upwind) * wj;
-                        for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            Xs[nsp]      = upwind * Xjm[nsp] + (1.0 - upwind) * Xj[nsp];
-                        }
-                        Ys = upwind * Yjm + (1.0 - upwind) * Yj;
-                        Zs = upwind * Zjm + (1.0 - upwind) * Zj;
-                        Hs = upwind * Hjm + (1.0 - upwind) * Hj;
-                        
-                        fy->rho[n]  = Ys * tmpy;
-                        fy->rhou[n] = us * tmpy;  
-                        fy->rhov[n] = vs * tmpy + vs * tmpy; 
-                        fy->rhow[n] = ws * tmpy;  
-                        for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            fy->rhoX[nsp][n] = Xs[nsp] * tmpy; 
-                        }
-                        fy->rhoe[n] = 0.0 * Hs * tmpy;
-                        fy->rhoY[n] = tmpy;
-                        fy->rhoZ[n] = Zs * tmpy;
-                    }   
-                }
-			}
-             
-			/* fluxes in the z-direction */
-			for(j = igy; j < icy - igy; j++) {l = j * ifz*icx;
-                for(i = igx; i < icx - igx; i++) {m = l + i * ifz;
-                    for(k = igz; k < ifz - igz; k++) {n = m + k;
-                        kc   = k*diz + j*diy + i*dix;
-                        kcp  = kc + diz;   
-                        kcm  = kc - diz;
-                        kcmm = kc - 2*diz;  
-                        
-                        p0_c = mpv->HydroState->p0[j];
-                       
-                        oorhok = 1.0 /INTERPOL(Sol->rhoY[kcp], Sol->rhoY[kc], Sol->rhoY[kcm]);
-                        uk = oorhok * INTERPOL(Sol->rhou[kcp], Sol->rhou[kc], Sol->rhou[kcm]);
-                        vk = oorhok * INTERPOL(Sol->rhov[kcp], Sol->rhov[kc], Sol->rhov[kcm]);
-                        wk = oorhok * INTERPOL(Sol->rhow[kcp], Sol->rhow[kc], Sol->rhow[kcm]);
-                        for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            Xk[nsp]      = oorhok * INTERPOL(Sol->rhoX[nsp][kcp], Sol->rhoX[nsp][kc], Sol->rhoX[nsp][kcm]);
-                        }
-                        Yk = oorhok * INTERPOL(Sol->rho[kcp], Sol->rho[kc], Sol->rho[kcm]);
-                        Zk = oorhok * INTERPOL(Sol->rhoZ[kcp], Sol->rhoZ[kc], Sol->rhoZ[kcm]);
-                        Hk = oorhok * (INTERPOL(Sol->rhoe[kcp], Sol->rhoe[kc], Sol->rhoe[kcm]) + p0_c);
-                        
-                        oorhokm = 1.0 / INTERPOL(Sol->rhoY[kcmm], Sol->rhoY[kcm], Sol->rhoY[kc]);
-                        ukm = oorhokm * INTERPOL(Sol->rhou[kcmm], Sol->rhou[kcm], Sol->rhou[kc]);
-                        vkm = oorhokm * INTERPOL(Sol->rhov[kcmm], Sol->rhov[kcm], Sol->rhov[kc]);
-                        wkm = oorhokm * INTERPOL(Sol->rhow[kcmm], Sol->rhow[kcm], Sol->rhow[kc]);
-                        for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            Xkm[nsp]      = oorhokm * INTERPOL(Sol->rhoX[nsp][kcmm], Sol->rhoX[nsp][kcm], Sol->rhoX[nsp][kc]);
-                        }
-                        Ykm = oorhokm * INTERPOL(Sol->rho[kcmm], Sol->rho[kcm], Sol->rho[kc]);
-                        Zkm = oorhokm * INTERPOL(Sol->rhoZ[kcmm], Sol->rhoZ[kcm], Sol->rhoZ[kc]);
-                        Hkm = oorhokm * (INTERPOL(Sol->rhoe[kcmm], Sol->rhoe[kcm], Sol->rhoe[kc]) + p0_c);
-                        
-#ifdef STANDARD_STENCIL_PROJ1
-                        tmpz = - dto2dz * hplusz[n] * cstencil * (dp2[kc] - dp2[kcm]);  
-#else
-                        tmpz = - dto2dz * hplusz[n] * cstencil *
-                        (  36.0 *    (dp2[kc] - dp2[kcm])  
-                         +  6.0 * (  (dp2[kc+diz] - dp2[kcm+diz]) 
-                                   + (dp2[kc-diz] - dp2[kcm-diz])  
-                                   + (dp2[kc+dix] - dp2[kcm+dix])  
-                                   + (dp2[kc-dix] - dp2[kcm-dix])
-                                   )
-                         +  1.0 * (  (dp2[kc+diz+dix] - dp2[kcm+diz+dix]) 
-                                   + (dp2[kc-diz+dix] - dp2[kcm-diz+dix])  
-                                   + (dp2[kc+diz-dix] - dp2[kcm+diz-dix])  
-                                   + (dp2[kc-diz-dix] - dp2[kcm-diz-dix])
-                                   )
-                         );
-#endif                        
-                        frhoY       = fz->rhoY[n] + tmpz;
-                        
-#ifdef NO_UPWIND_PROJ1
-                        upwind = 0.5; 
-#else
-                        upwind = 0.5 * ( 1.0 + SMOOTHSIGN(frhoY, 0.01) ); 
-#endif
-                        
-                        us = upwind * ukm + (1.0 - upwind) * uk;
-                        vs = upwind * vkm + (1.0 - upwind) * vk;
-                        ws = upwind * wkm + (1.0 - upwind) * wk;
-                        for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            Xs[nsp]      = upwind * Xkm[nsp] + (1.0 - upwind) * Xk[nsp];
-                        }
-                        Ys = upwind * Ykm + (1.0 - upwind) * Yk;
-                        Zs = upwind * Zkm + (1.0 - upwind) * Zk;
-                        Hs = upwind * Hkm + (1.0 - upwind) * Hk;
-                        
-                        fz->rho[n]  = Ys * tmpz;
-                        fz->rhou[n] = us * tmpz;  
-                        fz->rhov[n] = vs * tmpz; 
-                        fz->rhow[n] = ws * tmpz + ws * tmpz;  
-                        for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            fz->rhoX[nsp][n] = Xs[nsp] * tmpz; 
-                        }
-                        fz->rhoe[n] = 0.0 * Hs * tmpz;
-                        fz->rhoY[n] = tmpz;
-                        fz->rhoZ[n] = Zs * tmpz;
-                    }   
-                }
-			}			
-            break;
-		}
-		default: ERROR("ndim not in {1, 2, 3}");
-    }
-}
-#endif /* SHIFTED_COEFFICIENTS_PROJ1 */
 
 /* ========================================================================== */
 

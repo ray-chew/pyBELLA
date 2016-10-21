@@ -609,33 +609,10 @@ void adjust_pi(
 			for(i = igx; i < icx - igx; i++) {n = m + i;
 
                 double p2_old       = Sol0->rhoZ[n] / Sol0->rho[n];
-#ifdef DP_AVERAGE
-                double dp2_rhoY     = scalefac * 0.125*(4.0*(pow(Sol->rhoY[n],th.gamm) - pow(Sol0->rhoY[n],th.gamm))
-                                                        + 0.75*(pow(Sol->rhoY[n-1],th.gamm) - pow(Sol0->rhoY[n-1],th.gamm))
-                                                        + 0.75*(pow(Sol->rhoY[n+1],th.gamm) - pow(Sol0->rhoY[n+1],th.gamm))
-                                                        + 0.75*(pow(Sol->rhoY[n-icx],th.gamm) - pow(Sol0->rhoY[n-icx],th.gamm))
-                                                        + 0.75*(pow(Sol->rhoY[n+icx],th.gamm) - pow(Sol0->rhoY[n+icx],th.gamm))
-                                                        + 0.25*(pow(Sol->rhoY[n-1-icx],th.gamm) - pow(Sol0->rhoY[n-1-icx],th.gamm))
-                                                        + 0.25*(pow(Sol->rhoY[n+1-icx],th.gamm) - pow(Sol0->rhoY[n+1-icx],th.gamm))
-                                                        + 0.25*(pow(Sol->rhoY[n-1+icx],th.gamm) - pow(Sol0->rhoY[n-1+icx],th.gamm))
-                                                        + 0.25*(pow(Sol->rhoY[n+1+icx],th.gamm) - pow(Sol0->rhoY[n+1+icx],th.gamm))
-                                                        );
-
-                /* double dp2_elliptic = 0.125*(4.0*mpv->dp2_cells[n] + mpv->dp2_cells[n-1] + mpv->dp2_cells[n+1] + mpv->dp2_cells[n-icx] + mpv->dp2_cells[n+icx]); */
-                double dp2_elliptic = 0.125*(4.0*mpv->dp2_cells[n] 
-                                             + 0.75*mpv->dp2_cells[n-1] 
-                                             + 0.75*mpv->dp2_cells[n+1] 
-                                             + 0.75*mpv->dp2_cells[n-icx] 
-                                             + 0.75*mpv->dp2_cells[n+icx]
-                                             + 0.25*mpv->dp2_cells[n-1-icx] 
-                                             + 0.25*mpv->dp2_cells[n+1-icx] 
-                                             + 0.25*mpv->dp2_cells[n-1+icx] 
-                                             + 0.25*mpv->dp2_cells[n+1+icx]);
-#else
                 double dp2_rhoY     = scalefac * (pow(Sol->rhoY[n],th.gamm) - pow(Sol0->rhoY[n],th.gamm));
                 double dp2_elliptic = mpv->dp2_cells[n];
-#endif
-				Sol->rhoZ[n]     = Sol->rho[n] * (p2_old + weight * (alpha * dp2_rhoY + (1.0-alpha) * dp2_ell_factor*dp2_elliptic));
+
+                Sol->rhoZ[n]     = Sol->rho[n] * (p2_old + weight * (alpha * dp2_rhoY + (1.0-alpha) * dp2_ell_factor*dp2_elliptic));
 				dp2_elliptic_max = MAX_own(dp2_elliptic_max, fabs(dp2_elliptic));
 				dp2_rhoY_max     = MAX_own(dp2_rhoY_max, fabs(dp2_rhoY));
 				ddp2             = MAX_own(ddp2, fabs(dp2_rhoY-dp2_elliptic));

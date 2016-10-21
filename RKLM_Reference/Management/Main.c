@@ -168,27 +168,11 @@ int main( void )
 #if OUTPUT_SUBSTEPS
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
-            
-#ifdef PERTURBATION_POTENTIAL_TEMPERATURE
-            
-            /* explicit half-time predictor for fast subsystem */
-            Predictor_for_fast_Subsystem(Sol, mpv, elem, node, dt);
-            
-            /* advection 
-             Advector();
-             */
-            
-            /* implicit completion of implicit trapezoidal rule for fast subsystem 
-            Corrector_for_fast_Subsystem();
-             */
-            
-            
-#else /* PERTURBATION_POTENTIAL_TEMPERATURE */
-            
+                        
 			printf("\nnonlinear fluxes ---------------------------- \n");
 			
             /* if (ud.absorber) Absorber(Sol, t, 0.5*dt);  */   
-            /* if (ud.absorber) Absorber(Sol, t, dt);
+            /* if (ud.absorber) Absorber(Sol, t, dt); */
 			/* Explicit_Source(Sol, t, 0.5*lambda); */
 				
 #if OUTPUT_SUBSTEPS
@@ -313,9 +297,7 @@ int main( void )
 					if (ud.absorber) Absorber(Sol, t, dt); 					
 				}
             }
-            			
-#endif /* PERTURBATION_POTENTIAL_TEMPERATURE */
-            
+            			            
 			t += dt;
 			step++;
 			            

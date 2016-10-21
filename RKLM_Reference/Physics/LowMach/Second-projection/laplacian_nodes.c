@@ -70,33 +70,12 @@ void precon_prepare(
                 const int igyn = node->igy;
                 const int icyn = node->icy;
                 
-                const int igxe = elem->igx;
                 const int icxe = elem->icx;
-                const int igye = elem->igy;
                 const int icye = elem->icy;
-                
-                const double dx = node->dx;
-                const double dy = node->dy;
-                
+                                
                 const double* hplusx   = hplus[0];
                 const double* hplusy   = hplus[1];
-                const double* hcenter  = wcenter;
-                const double* hgrav    = wgrav;
-                
-                const double oody  = 0.5 / dy;
-                
-                const double oodx2 = 0.5 / (dx * dx);
-                const double oody2 = 0.5 / (dy * dy);
-                const double nine_pt = (0.25 * (1.0 + P2_DIAGONAL_FIVE_POINT)) * P2_FULL_STENCIL;
-                
-                double flux_x_lower, flux_x_upper, flux_y_left, flux_y_right, hc, hg;
-                double dsq_p_dxdy;
-                
-                double pnn      = 1.0;
-                double pnn1     = 1.0;
-                double pnnicxn  = 1.0;
-                double pnn1icxn = 1.0;
-                
+                                                                                
                 int i, j, me, mn, ne, nn, nn1, nnicxn, nn1icxn;
                 
                 for(nn=0; nn<node->nc; nn++) diag[nn] = diaginv[nn] = 0.0;

@@ -98,54 +98,30 @@ void Explicit_step_and_flux(
     /* bring dummy cells in the current space direction up to date  */
     Bound(Sol, HydroState, lambda, n, SplitStep);
 
-#ifdef P_AVERAGE  
     double *p2_store = W0;
     double *Yinv_ave = W1;
-        {    
-            assert(elem->ndim == 2); /* lateral averaging for 3D not yet implemented */
-                    
-            for (int ic=0; ic<elem->nc; ic++) {
-                p2_store[ic] = Sol->rhoZ[ic]/Sol->rho[ic];
-            }
 
-            for(int j=1; j<elem->icy-1; j++) {
-                int njk = j*elem->icx;
-                for(int i=0; i<elem->icx; i++) {
-                    int nijk  = njk + i;
-                    int nijkp = nijk + elem->icx;
-                    int nijkm = nijk - elem->icx;
-                    /* this version corresponds to the weights also used in the cell-centered Laplacian */
-                    Sol->rhoZ[nijk]  = Sol->rho[nijk] * (ud.latw[0]*p2_store[nijkp] + ud.latw[1]*p2_store[nijk] + ud.latw[2]*p2_store[nijkm]);
-                    Yinv_ave[nijk] = Sol->rho[nijk]/Sol->rhoY[nijk];
-                    /* this version yields good results for the smooth Gresho vortex 
-                     Sol->rhoZ[nijk]  = 0.25 * Sol->rho[nijk] * (p2_store[nijkp] + 2.0*p2_store[nijk] + p2_store[nijkm]);
-                     */
-                }
-            }
-        }
-#else
-    double *p2_store = W0;
-    double *Yinv_ave = W1;
-    {    
-        assert(elem->ndim == 2); /* lateral averaging for 3D not yet implemented */
-                
-        for (int ic=0; ic<elem->nc; ic++) {
-            p2_store[ic] = Sol->rhoZ[ic]/Sol->rho[ic];
-        }
-
-        for(int j=1; j<elem->icy-1; j++) {
-            int njk = j*elem->icx;
-            for(int i=0; i<elem->icx; i++) {
-                int nijk  = njk + i;
-                Yinv_ave[nijk] = Sol->rho[nijk]/Sol->rhoY[nijk];
-            }
+    assert(elem->ndim == 2); /* lateral averaging for 3D not yet implemented */
+    
+    for (int ic=0; ic<elem->nc; ic++) {
+        p2_store[ic] = Sol->rhoZ[ic]/Sol->rho[ic];
+    }
+    
+    for(int j=1; j<elem->icy-1; j++) {
+        int njk = j*elem->icx;
+        for(int i=0; i<elem->icx; i++) {
+            int nijk  = njk + i;
+            int nijkp = nijk + elem->icx;
+            int nijkm = nijk - elem->icx;
+            /* selected weights should correspond to weights in the cell-centered Laplacian */
+            Sol->rhoZ[nijk]  = Sol->rho[nijk] * (ud.latw[0]*p2_store[nijkp] + ud.latw[1]*p2_store[nijk] + ud.latw[2]*p2_store[nijkm]);
+            Yinv_ave[nijk] = Sol->rho[nijk]/Sol->rhoY[nijk];
         }
     }
-#endif /* P_AVERAGE */ 
-    		
-	States_setp(Solk, Sol, 0);
-	nmax = MIN_own(ncache, n);
-	States_HydroState(Solk, HydroState, elem, 0, nmax, 0, SplitStep);
+    
+    States_setp(Solk, Sol, 0);
+    nmax = MIN_own(ncache, n);
+    States_HydroState(Solk, HydroState, elem, 0, nmax, 0, SplitStep);
 	
 	ConsVars_setp(&pdSol, dSol, 0);
 	ConsVars_setp(&pflux, flux, 0);
@@ -255,11 +231,9 @@ void Explicit_step_and_flux(
         Explicit_step_update(Sol, n); 
     }    
 
-#ifdef P_AVERAGE        
     for (int ic=0; ic<elem->nc; ic++) {
         Sol->rhoZ[ic] = p2_store[ic]*Sol->rho[ic];
     }
-#endif /* P_AVERAGE */
 }
 
 /* ================================================================================ */

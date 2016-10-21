@@ -95,9 +95,7 @@ void putout(
 	extern MPV* mpv;
 	extern double *W0, *Yinvbg;
 
-#ifdef MATLAB_OUTPUT
 	static int output_counter = 0;
-#endif
 
 	const int ndim = elem->ndim;
 	const int icx = elem->icx;
@@ -145,7 +143,6 @@ void putout(
                 return;
             }
 			
-#ifdef MATLAB_OUTPUT			
 			if(output_counter<10) {
 				sprintf(step_string, "00%d", output_counter);
 			}
@@ -156,21 +153,8 @@ void putout(
 				sprintf(step_string, "%d", output_counter);
 			}
             output_counter++;
-#else
-			if(step<10) {
-				sprintf(step_string, "000%d", step);
-			}
-			else if(step<100) {
-				sprintf(step_string, "00%d", step);
-			}
-			else if(step<1000) {
-				sprintf(step_string, "0%d", step);
-			}
-			else {
-				sprintf(step_string, "%d", step);
-			}
-#endif
-			var = W0;
+
+            var = W0;
 			
 			if(ud.write_stdout == ON) printf("\n");
 			

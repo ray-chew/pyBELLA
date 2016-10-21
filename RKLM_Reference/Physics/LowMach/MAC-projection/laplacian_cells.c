@@ -89,10 +89,6 @@ void precon_c_prepare(
                     int o_n = oy + 1;
                     int o_s = oy;
                     
-#ifdef STANDARD_STENCIL_PROJ1
-                    diag_c[nc]  = oodx2 * ( hplusx[o_e] * (-pnc) - hplusx[o_w] * pnc);
-                    diag_c[nc] += oody2 * ( hplusy[o_n] * (-pnc) - hplusy[o_s] * pnc);
-#else
                     diag_c[nc]  = oodx2 * ( (  hplusx[o_e] * (-pnc) - hplusx[o_w] * pnc
                                          )
                                        + 0.125 * (  hplusx[o_e] * (   pnc )
@@ -110,7 +106,6 @@ void precon_c_prepare(
                                                   + hplusy[o_s] * (  pnc )
                                                   )
                                        );
-#endif
                     
                     diag_c[nc] += hc[nc] * pnc;
                     
@@ -274,11 +269,6 @@ void EnthalpyWeightedLap_bilinear_p(
                     o_sc   = oy;
 					o_sw   = oy - ify;
 					
-#ifdef STANDARD_STENCIL_PROJ1
-					lap[n]  = oodx2 * ( hplusx[o_e] * (p[n_e ] - p[n_c ]) - hplusx[o_w] * (p[n_c ] - p[n_w ]) );
-					lap[n] += oody2 * ( hplusy[o_n] * (p[n_n ] - p[n_c ]) - hplusy[o_s] * (p[n_c ] - p[n_s ]) );
-                    lap[n] += oody * (hg[o_n] * 0.5*(p[n_n] + p[n_c]) - hg[o_s] * 0.5*(p[n_s] + p[n_c]));
-#else
 					lap[n]  = oodx2 * (  0.75  * (  hplusx[o_ec] * (p[n_e ] - p[n_c ]) - hplusx[o_wc] * (p[n_c ] - p[n_w ])) 
                                        + 0.125 * (  hplusx[o_es] * (p[n_se] - p[n_s ]) - hplusx[o_ws] * (p[n_s ] - p[n_sw])  
                                                   + hplusx[o_en] * (p[n_ne] - p[n_n ]) - hplusx[o_wn] * (p[n_n ] - p[n_nw])   
@@ -308,7 +298,6 @@ void EnthalpyWeightedLap_bilinear_p(
                      lap[n] += dlap1;
                      }
                     */
-#endif
  					
 					lap[n] += hc[n] * p[n_c];
                     
@@ -400,11 +389,6 @@ void EnthalpyWeightedLap_bilinear_p(
                     o_n   = oy + 1;
                     o_s   = oy;
                     
-#ifdef STANDARD_STENCIL_PROJ1
-                    lap[n]  = oodx2 * ( hplusx[o_e] * (p[n_e ] - p[n_c ]) - hplusx[o_w] * (p[n_c ] - p[n_w ]) );
-                    lap[n] += oody2 * ( hplusy[o_n] * (p[n_n ] - p[n_c ]) - hplusy[o_s] * (p[n_c ] - p[n_s ]) );
-                    lap[n] += oody * (hg[o_n] * 0.5*(p[n_n] + p[n_c]) - hg[o_s] * 0.5*(p[n_s] + p[n_c]));
-#else
                     lap[n]  = oodx2 * ( (  hplusx[o_e] * (p[n_e ] - p[n_c ]) - hplusx[o_w] * (p[n_c ] - p[n_w ]) 
                                          ) 
                                        + 0.125 * (  hplusx[o_e] * (  (p[n_ne] - p[n_n ] ) - (p[n_e ] - p[n_c ] ) ) 
@@ -423,7 +407,6 @@ void EnthalpyWeightedLap_bilinear_p(
                                                   )
                                        );
                     lap[n] += oody * (hg[o_n] * 0.5*(p[n_n] + p[n_c]) - hg[o_s] * 0.5*(p[n_s] + p[n_c]));
-#endif
                     
                     lap[n] += hc[n] * p[n_c];
                     
@@ -453,11 +436,7 @@ void EnthalpyWeightedLap_bilinear_p(
             
             /* for MG-scaling with elem->scale_factor; see old version of routine */
             
-#ifdef STANDARD_STENCIL_PROJ1
-            const double codsq[3] = {1.0/(dx*dx), 1.0/(dy*dy), 1.0/(dz*dz)}; 
-#else
             const double codsq[3] = {1.0/(64.0*dx*dx), 1.0/(64.0*dy*dy), 1.0/(64.0*dz*dz)}; 
-#endif
             
             const int dis[3][3] = {{1, icx, icx*icy}, {icx, icx*icy, 1}, {icx*icy, 1, icx}};
             const int ics[3][3] = {{icx,icy,icz}, {icy,icz,icx}, {icz,icx,icy}};
@@ -484,9 +463,6 @@ void EnthalpyWeightedLap_bilinear_p(
                             double h_p = hplus[idim][o_p];
                             double h_m = hplus[idim][o_m];
                             
-#ifdef STANDARD_STENCIL_PROJ1
-                            lap[n] += codsq[idim] * (h_p*(p[n_p] - p[n_c]) - h_m*(p[n_c] - p[n_m]) );
-#else
                             int n_ms    = n - dis[idim][0] - dis[idim][1];
                             int n_cs    = n                - dis[idim][1];
                             int n_ps    = n + dis[idim][0] - dis[idim][1];
@@ -533,7 +509,6 @@ void EnthalpyWeightedLap_bilinear_p(
                                        + h_p * (p[n_pnw] - p[n_cnw]) - h_m * (p[n_cnw] - p[n_mnw])  \
                                        )                                                            \
                              );
-#endif
                         }
                         lap[n] += hcenter[n] * p[n];
                     }
