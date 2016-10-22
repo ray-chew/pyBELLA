@@ -40,7 +40,7 @@
 		9AC4F9AC1DA3F06F00AED455 /* laplacian_nodes.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9781DA3F06F00AED455 /* laplacian_nodes.c */; };
 		9AC4F9AE1DA3F06F00AED455 /* second_projection_bilinear_p_WITH_HYPRE.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F97C1DA3F06F00AED455 /* second_projection_bilinear_p_WITH_HYPRE.c */; };
 		9AC4F9AF1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F97D1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c */; };
-		9AE4ABB91DBB9F39007205FD /* userdata_Straka_3D.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AE4ABB81DBB9F39007205FD /* userdata_Straka_3D.c */; };
+		9AE4ABBB1DBBAB24007205FD /* userdata_TravellingVortex_2D.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AE4ABBA1DBBAB24007205FD /* userdata_TravellingVortex_2D.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -138,7 +138,7 @@
 		9AC4F97C1DA3F06F00AED455 /* second_projection_bilinear_p_WITH_HYPRE.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = second_projection_bilinear_p_WITH_HYPRE.c; sourceTree = "<group>"; };
 		9AC4F97D1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = variable_coefficient_poisson_nodes.c; sourceTree = "<group>"; };
 		9AC4F97E1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = variable_coefficient_poisson_nodes.h; sourceTree = "<group>"; };
-		9AE4ABB81DBB9F39007205FD /* userdata_Straka_3D.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_Straka_3D.c; sourceTree = "<group>"; };
+		9AE4ABBA1DBBAB24007205FD /* userdata_TravellingVortex_2D.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_TravellingVortex_2D.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -231,7 +231,7 @@
 		9AC4F9221DA3F06F00AED455 /* Input */ = {
 			isa = PBXGroup;
 			children = (
-				9AE4ABB81DBB9F39007205FD /* userdata_Straka_3D.c */,
+				9AE4ABBA1DBBAB24007205FD /* userdata_TravellingVortex_2D.c */,
 				9AC4F9311DA3F06F00AED455 /* userdata.h */,
 				9AC4F9231DA3F06F00AED455 /* boundary.c */,
 				9AC4F9241DA3F06F00AED455 /* boundary.h */,
@@ -461,10 +461,10 @@
 				9AC4F9A21DA3F06F00AED455 /* recovery.c in Sources */,
 				9AC4F9AE1DA3F06F00AED455 /* second_projection_bilinear_p_WITH_HYPRE.c in Sources */,
 				9AC4F99E1DA3F06F00AED455 /* Gasdynamics.c in Sources */,
-				9AE4ABB91DBB9F39007205FD /* userdata_Straka_3D.c in Sources */,
 				9AC4F99F1DA3F06F00AED455 /* limiter.c in Sources */,
 				9AC4F99B1DA3F06F00AED455 /* Eos.c in Sources */,
 				9AC4F9A81DA3F06F00AED455 /* laplacian_cells.c in Sources */,
+				9AE4ABBB1DBBAB24007205FD /* userdata_TravellingVortex_2D.c in Sources */,
 				9AC4F9AC1DA3F06F00AED455 /* laplacian_nodes.c in Sources */,
 				9AC4F9881DA3F06F00AED455 /* set_ghostnodes_p.c in Sources */,
 				9AC4F9961DA3F06F00AED455 /* kgrid.c in Sources */,
