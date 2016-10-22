@@ -6,7 +6,6 @@
 #ifndef FLUX_CORRECTION_H
 #define FLUX_CORRECTION_H
 
-#include "ProjectionType.h"
 #include "variable.h"
 #include "mpv.h"
 

@@ -9,7 +9,6 @@
 #define BiCGSTAB_H
 
 #include "Common.h"
-#include "ProjectionType.h"
 #include "BiCGSTAB.h"
 #include "kgrid.h"
 #include "variable.h"

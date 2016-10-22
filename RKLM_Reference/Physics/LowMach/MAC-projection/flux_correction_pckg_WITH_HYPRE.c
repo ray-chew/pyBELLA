@@ -10,7 +10,6 @@
 #include <string.h>
 #include <stdio.h>
 #include "Common.h"
-#include "ProjectionType.h"
 #include "set_ghostcells_p.h"
 #include "mpv.h"
 #include "memory.h"

@@ -12,7 +12,6 @@
 #include "Common.h"
 #include "kgrid.h"
 #include "variable.h"
-#include "ProjectionType.h"
 
 void set_ghostcells_p2(
                        double* p,                        

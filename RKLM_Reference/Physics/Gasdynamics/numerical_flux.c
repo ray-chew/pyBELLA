@@ -6,7 +6,6 @@
 #include <float.h>
 #include <math.h>
 #include "Common.h"
-#include "ProjectionType.h"
 #include "math_own.h"
 #include "Eos.h"   
 #include "thermodynamic.h"

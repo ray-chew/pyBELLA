@@ -7,7 +7,6 @@
 #include <math.h>
 #include <float.h>
 #include "Common.h"
-#include "ProjectionType.h"
 #include "error.h"
 #include "boundary.h"
 #include "userdata.h"

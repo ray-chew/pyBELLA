@@ -11,7 +11,6 @@
 #include "userdata.h"
 #include "error.h"
 #include "Common.h"
-#include "ProjectionType.h"
 #include "enumerator.h"
 #include "ThomasAlgorithmus.h"
 #include "mpv.h"

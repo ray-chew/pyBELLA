@@ -7,7 +7,6 @@
  *
  */
 #include "Common.h"
-#include "ProjectionType.h"
 
 #ifndef VARIABLE_COEFFICIENT_POISSION_NODES
 #define VARIABLE_COEFFICIENT_POISSION_NODES

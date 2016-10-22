@@ -4,7 +4,6 @@
  Date:   ?
  *******************************************************************************/
 #include "Common.h"
-#include "ProjectionType.h"
 #include <stdio.h>
 #ifdef MACPROFILE
 #include <profiler.h> 
@@ -170,11 +169,7 @@ int main( void )
 #endif
                         
 			printf("\nnonlinear fluxes ---------------------------- \n");
-			
-            /* if (ud.absorber) Absorber(Sol, t, 0.5*dt);  */   
-            /* if (ud.absorber) Absorber(Sol, t, dt); */
-			/* Explicit_Source(Sol, t, 0.5*lambda); */
-				
+							
 #if OUTPUT_SUBSTEPS
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
@@ -238,9 +233,6 @@ int main( void )
 #if OUTPUT_SUBSTEPS
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
-
-            /* Explicit_Source(Sol, t, 0.5*lambda); */
-            /* if(ud.absorber) Absorber(Sol, t, 0.5*dt); */
 
 #if OUTPUT_SUBSTEPS
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);

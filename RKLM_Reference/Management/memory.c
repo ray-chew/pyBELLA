@@ -17,7 +17,6 @@
 #include "variable.h"
 #include "Gasdynamics.h"
 #include "math_own.h"
-#include "ProjectionType.h"
 
 
 void update(

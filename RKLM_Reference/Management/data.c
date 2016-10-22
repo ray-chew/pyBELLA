@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "Common.h"
-#include "ProjectionType.h"
 #include "enumerator.h"
 #include "math_own.h"
 #include "float.h"

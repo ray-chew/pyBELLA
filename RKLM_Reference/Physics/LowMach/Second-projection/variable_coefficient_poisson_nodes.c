@@ -22,7 +22,6 @@
 #include "mpv.h"
 #include "thermodynamic.h"
 
-#include "ProjectionType.h"
 #include "variable_coefficient_poisson_nodes.h"
 #include "set_ghostnodes_p.h"
 #include "set_ghostnodes_rhs.h"

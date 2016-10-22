@@ -5,7 +5,6 @@
  *******************************************************************************/
 #include <math.h>
 #include "Common.h"
-#include "ProjectionType.h"
 #include "thermodynamic.h"
 #include "mpv.h"
 /* #include "Hydrostatics.h"*/

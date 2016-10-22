@@ -11,7 +11,6 @@
 #include <assert.h>
 #include <math.h>
 #include "Common.h"
-#include "ProjectionType.h"
 #include "BiCGSTAB.h"
 #include "kgrid.h"
 #include "variable.h"

@@ -4,7 +4,6 @@
  Date:   
  *******************************************************************************/
 #include "Common.h"
-#include "ProjectionType.h"
 #include "variable.h"
 #include "math_own.h"
 #include "error.h"   

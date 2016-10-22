@@ -20,7 +20,6 @@
 #include "variable.h"
 #include "userdata.h"
 #include "thermodynamic.h"
-#include "ProjectionType.h"
 
 /*------------------------------------------------------------------------------
  left p

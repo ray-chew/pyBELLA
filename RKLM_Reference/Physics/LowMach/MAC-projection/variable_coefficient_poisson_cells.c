@@ -12,7 +12,6 @@
 #include <string.h>
 
 #include "Common.h"
-#include "ProjectionType.h"
 
 #include "error.h"
 

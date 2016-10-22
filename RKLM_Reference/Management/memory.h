@@ -6,7 +6,6 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include "ProjectionType.h"
 #include "enumerator.h"
 
 void update(

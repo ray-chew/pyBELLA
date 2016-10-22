@@ -8,7 +8,6 @@
 
 #include "Common.h"
 #include "kgrid.h"
-#include "ProjectionType.h"
 #include "mpv.h"
 
 void precon_prepare(

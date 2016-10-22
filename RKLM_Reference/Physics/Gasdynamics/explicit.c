@@ -4,7 +4,6 @@
  Date:   Mon Mar  2 10:52:55 CET 1998
  *******************************************************************************/
 #include "Common.h"
-#include "ProjectionType.h"
 #include "math_own.h"
 #include "boundary.h"
 #include "recovery.h"
