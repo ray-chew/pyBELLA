@@ -22,6 +22,7 @@
 #include "set_ghostnodes_p.h"
 #include "boundary.h"
 #include "memory.h"
+#include "Hydrostatics.h"
 
 double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma);
 
@@ -228,17 +229,11 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
     
     /* output times */
-    ud->tout[0] =  2.0;
-    ud->tout[1] =  4.0;
-    ud->tout[2] =  6.0;
-    ud->tout[3] =  8.0;
-    ud->tout[4] = -1.0;
-    
-    /*
-	ud->tout[0] =  18.0;
-	ud->tout[1] = -1.0;
-     */
-    
+    ud->tout[0] =  3.0;
+    ud->tout[1] =  6.0;
+    ud->tout[2] =  9.0;
+    ud->tout[3] = -1.0;
+        
     ud->stepmax = 440;
     
 	ud->write_stdout = ON;
@@ -268,113 +263,58 @@ void Sol_initial(ConsVars* Sol,
 	extern Thermodynamic th;
 	extern User_Data ud;
     extern MPV* mpv;
+    extern double *Yinvbg;
     
 	const double u0 = ud.wind_speed;
 	const double v0 = 0.0;
 	const double w0 = 0.0;
-	const double rho0 = 1.0;
 	const double delT = 15.0/300.0; /* temp perturbation in K */
 	
     const double x0 = 0.0;
     const double y0 = 0.3;
     const double rx = 0.4;
     const double ry = 0.2;
-    
-	const double Gamma = th.gm1 / th.gamm;
-	const double gamm  = th.gamm;
-    const double Gamma_inv = 1.0/Gamma;
-	
-	const double M_LH_sq = ud.Msq;
-	
+    		
 	const int icx = elem->icx;
 	const int icy = elem->icy;
 	const int icz = elem->icz;
-    const int igx = elem->igx;
 	const int igy = elem->igy;
 	const int igz = elem->igz;
     
-    const int inx = node->icx;
-    const int iny = node->icy;
+    const int icxn = node->icx;
+    const int icyn = node->icy;
+    const int iczn = node->icz;
 	
 	int i, j, k, l, m, n;
-	double x, y;
-	double rho, u, v, w, p, rhoY, p0, temp, dtemp, pex, thet;
+	double x, y, z;
+	double rho, u, v, w, p, rhoY, pex;
 	
-    double S_integral, p2_o, g;
-	double elevation_m, elevation_p, S_m, S_p, p_hydro, rho_hydro;
+    double g;
 	
-    
 	g = ud.gravity_strength[1];
 	
-	/* Hydrostates in bottom dummy cells */
-	y = elem->y[igy];
-	elevation_m = y - (elem->y[elem->igy] - 0.5*elem->dy);
-	S_m         = 1.0/stratification(elevation_m);
-	S_integral  = 0.5 * elevation_m * (S_m + 1.0/stratification(0.0));
-	p0 = pow(rho0 * stratification(0.0), gamm);
-	
-	for(j = igy; j >= 0; j--) {
-		y = elem->y[j];
-		elevation_m = y - (elem->y[elem->igy] - 0.5*elem->dy);
-		
-		S_m         = 1.0/stratification(elevation_m);
-		p_hydro     = pow( pow(p0,Gamma) - Gamma*g*S_integral ,  Gamma_inv);
-		rho_hydro   = S_m * pow(p_hydro,1.0/th.gamm);
-		
-		mpv->HydroState->geopot[j] = g * elevation_m;
-		mpv->HydroState->rho0[j] = rho_hydro;
-		mpv->HydroState->p0[j]   = p_hydro;
-		mpv->HydroState->S0[j]   = S_m;
-		mpv->HydroState->S10[j]  = 0.0;
-		mpv->HydroState->Y0[j]  = stratification(elevation_m);
-		
-		elevation_p = elevation_m - elem->dy;
-		S_p         = 1.0/stratification(elevation_p);
-		S_integral -= 0.5*elem->dy*(S_m + S_p);
-	}
-    
-    /* data in the bulk of the domain */
-    p0 = pow(rho0 * stratification(0.0), gamm);
-    
+    Hydrostatics_State(mpv, Yinvbg, elem);
+
 	for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
-        
-		y = elem->y[igy];
-		elevation_p = y - (elem->y[elem->igy] - 0.5*elem->dy);
-		S_p         = 1.0/stratification(elevation_p);
-		S_integral  = 0.5 * elevation_p * (S_p + 1.0/stratification(0.0));
+        z = elem->z[k];
         
         for(j = igy; j < icy - igy; j++) {m = l + j * icx;
-			
-            elevation_m = elevation_p;
-            S_m         = S_p;
-            
-            p_hydro     = pow( pow(p0,Gamma) - Gamma*g*S_integral ,  Gamma_inv);
-            rho_hydro   = S_m * pow(p_hydro,1.0/th.gamm);
-			
-            if (k==igz) {
-                mpv->HydroState->geopot[j] = g * elevation_m;
-                mpv->HydroState->rho0[j] = rho_hydro;
-                mpv->HydroState->p0[j]   = p_hydro;
-                mpv->HydroState->S0[j]   = S_m;
-                mpv->HydroState->S10[j]  = 0.0;
-                mpv->HydroState->Y0[j]  = stratification(elevation_m);
-            }
-            
-			for(i = 0; i < icx; i++) {n = m + i;
-                double ystar, r;
+            y = elem->y[j];
+
+            for(i = 0; i < icx; i++) {n = m + i;
+                double temp, dtemp, thet, r;
                 
 				x = elem->x[i];
 				
                 u   = u0;
                 v   = v0;
                 w   = w0;
-                ystar = elevation_m;
                 
-				r     = sqrt((x-x0)*(x-x0)/(rx*rx) + (ystar-y0)*(ystar-y0)/(ry*ry));
-                p     = p_hydro;
-                pex   = pow(p_hydro,th.Gamma);
-				rhoY  = pow(p_hydro,1.0/th.gamm);
-                temp  = pex * stratification(ystar);
+				r     = sqrt((x-x0)*(x-x0)/(rx*rx) + (y-y0)*(y-y0)/(ry*ry));
+                p     = mpv->HydroState->p0[j];
+				rhoY  = mpv->HydroState->rhoY0[j];
+                pex   = pow(p,th.Gamma);
+                temp  = pex * stratification(y);
                 dtemp = delT * (r < 1.0 ? 0.5 * (1.0 + cos(PI*r)) : 0.0);
                 thet  = (temp - dtemp) / pex;
 				rho   = rhoY / thet;
@@ -383,83 +323,20 @@ void Sol_initial(ConsVars* Sol,
 				Sol->rhou[n] = rho * u;
 				Sol->rhov[n] = rho * v;
 				Sol->rhow[n] = rho * w;
-				Sol->rhoe[n] = rhoe(rho, u, v, w, p, g*elevation_m);
+				Sol->rhoe[n] = rhoe(rho, u, v, w, p, g*y);
 				Sol->rhoY[n] = rhoY;
-				Sol->geopot[n] = g * elevation_m;
+				Sol->geopot[n] = g * y;
                 
-#ifdef P_RHO
-				mpv->p2_cells[n] = pow(rhoY,th.gamm) / ud.Msq;
-#else /* P_RHO */
-				mpv->p2_cells[n] = th.Gammainv * pow(rhoY,th.gm1) / ud.Msq;
-#endif /* P_RHO */
-				Sol->rhoZ[n]     = rho * mpv->p2_cells[n];
-			}
-            
-            elevation_p = elevation_m + elem->dy;
-            S_p         = 1.0/stratification(elevation_p);
-            S_integral += 0.5*elem->dy*(S_m + S_p);
-			
-		}
-		
-        /* Hydrostates in top dummy cells */
-        for(j = icy-igy; j < icy; j++) {
-            y = elem->y[j];
-            elevation_m = y - (elem->y[elem->igy] - 0.5*elem->dy);
-            
-            S_m         = 1.0 / stratification(elevation_m);
-            p_hydro     = pow( pow(p0,Gamma) - Gamma*g*S_integral ,  Gamma_inv);
-            rho_hydro   = S_m * pow(p_hydro,1.0/th.gamm);
-            
-            mpv->HydroState->geopot[j] = g * elevation_m;
-            mpv->HydroState->rho0[j] = rho_hydro;
-            mpv->HydroState->p0[j]   = p_hydro;
-            mpv->HydroState->S0[j]   = S_m;
-            mpv->HydroState->S10[j]  = 0.0;
-            mpv->HydroState->Y0[j]  = stratification(elevation_m);
-            
-            elevation_p = elevation_m + elem->dy;
-            S_p         = 1.0 / stratification(elevation_p);
-            S_integral += 0.5*elem->dy*(S_m + S_p);
-        }
-        
-        /* initialize nodal pressure; construct relative to background state */
-        for (j=igy; j<iny-igy; j++) {
-            int mn = j*inx;
-            
-            double phy_c   = mpv->HydroState->p0[j];
-            double y_c     = elem->y[j];
-            double elev_c  = y_c - (elem->y[elem->igy] - 0.5*elem->dy);
-            double elev_m  = elev_c - elem->dy;
-            double S_c     = 1.0 / stratification(elev_c);
-            double S_m     = 1.0 / stratification(elev_m);
-            double phy_mc  = pow( pow(phy_c,Gamma) + Gamma*g*0.25*elem->dy*(S_m + S_c) ,  Gamma_inv);
-            
-            for (i=igx; i<inx-igx; i++) {
-                int nn = mn+i;
-                
-                mpv->p2_nodes[nn] = phy_mc/ud.Msq;
-            }
-        }
-
-        
-		/* balanced "elliptic pressure" w.r.t. background state */
-		p2_o = 0.0;
-		
-        for(j = igy; j < icy - igy; j++) {
-			double p2_n;
-            mpv->HydroState->p20[j] = p2_o;
-#define P_RHO
-#ifdef P_RHO
-            p2_n = (mpv->HydroState->p0[j+1] - mpv->HydroState->p0[igy]) / M_LH_sq;
-#else /* P_RHO */
-		    p2_n   = p2_o - (g/M_LH_sq) * 0.5 * elem->dy *
-            (  (1.0/stratification(elem->y[j+1]) - ALPHA_BG)
-             + (1.0/stratification(elem->y[j]) - ALPHA_BG) );
+#ifdef THERMCON
+                mpv->p2_cells[n] = (p/rhoY) / ud.Msq;
+#else
+                mpv->p2_cells[n] = p / ud.Msq;
 #endif
-			
-            p2_o = p2_n;
+                Sol->rhoZ[n]     = rho * mpv->p2_cells[n];				
+			}			
 		}
 		
+        		
 		/* set all dummy cells */
 		/* geopotential in bottom and top dummy cells */
 		for(j = 0; j < igy; j++) {m = l + j * icx;
@@ -477,16 +354,36 @@ void Sol_initial(ConsVars* Sol,
 		}
 	}
 	    
-    /* put p2_cells into Z for advection */
-    for(i=0; i<elem->nc; i++) {
-        Sol->rhoZ[i]  = mpv->p2_cells[i] * Sol->rho[i];
-    }
+    /*set nodal pressures to hydrostatic values */
+    for(k = 0; k < iczn; k++) {l = k * icxn * icyn;   
+        
+        for(j = 0; j < icyn; j++) {m = l + j * icxn;                
+#ifdef THERMCON
+            double p    = mpv->HydroState->p0[j];
+            double rhoY = mpv->HydroState->rhoY0[j];
+            
+            for(i = 0; i < icxn; i++) {n = m + i;
+                mpv->p2_nodes[n] = (p/rhoY) / ud.Msq;
+            }
+#else
+            double p    = mpv->HydroState->p0[j];
+            for(i = 0; i < icxn; i++) {n = m + i;
+                mpv->p2_nodes[n] = p / ud.Msq;
+            }
+#endif
+        }
+    }                  
+
 }
 
+
+/* ================================================================================== */
 
 double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma){
 	return pow((pow(p0,Gamma) + Gamma*S0*Msq*u_theta*u_theta*(1.0 - pow((1.0-r),5.0)*(5.0*r+1.0))/30.0), (1.0/Gamma));
 }
+
+/* ================================================================================== */
 
 double stratification(
 					  double y) {
