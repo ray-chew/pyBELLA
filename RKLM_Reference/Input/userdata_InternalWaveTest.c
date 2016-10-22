@@ -254,10 +254,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     extern Thermodynamic th;
     extern User_Data ud;
     extern MPV* mpv;
-    extern double *W0, *W1, *Yinvbg;
-    
-    double* pi     = W0;
-    double* dp_int = W1;
+    extern double *Yinvbg;
     
     const double u0 = ud.wind_speed;
     const double v0 = 0.0;
@@ -265,9 +262,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const double delth = 0.01 / ud.T_ref;  /* standard:  0.01 / ud.T_ref */
     const double xc    = -0.0e+03/ud.h_ref; /* -50.0e+03/ud.h_ref; 0.0; */
     const double a     = scalefactor * 5.0e+03/ud.h_ref;
-    
-    const double Gamma = th.gm1 / th.gamm;
-    
+        
     const int icx = elem->icx;
     const int icy = elem->icy;
     const int igy = elem->igy;
@@ -275,62 +270,19 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const int icxn = node->icx;
     const int icyn = node->icy;
     const int iczn = node->icz;
-
-    const double dy = elem->dy;
         
     int i, j, m, n, nm;
     double x, y, ym;
-    double rho, u, v, w, p, Y, Ym, rhoY;
+    double rho, u, v, w, p, rhoY;
     
     double g;
-    double S, Sbar, Sm, p_hydro, rho_hydro;
         
     g = ud.gravity_strength[1];
     
     Hydrostatics_State(mpv, Yinvbg, elem);
-    
-    /* Initial data in the bulk of the domain */
-    /* initialize hydrostatic pressure perturbation field */
-    for (i = 0; i < icx; i++) {
-        n         = (igy-2)*icx + i;
-        pi[n]     = mpv->HydroState->pi0[igy-2];
-        dp_int[n] = 0.0;
-    }
-    
+        
     for(i = 0; i < icx; i++) {
-        
-        /* compute hydrostatic background Exner pressure and perturbation 
-           pressure and the vertical integral of the latter, which equals the
-           bottom Exner pressure perturbation for the hydrostatic setting
-         */
-        for(j = igy-1; j < icy-igy+1; j++) {
-
-            n  = j*icx + i;
-            nm = n-icx;
-            
-            x  = elem->x[i];
-            y  = elem->y[j];
-            ym = elem->y[j-1];
-            
-            u   = u0;
-            v   = v0;
-            w   = w0;
-            
-            Sbar = 1.0/stratification(y);
-            
-            p_hydro   = mpv->HydroState->p0[j];
-            rho_hydro = mpv->HydroState->rhoY0[j];
-            
-            Y    = stratification(y)  + delth * sin(PI*y)  / (1.0 + (x-xc)*(x-xc) / (a*a));
-            Ym   = stratification(ym) + delth * sin(PI*ym) / (1.0 + (x-xc)*(x-xc) / (a*a));
-            
-            S    = 1.0/Y;
-            Sm   = 1.0/Ym;
-            
-            pi[n]     = pi[nm] - Gamma*g*0.5*(S+Sm)*dy;
-            dp_int[n] = dp_int[nm] + pow(p_hydro, th.gm1inv) * dy * (pi[n]-mpv->HydroState->pi0[j]) / Gamma;
-        }
-        
+                
         /* initialization of field variables */
         for(j = igy; j < icy - igy; j++) {
             
@@ -344,22 +296,10 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             u   = u0;
             v   = v0;
             w   = w0;
-            
-            Sbar = 1.0/stratification(y);
-            
-            p_hydro   = mpv->HydroState->p0[j];
-            rho_hydro = Sbar * pow(p_hydro,1.0/th.gamm);
-            
-            p    = p_hydro;
-            rhoY = pow(p_hydro,1.0/th.gamm);
-            
-            Y    = (stratification(y)  + delth * sin(PI*y)  / (1.0 + (x-xc)*(x-xc) / (a*a)));
-            Ym   = (stratification(ym) + delth * sin(PI*ym) / (1.0 + (x-xc)*(x-xc) / (a*a)));
-            
-            S    = 1.0/Y;
-            Sm   = 1.0/Ym;
-            
-            rho  = rhoY/Y;
+                        
+            p    = mpv->HydroState->p0[j];            
+            rhoY = mpv->HydroState->rhoY0[j];
+            rho  = rhoY/(stratification(y)  + delth * sin(PI*y)  / (1.0 + (x-xc)*(x-xc) / (a*a)));
 
             Sol->rho[n]  = rho;
             Sol->rhou[n] = rho * u;
