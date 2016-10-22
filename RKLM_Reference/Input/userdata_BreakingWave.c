@@ -266,7 +266,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     
     double g = ud.gravity_strength[1];
     
-    Hydrostatics_State(mpv, elem);
+    Hydrostatics_State(mpv, Yinvbg, elem);
     
     for(k = igze; k < icze - igze; k++) {l = k * icxe * icye; 
         z = elem->z[k];

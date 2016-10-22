@@ -278,6 +278,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
 	extern Thermodynamic th;
 	extern User_Data ud;
     extern MPV* mpv;
+    extern double *Yinvbg;
     
 	const double u0 = ud.wind_speed;
 	const double v0 = 0.0;
@@ -305,7 +306,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
 	    
 	g = ud.gravity_strength[1];
     
-    Hydrostatics_State(mpv, elem);
+    Hydrostatics_State(mpv, Yinvbg, elem);
 		    
     /* data in the bulk of the domain */
 	for(k = igz; k < icz - igz; k++) {l = k * icx * icy; 
@@ -384,10 +385,13 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
 
 }
 
+/* ================================================================================== */
 
 double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma){
 	return pow((pow(p0,Gamma) + Gamma*S0*Msq*u_theta*u_theta*(1.0 - pow((1.0-r),5.0)*(5.0*r+1.0))/30.0), (1.0/Gamma));
 }
+
+/* ================================================================================== */
 
 double rho_function(double psi){
 	
@@ -415,21 +419,12 @@ double rho_function(double psi){
 		   ); 
 }
 
+/* ================================================================================== */
+
 double stratification(
 					  double y) {
 	
-	extern User_Data ud;
-	
-	/* const double delS_slope = 0.0651466; */  /* 0.1 ClarkeFarley; 0.0651466 Breaking Wave */ /*  BREAKING WAVE CHANGE */
-	
-	/* Clarke-Farley-Bubble test
-	 return(4.0 * ( (exp(-delS_slope * y) - 1.0) / (1.0 - exp(-delS_slope * ud.ymax)) )); 
-	 */
-	
-	/* breaking waves 
-	 return( exp(delS_slope * y) );
-	 */
-	/* breaking waves */
+	extern User_Data ud;	
 	return( 1.0 );
 }
 
