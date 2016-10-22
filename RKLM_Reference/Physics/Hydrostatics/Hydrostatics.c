@@ -16,7 +16,7 @@
 
 /* ================================================================================== */
 
-void Hydrostatics_State(MPV* mpv, const ElemSpaceDiscr* elem) {
+void Hydrostatics_State(MPV* mpv, double *Yinvbg, const ElemSpaceDiscr* elem) {
     
     extern Thermodynamic th;
     extern User_Data ud;
@@ -130,4 +130,21 @@ void Hydrostatics_State(MPV* mpv, const ElemSpaceDiscr* elem) {
         rhoY_hydro_n  = pow( pow(p0,Gamma) - Gamma*g*S_integral_n ,  th.gm1inv);
         mpv->HydroState_n->rhoY0[j+1] = rhoY_hydro_n;
     }
+    
+    /* HydroStates in an auxiliary field */
+    /* */
+    for (int k = 0; k < elem->icz; k++) {
+        int nk = k*elem->icx*elem->icy;
+        
+        for (int j = 0; j < elem->icy; j++) {
+            int njk = nk + j*elem->icx;
+            
+            for (int i = 0; i < elem->icx; i++) {
+                int nijk = njk + i;
+                
+                Yinvbg[nijk] = mpv->HydroState->S0[j];
+            }
+        }
+    }
+
 }

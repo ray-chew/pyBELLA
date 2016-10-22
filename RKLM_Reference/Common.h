@@ -3,8 +3,10 @@
 #define QC    1   /* cloud water */
 #define QR    2   /* rain water  */
    
-/**/
+/*
+ */
 #define THERMCON
+#define ADVECT_THETA_PRIME 0.0
 
 #define PERTURBED_WALL
 

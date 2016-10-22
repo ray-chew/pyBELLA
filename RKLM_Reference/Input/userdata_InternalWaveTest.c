@@ -9,7 +9,6 @@
 
 #include "enumerator.h"
 #include "Common.h"
-#include "ProjectionType.h"
 #include "userdata.h"
 #include "time_discretization.h"
 #include "error.h"
@@ -23,8 +22,7 @@
 #include "set_ghostnodes_p.h"
 #include "boundary.h"
 #include "memory.h"
-
-static void (*rotate[])(ConsVars* Sol, double* rhs, double *Yinvbg, const enum Direction dir) = {NULL, rotate2D, rotate3D};
+#include "Hydrostatics.h"
 
 double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma);
 
@@ -104,7 +102,6 @@ void User_Data_init(User_Data* ud) {
     ud->implicit_gravity_press  = 0; /* should be on for compressible option */
     ud->implicit_gravity_theta2 = 0;
     ud->implicit_gravity_press2 = 0; /* should this, too, be on for compressible option ?  */
-    ud->thermcon = 0;
     
     /* flow domain */
     ud->xmin = -15.0 * scalefactor;
@@ -168,17 +165,13 @@ void User_Data_init(User_Data* ud) {
     ud->kZ = 1.4; /* 2.0 */
     
     /* first correction */
-    ud->p_flux_correction = CORRECT; /* CORRECT, WRONG; */
+    ud->p_flux_correction = WRONG; /* CORRECT, WRONG; */
     if (ud->time_integrator == OP_SPLIT || ud->time_integrator == OP_SPLIT_MD_UPDATE) {
-#ifdef NODAL_PROJECTION_ONLY
-        ud->latw[0] = ud->latw[2] = 0.0; ud->latw[1] = 1.0; ud->p_extrapol = 1.0;
-#else
         ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.0;  /* BEST RESULTS */
         /* ud->latw[0] = ud->latw[2] = 0.0; ud->latw[1] = 1.0; ud->p_extrapol = 1.0; */   
         /* ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.0; */  
         /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25; */
         /* ud->latw[0] = ud->latw[2] = 0.2; ud->latw[1] = 0.6; ud->p_extrapol = 1.5;  */
-#endif
     } else {
         /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25;*/
         ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.5;
@@ -190,7 +183,7 @@ void User_Data_init(User_Data* ud) {
     ud->which_projection_first = 1;
     ud->Solver = BICGSTAB_PRECON;        /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->Solver_Node = BICGSTAB_PRECON;   /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
-    ud->precondition = WRONG;
+    ud->precondition = CORRECT;
     double tol = 1.e-8;
     ud->flux_correction_precision = tol;
     ud->flux_correction_local_precision = tol;   /* 1.e-05 should be enough */
@@ -269,118 +262,32 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const double u0 = ud.wind_speed;
     const double v0 = 0.0;
     const double w0 = 0.0;
-    const double rho0 = 1.0;
     const double delth = 0.01 / ud.T_ref;  /* standard:  0.01 / ud.T_ref */
     const double xc    = -0.0e+03/ud.h_ref; /* -50.0e+03/ud.h_ref; 0.0; */
     const double a     = scalefactor * 5.0e+03/ud.h_ref;
     
     const double Gamma = th.gm1 / th.gamm;
-    const double gamm  = th.gamm;
-    const double Gamma_inv = 1.0/Gamma;
-    
-    const double M_LH_sq = ud.Msq;
     
     const int icx = elem->icx;
     const int icy = elem->icy;
-    const int igx = elem->igx;
     const int igy = elem->igy;
-    const int ndim = elem->ndim;
-    
+
+    const int icxn = node->icx;
+    const int icyn = node->icy;
+    const int iczn = node->icz;
+
     const double dy = elem->dy;
-    
-    const int inx = node->icx;
-    const int iny = node->icy;
-    
+        
     int i, j, m, n, nm;
     double x, y, ym;
-    double rho, u, v, w, p, Y, Ym, rhoY, p0;
+    double rho, u, v, w, p, Y, Ym, rhoY;
     
-    double S_integral, p2_o, g, c_int;
-    double elevation_m, elevation_p, S, Sbar, Sm, S_m, S_p, p_hydro, pi_hydro, rho_hydro;
-    
-    int SplitStep;
-    
+    double g;
+    double S, Sbar, Sm, p_hydro, rho_hydro;
+        
     g = ud.gravity_strength[1];
     
-    /* Hydrostates in bottom dummy cells */
-    y = elem->y[igy];
-    elevation_m = y - (elem->y[elem->igy] - 0.5*elem->dy);
-    S_m         = 1.0/stratification(elevation_m);
-    S_integral  = 0.5 * elevation_m * (S_m + 1.0/stratification(0.0));
-    p0 = pow(rho0 * stratification(0.0), gamm);
-    
-    for(j = igy; j >= 0; j--) {
-        y = elem->y[j];
-        elevation_m = y - (elem->y[elem->igy] - 0.5*elem->dy);
-        
-        S_m         = 1.0/stratification(elevation_m);
-        pi_hydro    = pow(p0,Gamma) - Gamma*g*S_integral;
-        p_hydro     = pow(pi_hydro ,  Gamma_inv);
-        rho_hydro   = S_m * pow(p_hydro,1.0/th.gamm);
-        
-        mpv->HydroState->geopot[j] = g * elevation_m;
-        mpv->HydroState->rho0[j] = rho_hydro;
-        mpv->HydroState->pi0[j]  = pi_hydro;
-        mpv->HydroState->p0[j]   = p_hydro;
-        mpv->HydroState->S0[j]   = S_m;
-        mpv->HydroState->S10[j]  = 0.0;
-        mpv->HydroState->Y0[j]  = stratification(elevation_m);
-        
-        elevation_p = elevation_m - elem->dy;
-        S_p         = 1.0/stratification(elevation_p);
-        S_integral -= 0.5*elem->dy*(S_m + S_p);
-    }
-    
-    /* Hydrostates in the bulk of the domain and the top dummy cells */
-    y = elem->y[igy];
-    elevation_p = y - (elem->y[elem->igy] - 0.5*elem->dy);
-    S_p         = 1.0/stratification(elevation_p);
-    S_integral  = 0.5 * elevation_p * (S_p + 1.0/stratification(0.0));
-    
-    c_int = 0.0;
-    
-    for(j = igy; j < icy; j++) {
-        
-        elevation_m = elevation_p;
-        S_m         = S_p;
-        
-        pi_hydro    = pow(p0,Gamma) - Gamma*g*S_integral;
-        p_hydro     = pow(pi_hydro ,  Gamma_inv);
-        rho_hydro   = S_m * pow(p_hydro,1.0/th.gamm);
-        
-        mpv->HydroState->geopot[j] = g * elevation_m;
-        mpv->HydroState->rho0[j] = rho_hydro;
-        mpv->HydroState->pi0[j]  = pi_hydro;
-        mpv->HydroState->p0[j]   = p_hydro;
-        mpv->HydroState->S0[j]   = S_m;
-        mpv->HydroState->S10[j]  = 0.0;
-        mpv->HydroState->Y0[j]  = stratification(elevation_m);
-        
-        elevation_p = elevation_m + elem->dy;
-        S_p         = 1.0/stratification(elevation_p);
-        S_integral += 0.5*elem->dy*(S_m + S_p);
-        
-        /* stop integration of the coefficient for the dummy cells */
-        c_int      += (j < icy-igy ? elem->dy * pow(p_hydro, th.gm1inv) / Gamma : 0.0);
-        
-    }
-    
-    /* HydroStates in an auxiliary field */
-    /* */
-    for (int k = 0; k < elem->icz; k++) {
-        int nk = k*elem->icx*elem->icy;
-        
-        for (int j = 0; j < elem->icy; j++) {
-            int njk = nk + j*elem->icx;
-            
-            for (int i = 0; i < elem->icx; i++) {
-                int nijk = njk + i;
-                
-                Yinvbg[nijk] = 0.0/mpv->HydroState->Y0[j];
-            }
-        }
-    }
-
+    Hydrostatics_State(mpv, Yinvbg, elem);
     
     /* Initial data in the bulk of the domain */
     /* initialize hydrostatic pressure perturbation field */
@@ -412,7 +319,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             Sbar = 1.0/stratification(y);
             
             p_hydro   = mpv->HydroState->p0[j];
-            rho_hydro = Sbar * pow(p_hydro,1.0/th.gamm);
+            rho_hydro = mpv->HydroState->rhoY0[j];
             
             Y    = stratification(y)  + delth * sin(PI*y)  / (1.0 + (x-xc)*(x-xc) / (a*a));
             Ym   = stratification(ym) + delth * sin(PI*ym) / (1.0 + (x-xc)*(x-xc) / (a*a));
@@ -427,8 +334,6 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
         /* initialization of field variables */
         for(j = igy; j < icy - igy; j++) {
             
-            int ntop = (icy-igy-1)*icx + i;
-
             n  = j*icx + i;
             nm = n-icx;
             
@@ -464,37 +369,15 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             Sol->rhoY[n] = rhoY;
             Sol->geopot[n] = g * y;
             
-#ifdef INITIALIZE_PI2
-#ifdef INITIALIZE_PI2_HYDROSTATICALLY
-#ifdef NODAL_PROJECTION_ONLY
-            mpv->p2_cells[n] = pow(pi[n], th.Gammainv) / ud.Msq;
+#ifdef THERMCON
+            mpv->p2_cells[n] = (p/rhoY) / ud.Msq;
 #else
-            mpv->p2_cells[n] = pow(pi[n] - dp_int[ntop]/c_int, th.Gammainv) / ud.Msq;
-#endif
-#else
-            mpv->p2_cells[n] = pow(rhoY,th.gamm) / ud.Msq;
+            mpv->p2_cells[n] = p / ud.Msq;
 #endif
             Sol->rhoZ[n]     = rho * mpv->p2_cells[n];
-#else /* INITIALIZE_PI2 */
-            mpv->p2_cells[n] = 0.0;
-            Sol->rhoZ[n] = 0.0;
-#endif /* INITIALIZE_PI2 */
             
         }
     }
-    
-    /* balanced "elliptic pressure" w.r.t. background state */
-    p2_o = 0.0;
-    
-    for(j = igy; j < icy - igy; j++) {m = j * icx;
-        double p2_n;
-        
-        mpv->HydroState->p20[j] = p2_o;
-        
-        p2_n = (mpv->HydroState->p0[j+1] - mpv->HydroState->p0[igy]) / M_LH_sq;        
-        p2_o = p2_n;
-    }
-    
     
     /* set all dummy cells */
     /* geopotential in bottom and top dummy cells */
@@ -517,102 +400,26 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     for(i=0; i<elem->nc; i++) {
         Sol->rhoZ[i]  = mpv->p2_cells[i] * Sol->rho[i];
     }
-
-    for(SplitStep = 0; SplitStep < ndim; SplitStep++) {
-        const double lambda = 1.0;
-        Bound(Sol, mpv->HydroState,lambda, elem->nc, SplitStep);
-        if(SplitStep < ndim - 1) (*rotate[ndim - 1])(Sol, mpv->Level[0]->rhs, Yinvbg, FORWARD);
-    }
-    /* rotate back */
-    for(SplitStep = ndim-1; SplitStep > 0; SplitStep--) {
-        (*rotate[ndim - 1])(Sol, mpv->Level[0]->rhs, Yinvbg, BACKWARD);
-    }
     
-#ifdef GRAVITY_1
-    double p00 = 1.0;
-
-    /* bottom row of nodes */
-    for (i=igx; i<inx-igx; i++) {
-        int nn = igy*inx + i;
-        mpv->p2_nodes[nn] = p00/ud.Msq;
-    }       
-    
-    /* core and top rows of nodes */
-    for (i=igx; i<inx-igx; i++) {
-        int mn = i;
-        int mc = i;
-                        
-        for (j=igy+1; j<iny-igy; j++) {
-            int nn  = mn+j*inx;
-            int nnm = nn-inx;
-            int nc  = mc+(j-1)*icx;
-            int ncm = nc-1;
+    /*set nodal pressures */
+    for(int k = 0; k < iczn; k++) {int l = k * icxn * icyn;   
+        
+        for(int j = 0; j < icyn; j++) {int m = l + j * icxn;                
+#ifdef THERMCON
+            double p    = mpv->HydroState->p0[j];
+            double rhoY = mpv->HydroState->rhoY0[j];
             
-            double Sc  = Sol->rho[nc]/Sol->rhoY[nc];
-            double Sm  = Sol->rho[ncm]/Sol->rhoY[ncm];
-            double pim = pow(mpv->p2_nodes[nnm]*ud.Msq, Gamma);
-            double dpi = - Gamma*g*elem->dy*0.5*(Sc+Sm);
-            
-            mpv->p2_nodes[nn] = pow(pim+dpi, Gamma_inv)/ud.Msq;
-        }  
-    }
-#else /* GRAVITY_1 */
-        /* 
-         hydrostatic initialization of nodal pressures in two steps:
-         1. average of 1/theta to vertical cell faces, then 
-         2. integrate hydrostatic pressure between nodes
-         */
-        for (j=igy; j<iny-igy; j++) {
-            int mn = j*inx;
-            int mc = j*icx;
-            
-            double phy_c   = mpv->HydroState->p0[j];
-            double phy_m   = mpv->HydroState->p0[j-1];
-            double S_c     = mpv->HydroState->S0[j];
-            double S_m     = mpv->HydroState->S0[j-1];
-            double phy_cm  = pow( pow(phy_c,Gamma) + Gamma*g*0.5*elem->dy*0.5*(S_c + 0.5*(S_m + S_c)) ,  Gamma_inv);
-            double phy_mc  = pow( pow(phy_m,Gamma) - Gamma*g*0.5*elem->dy*0.5*(S_m + 0.5*(S_m + S_c)) ,  Gamma_inv);
-            
-            mpv->HydroState_n->p0[j] = 0.5*(phy_mc + phy_cm);
-            
-            /* step 1. */
-            for (i=igx; i<inx-igx; i++) {
-                int nn  = mn+i;
-                int ncc = mc+i;
-                int ncm = mc+i-icx;
-                
-                double phy_c   = (Sol->rhoZ[ncc]/Sol->rho[ncc])*ud.Msq;
-                double phy_m   = (Sol->rhoZ[ncm]/Sol->rho[ncm])*ud.Msq;
-                double S_c     = Sol->rho[ncc]/Sol->rhoY[ncc];
-                double S_m     = Sol->rho[ncm]/Sol->rhoY[ncm];
-                double phy_cm  = pow( pow(phy_c,Gamma) + Gamma*g*0.5*elem->dy*0.5*(S_c + 0.5*(S_m + S_c)) ,  Gamma_inv);
-                double phy_mc  = pow( pow(phy_m,Gamma) - Gamma*g*0.5*elem->dy*0.5*(S_m + 0.5*(S_m + S_c)) ,  Gamma_inv);
-                
-                /* NOTE: index shifted by one to make next loop possible */
-                mpv->p2_nodes[nn] = 0.5*(phy_cm + phy_mc)/ud.Msq;
+            for(int i = 0; i < icxn; i++) {int n = m + i;
+                mpv->p2_nodes[n] = (p/rhoY) / ud.Msq;
             }
-            
-            /* step 2.:  simplest version -- average cell face pressures / slight imbalances to be expected */
-            if (ud.bdrytype_min[0] == PERIODIC) {
-                double p2_left, p2_right;
-                
-                p2_left                     = mpv->p2_nodes[mn+icx-igx-1];
-                p2_right                    = mpv->p2_nodes[mn+igx];
-                mpv->p2_nodes[mn+igx]       = 0.5*(p2_left + p2_right);
-                mpv->p2_nodes[mn+inx-igx-1] = mpv->p2_nodes[mn+igx];
-                
-                for (i=igx+1; i<inx-igx-1; i++) {
-                    int nn  = mn+i;                
-                    p2_left  = p2_right;
-                    p2_right = mpv->p2_nodes[nn];
-                    mpv->p2_nodes[nn] = 0.5*(p2_left + p2_right);
-                }
-                
-            } else {
-                ERROR("reconstruction of nodal pressures only implemented for PERIODIC boundary conditions\n")
+#else
+            double p    = mpv->HydroState->p0[j];
+            for(int i = 0; i < icxn; i++) {int n = m + i;
+                mpv->p2_nodes[n] = p / ud.Msq;
             }
+#endif
         }
-#endif /* GRAVITY_1 */
+    }                      
 }
 
 /* ================================================================================== */

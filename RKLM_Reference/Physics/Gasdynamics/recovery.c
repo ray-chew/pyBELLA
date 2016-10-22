@@ -169,7 +169,7 @@ void recovery_gravity(
         for (nsp = 0; nsp < ud.nspec; nsp++) {
             Diffs->X[nsp][i] =  Sol->X[nsp][i+1]*Yrinv - Sol->X[nsp][i]*Ylinv;
         }
-		Diffs->Y[i] =  Yrinv - Ylinv - (Yinvbg[i+1] - Yinvbg[i]);
+		Diffs->Y[i] =  Yrinv - Ylinv - ADVECT_THETA_PRIME*(Yinvbg[i+1] - Yinvbg[i]);
     }
     
 	/* Projection on right eigenvectors */
@@ -186,7 +186,7 @@ void recovery_gravity(
         for (nsp = 0; nsp < ud.nspec; nsp++) {
             Ampls->X[nsp][i]     = 0.5 * Slopes->X[nsp][i] * ( 1 - lambda *    u   );
         }                                
-		Ampls->Y[i]     = 0.5 * (Slopes->Y[i] + 0.5*(Yinvbg[i+1] - Yinvbg[i-1])) * ( 1 - lambda *    u   );
+		Ampls->Y[i]     = 0.5 * (Slopes->Y[i] + 0.5*ADVECT_THETA_PRIME*(Yinvbg[i+1] - Yinvbg[i-1])) * ( 1 - lambda *    u   );
 	}
 	
 	for( i = 1; i < nmax-1; i++ ) {
@@ -213,7 +213,7 @@ void recovery_gravity(
         for (nsp = 0; nsp < ud.nspec; nsp++) {
             Ampls->X[nsp][i]     = -0.5 * Slopes->X[nsp][i] * ( 1 + lambda *    u   );
         }                                
-		Ampls->Y[i]     = -0.5 * (Slopes->Y[i] + 0.5*(Yinvbg[i+1] - Yinvbg[i-1]) )  * ( 1 + lambda *    u   );
+		Ampls->Y[i]     = -0.5 * (Slopes->Y[i] + 0.5*ADVECT_THETA_PRIME*(Yinvbg[i+1] - Yinvbg[i-1]) )  * ( 1 + lambda *    u   );
 	}
 	
 	for( i = 1; i < nmax-1; i++ ) {

@@ -343,9 +343,13 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     }                  
 }
 
+/* ====================================================================== */ 
+
 double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma){
 	return pow((pow(p0,Gamma) + Gamma*S0*Msq*u_theta*u_theta*(1.0 - pow((1.0-r),5.0)*(5.0*r+1.0))/30.0), (1.0/Gamma));
 }
+
+/* ====================================================================== */ 
 
 double rho_function(double psi){
 	

@@ -419,8 +419,9 @@ void operator_coefficients(
 	extern User_Data ud;
 	extern Thermodynamic th;
 	
+#ifdef THERMCON
     const double Gammainv = th.Gammainv;
-    
+#endif
 	const int ndim = elem->ndim;
 	
     const int impl_grav_th = ud.implicit_gravity_theta;

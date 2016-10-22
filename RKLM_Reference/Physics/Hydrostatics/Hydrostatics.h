@@ -13,6 +13,6 @@
 #include "space_discretization.h"
 #include "mpv.h"
 
-void Hydrostatics_State(MPV* mpv, const ElemSpaceDiscr* elem);
+void Hydrostatics_State(MPV* mpv, double *Yinvbg, const ElemSpaceDiscr* elem);
 
 #endif /* Hydrostatics_h */
