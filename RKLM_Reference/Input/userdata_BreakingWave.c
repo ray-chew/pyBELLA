@@ -9,7 +9,6 @@
 
 #include "enumerator.h"
 #include "Common.h"
-#include "ProjectionType.h"
 #include "userdata.h"
 #include "time_discretization.h"
 #include "error.h"
@@ -244,6 +243,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     extern Thermodynamic th;
     extern User_Data ud;
     extern MPV* mpv;
+    extern double *Yinvbg;
     
     const double u0 = ud.wind_speed;
     const double v0 = 0.0;
