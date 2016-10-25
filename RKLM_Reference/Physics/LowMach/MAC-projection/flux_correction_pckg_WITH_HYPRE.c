@@ -473,6 +473,10 @@ void operator_coefficients(
 #ifdef THERMCON
                     hi    = 0.5 * ( Sol->rhoY[ic] * Sol->rhoY[ic] / Sol->rho[ic] + Sol0->rhoY[ic] * Sol0->rhoY[ic] / Sol0->rho[ic] ) * Gammainv;   
                     him   = 0.5 * ( Sol->rhoY[icm] * Sol->rhoY[icm] / Sol->rho[icm] + Sol0->rhoY[icm] * Sol0->rhoY[icm] / Sol0->rho[icm] ) * Gammainv;
+                    /*
+                    hi    = Sol->rhoY[ic] * Sol->rhoY[ic] / Sol->rho[ic] * Gammainv;   
+                    him   = Sol->rhoY[icm] * Sol->rhoY[icm] / Sol->rho[icm] * Gammainv;
+                     */
 #else
                     hi    = 0.5 * ( Sol->rhoY[ic] / Sol->rho[ic] + Sol0->rhoY[ic] / Sol0->rho[ic] );   
 					him   = 0.5 * ( Sol->rhoY[icm] / Sol->rho[icm] + Sol0->rhoY[icm] / Sol0->rho[icm] );
@@ -498,10 +502,14 @@ void operator_coefficients(
                     m     = n + j;
                     jc    = j * icx + i;
 					jcm   = jc - icx;          
-					
+				
 #ifdef THERMCON
                     hj    = 0.5 * ( Sol->rhoY[jc] * Sol->rhoY[jc] / Sol->rho[jc] + Sol0->rhoY[jc] * Sol0->rhoY[jc] / Sol0->rho[jc]) * Gammainv;
                     hjm   = 0.5 * ( Sol->rhoY[jcm] * Sol->rhoY[jcm] / Sol->rho[jcm] + Sol0->rhoY[jcm] * Sol0->rhoY[jcm] / Sol0->rho[jcm]) * Gammainv;
+                    /*
+                    hj    = Sol->rhoY[jc] * Sol->rhoY[jc] / Sol->rho[jc] * Gammainv;
+                    hjm   = Sol->rhoY[jcm] * Sol->rhoY[jcm] / Sol->rho[jcm] * Gammainv;
+                     */
 #else
 					hj    = 0.5 * ( Sol->rhoY[jc] / Sol->rho[jc] + Sol0->rhoY[jc] / Sol0->rho[jc]);
 					hjm   = 0.5 * ( Sol->rhoY[jcm] / Sol->rho[jcm] + Sol0->rhoY[jcm] / Sol0->rho[jcm]);

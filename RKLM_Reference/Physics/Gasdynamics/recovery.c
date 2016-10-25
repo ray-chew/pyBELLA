@@ -257,8 +257,8 @@ void recovery_gravity(
     }
     
     for( i = 0; i < nmax-1;  i++) {        
-        Lefts->rhoY[i] = Rights->rhoY[i+1] = 0.5*(Hydros[i].rhoY[3]+Hydros[i+1].rhoY[1]) 
-        - 0.5*lambda*(Sol->u[i+1]*Sol->rhoY[i+1]-Sol->u[i]*Sol->rhoY[i]);
+        Lefts->rhoY[i] = Rights->rhoY[i+1] = 0.5*(Hydros[i].rhoY[3]+Hydros[i+1].rhoY[1]) \
+                         - OrderTwo * 0.5*lambda*(Sol->u[i+1]*Sol->rhoY[i+1]-Sol->u[i]*Sol->rhoY[i]);
         Lefts->p0[i]   = Rights->p0[i+1]   = pow(Lefts->rhoY[i], gamm);
     }
 
@@ -267,11 +267,12 @@ void recovery_gravity(
     
 	/* pressure gradient and gravity terms */
     for( i = 1; i < nmax; i++ ) {
-        double drhou, drhou_left, drhou_right, du;
+        double drhou;
         
         double u    = 0.5*(Sol->u[i]+Sol->u[i-1]);
 #ifdef THERMCON
-        double gps  = th.Gammainv * 0.5 * (Sol->rhoY[i] + Sol->rhoY[i-1]);  
+        double gps  = th.Gammainv * 0.5 * (Sol->rhoY[i] + Sol->rhoY[i-1]); 
+        /* double gps  = th.Gammainv * 0.5 * (Rights->rhoY[i]+Lefts->rhoY[i-1]);  */
 #else
         double gps  = 1.0;  
 #endif
@@ -281,16 +282,13 @@ void recovery_gravity(
             double uSlopeY    = u*SlopeY;
             double rhoYc      = 0.5 * (Rights->rhoY[i]+Lefts->rhoY[i]);
             double dbuoy_adv  = 0.5 * rhoYc*lambda*dh * (strength/Msq) * uSlopeY * 0.5;
-            
+    
             double dp2hydro_l = 0.5 * ((Hydros[i-1].p2[4]-Hydros[i-1].p2[2]) + (Hydros[i].p2[2]-Hydros[i].p2[0]));
-            du                = - 0.5 * (Sol->Z[i] - Sol->Z[i-1] - dp2hydro_l) * gps;
-            drhou_right       = du;
-            drhou_left        = du;
-            drhou             = 0.5*(drhou_right+drhou_left);
-            Rights->u[i]     += lambda  * du / Rights->rho[i];
-            Lefts->u[i-1]    += lambda  * du / Lefts->rho[i-1];
-            Rights->rhou[i]  += lambda  * drhou_right;
-            Lefts->rhou[i-1] += lambda  * drhou_left;
+            drhou             = - 0.5 * (Sol->Z[i] - Sol->Z[i-1] - dp2hydro_l) * gps;
+            Rights->u[i]     += lambda  * drhou / Rights->rho[i];
+            Lefts->u[i-1]    += lambda  * drhou / Lefts->rho[i-1];
+            Rights->rhou[i]  += lambda  * drhou;
+            Lefts->rhou[i-1] += lambda  * drhou;
             
             // Try building advective update of Yinv already into the hydrostatic computations
             

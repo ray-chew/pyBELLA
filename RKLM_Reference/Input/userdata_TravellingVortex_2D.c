@@ -20,6 +20,7 @@
 #include "set_ghostnodes_p.h"
 #include "boundary.h"
 #include "memory.h"
+#include "Hydrostatics.h"
 
 /*
  Monitor configurations:
@@ -62,10 +63,6 @@
  NEXT:   STRAKA
 
  */ 
-
-
-//static void (*rotate[])(ConsVars* Sol, double* rhs, const enum Direction dir) = {NULL, rotate2D, rotate3D};
-static void (*rotate[])(ConsVars* Sol, double* rhs, double *Yinvbg, const enum Direction dir) = {NULL, rotate2D, rotate3D};
 
 double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma);
 
@@ -191,8 +188,8 @@ void User_Data_init(User_Data* ud) {
 	/* explicit predictor step */
 	/* Recovery */
 	ud->recovery_order        = SECOND;
-	ud->limiter_type_scalars  = NONE; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; VANLEERSmooth; SWEBY_MUNZ; SUPERBEE; NO_SLOPE;*/
-	ud->limiter_type_velocity = NONE; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; VANLEERSmooth; SWEBY_MUNZ; SUPERBEE; NO_SLOPE;*/
+	ud->limiter_type_scalars  = VANLEER; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; VANLEERSmooth; SWEBY_MUNZ; SUPERBEE; NO_SLOPE;*/
+	ud->limiter_type_velocity = VANLEER; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; VANLEERSmooth; SWEBY_MUNZ; SUPERBEE; NO_SLOPE;*/
 
     /* first correction */
 	ud->p_flux_correction = WRONG; /* CORRECT, WRONG; */
@@ -286,7 +283,7 @@ void Sol_initial(ConsVars* Sol,
 	extern Thermodynamic th;
 	extern User_Data ud;
     extern MPV* mpv;
-    extern double *W0, *W1, *Yinvbg;
+    extern double *Yinvbg;
     
 	const double u0    = 1.0*ud.wind_speed;
 	const double v0    = 1.0*ud.wind_speed;
@@ -294,278 +291,134 @@ void Sol_initial(ConsVars* Sol,
     
     const double rotdir = -1.0;
     
-	const double rho0    = 1.0;
+	const double rho0    = 0.5;
     const double del_rho = 0.5;  /* 0.0; for homentropic */
     const double R0      = 0.4;
     const double fac     = 1*1024.0; /* 4*1024.0 */
-		
-	const double M_LH_sq = ud.Msq;
-	
-	const int icx = elem->icx;
-	const int icy = elem->icy;
-	const int icz = elem->icz;
-	const int igy = elem->igy;
-	const int igz = elem->igz;
+			
+	const int icx  = elem->icx;
+	const int icy  = elem->icy;
+	const int icz  = elem->icz;
+	const int igy  = elem->igy;
+	const int igz  = elem->igz;
 
-    const int inx = node->icx;
-    const int iny = node->icy;
-
-    const int ndim = elem->ndim;
+    const int icxn = node->icx;
+    const int icyn = node->icy;
+    const int iczn = node->icz;
 	    
 	int i, j, k, l, m, n;
 	double x, y, z;
-	double rho, u, v, w, p, rhoY, qv, qc, qr, p0, pex0, theta, T;
+	double rho, u, v, w, rhoY, qv, qc, qr, theta, T, p_hydro;
     double qvs;
 	
-    double S_integral, p2_o, g;
-	double elevation_m, elevation_p, S_m, S_p, p_hydro, pex_hydro, rho_hydro, rhoY_hydro;
-	
-    int SplitStep;
-                
-    g           = ud.gravity_strength[1];
-	y           = elem->y[igy];
-	elevation_m = y - (elem->y[elem->igy] - 0.5*elem->dy);
-	S_m         = 1.0/stratification(elevation_m);
-	S_integral  = 0.5 * elevation_m * (S_m + 1.0/stratification(0.0));
-	p0          = pow(rho0 * stratification(0.0), th.gamm);
-    pex0        = th.Gammainv * pow(rho0 * stratification(0.0), th.gm1);
-	
-    /* Hydrostates in bottom dummy cells */
-    for(j = igy; j >= 0; j--) {
-		y = elem->y[j];
-		elevation_m = y - (elem->y[elem->igy] - 0.5*elem->dy);
-		
-		S_m         = 1.0/stratification(elevation_m);
-        pex_hydro   = pex0 - g*S_integral;
-		p_hydro     = pow(th.Gamma*pex_hydro, th.Gammainv);
-		rhoY_hydro  = pow(p_hydro,1.0/th.gamm);
-		rho_hydro   = S_m * rhoY_hydro;
-		
-		mpv->HydroState->geopot[j] = g * elevation_m;
-		mpv->HydroState->rho0[j] = rho_hydro;
-		mpv->HydroState->p0[j]   = p_hydro;
-		mpv->HydroState->S0[j]   = S_m;
-		mpv->HydroState->S10[j]  = 0.0;
-		mpv->HydroState->Y0[j]  = stratification(elevation_m);
-		
-		elevation_p = elevation_m - elem->dy;
-		S_p         = 1.0/stratification(elevation_p);
-		S_integral -= 0.5*elem->dy*(S_m + S_p);
-	}
-	
+    double g;
+	                
+    g = ud.gravity_strength[1];
+
+    Hydrostatics_State(mpv, Yinvbg, elem);
+    
     /* Initial data and hydro-states in the flow domain */
 	for(k = igz; k < icz - igz; k++) {l = k * icx * icy; 
 		z = elem->z[k];
         
-		y = elem->y[igy];
-		elevation_p = y - (elem->y[elem->igy] - 0.5*elem->dy);
-		S_p         = 1.0/stratification(elevation_p);
-		S_integral  = 0.5 * elevation_p * (S_p + 1.0/stratification(0.0));
-        
         for(j = igy; j < icy - igy; j++) {m = l + j * icx;
 			
             y = elem->y[j];
-
-            elevation_m = elevation_p;
-            S_m         = S_p;
-            
-            pex_hydro   = pex0 - g*S_integral;
-            p_hydro     = pow(th.Gamma*pex_hydro, th.Gammainv);
-            rhoY_hydro  = pow(th.Gamma*pex_hydro, th.gm1inv);
-            rho_hydro   = S_m * rhoY_hydro;
 			
-            mpv->HydroState->geopot[j] = g * elevation_m;
-            mpv->HydroState->rho0[j]   = rho_hydro;
-            mpv->HydroState->p0[j]     = p_hydro;
-            mpv->HydroState->S0[j]     = S_m;
-            mpv->HydroState->S10[j]    = 0.0;
-            mpv->HydroState->Y0[j]     = stratification(elevation_m);
-			
-			for(i = 0; i < icx; i++) {n = m + i;
+            for(i = 0; i < icx; i++) {n = m + i;
                 double r, uth;
                 
-				x   = elem->x[i];
-				r   = sqrt(x*x + y*y);
-                uth = rotdir * (r < R0 ? fac * pow( 1.0-r/R0, 6) * pow( r/R0, 6) : 0.0);
-				
-                u   = u0 + uth * (-y/r);
-                v   = v0 + uth * (+x/r);
-                w   = w0;
-                p    = p_hydro;
-				rhoY = rhoY_hydro;
-                qc   = 0.0;
-                qr   = 0.0;
-                theta= stratification(y);
-				rho  = rho0 * (r < R0 ? (1 + del_rho*pow( 1-(r/R0)*(r/R0) , 6)) : 1.0);
-                T    = T_from_p_rho(p_hydro,rho);
-                qvs  = 1.0;
-                qv   = 0.0;
-				
-				Sol->rho[n]      = rho;
-				Sol->rhou[n]     = rho * u;
-				Sol->rhov[n]     = rho * v;
-				Sol->rhow[n]     = rho * w;
-				Sol->rhoe[n]     = rhoe(rho, u, v, w, p, g*elevation_m);
-				Sol->rhoY[n]     = rhoY;
+                x       = elem->x[i];
+                r       = sqrt(x*x + y*y);
+                uth     = rotdir * (r < R0 ? fac * pow( 1.0-r/R0, 6) * pow( r/R0, 6) : 0.0);
+                
+                u       = u0 + uth * (-y/r);
+                v       = v0 + uth * (+x/r);
+                w       = w0;
+                p_hydro = mpv->HydroState->p0[j];
+                rhoY    = mpv->HydroState->rhoY0[j];
+                qc      = 0.0;
+                qr      = 0.0;
+                theta   = stratification(y);
+                rho     =  (r < R0 ? (rho0 + del_rho*pow( 1-(r/R0)*(r/R0) , 6)) : rho0);
+                T       = T_from_p_rho(p_hydro,rho);
+                qvs     = 1.0;
+                qv      = 0.0;
+                
+                Sol->rho[n]  = rho;
+                Sol->rhou[n] = rho * u;
+                Sol->rhov[n] = rho * v;
+                Sol->rhow[n] = rho * w;
+                Sol->rhoe[n] = rhoe(rho, u, v, w, p_hydro, g*y);
+                Sol->rhoY[n] = rhoY;
+                
                 if (ud.nspec == 3) {
                     Sol->rhoX[QV][n] = rho*qv;
                     Sol->rhoX[QC][n] = rho*qc;
                     Sol->rhoX[QR][n] = rho*qr;                    
                 }
                 
-				Sol->geopot[n] = g * elevation_m;
-
-#ifdef INITIALIZE_PI2
-                {
-                    if ( r/R0 < 1.0 ) {
-                        
-                        int ii;
-                        double coe[25];
-                        
-                        /*
-                         double R = rho;  
-                        coe[0]  =     1.0 / 24 * (    1 +   2 * R );
-                        coe[1]  = -   6.0 / 13 * (    1 +   2 * R );
-                        coe[2]  =     3.0 / 7  * (    5 +  11 * R );
-                        coe[3]  = -   2.0 / 15 * (   37 + 110 * R );
-                        coe[4]  =     3.0 / 16 * (   19 + 165 * R );
-                        coe[5]  =     6.0 / 17 * (   29 - 132 * R );
-                        coe[6]  = -   1.0 / 9  * (  269 - 462 * R ); 
-                        coe[7]  =    18.0 / 19 * (   25 -  44 * R );
-                        coe[8]  =     9.0 / 40 * (  119 + 110 * R );
-                        coe[9]  = -   4.0 / 21 * (  391 +  55 * R );
-                        coe[10] =   510.0 / 11 + 3 * R;
-                        coe[11] =    12.0 / 23 * (   85 - R );
-                        coe[12] = -   1.0 / 24 * ( 2210 - R );
-                        coe[13] =   204.0 / 5;
-                        coe[14] =   510.0 / 13;
-                        coe[15] = -1564.0 / 27;
-                        coe[16] =   153.0 / 8;
-                        coe[17] =   450.0 / 29;
-                        coe[18] = - 269.0 / 15;
-                        coe[19] =   174.0 / 31;
-                        coe[20] =    57.0 / 32;
-                        coe[21] = -  74.0 / 33;
-                        coe[22] =    15.0 / 17;
-                        coe[23] = -   6.0 / 35;
-                        coe[24] =     1.0 / 72;
-                        */
-
-                        coe[0]  =     1.0 / 12.0;
-                        coe[1]  = -  12.0 / 13.0;
-                        coe[2]  =     9.0 /  2.0;
-                        coe[3]  = - 184.0 / 15.0;
-                        coe[4]  =   609.0 / 32.0;
-                        coe[5]  = - 222.0 / 17.0;
-                        coe[6]  = -  38.0 /  9.0; 
-                        coe[7]  =    54.0 / 19.0;
-                        coe[8]  =   783.0 / 20.0;
-                        coe[9]  = - 558.0 /  7.0;
-                        coe[10] =  1053.0 / 22.0;
-                        coe[11] =  1014.0 / 23.0;
-                        coe[12] = -1473.0 / 16.0;
-                        coe[13] =   204.0 /  5.0;
-                        coe[14] =   510.0 / 13.0;
-                        coe[15] = -1564.0 / 27.0;
-                        coe[16] =   153.0 /  8.0;
-                        coe[17] =   450.0 / 29.0;
-                        coe[18] = - 269.0 / 15.0; /* Kadioglu et al.: 259; Papke: 269 */
-                        coe[19] =   174.0 / 31.0;
-                        coe[20] =    57.0 / 32.0;
-                        coe[21] = -  74.0 / 33.0;
-                        coe[22] =    15.0 / 17.0;
-                        coe[23] = -   6.0 / 35.0;
-                        coe[24] =     1.0 / 72.0;
-                        
-                        mpv->p2_cells[n] = 0.0;
-                        
-                        for (ii = 0; ii < 25; ii++)
-                        {
-                            double fact = 2.0;
-                            mpv->p2_cells[n] += fact * coe[ii] * ( pow(r/R0 ,12+ii) - 1.0) * rotdir * rotdir;
-                        }
-                    }
-                    else {
-                        mpv->p2_cells[n] = 0.0;
-                    }
+                Sol->geopot[n] = g * y;
+                
+                if ( r/R0 < 1.0 ) {
                     
-                    mpv->p2_cells[n] *= fac*fac;
-#define P_RHO
-#ifdef P_RHO
-                    Sol->rhoZ[n]      = rho * (p_hydro/ud.Msq + mpv->p2_cells[n]);
-                    Sol->rhoY[n]      = pow((p_hydro+mpv->p2_cells[n]*ud.Msq),1.0/th.gamm);
-#else
-                    const double ooGammaMsq = th.Gammainv / ud.Msq;
-                    Sol->rhoZ[n]      = rho * mpv->p2_cells[n];
-                    Sol->rhoY[n]      = pow((p_hydro+mpv->p2_cells[n]/ooGammaMsq),1.0/th.gm1);
-#endif
+                    int ii;
+                    double coe[25];
+                                        
+                    coe[0]  =     1.0 / 12.0;
+                    coe[1]  = -  12.0 / 13.0;
+                    coe[2]  =     9.0 /  2.0;
+                    coe[3]  = - 184.0 / 15.0;
+                    coe[4]  =   609.0 / 32.0;
+                    coe[5]  = - 222.0 / 17.0;
+                    coe[6]  = -  38.0 /  9.0; 
+                    coe[7]  =    54.0 / 19.0;
+                    coe[8]  =   783.0 / 20.0;
+                    coe[9]  = - 558.0 /  7.0;
+                    coe[10] =  1053.0 / 22.0;
+                    coe[11] =  1014.0 / 23.0;
+                    coe[12] = -1473.0 / 16.0;
+                    coe[13] =   204.0 /  5.0;
+                    coe[14] =   510.0 / 13.0;
+                    coe[15] = -1564.0 / 27.0;
+                    coe[16] =   153.0 /  8.0;
+                    coe[17] =   450.0 / 29.0;
+                    coe[18] = - 269.0 / 15.0; /* Kadioglu et al.: 259; Papke: 269 */
+                    coe[19] =   174.0 / 31.0;
+                    coe[20] =    57.0 / 32.0;
+                    coe[21] = -  74.0 / 33.0;
+                    coe[22] =    15.0 / 17.0;
+                    coe[23] = -   6.0 / 35.0;
+                    coe[24] =     1.0 / 72.0;
+                    
+                    mpv->p2_cells[n] = 0.0;
+                    
+                    for (ii = 0; ii < 25; ii++)
+                    {
+                        mpv->p2_cells[n] += coe[ii] * (pow(r/R0 ,12+ii) - 1.0) * rotdir * rotdir;
+                    }
                 }
+                else {
+                    mpv->p2_cells[n] = 0.0;
+                }
+                
+                /* regular thermodynamic pressure */
+                /* mpv->p2_cells[n] = p_hydro/ud.Msq + fac*fac*mpv->p2_cells[n]; */
+#ifdef THERMCON
+                /* pseudo-incompressible option */
+                mpv->p2_cells[n] = th.Gamma*fac*fac*mpv->p2_cells[n];
+                mpv->p2_cells[n]  = ud.is_compressible*pow(p_hydro+mpv->p2_cells[n]*ud.Msq, th.Gamma)/ud.Msq \
+                                    + (1-ud.is_compressible)*mpv->p2_cells[n]/mpv->HydroState->rhoY0[j];
+                Sol->rhoZ[n]      = rho * mpv->p2_cells[n];
+                Sol->rhoY[n]      = ud.is_compressible*pow(p_hydro+mpv->p2_cells[n]*ud.Msq,1.0/th.gamm) \
+                                    + (1-ud.is_compressible)*Sol->rhoY[n];
 #else
-                mpv->p2_cells[n] = 0.0;
-				Sol->rhoZ[n] = 0.0;
+                mpv->p2_cells[n] = fac*fac*mpv->p2_cells[n];
+                assert(0);
 #endif
-				
-			}
-            
-            elevation_p = elevation_m + elem->dy;
-            S_p         = 1.0/stratification(elevation_p);
-            S_integral += 0.5*elem->dy*(S_m + S_p);
-			
+            }            
 		}
-        
-        /* initialize nodal pressure */
-        for (j=0; j<iny; j++) {int mn = j*inx;
-            for (i=0; i<inx; i++) {int nn = mn+i;
-                mpv->p2_nodes[nn] = 0.0;
-            }
-        }
-        
-		
-		/* Hydrostates in top dummy cells */
-		for(j = icy-igy; j < icy; j++) {
-			y = elem->y[j];
-			elevation_m = y - (elem->y[elem->igy] - 0.5*elem->dy);
-			
-			S_m         = 1.0 / stratification(elevation_m);
-            pex_hydro   = pex0 - g*S_integral;
-			p_hydro     = pow(th.Gamma*pex_hydro, th.Gammainv);
-			rhoY_hydro  = pow(th.Gamma*pex_hydro, th.gm1inv);
-			rho_hydro   = S_m * rhoY_hydro;
-			
-			mpv->HydroState->geopot[j] = g * elevation_m;
-			mpv->HydroState->rho0[j] = rho_hydro;
-			mpv->HydroState->p0[j]   = p_hydro;
-			mpv->HydroState->S0[j]   = S_m;
-			mpv->HydroState->S10[j]  = 0.0;
-			mpv->HydroState->Y0[j]  = stratification(elevation_m);
-			
-			elevation_p = elevation_m + elem->dy;
-			S_p         = 1.0 / stratification(elevation_p);
-			S_integral += 0.5*elem->dy*(S_m + S_p);
-		}
-		
-		/* balanced "elliptic pressure" w.r.t. background state */
-		p2_o = 0.0;
-		
-        for(j = 0; j < icy; j++) {m = l + j * icx; 
-			double p2_n;
-			double Y_o = stratification(elem->y[j]);
-			double Y_n = stratification(elem->y[j+1]);
-			
-			mpv->HydroState->p20[j] = p2_o;
-			
-		    p2_n   = p2_o - (g/M_LH_sq) * 0.5 * elem->dy * ( 1.0/Y_n + 1.0/Y_o );
-			
-            p2_o = p2_n;
-		}
-        
-        /* represent as deviation from value in bottom cells */ 
-        p2_o = mpv->HydroState->p20[igy];
-        for(j = 0; j < icy; j++) {m = l + j * icx; 
-			mpv->HydroState->p20[j] -= p2_o;			
-		}
-		
-		
+                
 		/* set all dummy cells */
 		/* geopotential in bottom and top dummy cells */
 		for(j = 0; j < igy; j++) {m = l + j * icx;  
@@ -582,23 +435,35 @@ void Sol_initial(ConsVars* Sol,
 			}
 		}
 	}  
-	
-	
-    for(SplitStep = 0; SplitStep < ndim; SplitStep++) { 
-        const double lambda = 1.0;
-        Bound(Sol, mpv->HydroState,lambda, elem->nc, SplitStep); 
-        if(SplitStep < ndim - 1) (*rotate[ndim - 1])(Sol, mpv->Level[0]->rhs, Yinvbg, FORWARD);
-    }         
-    /* rotate back */          
-    for(SplitStep = ndim-1; SplitStep > 0; SplitStep--) {
-        (*rotate[ndim - 1])(Sol, mpv->Level[0]->rhs, Yinvbg, BACKWARD);
-    }	
+
+    /*set nodal pressures */
+    for(int k = 0; k < iczn; k++) {int l = k * icxn * icyn;   
+        
+        for(int j = 0; j < icyn; j++) {int m = l + j * icxn;                
+#ifdef THERMCON
+            double p    = mpv->HydroState->p0[j];
+            double rhoY = mpv->HydroState->rhoY0[j];
+            
+            for(int i = 0; i < icxn; i++) {int n = m + i;
+                mpv->p2_nodes[n] = (p/rhoY) / ud.Msq;
+            }
+#else
+            double p    = mpv->HydroState->p0[j];
+            for(int i = 0; i < icxn; i++) {int n = m + i;
+                mpv->p2_nodes[n] = p / ud.Msq;
+            }
+#endif
+        }
+    }                      
 }
 
+/* ================================================================================== */
 
 double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma){
 	return pow((pow(p0,Gamma) + Gamma*S0*Msq*u_theta*u_theta*(1.0 - pow((1.0-r),5.0)*(5.0*r+1.0))/30.0), (1.0/Gamma));
 }
+
+/* ================================================================================== */
 
 double rho_function(double psi){
 	

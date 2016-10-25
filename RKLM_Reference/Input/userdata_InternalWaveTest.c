@@ -71,7 +71,7 @@ void User_Data_init(User_Data* ud) {
     ud->nspec       = NSPEC;
     
     /* Low Mach */
-    ud->is_compressible   = 0;   /* 0:psinc; 1:comp;  -1:psinc-comp-trans -> compressibility() */
+    ud->is_compressible   = 0; /* 0:psinc; 1:comp;  -1:psinc-comp-trans -> compressibility() */
     ud->acoustic_timestep = 0; /* 0;  1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
     

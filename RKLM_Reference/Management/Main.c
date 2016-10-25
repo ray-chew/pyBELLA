@@ -112,11 +112,12 @@ int main( void )
     set_wall_massflux(bdry, Sol, elem);
     dt = 1.0;
     mpv->dt = dt;
+    /*
     second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, t, dt);
     Set_Explicit_Boundary_Data(Sol, elem, mpv);
+     */
     ConsVars_set(Sol0, Sol, elem->nc);
     which_projection = 1;
-    Set_Explicit_Boundary_Data(Sol, elem, mpv);
 
 	/* Main loop over the sequence of time values of tout */
 	while(t < *tout && step < ud.stepmax) {
