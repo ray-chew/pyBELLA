@@ -241,9 +241,9 @@ void User_Data_init(User_Data* ud) {
 	/* =====  FLOW CONTROL  ===================================================== */
 	/* ========================================================================== */
     
-    /* output times and max no of time steps */
-    ud->tout[0]  = 0.2;     /* 0.1*8; */
-	ud->tout[1]  = 0.4;     /* 0.2*8; */
+    /* output times and max no of time steps 
+    ud->tout[0]  = 0.2;      
+	ud->tout[1]  = 0.4;      
 	ud->tout[2]  = 0.6;
 	ud->tout[3]  = 0.8;
 	ud->tout[4]  = 1.0;
@@ -253,7 +253,21 @@ void User_Data_init(User_Data* ud) {
 	ud->tout[8]  = 1.8;
 	ud->tout[9]  = 2.0;
 	ud->tout[10] = -1.0;
+     */
+    /* output times and max no of time steps */
+    ud->tout[0]  = 0.4;      
+    ud->tout[1]  = 0.8;      
+    ud->tout[2]  = 1.2;
+    ud->tout[3]  = 1.6;
+    ud->tout[4]  = 2.0;
+    ud->tout[5]  = 2.4;
+    ud->tout[6]  = 2.8;
+    ud->tout[7]  = 3.2;
+    ud->tout[8]  = 3.6;
+    ud->tout[9]  = 4.0;
+    ud->tout[10] = -1.0;
 
+    
     ud->stepmax = 10000;
 
 	ud->write_stdout = ON;

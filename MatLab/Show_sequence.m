@@ -2,23 +2,23 @@
 % distribution loaded directly from the .hdf-file for
 % the Bryan-Bubble-output
 
-%test_case = 'Skamarock-Klemp-Internal-Wave';
+test_case = 'Skamarock-Klemp-Internal-Wave';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
-test_case = 'Travelling-Vortex';
+%test_case = 'Travelling-Vortex';
 
 showmode = 1;
-filledcontours = 1;
-fixed_contours = 0;
+filledcontours = 0;
+fixed_contours = 1;
 no_of_contours = 25;
 symmetry = 0;        % in {0,1}
 symmetrytest = 0;
-showdummycells = 1;
+showdummycells = 0;
 
-th0 = 300.25/300;
-dth = 0.25/300;
-contour_values = [th0 th0+dth th0+2*dth th0+3*dth th0+4*dth th0+5*dth th0+6*dth th0+7*dth];
+th0 = -0.0015/300;
+dth = 5e-4/300;
+contour_values = [th0 th0+dth th0+2*dth th0+3*dth th0+4*dth th0+5*dth th0+6*dth th0+7*dth th0+8*dth th0+9*dth th0+10*dth];
 %contour_values = [1.0001 1.0011 1.0022 1.0022 1.0033 1.0044 1.0055 1.0065];
 %contour_values = linspace(-0.01,0.01,41) / 288.15;
 title_true = 1;
@@ -31,13 +31,13 @@ dk   = 1;
 modelstr = 'psinc';
 %modelstr = 'comp';
 
-scalefactor = 2.0;
 
 if strcmp(test_case, 'Skamarock-Klemp-Internal-Wave')
-    ncx = 600;  
+    scalefactor = 1.0;
+    ncx = 600; 
     ncy = 40;  
     L   = 300.0 * scalefactor;  % 
-    x0  = 0.0*L;
+    x0  = 0.5*L;
     H   = 10.0;  %
     aspect = [8 1 1];
 elseif strcmp(test_case, 'Rising-Bubble')
@@ -98,7 +98,7 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy]; rhoY_diff = 1;
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy];
+varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'Z';  folderstr = 'Z'; titlestr = 'Z'; ndummy = 2; arraysize = [ncx ncy]; rhoZ_diff = 0;
 %varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
 %varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy];
@@ -111,7 +111,7 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'dpdim';  folderstr = 'dpdime'; titlestr = 'dp [Pa]'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhs_cells';  folderstr = 'rhs_cells'; titlestr = 'rhs_c'; ndummy = 2; arraysize = [ncx ncy];
 
-varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny];
+%varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'rhs_nodes';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n';    ndummy = 2; arraysize = [nnx nny];
 
