@@ -15,7 +15,6 @@
 
 ConsVars* ConsVars_new(const int size) {
     extern User_Data ud;
-    int nsp;
 	ConsVars* var = (ConsVars*)malloc(sizeof(ConsVars));
 	var->rho  = (double*)malloc(size * sizeof(double));
 	var->rhou = (double*)malloc(size * sizeof(double));
@@ -23,8 +22,10 @@ ConsVars* ConsVars_new(const int size) {
 	var->rhow = (double*)malloc(size * sizeof(double));
 	var->rhoe = (double*)malloc(size * sizeof(double));
 	var->rhoY = (double*)malloc(size * sizeof(double));
-	var->rhoZ = (double*)malloc(size * sizeof(double));
-    for (nsp=0; nsp<ud.nspec; nsp++) {
+    for (int nsp=0; nsp<ud.nspec; nsp++) {
+        var->rhoZ[nsp] = (double*)malloc(size * sizeof(double));
+    }
+    for (int nsp=0; nsp<ud.nspec; nsp++) {
         var->rhoX[nsp] = (double*)malloc(size * sizeof(double));
     }
 	var->geopot = (double*)malloc(size * sizeof(double));
@@ -196,7 +197,6 @@ States* States_new(const int size) {
 	var->entro= (double*)malloc(size * sizeof(double));
 	var->H    = (double*)malloc(size * sizeof(double));
 	var->Y    = (double*)malloc(size * sizeof(double));
-	var->Z    = (double*)malloc(size * sizeof(double));
     for (nsp=0; nsp<ud.nspec; nsp++) {
         var->X[nsp] = (double*)malloc(size * sizeof(double));
     }
@@ -234,7 +234,6 @@ void States_free(States* var) {
 	free(var->entro);
 	free(var->H);
 	free(var->Y);
-	free(var->Z);
     for (nsp=0; nsp<ud.nspec; nsp++) {
         free(var->X[nsp]);
     }
@@ -261,7 +260,6 @@ States* States_small_new(const int size) {
 	var->H     = (double*)malloc(size * sizeof(double));
 	var->c     = (double*)malloc(size * sizeof(double));
 	var->Y     = (double*)malloc(size * sizeof(double));
-	var->Z     = (double*)malloc(size * sizeof(double));
     for (nsp=0; nsp<ud.nspec; nsp++) {
         var->X[nsp] = (double*)malloc(size * sizeof(double));
     }
@@ -286,7 +284,6 @@ void States_small_free(States* var) {
 	free(var->H);
 	free(var->c);
 	free(var->Y);
-	free(var->Z);
     for (nsp=0; nsp<ud.nspec; nsp++) {
         free(var->X[nsp]);
     }
@@ -383,7 +380,6 @@ Characters* Characters_new(const int size) {
 	var->v     = (double*)malloc(size * sizeof(double));
 	var->w     = (double*)malloc(size * sizeof(double));
 	var->Y     = (double*)malloc(size * sizeof(double));
-	var->Z     = (double*)malloc(size * sizeof(double));
     for (nsp=0; nsp<ud.nspec; nsp++) {
         var->X[nsp] = (double*)malloc(size * sizeof(double));
     }
@@ -399,7 +395,6 @@ void Characters_free(Characters* var) {
 	free(var->v);
 	free(var->w);
 	free(var->Y);
-	free(var->Z);
     for (nsp=0; nsp<ud.nspec; nsp++) {
         free(var->X[nsp]);
     }

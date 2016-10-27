@@ -28,7 +28,7 @@ void update(
 	
 	extern User_Data ud;
 	
-    double drho, drhoe_total, rho_old;
+    double drho, drhoe_total;
     double drhoY_max = 0.0;
   	int ndim = elem->ndim;
     int nsp;
@@ -42,7 +42,6 @@ void update(
     		const ConsVars* f = flux[0];
 			
     		for(i = igx; i < icx - igx; i++) {
-				rho_old = sol->rho[i];
       			sol->rho[i]  -= lambdax * (f->rho[i + 1]  - f->rho[i]);
       			sol->rhou[i] -= lambdax * (f->rhou[i + 1] - f->rhou[i]) - buoy->x[i];
       			sol->rhov[i] -= lambdax * (f->rhov[i + 1] - f->rhov[i]);
@@ -52,9 +51,6 @@ void update(
                 for (nsp = 0; nsp < ud.nspec; nsp++) {
                     sol->rhoX[nsp][i] -= lambdax * (f->rhoX[nsp][i + 1] - f->rhoX[nsp][i]);
                 }
-				
-				/* no transport of Z; represents elliptic pressure variable */
-      			sol->rhoZ[i] = (sol->rhoZ[i]/rho_old)*sol->rho[i];
     		}
     		break;
   		}
@@ -80,9 +76,7 @@ void update(
 										
 					drho        = - lambdax * (f->rho[ox+1]  - f->rho[ox] ) - lambday * (g->rho[oy+1]  - g->rho[oy] );
 					drhoe_total = - lambdax * (f->rhoe[ox+1] - f->rhoe[ox]) - lambday * (g->rhoe[oy+1] - g->rhoe[oy]);
-					
-					rho_old = sol->rho[n];
-					
+										
 					sol->rho[n]  += drho; 
 					sol->rhoe[n] += drhoe_total;
 					
@@ -95,9 +89,6 @@ void update(
                     for (nsp = 0; nsp < ud.nspec; nsp++) {
                         sol->rhoX[nsp][n] -= lambdax * (f->rhoX[nsp][ox + 1] - f->rhoX[nsp][ox]) - lambday * (g->rhoX[nsp][oy + 1] - g->rhoX[nsp][oy]);
                     }
-                    
-					/* no transport of Z; represents elliptic pressure variable */
-					sol->rhoZ[n] = (sol->rhoZ[n]/rho_old)*sol->rho[n];
 				}
 			}
 			
@@ -125,21 +116,18 @@ void update(
 			const ConsVars* f = flux[0];
 			const ConsVars* g = flux[1];
 			const ConsVars* h = flux[2];
-			double Z_old;
 			
 			for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
 				for(j = igy; j < icy - igy; j++) {m = l + j * icx;
 					for(i = igx; i < icx - igx; i++) {n = m + i;
 						/* assuming non-moving grid and stationary geopotential */
 						o = k * ifxicy + j * ifx + i;
-						Z_old = sol->rhoZ[n] / sol->rho[n];
 						sol->rho[n] -= lambdax * ( f->rho[o + 1] -  f->rho[o]);
 						sol->rhou[n] -= lambdax * (f->rhou[o + 1] - f->rhou[o]);
 						sol->rhov[n] -= lambdax * (f->rhov[o + 1] - f->rhov[o]);
 						sol->rhow[n] -= lambdax * (f->rhow[o + 1] - f->rhow[o]);
 						sol->rhoe[n] -= lambdax * (f->rhoe[o + 1] - f->rhoe[o]);
 						sol->rhoY[n] -= lambdax * (f->rhoY[o + 1] - f->rhoY[o]);
-						sol->rhoZ[n] -= lambdax * (f->rhoZ[o + 1] - f->rhoZ[o]);
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
                             sol->rhoX[nsp][n] -= lambdax * (f->rhoX[nsp][o + 1] - f->rhoX[nsp][o]);
                         }
@@ -151,7 +139,6 @@ void update(
 						sol->rhow[n] -= lambday * (g->rhow[o + 1] - g->rhow[o]);
 						sol->rhoe[n] -= lambday * (g->rhoe[o + 1] - g->rhoe[o]);
 						sol->rhoY[n] -= lambday * (g->rhoY[o + 1] - g->rhoY[o]);
-						sol->rhoZ[n] -= lambday * (g->rhoZ[o + 1] - g->rhoZ[o]);
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
                             sol->rhoX[nsp][n] -= lambday * (g->rhoX[nsp][o + 1] - g->rhoX[nsp][o]);
                         }
@@ -164,13 +151,9 @@ void update(
 						sol->rhow[n] -= lambdaz * (h->rhow[o + 1] - h->rhow[o]);
 						sol->rhoe[n] -= lambdaz * (h->rhoe[o + 1] - h->rhoe[o]);
 						sol->rhoY[n] -= lambdaz * (h->rhoY[o + 1] - h->rhoY[o]);
-						sol->rhoZ[n] -= lambdaz * (h->rhoZ[o + 1] - h->rhoZ[o]);
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
                             sol->rhoX[nsp][n] -= lambdaz * (h->rhoX[nsp][o + 1] - h->rhoX[nsp][o]);
                         }
-						
-						/* no transport of Z; represents elliptic pressure variable */
-					    sol->rhoZ[n] = Z_old*sol->rho[n];
 					}
 				} 
 			}  

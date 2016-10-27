@@ -37,7 +37,6 @@ void primitives(
 		U->v[i] = U->rhov[i] / U->rho[i];
 		U->w[i] = U->rhow[i] / U->rho[i];
 		U->Y[i] = U->rhoY[i] / U->rho[i];
-		U->Z[i] = U->rhoZ[i] / U->rho[i];
         for (nsp=0; nsp<ud.nspec; nsp++) {
             U->X[nsp][i] = U->rhoX[nsp][i] / U->rho[i];
         }
@@ -70,7 +69,6 @@ void conservatives(
 		U->rhov[i] = U->v[i] * U->rho[i];
 		U->rhow[i] = U->w[i] * U->rho[i];
 		U->rhoY[i] = U->Y[i] * U->rho[i];
-		U->rhoZ[i] = U->Z[i] * U->rho[i];
         for (nsp=0; nsp<ud.nspec; nsp++) {
             U->rhoX[nsp][i] = U->X[nsp][i] * U->rho[i];
         }
@@ -103,7 +101,6 @@ void conservatives_from_entro_vars(
 		U->rhov[i] = U->v[i] * rho;
 		U->rhow[i] = U->w[i] * rho;
 		U->rhoY[i] = U->Y[i] * rho;
-		U->rhoZ[i] = U->Z[i] * rho;
         for (nsp=0; nsp<ud.nspec; nsp++) {
             U->rhoX[nsp][i] = U->X[nsp][i] * U->rho[i];
         }
@@ -134,7 +131,6 @@ void conservatives_from_primitives(
 		U->rhov[i] = U->v[i] * rho;
 		U->rhow[i] = U->w[i] * rho;
 		U->rhoY[i] = U->Y[i] * rho;
-		U->rhoZ[i] = U->Z[i] * rho;
         for (nsp=0; nsp<ud.nspec; nsp++) {
             U->rhoX[nsp][i] = U->X[nsp][i] * U->rho[i];
         }
@@ -466,44 +462,6 @@ void MassFrac_Y_perturbation(double *dY, const ConsVars* U, const int nstart, co
 	}
 }
 
-
-/*------------------------------------------------------------------------------
- 
- ------------------------------------------------------------------------------*/
-void MassFrac_Z(
-				double *Z, 
-				const ConsVars* U, 
-				const int nstart, 
-				const int nende) {  
-	
-	double *prho, *prhoZ, *pZ;
-    
-	int i;
-    int count = 0;
-	
-	for( i = nstart , prho = &U->rho[nstart], prhoZ = &U->rhoZ[nstart], pZ = &Z[nstart];
-		i < nende;  
-		i++ ,        prho++,                prhoZ++,                 pZ++)
-    {
-        double Z = *prhoZ / *prho;
-		*pZ =  Z;
-        count++;
-    }
-#if 0
-    double Zsum = 0.0; /* declare */
-    Zsum += Z;         /* accumulate in loop */
-
-    Zsum /= count;     /* compute average right here */
-
-    for( i = nstart, pZ = &Z[nstart];
-		i < nende;  
-		i++, pZ++)
-    {
-		*pZ = (*pZ - Zsum)/Zsum;
-    }
-#endif
-}
-
 /*------------------------------------------------------------------------------
  
  ------------------------------------------------------------------------------*/
@@ -608,11 +566,11 @@ void adjust_pi(
 		for(j = igy; j < icy - igy; j++) {m = l + j * icx;
 			for(i = igx; i < icx - igx; i++) {n = m + i;
 
-                double p2_old       = Sol0->rhoZ[n] / Sol0->rho[n];
+                double p2_old       = Sol0->rhoZ[n];
                 double dp2_rhoY     = scalefac * (pow(Sol->rhoY[n],th.gamm) - pow(Sol0->rhoY[n],th.gamm));
                 double dp2_elliptic = mpv->dp2_cells[n];
 
-                Sol->rhoZ[n]     = Sol->rho[n] * (p2_old + weight * (alpha * dp2_rhoY + (1.0-alpha) * dp2_ell_factor*dp2_elliptic));
+                Sol->rhoZ[n]     = (p2_old + weight * (alpha * dp2_rhoY + (1.0-alpha) * dp2_ell_factor*dp2_elliptic));
 				dp2_elliptic_max = MAX_own(dp2_elliptic_max, fabs(dp2_elliptic));
 				dp2_rhoY_max     = MAX_own(dp2_rhoY_max, fabs(dp2_rhoY));
 				ddp2             = MAX_own(ddp2, fabs(dp2_rhoY-dp2_elliptic));

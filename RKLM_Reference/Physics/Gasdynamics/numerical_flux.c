@@ -27,8 +27,8 @@ void hllestar(
     
     extern User_Data ud;
     
-    double rhol, ul, vl, wl, pl, rhoul, Hl, Yl, Zl;
-    double rhor, ur, vr, wr, pr, rhour, Hr, Yr, Zr;
+    double rhol, ul, vl, wl, pl, rhoul, Hl, Yl;
+    double rhor, ur, vr, wr, pr, rhour, Hr, Yr;
     double Xl[NSPEC], Xr[NSPEC];
     double upwind, upl, upr;
     int i, nsp;
@@ -55,7 +55,6 @@ void hllestar(
         wl    = Lefts->w[i];
         pl    = Lefts->p[i];
         Yl    = Lefts->Y[i];
-        Zl    = Lefts->Z[i];
         
         for (nsp = 0; nsp < ud.nspec; nsp++) {
             Xl[nsp]    = Lefts->X[nsp][i];
@@ -70,7 +69,6 @@ void hllestar(
         wr    = Rights->w[i+1];
         pr    = Rights->p[i+1];
         Yr    = Rights->Y[i+1];
-        Zr    = Rights->Z[i+1];
         
         for (nsp = 0; nsp < ud.nspec; nsp++) {
             Xr[nsp]    = Rights->X[nsp][i+1];
@@ -91,7 +89,6 @@ void hllestar(
         Fluxes->rhoe[i] = Fluxes->rhoY[i] * (upl * Hl  + upr * Hr) ;
         Fluxes->rhov[i] = Fluxes->rhoY[i] * (upl * vl  + upr * vr) ;
         Fluxes->rhow[i] = Fluxes->rhoY[i] * (upl * wl  + upr * wr) ;
-        Fluxes->rhoZ[i] = Fluxes->rhoY[i] * (upl * Zl  + upr * Zr) ;
         
         for (nsp = 0; nsp < ud.nspec; nsp++) {
             Fluxes->rhoX[nsp][i] = Fluxes->rhoY[i] * (upl * Xl[nsp]  + upr * Xr[nsp]) ;

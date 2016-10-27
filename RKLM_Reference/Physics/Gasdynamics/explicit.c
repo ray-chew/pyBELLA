@@ -103,7 +103,7 @@ void Explicit_step_and_flux(
     assert(elem->ndim == 2); /* lateral averaging for 3D not yet implemented */
     
     for (int ic=0; ic<elem->nc; ic++) {
-        p2_store[ic] = Sol->rhoZ[ic]/Sol->rho[ic];
+        p2_store[ic] = Sol->rhoZ[ic];
     }
     
     for(int j=1; j<elem->icy-1; j++) {
@@ -113,7 +113,7 @@ void Explicit_step_and_flux(
             int nijkp = nijk + elem->icx;
             int nijkm = nijk - elem->icx;
             /* selected weights should correspond to weights in the cell-centered Laplacian */
-            Sol->rhoZ[nijk]  = Sol->rho[nijk] * (ud.latw[0]*p2_store[nijkp] + ud.latw[1]*p2_store[nijk] + ud.latw[2]*p2_store[nijkm]);
+            Sol->rhoZ[nijk]  = (ud.latw[0]*p2_store[nijkp] + ud.latw[1]*p2_store[nijk] + ud.latw[2]*p2_store[nijkm]);
             Yinv_ave[nijk] = Sol->rho[nijk]/Sol->rhoY[nijk];
         }
     }
@@ -136,7 +136,7 @@ void Explicit_step_and_flux(
 		const enum Boolean last = ((kcache + 1) * njump < n - elem->igx) ? WRONG : CORRECT;
 		                
 		/* flux computation*/
-        recovery_gravity(Lefts, Rights, gravity_source, pbuoy, pYinv, pYinvbg, gravity_strength, Solk, Solk->Y, Solk->Z, dp2, lambda, nmax, RK_stage);
+        recovery_gravity(Lefts, Rights, gravity_source, pbuoy, pYinv, pYinvbg, gravity_strength, Solk, Solk->Y, Solk->rhoZ, dp2, lambda, nmax, RK_stage);
         check_flux_bcs(Lefts, Rights, nmax, kcache, njump, elem, SplitStep);
                     
         hllestar(Fluxes, Lefts, Rights, Solk, lambda, nmax);
@@ -175,7 +175,6 @@ void Explicit_step_and_flux(
 			*ppdSol.rhow += lambda * (*pFluxes.rhow - pFluxes.rhow[1]);  
 			*ppdSol.rhoe += lambda * (*pFluxes.rhoe - pFluxes.rhoe[1]);
 			*ppdSol.rhoY += lambda * (*pFluxes.rhoY - pFluxes.rhoY[1]);
-			*ppdSol.rhoZ += lambda * (*pFluxes.rhoZ - pFluxes.rhoZ[1]);
             for (nsp = 0; nsp < ud.nspec; nsp++) {
                 *ppdSol.rhoX[nsp] += lambda * (*pFluxes.rhoX[nsp] - pFluxes.rhoX[nsp][1]);
             }
@@ -231,7 +230,7 @@ void Explicit_step_and_flux(
     }    
 
     for (int ic=0; ic<elem->nc; ic++) {
-        Sol->rhoZ[ic] = p2_store[ic]*Sol->rho[ic];
+        Sol->rhoZ[ic] = p2_store[ic];
     }
 }
 
@@ -470,9 +469,6 @@ void fullD_explicit_updates(ConsVars* Sol,
                         Sol->rhoX[ispec][nc] = Sol0->rhoX[ispec][nc] + delta;
                     }
                     
-                    
-                    Sol->rhoZ[nc] = (Sol0->rhoZ[nc]/Sol0->rho[nc]) * Sol->rho[nc];
-
 					deltax        = - lambda_x * (flux[0]->rhoY[nfxp]   - flux[0]->rhoY[nfx]);
 					deltay        = - lambda_y * (flux[1]->rhoY[nfyp]   - flux[1]->rhoY[nfy]);
 					delta         = deltax + deltay;
@@ -563,9 +559,6 @@ void fullD_explicit_updates(ConsVars* Sol,
                             delta                = deltax + deltay + deltaz;
                             Sol->rhoX[ispec][nc] = Sol0->rhoX[ispec][nc] + delta;
                         }
-                        
-                        
-                        Sol->rhoZ[nc] = (Sol0->rhoZ[nc]/Sol0->rho[nc]) * Sol->rho[nc];
                         
                         deltax        = - lambda_x * (flux[0]->rhoY[nfxp]   - flux[0]->rhoY[nfx]);
                         deltay        = - lambda_y * (flux[1]->rhoY[nfyp]   - flux[1]->rhoY[nfy]);

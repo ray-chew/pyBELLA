@@ -313,7 +313,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
 #else
             mpv->p2_cells[n] = p / ud.Msq;
 #endif
-            Sol->rhoZ[n]     = rho * mpv->p2_cells[n];
+            Sol->rhoZ[n]     = mpv->p2_cells[n];
             
         }
     }
@@ -337,7 +337,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     
     /* put p2_cells into Z for advection */
     for(i=0; i<elem->nc; i++) {
-        Sol->rhoZ[i]  = mpv->p2_cells[i] * Sol->rho[i];
+        Sol->rhoZ[i]  = mpv->p2_cells[i];
     }
     
     /*set nodal pressures */

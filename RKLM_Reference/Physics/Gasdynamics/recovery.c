@@ -248,7 +248,7 @@ void recovery_gravity(
         Hydros[i].Yinv[1] = 0.5*(Hydros[i].Yinv[0]+Hydros[i].Yinv[2]);
         Hydros[i].Yinv[3] = 0.5*(Hydros[i].Yinv[2]+Hydros[i].Yinv[4]);
 
-        Hydros[i].p2[2]   = Sol->rhoZ[i] / Sol->rho[i];  
+        Hydros[i].p2[2]   = Sol->rhoZ[i];  
         
         HydroStates(Hydros, strength, Msq, i, dh, elem);
         
@@ -284,7 +284,7 @@ void recovery_gravity(
             double dbuoy_adv  = 0.5 * rhoYc*lambda*dh * (strength/Msq) * uSlopeY * 0.5;
     
             double dp2hydro_l = 0.5 * ((Hydros[i-1].p2[4]-Hydros[i-1].p2[2]) + (Hydros[i].p2[2]-Hydros[i].p2[0]));
-            drhou             = - 0.5 * (Sol->Z[i] - Sol->Z[i-1] - dp2hydro_l) * gps;
+            drhou             = - 0.5 * (Sol->rhoZ[i] - Sol->rhoZ[i-1] - dp2hydro_l) * gps;
             Rights->u[i]     += lambda  * drhou / Rights->rho[i];
             Lefts->u[i-1]    += lambda  * drhou / Lefts->rho[i-1];
             Rights->rhou[i]  += lambda  * drhou;
@@ -344,7 +344,7 @@ void pressure_gradient_and_gravity(
         Hydros[i].Yinv[1] = 0.5*(Hydros[i].Yinv[0]+Hydros[i].Yinv[2]);
         Hydros[i].Yinv[3] = 0.5*(Hydros[i].Yinv[2]+Hydros[i].Yinv[4]);
         
-        Hydros[i].p2[2]    = Sol->rhoZ[i] / Sol->rho[i];  
+        Hydros[i].p2[2]    = Sol->rhoZ[i];  
         
         HydroStates(Hydros, strength, Msq, i, dh, elem);
     }
@@ -360,7 +360,7 @@ void pressure_gradient_and_gravity(
 		{            
 			/* double SlopeY  = Slopes->Y[i]; */
 			double SlopeY  = 0.5 * (1.0/Sol->Y[i+1] - 1.0/Sol->Y[i-1]);
-			du          = - 0.5 * (Sol->Z[i] - Sol->Z[i-1] - dp2hydro_left);
+			du          = - 0.5 * (Sol->rhoZ[i] - Sol->rhoZ[i-1] - dp2hydro_left);
 			drhou_right = du;
 			drhou_left  = du;
 			drhou       = 0.5*(drhou_right+drhou_left);

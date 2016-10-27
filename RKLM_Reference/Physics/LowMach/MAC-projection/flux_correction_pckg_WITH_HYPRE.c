@@ -715,11 +715,11 @@ static void flux_correction_due_to_pressure_gradients(
             const double* hplusx   = hplus[0];
             const double* hplusy   = hplus[1];
             
-            double oorhoi, ui, vi, wi, Yi, Zi, Hi, oorhoim, uim, vim, wim, Yim, Zim, Him;
+            double oorhoi, ui, vi, wi, Yi, Hi, oorhoim, uim, vim, wim, Yim, Him;
             double Xi[NSPEC], Xim[NSPEC];
-            double oorhoj, uj, vj, wj, Yj, Zj, Hj, oorhojm, ujm, vjm, wjm, Yjm, Zjm, Hjm;
+            double oorhoj, uj, vj, wj, Yj, Hj, oorhojm, ujm, vjm, wjm, Yjm, Hjm;
             double Xj[NSPEC], Xjm[NSPEC];
-            double us, vs, ws, Hs, Ys, Zs;
+            double us, vs, ws, Hs, Ys;
             double Xs[NSPEC];
             double tmpx, tmpy, frhoY, grhoY;
             
@@ -752,7 +752,6 @@ static void flux_correction_due_to_pressure_gradients(
                         Xi[nsp]      = oorhoi * INTERPOL(Sol->rhoX[nsp][icp], Sol->rhoX[nsp][ic], Sol->rhoX[nsp][icm]);
                     }
                     Yi      = oorhoi * INTERPOL(Sol->rho[icp], Sol->rho[ic], Sol->rho[icm]);
-                    Zi      = oorhoi * INTERPOL(Sol->rhoZ[icp], Sol->rhoZ[ic], Sol->rhoZ[icm]);
                     Hi      = oorhoi * (INTERPOL(Sol->rhoe[icp], Sol->rhoe[ic], Sol->rhoe[icm]) + p0_c);
                     
                     oorhoim = 1.0 / INTERPOL(Sol->rhoY[icmm], Sol->rhoY[icm], Sol->rhoY[ic]); 
@@ -763,7 +762,6 @@ static void flux_correction_due_to_pressure_gradients(
                         Xim[nsp]      = oorhoim * INTERPOL(Sol->rhoX[nsp][icmm], Sol->rhoX[nsp][icm], Sol->rhoX[nsp][ic]);
                     }
                     Yim     = oorhoim * INTERPOL(Sol->rho[icmm], Sol->rho[icm], Sol->rho[ic]);
-                    Zim     = oorhoim * INTERPOL(Sol->rhoZ[icmm], Sol->rhoZ[icm], Sol->rhoZ[ic]);
                     Him     = oorhoim * (INTERPOL(Sol->rhoe[icmm], Sol->rhoe[icm], Sol->rhoe[ic]) + p0_c);
                     
                     tmpx = - dto2dx * (  0.75  *   hplusx[nc] * (dp2[ic]     - dp2[icm]    )  
@@ -787,7 +785,6 @@ static void flux_correction_due_to_pressure_gradients(
                         Xs[nsp]      = upwind * Xim[nsp] + (1.0 - upwind) * Xi[nsp];
                     }
                     Ys = upwind * Yim + (1.0 - upwind) * Yi;
-                    Zs = upwind * Zim + (1.0 - upwind) * Zi;
                     Hs = upwind * Him + (1.0 - upwind) * Hi;
                     
                     f->rho[nc]  = Ys * tmpx;
@@ -799,7 +796,6 @@ static void flux_correction_due_to_pressure_gradients(
                     }
                     f->rhoe[nc] = 0.0 * Hs * tmpx;
                     f->rhoY[nc] = tmpx;
-                    f->rhoZ[nc] = Zs * tmpx;
                 }
             }  
             
@@ -830,7 +826,6 @@ static void flux_correction_due_to_pressure_gradients(
                         Xj[nsp]      = oorhoj * INTERPOL(Sol->rhoX[nsp][jcp], Sol->rhoX[nsp][jc], Sol->rhoX[nsp][jcm]);
                     }
                     Yj = oorhoj * INTERPOL(Sol->rho[jcp], Sol->rho[jc], Sol->rho[jcm]);
-                    Zj = oorhoj * INTERPOL(Sol->rhoZ[jcp], Sol->rhoZ[jc], Sol->rhoZ[jcm]);
                     Hj = oorhoj * (INTERPOL(Sol->rhoe[jcp], Sol->rhoe[jc], Sol->rhoe[jcm]) + p0_c);
                     
                     oorhojm = 1.0 / INTERPOL(Sol->rhoY[jcmm], Sol->rhoY[jcm], Sol->rhoY[jc]);
@@ -841,7 +836,6 @@ static void flux_correction_due_to_pressure_gradients(
                         Xjm[nsp]      = oorhojm * INTERPOL(Sol->rhoX[nsp][jcmm], Sol->rhoX[nsp][jcm], Sol->rhoX[nsp][jc]);
                     }
                     Yjm = oorhojm * INTERPOL(Sol->rho[jcmm], Sol->rho[jcm], Sol->rho[jc]);
-                    Zjm = oorhojm * INTERPOL(Sol->rhoZ[jcmm], Sol->rhoZ[jcm], Sol->rhoZ[jc]);
                     Hjm = oorhojm * (INTERPOL(Sol->rhoe[jcmm], Sol->rhoe[jcm], Sol->rhoe[jc]) + p0_s);
                     
                     tmpy = - dto2dy * (  0.75  *   hplusy[mc] * (dp2[jc]   - dp2[jcm]  ) 
@@ -868,7 +862,6 @@ static void flux_correction_due_to_pressure_gradients(
                         Xs[nsp]      = upwind * Xjm[nsp] + (1.0 - upwind) * Xj[nsp];
                     }
                     Ys = upwind * Yjm + (1.0 - upwind) * Yj;
-                    Zs = upwind * Zjm + (1.0 - upwind) * Zj;
                     Hs = upwind * Hjm + (1.0 - upwind) * Hj;
                     
                     g->rho[mc]  = Ys * tmpy;
@@ -880,7 +873,6 @@ static void flux_correction_due_to_pressure_gradients(
                     }
                     g->rhoe[mc] = 0.0 * Hs * tmpy;
                     g->rhoY[mc] = tmpy;
-                    g->rhoZ[mc] = Zs * tmpy;
                 }   
             }
             
@@ -916,19 +908,19 @@ static void flux_correction_due_to_pressure_gradients(
             const double* hplusy   = hplus[1];
             const double* hplusz   = hplus[2];
             
-            double oorhoi, ui, vi, wi, Yi, Zi, Hi; 
-            double oorhoim, uim, vim, wim, Yim, Zim, Him;
+            double oorhoi, ui, vi, wi, Yi, Hi; 
+            double oorhoim, uim, vim, wim, Yim, Him;
             double Xi[NSPEC], Xim[NSPEC];
             
-            double oorhoj, uj, vj, wj, Yj, Zj, Hj; 
-            double oorhojm, ujm, vjm, wjm, Yjm, Zjm, Hjm;
+            double oorhoj, uj, vj, wj, Yj, Hj; 
+            double oorhojm, ujm, vjm, wjm, Yjm, Hjm;
             double Xj[NSPEC], Xjm[NSPEC];
             
-            double oorhok, uk, vk, wk, Yk, Zk, Hk; 
-            double oorhokm, ukm, vkm, wkm, Ykm, Zkm, Hkm;
+            double oorhok, uk, vk, wk, Yk, Hk; 
+            double oorhokm, ukm, vkm, wkm, Ykm, Hkm;
             double Xk[NSPEC], Xkm[NSPEC];
             
-            double us, vs, ws, Hs, Ys, Zs;
+            double us, vs, ws, Hs, Ys;
             double Xs[NSPEC];
             
             double tmpx, tmpy, tmpz, frhoY;
@@ -961,7 +953,6 @@ static void flux_correction_due_to_pressure_gradients(
                             Xi[nsp]      = oorhoi * INTERPOL(Sol->rhoX[nsp][icp], Sol->rhoX[nsp][ic], Sol->rhoX[nsp][icm]);
                         }
                         Yi      = oorhoi * INTERPOL(Sol->rho[icp], Sol->rho[ic], Sol->rho[icm]);
-                        Zi      = oorhoi * INTERPOL(Sol->rhoZ[icp], Sol->rhoZ[ic], Sol->rhoZ[icm]);
                         Hi      = oorhoi * (INTERPOL(Sol->rhoe[icp], Sol->rhoe[ic], Sol->rhoe[icm]) + p0_c);
                         
                         oorhoim = 1.0 / INTERPOL(Sol->rhoY[icmm], Sol->rhoY[icm], Sol->rhoY[ic]); 
@@ -972,7 +963,6 @@ static void flux_correction_due_to_pressure_gradients(
                             Xim[nsp]      = oorhoim * INTERPOL(Sol->rhoX[nsp][icmm], Sol->rhoX[nsp][icm], Sol->rhoX[nsp][ic]);
                         }
                         Yim     = oorhoim * INTERPOL(Sol->rho[icmm], Sol->rho[icm], Sol->rho[ic]);
-                        Zim     = oorhoim * INTERPOL(Sol->rhoZ[icmm], Sol->rhoZ[icm], Sol->rhoZ[ic]);
                         Him     = oorhoim * (INTERPOL(Sol->rhoe[icmm], Sol->rhoe[icm], Sol->rhoe[ic]) + p0_c);
                         
                         tmpx = - dto2dx * hplusx[n] * cstencil *
@@ -1004,7 +994,6 @@ static void flux_correction_due_to_pressure_gradients(
                             Xs[nsp]      = upwind * Xim[nsp] + (1.0 - upwind) * Xi[nsp];
                         }
                         Ys = upwind * Yim + (1.0 - upwind) * Yi;
-                        Zs = upwind * Zim + (1.0 - upwind) * Zi;
                         Hs = upwind * Him + (1.0 - upwind) * Hi;
                         
                         fx->rho[n]  = Ys * tmpx;
@@ -1016,7 +1005,6 @@ static void flux_correction_due_to_pressure_gradients(
                         }
                         fx->rhoe[n] = 0.0 * Hs * tmpx;
                         fx->rhoY[n] = tmpx;
-                        fx->rhoZ[n] = Zs * tmpx;
                     }
                 } 
             }
@@ -1044,7 +1032,6 @@ static void flux_correction_due_to_pressure_gradients(
                             Xj[nsp]      = oorhoj * INTERPOL(Sol->rhoX[nsp][jcp], Sol->rhoX[nsp][jc], Sol->rhoX[nsp][jcm]);
                         }
                         Yj = oorhoj * INTERPOL(Sol->rho[jcp], Sol->rho[jc], Sol->rho[jcm]);
-                        Zj = oorhoj * INTERPOL(Sol->rhoZ[jcp], Sol->rhoZ[jc], Sol->rhoZ[jcm]);
                         Hj = oorhoj * (INTERPOL(Sol->rhoe[jcp], Sol->rhoe[jc], Sol->rhoe[jcm]) + p0_c);
                         
                         oorhojm = 1.0 / INTERPOL(Sol->rhoY[jcmm], Sol->rhoY[jcm], Sol->rhoY[jc]);
@@ -1055,7 +1042,6 @@ static void flux_correction_due_to_pressure_gradients(
                             Xjm[nsp]      = oorhojm * INTERPOL(Sol->rhoX[nsp][jcmm], Sol->rhoX[nsp][jcm], Sol->rhoX[nsp][jc]);
                         }
                         Yjm = oorhojm * INTERPOL(Sol->rho[jcmm], Sol->rho[jcm], Sol->rho[jc]);
-                        Zjm = oorhojm * INTERPOL(Sol->rhoZ[jcmm], Sol->rhoZ[jcm], Sol->rhoZ[jc]);
                         Hjm = oorhojm * (INTERPOL(Sol->rhoe[jcmm], Sol->rhoe[jcm], Sol->rhoe[jc]) + p0_s);
                         
                         tmpy = - dto2dy * hplusy[n] * cstencil *
@@ -1087,7 +1073,6 @@ static void flux_correction_due_to_pressure_gradients(
                             Xs[nsp]      = upwind * Xjm[nsp] + (1.0 - upwind) * Xj[nsp];
                         }
                         Ys = upwind * Yjm + (1.0 - upwind) * Yj;
-                        Zs = upwind * Zjm + (1.0 - upwind) * Zj;
                         Hs = upwind * Hjm + (1.0 - upwind) * Hj;
                         
                         fy->rho[n]  = Ys * tmpy;
@@ -1099,7 +1084,6 @@ static void flux_correction_due_to_pressure_gradients(
                         }
                         fy->rhoe[n] = 0.0 * Hs * tmpy;
                         fy->rhoY[n] = tmpy;
-                        fy->rhoZ[n] = Zs * tmpy;
                     }   
                 }
             }
@@ -1123,7 +1107,6 @@ static void flux_correction_due_to_pressure_gradients(
                             Xk[nsp]      = oorhok * INTERPOL(Sol->rhoX[nsp][kcp], Sol->rhoX[nsp][kc], Sol->rhoX[nsp][kcm]);
                         }
                         Yk = oorhok * INTERPOL(Sol->rho[kcp], Sol->rho[kc], Sol->rho[kcm]);
-                        Zk = oorhok * INTERPOL(Sol->rhoZ[kcp], Sol->rhoZ[kc], Sol->rhoZ[kcm]);
                         Hk = oorhok * (INTERPOL(Sol->rhoe[kcp], Sol->rhoe[kc], Sol->rhoe[kcm]) + p0_c);
                         
                         oorhokm = 1.0 / INTERPOL(Sol->rhoY[kcmm], Sol->rhoY[kcm], Sol->rhoY[kc]);
@@ -1134,7 +1117,6 @@ static void flux_correction_due_to_pressure_gradients(
                             Xkm[nsp]      = oorhokm * INTERPOL(Sol->rhoX[nsp][kcmm], Sol->rhoX[nsp][kcm], Sol->rhoX[nsp][kc]);
                         }
                         Ykm = oorhokm * INTERPOL(Sol->rho[kcmm], Sol->rho[kcm], Sol->rho[kc]);
-                        Zkm = oorhokm * INTERPOL(Sol->rhoZ[kcmm], Sol->rhoZ[kcm], Sol->rhoZ[kc]);
                         Hkm = oorhokm * (INTERPOL(Sol->rhoe[kcmm], Sol->rhoe[kcm], Sol->rhoe[kc]) + p0_c);
                         
                         tmpz = - dto2dz * hplusz[n] * cstencil *
@@ -1166,7 +1148,6 @@ static void flux_correction_due_to_pressure_gradients(
                             Xs[nsp]      = upwind * Xkm[nsp] + (1.0 - upwind) * Xk[nsp];
                         }
                         Ys = upwind * Ykm + (1.0 - upwind) * Yk;
-                        Zs = upwind * Zkm + (1.0 - upwind) * Zk;
                         Hs = upwind * Hkm + (1.0 - upwind) * Hk;
                         
                         fz->rho[n]  = Ys * tmpz;
@@ -1178,7 +1159,6 @@ static void flux_correction_due_to_pressure_gradients(
                         }
                         fz->rhoe[n] = 0.0 * Hs * tmpz;
                         fz->rhoY[n] = tmpz;
-                        fz->rhoZ[n] = Zs * tmpz;
                     }   
                 }
             }			

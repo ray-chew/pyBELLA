@@ -267,7 +267,7 @@ void Bound(
                     int isource = 2*elem->igx-1 - i;
                     int nsource = njk + isource;
 					
-					double Z_last = Sol->rhoZ[nlast] / Sol->rho[nlast];
+					double Z_last = Sol->rhoZ[nlast];
 					double Y_last = Sol->rhoY[nlast] / Sol->rho[nlast];
 					double rhou_wall;
 					
@@ -306,7 +306,7 @@ void Bound(
 						Sol->rhow[nimage] = rho*w;
 						Sol->rhoe[nimage] = rhoe(rho, u, v, w, p, Sol->geopot[nimage]);
 						Sol->rhoY[nimage] = rhoY;				  /* should probably be adjusted not to take HydroState values*/
-						Sol->rhoZ[nimage] = rho*Z;
+						Sol->rhoZ[nimage] = Z;
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
                             Sol->rhoX[nsp][nimage] = rho*X[nsp];
                         }
@@ -321,7 +321,7 @@ void Bound(
                     int isource = ix - elem->igx - 1 - i;
                     int nsource = njk + isource;
 					
-					double Z_last = Sol->rhoZ[nlast] / Sol->rho[nlast];
+					double Z_last = Sol->rhoZ[nlast];
 					double Y_last = Sol->rhoY[nlast] / Sol->rho[nlast];
 					double rhou_wall;
 					
@@ -360,7 +360,7 @@ void Bound(
 						Sol->rhow[nimage] = rho*w;
 						Sol->rhoe[nimage] = rhoe(rho, u, v, w, p, Sol->geopot[nimage]);
 						Sol->rhoY[nimage] = rhoY;       /* should probably be adjusted not to take HydroState values*/
-						Sol->rhoZ[nimage] = rho*Z;
+						Sol->rhoZ[nimage] = Z;
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
                             Sol->rhoX[nsp][nimage] = rho*X[nsp];
                         }
@@ -674,7 +674,7 @@ static void dirichlet_min(ConsVars* Sol, const int njk, const int i)
 	Sol->rhow[nijk]   = 0.0;
 	Sol->rhoe[nijk]   = rhoe(rho_outer, u_outer, 0.0, 0.0, p_outer, Sol->geopot[nijk]);
 	Sol->rhoY[nijk]   = rho_outer * S2_outer;
-	Sol->rhoZ[nijk]   = rho_outer * p2_outer;  
+	Sol->rhoZ[nijk]   = p2_outer;  
 }
 
 static void dirichlet_max(ConsVars* Sol, const int njk, const int i)
@@ -702,7 +702,7 @@ static void dirichlet_max(ConsVars* Sol, const int njk, const int i)
 	Sol->rhow[nijk]   = 0.0;
 	Sol->rhoe[nijk]   = rhoe(rho_outer, u_outer, 0.0, 0.0, p_outer, Sol->geopot[nijk]);
 	Sol->rhoY[nijk]   = rho_outer * S2_outer;
-	Sol->rhoZ[nijk]   = rho_outer * p2_outer;
+	Sol->rhoZ[nijk]   = p2_outer;
 }
 
 static void open_min(ConsVars* Sol, const int njk, const int i)
@@ -913,7 +913,7 @@ void check_flux_bcs(
 						Rights->rhow[i] = Lefts->rhow[i-1] = 0.0;
 						Rights->rhoe[i] = Lefts->rhoe[i-1] = rhoe(rho, ud.wind_speed, 0.0, 0.0, p, g*y);
 						Rights->rhoY[i] = Lefts->rhoY[i-1] = rho * S2; 
-						Rights->rhoZ[i] = Lefts->rhoZ[i-1] = rho * p2;
+						Rights->rhoZ[i] = Lefts->rhoZ[i-1] = p2;
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
                             Rights->rhoX[nsp][i] = Lefts->rhoX[nsp][i-1] = 99999.9;
                         }
@@ -958,7 +958,7 @@ void check_flux_bcs(
 						Lefts->rhow[i-1] = Rights->rhow[i] = 0.0;
 						Lefts->rhoe[i-1] = Rights->rhoe[i] = rhoe(rho, ud.wind_speed, 0.0, 0.0, p, g*y);
 						Lefts->rhoY[i-1] = Rights->rhoY[i] = rho * S2;
-						Lefts->rhoZ[i-1] = Rights->rhoZ[i] = rho * p2;
+						Lefts->rhoZ[i-1] = Rights->rhoZ[i] = p2;
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
                             Lefts->rhoX[nsp][i-1] = Rights->rhoX[nsp][i] = 9999.9;
                         }

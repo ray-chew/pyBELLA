@@ -2,7 +2,11 @@
 #define QV    0   /* water vapor */
 #define QC    1   /* cloud water */
 #define QR    2   /* rain water  */
-   
+
+#define NAUX  2
+#define PRES  0
+#define BUOY  1
+
 /*
  */
 #define THERMCON
