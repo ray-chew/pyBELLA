@@ -2,9 +2,9 @@
 % distribution loaded directly from the .hdf-file for
 % the Bryan-Bubble-output
 
-test_case = 'Skamarock-Klemp-Internal-Wave';
+%test_case = 'Skamarock-Klemp-Internal-Wave';
 %test_case = 'Rising-Bubble';
-%test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
+test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
 %test_case = 'Travelling-Vortex';
 

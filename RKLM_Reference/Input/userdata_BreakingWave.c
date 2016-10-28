@@ -70,6 +70,7 @@ void User_Data_init(User_Data* ud) {
 
     /* number of advected species */
     ud->nspec       = NSPEC;
+    ud->naux        = NAUX;
 
 	/* Low Mach */
     ud->is_compressible   = 0;   /* 0:psinc; 1:comp;  -1:psinc-comp-trans -> compressibility() */
@@ -301,7 +302,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
 #else
                 mpv->p2_cells[n] = p / ud.Msq;
 #endif
-                Sol->rhoZ[n]     = rho * mpv->p2_cells[n];				
+                Sol->rhoZ[PRES][n]     = mpv->p2_cells[n];				
             }			
         }
                 
