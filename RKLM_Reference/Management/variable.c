@@ -23,10 +23,10 @@ ConsVars* ConsVars_new(const int size) {
 	var->rhoe = (double*)malloc(size * sizeof(double));
 	var->rhoY = (double*)malloc(size * sizeof(double));
     for (int nsp=0; nsp<ud.nspec; nsp++) {
-        var->rhoZ[nsp] = (double*)malloc(size * sizeof(double));
-    }
-    for (int nsp=0; nsp<ud.nspec; nsp++) {
         var->rhoX[nsp] = (double*)malloc(size * sizeof(double));
+    }
+    for (int nsp=0; nsp<ud.naux; nsp++) {
+        var->rhoZ[nsp] = (double*)malloc(size * sizeof(double));
     }
 	var->geopot = (double*)malloc(size * sizeof(double));
 	return var;
@@ -41,9 +41,11 @@ void ConsVars_free(ConsVars* var) {
 	free(var->rhow);
 	free(var->rhoe);
 	free(var->rhoY);
-	free(var->rhoZ);
     for (nsp=0; nsp<ud.nspec; nsp++) {
         free(var->rhoX[nsp]);
+    }
+    for (nsp=0; nsp<ud.naux; nsp++) {
+        free(var->rhoZ[nsp]);
     }
 	free(var->geopot);
 	free(var); 
@@ -58,25 +60,28 @@ void ConsVars_setp(ConsVars* obj, const ConsVars* src, const int i) {
 	obj->rhow = &src->rhow[i];
 	obj->rhoe = &src->rhoe[i];
 	obj->rhoY = &src->rhoY[i];
-	obj->rhoZ = &src->rhoZ[i];
     for (nsp=0; nsp<ud.nspec; nsp++) {
         obj->rhoX[nsp] = &src->rhoX[nsp][i];
+    }
+    for (nsp=0; nsp<ud.naux; nsp++) {
+        obj->rhoZ[nsp] = &src->rhoZ[nsp][i];
     }
 	obj->geopot = &src->geopot[i];
 }
 
 void ConsVars_addp(ConsVars* obj, const int n) {
     extern User_Data ud;
-    int nsp;
 	obj->rho  += n;
 	obj->rhou += n;
 	obj->rhov += n;
 	obj->rhow += n;
 	obj->rhoe += n;
 	obj->rhoY += n;
-	obj->rhoZ += n;
-    for (nsp=0; nsp<ud.nspec; nsp++) {
+    for (int nsp=0; nsp<ud.nspec; nsp++) {
         obj->rhoX[nsp] += n;
+    }
+    for (int nsp=0; nsp<ud.naux; nsp++) {
+        obj->rhoZ[nsp] += n;
     }
 	obj->geopot += n;
 }
@@ -92,9 +97,11 @@ void ConsVars_setzero(ConsVars* obj, const int n) {
 		obj->rhow[i] = 0.0;
 		obj->rhoe[i] = 0.0;
 		obj->rhoY[i] = 0.0;
-		obj->rhoZ[i] = 0.0;
         for (nsp=0; nsp<ud.nspec; nsp++) {
             obj->rhoX[nsp][i] = 0.0;
+        }
+        for (nsp=0; nsp<ud.naux; nsp++) {
+            obj->rhoZ[nsp][i] = 0.0;
         }
 		/* will not do that for the geopotential */
 	}
@@ -111,9 +118,11 @@ void ConsVars_set(ConsVars* obj, const ConsVars* src, const int n) {
 	memcpy(obj->rhow, src->rhow, n * sizeof(double));
 	memcpy(obj->rhoe, src->rhoe, n * sizeof(double));
 	memcpy(obj->rhoY, src->rhoY, n * sizeof(double));
-	memcpy(obj->rhoZ, src->rhoZ, n * sizeof(double));
     for (nsp=0; nsp<ud.nspec; nsp++) {
         memcpy(obj->rhoX[nsp], src->rhoX[nsp], n * sizeof(double));
+    }
+    for (nsp=0; nsp<ud.naux; nsp++) {
+        memcpy(obj->rhoZ[nsp], src->rhoZ[nsp], n * sizeof(double));
     }
 	memcpy(obj->geopot, src->geopot, n * sizeof(double));
 }
@@ -175,7 +184,6 @@ double L1_norm(double* u, const int nstart, const int nend){
 
 States* States_new(const int size) {
     extern User_Data ud;
-	int nsp;
 	States* var = (States*)malloc(sizeof(States));
 	var->rho  = (double*)malloc(size * sizeof(double));
 	var->rhou = (double*)malloc(size * sizeof(double));
@@ -183,9 +191,11 @@ States* States_new(const int size) {
 	var->rhow = (double*)malloc(size * sizeof(double));
 	var->rhoe = (double*)malloc(size * sizeof(double));
 	var->rhoY = (double*)malloc(size * sizeof(double));
-	var->rhoZ = (double*)malloc(size * sizeof(double));
-    for (nsp=0; nsp<ud.nspec; nsp++) {
+    for (int nsp=0; nsp<ud.nspec; nsp++) {
         var->rhoX[nsp] = (double*)malloc(size * sizeof(double));
+    }
+    for (int nsp=0; nsp<ud.naux; nsp++) {
+        var->rhoZ[nsp] = (double*)malloc(size * sizeof(double));
     }
 	var->geopot = (double*)malloc(size * sizeof(double));
 	var->u    = (double*)malloc(size * sizeof(double));
@@ -197,7 +207,7 @@ States* States_new(const int size) {
 	var->entro= (double*)malloc(size * sizeof(double));
 	var->H    = (double*)malloc(size * sizeof(double));
 	var->Y    = (double*)malloc(size * sizeof(double));
-    for (nsp=0; nsp<ud.nspec; nsp++) {
+    for (int nsp=0; nsp<ud.nspec; nsp++) {
         var->X[nsp] = (double*)malloc(size * sizeof(double));
     }
 	var->p0   = (double*)malloc(size * sizeof(double));
@@ -213,16 +223,17 @@ States* States_new(const int size) {
 
 void States_free(States* var) {     
     extern User_Data ud;
-	int nsp;
 	free(var->rho);
 	free(var->rhou);
 	free(var->rhov);
 	free(var->rhow);
 	free(var->rhoe);
 	free(var->rhoY);
-	free(var->rhoZ);
-    for (nsp=0; nsp<ud.nspec; nsp++) {
+    for (int nsp=0; nsp<ud.nspec; nsp++) {
         free(var->rhoX[nsp]);
+    }
+    for (int nsp=0; nsp<ud.naux; nsp++) {
+        free(var->rhoZ[nsp]);
     }
 	free(var->geopot);
 	free(var->u);
@@ -234,7 +245,7 @@ void States_free(States* var) {
 	free(var->entro);
 	free(var->H);
 	free(var->Y);
-    for (nsp=0; nsp<ud.nspec; nsp++) {
+    for (int nsp=0; nsp<ud.nspec; nsp++) {
         free(var->X[nsp]);
     }
 	free(var->p0);
@@ -297,32 +308,34 @@ void States_small_free(States* var) {
 
 void States_setp(States* obj, const ConsVars* src, const int i) {
     extern User_Data ud;
-	int nsp;
 	obj->rho  = &src->rho[i];
 	obj->rhou = &src->rhou[i];
 	obj->rhov = &src->rhov[i];
 	obj->rhow = &src->rhow[i];
 	obj->rhoe = &src->rhoe[i];
 	obj->rhoY = &src->rhoY[i];
-	obj->rhoZ = &src->rhoZ[i];
-    for (nsp=0; nsp<ud.nspec; nsp++) {
+    for (int nsp=0; nsp<ud.nspec; nsp++) {
         obj->rhoX[nsp] = &src->rhoX[nsp][i];
+    }
+    for (int nsp=0; nsp<ud.naux; nsp++) {
+        obj->rhoZ[nsp] = &src->rhoZ[nsp][i];
     }
 	obj->geopot= &src->geopot[i];
 }
 
 void States_addp(States* obj, const int n) {
     extern User_Data ud;
-    int nsp;
 	obj->rho  += n;
 	obj->rhou += n;
 	obj->rhov += n;
 	obj->rhow += n;
 	obj->rhoe += n;
 	obj->rhoY += n;
-	obj->rhoZ += n;
-    for (nsp=0; nsp<ud.nspec; nsp++) {
+    for (int nsp=0; nsp<ud.nspec; nsp++) {
         obj->rhoX[nsp] += n;
+    }
+    for (int nsp=0; nsp<ud.naux; nsp++) {
+        obj->rhoZ[nsp] += n;
     }
 	obj->geopot += n;
 }

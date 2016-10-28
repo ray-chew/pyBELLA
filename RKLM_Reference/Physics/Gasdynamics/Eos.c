@@ -566,11 +566,11 @@ void adjust_pi(
 		for(j = igy; j < icy - igy; j++) {m = l + j * icx;
 			for(i = igx; i < icx - igx; i++) {n = m + i;
 
-                double p2_old       = Sol0->rhoZ[n];
+                double p2_old       = Sol0->rhoZ[PRES][n];
                 double dp2_rhoY     = scalefac * (pow(Sol->rhoY[n],th.gamm) - pow(Sol0->rhoY[n],th.gamm));
                 double dp2_elliptic = mpv->dp2_cells[n];
 
-                Sol->rhoZ[n]     = (p2_old + weight * (alpha * dp2_rhoY + (1.0-alpha) * dp2_ell_factor*dp2_elliptic));
+                Sol->rhoZ[PRES][n]     = (p2_old + weight * (alpha * dp2_rhoY + (1.0-alpha) * dp2_ell_factor*dp2_elliptic));
 				dp2_elliptic_max = MAX_own(dp2_elliptic_max, fabs(dp2_elliptic));
 				dp2_rhoY_max     = MAX_own(dp2_rhoY_max, fabs(dp2_rhoY));
 				ddp2             = MAX_own(ddp2, fabs(dp2_rhoY-dp2_elliptic));

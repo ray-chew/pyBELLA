@@ -195,9 +195,11 @@ void rotate2D(ConsVars* Sol, double* rhs, double *Yinvbg, const enum Direction d
 	flip2D(Sol->rhow, icx, icy, nc, W0);       
 	flip2D(Sol->rhoe, icx, icy, nc, W0);       
 	flip2D(Sol->rhoY, icx, icy, nc, W0);       
-	flip2D(Sol->rhoZ, icx, icy, nc, W0); 
     for (nsp = 0; nsp < ud.nspec; nsp++) {
         flip2D(Sol->rhoX[nsp], icx, icy, nc, W0);
+    }
+    for (nsp = 0; nsp < ud.naux; nsp++) {
+        flip2D(Sol->rhoZ[nsp], icx, icy, nc, W0);
     }
 	flip2D(Sol->geopot, icx, icy, nc, W0); 
 	
@@ -308,7 +310,7 @@ void rotate3D(ConsVars* Sol, double *rhs, double *Yinvbg, const enum Direction d
 	
 	double *phelp;
 	double delta;
-	int i, nsp;
+	int i;
 	
 	if(direction == FORWARD) {
 		
@@ -324,9 +326,11 @@ void rotate3D(ConsVars* Sol, double *rhs, double *Yinvbg, const enum Direction d
 		flip3D_f( Sol->rhow, icx, icy, icz, nc, W0 );       
 		flip3D_f( Sol->rhoe, icx, icy, icz, nc, W0 );       
 		flip3D_f( Sol->rhoY, icx, icy, icz, nc, W0 );       
-		flip3D_f( Sol->rhoZ, icx, icy, icz, nc, W0 );       
-        for (nsp = 0; nsp < ud.nspec; nsp++) {
+        for (int nsp = 0; nsp < ud.nspec; nsp++) {
             flip3D_f(Sol->rhoX[nsp], icx, icy, icz, nc, W0);
+        }
+        for (int nsp = 0; nsp < ud.naux; nsp++) {
+            flip3D_f(Sol->rhoZ[nsp], icx, icy, icz, nc, W0);
         }
 		flip3D_f( Sol->geopot, icx, icy, icz, nc, W0 );       
 		
@@ -588,9 +592,11 @@ void rotate3D(ConsVars* Sol, double *rhs, double *Yinvbg, const enum Direction d
 		flip3D_b( Sol->rhow, icx, icy, icz, nc, W0 );       
 		flip3D_b( Sol->rhoe, icx, icy, icz, nc, W0 );       
 		flip3D_b( Sol->rhoY, icx, icy, icz, nc, W0 );       
-		flip3D_b( Sol->rhoZ, icx, icy, icz, nc, W0 );       
-        for (nsp = 0; nsp < ud.nspec; nsp++) {
+        for (int nsp = 0; nsp < ud.nspec; nsp++) {
             flip3D_b(Sol->rhoX[nsp], icx, icy, icz, nc, W0);
+        }
+        for (int nsp = 0; nsp < ud.naux; nsp++) {
+            flip3D_b(Sol->rhoZ[nsp], icx, icy, icz, nc, W0);
         }
 		flip3D_b( Sol->geopot, icx, icy, icz, nc, W0 );       
 		

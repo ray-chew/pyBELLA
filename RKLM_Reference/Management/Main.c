@@ -149,11 +149,11 @@ int main( void )
             if (reset_init_data) {
                 adjust_pi(Sol, mpv, Sol0, elem, 1.0);
                 for (int n=0; n<elem->nc; n++) {
-                    Zaux[n] = Sol->rhoZ[n];
+                    Zaux[n] = Sol->rhoZ[PRES][n];
                 }
                 ConsVars_set(Sol, Sol0, elem->nc);                
                 for (int n=0; n<elem->nc; n++) {
-                    Sol->rhoZ[n] = Zaux[n];
+                    Sol->rhoZ[PRES][n] = Zaux[n];
                 }
                 if (step == 0) {
                     reset_init_data = WRONG;

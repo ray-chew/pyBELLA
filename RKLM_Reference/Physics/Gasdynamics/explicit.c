@@ -103,7 +103,7 @@ void Explicit_step_and_flux(
     assert(elem->ndim == 2); /* lateral averaging for 3D not yet implemented */
     
     for (int ic=0; ic<elem->nc; ic++) {
-        p2_store[ic] = Sol->rhoZ[ic];
+        p2_store[ic] = Sol->rhoZ[PRES][ic];
     }
     
     for(int j=1; j<elem->icy-1; j++) {
@@ -113,7 +113,7 @@ void Explicit_step_and_flux(
             int nijkp = nijk + elem->icx;
             int nijkm = nijk - elem->icx;
             /* selected weights should correspond to weights in the cell-centered Laplacian */
-            Sol->rhoZ[nijk]  = (ud.latw[0]*p2_store[nijkp] + ud.latw[1]*p2_store[nijk] + ud.latw[2]*p2_store[nijkm]);
+            Sol->rhoZ[PRES][nijk]  = (ud.latw[0]*p2_store[nijkp] + ud.latw[1]*p2_store[nijk] + ud.latw[2]*p2_store[nijkm]);
             Yinv_ave[nijk] = Sol->rho[nijk]/Sol->rhoY[nijk];
         }
     }
@@ -136,7 +136,7 @@ void Explicit_step_and_flux(
 		const enum Boolean last = ((kcache + 1) * njump < n - elem->igx) ? WRONG : CORRECT;
 		                
 		/* flux computation*/
-        recovery_gravity(Lefts, Rights, gravity_source, pbuoy, pYinv, pYinvbg, gravity_strength, Solk, Solk->Y, Solk->rhoZ, dp2, lambda, nmax, RK_stage);
+        recovery_gravity(Lefts, Rights, gravity_source, pbuoy, pYinv, pYinvbg, gravity_strength, Solk, Solk->Y, Solk->rhoZ[PRES], dp2, lambda, nmax, RK_stage);
         check_flux_bcs(Lefts, Rights, nmax, kcache, njump, elem, SplitStep);
                     
         hllestar(Fluxes, Lefts, Rights, Solk, lambda, nmax);
@@ -160,7 +160,6 @@ void Explicit_step_and_flux(
 			*ppflux.rhow = flux_weight_old * *ppflux.rhow + flux_weight_new * *pFluxes.rhow;  
 			*ppflux.rhoe = flux_weight_old * *ppflux.rhoe + flux_weight_new * *pFluxes.rhoe;  
 			*ppflux.rhoY = flux_weight_old * *ppflux.rhoY + flux_weight_new * *pFluxes.rhoY;  
-			*ppflux.rhoZ = flux_weight_old * *ppflux.rhoZ + flux_weight_new * *pFluxes.rhoZ;  
             for (nsp = 0; nsp < ud.nspec; nsp++) {
                 *ppflux.rhoX[nsp] = flux_weight_old * *ppflux.rhoX[nsp] + flux_weight_new * *pFluxes.rhoX[nsp];
             }
@@ -185,11 +184,9 @@ void Explicit_step_and_flux(
 			pFluxes.rhow++;
 			pFluxes.rhoe++;
 			pFluxes.rhoY++;
-			pFluxes.rhoZ++;
             for (nsp = 0; nsp < ud.nspec; nsp++) {
                 pFluxes.rhoX[nsp]++;
             }
-			
 			
 			count++;
 			ConsVars_addp(&ppdSol, 1);
@@ -218,7 +215,6 @@ void Explicit_step_and_flux(
 			*ppflux.rhow = flux_weight_old * *ppflux.rhow + flux_weight_new * *pFluxes.rhow;  
 			*ppflux.rhoe = flux_weight_old * *ppflux.rhoe + flux_weight_new * *pFluxes.rhoe;  
 			*ppflux.rhoY = flux_weight_old * *ppflux.rhoY + flux_weight_new * *pFluxes.rhoY;  
-			*ppflux.rhoZ = flux_weight_old * *ppflux.rhoZ + flux_weight_new * *pFluxes.rhoZ;  
             for (nsp = 0; nsp < ud.nspec; nsp++) {
                 *ppflux.rhoX[nsp] = flux_weight_old * *ppflux.rhoX[nsp] + flux_weight_new * *pFluxes.rhoX[nsp];
             }
@@ -230,7 +226,7 @@ void Explicit_step_and_flux(
     }    
 
     for (int ic=0; ic<elem->nc; ic++) {
-        Sol->rhoZ[ic] = p2_store[ic];
+        Sol->rhoZ[PRES][ic] = p2_store[ic];
     }
 }
 
@@ -328,9 +324,7 @@ void Explicit_step_update(
 	
 	ConsVars_setp(&pSol, Sol, 0);
 	ConsVars_setp(&pdSol, dSol, 0);
-	for(i = 0; i < n; i++) {
-		double rho_old = *pSol.rho;
-		
+	for(i = 0; i < n; i++) {		
 		*pSol.rho  +=  *pdSol.rho;
 		*pSol.rhou +=  *pdSol.rhou;
 		*pSol.rhov +=  *pdSol.rhov;
@@ -341,7 +335,6 @@ void Explicit_step_update(
         
 		*pSol.rhoe +=  rhoe_update_factor * *pdSol.rhoe;
 		*pSol.rhoY +=  *pdSol.rhoY;
-		*pSol.rhoZ =  (*pSol.rhoZ/rho_old) * *pSol.rho;
 
         *pdSol.rho   =  0.0; 
 		*pdSol.rhou  =  0.0;
@@ -349,7 +342,6 @@ void Explicit_step_update(
 		*pdSol.rhow  =  0.0;
 		*pdSol.rhoe  =  0.0;
 		*pdSol.rhoY  =  0.0;
-		*pdSol.rhoZ  =  0.0;
         for (nsp = 0; nsp < ud.nspec; nsp++) {
             *pdSol.rhoX[nsp] = 0.0;
         }

@@ -42,7 +42,7 @@ void hllestar(
     Fluxes->rhov[0] = Fluxes->rhov[n-2] = Fluxes->rhov[n-1] = 0.0;
     Fluxes->rhow[0] = Fluxes->rhow[n-2] = Fluxes->rhow[n-1] = 0.0;
     Fluxes->rhoe[0] = Fluxes->rhoe[n-2] = Fluxes->rhoe[n-1] = 0.0;
-    Fluxes->rhoZ[0] = Fluxes->rhoZ[n-2] = Fluxes->rhoZ[n-1] = 0.0;
+    Fluxes->rhoZ[PRES][0] = Fluxes->rhoZ[PRES][n-2] = Fluxes->rhoZ[PRES][n-1] = 0.0;
 
     for (nsp = 0; nsp < ud.nspec; nsp++) {
         Fluxes->rhoX[nsp][0] = Fluxes->rhoX[nsp][n-2] = Fluxes->rhoX[nsp][n-1] = 0.0;

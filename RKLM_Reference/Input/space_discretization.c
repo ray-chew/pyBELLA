@@ -704,12 +704,12 @@ ElemSpaceDiscr_ghost_rhoY_left_neumann
  left rhoZ
  ------------------------------------------------------------------------------*/
 static void ElemSpaceDiscr_ghost_rhoZ_left_void(
-												double* rhoZ, 
+												double** rhoZ, 
 												const ElemSpaceDiscr* elem,
 												const int ig) {}
 
 static void ElemSpaceDiscr_ghost_rhoZ_left_wall(
-												double* rhoZ, 
+												double** rhoZ, 
 												const ElemSpaceDiscr* elem,
 												const int ig) {
 	
@@ -728,28 +728,28 @@ static void ElemSpaceDiscr_ghost_rhoZ_left_wall(
 		mobj = (bobj - i);
 		for(k = 0; k < icz; k++) {l = k * icx * icy;
 			for(j = 0; j < icy; j++) {n = l + j * icx;
-				rhoZ[n + mobj] = rhoZ[n + msrc];
+				rhoZ[PRES][n + mobj] = rhoZ[PRES][n + msrc];
 			}
 		}
 	}
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_left_inflow(
-												  double* rhoZ, 
+												  double** rhoZ, 
 												  const ElemSpaceDiscr* elem, 
 												  const int ig) {
 	ERROR("function not available");
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_left_outflow(
-												   double* rhoZ, 
+												   double** rhoZ, 
 												   const ElemSpaceDiscr* elem, 
 												   const int ig) {
 	ERROR("function not available");
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_left_periodic(
-													double* rhoZ, 
+													double** rhoZ, 
 													const ElemSpaceDiscr* elem, 
 													const int ig) {
 	
@@ -768,14 +768,14 @@ static void ElemSpaceDiscr_ghost_rhoZ_left_periodic(
 		nobj = bobj - i;
 		for(k = 0; k < icz; k++) {l = k * icx * icy;
 			for(j = 0; j < icy; j++) {m = l + j * icx;
-				rhoZ[m + nobj] = rhoZ[m + nsrc];
+				rhoZ[PRES][m + nobj] = rhoZ[PRES][m + nsrc];
 			}
 		}
 	}
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_left_neumann(
-												   double* rhoZ, 
+												   double** rhoZ, 
 												   const ElemSpaceDiscr* elem, 
 												   const int ig) {
 	
@@ -794,14 +794,14 @@ static void ElemSpaceDiscr_ghost_rhoZ_left_neumann(
 		mobj = (bobj - i);
 		for(k = 0; k < icz; k++) {l = k * icx * icy;
 			for(j = 0; j < icy; j++) {n = l + j * icx;
-				rhoZ[n + mobj] = rhoZ[n + msrc];
+				rhoZ[PRES][n + mobj] = rhoZ[PRES][n + msrc];
 			}
 		}
 	}
 }
 
 static void (*ElemSpaceDiscr_ghost_rhoZ_left[])(
-												double* rhoZ, 
+												double** rhoZ, 
 												const ElemSpaceDiscr* elem, 
 												const int ig) = {
 ElemSpaceDiscr_ghost_rhoZ_left_void,
@@ -1502,12 +1502,12 @@ ElemSpaceDiscr_ghost_rhoY_right_neumann
  right rhoZ
  ------------------------------------------------------------------------------*/
 static void ElemSpaceDiscr_ghost_rhoZ_right_void(
-												 double* rhoZ, 
+												 double** rhoZ, 
 												 const ElemSpaceDiscr* elem, 
 												 const int ig) {}
 
 static void ElemSpaceDiscr_ghost_rhoZ_right_wall(
-												 double* rhoZ, 
+												 double** rhoZ, 
 												 const ElemSpaceDiscr* elem, 
 												 const int ig) {
 	
@@ -1526,28 +1526,28 @@ static void ElemSpaceDiscr_ghost_rhoZ_right_wall(
 		mobj = (bobj + i);
 		for(k = 0; k < icz; k++) {l = k * icx * icy;
 			for(j = 0; j < icy; j++) {n = l + j * icx;
-				rhoZ[n + mobj] = rhoZ[n + msrc];
+				rhoZ[PRES][n + mobj] = rhoZ[PRES][n + msrc];
 			}
 		}
 	}
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_right_inflow(
-												   double* rhoZ, 
+												   double** rhoZ, 
 												   const ElemSpaceDiscr* elem, 
 												   const int ig) {  
 	ERROR("function not available");
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_right_outflow(
-													double* rhoZ, 
+													double** rhoZ, 
 													const ElemSpaceDiscr* elem, 
 													const int ig) {
 	ERROR("function not available");
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_right_periodic(
-													 double* rhoZ, 
+													 double** rhoZ, 
 													 const ElemSpaceDiscr* elem, 
 													 const int ig) {
 	
@@ -1566,14 +1566,14 @@ static void ElemSpaceDiscr_ghost_rhoZ_right_periodic(
 		nobj = bobj + i;
 		for(k = 0; k < icz; k++) {l = k * icx * icy;
 			for(j = 0; j < icy; j++) {m = l + j * icx;
-				rhoZ[m + nobj] = rhoZ[m + nsrc];
+				rhoZ[PRES][m + nobj] = rhoZ[PRES][m + nsrc];
 			}
 		}
 	}
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_right_neumann(
-													double* rhoZ, 
+													double** rhoZ, 
 													const ElemSpaceDiscr* elem, 
 													const int ig) {
 	
@@ -1592,14 +1592,14 @@ static void ElemSpaceDiscr_ghost_rhoZ_right_neumann(
 		mobj = (bobj + i);
 		for(k = 0; k < icz; k++) {l = k * icx * icy;
 			for(j = 0; j < icy; j++) {n = l + j * icx;
-				rhoZ[n + mobj] = rhoZ[n + msrc];
+				rhoZ[PRES][n + mobj] = rhoZ[PRES][n + msrc];
 			}
 		}
 	}
 }
 
 static void (*ElemSpaceDiscr_ghost_rhoZ_right[])(
-												 double* rhoZ, 
+												 double** rhoZ, 
 												 const ElemSpaceDiscr* elem, 
 												 const int ig) = {
 ElemSpaceDiscr_ghost_rhoZ_right_void,
@@ -2180,12 +2180,12 @@ ElemSpaceDiscr_ghost_rhoY_bottom_neumann
  bottom rhoZ
  ------------------------------------------------------------------------------*/
 static void ElemSpaceDiscr_ghost_rhoZ_bottom_void(
-												  double* rhoZ, 
+												  double** rhoZ, 
 												  const ElemSpaceDiscr* elem, 
 												  const int ig) {}
 
 static void ElemSpaceDiscr_ghost_rhoZ_bottom_wall(
-												  double* rhoZ, 
+												  double** rhoZ, 
 												  const ElemSpaceDiscr* elem, 
 												  const int ig) {
 	
@@ -2204,28 +2204,28 @@ static void ElemSpaceDiscr_ghost_rhoZ_bottom_wall(
 		mobj = (bobj - j) * icx;
 		for(k = 0; k < icz; k++) {l = k * icx * icy;
 			for(i = 0; i < icx; i++) {n = l + i;
-				rhoZ[n + mobj] = rhoZ[n + msrc];
+				rhoZ[PRES][n + mobj] = rhoZ[PRES][n + msrc];
 			}
 		}
 	}
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_bottom_inflow(
-													double* rhoZ, 
+													double** rhoZ, 
 													const ElemSpaceDiscr* elem, 
 													const int ig) {
 	ERROR("function not available");
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_bottom_outflow(
-													 double* rhoZ, 
+													 double** rhoZ, 
 													 const ElemSpaceDiscr* elem, 
 													 const int ig) {
 	ERROR("function not available");
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_bottom_periodic(
-													  double* rhoZ, 
+													  double** rhoZ, 
 													  const ElemSpaceDiscr* elem, 
 													  const int ig) {
 	
@@ -2244,21 +2244,21 @@ static void ElemSpaceDiscr_ghost_rhoZ_bottom_periodic(
 		mobj = (bobj - j)*icx;
 		for(k = 0; k < icz; k++) {l = k * icx * icy;
 			for(i = 0; i < icx; i++) {n = l + i;
-				rhoZ[n + mobj] = rhoZ[n + msrc];
+				rhoZ[PRES][n + mobj] = rhoZ[PRES][n + msrc];
 			}
 		}
 	}
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_bottom_neumann(
-													 double* rhoZ, 
+													 double** rhoZ, 
 													 const ElemSpaceDiscr* elem, 
 													 const int ig) {
 	ERROR("function not available");
 }
 
 static void (*ElemSpaceDiscr_ghost_rhoZ_bottom[])(
-												  double* rhoZ, 
+												  double** rhoZ, 
 												  const ElemSpaceDiscr* elem, 
 												  const int ig) = {
 ElemSpaceDiscr_ghost_rhoZ_bottom_void,
@@ -2838,12 +2838,12 @@ ElemSpaceDiscr_ghost_rhoY_top_neumann
  top rhoZ
  ------------------------------------------------------------------------------*/
 static void ElemSpaceDiscr_ghost_rhoZ_top_void(
-											   double* rhoZ, 
+											   double** rhoZ, 
 											   const ElemSpaceDiscr* elem, 
 											   const int ig) {}
 
 static void ElemSpaceDiscr_ghost_rhoZ_top_wall(
-											   double* rhoZ, 
+											   double** rhoZ, 
 											   const ElemSpaceDiscr* elem, 
 											   const int ig) {
 	
@@ -2862,28 +2862,28 @@ static void ElemSpaceDiscr_ghost_rhoZ_top_wall(
 		mobj = (bobj + j) * icx;
 		for(k = 0; k < icz; k++) {l = k * icx * icy;
 			for(i = 0; i < icx; i++) {n = l + i;
-				rhoZ[n + mobj] = rhoZ[n + msrc];
+				rhoZ[PRES][n + mobj] = rhoZ[PRES][n + msrc];
 			}
 		}
 	}
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_top_inflow(
-												 double* rhoZ, 
+												 double** rhoZ, 
 												 const ElemSpaceDiscr* elem, 
 												 const int ig) {
 	ERROR("function not available");
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_top_outflow(
-												  double* rhoZ, 
+												  double** rhoZ, 
 												  const ElemSpaceDiscr* elem, 
 												  const int ig) {
 	ERROR("function not available");
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_top_periodic(
-												   double* rhoZ, 
+												   double** rhoZ, 
 												   const ElemSpaceDiscr* elem, 
 												   const int ig) {
 	
@@ -2902,21 +2902,21 @@ static void ElemSpaceDiscr_ghost_rhoZ_top_periodic(
 		mobj = (bobj + j)*icx;
 		for(k = 0; k < icz; k++) {l = k * icx * icy;
 			for(i = 0; i < icx; i++) {n = l + i;
-				rhoZ[n + mobj] = rhoZ[n + msrc];
+				rhoZ[PRES][n + mobj] = rhoZ[PRES][n + msrc];
 			}
 		}
 	}
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_top_neumann(
-												  double* rhoZ, 
+												  double** rhoZ, 
 												  const ElemSpaceDiscr* elem, 
 												  const int ig) {
 	ERROR("function not available");
 }
 
 static void (*ElemSpaceDiscr_ghost_rhoZ_top[])(
-											   double* rhoZ, 
+											   double** rhoZ, 
 											   const ElemSpaceDiscr* elem, 
 											   const int ig) = {
 ElemSpaceDiscr_ghost_rhoZ_top_void,
@@ -3392,12 +3392,12 @@ ElemSpaceDiscr_ghost_rhoY_back_neumann
  back rhoZ
  ------------------------------------------------------------------------------*/
 static void ElemSpaceDiscr_ghost_rhoZ_back_void(
-												double* rhoZ, 
+												double** rhoZ, 
 												const ElemSpaceDiscr* elem, 
 												const int ig) {}
 
 static void ElemSpaceDiscr_ghost_rhoZ_back_wall(
-												double* rhoZ, 
+												double** rhoZ, 
 												const ElemSpaceDiscr* elem, 
 												const int ig) {
 	
@@ -3418,42 +3418,42 @@ static void ElemSpaceDiscr_ghost_rhoZ_back_wall(
 		
 		for(j = 0; j < icy; j++) {m = j * icx;
 			for(i = 0; i < icx; i++) {n = m + i;
-				rhoZ[n + lobj] = rhoZ[n + lsrc];
+				rhoZ[PRES][n + lobj] = rhoZ[PRES][n + lsrc];
 			}
 		}
 	}
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_back_inflow(
-												  double* rhoZ, 
+												  double** rhoZ, 
 												  const ElemSpaceDiscr* elem, 
 												  const int ig) {
 	ERROR("function not available");
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_back_outflow(
-												   double* rhoZ, 
+												   double** rhoZ, 
 												   const ElemSpaceDiscr* elem, 
 												   const int ig) {
 	ERROR("function not available");
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_back_periodic(
-													double* rhoZ, 
+													double** rhoZ, 
 													const ElemSpaceDiscr* elem, 
 													const int ig) {
 	ERROR("function not available");
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_back_neumann(
-												   double* rhoZ, 
+												   double** rhoZ, 
 												   const ElemSpaceDiscr* elem, 
 												   const int ig) {
 	ERROR("function not available");
 }
 
 static void (*ElemSpaceDiscr_ghost_rhoZ_back[])(
-												double* rhoZ, 
+												double** rhoZ, 
 												const ElemSpaceDiscr* elem, 
 												const int ig) = {
 ElemSpaceDiscr_ghost_rhoZ_back_void,
@@ -3936,12 +3936,12 @@ ElemSpaceDiscr_ghost_rhoY_front_neumann
  front rhoZ
  ------------------------------------------------------------------------------*/
 static void ElemSpaceDiscr_ghost_rhoZ_front_void(
-												 double* rhoZ, 
+												 double** rhoZ, 
 												 const ElemSpaceDiscr* elem, 
 												 const int ig) {}
 
 static void ElemSpaceDiscr_ghost_rhoZ_front_wall(
-												 double* rhoZ, 
+												 double** rhoZ, 
 												 const ElemSpaceDiscr* elem, 
 												 const int ig) {
 	
@@ -3963,42 +3963,42 @@ static void ElemSpaceDiscr_ghost_rhoZ_front_wall(
 		
 		for(j = 0; j < icy; j++) {m = j * icx;
 			for(i = 0; i < icx; i++) {n = m + i;
-				rhoZ[n + lobj] = rhoZ[n + lsrc];
+				rhoZ[PRES][n + lobj] = rhoZ[PRES][n + lsrc];
 			}
 		}
 	}
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_front_inflow(
-												   double* rhoZ, 
+												   double** rhoZ, 
 												   const ElemSpaceDiscr* elem, 
 												   const int ig) {
 	ERROR("function not available");
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_front_outflow(
-													double* rhoZ, 
+													double** rhoZ, 
 													const ElemSpaceDiscr* elem, 
 													const int ig) {
 	ERROR("function not available");
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_front_periodic(
-													 double* rhoZ, 
+													 double** rhoZ, 
 													 const ElemSpaceDiscr* elem, 
 													 const int ig) {
 	ERROR("function not available");
 }
 
 static void ElemSpaceDiscr_ghost_rhoZ_front_neumann(
-													double* rhoZ, 
+													double** rhoZ, 
 													const ElemSpaceDiscr* elem, 
 													const int ig) {
 	ERROR("function not available");
 }
 
 static void (*ElemSpaceDiscr_ghost_rhoZ_front[])(
-												 double* rhoZ, 
+												 double** rhoZ, 
 												 const ElemSpaceDiscr* elem, 
 												 const int ig) = {
 ElemSpaceDiscr_ghost_rhoZ_front_void,
@@ -4099,7 +4099,7 @@ void ElemSpaceDiscr_ghost_rhoY(
 
 
 void ElemSpaceDiscr_ghost_rhoZ(
-							   double* rhoZ, 
+							   double** rhoZ, 
 							   const ElemSpaceDiscr* elem, 
 							   const int ig) {
 	
@@ -4587,33 +4587,33 @@ NodeSpaceDiscr_ghost_rhoY_left_neumann
  left rhoZ
  ------------------------------------------------------------------------------*/
 static void NodeSpaceDiscr_ghost_rhoZ_left_void(
-												double* rhoZ, 
+												double** rhoZ, 
 												const NodeSpaceDiscr* node,
 												const int ig) {}
 
 static void NodeSpaceDiscr_ghost_rhoZ_left_wall(
-												double* rhoZ, 
+												double** rhoZ, 
 												const NodeSpaceDiscr* node,
 												const int ig) {
 	ERROR("function not available");
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_left_inflow(
-												  double* rhoZ, 
+												  double** rhoZ, 
 												  const NodeSpaceDiscr* node, 
 												  const int ig) {
 	ERROR("function not available");
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_left_outflow(
-												   double* rhoZ, 
+												   double** rhoZ, 
 												   const NodeSpaceDiscr* node, 
 												   const int ig) {
 	ERROR("function not available");
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_left_periodic(
-													double* rhoZ, 
+													double** rhoZ, 
 													const NodeSpaceDiscr* node, 
 													const int ig) {
 	
@@ -4632,21 +4632,21 @@ static void NodeSpaceDiscr_ghost_rhoZ_left_periodic(
 		nobj = bobj - i;
 		for(k = 0; k < icz; k++) {l = k * icx * icy;
 			for(j = 0; j < icy; j++) {m = l + j * icx;
-				rhoZ[m + nobj] = rhoZ[m + nsrc];
+				rhoZ[PRES][m + nobj] = rhoZ[PRES][m + nsrc];
 			}
 		}
 	}
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_left_neumann(
-												   double* rhoZ, 
+												   double** rhoZ, 
 												   const NodeSpaceDiscr* node, 
 												   const int ig) {
 	ERROR("function not available");
 }
 
 static void (*NodeSpaceDiscr_ghost_rhoZ_left[])(
-												double* rhoZ, 
+												double** rhoZ, 
 												const NodeSpaceDiscr* node, 
 												const int ig) = {
 NodeSpaceDiscr_ghost_rhoZ_left_void,
@@ -5120,33 +5120,33 @@ NodeSpaceDiscr_ghost_rhoY_right_neumann
  right rhoZ
  ------------------------------------------------------------------------------*/
 static void NodeSpaceDiscr_ghost_rhoZ_right_void(
-												 double* rhoZ, 
+												 double** rhoZ, 
 												 const NodeSpaceDiscr* node, 
 												 const int ig) {}
 
 static void NodeSpaceDiscr_ghost_rhoZ_right_wall(
-												 double* rhoZ, 
+												 double** rhoZ, 
 												 const NodeSpaceDiscr* node, 
 												 const int ig) {
 	ERROR("function not available");
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_right_inflow(
-												   double* rhoZ, 
+												   double** rhoZ, 
 												   const NodeSpaceDiscr* node, 
 												   const int ig) {  
 	ERROR("function not available");
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_right_outflow(
-													double* rhoZ, 
+													double** rhoZ, 
 													const NodeSpaceDiscr* node, 
 													const int ig) {
 	ERROR("function not available");
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_right_periodic(
-													 double* rhoZ, 
+													 double** rhoZ, 
 													 const NodeSpaceDiscr* node, 
 													 const int ig) {
 	
@@ -5165,21 +5165,21 @@ static void NodeSpaceDiscr_ghost_rhoZ_right_periodic(
 		nobj = bobj + i;
 		for(k = 0; k < icz; k++) {l = k * icx * icy;
 			for(j = 0; j < icy; j++) {m = l + j * icx;
-				rhoZ[m + nobj] = rhoZ[m + nsrc];
+				rhoZ[PRES][m + nobj] = rhoZ[PRES][m + nsrc];
 			}
 		}
 	}
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_right_neumann(
-													double* rhoZ, 
+													double** rhoZ, 
 													const NodeSpaceDiscr* node, 
 													const int ig) {
 	ERROR("function not available");
 }
 
 static void (*NodeSpaceDiscr_ghost_rhoZ_right[])(
-												 double* rhoZ, 
+												 double** rhoZ, 
 												 const NodeSpaceDiscr* node, 
 												 const int ig) = {
 NodeSpaceDiscr_ghost_rhoZ_right_void,
@@ -5761,12 +5761,12 @@ NodeSpaceDiscr_ghost_rhoY_bottom_neumann
  bottom rhoZ
  ------------------------------------------------------------------------------*/
 static void NodeSpaceDiscr_ghost_rhoZ_bottom_void(
-												  double* rhoZ, 
+												  double** rhoZ, 
 												  const NodeSpaceDiscr* node, 
 												  const int ig) {}
 
 static void NodeSpaceDiscr_ghost_rhoZ_bottom_wall(
-												  double* rhoZ, 
+												  double** rhoZ, 
 												  const NodeSpaceDiscr* node, 
 												  const int ig) {
 	
@@ -5785,28 +5785,28 @@ static void NodeSpaceDiscr_ghost_rhoZ_bottom_wall(
 		mobj = (bobj - j) * icx;
 		for(k = 0; k < icz; k++) {l = k * icx * icy;
 			for(i = 0; i < icx; i++) {n = l + i;
-				rhoZ[n + mobj] = rhoZ[n + msrc];
+				rhoZ[PRES][n + mobj] = rhoZ[PRES][n + msrc];
 			}
 		}
 	}
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_bottom_inflow(
-													double* rhoZ, 
+													double** rhoZ, 
 													const NodeSpaceDiscr* node, 
 													const int ig) {
 	ERROR("function not available");
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_bottom_outflow(
-													 double* rhoZ, 
+													 double** rhoZ, 
 													 const NodeSpaceDiscr* node, 
 													 const int ig) {
 	ERROR("function not available");
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_bottom_periodic(
-													  double* rhoZ, 
+													  double** rhoZ, 
 													  const NodeSpaceDiscr* node, 
 													  const int ig) {
 	
@@ -5825,21 +5825,21 @@ static void NodeSpaceDiscr_ghost_rhoZ_bottom_periodic(
 		mobj = (bobj - j) * icx;
 		for(k = 0; k < icz; k++) {l = k * icx * icy;
 			for(i = 0; i < icx; i++) {n = l + i;
-				rhoZ[n + mobj] = rhoZ[n + msrc];
+				rhoZ[PRES][n + mobj] = rhoZ[PRES][n + msrc];
 			}
 		}
 	}
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_bottom_neumann(
-													 double* rhoZ, 
+													 double** rhoZ, 
 													 const NodeSpaceDiscr* node, 
 													 const int ig) {
 	ERROR("function not available");
 }
 
 static void (*NodeSpaceDiscr_ghost_rhoZ_bottom[])(
-												  double* rhoZ, 
+												  double** rhoZ, 
 												  const NodeSpaceDiscr* node, 
 												  const int ig) = {
 NodeSpaceDiscr_ghost_rhoZ_bottom_void,
@@ -6419,12 +6419,12 @@ NodeSpaceDiscr_ghost_rhoY_top_neumann
  top rhoZ
  ------------------------------------------------------------------------------*/
 static void NodeSpaceDiscr_ghost_rhoZ_top_void(
-											   double* rhoZ, 
+											   double** rhoZ, 
 											   const NodeSpaceDiscr* node, 
 											   const int ig) {}
 
 static void NodeSpaceDiscr_ghost_rhoZ_top_wall(
-											   double* rhoZ, 
+											   double** rhoZ, 
 											   const NodeSpaceDiscr* node, 
 											   const int ig) {
 	
@@ -6443,28 +6443,28 @@ static void NodeSpaceDiscr_ghost_rhoZ_top_wall(
 		mobj = (bobj + j) * icx;
 		for(k = 0; k < icz; k++) {l = k * icx * icy;
 			for(i = 0; i < icx; i++) {n = l + i;
-				rhoZ[n + mobj] = rhoZ[n + msrc];
+				rhoZ[PRES][n + mobj] = rhoZ[PRES][n + msrc];
 			}
 		}
 	}
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_top_inflow(
-												 double* rhoZ, 
+												 double** rhoZ, 
 												 const NodeSpaceDiscr* node, 
 												 const int ig) {
 	ERROR("function not available");
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_top_outflow(
-												  double* rhoZ, 
+												  double** rhoZ, 
 												  const NodeSpaceDiscr* node, 
 												  const int ig) {
 	ERROR("function not available");
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_top_periodic(
-												   double* rhoZ, 
+												   double** rhoZ, 
 												   const NodeSpaceDiscr* node, 
 												   const int ig) {
 	
@@ -6483,21 +6483,21 @@ static void NodeSpaceDiscr_ghost_rhoZ_top_periodic(
 		mobj = (bobj + j) * icx;
 		for(k = 0; k < icz; k++) {l = k * icx * icy;
 			for(i = 0; i < icx; i++) {n = l + i;
-				rhoZ[n + mobj] = rhoZ[n + msrc];
+				rhoZ[PRES][n + mobj] = rhoZ[PRES][n + msrc];
 			}
 		}
 	}
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_top_neumann(
-												  double* rhoZ, 
+												  double** rhoZ, 
 												  const NodeSpaceDiscr* node, 
 												  const int ig) {
 	ERROR("function not available");
 }
 
 static void (*NodeSpaceDiscr_ghost_rhoZ_top[])(
-											   double* rhoZ, 
+											   double** rhoZ, 
 											   const NodeSpaceDiscr* node, 
 											   const int ig) = {
 NodeSpaceDiscr_ghost_rhoZ_top_void,
@@ -6974,12 +6974,12 @@ NodeSpaceDiscr_ghost_rhoY_back_neumann
  back rhoZ
  ------------------------------------------------------------------------------*/
 static void NodeSpaceDiscr_ghost_rhoZ_back_void(
-												double* rhoZ, 
+												double** rhoZ, 
 												const NodeSpaceDiscr* node, 
 												const int ig) {}
 
 static void NodeSpaceDiscr_ghost_rhoZ_back_wall(
-												double* rhoZ, 
+												double** rhoZ, 
 												const NodeSpaceDiscr* node, 
 												const int ig) {
 	
@@ -7000,42 +7000,42 @@ static void NodeSpaceDiscr_ghost_rhoZ_back_wall(
 		
 		for(j = 0; j < icy; j++) {m = j * icx;
 			for(i = 0; i < icx; i++) {n = m + i;
-				rhoZ[n + lobj] = rhoZ[n + lsrc];
+				rhoZ[PRES][n + lobj] = rhoZ[PRES][n + lsrc];
 			}
 		}
 	}
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_back_inflow(
-												  double* rhoZ, 
+												  double** rhoZ, 
 												  const NodeSpaceDiscr* node, 
 												  const int ig) {
 	ERROR("function not available");
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_back_outflow(
-												   double* rhoZ, 
+												   double** rhoZ, 
 												   const NodeSpaceDiscr* node, 
 												   const int ig) {
 	ERROR("function not available");
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_back_periodic(
-													double* rhoZ, 
+													double** rhoZ, 
 													const NodeSpaceDiscr* node, 
 													const int ig) {
 	ERROR("function not available");
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_back_neumann(
-												   double* rhoZ, 
+												   double** rhoZ, 
 												   const NodeSpaceDiscr* node, 
 												   const int ig) {
 	ERROR("function not available");
 }
 
 static void (*NodeSpaceDiscr_ghost_rhoZ_back[])(
-												double* rhoZ, 
+												double** rhoZ, 
 												const NodeSpaceDiscr* node, 
 												const int ig) = {
 NodeSpaceDiscr_ghost_rhoZ_back_void,
@@ -7519,12 +7519,12 @@ NodeSpaceDiscr_ghost_rhoY_front_neumann
  front rhoZ
  ------------------------------------------------------------------------------*/
 static void NodeSpaceDiscr_ghost_rhoZ_front_void(
-												 double* rhoZ, 
+												 double** rhoZ, 
 												 const NodeSpaceDiscr* node, 
 												 const int ig) {}
 
 static void NodeSpaceDiscr_ghost_rhoZ_front_wall(
-												 double* rhoZ, 
+												 double** rhoZ, 
 												 const NodeSpaceDiscr* node, 
 												 const int ig) {
 	
@@ -7546,42 +7546,42 @@ static void NodeSpaceDiscr_ghost_rhoZ_front_wall(
 		
 		for(j = 0; j < icy; j++) {m = j * icx;
 			for(i = 0; i < icx; i++) {n = m + i;
-				rhoZ[n + lobj] = rhoZ[n + lsrc];
+				rhoZ[PRES][n + lobj] = rhoZ[PRES][n + lsrc];
 			}
 		}
 	}
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_front_inflow(
-												   double* rhoZ, 
+												   double** rhoZ, 
 												   const NodeSpaceDiscr* node, 
 												   const int ig) {
 	ERROR("function not available");
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_front_outflow(
-													double* rhoZ, 
+													double** rhoZ, 
 													const NodeSpaceDiscr* node, 
 													const int ig) {
 	ERROR("function not available");
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_front_periodic(
-													 double* rhoZ, 
+													 double** rhoZ, 
 													 const NodeSpaceDiscr* node, 
 													 const int ig) {
 	ERROR("function not available");
 }
 
 static void NodeSpaceDiscr_ghost_rhoZ_front_neumann(
-													double* rhoZ, 
+													double** rhoZ, 
 													const NodeSpaceDiscr* node, 
 													const int ig) {
 	ERROR("function not available");
 }
 
 static void (*NodeSpaceDiscr_ghost_rhoZ_front[])(
-												 double* rhoZ, 
+												 double** rhoZ, 
 												 const NodeSpaceDiscr* node, 
 												 const int ig) = {
 NodeSpaceDiscr_ghost_rhoZ_front_void,
@@ -7679,7 +7679,7 @@ void NodeSpaceDiscr_ghost_rhoY(
 
 
 void NodeSpaceDiscr_ghost_rhoZ(
-							   double* rhoZ, 
+							   double** rhoZ, 
 							   const NodeSpaceDiscr* node, 
 							   const int ig) {
 	

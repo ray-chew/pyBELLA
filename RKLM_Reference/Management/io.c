@@ -249,7 +249,7 @@ void putout(
             sprintf(fn, "%s/rhoZ/rhoZ_%s.hdf", dir_name, step_string);
             if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
             sprintf(fieldname, "rhoZ_%s_%s", field_name, step_string);
-            WriteHDF(prhoYfile, icx, icy, icz, ndim, Sol->rhoZ, fn, fieldname);
+            WriteHDF(prhoYfile, icx, icy, icz, ndim, Sol->rhoZ[PRES], fn, fieldname);
 
             for (nsp = 0; nsp < ud.nspec; nsp++) {
                 
@@ -622,7 +622,7 @@ static void putoutASCII(
 				u   = Sol->rhou[i] / rho;
 				p   = W0[i];
 				Y   = Sol->rhoY[i] / rho;
-				Z   = Sol->rhoZ[i];
+				Z   = Sol->rhoZ[PRES][i];
 				fprintf(file, form, x, rho, u, p, Y, Z);
 			}
 			fclose(file);
@@ -648,7 +648,7 @@ static void putoutASCII(
 					p    = mpv->p2_cells[n];
 					/*p    = W0[n];*/ 
 					Y    = Sol->rhoY[n] / rho;
-					Z    = Sol->rhoZ[n];	
+					Z    = Sol->rhoZ[PRES][n];	
 					fprintf(file, form, x, y, rho, u, v, p, Y, Z);
 				}
 				fprintf(file, "\n");
@@ -681,7 +681,7 @@ static void putoutASCII(
 						w    = Sol->rhow[n] * oorho;
 						p    = W0[n];
 						Y    = Sol->rhoY[n] * oorho;
-						Z    = Sol->rhoZ[n];
+						Z    = Sol->rhoZ[PRES][n];
 						fprintf(file, form, x, y, z, rho, u, v, w, p, Y, Z);
 					}
 					fprintf(file, "\n"); 
@@ -748,7 +748,7 @@ static void WriteSliceASCII(
 					w    = Sol->rhow[n] * oorho;
 					p    = mpv->p2_cells[n];
 					Y    = Sol->rhoY[n] * oorho;
-					Z    = Sol->rhoZ[n];
+					Z    = Sol->rhoZ[PRES][n];
 					fprintf(file, form, x, y, rho, u, v, w, p, Y, Z);
 				}
 				fprintf(file, "\n"); 
