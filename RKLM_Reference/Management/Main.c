@@ -171,10 +171,6 @@ int main( void )
                         
 			printf("\nnonlinear fluxes ---------------------------- \n");
 							
-#if OUTPUT_SUBSTEPS
-            putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
-#endif
-
             if (ud.time_integrator == OP_SPLIT || ud.time_integrator == OP_SPLIT_MD_UPDATE) {
                 
                 
@@ -186,9 +182,11 @@ int main( void )
                     Explicit_step_and_flux(Sol, flux[Split], buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage);
                     
 #if OUTPUT_SUBSTEPS_PREDICTOR
+                    /* TODO: remove necessity of calling b.c. routine for all directions after each splitstep */
                     if (i_OpSplit == 1)  {
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, BACKWARD);
                     }
+                    Set_Explicit_Boundary_Data(Sol, elem, mpv);
                     putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", OUTPUT_SPLITSTEPS);
                     if (i_OpSplit == 1)  {
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, FORWARD);
@@ -210,6 +208,7 @@ int main( void )
                     if (i_OpSplit == 0)  {
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, BACKWARD);
                     }
+                    Set_Explicit_Boundary_Data(Sol, elem, mpv);
                     putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", OUTPUT_SPLITSTEPS);
                     if (i_OpSplit == 0)  {
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, FORWARD);
@@ -238,58 +237,39 @@ int main( void )
 #if OUTPUT_SUBSTEPS
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
-
-			{
-				int corrections_iterations;
+            
+            
+            Set_Explicit_Boundary_Data(Sol, elem, mpv);
+            
+#if OUTPUT_SUBSTEPS
+            putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
+#endif
+            
+            if(PROJECTION1) {
                 
-				for(corrections_iterations = 0; corrections_iterations < ud.max_projection_iterations; corrections_iterations++){
-					
-                    Set_Explicit_Boundary_Data(Sol, elem, mpv);
-					
+                flux_correction(flux, buoy, elem, Sol, Sol0, t, dt, ud.implicitness, step);
+                update(Sol, (const ConsVars**)flux, buoy, elem, dt);
+                which_projection = 2;
+                Set_Explicit_Boundary_Data(Sol, elem, mpv);
 #if OUTPUT_SUBSTEPS
-                    putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
+                putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
-					                    
-                    for (int projections = 0; projections < 2; projections++) {
-                        
-                        switch (which_projection) {
-                            
-                            case 1:
-                                
-                                if(PROJECTION1) {
-                                    
-                                    flux_correction(flux, buoy, elem, Sol, Sol0, t, dt, ud.implicitness, step);
-                                    update(Sol, (const ConsVars**)flux, buoy, elem, dt);
-                                    which_projection = 2;
-                                    Set_Explicit_Boundary_Data(Sol, elem, mpv);
-#if OUTPUT_SUBSTEPS
-                                    putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
-#endif
-                                }
-
-                                break;
-                                
-                            case 2:
-                                
-                                if(PROJECTION2 == 1) {
-                                    second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 1.0, t, dt);
-                                    which_projection = 1;
-                                    Set_Explicit_Boundary_Data(Sol, elem, mpv);
-#if OUTPUT_SUBSTEPS
-                                    putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
-#endif
-                                }
-                                
-                                break;
-                                
-                            default:
-                                break;
-                        }
-                    }
-										
-					if (ud.absorber) Absorber(Sol, t, dt); 					
-				}
             }
+            
+            if(PROJECTION2 == 1) {
+                second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 1.0, t, dt);
+                which_projection = 1;
+                Set_Explicit_Boundary_Data(Sol, elem, mpv);
+#if OUTPUT_SUBSTEPS
+                putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
+#endif
+            }
+            
+            if (ud.absorber) 
+            {
+                Absorber(Sol, t, dt); 
+                Set_Explicit_Boundary_Data(Sol, elem, mpv);
+            }					
             			            
 			t += dt;
 			step++;
@@ -312,9 +292,6 @@ int main( void )
             if (ud.write_history) {
                 WriteTimeHistories(Sol, elem, t, step, 0);
             }
-            
-			
-			/* output_switch = 0; */
 		}
         
 		if(ud.write_file == ON) putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);

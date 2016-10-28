@@ -30,8 +30,7 @@ void precon_c_prepare(
                       const NodeSpaceDiscr* node,
                       const ElemSpaceDiscr* elem,
                       const double* hplus[3],
-                      const double* hcenter,
-                      const double* hgrav) {
+                      const double* hcenter) {
     
     /*
      the following defines diag/diaginv directly through the calculations in
@@ -65,7 +64,6 @@ void precon_c_prepare(
             const int ify       = elem->ify;
             const double dx     = elem->dx;
             const double dy     = elem->dy;
-            const double oody   = 1.0 / dy;
             const double oodx2  = 1.0 / (dx * dx);
             const double oody2  = 1.0 / (dy * dy);
             
@@ -74,7 +72,6 @@ void precon_c_prepare(
             const double* hplusx = hplus[0];
             const double* hplusy = hplus[1];
             const double* hc     = hcenter;
-            const double* hg     = hgrav;
             
             for(int nc=0; nc<elem->nc; nc++) diag_c[nc] = diaginv_c[nc] = 0.0;
             
@@ -107,9 +104,6 @@ void precon_c_prepare(
                                        );
                     
                     diag_c[nc] += hc[nc] * pnc;
-                    
-                    /* implicit gravity works only for gravity in y-direction */
-                    diag_c[nc] += oody * (hg[o_n] * 0.5*( pnc ) - hg[o_s] * 0.5*( pnc ));
                 }
             }
 
@@ -161,8 +155,7 @@ void precon_c_prepare(
                       const NodeSpaceDiscr* node,
                       const ElemSpaceDiscr* elem,
                       const double* hplus[3],
-                      const double* hcenter,
-                      const double* hgrav) {
+                      const double* hcenter) {
 }
 
 void precon_c_apply(
@@ -188,7 +181,6 @@ void EnthalpyWeightedLap_bilinear_p(
 									const double* p,
 									const double* hplus[3],
 									const double* hcenter,
-									const double* hgrav,
 									const ConsVars* Sol,
 									const MPV* mpv, 
 									const double dt,
@@ -222,7 +214,6 @@ void EnthalpyWeightedLap_bilinear_p(
 			const double* hplusx   = hplus[0];
 			const double* hplusy   = hplus[1];
 			const double* hc       = hcenter;
-			const double* hg       = hgrav;
             
             double dlapsum;
             
@@ -278,33 +269,13 @@ void EnthalpyWeightedLap_bilinear_p(
                                        + 0.125 * (  hplusy[o_ne] * (p[n_ne] - p[n_e ]) - hplusy[o_se] * (p[n_e ] - p[n_se]) 
                                                   + hplusy[o_nw] * (p[n_nw] - p[n_w ]) - hplusy[o_sw] * (p[n_w ] - p[n_sw]) 
                                                   )
-                                       );
-                    
-                    lap[n] += oody * 0.5 * (hg[o_nc] * (p[n_n] + p[n_c]) - hg[o_sc] * (p[n_s] + p[n_c]));
-                    
-                    /*
-                     {
-                     double dlap1, dlap2;
-                     
-                     dlap1 = oody * 0.5 * (hg[o_nc] * (p[n_n] + p[n_c]) - hg[o_sc] * (p[n_s] + p[n_c]));
-                    
-                     dlap2 = oody * 0.5 * ( 0.75  * (hg[o_nc] * (p[n_n ] + p[n_c ]) - hg[o_sc] * (p[n_s ] + p[n_c ]))
-                                          +0.125 * (hg[o_ne] * (p[n_ne] + p[n_e ]) - hg[o_se] * (p[n_se] + p[n_e ]))
-                                          +0.125 * (hg[o_nw] * (p[n_nw] + p[n_w ]) - hg[o_sw] * (p[n_sw] + p[n_w ]))
-                                                    );
-                     dlapsum += fabs(dlap1 - dlap2);
-
-                     lap[n] += dlap1;
-                     }
-                    */
+                                       );                                        
  					
 					lap[n] += hc[n] * p[n_c];
                     
 				}
 			}    
-            
-            /* printf("dlap1 = %e\t dlap2 = %e\t dlapsum = %e\n", dlap1, dlap2, dlapsum); */
-			
+            			
 #ifdef PRECON
             precon_c_invert(lap, lap, elem);
 #endif
@@ -325,7 +296,6 @@ void EnthalpyWeightedLap_bilinear_p(
                                     const double* p,
                                     const double* hplus[3],
                                     const double* hcenter,
-                                    const double* hgrav,
                                     const ConsVars* Sol,
                                     const MPV* mpv, 
                                     const double dt,
@@ -350,16 +320,13 @@ void EnthalpyWeightedLap_bilinear_p(
             const double dy = elem->dy;
             
             /* for MG-scaling with elem->scale_factor; see old version of routine */
-            
-            const double oody      = 1.0 / dy;
-            
+        
             const double oodx2     = 1.0 / (dx * dx);
             const double oody2     = 1.0 / (dy * dy);
             
             const double* hplusx   = hplus[0];
             const double* hplusy   = hplus[1];
             const double* hc       = hcenter;
-            const double* hg       = hgrav;
             
             int n_c, n_e, n_ne, n_n, n_nw, n_w, n_sw, n_s, n_se;
             int o_e, o_n, o_w, o_s, ox, oy;
@@ -405,7 +372,6 @@ void EnthalpyWeightedLap_bilinear_p(
                                                   + hplusy[o_s] * (  (p[n_c ] - p[n_s ] ) - (p[n_w ] - p[n_sw] ) ) 
                                                   )
                                        );
-                    lap[n] += oody * (hg[o_n] * 0.5*(p[n_n] + p[n_c]) - hg[o_s] * 0.5*(p[n_s] + p[n_c]));
                     
                     lap[n] += hc[n] * p[n_c];
                     

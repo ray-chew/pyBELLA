@@ -16,7 +16,6 @@ void variable_coefficient_poisson_cells(
                                         double *rhs,
 										const double *hplus[3],
 										const double *hcenter,
-										const double *hgrav,
 										const ConsVars* Sol,
                                         const ElemSpaceDiscr* elem,
                                         const NodeSpaceDiscr* node,

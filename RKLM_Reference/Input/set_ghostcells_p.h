@@ -16,7 +16,6 @@
 void set_ghostcells_p2(
                        double* p,                        
                        const double* hplus[3],
-                       const double* hgrav,
 					   const ElemSpaceDiscr* elem, 
 					   const int ig);
 

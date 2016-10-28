@@ -39,7 +39,6 @@ void flux_correction(
 void operator_coefficients(
                            double* hplus[3], 
                            double* wcenter, 
-                           double* wgrav,
                            const ElemSpaceDiscr* elem,
                            const ConsVars* Sol,
                            const ConsVars* Sol0,

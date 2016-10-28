@@ -108,6 +108,7 @@ void User_Data_init(User_Data* ud) {
 
     /* number of advected species */
     ud->nspec       = NSPEC;  
+    ud->naux        = NAUX;  
 
 	/* Low Mach */
     ud->is_compressible = 0;
@@ -138,9 +139,7 @@ void User_Data_init(User_Data* ud) {
     
     /* low Froude */
     ud->implicit_gravity_theta  = 0;
-    ud->implicit_gravity_press  = 0; /* should be on for compressible option */
     ud->implicit_gravity_theta2 = 0;
-    ud->implicit_gravity_press2 = 0; /* should this, too, be on for compressible option ?  */
 
 	/* flow domain */
 	ud->xmin = - 0.5;  
@@ -180,8 +179,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx =  256+1; /*  */
-	ud->iny =  256+1; /*  */
+	ud->inx =  128+1; /*  */
+	ud->iny =  128+1; /*  */
 	ud->inz =  1;
 	ud->h   = MIN_own((ud->xmax-ud->xmin)/(ud->inx),MIN_own((ud->ymax-ud->ymin)/(ud->iny),(ud->zmax-ud->zmin)/(ud->inz)));
 
@@ -420,11 +419,11 @@ void Sol_initial(ConsVars* Sol,
                 /* mpv->p2_cells[n] = p_hydro/ud.Msq + fac*fac*mpv->p2_cells[n]; */
 #ifdef THERMCON
                 /* pseudo-incompressible option */
-                mpv->p2_cells[n] = th.Gamma*fac*fac*mpv->p2_cells[n];
-                mpv->p2_cells[n]  = ud.is_compressible*pow(p_hydro+mpv->p2_cells[n]*ud.Msq, th.Gamma)/ud.Msq \
+                mpv->p2_cells[n]  = th.Gamma*fac*fac*mpv->p2_cells[n];
+                mpv->p2_cells[n]   = ud.is_compressible*pow(p_hydro+mpv->p2_cells[n]*ud.Msq, th.Gamma)/ud.Msq \
                                     + (1-ud.is_compressible)*mpv->p2_cells[n]/mpv->HydroState->rhoY0[j];
-                Sol->rhoZ[n]      = rho * mpv->p2_cells[n];
-                Sol->rhoY[n]      = ud.is_compressible*pow(p_hydro+mpv->p2_cells[n]*ud.Msq,1.0/th.gamm) \
+                Sol->rhoZ[PRES][n] = mpv->p2_cells[n];
+                Sol->rhoY[n]       = ud.is_compressible*pow(p_hydro+mpv->p2_cells[n]*ud.Msq,1.0/th.gamm) \
                                     + (1-ud.is_compressible)*Sol->rhoY[n];
 #else
                 mpv->p2_cells[n] = fac*fac*mpv->p2_cells[n];

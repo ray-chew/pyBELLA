@@ -68,7 +68,6 @@ double SOLVER(
               const NodeSpaceDiscr* node,
               const double* hplus[3],
               const double* hcenter,
-              const double* hgrav,
               const ConsVars* Sol,
               const MPV* mpv,
               const double dt,

@@ -116,9 +116,7 @@ typedef struct {
 	int i_gravity[3];
 	int gravity_direction;
     int implicit_gravity_theta;
-    int implicit_gravity_press;
     int implicit_gravity_theta2;
-    int implicit_gravity_press2;
 
     double coriolis_strength[3];
 	int i_coriolis[3];

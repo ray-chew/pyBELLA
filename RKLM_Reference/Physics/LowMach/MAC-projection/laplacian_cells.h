@@ -19,8 +19,7 @@ void precon_c_prepare(
                       const NodeSpaceDiscr* node,
                       const ElemSpaceDiscr* elem,
                       const double* hplus[3],
-                      const double* hcenter,
-                      const double* hgrav);
+                      const double* hcenter);
 
 void precon_c_apply(
                     double* vec_out,
@@ -38,7 +37,6 @@ void EnthalpyWeightedLap_bilinear_p(
 									const double* p,
 									const double* hplus[3],
 									const double* hcenter,
-									const double* hgrav,
 									const ConsVars* Sol,
 									const MPV* mpv, 
 									const double dt,

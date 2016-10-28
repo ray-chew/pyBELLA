@@ -29,7 +29,6 @@ void precon_prepare(
                     const ElemSpaceDiscr* elem,
                     const double* hplus[3],
                     const double* wcenter,
-                    const double* wgrav,
                     const int x_periodic,
                     const int y_periodic,
                     const int z_periodic) 
@@ -122,7 +121,6 @@ void precon_prepare(
                     const ElemSpaceDiscr* elem,
                     const double* hplus[3],
                     const double* wcenter,
-                    const double* wgrav,
                     const int x_periodic,
                     const int y_periodic,
                     const int z_periodic) 
@@ -173,7 +171,6 @@ void precon_prepare(
                 const double* hplusx   = hplus[0];
                 const double* hplusy   = hplus[1];
                 const double* hcenter  = wcenter;
-                const double* hgrav    = wgrav;
                 
                 const double oody  = 0.5 / dy;
                 
@@ -181,7 +178,7 @@ void precon_prepare(
                 const double oody2 = 0.5 / (dy * dy);
                 const double nine_pt = (0.25 * (1.0 + P2_DIAGONAL_FIVE_POINT)) * P2_FULL_STENCIL;
                 
-                double flux_x_lower, flux_x_upper, flux_y_left, flux_y_right, hc, hg;
+                double flux_x_lower, flux_x_upper, flux_y_left, flux_y_right, hc;
                 double dsq_p_dxdy;
                 
                 double pnn      = 1.0;
@@ -215,9 +212,8 @@ void precon_prepare(
                         flux_y_right  = hplusy[ne] * oody2 * (       - nine_pt * dsq_p_dxdy);
                         
                         hc            = 0.25 * hcenter[ne];
-                        hg            = 0.5  * hgrav[ne] * oody * 0.25 * pnn;
                         
-                        diag[nn]      += (  flux_x_lower + flux_y_left ) + hg + hc*pnn;
+                        diag[nn]      += (  flux_x_lower + flux_y_left ) + hc*pnn;
                         
                         
                         
@@ -231,9 +227,8 @@ void precon_prepare(
                         flux_y_right  = hplusy[ne] * oody2 * (-pnn1 - nine_pt * dsq_p_dxdy);
                         
                         hc            = 0.25 * hcenter[ne];
-                        hg            = 0.5  * hgrav[ne] * oody * 0.25 * pnn1;
                         
-                        diag[nn1]     += (- flux_x_lower + flux_y_right) + hg + hc*pnn1;
+                        diag[nn1]     += (- flux_x_lower + flux_y_right) + hc*pnn1;
                         
                         
                         
@@ -247,9 +242,8 @@ void precon_prepare(
                         flux_y_right  = hplusy[ne] * oody2 * (         - nine_pt * dsq_p_dxdy);
                         
                         hc            = 0.25 * hcenter[ne];
-                        hg            = 0.5  * hgrav[ne] * oody * 0.25 * (pnnicxn + pnn + pnn1icxn + pnn1);
                         
-                        diag[nnicxn]  += (  flux_x_upper - flux_y_left ) - hg + hc*pnnicxn ;
+                        diag[nnicxn]  += (  flux_x_upper - flux_y_left ) + hc*pnnicxn ;
                         
                         
                         
@@ -263,9 +257,8 @@ void precon_prepare(
                         flux_y_right  = hplusy[ne] * oody2 * ( pnn1icxn - nine_pt * dsq_p_dxdy);
                         
                         hc            = 0.25 * hcenter[ne];
-                        hg            = 0.5  * hgrav[ne] * oody * 0.25 * pnn1icxn + pnn1;
                         
-                        diag[nn1icxn] += (- flux_x_upper - flux_y_right) - hg + hc*pnn1icxn;
+                        diag[nn1icxn] += (- flux_x_upper - flux_y_right) + hc*pnn1icxn;
                     }
                 }
                 
@@ -317,7 +310,6 @@ void precon_prepare(
                     const ElemSpaceDiscr* elem,
                     const double* hplus[3],
                     const double* wcenter,
-                    const double* wgrav,
                     const int x_periodic,
                     const int y_periodic,
                     const int z_periodic) {
@@ -357,13 +349,12 @@ void precon_prepare(
             
             const double* hplusy   = hplus[1];
             const double* hcenter  = wcenter;
-            const double* hgrav    = wgrav;
             
             const double oody  = 0.5 / dy;
             
             const double oody2 = 0.5 / (dy * dy);
             
-            double flux_y_left, flux_y_right, hc, hg;
+            double flux_y_left, flux_y_right, hc;
             
             int i, j, me, mn, ne, nn, nn1, nnicxn, nn1icxn;
             
@@ -397,27 +388,22 @@ void precon_prepare(
                     
                     /* summand 1.0 takes care of singularity of the tridiagoonal matrix */
                     hc            = 0.25 * (-1.0 + hcenter[ne]);
-                    
-                    /*
-                     hg            = 0.5  * hgrav[ne] * oody * 0.25 * (pnnicxn + pnn + pnn1icxn + pnn1);
-                     */
-                    hg            = 0.5  * hgrav[ne] * oody * 0.25;
-                    
+                                        
                     
                     /* eventually I should transpose the tridiago[][] field for better memory efficiency */
                     /* eventually I should let tridiago[] run from  -1 to +1 */
                     
-                    tridiago[1][nn]      += (+ flux_y_left  * ( -pnn      )) + hg*pnn      + hc*pnn;
-                    tridiago[2][nn]      += (+ flux_y_left  * ( +pnnicxn  )) + hg*pnnicxn;
+                    tridiago[1][nn]      += (+ flux_y_left  * ( -pnn      )) + hc*pnn;
+                    tridiago[2][nn]      += (+ flux_y_left  * ( +pnnicxn  ));
                     
-                    tridiago[1][nn1]     += (+ flux_y_right * ( -pnn1     )) + hg*pnn1     + hc*pnn1;
-                    tridiago[2][nn1]     += (+ flux_y_right * ( +pnn1icxn )) + hg*pnn1icxn;
+                    tridiago[1][nn1]     += (+ flux_y_right * ( -pnn1     )) + hc*pnn1;
+                    tridiago[2][nn1]     += (+ flux_y_right * ( +pnn1icxn ));
                     
-                    tridiago[0][nnicxn]  += (- flux_y_left  * ( -pnn      )) - hg*pnn;
-                    tridiago[1][nnicxn]  += (- flux_y_left  * ( +pnnicxn  )) - hg*pnnicxn  + hc*pnnicxn;
+                    tridiago[0][nnicxn]  += (- flux_y_left  * ( -pnn      ));
+                    tridiago[1][nnicxn]  += (- flux_y_left  * ( +pnnicxn  )) + hc*pnnicxn;
                     
-                    tridiago[0][nn1icxn] += (- flux_y_right * ( -pnn1     )) - hg*pnn1;
-                    tridiago[1][nn1icxn] += (- flux_y_right * ( +pnn1icxn )) - hg*pnn1icxn + hc*pnn1icxn;
+                    tridiago[0][nn1icxn] += (- flux_y_right * ( -pnn1     ));
+                    tridiago[1][nn1icxn] += (- flux_y_right * ( +pnn1icxn )) + hc*pnn1icxn;
                 }
             }
         }
@@ -509,7 +495,6 @@ void precon_prepare(
                            const ElemSpaceDiscr* elem,
                            const double* hplus[3],
                            const double* wcenter,
-                           const double* wgravb,
                            const int x_periodic,
                            const int y_periodic,
                            const int z_periodic) {
@@ -536,7 +521,6 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                                                  const double* p,
                                                  const double* hplus[3],
                                                  const double* wcenter,
-                                                 const double* wgrav,
                                                  const int x_periodic,
                                                  const int y_periodic,
                                                  const int z_periodic,
@@ -565,15 +549,12 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             const double* hplusx   = hplus[0];
             const double* hplusy   = hplus[1];
             const double* hcenter  = wcenter;
-            const double* hgrav    = wgrav;
-            
-            const double oody  = 0.5 / dy;
-            
+                        
             const double oodx2 = 0.5 / (dx * dx);
             const double oody2 = 0.5 / (dy * dy);
             const double nine_pt = (0.25 * (1.0 + P2_DIAGONAL_FIVE_POINT)) * P2_FULL_STENCIL;
             
-            double flux_x_lower, flux_x_upper, flux_y_left, flux_y_right, hc, hg;
+            double flux_x_lower, flux_x_upper, flux_y_left, flux_y_right, hc;
             double dsq_p_dxdy;
             
             int i, j, me, mn, ne, nn, nn1, nnicxn, nn1icxn;
@@ -601,12 +582,11 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                     flux_y_right  = hplusy[ne] * oody2 * ( (p[nn1icxn] - p[nn1]   ) - nine_pt * dsq_p_dxdy);
                     
                     hc            = 0.25 * hcenter[ne];
-                    hg            = 0.5  * hgrav[ne] * oody * 0.25 * (p[nnicxn] + p[nn] + p[nn1icxn] + p[nn1]);
                     
-                    lap[nn]      += (  flux_x_lower + flux_y_left ) + hg + hc*p[nn]     ;
-                    lap[nn1]     += (- flux_x_lower + flux_y_right) + hg + hc*p[nn1]    ;
-                    lap[nnicxn]  += (  flux_x_upper - flux_y_left ) - hg + hc*p[nnicxn] ;
-                    lap[nn1icxn] += (- flux_x_upper - flux_y_right) - hg + hc*p[nn1icxn];
+                    lap[nn]      += (  flux_x_lower + flux_y_left ) + hc*p[nn]     ;
+                    lap[nn1]     += (- flux_x_lower + flux_y_right) + hc*p[nn1]    ;
+                    lap[nnicxn]  += (  flux_x_upper - flux_y_left ) + hc*p[nnicxn] ;
+                    lap[nn1icxn] += (- flux_x_upper - flux_y_right) + hc*p[nn1icxn];
                 }
             }
             

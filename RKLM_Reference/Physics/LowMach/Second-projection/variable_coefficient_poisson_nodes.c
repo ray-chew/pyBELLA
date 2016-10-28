@@ -94,7 +94,6 @@ static double BiCGSTAB_MG_nodes(
 								const ElemSpaceDiscr* elem,
 								const double* hplus[3],
 								const double* hcenter,
-								const double* hgrav,
 								const double* rhs,
 								double* solution_io,
 								const int x_periodic,
@@ -132,11 +131,11 @@ static double BiCGSTAB_MG_nodes(
 	assert(data->size >= node->nc);                          /* Rupert: This could be dangerous. */
     
     
-    precon_prepare(node, elem, hplus, hcenter, hgrav, x_periodic, y_periodic, z_periodic);
+    precon_prepare(node, elem, hplus, hcenter, x_periodic, y_periodic, z_periodic);
     
     set_periodic_data(solution_io,	node, x_periodic, y_periodic, z_periodic);
     
-    EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, solution_io, hplus, hcenter, hgrav, x_periodic, y_periodic, z_periodic, v_j);
+    EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, solution_io, hplus, hcenter, x_periodic, y_periodic, z_periodic, v_j);
 
     precon_invert(rhs_prec, rhs, node);
     
@@ -218,7 +217,7 @@ static double BiCGSTAB_MG_nodes(
 		
         set_periodic_data(p_j,	node, x_periodic, y_periodic, z_periodic);
         
-        EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, p_j, hplus, hcenter, hgrav, x_periodic, y_periodic, z_periodic, v_j);
+        EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, p_j, hplus, hcenter, x_periodic, y_periodic, z_periodic, v_j);
 
 		sigma = 0.0; 
 		for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
@@ -241,7 +240,7 @@ static double BiCGSTAB_MG_nodes(
 		
         set_periodic_data(s_j,	node, x_periodic, y_periodic, z_periodic);
 
-        EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, s_j, hplus, hcenter, hgrav, x_periodic, y_periodic, z_periodic, t_j);
+        EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, s_j, hplus, hcenter, x_periodic, y_periodic, z_periodic, t_j);
 
 		omega = 0.0; 
 		tmp = 0.0; 
@@ -300,7 +299,6 @@ void variable_coefficient_poisson_nodes(
                                         double *p2,
                                         const double *hplus[3],
                                         const double *hcenter,
-                                        const double *hgrav,
                                         const double *rhs,
                                         const int x_periodic,
                                         const int y_periodic,
@@ -326,7 +324,7 @@ void variable_coefficient_poisson_nodes(
     data = BiCGSTABData_new(nc, precision, local_precision, max_iter, outperiod);
     int maxit = data->max_iterations;
     data->max_iterations = ud.second_projection_max_iterations;
-    tmp = BiCGSTAB_MG_nodes(data, node, elem, hplus, hcenter, hgrav, rhs, p2, x_periodic, y_periodic, z_periodic, dt);
+    tmp = BiCGSTAB_MG_nodes(data, node, elem, hplus, hcenter, rhs, p2, x_periodic, y_periodic, z_periodic, dt);
     printf("residual 2nd projection = %e * tol\n", tmp);
     
     data->max_iterations = maxit;

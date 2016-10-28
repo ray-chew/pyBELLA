@@ -15,7 +15,6 @@ void variable_coefficient_poisson_nodes(
 										double *p2_argument,
 										const double *hplus[3],
 										const double *hcenter,
-										const double *hgrav,
 										const double *rhs,
 										const int x_periodic,
 										const int y_periodic, 

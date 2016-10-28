@@ -4,9 +4,9 @@
 
 %test_case = 'Skamarock-Klemp-Internal-Wave';
 %test_case = 'Rising-Bubble';
-test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
+%test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
-%test_case = 'Travelling-Vortex';
+test_case = 'Travelling-Vortex';
 
 showmode = 1;
 filledcontours = 1;
@@ -48,8 +48,8 @@ elseif strcmp(test_case, 'Rising-Bubble')
     H   = 1.0; 
     aspect = [1 1 1];
 elseif strcmp(test_case, 'Travelling-Vortex')
-    ncx = 256;  % 512; 256;
-    ncy = 256;  % 512; 256;
+    ncx = 128;  % 512; 256;
+    ncy = 128;  % 512; 256;
     L   = 1.0;  
     x0  = 0.5;
     H   = 1.0; 
@@ -100,8 +100,8 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'Z';  folderstr = 'Z'; titlestr = 'Z'; ndummy = 2; arraysize = [ncx ncy]; rhoZ_diff = 0;
-%varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
-varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy];
+varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
+%varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qc';  folderstr = 'qc'; titlestr = 'qc'; ndummy = 2; arraysize = [ncx ncy];

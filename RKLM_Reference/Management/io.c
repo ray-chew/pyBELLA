@@ -51,8 +51,6 @@
 #include "silo.h"
 #endif
 
-static void (*rotate[])(ConsVars* Sol, double* rhs, double *Yinvbg, const enum Direction dir) = {NULL, rotate2D, rotate3D};
-
 #ifdef SILOFORMAT
 static void putoutSILO(char* file_name);
 #endif
@@ -125,18 +123,17 @@ void putout(
 			break;
 		}
 		case HDF: {
-			int i;
 			
-			/* rotate forward and set boundary data */          
-			for(i = 0; i < ndim; i++) { 
+			/* rotate forward and set boundary data          
+			for(int i = 0; i < ndim; i++) { 
 				const double lambda = 1.0;
 				Bound(Sol, mpv->HydroState, lambda, nc, SplitStep+i); 
 				if(i < ndim - 1) (*rotate[ndim - 1])(Sol, mpv->Level[0]->rhs, Yinvbg, FORWARD);
 			}         
-			/* rotate back */          
-			for(i = ndim-1; i > 0; i--) {
+			for(int i = ndim-1; i > 0; i--) {
 				(*rotate[ndim - 1])(Sol, mpv->Level[0]->rhs, Yinvbg, BACKWARD);
 			}
+             */
             
             if (writeout == 0) {
                 return;

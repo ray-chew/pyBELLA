@@ -257,7 +257,6 @@ typedef struct {
     double Yinv[5];
     double p[5];
     double p2[5];
-    double p2c[5];
     double rho[5];
     double rhoY[5];
 } Hydro;

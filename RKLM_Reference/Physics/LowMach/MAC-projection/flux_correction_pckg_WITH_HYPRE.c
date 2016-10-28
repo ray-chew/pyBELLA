@@ -66,7 +66,6 @@ static void flux_correction_due_to_pressure_gradients(
 													  ConsVars* Sol0,
 													  const MPV* mpv, 
 													  double* hplus[3],
-													  double* hgrav,
 													  double* dp2,
 													  const double t,
 													  const double dt,
@@ -105,7 +104,6 @@ void flux_correction(
 
 	double** hplus       = mpv->Level[0]->wplus;
 	double*  hcenter     = mpv->Level[0]->wcenter;
-	double*  hgrav       = mpv->Level[0]->wgrav;
 	
 	double* rhs          = mpv->Level[0]->rhs;
 	double* dp2		     = mpv->Level[0]->p;
@@ -118,7 +116,7 @@ void flux_correction(
     printf("\nFirst Projection");
     printf("\n====================================================\n");
 	    
-	operator_coefficients(hplus, hcenter, hgrav, elem, Sol, Sol0, mpv, dt);
+	operator_coefficients(hplus, hcenter, elem, Sol, Sol0, mpv, dt);
     
 	/* obtain finest grid data for the MG hierarchy */
 	controlled_variable_change_explicit(rhs, elem, Sol, Sol0, dt, mpv);
@@ -210,11 +208,11 @@ void flux_correction(
 
     
     /**/
-    variable_coefficient_poisson_cells(dp2, rhs, (const double **)hplus, hcenter, hgrav, Sol, elem, node, implicitness);
+    variable_coefficient_poisson_cells(dp2, rhs, (const double **)hplus, hcenter, Sol, elem, node, implicitness);
 
-    set_ghostcells_p2(dp2, (const double **)hplus, hgrav, elem, elem->igx);
+    set_ghostcells_p2(dp2, (const double **)hplus, elem, elem->igx);
 
-    flux_correction_due_to_pressure_gradients(flux, buoy, elem, Sol, Sol0, mpv, hplus, hgrav, dp2, t, dt, implicitness);
+    flux_correction_due_to_pressure_gradients(flux, buoy, elem, Sol, Sol0, mpv, hplus, dp2, t, dt, implicitness);
     if (ud.p_flux_correction) {
         flux_correction_due_to_pressure_values(flux, buoy, elem, Sol, dp2, dt); 
     }
@@ -226,7 +224,7 @@ void flux_correction(
     /* store results in mpv-fields */        
     for(n=0; n<elem->nc; n++) mpv->p2_cells[n] = mpv->p2_cells[n] + dp2[n];
     
-	set_ghostcells_p2(mpv->p2_cells, (const double **)hplus, hgrav, elem, elem->igx);
+	set_ghostcells_p2(mpv->p2_cells, (const double **)hplus, elem, elem->igx);
 }
 
 /* ========================================================================== */
@@ -409,7 +407,6 @@ static enum Constraint integral_condition(
 void operator_coefficients(
                            double* hplus[3], 
                            double* wcenter,
-                           double* wgrav,
                            const ElemSpaceDiscr* elem,
                            const ConsVars* Sol,
                            const ConsVars* Sol0,
@@ -425,7 +422,6 @@ void operator_coefficients(
 	const int ndim = elem->ndim;
 	
     const int impl_grav_th = ud.implicit_gravity_theta;
-    const int impl_grav_pr = ud.implicit_gravity_press;
     
 	const double implicitness = ud.implicitness;
     const double ccw = 2.0; /* ccenterweight   4.0 */
@@ -453,7 +449,6 @@ void operator_coefficients(
 			double* hx = hplus[0];
 			double* hy = hplus[1];
 			double* hc = wcenter;
-			double* hg = wgrav;
 			
 			double hi, him, hj, hjm, g, gimp, thet, thetm, Msq;
 			
@@ -521,10 +516,7 @@ void operator_coefficients(
                     gimp  = 1.0 / (1.0 + impl_grav_th*0.25*dt*dt*(g/Msq)*(thet-thetm)/(dy*0.5*(thet+thetm)));
                     
 					hy[m] = 0.5 * (hj + hjm) * implicitness * gimp;
-                    
-                    hg[m] = th.gamminv * pow(0.5*(Sol->rhoY[jc]+Sol->rhoY[jcm]),cexp) * g * impl_grav_pr * gimp; 
-                    /* hg[m] = th.gamminv * pow(0.5*(Sol0->rhoY[jc]+Sol0->rhoY[jcm]),cexp) * (g/Msq) * impl_grav_pr * gimp; */
-                    
+                                        
 					assert(hy[m] > 0.0);
 				}
 			}
@@ -555,7 +547,6 @@ void operator_coefficients(
 			double* hy = hplus[1];
 			double* hz = hplus[2];
 			double* hc = wcenter;
-			double* hg = wgrav;
 			
 			double hi, him, hj, hjm, hk, hkm, g, gimp, thet, thetm, Msq;
 			
@@ -610,9 +601,6 @@ void operator_coefficients(
                     
                         hy[n] = 0.5 * (hj + hjm) * implicitness * gimp;
                         
-                        hg[m] = th.gamminv * pow(0.5*(Sol->rhoY[jc]+Sol->rhoY[jcm]),cexp) * g * implicitness * gimp;
-                        /* hg[m] = th.gamminv * pow(0.5*(Sol->rhoY[jc]+Sol->rhoY[jcm]),cexp) * (g/Msq) * implicitness * gimp; */
-
                         assert(hy[n] > 0.0);
                     }
                 }
@@ -679,7 +667,6 @@ static void flux_correction_due_to_pressure_gradients(
                                                       ConsVars* Sol0,
                                                       const MPV* mpv, 
                                                       double* hplus[3],
-                                                      double* hgrav,
                                                       double* dp2,
                                                       const double t,
                                                       const double dt,
@@ -844,7 +831,6 @@ static void flux_correction_due_to_pressure_gradients(
                                                   ) 
                                        );
                     
-                    tmpy += - 0.5 * dt * hgrav[mc] * 0.5 * (dp2[jc]+dp2[jcm]); /* implicit gravity contribution */                    
                     grhoY       = g->rhoY[mc] + tmpy;
                     
                     

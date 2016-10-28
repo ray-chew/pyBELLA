@@ -285,14 +285,12 @@ set_ghostcells_p2_right_open
 static void set_ghostcells_p2_bottom_void(
 										  double* p,
                                           const double* hplus[3],
-                                          const double* hgrav,
 										  const ElemSpaceDiscr* elem, 
 										  const int ig) {}
 
 static void set_ghostcells_p2_bottom_wall(
 										  double* p,
                                           const double* hplus[3],
-                                          const double* hgrav,
 										  const ElemSpaceDiscr* elem, 
 										  const int ig) {
 	
@@ -302,15 +300,10 @@ static void set_ghostcells_p2_bottom_wall(
 	const int icz = elem->icz;
     const int ify = elem->ify;
     
-    const double dy = elem->dy;
-
 	const int bsrc = igy;
 	const int bobj = igy - 1;
-    
-    const double* hplusy = hplus[1];
-	
+    	
 	int i, j, k, l, msrc, mobj, n, nh;
-    double xsi;
 	
 	assert(ig <= igy);
     assert(elem->ndim < 3);
@@ -323,8 +316,7 @@ static void set_ghostcells_p2_bottom_wall(
 			for(i = 0; i < icx; i++) {
                 n   = l + i;
                 nh  = i*ify + (bsrc + j);
-                xsi = 0.5 * dy * hgrav[nh] / hplusy[nh];
-				p[n + mobj] = p[n + msrc] * (1.0+xsi) / (1.0-xsi);
+				p[n + mobj] = p[n + msrc];
 			}
 		}
 	}
@@ -333,7 +325,6 @@ static void set_ghostcells_p2_bottom_wall(
 static void set_ghostcells_p2_bottom_inflow(
 											double* p,
                                             const double* hplus[3],
-                                            const double* hgrav,
 											const ElemSpaceDiscr* elem, 
 											const int ig) {
 	ERROR("function not available");
@@ -342,7 +333,6 @@ static void set_ghostcells_p2_bottom_inflow(
 static void set_ghostcells_p2_bottom_outflow(
 											 double* p,
                                              const double* hplus[3],
-                                             const double* hgrav,
 											 const ElemSpaceDiscr* elem, 
 											 const int ig) {
 	ERROR("function not available");
@@ -351,7 +341,6 @@ static void set_ghostcells_p2_bottom_outflow(
 static void set_ghostcells_p2_bottom_periodic(
 											  double* p,
                                               const double* hplus[3],
-                                              const double* hgrav,
 											  const ElemSpaceDiscr* elem, 
 											  const int ig) {
 	
@@ -379,7 +368,6 @@ static void set_ghostcells_p2_bottom_periodic(
 static void set_ghostcells_p2_bottom_neumann(
 											 double* p,
                                              const double* hplus[3],
-                                             const double* hgrav,
 											 const ElemSpaceDiscr* elem, 
 											 const int ig) {
 	ERROR("function not available");
@@ -388,7 +376,6 @@ static void set_ghostcells_p2_bottom_neumann(
 static void (*set_ghostcells_p2_bottom[])(
 										  double* p,
                                           const double* hplus[3],
-                                          const double* hgrav,
 										  const ElemSpaceDiscr* elem, 
 										  const int ig) = {
 set_ghostcells_p2_bottom_void,
@@ -405,14 +392,12 @@ set_ghostcells_p2_bottom_neumann
 static void set_ghostcells_p2_top_void(
 									   double* p,
                                        const double* hplus[3],
-                                       const double* hgrav,
 									   const ElemSpaceDiscr* elem, 
 									   const int ig) {}
 
 static void set_ghostcells_p2_top_wall(
 									   double* p,
                                        const double* hplus[3],
-                                       const double* hgrav,
 									   const ElemSpaceDiscr* elem, 
 									   const int ig) {
 	
@@ -424,12 +409,7 @@ static void set_ghostcells_p2_top_wall(
 	const int bsrc = icy - igy - 1;
 	const int bobj = icy - igy;
     
-    const double dy = elem->dy;
-
-    const double* hplusy = hplus[1];
-
     int i, j, k, l, msrc, mobj, n, nh;
-    double xsi;
 	
 	assert(ig <= igy);
     assert(elem->ndim < 3);
@@ -442,8 +422,7 @@ static void set_ghostcells_p2_top_wall(
 			for(i = 0; i < icx; i++) {
                 n   = l + i;
                 nh  = i*ify + (bsrc-j) + 1;
-                xsi = 0.5 * dy * hgrav[nh] / hplusy[nh];
-				p[n + mobj] = p[n + msrc] * (1.0-xsi) / (1.0+xsi);
+				p[n + mobj] = p[n + msrc];
 			}
 		}
 	}
@@ -452,7 +431,6 @@ static void set_ghostcells_p2_top_wall(
 static void set_ghostcells_p2_top_inflow(
 										 double* p,
                                          const double* hplus[3],
-                                         const double* hgrav,
 										 const ElemSpaceDiscr* elem, 
 										 const int ig) {
 	ERROR("function not available");
@@ -461,7 +439,6 @@ static void set_ghostcells_p2_top_inflow(
 static void set_ghostcells_p2_top_outflow(
 										  double* p,
                                           const double* hplus[3],
-                                          const double* hgrav,
 										  const ElemSpaceDiscr* elem, 
 										  const int ig) {
 	ERROR("function not available");
@@ -470,7 +447,6 @@ static void set_ghostcells_p2_top_outflow(
 static void set_ghostcells_p2_top_periodic(
 										   double* p,
                                            const double* hplus[3],
-                                           const double* hgrav,
 										   const ElemSpaceDiscr* elem, 
 										   const int ig) {
 	
@@ -498,7 +474,6 @@ static void set_ghostcells_p2_top_periodic(
 static void set_ghostcells_p2_top_neumann(
 										  double* p,
                                           const double* hplus[3],
-                                          const double* hgrav,
 										  const ElemSpaceDiscr* elem, 
 										  const int ig) {
 	ERROR("function not available");
@@ -507,7 +482,6 @@ static void set_ghostcells_p2_top_neumann(
 static void (*set_ghostcells_p2_top[])(
 									   double* p,
                                        const double* hplus[3],
-                                       const double* hgrav,
 									   const ElemSpaceDiscr* elem, 
 									   const int ig) = {
 set_ghostcells_p2_top_void,
@@ -675,15 +649,14 @@ set_ghostcells_p2_front_neumann
 void set_ghostcells_p2(
 					   double* p,
                        const double* hplus[3],
-                       const double* hgrav,
 					   const ElemSpaceDiscr* elem, 
 					   const int ig) {
 	
 	
 	(*set_ghostcells_p2_left[elem->left])(p, elem, ig);
 	(*set_ghostcells_p2_right[elem->right])(p, elem, ig);
-	(*set_ghostcells_p2_bottom[elem->bottom])(p, hplus, hgrav, elem, ig);
-	(*set_ghostcells_p2_top[elem->top])(p, hplus, hgrav, elem, ig); 
+	(*set_ghostcells_p2_bottom[elem->bottom])(p, hplus, elem, ig);
+	(*set_ghostcells_p2_top[elem->top])(p, hplus, elem, ig); 
 	(*set_ghostcells_p2_back[elem->back])(p, elem, ig);
 	(*set_ghostcells_p2_front[elem->front])(p, elem, ig);
 }

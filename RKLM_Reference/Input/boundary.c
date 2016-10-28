@@ -991,7 +991,6 @@ void Set_Explicit_Boundary_Data(
     for(SplitStep = elem->ndim-1; SplitStep > 0; SplitStep--) {
         (*rotate[elem->ndim - 1])(Sol, mpv->Level[0]->rhs, Yinvbg, BACKWARD);
     }
-    
 }
 
 

@@ -64,7 +64,6 @@ static void	catch_periodic_directions(
 static void operator_coefficients_nodes(
 										double* Splus[3], 
 										double* wcenter,
-										double* wgrav,
 										const ElemSpaceDiscr* elem,
 										const NodeSpaceDiscr* node,
 										ConsVars* Sol,
@@ -77,7 +76,6 @@ void correction_nodes(
 					  const ElemSpaceDiscr* elem,
 					  const NodeSpaceDiscr* node,
                       const double* hplus[3], 
-                      const double* hgrav,
 					  double* p2, 
 					  const double t,
 					  const double dt);
@@ -102,7 +100,6 @@ void second_projection(
 	
 	double** hplus   = mpv->Level[0]->wplus;
 	double*  hcenter = mpv->Level[0]->wcenter;
-	double*  hgrav   = mpv->Level[0]->wgrav;
 	
 	double* rhs      = mpv->Level[0]->rhs;
 	double* p2       = mpv->Level[0]->p;
@@ -152,9 +149,9 @@ void second_projection(
      
     
 	assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED); 
-	operator_coefficients_nodes(hplus, hcenter, hgrav, elem, node, Sol, Sol0, mpv, dt);
+	operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
 	
-	variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, hgrav, rhs, x_periodic, y_periodic, z_periodic, dt);
+	variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, x_periodic, y_periodic, z_periodic, dt);
     
 #if 1
     rhs_max = 0.0;
@@ -209,8 +206,8 @@ void second_projection(
         }
     }
     printf("rhs_max before = %e\n", rhs_max);
-    correction_nodes(Sol, elem, node, (const double **)hplus, hgrav, p2, t, dt);
-    EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, p2, (const double **)hplus, hcenter, hgrav, x_periodic, y_periodic, z_periodic, W0);
+    correction_nodes(Sol, elem, node, (const double **)hplus, p2, t, dt);
+    EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, p2, (const double **)hplus, hcenter, x_periodic, y_periodic, z_periodic, W0);
     precon_apply(W0,W0,node);
     for(ii=0; ii<nc; ii++) rhs[ii] = 0.0;
     rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv->eta, mpv, bdry, dt, rhs_weight_new);
@@ -241,7 +238,7 @@ void second_projection(
     }
     printf("rhs_max after  = %e\n", rhs_max);
 #else
-    correction_nodes(Sol, elem, node, (const double**)hplus, hgrav, p2, t, dt);
+    correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);
 #endif
     
     for(ii=0; ii<nc; ii++) {
@@ -603,7 +600,6 @@ static void	catch_periodic_directions(
 static void operator_coefficients_nodes(
 										double* hplus[3], 
 										double* hcenter,
-										double* hgrav,
 										const ElemSpaceDiscr* elem,
 										const NodeSpaceDiscr* node,
 										ConsVars* Sol,
@@ -620,10 +616,7 @@ static void operator_coefficients_nodes(
     const int ndim = node->ndim;
     
     const int impl_grav_th2 = ud.implicit_gravity_theta2;
-    const int impl_grav_pr2 = ud.implicit_gravity_press2;
-    
-    assert(impl_grav_pr2 == 0);
-            
+                
 	switch(ndim) {
 		case 1: {    
 			ERROR("interface_enthalpy_nodes() not implemented for 1D\n");
@@ -641,7 +634,6 @@ static void operator_coefficients_nodes(
 			double* hplusx  = hplus[0];
 			double* hplusy  = hplus[1];
 			double* hc      = hcenter;
-			double* hg      = hgrav;
 
 			const double ccenter = - 4.0*(ud.compressibility*ud.Msq)*th.gamminv/(mpv->dt*mpv->dt);
 
@@ -669,7 +661,6 @@ static void operator_coefficients_nodes(
                                         
                     hplusx[n]  = theta * gimpx;
                     hplusy[n]  = theta * gimpy;
-                    hg[n]      = 0.0;
 				}
 			}
 									
@@ -874,7 +865,6 @@ void correction_nodes(
 					  const ElemSpaceDiscr* elem,
 					  const NodeSpaceDiscr* node,
                       const double* hplus[3], 
-                      const double* hgrav,
 					  double* p, 
 					  const double t,
 					  const double dt) {

@@ -73,9 +73,7 @@ static void HydroStates(Hydro* Hydros,
     Sl = Hydros[ic].Yinv[0];
     Sc = Hydros[ic].Yinv[2];
     Sr = Hydros[ic].Yinv[4];
-    
-    Hydros[ic].p2c[2] = Hydros[ic].p2[2];
-    
+        
     for(k=0; k<2; k++) {
         double dhk = (k-2) * 0.5 * dh; 
         double dpi = - (th.Gamma*strength) * dhk * 0.5 * ((1+0.5*k)*Sc + (1-0.5*k)*Sl);
@@ -94,26 +92,6 @@ static void HydroStates(Hydro* Hydros,
 #else
         double dp  = pow(pi+dpi,th.Gammainv) - Hydros[ic].p2[2]*Msq;
         Hydros[ic].p2[k] = Hydros[ic].p2[2] + dp/Msq;
-#endif
-    }
-    
-    /* hydrostatic p-difference from cell-centered theta for stronger feedback on cell-centered momentum */
-    {
-        
-        double dpi = - (th.Gamma*strength) * 0.5 * dh * Sc;
-#ifdef THERMCON
-        Hydros[ic].p2c[3] = Hydros[ic].p2c[2] + dpi/Msq;
-#else
-        double dp  = pow(pi+dpi,th.Gammainv) - Hydros[ic].p2[2]*Msq;
-        Hydros[ic].p2c[3] = Hydros[ic].p2c[2] + dp/Msq;
-#endif
-        
-        dpi = (th.Gamma*strength) * 0.5 * dh * Sc;
-#ifdef THERMCON
-        Hydros[ic].p2c[1] = Hydros[ic].p2c[2] + dpi/Msq;  
-#else
-        dp  = pow(pi+dpi,th.Gammainv) - Hydros[ic].p2[2]*Msq;
-        Hydros[ic].p2c[1] = Hydros[ic].p2c[2] + dp/Msq;  
 #endif
     }
 }

@@ -15,7 +15,6 @@ void precon_prepare(
                     const ElemSpaceDiscr* elem,
                     const double* hplus[3],
                     const double* wcenter,
-                    const double* wgravb,
                     const int x_periodic,
                     const int y_periodic,
                     const int z_periodic);
@@ -36,7 +35,6 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
 												 const double* p,
 												 const double* wplus[3],
 												 const double* wcenter,
-												 const double* wgrav,
 												 const int x_periodic,
 												 const int y_periodic,
 												 const int z_periodic,
