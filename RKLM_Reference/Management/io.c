@@ -242,11 +242,17 @@ void putout(
 			sprintf(fieldname, "dY_%s_%s", field_name, step_string);
 			WriteHDF(pdYfile, icx, icy, icz, ndim, var, fn, fieldname);
 			
-            /* rho Z */
-            sprintf(fn, "%s/rhoZ/rhoZ_%s.hdf", dir_name, step_string);
+            /* rho Z - pressure */
+            sprintf(fn, "%s/rhoZp/rhoZp_%s.hdf", dir_name, step_string);
             if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
-            sprintf(fieldname, "rhoZ_%s_%s", field_name, step_string);
+            sprintf(fieldname, "rhoZp_%s_%s", field_name, step_string);
             WriteHDF(prhoYfile, icx, icy, icz, ndim, Sol->rhoZ[PRES], fn, fieldname);
+
+            /* rho Z - buoyancy */
+            sprintf(fn, "%s/rhoZB/rhoZB_%s.hdf", dir_name, step_string);
+            if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
+            sprintf(fieldname, "rhoZB_%s_%s", field_name, step_string);
+            WriteHDF(prhoYfile, icx, icy, icz, ndim, Sol->rhoZ[BUOY], fn, fieldname);
 
             for (nsp = 0; nsp < ud.nspec; nsp++) {
                 

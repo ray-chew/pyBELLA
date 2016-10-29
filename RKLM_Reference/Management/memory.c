@@ -18,18 +18,23 @@
 #include "Gasdynamics.h"
 #include "math_own.h"
 
+/* ================================================================================ */
 
 void update(
 			ConsVars* sol, 
 			const ConsVars *flux[3], 
 			const VectorField* buoy,
 			const ElemSpaceDiscr* elem, 
-			const double dt) {
+			const double dt) 
+{
 	
 	extern User_Data ud;
+    extern MPV *mpv;
 	
+    const double grav = ud.gravity_strength[1];
+    const double Msq  = ud.Msq;
+    
     double drho, drhoe_total;
-    double drhoY_max = 0.0;
   	int ndim = elem->ndim;
     int nsp;
 	
@@ -55,7 +60,6 @@ void update(
     		break;
   		}
   		case 2: {
-			int i, j, m, n, ox, oy;
 			const int igx = elem->igx;
 			const int icx = elem->icx;
 			const int ifx = elem->ifx;
@@ -67,13 +71,27 @@ void update(
 			const ConsVars* f = flux[0];
 			const ConsVars* g = flux[1];
             
-            double drhoY;
-			
+            double drhoY, drhoYS, dYS, Sxc, Syp, Sym, rho_old, rhoY_old, rhoYS_old;
+
+            int i, j, m, n, ox, oy;
+
 			for(j = igy; j < icy - igy; j++) {m = j * icx;
+                
+                Sxc = mpv->HydroState->S0[j];
+                Sym = 0.5*(mpv->HydroState->S0[j]+mpv->HydroState->S0[j-1]);
+                Syp = 0.5*(mpv->HydroState->S0[j]+mpv->HydroState->S0[j+1]);
+                
 				for(i = igx; i < icx - igx; i++) {n = m + i;
 					ox = j * ifx + i;
 					oy = i * ify + j;
-										
+					
+                    /* Buoyancy contribution due to update of theta-fluctuations - preparation */
+                    rho_old   = sol->rho[n];
+                    rhoY_old  = sol->rhoY[n];
+                    rhoYS_old = rho_old - rhoY_old*Sxc;
+                    drhoYS    = - lambdax * ((f->rho[ox+1] - f->rhoY[ox+1]*Sxc) - (f->rho[ox] - f->rhoY[ox]*Sxc) ) 
+                                - lambday * ((g->rho[oy+1] - g->rhoY[oy+1]*Syp) - (g->rho[oy] - g->rhoY[oy]*Sym) );
+                    
 					drho        = - lambdax * (f->rho[ox+1]  - f->rho[ox] ) - lambday * (g->rho[oy+1]  - g->rho[oy] );
 					drhoe_total = - lambdax * (f->rhoe[ox+1] - f->rhoe[ox]) - lambday * (g->rhoe[oy+1] - g->rhoe[oy]);
 										
@@ -84,20 +102,21 @@ void update(
 					sol->rhov[n] += -lambdax * (f->rhov[ox + 1] - f->rhov[ox]) - lambday * (g->rhov[oy + 1] - g->rhov[oy]) + buoy->y[n];
 					sol->rhow[n] += -lambdax * (f->rhow[ox + 1] - f->rhow[ox]) - lambday * (g->rhow[oy + 1] - g->rhow[oy]);
 					drhoY = -lambdax * (f->rhoY[ox + 1] - f->rhoY[ox]) - lambday * (g->rhoY[oy + 1] - g->rhoY[oy]);
-                    drhoY_max = MAX_own(drhoY_max, fabs(drhoY));
                     sol->rhoY[n] += drhoY;
                     for (nsp = 0; nsp < ud.nspec; nsp++) {
                         sol->rhoX[nsp][n] -= lambdax * (f->rhoX[nsp][ox + 1] - f->rhoX[nsp][ox]) - lambday * (g->rhoX[nsp][oy + 1] - g->rhoX[nsp][oy]);
                     }
+                    
+                    /* Buoyancy contribution due to update of theta-fluctuations */
+                    dYS = (rhoYS_old + drhoYS) / sol->rhoY[n] - rhoYS_old / rhoY_old;
+                    sol->rhov[n] -= 0.5 * dt * 0.5 * (sol->rhoY[n]+rhoY_old) * (grav/Msq) * dYS;
+                    
 				}
 			}
-			
-            printf("drhoY_max = %e\n", drhoY_max);
-            
+			            
 			break;
 		}
 		case 3: {
-			int i, j, k, l, m, n, o;
 			const int igx = elem->igx;
 			const int icx = elem->icx;
 			const int ifx = elem->ifx;
@@ -117,43 +136,65 @@ void update(
 			const ConsVars* g = flux[1];
 			const ConsVars* h = flux[2];
 			
-			for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
+            double drhoY, drhoYS, dYS, Sxc, Syp, Sym, rho_old, rhoY_old, rhoYS_old;
+
+            int i, j, k, l, m, n, ox, oy, oz;
+
+            for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
 				for(j = igy; j < icy - igy; j++) {m = l + j * icx;
+                    
+                    Sxc = mpv->HydroState->S0[j];
+                    Sym = 0.5*(mpv->HydroState->S0[j]+mpv->HydroState->S0[j-1]);
+                    Syp = 0.5*(mpv->HydroState->S0[j]+mpv->HydroState->S0[j+1]);
+                    
 					for(i = igx; i < icx - igx; i++) {n = m + i;
+                        ox = k * ifxicy + j * ifx + i;
+                        oy = i * ifyicz + k * ify + j;
+                        oz = j * ifzicx + i * ifz + k;
+
+                        /* Buoyancy contribution due to update of theta-fluctuations - preparation */
+                        rho_old   = sol->rho[n];
+                        rhoY_old  = sol->rhoY[n];
+                        rhoYS_old = rho_old - rhoY_old*Sxc;
+                        drhoYS    = - lambdax * ((f->rho[ox+1] - f->rhoY[ox+1]*Sxc) - (f->rho[ox] - f->rhoY[ox]*Sxc) ) 
+                                    - lambday * ((g->rho[oy+1] - g->rhoY[oy+1]*Syp) - (g->rho[oy] - g->rhoY[oy]*Sym) ) 
+                                    - lambdaz * ((h->rho[oz+1] - h->rhoY[oz+1]*Syp) - (h->rho[oz] - h->rhoY[oz]*Sym) );
+
 						/* assuming non-moving grid and stationary geopotential */
-						o = k * ifxicy + j * ifx + i;
-						sol->rho[n] -= lambdax * ( f->rho[o + 1] -  f->rho[o]);
-						sol->rhou[n] -= lambdax * (f->rhou[o + 1] - f->rhou[o]);
-						sol->rhov[n] -= lambdax * (f->rhov[o + 1] - f->rhov[o]);
-						sol->rhow[n] -= lambdax * (f->rhow[o + 1] - f->rhow[o]);
-						sol->rhoe[n] -= lambdax * (f->rhoe[o + 1] - f->rhoe[o]);
-						sol->rhoY[n] -= lambdax * (f->rhoY[o + 1] - f->rhoY[o]);
+						sol->rho[n] -= lambdax * ( f->rho[ox + 1] -  f->rho[ox]);
+						sol->rhou[n] -= lambdax * (f->rhou[ox + 1] - f->rhou[ox]);
+						sol->rhov[n] -= lambdax * (f->rhov[ox + 1] - f->rhov[ox]);
+						sol->rhow[n] -= lambdax * (f->rhow[ox + 1] - f->rhow[ox]);
+						sol->rhoe[n] -= lambdax * (f->rhoe[ox + 1] - f->rhoe[ox]);
+						sol->rhoY[n] -= lambdax * (f->rhoY[ox + 1] - f->rhoY[ox]);
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            sol->rhoX[nsp][n] -= lambdax * (f->rhoX[nsp][o + 1] - f->rhoX[nsp][o]);
+                            sol->rhoX[nsp][n] -= lambdax * (f->rhoX[nsp][ox + 1] - f->rhoX[nsp][ox]);
                         }
 						/* assuming non-moving grid and stationary geopotential */
-						o = i * ifyicz + k * ify + j;
-						sol->rho[n] -= lambday * ( g->rho[o + 1] -  g->rho[o]);
-						sol->rhou[n] -= lambday * (g->rhou[o + 1] - g->rhou[o]);
-						sol->rhov[n] -= lambday * (g->rhov[o + 1] - g->rhov[o]);
-						sol->rhow[n] -= lambday * (g->rhow[o + 1] - g->rhow[o]);
-						sol->rhoe[n] -= lambday * (g->rhoe[o + 1] - g->rhoe[o]);
-						sol->rhoY[n] -= lambday * (g->rhoY[o + 1] - g->rhoY[o]);
+						sol->rho[n] -= lambday * ( g->rho[oy + 1] -  g->rho[oy]);
+						sol->rhou[n] -= lambday * (g->rhou[oy + 1] - g->rhou[oy]);
+						sol->rhov[n] -= lambday * (g->rhov[oy + 1] - g->rhov[oy]);
+						sol->rhow[n] -= lambday * (g->rhow[oy + 1] - g->rhow[oy]);
+						sol->rhoe[n] -= lambday * (g->rhoe[oy + 1] - g->rhoe[oy]);
+						sol->rhoY[n] -= lambday * (g->rhoY[oy + 1] - g->rhoY[oy]);
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            sol->rhoX[nsp][n] -= lambday * (g->rhoX[nsp][o + 1] - g->rhoX[nsp][o]);
+                            sol->rhoX[nsp][n] -= lambday * (g->rhoX[nsp][oy + 1] - g->rhoX[nsp][oy]);
                         }
 
 						/* assuming non-moving grid and stationary geopotential */
-						o = j * ifzicx + i * ifz + k;
-						sol->rho[n] -= lambdaz * ( h->rho[o + 1] -  h->rho[o]);
-						sol->rhou[n] -= lambdaz * (h->rhou[o + 1] - h->rhou[o]);
-						sol->rhov[n] -= lambdaz * (h->rhov[o + 1] - h->rhov[o]);
-						sol->rhow[n] -= lambdaz * (h->rhow[o + 1] - h->rhow[o]);
-						sol->rhoe[n] -= lambdaz * (h->rhoe[o + 1] - h->rhoe[o]);
-						sol->rhoY[n] -= lambdaz * (h->rhoY[o + 1] - h->rhoY[o]);
+						sol->rho[n] -= lambdaz * ( h->rho[oz + 1] -  h->rho[oz]);
+						sol->rhou[n] -= lambdaz * (h->rhou[oz + 1] - h->rhou[oz]);
+						sol->rhov[n] -= lambdaz * (h->rhov[oz + 1] - h->rhov[oz]);
+						sol->rhow[n] -= lambdaz * (h->rhow[oz + 1] - h->rhow[oz]);
+						sol->rhoe[n] -= lambdaz * (h->rhoe[oz + 1] - h->rhoe[oz]);
+						sol->rhoY[n] -= lambdaz * (h->rhoY[oz + 1] - h->rhoY[oz]);
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            sol->rhoX[nsp][n] -= lambdaz * (h->rhoX[nsp][o + 1] - h->rhoX[nsp][o]);
+                            sol->rhoX[nsp][n] -= lambdaz * (h->rhoX[nsp][oz + 1] - h->rhoX[nsp][oz]);
                         }
+                        
+                        /* Buoyancy contribution due to update of theta-fluctuations */
+                        dYS = (rhoYS_old + drhoYS) / sol->rhoY[n] - rhoYS_old / rhoY_old;
+                        sol->rhov[n] -= 0.5 * dt * 0.5 * (sol->rhoY[n]+rhoY_old) * (grav/Msq) * dYS;
 					}
 				} 
 			}  
@@ -166,6 +207,7 @@ void update(
 	
 }
 
+/* ================================================================================ */
 
 void rotate2D(ConsVars* Sol, double* rhs, double *Yinvbg, const enum Direction direction) {
 	
@@ -294,6 +336,7 @@ void rotate2D(ConsVars* Sol, double* rhs, double *Yinvbg, const enum Direction d
 	}
 }
 
+/* ================================================================================ */
 
 void rotate3D(ConsVars* Sol, double *rhs, double *Yinvbg, const enum Direction direction) {
 	
@@ -609,6 +652,7 @@ void rotate3D(ConsVars* Sol, double *rhs, double *Yinvbg, const enum Direction d
 	}
 }  
 
+/* ================================================================================ */
 
 void flip3D_f( double *f, int ix, int iy, int iz, int n, double *W ) {
 	
@@ -624,6 +668,7 @@ void flip3D_f( double *f, int ix, int iy, int iz, int n, double *W ) {
 				f[i * iy * iz + k * iy + j] = W[k * ix * iy + j * ix + i];
 }
 
+/* ================================================================================ */
 
 void flip3D_b( double *f, int ix, int iy, int iz, int n, double *W ) {
 	
@@ -640,7 +685,7 @@ void flip3D_b( double *f, int ix, int iy, int iz, int n, double *W ) {
 }
 
 
-/* void memcpy(double *W, double *f, int n_allocate); */
+/* ================================================================================ */
 
 void flip2D(double *f, int ix, int iy, int n, double *W ) {
 	

@@ -648,11 +648,7 @@ static void operator_coefficients_nodes(
                 for(i = igx; i < icx - igx; i++) {
                     n = m + i;     
                     
-#ifdef THERMCON
                     double theta   = Gammainv * Sol->rhoY[n]*Sol->rhoY[n] / Sol->rho[n] ;
-#else
-                    double theta   = Sol->rhoY[n] / Sol->rho[n] ;
-#endif               
                     double dthetax = (mpv->HydroState->Y0[j] - mpv->HydroState->Y0[j]) / (2.0*dx);
                     double gimpx   = 1.0 / (1.0 + impl_grav_th2*0.25*dt*dt*(ud.gravity_strength[0]/Msq)*dthetax/theta);
                     
@@ -705,11 +701,7 @@ static void operator_coefficients_nodes(
                 for(j = igy; j < icy - igy; j++) {m = l + j * icx;
                     for(i = igx; i < icx - igx; i++) {n = m + i;
                         {
-#ifdef THERMCON
                             double theta   = Gammainv * Sol->rhoY[n]*Sol->rhoY[n] / Sol->rho[n] ;
-#else
-                            double theta   = Sol->rhoY[n] / Sol->rho[n] ;
-#endif               
                             
                             double dthetax = ((Sol->rhoY[n+dix]  / Sol->rho[n+dix]) - (Sol->rhoY[n-dix]  / Sol->rho[n-dix])) / (2.0*dx);
                             double gimpx   = 1.0 / (1.0 + impl_grav_th2*0.25*dt*dt*(ud.gravity_strength[0]/Msq)*dthetax/theta);

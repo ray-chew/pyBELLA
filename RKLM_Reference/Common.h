@@ -9,7 +9,6 @@
 
 /*
  */
-#define THERMCON
 #define ADVECT_THETA_PRIME 0.0
 
 #define PERTURBED_WALL
@@ -24,6 +23,8 @@
 /* ============================================= 
  Elliptic Solver Options
  ============================================= */
+
+#define GRAVITY_IMPLICIT
 
 /* solver options ==============================
  #define SOLVER_1_CR2

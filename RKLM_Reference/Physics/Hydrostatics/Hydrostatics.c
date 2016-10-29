@@ -16,7 +16,8 @@
 
 /* ================================================================================== */
 
-void Hydrostatics_State(MPV* mpv, double *Yinvbg, const ElemSpaceDiscr* elem) {
+void Hydrostatics_State(MPV* mpv, double *Yinvbg, const ElemSpaceDiscr* elem) 
+{
     
     extern Thermodynamic th;
     extern User_Data ud;

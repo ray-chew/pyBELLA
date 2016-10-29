@@ -75,24 +75,14 @@ static void HydroStates(Hydro* Hydros,
     Sr = Hydros[ic].Yinv[4];
         
     for(k=0; k<2; k++) {
-        double dhk = (k-2) * 0.5 * dh; 
-        double dpi = - (th.Gamma*strength) * dhk * 0.5 * ((1+0.5*k)*Sc + (1-0.5*k)*Sl);
-#ifdef THERMCON
+        double dhk       = (k-2) * 0.5 * dh; 
+        double dpi       = - (th.Gamma*strength) * dhk * 0.5 * ((1+0.5*k)*Sc + (1-0.5*k)*Sl);
         Hydros[ic].p2[k] = Hydros[ic].p2[2] + dpi/Msq;
-#else
-        double dp  = pow(pi+dpi,th.Gammainv) - Hydros[ic].p2[2]*Msq;
-        Hydros[ic].p2[k] = Hydros[ic].p2[2] + dp/Msq;
-#endif
     }
     for(k=3; k<5; k++) {
-        double dhk  = (k-2) * 0.5 * dh; 
-        double dpi = - (th.Gamma*strength) * dhk * 0.5 * ((1+0.5*(4-k))*Sc + (1-0.5*(4-k))*Sr);
-#ifdef THERMCON
+        double dhk       = (k-2) * 0.5 * dh; 
+        double dpi       = - (th.Gamma*strength) * dhk * 0.5 * ((1+0.5*(4-k))*Sc + (1-0.5*(4-k))*Sr);
         Hydros[ic].p2[k] = Hydros[ic].p2[2] + dpi/Msq;
-#else
-        double dp  = pow(pi+dpi,th.Gammainv) - Hydros[ic].p2[2]*Msq;
-        Hydros[ic].p2[k] = Hydros[ic].p2[2] + dp/Msq;
-#endif
     }
 }
 
@@ -214,17 +204,19 @@ void recovery_gravity(
         
         Hydros[i].rho[2]  = Sol->rho[i];
         
-        Hydros[i].rhoY[0] = Sol->rhoY[iminus];
-        Hydros[i].rhoY[1] = 0.5*(Sol->rhoY[iminus] + Sol->rhoY[i]);
-        Hydros[i].rhoY[2] = Sol->rhoY[i];
-        Hydros[i].rhoY[3] = 0.5*(Sol->rhoY[i] + Sol->rhoY[iplus]);
-        Hydros[i].rhoY[4] = Sol->rhoY[iplus];
-        
+#ifdef GRAVITY_IMPLICIT
+        Hydros[i].Yinv[0] = Sol->rhoZ[BUOY][iminus];
+        Hydros[i].Yinv[2] = Sol->rhoZ[BUOY][i];
+        Hydros[i].Yinv[4] = Sol->rhoZ[BUOY][iplus];
+        Hydros[i].Yinv[1] = 0.5*(Hydros[i].Yinv[0]+Hydros[i].Yinv[2]);
+        Hydros[i].Yinv[3] = 0.5*(Hydros[i].Yinv[2]+Hydros[i].Yinv[4]);
+#else
         Hydros[i].Yinv[0] = Yinv_ave[iminus];
         Hydros[i].Yinv[2] = Yinv_ave[i];
         Hydros[i].Yinv[4] = Yinv_ave[iplus];
         Hydros[i].Yinv[1] = 0.5*(Hydros[i].Yinv[0]+Hydros[i].Yinv[2]);
         Hydros[i].Yinv[3] = 0.5*(Hydros[i].Yinv[2]+Hydros[i].Yinv[4]);
+#endif
 
         Hydros[i].p2[2]   = Sol->rhoZ[PRES][i];  
         
@@ -235,7 +227,7 @@ void recovery_gravity(
     }
     
     for( i = 0; i < nmax-1;  i++) {        
-        Lefts->rhoY[i] = Rights->rhoY[i+1] = 0.5*(Hydros[i].rhoY[3]+Hydros[i+1].rhoY[1]) \
+        Lefts->rhoY[i] = Rights->rhoY[i+1] = 0.5*(Sol->rhoY[i] + Sol->rhoY[i+1]) \
                          - OrderTwo * 0.5*lambda*(Sol->u[i+1]*Sol->rhoY[i+1]-Sol->u[i]*Sol->rhoY[i]);
         Lefts->p0[i]   = Rights->p0[i+1]   = pow(Lefts->rhoY[i], gamm);
     }
@@ -248,12 +240,8 @@ void recovery_gravity(
         double drhou;
         
         double u    = 0.5*(Sol->u[i]+Sol->u[i-1]);
-#ifdef THERMCON
         double gps  = th.Gammainv * 0.5 * (Sol->rhoY[i] + Sol->rhoY[i-1]); 
-        /* double gps  = th.Gammainv * 0.5 * (Rights->rhoY[i]+Lefts->rhoY[i-1]);  */
-#else
-        double gps  = 1.0;  
-#endif
+        /* option: double gps  = th.Gammainv * 0.5 * (Rights->rhoY[i]+Lefts->rhoY[i-1]);  */
 
         {            
             double SlopeY     = (1.0/Sol->Y[i] - 1.0/Sol->Y[i-1]); 

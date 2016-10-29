@@ -81,7 +81,7 @@ static void flux_correction_due_to_pressure_values(
 
 /* ========================================================================== */
 
-#if 1
+#if 0
 static int rhs_output_count = 0;
 #endif
 
@@ -107,9 +107,7 @@ void flux_correction(
 	
 	double* rhs          = mpv->Level[0]->rhs;
 	double* dp2		     = mpv->Level[0]->p;
-    
-    rhs_output_count     = 0;
-    
+        
 	int n;
         
     printf("\n\n====================================================");
@@ -124,7 +122,7 @@ void flux_correction(
     assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
     rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
     
-#if 1
+#if 0
     extern User_Data ud;
     FILE *prhsfile = NULL;
     char fn2[200], fieldname2[90];
@@ -416,9 +414,7 @@ void operator_coefficients(
 	extern User_Data ud;
 	extern Thermodynamic th;
 	
-#ifdef THERMCON
     const double Gammainv = th.Gammainv;
-#endif
 	const int ndim = elem->ndim;
 	
     const int impl_grav_th = ud.implicit_gravity_theta;
@@ -444,13 +440,12 @@ void operator_coefficients(
 			const int igy = elem->igy;
 			const int icy = elem->icy;
 			const int ify = elem->ify;
-            const double dx = elem->dx;
             const double dy = elem->dy;
 			double* hx = hplus[0];
 			double* hy = hplus[1];
 			double* hc = wcenter;
 			
-			double hi, him, hj, hjm, g, gimp, thet, thetm, Msq;
+			double hi, him, hj, hjm, g, gimp, Msq;
 			
 			int i, j, m, n, ic, icm, jc, jcm;
             
@@ -465,23 +460,15 @@ void operator_coefficients(
                     ic    = n - j;
 					icm   = ic - 1; 
 					
-#ifdef THERMCON
                     hi    = 0.5 * ( Sol->rhoY[ic] * Sol->rhoY[ic] / Sol->rho[ic] + Sol0->rhoY[ic] * Sol0->rhoY[ic] / Sol0->rho[ic] ) * Gammainv;   
                     him   = 0.5 * ( Sol->rhoY[icm] * Sol->rhoY[icm] / Sol->rho[icm] + Sol0->rhoY[icm] * Sol0->rhoY[icm] / Sol0->rho[icm] ) * Gammainv;
+
                     /*
                     hi    = Sol->rhoY[ic] * Sol->rhoY[ic] / Sol->rho[ic] * Gammainv;   
                     him   = Sol->rhoY[icm] * Sol->rhoY[icm] / Sol->rho[icm] * Gammainv;
                      */
-#else
-                    hi    = 0.5 * ( Sol->rhoY[ic] / Sol->rho[ic] + Sol0->rhoY[ic] / Sol0->rho[ic] );   
-					him   = 0.5 * ( Sol->rhoY[icm] / Sol->rho[icm] + Sol0->rhoY[icm] / Sol0->rho[icm] );
-#endif
-                    thet  = Sol->rhoY[ic]  / Sol->rho[ic] ;
-                    thetm = Sol->rhoY[icm] / Sol->rho[icm];
                     
-                    gimp  = 1.0 / (1.0 + impl_grav_th*0.25*dt*dt*(g/Msq)*(thet-thetm)/(dx*0.5*(thet+thetm)));
-                    
-					hx[n] = 0.5 * (hi + him) * implicitness * gimp;
+					hx[n] = 0.5 * (hi + him) * implicitness;
                     
 					assert(hx[n] > 0.0);
 				}
@@ -498,22 +485,20 @@ void operator_coefficients(
                     jc    = j * icx + i;
 					jcm   = jc - icx;          
 				
-#ifdef THERMCON
                     hj    = 0.5 * ( Sol->rhoY[jc] * Sol->rhoY[jc] / Sol->rho[jc] + Sol0->rhoY[jc] * Sol0->rhoY[jc] / Sol0->rho[jc]) * Gammainv;
                     hjm   = 0.5 * ( Sol->rhoY[jcm] * Sol->rhoY[jcm] / Sol->rho[jcm] + Sol0->rhoY[jcm] * Sol0->rhoY[jcm] / Sol0->rho[jcm]) * Gammainv;
+                    
                     /*
                     hj    = Sol->rhoY[jc] * Sol->rhoY[jc] / Sol->rho[jc] * Gammainv;
                     hjm   = Sol->rhoY[jcm] * Sol->rhoY[jcm] / Sol->rho[jcm] * Gammainv;
                      */
-#else
-					hj    = 0.5 * ( Sol->rhoY[jc] / Sol->rho[jc] + Sol0->rhoY[jc] / Sol0->rho[jc]);
-					hjm   = 0.5 * ( Sol->rhoY[jcm] / Sol->rho[jcm] + Sol0->rhoY[jcm] / Sol0->rho[jcm]);
-#endif
                     
-                    thet  = Sol->rhoY[jc]  / Sol->rho[jc] ;
-                    thetm = Sol->rhoY[jcm] / Sol->rho[jcm];
+                    double S   = mpv->HydroState->S0[j];
+                    double Sm  = mpv->HydroState->S0[j-1];
+                    double Y   = 0.5 * (Sol->rhoY[jc] / Sol->rho[jc] + Sol0->rhoY[jc] / Sol0->rho[jc]);
+                    double Nsq = - (g/Msq) * Y * (S-Sm)/dy;
                      
-                    gimp  = 1.0 / (1.0 + impl_grav_th*0.25*dt*dt*(g/Msq)*(thet-thetm)/(dy*0.5*(thet+thetm)));
+                    gimp  = 1.0 / (1.0 + impl_grav_th*0.5*dt*dt*Nsq);
                     
 					hy[m] = 0.5 * (hj + hjm) * implicitness * gimp;
                                         
@@ -540,15 +525,13 @@ void operator_coefficients(
 			const int igz = elem->igz;
 			const int icz = elem->icz;
 			const int ifz = elem->ifz;
-            const double dx = elem->dx;
             const double dy = elem->dy;
-            const double dz = elem->dz;
 			double* hx = hplus[0];
 			double* hy = hplus[1];
 			double* hz = hplus[2];
 			double* hc = wcenter;
 			
-			double hi, him, hj, hjm, hk, hkm, g, gimp, thet, thetm, Msq;
+			double hi, him, hj, hjm, hk, hkm, g, gimp, Msq;
 			
 			int i, j, k, l, m, n, ic, icm, jc, jcm, kc, kcm;
             
@@ -561,19 +544,13 @@ void operator_coefficients(
                     for(i = igx; i < ifx - igx; i++) {n = m + i;
                         ic  = k*icx*icy + j*icx + i;
                         icm = ic - 1; 
-#ifdef THERMCON
+
                         hi    = 0.5 * (Sol->rhoY[ic] *Sol->rhoY[ic] /Sol->rho[ic]  + Sol0->rhoY[ic] *Sol0->rhoY[ic] /Sol0->rho[ic] ) * Gammainv;   
                         him   = 0.5 * (Sol->rhoY[icm]*Sol->rhoY[icm]/Sol->rho[icm] + Sol0->rhoY[icm]*Sol0->rhoY[icm]/Sol0->rho[icm]) * Gammainv;
-#else
-                        hi    = 0.5 * (Sol->rhoY[ic] /Sol->rho[ic]  + Sol0->rhoY[ic] /Sol0->rho[ic] );   
-                        him   = 0.5 * (Sol->rhoY[icm]/Sol->rho[icm] + Sol0->rhoY[icm]/Sol0->rho[icm]);
-#endif
 					
-                        thet  = Sol->rhoY[ic]  / Sol->rho[ic] ;
-                        thetm = Sol->rhoY[icm] / Sol->rho[icm];
-                        gimp   = 1.0 / (1.0 + impl_grav_th*0.25*dt*dt*(g/Msq)*(thet-thetm)/(dx*0.5*(thet+thetm)));
-                    
-                        hx[n] = 0.5 * (hi + him) * implicitness * gimp;
+                        /* optional with new time level data only as in 2D part of routine ... */
+
+                        hx[n] = 0.5 * (hi + him) * implicitness;
                         assert(hx[n] > 0.0);
                     }
                 }
@@ -587,17 +564,19 @@ void operator_coefficients(
                     for(j = igy; j < ify - igy; j++) {n = m + j;
                         jc  = k*icx*icy + j*icx + i;
                         jcm = jc - icx;          
-#ifdef THERMCON
+
                         hj       = 0.5 * (Sol->rhoY[jc] *Sol->rhoY[jc] /Sol->rho[jc] + Sol0->rhoY[jc] *Sol0->rhoY[jc] /Sol0->rho[jc] ) * Gammainv;
                         hjm      = 0.5 * (Sol->rhoY[jcm]*Sol->rhoY[jcm]/Sol->rho[jcm]+ Sol0->rhoY[jcm]*Sol0->rhoY[jcm]/Sol0->rho[jcm]) * Gammainv;
-#else
-                        hj       = 0.5 * (Sol->rhoY[jc] /Sol->rho[jc] + Sol0->rhoY[jc] /Sol0->rho[jc] );
-                        hjm      = 0.5 * (Sol->rhoY[jcm]/Sol->rho[jcm]+ Sol0->rhoY[jcm]/Sol0->rho[jcm]);
-#endif
-					
-                        thet  = Sol->rhoY[jc]  / Sol->rho[jc] ;
-                        thetm = Sol->rhoY[jcm] / Sol->rho[jcm];
-                        gimp   = 1.0 / (1.0 + impl_grav_th*0.25*dt*dt*(g/Msq)*(thet-thetm)/(dy*0.5*(thet+thetm)));
+
+                        /* optional with new time level data only as in 2D part of routine ... */
+
+                        double S   = mpv->HydroState->S0[j];
+                        double Sm  = mpv->HydroState->S0[j-1];
+                        double Y   = 0.5 * (Sol->rhoY[jc]  / Sol->rho[jc]  + Sol0->rhoY[jc]  / Sol0->rho[jc]);
+                        double Ym  = 0.5 * (Sol->rhoY[jcm] / Sol->rho[jcm] + Sol0->rhoY[jcm] / Sol0->rho[jcm]);
+                        double Nsq = - (g/Msq) * 0.5*(Y+Ym) * (S-Sm)/dy;
+                        
+                        gimp  = 1.0 / (1.0 + impl_grav_th*0.5*dt*dt*Nsq);
                     
                         hy[n] = 0.5 * (hj + hjm) * implicitness * gimp;
                         
@@ -614,19 +593,13 @@ void operator_coefficients(
                     for(k = igz; k < ifz - igz; k++) {n = m + k;
                         kc  = k*icx*icy + j*icx + i;
                         kcm = kc - icx*icy;          
-#ifdef THERMCON
+
                         hk       = 0.5 * (Sol->rhoY[kc] *Sol->rhoY[kc] /Sol->rho[kc] + Sol0->rhoY[kc] *Sol0->rhoY[kc] /Sol0->rho[kc] ) * Gammainv;
                         hkm      = 0.5 * (Sol->rhoY[kcm]*Sol->rhoY[kcm]/Sol->rho[kcm]+ Sol0->rhoY[kcm]*Sol0->rhoY[kcm]/Sol0->rho[kcm]) * Gammainv;
-#else
-                        hk       = 0.5 * (Sol->rhoY[kc] /Sol->rho[kc] + Sol0->rhoY[kc] /Sol0->rho[kc] );
-                        hkm      = 0.5 * (Sol->rhoY[kcm]/Sol->rho[kcm]+ Sol0->rhoY[kcm]/Sol0->rho[kcm]);
-#endif
-					
-                        thet  = Sol->rhoY[kc]  / Sol->rho[kc] ;
-                        thetm = Sol->rhoY[kcm] / Sol->rho[kcm];
-                        gimp   = 1.0 / (1.0 + impl_grav_th*0.25*dt*dt*(g/Msq)*(thet-thetm)/(dz*0.5*(thet+thetm)));
+
+                        /* optional with new time level data only as in 2D part of routine ... */
                     
-                        hz[n] = 0.5 * (hk + hkm) * implicitness * gimp;
+                        hz[n] = 0.5 * (hk + hkm) * implicitness;
                         assert(hz[n] > 0.0); 
                     }
                 }
@@ -1296,11 +1269,8 @@ static void flux_correction_due_to_pressure_values(
 					ic  = n - j;
 					icm = ic - 1;
 					
-#ifdef THERMCON
                     coeff = Gammainv * 0.5 * (Sol->rhoY[ic]*Sol->rhoY[ic]/Sol->rho[ic] + Sol->rhoY[icm]*Sol->rhoY[icm]/Sol->rho[icm]);
-#else
-                    coeff = 1.0;
-#endif
+
                     f->rhou[n] += ud.p_extrapol*0.5*coeff*(
                                               (ud.latw[0]*dp2[ic+icx]  + ud.latw[1]*dp2[ic]  + ud.latw[2]*dp2[ic-icx]) 
                                             + (ud.latw[0]*dp2[icm+icx] + ud.latw[1]*dp2[icm] + ud.latw[2]*dp2[icm-icx]) 
@@ -1319,12 +1289,9 @@ static void flux_correction_due_to_pressure_values(
 					jc  = j * icx + i;
 					jcm = jc - icx;
 					
-#ifdef THERMCON
                     coeff = Gammainv * 0.5 * (Sol->rhoY[jc]*Sol->rhoY[jc]/Sol->rho[jc] + Sol->rhoY[jcm]*Sol->rhoY[jcm]/Sol->rho[jcm]);
-#else
-                    coeff = 1.0;
-#endif
-					g->rhov[m] += ud.p_extrapol*0.5*coeff*(  
+
+                    g->rhov[m] += ud.p_extrapol*0.5*coeff*(  
                                                      (ud.latw[0]*dp2[jc+1]  + ud.latw[1]*dp2[jc]  + ud.latw[2]*dp2[jc-1])  
                                                    + (ud.latw[0]*dp2[jcm+1] + ud.latw[1]*dp2[jcm] + ud.latw[2]*dp2[jcm-1])
                                                   );

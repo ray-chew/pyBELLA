@@ -290,15 +290,12 @@ void Bound(
                         double rhoY = pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv);
                         double rho  = rhoY * Yinv;
                         double p    = pow(rhoY, th.gamm);
-#ifdef THERMCON
+
                         /* treat as Exner */
                         double Z    = Z_last + dpi/M_LH_sq;
                         /* treat as p/Pbar
                          not implemented - but worth a try
                          */
-#else
-                        double Z    = pow(pow(Z_last*M_LH_sq,th.Gamma) + dpi, 1.0/th.Gamma)/M_LH_sq;
-#endif
 
                         Sol->rho[nimage]  = rho;
 						Sol->rhou[nimage] = rho*u;
@@ -344,15 +341,12 @@ void Bound(
                         double rhoY = pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv);
                         double rho  = rhoY * Yinv;
                         double p    = pow(rhoY, th.gamm);
-#ifdef THERMCON
+
                         /* treat as Exner */
                         double Z    = Z_last + dpi/M_LH_sq;
                         /* treat as  p / Pbar 
                          not implemented - but worth trying 
                          */
-#else
-                        double Z    = pow(pow(Z_last*M_LH_sq,th.Gamma) + dpi,1.0/th.Gamma)/M_LH_sq;
-#endif
 
                         Sol->rho[nimage]  = rho;
 						Sol->rhou[nimage] = rho*u;

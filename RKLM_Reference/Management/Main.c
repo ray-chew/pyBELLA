@@ -249,7 +249,6 @@ int main( void )
                 
                 flux_correction(flux, buoy, elem, Sol, Sol0, t, dt, ud.implicitness, step);
                 update(Sol, (const ConsVars**)flux, buoy, elem, dt);
-                which_projection = 2;
                 Set_Explicit_Boundary_Data(Sol, elem, mpv);
 #if OUTPUT_SUBSTEPS
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
@@ -258,7 +257,6 @@ int main( void )
             
             if(PROJECTION2 == 1) {
                 second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 1.0, t, dt);
-                which_projection = 1;
                 Set_Explicit_Boundary_Data(Sol, elem, mpv);
 #if OUTPUT_SUBSTEPS
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
