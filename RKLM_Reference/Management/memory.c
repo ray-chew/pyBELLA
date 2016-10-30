@@ -33,6 +33,7 @@ void update(
 	
     const double grav = ud.gravity_strength[1];
     const double Msq  = ud.Msq;
+    const double impg = ud.implicit_gravity_theta;
     
     double drho, drhoe_total;
   	int ndim = elem->ndim;
@@ -78,8 +79,8 @@ void update(
 			for(j = igy; j < icy - igy; j++) {m = j * icx;
                 
                 Sxc = mpv->HydroState->S0[j];
-                Sym = 0.5*(mpv->HydroState->S0[j]+mpv->HydroState->S0[j-1]);
-                Syp = 0.5*(mpv->HydroState->S0[j]+mpv->HydroState->S0[j+1]);
+                Sym = mpv->HydroState_n->S0[j];
+                Syp = mpv->HydroState_n->S0[j+1];
                 
 				for(i = igx; i < icx - igx; i++) {n = m + i;
 					ox = j * ifx + i;
@@ -109,7 +110,7 @@ void update(
                     
                     /* Buoyancy contribution due to update of theta-fluctuations */
                     dYS = (rhoYS_old + drhoYS) / sol->rhoY[n] - rhoYS_old / rhoY_old;
-                    sol->rhov[n] -= 0.5 * dt * 0.5 * (sol->rhoY[n]+rhoY_old) * (grav/Msq) * dYS;
+                    sol->rhov[n] -= 0.5 * dt * 0.5 * (sol->rhoY[n]+rhoY_old) * (grav/Msq) * dYS * impg;
                     
 				}
 			}
@@ -136,14 +137,14 @@ void update(
 			const ConsVars* g = flux[1];
 			const ConsVars* h = flux[2];
 			
-            double drhoY, drhoYS, dYS, Sxc, Syp, Sym, rho_old, rhoY_old, rhoYS_old;
+            double drhoYS, dYS, Sc, Syp, Sym, rho_old, rhoY_old, rhoYS_old;
 
             int i, j, k, l, m, n, ox, oy, oz;
 
             for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
 				for(j = igy; j < icy - igy; j++) {m = l + j * icx;
                     
-                    Sxc = mpv->HydroState->S0[j];
+                    Sc  = mpv->HydroState->S0[j];
                     Sym = 0.5*(mpv->HydroState->S0[j]+mpv->HydroState->S0[j-1]);
                     Syp = 0.5*(mpv->HydroState->S0[j]+mpv->HydroState->S0[j+1]);
                     
@@ -155,10 +156,10 @@ void update(
                         /* Buoyancy contribution due to update of theta-fluctuations - preparation */
                         rho_old   = sol->rho[n];
                         rhoY_old  = sol->rhoY[n];
-                        rhoYS_old = rho_old - rhoY_old*Sxc;
-                        drhoYS    = - lambdax * ((f->rho[ox+1] - f->rhoY[ox+1]*Sxc) - (f->rho[ox] - f->rhoY[ox]*Sxc) ) 
+                        rhoYS_old = rho_old - rhoY_old*Sc;
+                        drhoYS    = - lambdax * ((f->rho[ox+1] - f->rhoY[ox+1]*Sc) - (f->rho[ox] - f->rhoY[ox]*Sc) ) 
                                     - lambday * ((g->rho[oy+1] - g->rhoY[oy+1]*Syp) - (g->rho[oy] - g->rhoY[oy]*Sym) ) 
-                                    - lambdaz * ((h->rho[oz+1] - h->rhoY[oz+1]*Syp) - (h->rho[oz] - h->rhoY[oz]*Sym) );
+                                    - lambdaz * ((h->rho[oz+1] - h->rhoY[oz+1]*Sc) - (h->rho[oz] - h->rhoY[oz]*Sc) );
 
 						/* assuming non-moving grid and stationary geopotential */
 						sol->rho[n] -= lambdax * ( f->rho[ox + 1] -  f->rho[ox]);
@@ -194,7 +195,7 @@ void update(
                         
                         /* Buoyancy contribution due to update of theta-fluctuations */
                         dYS = (rhoYS_old + drhoYS) / sol->rhoY[n] - rhoYS_old / rhoY_old;
-                        sol->rhov[n] -= 0.5 * dt * 0.5 * (sol->rhoY[n]+rhoY_old) * (grav/Msq) * dYS;
+                        sol->rhov[n] -= 0.5 * dt * 0.5 * (sol->rhoY[n]+rhoY_old) * (grav/Msq) * dYS * impg;
 					}
 				} 
 			}  
@@ -202,9 +203,6 @@ void update(
 		}
 		default: ERROR("ndim not in {1,2,3}");
 	}
-	
-	/* ElemSpaceDiscr_ghost(sol, elem, elem->igx); */
-	
 }
 
 /* ================================================================================ */

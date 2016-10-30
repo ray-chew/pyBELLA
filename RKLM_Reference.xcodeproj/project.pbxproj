@@ -353,9 +353,9 @@
 		9AC4F9671DA3F06F00AED455 /* LowMach */ = {
 			isa = PBXGroup;
 			children = (
-				9AC4F96C1DA3F06F00AED455 /* MAC-projection */,
 				9AC4F9751DA3F06F00AED455 /* mpv.c */,
 				9AC4F9761DA3F06F00AED455 /* mpv.h */,
+				9AC4F96C1DA3F06F00AED455 /* MAC-projection */,
 				9AC4F9771DA3F06F00AED455 /* Second-projection */,
 			);
 			path = LowMach;
@@ -379,8 +379,8 @@
 			children = (
 				9AC4F9781DA3F06F00AED455 /* laplacian_nodes.c */,
 				9AC4F9791DA3F06F00AED455 /* laplacian_nodes.h */,
-				9AC4F97B1DA3F06F00AED455 /* second_projection_bilinear_p.h */,
 				9AC4F97C1DA3F06F00AED455 /* second_projection_bilinear_p_WITH_HYPRE.c */,
+				9AC4F97B1DA3F06F00AED455 /* second_projection_bilinear_p.h */,
 				9AC4F97D1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c */,
 				9AC4F97E1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.h */,
 			);

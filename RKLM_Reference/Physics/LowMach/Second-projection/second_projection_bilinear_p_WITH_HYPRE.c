@@ -80,6 +80,17 @@ void correction_nodes(
 					  const double t,
 					  const double dt);
 
+#ifdef GRAVITY_IMPLICIT
+void explicit_background_buoyancy(
+                                  ConsVars* Sol,
+                                  MPV* mpv,
+                                  const ConsVars* Sol0,
+                                  const ElemSpaceDiscr* elem,
+                                  const NodeSpaceDiscr* node,
+                                  const double dt
+);
+#endif
+
 /* ========================================================================== */
 
 void second_projection(
@@ -128,6 +139,12 @@ void second_projection(
 		p2[ii] = mpv->dp2_nodes[ii];
 		rhs[ii] = 0.0;
 	}
+    
+    
+#ifdef GRAVITY_IMPLICIT
+    explicit_background_buoyancy(Sol, mpv, Sol0, elem, node, dt);
+#endif
+
 	    
     double rhs_weight_new = 2.0;
     double rhs_weight_old = 2.0*ud.compressibility;
@@ -610,6 +627,7 @@ static void operator_coefficients_nodes(
 	extern User_Data ud;
 	extern Thermodynamic th;
 	
+    const double g   = ud.gravity_strength[1];
     const double Msq = ud.Msq;
     const double Gammainv = th.Gammainv;
     
@@ -628,7 +646,6 @@ static void operator_coefficients_nodes(
 			const int igy = elem->igy;
 			const int icy = elem->icy;
 
-            const double dx = elem->dx;
             const double dy = elem->dy;
 			
 			double* hplusx  = hplus[0];
@@ -645,18 +662,24 @@ static void operator_coefficients_nodes(
 			for(j = igy; j < icy - igy; j++) {
                 m = j * icx;
 				
+                double dSdy  = (mpv->HydroState_n->S0[j+1] - mpv->HydroState_n->S0[j]) / dy;
+
                 for(i = igx; i < icx - igx; i++) {
                     n = m + i;     
                     
-                    double theta   = Gammainv * Sol->rhoY[n]*Sol->rhoY[n] / Sol->rho[n] ;
-                    double dthetax = (mpv->HydroState->Y0[j] - mpv->HydroState->Y0[j]) / (2.0*dx);
-                    double gimpx   = 1.0 / (1.0 + impl_grav_th2*0.25*dt*dt*(ud.gravity_strength[0]/Msq)*dthetax/theta);
+                    double Y     = 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]);
                     
-                    double dthetay = (mpv->HydroState->Y0[j+1] - mpv->HydroState->Y0[j-1]) / (2.0*dy);
-                    double gimpy    = 1.0 / (1.0 + impl_grav_th2*0.25*dt*dt*(ud.gravity_strength[1]/Msq)*dthetay/theta);
+                    /*  TODO: Check what effect the following choice is having 
+                        -- this is the version before implementation of implicit gravity in Oct. 2016: 
+                    double coeff = Gammainv * Sol->rhoY[n]*Sol->rhoY[n] / Sol->rho[n];
+                     */
+                    double coeff = Gammainv * Sol->rhoY[n] * Y;
+
+                    double Nsqsc = 0.25*dt*dt * (g/Msq) * Y * dSdy;                    
+                    double gimpy = 1.0 / (1.0 + impl_grav_th2*Nsqsc);
                                         
-                    hplusx[n]  = theta * gimpx;
-                    hplusy[n]  = theta * gimpy;
+                    hplusx[n]    = coeff;
+                    hplusy[n]    = coeff * gimpy;
 				}
 			}
 									
@@ -675,13 +698,7 @@ static void operator_coefficients_nodes(
 			const int igz = elem->igz;
 			const int icz = elem->icz;
             
-            const double dx = elem->dx;
             const double dy = elem->dy;
-            const double dz = elem->dz;
-
-            const int dix = 1;
-			const int diy = icx;
-			const int diz = icx*icy;
 
             double Msq = ud.Msq;
 			
@@ -698,23 +715,21 @@ static void operator_coefficients_nodes(
             for(i=0; i<elem->nc; i++) hc[i] = hplusx[i] = hplusy[i] = hplusz[i] = 0.0;
             
 			for(k = igz; k < icz - igz; k++) {l = k * icx*icy;
+                
                 for(j = igy; j < icy - igy; j++) {m = l + j * icx;
+
+                    double dSdy  = (mpv->HydroState_n->S0[j+1] - mpv->HydroState_n->S0[j]) / dy;
+                    
                     for(i = igx; i < icx - igx; i++) {n = m + i;
                         {
-                            double theta   = Gammainv * Sol->rhoY[n]*Sol->rhoY[n] / Sol->rho[n] ;
+                            double coeff   = Gammainv * Sol->rhoY[n]*Sol->rhoY[n] / Sol->rho[n];
                             
-                            double dthetax = ((Sol->rhoY[n+dix]  / Sol->rho[n+dix]) - (Sol->rhoY[n-dix]  / Sol->rho[n-dix])) / (2.0*dx);
-                            double gimpx   = 1.0 / (1.0 + impl_grav_th2*0.25*dt*dt*(ud.gravity_strength[0]/Msq)*dthetax/theta);
+                            double Nsqsc = 0.25*dt*dt * (g/Msq) * 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]) * dSdy;                    
+                            double gimpy = 1.0 / (1.0 + impl_grav_th2*Nsqsc);
                             
-                            double dthetay = ((Sol->rhoY[n+diy]  / Sol->rho[n+diy]) - (Sol->rhoY[n-diy]  / Sol->rho[n-diy])) / (2.0*dy);
-                            double gimpy    = 1.0 / (1.0 + impl_grav_th2*0.25*dt*dt*(ud.gravity_strength[1]/Msq)*dthetay/theta);
-
-                            double dthetaz = ((Sol->rhoY[n+diz]  / Sol->rho[n+diz]) - (Sol->rhoY[n-diz]  / Sol->rho[n-diz])) / (2.0*dz);
-                            double gimpz    = 1.0 / (1.0 + impl_grav_th2*0.25*dt*dt*(ud.gravity_strength[1]/Msq)*dthetaz/theta);
-
-                            hplusx[n]  = theta * gimpx;
-                            hplusy[n]  = theta * gimpy;
-                            hplusz[n]  = theta * gimpz;
+                            hplusx[n]  = coeff;
+                            hplusy[n]  = coeff * gimpy;
+                            hplusz[n]  = coeff;
                         }
                     }
                 }
@@ -1000,6 +1015,56 @@ void correction_nodes(
 		default: ERROR("ndim not in {1, 2,3}");
 	}
 }
+
+#ifdef GRAVITY_IMPLICIT
+/* ========================================================================== */
+
+void explicit_background_buoyancy(
+                                  ConsVars* Sol,
+                                  MPV* mpv,
+                                  const ConsVars* Sol0,
+                                  const ElemSpaceDiscr* elem,
+                                  const NodeSpaceDiscr* node,
+                                  const double dt
+                                  )
+{
+    /* For implicit treatment of gravity, up to the call to 
+     second_projection() the advection of 1/theta (here: 1/Y) 
+     has only been accounted for as far as deviations from the
+     background stratification are concerned. The effect on
+     buoyancy/gravity of the advection of the background strati-
+     fication is split into an explicit piece -- computed here --
+     and an implicit piece that is included in the subsequent 
+     Poisson solution. 
+     */
+    extern User_Data ud;
+    
+    const double g   = ud.gravity_strength[1];
+    const double Msq = ud.Msq;
+    const double dy  = elem->dy;
+    
+    const int icx = elem->icx;
+    const int icy = elem->icy;
+    const int icz = elem->icz;
+    
+    for (int k=0; k<icz; k++) {int l = k*icy*icx;
+        
+        for (int j=0; j<icy; j++) {int m = l + j*icx;
+            
+            double dSdy = (mpv->HydroState_n->S0[j+1] - mpv->HydroState_n->S0[j]) / dy;
+            
+            for (int i=0; i<icx; i++) {int n = m + i;
+                
+                double Nsqsc = 0.25*dt*dt * (g/Msq) * 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]) * dSdy;
+                double v     = 0.5 * (Sol->rhov[n]/Sol->rho[n] + Sol0->rhov[n]/Sol0->rho[n]);
+                
+                Sol->rhov[n] += Sol->rhov[n] * v * Nsqsc / (1.0 + Nsqsc);
+            }
+        }
+    }
+}
+#endif
+
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log:$

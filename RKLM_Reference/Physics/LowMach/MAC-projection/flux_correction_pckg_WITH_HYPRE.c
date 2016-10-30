@@ -495,8 +495,9 @@ void operator_coefficients(
                     
                     double S   = mpv->HydroState->S0[j];
                     double Sm  = mpv->HydroState->S0[j-1];
-                    double Y   = 0.5 * (Sol->rhoY[jc] / Sol->rho[jc] + Sol0->rhoY[jc] / Sol0->rho[jc]);
-                    double Nsq = - (g/Msq) * Y * (S-Sm)/dy;
+                    double Y   = 0.5 * (Sol->rhoY[jc]  / Sol->rho[jc]  + Sol0->rhoY[jc]  / Sol0->rho[jc]);
+                    double Ym  = 0.5 * (Sol->rhoY[jcm] / Sol->rho[jcm] + Sol0->rhoY[jcm] / Sol0->rho[jcm]);
+                    double Nsq = - (g/Msq) * 0.5*(Y+Ym) * (S-Sm)/dy;
                      
                     gimp  = 1.0 / (1.0 + impl_grav_th*0.5*dt*dt*Nsq);
                     
