@@ -94,6 +94,7 @@ int main( void )
 	
 	/* data allocation and initialization */
 	Data_init();
+    Set_Explicit_Boundary_Data(Sol, elem, mpv);
     ud.compressibility = compressibility(0);
     
 	if(ud.write_file == ON) 
@@ -105,10 +106,10 @@ int main( void )
     
     ConsVars_set(Sol0, Sol, elem->nc);
     	
-    double* Zaux = W0; 
+    double* Zaux_p = W0; 
+    double* Zaux_b = W1; 
     
     /* generate divergence-controlled initial data  */
-    Set_Explicit_Boundary_Data(Sol, elem, mpv);
     set_wall_massflux(bdry, Sol, elem);
     dt = 1.0;
     mpv->dt = dt;
@@ -149,11 +150,13 @@ int main( void )
             if (reset_init_data) {
                 adjust_pi(Sol, mpv, Sol0, elem, 1.0);
                 for (int n=0; n<elem->nc; n++) {
-                    Zaux[n] = Sol->rhoZ[PRES][n];
+                    Zaux_p[n] = Sol->rhoZ[PRES][n];
+                    Zaux_b[n] = Sol->rhoZ[BUOY][n];
                 }
                 ConsVars_set(Sol, Sol0, elem->nc);                
                 for (int n=0; n<elem->nc; n++) {
-                    Sol->rhoZ[PRES][n] = Zaux[n];
+                    Sol->rhoZ[PRES][n] = Zaux_p[n];
+                    Sol->rhoZ[BUOY][n] = Zaux_b[n];
                 }
                 if (step == 0) {
                     reset_init_data = WRONG;

@@ -156,7 +156,7 @@ void second_projection(
 	catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
 
     /* test */
-#if 1
+#if 0
     FILE *prhsfile = NULL;
     char fn[120], fieldname[90];
     sprintf(fn, "%s/rhs_nodes/rhs_nodes_000.hdf", ud.file_name);
@@ -170,7 +170,7 @@ void second_projection(
 	
 	variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, x_periodic, y_periodic, z_periodic, dt);
     
-#if 1
+#if 0
     rhs_max = 0.0;
     double rhs_min = 100000.0;
     double hx_max  = 0.0;
@@ -230,7 +230,7 @@ void second_projection(
     rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv->eta, mpv, bdry, dt, rhs_weight_new);
     catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
 
-#if 1
+#if 0
     FILE *prhs2file = NULL;
     char fn2[120], fieldname2[90];
     sprintf(fn2, "%s/rhs_nodes/rhs_nodes_002.hdf", ud.file_name);
