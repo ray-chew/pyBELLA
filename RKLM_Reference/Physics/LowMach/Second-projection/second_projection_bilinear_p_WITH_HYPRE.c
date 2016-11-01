@@ -675,7 +675,8 @@ static void operator_coefficients_nodes(
                      */
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
 
-                    double Nsqsc = 0.25*dt*dt * (g/Msq) * Y * dSdy;                    
+                    /* TODO: first factor 0.25 or 0.5 ? */
+                    double Nsqsc = - 0.25*dt*dt * (g/Msq) * Y * dSdy;                    
                     double gimpy = 1.0 / (1.0 + impl_grav_th2*Nsqsc);
                                         
                     hplusx[n]    = coeff;
@@ -722,9 +723,13 @@ static void operator_coefficients_nodes(
                     
                     for(i = igx; i < icx - igx; i++) {n = m + i;
                         {
-                            double coeff   = Gammainv * Sol->rhoY[n]*Sol->rhoY[n] / Sol->rho[n];
-                            
-                            double Nsqsc = 0.25*dt*dt * (g/Msq) * 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]) * dSdy;                    
+                            double Y     = 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]);
+                            double coeff = Gammainv * Sol->rhoY[n] * Y;
+                            /*
+                             double coeff   = Gammainv * Sol->rhoY[n]*Sol->rhoY[n] / Sol->rho[n];
+                             */
+                            /* TODO: first factor 0.25 or 0.5 ? */
+                            double Nsqsc = - 0.25*dt*dt * (g/Msq) * 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]) * dSdy;                    
                             double gimpy = 1.0 / (1.0 + impl_grav_th2*Nsqsc);
                             
                             hplusx[n]  = coeff;
@@ -1055,10 +1060,11 @@ void explicit_background_buoyancy(
             
             for (int i=0; i<icx; i++) {int n = m + i;
                 
-                double Nsqsc = 0.25*dt*dt * (g/Msq) * 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]) * dSdy;
-                double v     = 0.5 * (Sol->rhov[n]/Sol->rho[n] + Sol0->rhov[n]/Sol0->rho[n]);
+                double Nsqsc = - 0.5*dt*dt * (g/Msq) * 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]) * dSdy;
+                double v     = Sol->rhov[n]/Sol->rho[n];
+                /* double v     = 0.5 * (Sol->rhov[n]/Sol->rho[n] + Sol0->rhov[n]/Sol0->rho[n]); */
                 
-                Sol->rhov[n] += Sol->rhov[n] * v * Nsqsc / (1.0 + Nsqsc);
+                Sol->rhov[n] -= Sol->rho[n] * v * Nsqsc / (1.0 + Nsqsc);
             }
         }
     }

@@ -33,7 +33,7 @@ void update(
 	
     const double grav = ud.gravity_strength[1];
     const double Msq  = ud.Msq;
-    const double impg = ud.implicit_gravity_theta;
+    const int    impg = ud.implicit_gravity_theta;
     
     double drho, drhoe_total;
   	int ndim = elem->ndim;

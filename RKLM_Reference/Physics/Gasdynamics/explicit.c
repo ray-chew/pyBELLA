@@ -368,7 +368,13 @@ void fullD_explicit_updates(ConsVars* Sol,
      this creates a problem solving the projection step.
 	 */
 	extern User_Data ud;
-	
+#ifdef GRAVITY_IMPLICIT
+    extern MPV* mpv;
+#endif
+    const int impg = ud.implicit_gravity_theta;
+    const double grav = ud.gravity_strength[1];
+    const double Msq  = ud.Msq;
+
 	const int icx = elem->icx;
 	const int icy = elem->icy;
 	const int icz = elem->icz;
@@ -386,6 +392,7 @@ void fullD_explicit_updates(ConsVars* Sol,
 	double lambda_z = ud.tips.update_frac[RK_stage] * dt / elem->dz;
         
     double delta, deltaSol, delmax, ddelmax, ddelmaxu, ddelmaxv, ddelmaxY;
+    double Sc, Sym, Syp;
     double deltax, deltay, deltaz;
         
     int i, j, k, nc; 
@@ -411,7 +418,14 @@ void fullD_explicit_updates(ConsVars* Sol,
 				mcy = j; 
 				mfx = j*ifx; 
 				mfy = j;
-				for (i = igx; i < icx-igx; i++) {
+                
+#ifdef GRAVITY_IMPLICIT
+                Sc  = mpv->HydroState->S0[j];
+                Sym = mpv->HydroState_n->S0[j];
+                Syp = mpv->HydroState_n->S0[j+1];
+#endif
+                
+                for (i = igx; i < icx-igx; i++) {
 					ncx  = mcx + i; 
                     ncy  = mcy + i*icy;
 					nfx  = mfx + i;
@@ -465,10 +479,23 @@ void fullD_explicit_updates(ConsVars* Sol,
 					deltay        = - lambda_y * (flux[1]->rhoY[nfyp]   - flux[1]->rhoY[nfy]);
 					delta         = deltax + deltay;
                     deltaSol      = Sol->rhoY[nc] - Sol0->rhoY[nc];
-                    delmax        = MAX_own(delmax,fabs(deltaSol));
+                    delmax        = MAX_own(delmax, fabs(deltaSol));
                     ddelmaxY      = MAX_own(ddelmaxY, fabs(delta-deltaSol));
                     Sol->rhoY[nc] = Sol0->rhoY[nc] + delta;
-                    
+                
+#ifdef GRAVITY_IMPLICIT
+                    {
+                        /* Buoyancy contribution due to update of theta-fluctuations */
+                        double rho_old   = Sol0->rho[nc];
+                        double rhoY_old  = Sol0->rhoY[nc];
+                        double rhoYS_old = rho_old - rhoY_old*Sc;
+                        double drhoYS    = - lambda_x * ((flux[0]->rho[nfxp] - flux[0]->rhoY[nfxp]*Sc)  - (flux[0]->rho[nfx] - flux[0]->rhoY[nfx]*Sc ) ) 
+                                           - lambda_y * ((flux[1]->rho[nfyp] - flux[1]->rhoY[nfyp]*Syp) - (flux[1]->rho[nfy] - flux[1]->rhoY[nfy]*Sym) );                        
+                        double dYS       = (rhoYS_old + drhoYS) / Sol->rhoY[nc] - rhoYS_old / rhoY_old;
+                        Sol->rhov[nc]   -= 0.5 * dt * 0.5 * (Sol->rhoY[nc]+rhoY_old) * (grav/Msq) * dYS * impg;                        
+                    }
+#endif
+
                 }
 			}
             
@@ -497,6 +524,12 @@ void fullD_explicit_updates(ConsVars* Sol,
                     mfy = lfy + j;
                     mfz = lfz + j*icx*ifz;
                     
+#ifdef GRAVITY_IMPLICIT
+                    Sc  = mpv->HydroState->S0[j];
+                    Sym = mpv->HydroState_n->S0[j];
+                    Syp = mpv->HydroState_n->S0[j+1];
+#endif
+
                     for (i = igx; i < icx-igx; i++) {
                         ncx  = mcx + i; 
                         ncy  = mcy + i*icz*icy;
@@ -561,6 +594,20 @@ void fullD_explicit_updates(ConsVars* Sol,
                         ddelmax = MAX_own(ddelmax, fabs(delta-deltaSol));
                         Sol->rhoY[nc] = Sol0->rhoY[nc] + delta;
                         
+#ifdef GRAVITY_IMPLICIT
+                        {
+                            /* Buoyancy contribution due to update of theta-fluctuations */
+                            double rho_old   = Sol0->rho[nc];
+                            double rhoY_old  = Sol0->rhoY[nc];
+                            double rhoYS_old = rho_old - rhoY_old*Sc;
+                            double drhoYS    = - lambda_x * ((flux[0]->rho[nfxp] - flux[0]->rhoY[nfxp]*Sc)  - (flux[0]->rho[nfx] - flux[0]->rhoY[nfx]*Sc ) ) \
+                                               - lambda_y * ((flux[1]->rho[nfyp] - flux[1]->rhoY[nfyp]*Syp) - (flux[1]->rho[nfy] - flux[1]->rhoY[nfy]*Sym) ) \
+                                               - lambda_z * ((flux[2]->rho[nfzp] - flux[2]->rhoY[nfzp]*Sc)  - (flux[2]->rho[nfz] - flux[2]->rhoY[nfz]*Sc ) );                        
+                            double dYS       = (rhoYS_old + drhoYS) / Sol->rhoY[nc] - rhoYS_old / rhoY_old;
+                            Sol->rhov[nc]   -= 0.5 * dt * 0.5 * (Sol->rhoY[nc]+rhoY_old) * (grav/Msq) * dYS * impg;                        
+                        }
+#endif
+
                     }
                 }			
 			}			

@@ -24,9 +24,9 @@
  Elliptic Solver Options
  ============================================= */
 
-/* 
+/* */  
 #define GRAVITY_IMPLICIT 
- */ 
+ 
 
 /* solver options ==============================
  #define SOLVER_1_CR2
