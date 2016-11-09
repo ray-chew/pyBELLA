@@ -89,9 +89,19 @@ void fullD_explicit_updates(ConsVars* Sol,
                             const int RK_stage);
 
 
+#ifdef GRAVITY_IMPLICIT_2
 /*------------------------------------------------------------------------------
- Computes updates from full-dimensional flux balances
+ explicit step for the fast linear system
  ------------------------------------------------------------------------------*/
+void Explicit_Buoyancy(ConsVars* Sol, 
+                       VectorField* buoy, 
+                       const MPV* mpv, 
+                       const ElemSpaceDiscr* elem, 
+                       const NodeSpaceDiscr* node, 
+                       const double t, 
+                       const double dt,
+                       const int implicit);
+#endif
 
 #endif /* EXPLICIT_H */
 

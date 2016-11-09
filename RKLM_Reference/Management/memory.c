@@ -72,7 +72,7 @@ void update(
 			const ConsVars* f = flux[0];
 			const ConsVars* g = flux[1];
             
-            double drhoY, drhoYS, dYS, Sxc, Syp, Sym, rho_old, rhoY_old, rhoYS_old;
+            double drhoY, drhoYS, Sxc, Syp, Sym, rho_old, rhoY_old, rhoYS_old, dYS;
 
             int i, j, m, n, ox, oy;
 
@@ -108,9 +108,13 @@ void update(
                         sol->rhoX[nsp][n] -= lambdax * (f->rhoX[nsp][ox + 1] - f->rhoX[nsp][ox]) - lambday * (g->rhoX[nsp][oy + 1] - g->rhoX[nsp][oy]);
                     }
                     
+#ifdef GRAVITY_IMPLICIT
+#ifndef GRAVITY_IMPLICIT_2
                     /* Buoyancy contribution due to update of theta-fluctuations */
                     dYS = (rhoYS_old + drhoYS) / sol->rhoY[n] - rhoYS_old / rhoY_old;
                     sol->rhov[n] -= 0.5 * dt * 0.5 * (sol->rhoY[n]+rhoY_old) * (grav/Msq) * dYS * impg;
+#endif
+#endif
                     
 				}
 			}
@@ -192,10 +196,13 @@ void update(
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
                             sol->rhoX[nsp][n] -= lambdaz * (h->rhoX[nsp][oz + 1] - h->rhoX[nsp][oz]);
                         }
-                        
+#ifdef GRAVITY_IMPLICIT
+#ifndef GRAVITY_IMPLICIT_2
                         /* Buoyancy contribution due to update of theta-fluctuations */
                         dYS = (rhoYS_old + drhoYS) / sol->rhoY[n] - rhoYS_old / rhoY_old;
                         sol->rhov[n] -= 0.5 * dt * 0.5 * (sol->rhoY[n]+rhoY_old) * (grav/Msq) * dYS * impg;
+#endif
+#endif
 					}
 				} 
 			}  

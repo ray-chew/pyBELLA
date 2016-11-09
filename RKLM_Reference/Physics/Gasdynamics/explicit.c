@@ -368,12 +368,15 @@ void fullD_explicit_updates(ConsVars* Sol,
      this creates a problem solving the projection step.
 	 */
 	extern User_Data ud;
-#ifdef GRAVITY_IMPLICIT
+#ifdef GRAVITY_IMPLICIT_1
     extern MPV* mpv;
-#endif
+
     const int impg = ud.implicit_gravity_theta;
     const double grav = ud.gravity_strength[1];
     const double Msq  = ud.Msq;
+
+    double Sc, Sym, Syp;
+#endif
 
 	const int icx = elem->icx;
 	const int icy = elem->icy;
@@ -392,7 +395,6 @@ void fullD_explicit_updates(ConsVars* Sol,
 	double lambda_z = ud.tips.update_frac[RK_stage] * dt / elem->dz;
         
     double delta, deltaSol, delmax, ddelmax, ddelmaxu, ddelmaxv, ddelmaxY;
-    double Sc, Sym, Syp;
     double deltax, deltay, deltaz;
         
     int i, j, k, nc; 
@@ -400,6 +402,8 @@ void fullD_explicit_updates(ConsVars* Sol,
     int mcx, mcy, mfx, mfy, mfz;
     int ncx, ncy, nfx, nfy, nfz;
     int nfxp, nfyp, nfzp;
+    
+    double buoymax = 0.0; 
     
 	switch (elem->ndim) {
 		case 1:
@@ -419,7 +423,7 @@ void fullD_explicit_updates(ConsVars* Sol,
 				mfx = j*ifx; 
 				mfy = j;
                 
-#ifdef GRAVITY_IMPLICIT
+#ifdef GRAVITY_IMPLICIT_1
                 Sc  = mpv->HydroState->S0[j];
                 Sym = mpv->HydroState_n->S0[j];
                 Syp = mpv->HydroState_n->S0[j+1];
@@ -457,6 +461,8 @@ void fullD_explicit_updates(ConsVars* Sol,
                     deltaSol      = Sol->rhov[nc] - Sol0->rhov[nc];
                     ddelmaxv       = MAX_own(ddelmaxv, fabs(delta-deltaSol));
                     Sol->rhov[nc] = Sol0->rhov[nc] + delta;
+                    
+                    buoymax = MAX_own(buoymax, fabs(buoy->y[ncy]));
 
                     deltax        = - lambda_x * (flux[0]->rhow[nfxp]   - flux[0]->rhow[nfx]);
 					deltay        = - lambda_y * (flux[1]->rhow[nfyp]   - flux[1]->rhow[nfy]);
@@ -483,7 +489,7 @@ void fullD_explicit_updates(ConsVars* Sol,
                     ddelmaxY      = MAX_own(ddelmaxY, fabs(delta-deltaSol));
                     Sol->rhoY[nc] = Sol0->rhoY[nc] + delta;
                 
-#ifdef GRAVITY_IMPLICIT
+#ifdef GRAVITY_IMPLICIT_1
                     {
                         /* Buoyancy contribution due to update of theta-fluctuations */
                         double rho_old   = Sol0->rho[nc];
@@ -499,8 +505,10 @@ void fullD_explicit_updates(ConsVars* Sol,
                 }
 			}
             
-            /* */
+            /* 
             printf("ddelmax, -u, -v, -Y = %e, %e, %e, %e\n", ddelmax, ddelmaxu, ddelmaxv, ddelmaxY); 
+             */
+            printf("buoymax = %e\n", buoymax); 
              
 			break;
 		case 3:
@@ -524,7 +532,7 @@ void fullD_explicit_updates(ConsVars* Sol,
                     mfy = lfy + j;
                     mfz = lfz + j*icx*ifz;
                     
-#ifdef GRAVITY_IMPLICIT
+#ifdef GRAVITY_IMPLICIT_1
                     Sc  = mpv->HydroState->S0[j];
                     Sym = mpv->HydroState_n->S0[j];
                     Syp = mpv->HydroState_n->S0[j+1];
@@ -594,7 +602,7 @@ void fullD_explicit_updates(ConsVars* Sol,
                         ddelmax = MAX_own(ddelmax, fabs(delta-deltaSol));
                         Sol->rhoY[nc] = Sol0->rhoY[nc] + delta;
                         
-#ifdef GRAVITY_IMPLICIT
+#ifdef GRAVITY_IMPLICIT_1
                         {
                             /* Buoyancy contribution due to update of theta-fluctuations */
                             double rho_old   = Sol0->rho[nc];
@@ -616,6 +624,202 @@ void fullD_explicit_updates(ConsVars* Sol,
 			ERROR("\n\nwe are not doing string theory");;
 	}
 }
+
+#ifdef GRAVITY_IMPLICIT_2
+/*------------------------------------------------------------------------------
+ explicit step for the fast linear system
+ ------------------------------------------------------------------------------*/
+
+void Explicit_Buoyancy(ConsVars* Sol, 
+                       VectorField* buoy, 
+                       const MPV* mpv, 
+                       const ElemSpaceDiscr* elem, 
+                       const NodeSpaceDiscr* node, 
+                       const double t, 
+                       const double dt,
+                       const int implicit)
+{
+    extern User_Data ud;
+    extern Thermodynamic th;
+    extern double *W0;
+    
+    double *vold = W0;
+    
+    double g        = ud.gravity_strength[1];
+    double Msq      = ud.Msq;
+    double Gamma    = th.Gamma;
+    double Gammainv = th.Gammainv;
+    
+    /* variant relying on the nodal pressure */
+    double* p2 = mpv->p2_nodes;
+    
+    const int icxe = elem->icx;
+    const int icye = elem->icy;
+    const int icze = elem->icz;
+    
+    const int igx = elem->igx;
+    const int igy = elem->igy;
+    const int igz = elem->igz;
+    
+    const int icxn = node->icx;
+    const int icyn = node->icy;
+    
+    const double dx = elem->dx;
+    const double dy = elem->dy;
+    
+    const int kkmax = (elem->ndim > 2 ? 2 : 1);
+    const int jjmax = (elem->ndim > 1 ? 2 : 1);
+    const int iimax = (elem->ndim > 0 ? 2 : 1);
+    
+    const int strkn = icyn*icxn;
+    const int strjn = icxn;
+    const int strin = 1;
+    
+    double dpdx_max = 0.0;
+                
+    assert(elem->ndim == 2);
+
+    for (int k=igz; k<icze-igz; k++) {
+        int nck = k*icye*icxe;
+        int nnk = k*icyn*icxn;
+        
+        for (int j=igy; j<icye-igy; j++) {
+            int nckj   = nck + j*icxe;
+            int nckj_y = nck + j;
+            int nnkj   = nnk + j*icxn;
+            
+            /* scaled Brunt-Väisälä frequency - squared */
+            double dSdy      = (mpv->HydroState_n->S0[j+1] - mpv->HydroState_n->S0[1]) / dy;
+            double dtsqgdSdz = implicit * dt*dt * (g/Msq) * dSdy;  
+            
+            for (int i=igx; i<icxe-igx; i++) {
+                int nckji   = nckj + i;
+                int nckji_y = nckj_y + i*icye;
+                int nnkji   = nnkj + i;
+                
+                int nsw = nckji - icxe - 1;
+                int nsc = nckji - icxe;
+                int nse = nckji - icxe + 1;
+
+                int ncw = nckji - 1;
+                int ncc = nckji;
+                int nce = nckji + 1;
+
+                int nnw = nckji + icxe - 1;
+                int nnc = nckji + icxe;
+                int nne = nckji + icxe + 1;
+
+                double dpdx = 0.0;
+                double dpdy = 0.0;
+                double dpdy_hy = 0.0;
+
+                double Nsqsc = dtsqgdSdz * Sol->rho[nckji]/Sol->rhoY[nckji];
+                
+                double Sse, Ssc, Ssw, Sce, Scc, Scw, Sne, Snc, Snw, dpie, dpic, dpiw, dpibg;
+
+                /* note: v_old at entry time level could also be computed from
+                 the vertical average of P-fluxes */
+                
+                /* vertical pressure gradient */
+                int cnt = 0;
+                for (int kk=0; kk<kkmax; kk++) {
+                    for (int ii=0; ii<iimax; ii++) {
+                        int nnkji_m = nnkji + kk*strkn + ii*strin;
+                        int nnkji_p = nnkji + kk*strkn + ii*strin + strjn;
+                        
+                        dpdy += p2[nnkji_p] - p2[nnkji_m];
+                        cnt++;
+                    }
+                }
+                dpdy /= (cnt*dy);
+                
+                /* horizontal pressure gradient */
+                cnt = 0;
+                for (int kk=0; kk<kkmax; kk++) {
+                    for (int jj=0; jj<jjmax; jj++) {
+                        int nnkji_l = nnkji + kk*strkn + jj*strjn;
+                        int nnkji_r = nnkji + kk*strkn + jj*strjn + strin;
+                        
+                        dpdx += p2[nnkji_r] - p2[nnkji_l];
+                        cnt++;
+                    }
+                }
+                dpdx /= (cnt*dx);
+                dpdx_max = MAX_own(dpdx_max, fabs(dpdx));
+                                
+                /* hydrostatic pressure gradient 
+                Sse    = (Sol->rhoX[BUOY][nse]/Sol->rho[nse] + mpv->HydroState->S0[j-1]); 
+                Ssc    = (Sol->rhoX[BUOY][nsc]/Sol->rho[nsc] + mpv->HydroState->S0[j-1]); 
+                Ssw    = (Sol->rhoX[BUOY][nsw]/Sol->rho[nsw] + mpv->HydroState->S0[j-1]); 
+
+                Sce    = (Sol->rhoX[BUOY][nce]/Sol->rho[nce] + mpv->HydroState->S0[j]); 
+                Scc    = (Sol->rhoX[BUOY][ncc]/Sol->rho[ncc] + mpv->HydroState->S0[j]); 
+                Scw    = (Sol->rhoX[BUOY][ncw]/Sol->rho[ncw] + mpv->HydroState->S0[j]); 
+                
+                Sne    = (Sol->rhoX[BUOY][nne]/Sol->rho[nne] + mpv->HydroState->S0[j+1]); 
+                Snc    = (Sol->rhoX[BUOY][nnc]/Sol->rho[nnc] + mpv->HydroState->S0[j+1]); 
+                Snw    = (Sol->rhoX[BUOY][nnw]/Sol->rho[nnw] + mpv->HydroState->S0[j+1]); 
+
+                dpie   = -Gamma*(g/Msq)*0.25*(Sse + 2.0*Sce + Sne);
+                dpic   = -Gamma*(g/Msq)*0.25*(Ssc + 2.0*Scc + Snc);
+                dpiw   = -Gamma*(g/Msq)*0.25*(Ssw + 2.0*Scw + Snw);
+                                
+                dpdy_hy      = 0.25*(dpie + 2.0*dpic + dpiw);                 
+                */
+                
+                Sse      = Sol->rhoX[BUOY][nse]/Sol->rho[nse]; 
+                Ssc      = Sol->rhoX[BUOY][nsc]/Sol->rho[nsc]; 
+                Ssw      = Sol->rhoX[BUOY][nsw]/Sol->rho[nsw]; 
+                
+                Sce      = Sol->rhoX[BUOY][nce]/Sol->rho[nce]; 
+                Scc      = Sol->rhoX[BUOY][ncc]/Sol->rho[ncc]; 
+                Scw      = Sol->rhoX[BUOY][ncw]/Sol->rho[ncw]; 
+                
+                Sne      = Sol->rhoX[BUOY][nne]/Sol->rho[nne]; 
+                Snc      = Sol->rhoX[BUOY][nnc]/Sol->rho[nnc]; 
+                Snw      = Sol->rhoX[BUOY][nnw]/Sol->rho[nnw]; 
+                
+                dpie     = 0.25*(Sse + 2.0*Sce + Sne);
+                dpic     = 0.25*(Ssc + 2.0*Scc + Snc);
+                dpiw     = 0.25*(Ssw + 2.0*Scw + Snw);
+                dpibg    = 0.25*(mpv->HydroState->S0[j+1] + 2.0*mpv->HydroState->S0[j] + mpv->HydroState->S0[j-1]);
+                
+                dpdy_hy  = 0.25*(dpie + dpiw);     
+                dpdy_hy += 0.5 *dpic;
+                dpdy_hy += dpibg;
+                dpdy_hy *= -Gamma*(g/Msq);
+
+                
+                Sol->rhou[nckji] -= dt*Gammainv*Sol->rhoY[nckji]*dpdx;
+                vold[nckji]       = Sol->rhov[nckji] / Sol->rho[nckji];
+                Sol->rhov[nckji] += (-dt*Gammainv*Sol->rhoY[nckji]*(dpdy-dpdy_hy) - Sol->rhov[nckji] * Nsqsc) / (1.0 + Nsqsc);                    
+                Sol->rhoX[BUOY][nckji] -= dt * Sol->rhov[nckji] * dSdy;
+
+                buoy->x[nckji]    = 0.0;
+                buoy->y[nckji_y]  = 0.0;
+            }
+        }
+    }
+
+    /* advection of the background inverse potential temperature
+    for (int k=igz; k<icze-igz; k++) {
+        int nck = k*icye*icxe;
+        
+        for (int j=igy; j<icye-igy; j++) {
+            int nckj   = nck + j*icxe;
+            
+            for (int i=igx; i<icxe-igx; i++) {
+                int nckji   = nckj + i;
+                
+                                
+                Sol->rhoX[BUOY][nckji] -= Sol->rho[nckji] * dt * vold[nckji] *  (mpv->HydroState_n->S0[j+1] - mpv->HydroState_n->S0[j]) / dy;
+            }
+        }
+    }
+    */
+}
+#endif
+
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log: explicit.c,v $

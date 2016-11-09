@@ -94,6 +94,7 @@ int main( void )
 	
 	/* data allocation and initialization */
 	Data_init();
+    set_wall_massflux(bdry, Sol, elem);
     Set_Explicit_Boundary_Data(Sol, elem, mpv);
     ud.compressibility = compressibility(0);
     
@@ -110,7 +111,6 @@ int main( void )
     double* Zaux_b = W1; 
     
     /* generate divergence-controlled initial data  */
-    set_wall_massflux(bdry, Sol, elem);
     dt = 1.0;
     mpv->dt = dt;
     /*
@@ -151,12 +151,12 @@ int main( void )
                 adjust_pi(Sol, mpv, Sol0, elem, 1.0);
                 for (int n=0; n<elem->nc; n++) {
                     Zaux_p[n] = Sol->rhoZ[PRES][n];
-                    Zaux_b[n] = Sol->rhoZ[BUOY][n];
+                    Zaux_b[n] = Sol->rhoZ[SOLD][n];
                 }
                 ConsVars_set(Sol, Sol0, elem->nc);                
                 for (int n=0; n<elem->nc; n++) {
                     Sol->rhoZ[PRES][n] = Zaux_p[n];
-                    Sol->rhoZ[BUOY][n] = Zaux_b[n];
+                    Sol->rhoZ[SOLD][n] = Zaux_b[n];
                 }
                 if (step == 0) {
                     reset_init_data = WRONG;
@@ -171,8 +171,18 @@ int main( void )
 #if OUTPUT_SUBSTEPS
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
-                        
-			printf("\nnonlinear fluxes ---------------------------- \n");
+           
+#ifdef GRAVITY_IMPLICIT_2
+            /* first explicit half time step for pressure gradient and buoyancy advection */
+            Explicit_Buoyancy(Sol, buoy, mpv, elem, node, t, 0.5*dt, 0);
+            ConsVars_set(Sol0, Sol, elem->nc);            
+#endif
+            
+#if OUTPUT_SUBSTEPS
+            putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
+#endif
+
+            printf("\nnonlinear fluxes ---------------------------- \n");
 							
             if (ud.time_integrator == OP_SPLIT || ud.time_integrator == OP_SPLIT_MD_UPDATE) {
                 
@@ -232,16 +242,7 @@ int main( void )
 #endif
                 }
             }
-          
-#if OUTPUT_SUBSTEPS
-            putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
-#endif
-
-#if OUTPUT_SUBSTEPS
-            putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
-#endif
-            
-            
+                        
             Set_Explicit_Boundary_Data(Sol, elem, mpv);
             
 #if OUTPUT_SUBSTEPS
@@ -257,6 +258,20 @@ int main( void )
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
             }
+            
+#ifdef GRAVITY_IMPLICIT_2
+            /* second explicit half time step for pressure gradient and buoyancy advection */
+            
+            /*
+            this is too naive; implicitly carrying out this step requires rescaling of the 
+            explicit part of vertical advection of (1/theta)_bar
+            */
+            Explicit_Buoyancy(Sol, buoy, mpv, elem, node, t, 0.5*dt, 1);
+#endif
+            
+#if OUTPUT_SUBSTEPS
+            putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
+#endif
             
             if(PROJECTION2 == 1) {
                 second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 1.0, t, dt);

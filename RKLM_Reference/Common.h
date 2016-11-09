@@ -1,11 +1,13 @@
 #define NSPEC 1
-#define QV    0   /* water vapor */
-#define QC    1   /* cloud water */
-#define QR    2   /* rain water  */
+#define BUOY  0
+#define QV    1   /* water vapor */
+#define QC    2   /* cloud water */
+#define QR    3   /* rain water  */
 
 #define NAUX  2
 #define PRES  0
-#define BUOY  1
+#define SOLD  1
+
 
 /*
  */
@@ -24,9 +26,16 @@
  Elliptic Solver Options
  ============================================= */
 
-/* */  
 #define GRAVITY_IMPLICIT 
- 
+
+/* 
+ #define GRAVITY_IMPLICIT 
+ #define GRAVITY_IMPLICIT_1   (buoyancy directly from conserved quantities)
+ #define GRAVITY_IMPLICIT_2   (buoyancy via auxiliary variable; Piotr's variant)
+ */  
+#ifdef GRAVITY_IMPLICIT
+#define GRAVITY_IMPLICIT_2
+#endif
 
 /* solver options ==============================
  #define SOLVER_1_CR2

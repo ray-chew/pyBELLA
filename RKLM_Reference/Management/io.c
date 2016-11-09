@@ -252,11 +252,15 @@ void putout(
             sprintf(fn, "%s/rhoZB/rhoZB_%s.hdf", dir_name, step_string);
             if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
             sprintf(fieldname, "rhoZB_%s_%s", field_name, step_string);
-            WriteHDF(prhoYfile, icx, icy, icz, ndim, Sol->rhoZ[BUOY], fn, fieldname);
+            WriteHDF(prhoYfile, icx, icy, icz, ndim, Sol->rhoZ[SOLD], fn, fieldname);
 
             for (nsp = 0; nsp < ud.nspec; nsp++) {
                 
                 switch (nsp) {
+                    case BUOY:
+                        sprintf(fn, "%s/buoy/buoy_%s.hdf", dir_name, step_string);
+                        sprintf(fieldname, "buoy_%s_%s", field_name, step_string);
+                        break;
                     case QV:
                         sprintf(fn, "%s/qv/qv_%s.hdf", dir_name, step_string);
                         sprintf(fieldname, "qv_%s_%s", field_name, step_string);

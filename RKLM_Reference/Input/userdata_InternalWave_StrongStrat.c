@@ -138,9 +138,9 @@ void User_Data_init(User_Data* ud) {
     
     /* time discretization */
     ud->time_integrator        = OP_SPLIT_MD_UPDATE; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT*/
-    ud->CFL                    = 0.98; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 76.0 / ud->t_ref;
-    ud->dtfixed                = 76.0 / ud->t_ref;
+    ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
+    ud->dtfixed0               = 50.0 / ud->t_ref;
+    ud->dtfixed                = 50.0 / ud->t_ref;
     ud->no_of_steps_to_CFL     = 1;
     ud->no_of_steps_to_dtfixed = 1;
 
@@ -238,7 +238,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 10000;
+    ud->write_file_period = 1;
     ud->file_format = HDF;
     
     {
@@ -307,16 +307,17 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             rhoY = mpv->HydroState->rhoY0[j];
             rho  = rhoY/(stratification(y)  + delth * sin(PI*y)  / (1.0 + (x-xc)*(x-xc) / (a*a)));
 
-            Sol->rho[n]  = rho;
-            Sol->rhou[n] = rho * u;
-            Sol->rhov[n] = rho * v;
-            Sol->rhow[n] = rho * w;
-            Sol->rhoe[n] = rhoe(rho, u, v, w, p, g*y);
-            Sol->rhoY[n] = rhoY;
+            Sol->rho[n]    = rho;
+            Sol->rhou[n]   = rho * u;
+            Sol->rhov[n]   = rho * v;
+            Sol->rhow[n]   = rho * w;
+            Sol->rhoe[n]   = rhoe(rho, u, v, w, p, g*y);
+            Sol->rhoY[n]   = rhoY;
             Sol->geopot[n] = g * y;
             
-            mpv->p2_cells[n] = (p/rhoY) / ud.Msq;
-            Sol->rhoZ[PRES][n]     = mpv->p2_cells[n];
+            mpv->p2_cells[n]   = (p/rhoY) / ud.Msq;
+            Sol->rhoZ[PRES][n] = mpv->p2_cells[n];
+            Sol->rhoX[BUOY][n] = Sol->rho[n] * ( Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
                         
         }
     }
@@ -347,8 +348,8 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     for(int k = 0; k < iczn; k++) {int l = k * icxn * icyn;   
         
         for(int j = 0; j < icyn; j++) {int m = l + j * icxn;                
-            double p    = mpv->HydroState->p0[j];
-            double rhoY = mpv->HydroState->rhoY0[j];
+            double p    = mpv->HydroState_n->p0[j];
+            double rhoY = mpv->HydroState_n->rhoY0[j];
             
             for(int i = 0; i < icxn; i++) {int n = m + i;
                 mpv->p2_nodes[n] = (p/rhoY) / ud.Msq;

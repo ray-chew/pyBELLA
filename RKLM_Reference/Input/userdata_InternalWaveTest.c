@@ -237,7 +237,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 50;
+    ud->write_file_period = 10;
     ud->file_format = HDF;
     
     {
@@ -314,8 +314,9 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             Sol->rhoY[n] = rhoY;
             Sol->geopot[n] = g * y;
             
-            mpv->p2_cells[n] = (p/rhoY) / ud.Msq;
-            Sol->rhoZ[PRES][n]     = mpv->p2_cells[n];
+            mpv->p2_cells[n]   = (p/rhoY) / ud.Msq;
+            Sol->rhoZ[PRES][n] = mpv->p2_cells[n];
+            Sol->rhoX[BUOY][n] = Sol->rho[n] * ( Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
             
         }
     }
@@ -346,8 +347,8 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     for(int k = 0; k < iczn; k++) {int l = k * icxn * icyn;   
         
         for(int j = 0; j < icyn; j++) {int m = l + j * icxn;                
-            double p    = mpv->HydroState->p0[j];
-            double rhoY = mpv->HydroState->rhoY0[j];
+            double p    = mpv->HydroState_n->p0[j];
+            double rhoY = mpv->HydroState_n->rhoY0[j];
             
             for(int i = 0; i < icxn; i++) {int n = m + i;
                 mpv->p2_nodes[n] = (p/rhoY) / ud.Msq;

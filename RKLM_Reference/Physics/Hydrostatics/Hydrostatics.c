@@ -72,6 +72,7 @@ void Hydrostatics_State(MPV* mpv, double *Yinvbg, const ElemSpaceDiscr* elem)
         rhoY_hydro_n  = pow( pow(p0,Gamma) - Gamma*g*S_integral_n ,  th.gm1inv);
         mpv->HydroState_n->rhoY0[j] = rhoY_hydro_n;
         mpv->HydroState_n->S0[j]    = 1.0/stratification(0.5*(y_p+y_m));
+        mpv->HydroState_n->p0[j]    = pow(rhoY_hydro_n,th.gamm);
     }
     
     /* Hydrostates in bulk of domain */
@@ -104,6 +105,7 @@ void Hydrostatics_State(MPV* mpv, double *Yinvbg, const ElemSpaceDiscr* elem)
         rhoY_hydro_n  = pow( pow(p0,Gamma) - Gamma*g*S_integral_n ,  th.gm1inv);
         mpv->HydroState_n->rhoY0[j+1] = rhoY_hydro_n;
         mpv->HydroState_n->S0[j+1]    = 1.0/stratification(0.5*(y_p+y_m));
+        mpv->HydroState_n->p0[j+1]    = pow(rhoY_hydro_n,th.gamm);
         
     }
     
@@ -133,6 +135,7 @@ void Hydrostatics_State(MPV* mpv, double *Yinvbg, const ElemSpaceDiscr* elem)
         rhoY_hydro_n  = pow( pow(p0,Gamma) - Gamma*g*S_integral_n ,  th.gm1inv);
         mpv->HydroState_n->rhoY0[j+1] = rhoY_hydro_n;
         mpv->HydroState_n->S0[j+1]    = 1.0/stratification(0.5*(y_p+y_m));
+        mpv->HydroState_n->p0[j+1]    = pow(rhoY_hydro_n,th.gamm);
     }
     
     /* HydroStates in an auxiliary field */

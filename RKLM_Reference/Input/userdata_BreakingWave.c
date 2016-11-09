@@ -101,9 +101,7 @@ void User_Data_init(User_Data* ud) {
 	
     /* low Froude */
     ud->implicit_gravity_theta  = 0;
-    ud->implicit_gravity_press  = 0; /* should be on for compressible option */
     ud->implicit_gravity_theta2 = 0;
-    ud->implicit_gravity_press2 = 0; /* should this, too, be on for compressible option ?  */
     	 
 	/* flow domain */
 	ud->xmin = - 60000/h_ref;  
@@ -297,12 +295,10 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
                 Sol->rhoY[n] = rhoY;
                 Sol->geopot[n] = g*y;
                 
-#ifdef THERMCON
-                mpv->p2_cells[n] = (p/rhoY) / ud.Msq;
-#else
-                mpv->p2_cells[n] = p / ud.Msq;
-#endif
-                Sol->rhoZ[PRES][n]     = mpv->p2_cells[n];				
+                mpv->p2_cells[n]   = (p/rhoY) / ud.Msq;
+                Sol->rhoZ[PRES][n] = mpv->p2_cells[n];		            
+                Sol->rhoX[BUOY][n] = Sol->rho[n] * ( Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
+		
             }			
         }
                 
@@ -327,19 +323,12 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     for(k = 0; k < iczn; k++) {l = k * icxn * icyn;   
         
         for(j = 0; j < icyn; j++) {m = l + j * icxn;                
-#ifdef THERMCON
-            double p    = mpv->HydroState->p0[j];
-            double rhoY = mpv->HydroState->rhoY0[j];
+            double p    = mpv->HydroState_n->p0[j];
+            double rhoY = mpv->HydroState_n->rhoY0[j];
             
             for(i = 0; i < icxn; i++) {n = m + i;
                 mpv->p2_nodes[n] = (p/rhoY) / ud.Msq;
             }
-#else
-            double p    = mpv->HydroState->p0[j];
-            for(i = 0; i < icxn; i++) {n = m + i;
-                mpv->p2_nodes[n] = p / ud.Msq;
-            }
-#endif
         }
     }                  
 }

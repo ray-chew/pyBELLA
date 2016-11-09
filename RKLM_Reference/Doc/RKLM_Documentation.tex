@@ -109,6 +109,8 @@
 
 \newcommand{\ie}{\emph{i.e.}}
 
+\newcommand{\Nscsq}{N^2_{sc}}
+
 % ===========================================================================
 % ===========================================================================
 % ===========================================================================
@@ -486,6 +488,110 @@ D_\alpha U^{n+1} = \advectionNum{D_\alpha U^{n} + \frac{\Delta t}{2} \rhs{U^{n}}
 \end{equation}
 %
 
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+
+\section{Semi-implicit gravity}
+\label{sec:SIGravity}
+
+To be solved in a (linearized) implicit, backward Euler step over $\Delta t / 2$,
+%
+\begin{eqnarray}
+w_t 
+  & = 
+    & - \frac{\theta}{\Gamma}\left(\pi_z + \Gamma g \chi\right)
+      \\
+\chi_t
+  & =
+    & - w \frac{d\overline{\chi}}{dz}
+\end{eqnarray}
+%
+where $\theta = 1/\chi$ is frozen in the linearization. The current state 
+is $w^*, \chi^*, \pi^*$. 
+
+Then, an implicit step over time step $\Delta t$ reads
+%
+\begin{eqnarray}
+\label{eq:deltaw1}
+w^{n+1} - w^* = \delta w 
+  & = 
+    & - \Delta t \, \frac{\theta}{\Gamma}\left([\pi^*+\delta\pi]_z + \Gamma g [\chi^* + \delta\chi]\right)
+      \\
+\label{eq:deltachi1}
+\chi^{n+1} - \chi^* = \delta\chi
+  & =
+    & - \Delta t\, (w^* + \delta w) \frac{d\overline{\chi}}{dz}\,.
+\end{eqnarray}
+%
+
+Reorder explicit and implicit contributions, replace $\delta\chi$ in \eq{eq:deltaw1}
+and solve for $\delta w$, 
+%
+\begin{eqnarray}
+w^{n+1} - w^* = \delta w 
+  & = 
+    & - \Delta t \, \frac{\theta}{\Gamma}\left(\pi^*_z + \Gamma g \chi^*\right)
+      - \Delta t \, \frac{\theta}{\Gamma}\left(\delta\pi_z + \Gamma g \delta\chi\right)
+      \\
+  & =
+    & - \Delta t \, \frac{\theta}{\Gamma}\left(\pi^*_z + \Gamma g \chi^*\right)
+      - \Delta t \, \frac{\theta}{\Gamma}\left(\delta\pi_z 
+      - \Delta t \, \Gamma g (w^* + \delta w) \frac{d\overline{\chi}}{dz}\right)
+      \\
+\delta w \left(1 - (\Delta t)^2 g \theta \frac{d\overline{\chi}}{dz}\right)
+  & =
+    & - \Delta t \, \frac{\theta}{\Gamma}\left(\pi^*_z + \Gamma g \chi^*\right)
+      + w^* (\Delta t)^2 g \theta \frac{d\overline{\chi}}{dz}
+      - \Delta t \, \frac{\theta}{\Gamma} \delta\pi_z \,.
+\end{eqnarray}
+%
+Letting
+%
+\begin{equation}
+\Nscsq = - (\Delta t)^2 g \theta \frac{d\overline{\chi}}{dz}
+\end{equation}
+%
+we have
+%
+\begin{equation}
+\label{eq:deltaw2}
+\delta w = \frac{1}{1 + \Nscsq} 
+\left(- \Delta t \frac{\theta}{\Gamma}\left(\pi^*_z + \Gamma g \chi^*\right)
+      - w^* \Nscsq\right)
+      - \Delta t \frac{\theta/\Gamma}{1 + \Nscsq} \delta\pi_z
+\end{equation}
+%
+and the update formular for $\chi$ subsequently follows from \eq{eq:deltachi1}.
+
+In \eq{eq:deltaw2} we use the abbreviation $\Gamma g \chi^* = - \pi^{\rm hy}_z$
+to obtain
+%
+\begin{eqnarray}
+\label{eq:deltaw2}
+\delta w 
+  & = 
+    & \frac{1}{1 + \Nscsq} 
+      \left(- \Delta t \frac{\theta}{\Gamma}\left(\pi^*_z - \pi^{\rm hy}_z\right)
+            - w^* \Nscsq
+      \right)
+      - \Delta t \frac{\theta/\Gamma}{1 + \Nscsq} \delta\pi_z 
+      \\
+\delta w 
+  & = 
+    & \delta^{\rm expl} w + \delta^{\rm \pi} w
+      \\
+\delta \chi
+  & = 
+    & - \Delta t\, (w^* + \delta^{\rm expl} w) \frac{d\overline{\chi}}{dz} 
+      + \frac{1}{\Gamma g}\frac{1}{1 + \Nscsq} (\Delta t)^2  g\theta\frac{d\overline{\chi}}{dz} \delta\pi_z 
+      \\
+\delta \chi
+  & = 
+    & - \Delta t\, (w^* + \delta^{\rm expl} w) \frac{d\overline{\chi}}{dz} 
+      + \frac{1}{\Gamma g}\frac{\Nscsq}{1 + \Nscsq}\delta\pi_z 
+\end{eqnarray}
+%
 
 % ===========================================================================
 % ===========================================================================
