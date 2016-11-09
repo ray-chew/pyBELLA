@@ -793,7 +793,7 @@ void Explicit_Buoyancy(ConsVars* Sol,
                 Sol->rhou[nckji] -= dt*Gammainv*Sol->rhoY[nckji]*dpdx;
                 vold[nckji]       = Sol->rhov[nckji] / Sol->rho[nckji];
                 Sol->rhov[nckji] += (-dt*Gammainv*Sol->rhoY[nckji]*(dpdy-dpdy_hy) - Sol->rhov[nckji] * Nsqsc) / (1.0 + Nsqsc);                    
-                Sol->rhoX[BUOY][nckji] -= dt * Sol->rhov[nckji] * dSdy;
+                Sol->rhoX[BUOY][nckji] -= dt * Sol->rhov[nckji] * dSdy;  
 
                 buoy->x[nckji]    = 0.0;
                 buoy->y[nckji_y]  = 0.0;
