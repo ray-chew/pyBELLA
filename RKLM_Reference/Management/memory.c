@@ -23,6 +23,7 @@
 void update(
 			ConsVars* sol, 
 			const ConsVars *flux[3], 
+            const double* buoyS,
 			const VectorField* buoy,
 			const ElemSpaceDiscr* elem, 
 			const double dt) 
@@ -57,6 +58,7 @@ void update(
                 for (nsp = 0; nsp < ud.nspec; nsp++) {
                     sol->rhoX[nsp][i] -= lambdax * (f->rhoX[nsp][i + 1] - f->rhoX[nsp][i]);
                 }
+                sol->rhoX[nsp][i] += buoyS[i];
     		}
     		break;
   		}
@@ -107,6 +109,8 @@ void update(
                     for (nsp = 0; nsp < ud.nspec; nsp++) {
                         sol->rhoX[nsp][n] -= lambdax * (f->rhoX[nsp][ox + 1] - f->rhoX[nsp][ox]) - lambday * (g->rhoX[nsp][oy + 1] - g->rhoX[nsp][oy]);
                     }
+                    
+                    sol->rhoX[nsp][n] += buoyS[n];
                     
 #ifdef GRAVITY_IMPLICIT
 #ifndef GRAVITY_IMPLICIT_2
@@ -167,7 +171,7 @@ void update(
 
 						/* assuming non-moving grid and stationary geopotential */
 						sol->rho[n] -= lambdax * ( f->rho[ox + 1] -  f->rho[ox]);
-						sol->rhou[n] -= lambdax * (f->rhou[ox + 1] - f->rhou[ox]);
+						sol->rhou[n] -= lambdax * (f->rhou[ox + 1] - f->rhou[ox]) + buoy->x[n];
 						sol->rhov[n] -= lambdax * (f->rhov[ox + 1] - f->rhov[ox]);
 						sol->rhow[n] -= lambdax * (f->rhow[ox + 1] - f->rhow[ox]);
 						sol->rhoe[n] -= lambdax * (f->rhoe[ox + 1] - f->rhoe[ox]);
@@ -178,7 +182,7 @@ void update(
 						/* assuming non-moving grid and stationary geopotential */
 						sol->rho[n] -= lambday * ( g->rho[oy + 1] -  g->rho[oy]);
 						sol->rhou[n] -= lambday * (g->rhou[oy + 1] - g->rhou[oy]);
-						sol->rhov[n] -= lambday * (g->rhov[oy + 1] - g->rhov[oy]);
+						sol->rhov[n] -= lambday * (g->rhov[oy + 1] - g->rhov[oy]) + buoy->y[n];
 						sol->rhow[n] -= lambday * (g->rhow[oy + 1] - g->rhow[oy]);
 						sol->rhoe[n] -= lambday * (g->rhoe[oy + 1] - g->rhoe[oy]);
 						sol->rhoY[n] -= lambday * (g->rhoY[oy + 1] - g->rhoY[oy]);
@@ -190,12 +194,14 @@ void update(
 						sol->rho[n] -= lambdaz * ( h->rho[oz + 1] -  h->rho[oz]);
 						sol->rhou[n] -= lambdaz * (h->rhou[oz + 1] - h->rhou[oz]);
 						sol->rhov[n] -= lambdaz * (h->rhov[oz + 1] - h->rhov[oz]);
-						sol->rhow[n] -= lambdaz * (h->rhow[oz + 1] - h->rhow[oz]);
+						sol->rhow[n] -= lambdaz * (h->rhow[oz + 1] - h->rhow[oz]) + buoy->z[n];
 						sol->rhoe[n] -= lambdaz * (h->rhoe[oz + 1] - h->rhoe[oz]);
 						sol->rhoY[n] -= lambdaz * (h->rhoY[oz + 1] - h->rhoY[oz]);
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
                             sol->rhoX[nsp][n] -= lambdaz * (h->rhoX[nsp][oz + 1] - h->rhoX[nsp][oz]);
                         }
+                        
+                        sol->rhoX[BUOY][n] += buoyS[n];
 #ifdef GRAVITY_IMPLICIT
 #ifndef GRAVITY_IMPLICIT_2
                         /* Buoyancy contribution due to update of theta-fluctuations */
@@ -214,7 +220,8 @@ void update(
 
 /* ================================================================================ */
 
-void rotate2D(ConsVars* Sol, double* rhs, double *Yinvbg, const enum Direction direction) {
+void rotate2D(ConsVars* Sol, double* rhs, double *Yinvbg, double* buoyS, const enum Direction direction) 
+{
 	
 	/* User data */
 	extern User_Data ud;
@@ -252,6 +259,7 @@ void rotate2D(ConsVars* Sol, double* rhs, double *Yinvbg, const enum Direction d
 	
 	flip2D(rhs, icx, icy, nc, W0);
     flip2D(Yinvbg, icx, icy, nc, W0);
+    flip2D(buoyS, icx, icy, nc, W0);
 	
 	/* rotation of grid parameters */
 	/* control volumes (elem) */
@@ -343,7 +351,7 @@ void rotate2D(ConsVars* Sol, double* rhs, double *Yinvbg, const enum Direction d
 
 /* ================================================================================ */
 
-void rotate3D(ConsVars* Sol, double *rhs, double *Yinvbg, const enum Direction direction) {
+void rotate3D(ConsVars* Sol, double *rhs, double *Yinvbg, double* buoyS, const enum Direction direction) {
 	
 	/* User data */
 	extern User_Data ud;
@@ -384,6 +392,7 @@ void rotate3D(ConsVars* Sol, double *rhs, double *Yinvbg, const enum Direction d
 		
 		flip3D_f( rhs, icx, icy, icz, nc, W0 );       
         flip3D_f( Yinvbg, icx, icy, icz, nc, W0 );       
+        flip3D_f( buoyS, icx, icy, icz, nc, W0 );       
 		
 		/* rotation of grid parameters */
 		/* control volumes (elem) */
@@ -650,6 +659,7 @@ void rotate3D(ConsVars* Sol, double *rhs, double *Yinvbg, const enum Direction d
 		
 		flip3D_b( rhs, icx, icy, icz, nc, W0 );       
         flip3D_b( Yinvbg, icx, icy, icz, nc, W0 );       
+        flip3D_b( buoyS, icx, icy, icz, nc, W0 );       
 		
 	}
 	else {

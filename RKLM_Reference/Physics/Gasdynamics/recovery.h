@@ -32,7 +32,8 @@ void recovery_gravity(
                       const double* dp2,
 					  const double lambda, 
 					  const int nmax,
-                      const int stage);
+                      const int stage,
+                      const int implicit);
 
 /*------------------------------------------------------------------------------
  

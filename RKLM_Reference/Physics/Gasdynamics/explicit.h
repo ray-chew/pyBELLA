@@ -40,13 +40,15 @@ void Explicit_free();
 void Explicit_step_and_flux(
 							ConsVars* Sol,
 							ConsVars* flux,
+                            double* buoyS,
                             VectorField* buoy,
                             double* dp2,
 							const States* HydroState,
 							const double lambda, 
 							const int n, 
 							const int SplitStep,
-                            const int RK_stage);
+                            const int RK_stage,
+                            const int implicit);
 
 
 /*------------------------------------------------------------------------------
@@ -54,6 +56,7 @@ void Explicit_step_and_flux(
  ------------------------------------------------------------------------------*/
 void Explicit_pressure_and_gravity(
                                    ConsVars* Sol,
+                                   double* buoyS,
                                    VectorField* buoy,
                                    const MPV* mpv,
                                    const ElemSpaceDiscr* elem,
@@ -83,6 +86,7 @@ void Explicit_step_update(
 void fullD_explicit_updates(ConsVars* Sol, 
                             ConsVars* Sol0,
                             ConsVars* flux[3],
+                            double* buoyS,
                             VectorField* buoy, 
                             const ElemSpaceDiscr* elem, 
                             const double dt,

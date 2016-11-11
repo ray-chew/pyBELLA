@@ -49,6 +49,7 @@ Thermodynamic th;
 ConsVars* Sol;            /* full size */
 ConsVars* Sol0;           /* full size (M < 1.0) */
 ConsVars* dSol;           /* full size */
+double* buoyS;            /* full size */
 VectorField* buoy;        /* full size */
 VectorField* adv_flux;    /* full size, components located on primary cell faces */
 VectorField* adv_flux0;    /* full size, components located on primary cell faces */
@@ -124,6 +125,7 @@ void Data_init() {
 	/* Arrays */
 	Sol  = ConsVars_new(elem->nc);
 	dSol = ConsVars_new(elem->nc);
+    buoyS = (double*)malloc((unsigned)(elem->nc * sizeof(double)));
 	buoy = VectorField_new(elem->nc);
     adv_flux  = VectorField_new(node->nc);
     adv_flux0 = VectorField_new(node->nc);
@@ -182,6 +184,7 @@ void Data_free() {
 	NodeSpaceDiscr_free(node);
 	ConsVars_free(Sol);
 	ConsVars_free(dSol);
+    free(buoyS);
 	VectorField_free(buoy);
     VectorField_free(adv_flux);
 	States_small_free(Solk);

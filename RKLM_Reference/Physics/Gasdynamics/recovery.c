@@ -103,7 +103,8 @@ void recovery_gravity(
                       const double* dp2,
 					  const double lambda, 
 					  const int nmax,
-                      const int stage) {
+                      const int stage,
+                      const int implicit) {
 	
 	extern User_Data ud;
 	extern Thermodynamic th;
@@ -112,8 +113,10 @@ void recovery_gravity(
 	const double gamm  = th.gamm;
     
 #ifndef GRAVITY_IMPLICIT_2
+    const double g     = ud.gravity_strength[1];
     const double Msq   = ud.Msq;
-	const double dh = elem->dx;
+	const double dh    = elem->dx;
+    const double dt    = lambda * dh;
 #endif
     
     int OrderTwo  = ((ud.recovery_order == SECOND) ? 1 : 0);
@@ -209,6 +212,7 @@ void recovery_gravity(
     conservatives_from_uvwYZ(Lefts, 1, nmax-1);
 
 #ifndef GRAVITY_IMPLICIT_2
+#ifdef GRAVITY_IMPLICIT_1
     /* pressure gradient and gravity terms */
     for( i = 0; i < nmax;  i++) {
         
@@ -217,19 +221,71 @@ void recovery_gravity(
         
         Hydros[i].rho[2]  = Sol->rho[i];
         
-#ifdef GRAVITY_IMPLICIT_1
-        Hydros[i].Yinv[0] = Sol->rhoZ[SOLD][iminus];
-        Hydros[i].Yinv[2] = Sol->rhoZ[SOLD][i];
-        Hydros[i].Yinv[4] = Sol->rhoZ[SOLD][iplus];
+        Hydros[i].Yinv[0] = Yinvbg[iminus] + Sol->rhoX[BUOY][iminus];
+        Hydros[i].Yinv[2] = Yinvbg[i]      + Sol->rhoX[BUOY][i];
+        Hydros[i].Yinv[4] = Yinvbg[iplus]  + Sol->rhoX[BUOY][iplus];
         Hydros[i].Yinv[1] = 0.5*(Hydros[i].Yinv[0]+Hydros[i].Yinv[2]);
         Hydros[i].Yinv[3] = 0.5*(Hydros[i].Yinv[2]+Hydros[i].Yinv[4]);
-#else
+        
+        Hydros[i].p2[2]   = Sol->rhoZ[PRES][i];  
+        
+        HydroStates(Hydros, strength, Msq, i, dh, elem);
+        
+        Lefts->geopot[i]  = 0.5 * (Sol->geopot[iplus] + Sol->geopot[i]);
+        Rights->geopot[i] = 0.5 * (Sol->geopot[i] + Sol->geopot[iminus]);
+    }
+    
+    for( i = 1; i < nmax; i++ ) {
+        
+        double dS;
+
+        double Y          = 0.5*(Sol->rhoY[i]/Sol->rho[i] + Sol->rhoY[i-1]/Sol->rho[i-1]);
+        double dSbgdy     = (Yinvbg[i]-Yinvbg[i-1])/dh;
+        double Nsqsc      = - implicit * dt*dt * (g/Msq) * Y * dSbgdy;
+        double ooopNsqsc  = 1.0 / (1.0+Nsqsc);
+        
+        double u          = 0.5*(Sol->u[i]+Sol->u[i-1]);
+        double rhoY       = 0.5 * (Sol->rhoY[i] + Sol->rhoY[i-1]); 
+        double SlopeS     = (Sol->rhoX[BUOY][i] - Sol->rhoX[BUOY][i-1]); 
+        double uSlopeS    = u*SlopeS;
+        double dp2hydro_l = 0.5 * ((Hydros[i-1].p2[4]-Hydros[i-1].p2[2]) + (Hydros[i].p2[2]-Hydros[i].p2[0]));
+
+        /* TODO: is this needed for 2nd order? */
+        double rhoYc      = 0.5 * (Rights->rhoY[i]+Lefts->rhoY[i]);
+        double dbuoy_adv  = 0.0 * rhoYc*lambda*dh * (strength/Msq) * uSlopeS * 0.5;  
+        
+        double rhou       = 0.5 * (Rights->rhou[i] + Lefts->rhou[i-1]);
+        double drhou      = - 0.5 * lambda * th.Gammainv * rhoY * (Sol->rhoZ[PRES][i] - Sol->rhoZ[PRES][i-1] - dp2hydro_l);
+        double drhou_f    = ooopNsqsc * (drhou - Nsqsc * rhou);
+                
+        Rights->u[i]     += drhou_f / Rights->rho[i];
+        Lefts->u[i-1]    += drhou_f / Lefts->rho[i-1];
+        Rights->rhou[i]  += drhou_f;
+        Lefts->rhou[i-1] += drhou_f;
+        
+        dS                = - dt * 0.5* (Rights->u[i]+Lefts->u[i-1]) * dSbgdy;
+
+        Rights->rhoX[BUOY][i]  += Rights->rho[i] * dS;
+        Lefts->rhoX[BUOY][i-1] += Lefts->rho[i-1] * dS;
+
+        /* weighting of this term for implicit part realized in Explicit_Step_and_Flux() */
+        gravity_source[i]    = drhou + dbuoy_adv; 
+        gravity_source[i-1] += drhou + dbuoy_adv; 
+    }
+#else  /* GRAVITY_IMPLICIT_1 */
+    /* pressure gradient and gravity terms */
+    for( i = 0; i < nmax;  i++) {
+        
+        int iminus = MAX_own(0,i-1);
+        int iplus  = MIN_own(nmax-1,i+1);
+        
+        Hydros[i].rho[2]  = Sol->rho[i];
+        
         Hydros[i].Yinv[0] = Yinv_ave[iminus];
         Hydros[i].Yinv[2] = Yinv_ave[i];
         Hydros[i].Yinv[4] = Yinv_ave[iplus];
         Hydros[i].Yinv[1] = 0.5*(Hydros[i].Yinv[0]+Hydros[i].Yinv[2]);
         Hydros[i].Yinv[3] = 0.5*(Hydros[i].Yinv[2]+Hydros[i].Yinv[4]);
-#endif
 
         Hydros[i].p2[2]   = Sol->rhoZ[PRES][i];  
         
@@ -241,18 +297,6 @@ void recovery_gravity(
         
     for( i = 1; i < nmax; i++ ) {
         
-#ifdef GRAVITY_IMPLICIT_1
-        double gps        = th.Gammainv * 0.5 * (Sol->rhoY[i] + Sol->rhoY[i-1]); 
-        double dp2hydro_l = 0.5 * ((Hydros[i-1].p2[4]-Hydros[i-1].p2[2]) + (Hydros[i].p2[2]-Hydros[i].p2[0]));        
-        double drhou      = - 0.5 * (Sol->rhoZ[PRES][i] - Sol->rhoZ[PRES][i-1] - dp2hydro_l) * gps;
-        
-        Rights->u[i]     += lambda  * drhou / Rights->rho[i];
-        Lefts->u[i-1]    += lambda  * drhou / Lefts->rho[i-1];
-        Rights->rhou[i]  += lambda  * drhou;
-        Lefts->rhou[i-1] += lambda  * drhou;
-        gravity_source[i]    = drhou; /* switch grav indep of gss ! */
-        gravity_source[i-1] += drhou; 
-#else /* GRAVITY_IMPLICIT_1 */
         double u          = 0.5*(Sol->u[i]+Sol->u[i-1]);
         double gps        = th.Gammainv * 0.5 * (Sol->rhoY[i] + Sol->rhoY[i-1]); 
         double SlopeY     = (1.0/Sol->Y[i] - 1.0/Sol->Y[i-1]); 
@@ -268,9 +312,8 @@ void recovery_gravity(
         Lefts->rhou[i-1] += lambda  * drhou;
         gravity_source[i]    = drhou + dbuoy_adv; /* switch grav indep of gss ! */
         gravity_source[i-1] += drhou + dbuoy_adv; 
-#endif /* GRAVITY_IMPLICIT_1 */
     }
-
+#endif /* GRAVITY_IMPLICIT_1 */
 #endif /* GRAVITY_IMPLICIT_2 */
 }
 

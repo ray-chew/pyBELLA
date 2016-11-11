@@ -966,7 +966,7 @@ void check_flux_bcs(
 
 /* ============================================================================= */
 
-static void (*rotate[])(ConsVars* Sol, double* rhs, double *Yinvbg, const enum Direction dir) = {NULL, rotate2D, rotate3D};
+static void (*rotate[])(ConsVars* Sol, double* rhs, double *Yinvbg, double *buoyS, const enum Direction dir) = {NULL, rotate2D, rotate3D};
 
 void Set_Explicit_Boundary_Data(
                                 ConsVars* Sol,
@@ -974,16 +974,17 @@ void Set_Explicit_Boundary_Data(
                                 const MPV* mpv) 
 {
     extern double *Yinvbg;
+    extern double *buoyS;
     int SplitStep;
     
     for(SplitStep = 0; SplitStep < elem->ndim; SplitStep++) { 
         const double lambda = 1.0;
         Bound(Sol, mpv->HydroState, lambda, elem->nc, SplitStep); 
-        if(SplitStep < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->Level[0]->rhs, Yinvbg, FORWARD);
+        if(SplitStep < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->Level[0]->rhs, Yinvbg, buoyS, FORWARD);
     }         
     /* rotate back */          
     for(SplitStep = elem->ndim-1; SplitStep > 0; SplitStep--) {
-        (*rotate[elem->ndim - 1])(Sol, mpv->Level[0]->rhs, Yinvbg, BACKWARD);
+        (*rotate[elem->ndim - 1])(Sol, mpv->Level[0]->rhs, Yinvbg, buoyS, BACKWARD);
     }
 }
 

@@ -64,6 +64,7 @@ static void	catch_periodic_directions(
 static void operator_coefficients_nodes(
 										double* Splus[3], 
 										double* wcenter,
+                                        double* hS,
 										const ElemSpaceDiscr* elem,
 										const NodeSpaceDiscr* node,
 										ConsVars* Sol,
@@ -111,6 +112,7 @@ void second_projection(
 	
 	double** hplus   = mpv->Level[0]->wplus;
 	double*  hcenter = mpv->Level[0]->wcenter;
+    double*  hS      = mpv->Level[0]->wgrav;
 	
 	double* rhs      = mpv->Level[0]->rhs;
 	double* p2       = mpv->Level[0]->p;
@@ -143,7 +145,7 @@ void second_projection(
     
 #ifdef GRAVITY_IMPLICIT
 #ifndef GRAVITY_IMPLICIT_2
-    explicit_background_buoyancy(Sol, mpv, Sol0, elem, node, dt);
+    // explicit_background_buoyancy(Sol, mpv, Sol0, elem, node, dt);
 #endif
 #endif
 
@@ -168,7 +170,7 @@ void second_projection(
      
     
 	assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED); 
-	operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
+	operator_coefficients_nodes(hplus, hcenter, hS, elem, node, Sol, Sol0, mpv, dt);
 	
 	variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, x_periodic, y_periodic, z_periodic, dt);
     
@@ -619,6 +621,7 @@ static void	catch_periodic_directions(
 static void operator_coefficients_nodes(
 										double* hplus[3], 
 										double* hcenter,
+                                        double* hS,
 										const ElemSpaceDiscr* elem,
 										const NodeSpaceDiscr* node,
 										ConsVars* Sol,
@@ -886,7 +889,7 @@ void correction_nodes(
 					  const double dt) {
 	
 	extern User_Data ud;
-#ifdef GRAVITY_IMPLICIT_2
+#ifdef GRAVITY_IMPLICIT
     extern MPV* mpv;
 #endif
 	const int ndim = elem->ndim;
@@ -922,7 +925,7 @@ void correction_nodes(
 				m = j * icx; 
 				me = j * icxe;
                 
-#ifdef GRAVITY_IMPLICIT_2
+#ifdef GRAVITY_IMPLICIT
                 double dSdy = (mpv->HydroState_n->S0[j+1]-mpv->HydroState_n->S0[j])/dy;
 #endif
 				
@@ -937,13 +940,13 @@ void correction_nodes(
 					const double Dpx   = 0.5 * (p[n1]   - p[n] + p[n1icx] - p[nicx]);
 					const double Dpy   = 0.5 * (p[nicx] - p[n] + p[n1icx] - p[n1]);
                     const double thinv = Sol->rho[ne] / Sol->rhoY[ne] ;
-#ifdef GRAVITY_IMPLICIT_2
+#ifdef GRAVITY_IMPLICIT
                     const double vold  = Sol->rhov[ne] / Sol->rho[ne];
                     double vnew;
 #endif
 					Sol->rhou[ne] += - dtowdx * thinv * hplusx[ne] * Dpx;
 					Sol->rhov[ne] += - dtowdy * thinv * hplusy[ne] * Dpy;
-#ifdef GRAVITY_IMPLICIT_2
+#ifdef GRAVITY_IMPLICIT
                     vnew  = Sol->rhov[ne] / Sol->rho[ne];
                     Sol->rhoX[BUOY][ne] += - Sol->rho[ne] * 0.5*dt * (vnew-vold) * dSdy;
 #endif

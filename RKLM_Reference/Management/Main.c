@@ -30,7 +30,7 @@
 #include "boundary.h"
 #include "numerical_flux.h"
 
-static void (*rotate[])(ConsVars* Sol, double* rhs, double *Yinvbg, const enum Direction dir) = {NULL, rotate2D, rotate3D};
+static void (*rotate[])(ConsVars* Sol, double* rhs, double *Yinvbg, double *buoyS, const enum Direction dir) = {NULL, rotate2D, rotate3D};
 
 int i_OpSplit;
 
@@ -59,6 +59,7 @@ int main( void )
 	extern ConsVars* Sol0; 
 	extern ConsVars* flux[3];
     extern VectorField* adv_flux;
+    extern double* buoyS;
     extern VectorField* buoy; 
     
     extern double* W0;
@@ -192,21 +193,21 @@ int main( void )
                 for(i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
                     lambda = ud.tips.dt_frac*dt/elem->dx;
                     Split = sequence * i_OpSplit + (1 - sequence) * ((elem->ndim - 1) - i_OpSplit);
-                    Explicit_step_and_flux(Sol, flux[Split], buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage);
+                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, 0);
                     
 #if OUTPUT_SUBSTEPS_PREDICTOR
                     /* TODO: remove necessity of calling b.c. routine for all directions after each splitstep */
                     if (i_OpSplit == 1)  {
-                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, BACKWARD);
+                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, buoyS, BACKWARD);
                     }
                     Set_Explicit_Boundary_Data(Sol, elem, mpv);
                     putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", OUTPUT_SPLITSTEPS);
                     if (i_OpSplit == 1)  {
-                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, FORWARD);
+                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, buoyS, FORWARD);
                     }
 #endif
 
-                    if(i_OpSplit < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, FORWARD);
+                    if(i_OpSplit < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, buoyS, FORWARD);
 
                 }
                 
@@ -215,20 +216,20 @@ int main( void )
                 for(i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
                     lambda = ud.tips.dt_frac*dt/elem->dx;
                     Split = (1 - sequence) * i_OpSplit + sequence * ((elem->ndim - 1) - i_OpSplit);
-                    Explicit_step_and_flux(Sol, flux[Split], buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage);
+                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, 1);
                     
 #if OUTPUT_SUBSTEPS_PREDICTOR
                     if (i_OpSplit == 0)  {
-                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, BACKWARD);
+                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, buoyS, BACKWARD);
                     }
                     Set_Explicit_Boundary_Data(Sol, elem, mpv);
                     putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", OUTPUT_SPLITSTEPS);
                     if (i_OpSplit == 0)  {
-                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, FORWARD);
+                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, buoyS, FORWARD);
                     }
 #endif
                     
-                    if(i_OpSplit < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, BACKWARD);
+                    if(i_OpSplit < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, buoyS, BACKWARD);
                 }
                 
                 
@@ -236,7 +237,7 @@ int main( void )
 #if OUTPUT_SUBSTEPS_PREDICTOR
                     putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 0);
 #endif
-                    fullD_explicit_updates(Sol, Sol0, flux, buoy, elem, dt, stage);
+                    fullD_explicit_updates(Sol, Sol0, flux, buoyS, buoy, elem, dt, stage);
 #if OUTPUT_SUBSTEPS_PREDICTOR
                     putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 0);
 #endif
@@ -252,7 +253,7 @@ int main( void )
             if(PROJECTION1) {
                 
                 flux_correction(flux, buoy, elem, Sol, Sol0, t, dt, ud.implicitness, step);
-                update(Sol, (const ConsVars**)flux, buoy, elem, dt);
+                update(Sol, (const ConsVars**)flux, buoyS, buoy, elem, dt);
                 Set_Explicit_Boundary_Data(Sol, elem, mpv);
 #if OUTPUT_SUBSTEPS
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);

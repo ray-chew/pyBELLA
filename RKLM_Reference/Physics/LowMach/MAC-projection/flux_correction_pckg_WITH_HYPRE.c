@@ -66,6 +66,7 @@ static void flux_correction_due_to_pressure_gradients(
 													  ConsVars* Sol0,
 													  const MPV* mpv, 
 													  double* hplus[3],
+                                                      double* hS,
 													  double* dp2,
 													  const double t,
 													  const double dt,
@@ -104,6 +105,7 @@ void flux_correction(
 
 	double** hplus       = mpv->Level[0]->wplus;
 	double*  hcenter     = mpv->Level[0]->wcenter;
+    double*  hS          = mpv->Level[0]->wgrav;
 	
 	double* rhs          = mpv->Level[0]->rhs;
 	double* dp2		     = mpv->Level[0]->p;
@@ -114,7 +116,7 @@ void flux_correction(
     printf("\nFirst Projection");
     printf("\n====================================================\n");
 	    
-	operator_coefficients(hplus, hcenter, elem, Sol, Sol0, mpv, dt);
+	operator_coefficients(hplus, hcenter, hS, elem, Sol, Sol0, mpv, dt);
     
 	/* obtain finest grid data for the MG hierarchy */
 	controlled_variable_change_explicit(rhs, elem, Sol, Sol0, dt, mpv);
@@ -210,7 +212,7 @@ void flux_correction(
 
     set_ghostcells_p2(dp2, (const double **)hplus, elem, elem->igx);
 
-    flux_correction_due_to_pressure_gradients(flux, buoy, elem, Sol, Sol0, mpv, hplus, dp2, t, dt, implicitness);
+    flux_correction_due_to_pressure_gradients(flux, buoy, elem, Sol, Sol0, mpv, hplus, hS, dp2, t, dt, implicitness);
     if (ud.p_flux_correction) {
         flux_correction_due_to_pressure_values(flux, buoy, elem, Sol, dp2, dt); 
     }
@@ -405,6 +407,7 @@ static enum Constraint integral_condition(
 void operator_coefficients(
                            double* hplus[3], 
                            double* wcenter,
+                           double* hS,
                            const ElemSpaceDiscr* elem,
                            const ConsVars* Sol,
                            const ConsVars* Sol0,
@@ -493,15 +496,17 @@ void operator_coefficients(
                     hjm   = Sol->rhoY[jcm] * Sol->rhoY[jcm] / Sol->rho[jcm] * Gammainv;
                      */
                     
-                    double S   = mpv->HydroState->S0[j];
-                    double Sm  = mpv->HydroState->S0[j-1];
-                    double Y   = 0.5 * (Sol->rhoY[jc]  / Sol->rho[jc]  + Sol0->rhoY[jc]  / Sol0->rho[jc]);
-                    double Ym  = 0.5 * (Sol->rhoY[jcm] / Sol->rho[jcm] + Sol0->rhoY[jcm] / Sol0->rho[jcm]);
-                    double Nsq = - (g/Msq) * 0.5*(Y+Ym) * (S-Sm)/dy;
+                    double S     = mpv->HydroState->S0[j];
+                    double Sm    = mpv->HydroState->S0[j-1];
+                    double Y     = 0.5 * (Sol->rhoY[jc]  / Sol->rho[jc]  + Sol0->rhoY[jc]  / Sol0->rho[jc]);
+                    double Ym    = 0.5 * (Sol->rhoY[jcm] / Sol->rho[jcm] + Sol0->rhoY[jcm] / Sol0->rho[jcm]);
+                    double Nsq   = - (g/Msq) * 0.5*(Y+Ym) * (S-Sm)/dy;
+                    double Nsqsc = impl_grav_th*0.5*dt*dt*Nsq;
                      
-                    gimp  = 1.0 / (1.0 + impl_grav_th*0.5*dt*dt*Nsq);
+                    gimp  = 1.0 / (1.0 + Nsqsc);
                     
 					hy[m] = 0.5 * (hj + hjm) * implicitness * gimp;
+                    hS[m] = Nsqsc * gimp * Gammainv / (g/Msq) / Y;
                                         
 					assert(hy[m] > 0.0);
 				}
@@ -641,6 +646,7 @@ static void flux_correction_due_to_pressure_gradients(
                                                       ConsVars* Sol0,
                                                       const MPV* mpv, 
                                                       double* hplus[3],
+                                                      double* hS,
                                                       double* dp2,
                                                       const double t,
                                                       const double dt,
@@ -669,6 +675,7 @@ static void flux_correction_due_to_pressure_gradients(
             
             const double dto2dx = implicitness * 0.5 * dt / elem->dx;
             const double dto2dy = implicitness * 0.5 * dt / elem->dy;
+            const double oody   = 1.0/elem->dy;
             
             ConsVars* f = flux[0];
             ConsVars* g = flux[1];
@@ -704,6 +711,7 @@ static void flux_correction_due_to_pressure_gradients(
                     
                     buoy->x[ic] = 0.0;
                     
+                    /* TODO: Check what happens if you interpolate (rhoX / rhoY) directly instead */
                     /* compute interface values of u, v, Y, Z, H */
                     oorhoi  = 1.0 / INTERPOL(Sol->rhoY[icp],  Sol->rhoY[ic],  Sol->rhoY[icm]); 
                     ui      = oorhoi * INTERPOL(Sol->rhou[icp], Sol->rhou[ic], Sol->rhou[icm]);
@@ -777,6 +785,7 @@ static void flux_correction_due_to_pressure_gradients(
                     p0_c = mpv->HydroState->p0[j];
                     p0_s = mpv->HydroState->p0[j-1];
                     
+                    /* TODO: eliminate buoy-fields from projection step(s); they are everywhere zero anyway it seems. */
                     buoy->y[jc] = 0.0;
                     
                     oorhoj = 1.0 / INTERPOL(Sol->rhoY[jcp], Sol->rhoY[jc], Sol->rhoY[jcm]);
@@ -798,7 +807,7 @@ static void flux_correction_due_to_pressure_gradients(
                     }
                     Yjm = oorhojm * INTERPOL(Sol->rho[jcmm], Sol->rho[jcm], Sol->rho[jc]);
                     Hjm = oorhojm * (INTERPOL(Sol->rhoe[jcmm], Sol->rhoe[jcm], Sol->rhoe[jc]) + p0_s);
-                    
+                                        
                     tmpy = - dto2dy * (  0.75  *   hplusy[mc] * (dp2[jc]   - dp2[jcm]  ) 
                                        + 0.125 * ( hplusy[me] * (dp2[jc+1] - dp2[jcm+1]) 
                                                  + hplusy[mw] * (dp2[jc-1] - dp2[jcm-1]) 
@@ -808,7 +817,19 @@ static void flux_correction_due_to_pressure_gradients(
                     grhoY       = g->rhoY[mc] + tmpy;
                     
                     
-                    
+#ifdef GRAVITY_IMPLICIT_1
+                    {
+                        double tmpS = oody * (  0.75  *    hS[mc] * (dp2[jc]   - dp2[jcm]  ) 
+                                              + 0.125 * (  hS[me] * (dp2[jc+1] - dp2[jcm+1]) 
+                                                         + hS[mw] * (dp2[jc-1] - dp2[jcm-1]) 
+                                                        ) 
+                                              );
+                        /* correction of advected value for S = 1/Y for implicit gravity */
+                        Xj[BUOY]  += tmpS;
+                        Xjm[BUOY] += tmpS;                   
+                    }
+#endif
+
 #ifdef NO_UPWIND_PROJ1
                     upwind = 0.5; 
 #else
@@ -853,6 +874,7 @@ static void flux_correction_due_to_pressure_gradients(
             const double dto2dx = implicitness * 0.5 * dt / elem->dx;
             const double dto2dy = implicitness * 0.5 * dt / elem->dy;
             const double dto2dz = implicitness * 0.5 * dt / elem->dz;
+            const double oody   = 1.0/elem->dy;
             
             const int dix = 1;
             const int diy = icx; 
@@ -1019,6 +1041,13 @@ static void flux_correction_due_to_pressure_gradients(
                          );
 
                         frhoY       = fy->rhoY[n] + tmpy;
+                        
+#ifdef GRAVITY_IMPLICIT_1
+                        {
+                            assert(0); /* implement S-correction from 2D case */
+                        }
+#endif
+
                         
 #ifdef NO_UPWIND_PROJ1
                         upwind = 0.5; 

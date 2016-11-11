@@ -11,6 +11,7 @@
 void update(
 			ConsVars* sol, 
 			const ConsVars *flux[3], 
+            const double* buoyS,
 			const VectorField* buoy,
 			const ElemSpaceDiscr* elem, 
 			const double dt);
@@ -27,14 +28,14 @@ void arrays(int allocate);
  here a permutation of the x,y,z directions is carried out. the permutation goes
  forward when "direction" = FORWARD, otherwise ...
  ------------------------------------------------------------------------------*/
-void rotate2D(ConsVars* Sol, double *rhs, double *Yinvbg, const enum Direction direction);
+void rotate2D(ConsVars* Sol, double *rhs, double *Yinvbg, double* buoyS, const enum Direction direction);
 
 
 /*------------------------------------------------------------------------------
  here a permutation of the x,y,z directions is carried out. the permutation goes
  forward when "direction" = FORWARD, otherwise ...
  ------------------------------------------------------------------------------*/
-void rotate3D(ConsVars* Sol, double *rhs, double *Yinvbg, const enum Direction direction);
+void rotate3D(ConsVars* Sol, double *rhs, double *Yinvbg, double* buoyS, const enum Direction direction);
 
 
 /*------------------------------------------------------------------------------
