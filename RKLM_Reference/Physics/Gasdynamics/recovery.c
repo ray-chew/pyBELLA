@@ -237,6 +237,16 @@ void recovery_gravity(
     
     for( i = 1; i < nmax; i++ ) {
         
+        /*
+        double u          = 0.5*(Sol->u[i]+Sol->u[i-1]);
+        double SlopeY     = (1.0/Sol->Y[i] - 1.0/Sol->Y[i-1]); 
+        double uSlopeY    = u*SlopeY;
+        double rhoYc      = 0.5 * (Rights->rhoY[i]+Lefts->rhoY[i]);
+        double dbuoy_adv  = 0.5 * rhoYc*lambda*dh * (strength/Msq) * uSlopeY * 0.5;
+         */
+        
+        double dbuoy_adv  = 0.0;
+        
         double Y          = 0.5*(Sol->rhoY[i]/Sol->rho[i] + Sol->rhoY[i-1]/Sol->rho[i-1]);
         double dSbgdy     = (Yinvbg[i]-Yinvbg[i-1])/dh;
         double Nsqsc      = - implicit * dt*dt * (g/Msq) * Y * dSbgdy;
@@ -255,8 +265,8 @@ void recovery_gravity(
         Lefts->rhou[i-1] += drhou_f;
         
         /* weighting of this term for implicit part realized in Explicit_Step_and_Flux() */
-        gravity_source[i]    = drhou; 
-        gravity_source[i-1] += drhou; 
+        gravity_source[i]    = drhou + dbuoy_adv; 
+        gravity_source[i-1] += drhou + dbuoy_adv; 
     }
 #else  /* GRAVITY_IMPLICIT_1 */
     /* pressure gradient and gravity terms */
@@ -289,6 +299,7 @@ void recovery_gravity(
         double uSlopeY    = u*SlopeY;
         double rhoYc      = 0.5 * (Rights->rhoY[i]+Lefts->rhoY[i]);
         double dbuoy_adv  = 0.5 * rhoYc*lambda*dh * (strength/Msq) * uSlopeY * 0.5;
+        
         double dp2hydro_l = 0.5 * ((Hydros[i-1].p2[4]-Hydros[i-1].p2[2]) + (Hydros[i].p2[2]-Hydros[i].p2[0]));
         double drhou      = - 0.5 * (Sol->rhoZ[PRES][i] - Sol->rhoZ[PRES][i-1] - dp2hydro_l) * gps;
         
