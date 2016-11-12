@@ -816,20 +816,6 @@ static void flux_correction_due_to_pressure_gradients(
                     
                     grhoY       = g->rhoY[mc] + tmpy;
                     
-                    
-#ifdef GRAVITY_IMPLICIT_1
-                    {
-                        double tmpS = oody * (  0.75  *    hS[mc] * (dp2[jc]   - dp2[jcm]  ) 
-                                              + 0.125 * (  hS[me] * (dp2[jc+1] - dp2[jcm+1]) 
-                                                         + hS[mw] * (dp2[jc-1] - dp2[jcm-1]) 
-                                                        ) 
-                                              );
-                        /* correction of advected value for S = 1/Y for implicit gravity */
-                        Xj[BUOY]  += tmpS;
-                        Xjm[BUOY] += tmpS;                   
-                    }
-#endif
-
 #ifdef NO_UPWIND_PROJ1
                     upwind = 0.5; 
 #else
@@ -1041,13 +1027,6 @@ static void flux_correction_due_to_pressure_gradients(
                          );
 
                         frhoY       = fy->rhoY[n] + tmpy;
-                        
-#ifdef GRAVITY_IMPLICIT_1
-                        {
-                            assert(0); /* implement S-correction from 2D case */
-                        }
-#endif
-
                         
 #ifdef NO_UPWIND_PROJ1
                         upwind = 0.5; 

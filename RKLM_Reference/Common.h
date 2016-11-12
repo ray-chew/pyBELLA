@@ -28,9 +28,10 @@
  Elliptic Solver Options
  ============================================= */
 
-#define GRAVITY_IMPLICIT 
+#define GRAVITY_IMPLICIT
 
 /* 
+ #define GRAVITY_IMPLICIT
  #define GRAVITY_IMPLICIT_1   (buoyancy directly from conserved quantities)
  #define GRAVITY_IMPLICIT_2   (buoyancy via auxiliary variable; Piotr's variant)
  */  

@@ -40,7 +40,7 @@
 		9AC4F9AC1DA3F06F00AED455 /* laplacian_nodes.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9781DA3F06F00AED455 /* laplacian_nodes.c */; };
 		9AC4F9AE1DA3F06F00AED455 /* second_projection_bilinear_p_WITH_HYPRE.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F97C1DA3F06F00AED455 /* second_projection_bilinear_p_WITH_HYPRE.c */; };
 		9AC4F9AF1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F97D1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c */; };
-		9AEDEDC61DD22D170021C128 /* userdata_InternalWaveTest.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AEDEDC51DD22D170021C128 /* userdata_InternalWaveTest.c */; };
+		9AEDEDC81DD727D10021C128 /* userdata_InternalWave_StrongStrat.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AEDEDC71DD727D10021C128 /* userdata_InternalWave_StrongStrat.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -144,7 +144,7 @@
 		9AE4ABDC1DBF3989007205FD /* Show_sequence_3D.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Show_sequence_3D.m; sourceTree = "<group>"; };
 		9AE4ABDD1DBF3989007205FD /* SymmetryTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SymmetryTests.m; sourceTree = "<group>"; };
 		9AE4ABDE1DBF3989007205FD /* TravellingVortexPressure.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TravellingVortexPressure.m; sourceTree = "<group>"; };
-		9AEDEDC51DD22D170021C128 /* userdata_InternalWaveTest.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_InternalWaveTest.c; sourceTree = "<group>"; };
+		9AEDEDC71DD727D10021C128 /* userdata_InternalWave_StrongStrat.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_InternalWave_StrongStrat.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -238,7 +238,7 @@
 		9AC4F9221DA3F06F00AED455 /* Input */ = {
 			isa = PBXGroup;
 			children = (
-				9AEDEDC51DD22D170021C128 /* userdata_InternalWaveTest.c */,
+				9AEDEDC71DD727D10021C128 /* userdata_InternalWave_StrongStrat.c */,
 				9AC4F9311DA3F06F00AED455 /* userdata.h */,
 				9AC4F9231DA3F06F00AED455 /* boundary.c */,
 				9AC4F9241DA3F06F00AED455 /* boundary.h */,
@@ -476,9 +476,9 @@
 				9AC4F9931DA3F06F00AED455 /* Main.c in Sources */,
 				9A35833A1DB7388D00A73EC1 /* Hydrostatics.c in Sources */,
 				9AC4F9A31DA3F06F00AED455 /* thermodynamic.c in Sources */,
-				9AEDEDC61DD22D170021C128 /* userdata_InternalWaveTest.c in Sources */,
 				9AC4F9861DA3F06F00AED455 /* set_ghostcells_p.c in Sources */,
 				9AC4F9A01DA3F06F00AED455 /* numerical_flux.c in Sources */,
+				9AEDEDC81DD727D10021C128 /* userdata_InternalWave_StrongStrat.c in Sources */,
 				9AC4F9A21DA3F06F00AED455 /* recovery.c in Sources */,
 				9AC4F9AE1DA3F06F00AED455 /* second_projection_bilinear_p_WITH_HYPRE.c in Sources */,
 				9AC4F99E1DA3F06F00AED455 /* Gasdynamics.c in Sources */,

@@ -221,9 +221,9 @@ void recovery_gravity(
         
         Hydros[i].rho[2]  = Sol->rho[i];
         
-        Hydros[i].Yinv[0] = Yinvbg[iminus] + Sol->rhoX[BUOY][iminus];
-        Hydros[i].Yinv[2] = Yinvbg[i]      + Sol->rhoX[BUOY][i];
-        Hydros[i].Yinv[4] = Yinvbg[iplus]  + Sol->rhoX[BUOY][iplus];
+        Hydros[i].Yinv[0] = Yinv_ave[iminus];
+        Hydros[i].Yinv[2] = Yinv_ave[i];
+        Hydros[i].Yinv[4] = Yinv_ave[iplus];
         Hydros[i].Yinv[1] = 0.5*(Hydros[i].Yinv[0]+Hydros[i].Yinv[2]);
         Hydros[i].Yinv[3] = 0.5*(Hydros[i].Yinv[2]+Hydros[i].Yinv[4]);
         
@@ -237,22 +237,13 @@ void recovery_gravity(
     
     for( i = 1; i < nmax; i++ ) {
         
-        double dS;
-
         double Y          = 0.5*(Sol->rhoY[i]/Sol->rho[i] + Sol->rhoY[i-1]/Sol->rho[i-1]);
         double dSbgdy     = (Yinvbg[i]-Yinvbg[i-1])/dh;
         double Nsqsc      = - implicit * dt*dt * (g/Msq) * Y * dSbgdy;
         double ooopNsqsc  = 1.0 / (1.0+Nsqsc);
         
-        double u          = 0.5*(Sol->u[i]+Sol->u[i-1]);
         double rhoY       = 0.5 * (Sol->rhoY[i] + Sol->rhoY[i-1]); 
-        double SlopeS     = (Sol->rhoX[BUOY][i] - Sol->rhoX[BUOY][i-1]); 
-        double uSlopeS    = u*SlopeS;
         double dp2hydro_l = 0.5 * ((Hydros[i-1].p2[4]-Hydros[i-1].p2[2]) + (Hydros[i].p2[2]-Hydros[i].p2[0]));
-
-        /* TODO: is this needed for 2nd order? */
-        double rhoYc      = 0.5 * (Rights->rhoY[i]+Lefts->rhoY[i]);
-        double dbuoy_adv  = 0.0 * rhoYc*lambda*dh * (strength/Msq) * uSlopeS * 0.5;  
         
         double rhou       = 0.5 * (Rights->rhou[i] + Lefts->rhou[i-1]);
         double drhou      = - 0.5 * lambda * th.Gammainv * rhoY * (Sol->rhoZ[PRES][i] - Sol->rhoZ[PRES][i-1] - dp2hydro_l);
@@ -263,14 +254,9 @@ void recovery_gravity(
         Rights->rhou[i]  += drhou_f;
         Lefts->rhou[i-1] += drhou_f;
         
-        dS                = - dt * 0.5* (Rights->u[i]+Lefts->u[i-1]) * dSbgdy;
-
-        Rights->rhoX[BUOY][i]  += Rights->rho[i] * dS;
-        Lefts->rhoX[BUOY][i-1] += Lefts->rho[i-1] * dS;
-
         /* weighting of this term for implicit part realized in Explicit_Step_and_Flux() */
-        gravity_source[i]    = drhou + dbuoy_adv; 
-        gravity_source[i-1] += drhou + dbuoy_adv; 
+        gravity_source[i]    = drhou; 
+        gravity_source[i-1] += drhou; 
     }
 #else  /* GRAVITY_IMPLICIT_1 */
     /* pressure gradient and gravity terms */
