@@ -193,7 +193,7 @@ int main( void )
                 for(i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
                     lambda = ud.tips.dt_frac*dt/elem->dx;
                     Split = sequence * i_OpSplit + (1 - sequence) * ((elem->ndim - 1) - i_OpSplit);
-                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, 0);
+                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, 1);
                     
 #if OUTPUT_SUBSTEPS_PREDICTOR
                     /* TODO: remove necessity of calling b.c. routine for all directions after each splitstep */

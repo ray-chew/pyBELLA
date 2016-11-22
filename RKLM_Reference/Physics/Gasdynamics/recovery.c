@@ -258,6 +258,7 @@ void recovery_gravity(
         double rhou       = 0.5 * (Rights->rhou[i] + Lefts->rhou[i-1]);
         double drhou      = - 0.5 * lambda * th.Gammainv * rhoY * (Sol->rhoZ[PRES][i] - Sol->rhoZ[PRES][i-1] - dp2hydro_l);
         double drhou_f    = ooopNsqsc * (drhou - Nsqsc * rhou);
+        /* double drhou_f    = ooopNsqsc * (drhou - 2.0 * Nsqsc * rhou); */
                 
         Rights->u[i]     += drhou_f / Rights->rho[i];
         Lefts->u[i-1]    += drhou_f / Lefts->rho[i-1];

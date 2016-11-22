@@ -171,7 +171,8 @@ void Explicit_step_and_flux(
             double dSbgdy     = (Solk->S0[i+1] - Solk->S0[i-1]) / (2.0*dh);
             double Nsqsc      = - implicit * dt*dt * (g/Msq) * Solk->Y[i] * dSbgdy;
             double ooopNsqsc  = 1.0 / (1.0 + Nsqsc); 
-            gravity_source[i] = ooopNsqsc * (gravity_source[i] - Nsqsc * Solk->rhou[i]) / lambda;
+            /* gravity_source[i] = ooopNsqsc * (gravity_source[i] - Nsqsc * Solk->rhou[i]) / lambda; */
+            gravity_source[i] = ooopNsqsc * (gravity_source[i] - 2.0 * Nsqsc * Solk->rhou[i]) / lambda; 
 #endif
             *ppbuoy             = flux_weight_old * *ppbuoy + flux_weight_new * gravity_source[i];
 			*ppdSol.rhou       += lambda * gravity_source[i];

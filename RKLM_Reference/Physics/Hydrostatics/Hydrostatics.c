@@ -12,6 +12,7 @@
 #include "thermodynamic.h"
 #include "userdata.h"
 #include "variable.h"
+#include "math_own.h"
 
 
 /* ================================================================================== */
@@ -153,5 +154,68 @@ void Hydrostatics_State(MPV* mpv, double *Yinvbg, const ElemSpaceDiscr* elem)
             }
         }
     }
+}
 
+/* ================================================================================== */
+
+void Hydrostatic_Exner_pressure(
+                                double *pi, 
+                                const double pi0, 
+                                const double *Yinv, 
+                                const double Yinv0,
+                                const double dh,
+                                const int n, 
+                                const int ig) 
+{
+    
+    extern Thermodynamic th;
+    extern User_Data ud;
+    
+    const double Gamma = th.gm1 / th.gamm;
+    
+    double S_integral_m, S_integral_p, g;
+    double S_m, S_p;
+    
+    int j;
+    
+    g = ud.gravity_strength[1];
+    
+    /* Hydrostatic Exner pressure in bottom dummy cells */
+    S_p          = Yinv[ig];
+    S_integral_p = 0.5 * dh * 0.5*(S_p + Yinv0);
+    
+    for(j = ig; j >= 0; j--) {
+        
+        pi[j]         = pi0 - Gamma*g*S_integral_p;
+                
+        S_m           = S_p;
+        S_p           = Yinv[MAX_own(0,j-1)];
+        S_integral_m  = S_integral_p;
+        S_integral_p -= 0.5*dh*(S_m + S_p);        
+    }
+    
+    /* Hydrostatic Exner pressure in bulk of domain */
+    S_p          = Yinv[ig];
+    S_integral_p = 0.5 * dh * 0.5*(S_p + Yinv0);
+    
+    for(j = ig; j < n - ig; j++) {
+        
+        pi[j] = pi0 - Gamma*g*S_integral_p;
+        
+        S_m           = S_p;
+        S_p           = Yinv[j+1];
+        S_integral_m  = S_integral_p;
+        S_integral_p += 0.5*dh*(S_m + S_p);
+    }
+    
+    /* Hydrostates in top dummy cells */
+    for(j = n-ig; j < n; j++) {
+        
+        pi[j] = pi0 - Gamma*g*S_integral_p;
+        
+        S_m           = S_p;
+        S_p           = Yinv[MIN_own(n-1, j+1)];
+        S_integral_m  = S_integral_p;
+        S_integral_p += 0.5*dh*(S_m + S_p);
+    }
 }

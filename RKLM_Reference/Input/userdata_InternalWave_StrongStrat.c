@@ -28,7 +28,7 @@ double pressure_function(double r, double p0, double S0, double u_theta, double 
 
 double rho_function(double psi);
 
-static double scalefactor = 4.0; /* up to 4.0 tested positively on Skamarock-Klemp internal wave test */
+static double scalefactor = 2.0; /* up to 4.0 tested positively on Skamarock-Klemp internal wave test */
 
 void User_Data_init(User_Data* ud) {
     
@@ -139,8 +139,8 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = OP_SPLIT_MD_UPDATE; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT*/
     ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 100.0 / ud->t_ref;
-    ud->dtfixed                = 100.0 / ud->t_ref;
+    ud->dtfixed0               = 1000.0 / ud->t_ref;
+    ud->dtfixed                = 1000.0 / ud->t_ref;
     ud->no_of_steps_to_CFL     = 1;
     ud->no_of_steps_to_dtfixed = 1;
 
@@ -214,31 +214,23 @@ void User_Data_init(User_Data* ud) {
     /* =====  FLOW CONTROL  ============================================================= */
     /* ================================================================================== */
     
-    /* output times  */
-    ud->tout[0] = scalefactor *  250.0 / ud->t_ref;
-    ud->tout[1] = scalefactor *  500.0 / ud->t_ref;
-    ud->tout[2] = scalefactor *  750.0 / ud->t_ref;
-    ud->tout[3] = scalefactor * 1000.0 / ud->t_ref;
-    ud->tout[4] = -1.0;
-
-    /*
+    /* output times 
     ud->tout[0] = scalefactor *  500.0 / ud->t_ref;
     ud->tout[1] = scalefactor * 1000.0 / ud->t_ref;
     ud->tout[2] = scalefactor * 1500.0 / ud->t_ref;
     ud->tout[3] = scalefactor * 2000.0 / ud->t_ref;
-    ud->tout[4] = scalefactor * 3000.0 / ud->t_ref;
-    ud->tout[5] = scalefactor * 4000.0 / ud->t_ref;
-    ud->tout[6] = scalefactor * 5000.0 / ud->t_ref;
-    ud->tout[7] = scalefactor * 6000.0 / ud->t_ref;
-    ud->tout[8] = scalefactor * 7000.0 / ud->t_ref;
-    ud->tout[9] = -1.0;
-    */
+    ud->tout[4] = -1.0;
+      */
+    /**/
+    ud->tout[0] = scalefactor * 5000.0 / ud->t_ref;
+    ud->tout[1] = -1.0;
+    
     ud->stepmax = 10000;
     
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 20;
+    ud->write_file_period = 1;
     ud->file_format = HDF;
     
     {
@@ -262,6 +254,8 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     extern MPV* mpv;
     extern double *W0, *W1, *Yinvbg;
     
+    const double pi0   = 1.0;
+    const double Yinv0 = 1.0;
     const double u0 = ud.wind_speed;
     const double v0 = 0.0;
     const double w0 = 0.0;
@@ -277,13 +271,17 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const int icyn = node->icy;
     const int iczn = node->icz;
     
+    double p2_cells[elem->icy];
+    double Yinv[elem->icy];
+    
     int i, j, m, n, nm;
     double x, y, ym;
     double rho, u, v, w, p, rhoY;
     
-    double g;
+    double g, Msq;
         
-    g = ud.gravity_strength[1];
+    g   = ud.gravity_strength[1];
+    Msq = ud.Msq;
     
     Hydrostatics_State(mpv, Yinvbg, elem);
         
@@ -315,11 +313,21 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             Sol->rhoY[n]   = rhoY;
             Sol->geopot[n] = g * y;
             
-            mpv->p2_cells[n]   = (p/rhoY) / ud.Msq;
-            Sol->rhoZ[PRES][n] = mpv->p2_cells[n];
             Sol->rhoX[BUOY][n] = Sol->rho[n] * ( Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
-                        
+            
+            /*
+            Yinv[j] = rho/rhoY;
+              */          
+            Yinv[j] = mpv->HydroState->S0[j];
         }
+        
+        Hydrostatic_Exner_pressure(p2_cells, pi0, Yinv, Yinv0, elem->dy, icy, igy);
+        
+        for (int j=0; j<icy; j++) {
+            n = j*icx+i;
+            mpv->p2_cells[n]   = p2_cells[j]/Msq;
+        }
+
     }
     
     /* set all dummy cells */

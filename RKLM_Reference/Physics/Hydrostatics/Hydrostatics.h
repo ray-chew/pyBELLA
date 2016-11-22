@@ -15,4 +15,12 @@
 
 void Hydrostatics_State(MPV* mpv, double *Yinvbg, const ElemSpaceDiscr* elem);
 
+void Hydrostatic_Exner_pressure(
+                                double *pi, 
+                                const double pi0, 
+                                const double *Yinv, 
+                                const double Yinv0,
+                                const double dh,
+                                const int n, 
+                                const int ig);
 #endif /* Hydrostatics_h */
