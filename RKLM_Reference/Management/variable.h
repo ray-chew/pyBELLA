@@ -254,7 +254,8 @@ void Characters_free(Characters* var);
 
 typedef struct {
     double Y[5];
-    double Yinv[5];
+    double S[5];
+    double Sbg[5];
     double p[5];
     double p2[5];
     double rho[5];

@@ -59,7 +59,7 @@ States* Solk;             /* cache size */
 double* W0;               /* full nG-length double array */
 double* W1; 	   	      /* full nG-length double array */
 double* W2;               /* full nG-length double array */
-double* Yinvbg; 	   	  /* full nG-length double array */
+double* Sbg; 	   	  /* full nG-length double array */
 
 
 void Data_init() {
@@ -139,7 +139,7 @@ void Data_init() {
     W0  = (double*)malloc((unsigned)(n_aux * sizeof(double)));
 	W1  = (double*)malloc((unsigned)(n_aux * sizeof(double)));
     W2  = (double*)malloc((unsigned)(n_aux * sizeof(double)));
-    Yinvbg = (double*)malloc((unsigned)(n_aux * sizeof(double)));
+    Sbg = (double*)malloc((unsigned)(n_aux * sizeof(double)));
 	
 	{
 		Sol0    = ConsVars_new(elem->nc);

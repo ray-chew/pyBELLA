@@ -90,7 +90,7 @@ void putout(
 	
 	/* Arrays */
 	extern MPV* mpv;
-	extern double *W0, *Yinvbg;
+	extern double *W0, *Sbg;
 
 	static int output_counter = 0;
 
@@ -128,10 +128,10 @@ void putout(
 			for(int i = 0; i < ndim; i++) { 
 				const double lambda = 1.0;
 				Bound(Sol, mpv->HydroState, lambda, nc, SplitStep+i); 
-				if(i < ndim - 1) (*rotate[ndim - 1])(Sol, mpv->Level[0]->rhs, Yinvbg, buoyS, FORWARD);
+				if(i < ndim - 1) (*rotate[ndim - 1])(Sol, mpv->Level[0]->rhs, Sbg, buoyS, FORWARD);
 			}         
 			for(int i = ndim-1; i > 0; i--) {
-				(*rotate[ndim - 1])(Sol, mpv->Level[0]->rhs, Yinvbg, buoyS, BACKWARD);
+				(*rotate[ndim - 1])(Sol, mpv->Level[0]->rhs, Sbg, buoyS, BACKWARD);
 			}
              */
             

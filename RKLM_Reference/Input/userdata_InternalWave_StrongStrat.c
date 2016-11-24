@@ -252,10 +252,10 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     extern Thermodynamic th;
     extern User_Data ud;
     extern MPV* mpv;
-    extern double *W0, *W1, *Yinvbg;
+    extern double *W0, *W1, *Sbg;
     
     const double pi0   = 1.0;
-    const double Yinv0 = 1.0;
+    const double S0 = 1.0;
     const double u0 = ud.wind_speed;
     const double v0 = 0.0;
     const double w0 = 0.0;
@@ -272,7 +272,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const int iczn = node->icz;
     
     double p2_cells[elem->icy];
-    double Yinv[elem->icy];
+    double S[elem->icy];
     
     int i, j, m, n, nm;
     double x, y, ym;
@@ -283,7 +283,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     g   = ud.gravity_strength[1];
     Msq = ud.Msq;
     
-    Hydrostatics_State(mpv, Yinvbg, elem);
+    Hydrostatics_State(mpv, Sbg, elem);
         
     for(i = 0; i < icx; i++) {
                 
@@ -316,12 +316,12 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             Sol->rhoX[BUOY][n] = Sol->rho[n] * ( Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
             
             /*
-            Yinv[j] = rho/rhoY;
+            S[j] = rho/rhoY;
               */          
-            Yinv[j] = mpv->HydroState->S0[j];
+            S[j] = mpv->HydroState->S0[j];
         }
         
-        Hydrostatic_Exner_pressure(p2_cells, pi0, Yinv, Yinv0, elem->dy, icy, igy);
+        Hydrostatic_Exner_pressure(p2_cells, pi0, S, S0, elem->dy, icy, igy);
         
         for (int j=0; j<icy; j++) {
             n = j*icx+i;

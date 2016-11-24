@@ -220,7 +220,7 @@ void update(
 
 /* ================================================================================ */
 
-void rotate2D(ConsVars* Sol, double* rhs, double *Yinvbg, double* buoyS, const enum Direction direction) 
+void rotate2D(ConsVars* Sol, double* rhs, double *Sbg, double* buoyS, const enum Direction direction) 
 {
 	
 	/* User data */
@@ -258,7 +258,7 @@ void rotate2D(ConsVars* Sol, double* rhs, double *Yinvbg, double* buoyS, const e
 	flip2D(Sol->geopot, icx, icy, nc, W0); 
 	
 	flip2D(rhs, icx, icy, nc, W0);
-    flip2D(Yinvbg, icx, icy, nc, W0);
+    flip2D(Sbg, icx, icy, nc, W0);
     flip2D(buoyS, icx, icy, nc, W0);
 	
 	/* rotation of grid parameters */
@@ -351,7 +351,7 @@ void rotate2D(ConsVars* Sol, double* rhs, double *Yinvbg, double* buoyS, const e
 
 /* ================================================================================ */
 
-void rotate3D(ConsVars* Sol, double *rhs, double *Yinvbg, double* buoyS, const enum Direction direction) {
+void rotate3D(ConsVars* Sol, double *rhs, double *Sbg, double* buoyS, const enum Direction direction) {
 	
 	/* User data */
 	extern User_Data ud;
@@ -391,7 +391,7 @@ void rotate3D(ConsVars* Sol, double *rhs, double *Yinvbg, double* buoyS, const e
 		flip3D_f( Sol->geopot, icx, icy, icz, nc, W0 );       
 		
 		flip3D_f( rhs, icx, icy, icz, nc, W0 );       
-        flip3D_f( Yinvbg, icx, icy, icz, nc, W0 );       
+        flip3D_f( Sbg, icx, icy, icz, nc, W0 );       
         flip3D_f( buoyS, icx, icy, icz, nc, W0 );       
 		
 		/* rotation of grid parameters */
@@ -658,7 +658,7 @@ void rotate3D(ConsVars* Sol, double *rhs, double *Yinvbg, double* buoyS, const e
 		flip3D_b( Sol->geopot, icx, icy, icz, nc, W0 );       
 		
 		flip3D_b( rhs, icx, icy, icz, nc, W0 );       
-        flip3D_b( Yinvbg, icx, icy, icz, nc, W0 );       
+        flip3D_b( Sbg, icx, icy, icz, nc, W0 );       
         flip3D_b( buoyS, icx, icy, icz, nc, W0 );       
 		
 	}

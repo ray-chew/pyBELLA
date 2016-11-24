@@ -80,7 +80,7 @@ void Explicit_step_and_flux(
 	extern ElemSpaceDiscr* elem;
 	extern ConsVars* dSol;
 	extern States* Solk; 
-    extern double *W0, *W1, *W2, *Yinvbg;
+    extern double *W0, *W1, *W2, *Sbg;
 	
 	const double gravity_strength = ud.gravity_strength[SplitStep];
     const double dh  = elem->dx;
@@ -92,7 +92,7 @@ void Explicit_step_and_flux(
 	
 	ConsVars pdSol, ppdSol, pFluxes, pflux, ppflux;
     double *pbuoy, *ppbuoy, *pbuoyS, *ppbuoyS;
-    double *pdp2, *pYinv, *pYinvbg;
+    double *pdp2, *pS, *pSbg;
     
 	double flux_weight_old, flux_weight_new;
     	
@@ -108,7 +108,7 @@ void Explicit_step_and_flux(
     Bound(Sol, HydroState, lambda, n, SplitStep);
 
     double *p2_store = W0;
-    double *Yinv_ave = W1;
+    double *S_ave = W1;
 
     assert(elem->ndim == 2); /* lateral averaging for 3D not yet implemented */
     
@@ -124,7 +124,7 @@ void Explicit_step_and_flux(
             int nijkm = nijk - elem->icx;
             /* selected weights should correspond to weights in the cell-centered Laplacian */
             Sol->rhoZ[PRES][nijk]  = (ud.latw[0]*p2_store[nijkp] + ud.latw[1]*p2_store[nijk] + ud.latw[2]*p2_store[nijkm]);
-            Yinv_ave[nijk] = Sol->rho[nijk]/Sol->rhoY[nijk];
+            S_ave[nijk] = Sol->rho[nijk]/Sol->rhoY[nijk];
         }
     }
     
@@ -137,8 +137,8 @@ void Explicit_step_and_flux(
 	pbuoy   = (SplitStep == 0 ? buoy->x : (SplitStep == 1 ? buoy->y : buoy->z));
 	pdp2    = dp2;
     pbuoyS  = buoyS;
-    pYinv   = Yinv_ave;
-    pYinvbg = Yinvbg;
+    pS   = S_ave;
+    pSbg = Sbg;
     
 	count = 0;
 	for (kcache = 0; kcache * njump < n - elem->igx; kcache++) {
@@ -147,7 +147,7 @@ void Explicit_step_and_flux(
 		const enum Boolean last = ((kcache + 1) * njump < n - elem->igx) ? WRONG : CORRECT;
 		                
 		/* flux computation*/
-        recovery_gravity(Lefts, Rights, gravity_source, pbuoy, pYinv, pYinvbg, gravity_strength, Solk, Solk->Y, Solk->rhoZ[PRES], dp2, lambda, nmax, RK_stage, implicit);
+        recovery_gravity(Lefts, Rights, gravity_source, pbuoy, pS, pSbg, gravity_strength, Solk, Solk->Y, Solk->rhoZ[PRES], dp2, lambda, nmax, RK_stage, implicit);
         check_flux_bcs(Lefts, Rights, nmax, kcache, njump, elem, SplitStep);
                     
         hllestar(Fluxes, Lefts, Rights, Solk, lambda, nmax);
@@ -222,8 +222,8 @@ void Explicit_step_and_flux(
 			ConsVars_addp(&pflux, njump); 
             pbuoyS+=njump;
             pbuoy+=njump;
-            pYinv+=njump;
-            pYinvbg+=njump;
+            pS+=njump;
+            pSbg+=njump;
             pdp2+=njump;
 			States_addp(Solk, njump); 
 			States_HydroState(Solk, HydroState, elem, 0, nmax, (kcache+1)*njump, SplitStep);
@@ -301,21 +301,21 @@ void Absorber(
 				const double alpha   = MAX_own(alpha_x, alpha_y); 
      	        const double decay   = 1.0 / (1.0 + alpha * dt); 
 				
-				const double Yinv_outer    = 1.0/mpv->HydroState->Y0[j];
-				double Yinvold, Yinvnew, uold, unew, vold, vnew, wold, wnew; 
+				const double S_outer    = 1.0/mpv->HydroState->Y0[j];
+				double Sold, Snew, uold, unew, vold, vnew, wold, wnew; 
 				
-				Yinvold = Sol->rho[nijk]  / Sol->rhoY[nijk];
+				Sold = Sol->rho[nijk]  / Sol->rhoY[nijk];
 				uold    = Sol->rhou[nijk] / Sol->rho[nijk];
 				vold    = Sol->rhov[nijk] / Sol->rho[nijk];
 				wold    = Sol->rhow[nijk] / Sol->rho[nijk];
 				
-				Yinvnew = Yinv_outer + decay * (Yinvold  - Yinv_outer);
+				Snew = S_outer + decay * (Sold  - S_outer);
 				unew    = u_outer    + decay * (uold     - u_outer);
 				vnew    = v_outer    + decay * (vold     - v_outer);
 				wnew    = w_outer    + decay * (wold     - w_outer);
 				
 				// Sol->rhoY[nijk] = rhoY_outer + decay * (Sol->rhoY[nijk] - rhoY_outer);  
-				Sol->rho[nijk]  = Sol->rhoY[nijk]*Yinvnew;  
+				Sol->rho[nijk]  = Sol->rhoY[nijk]*Snew;  
 				Sol->rhou[nijk] = Sol->rho[nijk] * unew;  
 				Sol->rhov[nijk] = Sol->rho[nijk] * vnew;  
 				Sol->rhow[nijk] = Sol->rho[nijk] * wnew;  

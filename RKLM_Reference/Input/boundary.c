@@ -284,11 +284,11 @@ void Bound(
 					
 					{
 						int iimage  = i;
-						/* double Yinv = (2.0*Sol->rho[nimage+1]/Sol->rhoY[nimage+1] - Sol->rho[nimage+2]/Sol->rhoY[nimage+2]); */
-                        double Yinv = 1./stratification(elem->x[iimage]); 
-                        double dpi  = (th.Gamma*g) * 0.5*dh*(1.0/Y_last + Yinv);
+						/* double S = (2.0*Sol->rho[nimage+1]/Sol->rhoY[nimage+1] - Sol->rho[nimage+2]/Sol->rhoY[nimage+2]); */
+                        double S = 1./stratification(elem->x[iimage]); 
+                        double dpi  = (th.Gamma*g) * 0.5*dh*(1.0/Y_last + S);
                         double rhoY = pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv);
-                        double rho  = rhoY * Yinv;
+                        double rho  = rhoY * S;
                         double p    = pow(rhoY, th.gamm);
 
                         /* treat as Exner */
@@ -335,11 +335,11 @@ void Bound(
 					
 					{				    
 						int iimage  = ix - elem->igx + i; 
-                        double Yinv = 1./stratification(elem->x[iimage]); 
-                        /* double Yinv = (2.0*Sol->rho[nlast]/Sol->rhoY[nlast] - Sol->rho[nlast-1]/Sol->rhoY[nlast-1]); */
-                        double dpi  = -(th.Gamma*g) * 0.5*dh*(1.0/Y_last + Yinv);
+                        double S = 1./stratification(elem->x[iimage]); 
+                        /* double S = (2.0*Sol->rho[nlast]/Sol->rhoY[nlast] - Sol->rho[nlast-1]/Sol->rhoY[nlast-1]); */
+                        double dpi  = -(th.Gamma*g) * 0.5*dh*(1.0/Y_last + S);
                         double rhoY = pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv);
-                        double rho  = rhoY * Yinv;
+                        double rho  = rhoY * S;
                         double p    = pow(rhoY, th.gamm);
 
                         /* treat as Exner */
@@ -966,25 +966,25 @@ void check_flux_bcs(
 
 /* ============================================================================= */
 
-static void (*rotate[])(ConsVars* Sol, double* rhs, double *Yinvbg, double *buoyS, const enum Direction dir) = {NULL, rotate2D, rotate3D};
+static void (*rotate[])(ConsVars* Sol, double* rhs, double *Sbg, double *buoyS, const enum Direction dir) = {NULL, rotate2D, rotate3D};
 
 void Set_Explicit_Boundary_Data(
                                 ConsVars* Sol,
                                 const ElemSpaceDiscr* elem,
                                 const MPV* mpv) 
 {
-    extern double *Yinvbg;
+    extern double *Sbg;
     extern double *buoyS;
     int SplitStep;
     
     for(SplitStep = 0; SplitStep < elem->ndim; SplitStep++) { 
         const double lambda = 1.0;
         Bound(Sol, mpv->HydroState, lambda, elem->nc, SplitStep); 
-        if(SplitStep < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->Level[0]->rhs, Yinvbg, buoyS, FORWARD);
+        if(SplitStep < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->Level[0]->rhs, Sbg, buoyS, FORWARD);
     }         
     /* rotate back */          
     for(SplitStep = elem->ndim-1; SplitStep > 0; SplitStep--) {
-        (*rotate[elem->ndim - 1])(Sol, mpv->Level[0]->rhs, Yinvbg, buoyS, BACKWARD);
+        (*rotate[elem->ndim - 1])(Sol, mpv->Level[0]->rhs, Sbg, buoyS, BACKWARD);
     }
 }
 

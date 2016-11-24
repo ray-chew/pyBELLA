@@ -28,14 +28,14 @@ void arrays(int allocate);
  here a permutation of the x,y,z directions is carried out. the permutation goes
  forward when "direction" = FORWARD, otherwise ...
  ------------------------------------------------------------------------------*/
-void rotate2D(ConsVars* Sol, double *rhs, double *Yinvbg, double* buoyS, const enum Direction direction);
+void rotate2D(ConsVars* Sol, double *rhs, double *Sbg, double* buoyS, const enum Direction direction);
 
 
 /*------------------------------------------------------------------------------
  here a permutation of the x,y,z directions is carried out. the permutation goes
  forward when "direction" = FORWARD, otherwise ...
  ------------------------------------------------------------------------------*/
-void rotate3D(ConsVars* Sol, double *rhs, double *Yinvbg, double* buoyS, const enum Direction direction);
+void rotate3D(ConsVars* Sol, double *rhs, double *Sbg, double* buoyS, const enum Direction direction);
 
 
 /*------------------------------------------------------------------------------

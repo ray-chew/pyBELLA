@@ -30,7 +30,7 @@
 #include "boundary.h"
 #include "numerical_flux.h"
 
-static void (*rotate[])(ConsVars* Sol, double* rhs, double *Yinvbg, double *buoyS, const enum Direction dir) = {NULL, rotate2D, rotate3D};
+static void (*rotate[])(ConsVars* Sol, double* rhs, double *Sbg, double *buoyS, const enum Direction dir) = {NULL, rotate2D, rotate3D};
 
 int i_OpSplit;
 
@@ -64,7 +64,7 @@ int main( void )
     
     extern double* W0;
     extern double* W1;
-    extern double* Yinvbg;
+    extern double* Sbg;
 	
 	Speeds a_u_max;
     TimeStepInfo dt_info;
@@ -198,16 +198,16 @@ int main( void )
 #if OUTPUT_SUBSTEPS_PREDICTOR
                     /* TODO: remove necessity of calling b.c. routine for all directions after each splitstep */
                     if (i_OpSplit == 1)  {
-                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, buoyS, BACKWARD);
+                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
                     }
                     Set_Explicit_Boundary_Data(Sol, elem, mpv);
                     putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", OUTPUT_SPLITSTEPS);
                     if (i_OpSplit == 1)  {
-                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, buoyS, FORWARD);
+                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
                     }
 #endif
 
-                    if(i_OpSplit < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, buoyS, FORWARD);
+                    if(i_OpSplit < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
 
                 }
                 
@@ -220,16 +220,16 @@ int main( void )
                     
 #if OUTPUT_SUBSTEPS_PREDICTOR
                     if (i_OpSplit == 0)  {
-                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, buoyS, BACKWARD);
+                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
                     }
                     Set_Explicit_Boundary_Data(Sol, elem, mpv);
                     putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", OUTPUT_SPLITSTEPS);
                     if (i_OpSplit == 0)  {
-                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, buoyS, FORWARD);
+                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
                     }
 #endif
                     
-                    if(i_OpSplit < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Yinvbg, buoyS, BACKWARD);
+                    if(i_OpSplit < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
                 }
                 
                 

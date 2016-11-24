@@ -17,7 +17,7 @@
 
 /* ================================================================================== */
 
-void Hydrostatics_State(MPV* mpv, double *Yinvbg, const ElemSpaceDiscr* elem) 
+void Hydrostatics_State(MPV* mpv, double *Sbg, const ElemSpaceDiscr* elem) 
 {
     
     extern Thermodynamic th;
@@ -150,7 +150,7 @@ void Hydrostatics_State(MPV* mpv, double *Yinvbg, const ElemSpaceDiscr* elem)
             for (int i = 0; i < elem->icx; i++) {
                 int nijk = njk + i;
                 
-                Yinvbg[nijk] = mpv->HydroState->S0[j];
+                Sbg[nijk] = mpv->HydroState->S0[j];
             }
         }
     }
@@ -161,8 +161,8 @@ void Hydrostatics_State(MPV* mpv, double *Yinvbg, const ElemSpaceDiscr* elem)
 void Hydrostatic_Exner_pressure(
                                 double *pi, 
                                 const double pi0, 
-                                const double *Yinv, 
-                                const double Yinv0,
+                                const double *S, 
+                                const double S0,
                                 const double dh,
                                 const int n, 
                                 const int ig) 
@@ -181,29 +181,29 @@ void Hydrostatic_Exner_pressure(
     g = ud.gravity_strength[1];
     
     /* Hydrostatic Exner pressure in bottom dummy cells */
-    S_p          = Yinv[ig];
-    S_integral_p = 0.5 * dh * 0.5*(S_p + Yinv0);
+    S_p          = S[ig];
+    S_integral_p = 0.5 * dh * 0.5*(S_p + S0);
     
     for(j = ig; j >= 0; j--) {
         
         pi[j]         = pi0 - Gamma*g*S_integral_p;
                 
         S_m           = S_p;
-        S_p           = Yinv[MAX_own(0,j-1)];
+        S_p           = S[MAX_own(0,j-1)];
         S_integral_m  = S_integral_p;
         S_integral_p -= 0.5*dh*(S_m + S_p);        
     }
     
     /* Hydrostatic Exner pressure in bulk of domain */
-    S_p          = Yinv[ig];
-    S_integral_p = 0.5 * dh * 0.5*(S_p + Yinv0);
+    S_p          = S[ig];
+    S_integral_p = 0.5 * dh * 0.5*(S_p + S0);
     
     for(j = ig; j < n - ig; j++) {
         
         pi[j] = pi0 - Gamma*g*S_integral_p;
         
         S_m           = S_p;
-        S_p           = Yinv[j+1];
+        S_p           = S[j+1];
         S_integral_m  = S_integral_p;
         S_integral_p += 0.5*dh*(S_m + S_p);
     }
@@ -214,7 +214,7 @@ void Hydrostatic_Exner_pressure(
         pi[j] = pi0 - Gamma*g*S_integral_p;
         
         S_m           = S_p;
-        S_p           = Yinv[MIN_own(n-1, j+1)];
+        S_p           = S[MIN_own(n-1, j+1)];
         S_integral_m  = S_integral_p;
         S_integral_p += 0.5*dh*(S_m + S_p);
     }
