@@ -103,7 +103,13 @@ void Explicit_step_and_flux(
 	assert(arraysize >= ncache);
     
     icx = elem->icx;
-        
+    
+    /*
+    Asymmetry of wave representation in the advected case: 
+     1) try extrapolating pressure to the quarter and three quarter time levels.
+     2) try working with old time level pressure and buoyancy
+    */
+    
     /* bring dummy cells in the current space direction up to date  */
     Bound(Sol, HydroState, lambda, n, SplitStep);
 

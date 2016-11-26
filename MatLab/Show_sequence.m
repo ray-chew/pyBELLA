@@ -2,8 +2,8 @@
 % distribution loaded directly from the .hdf-file for
 % the Bryan-Bubble-output
 
-%test_case = 'Internal-Wave-Long-Wave';
-test_case = 'Internal-Wave-Strong-Strat';
+test_case = 'Internal-Wave-Long-Wave';
+%test_case = 'Internal-Wave-Strong-Strat';
 %test_case = 'Skamarock-Klemp-Internal-Wave';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
@@ -26,7 +26,7 @@ contour_values = [th0 th0+dth th0+2*dth th0+3*dth th0+4*dth th0+5*dth th0+6*dth 
 title_true = 1;
 
 kmin = 0;
-kmax = 400;
+kmax = 50;
 dk   = 1;
 
 %modelstr = '';
@@ -35,11 +35,11 @@ modelstr = 'psinc';
 
 
 if strcmp(test_case, 'Internal-Wave-Long-Wave')
-    scalefactor = 1.0;
+    scalefactor = 2.0;
     ncx = 300; 
     ncy = 10;  
     L   = 300.0 * scalefactor;  % 
-    x0  = 0.5*L;
+    x0  = 0.0*L;
     H   = 10.0;  %
     aspect = [8 1 1];
 elseif strcmp(test_case, 'Internal-Wave-Strong-Strat')

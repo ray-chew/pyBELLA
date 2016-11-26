@@ -123,7 +123,7 @@ void User_Data_init(User_Data* ud) {
     ud->zmax =   1.0;
     
     /* boundary/initial conditions */
-    ud->wind_speed  =  1.0 * 20.0/u_ref;
+    ud->wind_speed  =  -1.0 * 20.0/u_ref;
     ud->wind_shear  = -0.0;              /* velocity in [u_ref/h_ref] */
     ud->hill_height = 0.0 * 0.096447; 
     ud->hill_length_scale = 0.1535;   /* hill_length * l_ref = 1.0 km */
@@ -143,9 +143,9 @@ void User_Data_init(User_Data* ud) {
     
     /* time discretization */
     ud->time_integrator        = OP_SPLIT_MD_UPDATE; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT*/
-    ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 50.0 / ud->t_ref;
-    ud->dtfixed                = 50.0 / ud->t_ref;
+    ud->CFL                    = 0.3; /* 0.45; 0.9; 0.8; */
+    ud->dtfixed0               = 1000.0 / ud->t_ref;
+    ud->dtfixed                = 1000.0 / ud->t_ref;
     ud->no_of_steps_to_CFL     = 1;
     ud->no_of_steps_to_dtfixed = 1;
 
@@ -265,13 +265,13 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     extern Thermodynamic th;
     extern User_Data ud;
     extern MPV* mpv;
-    extern double *W0, *W1, *Yinvbg;
+    extern double *W0, *W1, *Sbg;
     
     const double u0 = ud.wind_speed;
     const double v0 = 0.0;
     const double w0 = 0.0;
     const double delth = 0.01 / ud.T_ref;  /* standard:  0.01 / ud.T_ref */
-    const double xc    = -1000.0e+03/ud.h_ref; /* -50.0e+03/ud.h_ref; 0.0; */
+    const double xc    = +1000.0e+03/ud.h_ref; /* -50.0e+03/ud.h_ref; 0.0; */
     const double a     = 1.0e+05/ud.h_ref;
         
     const int icx = elem->icx;
@@ -290,7 +290,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
         
     g = ud.gravity_strength[1];
     
-    Hydrostatics_State(mpv, Yinvbg, elem);
+    Hydrostatics_State(mpv, Sbg, elem);
         
     for(i = 0; i < icx; i++) {
                 

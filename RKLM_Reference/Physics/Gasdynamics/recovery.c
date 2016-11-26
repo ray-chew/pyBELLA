@@ -169,7 +169,8 @@ void recovery_gravity(
         double dp2hydro_l = 0.5 * ((Hydros[i-1].p2[4]-Hydros[i-1].p2[2]) + (Hydros[i].p2[2]-Hydros[i].p2[0]));
         
         drhou[i]      = - 0.5 * lambda * th.Gammainv * rhoY * (Sol->rhoZ[PRES][i] - Sol->rhoZ[PRES][i-1] - dp2hydro_l);
-        Nsqsc[i]      = - implicit * dt*dt * (g/Msq) * Y * dSbgdy;
+        /* Nsqsc[i]      = - implicit * 1.0*dt*dt * (g/Msq) * Y * dSbgdy; */
+        Nsqsc[i]      = - implicit * 0.25*dt*dt * (g/Msq) * Y * dSbgdy; 
         ooopNsqsc[i]  = 1.0 / (1.0+Nsqsc[i]);
         
         Rights->S0[i]  = Hydros[i].Sbg[1];
