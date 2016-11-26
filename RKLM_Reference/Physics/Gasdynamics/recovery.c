@@ -163,14 +163,16 @@ void recovery_gravity(
     
     for( i = 1; i < nmax; i++ ) {
                 
-        double Y          = 0.5*(Sol->rhoY[i]/Sol->rho[i] + Sol->rhoY[i-1]/Sol->rho[i-1]);
-        double dSbgdy     = (Sbg[i]-Sbg[i-1])/dh;        
+        /* double Y          = 0.5*(Sol->rhoY[i]/Sol->rho[i] + Sol->rhoY[i-1]/Sol->rho[i-1]); */
+        double Y          = 0.5*(1.0/Sbg[i] + 1.0/Sbg[i-1]);
+        double dSdy     = (Sbg[i]-Sbg[i-1])/dh; 
+        /* double dSdy     = (S_ave[i]-S_ave[i-1])/dh; */     
         double rhoY       = 0.5 * (Sol->rhoY[i] + Sol->rhoY[i-1]); 
         double dp2hydro_l = 0.5 * ((Hydros[i-1].p2[4]-Hydros[i-1].p2[2]) + (Hydros[i].p2[2]-Hydros[i].p2[0]));
         
         drhou[i]      = - 0.5 * lambda * th.Gammainv * rhoY * (Sol->rhoZ[PRES][i] - Sol->rhoZ[PRES][i-1] - dp2hydro_l);
-        /* Nsqsc[i]      = - implicit * 1.0*dt*dt * (g/Msq) * Y * dSbgdy; */
-        Nsqsc[i]      = - implicit * 0.25*dt*dt * (g/Msq) * Y * dSbgdy; 
+        /* Nsqsc[i]      = - implicit * 1.0*dt*dt * (g/Msq) * Y * dSdy; */
+        Nsqsc[i]      = - implicit * 0.25*dt*dt * (g/Msq) * Y * dSdy; 
         ooopNsqsc[i]  = 1.0 / (1.0+Nsqsc[i]);
         
         Rights->S0[i]  = Hydros[i].Sbg[1];
@@ -208,7 +210,7 @@ void recovery_gravity(
         double ooopNsqscm = 1.0 / (1.0 + Nsqscm);
         double dum        = 0.5 * (drhou[i] + drhou[i+1]) / Sol->rho[i];
         
-        u[i]              = Sol->u[i] + (dum - Nsqscm * Sol->u[i]) * ooopNsqscm ;
+        u[i]              = Sol->u[i] + 1.0*(dum - Nsqscm * Sol->u[i]) * ooopNsqscm ;
         
 		Ampls->entro[i]   = 0.5 * Slopes->entro[i] * ( 1 - lambda * u[i] ); /* entro-entry abused for u */
 		Ampls->v[i]       = 0.5 * Slopes->v[i]     * ( 1 - lambda * u[i] );

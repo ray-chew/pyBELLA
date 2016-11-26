@@ -546,7 +546,8 @@ void adjust_pi(
 	    
     double alpha = ud.compressibility; 
     
-    double dp2_ell_factor = 1.0 + ud.compressibility; /* 1.0; */
+    /* double dp2_ell_factor = 1.0 + ud.compressibility; */ /* 1.0; */
+    double dp2_ell_factor = 0.5; /* 1.0; */
 		
 	const double scalefac = 1.0 / ud.Msq;
     
@@ -562,9 +563,9 @@ void adjust_pi(
 
                 double p2_old       = Sol0->rhoZ[PRES][n];
                 double dp2_rhoY     = scalefac * (pow(Sol->rhoY[n],th.gamm) - pow(Sol0->rhoY[n],th.gamm));
-                double dp2_elliptic = mpv->dp2_cells[n];
+                double dp2_elliptic = mpv->dp2_cells[n]; /* mpv->dp2_cells should contain a full time step update of p2_cell */
 
-                Sol->rhoZ[PRES][n]  = (p2_old + weight * (alpha * dp2_rhoY + (1.0-alpha) * dp2_ell_factor*dp2_elliptic));
+                Sol->rhoZ[PRES][n]  = p2_old + weight * (alpha * dp2_rhoY + (1.0-alpha) * dp2_ell_factor*dp2_elliptic);
                 Sol->rhoZ[SOLD][n]  = Sol->rho[n]/Sol->rhoY[n];
 #ifdef GRAVITY_IMPLICIT_2
                 // Sol->rhoX[BUOY][n]  = Sol->rho[n] * (Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);

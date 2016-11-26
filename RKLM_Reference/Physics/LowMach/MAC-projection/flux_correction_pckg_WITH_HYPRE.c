@@ -222,7 +222,11 @@ void flux_correction(
     memcpy(mpv->dp2_cells, dp2, elem->nc*sizeof(double));
 
     /* store results in mpv-fields */        
-    for(n=0; n<elem->nc; n++) mpv->p2_cells[n] = mpv->p2_cells[n] + dp2[n];
+    for(n=0; n<elem->nc; n++) {
+        /* mpv->dp2_cells[n] = 2.0*dp2[n]; */
+        mpv->dp2_cells[n] = Sol->rhoZ[PRES][n] + 2.0*dp2[n] - mpv->p2_cells[n];
+        mpv->p2_cells[n]  = mpv->p2_cells[n] + mpv->dp2_cells[n];
+    }
     
 	set_ghostcells_p2(mpv->p2_cells, (const double **)hplus, elem, elem->igx);
 }
