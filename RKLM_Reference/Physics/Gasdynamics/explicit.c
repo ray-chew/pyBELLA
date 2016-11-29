@@ -99,6 +99,10 @@ void Explicit_step_and_flux(
 	int icx, kcache, i, nmax, nsp; 
 	int count;
 	    
+    if (lambda == 0.0) {
+        return;
+    }
+    
     assert(allocated == CORRECT);
 	assert(arraysize >= ncache);
     

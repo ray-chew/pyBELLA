@@ -77,6 +77,13 @@ int main( void )
     int stage;
     int which_projection = ud.which_projection_first;
     
+    
+    /* 
+     const double stepfrac[] = {1.0, 1.0, 1.0, 1.0};
+     */
+    const double stepfrac[] = {1.0, 2.0, 0.0, 1.0}; 
+    int substep;
+    
     /*
      enum LimiterType limiter_second_order_velocity;
      enum LimiterType limiter_second_order_scalars;
@@ -184,16 +191,23 @@ int main( void )
 #endif
 
             printf("\nnonlinear fluxes ---------------------------- \n");
-							
+				
+            /* lift pressure to 1/4 time level */
+            for (int nc = 0; nc < elem->nc; nc++) {
+                Sol->rhoZ[PRES][nc] += 0.0 * mpv->dp2_cells[nc];
+            }
+
             if (ud.time_integrator == OP_SPLIT || ud.time_integrator == OP_SPLIT_MD_UPDATE) {
                 
-                
+                substep = 0;
+                                
                 /* FORWARD gasdynamics */
                 stage = 0;
                 for(i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
-                    lambda = ud.tips.dt_frac*dt/elem->dx;
+                    lambda = stepfrac[substep]*ud.tips.dt_frac*dt/elem->dx;
                     Split = sequence * i_OpSplit + (1 - sequence) * ((elem->ndim - 1) - i_OpSplit);
                     Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, 1);
+                    substep++;
                     
 #if OUTPUT_SUBSTEPS_PREDICTOR
                     /* TODO: remove necessity of calling b.c. routine for all directions after each splitstep */
@@ -211,12 +225,18 @@ int main( void )
 
                 }
                 
+                /* lift pressure to 3/4 time level */
+                for (int nc = 0; nc < elem->nc; nc++) {
+                    Sol->rhoZ[PRES][nc] += 0.0* mpv->dp2_cells[nc];
+                }
+                
                 /* BACKWARD gasdynamics */
                 stage = 1;
                 for(i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
-                    lambda = ud.tips.dt_frac*dt/elem->dx;
+                    lambda = stepfrac[substep]*ud.tips.dt_frac*dt/elem->dx;
                     Split = (1 - sequence) * i_OpSplit + sequence * ((elem->ndim - 1) - i_OpSplit);
                     Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, 1);
+                    substep++;
                     
 #if OUTPUT_SUBSTEPS_PREDICTOR
                     if (i_OpSplit == 0)  {
