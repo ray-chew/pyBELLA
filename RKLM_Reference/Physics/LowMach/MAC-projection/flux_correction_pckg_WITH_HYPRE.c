@@ -223,9 +223,14 @@ void flux_correction(
 
     /* store results in mpv-fields */        
     for(n=0; n<elem->nc; n++) {
+#if 1
         /* mpv->dp2_cells[n] = 2.0*dp2[n]; */
-        mpv->dp2_cells[n] = Sol->rhoZ[PRES][n] + 1.25*dp2[n] - mpv->p2_cells[n];
+        mpv->dp2_cells[n] = Sol->rhoZ[PRES][n] + 1.0*dp2[n] - mpv->p2_cells[n];
         mpv->p2_cells[n]  = mpv->p2_cells[n] + mpv->dp2_cells[n];
+#else
+        mpv->dp2_cells[n] = 1.0*dp2[n];
+        mpv->p2_cells[n]  = mpv->p2_cells[n] + mpv->dp2_cells[n];
+#endif
     }
     
 	set_ghostcells_p2(mpv->p2_cells, (const double **)hplus, elem, elem->igx);

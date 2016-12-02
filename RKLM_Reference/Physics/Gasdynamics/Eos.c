@@ -547,7 +547,7 @@ void adjust_pi(
     double alpha = ud.compressibility; 
     
     /* double dp2_ell_factor = 1.0 + ud.compressibility; */ /* 1.0; */
-    double dp2_ell_factor = 0.5; /* 1.0; */
+    double dp2_ell_factor = 0.0; /* 0.0; 0.5; 1.0; */
 		
 	const double scalefac = 1.0 / ud.Msq;
     

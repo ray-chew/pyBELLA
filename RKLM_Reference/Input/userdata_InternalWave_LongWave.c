@@ -143,7 +143,7 @@ void User_Data_init(User_Data* ud) {
     
     /* time discretization */
     ud->time_integrator        = OP_SPLIT_MD_UPDATE; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT*/
-    ud->CFL                    = 0.3; /* 0.45; 0.9; 0.8; */
+    ud->CFL                    = 0.6; /* 0.45; 0.9; 0.8; */
     ud->dtfixed0               = 200.0 / ud->t_ref;
     ud->dtfixed                = 200.0 / ud->t_ref;
     ud->no_of_steps_to_CFL     = 1;
@@ -219,13 +219,16 @@ void User_Data_init(User_Data* ud) {
     /* =====  FLOW CONTROL  ============================================================= */
     /* ================================================================================== */
     
-    /* output times  */
+    ud->tout[0] = scalefactor * 2000.0 / ud->t_ref;
+    ud->tout[1] = -1.0;
+
+    /* output times  
     ud->tout[0] = scalefactor *  500.0 / ud->t_ref;
     ud->tout[1] = scalefactor * 1000.0 / ud->t_ref;
     ud->tout[2] = scalefactor * 2000.0 / ud->t_ref;
     ud->tout[3] = scalefactor * 3000.0 / ud->t_ref;
     ud->tout[4] = -1.0;
-
+     */
     /*
     ud->tout[0] = scalefactor *  500.0 / ud->t_ref;
     ud->tout[1] = scalefactor * 1000.0 / ud->t_ref;
@@ -243,7 +246,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 20;
+    ud->write_file_period = 10;
     ud->file_format = HDF;
     
     {
