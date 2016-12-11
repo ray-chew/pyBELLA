@@ -175,6 +175,8 @@ void second_projection(
 	variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, x_periodic, y_periodic, z_periodic, dt);
     
 #if 0
+    FILE *prhs1file = NULL;
+    char fn1[120], fieldname1[90];
     rhs_max = 0.0;
     double rhs_min = 100000.0;
     double hx_max  = 0.0;
@@ -205,9 +207,9 @@ void second_projection(
     }
     printf("rhs_max, rhs_min, h1_max, h1_min, h2_max, h2_max, p2_min, p2_max = %e, %e, %e, %e, %e, %e, %e, %e\n", rhs_max, rhs_min, hx_max, hx_min, hy_max, hy_min, p2_min, p2_max);
 
-    sprintf(fn, "%s/rhs_nodes/rhs_nodes_001.hdf", ud.file_name);
-    sprintf(fieldname, "rhs-nodes");
-    WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+    sprintf(fn1, "%s/rhs_nodes/rhs_nodes_001.hdf", ud.file_name);
+    sprintf(fieldname1, "rhs-nodes");
+    WriteHDF(prhs1file, node->icx, node->icy, node->icz, node->ndim, rhs, fn1, fieldname1);
 
 #endif
         

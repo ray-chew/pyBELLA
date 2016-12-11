@@ -352,9 +352,22 @@ double SOLVER(
         }
     }
     
+#ifdef CONTROL_PRECONDITIONED_RESIDUAL_PROJ1
+    tmp = 0.0;
+    tmp_local = 0.0;
+    for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
+        for(j = igy; j < icy - igy; j++) {m = l + j * icx;
+            for(i = igx; i < icx - igx; i++) {n = m + i;
+                tmp += r_j[n] * r_j[n];
+                tmp_local = MAX_own(tmp_local, fabs(r_j[n]));
+            }
+        }
+    }
+#else /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ1 */ 
     precon_c_apply(r_j_unprec, r_j, elem);
 
     tmp = 0.0;
+    tmp_local = 0.0;
     for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
         for(j = igy; j < icy - igy; j++) {m = l + j * icx;
             for(i = igx; i < icx - igx; i++) {n = m + i;
@@ -363,6 +376,7 @@ double SOLVER(
             }
         }
     }
+#endif /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ1 */ 
 
     alpha = omega = rho1 = 1.;
     tmp_local *= 0.5*dt/local_precision;
@@ -444,6 +458,18 @@ double SOLVER(
             }
         }
 
+#ifdef CONTROL_PRECONDITIONED_RESIDUAL_PROJ1
+        tmp       = 0.0;
+        tmp_local = 0.0;
+        for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
+            for(j = igy; j < icy - igy; j++) {m = l + j * icx;
+                for(i = igx; i < icx - igx; i++) {n = m + i;
+                    tmp      += r_j[n] * r_j[n];
+                    tmp_local = MAX_own(tmp_local, fabs(r_j[n])); 
+                }
+            }
+        }
+#else /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ1 */
         precon_c_apply(r_j_unprec, r_j, elem);
 
         tmp       = 0.0;
@@ -456,7 +482,8 @@ double SOLVER(
                 }
             }
         }
-
+#endif /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ1 */
+        
         rho1 = rho2;
         tmp_local *= 0.5*dt/local_precision;
         tmp = 0.5*dt*sqrt(tmp/cell_cnt)/precision;

@@ -152,24 +152,20 @@ static double BiCGSTAB_MG_nodes(
 		}
 	}
     
-    precon_apply(r_j_unprec, r_j, node);
 
-#if 0 /* TEST */
-    {
-        double err      = 0.0;
-        double r_j_norm = 0.0;
-        double *r_j_prec = (double*)malloc(node->nc*sizeof(double));
-        memset(r_j_prec, 0.0, sizeof(double));
-        precon_invert(r_j_prec, r_j_unprec, node);
-        for (int nn=0; nn<node->nc; nn++) {
-            r_j_norm += r_j[nn]*r_j[nn];
-            err += (r_j_prec[nn]-r_j[nn])*(r_j_prec[nn]-r_j[nn]);
+#ifdef CONTROL_PRECONDITIONED_RESIDUAL_PROJ2
+    tmp = 0.0;
+    tmp_local = 0.0;
+    for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
+        for(j = igy; j < icy - igy - y_periodic; j++) {m = l + j * icx;
+            for(i = igx; i < icx - igx - x_periodic; i++) {n = m + i;
+                tmp += r_j[n] * r_j[n];
+                tmp_local = MAX_own(tmp_local, fabs(r_j[n]));
+            }
         }
-        err      = sqrt(err/node->nc);
-        r_j_norm = sqrt(r_j_norm/node->nc);
-        printf("err, r_j_norm = %e, %e\n", err, r_j_norm);
     }
-#endif
+#else  /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ2 */
+    precon_apply(r_j_unprec, r_j, node);
     
     tmp = 0.0;
     tmp_local = 0.0;
@@ -181,6 +177,7 @@ static double BiCGSTAB_MG_nodes(
             }
         }
     }
+#endif  /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ2 */
 
     alpha = omega = rho1 = 1.;
 	tmp_local *= 0.5*dt/precision;
@@ -263,9 +260,21 @@ static double BiCGSTAB_MG_nodes(
 				}
 			}
 		}
-
-        precon_apply(r_j_unprec, r_j, node);
         
+#ifdef CONTROL_PRECONDITIONED_RESIDUAL_PROJ2
+        tmp = 0.0;
+        tmp_local = 0.0;
+        for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
+            for(j = igy; j < icy - igy - y_periodic; j++) {m = l + j * icx;
+                for(i = igx; i < icx - igx - x_periodic; i++) {n = m + i;
+                    tmp      += r_j[n] * r_j[n];
+                    tmp_local = MAX_own(tmp_local, fabs(r_j[n]));
+                }
+            }
+        }
+#else  /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ2 */
+        precon_apply(r_j_unprec, r_j, node);
+
         tmp = 0.0;
         tmp_local = 0.0;
         for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
@@ -276,7 +285,8 @@ static double BiCGSTAB_MG_nodes(
                 }
             }
         }
-
+#endif /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ2 */
+        
 		rho1 = rho2;
 		tmp_local *= 0.5*dt/precision;
         tmp = 0.5*dt*sqrt(tmp/cell_cnt)/precision;

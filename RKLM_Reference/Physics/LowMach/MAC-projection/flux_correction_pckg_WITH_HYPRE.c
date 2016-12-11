@@ -82,7 +82,7 @@ static void flux_correction_due_to_pressure_values(
 
 /* ========================================================================== */
 
-#if 0
+#if 1
 static int rhs_output_count = 0;
 #endif
 

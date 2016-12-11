@@ -101,7 +101,10 @@ void update(
                      drhoYS    = - lambdax * ((f->rho[ox+1] - f->rhoY[ox+1]*Sxc) - (f->rho[ox] - f->rhoY[ox]*Sxc) ) 
                                  - lambday * ((g->rho[oy+1] - g->rhoY[oy+1]*Syp) - (g->rho[oy] - g->rhoY[oy]*Sym) );
                      */
-                    S_old = sol->rho[n] / sol->rhoY[n];
+                    S_old = sol->rho[n] / sol->rhoY[n]; 
+                    /* 
+                    S_old = 0.25 * (sol->rho[n-icx] / sol->rhoY[n-icx] + 2.0 * sol->rho[n] / sol->rhoY[n] + sol->rho[n+icx] / sol->rhoY[n+icx]);
+                     */
 #endif
                     
 					drho        = - lambdax * (f->rho[ox+1]  - f->rho[ox] ) - lambday * (g->rho[oy+1]  - g->rho[oy] );
@@ -126,7 +129,10 @@ void update(
                     dYS = (rhoYS_old + drhoYS) / sol->rhoY[n] - rhoYS_old / rhoY_old;
                     sol->rhov[n] -= 0.5 * dt * 0.5 * (sol->rhoY[n]+rhoY_old) * (grav/Msq) * dYS * impg;
                      */
-                    S_new = sol->rho[n] / sol->rhoY[n];
+                     S_new = sol->rho[n] / sol->rhoY[n];
+                    /*
+                    S_new = 0.25 * (sol->rho[n-icx] / sol->rhoY[n-icx] + 2.0 * sol->rho[n] / sol->rhoY[n] + sol->rho[n+icx] / sol->rhoY[n+icx]);
+                     */
                     sol->rhov[n] -= 0.5 * dt * sol->rhoY[n] * (grav/Msq) * (S_new - S_old) * impg * ooopNsqsc;                    
 #endif
                     
