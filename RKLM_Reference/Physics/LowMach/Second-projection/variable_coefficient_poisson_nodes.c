@@ -131,7 +131,7 @@ static double BiCGSTAB_MG_nodes(
 	assert(data->size >= node->nc);                          /* Rupert: This could be dangerous. */
     
     
-    precon_prepare(node, elem, hplus, hcenter, x_periodic, y_periodic, z_periodic);
+    double precon_inv_scale = precon_prepare(node, elem, hplus, hcenter, x_periodic, y_periodic, z_periodic);
     
     set_periodic_data(solution_io,	node, x_periodic, y_periodic, z_periodic);
     
@@ -180,8 +180,8 @@ static double BiCGSTAB_MG_nodes(
 #endif  /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ2 */
 
     alpha = omega = rho1 = 1.;
-	tmp_local *= 0.5*dt/precision;
-    tmp = 0.5*dt*sqrt(tmp/cell_cnt)/precision;
+	tmp_local *= 0.5*dt/(precon_inv_scale*precision);
+    tmp = 0.5*dt*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
 	
     printf(" iter = 0,  residual = %e,  local residual = %e,  gridsize = %d\n", tmp, tmp_local, nc);
 
@@ -288,8 +288,8 @@ static double BiCGSTAB_MG_nodes(
 #endif /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ2 */
         
 		rho1 = rho2;
-		tmp_local *= 0.5*dt/precision;
-        tmp = 0.5*dt*sqrt(tmp/cell_cnt)/precision;
+		tmp_local *= 0.5*dt/(precon_inv_scale*precision);
+        tmp = 0.5*dt*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
 		cnt++;
 		
 		if(cnt % 100 == 0) printf(" iter = %d, residual = %e\n", cnt, tmp);  

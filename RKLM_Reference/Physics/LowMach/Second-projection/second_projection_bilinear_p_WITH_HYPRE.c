@@ -213,7 +213,7 @@ void second_projection(
 
 #endif
         
-#if 1
+#if 0
     extern double *W0;
     int imax, jmax;
     rhs_max = 0.0;

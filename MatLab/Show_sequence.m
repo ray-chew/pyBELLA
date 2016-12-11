@@ -11,9 +11,9 @@ test_case = 'Internal-Wave-Long-Wave';
 %test_case = 'Travelling-Vortex';
 
 showmode = 1;
-filledcontours = 1;
+filledcontours = 0;
 fixed_contours = 0;
-no_of_contours = 50;
+no_of_contours = 20;
 symmetry = 0;        % in {0,1}
 symmetrytest = 0;
 showdummycells = 0;
@@ -38,8 +38,10 @@ modelstr = 'psinc';
 
 if strcmp(test_case, 'Internal-Wave-Long-Wave')
     scalefactor = 2.0;
-    ncx = 300; 
-    ncy = 10;  
+    %ncx = 300; 
+    %ncy = 10;  
+    ncx = 600; 
+    ncy = 20;  
     L   = 300.0 * scalefactor;  % 
     x0  = 0.0*L;
     H   = 10.0;  %

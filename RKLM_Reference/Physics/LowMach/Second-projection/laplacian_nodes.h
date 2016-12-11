@@ -10,7 +10,7 @@
 #include "kgrid.h"
 #include "mpv.h"
 
-void precon_prepare(
+double precon_prepare(
                     const NodeSpaceDiscr* node,
                     const ElemSpaceDiscr* elem,
                     const double* hplus[3],
