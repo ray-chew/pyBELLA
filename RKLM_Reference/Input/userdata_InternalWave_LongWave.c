@@ -34,7 +34,7 @@ static double scalefactor = 20.0;
 
 void User_Data_init(User_Data* ud) {
     
-    int i, max_no_of_levels;
+    int i, max_no_of_levels; 
     
     /* ================================================================================== */
     /* =====  PROBLEM SET UP  =========================================================== */
