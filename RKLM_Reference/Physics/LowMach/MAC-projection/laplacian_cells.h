@@ -15,7 +15,7 @@
  pressure distributions within the rectangles spanned by cell centers
  ------------------------------------------------------------------------------*/
 
-void precon_c_prepare(
+double precon_c_prepare(
                       const NodeSpaceDiscr* node,
                       const ElemSpaceDiscr* elem,
                       const double* hplus[3],

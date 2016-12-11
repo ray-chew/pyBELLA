@@ -69,7 +69,7 @@ void BiCGSTABData_free(BiCGSTABData* var) {
     free(var);
 }
 
-#ifdef SOLVER_CR2
+#ifdef SOLVER_1_CR2
 /* ========================================================================== */
 /* Piotr's Conjugate Residual scheme */
 
@@ -95,8 +95,7 @@ double SOLVER(
     double* phi_m = data->v_j;
     double* phi_0 = data->s_j;
     double* phi_p = data->t_j;
-    double* Lr_0  = data->Lr_0;
-    double* diaginv = data->help_vec;
+    double* Lr_0  = data->help_vec;
     double* pshuffle;
     
     const int nc  = elem->nc;
@@ -115,19 +114,20 @@ double SOLVER(
     double AA, AB, AC, BB, BC, tmp, tmp_local, alpha, beta;
     
     assert(data->size >= elem->nc);                          /* Rupert: This could be dangerous. */
-    
-    assert(0); /* preconditioning through appropriate function calls not implemented yet */
-    
-    
+        
+    double precon_inv_scale = precon_c_prepare(node, elem, hplus, hcenter);
+
     /* initialization */
     /* initial residual; intermediate abuse of the field */
     set_ghostcells_p2(p2, hplus, elem, 1);
     EnthalpyWeightedLap_bilinear_p(elem, node, p2, hplus, hcenter, Sol, mpv, dt, theta, r_0);
     
+    precon_c_invert(rhs, rhs, elem);
+
     for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
         for(j = igy; j < icy - igy; j++) {m = l + j * icx;
             for(i = igx; i < icx - igx; i++) {n = m + i;
-                r_0[n]  -= rhs[n]*diaginv[n];
+                r_0[n]  -= rhs[n];
                 phi_0[n] = p2[n];
                 r_m[n]   = phi_m[n] = 0.0;
             }
@@ -147,16 +147,17 @@ double SOLVER(
     for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
         for(j = igy; j < icy - igy; j++) {m = l + j * icx;
             for(i = igx; i < icx - igx; i++) {n = m + i;
-                tmp_local = MAX_own(tmp_local, fabs(r_0[n]/diaginv[n]));
-                tmp += (r_0[n]/diaginv[n])  * (r_0[n]/diaginv[n]);
+                tmp_local = MAX_own(tmp_local, fabs(r_0[n]));
+                tmp += r_0[n] * r_0[n];
                 AA  += r_0[n]  * Lr_0[n];
                 BB  += Lr_0[n] * Lr_0[n];
                 cell_cnt++;
             }
         }
     }
-    tmp_local *= (dt*dt/local_precision);
-    tmp = 0.5*dt*sqrt(tmp/cell_cnt)/precision;
+    tmp_local *= 0.5*dt/(precon_inv_scale*local_precision);
+    tmp = 0.5*dt*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
+    
     alpha = 1.0;
     beta  = - AA / BB;
     
@@ -185,14 +186,14 @@ double SOLVER(
         for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
             for(j = igy; j < icy - igy; j++) {m = l + j * icx;
                 for(i = igx; i < icx - igx; i++) {n = m + i;
-                    tmp_local = MAX_own(tmp_local, fabs(r_p[n]/diaginv[n]));
-                    tmp      += (r_p[n]/diaginv[n]) * (r_p[n]/diaginv[n]);
+                    tmp_local = MAX_own(tmp_local, fabs(r_p[n]));
+                    tmp      += (r_p[n]) * (r_p[n]);
                     cell_cnt++;
                 }
             }
         }
-        tmp_local *= (dt*dt/local_precision);
-        tmp = 0.5*dt*sqrt(tmp/cell_cnt)/precision;
+        tmp_local *= 0.5*dt/(precon_inv_scale*local_precision);
+        tmp = 0.5*dt*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
         
         /* finish loop and reshuffle pointers */
         pshuffle = r_m;
@@ -287,7 +288,7 @@ double SOLVER(
     
 }
 
-#else /* SOLVER_CR2 */
+#else /* SOLVER_1_CR2 */
 
 /* ========================================================================== */
 /* BiCGSTAB */
@@ -330,14 +331,14 @@ double SOLVER(
     double rho1, alpha, beta, rho2, omega, sigma, tmp, tmp_local;
     
     assert(data->size >= elem->nc);                          /* Rupert: This could be dangerous. */
-
-    precon_c_prepare(node, elem, hplus, hcenter);
-
+    
+    double precon_inv_scale = precon_c_prepare(node, elem, hplus, hcenter);
+    
     set_ghostcells_p2(p2, hplus, elem, 1);
     EnthalpyWeightedLap_bilinear_p(elem, node, p2, hplus, hcenter, Sol, mpv, dt, theta, v_j);
     
     precon_c_invert(rhs_prec, rhs, elem);
-
+    
     tmp_local = 0.0;
     cell_cnt = 0;
     
@@ -365,7 +366,7 @@ double SOLVER(
     }
 #else /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ1 */ 
     precon_c_apply(r_j_unprec, r_j, elem);
-
+    
     tmp = 0.0;
     tmp_local = 0.0;
     for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
@@ -377,10 +378,10 @@ double SOLVER(
         }
     }
 #endif /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ1 */ 
-
+    
     alpha = omega = rho1 = 1.;
-    tmp_local *= 0.5*dt/local_precision;
-    tmp = 0.5*dt*sqrt(tmp/cell_cnt)/precision;
+    tmp_local *= 0.5*dt/(precon_inv_scale*local_precision);
+    tmp = 0.5*dt*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
     
     cnt = 0;
     printf(" iter = 0,  residual = %e,  local residual = %e,  gridsize = %d\n", tmp, tmp_local, nc);
@@ -389,115 +390,114 @@ double SOLVER(
     while(tmp > 1.0 && tmp_local > 1.0 && cnt < max_iterations)
     {
 #else
-    while(tmp > 1.0 && cnt < max_iterations)
-    {
+        while(tmp > 1.0 && cnt < max_iterations)
+        {
 #endif
-        rho2 = 0.0;
-        for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
-            for(j = igy; j < icy - igy; j++) {m = l + j * icx;
-                for(i = igx; i < icx - igx; i++) {n = m + i;
-                    rho2 += r_j[n] * r_0[n];
+            rho2 = 0.0;
+            for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
+                for(j = igy; j < icy - igy; j++) {m = l + j * icx;
+                    for(i = igx; i < icx - igx; i++) {n = m + i;
+                        rho2 += r_j[n] * r_0[n];
+                    }
                 }
             }
-        }
-        
-        beta = (rho2 * alpha) / (rho1 * omega);
-        
-        for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
-            for(j = igy; j < icy - igy; j++) {m = l + j * icx;
-                for(i = igx; i < icx - igx; i++) {n = m + i;
-                    p_j[n]  = r_j[n]  + beta * (p_j[n]  - omega * v_j[n]);
+            
+            beta = (rho2 * alpha) / (rho1 * omega);
+            
+            for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
+                for(j = igy; j < icy - igy; j++) {m = l + j * icx;
+                    for(i = igx; i < icx - igx; i++) {n = m + i;
+                        p_j[n]  = r_j[n]  + beta * (p_j[n]  - omega * v_j[n]);
+                    }
                 }
             }
-        }
-        
-        set_ghostcells_p2(p_j, hplus, elem, 1);
-        EnthalpyWeightedLap_bilinear_p(elem, node, p_j, hplus, hcenter, Sol, mpv, dt, theta, v_j);
-        
-        sigma = 0.0; 
-        for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
-            for(j = igy; j < icy - igy; j++) {m = l + j * icx;
-                for(i = igx; i < icx - igx; i++) {n = m + i;
-                    sigma += v_j[n] * r_0[n];
+            
+            set_ghostcells_p2(p_j, hplus, elem, 1);
+            EnthalpyWeightedLap_bilinear_p(elem, node, p_j, hplus, hcenter, Sol, mpv, dt, theta, v_j);
+            
+            sigma = 0.0; 
+            for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
+                for(j = igy; j < icy - igy; j++) {m = l + j * icx;
+                    for(i = igx; i < icx - igx; i++) {n = m + i;
+                        sigma += v_j[n] * r_0[n];
+                    }
                 }
             }
-        }
-        
-        alpha = rho2 / sigma;
-        
-        for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
-            for(j = igy; j < icy - igy; j++) {m = l + j * icx;
-                for(i = igx; i < icx - igx; i++) {n = m + i;
-                    s_j[n]  = r_j[n]  - alpha * v_j[n];
+            
+            alpha = rho2 / sigma;
+            
+            for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
+                for(j = igy; j < icy - igy; j++) {m = l + j * icx;
+                    for(i = igx; i < icx - igx; i++) {n = m + i;
+                        s_j[n]  = r_j[n]  - alpha * v_j[n];
+                    }
                 }
             }
-        }
-        
-        set_ghostcells_p2(s_j, hplus, elem, 1);
-        EnthalpyWeightedLap_bilinear_p(elem, node, s_j, hplus, hcenter, Sol, mpv, dt, theta, t_j);
-        
-        omega = 0.0; 
-        tmp = 0.0; 
-        for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
-            for(j = igy; j < icy - igy; j++) {m = l + j * icx;
-                for(i = igx; i < icx - igx; i++) {n = m + i;
-                    omega += s_j[n] * t_j[n];
-                    tmp   += t_j[n] * t_j[n];
+            
+            set_ghostcells_p2(s_j, hplus, elem, 1);
+            EnthalpyWeightedLap_bilinear_p(elem, node, s_j, hplus, hcenter, Sol, mpv, dt, theta, t_j);
+            
+            omega = 0.0; 
+            tmp = 0.0; 
+            for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
+                for(j = igy; j < icy - igy; j++) {m = l + j * icx;
+                    for(i = igx; i < icx - igx; i++) {n = m + i;
+                        omega += s_j[n] * t_j[n];
+                        tmp   += t_j[n] * t_j[n];
+                    }
                 }
             }
-        }
-        
-        omega /= tmp;
-        
-        for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
-            for(j = igy; j < icy - igy; j++) {m = l + j * icx;
-                for(i = igx; i < icx - igx; i++) {n = m + i;
-                    p2[n]    += alpha * p_j[n]  + omega * s_j[n];
-                    r_j[n]    = s_j[n] - omega * t_j[n];
+            
+            omega /= tmp;
+            
+            for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
+                for(j = igy; j < icy - igy; j++) {m = l + j * icx;
+                    for(i = igx; i < icx - igx; i++) {n = m + i;
+                        p2[n]    += alpha * p_j[n]  + omega * s_j[n];
+                        r_j[n]    = s_j[n] - omega * t_j[n];
+                    }
                 }
             }
-        }
-
+            
 #ifdef CONTROL_PRECONDITIONED_RESIDUAL_PROJ1
-        tmp       = 0.0;
-        tmp_local = 0.0;
-        for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
-            for(j = igy; j < icy - igy; j++) {m = l + j * icx;
-                for(i = igx; i < icx - igx; i++) {n = m + i;
-                    tmp      += r_j[n] * r_j[n];
-                    tmp_local = MAX_own(tmp_local, fabs(r_j[n])); 
+            tmp       = 0.0;
+            tmp_local = 0.0;
+            for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
+                for(j = igy; j < icy - igy; j++) {m = l + j * icx;
+                    for(i = igx; i < icx - igx; i++) {n = m + i;
+                        tmp      += r_j[n] * r_j[n];
+                        tmp_local = MAX_own(tmp_local, fabs(r_j[n])); 
+                    }
                 }
             }
-        }
 #else /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ1 */
-        precon_c_apply(r_j_unprec, r_j, elem);
-
-        tmp       = 0.0;
-        tmp_local = 0.0;
-        for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
-            for(j = igy; j < icy - igy; j++) {m = l + j * icx;
-                for(i = igx; i < icx - igx; i++) {n = m + i;
-                    tmp      += r_j_unprec[n] * r_j_unprec[n];
-                    tmp_local = MAX_own(tmp_local, fabs(r_j_unprec[n])); 
+            precon_c_apply(r_j_unprec, r_j, elem);
+            
+            tmp       = 0.0;
+            tmp_local = 0.0;
+            for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
+                for(j = igy; j < icy - igy; j++) {m = l + j * icx;
+                    for(i = igx; i < icx - igx; i++) {n = m + i;
+                        tmp      += r_j_unprec[n] * r_j_unprec[n];
+                        tmp_local = MAX_own(tmp_local, fabs(r_j_unprec[n])); 
+                    }
                 }
             }
-        }
 #endif /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ1 */
+            
+            rho1 = rho2;
+            tmp_local *= 0.5*dt/(precon_inv_scale*local_precision);
+            tmp = 0.5*dt*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
+            
+            cnt++;
+            if(cnt % 100 == 0) printf(" iter = %d,  residual = %e\n", cnt, tmp);
+        }
         
-        rho1 = rho2;
-        tmp_local *= 0.5*dt/local_precision;
-        tmp = 0.5*dt*sqrt(tmp/cell_cnt)/precision;
+        printf(" iter = %d,  residual = %e,  local residual = %e,  gridsize = %d\n", cnt, tmp, tmp_local, nc);
         
-        cnt++;
-        if(cnt % 100 == 0) printf(" iter = %d,  residual = %e\n", cnt, tmp);
-    }
-    
-    printf(" iter = %d,  residual = %e,  local residual = %e,  gridsize = %d\n", cnt, tmp, tmp_local, nc);
-    
-    data->actual_iterations = cnt;
+        data->actual_iterations = cnt;
         
-    return(MIN_own(tmp,tmp_local));
-    
+        return(MIN_own(tmp,tmp_local));
 }
-#endif /* SOLVER_CR2 */
+#endif /* SOLVER_1_CR2 */
 

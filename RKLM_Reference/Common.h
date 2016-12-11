@@ -50,10 +50,6 @@
  #define CONTROL_PRECONDITIONED_RESIDUAL_PROJ2
 */
 
-
-
-#define PROJECTION1 1
-
 #define SOLVER_1_CR2
 #define SOLVER_2_BICGSTAB
 
@@ -72,6 +68,10 @@
 #define PRECON_LEGACY
 #endif
 
+
+/* First projection options */
+#define PROJECTION1 1
+
 /*
  #define NO_UPWIND_PROJ1          IMPORTANT: Upwinding in the correction induces NOISE  
  */
@@ -84,9 +84,10 @@
  */
 #define SECOND_ORDER_CENTRAL_CORRECTION
 
-#define CONTROL_PRECONDITIONED_RESIDUAL_PROJ2
 
+/* Second projection options */
 #define PROJECTION2 1
+#define CONTROL_PRECONDITIONED_RESIDUAL_PROJ2
 #define DIV_CONTROL_LOCAL
 #define P2_FULL_STENCIL 1.0 /* 0.0, 1.0 */
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0 */

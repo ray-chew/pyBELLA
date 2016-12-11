@@ -26,7 +26,7 @@ static enum Boolean diaginv_c_is_allocated = WRONG;
 static double *diaginv_c;
 static double *diag_c;
 
-void precon_c_prepare(
+double precon_c_prepare(
                       const NodeSpaceDiscr* node,
                       const ElemSpaceDiscr* elem,
                       const double* hplus[3],
@@ -40,6 +40,7 @@ void precon_c_prepare(
      diagonal value from a full stencil.
      */
     
+    double precon_inv_scale;
     
     if (diaginv_c_is_allocated == WRONG) {
         diag_c    = (double*)malloc(node->nc*sizeof(double));
@@ -107,12 +108,16 @@ void precon_c_prepare(
                 }
             }
 
-            diagscale = 3.0 /(elem->dx*elem->dx) + 3.0 /(elem->dy*elem->dy);
+            /* diagscale = 3.0 /(elem->dx*elem->dx) + 3.0 /(elem->dy*elem->dy); */
+            diagscale = 1.0;
 
+            precon_inv_scale = 0.0;
+            
             for (int j = igy; j < icy-igy; j++) {int mc = j*icx;
                 for (int i = igx; i < icx-igx; i++) {int nc = mc + i;
                     diag_c[nc]   *= diagscale;
                     diaginv_c[nc] = 1.0/diag_c[nc];
+                    precon_inv_scale = MAX_own(precon_inv_scale, fabs(diaginv_c[nc]));
                 }
             }
 
@@ -124,6 +129,8 @@ void precon_c_prepare(
         }
         default: ERROR("ndim not in {1, 2, 3}");
     }
+    
+    return precon_inv_scale;
 
 }
 
@@ -151,7 +158,7 @@ Nothing defined yet
 #endif /* PRECON_VERTICAL_COLUMN */
 
 #else  /* PRECON */
-void precon_c_prepare(
+double precon_c_prepare(
                       const NodeSpaceDiscr* node,
                       const ElemSpaceDiscr* elem,
                       const double* hplus[3],
@@ -171,122 +178,6 @@ void precon_c_invert(
 }
 #endif /* PRECON */
 
- 
-#ifdef SHIFTED_COEFFICIENTS_PROJ1
-/* ========================================================================== */
-
-void EnthalpyWeightedLap_bilinear_p(
-									const ElemSpaceDiscr* elem, 
-                                    const NodeSpaceDiscr* node,
-									const double* p,
-									const double* hplus[3],
-									const double* hcenter,
-									const ConsVars* Sol,
-									const MPV* mpv, 
-									const double dt,
-									const double theta,
-									double* lap) {
-	
-	const int ndim = elem->ndim;
-	
-	switch(ndim) {
-		case 1: {    
-			ERROR("function not available");
-			break;
-		}
-		case 2: {
-			const int igx = elem->igx;
-			const int icx = elem->icx;
-			const int ifx = elem->ifx;
-			const int igy = elem->igy;
-			const int icy = elem->icy;
-			const int ify = elem->ify;
-			const double dx = elem->dx;
-			const double dy = elem->dy;
-
-			/* for MG-scaling with elem->scale_factor; see old version of routine */
-
-            const double oody      = 1.0 / dy;
-
-            const double oodx2     = 1.0 / (dx * dx);
-			const double oody2     = 1.0 / (dy * dy);
-            
-			const double* hplusx   = hplus[0];
-			const double* hplusy   = hplus[1];
-			const double* hc       = hcenter;
-            
-            double dlapsum;
-            
-            dlapsum = 0.0;
-			
-			int n_c, n_e, n_ne, n_n, n_nw, n_w, n_sw, n_s, n_se;
-			int o_en, o_ec, o_es, o_nw, o_nc, o_ne, o_wn, o_wc, o_ws, o_se, o_sc, o_sw, ox, oy;
-			
-			int i, j, m, n;
-            			
-			for(j = igy; j < icy - igy; j++) {
-                m = j * icx;				
-				
-                for(i = igx; i < icx - igx; i++) {
-                    n  = m + i;
-                    
-					ox = j * ifx + i;
-					oy = i * ify + j;
-					
-					n_c    = n;
-					n_e    = n + 1      ;
-					n_ne   = n + 1 + icx;
-					n_n    = n     + icx;
-					n_nw   = n - 1 + icx;
-					n_w    = n - 1      ;
-					n_sw   = n - 1 - icx;
-					n_s    = n     - icx;
-					n_se   = n + 1 - icx;
-					
-                    o_es   = ox + 1 - ifx;
-                    o_ec   = ox + 1;
-					o_en   = ox + 1 + ifx;
-
-                    o_ws   = ox - ifx;
-                    o_wc   = ox;
-                    o_wn   = ox + ifx;
-					
-                    o_ne   = oy + 1 + ify;
-                    o_nc   = oy + 1;
-					o_nw   = oy + 1 - ify;
-                    
-                    o_se   = oy + ify;
-                    o_sc   = oy;
-					o_sw   = oy - ify;
-					
-					lap[n]  = oodx2 * (  0.75  * (  hplusx[o_ec] * (p[n_e ] - p[n_c ]) - hplusx[o_wc] * (p[n_c ] - p[n_w ])) 
-                                       + 0.125 * (  hplusx[o_es] * (p[n_se] - p[n_s ]) - hplusx[o_ws] * (p[n_s ] - p[n_sw])  
-                                                  + hplusx[o_en] * (p[n_ne] - p[n_n ]) - hplusx[o_wn] * (p[n_n ] - p[n_nw])   
-                                                 )
-                                       );
-                    
-					lap[n] += oody2 * (  0.75  * (  hplusy[o_nc] * (p[n_n ] - p[n_c ]) - hplusy[o_sc] * (p[n_c ] - p[n_s ]))
-                                       + 0.125 * (  hplusy[o_ne] * (p[n_ne] - p[n_e ]) - hplusy[o_se] * (p[n_e ] - p[n_se]) 
-                                                  + hplusy[o_nw] * (p[n_nw] - p[n_w ]) - hplusy[o_sw] * (p[n_w ] - p[n_sw]) 
-                                                  )
-                                       );                                        
- 					
-					lap[n] += hc[n] * p[n_c];
-                    
-				}
-			}    
-            			
-#ifdef PRECON
-            precon_c_invert(lap, lap, elem);
-#endif
-			break;
-		}
-        case 3:  ERROR("SHIFTED_COEFFICIENTS Version not implemented in 3D yet");
-		default: ERROR("ndim not in {1, 2, 3}");
-	}
-}
-
-#else /* SHIFTED_COEFFICIENTS */
 
 /* ========================================================================== */
 
@@ -488,5 +379,3 @@ void EnthalpyWeightedLap_bilinear_p(
         default: ERROR("ndim not in {1, 2, 3}");
     }
 }
-
-#endif /* SHIFTED_COEFFICIENTS */
