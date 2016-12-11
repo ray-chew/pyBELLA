@@ -18,7 +18,8 @@
 
 #ifdef PRECON /* ============================================================================= */
 
-#ifdef PRECON_DIAGONAL_2ND_PROJ /* =========================================================== */
+#ifdef PRECON_DIAGONAL_2ND_PROJ 
+
 static enum Boolean diaginv_is_allocated = WRONG;
 static double *diaginv;
 static double *diag;
