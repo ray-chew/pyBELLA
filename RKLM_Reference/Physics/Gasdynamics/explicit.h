@@ -92,6 +92,8 @@ void fullD_explicit_updates(ConsVars* Sol,
                             const double dt,
                             const int RK_stage);
 
+void Explicit_Coriolis(ConsVars *Sol, const ElemSpaceDiscr* elem, const double dt);
+
 
 #ifdef GRAVITY_IMPLICIT_2
 /*------------------------------------------------------------------------------

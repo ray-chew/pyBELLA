@@ -41,8 +41,8 @@ void User_Data_init(User_Data* ud) {
     /* ================================================================================== */
     
     /* Earth */
-    double grav     = 10.0;             /* [m/s^2]                */
-    double omega    = 0.0;              /* [s^-1]                 */
+    double grav     = 9.81;             /* [m/s^2]                */
+    double omega    = sin(0.5*PI) * 2.0 * 0.00007272205217;  /* sin(0.33333*PI) [s^-1] */
     
     /* thermodynamics and chemistry */
     double R_gas    = 287.4;            /* [J/kg/K]               */
@@ -144,8 +144,8 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = OP_SPLIT_MD_UPDATE; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT*/
     ud->CFL                    = 0.6; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 600.0 / ud->t_ref;
-    ud->dtfixed                = 600.0 / ud->t_ref;
+    ud->dtfixed0               = 200.0 / ud->t_ref;
+    ud->dtfixed                = 200.0 / ud->t_ref;
     ud->no_of_steps_to_CFL     = 1;
     ud->no_of_steps_to_dtfixed = 1;
 
@@ -156,8 +156,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx =  600+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =   20+1; /* 321; 161;  81;  65; 41;  */
+    ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
+    ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
     ud->inz = 1;
     ud->h   = MIN_own((ud->xmax-ud->xmin)/(ud->inx),MIN_own((ud->ymax-ud->ymin)/(ud->iny),(ud->zmax-ud->zmin)/(ud->inz)));
     

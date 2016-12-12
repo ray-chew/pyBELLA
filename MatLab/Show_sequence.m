@@ -12,15 +12,17 @@ test_case = 'Internal-Wave-Long-Wave';
 
 showmode = 1;
 filledcontours = 0;
-fixed_contours = 0;
+fixed_contours = 1;
 no_of_contours = 20;
 symmetry = 0;        % in {0,1}
 symmetrytest = 0;
 showdummycells = 0;
 
-th0 = -0.0015/300;
-dth = 5e-4/300;
-contour_values = [th0 th0+dth th0+2*dth th0+3*dth th0+4*dth th0+5*dth th0+6*dth th0+7*dth th0+8*dth th0+9*dth th0+10*dth];
+% th0 = -0.0015/300;
+% dth = 5e-4/300;
+% contour_values = [th0 th0+dth th0+2*dth th0+3*dth th0+4*dth th0+5*dth th0+6*dth th0+7*dth th0+8*dth th0+9*dth th0+10*dth];
+dth = 0.5e-3/223.68;
+contour_values = [-4*dth, -3*dth, -2*dth, dth, 0.0, dth, 2*dth, 3*dth, 4*dth, 5*dth, 6*dth];
 %contour_values = [1.0001 1.0011 1.0022 1.0022 1.0033 1.0044 1.0055 1.0065];
 %contour_values = linspace(-0.01,0.01,41) / 288.15;
 title_true = 1;
@@ -28,7 +30,7 @@ title_true = 1;
 %kmin = 50;
 %kmax = 53;
 kmin = 0;
-kmax = 30;
+kmax = 31;
 dk   = 1;
 
 %modelstr = '';
@@ -38,10 +40,10 @@ modelstr = 'psinc';
 
 if strcmp(test_case, 'Internal-Wave-Long-Wave')
     scalefactor = 2.0;
-    %ncx = 300; 
-    %ncy = 10;  
-    ncx = 600; 
-    ncy = 20;  
+    ncx = 300; 
+    ncy = 10;  
+    %ncx = 600; 
+    %ncy = 20;  
     L   = 300.0 * scalefactor;  % 
     x0  = 0.0*L;
     H   = 10.0;  %
@@ -119,14 +121,14 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy]; rhoY_diff = 1;
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy];
+varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZ';  folderstr = 'rhoZ'; titlestr = 'rhoZ'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'Z';  folderstr = 'Z'; titlestr = 'Z'; ndummy = 2; arraysize = [ncx ncy]; rhoZ_diff = 0;
 %varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
-varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy];
+%varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qc';  folderstr = 'qc'; titlestr = 'qc'; ndummy = 2; arraysize = [ncx ncy];

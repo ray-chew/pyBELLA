@@ -186,6 +186,9 @@ int main( void )
             ConsVars_set(Sol0, Sol, elem->nc);            
 #endif
             
+            Explicit_Coriolis(Sol, elem, 0.5*dt);
+            
+            
 #if OUTPUT_SUBSTEPS
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
@@ -264,6 +267,8 @@ int main( void )
                 }
             }
                         
+            Explicit_Coriolis(Sol, elem, 0.5*dt);
+
             Set_Explicit_Boundary_Data(Sol, elem, mpv);
             
 #if OUTPUT_SUBSTEPS
