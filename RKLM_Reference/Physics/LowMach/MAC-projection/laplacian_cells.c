@@ -17,6 +17,7 @@ Date:   Fri Mar 13 07:56:56 CET 1998  Feb. 2004
 #include "thermodynamic.h"
 #include "EOS.h"
 #include "math_own.h"
+#include "ThomasAlgorithmus.h"
 
 /* ========================================================================== */
 #ifdef PRECON
@@ -25,6 +26,8 @@ Date:   Fri Mar 13 07:56:56 CET 1998  Feb. 2004
 static enum Boolean diaginv_c_is_allocated = WRONG;
 static double *diaginv_c;
 static double *diag_c;
+
+/* -------------------------------------------------------------------------- */
 
 double precon_c_prepare(
                       const NodeSpaceDiscr* node,
@@ -134,6 +137,8 @@ double precon_c_prepare(
 
 }
 
+/* -------------------------------------------------------------------------- */
+
 void precon_c_apply(
                     double* vec_out,
                     const double* vec_in,
@@ -143,6 +148,8 @@ void precon_c_apply(
     }
 }
 
+/* -------------------------------------------------------------------------- */
+
 void precon_c_invert(
                      double* vec_out,
                      const double* vec_in,
@@ -151,13 +158,218 @@ void precon_c_invert(
         vec_out[nc] = vec_in[nc]*diaginv_c[nc];
     }
 }
-#endif /* PRECON_DIAGONAL */
+#endif /* PRECON_DIAGONAL_1ST_PROJ  =========================================================== */
 
-#ifdef PRECON_VERTICAL_COLUMN_1ST_PROJ
-Nothing defined yet
+#ifdef PRECON_VERTICAL_COLUMN_1ST_PROJ /* ===================================================== */
+static enum Boolean tridiago_is_allocated = WRONG;
+static double *tridiago[3];
+
+#ifdef UN_AVERAGE_PROJ1
+static enum Boolean vec_ave_c_is_allocated = WRONG;
+static double *vec_ave_c;
+#endif
+
+/* -------------------------------------------------------------------------- */
+
+double precon_c_prepare(
+                        const NodeSpaceDiscr* node,
+                        const ElemSpaceDiscr* elem,
+                        const double* hplus[3],
+                        const double* hcenter) {
+    
+    /*
+     the following defines diag/diaginv directly through the calculations in
+     EnthalpyWeightedLap_bilinear_p()
+     As a consequence, also the boundary elements have the real diagonal values,
+     as opposed to what I did previously, when all the elements received the
+     diagonal value from a full stencil.
+     */
+    
+    double precon_inv_scale;
+    
+#ifdef UN_AVERAGE_PROJ1
+    if (vec_ave_c_is_allocated == WRONG) {
+        vec_ave_c = (double*)malloc(elem->icx*sizeof(double));
+        vec_ave_c_is_allocated = CORRECT;
+    }
+#endif
+    
+    if (tridiago_is_allocated == WRONG) {
+        for (int k=0; k<3; k++) {
+            tridiago[k] = (double*)malloc(elem->nc*sizeof(double));
+        }
+        tridiago_is_allocated = CORRECT;
+    }
+    
+    const int ndim = elem->ndim;
+    
+    switch(ndim) {
+        case 1: {
+            ERROR("function not available for 1D");
+            break;
+        }
+        case 2: {
+            const int igx       = elem->igx;
+            const int icx       = elem->icx;
+            const int ifx       = elem->ifx;
+            const int igy       = elem->igy;
+            const int icy       = elem->icy;
+            const int ify       = elem->ify;
+            const double dx     = elem->dx;
+            const double dy     = elem->dy;
+            const double oodx2  = 1.0 / (dx * dx);
+            const double oody2  = 1.0 / (dy * dy);
+                        
+            const double* hplusx = hplus[0];
+            const double* hplusy = hplus[1];
+            const double* hc     = hcenter;
+            
+            for (int k=0; k<3; k++) {
+                for(int nn=0; nn<elem->nc; nn++) tridiago[k][nn] = 0.0;
+            }
+            
+            for(int j = igy; j < icy - igy; j++) {int mc = j * icx;
+                for(int i = igx; i < icx - igx; i++) {int nc  = mc + i;
+                    
+                    int oy  = i * ify + j;
+                    int o_n = oy + 1;
+                    int o_s = oy;
+                    
+                    tridiago[0][nc] = oody2 * hplusy[o_s]; 
+                    tridiago[1][nc] = - oody2 * (hplusy[o_n] + hplusy[o_s]) + hc[nc];
+                    tridiago[2][nc] = oody2 * hplusy[o_n]; 
+                }
+            }
+            
+            /* normalization */
+            precon_inv_scale = 0.0;
+            
+            for(int j = igy; j < icy - igy; j++) {
+                int mn = j * icx;
+                
+                for(int i = igx; i < icx - igx; i++) {
+                    int nn = mn + i;
+                    
+                    precon_inv_scale = MAX_own(precon_inv_scale, fabs(1.0/tridiago[1][nn]));                
+                }
+            }            
+            
+            break;
+        }
+        case 3: {
+            ERROR("function not available for 3D");
+            break;
+        }
+        default: ERROR("ndim not in {1, 2, 3}");
+    }
+    
+    return precon_inv_scale;
+    
+}
+
+/* -------------------------------------------------------------------------- */
+
+void precon_c_apply(
+                    double* vec_out,
+                    const double* vec_in,
+                    const ElemSpaceDiscr *elem) {
+
+    const int icxe = elem->icx;
+    const int icye = elem->icy;
+    
+    const int igxe = elem->igx;
+    const int igye = elem->igy;
+    
+#ifdef UN_AVERAGE_PROJ1
+    extern User_Data ud;
+    
+    /* generate averaged pressure state corresponding to the 9-pt or 27-pt stencil */
+    for (int j = igye; j<icye-igye; j++) {
+        for (int i = igxe; i<icxe-igxe; i++) {
+            int nn0 = j*icxe+i-1;
+            int nn1 = j*icxe+i;
+            int nn2 = j*icxe+i+1;
+            vec_ave[nn1] = ud.latw[0]*vec_in[nn0] + ud.latw[1]*vec_in[nn1] + ud.latw[2]*vec_in[nn2];
+        }
+    }
+
+    for (int i = igxe; i<icxe-igxe; i++) {
+        for (int j = igye; j<icye-igye; j++) {
+            int nn0 = (j-1)*icxe+i;
+            int nn1 =   j  *icxe+i;
+            int nn2 = (j+1)*icxe+i;
+            vec_out[nn1] = tridiago[0][nn1]*vec_ave[nn0]+tridiago[1][nn1]*vec_ave[nn1]+tridiago[2][nn1]*vec_ave[nn2];
+        }
+    }    
+#else
+    for (int i = igxe; i<icxe-igxe; i++) {
+        for (int j = igye; j<icye-igye; j++) {
+            int nn0 = (j-1)*icxe+i;
+            int nn1 =   j  *icxe+i;
+            int nn2 = (j+1)*icxe+i;
+            vec_out[nn1] = tridiago[0][nn1]*vec_in[nn0]+tridiago[1][nn1]*vec_in[nn1]+tridiago[2][nn1]*vec_in[nn2];
+        }
+    }        
+#endif
+
+}
+
+/* -------------------------------------------------------------------------- */
+
+void precon_c_invert(
+                     double* vec_out,
+                     const double* vec_in,
+                     const ElemSpaceDiscr *elem) {
+
+    /* It will be more efficient to immediately store tridiago in the y-first ordering
+     to avoid the transposition and intermediate storage in upper, diago, lower,
+     but that can be done later
+     */
+    
+    const int icxe = elem->icx;
+    const int icye = elem->icy;
+    
+    const int igxe = elem->igx;
+    const int igye = elem->igy;
+    
+    const int size = icye-2*igye;
+    
+    double* upper  = (double*)malloc(size*sizeof(double));
+    double* diago  = (double*)malloc(size*sizeof(double));
+    double* lower  = (double*)malloc(size*sizeof(double));
+    double* v_in   = (double*)malloc(size*sizeof(double));
+    double* v_out  = (double*)malloc(size*sizeof(double));
+    
+    for (int i=igxe; i<icxe-igxe; i++) {
+        for (int j=igye; j<icye-igye; j++) {
+            int j_inc = j-igye;
+            int nc    = j*icxe+i;
+            lower[j_inc] = tridiago[0][nc];
+            diago[j_inc] = tridiago[1][nc];
+            upper[j_inc] = tridiago[2][nc];
+            v_in[j_inc]  = vec_in[nc];
+        }
+        Thomas_Algorithm(v_out, v_in, upper, diago, lower, size);
+        for (int j=igye; j<icye-igye; j++) {
+            int j_inc = j-igye;
+            int nc    = j*icxe+i;
+            vec_out[nc] = v_out[j_inc];
+        }
+    }
+    
+    free(upper);
+    free(diago);
+    free(lower);
+    free(v_in );
+    free(v_out);
+
+}
 #endif /* PRECON_VERTICAL_COLUMN */
 
 #else  /* PRECON */
+
+/* -------------------------------------------------------------------------- */
+
 double precon_c_prepare(
                       const NodeSpaceDiscr* node,
                       const ElemSpaceDiscr* elem,
@@ -165,11 +377,15 @@ double precon_c_prepare(
                       const double* hcenter) {
 }
 
+/* -------------------------------------------------------------------------- */
+
 void precon_c_apply(
                     double* vec_out,
                     const double* vec_in,
                     const ElemSpaceDiscr *elem) {
 }
+
+/* -------------------------------------------------------------------------- */
 
 void precon_c_invert(
                      double* vec_out,

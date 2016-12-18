@@ -639,9 +639,15 @@ double compressibility(const double t)
             break;
         case -1:
         {
+            /*
              double a = 0.00225;
              double b = 1.0 / 0.00225;
-             return(MIN_own(1.0, MAX_own(0.0, b*(t-a)))); 
+             return(MIN_own(1.0, MAX_own(0.0, b*(t-a))));
+             */
+            double a = 12.5;
+            double b = 1.0 / 24.0;
+            double c = MIN_own(1.0, MAX_own(0.0, b*(t-a)));
+            return c;
             /*
             return(0.0);
              */

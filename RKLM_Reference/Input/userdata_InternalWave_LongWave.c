@@ -42,7 +42,8 @@ void User_Data_init(User_Data* ud) {
     
     /* Earth */
     double grav     = 9.81;             /* [m/s^2]                */
-    double omega    = sin(0.5*PI) * 2.0 * 0.00007272205217;  /* sin(0.33333*PI) [s^-1] */
+    double omega    = 1.0*0.0001;     /* 1.454 */
+    /* double omega  = sin(0.5*PI) * 2.0 * 0.00007272205217;   */
     
     /* thermodynamics and chemistry */
     double R_gas    = 287.4;            /* [J/kg/K]               */
@@ -53,7 +54,7 @@ void User_Data_init(User_Data* ud) {
     /* references for non-dimensionalization */
     double h_ref    = 10000;                 /* [m]               */
     double t_ref    = 100;                   /* [s]               */
-    double T_ref    = 223.68;                /* [K]               */
+    double T_ref    = 224.00;                /* [K]               */
     double p_ref    = 10e+5;                 /* [Pa]              */
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
     /* double rho_ref = p_ref / (R_gas*T_ref); [kg/m^3]          */
@@ -156,8 +157,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
+    ud->inx =  600+1; /* 641; 321; 161; 129; 81; */
+    ud->iny =   20+1; /* 321; 161;  81;  65; 41;  */
     ud->inz = 1;
     ud->h   = MIN_own((ud->xmax-ud->xmin)/(ud->inx),MIN_own((ud->ymax-ud->ymin)/(ud->iny),(ud->zmax-ud->zmin)/(ud->inz)));
     
@@ -195,7 +196,7 @@ void User_Data_init(User_Data* ud) {
     ud->Solver = BICGSTAB_PRECON;        /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->Solver_Node = BICGSTAB_PRECON;   /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->precondition = CORRECT;
-    double tol = 1.e-8;
+    double tol = 1.e-10;
     ud->flux_correction_precision = tol;
     ud->flux_correction_local_precision = tol;   /* 1.e-05 should be enough */
     ud->second_projection_precision = tol;
@@ -246,7 +247,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 10;
+    ud->write_file_period = 20;
     ud->file_format = HDF;
     
     {

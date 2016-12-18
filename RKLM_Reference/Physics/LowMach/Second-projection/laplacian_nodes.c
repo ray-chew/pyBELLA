@@ -367,13 +367,17 @@ double precon_prepare(
             break;
         }
         case 2: {
-            const int icxn = node->icx;
             
             const int igxe = elem->igx;
             const int icxe = elem->icx;
             const int igye = elem->igy;
             const int icye = elem->icy;
-            
+
+            const int icxn = node->icx;
+            const int icyn = node->icy;
+            const int igxn = node->igx;
+            const int igyn = node->igy;
+
             const double dy = node->dy;
             
             const double* hplusy   = hplus[1];
@@ -436,9 +440,18 @@ double precon_prepare(
                 }
             }
             
-            This has not been tested !
+            /* normalization */
             precon_inv_scale = 0.0;
-            for(nn=0; nn<node->nc; nn++) precon_inv_scale = MAX_own(precon_inv_scale, fabs(1.0/tridiago[1][nn]));
+
+            for(j = igyn; j < icyn - igyn; j++) {
+                mn   = j * icxn;
+                
+                for(i = igxn; i < icxn - igxn; i++) {
+                    nn       = mn + i;
+
+                    precon_inv_scale = MAX_own(precon_inv_scale, fabs(1.0/tridiago[1][nn]));                
+                }
+            }            
         }
             break;
         case 3: {

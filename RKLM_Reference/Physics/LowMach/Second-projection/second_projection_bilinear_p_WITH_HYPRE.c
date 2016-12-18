@@ -153,9 +153,11 @@ void second_projection(
     double rhs_weight_new = 2.0;
     double rhs_weight_old = 2.0*ud.compressibility;
     rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv->eta, mpv, bdry, dt, rhs_weight_new);
+    /*  for psinc, this can be commented out 
     if (ud.compressibility) {
-        divergence_nodes(rhs, elem, node, Sol0, mpv->eta0, mpv, bdry, dt, rhs_weight_old); /*  for psinc, this can be commented out */
+        divergence_nodes(rhs, elem, node, Sol0, mpv->eta0, mpv, bdry, dt, rhs_weight_old); 
     }
+    */
         
 	catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
 

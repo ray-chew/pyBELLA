@@ -267,6 +267,9 @@ int main( void )
                 }
             }
                         
+            /* Explicit_Coriolis(Sol, elem, 0.5*dt);
+             */
+
             Explicit_Coriolis(Sol, elem, 0.5*dt);
 
             Set_Explicit_Boundary_Data(Sol, elem, mpv);
@@ -312,7 +315,7 @@ int main( void )
                 Absorber(Sol, t, dt); 
                 Set_Explicit_Boundary_Data(Sol, elem, mpv);
             }					
-            			            
+            			
 			t += dt;
 			step++;
 			            

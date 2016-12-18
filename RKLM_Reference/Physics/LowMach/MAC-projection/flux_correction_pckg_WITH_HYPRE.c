@@ -223,7 +223,7 @@ void flux_correction(
 
     /* store results in mpv-fields */        
     for(n=0; n<elem->nc; n++) {
-#if 1
+#if 0
         /* mpv->dp2_cells[n] = 2.0*dp2[n]; */
         mpv->dp2_cells[n] = Sol->rhoZ[PRES][n] + 1.0*dp2[n] - mpv->p2_cells[n];
         mpv->p2_cells[n]  = mpv->p2_cells[n] + mpv->dp2_cells[n];
