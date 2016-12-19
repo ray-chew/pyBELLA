@@ -161,13 +161,23 @@ void precon_c_invert(
 #endif /* PRECON_DIAGONAL_1ST_PROJ  =========================================================== */
 
 #ifdef PRECON_VERTICAL_COLUMN_1ST_PROJ /* ===================================================== */
-static enum Boolean tridiago_is_allocated = WRONG;
-static double *tridiago[3];
 
 #ifdef UN_AVERAGE_PROJ1
-static enum Boolean vec_ave_c_is_allocated = WRONG;
-static double *vec_ave_c;
+static enum Boolean vec_ave_x_is_allocated = WRONG;
+static double *vec_ave_x;
+static double lambda;
+static double rhs_scale;
+static int size_x;
 #endif
+
+static enum Boolean tridiago_is_allocated = WRONG;
+static double *tridiago[3];
+static double* upper;
+static double* diago;
+static double* lower;
+static double* v_in ;
+static double* v_out;
+static int size;
 
 /* -------------------------------------------------------------------------- */
 
@@ -185,19 +195,33 @@ double precon_c_prepare(
      diagonal value from a full stencil.
      */
     
+    extern User_Data ud;
+    
     double precon_inv_scale;
     
 #ifdef UN_AVERAGE_PROJ1
-    if (vec_ave_c_is_allocated == WRONG) {
-        vec_ave_c = (double*)malloc(elem->icx*sizeof(double));
-        vec_ave_c_is_allocated = CORRECT;
+    if (vec_ave_x_is_allocated == WRONG) {
+        vec_ave_x = (double*)malloc(elem->icx*sizeof(double));  
+        lambda    = ud.latw[1] / ud.latw[0];
+        rhs_scale = 1.0 / ud.latw[0];
+        size_x    = elem->icx - 2*elem->igx;
+        vec_ave_x_is_allocated = CORRECT;
     }
 #endif
+    
+    size = elem->icy-2*elem->igy;
     
     if (tridiago_is_allocated == WRONG) {
         for (int k=0; k<3; k++) {
             tridiago[k] = (double*)malloc(elem->nc*sizeof(double));
         }
+
+        upper  = (double*)malloc(size*sizeof(double));
+        diago  = (double*)malloc(size*sizeof(double));
+        lower  = (double*)malloc(size*sizeof(double));
+        v_in   = (double*)malloc(size*sizeof(double));
+        v_out  = (double*)malloc(size*sizeof(double));
+
         tridiago_is_allocated = CORRECT;
     }
     
@@ -211,16 +235,13 @@ double precon_c_prepare(
         case 2: {
             const int igx       = elem->igx;
             const int icx       = elem->icx;
-            const int ifx       = elem->ifx;
             const int igy       = elem->igy;
             const int icy       = elem->icy;
             const int ify       = elem->ify;
             const double dx     = elem->dx;
             const double dy     = elem->dy;
-            const double oodx2  = 1.0 / (dx * dx);
             const double oody2  = 1.0 / (dy * dy);
                         
-            const double* hplusx = hplus[0];
             const double* hplusy = hplus[1];
             const double* hc     = hcenter;
             
@@ -229,6 +250,14 @@ double precon_c_prepare(
             }
             
             for(int j = igy; j < icy - igy; j++) {int mc = j * icx;
+                
+                /*
+                double bdry_sw_bot = (j == igy ? 0.0 : 1.0);
+                double bdry_sw_top = (j == icy-igy-1 ? 0.0 : 1.0);
+                */
+                double bdry_sw_bot = 1.0;
+                double bdry_sw_top = 1.0;
+                
                 for(int i = igx; i < icx - igx; i++) {int nc  = mc + i;
                     
                     int oy  = i * ify + j;
@@ -236,7 +265,7 @@ double precon_c_prepare(
                     int o_s = oy;
                     
                     tridiago[0][nc] = oody2 * hplusy[o_s]; 
-                    tridiago[1][nc] = - oody2 * (hplusy[o_n] + hplusy[o_s]) + hc[nc];
+                    tridiago[1][nc] = - oody2 * (bdry_sw_top * hplusy[o_n] + bdry_sw_bot * hplusy[o_s]) + hc[nc];
                     tridiago[2][nc] = oody2 * hplusy[o_n]; 
                 }
             }
@@ -244,7 +273,7 @@ double precon_c_prepare(
             /* normalization */
             precon_inv_scale = 0.0;
             
-            for(int j = igy; j < icy - igy; j++) {
+            for(int j = igy+1; j < icy - igy - 1; j++) {
                 int mn = j * icx;
                 
                 for(int i = igx; i < icx - igx; i++) {
@@ -283,22 +312,57 @@ void precon_c_apply(
 #ifdef UN_AVERAGE_PROJ1
     extern User_Data ud;
     
-    /* generate averaged pressure state corresponding to the 9-pt or 27-pt stencil */
+    /* generate averaged pressure state corresponding to the 9-pt stencil */
+    /* sorry need to account vor boundary conditions here ... there should be
+       a more elegant way of doing this
+     
+        x-periodic condition
+     */
     for (int j = igye; j<icye-igye; j++) {
-        for (int i = igxe; i<icxe-igxe; i++) {
-            int nn0 = j*icxe+i-1;
-            int nn1 = j*icxe+i;
-            int nn2 = j*icxe+i+1;
-            vec_ave[nn1] = ud.latw[0]*vec_in[nn0] + ud.latw[1]*vec_in[nn1] + ud.latw[2]*vec_in[nn2];
+        
+        int mc = j*icxe;
+        
+        /* left boundary */
+        int nn0 = mc+icxe-igxe-1;
+        int nn1 = mc+igxe;
+        int nn2 = mc+igxe+1;
+        
+        vec_ave_x[nn1] = ud.latw[0]*vec_in[nn0] + ud.latw[1]*vec_in[nn1] + ud.latw[2]*vec_in[nn2];
+        
+        for (int i = igxe+1; i<icxe-igxe-1; i++) {
+            nn0 = mc+i-1;
+            nn1 = mc+i;
+            nn2 = mc+i+1;
+            vec_ave_x[nn1] = ud.latw[0]*vec_in[nn0] + ud.latw[1]*vec_in[nn1] + ud.latw[2]*vec_in[nn2];
         }
-    }
 
+        /* right boundary */
+        nn0 = mc+icxe-igxe-2;
+        nn1 = mc+icxe-igxe-1;
+        nn2 = mc+igxe;
+        
+        vec_ave_x[nn1] = ud.latw[0]*vec_in[nn0] + ud.latw[1]*vec_in[nn1] + ud.latw[2]*vec_in[nn2];
+    }
+    
+    /* set bottom and top first rows of dummy cell values */
+    int jbot = igxe-1;
+    int jtop = icye-igxe;
+    int mbot = jbot*icxe;
+    int mtop = jtop*icxe;
+    for (int i = igxe; i<icxe-igxe; i++) {
+        int nbot = mbot + i;
+        int ntop = mtop + i;
+        vec_ave_x[nbot] = vec_ave_x[nbot+icxe];
+        vec_ave_x[ntop] = vec_ave_x[ntop-icxe];
+    }
+    
+    /* evaluate vertical stencil */
     for (int i = igxe; i<icxe-igxe; i++) {
         for (int j = igye; j<icye-igye; j++) {
             int nn0 = (j-1)*icxe+i;
             int nn1 =   j  *icxe+i;
             int nn2 = (j+1)*icxe+i;
-            vec_out[nn1] = tridiago[0][nn1]*vec_ave[nn0]+tridiago[1][nn1]*vec_ave[nn1]+tridiago[2][nn1]*vec_ave[nn2];
+            vec_out[nn1] = tridiago[0][nn1]*vec_ave_x[nn0]+tridiago[1][nn1]*vec_ave_x[nn1]+tridiago[2][nn1]*vec_ave_x[nn2];
         }
     }    
 #else
@@ -331,15 +395,55 @@ void precon_c_invert(
     
     const int igxe = elem->igx;
     const int igye = elem->igy;
+        
+#ifdef UN_AVERAGE_PROJ1
+    /* Solve for vertical structure of x-averaged pressure variable */
+    for (int i=igxe; i<icxe-igxe; i++) {
+        int jbot, jtop;
+        
+        for (int j=igye; j<icye-igye; j++) {
+            int j_inc = j-igye;
+            int nc    = j*icxe+i;
+            lower[j_inc] = tridiago[0][nc];
+            diago[j_inc] = tridiago[1][nc];
+            upper[j_inc] = tridiago[2][nc];
+            v_in[j_inc]  = vec_in[nc];
+        }
+        
+        /* fix diagonal entries in the first and last row for boundary condition consistency */
+        jbot = 0;
+        jtop = icye-2*igxe-1;
+        
+        diago[jbot] += lower[jbot];
+        lower[jbot]  = 0.0;
+        diago[jtop] += upper[jtop];
+        upper[jtop]  = 0.0;
+        
+        
+        Thomas_Algorithm(v_out, v_in, upper, diago, lower, size);
+        for (int j=igye; j<icye-igye; j++) {
+            int j_inc = j-igye;
+            int nc    = j*icxe+i;
+            vec_out[nc] = v_out[j_inc];
+        }
+    }
     
-    const int size = icye-2*igye;
+    /* invert x-averaging */
+    for (int j=igye; j<icye-igye; j++) {
+        int mc  = j*icxe;
+        int mc0 = mc + igxe;
+        for (int i=igxe; i<icxe-igxe; i++) {
+            int nc = mc+i;
+            vec_ave_x[i-igxe] = rhs_scale * vec_out[nc];
+        }
+        Algorithm_4(&vec_out[mc0], vec_ave_x, lambda, size_x);
+        
+        /* periodicity for now */
+        vec_out[mc+igxe - 1]    = vec_out[mc+icxe - igxe - 1];
+        vec_out[mc+icxe - igxe] = vec_out[mc+igxe];
+    }
     
-    double* upper  = (double*)malloc(size*sizeof(double));
-    double* diago  = (double*)malloc(size*sizeof(double));
-    double* lower  = (double*)malloc(size*sizeof(double));
-    double* v_in   = (double*)malloc(size*sizeof(double));
-    double* v_out  = (double*)malloc(size*sizeof(double));
-    
+#else
     for (int i=igxe; i<icxe-igxe; i++) {
         for (int j=igye; j<icye-igye; j++) {
             int j_inc = j-igye;
@@ -356,13 +460,7 @@ void precon_c_invert(
             vec_out[nc] = v_out[j_inc];
         }
     }
-    
-    free(upper);
-    free(diago);
-    free(lower);
-    free(v_in );
-    free(v_out);
-
+#endif
 }
 #endif /* PRECON_VERTICAL_COLUMN */
 

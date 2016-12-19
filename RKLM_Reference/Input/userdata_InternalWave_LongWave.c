@@ -78,7 +78,7 @@ void User_Data_init(User_Data* ud) {
     ud->naux        = NAUX;
 
     /* Low Mach */
-    ud->is_compressible   = 0;   /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_compressible   = -1;   /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep = 0; /* 0;  1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
     
@@ -196,7 +196,7 @@ void User_Data_init(User_Data* ud) {
     ud->Solver = BICGSTAB_PRECON;        /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->Solver_Node = BICGSTAB_PRECON;   /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->precondition = CORRECT;
-    double tol = 1.e-10;
+    double tol = 1.e-8;
     ud->flux_correction_precision = tol;
     ud->flux_correction_local_precision = tol;   /* 1.e-05 should be enough */
     ud->second_projection_precision = tol;
@@ -247,7 +247,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 20;
+    ud->write_file_period = 1;
     ud->file_format = HDF;
     
     {

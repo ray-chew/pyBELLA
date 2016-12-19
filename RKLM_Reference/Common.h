@@ -75,6 +75,7 @@
 /* First projection options */
 #define PROJECTION1 1
 #define CONTROL_PRECONDITIONED_RESIDUAL_PROJ1
+#define UN_AVERAGE_PROJ1
 
 /*
  #define NO_UPWIND_PROJ1          IMPORTANT: Upwinding in the correction induces NOISE  
