@@ -171,6 +171,8 @@ static int size_x;
 #endif
 
 static enum Boolean tridiago_is_allocated = WRONG;
+static double *diaginv_c;
+static double *diag_c;
 static double *tridiago[3];
 static double* upper;
 static double* diago;
@@ -197,7 +199,7 @@ double precon_c_prepare(
     
     extern User_Data ud;
     
-    double precon_inv_scale;
+    double precon_inv_scale, diag_scale;
     
 #ifdef UN_AVERAGE_PROJ1
     if (vec_ave_x_is_allocated == WRONG) {
@@ -216,11 +218,13 @@ double precon_c_prepare(
             tridiago[k] = (double*)malloc(elem->nc*sizeof(double));
         }
 
-        upper  = (double*)malloc(size*sizeof(double));
-        diago  = (double*)malloc(size*sizeof(double));
-        lower  = (double*)malloc(size*sizeof(double));
-        v_in   = (double*)malloc(size*sizeof(double));
-        v_out  = (double*)malloc(size*sizeof(double));
+        diag_c    = (double*)malloc(node->nc*sizeof(double));
+        diaginv_c = (double*)malloc(node->nc*sizeof(double));
+        upper     = (double*)malloc(size*sizeof(double));
+        diago     = (double*)malloc(size*sizeof(double));
+        lower     = (double*)malloc(size*sizeof(double));
+        v_in      = (double*)malloc(size*sizeof(double));
+        v_out     = (double*)malloc(size*sizeof(double));
 
         tridiago_is_allocated = CORRECT;
     }
@@ -235,13 +239,16 @@ double precon_c_prepare(
         case 2: {
             const int igx       = elem->igx;
             const int icx       = elem->icx;
+            const int ifx       = elem->ifx;
             const int igy       = elem->igy;
             const int icy       = elem->icy;
             const int ify       = elem->ify;
             const double dx     = elem->dx;
             const double dy     = elem->dy;
             const double oody2  = 1.0 / (dy * dy);
+            const double oodx2  = 1.0 / (dx * dx);
                         
+            const double* hplusx = hplus[0];
             const double* hplusy = hplus[1];
             const double* hc     = hcenter;
             
@@ -250,27 +257,36 @@ double precon_c_prepare(
             }
             
             for(int j = igy; j < icy - igy; j++) {int mc = j * icx;
-                
-                /*
-                double bdry_sw_bot = (j == igy ? 0.0 : 1.0);
-                double bdry_sw_top = (j == icy-igy-1 ? 0.0 : 1.0);
-                */
-                double bdry_sw_bot = 1.0;
-                double bdry_sw_top = 1.0;
-                
+                                
                 for(int i = igx; i < icx - igx; i++) {int nc  = mc + i;
                     
+                    int ox = j * ifx + i;
+                    int o_e   = ox + 1;
+                    int o_w   = ox;
+
                     int oy  = i * ify + j;
                     int o_n = oy + 1;
                     int o_s = oy;
                     
                     tridiago[0][nc] = oody2 * hplusy[o_s]; 
-                    tridiago[1][nc] = - oody2 * (bdry_sw_top * hplusy[o_n] + bdry_sw_bot * hplusy[o_s]) + hc[nc];
+                    tridiago[1][nc] = - oody2 * (hplusy[o_n] + hplusy[o_s])
+                                      - oodx2 * (hplusx[o_e] + hplusx[o_w]) + hc[nc];
                     tridiago[2][nc] = oody2 * hplusy[o_n]; 
+
+                    diag_c[nc]  = oodx2 * ( -(hplusx[o_e] + hplusx[o_w])
+                                           + 0.125 * (  hplusx[o_e] + hplusx[o_w] + hplusx[o_e] + hplusx[o_w])
+                                           );
+                    
+                    diag_c[nc] += oody2 * ( -(hplusy[o_n] + hplusy[o_s])
+                                           + 0.125 * (  hplusy[o_n] + hplusy[o_s] + hplusy[o_n] + hplusy[o_s])
+                                           );
+                    
+                    diag_c[nc] += hc[nc];
+
                 }
             }
             
-            /* normalization */
+            /* normalization 
             precon_inv_scale = 0.0;
             
             for(int j = igy+1; j < icy - igy - 1; j++) {
@@ -282,7 +298,20 @@ double precon_c_prepare(
                     precon_inv_scale = MAX_own(precon_inv_scale, fabs(1.0/tridiago[1][nn]));                
                 }
             }            
+            */
             
+            diag_scale = 1.0;
+            
+            precon_inv_scale = 0.0;
+            
+            for (int j = igy; j < icy-igy; j++) {int mc = j*icx;
+                for (int i = igx; i < icx-igx; i++) {int nc = mc + i;
+                    diag_c[nc]   *= diag_scale;
+                    diaginv_c[nc] = 1.0/diag_c[nc];
+                    precon_inv_scale = MAX_own(precon_inv_scale, fabs(diaginv_c[nc]));
+                }
+            }
+
             break;
         }
         case 3: {
@@ -421,9 +450,10 @@ void precon_c_invert(
         
         
         Thomas_Algorithm(v_out, v_in, upper, diago, lower, size);
+        
         for (int j=igye; j<icye-igye; j++) {
-            int j_inc = j-igye;
-            int nc    = j*icxe+i;
+            int j_inc   = j-igye;
+            int nc      = j*icxe+i;
             vec_out[nc] = v_out[j_inc];
         }
     }
@@ -432,10 +462,12 @@ void precon_c_invert(
     for (int j=igye; j<icye-igye; j++) {
         int mc  = j*icxe;
         int mc0 = mc + igxe;
+        
         for (int i=igxe; i<icxe-igxe; i++) {
             int nc = mc+i;
             vec_ave_x[i-igxe] = rhs_scale * vec_out[nc];
         }
+        
         Algorithm_4(&vec_out[mc0], vec_ave_x, lambda, size_x);
         
         /* periodicity for now */
@@ -445,6 +477,8 @@ void precon_c_invert(
     
 #else
     for (int i=igxe; i<icxe-igxe; i++) {
+        int jbot, jtop;
+
         for (int j=igye; j<icye-igye; j++) {
             int j_inc = j-igye;
             int nc    = j*icxe+i;
@@ -453,7 +487,18 @@ void precon_c_invert(
             upper[j_inc] = tridiago[2][nc];
             v_in[j_inc]  = vec_in[nc];
         }
+        
+        /* fix diagonal entries in the first and last row for boundary condition consistency */
+        jbot = 0;
+        jtop = icye-2*igxe-1;
+        
+        diago[jbot] += lower[jbot];
+        lower[jbot]  = 0.0;
+        diago[jtop] += upper[jtop];
+        upper[jtop]  = 0.0;
+
         Thomas_Algorithm(v_out, v_in, upper, diago, lower, size);
+
         for (int j=igye; j<icye-igye; j++) {
             int j_inc = j-igye;
             int nc    = j*icxe+i;

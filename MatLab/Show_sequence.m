@@ -35,8 +35,8 @@ kmax = 201;
 dk   = 1;
 
 %modelstr = '';
-%modelstr = 'psinc';
-modelstr = 'comp';
+modelstr = 'psinc';
+%modelstr = 'comp';
 
 
 if strcmp(test_case, 'Internal-Wave-Long-Wave')

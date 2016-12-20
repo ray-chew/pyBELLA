@@ -223,14 +223,20 @@ void Algorithm_4(double* x,  double* rhs, double  lambda, int size)
     /* test */
     {
         double delta = 0.0;
+        double rmax  = 0.0;
+        
         delta = MAX_own(delta, fabs(rhs[0] - (x[size-1] + lambda*x[0] + x[1])));
+        rmax  = MAX_own(rmax, fabs(rhs[0]));
         
         for (int i=1; i<size-1; i++) {
             delta = MAX_own(delta, fabs(rhs[i] - (x[i-1] + lambda*x[i] + x[i+1])));
+            rmax  = MAX_own(rmax, fabs(rhs[i]));
         }
         
         delta = MAX_own(delta, fabs(rhs[size-1] - (x[size-2] + lambda*x[size-1] + x[0])));
-        printf("Algorithm 4:  delta = %e\n", delta);
+        rmax  = MAX_own(rmax, fabs(rhs[size-1]));
+
+        printf("Algorithm 4:  delta = %e, rmax = %e\n", delta, rmax);
     }
 #endif
     

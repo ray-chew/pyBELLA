@@ -378,24 +378,20 @@ double precon_prepare(
             const int igxn = node->igx;
             const int igyn = node->igy;
 
+            const double dx = node->dx;
             const double dy = node->dy;
             
+            const double* hplusx   = hplus[0];
             const double* hplusy   = hplus[1];
             const double* hcenter  = wcenter;
-            
-            const double oody  = 0.5 / dy;
-            
+                        
+            const double oodx2 = 0.5 / (dx * dx);
             const double oody2 = 0.5 / (dy * dy);
             
-            double flux_y_left, flux_y_right, hc;
+            double flux_x_lower, flux_x_upper, flux_y_left, flux_y_right, hc;
             
             int i, j, me, mn, ne, nn, nn1, nnicxn, nn1icxn;
-            
-            double pnn      = 1.0;
-            double pnn1     = 1.0;
-            double pnnicxn  = 1.0;
-            double pnn1icxn = 1.0;
-            
+                        
             for (int k=0; k<3; k++) {
                 for(nn=0; nn<node->nc; nn++) tridiago[k][nn] = 0.0;
             }
@@ -419,24 +415,28 @@ double precon_prepare(
                     flux_y_left   = hplusy[ne] * oody2;
                     flux_y_right  = hplusy[ne] * oody2;
                     
+                    flux_x_lower  = hplusx[ne] * oodx2;
+                    flux_x_upper  = hplusx[ne] * oodx2;
+                    
+                    
                     /* summand 1.0 takes care of singularity of the tridiagoonal matrix */
-                    hc            = 0.25 * (-1.0 + hcenter[ne]);
+                    hc            = 0.25 * hcenter[ne];
                                         
                     
                     /* eventually I should transpose the tridiago[][] field for better memory efficiency */
                     /* eventually I should let tridiago[] run from  -1 to +1 */
                     
-                    tridiago[1][nn]      += (+ flux_y_left  * ( -pnn      )) + hc*pnn;
-                    tridiago[2][nn]      += (+ flux_y_left  * ( +pnnicxn  ));
+                    tridiago[1][nn]      += - flux_x_lower - flux_y_left + hc;
+                    tridiago[2][nn]      +=   flux_y_left;
                     
-                    tridiago[1][nn1]     += (+ flux_y_right * ( -pnn1     )) + hc*pnn1;
-                    tridiago[2][nn1]     += (+ flux_y_right * ( +pnn1icxn ));
+                    tridiago[1][nn1]     += - flux_x_lower - flux_y_right + hc;
+                    tridiago[2][nn1]     +=   flux_y_right;
                     
-                    tridiago[0][nnicxn]  += (- flux_y_left  * ( -pnn      ));
-                    tridiago[1][nnicxn]  += (- flux_y_left  * ( +pnnicxn  )) + hc*pnnicxn;
+                    tridiago[0][nnicxn]  +=   flux_y_left;
+                    tridiago[1][nnicxn]  += - flux_x_upper - flux_y_left + hc;
                     
-                    tridiago[0][nn1icxn] += (- flux_y_right * ( -pnn1     ));
-                    tridiago[1][nn1icxn] += (- flux_y_right * ( +pnn1icxn )) + hc*pnn1icxn;
+                    tridiago[0][nn1icxn] += - flux_y_right;
+                    tridiago[1][nn1icxn] += - flux_x_upper - flux_y_right + hc;                    
                 }
             }
             
@@ -510,7 +510,7 @@ void precon_invert(
     double* lower  = (double*)malloc(size*sizeof(double));
     double* v_in   = (double*)malloc(size*sizeof(double));
     double* v_out  = (double*)malloc(size*sizeof(double));
-    
+        
     for (int i=igxn; i<icxn-igxn; i++) {
         for (int j=igyn; j<icyn-igyn; j++) {
             int j_inn = j-igyn;
