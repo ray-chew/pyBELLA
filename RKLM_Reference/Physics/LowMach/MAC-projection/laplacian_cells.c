@@ -433,10 +433,10 @@ void precon_c_invert(
         for (int j=igye; j<icye-igye; j++) {
             int j_inc = j-igye;
             int nc    = j*icxe+i;
-            lower[j_inc] = tridiago[0][nc];
-            diago[j_inc] = tridiago[1][nc];
-            upper[j_inc] = tridiago[2][nc];
-            v_in[j_inc]  = vec_in[nc];
+            lower[j_inc] = tridiago[0][nc]*diaginv_c[nc];
+            diago[j_inc] = tridiago[1][nc]*diaginv_c[nc];
+            upper[j_inc] = tridiago[2][nc]*diaginv_c[nc];
+            v_in[j_inc]  = vec_in[nc]*diaginv_c[nc];
         }
         
         /* fix diagonal entries in the first and last row for boundary condition consistency */
@@ -482,10 +482,10 @@ void precon_c_invert(
         for (int j=igye; j<icye-igye; j++) {
             int j_inc = j-igye;
             int nc    = j*icxe+i;
-            lower[j_inc] = tridiago[0][nc];
-            diago[j_inc] = tridiago[1][nc];
-            upper[j_inc] = tridiago[2][nc];
-            v_in[j_inc]  = vec_in[nc];
+            lower[j_inc] = tridiago[0][nc]*diaginv_c[nc];
+            diago[j_inc] = tridiago[1][nc]*diaginv_c[nc];
+            upper[j_inc] = tridiago[2][nc]*diaginv_c[nc];
+            v_in[j_inc]  = vec_in[nc]*diaginv_c[nc];
         }
         
         /* fix diagonal entries in the first and last row for boundary condition consistency */
