@@ -20,8 +20,8 @@
 /* Output parameters */
 #define HDFFORMAT
 #define OUTPUT_SUBSTEPS_PREDICTOR 1
-#define OUTPUT_SUBSTEPS 0
-#define OUTPUT_SPLITSTEPS 0
+#define OUTPUT_SUBSTEPS 1
+#define OUTPUT_SPLITSTEPS 1
 
 
 /* ============================================= 
@@ -67,7 +67,7 @@
 #define PRECON
 #ifdef PRECON
 #define PRECON_DIAGONAL_1ST_PROJ
-#define PRECON_VERTICAL_COLUMN_2ND_PROJ
+#define PRECON_DIAGONAL_2ND_PROJ
 #define PRECON_LEGACY
 #endif
 

@@ -42,7 +42,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Earth */
     double grav     = 9.81;             /* [m/s^2]                */
-    double omega    = 1.0*0.0001;     /* 1.454 */
+    double omega    = 0.0*0.0001;     /* 1.454 */
     /* double omega  = sin(0.5*PI) * 2.0 * 0.00007272205217;   */
     
     /* thermodynamics and chemistry */
@@ -78,7 +78,7 @@ void User_Data_init(User_Data* ud) {
     ud->naux        = NAUX;
 
     /* Low Mach */
-    ud->is_compressible   = -1;   /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_compressible   = 1;   /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep = 0; /* 0;  1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
     
@@ -247,7 +247,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 1;
+    ud->write_file_period = 20;
     ud->file_format = HDF;
     
     {
