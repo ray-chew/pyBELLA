@@ -48,7 +48,7 @@ void Explicit_step_and_flux(
 							const int n, 
 							const int SplitStep,
                             const int RK_stage,
-                            const int implicit);
+                            const enum GravityTimeIntegrator GTI);
 
 
 /*------------------------------------------------------------------------------

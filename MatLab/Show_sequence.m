@@ -16,8 +16,8 @@ fixed_contours = 0;
 fixed_contour_step = 1;
 no_of_contours = 10;
 symmetry = 0;        % in {0,1}
-symmetrytest = 0;
-showdummycells = 1;
+symmetrytest = 1;
+showdummycells = 0;
 
 % th0 = -0.0015/300;
 % dth = 5e-4/300;
@@ -35,8 +35,8 @@ kmax = 201;
 dk   = 1;
 
 %modelstr = '';
-%modelstr = 'psinc';
-modelstr = 'comp';
+modelstr = 'psinc';
+%modelstr = 'comp';
 
 
 if strcmp(test_case, 'Internal-Wave-Long-Wave')
@@ -126,8 +126,8 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
-%varstr = 'rhoZ';  folderstr = 'rhoZ'; titlestr = 'rhoZ'; ndummy = 2; arraysize = [ncx ncy];
-%varstr = 'Z';  folderstr = 'Z'; titlestr = 'Z'; ndummy = 2; arraysize = [ncx ncy]; rhoZ_diff = 0;
+%%varstr = 'rhoZ';  folderstr = 'rhoZ'; titlestr = 'rhoZ'; ndummy = 2; arraysize = [ncx ncy];
+%%varstr = 'Z';  folderstr = 'Z'; titlestr = 'Z'; ndummy = 2; arraysize = [ncx ncy]; rhoZ_diff = 0;
 %varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
 varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy];

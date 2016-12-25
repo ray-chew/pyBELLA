@@ -70,7 +70,7 @@ void Explicit_step_and_flux(
 							const int n, 
 							const int SplitStep,
                             const int RK_stage,
-                            const int implicit) {
+                            const enum GravityTimeIntegrator GTI) {
 	
     /* TODO: Can I get away without ever computing the theta-perturbation evolution,
         just modifying the momentum balance to include the semi-implicit effects?
@@ -89,6 +89,9 @@ void Explicit_step_and_flux(
     const double dt  = lambda * dh;
 	const int ncache = ud.ncache;
 	const int njump  = ncache - 2*elem->igx;
+    
+    const double implicit = (GTI == EULER_FORWARD ? 0 : (GTI == EULER_BACKWARD ? 1.0 : 0.5));
+    const double implicit_reg = (implicit == 0.0 ? 1.0 : implicit);
 	
 	ConsVars pdSol, ppdSol, pFluxes, pflux, ppflux;
     double *pbuoy, *ppbuoy, *pbuoyS, *ppbuoyS;
@@ -179,10 +182,10 @@ void Explicit_step_and_flux(
 			/* pressure gradient and gravity source terms */
 #ifdef GRAVITY_IMPLICIT_1
             double dSbgdy     = (Solk->S0[i+1] - Solk->S0[i-1]) / (2.0*dh);
-            double Nsqsc      = - implicit * dt*dt * (g/Msq) * Solk->Y[i] * dSbgdy;
+            double Nsqsc      = - implicit*implicit*dt*dt * (g/Msq) * Solk->Y[i] * dSbgdy; /* CHECK FACTOR OF 0.25 for all "implicit" options */
             double ooopNsqsc  = 1.0 / (1.0 + Nsqsc); 
             /* gravity_source[i] = ooopNsqsc * (gravity_source[i] - Nsqsc * Solk->rhou[i]) / lambda; */
-            gravity_source[i] = ooopNsqsc * (gravity_source[i] - 2.0 * Nsqsc * Solk->rhou[i]) / lambda; 
+            gravity_source[i] = ooopNsqsc * (gravity_source[i] - (1.0/implicit_reg) * Nsqsc * Solk->rhou[i]) / lambda; /* CHECK FACTOR OF 2.0 for all "implicit" options */
 #endif
             *ppbuoy             = flux_weight_old * *ppbuoy + flux_weight_new * gravity_source[i];
 			*ppdSol.rhou       += lambda * gravity_source[i];

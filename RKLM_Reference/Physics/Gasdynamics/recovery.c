@@ -104,7 +104,7 @@ void recovery_gravity(
 					  const double lambda, 
 					  const int nmax,
                       const int stage,
-                      const int implicit) {
+                      const double implicit) {
 	
 	extern User_Data ud;
 	extern Thermodynamic th;
@@ -175,7 +175,7 @@ void recovery_gravity(
         Nsqsc[i]      = - implicit * 1.0*dt*dt * (g/Msq) * Y * dSdy;
          */
         drhou[i]      = - 0.5 * lambda * th.Gammainv * rhoY * (Sol->rhoZ[PRES][i] - Sol->rhoZ[PRES][i-1] - dp2hydro_l);
-        Nsqsc[i]      = - implicit * 0.25*dt*dt * (g/Msq) * Y * dSdy; 
+        Nsqsc[i]      = - implicit*implicit*dt*dt * (g/Msq) * Y * dSdy; 
         ooopNsqsc[i]  = 1.0 / (1.0+Nsqsc[i]);
         
         Rights->S0[i]  = Hydros[i].Sbg[1];
@@ -216,7 +216,7 @@ void recovery_gravity(
         /*
         u[i]              = (Sol->u[i] + dum) * ooopNsqscm;                    The dum-term should drop out for forward EULER. 
          */
-        u[i]              = Sol->u[i] + 0.5*(dum - Nsqscm * Sol->u[i]) * ooopNsqscm;
+        u[i]              = Sol->u[i] + implicit*(dum - Nsqscm * Sol->u[i]) * ooopNsqscm;     /* CHECK FACTOR of 1.0 HERE for all "implicit" options !! */
 		Ampls->entro[i]   = 0.5 * Slopes->entro[i] * ( 1 - lambda * u[i] ); /* entro-entry abused for u */
 		Ampls->v[i]       = 0.5 * Slopes->v[i]     * ( 1 - lambda * u[i] );
 		Ampls->w[i]       = 0.5 * Slopes->w[i]     * ( 1 - lambda * u[i] );
@@ -276,11 +276,12 @@ void recovery_gravity(
 
 #ifndef GRAVITY_IMPLICIT_2
 #ifdef GRAVITY_IMPLICIT_1
+    int impl_factor = (implicit == 1.0 ? 2.0 : 1.0);
     for( i = 1; i < nmax; i++ ) {
     
         double rhou       = 0.5 * (Rights->rhou[i] + Lefts->rhou[i-1]);
         
-        drhou_f[i]        = (drhou[i] - Nsqsc[i] * rhou) * ooopNsqsc[i];
+        drhou_f[i]        = (impl_factor*drhou[i] - Nsqsc[i] * rhou) * ooopNsqsc[i];
         
         Rights->u[i]     += drhou_f[i] / Rights->rho[i];
         Lefts->u[i-1]    += drhou_f[i] / Lefts->rho[i-1];

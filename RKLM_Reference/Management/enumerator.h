@@ -48,6 +48,12 @@ enum TimeIntegrator {
     RK3_SKAMA,
     RK3_TEST};
 
+enum GravityTimeIntegrator {
+    EULER_FORWARD,
+    EULER_BACKWARD,
+    IMPLICIT_TRAPEZOIDAL
+};
+
 enum TimeLevel {
     OLD,
     NEW};

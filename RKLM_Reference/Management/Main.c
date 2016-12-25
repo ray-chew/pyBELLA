@@ -78,10 +78,15 @@ int main( void )
     int which_projection = ud.which_projection_first;
     
     
+     
     /* 
-     const double stepfrac[] = {1.0, 1.0, 1.0, 1.0};
+     const double stepfrac[] = {1.0, 2.0, 0.0, 1.0}; 
      */
-    const double stepfrac[] = {1.0, 2.0, 0.0, 1.0}; 
+    const double stepfrac[] = {1.0, 1.0, 1.0, 1.0};
+    
+    const enum GravityTimeIntegrator GRAVITY_SWITCH_I  = (stepfrac[1] == 2.0 ? IMPLICIT_TRAPEZOIDAL : EULER_BACKWARD);
+    const enum GravityTimeIntegrator GRAVITY_SWITCH_II = (stepfrac[2] == 0.0 ? IMPLICIT_TRAPEZOIDAL : EULER_FORWARD);
+    
     int substep;
     
     /*
@@ -209,7 +214,7 @@ int main( void )
                 for(i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
                     lambda = stepfrac[substep]*ud.tips.dt_frac*dt/elem->dx;
                     Split = sequence * i_OpSplit + (1 - sequence) * ((elem->ndim - 1) - i_OpSplit);
-                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, 1);
+                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, GRAVITY_SWITCH_I);
                     substep++;
                     
 #if OUTPUT_SUBSTEPS_PREDICTOR
@@ -238,7 +243,7 @@ int main( void )
                 for(i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
                     lambda = stepfrac[substep]*ud.tips.dt_frac*dt/elem->dx;
                     Split = (1 - sequence) * i_OpSplit + sequence * ((elem->ndim - 1) - i_OpSplit);
-                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, 1);
+                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, GRAVITY_SWITCH_II);
                     substep++;
                     
 #if OUTPUT_SUBSTEPS_PREDICTOR
