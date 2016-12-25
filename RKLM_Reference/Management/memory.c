@@ -225,7 +225,7 @@ void update(
                         sol->rhoX[BUOY][n] += buoyS[n];
 #if 0
 #ifdef GRAVITY_IMPLICIT
-#ifndef GRAVITY_IMPLICIT_2
+#ifndef GRAVITY_IMPLICIT_2 
                         /* Buoyancy contribution due to update of theta-fluctuations */
                         dYS = (rhoYS_old + drhoYS) / sol->rhoY[n] - rhoYS_old / rhoY_old;
                         sol->rhov[n] -= 0.5 * dt * 0.5 * (sol->rhoY[n]+rhoY_old) * (grav/Msq) * dYS * impg;
