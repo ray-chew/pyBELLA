@@ -70,7 +70,7 @@ int main( void )
     TimeStepInfo dt_info;
 	double lambda, cfl, cfl_ac, cfl_adv;   
 	const double* tout = ud.tout;
-	const int sequence = 1;
+	const int sequence = 0;  /* 1; 0; */
 	int Split = 0;
 	int output_switch = 0;
 	int time_step_switch = 0;
@@ -208,6 +208,12 @@ int main( void )
             if (ud.time_integrator == OP_SPLIT || ud.time_integrator == OP_SPLIT_MD_UPDATE) {
                 
                 substep = 0;
+                
+                /* valid for 2D only */
+                assert(elem->ndim < 3);
+                if (sequence == 0) {
+                    (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
+                }
                                 
                 /* FORWARD gasdynamics */
                 stage = 0;
@@ -219,12 +225,12 @@ int main( void )
                     
 #if OUTPUT_SUBSTEPS_PREDICTOR
                     /* TODO: remove necessity of calling b.c. routine for all directions after each splitstep */
-                    if (i_OpSplit == 1)  {
+                    if (Split == 1)  {
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
                     }
                     Set_Explicit_Boundary_Data(Sol, elem, mpv);
                     putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", OUTPUT_SPLITSTEPS);
-                    if (i_OpSplit == 1)  {
+                    if (Split == 1)  {
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
                     }
 #endif
@@ -247,12 +253,12 @@ int main( void )
                     substep++;
                     
 #if OUTPUT_SUBSTEPS_PREDICTOR
-                    if (i_OpSplit == 0)  {
+                    if (Split == 1)  {
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
                     }
                     Set_Explicit_Boundary_Data(Sol, elem, mpv);
                     putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", OUTPUT_SPLITSTEPS);
-                    if (i_OpSplit == 0)  {
+                    if (Split == 1)  {
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
                     }
 #endif
@@ -260,6 +266,11 @@ int main( void )
                     if(i_OpSplit < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
                 }
                 
+                /* valid for 2D only */
+                assert(elem->ndim < 3);
+                if (sequence == 0) {
+                    (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
+                }
                 
                 if (ud.time_integrator == OP_SPLIT_MD_UPDATE) {
 #if OUTPUT_SUBSTEPS_PREDICTOR

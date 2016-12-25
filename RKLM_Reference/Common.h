@@ -62,6 +62,7 @@
  #define PRECON_VERTICAL_COLUMN_2ND_PROJ
 
  #define UN_AVERAGE_PROJ1
+ #define TIME_AVERAGED_COEFFS_PROJ1
 */
 
 #define PRECON
@@ -75,6 +76,7 @@
 /* First projection options */
 #define PROJECTION1 1
 #define CONTROL_PRECONDITIONED_RESIDUAL_PROJ1
+#define TIME_AVERAGED_COEFFS_PROJ1
 
 /*
  #define NO_UPWIND_PROJ1          IMPORTANT: Upwinding in the correction induces NOISE  
