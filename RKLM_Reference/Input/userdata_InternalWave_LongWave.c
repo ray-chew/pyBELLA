@@ -275,7 +275,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const double v0 = 0.0;
     const double w0 = 0.0;
     const double delth = 0.01 / ud.T_ref;  /* standard:  0.01 / ud.T_ref */
-    const double xc    = -1000.0e+03/ud.h_ref; /* -1000.0e+03/ud.h_ref;  -50.0e+03/ud.h_ref; 0.0; */
+    const double xc    = +0.0*1000.0e+03/ud.h_ref; /* -1000.0e+03/ud.h_ref;  -50.0e+03/ud.h_ref; 0.0; */
     const double a     = 1.0e+05/ud.h_ref;
         
     const int icx = elem->icx;

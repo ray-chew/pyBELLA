@@ -92,7 +92,7 @@ void update(
 					ox = j * ifx + i;
 					oy = i * ify + j;
 					
-#if 0
+#if 1
 #ifdef GRAVITY_IMPLICIT_1
                     /* Buoyancy contribution due to update of theta-fluctuations - preparation */
                     /* 
@@ -126,7 +126,7 @@ void update(
                     
                     sol->rhoX[nsp][n] += buoyS[n];
                     
-#if 0
+#if 1
 #ifdef GRAVITY_IMPLICIT_1
                     /* THIS POST_CORRECTION INDUCES SHORT-SCALE INSTABILITY IN THE K-S-LONGWAVE-TEST WITHOUT ADVECTION!  */
                     /* Buoyancy contribution due to update of theta-fluctuations 

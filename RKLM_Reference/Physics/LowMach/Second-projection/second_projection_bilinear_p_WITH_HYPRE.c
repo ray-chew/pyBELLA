@@ -676,8 +676,11 @@ static void operator_coefficients_nodes(
                 for(i = igx; i < icx - igx; i++) {
                     n = m + i;     
                     
-                    /* double Y     = 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]); */
-                    double Y     = Sol->rhoY[n]/Sol->rho[n];
+                    /* 
+                     double Y     = 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]); 
+                     double Y     = Sol->rhoY[n]/Sol->rho[n];
+                     */
+                    double Y     = 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]); 
                     
                     /*  TODO: Check what effect the following choice is having 
                         -- this is the version before implementation of implicit gravity in Oct. 2016: 
@@ -950,6 +953,9 @@ void correction_nodes(
 #endif
 					Sol->rhou[ne] += - dtowdx * thinv * hplusx[ne] * Dpx;
 					Sol->rhov[ne] += - dtowdy * thinv * hplusy[ne] * Dpy;
+                    
+                    /* Does this already include the buoyancy-gravity part of the correction? */
+                    
 #ifdef GRAVITY_IMPLICIT
                     vnew  = Sol->rhov[ne] / Sol->rho[ne];
                     Sol->rhoX[BUOY][ne] += - Sol->rho[ne] * 0.5*dt * (vnew-vold) * dSdy;

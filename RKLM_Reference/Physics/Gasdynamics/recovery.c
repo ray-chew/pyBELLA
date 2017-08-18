@@ -265,6 +265,7 @@ void recovery_gravity(
 		Rights->Y[i]   = Yright;
 	}
 	    
+    /* TODO: Shouldn't the second order update depend on implicitness option? */
     for( i = 0; i < nmax-1;  i++) {        
         Lefts->rhoY[i] = Rights->rhoY[i+1] = 0.5*(Sol->rhoY[i] + Sol->rhoY[i+1]) \
         - OrderTwo * 0.5*lambda*(Sol->u[i+1]*Sol->rhoY[i+1]-Sol->u[i]*Sol->rhoY[i]);

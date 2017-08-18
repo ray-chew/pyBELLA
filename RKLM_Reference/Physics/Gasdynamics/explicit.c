@@ -90,6 +90,7 @@ void Explicit_step_and_flux(
 	const int ncache = ud.ncache;
 	const int njump  = ncache - 2*elem->igx;
     
+    /* const double implicit = (GTI == EULER_FORWARD ? 0.0 : (GTI == EULER_BACKWARD ? 0.125 : 0.5));  */
     const double implicit = (GTI == EULER_FORWARD ? 0.0 : (GTI == EULER_BACKWARD ? 1.0 : 0.5));
     const double implicit_reg = (implicit == 0.0 ? 1.0 : implicit);
 	
