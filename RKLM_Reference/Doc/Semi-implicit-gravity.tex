@@ -1,0 +1,1400 @@
+\documentclass[11pt,a4]{article}
+
+\parindent=0pt
+\parskip=3pt
+
+\setlength{\paperheight}{29.5cm}
+\setlength{\paperwidth}{21.2cm}
+
+%\setlength{\voffset}{-2.0cm}
+\setlength{\headheight}{0cm}
+\setlength{\headsep}{0cm}
+\setlength{\textheight}{23.7cm}
+\setlength{\textwidth}{16cm}
+\setlength{\oddsidemargin}{0cm}
+\setlength{\evensidemargin}{0cm}
+\setlength{\topmargin}{0cm}
+\setlength{\topskip}{0cm}
+
+\catcode`\"=\active \let"=\"
+\let\3=\ss
+
+\usepackage[latin9]{inputenc}
+
+\usepackage[sort]{natbib}
+\bibpunct{(}{)}{,}{a}{}{,}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+%\usepackage[squaren]{SIunits}
+\usepackage{graphicx}
+
+%----------------------------------------------------------------------------
+%---- Farben und Macros zur Textmarkierung ----------------------------------
+%----------------------------------------------------------------------------
+\usepackage{color}
+\definecolor{light}{gray}{0.50}
+\definecolor{heavy}{gray}{0.35}
+\definecolor{black}{gray}{0.0}
+\definecolor{dgreen}{rgb}{0.0,0.7,0}
+\definecolor{dred}{rgb}{0.9959,0,0}
+\definecolor{green}{rgb}{0.0,0.99599,0.0}
+\definecolor{purple}{rgb}{0.6,0.0,0.4}
+
+\newcommand{\red}[1]{\textcolor{dred}{#1}}
+\newcommand{\green}[1]{\textcolor{green}{#1}}
+\newcommand{\dgreen}[1]{\textcolor{dgreen}{#1}}
+\newcommand{\purple}[1]{\textcolor{purple}{#1}}
+\newcommand{\blue}[1]{\textcolor{blue}{#1}}
+\newcommand{\black}[1]{\textcolor{black}{#1}}
+\newcommand{\grey}[1]{\textcolor{heavy}{#1}}
+\newcommand{\lightgrey}[1]{\textcolor{light}{#1}}
+
+%----------------------------------------------------------------------------
+%---- Kommentare ------------------------------------------------------------
+%----------------------------------------------------------------------------
+
+\newcommand{\klein}[1]{\textcolor{blue}{#1}}
+\newcounter{kleincommentno}
+\setcounter{kleincommentno}{1}
+\newcommand{\kleincomment}[1]{{\small\bfseries\textcolor{blue}{ {\small\bfseries${}^{[\arabic{kleincommentno}]}$}}%
+\marginpar{\textcolor{blue}{{\small{\bfseries[\arabic{kleincommentno}]}\ \small #1}}\addtocounter{kleincommentno}{1}}}}
+
+\newcommand{\benacchio}[1]{\textcolor{red}{#1}}
+\newcounter{benacchiocommentno}
+\setcounter{benacchiocommentno}{1}
+\newcommand{\benacchiocomment}[1]{{\small\bfseries\textcolor{red}{ {\small\bfseries${}^{[\arabic{benacchiocommentno}]}$}}%
+\marginpar{\textcolor{red}{{\small{\bfseries[\arabic{benacchiocommentno}]}\ \small #1}}\addtocounter{benacchiocommentno}{1}}}}
+
+%----------------------------------------------------------------------------
+%---- Eigene Macros ---------------------------------------------------------
+%----------------------------------------------------------------------------
+\newcommand{\hsc}{h_{\rm sc}}
+\newcommand{\order}[1]{^{(#1)}}
+\let\dss=\displaystyle
+
+\renewcommand{\vector}[1]{\relax\ifmmode\mathchoice
+{\mbox{\boldmath$\displaystyle#1$}}
+{\mbox{\boldmath$\displaystyle#1$}}
+{\mbox{\boldmath$\scriptstyle#1$}}
+{\mbox{\boldmath$\scriptscriptstyle#1$}}\else
+\hbox{\boldmath$\textstyle#1$}\fi}
+
+\newcommand{\eq}[1]{(\ref{#1})}
+
+\newcommand{\cbar}{\overline{c}}
+\newcommand{\thetabar}{\overline{\theta}}
+\newcommand{\thetatilde}{\widetilde{\theta}}
+
+\newcommand{\vk}{\vector{k}}
+\newcommand{\vu}{\vector{u}}
+\newcommand{\vv}{\vector{v}}
+\newcommand{\vx}{\vector{x}}
+
+\newcommand{\ubar}{\overline{u}}
+\newcommand{\vbar}{\overline{v}}
+
+\newcommand{\advection}[1]{\mathcal{A}\left[#1\right]}
+\newcommand{\advectionNum}[1]{\widetilde{\mathcal{A}}\left[#1\right]}
+\newcommand{\rhs}[1]{\mathcal{R}\left[#1\right]}
+\newcommand{\source}[1]{S\left(#1\right)}
+\newcommand{\Id}{{\rm Id}}
+
+\newcommand{\pprime}{p'}
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\quart}{\frac{1}{4}}
+\newcommand{\eightth}{\frac{1}{8}}
+
+\newcommand{\ie}{\emph{i.e.}}
+
+\newcommand{\Nsq}{N^2}
+\newcommand{\Nscsq}{(\tau N)^2}
+
+\newcommand{\dt}{\Delta t}
+\newcommand{\dz}{\Delta z}
+\newcommand{\chibar}{\overline{\chi}}
+\newcommand{\chitilde}{{\widetilde \chi}}
+
+\newcommand{\pp}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\ppn}[3]{\frac{\partial^{#1} #2}{\partial #3^{#1}}}
+
+\newcommand{\bigoh}[1]{\mathcal{O}\left(#1\right)}
+\newcommand{\littleoh}[1]{{\scriptstyle\mathcal{O}}\left(#1\right)}
+
+\newcommand{\reals}{\mathbb{R}}
+
+\newcommand{\eps}{\varepsilon}
+
+\newcommand{\Lopfirst}{{\cal L}^{\rm 1st}}
+
+\newcommand{\pibar}{\overline{\pi}}
+
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+
+\title{Semi-implicit gravity}
+\author{T.~Benacchio, MetOffice, Exeter, UK\\ 
+        R.~Klein, Mathematics \& Informatics, Freie Universit\"at Berlin}
+
+\begin{document}
+
+\maketitle
+
+Hi Tommaso, \\
+
+in dreaming up the semi-implicit gravity version in the appendix of your
+thesis, I think we missed one crucial point. Reconsidering, I came to the
+conclusion that it is the ``explicit part of the implicit step'' in the
+trapezoidal rule that controls vertical velocities, and thus stability, 
+for large time steps. I'll try to highlight this in the following short 
+note. \\
+
+Best, \\
+
+Rupert
+
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+
+\section{The second step of the implicit trapezoidal rule}
+\label{sec:trapezoidal}
+
+Focusing just on the crucial linear terms in the governing equations that
+are responsible for internal waves, we have -- for advection of the background 
+potential temperature and for the vertical momentum, 
+%
+\begin{eqnarray}
+w_t 
+  & = 
+    & - \frac{\theta}{\Gamma}\left(\pi_z + \Gamma g \chi\right)
+      \\
+\chi_t
+  & =
+    & - w \frac{d\overline{\chi}}{dz}
+\end{eqnarray}
+%
+here $\pi$ is Exner pressure, $\Gamma = (\gamma - 1) / \gamma$ with $\gamma$
+the isentropic exponent, $\chi = 1/\theta$, and the prefactor $\theta$ in the 
+first equation is frozen in for the linearization. Suppose that an explicit 
+Euler forward step for these equations over $\Delta t / 2$ as well as 
+advection of all quantities have been taken care of in operator splitting-like 
+steps, so that all that is left to do is an implicit, backward Euler step over 
+$\tau = \Delta t / 2$. 
+
+Suppose that $(\chi^*, w^*, \pi^*)$ denote the state of the relevant solution 
+variables at the start of the implicit substep and 
+$(\delta\chi, \delta w, \delta\pi)$ the respective updates over the implicit
+step. Then,
+%
+\begin{eqnarray}
+\label{eq:deltaw1}
+w^{n+1} - w^* \equiv \delta w 
+  & = 
+    & - \tau \, \frac{\theta}{\Gamma}\left([\pi^*+\delta\pi]_z + \Gamma g [\chi^* + \delta\chi]\right)
+      \\
+\label{eq:deltachi1}
+\chi^{n+1} - \chi^* \equiv \delta\chi
+  & =
+    & - \tau\, (w^* + \delta w) \frac{d\overline{\chi}}{dz}\,.
+\end{eqnarray}
+%
+
+Now we reorder explicit and implicit contributions, replace $\delta\chi$ in 
+\eq{eq:deltaw1} using \eq{eq:deltachi1} and solve for $\delta w$, 
+%
+\begin{eqnarray}
+w^{n+1} - w^* = \delta w 
+  & = 
+    & - \tau \, \frac{\theta}{\Gamma}\left(\pi^*_z + \Gamma g \chi^*\right)
+      - \tau \, \frac{\theta}{\Gamma}\left(\delta\pi_z + \Gamma g \delta\chi\right)
+      \\
+  & =
+    & - \tau \, \frac{\theta}{\Gamma}\left(\pi^*_z + \Gamma g \chi^*\right)
+      - \tau \, \frac{\theta}{\Gamma}\left(\delta\pi_z 
+      - \tau \, \Gamma g (w^* + \delta w) \frac{d\overline{\chi}}{dz}\right)
+      \\
+\delta w \left(1 - \tau^2 g \theta \frac{d\overline{\chi}}{dz}\right)
+  & =
+    & - \tau \, \frac{\theta}{\Gamma}\left(\pi^*_z + \Gamma g \chi^*\right)
+      + w^* \tau^2 g \theta \frac{d\overline{\chi}}{dz}
+      - \tau \, \frac{\theta}{\Gamma} \delta\pi_z \,.
+\end{eqnarray}
+%
+Letting
+%
+\begin{equation}
+\Nsq = - g \theta \frac{d\overline{\chi}}{dz}
+\end{equation}
+%
+denote the square of the buoyancy-frequency, we have
+%
+\begin{equation}
+\label{eq:deltaw2}
+\delta w = \frac{1}{1 + \Nscsq} 
+\left(- \tau \frac{\theta}{\Gamma}\left(\pi^*_z + \Gamma g \chi^*\right)
+      - w^* \Nscsq\right)
+      - \tau \frac{\theta/\Gamma}{1 + \Nscsq} \delta\pi_z
+\end{equation}
+%
+and the update formular for $\chi$ subsequently follows from \eq{eq:deltachi1}.
+
+Consider now the first term on the right in \eq{eq:deltaw2}, which contains all
+explicit contributions to the velocity update, and its scaling for large time
+steps $\tau \to \infty$. The first term in the bracket scales linearly with
+$\tau$, so that it vanishes in the limit. The second term in the bracket involves
+$(\tau N)^2$, however, and therefore the limit reads
+%
+\begin{equation}
+\delta w\big|_{\tau \to \infty} = -w^*\, .
+\end{equation}
+%
+That is, the first thing the explicit part of the implicit step does is to 
+set the vertical velocity to zero in that limit! This is clearly a stabilizing
+effect that can capture any large excursion in $w^*$ that may have incurred 
+during the explicit half-time step of the trapezoidal rule. 
+
+Tommaso, I think we left this bit out in our earlier attempts. I have implemented
+a variant of this in my scheme and see the stabilization of vertical velocity 
+very nicely for $N \Delta t$ as large as five. The large scale horizontal
+domain with a hydrostatic gravity wave still does not quite work yet, but I have
+two more things to try: (i) locally hydrostatic initialization of pressure - which
+in my current setup I do not have, and (ii) a preconditioner that addresses the vertical
+part of the Poisson problem, instead of preconditioning only through division by
+the diagonal element of the Poisson-matrix. Will keep you posted. 
+
+Best, 
+
+Rupert
+
+\newpage
+
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+
+\section{Implicit trapezoidal rule -- variant 2}
+\label{sec:trapezoidal2}
+
+% ===========================================================================
+% ===========================================================================
+
+\subsection{Linear oscillator}
+
+To understand the mechanism of stabilization for arbitrary time steps in the
+implicit trapezoidal rule, we consider 
+%
+\begin{equation}
+\ddot y + y = 0
+\qquad\text{or rather}\qquad
+\begin{array}{rcr}
+\dot y 
+  & = 
+    & v
+      \\
+\dot v 
+  & =
+    & - y
+\end{array}\,.
+\end{equation}
+%
+The implicit trapezoidal rule for the system version of this problem over
+one time step reads
+%
+\begin{equation}\label{eq:ImplicitTrapezoidalOscillator}
+\begin{array}{rcr}
+\dss y^{n+1} - y^n 
+  & = 
+    & \dss \frac{\dt}{2} \left(v^{n+1} +  v^n\right)
+      \\[10pt]
+\dss v^{n+1} - v^n 
+  & =
+    & \dss - \frac{\dt}{2} \left(y^{n+1} +  y^n\right)
+\end{array}\,.
+\end{equation}
+%
+We solve for $v^{n+1}$ first:
+%
+\begin{equation}\label{eq:ImplicitTrapezoidalStepOscillator}
+\begin{array}{rcl}
+\dss v^{n+1} 
+  & = 
+    & \dss v^n - \frac{\dt}{2} \left(y^n + \frac{\dt}{2}\left(v^{n+1} + v^n\right) + y^n\right) 
+      \\[10pt]
+\dss v^{n+1} \left(1 + \frac{(\dt)^2}{4}\right)
+  & =
+    & \dss v^n \left(1 - \frac{(\dt)^2}{4}\right) - \dt\, y^n
+      \\
+\dss v^{n+1} 
+  & =
+    & \dss \frac{1 - \frac{(\dt)^2}{4}}{1 + \frac{(\dt)^2}{4}} \  v^n 
+          - \frac{\dt}{1 + \frac{(\dt)^2}{4}}\, y^n
+\end{array}
+\end{equation}
+or
+%
+\begin{equation}
+v^{n+1} - v^n  \equiv \delta v
+= - \ 2 v^n  \ \frac{\frac{(\dt)^2}{4}}{1 + \frac{(\dt)^2}{4}} 
+          - \frac{\dt}{1 + \frac{(\dt)^2}{4}}\, y^n
+\end{equation}
+%
+%
+Similarly, 
+%
+\begin{equation}
+\begin{array}{rcl}
+\dss y^{n+1} 
+  & = 
+    & \dss y^n + \frac{\dt}{2} \left(v^n - \frac{\dt}{2}\left(y^{n+1} + y^n\right) + v^n\right) 
+      \\[10pt]
+\dss y^{n+1} \left(1 + \frac{(\dt)^2}{4}\right)
+  & =
+    & \dss y^n \left(1 - \frac{(\dt)^2}{4}\right) + \dt\, v^n
+      \\
+\dss y^{n+1} 
+  & =
+    & \dss \frac{1 - \frac{(\dt)^2}{4}}{1 + \frac{(\dt)^2}{4}} \  y^n 
+          + \frac{\dt}{1 + \frac{(\dt)^2}{4}}\, v^n
+\end{array}
+\end{equation}
+%
+
+
+Clearly, 
+%
+\begin{equation}
+\lim\limits_{\dt\to\infty} (y^{n+1}, n^{n+1}) = - (y^n, v^n)\, ,
+\end{equation}
+%
+and this characterizes the energy-preserving, oscillatory nature, and
+unconditional neutrality of the scheme in the large-time step limit. 
+
+Can we understand the implicit trapezoidal rule as a two-step scheme 
+involving a forward Euler predictor and a backward Euler corrector? 
+Let's see.
+
+Forward Euler predictor:
+%
+\begin{equation}
+\begin{array}{rcr}
+\dss y^* - y^n 
+  & = 
+    & \dss \frac{\dt}{2} \, v^n
+      \\[10pt]
+\dss v^* - v^n 
+  & =
+    & \dss - \frac{\dt}{2} \, y^n
+\end{array}\,.
+\end{equation}
+%
+
+Backward Euler corrector:
+%
+\begin{equation}
+\begin{array}{rcr}
+\dss y^{n+1} - y^*
+  & = 
+    & \dss \frac{\dt}{2} \, v^{n+1}
+      \\[10pt]
+\dss v^{n+1} - v^* 
+  & =
+    & \dss - \frac{\dt}{2} \, y^{n+1}
+\end{array}\,.
+\end{equation}
+%
+Obviously, adding the two equation sets we get back the implicit 
+trapezoidal rule from \eq{eq:ImplicitTrapezoidalOscillator}. Solving for
+the new time data, however, given the predicted ones, we obtain
+%
+\begin{equation}
+\begin{array}{rcl}
+\dss v^{n+1} 
+  & = 
+    & \dss v^* - \frac{\dt}{2} \left(y^* + \frac{\dt}{2}\, v^{n+1}\right) 
+      \\[10pt]
+\dss v^{n+1} \left(1 + \frac{(\dt)^2}{4}\right)
+  & =
+    & \dss v^* - \frac{\dt}{2}\, y^*
+      \\
+\dss v^{n+1} 
+  & =
+    & \dss \frac{1}{1 + \frac{(\dt)^2}{4}} \  v^* 
+          - \frac{1}{2}\frac{\dt}{1 + \frac{(\dt)^2}{4}}\, y^*
+\end{array}
+\end{equation}
+%
+For the increment within the half timestep we have
+%
+\begin{equation}
+v^{n+1} - v^* \equiv \delta v 
+= - \ v^* \ \frac{\frac{(\dt)^2}{4}}{1 + \frac{(\dt)^2}{4}}  
+          - \frac{1}{2}\frac{\dt}{1 + \frac{(\dt)^2}{4}}\, y^*
+\end{equation}
+%
+
+
+
+To get back to the original formula from 
+\eq{eq:ImplicitTrapezoidalStepOscillator} we re-insert the predictor 
+step to obtain
+%
+\begin{equation}
+\begin{array}{rcl}
+\dss v^{n+1} 
+  & =
+    & \dss \frac{1}{1 + \frac{(\dt)^2}{4}} \  v^* 
+          - \frac{1}{2}\frac{\dt}{1 + \frac{(\dt)^2}{4}}\, y^*
+      \\[15pt]
+  & =
+    & \dss \frac{1}{1 + \frac{(\dt)^2}{4}} \left(v^n - \frac{\dt}{2} y^n\right) 
+          - \frac{1}{2}\frac{\dt}{1 + \frac{(\dt)^2}{4}} \left(y^n + \frac{\dt}{2} v^n\right)
+      \\[15pt]
+  & =
+    & \dss \frac{1 - \frac{(\dt)^2}{4}}{1 + \frac{(\dt)^2}{4}} \,  v^n
+          - \frac{\dt}{1 + \frac{(\dt)^2}{4}}\, y^n
+      \\
+\end{array}
+\end{equation}
+%
+And analogously for $y^{n+1}$, i.e., 
+%
+\begin{equation}
+y^{n+1} = \frac{1 - \frac{(\dt)^2}{4}}{1 + \frac{(\dt)^2}{4}} \,  y^n
+          + \frac{\dt}{1 + \frac{(\dt)^2}{4}}\, v^n
+\end{equation}
+%
+
+We distinguish the cases of $(y^n, v^n) = \bigoh{1}$ and $y^n = 0$ or
+$v^n = 0$ and consider the limit $\dt\to\infty$: 
+%
+\begin{enumerate}
+
+\item Obviously, when $(y^n, v^n) = \bigoh{1}$, we have
+%
+\begin{equation}
+\left.y^{n+1}\right|_{\dt\to\infty} = - y^n\,.
+\qquad\text{and}\qquad
+\left.v^{n+1}\right|_{\dt\to\infty} = - v^n
+\end{equation}
+%
+
+\item However, if the respective initial datum is zero, the limiting behavior
+changes as follows. Suppose $y^n = 0$, but $v^n \not= 0$. Then, 
+%
+\begin{equation}
+y^{n+1} = \frac{\dt}{1 + \frac{(\dt)^2}{4}}\, v^n
+\qquad\text{and}\qquad
+v^{n+1} = \frac{1 - \frac{(\dt)^2}{4}}{1 + \frac{(\dt)^2}{4}} \,  v^n \to - v^n\,.
+\end{equation}
+%
+
+\end{enumerate}
+%
+
+
+Now, can we also understand the implicit trapezoidal rule as a two-step scheme 
+involving a first the backward and second the forward Euler step? 
+Let's see.
+
+Backward Euler step:
+%
+\begin{equation}
+\begin{array}{rcr}
+\dss y^{*} - y^n
+  & = 
+    & \dss \frac{\dt}{2} \, v^{*}
+      \\[10pt]
+\dss v^{*} - v^n 
+  & =
+    & \dss - \frac{\dt}{2} \, y^{*}
+\end{array}\,.
+\end{equation}
+%
+
+Forward Euler step:
+%
+\begin{equation}\label{eq:FowardEulerII}
+\begin{array}{rcr}
+\dss y^{n+1} - y^* 
+  & = 
+    & \dss \frac{\dt}{2} \, v^*
+      \\[10pt]
+\dss v^{n+1} - v^* 
+  & =
+    & \dss - \frac{\dt}{2} \, y^*
+\end{array}\,.
+\end{equation}
+%
+Solving for
+the intermediate time data first we obtain
+%
+\begin{equation}
+\begin{array}{rcl}
+\dss v^{*} 
+  & = 
+    & \dss v^n - \frac{\dt}{2} y^* 
+      \\
+\dss y^{*}
+  & = 
+    & \dss y^n + \frac{\dt}{2} v^* = y^n + \frac{\dt}{2} \left(v^n - \frac{\dt}{2} y^*\right)
+      \\[10pt]
+\dss y^{*} \left(1 + \frac{(\dt)^2}{4}\right)
+  & =
+    & \dss y^n + \frac{\dt}{2}\, v^n
+      \\
+\dss y^{*} 
+  & =
+    & \dss \frac{1}{1 + \frac{(\dt)^2}{4}} \  
+          \left(y^n + \frac{\dt}{2}\, v^n\right)
+\end{array}
+\end{equation}
+%
+and then, 
+%
+\begin{equation}
+\begin{array}{rcl}
+\dss v^{*} 
+  & = 
+    & \dss v^n - \frac{\dt}{2} y^* 
+      \\
+  & = 
+    & \dss v^n - \frac{\frac{\dt}{2}}{1 + \frac{(\dt)^2}{4}} 
+          \left(y^n + \frac{\dt}{2} v^n\right)
+      \\[10pt]
+  & =
+    & \dss \frac{1}{1 + \frac{(\dt)^2}{4}} \left(v^n - \frac{\dt}{2} y^n\right)
+\end{array}
+\end{equation}
+%
+Next we insert into the forward Euler step in \eq{eq:FowardEulerII} to obtain,
+%
+\begin{equation}
+\begin{array}{rcl}
+\dss v^{n+1} 
+  & = 
+    & \dss v^* - \frac{\dt}{2} y^* 
+      \\
+  & = 
+    & \dss \frac{1}{1 + \frac{(\dt)^2}{4}} 
+          \left(v^n - \frac{\dt}{2} y^n  - \frac{\dt}{2}\left(y^n + \frac{\dt}{2}v^n\right)
+          \right)
+      \\[10pt]
+  & =
+    & \dss \frac{1 - \frac{(\dt)^2}{4}}{1 + \frac{(\dt)^2}{4}} v^n 
+          - \frac{\dt}{1 + \frac{(\dt)^2}{4}} y^n
+\end{array}
+\end{equation}
+%
+and that is the same as found in \eq{eq:ImplicitTrapezoidalStepOscillator}.
+
+% ===========================================================================
+
+\subsubsection{Summary}
+
+Euler forward over $\Delta t$:
+%
+\begin{equation}\label{eq:FowardEulerIII}
+\begin{array}{rcr}
+\dss y^{\rm new}  
+  & = 
+    & \dss y^{\rm old} + \dt \, v^{\rm old}
+      \\[10pt]
+\dss v^{\rm new}  
+  & =
+    & \dss v^{\rm old} - \dt \, y^{\rm old}
+\end{array}\,.
+\end{equation}
+%
+
+Euler backward over $\Delta t$:
+%
+\begin{equation}
+\begin{array}{rcl}
+\dss y^{\rm new} 
+  & =
+    & \dss \frac{1}{1 + (\dt)^2} \  
+          \left(y^{\rm old} + \dt\, v^{\rm old}\right)
+       \ = \ y^{\rm old} - \frac{(\dt)^2}{1 + (\dt)^2} y^{\rm old} + \frac{\dt}{1 + (\dt)^2} v^{\rm old}
+      \\[15pt]
+\dss v^{\rm new} 
+  & =
+    & \dss \frac{1}{1 + (\dt)^2} \  
+          \left(v^{\rm old} - \dt\, y^{\rm old}\right)
+       \ = \ v^{\rm old} - \frac{(\dt)^2}{1 + (\dt)^2} v^{\rm old} - \frac{\dt}{1 + (\dt)^2} y^{\rm old}
+\end{array}
+\end{equation}
+%
+
+Implicit trapezoidal rule over $\dt$:
+%
+\begin{equation}
+\begin{array}{rcl}
+\dss y^{\rm new} 
+  & =
+    & \dss \frac{1 - \frac{(\dt)^2}{4}}{1 + \frac{(\dt)^2}{4}} y^{\rm old} 
+          + \frac{\dt}{1 + \frac{(\dt)^2}{4}} v^{\rm old}
+       \ = \ y^{\rm old} - \frac{2 \frac{(\dt)^2}{4}}{1 + \frac{(\dt)^2}{4}} y^{\rm old} 
+         + \frac{\dt}{1 + \frac{(\dt)^2}{4}} v^{\rm old}
+      \\[15pt]
+\dss v^{\rm new} 
+  & =
+    & \dss \frac{1 - \frac{(\dt)^2}{4}}{1 + \frac{(\dt)^2}{4}} v^{\rm old} 
+          - \frac{\dt}{1 + \frac{(\dt)^2}{4}} y^{\rm old}
+       \ = \ v^{\rm old} - \frac{2 \frac{(\dt)^2}{4}}{1 + \frac{(\dt)^2}{4}} v^{\rm old} 
+         - \frac{\dt}{1 + \frac{(\dt)^2}{4}} y^{\rm old}
+\end{array}
+\end{equation}
+%
+
+% ===========================================================================
+% ===========================================================================
+
+\subsection{Implicit gravity}
+
+% ===========================================================================
+
+\subsubsection{Explicit part of the implicit trapezoidal rule}
+
+Focusing just on the crucial linear terms in the governing equations that
+are responsible for internal waves, we have -- for advection of the background 
+potential temperature and for the vertical momentum, 
+%
+\begin{eqnarray}
+w_t 
+  & = 
+    & - \frac{\theta}{\Gamma}\left(\pi_z + \Gamma g \chi\right)
+      \\
+\chi_t
+  & =
+    & - w \frac{d\overline{\chi}}{dz}
+\end{eqnarray}
+%
+here $\pi$ is Exner pressure, $\Gamma = (\gamma - 1) / \gamma$ with $\gamma$
+the isentropic exponent, $\chi = 1/\theta$, and the prefactor $\theta$ in the 
+first equation is frozen in for the linearization. Suppose we wish to integrate
+these equations using the implicit trapezoidal rule over a time step $\dt$. 
+Then,
+%
+\begin{eqnarray}
+\label{eq:deltaw1a}
+w^{n+1} - w^n \equiv \delta w 
+  & = 
+    & - \dt \, \frac{\theta}{\Gamma}
+     \left(\left[\pi^n+\frac{\delta\pi}{2}\right]_z + \Gamma g 
+           \left[\chi^n + \frac{\delta\chi}{2}\right]\right)
+      \\
+\label{eq:deltachi1a}
+\chi^{n+1} - \chi^n \equiv \delta\chi
+  & =
+    & - \dt\, \left(w^n + \frac{\delta w}{2}\right) \frac{d\overline{\chi}}{dz}\,.
+\end{eqnarray}
+%
+
+Now we reorder explicit and implicit contributions, replace $\delta\chi$ in 
+\eq{eq:deltaw1a} using \eq{eq:deltachi1a} and solve for $\delta w$, 
+%
+\begin{eqnarray}
+w^{n+1} - w^n = \delta w 
+  & = 
+    & - \dt \, \frac{\theta}{\Gamma}\left(\pi^n_z + \Gamma g \chi^n\right)
+      - \frac{\dt}{2} \, \frac{\theta}{\Gamma}\left(\delta\pi_z + \Gamma g \delta\chi\right)
+      \\
+  & =
+    & - \dt \, \frac{\theta}{\Gamma}\left(\pi^n_z + \Gamma g \chi^n\right)
+      - \frac{\dt}{2} \, \frac{\theta}{\Gamma}\left(\delta\pi_z 
+      - \dt \, \Gamma g \left(w^n + \frac{\delta w}{2}\right) \frac{d\overline{\chi}}{dz}\right)
+      \\
+\delta w \left(1 - \frac{(\dt)^2}{4} g \theta \frac{d\overline{\chi}}{dz}\right)
+  & =
+    & - \dt \, \frac{\theta}{\Gamma}\left(\pi^n_z + \Gamma g \chi^n\right)
+      + w^n \frac{(\dt)^2}{2} g \theta \frac{d\overline{\chi}}{dz}
+      - \frac{\dt}{2} \, \frac{\theta}{\Gamma} \delta\pi_z \,.
+\end{eqnarray}
+%
+Letting
+%
+\begin{equation}
+\Nsq = - g \theta \frac{d\overline{\chi}}{dz}
+\end{equation}
+%
+denote the square of the buoyancy-frequency, we have
+%
+\begin{equation}
+\label{eq:deltaw2b}
+\delta w = \frac{1}{1 + \left(\frac{N\dt}{2}\right)^2} 
+\left(- \dt \frac{\theta}{\Gamma}\left(\pi^n_z + \Gamma g \chi^n\right)
+      - 2\, w^n \left(\frac{N\dt}{2}\right)^2\right)
+      - \frac{\dt}{2} \frac{\theta/\Gamma}{1 + \left(\frac{N\dt}{2}\right)^2} \delta\pi_z
+\end{equation}
+%
+and the update formula for $\chi$ subsequently follows from \eq{eq:deltachi1a}. We summarize
+these results in the following formulae for the new time level data, 
+%
+\begin{eqnarray}
+\label{eq:deltaw3}
+w^{n+1} 
+  & = 
+    & \frac{1 - \left(\frac{N\dt}{2}\right)^2}{1 + \left(\frac{N\dt}{2}\right)^2}\, w^n
+-\frac{\dt}{1 + \left(\frac{N\dt}{2}\right)^2} 
+\left( \frac{\theta}{\Gamma}\left(\pi^n_z + \Gamma g \chi^n\right)\right)
+      - \frac{\dt}{2} \frac{\theta/\Gamma}{1 + \left(\frac{N\dt}{2}\right)^2} \delta\pi_z
+\\
+\label{eq:deltaChi3}
+\chi^{n+1} 
+  & =
+    & \frac{1 - \left(\frac{N\dt}{2}\right)^2}{1 + \left(\frac{N\dt}{2}\right)^2}\, \chi^n
+-\frac{\dt}{1 + \left(\frac{N\dt}{2}\right)^2} \frac{d\overline{\chi}}{dz} \, w^n\,.
+\end{eqnarray}
+%
+It is also interesting to note the change in time of the momentum source term 
+for frozen $\pi^n$ in the following fashion, 
+%
+\begin{equation}
+\left(\chi + \frac{\pi_z}{\Gamma g}\right)^{n+1}
+=
+\frac{1 - \left(\frac{N\dt}{2}\right)^2}{1 + \left(\frac{N\dt}{2}\right)^2}\, 
+\left(\chi + \frac{\pi_z}{\Gamma g}\right)^n
+-\frac{\dt}{1 + \left(\frac{N\dt}{2}\right)^2} \frac{d\overline{\chi}}{dz} \, w^n\,.
+\end{equation}
+%
+
+
+Consider now the first term on the right in \eq{eq:deltaw3}, which contains all
+explicit contributions to the velocity update, and its scaling for large time
+steps $\dt \to \infty$. The first term in the bracket scales linearly with
+$\dt$, so that it vanishes in the limit. The second term in the bracket involves
+$(\dt N)^2$, however, and therefore the limit reads
+%
+\begin{equation}
+\delta^{\rm expl} w\big|_{\dt \to \infty} = - 2 w^n
+\qquad\text{or}\qquad
+w^{n+1} = - w^n\, .
+\end{equation}
+%
+That is, the first thing the explicit part of the implicit step does is to 
+impose a timestep--to--timestep oscillation as expected. This is the energy-preserving
+property of the implicit trapezoidal rule in the linear case.
+
+% ===========================================================================
+
+\subsubsection{Application to advective flux calculations}
+\label{sssec:AdvectiveFluxes}
+
+Here we have to consider the joint evolution of $P$ and $P\chi = \rho$ in the
+vertical split half time step, i.e.,
+%
+\begin{eqnarray}
+\label{eq:LinearizedConservativeChiEqn}
+(P\chi)_t
+  & = 
+    & - (P\chibar w)_z
+      \\
+(P)_t
+  & = 
+    & - (P w)_z
+\end{eqnarray}
+%
+and utilize the implicit trapezoidal rule as worked out in \eq{eq:deltaw3} 
+to determine the advecting fluxes $(Pw)$. Thus, 
+%
+\begin{eqnarray}
+\label{eq:ConservativeChiUpdate1}
+(P\chi)_j^{n+\half} - (P\chi)_j^n
+  & = 
+    & - \frac{\dt}{2\dz} \left( (P\chibar w)_{j+\half}^{n+\quart} - (P\chibar w)_{j-\half}^{n+\quart} \right)
+      \\
+P_j^{n+\half} - P_j^n
+  & = 
+    & - \frac{\dt}{2\dz} \left( (P w)_{j+\half}^{n+\quart} - (P w)_{j-\half}^{n+\quart} \right)
+\end{eqnarray}
+%
+What I want to show is that the update $\chi_j^{n+\half}-\chi_j^n$ is as 
+nicely controlled for large $\dt$ as is the nonconservative update from
+\eq{eq:deltaChi3}.
+
+Rewrite \eq{eq:ConservativeChiUpdate1} as
+%
+\begin{eqnarray}
+P^{n+\quart*}_j \left(\chi_j^{n+\half} - \chi_j^{n}\right)
+  & =  
+    & - \left(P^{n+\half}_j - P^n_j\right) \chi_j^{n+\quart*}
+      - \frac{\dt}{2\dz} 
+        \left( (P\chibar w)_{j+\half}^{n+\quart} - (P\chibar w)_{j-\half}^{n+\quart} 
+        \right)
+      \\[5pt]
+  & =  
+    & - \frac{\dt}{2\dz} 
+        \left( (P w)_{j+\half}^{n+\quart} (\chibar_{j+\half} - \chi_j^{n+\quart*}) 
+             - (P w)_{j-\half}^{n+\quart} (\chibar_{j-\half} - \chi_j^{n+\quart*})
+        \right)
+      \\[5pt]
+  & =  
+    & - \frac{\dt}{2\dz} \  
+        \frac{1}{2}\left((P w)_{j+\half}^{n+\quart} + (P w)_{j-\half}^{n+\quart}\right) 
+        \left(\chibar_{j+\half} - \chibar_{j-\half}\right)
+      \\[5pt]
+  &   
+    & - \frac{\dt}{2\dz} 
+        \left( \frac{1}{2}\left(\chibar_{j+\half} - 2\chi_j^{n+\quart*} + \chibar_{j-\half}\right)
+               \left( (P w)_{j+\half}^{n+\quart} - (P w)_{j-\half}^{n+\quart} \right)
+        \right)
+      \nonumber\\[5pt]
+  & =  
+    & - \frac{\dt}{2\dz} \  
+        \frac{1}{2}\left((P w)_{j+\half}^{n+\quart} + (P w)_{j-\half}^{n+\quart}\right) 
+        \left(\chibar_{j+\half} - \chibar_{j-\half}\right)
+      \\[5pt]
+  &   
+    & + \frac{\dt}{2} (\dz)^2 \frac{2}{\dt}\left( P_j^{n+\half} - P_j^{n} \right) 
+        \frac{1}{2(\dz)^2}\left(\chibar_{j+\half} - 2\chi_j^{n+\quart*} + \chibar_{j-\half}\right)
+      \nonumber\\[5pt]
+ \label{eq:ConservativeChiUpdate6}
+  & =  
+    & - \frac{\dt}{2\dz} \  
+        \frac{1}{2}\left((P w)_{j+\half}^{n+\quart} + (P w)_{j-\half}^{n+\quart}\right) 
+        \left(\chibar_{j+\half} - \chibar_{j-\half}\right)
+      \\[5pt]
+  &   
+    & - \left( P_j^{n+\half} - P_j^{n} \right) \left(\chi_j^{n+\quart*} - \chibar_j^n\right)
+      \nonumber\\[5pt]
+  &   
+    & + \frac{\dt}{16} (\dz)^2 \frac{2}{\dt}\left( P_j^{n+\half} - P_j^{n} \right) 
+        \frac{4}{(\dz)^2}\left(\chibar_{j+\half} - 2\chibar_j^n + \chibar_{j-\half}\right)
+      \nonumber\\[5pt]
+ \label{eq:ConservativeChiUpdate7}
+  & = 
+    & - \frac{\dt}{2\dz} \  
+        \frac{1}{2}\left((P w)_{j+\half}^{n+\quart} + (P w)_{j-\half}^{n+\quart}\right) 
+        \left(\chibar_{j+\half} - \chibar_{j-\half}\right)
+      \\[5pt]
+  &   
+    & - \left( P_j^{n+\half} - P_j^{n} \right) \left(\chi_j^{n+\quart*} - \chibar_j^n\right)
+      + \frac{\dt(\dz)^2}{16} \left(\pp{P}{t}\right)_{j}^{n+\quart} 
+        \left(\ppn{2}{\chibar}{z}\right)_{j}^{n}
+      \nonumber
+\end{eqnarray}
+%
+where we have used the abbreviations
+%
+\begin{equation}
+X^{n+\quart*} = \frac{1}{2}\left(X^{n+\half} + X^{n}\right)\,.
+\end{equation}
+%
+While the last term in \eq{eq:ConservativeChiUpdate7} 
+is arguably of higher order and may be neglected unless
+we want to demonstrate some rigorous bound on $\chi$ or the like, the next
+to last term is not negligible. It is the very kind of contribution that 
+induces us to carry the $P$-variable along in our scheme even if we solve
+the pseudo-incompressible equations despite the fact that in that equation
+set, $\partial_t P \equiv 0$: In each split step of our OpSplit procedure, 
+that derivative will be nonzero and of order unity in general. 
+
+We understand that our scheme is better than one may think at this point 
+if instead of considering only the linearized update for $P\chi$ according
+to \eq{eq:LinearizedConservativeChiEqn}, we consider the full nonlinear 
+expression
+%
+\begin{equation}
+\pp{P\chi}{t} = - \pp{(P\chi w)}{z}
+\end{equation}
+%
+which turns \eq{eq:ConservativeChiUpdate6} into 
+%
+\begin{eqnarray}
+\frac{2}{\dt} \left(\chi_j^{n+\half} - \chi_j^{n}\right)
+  & =  
+    & - \frac{1}{2P^{n+\quart*}_j}\left((P w)_{j+\half}^{n+\quart} + (P w)_{j-\half}^{n+\quart}\right) 
+        \frac{\chi^{n+\quart}_{j+\half} - \chi^{n+\quart}_{j-\half}}{\dz}      
+      \\[5pt]
+  &   
+    & + \frac{(\dz)^2}{8}  \frac{2}{\dt}\left( P_j^{n+\half} - P_j^{n} \right) 
+        \frac{4}{(\dz)^2}\left(\chi^{n+\quart}_{j+\half} - 2\chi^{n+\quart*}_j + \chi^{n+\quart}_{j-\half}\right)
+      \nonumber\\
+\label{eq:ConservativeChiUpdate8}
+  & =  
+    & - \frac{1}{2P_j^{n+\quart*}}\left((P w)_{j+\half}^{n+\quart} + (P w)_{j-\half}^{n+\quart}\right) 
+        \frac{\chi^{n+\quart}_{j+\half} - \chi^{n+\quart}_{j-\half}}{\dz}      
+      \\[5pt]
+  &   
+    & + \frac{(\dz)^2}{8} \left(\pp{P}{t}\right)_{j}^{n+\quart} 
+        \left(\ppn{2}{\chi}{z}\right)_{j}^{n+\quart} + \littleoh{(\dz)^2}\,.
+      \nonumber
+\end{eqnarray}
+%
+For a second-order MUSCL-scheme we can do even better. In that case, reconstruction
+at $t^{n+\quart}$ is piecewise linear, $\chi^{n+\quart*}_j = \chi^{n+\quart}_j + \bigoh{(\dt)^2}$, 
+and the edge values $\chi^{n+\quart}_{j+\half}$ are determined on an upwind basis. 
+
+Suppose, for case 1, that $\chi$ is smooth and does not have an extremum, and that 
+$(P w)_{j\pm\half}^{n+\quart} > 0$, then
+%
+\begin{eqnarray}
+\chi^{n+\quart}_{j+\half} - 2\chi^{n+\quart*}_j + \chi^{n+\quart}_{j-\half}
+  & =
+    & \chi^{n+\quart}_{j,+} - 2\chi^{n+\quart*}_j + \chi^{n+\quart}_{j-1,+}
+      \\
+  & =
+    & \chi^{n+\quart}_{j,+} - 2\chi^{n+\quart}_j + \chi^{n+\quart}_{j,-}
+      \\
+  & 
+    & + \left(\chi^{n+\quart}_{j-1,+} - \chi^{n+\quart}_{j,-}\right)
+      - 2 \left(\chi^{n+\quart*}_{j} - \chi^{n+\quart}_{j}\right)
+      \\
+  & =
+    & \left(\chi^{n+\quart}_{j-1,+} - \chi^{n+\quart}_{j,-}\right) + \bigoh{(\dt)^2}
+      \\
+  & =
+    & \left(\chi^{n+\quart}_{j-1} + \frac{\dz}{2} S_{j-1} 
+          - \chi^{n+\quart}_{j} + \frac{\dz}{2} S_{j} \right) + \bigoh{(\dt)^2}
+      \\
+  & =
+    & \dz \left(\frac{1}{2} \left(S_{j-1} +  S_{j}\right) 
+               - \frac{\chi^{n+\quart}_{j} - \chi^{n+\quart}_{j-1}}{\dz}
+          \right) + \bigoh{(\dt)^2}
+      \\
+  & = 
+    & \bigoh{(\dt)^2 + (\dz)^2}
+\end{eqnarray}
+%
+
+Issues to be addressed: This latter result is not ``better'', as we have
+already assumed in the previous estimate that this expression is basically
+$(\dz)^2(\partial^2 \chi / \partial z^2)$. What we do have to worry about
+are extrema of $\chi$, where the slope reconstruction deteriorates and we
+only have a spacial first-order accurate reconstruction, and about the
+$\bigoh{(\dt)^2}$ term. \\
+That term can deteriorate for large $\dt$, which is the current focus! 
+Checking where it comes from, we have to make sure that both 
+$\chi_{j,\pm}^{n+\quart}$ (from the reconstruction) and 
+$\chi_{j,\pm}^{n+\quart*}$ (from the time update within cell $j$) are
+controlled as $\dt \to \infty$ as displayed above in working out the 
+explicit part of the semi-implicit time integrator. 
+
+Let us, for the moment, not worry about the second derivative term that
+is an unwanted left-over imprint from the time changes of $P$, but rather
+focus on the dominant part of the $\chi$-update in 
+\eq{eq:ConservativeChiUpdate8}.  
+%
+\begin{eqnarray}
+\frac{2}{\dt} \left(\chi_j^{n+\half} - \chi_j^{n}\right)
+  & =  
+    & - \frac{1}{2P_j^{n+\quart*}}\left((P w)_{j+\half}^{n+\quart} + (P w)_{j-\half}^{n+\quart}\right) 
+        \frac{\chi^{n+\quart}_{j+\half} - \chi^{n+\quart}_{j-\half}}{\dz}      
+      + \littleoh{(\dz)^2}\,.
+\end{eqnarray}
+%
+Following the MUSCL strategy translated into the implicit trapezoidal 
+context, we insert a discretization of
+%
+\begin{eqnarray}
+w_t 
+  & = 
+    & - \frac{\theta}{\Gamma}\left(\pi_z^n + \Gamma g \chi\right)
+      \\
+\chi_t 
+  & = 
+    & - w \frac{d\chibar}{dz}
+\end{eqnarray}
+%
+over a half time step and then utilize $w^{n+\quart} = \half \left(w^{n+\quart} + w^n\right)$
+to extract the half of a half time step level vertical velocities. According to the 
+previous considerations in \eq{eq:deltaw3}, this yields
+%
+\begin{eqnarray}
+\label{eq:deltaw4}
+w^{n+\half} 
+  & = 
+    & \frac{1 - \left(\frac{N\dt}{4}\right)^2}{1 + \left(\frac{N\dt}{4}\right)^2}\, w^n
+-\frac{\dt/2}{1 + \left(\frac{N\dt}{4}\right)^2} 
+\left( \frac{\theta}{\Gamma}\left(\pi^n_z + \Gamma g \chi^n\right)\right)
+\\
+w^{n+\quart} = \frac{1}{2}\left(w^{n+\half} + w^{n}\right)
+  & = 
+    & \frac{1}{1 + \left(\frac{N\dt}{4}\right)^2}\,
+      \left( w^n -\frac{\dt}{4} g\theta \left(\chi^n + \frac{\pi^n_z}{\Gamma g}\right)
+      \right)
+\\
+  & \equiv 
+    & \frac{1}{1 + \left(\frac{N\dt}{4}\right)^2}\,
+      \left( w^n -\frac{\dt}{4} g\theta\,\chitilde^n
+      \right)
+\end{eqnarray}
+%
+With this we find, neglecting the error term for the moment, and with an 
+obvious abbreviation for the vertical $\chi$ derivative,
+%
+\begin{eqnarray}
+P_j^{n+\quart*} \left(\chitilde_j^{n+\half} - \chitilde_j^{n}\right)
+  & =  
+    & - \frac{\dt}{4}\left((P w)_{j+\half}^{n+\quart} + (P w)_{j-\half}^{n+\quart}\right) 
+        \left.\pp{\chi}{z}\right|_j^{n+\quart}     
+      \\ 
+  & =  
+    & - \frac{\dt}{4}
+        \left(
+        \frac{P_{j+\half}^{n+\quart} w_{j+\half}^{n}}{1 + \left(\frac{N_{j+\half}\dt}{4}\right)^2} 
+      + \frac{P_{j-\half}^{n+\quart} w_{j-\half}^{n}}{1 + \left(\frac{N_{j-\half}\dt}{4}\right)^2}
+        \right) 
+        \left.\pp{\chi}{z}\right|_j^{n+\quart}     
+      \\ 
+  &
+    & - \left(\frac{N^*_j \dt}{4}\right)^2  
+       \left(
+        \frac{P_{j+\half}^{n+\quart} \chitilde_{j+\half}^{n}}{1 + \left(\frac{N_{j+\half}\dt}{4}\right)^2} 
+      + \frac{P_{j-\half}^{n+\quart} \chitilde_{j-\half}^{n}}{1 + \left(\frac{N_{j-\half}\dt}{4}\right)^2}
+        \right)  
+\end{eqnarray}
+%
+where
+%
+\begin{equation}
+\left(N_{j*}\right)^2 = - g\theta\left.\pp{\chi}{z}\right|_j^{n+\quart}
+\end{equation}
+%
+and where, on the left hand side, we have replace the $\chi$-difference by
+the $\chitilde$-difference by adding a zero.
+
+Thus, what we obtain is
+%
+\begin{eqnarray}
+\chitilde_j^{n+\half} 
+  & =  
+    & \chitilde_j^{n} 
+      - \frac{\left(\frac{N^*_j \dt}{4}\right)^2}{P_j^{n+\quart*}}  
+        \left(
+        \frac{P_{j+\half}^{n+\quart} \chitilde_{j+\half}^{n}}{1 + \left(\frac{N_{j+\half}\dt}{4}\right)^2} 
+      + \frac{P_{j-\half}^{n+\quart} \chitilde_{j-\half}^{n}}{1 + \left(\frac{N_{j-\half}\dt}{4}\right)^2}
+        \right)  
+      \\ 
+  &
+    & - \frac{\dt}{2} \frac{1}{2 P_j^{n+\quart*} }
+        \left(
+        \frac{P_{j+\half}^{n+\quart} w_{j+\half}^{n}}{1 + \left(\frac{N_{j+\half}\dt}{4}\right)^2} 
+      + \frac{P_{j-\half}^{n+\quart} w_{j-\half}^{n}}{1 + \left(\frac{N_{j-\half}\dt}{4}\right)^2}
+        \right) 
+        \left.\pp{\chi}{z}\right|_j^{n+\quart}     
+\end{eqnarray}
+%
+The result does look like a complex variant of the explicit part of the
+implicit trapezoidal rule, although with weirdly weighted old time
+level data entering. 
+
+Of interest is the limit behavior as $\dt\to\infty$ with everything
+else fixed. What we obtain is
+%
+\begin{equation}
+\chitilde_j^{n+\half} \to  \chitilde_j^{n} - 2 \chitilde_j^{n*}
+\end{equation}
+%
+where
+%
+\begin{equation}
+\chitilde_j^{n*} 
+= \frac{1}{2}\frac{N^2_{j*}}{P_j^{n+\quart*}}
+  \left(\frac{ P_{j+\half}^{n+\quart}}{N^2_{j+\half}}\chitilde^n_{j+\half}
+      + \frac{P_{j-\half}^{n+\quart}}{N^2_{j-\half}}\chitilde^n_{j-\half}
+  \right)\, .
+\end{equation}
+%
+
+% ===========================================================================
+
+\subsubsection{Oscillator with slow forcing over a two-step cycle?}
+\label{sssec:SlowlyForcedOscillatorTwoStepCycle}
+
+Here we consider 
+%
+\begin{eqnarray}
+y^{n+1} = y^n + \dt v^{n+\half}
+\end{eqnarray}
+%
+
+\newpage
+
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+
+\section{Todos}
+
+\begin{itemize}
+
+\item advect only perturbations of $1/\theta$
+  \begin{itemize}
+  \item modify density flux accordingly by superimposing reconstructed
+        theta-perturbations and background values at cell faces, or
+  \item by advecting theta-perturbations as a separate scalar and then
+        recomputing full density after the full advection cycle.
+  \item[\red{\textbullet}] \red{Tried this, it doesn't improve things, and is
+       also somewhat against our philosophy. So, let's forget about this.}
+  \end{itemize}
+
+\item Apply explicit part of first-order backward Euler of the pressure-gravity
+      combo to $P$-fluxes, but that of the implicit trapezoidal rule to the 
+      cell-centered momenta.
+  \begin{itemize}
+  \item try just using the current implicit variant on both forward steps -- \dgreen{looks good}
+  \item fluxes -- \dgreen{produces controlled updates for very large time steps}
+  \item cell-centered momenta -- \blue{partial success: vertical velocity gathers 
+        oscillatory but controlled updates, yet the buoyancy does not undergo the
+        flip-flop in time that would be expected under the implicit trapezoidal rule
+        for large time steps. Reason: advection of background theta is done with the
+        first-order updated $P$-fluxes. I have to pull this part out.}
+  \item pull background-$\theta$ out of density flux and place it back in a source-term
+        like expression. -- \red{This is not appropriate because then I begin to handle
+        the density flux not consistently with the fluxes of other density-weighted 
+        variables. That should be avoided.}
+  \item What about going back to separately computing $\tilde S$, i.e., fluctuations of
+        $1/\theta$ only for buoyancy computations and resynchronizing after each step?
+  \item[\red{\textbullet}] \red{Meanwile tested applying backward Euler half time step
+       for the $P$-fluxes in the first OpSplit cycle and forward Euler in the second.
+       This formally should yield second order in the end as it would be the equivalent
+       of the implicit midpoint rule, and it does give the most favorable results so far.}
+  \end{itemize}
+
+\item 2016.12.01: I seem to be missing some part of the $\theta$-update in calculating
+      buoyancy for the final momentum update. Options:
+  \begin{enumerate}
+  \item Add a final $\theta$-buoyancy contribution when the second projection is done.\\
+        \red{I tried this: It does improve the asymmetries in the advected gravity wave
+        test case, but it introduces unfavorable behavior in the non-advected case. 
+        For rather large time steps, checkerboard modes kick in. I think that the 
+        asymmetry arising with mean advection has to do with how I link the advection
+        split steps (especially the horizontal ones) to the first projection. \\
+        Yet, I still have a suspicion that we cannot keep the implicit gravity discretization
+        out of the second projection entirely. So, this is where I stand as of August 18, 2017.}
+  \item Memorize all pressure-gradient / gravity terms over the predictor cycle and
+        recalculate them after the first projection based on the old and new time level
+        $\theta$s and on the nodal pressure. This would effectively provide a true
+        trapezoidal rule implementation of these terms albeit with a separate update,
+        done in the predictor and first projection, for $\theta$.
+  \item We get an interesting variant of this approach when we go back to the nodal-pressure
+        only version of the flux divergence control. KEEP THIS IN MIND!
+  \item Run scheme as is right now, but flip the $x$- and $y$-sweeps in the predictor. 
+        Then we get buoyancy evaluated at the beginning and true end of the $x$-sweep
+        of advection. In the end, this is a switch from a midpoint to a trapezoidal 
+        discretization. Why should this make a difference? Unclear. Also, we would have
+        to implement the decomposition of one semi-implicit predictor into two steps, 
+        which is somewhat of an arbitrary procedure.
+  \end{enumerate}
+ 
+\item 2016.12.01: The errors in the current version appear to be too large. Before I 
+      try modifications that seem all to be variants of a second-order accurate 
+      scheme, should I not first hunt for a bug that destroys second order in the first
+      place?
+
+\end{itemize}
+
+In \eq{eq:deltaw2} we use the abbreviation $\Gamma g \chi^* = - \pi^{\rm hy}_z$
+to obtain
+%
+\begin{eqnarray}
+\label{eq:deltaw3a}
+\delta w 
+  & = 
+    & \frac{1}{1 + \Nscsq} 
+      \left(- \tau \frac{\theta}{\Gamma}\left(\pi^*_z - \pi^{\rm hy}_z\right)
+            - w^* \Nscsq
+      \right)
+      - \tau \frac{\theta/\Gamma}{1 + \Nscsq} \delta\pi_z 
+      \\
+\delta w 
+  & = 
+    & \delta^{\rm expl} w + \delta^{\rm \pi} w
+      \\
+\delta \chi
+  & = 
+    & - \tau\, (w^* + \delta^{\rm expl} w) \frac{d\overline{\chi}}{dz} 
+      + \frac{1}{\Gamma g}\frac{1}{1 + \Nscsq} (\tau)^2  g\theta\frac{d\overline{\chi}}{dz} \delta\pi_z 
+      \\
+\delta \chi
+  & = 
+    & - \tau\, (w^* + \delta^{\rm expl} w) \frac{d\overline{\chi}}{dz} 
+      + \frac{1}{\Gamma g}\frac{\Nscsq}{1 + \Nscsq}\delta\pi_z 
+\end{eqnarray}
+%
+It is clear how to implement this in a split fashion outside of the advection
+routines. It needs to be implemented also, however, in the flux calculations, 
+and it is less clear how that could be achieved. 
+
+\newpage
+
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+
+\section{Preconditioning}
+\label{sec:Precon}
+
+\red{So far, this is a side issue. It looks as if the code converges very
+rapidly when all the components fit well together, even with vanilla
+BiCGStab. We can get back to this when we have the basic scheme running
+well. }
+
+% ===========================================================================
+% ===========================================================================
+
+\subsection{Introductory thoughts}
+\label{ssec:PreconIntro}
+
+Let me recall:  Given $A \in \reals^{n\times n}$, $b \in \reals^n$ find 
+$x \in \reals^n$ such that
+%
+\begin{equation}
+A x = b
+\end{equation}
+%
+Preconditioning from the left means multiplying by a matrix 
+$B^{-1} \in \reals^{n\times n}$ and considering the problem
+%
+\begin{equation}
+(B^{-1}A) x = B^{-1}b
+\end{equation}
+%
+with the hope that $B^{-1}A$ is better conditioned than $A$. 
+
+Using this strategy, a solver will remain unchanged except for 
+%
+\begin{enumerate}
+\item Computation of the rescaled right hand side $b \to B^{-1}b$ and
+\item Extending the call to $Ax$ by the composition of calls $B^{-1}\circ A\, x$. 
+\end{enumerate}
+%
+An interesting question besides this more or less trivial operation 
+concerns the computation of the stopping criterion for an iterative
+scheme. In some sense, lacking the exact solution, one will want to
+use information on the residual to assess how close one has come to 
+the solution of the problem. 
+
+Thus, there are two alternatives, 
+%
+\begin{equation}
+\parallel b - Ax^n \parallel < \eps
+\qquad\text{or}\qquad
+\parallel B^{-1}b - (B^{-1}A)x^n \parallel < \eps \, .
+\end{equation}
+%
+What are the implications? 
+
+To get an intuition, let's take the standard case in meteorology where
+we need to compute a solution in a deep atmosphere, across which the
+density falls off by a factor $10^{-4}$ or an even more extreme one. 
+In the present implementation that solves the 
+$P \equiv \overline{\rho\theta}$ equation implicitly and uses an 
+Exner type pressure variable, $x \equiv \delta\pi$, the matrix $A$ is 
+dominated by the discrete approximation of
+%
+\begin{equation}
+\nabla\cdot\left(\frac{P\theta}{\Gamma} \nabla \delta\pi\right)
+\sim 
+\nabla\cdot\left(\rho\theta^2 \nabla \delta\pi\right)
+\end{equation}
+%
+and the right hand side is 
+%
+\begin{equation}
+b = \nabla\cdot (P\vv)^*\,,
+\end{equation}
+%
+where the $(\ )^*$ superscript denotes the predicted values before the
+implicit divergence controlling step. The divergence constraint 
+in the pseudo-incompressible limit reads $\nabla\cdot (P\vv) = 0$, but
+the quantity of real interest is the velocity field. Therefore, we 
+would want the factor of $P$, which has a dynamic range comparable to the
+density, to be scaled out of the div-control. This means we would want 
+to control
+%
+\begin{equation}
+{\rm diag}(P)^{-1} \left(b - Ax\right) < \ \parallel {\rm diag}(P)^{-1}\parallel\ \eps\, .
+\end{equation}
+%
+Since division by the diagonal (or the main culprit for extreme dynamic
+range in the diagonal) corresponds simply to diagonal preconditioning, 
+the answer to the question raised above should be:  Control the residual
+of the preconditioned problem,
+%
+\begin{equation}
+\parallel B^{-1} (b - A) x^n \parallel\  < \ 
+\parallel B^{-1}\parallel\ \eps \, ,
+\end{equation}
+%
+and not the raw residuum.
+
+% ===========================================================================
+% ===========================================================================
+
+\subsection{Preconditioning w.r.t.\ vertical columns}
+\label{ssec:PreconVerticalColumn}
+
+% ===========================================================================
+
+\subsubsection{Columnwise preconditioning for the first projection}
+\label{ssec:PreconVerticalColumnFirstProjection}
+
+The pressure stencil for the first projection can be read as follows:
+%
+\begin{equation}
+\begin{split}
+\left(\Lopfirst \pi\right)_{i,j} 
+  & = \frac{h^x_{i+\half,j}\left(\pibar^y_{i+1,j} - \pibar^y_{i,j}\right)
+          - h^x_{i-\half,j}\left(\pibar^y_{i,j} - \pibar^y_{i-1,j}\right)}{dx^2}
+    \\[10pt]
+  & + \frac{h^y_{i,j+\half}\left(\pibar^x_{i,j+1} - \pibar^x_{i,j}\right)
+          - h^y_{i,j-\half}\left(\pibar^x_{i,j} - \pibar^x_{i,j-1}\right)}{dy^2}
+\end{split}
+\end{equation}
+%
+where 
+%
+\begin{equation}
+\begin{split}
+\pibar^x_{i,j}
+  & = \frac{\alpha}{2} \pi_{i-1,j} + (1-\alpha)\, \pi_{i,j} + \frac{\alpha}{2} \pi_{i+1,j} 
+    \\[10pt]
+\pibar^y_{i,j}
+  & = \frac{\alpha}{2} \pi_{i,j-1} + (1-\alpha)\, \pi_{i,j} + \frac{\alpha}{2} \pi_{i,j+1} 
+\end{split}
+\end{equation}
+%
+The dominant vertical derivative part of the operator thus reads
+%
+\begin{equation}
+\begin{split}
+\left(\Lopfirst \pi\right)_{j} 
+  & = \frac{h^y_{i,j+\half}\pibar^x_{i,j+1} 
+          - \left(h^y_{i,j+\half} + h^y_{i,j-\half}\right) \pibar^x_{i,j}
+          + h^y_{i,j-\half}\pibar^x_{i,j-1}}{dy^2}
+\end{split}
+\end{equation}
+%
+where 
+%
+\begin{equation}
+\begin{split}
+\pibar^x_{i,j}
+  & = \frac{\alpha}{2} \pi_{i-1,j} + (1-\alpha)\, \pi_{i,j} + \frac{\alpha}{2} \pi_{i+1,j} \,.
+\end{split}
+\end{equation}
+%
+To solve the equation
+%
+\begin{equation}
+\left(\Lopfirst \pi\right)_{j} = r_j
+\end{equation}
+%
+we can obviously first solve for $\pibar$ using the Thomas Algorithm
+for the $j$-direction, and then for $\pi$ by inverting the $x$-averaging -- 
+again using the Thomas Algorithm. 
+
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+
+\bibliographystyle{FluidMechanics}
+\bibliography{Bibliography}
+
+\end{document}
