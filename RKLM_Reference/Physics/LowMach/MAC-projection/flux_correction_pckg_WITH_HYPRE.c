@@ -124,7 +124,7 @@ void flux_correction(
     assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
     rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
     
-#if 0
+#if 1
     extern User_Data ud;
     FILE *prhsfile = NULL;
     char fn2[200], fieldname2[90];

@@ -66,12 +66,7 @@
 		9AC4F9171DA3F06F00AED455 /* Bibliography.bib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Bibliography.bib; sourceTree = "<group>"; };
 		9AC4F9181DA3F06F00AED455 /* FluidMechanics.bst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = FluidMechanics.bst; sourceTree = "<group>"; };
 		9AC4F91A1DA3F06F00AED455 /* PrimaryAndDualGrid.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = PrimaryAndDualGrid.pdf; sourceTree = "<group>"; };
-		9AC4F91B1DA3F06F00AED455 /* RKLM_Documentation.aux */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = RKLM_Documentation.aux; sourceTree = "<group>"; };
-		9AC4F91C1DA3F06F00AED455 /* RKLM_Documentation.bbl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = RKLM_Documentation.bbl; sourceTree = "<group>"; };
-		9AC4F91D1DA3F06F00AED455 /* RKLM_Documentation.blg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = RKLM_Documentation.blg; sourceTree = "<group>"; };
-		9AC4F91E1DA3F06F00AED455 /* RKLM_Documentation.log */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = RKLM_Documentation.log; sourceTree = "<group>"; };
 		9AC4F91F1DA3F06F00AED455 /* RKLM_Documentation.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = RKLM_Documentation.pdf; sourceTree = "<group>"; };
-		9AC4F9201DA3F06F00AED455 /* RKLM_Documentation.synctex.gz */ = {isa = PBXFileReference; lastKnownFileType = archive.gzip; path = RKLM_Documentation.synctex.gz; sourceTree = "<group>"; };
 		9AC4F9211DA3F06F00AED455 /* RKLM_Documentation.tex */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = RKLM_Documentation.tex; sourceTree = "<group>"; };
 		9AC4F9231DA3F06F00AED455 /* boundary.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = boundary.c; sourceTree = "<group>"; };
 		9AC4F9241DA3F06F00AED455 /* boundary.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = boundary.h; sourceTree = "<group>"; };
@@ -139,6 +134,8 @@
 		9AC4F97D1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = variable_coefficient_poisson_nodes.c; sourceTree = "<group>"; };
 		9AC4F97E1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = variable_coefficient_poisson_nodes.h; sourceTree = "<group>"; };
 		9ADB58871E07C77E0032A9F2 /* Thomas_Algorithmus_2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Thomas_Algorithmus_2.c; sourceTree = "<group>"; };
+		9ADC1B4D1F46C0F30053F709 /* Semi-implicit-gravity.tex */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Semi-implicit-gravity.tex"; sourceTree = "<group>"; };
+		9ADC1B4E1F46C0FB0053F709 /* Semi-implicit-gravity.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Semi-implicit-gravity.pdf"; sourceTree = "<group>"; };
 		9AE4ABD11DBF3988007205FD /* CheckSymmetries.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CheckSymmetries.m; sourceTree = "<group>"; };
 		9AE4ABD21DBF3989007205FD /* CheckSymmetry.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CheckSymmetry.m; sourceTree = "<group>"; };
 		9AE4ABDB1DBF3989007205FD /* Show_sequence.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Show_sequence.m; sourceTree = "<group>"; };
@@ -216,13 +213,10 @@
 				9AC4F9171DA3F06F00AED455 /* Bibliography.bib */,
 				9AC4F9181DA3F06F00AED455 /* FluidMechanics.bst */,
 				9AC4F9191DA3F06F00AED455 /* Graphics */,
-				9AC4F91B1DA3F06F00AED455 /* RKLM_Documentation.aux */,
-				9AC4F91C1DA3F06F00AED455 /* RKLM_Documentation.bbl */,
-				9AC4F91D1DA3F06F00AED455 /* RKLM_Documentation.blg */,
-				9AC4F91E1DA3F06F00AED455 /* RKLM_Documentation.log */,
 				9AC4F91F1DA3F06F00AED455 /* RKLM_Documentation.pdf */,
-				9AC4F9201DA3F06F00AED455 /* RKLM_Documentation.synctex.gz */,
 				9AC4F9211DA3F06F00AED455 /* RKLM_Documentation.tex */,
+				9ADC1B4E1F46C0FB0053F709 /* Semi-implicit-gravity.pdf */,
+				9ADC1B4D1F46C0F30053F709 /* Semi-implicit-gravity.tex */,
 			);
 			path = Doc;
 			sourceTree = "<group>";

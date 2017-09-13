@@ -138,7 +138,11 @@ void Explicit_step_and_flux(
             int nijkm = nijk - elem->icx;
             /* selected weights should correspond to weights in the cell-centered Laplacian */
             Sol->rhoZ[PRES][nijk]  = (ud.latw[0]*p2_store[nijkp] + ud.latw[1]*p2_store[nijk] + ud.latw[2]*p2_store[nijkm]);
+#ifdef OLD_S_IN_PREDICTOR
+            S_ave[nijk] = Sol->rhoZ[SOLD][nijk];
+#else
             S_ave[nijk] = Sol->rho[nijk]/Sol->rhoY[nijk];
+#endif
         }
     }
     

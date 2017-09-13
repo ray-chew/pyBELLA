@@ -15,6 +15,7 @@ filledcontours = 1;
 fixed_contours = 0;
 fixed_contour_step = 1;
 no_of_contours = 10;
+show_increments = 0;
 symmetry = 0;        % in {0,1}
 symmetrytest = 1;
 showdummycells = 0;
@@ -31,11 +32,14 @@ title_true = 1;
 %kmin = 50;
 %kmax = 53;
 kmin = 0;
-kmax = 31;
+kmax = 101;
 dk   = 1;
 
 %modelstr = '';
 modelstr = 'psinc';
+%modelstr = 'psinc_w_adv_Ndt=3';
+%modelstr = 'psinc_Ndt=3';
+%modelstr = 'psinc_w_adv_Ndt=05';
 %modelstr = 'comp';
 
 
@@ -126,8 +130,8 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
-%%varstr = 'rhoZ';  folderstr = 'rhoZ'; titlestr = 'rhoZ'; ndummy = 2; arraysize = [ncx ncy];
-%%varstr = 'Z';  folderstr = 'Z'; titlestr = 'Z'; ndummy = 2; arraysize = [ncx ncy]; rhoZ_diff = 0;
+%varstr = 'rhoZ';  folderstr = 'rhoZ'; titlestr = 'rhoZ'; ndummy = 2; arraysize = [ncx ncy];
+%varstr = 'Z';  folderstr = 'Z'; titlestr = 'Z'; ndummy = 2; arraysize = [ncx ncy]; rhoZ_diff = 0;
 %varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
 varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy];
@@ -186,7 +190,7 @@ for k = kmin:dk:kmax
         plot(x,th, 'r+');
 
         % Create xlabel
-        xlabel('x','FontSize',18,'FontName','Helvetica');
+        xlabel('x [10 km]','FontSize',18,'FontName','Helvetica');
         
         % Create ylabel
         ylabel(titlestr,'FontSize',18,'FontName','Helvetica');
@@ -253,16 +257,28 @@ for k = kmin:dk:kmax
                 contour(x,z,th,no_of_contours,'LineColor','k');
             end
         end
+                
         set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
         if title_true
             title(strcat(titlestr,kstr));
         end
         % Create xlabel
-        xlabel('x','FontSize',18,'FontName','Helvetica');
+        xlabel('x [10 km]','FontSize',18,'FontName','Helvetica');
         
         % Create ylabel
-        ylabel('z','FontSize',18,'FontName','Helvetica');
+        ylabel('z [km]','FontSize',18,'FontName','Helvetica');
         
+        
+        if show_increments
+            if k>kmin
+                figure(80)
+                contourf(x,z,th-th_old,25,'LineColor','auto');
+                colormap Jet
+                colorbar('FontSize',14,'FontName','Helvetica')
+            end
+            th_old = th;
+        end
+
         if abs(symmetry) == 1
             figure(figure2);
             NonSymmAmpl = CheckSymmetry(th,x,z,k,symmetry);

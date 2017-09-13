@@ -185,8 +185,21 @@ void recovery_gravity(
         gravity_source[i]    = drhou[i]; 
         gravity_source[i-1] += drhou[i]; 
     }
-#endif  /* GRAVITY_IMPLICIT_1 */
+    
+    Nsqsc[0]      = Nsqsc[1];
+    Nsqsc[nmax-1] = Nsqsc[nmax];
+    for( i = 1; i < nmax-1; i++ ) { 
+        double Nsqscm     = 0.5 * (Nsqsc[i] + Nsqsc[i+1]);
+        double ooopNsqscm = 1.0 / (1.0 + Nsqscm);
+        double dum        = 0.5 * (drhou[i] + drhou[i+1]) / Sol->rho[i];
+        u[i]              = Sol->u[i] + implicit*(dum - Nsqscm * Sol->u[i]) * ooopNsqscm; 
+    }
 
+#else  /* GRAVITY_IMPLICIT_1 */
+    for( i = 1; i < nmax-1; i++ ) { 
+        u[i] = Sol->u[i];    
+    }
+#endif /* GRAVITY_IMPLICIT_1 */
     
 	/* differences of primitive quantities */
 	for( i = 0; i < nmax - 1;  i++) {      
@@ -209,14 +222,6 @@ void recovery_gravity(
 	
 	/* half-timestep */
 	for( i = 1; i < nmax-1; i++ ) { 
-        double Nsqscm     = 0.5 * (Nsqsc[i] + Nsqsc[i+1]);
-        double ooopNsqscm = 1.0 / (1.0 + Nsqscm);
-        double dum        = 0.5 * (drhou[i] + drhou[i+1]) / Sol->rho[i];
-        
-        /*
-        u[i]              = (Sol->u[i] + dum) * ooopNsqscm;                    The dum-term should drop out for forward EULER. 
-         */
-        u[i]              = Sol->u[i] + implicit*(dum - Nsqscm * Sol->u[i]) * ooopNsqscm;     /* CHECK FACTOR of 1.0 HERE for all "implicit" options !! */
 		Ampls->entro[i]   = 0.5 * Slopes->entro[i] * ( 1 - lambda * u[i] ); /* entro-entry abused for u */
 		Ampls->v[i]       = 0.5 * Slopes->v[i]     * ( 1 - lambda * u[i] );
 		Ampls->w[i]       = 0.5 * Slopes->w[i]     * ( 1 - lambda * u[i] );

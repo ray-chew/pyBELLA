@@ -567,7 +567,6 @@ void adjust_pi(
                 double dp2_elliptic = mpv->dp2_cells[n]; 
 
                 Sol->rhoZ[PRES][n]  = p2_old + weight * (alpha * dp2_rhoY + (1.0-alpha) * dp2_ell_factor*dp2_elliptic);
-                Sol->rhoZ[SOLD][n]  = Sol->rho[n]/Sol->rhoY[n];
 #ifdef GRAVITY_IMPLICIT_2
                 // Sol->rhoX[BUOY][n]  = Sol->rho[n] * (Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
 #endif
@@ -575,16 +574,18 @@ void adjust_pi(
 		}
 	}
      
-    /*
+    
     for (int n=0; n<elem->nc; n++) {
+        /*
         double p2_old       = Sol0->rhoZ[PRES][n];
         double dp2_rhoY     = scalefac * (pow(Sol->rhoY[n],th.gamm) - pow(Sol0->rhoY[n],th.gamm));
         double dp2_elliptic = mpv->dp2_cells[n];
         
         Sol->rhoZ[PRES][n]  = (p2_old + weight * (alpha * dp2_rhoY + (1.0-alpha) * dp2_ell_factor*dp2_elliptic));
+        */
         Sol->rhoZ[SOLD][n]  = Sol->rho[n]/Sol->rhoY[n];
     }
-     */
+    
 }
 
 /*------------------------------------------------------------------------------

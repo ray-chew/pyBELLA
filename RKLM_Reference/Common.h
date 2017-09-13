@@ -19,7 +19,7 @@
 
 /* Output parameters */
 #define HDFFORMAT
-#define OUTPUT_SUBSTEPS_PREDICTOR 1
+#define OUTPUT_SUBSTEPS_PREDICTOR 0
 #define OUTPUT_SUBSTEPS 0
 #define OUTPUT_SPLITSTEPS 0
 
@@ -31,9 +31,13 @@
 #define GRAVITY_IMPLICIT
 
 /* 
- #define GRAVITY_IMPLICIT
+ 
  #define GRAVITY_IMPLICIT_1   (buoyancy directly from conserved quantities)
+ #define OLD_S_IN_PREDICTOR 
+
  #define GRAVITY_IMPLICIT_2   (buoyancy via auxiliary variable; Piotr's variant)
+
+
  */  
 #ifdef GRAVITY_IMPLICIT
 #define GRAVITY_IMPLICIT_1

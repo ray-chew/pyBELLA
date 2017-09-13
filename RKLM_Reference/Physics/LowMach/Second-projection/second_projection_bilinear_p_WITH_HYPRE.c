@@ -162,7 +162,7 @@ void second_projection(
 	catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
 
     /* test */
-#if 0
+#if 1
     FILE *prhsfile = NULL;
     char fn[120], fieldname[90];
     sprintf(fn, "%s/rhs_nodes/rhs_nodes_000.hdf", ud.file_name);

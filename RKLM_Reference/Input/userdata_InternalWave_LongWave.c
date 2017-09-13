@@ -30,7 +30,7 @@ double rho_function(double psi);
 
 double molly(double x);
 
-static double scalefactor = 20.0; 
+static double scalefactor = 2.0;   /* 20.0; 1.0;*/
 
 void User_Data_init(User_Data* ud) {
     
@@ -42,7 +42,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Earth */
     double grav     = 9.81;             /* [m/s^2]                */
-    double omega    = 1.0*0.0001;     /* 1.454 */
+    double omega    = 0.0*0.0001;     /* 1.454 */
     /* double omega  = sin(0.5*PI) * 2.0 * 0.00007272205217;   */
     
     /* thermodynamics and chemistry */
@@ -124,7 +124,7 @@ void User_Data_init(User_Data* ud) {
     ud->zmax =   1.0;
     
     /* boundary/initial conditions */
-    ud->wind_speed  =  1.0 * 20.0/u_ref;
+    ud->wind_speed  =  0.0 * 20.0/u_ref;
     ud->wind_shear  = -0.0;              /* velocity in [u_ref/h_ref] */
     ud->hill_height = 0.0 * 0.096447; 
     ud->hill_length_scale = 0.1535;   /* hill_length * l_ref = 1.0 km */
@@ -143,10 +143,10 @@ void User_Data_init(User_Data* ud) {
     /* ================================================================================== */
     
     /* time discretization */
-    ud->time_integrator        = OP_SPLIT_MD_UPDATE; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT*/
+    ud->time_integrator        = OP_SPLIT; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT*/
     ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 200.0 / ud->t_ref;
-    ud->dtfixed                = 200.0 / ud->t_ref;
+    ud->dtfixed0               = 25.0 / ud->t_ref;
+    ud->dtfixed                = 25.0 / ud->t_ref;
     ud->no_of_steps_to_CFL     = 1;
     ud->no_of_steps_to_dtfixed = 1;
 
@@ -189,14 +189,14 @@ void User_Data_init(User_Data* ud) {
         ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.5;
     }
     
-    ud->ncache = 48; /* 604*44; (ud->inx+3); */
+    ud->ncache = 71; /* 604*44; (ud->inx+3); */
     
     /* linear solver-stuff */
     ud->which_projection_first = 1;
     ud->Solver = BICGSTAB_PRECON;        /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->Solver_Node = BICGSTAB_PRECON;   /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->precondition = CORRECT;
-    double tol = 1.e-8;
+    double tol = 1.e-9;
     ud->flux_correction_precision = tol;
     ud->flux_correction_local_precision = tol;   /* 1.e-05 should be enough */
     ud->second_projection_precision = tol;
@@ -247,7 +247,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 10;
+    ud->write_file_period = 1;
     ud->file_format = HDF;
     
     {
@@ -276,7 +276,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const double w0 = 0.0;
     const double delth = 0.01 / ud.T_ref;  /* standard:  0.01 / ud.T_ref */
     const double xc    = +0.0*1000.0e+03/ud.h_ref; /* -1000.0e+03/ud.h_ref;  -50.0e+03/ud.h_ref; 0.0; */
-    const double a     = 1.0e+05/ud.h_ref;
+    const double a     = 1.0e+05/ud.h_ref/20;  /* 1.0e+05/ud.h_ref;  1.0e+05/ud.h_ref/20; */
         
     const int icx = elem->icx;
     const int icy = elem->icy;
