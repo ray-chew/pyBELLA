@@ -32,7 +32,7 @@ title_true = 1;
 %kmin = 50;
 %kmax = 53;
 kmin = 0;
-kmax = 101;
+kmax = 601;
 dk   = 1;
 
 %modelstr = '';

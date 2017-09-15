@@ -5,6 +5,7 @@
  *******************************************************************************/
 #include "Common.h"
 #include <stdio.h>
+#include <float.h>
 #ifdef MACPROFILE
 #include <profiler.h> 
 #endif
@@ -25,10 +26,10 @@
 #include "flux_correction.h"
 #include "second_projection_bilinear_p.h"
 #include "set_ghostcells_p.h"
-#include <float.h>
 #include "mpv.h"
 #include "boundary.h"
 #include "numerical_flux.h"
+#include "enumerator.h"
 
 static void (*rotate[])(ConsVars* Sol, double* rhs, double *Sbg, double *buoyS, const enum Direction dir) = {NULL, rotate2D, rotate3D};
 
@@ -107,8 +108,14 @@ int main( void )
 	
 	/* data allocation and initialization */
 	Data_init();
+
+    int kxy1 = 2*elem->icx + 2;
+    int kxy2 = 2*elem->icx + 3;
+    int kyx1 = 2*elem->icy + 2;
+    int kyx2 = 3*elem->icy + 2;
+
     set_wall_massflux(bdry, Sol, elem);
-    Set_Explicit_Boundary_Data(Sol, elem, mpv);
+    Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
     ud.compressibility = compressibility(0);
     
 	if(ud.write_file == ON) 
@@ -126,10 +133,7 @@ int main( void )
     /* generate divergence-controlled initial data  */
     dt = 1.0;
     mpv->dt = dt;
-    /*
-    second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, t, dt);
-    Set_Explicit_Boundary_Data(Sol, elem, mpv);
-     */
+
     ConsVars_set(Sol0, Sol, elem->nc);
     which_projection = 1;
 
@@ -228,7 +232,7 @@ int main( void )
                     if (Split == 1)  {
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
                     }
-                    Set_Explicit_Boundary_Data(Sol, elem, mpv);
+                    Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
                     putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", OUTPUT_SPLITSTEPS);
                     if (Split == 1)  {
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
@@ -256,7 +260,7 @@ int main( void )
                     if (Split == 1)  {
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
                     }
-                    Set_Explicit_Boundary_Data(Sol, elem, mpv);
+                    Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
                     putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", OUTPUT_SPLITSTEPS);
                     if (Split == 1)  {
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
@@ -288,7 +292,7 @@ int main( void )
 
             Explicit_Coriolis(Sol, elem, 0.5*dt);
 
-            Set_Explicit_Boundary_Data(Sol, elem, mpv);
+            Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
             
 #if OUTPUT_SUBSTEPS
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
@@ -298,7 +302,7 @@ int main( void )
                 
                 flux_correction(flux, buoy, elem, Sol, Sol0, t, dt, ud.implicitness, step);
                 update(Sol, (const ConsVars**)flux, buoyS, buoy, elem, dt);
-                Set_Explicit_Boundary_Data(Sol, elem, mpv);
+                Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
 #if OUTPUT_SUBSTEPS
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
@@ -320,7 +324,7 @@ int main( void )
             
             if(PROJECTION2 == 1) {
                 second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 1.0, t, dt);
-                Set_Explicit_Boundary_Data(Sol, elem, mpv);
+                Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
 #if OUTPUT_SUBSTEPS
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
@@ -329,7 +333,7 @@ int main( void )
             if (ud.absorber) 
             {
                 Absorber(Sol, t, dt); 
-                Set_Explicit_Boundary_Data(Sol, elem, mpv);
+                Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
             }					
             			
 			t += dt;

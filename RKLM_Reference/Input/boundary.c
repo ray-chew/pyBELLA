@@ -205,7 +205,8 @@ void Bound(
 		   const States* HydroState,
 		   const double lambda, 
 		   const int n, 
-		   const int SplitStep) 
+		   const int SplitStep, 
+           const int setZ) 
 {
 	
 	/* User data */
@@ -303,7 +304,11 @@ void Bound(
 						Sol->rhow[nimage] = rho*w;
 						Sol->rhoe[nimage] = rhoe(rho, u, v, w, p, Sol->geopot[nimage]);
 						Sol->rhoY[nimage] = rhoY;				  /* should probably be adjusted not to take HydroState values*/
+#if 0
+                        Sol->rhoZ[PRES][nimage] = setZ*Z + (1-setZ)*Sol->rhoZ[PRES][nimage];
+#else
 						Sol->rhoZ[PRES][nimage] = Z;
+#endif
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
                             Sol->rhoX[nsp][nimage] = rho*X[nsp];
                         }
@@ -354,7 +359,11 @@ void Bound(
 						Sol->rhow[nimage] = rho*w;
 						Sol->rhoe[nimage] = rhoe(rho, u, v, w, p, Sol->geopot[nimage]);
 						Sol->rhoY[nimage] = rhoY;       /* should probably be adjusted not to take HydroState values*/
-						Sol->rhoZ[PRES][nimage] = Z;
+#if 0
+                        Sol->rhoZ[PRES][nimage] = setZ*Z + (1-setZ)*Sol->rhoZ[PRES][nimage];
+#else
+                        Sol->rhoZ[PRES][nimage] = Z;
+#endif
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
                             Sol->rhoX[nsp][nimage] = rho*X[nsp];
                         }
@@ -971,7 +980,8 @@ static void (*rotate[])(ConsVars* Sol, double* rhs, double *Sbg, double *buoyS, 
 void Set_Explicit_Boundary_Data(
                                 ConsVars* Sol,
                                 const ElemSpaceDiscr* elem,
-                                const MPV* mpv) 
+                                const MPV* mpv,
+                                const int setZ) 
 {
     extern double *Sbg;
     extern double *buoyS;
@@ -979,7 +989,7 @@ void Set_Explicit_Boundary_Data(
     
     for(SplitStep = 0; SplitStep < elem->ndim; SplitStep++) { 
         const double lambda = 1.0;
-        Bound(Sol, mpv->HydroState, lambda, elem->nc, SplitStep); 
+        Bound(Sol, mpv->HydroState, lambda, elem->nc, SplitStep, setZ); 
         if(SplitStep < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->Level[0]->rhs, Sbg, buoyS, FORWARD);
     }         
     /* rotate back */          

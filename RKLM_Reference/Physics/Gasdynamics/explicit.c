@@ -3,6 +3,10 @@
  Author: Rupert, Nicola
  Date:   Mon Mar  2 10:52:55 CET 1998
  *******************************************************************************/
+#include <assert.h>
+#include <string.h>
+#include <math.h>
+
 #include "Common.h"
 #include "math_own.h"
 #include "boundary.h"
@@ -16,9 +20,7 @@
 #include "explicit.h"
 #include "io.h"
 #include "set_ghostcells_p.h"
-#include <assert.h>
-#include <string.h>
-#include <math.h>
+#include "enumerator.h"
 
 static enum Boolean allocated = WRONG;
 
@@ -119,7 +121,7 @@ void Explicit_step_and_flux(
     */
     
     /* bring dummy cells in the current space direction up to date  */
-    Bound(Sol, HydroState, lambda, n, SplitStep);
+    Bound(Sol, HydroState, lambda, n, SplitStep, 0);
 
     double *p2_store = W0;
     double *S_ave = W1;
@@ -267,6 +269,10 @@ void Explicit_step_and_flux(
     for (int ic=0; ic<elem->nc; ic++) {
         Sol->rhoZ[PRES][ic] = p2_store[ic];
     }
+    
+    /* bring dummy cells in the current space direction up to date  */
+    Bound(Sol, HydroState, lambda, n, SplitStep, 0);
+
 }
 
 /* ================================================================================ */

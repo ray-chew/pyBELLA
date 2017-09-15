@@ -127,7 +127,7 @@ void putout(
 			/* rotate forward and set boundary data          
 			for(int i = 0; i < ndim; i++) { 
 				const double lambda = 1.0;
-				Bound(Sol, mpv->HydroState, lambda, nc, SplitStep+i); 
+				Bound(Sol, mpv->HydroState, lambda, nc, SplitStep+i, 0); 
 				if(i < ndim - 1) (*rotate[ndim - 1])(Sol, mpv->Level[0]->rhs, Sbg, buoyS, FORWARD);
 			}         
 			for(int i = ndim-1; i > 0; i--) {

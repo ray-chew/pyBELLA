@@ -30,7 +30,7 @@ double rho_function(double psi);
 
 double molly(double x);
 
-static double scalefactor = 2.0;   /* 20.0; 1.0;*/
+static double scalefactor = 20.0;   /* 20.0; 1.0;*/
 
 void User_Data_init(User_Data* ud) {
     
@@ -143,10 +143,10 @@ void User_Data_init(User_Data* ud) {
     /* ================================================================================== */
     
     /* time discretization */
-    ud->time_integrator        = OP_SPLIT; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT*/
+    ud->time_integrator        = OP_SPLIT_MD_UPDATE; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT*/
     ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 25.0 / ud->t_ref;
-    ud->dtfixed                = 25.0 / ud->t_ref;
+    ud->dtfixed0               = 300.0 / ud->t_ref;
+    ud->dtfixed                = 300.0 / ud->t_ref;
     ud->no_of_steps_to_CFL     = 1;
     ud->no_of_steps_to_dtfixed = 1;
 
@@ -196,7 +196,7 @@ void User_Data_init(User_Data* ud) {
     ud->Solver = BICGSTAB_PRECON;        /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->Solver_Node = BICGSTAB_PRECON;   /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->precondition = CORRECT;
-    double tol = 1.e-9;
+    double tol = 1.e-8;
     ud->flux_correction_precision = tol;
     ud->flux_correction_local_precision = tol;   /* 1.e-05 should be enough */
     ud->second_projection_precision = tol;
@@ -247,7 +247,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 1;
+    ud->write_file_period = 80;
     ud->file_format = HDF;
     
     {
@@ -276,7 +276,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const double w0 = 0.0;
     const double delth = 0.01 / ud.T_ref;  /* standard:  0.01 / ud.T_ref */
     const double xc    = +0.0*1000.0e+03/ud.h_ref; /* -1000.0e+03/ud.h_ref;  -50.0e+03/ud.h_ref; 0.0; */
-    const double a     = 1.0e+05/ud.h_ref/20;  /* 1.0e+05/ud.h_ref;  1.0e+05/ud.h_ref/20; */
+    const double a     = 1.0e+05/ud.h_ref;  /* 1.0e+05/ud.h_ref;  1.0e+05/ud.h_ref/20; */
         
     const int icx = elem->icx;
     const int icy = elem->icy;

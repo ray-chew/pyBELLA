@@ -115,7 +115,7 @@ double precon_prepare(
                 }
                                 
                 /* 
-                 here we loop over inner nodes only because bdry nodes only pick up to terms
+                 here we loop over inner nodes only because bdry nodes only pick up two terms
                  in the above scattering loop
                  */
                 precon_inv_scale = 0.0;
@@ -306,6 +306,7 @@ double precon_prepare(
             default: ERROR("ndim not in {1, 2, 3}");
         }  
     }
+    return precon_inv_scale;
 }
 #endif /* PRECON_LEGACY */
 

@@ -32,7 +32,8 @@ void Bound(
 		   const States* HydroState,
 		   const double lambda, 
 		   const int n, 
-		   const int SplitStep);
+           const int SplitStep, 
+           const int setZ);
 
 void set_wall_massflux(
 					   BDRY* bdry, 
@@ -66,7 +67,8 @@ void check_flux_bcs(
 void Set_Explicit_Boundary_Data(
                                 ConsVars* Sol,
                                 const ElemSpaceDiscr* elem,
-                                const MPV* mpv);
+                                const MPV* mpv,
+                                const int setZ);
 
 
 /*
