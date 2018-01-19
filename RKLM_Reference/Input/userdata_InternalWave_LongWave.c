@@ -42,7 +42,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Earth */
     double grav     = 9.81;             /* [m/s^2]                */
-    double omega    = 0.0*0.0001;     /* 1.454 */
+    double omega    = 1.0*0.0001;     /* 1.454 */
     /* double omega  = sin(0.5*PI) * 2.0 * 0.00007272205217;   */
     
     /* thermodynamics and chemistry */
@@ -54,7 +54,7 @@ void User_Data_init(User_Data* ud) {
     /* references for non-dimensionalization */
     double h_ref    = 10000;                 /* [m]               */
     double t_ref    = 100;                   /* [s]               */
-    double T_ref    = 224.00;                /* [K]               */
+    double T_ref    = 300.00;                /* [K]               */
     double p_ref    = 10e+5;                 /* [Pa]              */
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
     /* double rho_ref = p_ref / (R_gas*T_ref); [kg/m^3]          */
@@ -124,7 +124,7 @@ void User_Data_init(User_Data* ud) {
     ud->zmax =   1.0;
     
     /* boundary/initial conditions */
-    ud->wind_speed  =  0.0 * 20.0/u_ref;
+    ud->wind_speed  =  1.0 * 20.0/u_ref;
     ud->wind_shear  = -0.0;              /* velocity in [u_ref/h_ref] */
     ud->hill_height = 0.0 * 0.096447; 
     ud->hill_length_scale = 0.1535;   /* hill_length * l_ref = 1.0 km */
@@ -145,8 +145,8 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = OP_SPLIT_MD_UPDATE; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT*/
     ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 300.0 / ud->t_ref;
-    ud->dtfixed                = 300.0 / ud->t_ref;
+    ud->dtfixed0               = 600.0 / ud->t_ref;
+    ud->dtfixed                = 600.0 / ud->t_ref;
     ud->no_of_steps_to_CFL     = 1;
     ud->no_of_steps_to_dtfixed = 1;
 
@@ -157,16 +157,16 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx =  600+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =   20+1; /* 321; 161;  81;  65; 41;  */
+    ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
+    ud->iny =   40+1; /* 321; 161;  81;  65; 41;  */
     ud->inz = 1;
     ud->h   = MIN_own((ud->xmax-ud->xmin)/(ud->inx),MIN_own((ud->ymax-ud->ymin)/(ud->iny),(ud->zmax-ud->zmin)/(ud->inz)));
     
     /* explicit predictor step */
     /* Recovery */
     ud->recovery_order = SECOND; /* FIRST, SECOND */ 
-    ud->limiter_type_scalars  = NONE; 
-    ud->limiter_type_velocity = NONE; 
+    ud->limiter_type_scalars  = VANLEER; 
+    ud->limiter_type_velocity = VANLEER; 
     /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
     
     /* parameters for SWEBY_MUNZ limiter family */
@@ -247,7 +247,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 80;
+    ud->write_file_period = 20;
     ud->file_format = HDF;
     
     {
@@ -275,8 +275,9 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const double v0 = 0.0;
     const double w0 = 0.0;
     const double delth = 0.01 / ud.T_ref;  /* standard:  0.01 / ud.T_ref */
-    const double xc    = +0.0*1000.0e+03/ud.h_ref; /* -1000.0e+03/ud.h_ref;  -50.0e+03/ud.h_ref; 0.0; */
-    const double a     = 1.0e+05/ud.h_ref;  /* 1.0e+05/ud.h_ref;  1.0e+05/ud.h_ref/20; */
+    const double xc    = -1.0*1200.0e+03/ud.h_ref; /* -1000.0e+03/ud.h_ref;  -50.0e+03/ud.h_ref; 0.0; */
+    /* const double a     = scalefactor * 5.0e+03/ud.h_ref; */
+    const double a     = 1.0e+05/ud.h_ref;   /* 1.0e+05/ud.h_ref;  1.0e+05/ud.h_ref/20; */
         
     const int icx = elem->icx;
     const int icy = elem->icy;

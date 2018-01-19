@@ -71,7 +71,7 @@ int main( void )
     TimeStepInfo dt_info;
 	double lambda, cfl, cfl_ac, cfl_adv;   
 	const double* tout = ud.tout;
-	const int sequence = 0;  /* 1; 0; */
+    const int sequence = 1;  /*  xyyx sequence (good)  1;   yxxy sequence (bad) 0; */
 	int Split = 0;
 	int output_switch = 0;
 	int time_step_switch = 0;
