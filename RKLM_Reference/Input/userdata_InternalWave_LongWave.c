@@ -145,8 +145,8 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = OP_SPLIT_MD_UPDATE; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT*/
     ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 600.0 / ud->t_ref;
-    ud->dtfixed                = 600.0 / ud->t_ref;
+    ud->dtfixed0               = 200.0 / ud->t_ref;
+    ud->dtfixed                = 200.0 / ud->t_ref;
     ud->no_of_steps_to_CFL     = 1;
     ud->no_of_steps_to_dtfixed = 1;
 
