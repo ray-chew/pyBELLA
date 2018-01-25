@@ -177,7 +177,7 @@ void User_Data_init(User_Data* ud) {
     ud->kZ = 1.4; /* 2.0 */
     
     /* first correction */
-    ud->p_flux_correction = CORRECT; /* CORRECT, WRONG; */
+    ud->p_flux_correction = WRONG; /* CORRECT, WRONG; */
     if (ud->time_integrator == OP_SPLIT || ud->time_integrator == OP_SPLIT_MD_UPDATE) {
         ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.0;  /* BEST RESULTS */
         /* ud->latw[0] = ud->latw[2] = 0.0; ud->latw[1] = 1.0; ud->p_extrapol = 1.0; */   
@@ -196,7 +196,7 @@ void User_Data_init(User_Data* ud) {
     ud->Solver = BICGSTAB_PRECON;        /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->Solver_Node = BICGSTAB_PRECON;   /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->precondition = CORRECT;
-    double tol = 1.e-10;
+    double tol = 1.e-8;
     ud->flux_correction_precision = tol;
     ud->flux_correction_local_precision = tol;   /* 1.e-05 should be enough */
     ud->second_projection_precision = tol;
@@ -261,6 +261,138 @@ void User_Data_init(User_Data* ud) {
         }
     }
 }
+
+#ifdef HYDRO_BALANCED_INIT_DATA
+
+/* ================================================================================== */
+
+void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr* node) {
+    
+    extern Thermodynamic th;
+    extern User_Data ud;
+    extern MPV* mpv;
+    extern double *W0, *W1, *Sbg;
+    
+    const double u0 = ud.wind_speed;
+    const double v0 = 0.0;
+    const double w0 = 0.0;
+    const double delth = 0.01 / ud.T_ref;  /* standard:  0.01 / ud.T_ref */
+    const double xc    = -1.0*scalefactor*60.0e+03/ud.h_ref; /* -1000.0e+03/ud.h_ref;  -50.0e+03/ud.h_ref; 0.0; */
+    /* const double a     = scalefactor * 5.0e+03/ud.h_ref; */
+    const double a     = scalefactor*5.0e+03/ud.h_ref;   /* 1.0e+05/ud.h_ref;  1.0e+05/ud.h_ref/20; */
+    
+    const int icx = elem->icx;
+    const int icy = elem->icy;
+    const int igy = elem->igy;
+    
+    const int icxn = node->icx;
+    const int icyn = node->icy;
+    const int iczn = node->icz;
+    
+    int i, j, m, n, nm;
+    double x, y, xn, yn, ym;
+    double rho, u, v, w, p, rhoY;
+    
+    double g;
+    
+    States *HySt, *HyStn;
+    double *Y, *Yn;
+    
+    g = ud.gravity_strength[1];
+    
+    HySt  = States_new(node->icy);
+    Y     = (double*)malloc(node->icy*sizeof(double));
+    HyStn = States_new(node->icy);
+    Yn    = (double*)malloc(node->icy*sizeof(double));
+    
+    Hydrostatics_State(mpv, Sbg, elem);
+    
+    for(i = 0; i < icx; i++) {
+        
+        /* set potential temperature stratification in the column */
+        for(j = 0; j < elem->icy; j++) {
+            x     = elem->x[i];
+            y     = elem->y[j];
+            Y[j]  = stratification(y)  + delth * molly(x) * sin(PI*y)  / (1.0 + (x-xc)*(x-xc) / (a*a));
+        }        
+        for(j = 0; j < node->icy; j++) {
+            xn    = node->x[i];
+            yn    = node->y[j];
+            Yn[j] = stratification(yn)  + delth * molly(xn) * sin(PI*yn)  / (1.0 + (xn-xc)*(xn-xc) / (a*a));
+        }        
+        Hydrostatics_Column(HySt, HyStn, Y, Yn, elem, node);
+        
+        /* initialization of field variables */
+        for(j = igy; j < icy - igy; j++) {
+            
+            n  = j*icx + i;
+            nm = n-icx;
+            
+            x  = elem->x[i];
+            y  = elem->y[j];
+            ym = elem->y[j-1];
+            
+            u   = u0;
+            v   = v0;
+            w   = w0;
+            
+            p    = HySt->p0[j];            
+            rhoY = HySt->rhoY0[j];
+            rho  = rhoY/(stratification(y)  + delth * molly(x) * sin(PI*y)  / (1.0 + (x-xc)*(x-xc) / (a*a)));
+            rho  = rhoY/Y[j];
+            
+            Sol->rho[n]    = rho;
+            Sol->rhou[n]   = rho * u;
+            Sol->rhov[n]   = rho * v;
+            Sol->rhow[n]   = rho * w;
+            Sol->rhoe[n]   = rhoe(rho, u, v, w, p, g*y);
+            Sol->rhoY[n]   = rhoY;
+            Sol->geopot[n] = g * y;
+            
+            mpv->p2_cells[n]   = (p/rhoY) / ud.Msq;
+            Sol->rhoZ[PRES][n] = mpv->p2_cells[n];
+            Sol->rhoX[BUOY][n] = Sol->rho[n] * ( Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
+            
+        }
+    }
+    
+    /* set all dummy cells */
+    /* geopotential in bottom and top dummy cells */
+    for(j = 0; j < igy; j++) {m = j * icx;
+        y = elem->y[j];
+        for(i = 0; i < icx; i++) {n = m + i;
+            Sol->geopot[n] = g * y;
+        }
+    }
+    
+    for(j = icy-igy; j < icy; j++) {m = j * icx;
+        y = elem->y[j];
+        for(i = 0; i < icx; i++) {n = m + i;
+            Sol->geopot[n] = g * y;
+        }
+    }
+    
+    
+    /* put p2_cells into Z for intermediate storage */
+    for(i=0; i<elem->nc; i++) {
+        Sol->rhoZ[PRES][i]  = mpv->p2_cells[i];
+    }
+    
+    /*set nodal pressures */
+    for(int k = 0; k < iczn; k++) {int l = k * icxn * icyn;   
+        
+        for(int j = 0; j < icyn; j++) {int m = l + j * icxn;                
+            double p    = mpv->HydroState_n->p0[j];
+            double rhoY = mpv->HydroState_n->rhoY0[j];
+            
+            for(int i = 0; i < icxn; i++) {int n = m + i;
+                mpv->p2_nodes[n] = (p/rhoY) / ud.Msq;
+            }
+        }
+    }                          
+}
+
+#else /* HYDRO_BALANCED_INIT_DATA */
 
 /* ================================================================================== */
 
@@ -368,6 +500,8 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     }                      
     
 }
+
+#endif /* HYDRO_BALANCED_INIT_DATA */
 
 /* ================================================================================== */
 

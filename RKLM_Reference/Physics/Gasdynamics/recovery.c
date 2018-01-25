@@ -282,7 +282,8 @@ void recovery_gravity(
 
 #ifndef GRAVITY_IMPLICIT_2
 #ifdef GRAVITY_IMPLICIT_1
-    int impl_factor = (implicit == 1.0 ? 2.0 : 1.0);
+    /* int impl_factor = (implicit == 1.0 ? 2.0 : 1.0); */
+    int impl_factor = (implicit == 1.0 ? 2.0 : 1.0);   /* zero seems more consistent with impl midpoint! */
     for( i = 1; i < nmax; i++ ) {
     
         double rhou       = 0.5 * (Rights->rhou[i] + Lefts->rhou[i-1]);

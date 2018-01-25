@@ -225,7 +225,7 @@ void flux_correction(
     for(n=0; n<elem->nc; n++) {
 #if 1
         /* mpv->dp2_cells[n] = 2.0*dp2[n]; */
-        mpv->dp2_cells[n] = Sol->rhoZ[PRES][n] + 0.5*dp2[n] - mpv->p2_cells[n];
+        mpv->dp2_cells[n] = Sol->rhoZ[PRES][n] + (1.0-DP2_ELL_FACTOR)*dp2[n] - mpv->p2_cells[n];
         mpv->p2_cells[n]  = mpv->p2_cells[n] + mpv->dp2_cells[n];
 #else
         mpv->dp2_cells[n] = 1.0*dp2[n];
@@ -524,7 +524,11 @@ void operator_coefficients(
             
 			for(j = igy; j < icy - igy; j++) {m = j * icx;
 				for(i = igx; i < icx - igx; i++) {n = m + i;
+#ifdef TIME_AVERAGED_COEFFS_PROJ1
 					hc[n] = ccenter * pow(0.5*(Sol->rhoY[n]+Sol0->rhoY[n]),cexp);
+#else
+                    hc[n] = ccenter * pow(Sol0->rhoY[n],cexp);
+#endif
 				}
 			}
 			
@@ -781,6 +785,10 @@ static void flux_correction_due_to_pressure_gradients(
                                        );
                     
                     frhoY = f->rhoY[nc] + tmpx;
+#ifdef CENTERED_UPDATE_1ST_PROJ
+                    buoy->x[ic]  += tmpx; 
+                    buoy->x[icm] += tmpx; 
+#endif
                     
 #ifdef NO_UPWIND_PROJ1
                     upwind = 0.5; 
@@ -875,7 +883,11 @@ static void flux_correction_due_to_pressure_gradients(
                                                   ) 
                                        );
                     
-                    grhoY       = g->rhoY[mc] + tmpy;
+                    grhoY        = g->rhoY[mc] + tmpy;
+#ifdef CENTERED_UPDATE_1ST_PROJ
+                    buoy->y[jc]  += tmpy;
+                    buoy->y[jcm] += tmpy;
+#endif 
                     
 #ifdef NO_UPWIND_PROJ1
                     upwind = 0.5; 

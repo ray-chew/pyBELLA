@@ -19,15 +19,20 @@
 
 /* Output parameters */
 #define HDFFORMAT
-#define OUTPUT_SUBSTEPS_PREDICTOR1
-#define OUTPUT_SUBSTEPS 1
-#define OUTPUT_SPLITSTEPS 1
+#define OUTPUT_SUBSTEPS 0
+#define OUTPUT_SPLITSTEPS 0
+#define OUTPUT_SUBSTEPS_PREDICTOR 0
 
+
+/* ============================================= 
+ Initial Data Options
+ ============================================= */
+
+#define HYDRO_BALANCED_INIT_DATA
 
 /* ============================================= 
  Elliptic Solver Options
  ============================================= */
-
 
 #define GRAVITY_IMPLICIT
 
@@ -38,6 +43,8 @@
  */  
 #ifdef GRAVITY_IMPLICIT
 #define GRAVITY_IMPLICIT_1
+#define DP2_ELL_FACTOR 0.5
+  /* #define CENTERED_UPDATE_1ST_PROJ */
 #endif
 
 /* solver options ==============================
@@ -63,7 +70,6 @@
  #define PRECON_VERTICAL_COLUMN_2ND_PROJ
 
  #define UN_AVERAGE_PROJ1
- #define TIME_AVERAGED_COEFFS_PROJ1
 */
 
 #define PRECON
@@ -77,7 +83,7 @@
 /* First projection options */
 #define PROJECTION1 1
 #define CONTROL_PRECONDITIONED_RESIDUAL_PROJ1
-#define TIME_AVERAGED_COEFFS_PROJ1
+#define TIME_AVERAGED_COEFFS_PROJ1 
 
 /*
  #define NO_UPWIND_PROJ1          IMPORTANT: Upwinding in the correction induces NOISE  

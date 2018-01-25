@@ -13,6 +13,15 @@
 #include "space_discretization.h"
 #include "mpv.h"
 
+/* ================================================================================== */
+
+void Hydrostatics_Column(States* HydroState, 
+                         States* HydroState_n, 
+                         double* Y, 
+                         double* Yn, 
+                         const ElemSpaceDiscr* elem, 
+                         const NodeSpaceDiscr* node);
+
 void Hydrostatics_State(MPV* mpv, double *Sbg, const ElemSpaceDiscr* elem);
 
 void Hydrostatic_Exner_pressure(
