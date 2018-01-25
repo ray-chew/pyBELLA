@@ -130,15 +130,76 @@
 
 \section*{ToDo}
 
-January 19, 2018:
+\paragraph{January 19, 2018 (additions of January 25, 2018):}
+%
 \begin{itemize}
 \item get compressible version going as the long-wave hydrostatic GW test
-      might involve a compressibility influence
-\item re-implement Runge-Kutta time integrator for the explicit part
-\item move 1st projection to the half-time level of the second-order RK-scheme
-\item can I invent a scheme that explicitly advects $\delta\theta$ instead of
-      full theta and thus allows me to control up-down symmetry better?
+      might involve a compressibility influence \\
+      (Set aside as long as I have no psinc version really running.)
+\item re-implement Runge-Kutta time integrator for the explicit part\\
+      (Set aside.)
+\item Move 1st projection to the half-time level of the second-order RK-scheme\\
+      (Will do so now, but keep the split/MUSCL scheme for now.)
+\item Can I invent a scheme that explicitly advects $\tilde\theta$ instead of
+      full theta and thus allows me to control up-down symmetry better?\\
+      (Part of my next move.)
 \end{itemize}
+%
+
+\paragraph{January 25, 2018: New scheme}
+
+The key difficulty with my approach so far seems to be that the time 
+semi-implicit integration is not consistently carried through the scheme. 
+I am using the ingredients of the implicit midpoint rule in formulating
+and stabilizing the advective fluxes, yet I am so far not fully evaluating
+the implicit terms at the mid-time level. This would entail solving the 
+pressure equation right there and accounting for the pressure gradients
+in correcting the advective fluxes also. This I am going to fix with the
+following strategy:
+%
+\begin{enumerate}
+\item \label{it:LeadingSplitStep}
+      Split-step advection forward cycle, including separated treatment 
+      of $\tilde\theta$, with the contribution from the background 
+      stratification taken out and shifted to the flux correction part.
+      Density transport is carried along as part of the compressible 
+      advection scheme. (See ``Options'' below.) 
+\item Advective flux correction including a correction that takes the 
+      split-step advection fluxes out and replaces them with fluxes 
+      computed afresh from the data obtained after 
+      step~\ref{it:LeadingSplitStep}. Only now will the advection of the
+      background be handled and added to $\tilde\theta$.
+\item Implicit momentum correction corresponding to ``second projection''
+      in our previous work. (See ``Options''.)
+\item Concluding advection split step. 
+\end{enumerate}
+%
+
+Options:
+%
+\begin{itemize}
+\item Options for compressible advection:
+  \begin{enumerate}
+  \item Standard procedure based on $(\rho, \rho\vv, P)$. The split into
+        an additional transport scheme for $\tilde\rho = (P\tilde\theta)$
+        may introduce a breach of mass continuity if $\rho$ is replaced 
+        with the result of the decomposed step after the fact. It might
+        be sufficient, though, to just use the split-version as an auxiliary
+        means of formulating balanced fluxes. 
+  \item Switch to formulating advection in terms of $(P\tilde\theta, P\vv, P)$. 
+        In this approach, we likely don't even have to invoke an additional
+        variable.  
+  \end{enumerate}
+\item Options for second projection / balanced momentum update
+  \begin{enumerate}
+  \item Treat implicit advection of background stratification as auxiliary
+        calculation.
+  \item Use ``single projection only'' approach developed earlier and 
+        implemented under \\ ``NODAL\_PROJECTION\_ONLY'' in RKLM code variant.
+  \end{enumerate}
+\end{itemize}
+%
+
 
 % ===========================================================================
 % ===========================================================================
