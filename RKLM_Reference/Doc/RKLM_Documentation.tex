@@ -111,6 +111,9 @@
 
 \newcommand{\Nscsq}{N^2_{sc}}
 
+\newcommand{\notdone}{$\circ$}
+\newcommand{\done}{$\bullet$}
+
 % ===========================================================================
 % ===========================================================================
 % ===========================================================================
@@ -140,9 +143,13 @@
       (Set aside.)
 \item Move 1st projection to the half-time level of the second-order RK-scheme\\
       (Will do so now, but keep the split/MUSCL scheme for now.)
-\item Can I invent a scheme that explicitly advects $\tilde\theta$ instead of
+\item Can I invent a scheme that explicitly advects $\tilde\chi$ instead of
       full theta and thus allows me to control up-down symmetry better?\\
       (Part of my next move.)
+\item Tested initial pressures with hydrostatic balance relative to background
+      $\theta$ and relative to $\tilde\theta$:  The latter gives slightly 
+      favorable results -- less (though anyway small) wiggles, slightly higher
+      wave amplitudes. But the solves become substantially more expensive.
 \end{itemize}
 %
 
@@ -160,7 +167,7 @@ following strategy:
 \begin{enumerate}
 \item \label{it:LeadingSplitStep}
       Split-step advection forward cycle, including separated treatment 
-      of $\tilde\theta$, with the contribution from the background 
+      of $\tilde\chi$, with the contribution from the background 
       stratification taken out and shifted to the flux correction part.
       Density transport is carried along as part of the compressible 
       advection scheme. (See ``Options'' below.) 
@@ -168,7 +175,7 @@ following strategy:
       split-step advection fluxes out and replaces them with fluxes 
       computed afresh from the data obtained after 
       step~\ref{it:LeadingSplitStep}. Only now will the advection of the
-      background be handled and added to $\tilde\theta$.
+      background be handled and added to $\tilde\chi$.
 \item Implicit momentum correction corresponding to ``second projection''
       in our previous work. (See ``Options''.)
 \item Concluding advection split step. 
@@ -181,12 +188,12 @@ Options:
 \item Options for compressible advection:
   \begin{enumerate}
   \item Standard procedure based on $(\rho, \rho\vv, P)$. The split into
-        an additional transport scheme for $\tilde\rho = (P\tilde\theta)$
+        an additional transport scheme for $\tilde\rho = (P\tilde\chi)$
         may introduce a breach of mass continuity if $\rho$ is replaced 
         with the result of the decomposed step after the fact. It might
         be sufficient, though, to just use the split-version as an auxiliary
         means of formulating balanced fluxes. 
-  \item Switch to formulating advection in terms of $(P\tilde\theta, P\vv, P)$. 
+  \item Switch to formulating advection in terms of $(P\tilde\chi, P\vv, P)$. 
         In this approach, we likely don't even have to invoke an additional
         variable.  
   \end{enumerate}
@@ -199,6 +206,55 @@ Options:
   \end{enumerate}
 \end{itemize}
 %
+
+ToDo-List: (not done yet: \notdone; \quad done: \done)
+%
+\begin{itemize}
+\item[\done] 
+      Introduce advection of density perturbation in {\tt rhoX}-Variables.
+\item[\notdone]
+      Make advective fluxes available inside the split step advection 
+      routines.
+\item[\notdone]
+      Access them everywhere to represent the advecting velocities.
+      \begin{itemize}
+      \item[\notdone] In the reconstruction.
+      \item[\notdone] In the flux function.
+      \end{itemize}
+\item[\notdone] 
+      Apply gravity source term and pressure gradient only to advective
+      fluxes in the split scheme, not to the cell-centered momenta. 
+\item[\notdone] 
+      Move projections in between the advection split steps.
+\item[\notdone] 
+      Make sure second split sequence works with advective fluxes determined
+      by the first projection. 
+\item[\notdone] 
+      Make sure second split sequence includes vertical advection of $\overline{\chi}$. 
+\item[\notdone] 
+      Make sure the second split sequence does not advect $\overline{\chi}$ for
+      the $\tilde\chi$ variable. 
+\item[\notdone] 
+      Compare results of full density advection with that of perturbation
+      density / $\tilde\chi$ advection
+\item[\notdone] 
+      In the second half step, which quantities am I to advect? Those fully
+      updated to the new time level or those strictly computed for the half 
+      time level? In fact, depending on how the details are done, I can 
+      recover Piotr's time integration strategy:
+      \begin{enumerate}
+      \item[\notdone] Euler forward advection over $\Delta t/2$
+      \item[\notdone] Euler implicit pressure/gravity for the advective fluxes
+                      over $\Delta t/2$ \\ (advective fluxes done)
+      \item[\notdone] Euler explicit pressure/gravity for centered data 
+                      from old time level over $\Delta t/2$
+      \item[\notdone] Second order advection of resulting fields over $\Delta t$
+                      based on previously estimated advective fluxes
+      \item[\notdone] Euler implicit pressure/gravity for centered data 
+                      from the result over $\Delta t/2$
+      \end{enumerate}
+\end{itemize}
+
 
 
 % ===========================================================================

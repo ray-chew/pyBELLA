@@ -142,14 +142,6 @@ void second_projection(
 		rhs[ii] = 0.0;
 	}
     
-    
-#ifdef GRAVITY_IMPLICIT
-#ifndef GRAVITY_IMPLICIT_2
-    // explicit_background_buoyancy(Sol, mpv, Sol0, elem, node, dt);
-#endif
-#endif
-
-	    
     double rhs_weight_new = 2.0;
     double rhs_weight_old = 2.0*ud.compressibility;
     rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv->eta, mpv, bdry, dt, rhs_weight_new);
@@ -169,7 +161,6 @@ void second_projection(
     WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
 #endif
      
-    
 	assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED); 
 	operator_coefficients_nodes(hplus, hcenter, hS, elem, node, Sol, Sol0, mpv, dt);
 	

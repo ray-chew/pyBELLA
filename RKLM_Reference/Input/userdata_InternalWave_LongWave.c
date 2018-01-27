@@ -143,7 +143,7 @@ void User_Data_init(User_Data* ud) {
     /* ================================================================================== */
     
     /* time discretization */
-    ud->time_integrator        = OP_SPLIT_MD_UPDATE; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT*/
+    ud->time_integrator        = SI_MIDPT; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, SI_MIDPT */
     ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
     ud->dtfixed0               = 600.0 / ud->t_ref;
     ud->dtfixed                = 600.0 / ud->t_ref;
@@ -460,7 +460,6 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             mpv->p2_cells[n]   = (p/rhoY) / ud.Msq;
             Sol->rhoZ[PRES][n] = mpv->p2_cells[n];
             Sol->rhoX[BUOY][n] = Sol->rho[n] * ( Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
-                        
         }
     }
     

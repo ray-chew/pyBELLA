@@ -58,7 +58,7 @@ void update(
                 for (nsp = 0; nsp < ud.nspec; nsp++) {
                     sol->rhoX[nsp][i] -= lambdax * (f->rhoX[nsp][i + 1] - f->rhoX[nsp][i]);
                 }
-                sol->rhoX[nsp][i] += buoyS[i];
+                /* sol->rhoX[BUOY][i] += buoyS[i]; */
     		}
     		break;
   		}
@@ -109,7 +109,7 @@ void update(
                         sol->rhoX[nsp][n] -= lambdax * (f->rhoX[nsp][ox + 1] - f->rhoX[nsp][ox]) - lambday * (g->rhoX[nsp][oy + 1] - g->rhoX[nsp][oy]);
                     }
                     
-                    sol->rhoX[nsp][n] += buoyS[n];
+                    /* sol->rhoX[BUOY][n] += buoyS[n]; */
 				}
 			}
 			            
@@ -191,7 +191,7 @@ void update(
                             sol->rhoX[nsp][n] -= lambdaz * (h->rhoX[nsp][oz + 1] - h->rhoX[nsp][oz]);
                         }
                         
-                        sol->rhoX[BUOY][n] += buoyS[n];
+                        /* sol->rhoX[BUOY][n] += buoyS[n]; */
 					}
 				} 
 			}  

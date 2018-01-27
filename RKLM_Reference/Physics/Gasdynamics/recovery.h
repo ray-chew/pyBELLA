@@ -33,7 +33,10 @@ void recovery_gravity(
 					  const double lambda, 
 					  const int nmax,
                       const int stage,
-                      const double implicit);
+                      const double implicit,
+                      const enum FluxesFrom adv_fluxes_from, 
+                      const enum MUSCL_ON_OFF muscl_on_off,
+                      const enum GRAVITY_ON_OFF gravity_on_off);
 
 /*------------------------------------------------------------------------------
  

@@ -284,8 +284,6 @@ void dp_exner(
     }
 }
 
-/* Test */
-
 /*------------------------------------------------------------------------------
  inverse of potential temperature
  ------------------------------------------------------------------------------*/
@@ -568,9 +566,6 @@ void adjust_pi(
                 double dp2_elliptic = mpv->dp2_cells[n]; 
 
                 Sol->rhoZ[PRES][n]  = p2_old + weight * (alpha * dp2_rhoY + (1.0-alpha) * dp2_ell_factor*dp2_elliptic);
-#ifdef GRAVITY_IMPLICIT_2
-                // Sol->rhoX[BUOY][n]  = Sol->rho[n] * (Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
-#endif
 			}
 		}
 	}

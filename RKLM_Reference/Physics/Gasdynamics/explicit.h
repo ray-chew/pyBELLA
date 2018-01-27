@@ -17,7 +17,6 @@ typedef struct {
     double dt_frac;
     double flux_frac[NO_OF_RK_STAGES][2];
     double update_frac[NO_OF_RK_STAGES];
-    int no_of_stages;
     enum Boolean multiD_updt;
 } TimeIntegratorParams;
 
@@ -48,7 +47,10 @@ void Explicit_step_and_flux(
 							const int n, 
 							const int SplitStep,
                             const int RK_stage,
-                            const enum GravityTimeIntegrator GTI);
+                            const enum FluxesFrom adv_fluxes_from,
+                            const enum GravityTimeIntegrator GTI, 
+                            const enum MUSCL_ON_OFF muscl_on_off,
+                            const enum GRAVITY_ON_OFF gravity_on_off);
 
 
 /*------------------------------------------------------------------------------
@@ -93,21 +95,6 @@ void fullD_explicit_updates(ConsVars* Sol,
                             const int RK_stage);
 
 void Explicit_Coriolis(ConsVars *Sol, const ElemSpaceDiscr* elem, const double dt);
-
-
-#ifdef GRAVITY_IMPLICIT_2
-/*------------------------------------------------------------------------------
- explicit step for the fast linear system
- ------------------------------------------------------------------------------*/
-void Explicit_Buoyancy(ConsVars* Sol, 
-                       VectorField* buoy, 
-                       const MPV* mpv, 
-                       const ElemSpaceDiscr* elem, 
-                       const NodeSpaceDiscr* node, 
-                       const double t, 
-                       const double dt,
-                       const int implicit);
-#endif
 
 #endif /* EXPLICIT_H */
 

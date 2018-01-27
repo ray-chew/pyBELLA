@@ -163,7 +163,7 @@ void Hydrostatics_State(MPV* mpv, double *Sbg, const ElemSpaceDiscr* elem)
     
     const double rho0 = 1.0;
     
-    double y_p, y_m;
+    double y_p, y_m; 
     double p0;
     
     double S_integral_m, S_integral_n, S_integral_p, g;

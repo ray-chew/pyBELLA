@@ -187,6 +187,7 @@ void Data_free() {
     free(buoyS);
 	VectorField_free(buoy);
     VectorField_free(adv_flux);
+    VectorField_free(adv_flux0);
 	States_small_free(Solk);
 	free(W0);
 	free(W1);

@@ -46,12 +46,28 @@ enum TimeIntegrator {
     HEUN,
     EXPL_MIDPT,
     RK3_SKAMA,
-    RK3_TEST};
+    RK3_TEST,
+    SI_MIDPT};
 
 enum GravityTimeIntegrator {
     EULER_FORWARD,
     EULER_BACKWARD,
     IMPLICIT_TRAPEZOIDAL
+};
+
+enum FluxesFrom {
+    FLUX_EXTERNAL,
+    FLUX_INTERNAL
+};
+
+enum MUSCL_ON_OFF {
+    WITHOUT_MUSCL,
+    WITH_MUSCL
+};
+
+enum GRAVITY_ON_OFF {
+    WITHOUT_GRAVITY,
+    WITH_GRAVITY
 };
 
 enum TimeLevel {

@@ -34,15 +34,12 @@ static double* rho_buoy;
 
 static Characters* Ampls;
 
-static void slopes_gravity(
-						   States* Sol, 
-						   Hydro* Hydros, 
-						   const int n);
+static void slopes(States* Sol, 
+                   const int n);
 
 /* ========================================================================== */
 
-double (*limiter[])(
-					const double a, 
+double (*limiter[])(const double a, 
 					const double b, 
 					const double k) = {
     None,
@@ -104,7 +101,10 @@ void recovery_gravity(
 					  const double lambda, 
 					  const int nmax,
                       const int stage,
-                      const double implicit) {
+                      const double implicit,
+                      const enum FluxesFrom adv_fluxes_from, 
+                      const enum MUSCL_ON_OFF muscl_on_off,
+                      const enum GRAVITY_ON_OFF gravity_on_off) {
 	
 	extern User_Data ud;
 	extern Thermodynamic th;
@@ -112,12 +112,10 @@ void recovery_gravity(
 	
 	const double gamm  = th.gamm;
     
-#ifndef GRAVITY_IMPLICIT_2
     const double g     = ud.gravity_strength[1];
     const double Msq   = ud.Msq;
 	const double dh    = elem->dx;
     const double dt    = lambda * dh;
-#endif
     
     int OrderTwo  = ((ud.recovery_order == SECOND) ? 1 : 0);
         
@@ -216,7 +214,7 @@ void recovery_gravity(
     }
     
 	/* Projection on right eigenvectors */
-	slopes_gravity(Sol, Hydros, nmax);
+	slopes(Sol, nmax);
     
 	/* right edge states inside cells = left states at cell interfaces */
 	
@@ -280,7 +278,6 @@ void recovery_gravity(
     conservatives_from_uvwYZ(Rights, 1, nmax-1); 
     conservatives_from_uvwYZ(Lefts, 1, nmax-1);
 
-#ifndef GRAVITY_IMPLICIT_2
 #ifdef GRAVITY_IMPLICIT_1
     /* int impl_factor = (implicit == 1.0 ? 2.0 : 1.0); */
     int impl_factor = (implicit == 1.0 ? 2.0 : 1.0);   /* zero seems more consistent with impl midpoint! */
@@ -339,7 +336,6 @@ void recovery_gravity(
         gravity_source[i-1] += drhou + dbuoy_adv; 
     }
 #endif /* GRAVITY_IMPLICIT_1 */
-#endif /* GRAVITY_IMPLICIT_2 */
 }
 
 /* ========================================================================== */
@@ -458,10 +454,8 @@ void recovery_free() {
 
 /* ========================================================================== */
 
-static void slopes_gravity(
-						   States* Sol, 
-						   Hydro* Hydros,
-						   const int n) {
+static void slopes(States* Sol, 
+                   const int n) {
 	
     /* User data */
     extern User_Data ud;

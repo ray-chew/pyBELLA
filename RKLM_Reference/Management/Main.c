@@ -89,12 +89,7 @@ int main( void )
     const enum GravityTimeIntegrator GRAVITY_SWITCH_II = (stepfrac[2] == 0.0 ? IMPLICIT_TRAPEZOIDAL : EULER_FORWARD);
     
     int substep;
-    
-    /*
-     enum LimiterType limiter_second_order_velocity;
-     enum LimiterType limiter_second_order_scalars;
-     */
-    
+        
     enum Boolean reset_init_data = CORRECT; /* CORRECT; WRONG; */
     
     FILE *tsfile = NULL; 
@@ -108,11 +103,6 @@ int main( void )
 	
 	/* data allocation and initialization */
 	Data_init();
-
-    int kxy1 = 2*elem->icx + 2;
-    int kxy2 = 2*elem->icx + 3;
-    int kyx1 = 2*elem->icy + 2;
-    int kyx2 = 3*elem->icy + 2;
 
     set_wall_massflux(bdry, Sol, elem);
     Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
@@ -188,28 +178,16 @@ int main( void )
 #if OUTPUT_SUBSTEPS
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
-           
-#ifdef GRAVITY_IMPLICIT_2
-            /* first explicit half time step for pressure gradient and buoyancy advection */
-            Explicit_Buoyancy(Sol, buoy, mpv, elem, node, t, 0.5*dt, 0);
-            ConsVars_set(Sol0, Sol, elem->nc);            
-#endif
-            
+                       
             Explicit_Coriolis(Sol, elem, 0.5*dt);
-            
             
 #if OUTPUT_SUBSTEPS
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
 
-            printf("\nnonlinear fluxes ---------------------------- \n");
-				
-            /* lift pressure to 1/4 time level */
-            for (int nc = 0; nc < elem->nc; nc++) {
-                Sol->rhoZ[PRES][nc] += 0.0 * mpv->dp2_cells[nc];
-            }
-
             if (ud.time_integrator == OP_SPLIT || ud.time_integrator == OP_SPLIT_MD_UPDATE) {
+                
+                printf("\nnonlinear fluxes ---------------------------- \n");
                 
                 substep = 0;
                 
@@ -218,13 +196,13 @@ int main( void )
                 if (sequence == 0) {
                     (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
                 }
-                                
+                
                 /* FORWARD gasdynamics */
                 stage = 0;
                 for(i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
                     lambda = stepfrac[substep]*ud.tips.dt_frac*dt/elem->dx;
                     Split = sequence * i_OpSplit + (1 - sequence) * ((elem->ndim - 1) - i_OpSplit);
-                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, GRAVITY_SWITCH_I);
+                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, FLUX_INTERNAL, GRAVITY_SWITCH_I, WITH_MUSCL, WITH_GRAVITY);
                     substep++;
                     
 #if OUTPUT_SUBSTEPS_PREDICTOR
@@ -238,22 +216,17 @@ int main( void )
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
                     }
 #endif
-
+                    
                     if(i_OpSplit < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
-
+                    
                 }
-                
-                /* lift pressure to 3/4 time level */
-                for (int nc = 0; nc < elem->nc; nc++) {
-                    Sol->rhoZ[PRES][nc] += 0.0* mpv->dp2_cells[nc];
-                }
-                
+                                
                 /* BACKWARD gasdynamics */
                 stage = 1;
                 for(i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
                     lambda = stepfrac[substep]*ud.tips.dt_frac*dt/elem->dx;
                     Split = (1 - sequence) * i_OpSplit + sequence * ((elem->ndim - 1) - i_OpSplit);
-                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, GRAVITY_SWITCH_II);
+                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, FLUX_INTERNAL, GRAVITY_SWITCH_II, WITH_MUSCL, WITH_GRAVITY);
                     substep++;
                     
 #if OUTPUT_SUBSTEPS_PREDICTOR
@@ -285,57 +258,153 @@ int main( void )
                     putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 0);
 #endif
                 }
-            }
-                        
-            /* Explicit_Coriolis(Sol, elem, 0.5*dt);
-             */
-
-            Explicit_Coriolis(Sol, elem, 0.5*dt);
-
-            Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
-            
-#if OUTPUT_SUBSTEPS
-            putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
-#endif
-            
-            if(PROJECTION1) {
                 
+                /* Bracketing Coriolis in Strang Split fashion around full advection-correction,
+                 that is after second projection, seems slightly better (see below) */
+                Explicit_Coriolis(Sol, elem, 0.5*dt); 
+                
+                Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
+                
+#if OUTPUT_SUBSTEPS
+                putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
+#endif
+                
+                if(PROJECTION1) {
+                    
+                    flux_correction(flux, buoy, elem, Sol, Sol0, t, dt, ud.implicitness, step);
+                    update(Sol, (const ConsVars**)flux, buoyS, buoy, elem, dt);
+                    Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
+#if OUTPUT_SUBSTEPS
+                    putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
+#endif
+                }
+                
+#if OUTPUT_SUBSTEPS
+                putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
+#endif
+                
+                if(PROJECTION2 == 1) {
+                    second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 1.0, t, dt);
+                    Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
+#if OUTPUT_SUBSTEPS
+                    putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
+#endif
+                }
+                
+                if (ud.absorber) 
+                {
+                    Absorber(Sol, t, dt); 
+                    Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
+                }					
+                
+                /* Bracketing Coriolis in Strang Split fashion around full advection-correction
+                 like here seems slightly better 
+                 Explicit_Coriolis(Sol, elem, 0.5*dt); 
+                 */
+            }
+            else if (ud.time_integrator == SI_MIDPT) {
+                
+                /* ======================================================================= */
+                /* RK-type time integration                                                */
+                /* ======================================================================= */
+                
+                printf("\nnonlinear advection 1 ---------------------------- \n");
+                
+                substep = 0;
+                
+                /* explicit advection half time step preparing advection flux calculation */
+                stage = 0;
+                for(Split = 0; Split < elem->ndim; Split++) {
+                    lambda = 0.5*dt/elem->dx;
+                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, FLUX_INTERNAL, GRAVITY_SWITCH_I, WITHOUT_MUSCL, WITHOUT_GRAVITY);
+                    substep++;
+                    
+#if OUTPUT_SUBSTEPS_PREDICTOR
+                    if (Split == 1)  {
+                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
+                    }
+                    Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
+                    putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", OUTPUT_SPLITSTEPS);
+                    if (Split == 1)  {
+                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
+                    }
+#endif
+                    
+                    if(i_OpSplit < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
+                    
+                }
+                                    
                 flux_correction(flux, buoy, elem, Sol, Sol0, t, dt, ud.implicitness, step);
                 update(Sol, (const ConsVars**)flux, buoyS, buoy, elem, dt);
                 Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
 #if OUTPUT_SUBSTEPS
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
-            }
-            
-#ifdef GRAVITY_IMPLICIT_2
-            /* second explicit half time step for pressure gradient and buoyancy advection */
-            
-            /*
-            this is too naive; implicitly carrying out this step requires rescaling of the 
-            explicit part of vertical advection of (1/theta)_bar
-            */
-            Explicit_Buoyancy(Sol, buoy, mpv, elem, node, t, 0.5*dt, 1);
-#endif
-            
-#if OUTPUT_SUBSTEPS
-            putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
-#endif
-            
-            if(PROJECTION2 == 1) {
+                
                 second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 1.0, t, dt);
                 Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
 #if OUTPUT_SUBSTEPS
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
-            }
-            
-            if (ud.absorber) 
-            {
-                Absorber(Sol, t, dt); 
+
+                printf("\nnonlinear advection 2 ---------------------------- \n");
+
+                /* BACKWARD gasdynamics */
+                stage = 1;
+                for(i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
+                    lambda = stepfrac[substep]*ud.tips.dt_frac*dt/elem->dx;
+                    Split = (1 - sequence) * i_OpSplit + sequence * ((elem->ndim - 1) - i_OpSplit);
+                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, FLUX_INTERNAL, GRAVITY_SWITCH_II, WITHOUT_MUSCL, WITHOUT_GRAVITY);
+                    substep++;
+                    
+#if OUTPUT_SUBSTEPS_PREDICTOR
+                    if (Split == 1)  {
+                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
+                    }
+                    Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
+                    putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", OUTPUT_SPLITSTEPS);
+                    if (Split == 1)  {
+                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
+                    }
+#endif
+                    
+                    if(i_OpSplit < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
+                }
+                
+                /* valid for 2D only */
+                assert(elem->ndim < 3);
+                if (sequence == 0) {
+                    (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
+                }
+                
+                if (ud.time_integrator == OP_SPLIT_MD_UPDATE) {
+#if OUTPUT_SUBSTEPS_PREDICTOR
+                    putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 0);
+#endif
+                    fullD_explicit_updates(Sol, Sol0, flux, buoyS, buoy, elem, dt, stage);
+#if OUTPUT_SUBSTEPS_PREDICTOR
+                    putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 0);
+#endif
+                }
+                
+                /* Bracketing Coriolis in Strang Split fashion around full advection-correction,
+                 that is after second projection, seems slightly better (see below) */
+                Explicit_Coriolis(Sol, elem, 0.5*dt); 
+                
                 Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
-            }					
-            			
+                
+#if OUTPUT_SUBSTEPS
+                putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
+#endif
+                                
+                if (ud.absorber) 
+                {
+                    Absorber(Sol, t, dt); 
+                    Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
+                }                                    
+            }
+
+            
 			t += dt;
 			step++;
 			            

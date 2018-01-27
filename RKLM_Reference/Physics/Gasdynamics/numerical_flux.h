@@ -21,7 +21,8 @@ void hllestar(
 			  States* Rights,
               States* Sol,
               const double lambda,
-			  const int n);
+              const int n,
+              const enum FluxesFrom adv_fluxes_from);
 
 void Advective_Fluxes(VectorField* adv_flux, 
                       const ConsVars* Sol, 

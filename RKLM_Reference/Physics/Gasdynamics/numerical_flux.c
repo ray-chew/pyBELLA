@@ -23,7 +23,8 @@ void hllestar(
               States* Rights,
               States* Sol,
               const double lambda,
-              const int n) {
+              const int n,
+              const enum FluxesFrom adv_fluxes_from) {
     
     extern User_Data ud;
     
