@@ -28,16 +28,20 @@
 #include "recovery.h"
 #include "laplacian_cells.h"
 
-static enum Constraint integral_condition(
-										  ConsVars* flux[3],
+static enum Constraint integral_condition(ConsVars* flux[3],
 										  double* rhs, 
 										  ConsVars* Sol,
 										  const double dt,
 										  const ElemSpaceDiscr* elem,
 										  MPV* mpv);
 
-static void controlled_variable_change_explicit(
-												double* rhs, 
+static void controlled_variable_flux_divergence(double* rhs, 
+                                                const ConsVars* flux[3],
+                                                const double dt, 
+                                                const ElemSpaceDiscr* elem);
+
+
+static void controlled_variable_change_explicit(double* rhs, 
 												const ElemSpaceDiscr* elem, 
 												ConsVars* Sol_new, 
 												ConsVars* Sol_old, 
@@ -86,8 +90,8 @@ static void flux_correction_due_to_pressure_values(
 static int rhs_output_count = 0;
 #endif
 
-void flux_correction(
-					 ConsVars* flux[3],
+void flux_correction(ConsVars* flux[3],
+                     VectorField* adv_flux_diff,
 					 VectorField* buoy,
 					 const ElemSpaceDiscr* elem_base_grid,
 					 ConsVars* Sol, 
@@ -117,9 +121,12 @@ void flux_correction(
     printf("\n====================================================\n");
 	    
 	operator_coefficients(hplus, hcenter, hS, elem, Sol, Sol0, mpv, dt);
-    
-	/* obtain finest grid data for the MG hierarchy */
-	controlled_variable_change_explicit(rhs, elem, Sol, Sol0, dt, mpv);
+
+    if (ud.time_integrator == SI_MIDPT) {
+        controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
+    } else {
+        controlled_variable_change_explicit(rhs, elem, Sol, Sol0, dt, mpv);        
+    }
     
     assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
     rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
@@ -213,6 +220,13 @@ void flux_correction(
     set_ghostcells_p2(dp2, (const double **)hplus, elem, elem->igx);
 
     flux_correction_due_to_pressure_gradients(flux, buoy, elem, Sol, Sol0, mpv, hplus, hS, dp2, t, dt, implicitness);
+    /*
+    if (ud.time_integrator == SI_MIDPT) {
+        for (int ii=0; ii<elem->nfx; ii++) flux[0]->rhoY[ii] += adv_flux_diff->x[ii];
+        if (elem->ndim > 1) for (int ii=0; ii<elem->nfy; ii++) flux[1]->rhoY[ii] += adv_flux_diff->y[ii];
+        if (elem->ndim > 2) for (int ii=0; ii<elem->nfz; ii++) flux[2]->rhoY[ii] += adv_flux_diff->z[ii];
+    }
+     */
     if (ud.p_flux_correction) {
         flux_correction_due_to_pressure_values(flux, buoy, elem, Sol, dp2, dt); 
     }
@@ -221,25 +235,80 @@ void flux_correction(
 
     memcpy(mpv->dp2_cells, dp2, elem->nc*sizeof(double));
 
-    /* store results in mpv-fields */        
-    for(n=0; n<elem->nc; n++) {
+    /* store results in mpv-fields */
+    if (ud.time_integrator == SI_MIDPT) {
+        for(n=0; n<elem->nc; n++) {
+            /* goal is to actually compute full deviation from background pressure here to begin with */
+            mpv->dp2_cells[n] = mpv->p2_cells[n] = dp2[n];
+        }
+    } else {
+        for(n=0; n<elem->nc; n++) {
 #if 1
-        /* mpv->dp2_cells[n] = 2.0*dp2[n]; */
-        mpv->dp2_cells[n] = Sol->rhoZ[PRES][n] + (1.0-DP2_ELL_FACTOR)*dp2[n] - mpv->p2_cells[n];
-        mpv->p2_cells[n]  = mpv->p2_cells[n] + mpv->dp2_cells[n];
+            /* mpv->dp2_cells[n] = 2.0*dp2[n]; */
+            mpv->dp2_cells[n] = Sol->rhoZ[PRES][n] + (1.0-DP2_ELL_FACTOR)*dp2[n] - mpv->p2_cells[n];
+            mpv->p2_cells[n]  = mpv->p2_cells[n] + mpv->dp2_cells[n];
 #else
-        mpv->dp2_cells[n] = 1.0*dp2[n];
-        mpv->p2_cells[n]  = mpv->p2_cells[n] + mpv->dp2_cells[n];
+            mpv->dp2_cells[n] = 1.0*dp2[n];
+            mpv->p2_cells[n]  = mpv->p2_cells[n] + mpv->dp2_cells[n];
 #endif
+        }        
     }
     
 	set_ghostcells_p2(mpv->p2_cells, (const double **)hplus, elem, elem->igx);
 }
 
+
+
+/* ========================================================================== */
+
+static void controlled_variable_flux_divergence(double* rhs, 
+                                                const ConsVars* flux[3],
+                                                const double dt, 
+                                                const ElemSpaceDiscr* elem)
+{
+    /* right hand side of pressure equation via advective flux divergence */
+    memset(rhs, 0.0, elem->nc*sizeof(double));
+    
+    const int igx = elem->igx;
+    const int icx = elem->icx;
+    const int ifx = elem->ifx;
+    const int igy = elem->igy;
+    const int icy = elem->icy;
+    const int ify = elem->ify;
+    
+    const double factor = 2.0 / dt;
+    const double dx = elem->dx;
+    const double dy = elem->dy;
+    
+    assert(elem->ndim == 2);
+    
+    for(int i=0; i<elem->nc; i++) rhs[i] = 0.0;
+    
+    for(int j = igy; j < icy - igy; j++) {
+        int mc  = j * icx;
+        int mfx = j * ifx; 
+        int mfy = j;
+        for(int i = igx; i < icx - igx; i++) {
+            int nc  = mc  + i;
+            int nfx = mfx + i;
+            int nfy = mfy + i*ify;
+            rhs[nc] = factor * ((flux[0]->rhoY[nfx+1] - flux[0]->rhoY[nfx])/dx + (flux[1]->rhoY[nfy+1] - flux[1]->rhoY[nfy])/dy);
+        }
+    }
+    
+#if 0
+    FILE *prhsfile = NULL;
+    char fn[100], fieldname[90];
+    sprintf(fn, "rhs_cells.hdf");
+    sprintf(fieldname, "rhs-cells");    
+    WriteHDF(prhsfile, elem->icx, elem->icy, elem->icz, elem->ndim, rhs, fn, fieldname);
+#endif
+}
+
+
 /* ========================================================================== */
  
-static void controlled_variable_change_explicit(
-                                                double* rhs, 
+static void controlled_variable_change_explicit(double* rhs, 
                                                 const ElemSpaceDiscr* elem, 
                                                 ConsVars* Sol_new, 
                                                 ConsVars* Sol_old, 

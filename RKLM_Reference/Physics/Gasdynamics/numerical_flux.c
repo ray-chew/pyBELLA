@@ -1,9 +1,11 @@
 /*******************************************************************************
  File:   numerical_flux.c
- Author: Thomas (Nicola)
- Date:   Wed Feb 25 13:21:46 WET 1998
  *******************************************************************************/
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <float.h>
+#include <stdarg.h>
 #include <math.h>
 #include "Common.h"
 #include "math_own.h"
@@ -16,7 +18,9 @@
 #include "numerical_flux.h"
 #include "boundary.h"
 
-
+/*------------------------------------------------------------------------------
+ plain upwind flux
+ ------------------------------------------------------------------------------*/
 void hllestar(
               ConsVars* Fluxes, 
               States* Lefts, 
@@ -33,6 +37,8 @@ void hllestar(
     double Xl[NSPEC], Xr[NSPEC];
     double upwind, upl, upr;
     int i, nsp;
+    
+    const double given_flux = (adv_fluxes_from == FLUX_EXTERNAL ? 1.0 : 0.0);
     
     primitives(Lefts,  1, n - 1);
     primitives(Rights, 1, n - 1);
@@ -78,7 +84,7 @@ void hllestar(
         rhour = Rights->rhou[i+1];
         Hr    = Rights->rhoe[i+1] + pr;
         
-        Fluxes->rhoY[i] = 0.25 * (rhol*Yl+rhor*Yr)*(ul + ur);
+        Fluxes->rhoY[i] = given_flux * Fluxes->rhoY[i] + (1.0-given_flux) * 0.25 * (rhol*Yl+rhor*Yr)*(ul + ur);
         
         upwind = 0.5 * ( 1.0 + SIGN(Fluxes->rhoY[i]));
         
@@ -97,15 +103,113 @@ void hllestar(
     }
 }
 
+/*------------------------------------------------------------------------------
+ store advective flux
+ ------------------------------------------------------------------------------*/
+void store_advective_fluxes(VectorField* adv_flux_full, 
+                            const ConsVars* flux[3], 
+                            const ElemSpaceDiscr* elem)
+{
+    
+    /* copy the advective fluxes */
+    memcpy(adv_flux_full->x, flux[0]->rhoY, elem->nfx*sizeof(double));
+    if (elem->ndim > 1) memcpy(adv_flux_full->y, flux[1]->rhoY, elem->nfy*sizeof(double));
+    if (elem->ndim > 2) memcpy(adv_flux_full->z, flux[2]->rhoY, elem->nfz*sizeof(double));
+}
 
-/*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
- $Log: numerical_flux.c,v $
- Revision 1.2  1998/03/07 09:56:47  nicola
- Added flux computation and multiple pressure variables.
- 
- Revision 1.1  1998/03/01 18:43:35  nicola
- This is the initial revision of 3d. It comes out after two weeks of work on
- Matthias' version of Rupert's F3D code. It is the starting point for imple
- menting a low Mach number extension.
- 
- LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL*/
+/*------------------------------------------------------------------------------
+ store advective flux difference
+ ------------------------------------------------------------------------------*/
+void add_advective_fluxes(VectorField* fd,
+                          const ConsVars* flux[3], 
+                          const int sign, 
+                          const VectorField* ff,
+                          const ElemSpaceDiscr* elem)
+{
+    for (int i=0; i<elem->ifx; i++) fd->x[i] = flux[0]->rhoY[i] + sign*ff->x[i]; 
+    if (elem->ndim >1) for (int i=0; i<elem->ifx; i++) fd->y[i] = flux[1]->rhoY[i] + sign*ff->y[i]; 
+    if (elem->ndim >2) for (int i=0; i<elem->ifx; i++) fd->z[i] = flux[2]->rhoY[i] + sign*ff->z[i]; 
+}
+
+/*------------------------------------------------------------------------------
+ store advective flux
+ ------------------------------------------------------------------------------*/
+void recompute_advective_fluxes(ConsVars* flux[3], 
+                      const ConsVars* Sol, 
+                      const ElemSpaceDiscr* elem)
+{
+    /* recompute advective flux at fixed time level from cell averages */
+    switch (elem->ndim) {
+        case 1: {
+            for(int i=1; i<elem->icx; i++) {
+                double u_c    = Sol->rhou[i]/Sol->rho[i];
+                double u_m    = Sol->rhou[i-1]/Sol->rho[i-1];
+                double rhoY_c = Sol->rhoY[i];
+                double rhoY_m = Sol->rhoY[i-1];
+                flux[0]->rhoY[i] = 0.25*(u_c+u_m)*(rhoY_c+rhoY_m);
+            }
+            break;
+        } 
+            
+        case 2: {
+            int icx = elem->icx;
+            int icy = elem->icy;
+            int ifx = elem->ifx;
+            int ify = elem->ify;
+            for (int j=1; j<icy; j++) {
+                int ncj  = j*icx;
+                int nfxj = j*ifx;
+                int nfyj = j;
+                for(int i=1; i<icx; i++) {
+                    int ncij  = ncj  + i;
+                    int nfxij = nfxj + i;
+                    int nfyij = nfyj + i*ify;
+                    double u_c     = Sol->rhou[ncij]/Sol->rho[ncij];
+                    double u_m     = Sol->rhou[ncij-1]/Sol->rho[ncij-1];
+                    double rhoY_c  = Sol->rhoY[ncij];
+                    double rhoY_mx = Sol->rhoY[ncij-1];
+                    
+                    double v_c     = Sol->rhov[ncij]/Sol->rho[ncij];
+                    double v_m     = Sol->rhov[ncij-icx]/Sol->rho[ncij-icx];
+                    double rhoY_my = Sol->rhoY[ncij-icx];
+                    
+                    flux[0]->rhoY[nfxij] = 0.25*(u_c+u_m)*(rhoY_c+rhoY_mx);
+                    flux[1]->rhoY[nfyij] = 0.25*(v_c+v_m)*(rhoY_c+rhoY_my);
+                }
+            }
+            break;
+        }
+            
+        case 3: {
+            ERROR("recompute_advective_fluxes() not implemented in 3D yet.");
+            break;
+        }
+    }
+}
+
+
+/*------------------------------------------------------------------------------
+ update advective flux
+ ------------------------------------------------------------------------------*/
+void update_advective_fluxes(ConsVars* flux[3], 
+                             const VectorField* adv_flux, 
+                             const ElemSpaceDiscr* elem)
+{
+    
+    /* advective fluxes in adv_flux get updated by increments in flux and
+       stored in the latter field
+     */
+    for (int nf=0; nf<elem->nfx; nf++) {
+        flux[0]->rhoY[nf] += adv_flux->x[nf];
+    }            
+    if (elem->ndim > 1) {
+        for (int nf=0; nf<elem->nfy; nf++) {
+            flux[1]->rhoY[nf] += adv_flux->y[nf];
+        }            
+    }
+    if (elem->ndim > 2) {
+        for (int nf=0; nf<elem->nfy; nf++) {
+            flux[2]->rhoY[nf] += adv_flux->z[nf];
+        }            
+    }
+}

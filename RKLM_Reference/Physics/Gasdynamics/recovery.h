@@ -27,6 +27,7 @@ void recovery_gravity(
                       double* Sbg,
 					  const double gravity_strength,
 					  States* Sol, 
+                      ConsVars* Fluxes,
 					  double* S2,
 					  double* p2,
                       const double* dp2,

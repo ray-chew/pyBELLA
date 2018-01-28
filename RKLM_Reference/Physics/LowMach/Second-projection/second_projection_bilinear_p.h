@@ -24,6 +24,15 @@ void second_projection(
                        const double t,
                        const double dt);
 
+#ifdef GRAVITY_IMPLICIT
+void euler_backward_gravity(ConsVars* Sol,
+                            VectorField* buoy,
+                            const MPV* mpv,
+                            const double dt,
+                            const ElemSpaceDiscr* elem);
+#endif
+
+
 #endif /* SECOND_PROJECTION_H */
 
 

@@ -81,17 +81,6 @@ void correction_nodes(
 					  const double t,
 					  const double dt);
 
-#ifdef GRAVITY_IMPLICIT
-void explicit_background_buoyancy(
-                                  ConsVars* Sol,
-                                  MPV* mpv,
-                                  const ConsVars* Sol0,
-                                  const ElemSpaceDiscr* elem,
-                                  const NodeSpaceDiscr* node,
-                                  const double dt
-);
-#endif
-
 /* ========================================================================== */
 
 void second_projection(
@@ -256,10 +245,17 @@ void second_projection(
     correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);
 #endif
     
-    for(ii=0; ii<nc; ii++) {
-        /* hunt down factor of 0.5 in the next line !! */
-        mpv->p2_nodes[ii]  = mpv->p2_nodes[ii] + p_update*0.5*p2[ii];
-        mpv->dp2_nodes[ii] = p2[ii];
+    if (ud.time_integrator == SI_MIDPT) {
+        for(ii=0; ii<nc; ii++) {
+            /* hunt down factor of 0.5 in the next line !! */
+            mpv->p2_nodes[ii] = mpv->dp2_nodes[ii] = p2[ii];
+        }
+    } else {
+        for(ii=0; ii<nc; ii++) {
+            /* hunt down factor of 0.5 in the next line !! */
+            mpv->p2_nodes[ii]  = mpv->p2_nodes[ii] + p_update*0.5*p2[ii];
+            mpv->dp2_nodes[ii] = p2[ii];
+        }        
     }
 }
 
@@ -661,15 +657,13 @@ static void operator_coefficients_nodes(
 			for(j = igy; j < icy - igy; j++) {
                 m = j * icx;
 				
-                double dSdy  = (mpv->HydroState_n->S0[j+1] - mpv->HydroState_n->S0[j]) / dy;
+                double strat = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j]) \
+                                    /(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
 
                 for(i = igx; i < icx - igx; i++) {
                     n = m + i;     
                     
-                    /* 
-                     double Y     = 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]); 
-                     double Y     = Sol->rhoY[n]/Sol->rho[n];
-                     */
+
                     double Y     = 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]); 
                     
                     /*  TODO: Check what effect the following choice is having 
@@ -679,7 +673,7 @@ static void operator_coefficients_nodes(
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
 
                     /* TODO: first factor 0.25 or 0.5 ? */
-                    double Nsqsc = - 0.25*dt*dt * (g/Msq) * Y * dSdy;                    
+                    double Nsqsc = 0.25*dt*dt * (g/Msq) * strat;                    
                     double gimpy = 1.0 / (1.0 + impl_grav_th2*Nsqsc);
                                         
                     hplusx[n]    = coeff;
@@ -910,8 +904,16 @@ void correction_nodes(
 			const double dy = node->dy;
 			const double oodx = 1.0 / dx;
 			const double oody = 1.0 / dy;
-			const double dtowdx = 0.5*dt * oodx;
-			const double dtowdy = 0.5*dt * oody;
+            
+            double dtowdx;
+            double dtowdy;
+            if (ud.time_integrator == SI_MIDPT) {
+                dtowdx = 1.0*dt * oodx;
+                dtowdy = 1.0*dt * oody;
+            } else {
+                dtowdx = 0.5*dt * oodx;
+                dtowdy = 0.5*dt * oody;                
+            }
             
             const double* hplusx = hplus[0];
             const double* hplusy = hplus[1];
@@ -921,35 +923,27 @@ void correction_nodes(
 			for(j = igy; j < icy - igy - 1; j++) {
 				m = j * icx; 
 				me = j * icxe;
-                
-#ifdef GRAVITY_IMPLICIT
-                double dSdy = (mpv->HydroState_n->S0[j+1]-mpv->HydroState_n->S0[j])/dy;
-#endif
-				
 				for(i = igx; i < icx - igx - 1; i++) {
-					const int n = m + i;
-					const int nicx = n + icx;
-					const int n1 = n + 1;
+					const int n     = m + i;
+					const int nicx  = n + icx;
+					const int n1    = n + 1;
 					const int n1icx = n1 + icx;
-					
-					const int ne = me + i; 
+					const int ne    = me + i; 
 					
 					const double Dpx   = 0.5 * (p[n1]   - p[n] + p[n1icx] - p[nicx]);
 					const double Dpy   = 0.5 * (p[nicx] - p[n] + p[n1icx] - p[n1]);
-                    const double thinv = Sol->rho[ne] / Sol->rhoY[ne] ;
-#ifdef GRAVITY_IMPLICIT
-                    const double vold  = Sol->rhov[ne] / Sol->rho[ne];
-                    double vnew;
-#endif
-					Sol->rhou[ne] += - dtowdx * thinv * hplusx[ne] * Dpx;
+                    const double thinv = Sol->rho[ne] / Sol->rhoY[ne];
+					
+                    /* currently this is only a half time step, not a full one; 
+                       This WILL get me divergence-free velocities, but it is not
+                       appropriate for getting second order. In fact, the implicit
+                       midpoint discretization will be div-controlled at the half
+                       time level, but will overshoot to its previous divergence
+                       level at the next full time level
+                     */
+                    
+                    Sol->rhou[ne] += - dtowdx * thinv * hplusx[ne] * Dpx;
 					Sol->rhov[ne] += - dtowdy * thinv * hplusy[ne] * Dpy;
-                    
-                    /* Does this already include the buoyancy-gravity part of the correction? */
-                    
-#ifdef GRAVITY_IMPLICIT
-                    vnew  = Sol->rhov[ne] / Sol->rho[ne];
-                    Sol->rhoX[BUOY][ne] += - Sol->rho[ne] * 0.5*dt * (vnew-vold) * dSdy;
-#endif
 				}
 			} 
 			
@@ -1044,23 +1038,20 @@ void correction_nodes(
 #ifdef GRAVITY_IMPLICIT
 /* ========================================================================== */
 
-void explicit_background_buoyancy(
-                                  ConsVars* Sol,
-                                  MPV* mpv,
-                                  const ConsVars* Sol0,
-                                  const ElemSpaceDiscr* elem,
-                                  const NodeSpaceDiscr* node,
-                                  const double dt
-                                  )
+void euler_backward_gravity(ConsVars* Sol,
+                            VectorField* delv,
+                            const MPV* mpv,
+                            const double dt,
+                            const ElemSpaceDiscr* elem)
 {
-    /* For implicit treatment of gravity, up to the call to 
-     second_projection() the advection of 1/theta (here: 1/Y) 
-     has only been accounted for as far as deviations from the
-     background stratification are concerned. The effect on
-     buoyancy/gravity of the advection of the background strati-
-     fication is split into an explicit piece -- computed here --
-     and an implicit piece that is included in the subsequent 
-     Poisson solution. 
+    /* 
+     evaluates the explicit part of the Euler backward contribution for
+     the gravity term in a semi-implicit discretization of the pressure
+     gradient and gravity terms. 
+       If called with a nonzero delv, it assumes that delv has been
+     a previous gravity update that needs to be corrected. So it is
+     subtracted from the (vertical) velocity, and the newly evaluated 
+     increment is added.
      */
     extern User_Data ud;
     
@@ -1072,19 +1063,22 @@ void explicit_background_buoyancy(
     const int icy = elem->icy;
     const int icz = elem->icz;
     
-    for (int k=0; k<icz; k++) {int l = k*icy*icx;
-        
-        for (int j=0; j<icy; j++) {int m = l + j*icx;
-            
-            double dSdy = (mpv->HydroState_n->S0[j+1] - mpv->HydroState_n->S0[j]) / dy;
-            
-            for (int i=0; i<icx; i++) {int n = m + i;
-                
-                double Nsqsc = - 0.5*dt*dt * (g/Msq) * 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]) * dSdy;
-                double v     = Sol->rhov[n]/Sol->rho[n];
-                /* double v     = 0.5 * (Sol->rhov[n]/Sol->rho[n] + Sol0->rhov[n]/Sol0->rho[n]); */
-                
-                Sol->rhov[n] -= Sol->rho[n] * v * Nsqsc / (1.0 + Nsqsc);
+    for (int k=0; k<icz; k++) {
+        int l = k*icy*icx;
+        for (int j=0; j<icy; j++) {
+            int m = l + j*icx;
+            double strat  = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j])/(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
+            double chibar = mpv->HydroState->S0[j];
+            for (int i=0; i<icx; i++) {
+                int n        = m + i;
+                double Nsqsc = dt*dt * (g/Msq) * strat;
+                double v     = Sol->rhov[n]/Sol->rho[n] - delv->y[n];
+                double dchi  = Sol->rhoX[BUOY][n]/Sol->rho[n];
+                double chi   = Sol->rho[n]/Sol->rhoY[n];
+                double dbuoy = -dchi/(chi*chibar);
+                double v_new = (v + dt * (g/Msq) * dbuoy) / (1.0 + Nsqsc);
+                delv->y[n]   = v_new - v;
+                Sol->rhov[n] = Sol->rho[n] * v_new;
             }
         }
     }

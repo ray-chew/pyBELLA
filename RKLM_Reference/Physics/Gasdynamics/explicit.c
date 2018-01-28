@@ -136,13 +136,7 @@ void Explicit_step_and_flux(
 	assert(arraysize >= ncache);
     
     icx = elem->icx;
-    
-    /*
-    Asymmetry of wave representation in the advected case: 
-     1) try extrapolating pressure to the quarter and three quarter time levels.
-     2) try working with old time level pressure and buoyancy
-    */
-    
+        
     /* bring dummy cells in the current space direction up to date  */
     Bound(Sol, HydroState, lambda, n, SplitStep, 0);
 
@@ -151,23 +145,20 @@ void Explicit_step_and_flux(
 
     assert(elem->ndim == 2); /* lateral averaging for 3D not yet implemented */
     
-    for (int ic=0; ic<elem->nc; ic++) {
-        p2_store[ic] = Sol->rhoZ[PRES][ic];
-    }
-    
-    for(int j=1; j<elem->icy-1; j++) {
-        int njk = j*elem->icx;
-        for(int i=0; i<elem->icx; i++) {
-            int nijk  = njk + i;
-            int nijkp = nijk + elem->icx;
-            int nijkm = nijk - elem->icx;
-            /* selected weights should correspond to weights in the cell-centered Laplacian */
-            Sol->rhoZ[PRES][nijk]  = (ud.latw[0]*p2_store[nijkp] + ud.latw[1]*p2_store[nijk] + ud.latw[2]*p2_store[nijkm]);
-#ifdef OLD_S_IN_PREDICTOR
-            S_ave[nijk] = Sol->rhoZ[SOLD][nijk];
-#else
-            S_ave[nijk] = Sol->rho[nijk]/Sol->rhoY[nijk];
-#endif
+    if (gravity_on_off) {
+        for (int ic=0; ic<elem->nc; ic++) {
+            p2_store[ic] = Sol->rhoZ[PRES][ic];
+            S_ave[ic]    = Sol->rho[ic]/Sol->rhoY[ic];
+        }
+        for(int j=1; j<elem->icy-1; j++) {
+            int njk = j*elem->icx;
+            for(int i=0; i<elem->icx; i++) {
+                int nijk  = njk + i;
+                int nijkp = nijk + elem->icx;
+                int nijkm = nijk - elem->icx;
+                /* selected weights should correspond to weights in the cell-centered Laplacian */
+                Sol->rhoZ[PRES][nijk]  = (ud.latw[0]*p2_store[nijkp] + ud.latw[1]*p2_store[nijk] + ud.latw[2]*p2_store[nijkm]);
+            }
         }
     }
     
@@ -194,7 +185,7 @@ void Explicit_step_and_flux(
         }
         
 		/* flux computation*/
-        recovery_gravity(Lefts, Rights, gravity_source, pbuoy, pS, pSbg, gravity_strength, Solk, Solk->Y, Solk->rhoZ[PRES], dp2, lambda, nmax, RK_stage, implicit, adv_fluxes_from, muscl_on_off, gravity_on_off);
+        recovery_gravity(Lefts, Rights, gravity_source, pbuoy, pS, pSbg, gravity_strength, Solk, Fluxes, Solk->Y, Solk->rhoZ[PRES], dp2, lambda, nmax, RK_stage, implicit, adv_fluxes_from, muscl_on_off, gravity_on_off);
         check_flux_bcs(Lefts, Rights, nmax, kcache, njump, elem, SplitStep);
                     
         hllestar(Fluxes, Lefts, Rights, Solk, lambda, nmax, adv_fluxes_from);

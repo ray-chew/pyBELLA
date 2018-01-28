@@ -1,7 +1,5 @@
 /*******************************************************************************
  File:   numerical_flux.h
- Author: Nicola
- Date:   Wed Feb 25 13:21:46 WET 1998
  *******************************************************************************/
 #ifndef NUMERICAL_FLUX_H
 #define NUMERICAL_FLUX_H
@@ -10,10 +8,7 @@
 
 
 /*------------------------------------------------------------------------------
- HLLE (Harten, Lax, van Leer and Einfeldt) numerical flux for the System I*
- 
- Notice: this is Thomas Schneider's extension of the HLLE (Harten, Lax, van 
- Leer and Einfeldt) numerical flux for the System I*. For 
+ plain upwind flux
  ------------------------------------------------------------------------------*/
 void hllestar(
 			  ConsVars* Fluxes, 
@@ -23,6 +18,24 @@ void hllestar(
               const double lambda,
               const int n,
               const enum FluxesFrom adv_fluxes_from);
+
+void store_advective_fluxes(VectorField* adv_flux, 
+                            const ConsVars* flux[3], 
+                            const ElemSpaceDiscr* elem);
+
+void add_advective_fluxes(VectorField* fd,
+                          const ConsVars* flux[3], 
+                          const int sign, 
+                          const VectorField* ff,
+                          const ElemSpaceDiscr* elem);
+
+void update_advective_fluxes(ConsVars* flux[3], 
+                             const VectorField* adv_flux,  
+                             const ElemSpaceDiscr* elem);
+
+void recompute_advective_fluxes(ConsVars* flux[3], 
+                                const ConsVars* Sol, 
+                                const ElemSpaceDiscr* elem);
 
 void Advective_Fluxes(VectorField* adv_flux, 
                       const ConsVars* Sol, 
@@ -34,15 +47,3 @@ void Advective_Fluxes_x(double* rhoYu,
                         const int SplitStep);
 
 #endif /* NUMERICAL_FLUX_H */
-
-
-
-
-/*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
- $Log: numerical_flux.h,v $
- Revision 1.1  1998/03/01 18:43:35  nicola
- This is the initial revision of 3d. It comes out after two weeks of work on
- Matthias' version of Rupert's F3D code. It is the starting point for imple
- menting a low Mach number extension.
- 
- LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL*/

@@ -587,6 +587,26 @@ void adjust_pi(
 /*------------------------------------------------------------------------------
  
  ------------------------------------------------------------------------------*/
+void reset_Y_perturbation(ConsVars* Sol,
+                          const MPV* mpv,
+                          const ElemSpaceDiscr* elem) 
+{   
+    for (int k=0; k<elem->icz; k++) {
+        int nk = k*elem->icx*elem->icy;
+        for (int j=0; j<elem->icy; j++) {
+            int nkj = nk + j*elem->icx;
+            for (int i=0; i<elem->icx; i++) {
+                int nkji = nkj + i;
+                Sol->rhoX[BUOY][nkji] = Sol->rho[nkji] * ( Sol->rho[nkji]/Sol->rhoY[nkji] - mpv->HydroState->S0[j]); 
+            }
+        }
+    }
+}
+
+
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 double T_from_p_rho(const double p, const double rho) 
 {
     extern Thermodynamic th;

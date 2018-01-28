@@ -133,7 +133,7 @@
 
 \section*{ToDo}
 
-\paragraph{January 19, 2018 (additions of January 25, 2018):}
+\subsection*{January 19, 2018 (additions of January 25, 2018):}
 %
 \begin{itemize}
 \item get compressible version going as the long-wave hydrostatic GW test
@@ -153,7 +153,7 @@
 \end{itemize}
 %
 
-\paragraph{January 25, 2018: New scheme}
+\subsection*{January 25, 2018: New scheme}
 
 The key difficulty with my approach so far seems to be that the time 
 semi-implicit integration is not consistently carried through the scheme. 
@@ -175,7 +175,12 @@ following strategy:
       split-step advection fluxes out and replaces them with fluxes 
       computed afresh from the data obtained after 
       step~\ref{it:LeadingSplitStep}. Only now will the advection of the
-      background be handled and added to $\tilde\chi$.
+      background be handled and added to $\tilde\chi$. 
+\item All fluxes, in particular the density flux, should be kept from the
+      split-step prediction and then fully corrected to reflect the 
+      mid time level state. The density flux, in particular, has to be
+      composed of the background and perturbation contributions 
+      associated with $\overline{\chi}$ and~$\tilde\chi$.
 \item Implicit momentum correction corresponding to ``second projection''
       in our previous work. (See ``Options''.)
 \item Concluding advection split step. 
@@ -195,7 +200,18 @@ Options:
         means of formulating balanced fluxes. 
   \item Switch to formulating advection in terms of $(P\tilde\chi, P\vv, P)$. 
         In this approach, we likely don't even have to invoke an additional
-        variable.  
+        variable. 
+  \item Find a way to post-correct the density flux after solving the 
+        cell-centered correction equation so as to build a meaningful 
+        full density flux (hopefully without having to redo the upwinding).
+  \end{enumerate}
+\item Options for gravity predictor
+  \begin{enumerate}
+  \item Keep well-balanced explicit gravity computation as is prior to this 
+        development.  
+  \item Evaluate gravity from $\tilde\chi$.
+  \item Take gravity out of advection entirely in split-fashion, moving it
+        to after advection is completed. (EULAG variant)
   \end{enumerate}
 \item Options for second projection / balanced momentum update
   \begin{enumerate}
@@ -212,7 +228,7 @@ ToDo-List: (not done yet: \notdone; \quad done: \done)
 \begin{itemize}
 \item[\done] 
       Introduce advection of density perturbation in {\tt rhoX}-Variables.
-\item[\notdone]
+\item[\done]
       Make advective fluxes available inside the split step advection 
       routines.
 \item[\notdone]
@@ -222,9 +238,17 @@ ToDo-List: (not done yet: \notdone; \quad done: \done)
       \item[\notdone] In the flux function.
       \end{itemize}
 \item[\notdone] 
-      Apply gravity source term and pressure gradient only to advective
-      fluxes in the split scheme, not to the cell-centered momenta. 
+      Switch off gravity source term entirely in the advection routines. 
 \item[\notdone] 
+      Introduce entire gravity source term as part of the pair of projections. 
+      \begin{itemize}
+      \item[\notdone] apply half time step cell center gravity
+      \item[\done] recompute fluxes
+      \item[\notdone] correct fluxes and post-correct all advective contributions
+      \item[\notdone] runs second pressure solve towards half time level
+      \item[\notdone] apply resulting source term another time to get to new time level
+      \end{itemize}
+\item[\done] 
       Move projections in between the advection split steps.
 \item[\notdone] 
       Make sure second split sequence works with advective fluxes determined
@@ -253,9 +277,20 @@ ToDo-List: (not done yet: \notdone; \quad done: \done)
       \item[\notdone] Euler implicit pressure/gravity for centered data 
                       from the result over $\Delta t/2$
       \end{enumerate}
+\item[\notdone] Check influence of how advecting velocity for MUSCL-update 
+      is computed from advecting fluxes in {\tt recovery\_gravity()}. Is division
+      by the local {\tt Sol->rhoY[i]} OK?
 \end{itemize}
 
 
+\section*{Other clean-up operations}
+%
+\begin{itemize}
+\item[\notdone] 
+      Move output-related memory flipping into the output routine.
+      
+\end{itemize}
+%
 
 % ===========================================================================
 % ===========================================================================

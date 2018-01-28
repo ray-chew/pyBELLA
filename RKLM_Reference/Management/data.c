@@ -51,6 +51,7 @@ ConsVars* Sol0;           /* full size (M < 1.0) */
 ConsVars* dSol;           /* full size */
 double* buoyS;            /* full size */
 VectorField* buoy;        /* full size */
+VectorField* buoy0;        /* full size */
 VectorField* adv_flux;    /* full size, components located on primary cell faces */
 VectorField* adv_flux0;    /* full size, components located on primary cell faces */
 ConsVars* flux[3];        /* full size (M < 1.0) */
@@ -126,7 +127,8 @@ void Data_init() {
 	Sol  = ConsVars_new(elem->nc);
 	dSol = ConsVars_new(elem->nc);
     buoyS = (double*)malloc((unsigned)(elem->nc * sizeof(double)));
-	buoy = VectorField_new(elem->nc);
+	buoy  = VectorField_new(elem->nc);
+    buoy0 = VectorField_new(elem->nc);
     adv_flux  = VectorField_new(node->nc);
     adv_flux0 = VectorField_new(node->nc);
 	Solk = States_small_new(3 * ud.ncache / 2);

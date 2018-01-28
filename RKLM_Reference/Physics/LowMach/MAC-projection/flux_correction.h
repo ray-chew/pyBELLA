@@ -25,8 +25,8 @@
  
  ------------------------------------------------------------------------------*/
 
-void flux_correction(
-					 ConsVars* flux[3],
+void flux_correction(ConsVars* flux[3],
+                     VectorField* adv_flux_diff,
 					 VectorField* buoy,
 					 const ElemSpaceDiscr* elem,
 					 ConsVars* Sol, 
@@ -36,8 +36,7 @@ void flux_correction(
 					 const double theta,
                      const int step);
 
-void operator_coefficients(
-                           double* hplus[3], 
+void operator_coefficients(double* hplus[3], 
                            double* wcenter, 
                            double* hS, 
                            const ElemSpaceDiscr* elem,

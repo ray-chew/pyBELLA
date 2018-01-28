@@ -178,12 +178,10 @@ void User_Data_init(User_Data* ud) {
     
     /* first correction */
     ud->p_flux_correction = WRONG; /* CORRECT, WRONG; */
-    if (ud->time_integrator == OP_SPLIT || ud->time_integrator == OP_SPLIT_MD_UPDATE) {
-        ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.0;  /* BEST RESULTS */
-        /* ud->latw[0] = ud->latw[2] = 0.0; ud->latw[1] = 1.0; ud->p_extrapol = 1.0; */   
-        /* ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.0; */  
-        /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25; */
-        /* ud->latw[0] = ud->latw[2] = 0.2; ud->latw[1] = 0.6; ud->p_extrapol = 1.5;  */
+    if (ud->time_integrator == OP_SPLIT || 
+        ud->time_integrator == OP_SPLIT_MD_UPDATE || 
+        ud->time_integrator == SI_MIDPT) {
+        ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.0;  /* BEST RESULTS */    
     } else {
         /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25;*/
         ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.5;
