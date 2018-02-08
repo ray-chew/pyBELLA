@@ -142,7 +142,7 @@ void second_projection(
 	catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
 
     /* test */
-#if 1
+#if 0
     FILE *prhsfile = NULL;
     char fn[120], fieldname[90];
     sprintf(fn, "%s/rhs_nodes/rhs_nodes_000.hdf", ud.file_name);
@@ -194,7 +194,7 @@ void second_projection(
 
 #endif
         
-#if 0
+#if 1
     extern double *W0;
     int imax, jmax;
     rhs_max = 0.0;
@@ -908,8 +908,8 @@ void correction_nodes(
             double dtowdx;
             double dtowdy;
             if (ud.time_integrator == SI_MIDPT) {
-                dtowdx = 1.0*dt * oodx;
-                dtowdy = 1.0*dt * oody;
+                dtowdx = 0.5*dt * oodx; /* 1.0*dt * oodx; */
+                dtowdy = 0.5*dt * oody; /* 1.0*dt * oody; */
             } else {
                 dtowdx = 0.5*dt * oodx;
                 dtowdy = 0.5*dt * oody;                
@@ -1038,11 +1038,12 @@ void correction_nodes(
 #ifdef GRAVITY_IMPLICIT
 /* ========================================================================== */
 
-void euler_backward_gravity(ConsVars* Sol,
-                            VectorField* delv,
-                            const MPV* mpv,
-                            const double dt,
-                            const ElemSpaceDiscr* elem)
+void euler_gravity(ConsVars* Sol,
+                   VectorField* delv,
+                   const MPV* mpv,
+                   const ElemSpaceDiscr* elem,
+                   const enum GravityTimeIntegrator GTI,
+                   const double dt)
 {
     /* 
      evaluates the explicit part of the Euler backward contribution for
@@ -1063,6 +1064,8 @@ void euler_backward_gravity(ConsVars* Sol,
     const int icy = elem->icy;
     const int icz = elem->icz;
     
+    const double implswitch = (GTI == EULER_FORWARD ? 0.0 : 1.0);
+    
     for (int k=0; k<icz; k++) {
         int l = k*icy*icx;
         for (int j=0; j<icy; j++) {
@@ -1071,7 +1074,7 @@ void euler_backward_gravity(ConsVars* Sol,
             double chibar = mpv->HydroState->S0[j];
             for (int i=0; i<icx; i++) {
                 int n        = m + i;
-                double Nsqsc = dt*dt * (g/Msq) * strat;
+                double Nsqsc = implswitch * dt*dt * (g/Msq) * strat;
                 double v     = Sol->rhov[n]/Sol->rho[n] - delv->y[n];
                 double dchi  = Sol->rhoX[BUOY][n]/Sol->rho[n];
                 double chi   = Sol->rho[n]/Sol->rhoY[n];

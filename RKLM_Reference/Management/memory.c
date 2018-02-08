@@ -74,19 +74,13 @@ void update(
 			const ConsVars* f = flux[0];
 			const ConsVars* g = flux[1];
             
-            double drhoY, Yinv, Sxc, Sym, Syp, Nsq, ooopNsqsc;
+            double drhoY, Yinv;
 
             int i, j, m, n, ox, oy;
 
 			for(j = igy; j < icy - igy; j++) {
                 m = j * icx;
-                
-                Sxc = mpv->HydroState->S0[j];
-                Sym = mpv->HydroState_n->S0[j];
-                Syp = mpv->HydroState_n->S0[j+1];
-                Nsq = - (grav/Msq) * (Syp-Sym) / (Sxc * elem->dy);
-                ooopNsqsc = 1.0 / (1.0 + 0.25 * dt * dt * Nsq);
-                
+                                
 				for(i = igx; i < icx - igx; i++) {
                     n  = m + i;
 					ox = j * ifx + i;
@@ -107,9 +101,7 @@ void update(
 					sol->rhow[n] += -lambdax * (f->rhow[ox + 1] - f->rhow[ox]) - lambday * (g->rhow[oy + 1] - g->rhow[oy]);
                     for (nsp = 0; nsp < ud.nspec; nsp++) {
                         sol->rhoX[nsp][n] -= lambdax * (f->rhoX[nsp][ox + 1] - f->rhoX[nsp][ox]) - lambday * (g->rhoX[nsp][oy + 1] - g->rhoX[nsp][oy]);
-                    }
-                    
-                    /* sol->rhoX[BUOY][n] += buoyS[n]; */
+                    }                    
 				}
 			}
 			            

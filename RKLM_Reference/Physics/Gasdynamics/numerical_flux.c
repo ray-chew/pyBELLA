@@ -17,6 +17,8 @@
 #include "error.h"
 #include "numerical_flux.h"
 #include "boundary.h"
+#include "boundary.h"
+#include "flux_correction.h"
 
 /*------------------------------------------------------------------------------
  plain upwind flux
@@ -126,9 +128,9 @@ void add_advective_fluxes(VectorField* fd,
                           const VectorField* ff,
                           const ElemSpaceDiscr* elem)
 {
-    for (int i=0; i<elem->ifx; i++) fd->x[i] = flux[0]->rhoY[i] + sign*ff->x[i]; 
-    if (elem->ndim >1) for (int i=0; i<elem->ifx; i++) fd->y[i] = flux[1]->rhoY[i] + sign*ff->y[i]; 
-    if (elem->ndim >2) for (int i=0; i<elem->ifx; i++) fd->z[i] = flux[2]->rhoY[i] + sign*ff->z[i]; 
+    for (int i=0; i<elem->nfx; i++) fd->x[i] = flux[0]->rhoY[i] + sign*ff->x[i]; 
+    if (elem->ndim >1) for (int i=0; i<elem->nfy; i++) fd->y[i] = flux[1]->rhoY[i] + sign*ff->y[i]; 
+    if (elem->ndim >2) for (int i=0; i<elem->nfz; i++) fd->z[i] = flux[2]->rhoY[i] + sign*ff->z[i]; 
 }
 
 /*------------------------------------------------------------------------------
@@ -193,8 +195,12 @@ void recompute_advective_fluxes(ConsVars* flux[3],
  ------------------------------------------------------------------------------*/
 void update_advective_fluxes(ConsVars* flux[3], 
                              const VectorField* adv_flux, 
-                             const ElemSpaceDiscr* elem)
+                             const ElemSpaceDiscr* elem,
+                             const double dt)
 {
+    
+    extern double *W0;
+    double *rhs = W0;
     
     /* advective fluxes in adv_flux get updated by increments in flux and
        stored in the latter field
@@ -212,4 +218,8 @@ void update_advective_fluxes(ConsVars* flux[3],
             flux[2]->rhoY[nf] += adv_flux->z[nf];
         }            
     }
+#if 0
+    double rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
+    printf("rhsmax = %e", rhsmax);
+#endif
 }

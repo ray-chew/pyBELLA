@@ -7,7 +7,7 @@
 /*********************************************************************
  tridiag(): solution of a tridiagonal system of equations a * x = b of size n
  a = tridiagonal matrix, x = solution vector, b = right hand side
- structure of a: [a(0,0), a(0,1), a(0,3), 
+ structure of a: [a(0,0), a(0,1), a(0,2), 
  a(2,1), a(2,2), a(2,3),
  ... a(i,i-1), a(i,i), a(i,i+1) ...
  a(n-1,n-3), a(n-1,n-2), a(n-1,n-1)]
@@ -141,7 +141,7 @@ void LowerTripleTriangleSolve(double* x,  double* rhs,  double* diago, double* l
 /* Templeton's Algorithm_4   from  (1975)                                             */
 /* ********************************************************************************** */
 
-void Algorithm_4(double* x,  double* rhs, double  lambda, int size)
+void Algorithm_4(double* x, double* rhs, double lambda, int size)
 {
     double *l_lower = (double*)malloc(size * sizeof(double));
     double *r_diago = (double*)malloc(size * sizeof(double));

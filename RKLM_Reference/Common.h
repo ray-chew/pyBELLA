@@ -19,17 +19,17 @@
 
 /* Output parameters */
 #define HDFFORMAT
-#define OUTPUT_SUBSTEPS 1
-#define OUTPUT_SPLITSTEPS 1
-#define OUTPUT_SUBSTEPS_PREDICTOR 1
+#define OUTPUT_SUBSTEPS 0
+#define OUTPUT_SPLITSTEPS 0
+#define OUTPUT_SUBSTEPS_PREDICTOR 0
 
 
 /* ============================================= 
  Initial Data Options
  ============================================= */
 /*
-#define HYDRO_BALANCED_INIT_DATA
  */
+#define HYDRO_BALANCED_INIT_DATA
 
 /* ============================================= 
  Elliptic Solver Options
@@ -55,10 +55,9 @@
 
  #define CONTROL_PRECONDITIONED_RESIDUAL_PROJ1
  #define CONTROL_PRECONDITIONED_RESIDUAL_PROJ2
- 
-*/
+ */
 
-#define SOLVER_1_BICGSTAB
+#define SOLVER_1_CR2
 #define SOLVER_2_BICGSTAB
 
 /* preconditioning options ======================

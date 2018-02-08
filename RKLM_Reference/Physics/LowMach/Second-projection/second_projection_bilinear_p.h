@@ -25,11 +25,12 @@ void second_projection(
                        const double dt);
 
 #ifdef GRAVITY_IMPLICIT
-void euler_backward_gravity(ConsVars* Sol,
-                            VectorField* buoy,
-                            const MPV* mpv,
-                            const double dt,
-                            const ElemSpaceDiscr* elem);
+void euler_gravity(ConsVars* Sol,
+                   VectorField* buoy,
+                   const MPV* mpv,
+                   const ElemSpaceDiscr* elem,
+                   const enum GravityTimeIntegrator GTI,
+                   const double dt);
 #endif
 
 

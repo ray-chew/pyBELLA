@@ -311,8 +311,11 @@ int main( void )
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
 
-                printf("\nnonlinear advection 1 ---------------------------- \n");
-                
+                /* ----------------------------------------------------------------------- */
+                /* half-time prediction of advective flux                                  */
+                /* ----------------------------------------------------------------------- */
+                printf("\nhalf-time prediction of advective flux ----------- \n");
+
                 substep = 0;
                 
                 /* explicit advection half time step preparing advection flux calculation */
@@ -339,7 +342,7 @@ int main( void )
                 
                 /* explicit part of Euler backward gravity over half time step */
                 VectorField_setzero(buoy0, elem->nc);
-                euler_backward_gravity(Sol, buoy0, (const MPV*)mpv, 0.5*dt, elem);
+                euler_gravity(Sol, buoy0, (const MPV*)mpv, elem, EULER_BACKWARD, 0.5*dt);
                 Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
 #if OUTPUT_SUBSTEPS
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
@@ -352,20 +355,31 @@ int main( void )
                 
                 /* implicit part of Euler backward gravity over half time step */
                 flux_correction(flux, adv_flux_diff, buoy, elem, Sol, Sol0, t, dt, ud.implicitness, step);
-                update(Sol, (const ConsVars**)flux, buoyS, buoy, elem, dt);
+
+                /* note: the following just completes the first half time advection */
+                update(Sol, (const ConsVars**)flux, buoyS, buoy, elem, 0.5*dt);
                 Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
-                update_advective_fluxes(flux, (const VectorField*)adv_flux, elem);                
+                update_advective_fluxes(flux, (const VectorField*)adv_flux, elem, dt);    
+                
+                /* advective fluxes with controlled divergence now available */
+                
+                
+                
+                update_SI_MIDPT_buoyancy(Sol, (const ConsVars**)flux, mpv, elem, 0.5*dt);
 #if OUTPUT_SUBSTEPS
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
 
-                euler_backward_gravity(Sol, buoy0, (const MPV*)mpv, 0.5*dt, elem);
+                /* TODO: Why should I do another backward half time step here? */
                 second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 1.0, t, dt);
                 Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
 #if OUTPUT_SUBSTEPS
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
-                
+
+                euler_gravity(Sol, buoy0, (const MPV*)mpv, elem, EULER_FORWARD, 0.5*dt);
+                update_SI_MIDPT_buoyancy(Sol, (const ConsVars**)flux, mpv, elem, 0.5*dt);
+
                 printf("\nnonlinear advection 2 ---------------------------- \n");
                 stage = 1;
                 for(i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {

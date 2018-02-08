@@ -165,8 +165,8 @@ void User_Data_init(User_Data* ud) {
     /* explicit predictor step */
     /* Recovery */
     ud->recovery_order = SECOND; /* FIRST, SECOND */ 
-    ud->limiter_type_scalars  = VANLEER; 
-    ud->limiter_type_velocity = VANLEER; 
+    ud->limiter_type_scalars  = NONE; 
+    ud->limiter_type_velocity = NONE; 
     /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
     
     /* parameters for SWEBY_MUNZ limiter family */
@@ -194,7 +194,7 @@ void User_Data_init(User_Data* ud) {
     ud->Solver = BICGSTAB_PRECON;        /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->Solver_Node = BICGSTAB_PRECON;   /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->precondition = CORRECT;
-    double tol = 1.e-8;
+    double tol = 1.e-9;
     ud->flux_correction_precision = tol;
     ud->flux_correction_local_precision = tol;   /* 1.e-05 should be enough */
     ud->second_projection_precision = tol;
@@ -353,6 +353,9 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             
         }
     }
+    
+    /* Pressure distribution for the hydrostatic model */
+    Hydrostatic_Initial_Pressure(Sol, mpv, elem);
     
     /* set all dummy cells */
     /* geopotential in bottom and top dummy cells */

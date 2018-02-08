@@ -22,7 +22,9 @@ void Hydrostatics_Column(States* HydroState,
                          const ElemSpaceDiscr* elem, 
                          const NodeSpaceDiscr* node);
 
-void Hydrostatics_State(MPV* mpv, double *Sbg, const ElemSpaceDiscr* elem);
+void Hydrostatics_State(MPV* mpv, 
+                        double *Sbg, 
+                        const ElemSpaceDiscr* elem);
 
 void Hydrostatic_Exner_pressure(
                                 double *pi, 
@@ -32,4 +34,9 @@ void Hydrostatic_Exner_pressure(
                                 const double dh,
                                 const int n, 
                                 const int ig);
+
+void Hydrostatic_Initial_Pressure(ConsVars* Sol, 
+                                  MPV* mpv,
+                                  const ElemSpaceDiscr *elem);
+
 #endif /* Hydrostatics_h */

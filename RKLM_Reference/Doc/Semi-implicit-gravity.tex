@@ -1390,6 +1390,86 @@ we can obviously first solve for $\pibar$ using the Thomas Algorithm
 for the $j$-direction, and then for $\pi$ by inverting the $x$-averaging -- 
 again using the Thomas Algorithm. 
 
+
+\newpage
+
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+
+\section{Hydrostatic initialization}
+\label{sec:HydroInit}
+
+The semi-implicit part of the time integration scheme that we intend to 
+use is either implicit trapezoidal or implicit midpoint. In both cases
+we have an explicit contribution (Euler forward) followed or preceded by
+an implicit one (Euler backward). Especially with my implementation up
+to Jan 2018, the Euler forward is first, and this implies potentially 
+very large deviations from the balanced state in the course of the first
+few time steps. This is indeed observed. Now, due to the advective 
+nonlinearity, these large deviations can leave a heavy imprint on the
+later solution, and this must be avoided. 
+
+Here I describe a pressure initialization by the hydrostatic model. This
+is a preliminary exercise also on our way towards constructing a blended
+hydrostatic/nonhydrostatic solver. 
+
+The linearized hydrostatic pseudo-incompressible equations for a vertical
+slice read
+%
+\begin{subequations}
+\begin{eqnarray}
+\label{eq:HorizontalMomentum}
+(P\vu)_t + \frac{P\theta}{\Gamma} \pi_x
+  & = 
+    & 0
+      \\
+\label{eq:Hydrostatics}
+\frac{\theta}{\Gamma}\pi_z
+  & = 
+    & -  g 
+      \\
+\theta_t
+  & = 
+    & - w \frac{d\overline{\Theta}}{dz} 
+      \\[5pt]
+\label{eq:DivConstraint}
+(P\vu)_x + (PW)_z
+  & =
+    & 0
+\end{eqnarray}
+\end{subequations}
+%
+Integrate \eq{eq:DivConstraint} from $z=0$ to $z=h$ and then from 
+$0$ to $x$, use the rigid lid conditions on $w$, take the time derivative,
+let $\pi = \pi_0(t,x) + \widetilde\pi(t,x,z)$, where
+%
+\begin{equation}
+\widetilde\pi(t,x,z) = - \int\limits_0^z \frac{\Gamma g}{\theta(t,x,\zeta)} \, d\zeta
+\end{equation}
+%
+and obtain
+%
+\begin{equation}
+\int\limits_0^h (P\vu)_t\, dz 
+= \left\langle (PU)_t \right\rangle(t)
+= - \left\langle\frac{P\theta}{\Gamma}\right\rangle \pi^0_x - 
+  \left\langle\frac{P\theta}{\Gamma}\widetilde\pi_x \right\rangle \,.
+\end{equation}
+%
+This yields
+%
+\begin{equation}
+\pi^0_x
+= - \frac{\left\langle (PU)_t \right\rangle }{\left\langle P\theta/\Gamma\right\rangle} 
+  - \frac{\left\langle P\theta\widetilde\pi_x/\Gamma \right\rangle}%
+         {\left\langle P\theta/\Gamma\right\rangle}\,.
+\end{equation}
+%
+Integration in $x$ yields the bottom pressure $\pi^0$ when 
+$\left\langle (PU)_t \right\rangle$ is adjusted so as to satisfy the 
+pressure boundary conditions, e.g., periodic ones.
+
 % ===========================================================================
 % ===========================================================================
 % ===========================================================================

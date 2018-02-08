@@ -7,6 +7,8 @@
 //
 
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "Hydrostatics.h"
 #include "thermodynamic.h"
@@ -356,3 +358,98 @@ void Hydrostatic_Exner_pressure(
         S_integral_p += 0.5*dh*(S_m + S_p);
     }
 }
+
+/* ================================================================================== */
+
+void Hydrostatic_Initial_Pressure(ConsVars* Sol, 
+                                  MPV* mpv,
+                                  const ElemSpaceDiscr *elem)
+{
+    /* 
+     Computes the pressure field corresponding to the linear hydrostatic
+     and pseudo-incompressible approximation for a vertical slice model 
+     and x-periodic conditions. 
+       The routine assumes that pi = mpv->p2_cells already contains a 
+     column-wise hydrostatically balanced Exner pressure field that is 
+     horizontally homogeneous at zero height, i.e.,
+     
+                     pi = int_0^z  Gamma g / theta dz'
+     
+     The problem can be reduced to an explicit x-integration and the
+     choice of one proper integration constant to establish periodicity
+     of the surface pressure. 
+     */
+    extern Thermodynamic th;
+     
+    double *beta, *bdpdx, *pibot, *coeff;
+    double dotPU;
+    
+    assert(elem->ndim == 2);
+    
+    beta  = (double*)malloc(elem->icx*sizeof(double));
+    bdpdx = (double*)malloc(elem->icx*sizeof(double));
+    pibot = (double*)malloc(elem->icx*sizeof(double));
+    coeff = (double*)malloc(elem->icx*sizeof(double));
+    
+    int icx = elem->icx;
+    int igx = elem->igx;
+    int icy = elem->icy;
+    int igy = elem->igy;
+    
+    double dx  = elem->dx;
+    double dy  = elem->dy;
+    
+    double Gammainv = th.Gammainv;
+    
+    /* vertical averages (see docs; Semi-Implicit-Gravity.tex, section \ref{sec:HydroInit}) */
+    memset(beta,0.0,elem->icx*sizeof(double));
+    memset(bdpdx,0.0,elem->icx*sizeof(double));
+    for (int i=1; i<icx-1; i++) {
+        int ni        = i;
+        double height = 0.0;        
+        for (int j=igy; j<icy-igy; j++) {
+            int nij    = ni + j*icx;
+            double Pc  = Sol->rhoY[nij];
+            double Pm  = Sol->rhoY[nij-1];
+            double thc = Sol->rhoY[nij]/Sol->rho[nij];
+            double thm = Sol->rhoY[nij-1]/Sol->rho[nij-1];
+            beta[i]   += 0.5*(Pm*thm+Pc*thc)*dy;
+            bdpdx[i]  += 0.5*(Pm*thm+Pc*thc)*(mpv->p2_cells[nij]-mpv->p2_cells[nij-1])*dy;
+            height    += dy;
+        }
+        beta[i]  *= Gammainv/height;
+        bdpdx[i] *= Gammainv/height/dx;
+    }
+
+    /* integrate in x */
+    memset(pibot,0.0,elem->icx*sizeof(double));
+    memset(coeff,0.0,elem->icx*sizeof(double));
+    for (int i=igx+1; i<icx-igx+1; i++) {
+        coeff[i] = coeff[i-1] + dx/beta[i];
+        pibot[i] = pibot[i-1] - dx*bdpdx[i]/beta[i];
+    }
+    
+    /* determine integration constant for periodicity of the surface pressure */
+    dotPU = pibot[icx-igx] / coeff[icx-igx];
+    
+    /*finalize bottom pressure distribution */
+    for (int i=igx; i<icx-igx; i++) {
+        pibot[i] -= dotPU*coeff[i];
+    }
+    
+    /*reset mpv->p2_cells */
+    for (int i=igx; i<icx-igx; i++) {
+        int ni     = i;
+        double pi0 = pibot[i];
+        for (int j=igy; j<icy-igy; j++) {
+            int nij    = ni + j*icx;
+            mpv->p2_cells[nij] += pi0;
+        }
+    }
+    
+    free(beta);
+    free(bdpdx);
+    free(pibot);
+    free(coeff);
+}
+

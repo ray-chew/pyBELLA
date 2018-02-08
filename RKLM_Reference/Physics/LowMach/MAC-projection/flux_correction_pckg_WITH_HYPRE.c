@@ -35,12 +35,6 @@ static enum Constraint integral_condition(ConsVars* flux[3],
 										  const ElemSpaceDiscr* elem,
 										  MPV* mpv);
 
-static void controlled_variable_flux_divergence(double* rhs, 
-                                                const ConsVars* flux[3],
-                                                const double dt, 
-                                                const ElemSpaceDiscr* elem);
-
-
 static void controlled_variable_change_explicit(double* rhs, 
 												const ElemSpaceDiscr* elem, 
 												ConsVars* Sol_new, 
@@ -114,6 +108,8 @@ void flux_correction(ConsVars* flux[3],
 	double* rhs          = mpv->Level[0]->rhs;
 	double* dp2		     = mpv->Level[0]->p;
         
+    double rhsmax;
+    
 	int n;
         
     printf("\n\n====================================================");
@@ -123,7 +119,8 @@ void flux_correction(ConsVars* flux[3],
 	operator_coefficients(hplus, hcenter, hS, elem, Sol, Sol0, mpv, dt);
 
     if (ud.time_integrator == SI_MIDPT) {
-        controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
+        rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
+        /* printf("rhsmax = %e", rhsmax); */
     } else {
         controlled_variable_change_explicit(rhs, elem, Sol, Sol0, dt, mpv);        
     }
@@ -131,7 +128,7 @@ void flux_correction(ConsVars* flux[3],
     assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
     rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
     
-#if 1
+#if 0
     extern User_Data ud;
     FILE *prhsfile = NULL;
     char fn2[200], fieldname2[90];
@@ -149,19 +146,19 @@ void flux_correction(ConsVars* flux[3],
              fn2,
              fieldname2);
     
-    /*
-    sprintf(fn2, "%s/Tests/p2_c_test.hdf", ud.file_name);
-    sprintf(fieldname2, "p2_c");
+    sprintf(fn2, "%s/Tests/frhoY_y_pre.hdf", ud.file_name);
+    sprintf(fieldname2, "frhoY_y_pre.hdf");
     
     WriteHDF(prhsfile,
+             mpv->Level[0]->elem->ify,
              mpv->Level[0]->elem->icx,
-             mpv->Level[0]->elem->icy,
              mpv->Level[0]->elem->icz,
              mpv->Level[0]->elem->ndim,
-             dp2,
+             flux[1]->rhoY,
              fn2,
              fieldname2);
 
+    /*
     sprintf(fn2, "%s/Tests/hx_c_test.hdf", ud.file_name);
     sprintf(fieldname2, "hx_c");
     
@@ -219,18 +216,55 @@ void flux_correction(ConsVars* flux[3],
 
     set_ghostcells_p2(dp2, (const double **)hplus, elem, elem->igx);
 
+    /* Note: flux will contain only the flux-correction after this routine; 
+     it is thus overwritten under the SI_MIDPT time integration sequence */
     flux_correction_due_to_pressure_gradients(flux, buoy, elem, Sol, Sol0, mpv, hplus, hS, dp2, t, dt, implicitness);
-    /*
+    
+#if 0
+    sprintf(fn2, "%s/Tests/frhoY_y_post.hdf", ud.file_name);
+    sprintf(fieldname2, "frhoY_y_post.hdf");
+    
+    WriteHDF(prhsfile,
+             mpv->Level[0]->elem->ify,
+             mpv->Level[0]->elem->icx,
+             mpv->Level[0]->elem->icz,
+             mpv->Level[0]->elem->ndim,
+             flux[1]->rhoY,
+             fn2,
+             fieldname2);
+#endif
+    
+    /* under the SI_MIDPT time integrator sequence, after this step flux will contain:
+       (flux_correction + recomputed flux after first advection sequence)
+        - flux accumulated over first advection sequence
+       The sum in the bracket is a divergence-controlled flux, while the 
+       subtracted flux from the first sequence will make up for the ``bad guess''
+       of the flux divergence in the explicity advection cycle.
+     */
     if (ud.time_integrator == SI_MIDPT) {
         for (int ii=0; ii<elem->nfx; ii++) flux[0]->rhoY[ii] += adv_flux_diff->x[ii];
         if (elem->ndim > 1) for (int ii=0; ii<elem->nfy; ii++) flux[1]->rhoY[ii] += adv_flux_diff->y[ii];
         if (elem->ndim > 2) for (int ii=0; ii<elem->nfz; ii++) flux[2]->rhoY[ii] += adv_flux_diff->z[ii];
     }
-     */
     if (ud.p_flux_correction) {
         flux_correction_due_to_pressure_values(flux, buoy, elem, Sol, dp2, dt); 
     }
 
+#if 0
+    sprintf(fn2, "%s/Tests/frhoY_y_post2.hdf", ud.file_name);
+    sprintf(fieldname2, "frhoY_y_post2.hdf");
+    
+    WriteHDF(prhsfile,
+             mpv->Level[0]->elem->ify,
+             mpv->Level[0]->elem->icx,
+             mpv->Level[0]->elem->icz,
+             mpv->Level[0]->elem->ndim,
+             flux[1]->rhoY,
+             fn2,
+             fieldname2);
+#endif
+
+    
     flux_fix_for_open_boundaries(flux, elem, mpv);  
 
     memcpy(mpv->dp2_cells, dp2, elem->nc*sizeof(double));
@@ -261,10 +295,10 @@ void flux_correction(ConsVars* flux[3],
 
 /* ========================================================================== */
 
-static void controlled_variable_flux_divergence(double* rhs, 
-                                                const ConsVars* flux[3],
-                                                const double dt, 
-                                                const ElemSpaceDiscr* elem)
+double controlled_variable_flux_divergence(double* rhs, 
+                                           const ConsVars* flux[3],
+                                           const double dt, 
+                                           const ElemSpaceDiscr* elem)
 {
     /* right hand side of pressure equation via advective flux divergence */
     memset(rhs, 0.0, elem->nc*sizeof(double));
@@ -280,6 +314,8 @@ static void controlled_variable_flux_divergence(double* rhs,
     const double dx = elem->dx;
     const double dy = elem->dy;
     
+    double rhsmax = 0.0;
+    
     assert(elem->ndim == 2);
     
     for(int i=0; i<elem->nc; i++) rhs[i] = 0.0;
@@ -293,6 +329,7 @@ static void controlled_variable_flux_divergence(double* rhs,
             int nfx = mfx + i;
             int nfy = mfy + i*ify;
             rhs[nc] = factor * ((flux[0]->rhoY[nfx+1] - flux[0]->rhoY[nfx])/dx + (flux[1]->rhoY[nfy+1] - flux[1]->rhoY[nfy])/dy);
+            rhsmax  = MAX_own(rhsmax, fabs(rhs[nc]));
         }
     }
     
@@ -303,6 +340,8 @@ static void controlled_variable_flux_divergence(double* rhs,
     sprintf(fieldname, "rhs-cells");    
     WriteHDF(prhsfile, elem->icx, elem->icy, elem->icz, elem->ndim, rhs, fn, fieldname);
 #endif
+    
+    return rhsmax;
 }
 
 
@@ -1518,6 +1557,66 @@ static void flux_fix_for_open_boundaries(
 		}
 	}
 }
+
+/* ========================================================================== */
+
+void update_SI_MIDPT_buoyancy(ConsVars* Sol, 
+                              const ConsVars* flux[3], 
+                              const MPV* mpv,
+                              const ElemSpaceDiscr* elem,
+                              const double dt)
+{
+    /* 
+     implicit midpoint for gravity implies that the buoyancy variable
+     receives, besides its own advection update, another update 
+     contribution due to the vertical advection of the background
+     stratification. That is what we do here based on the flux
+     determined at the half time level, and done for a full time
+     step.
+     */
+    const int ndim = elem->ndim;
+    const double lambda = dt/elem->dy;
+    
+    switch (ndim) {
+        case 1:
+            ERROR("Routine not implemented for 1D\n");
+            break;
+
+        case 2: {
+            
+            const int icx = elem->icx;
+            const int igx = elem->igx;
+            const int ifx = elem->ifx;
+            const int icy = elem->icy;
+            const int igy = elem->igy;
+            const int ify = elem->ify;
+            
+            const double dy = elem->dy;
+            
+            for (int j=igy; j<icy-igy; j++) {
+                int ncj = j*icx;
+                int nfj = j;
+                double S0p = mpv->HydroState_n->S0[j+1];
+                double S0m = mpv->HydroState_n->S0[j];
+                for (int i=igx; i<icx-igx; i++) {
+                    int ncji = ncj+i;
+                    int nfji = nfj+i*ify;
+                    Sol->rhoX[BUOY][ncji] += -lambda*(flux[1]->rhoY[nfji+1]*S0p - flux[1]->rhoY[nfji]*S0m);
+                }
+            }
+            break;
+        }
+        case 3:
+            ERROR("Routine not implemented for 3D\n");
+            break;
+
+        default:
+            break;
+    }
+    
+    
+}
+
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log:$
