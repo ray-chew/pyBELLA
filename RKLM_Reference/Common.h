@@ -74,7 +74,7 @@
 #ifdef PRECON
 #define PRECON_DIAGONAL_1ST_PROJ
 #define PRECON_DIAGONAL_2ND_PROJ
-#define PRECON_LEGACY
+/* #define PRECON_LEGACY  */
 #endif
 
 

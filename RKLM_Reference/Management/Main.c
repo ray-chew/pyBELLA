@@ -417,7 +417,8 @@ int main( void )
                     }
 #endif
                 }
-                
+                Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
+
                 euler_backward_gravity(Sol, mpv, elem, 0.5*dt);
 #if OUTPUT_SUBSTEPS
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
