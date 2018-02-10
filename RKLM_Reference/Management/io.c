@@ -139,16 +139,29 @@ void putout(
                 return;
             }
 			
-			if(output_counter<10) {
-				sprintf(step_string, "00%d", output_counter);
-			}
-			else if(output_counter<100) {
-				sprintf(step_string, "0%d", output_counter);
-			}
-			else {
-				sprintf(step_string, "%d", output_counter);
-			}
+            if(output_counter<10) {
+                sprintf(step_string, "00%d", output_counter);
+            }
+            else if(output_counter<100) {
+                sprintf(step_string, "0%d", output_counter);
+            }
+            else {
+                sprintf(step_string, "%d", output_counter);
+            }
             output_counter++;
+            
+#if 0
+            extern ConsVars* flux[3];
+            extern User_Data ud;
+            FILE *prhs2file = NULL;
+            char fn2[120], fieldname2[90];
+            sprintf(fn2, "%s/fluxes/flux_rhou_%s.hdf", dir_name, step_string);
+            sprintf(fieldname2, "flux_rhou");
+            WriteHDF(prhs2file, elem->ifx, elem->icy, elem->icz, elem->ndim, flux[0]->rhou, fn2, fieldname2);
+            sprintf(fn2, "%s/fluxes/flux_rhov_%s.hdf", dir_name, step_string);
+            sprintf(fieldname2, "flux_rhov");
+            WriteHDF(prhs2file, elem->ify, elem->icx, elem->icz, elem->ndim, flux[1]->rhou, fn2, fieldname2);
+#endif
 
             var = W0;
 			

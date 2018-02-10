@@ -194,7 +194,7 @@ void User_Data_init(User_Data* ud) {
     ud->Solver = BICGSTAB_PRECON;        /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->Solver_Node = BICGSTAB_PRECON;   /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->precondition = CORRECT;
-    double tol = 1.e-9;
+    double tol = 1.e-8;
     ud->flux_correction_precision = tol;
     ud->flux_correction_local_precision = tol;   /* 1.e-05 should be enough */
     ud->second_projection_precision = tol;
@@ -287,7 +287,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const int icyn = node->icy;
     const int iczn = node->icz;
     
-    int i, j, m, n, nm;
+    int i, j, m, n, nm, nn;
     double x, y, xn, yn, ym;
     double rho, u, v, w, p, rhoY;
     
@@ -303,7 +303,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     HyStn = States_new(node->icy);
     Yn    = (double*)malloc(node->icy*sizeof(double));
     
-    Hydrostatics_State(mpv, Sbg, elem);
+    Hydrostatics_State(mpv, Sbg, elem, node);
     
     for(i = 0; i < icx; i++) {
         
@@ -321,7 +321,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
         Hydrostatics_Column(HySt, HyStn, Y, Yn, elem, node);
         
         /* initialization of field variables */
-        for(j = igy; j < icy - igy; j++) {
+        for(j = igy; j < icy - igy + 1; j++) {
             
             n  = j*icx + i;
             nm = n-icx;
@@ -348,14 +348,18 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             Sol->geopot[n] = g * y;
             
             mpv->p2_cells[n]   = (p/rhoY) / ud.Msq;
-            Sol->rhoZ[PRES][n] = mpv->p2_cells[n];
             Sol->rhoX[BUOY][n] = Sol->rho[n] * ( Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
-            
+        
+            /* nodal pressure */
+            nn   = j*icxn+i;
+            p    = HyStn->p0[j];            
+            rhoY = HyStn->rhoY0[j];
+            mpv->p2_nodes[nn] = (p/rhoY) / ud.Msq;
         }
     }
     
     /* Pressure distribution for the hydrostatic model */
-    Hydrostatic_Initial_Pressure(Sol, mpv, elem);
+    Hydrostatic_Initial_Pressure(Sol, mpv, elem, node);
     
     /* set all dummy cells */
     /* geopotential in bottom and top dummy cells */
@@ -373,24 +377,22 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
         }
     }
     
-    
     /* put p2_cells into Z for intermediate storage */
     for(i=0; i<elem->nc; i++) {
         Sol->rhoZ[PRES][i]  = mpv->p2_cells[i];
     }
     
-    /*set nodal pressures */
+    /*set nodal pressures 
     for(int k = 0; k < iczn; k++) {int l = k * icxn * icyn;   
-        
         for(int j = 0; j < icyn; j++) {int m = l + j * icxn;                
             double p    = mpv->HydroState_n->p0[j];
             double rhoY = mpv->HydroState_n->rhoY0[j];
-            
             for(int i = 0; i < icxn; i++) {int n = m + i;
                 mpv->p2_nodes[n] = (p/rhoY) / ud.Msq;
             }
         }
-    }                          
+    }                     
+     */
 }
 
 #else /* HYDRO_BALANCED_INIT_DATA */

@@ -42,24 +42,34 @@ void Hydrostatics_Column(States* HydroState,
     double y_p, y_m;
     double p0;
     
-    double S_integral_m, S_integral_n, S_integral_p, g;
-    double S_m, S_p, p_hydro, rhoY_hydro, rhoY_hydro_n;
+    double S_integral_m, S_integral_p, Sn_integral_m, Sn_integral_p, g;
+    double S_m, S_p, Sn_m, Sn_p, p_hydro, rhoY_hydro, rhoY_hydro_n;
     
     int j;
     
     g = ud.gravity_strength[1];
+
+    /* reference state near the ground */
+    p0                       = pow(rho0 * Y_n[igy], gamm);
+    HydroState_n->rho0[igy]  = rho0;
+    HydroState_n->rhoY0[igy] = rho0 * Y_n[igy];
+    HydroState_n->Y0[igy]    = Y_n[igy];
+    HydroState_n->S0[igy]    = 1.0/Y_n[igy];
+    HydroState_n->p0[igy]    = p0;
+    HydroState_n->p20[igy]   = p0/ud.Msq;
+    Sn_p                     = 1.0/Y_n[igy];
+    Sn_integral_p            = 0.0;
     
     /* Hydrostates in bottom dummy cells */
-    y_p          = elem->y[igy];
-    S_m          = 1.0/Y[igy-1];
-    S_p          = 1.0/Y[igy];
-    S_integral_p = 0.5 * elem->dy * 0.5*(S_p + S_m);
-    p0           = pow(rho0 * 2.0/(S_p + S_m), gamm);
-    
-    for(j = igy; j >= 0; j--) {
+    y_p          = elem->y[igy-1];
+    S_m          = 1.0/Y_n[igy];
+    S_p          = 1.0/Y[igy-1];
+    S_integral_p = - 0.5 * elem->dy * 0.5*(S_p + S_m);
+
+    for(j = igy-1; j >= 0; j--) {
         
         p_hydro     = pow( pow(p0,Gamma) - Gamma*g*S_integral_p ,  Gamma_inv);
-        rhoY_hydro   = pow(p_hydro,1.0/th.gamm);
+        rhoY_hydro  = pow(p_hydro,1.0/th.gamm);
         
         HydroState->geopot[j] = g * y_p;
         HydroState->rho0[j]   = rhoY_hydro * S_p;
@@ -73,24 +83,32 @@ void Hydrostatics_Column(States* HydroState,
         y_m           = y_p;
         y_p           = y_m - elem->dy;
         S_m           = S_p;
-        S_p           = 1.0/Y[j-1];
+        S_p           = 1.0/Y[MAX_own(j-1, 0)];
         S_integral_m  = S_integral_p;
         S_integral_p -= 0.5*elem->dy*(S_m + S_p);
-        S_integral_n  = 0.5*(S_integral_m + S_integral_p);
         
-        rhoY_hydro_n  = pow( pow(p0,Gamma) - Gamma*g*S_integral_n ,  th.gm1inv);
+        Sn_m           = Sn_p;
+        Sn_p           = 1.0/Y_n[j];
+        Sn_integral_m  = Sn_integral_p;
+        Sn_integral_p -= 0.5*elem->dy*(Sn_m + Sn_p);
+        rhoY_hydro_n   = pow( pow(p0,Gamma) - Gamma*g*Sn_integral_p ,  th.gm1inv);
         HydroState_n->rhoY0[j] = rhoY_hydro_n;
         HydroState_n->Y0[j]    = Y_n[j];
         HydroState_n->S0[j]    = 1.0/Y_n[j];
         HydroState_n->p0[j]    = pow(rhoY_hydro_n,th.gamm);
+        HydroState_n->p20[j]   = HydroState_n->p0[j]/ud.Msq;
     }
     
     /* Hydrostates in bulk of domain */
+    Sn_p           = 1.0/Y_n[igy];
+    Sn_integral_p  = 0.0;
+
     y_p          = elem->y[igy];
     S_p          = 1.0/Y[igy];
+    S_m          = 1.0/Y_n[igy];
     S_integral_p = 0.5 * elem->dy * 0.5*(S_p + S_m);
     
-    for(j = igy; j < icy - igy; j++) {
+    for(j = igy; j < icy; j++) {
         
         p_hydro     = pow( pow(p0,Gamma) - Gamma*g*S_integral_p ,  Gamma_inv);
         rhoY_hydro  = pow(p_hydro,1.0/th.gamm);
@@ -110,17 +128,20 @@ void Hydrostatics_Column(States* HydroState,
         S_p           = 1.0/Y[j+1];
         S_integral_m  = S_integral_p;
         S_integral_p += 0.5*elem->dy*(S_m + S_p);
-        S_integral_n  = 0.5*(S_integral_m + S_integral_p);
-        
-        rhoY_hydro_n  = pow( pow(p0,Gamma) - Gamma*g*S_integral_n ,  th.gm1inv);
+
+        Sn_m           = Sn_p;
+        Sn_p           = 1.0/Y_n[j+1];
+        Sn_integral_m  = Sn_integral_p;
+        Sn_integral_p += 0.5*elem->dy*(Sn_m + Sn_p);
+        rhoY_hydro_n  = pow( pow(p0,Gamma) - Gamma*g*Sn_integral_p ,  th.gm1inv);
         HydroState_n->rhoY0[j+1] = rhoY_hydro_n;
-        HydroState_n->Y0[j]      = Y_n[j];
-        HydroState_n->S0[j+1]    = 1.0/Y_n[j];
+        HydroState_n->Y0[j+1]    = Y_n[j+1];
+        HydroState_n->S0[j+1]    = 1.0/Y_n[j+1];
         HydroState_n->p0[j+1]    = pow(rhoY_hydro_n,th.gamm);
-        
+        HydroState_n->p20[j+1]   = HydroState_n->p0[j+1]/ud.Msq;
     }
     
-    /* Hydrostates in top dummy cells */
+    /* Hydrostates in top dummy cells
     for(j = icy-igy; j < icy; j++) {
         
         p_hydro     = pow( pow(p0,Gamma) - Gamma*g*S_integral_p ,  Gamma_inv);
@@ -148,12 +169,16 @@ void Hydrostatics_Column(States* HydroState,
         HydroState_n->Y0[j]      = Y_n[j];
         HydroState_n->S0[j+1]    = 1.0/Y_n[j];
         HydroState_n->p0[j+1]    = pow(rhoY_hydro_n,th.gamm);
-    }    
+    }   
+      */
 }
 
 /* ================================================================================== */
 
-void Hydrostatics_State(MPV* mpv, double *Sbg, const ElemSpaceDiscr* elem) 
+void Hydrostatics_State(MPV* mpv, 
+                        double *Sbg, 
+                        const ElemSpaceDiscr* elem, 
+                        const NodeSpaceDiscr* node) 
 {
     
     extern Thermodynamic th;
@@ -168,26 +193,39 @@ void Hydrostatics_State(MPV* mpv, double *Sbg, const ElemSpaceDiscr* elem)
     
     const double rho0 = 1.0;
     
-    double y_p, y_m; 
     double p0;
     
-    double S_integral_m, S_integral_n, S_integral_p, g;
-    double S_m, S_p, p_hydro, rhoY_hydro, rhoY_hydro_n;
+    double g;
+    double y_p,  y_m,  S_integral_m,  S_integral_p,  S_m,  S_p; 
+    double yn_p, yn_m, Sn_integral_m, Sn_integral_p, Sn_m, Sn_p;
+    double p_hydro, p_hydro_n, rhoY_hydro, rhoY_hydro_n;
     
     int j;
     
     g = ud.gravity_strength[1];
     
-    /* Hydrostates in bottom dummy cells */
-    y_p          = elem->y[igy];
-    S_p          = 1.0/stratification(y_p);
-    S_integral_p = 0.5 * elem->dy * 0.5*(S_p + 1.0/stratification(0.0));
+    /* Reference state at the ground */
     p0           = pow(rho0 * stratification(0.0), gamm);
-    
-    for(j = igy; j >= 0; j--) {
+    mpv->HydroState_n->Y0[igy]    = stratification(0.0);
+    mpv->HydroState_n->rho0[igy]  = rho0;
+    mpv->HydroState_n->rhoY0[igy] = rho0*stratification(0.0);
+    mpv->HydroState_n->S0[igy]    = 1.0/mpv->HydroState_n->Y0[igy];
+    mpv->HydroState_n->p0[igy]    = p0;
+    mpv->HydroState_n->p20[igy]   = mpv->HydroState_n->p0[igy]/ud.Msq;
+
+    /* Hydrostates in bottom dummy cells */
+    y_p          = elem->y[igy-1];
+    S_p          = 1.0/stratification(y_p);
+    S_integral_p = -0.5 * elem->dy * 0.5*(S_p + 1.0/stratification(0.0));
+
+    yn_p          = node->y[igy-1];
+    Sn_p          = 1.0/stratification(yn_p);
+    Sn_integral_p = -node->dy * 0.5*(Sn_p + 1.0/stratification(0.0));
+
+    for(j = igy-1; j >= 0; j--) {
         
         p_hydro     = pow( pow(p0,Gamma) - Gamma*g*S_integral_p ,  Gamma_inv);
-        rhoY_hydro   = pow(p_hydro,1.0/th.gamm);
+        rhoY_hydro  = pow(p_hydro,1.0/th.gamm);
         
         mpv->HydroState->geopot[j] = g * y_p;
         mpv->HydroState->rho0[j]   = rhoY_hydro * S_p;
@@ -203,22 +241,35 @@ void Hydrostatics_State(MPV* mpv, double *Sbg, const ElemSpaceDiscr* elem)
         S_m           = S_p;
         S_p           = 1.0/stratification(y_p);
         S_integral_m  = S_integral_p;
-        S_integral_p -= 0.5*elem->dy*(S_m + S_p);
-        S_integral_n  = 0.5*(S_integral_m + S_integral_p);
-        
-        rhoY_hydro_n  = pow( pow(p0,Gamma) - Gamma*g*S_integral_n ,  th.gm1inv);
+        S_integral_p -= elem->dy*0.5*(S_m + S_p);
+                
+        p_hydro_n     = pow( pow(p0,Gamma) - Gamma*g*Sn_integral_p ,  Gamma_inv);
+        rhoY_hydro_n  = pow(p_hydro_n,1.0/th.gamm);
         mpv->HydroState_n->rhoY0[j] = rhoY_hydro_n;
         mpv->HydroState_n->Y0[j]    = stratification(0.5*(y_p+y_m));
+        mpv->HydroState_n->rho0[j]  = rhoY_hydro_n / mpv->HydroState_n->Y0[j];
         mpv->HydroState_n->S0[j]    = 1.0/mpv->HydroState_n->Y0[j];
-        mpv->HydroState_n->p0[j]    = pow(rhoY_hydro_n,th.gamm);
+        mpv->HydroState_n->p0[j]    = p_hydro_n;
+        mpv->HydroState_n->p20[j]   = mpv->HydroState_n->p0[j]/ud.Msq;
+
+        yn_m           = yn_p;
+        yn_p           = yn_m - node->dy;
+        Sn_m           = Sn_p;
+        Sn_p           = 1.0/stratification(yn_p);
+        Sn_integral_m  = Sn_integral_p;
+        Sn_integral_p -= elem->dy*0.5*(Sn_m + Sn_p);
     }
     
     /* Hydrostates in bulk of domain */
     y_p          = elem->y[igy];
     S_p          = 1.0/stratification(y_p);
     S_integral_p = 0.5 * elem->dy * 0.5*(S_p + 1.0/stratification(0.0));
+    
+    yn_p          = node->y[igy+1];
+    Sn_p          = 1.0/stratification(yn_p);
+    Sn_integral_p = node->dy * 0.5*(Sn_p + 1.0/stratification(0.0));
 
-    for(j = igy; j < icy - igy; j++) {
+    for(j = igy; j < icy; j++) {
         
         p_hydro     = pow( pow(p0,Gamma) - Gamma*g*S_integral_p ,  Gamma_inv);
         rhoY_hydro  = pow(p_hydro,1.0/th.gamm);
@@ -238,17 +289,25 @@ void Hydrostatics_State(MPV* mpv, double *Sbg, const ElemSpaceDiscr* elem)
         S_p           = 1.0/stratification(y_p);
         S_integral_m  = S_integral_p;
         S_integral_p += 0.5*elem->dy*(S_m + S_p);
-        S_integral_n  = 0.5*(S_integral_m + S_integral_p);
         
-        rhoY_hydro_n  = pow( pow(p0,Gamma) - Gamma*g*S_integral_n ,  th.gm1inv);
+        p_hydro_n     = pow( pow(p0,Gamma) - Gamma*g*Sn_integral_p ,  Gamma_inv);
+        rhoY_hydro_n  = pow(p_hydro_n,1.0/th.gamm);
         mpv->HydroState_n->rhoY0[j+1] = rhoY_hydro_n;
         mpv->HydroState_n->Y0[j+1]    = stratification(0.5*(y_p+y_m));
+        mpv->HydroState_n->rho0[j+1]  = rhoY_hydro_n / mpv->HydroState_n->Y0[j+1];
         mpv->HydroState_n->S0[j+1]    = 1.0/mpv->HydroState_n->Y0[j+1];
         mpv->HydroState_n->p0[j+1]    = pow(rhoY_hydro_n,th.gamm);
-        
-    }
+        mpv->HydroState_n->p20[j+1]   = mpv->HydroState_n->p0[j+1]/ud.Msq;
+
+        yn_m           = yn_p;
+        yn_p           = yn_m + elem->dy;
+        Sn_m           = Sn_p;
+        Sn_p           = 1.0/stratification(yn_p);
+        Sn_integral_m  = Sn_integral_p;
+        Sn_integral_p += 0.5*elem->dy*(Sn_m + Sn_p);
+}
     
-    /* Hydrostates in top dummy cells */
+    /* Hydrostates in top dummy cells 
     for(j = icy-igy; j < icy; j++) {
         
         p_hydro     = pow( pow(p0,Gamma) - Gamma*g*S_integral_p ,  Gamma_inv);
@@ -276,7 +335,9 @@ void Hydrostatics_State(MPV* mpv, double *Sbg, const ElemSpaceDiscr* elem)
         mpv->HydroState_n->Y0[j+1]    = stratification(0.5*(y_p+y_m));
         mpv->HydroState_n->S0[j+1]    = 1.0/mpv->HydroState_n->Y0[j+1];
         mpv->HydroState_n->p0[j+1]    = pow(rhoY_hydro_n,th.gamm);
+        mpv->HydroState_n->p20[j+1]   = mpv->HydroState_n->p0[j+1]/ud.Msq;
     }
+     */
     
     /* HydroStates in an auxiliary field */
     /* */
@@ -363,7 +424,8 @@ void Hydrostatic_Exner_pressure(
 
 void Hydrostatic_Initial_Pressure(ConsVars* Sol, 
                                   MPV* mpv,
-                                  const ElemSpaceDiscr *elem)
+                                  const ElemSpaceDiscr *elem,
+                                  const NodeSpaceDiscr *node)
 {
     /* 
      Computes the pressure field corresponding to the linear hydrostatic
@@ -379,10 +441,12 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
      choice of one proper integration constant to establish periodicity
      of the surface pressure. 
      */
+    extern User_Data ud;
     extern Thermodynamic th;
      
     double *beta, *bdpdx, *pibot, *coeff;
     double dotPU;
+    double NoBG = (ud.time_integrator == SI_MIDPT ? 1.0 : 0.0);
     
     assert(elem->ndim == 2);
     
@@ -395,7 +459,9 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
     int igx = elem->igx;
     int icy = elem->icy;
     int igy = elem->igy;
-    
+
+    int inx = node->icx;
+
     double dx  = elem->dx;
     double dy  = elem->dy;
     
@@ -437,13 +503,17 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
         pibot[i] -= dotPU*coeff[i];
     }
     
-    /*reset mpv->p2_cells */
-    for (int i=igx; i<icx-igx; i++) {
-        int ni     = i;
-        double pi0 = pibot[i];
-        for (int j=igy; j<icy-igy; j++) {
-            int nij    = ni + j*icx;
-            mpv->p2_cells[nij] += pi0;
+    /*reset mpv->p2_cells, mpv->p2_nodes */
+    for (int i=igx; i<icx-igx+1; i++) {
+        int nci     = i;
+        int nni     = i;
+        double pic0 = pibot[i];
+        double pin0 = 0.5*(pibot[i]+pibot[i-1]);
+        for (int j=igy; j<icy-igy+1; j++) {
+            int ncij    = nci + j*icx;
+            int nnij    = nni + j*inx;
+            mpv->p2_cells[ncij] += pic0 - NoBG * mpv->HydroState->p20[j]/mpv->HydroState->rhoY0[j];
+            mpv->p2_nodes[nnij] += pin0 - NoBG * mpv->HydroState_n->p20[j]/mpv->HydroState_n->rhoY0[j];
         }
     }
     

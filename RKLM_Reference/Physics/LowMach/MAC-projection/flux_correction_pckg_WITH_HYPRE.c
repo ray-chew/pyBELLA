@@ -128,7 +128,7 @@ void flux_correction(ConsVars* flux[3],
     assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
     rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
     
-#if 0
+#if 1
     extern User_Data ud;
     FILE *prhsfile = NULL;
     char fn2[200], fieldname2[90];
@@ -220,7 +220,7 @@ void flux_correction(ConsVars* flux[3],
      it is thus overwritten under the SI_MIDPT time integration sequence */
     flux_correction_due_to_pressure_gradients(flux, buoy, elem, Sol, Sol0, mpv, hplus, hS, dp2, t, dt, implicitness);
     
-#if 0
+#if 1
     sprintf(fn2, "%s/Tests/frhoY_y_post.hdf", ud.file_name);
     sprintf(fieldname2, "frhoY_y_post.hdf");
     
@@ -1590,18 +1590,17 @@ void update_SI_MIDPT_buoyancy(ConsVars* Sol,
             const int icy = elem->icy;
             const int igy = elem->igy;
             const int ify = elem->ify;
-            
-            const double dy = elem->dy;
-            
+                        
             for (int j=igy; j<icy-igy; j++) {
                 int ncj = j*icx;
                 int nfj = j;
                 double S0p = mpv->HydroState_n->S0[j+1];
                 double S0m = mpv->HydroState_n->S0[j];
+                double S0c = mpv->HydroState->S0[j];
                 for (int i=igx; i<icx-igx; i++) {
                     int ncji = ncj+i;
                     int nfji = nfj+i*ify;
-                    Sol->rhoX[BUOY][ncji] += -lambda*(flux[1]->rhoY[nfji+1]*S0p - flux[1]->rhoY[nfji]*S0m);
+                    Sol->rhoX[BUOY][ncji] += -lambda*(flux[1]->rhoY[nfji+1]*(S0p-S0c) + flux[1]->rhoY[nfji]*(S0c-S0m));
                 }
             }
             break;

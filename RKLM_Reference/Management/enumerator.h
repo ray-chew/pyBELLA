@@ -55,6 +55,11 @@ enum GravityTimeIntegrator {
     IMPLICIT_TRAPEZOIDAL
 };
 
+enum GRID {
+    CELL_CENTERED,
+    NODE_CENTERED
+};
+
 enum FluxesFrom {
     FLUX_EXTERNAL,
     FLUX_INTERNAL

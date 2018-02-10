@@ -37,8 +37,8 @@ kmax = 601;
 dk   = 1;
 
 %modelstr = '';
-modelstr = 'comp';
-%modelstr = 'psinc';
+%modelstr = 'comp';
+modelstr = 'psinc';
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
@@ -133,20 +133,22 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZ';  folderstr = 'rhoZ'; titlestr = 'rhoZ'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'Z';  folderstr = 'Z'; titlestr = 'Z'; ndummy = 2; arraysize = [ncx ncy]; rhoZ_diff = 0;
-%varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
+varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
 %varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qc';  folderstr = 'qc'; titlestr = 'qc'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qr';  folderstr = 'qr'; titlestr = 'qr'; ndummy = 2; arraysize = [ncx ncy];
+%varstr = 'flux_rhou';  folderstr = 'fluxes'; titlestr = 'flux_rhou'; ndummy = 2; arraysize = [ncx+1 ncy]; symmetry = -1*symmetry;
+%varstr = 'flux_rhov';  folderstr = 'fluxes'; titlestr = 'flux_rhov'; ndummy = 2; arraysize = [ncy+1 ncx]; symmetry = -1*symmetry;
 
 %varstr = 'p2_c';  folderstr = 'p2_c'; titlestr = '\pi'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dp2_c';  folderstr = 'dp2_c'; titlestr = 'd\pi'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dpdim';  folderstr = 'dpdime'; titlestr = 'dp [Pa]'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhs_cells';  folderstr = 'rhs_cells'; titlestr = 'rhs_c'; ndummy = 2; arraysize = [ncx ncy];
 
-varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
+%varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'rhs_nodes';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n';    ndummy = 2; arraysize = [nnx nny];
 
 %varstr = 'advflux_x';  folderstr = 'advflux'; titlestr = 'advflux_x'; ndummy = 2; arraysize = [ncx+1 ncy]; symmetry = -1*symmetry;
@@ -169,7 +171,8 @@ for k = kmin:dk:kmax
     kstr = num2str(k);
     if k < 10
         filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_00',kstr,'.hdf');
-    else if k < 100
+    else
+        if k < 100
             filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_0',kstr,'.hdf');
         else
             filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_',kstr,'.hdf');
@@ -177,6 +180,9 @@ for k = kmin:dk:kmax
     end
     if nny == 1
         v = hdfread(filestr, '/Data-Set-2', 'Index', {1,1,arraysize(1)+dumsx*ndummy});
+        if strcmp(varstr, 'flux_rhov')
+            transpose(v);
+        end
         velo = v;
 
         [ndum, nx] = size(velo);
@@ -246,7 +252,11 @@ for k = kmin:dk:kmax
         % Create contour
         if filledcontours
             figure(figure1)
-            contourf(x,z,th,25,'LineColor','auto');
+            if strcmp(varstr, 'flux_rhou')
+                contourf(x,z,th./th(:,1),25,'LineColor','auto');
+            else
+                contourf(x,z,th,25,'LineColor','auto');
+            end
             colormap Jet
             colorbar('FontSize',14,'FontName','Helvetica')
         else

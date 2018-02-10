@@ -31,7 +31,8 @@ void add_advective_fluxes(VectorField* fd,
 
 void update_advective_fluxes(ConsVars* flux[3], 
                              const VectorField* adv_flux,  
-                             const ElemSpaceDiscr* elem,
+                             const ElemSpaceDiscr* elem,  
+                             const NodeSpaceDiscr* node,
                              const double dt);
 
 void recompute_advective_fluxes(ConsVars* flux[3], 

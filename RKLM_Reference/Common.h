@@ -19,9 +19,9 @@
 
 /* Output parameters */
 #define HDFFORMAT
-#define OUTPUT_SUBSTEPS 0
-#define OUTPUT_SPLITSTEPS 0
-#define OUTPUT_SUBSTEPS_PREDICTOR 0
+#define OUTPUT_SUBSTEPS 1
+#define OUTPUT_SPLITSTEPS 1
+#define OUTPUT_SUBSTEPS_PREDICTOR 1
 
 
 /* ============================================= 

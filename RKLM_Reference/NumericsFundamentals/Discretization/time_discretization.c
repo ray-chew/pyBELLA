@@ -28,8 +28,8 @@ void set_time_integrator_parameters(User_Data *ud)
             ud->tips.dt_frac         = 0.5;
             ud->tips.flux_frac[0][0] = 0.0;
             ud->tips.flux_frac[0][1] = 1.0;
-            ud->tips.flux_frac[1][0] = 0.0;
-            ud->tips.flux_frac[1][1] = 1.0;
+            ud->tips.flux_frac[1][0] = 0.5;
+            ud->tips.flux_frac[1][1] = 0.5;
             for (int k=2; k<NO_OF_RK_STAGES; k++) {
                 ud->tips.flux_frac[k][1] = 1e10;
                 ud->tips.flux_frac[k][1] = 1e10;

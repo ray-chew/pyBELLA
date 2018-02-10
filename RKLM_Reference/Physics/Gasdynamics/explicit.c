@@ -124,6 +124,7 @@ void Explicit_step_and_flux(
     double *pdp2, *pS, *pSbg;
     
 	double flux_weight_old, flux_weight_new;
+    double flux_rhoY_weight_old, flux_rhoY_weight_new;
     	
 	int icx, kcache, i, nmax, nsp; 
 	int count;
@@ -201,6 +202,13 @@ void Explicit_step_and_flux(
 		/* flux_weight = 0.5; */
 		flux_weight_old = ud.tips.flux_frac[RK_stage][0];
 		flux_weight_new = ud.tips.flux_frac[RK_stage][1];
+        if (ud.time_integrator == SI_MIDPT) {
+            flux_rhoY_weight_old = 1.0;
+            flux_rhoY_weight_new = 0.0;
+        } else {
+            flux_rhoY_weight_old = flux_weight_old;
+            flux_rhoY_weight_new = flux_weight_new;
+        }
 				
 		for(i = elem->igx; i < nmax - elem->igx; i++) { 
 						
@@ -231,10 +239,10 @@ void Explicit_step_and_flux(
             *ppflux.rhov = flux_weight_old * *ppflux.rhov + flux_weight_new * *pFluxes.rhov;  
             *ppflux.rhow = flux_weight_old * *ppflux.rhow + flux_weight_new * *pFluxes.rhow;  
             *ppflux.rhoe = flux_weight_old * *ppflux.rhoe + flux_weight_new * *pFluxes.rhoe;  
-            *ppflux.rhoY = flux_weight_old * *ppflux.rhoY + flux_weight_new * *pFluxes.rhoY;  
             for (nsp = 0; nsp < ud.nspec; nsp++) {
                 *ppflux.rhoX[nsp] = flux_weight_old * *ppflux.rhoX[nsp] + flux_weight_new * *pFluxes.rhoX[nsp];
             }
+            *ppflux.rhoY = flux_rhoY_weight_old * *ppflux.rhoY + flux_rhoY_weight_new * *pFluxes.rhoY;  
 			
 			pFluxes.rho++;
 			pFluxes.rhou++;
@@ -274,14 +282,16 @@ void Explicit_step_and_flux(
 			*ppflux.rhov = flux_weight_old * *ppflux.rhov + flux_weight_new * *pFluxes.rhov;  
 			*ppflux.rhow = flux_weight_old * *ppflux.rhow + flux_weight_new * *pFluxes.rhow;  
 			*ppflux.rhoe = flux_weight_old * *ppflux.rhoe + flux_weight_new * *pFluxes.rhoe;  
-			*ppflux.rhoY = flux_weight_old * *ppflux.rhoY + flux_weight_new * *pFluxes.rhoY;  
             for (nsp = 0; nsp < ud.nspec; nsp++) {
                 *ppflux.rhoX[nsp] = flux_weight_old * *ppflux.rhoX[nsp] + flux_weight_new * *pFluxes.rhoX[nsp];
             }
+            *ppflux.rhoY = flux_rhoY_weight_old * *ppflux.rhoY + flux_rhoY_weight_new * *pFluxes.rhoY;  
 		}
 	}
 	
-    if (ud.time_integrator == OP_SPLIT || ud.time_integrator == OP_SPLIT_MD_UPDATE) {
+    if (ud.time_integrator == OP_SPLIT || 
+        ud.time_integrator == OP_SPLIT_MD_UPDATE || 
+        ud.time_integrator == SI_MIDPT) {
         Explicit_step_update(Sol, n); 
     }    
 

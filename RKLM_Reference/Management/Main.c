@@ -218,9 +218,7 @@ int main( void )
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
                     }
 #endif
-                    
                     if(i_OpSplit < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
-                    
                 }
                                 
                 /* BACKWARD gasdynamics */
@@ -241,7 +239,6 @@ int main( void )
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
                     }
 #endif
-                    
                     if(i_OpSplit < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
                 }
                 
@@ -253,11 +250,11 @@ int main( void )
                 
                 if (ud.time_integrator == OP_SPLIT_MD_UPDATE) {
 #if OUTPUT_SUBSTEPS_PREDICTOR
-                    putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 0);
+                    putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
                     fullD_explicit_updates(Sol, Sol0, flux, buoyS, buoy, elem, dt, stage);
 #if OUTPUT_SUBSTEPS_PREDICTOR
-                    putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 0);
+                    putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
                 }
                 
@@ -322,7 +319,7 @@ int main( void )
                 stage = 0;
                 for(Split = 0; Split < elem->ndim; Split++) {
                     lambda = 0.5*dt/elem->dx;
-                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, FLUX_INTERNAL, EULER_BACKWARD, WITH_MUSCL, WITHOUT_GRAVITY);
+                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, FLUX_INTERNAL, EULER_FORWARD, WITH_MUSCL, WITHOUT_GRAVITY);
                     substep++;
                     
 #if OUTPUT_SUBSTEPS_PREDICTOR
@@ -339,51 +336,69 @@ int main( void )
                     
                 }
                 fullD_explicit_updates(Sol, Sol0, flux, buoyS, buoy, elem, dt, stage);
+#if OUTPUT_SUBSTEPS
+                putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
+#endif
                 
                 /* explicit part of Euler backward gravity over half time step */
                 VectorField_setzero(buoy0, elem->nc);
-                euler_gravity(Sol, buoy0, (const MPV*)mpv, elem, EULER_BACKWARD, 0.5*dt);
+                euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt);
                 Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
 #if OUTPUT_SUBSTEPS
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
 
-                /* store accumulated advective flux */
-                store_advective_fluxes(adv_flux, (const ConsVars**)flux, elem);
+                /* divergence-controlled advective fluxes at the half time level */
                 recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
-                add_advective_fluxes(adv_flux_diff, (const ConsVars**)flux, -1, (const VectorField*)adv_flux, elem);
-                
-                /* implicit part of Euler backward gravity over half time step */
-                flux_correction(flux, adv_flux_diff, buoy, elem, Sol, Sol0, t, dt, ud.implicitness, step);
-
-                /* note: the following just completes the first half time advection */
-                update(Sol, (const ConsVars**)flux, buoyS, buoy, elem, 0.5*dt);
-                Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
-                update_advective_fluxes(flux, (const VectorField*)adv_flux, elem, dt);    
-                
-                /* advective fluxes with controlled divergence now available */
-                
-                
-                
-                update_SI_MIDPT_buoyancy(Sol, (const ConsVars**)flux, mpv, elem, 0.5*dt);
+                store_advective_fluxes(adv_flux, (const ConsVars**)flux, elem);
+                flux_correction(flux, adv_flux_diff, buoy, elem, Sol, Sol0, t, dt, ud.implicitness, step);                
+                update_advective_fluxes(flux, (const VectorField*)adv_flux, elem, node, dt);    
 #if OUTPUT_SUBSTEPS
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
-
-                /* TODO: Why should I do another backward half time step here? */
-                second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 1.0, t, dt);
-                Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
+                
+                /* reset Sol to state at beginning of time step */
+                ConsVars_set(Sol, Sol0, elem->nc);
 #if OUTPUT_SUBSTEPS
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
+                
+                /* explicit EULER half time step for gravity and pressure gradient */ 
+                VectorField_setzero(buoy0, elem->nc);
+                euler_forward_non_advective(Sol, (const MPV*)mpv, elem, node, 0.5*dt); 
+                
+#if OUTPUT_SUBSTEPS
+                putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
+#endif
+                
+                /* explicit full time step advection using div-controlled advective fluxes */
+                printf("\nnonlinear advection ------------------------------ \n");
+                
+                substep = 0;
+                VectorField_setzero(buoy, elem->nc);
 
-                euler_gravity(Sol, buoy0, (const MPV*)mpv, elem, EULER_FORWARD, 0.5*dt);
-                update_SI_MIDPT_buoyancy(Sol, (const ConsVars**)flux, mpv, elem, 0.5*dt);
-
-                printf("\nnonlinear advection 2 ---------------------------- \n");
+                stage = 0;
+                for(Split = 0; Split < elem->ndim; Split++) {
+                    lambda = 0.5*dt/elem->dx;
+                    Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, FLUX_EXTERNAL, EULER_BACKWARD, WITH_MUSCL, WITHOUT_GRAVITY);
+                    substep++;
+                    
+#if OUTPUT_SUBSTEPS_PREDICTOR
+                    if (Split == 1)  {
+                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
+                    }
+                    Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
+                    putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", OUTPUT_SPLITSTEPS);
+                    if (Split == 1)  {
+                        (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
+                    }
+#endif
+                    (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, FORWARD);
+                }
+                
                 stage = 1;
                 for(i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
-                    
+
                     (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
 
                     lambda = stepfrac[substep]*ud.tips.dt_frac*dt/elem->dx;
@@ -402,11 +417,24 @@ int main( void )
                     }
 #endif
                 }
-                fullD_explicit_updates(Sol, Sol0, flux, buoyS, buoy, elem, dt, stage);
-#if OUTPUT_SUBSTEPS_PREDICTOR
-                putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 0);
+                
+                euler_backward_gravity(Sol, mpv, elem, 0.5*dt);
+#if OUTPUT_SUBSTEPS
+                putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
                 
+                second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 1.0, t, dt);
+                Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
+#if OUTPUT_SUBSTEPS
+                putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
+#endif
+
+                /* This placement is not according to Piotr's rules ... */
+                update_SI_MIDPT_buoyancy(Sol, (const ConsVars**)flux, mpv, elem, 0.5*dt);
+#if OUTPUT_SUBSTEPS
+                putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
+#endif
+
                 /* Bracketing Coriolis in Strang Split fashion around full advection-correction,
                  that is after second projection, seems slightly better (see below) */
                 printf("\nCoriolis 2 ---------------------------------- \n");                

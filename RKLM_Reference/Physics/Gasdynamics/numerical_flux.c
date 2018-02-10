@@ -19,6 +19,7 @@
 #include "boundary.h"
 #include "boundary.h"
 #include "flux_correction.h"
+#include "io.h"
 
 /*------------------------------------------------------------------------------
  plain upwind flux
@@ -195,10 +196,11 @@ void recompute_advective_fluxes(ConsVars* flux[3],
  ------------------------------------------------------------------------------*/
 void update_advective_fluxes(ConsVars* flux[3], 
                              const VectorField* adv_flux, 
-                             const ElemSpaceDiscr* elem,
+                             const ElemSpaceDiscr* elem, 
+                             const NodeSpaceDiscr* node,
                              const double dt)
 {
-    
+    extern User_Data ud;
     extern double *W0;
     double *rhs = W0;
     
@@ -206,15 +208,39 @@ void update_advective_fluxes(ConsVars* flux[3],
        stored in the latter field
      */
     for (int nf=0; nf<elem->nfx; nf++) {
+        flux[0]->rho[nf]  = 0.0;
+        flux[0]->rhou[nf] = 0.0;
+        flux[0]->rhov[nf] = 0.0;
+        flux[0]->rhow[nf] = 0.0;
+        flux[0]->rhoe[nf] = 0.0;
+        for (int nsp=0; nsp<ud.nspec; nsp++) {
+            flux[0]->rhoX[nsp][nf] = 0.0;
+        }
         flux[0]->rhoY[nf] += adv_flux->x[nf];
     }            
     if (elem->ndim > 1) {
         for (int nf=0; nf<elem->nfy; nf++) {
+            flux[1]->rho[nf]  = 0.0;
+            flux[1]->rhou[nf] = 0.0;
+            flux[1]->rhov[nf] = 0.0;
+            flux[1]->rhow[nf] = 0.0;
+            flux[1]->rhoe[nf] = 0.0;
+            for (int nsp=0; nsp<ud.nspec; nsp++) {
+                flux[1]->rhoX[nsp][nf] = 0.0;
+            }
             flux[1]->rhoY[nf] += adv_flux->y[nf];
         }            
     }
     if (elem->ndim > 2) {
-        for (int nf=0; nf<elem->nfy; nf++) {
+        for (int nf=0; nf<elem->nfz; nf++) {
+            flux[2]->rho[nf]  = 0.0;
+            flux[2]->rhou[nf] = 0.0;
+            flux[2]->rhov[nf] = 0.0;
+            flux[2]->rhow[nf] = 0.0;
+            flux[2]->rhoe[nf] = 0.0;
+            for (int nsp=0; nsp<ud.nspec; nsp++) {
+                flux[2]->rhoX[nsp][nf] = 0.0;
+            }
             flux[2]->rhoY[nf] += adv_flux->z[nf];
         }            
     }
@@ -222,4 +248,17 @@ void update_advective_fluxes(ConsVars* flux[3],
     double rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
     printf("rhsmax = %e", rhsmax);
 #endif
+#if 0
+    extern User_Data ud;
+    FILE *prhs2file = NULL;
+    char fn2[120], fieldname2[90];
+    sprintf(fn2, "%s/fluxes/flux_rhoY_x.hdf", ud.file_name);
+    sprintf(fieldname2, "flux_rhoY_x");
+    WriteHDF(prhs2file, elem->ifx, elem->icy, elem->icz, elem->ndim, flux[0]->rhoY, fn2, fieldname2);
+    sprintf(fn2, "%s/fluxes/flux_rhoY_y.hdf", ud.file_name);
+    sprintf(fieldname2, "flux_rhoY_y");
+    WriteHDF(prhs2file, elem->ify, elem->icx, elem->icz, elem->ndim, flux[1]->rhoY, fn2, fieldname2);
+#endif
+    
+    
 }

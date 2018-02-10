@@ -142,7 +142,7 @@ void second_projection(
 	catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
 
     /* test */
-#if 0
+#if 1
     FILE *prhsfile = NULL;
     char fn[120], fieldname[90];
     sprintf(fn, "%s/rhs_nodes/rhs_nodes_000.hdf", ud.file_name);
@@ -217,7 +217,7 @@ void second_projection(
     rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv->eta, mpv, bdry, dt, rhs_weight_new);
     catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
 
-#if 0
+#if 1
     FILE *prhs2file = NULL;
     char fn2[120], fieldname2[90];
     sprintf(fn2, "%s/rhs_nodes/rhs_nodes_002.hdf", ud.file_name);
@@ -241,6 +241,17 @@ void second_projection(
         }
     }
     printf("rhs_max after  = %e\n", rhs_max);
+    
+#if 1   /* check coefficients */
+    sprintf(fn2, "%s/hplus_nodes/hplusx.hdf", ud.file_name);
+    sprintf(fieldname2, "hplusx");
+    WriteHDF(prhs2file, elem->icx, elem->icy, elem->icz, elem->ndim, hplus[0], fn2, fieldname2);
+    sprintf(fn2, "%s/hplus_nodes/hplusy.hdf", ud.file_name);
+    sprintf(fieldname2, "hplusy");
+    WriteHDF(prhs2file, elem->icx, elem->icy, elem->icz, elem->ndim, hplus[1], fn2, fieldname2);
+#endif
+
+    
 #else
     correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);
 #endif
@@ -1038,21 +1049,15 @@ void correction_nodes(
 #ifdef GRAVITY_IMPLICIT
 /* ========================================================================== */
 
-void euler_gravity(ConsVars* Sol,
-                   VectorField* delv,
-                   const MPV* mpv,
-                   const ElemSpaceDiscr* elem,
-                   const enum GravityTimeIntegrator GTI,
-                   const double dt)
+void euler_backward_gravity(ConsVars* Sol,
+                            const MPV* mpv,
+                            const ElemSpaceDiscr* elem,
+                            const double dt)
 {
     /* 
-     evaluates the explicit part of the Euler backward contribution for
-     the gravity term in a semi-implicit discretization of the pressure
-     gradient and gravity terms. 
-       If called with a nonzero delv, it assumes that delv has been
-     a previous gravity update that needs to be corrected. So it is
-     subtracted from the (vertical) velocity, and the newly evaluated 
-     increment is added.
+     evaluates Euler backward for the gravity term in a semi-implicit 
+     trapezoidal or midpoint discretization of the pressure gradient and 
+     gravity terms. 
      */
     extern User_Data ud;
     
@@ -1063,29 +1068,100 @@ void euler_gravity(ConsVars* Sol,
     const int icx = elem->icx;
     const int icy = elem->icy;
     const int icz = elem->icz;
-    
-    const double implswitch = (GTI == EULER_FORWARD ? 0.0 : 1.0);
-    
+        
     for (int k=0; k<icz; k++) {
         int l = k*icy*icx;
         for (int j=0; j<icy; j++) {
             int m = l + j*icx;
             double strat  = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j])/(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
-            double chibar = mpv->HydroState->S0[j];
+            /* double chibar = mpv->HydroState->S0[j]; */
             for (int i=0; i<icx; i++) {
                 int n        = m + i;
-                double Nsqsc = implswitch * dt*dt * (g/Msq) * strat;
-                double v     = Sol->rhov[n]/Sol->rho[n] - delv->y[n];
+                double Nsqsc = dt*dt * (g/Msq) * strat;
+                double v     = Sol->rhov[n]/Sol->rho[n];
                 double dchi  = Sol->rhoX[BUOY][n]/Sol->rho[n];
                 double chi   = Sol->rho[n]/Sol->rhoY[n];
-                double dbuoy = -dchi/(chi*chibar);
-                double v_new = (v + dt * (g/Msq) * dbuoy) / (1.0 + Nsqsc);
-                delv->y[n]   = v_new - v;
-                Sol->rhov[n] = Sol->rho[n] * v_new;
+                double dbuoy = -dchi/chi;    /* -dchi/chibar; */
+                
+                Sol->rhov[n] = Sol->rho[n] * (v + dt * (g/Msq) * dbuoy) / (1.0 + Nsqsc);
             }
         }
     }
 }
+
+/* ========================================================================== */
+
+void euler_forward_non_advective(ConsVars* Sol,
+                                 const MPV* mpv,
+                                 const ElemSpaceDiscr* elem,
+                                 const NodeSpaceDiscr* node,
+                                 const double dt)
+{
+    /* 
+     evaluates Euler forward for the pressure gradient, gravity, 
+     and background stratification advection terms based on cell-
+     centered data. 
+     */
+    extern User_Data ud;
+    extern Thermodynamic th;
+    
+    double *p2n       = mpv->p2_nodes;
+    
+    const double g    = ud.gravity_strength[1];
+    const double Msq  = ud.Msq;
+    const double Ginv = th.Gammainv; 
+    
+    const int icx = elem->icx;
+    const int icy = elem->icy;
+    const int icz = elem->icz;
+
+    const int igx = elem->igx;
+    const int igy = elem->igy;
+    const int igz = elem->igz;
+
+    const int inx = node->icx;
+    const int iny = node->icy;
+    
+    const double dx = node->dx;
+    const double dy = node->dy;
+    
+    assert(elem->ndim == 2);
+    
+    for (int k=igz; k<icz-igz; k++) {
+        int lc = k*icy*icx;
+        int ln = k*iny*inx;
+        for (int j=igy; j<icy-igy; j++) {
+            int mc = lc + j*icx;
+            int mn = ln + j*inx;
+            double S0p    = mpv->HydroState_n->S0[j+1];
+            double S0m    = mpv->HydroState_n->S0[j];
+            /* double chibar = mpv->HydroState->S0[j]; */
+            
+            for (int i=igx; i<icx-igx; i++) {
+                int nc        = mc + i;
+                int nn        = mn + i;
+                int nn1       = nn+1;
+                int nninx     = nn+inx;
+                int nn1inx    = nn+inx+1;
+                
+                double dpdx   = 0.5*(p2n[nn1]+p2n[nn1inx]   - (p2n[nn]+p2n[nninx]))/dx;
+                double dpdy   = 0.5*(p2n[nninx]+p2n[nn1inx] - (p2n[nn1]+p2n[nn]  ))/dy;
+                double dSdy   = (S0p-S0m) / dy;
+                
+                double YovG   = Ginv*Sol->rhoY[nc]/Sol->rho[nc];
+                double v      = Sol->rhov[nc]/Sol->rho[nc];
+                double dchi   = Sol->rhoX[BUOY][nc]/Sol->rho[nc];
+                double chi    = Sol->rho[nc]/Sol->rhoY[nc];
+                double dbuoy  = -dchi/chi;  /* -dchi/chibar; */
+                
+                Sol->rhou[nc]       += dt * Sol->rho[nc] * ( - YovG * dpdx);
+                Sol->rhov[nc]       += dt * Sol->rho[nc] * ( - YovG * dpdy + (g/Msq) * dbuoy);
+                Sol->rhoX[BUOY][nc] += dt * Sol->rho[nc] * ( - v * dSdy);
+            }
+        }
+    }
+}
+
 #endif
 
 
