@@ -42,7 +42,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Earth */
     double grav     = 9.81;             /* [m/s^2]                */
-    double omega    = 1.0*0.0001;     /* 1.454 */
+    double omega    = 2.0*0.0001;     /* 1.454 */
     /* double omega  = sin(0.5*PI) * 2.0 * 0.00007272205217;   */
     
     /* thermodynamics and chemistry */
@@ -145,8 +145,8 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = SI_MIDPT; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, SI_MIDPT */
     ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 600.0 / ud->t_ref;
-    ud->dtfixed                = 600.0 / ud->t_ref;
+    ud->dtfixed0               = 50.0 / ud->t_ref;
+    ud->dtfixed                = 50.0 / ud->t_ref;
     ud->no_of_steps_to_CFL     = 1;
     ud->no_of_steps_to_dtfixed = 1;
 
@@ -194,7 +194,7 @@ void User_Data_init(User_Data* ud) {
     ud->Solver = BICGSTAB_PRECON;        /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->Solver_Node = BICGSTAB_PRECON;   /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
     ud->precondition = CORRECT;
-    double tol = 1.e-10;
+    double tol = 1.e-8;
     ud->flux_correction_precision = tol;
     ud->flux_correction_local_precision = tol;   /* 1.e-05 should be enough */
     ud->second_projection_precision = tol;

@@ -12,8 +12,8 @@ test_case = 'Internal-Wave-Long-Wave';
 
 showmode = 1;
 separate_signs = 1;
-filledcontours = 1;
-fixed_contours = 0;
+filledcontours = 0;
+fixed_contours = 1;
 fixed_contour_step = 0;
 no_of_contours = 10;
 show_increments = 0;
@@ -34,7 +34,7 @@ title_true = 1;
 %kmax = 53;
 kmin = 0;
 kmax = 601;
-dk   = 16;
+dk   = 1;
 
 %modelstr = '';
 %modelstr = 'comp';
