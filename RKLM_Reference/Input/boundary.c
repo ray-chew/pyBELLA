@@ -289,7 +289,7 @@ void Bound(
 						/* double S = (2.0*Sol->rho[nimage+1]/Sol->rhoY[nimage+1] - Sol->rho[nimage+2]/Sol->rhoY[nimage+2]); */
                         double S    = 1./stratification(elem->x[iimage]); 
                         double dpi  = (th.Gamma*g) * 0.5*dh*(1.0/Y_last + S);
-                        double rhoY = (compressible == 1 ? pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv) : HydroState->rhoY[i]);
+                        double rhoY = (compressible == 1 ? pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv) : HydroState->rhoY0[i]);
                         double rho  = rhoY * S;
                         double p    = pow(rhoY, th.gamm);
 
@@ -344,7 +344,7 @@ void Bound(
                         double S = 1./stratification(elem->x[iimage]); 
                         /* double S = (2.0*Sol->rho[nlast]/Sol->rhoY[nlast] - Sol->rho[nlast-1]/Sol->rhoY[nlast-1]); */
                         double dpi  = -(th.Gamma*g) * 0.5*dh*(1.0/Y_last + S);
-                        double rhoY = pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv);
+                        double rhoY = (compressible == 1 ? pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv) : HydroState->rhoY0[iimage]);
                         double rho  = rhoY * S;
                         double p    = pow(rhoY, th.gamm);
 

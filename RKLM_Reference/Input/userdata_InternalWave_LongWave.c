@@ -187,7 +187,7 @@ void User_Data_init(User_Data* ud) {
         ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.5;
     }
     
-    ud->ncache = 75; /* 604*44; (ud->inx+3); */
+    ud->ncache = 304*44; /* 604*44; (ud->inx+3); */
     
     /* linear solver-stuff */
     ud->which_projection_first = 1;
@@ -353,7 +353,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
         
             /* nodal pressure */
             nn   = j*icxn+i;
-            mpv->p2_nodes[nn] = HyStn->p20[j] / ud.Msq;
+            mpv->p2_nodes[nn] = HyStn->p20[j];
         }
     }
     

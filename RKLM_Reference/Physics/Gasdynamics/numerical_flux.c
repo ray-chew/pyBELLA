@@ -244,11 +244,11 @@ void update_advective_fluxes(ConsVars* flux[3],
             flux[2]->rhoY[nf] += adv_flux->z[nf];
         }            
     }
-#if 0
+#if 1
     double rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
     printf("rhsmax = %e", rhsmax);
 #endif
-#if 0
+#if 1
     extern User_Data ud;
     FILE *prhs2file = NULL;
     char fn2[120], fieldname2[90];

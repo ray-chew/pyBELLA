@@ -19,7 +19,7 @@ no_of_contours = 10;
 show_increments = 0;
 symmetry = 0;        % in {0,1}
 symmetrytest = 1;
-showdummycells = 1;
+showdummycells = 0;
 
 % th0 = -0.0015/300;
 % dth = 5e-4/300;
