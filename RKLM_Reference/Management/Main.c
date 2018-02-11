@@ -304,7 +304,9 @@ int main( void )
                 /* ======================================================================= */
                 
                 reset_Y_perturbation(Sol, (const MPV*)mpv, elem);
-#if OUTPUT_SUBSTEPS
+                ConsVars_set(Sol0, Sol, elem->nc);            
+
+#if OUTPUT_SUBSTEPS  /* 1 */
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
 
@@ -322,7 +324,7 @@ int main( void )
                     Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, FLUX_INTERNAL, EULER_FORWARD, WITH_MUSCL, WITHOUT_GRAVITY);
                     substep++;
                     
-#if OUTPUT_SUBSTEPS_PREDICTOR
+#if OUTPUT_SUBSTEPS_PREDICTOR  /* 2, 3 */
                     if (Split == 1)  {
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
                     }
@@ -432,7 +434,7 @@ int main( void )
 
                 /* This placement is not according to Piotr's rules ... */
                 update_SI_MIDPT_buoyancy(Sol, (const ConsVars**)flux, mpv, elem, 0.5*dt);
-#if OUTPUT_SUBSTEPS
+#if OUTPUT_SUBSTEPS  /* 15 */
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
 
@@ -442,7 +444,7 @@ int main( void )
                 Explicit_Coriolis(Sol, elem, 0.5*dt); 
                 Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
                 
-#if OUTPUT_SUBSTEPS
+#if OUTPUT_SUBSTEPS  /* 16 */
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
                                 

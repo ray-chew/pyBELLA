@@ -245,13 +245,14 @@ void update_advective_fluxes(ConsVars* flux[3],
         }            
     }
 #if 1
+    extern User_Data ud;
     double rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
     printf("rhsmax = %e", rhsmax);
-#endif
-#if 1
-    extern User_Data ud;
     FILE *prhs2file = NULL;
     char fn2[120], fieldname2[90];
+    sprintf(fn2, "%s/rhs_cells/rhs_post.hdf", ud.file_name);
+    sprintf(fieldname2, "rhs_post");
+    WriteHDF(prhs2file, elem->icx, elem->icy, elem->icz, elem->ndim, rhs, fn2, fieldname2);
     sprintf(fn2, "%s/fluxes/flux_rhoY_x.hdf", ud.file_name);
     sprintf(fieldname2, "flux_rhoY_x");
     WriteHDF(prhs2file, elem->ifx, elem->icy, elem->icz, elem->ndim, flux[0]->rhoY, fn2, fieldname2);

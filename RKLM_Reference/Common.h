@@ -57,7 +57,7 @@
  #define CONTROL_PRECONDITIONED_RESIDUAL_PROJ2
  */
 
-#define SOLVER_1_CR2
+#define SOLVER_1_BICGSTAB
 #define SOLVER_2_BICGSTAB
 
 /* preconditioning options ======================
