@@ -336,7 +336,7 @@ int main( void )
                     
                 }
                 fullD_explicit_updates(Sol, Sol0, flux, buoyS, buoy, elem, dt, stage);
-#if OUTPUT_SUBSTEPS
+#if OUTPUT_SUBSTEPS /* 4 */
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
                 
@@ -344,7 +344,7 @@ int main( void )
                 VectorField_setzero(buoy0, elem->nc);
                 euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt);
                 Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
-#if OUTPUT_SUBSTEPS
+#if OUTPUT_SUBSTEPS /* 5 */
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
 
@@ -353,13 +353,13 @@ int main( void )
                 store_advective_fluxes(adv_flux, (const ConsVars**)flux, elem);
                 flux_correction(flux, adv_flux_diff, buoy, elem, Sol, Sol0, t, dt, ud.implicitness, step);                
                 update_advective_fluxes(flux, (const VectorField*)adv_flux, elem, node, dt);    
-#if OUTPUT_SUBSTEPS
+#if OUTPUT_SUBSTEPS  /* 6 */
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
                 
                 /* reset Sol to state at beginning of time step */
                 ConsVars_set(Sol, Sol0, elem->nc);
-#if OUTPUT_SUBSTEPS
+#if OUTPUT_SUBSTEPS  /* 7 */
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
                 
@@ -367,7 +367,7 @@ int main( void )
                 VectorField_setzero(buoy0, elem->nc);
                 euler_forward_non_advective(Sol, (const MPV*)mpv, elem, node, 0.5*dt); 
                 
-#if OUTPUT_SUBSTEPS
+#if OUTPUT_SUBSTEPS  /* 8 */
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
                 
@@ -383,7 +383,7 @@ int main( void )
                     Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, FLUX_EXTERNAL, EULER_BACKWARD, WITH_MUSCL, WITHOUT_GRAVITY);
                     substep++;
                     
-#if OUTPUT_SUBSTEPS_PREDICTOR
+#if OUTPUT_SUBSTEPS_PREDICTOR  /* 9, 10 */
                     if (Split == 1)  {
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
                     }
@@ -406,7 +406,7 @@ int main( void )
                     Explicit_step_and_flux(Sol, flux[Split], buoyS, buoy, mpv->dp2_cells, mpv->HydroState, lambda, elem->nc, Split, stage, FLUX_EXTERNAL, EULER_FORWARD, WITH_MUSCL, WITHOUT_GRAVITY);
                     substep++;
                     
-#if OUTPUT_SUBSTEPS_PREDICTOR
+#if OUTPUT_SUBSTEPS_PREDICTOR  /* 11, 12 */
                     if (Split == 1)  {
                         (*rotate[elem->ndim - 1])(Sol, mpv->dp2_cells, Sbg, buoyS, BACKWARD);
                     }
@@ -420,13 +420,13 @@ int main( void )
                 Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
 
                 euler_backward_gravity(Sol, mpv, elem, 0.5*dt);
-#if OUTPUT_SUBSTEPS
+#if OUTPUT_SUBSTEPS  /* 13 */
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
                 
                 second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 1.0, t, dt);
                 Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
-#if OUTPUT_SUBSTEPS
+#if OUTPUT_SUBSTEPS  /* 14 */
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
 

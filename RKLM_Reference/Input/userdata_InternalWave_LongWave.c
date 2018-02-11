@@ -187,7 +187,7 @@ void User_Data_init(User_Data* ud) {
         ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.5;
     }
     
-    ud->ncache = 71; /* 604*44; (ud->inx+3); */
+    ud->ncache = 75; /* 604*44; (ud->inx+3); */
     
     /* linear solver-stuff */
     ud->which_projection_first = 1;
@@ -271,6 +271,8 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     extern MPV* mpv;
     extern double *W0, *W1, *Sbg;
     
+    const int compressible = (ud.is_compressible == 0 ? 0 : 1);
+    
     const double u0 = ud.wind_speed;
     const double v0 = 0.0;
     const double w0 = 0.0;
@@ -334,9 +336,8 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             v   = v0;
             w   = w0;
             
-            p    = HySt->p0[j];            
-            rhoY = HySt->rhoY0[j];
-            rho  = rhoY/(stratification(y)  + delth * molly(x) * sin(PI*y)  / (1.0 + (x-xc)*(x-xc) / (a*a)));
+            p    = (compressible ? HySt->p0[j] : mpv->HydroState->p0[j]);            
+            rhoY = (compressible ? HySt->rhoY0[j] : mpv->HydroState->rhoY0[j]);
             rho  = rhoY/Y[j];
             
             Sol->rho[n]    = rho;
@@ -347,14 +348,12 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             Sol->rhoY[n]   = rhoY;
             Sol->geopot[n] = g * y;
             
-            mpv->p2_cells[n]   = (p/rhoY) / ud.Msq;
+            mpv->p2_cells[n]   = HySt->p20[j];
             Sol->rhoX[BUOY][n] = Sol->rho[n] * ( Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
         
             /* nodal pressure */
             nn   = j*icxn+i;
-            p    = HyStn->p0[j];            
-            rhoY = HyStn->rhoY0[j];
-            mpv->p2_nodes[nn] = (p/rhoY) / ud.Msq;
+            mpv->p2_nodes[nn] = HyStn->p20[j] / ud.Msq;
         }
     }
     

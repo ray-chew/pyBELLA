@@ -245,6 +245,7 @@ void Bound(
         extern ElemSpaceDiscr* elem;
         const double g = ud.gravity_strength[SplitStep];
 		const double M_LH_sq = ud.Msq;
+        const int compressible = ud.is_compressible;
 		
         double dh = elem->dx;   /* it is "dx" because Bound() is called during OPSPLIT steps; */
         double u, v, w;
@@ -286,9 +287,9 @@ void Bound(
 					{
 						int iimage  = i;
 						/* double S = (2.0*Sol->rho[nimage+1]/Sol->rhoY[nimage+1] - Sol->rho[nimage+2]/Sol->rhoY[nimage+2]); */
-                        double S = 1./stratification(elem->x[iimage]); 
+                        double S    = 1./stratification(elem->x[iimage]); 
                         double dpi  = (th.Gamma*g) * 0.5*dh*(1.0/Y_last + S);
-                        double rhoY = pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv);
+                        double rhoY = (compressible == 1 ? pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv) : HydroState->rhoY[i]);
                         double rho  = rhoY * S;
                         double p    = pow(rhoY, th.gamm);
 
@@ -990,12 +991,14 @@ void Set_Explicit_Boundary_Data(
     for(SplitStep = 0; SplitStep < elem->ndim; SplitStep++) { 
         const double lambda = 1.0;
         Bound(Sol, mpv->HydroState, lambda, elem->nc, SplitStep, setZ); 
-        if(SplitStep < elem->ndim - 1) (*rotate[elem->ndim - 1])(Sol, mpv->Level[0]->rhs, Sbg, buoyS, FORWARD);
+        /* if(SplitStep < elem->ndim - 1) */
+        (*rotate[elem->ndim - 1])(Sol, mpv->Level[0]->rhs, Sbg, buoyS, FORWARD);
     }         
-    /* rotate back */          
+    /* rotate back           
     for(SplitStep = elem->ndim-1; SplitStep > 0; SplitStep--) {
         (*rotate[elem->ndim - 1])(Sol, mpv->Level[0]->rhs, Sbg, buoyS, BACKWARD);
     }
+     */
 }
 
 

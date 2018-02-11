@@ -12,14 +12,14 @@ test_case = 'Internal-Wave-Long-Wave';
 
 showmode = 1;
 separate_signs = 1;
-filledcontours = 0;
+filledcontours = 1;
 fixed_contours = 0;
 fixed_contour_step = 0;
 no_of_contours = 10;
 show_increments = 0;
 symmetry = 0;        % in {0,1}
 symmetrytest = 1;
-showdummycells = 0;
+showdummycells = 1;
 
 % th0 = -0.0015/300;
 % dth = 5e-4/300;
