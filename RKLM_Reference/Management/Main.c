@@ -252,6 +252,8 @@ int main( void )
 #if OUTPUT_SUBSTEPS_PREDICTOR
                     putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
+                    printf("\nCoriolis 1 ---------------------------------- \n");                
+                    Explicit_Coriolis(Sol0, elem, 0.5*dt);                
                     fullD_explicit_updates(Sol, Sol0, flux, buoyS, buoy, elem, dt, stage);
 #if OUTPUT_SUBSTEPS_PREDICTOR
                     putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
@@ -317,6 +319,10 @@ int main( void )
 
                 substep = 0;
                 
+                printf("\nCoriolis 0 ---------------------------------- \n");                
+                Explicit_Coriolis(Sol, elem, 0.5*dt); 
+                Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
+
                 /* explicit advection half time step preparing advection flux calculation */
                 stage = 0;
                 for(Split = 0; Split < elem->ndim; Split++) {
@@ -361,6 +367,15 @@ int main( void )
                 
                 /* reset Sol to state at beginning of time step */
                 ConsVars_set(Sol, Sol0, elem->nc);
+
+                /* ----------------------------------------------------------------------- */
+                /* time step starts here                                                   */
+                /* ----------------------------------------------------------------------- */
+
+                printf("\nCoriolis 1 ---------------------------------- \n");                
+                Explicit_Coriolis(Sol, elem, 0.5*dt); 
+                Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
+
 #if OUTPUT_SUBSTEPS  /* 7 */
                 putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);
 #endif
