@@ -436,7 +436,7 @@ double precon_prepare(
                     tridiago[0][nnicxn]  +=   flux_y_left;
                     tridiago[1][nnicxn]  += - flux_x_upper - flux_y_left + hc;
                     
-                    tridiago[0][nn1icxn] += - flux_y_right;
+                    tridiago[0][nn1icxn] +=   flux_y_right;
                     tridiago[1][nn1icxn] += - flux_x_upper - flux_y_right + hc;                    
                 }
             }
@@ -516,10 +516,16 @@ void precon_invert(
         for (int j=igyn; j<icyn-igyn; j++) {
             int j_inn = j-igyn;
             int nn    = j*icxn+i;
+            /*
             lower[j_inn] = tridiago[0][nn];
             diago[j_inn] = tridiago[1][nn];
             upper[j_inn] = tridiago[2][nn];
             v_in[j_inn]  = vec_in[nn];
+             */
+            lower[j_inn] = tridiago[0][nn]/tridiago[1][nn];
+            diago[j_inn] = 1.0;
+            upper[j_inn] = tridiago[2][nn]/tridiago[1][nn];
+            v_in[j_inn]  = vec_in[nn]/tridiago[1][nn];
         }
         Thomas_Algorithm(v_out, v_in, upper, diago, lower, size);
         for (int j=igyn; j<icyn-igyn; j++) {
