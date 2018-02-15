@@ -60,7 +60,6 @@ int main( void )
     extern VectorField* adv_flux0;
     extern double* buoyS;
     extern VectorField* buoy; 
-    extern VectorField* buoy0; 
     
     extern double* W0;
     extern double* W1;
@@ -190,7 +189,6 @@ int main( void )
 #endif
             
             /* explicit part of Euler backward gravity over half time step */
-            VectorField_setzero(buoy0, elem->nc);
             euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt);
             Set_Explicit_Boundary_Data(Sol, elem, mpv, 1);
 #if OUTPUT_SUBSTEPS /* 5 */
@@ -222,7 +220,6 @@ int main( void )
 #endif
             
             /* explicit EULER half time step for gravity and pressure gradient */ 
-            VectorField_setzero(buoy0, elem->nc);
             euler_forward_non_advective(Sol, (const MPV*)mpv, elem, node, 0.5*dt); 
             
 #if OUTPUT_SUBSTEPS  /* 8 */
