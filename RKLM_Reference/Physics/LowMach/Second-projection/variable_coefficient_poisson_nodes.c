@@ -111,7 +111,6 @@ static double BiCGSTAB_MG_nodes(
 	double* s_j        = data->s_j;
 	double* t_j        = data->t_j;
     double* rhs_prec   = data->help_vec;
-    double* r_j_unprec = data->help_vec2;
 	
 	const int nc  = node->nc;
 	const int igx = node->igx;
@@ -153,7 +152,6 @@ static double BiCGSTAB_MG_nodes(
 	}
     
 
-#ifdef CONTROL_PRECONDITIONED_RESIDUAL_PROJ2
     tmp = 0.0;
     tmp_local = 0.0;
     for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
@@ -164,20 +162,6 @@ static double BiCGSTAB_MG_nodes(
             }
         }
     }
-#else  /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ2 */
-    precon_apply(r_j_unprec, r_j, node);
-    
-    tmp = 0.0;
-    tmp_local = 0.0;
-    for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
-        for(j = igy; j < icy - igy - y_periodic; j++) {m = l + j * icx;
-            for(i = igx; i < icx - igx - x_periodic; i++) {n = m + i;
-                tmp += r_j_unprec[n] * r_j_unprec[n];
-                tmp_local = MAX_own(tmp_local, fabs(r_j_unprec[n]));
-            }
-        }
-    }
-#endif  /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ2 */
 
     alpha = omega = rho1 = 1.;
 	tmp_local *= 0.5*dt/(precon_inv_scale*precision);
@@ -261,7 +245,6 @@ static double BiCGSTAB_MG_nodes(
 			}
 		}
         
-#ifdef CONTROL_PRECONDITIONED_RESIDUAL_PROJ2
         tmp = 0.0;
         tmp_local = 0.0;
         for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
@@ -272,20 +255,6 @@ static double BiCGSTAB_MG_nodes(
                 }
             }
         }
-#else  /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ2 */
-        precon_apply(r_j_unprec, r_j, node);
-
-        tmp = 0.0;
-        tmp_local = 0.0;
-        for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
-            for(j = igy; j < icy - igy - y_periodic; j++) {m = l + j * icx;
-                for(i = igx; i < icx - igx - x_periodic; i++) {n = m + i;
-                    tmp      += r_j_unprec[n] * r_j_unprec[n];
-                    tmp_local = MAX_own(tmp_local, fabs(r_j_unprec[n]));
-                }
-            }
-        }
-#endif /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ2 */
         
 		rho1 = rho2;
 		tmp_local *= 0.5*dt/(precon_inv_scale*precision);

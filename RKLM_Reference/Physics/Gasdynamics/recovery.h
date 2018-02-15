@@ -1,7 +1,5 @@
 /*******************************************************************************
  File:   recovery.h
- Author: Nicola
- Date:   Wed Feb 25 07:58:40 CET 1998
  *******************************************************************************/
 #ifndef RECOVERY_H
 #define RECOVERY_H
@@ -18,38 +16,14 @@
  Rights =
  ------------------------------------------------------------------------------*/
 
-void recovery_gravity(
-					  States* Lefts, 
-					  States* Rights,
-					  double* gravity_source, 
-                      double* buoy,
-                      double* S_ave,
-                      double* Sbg,
-					  const double gravity_strength,
-					  States* Sol, 
-                      ConsVars* Fluxes,
-					  double* S2,
-					  double* p2,
-                      const double* dp2,
-					  const double lambda, 
-					  const int nmax,
-                      const int stage,
-                      const double implicit,
-                      const enum FluxesFrom adv_fluxes_from, 
-                      const enum MUSCL_ON_OFF muscl_on_off,
-                      const enum GRAVITY_ON_OFF gravity_on_off);
-
-/*------------------------------------------------------------------------------
- 
- ------------------------------------------------------------------------------*/
-void pressure_gradient_and_gravity(
-                                   double* gravity_source,
-                                   const double strength,
-                                   States* Sol,
-                                   double* S2,
-                                   double* p2,
-                                   const double lambda, 
-                                   const int nmax);
+void recovery(States* Lefts,
+              States* Rights,
+              States* Sol,
+              ConsVars* Fluxes,
+              const double lambda_input, 
+              const int nmax,
+              const enum FluxesFrom adv_fluxes_from, 
+              const enum MUSCL_ON_OFF muscl_on_off) ;
 
 /*------------------------------------------------------------------------------
  

@@ -28,7 +28,6 @@ typedef struct {
     double* s_j;
     double* t_j;
     double* help_vec;
-    double* help_vec2;
     
 #ifdef SOLVER_CR2
     double* Lr_0;

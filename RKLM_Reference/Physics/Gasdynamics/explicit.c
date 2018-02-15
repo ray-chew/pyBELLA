@@ -84,18 +84,12 @@ void copy_fluxes(double *F,
 void Explicit_step_and_flux(
 							ConsVars* Sol,
 							ConsVars* flux,
-                            double* buoyS,
-                            VectorField* buoy,
-                            double* dp2,
-							const States* HydroState,
 							const double lambda, 
 							const int n, 
 							const int SplitStep,
                             const int RK_stage,
-                            const enum FluxesFrom adv_fluxes_from,
-                            const enum GravityTimeIntegrator GTI, 
-                            const enum MUSCL_ON_OFF muscl_on_off,
-                            const enum GRAVITY_ON_OFF gravity_on_off) {
+                            const enum FluxesFrom adv_fluxes_from, 
+                            const enum MUSCL_ON_OFF muscl_on_off) {
 	
     /* TODO: Can I get away without ever computing the theta-perturbation evolution,
         just modifying the momentum balance to include the semi-implicit effects?
@@ -105,23 +99,12 @@ void Explicit_step_and_flux(
 	extern ElemSpaceDiscr* elem;
 	extern ConsVars* dSol;
 	extern States* Solk; 
-    extern double *W0, *W1, *W2, *Sbg;
+    extern double *W0, *W1, *W2;
 	
-	const double gravity_strength = ud.gravity_strength[SplitStep];
-    const double dh  = elem->dx;
-    const double g   = ud.gravity_strength[SplitStep];
-    const double Msq = ud.Msq;
-    const double dt  = lambda * dh;
 	const int ncache = ud.ncache;
 	const int njump  = ncache - 2*elem->igx;
-    
-    /* const double implicit = (GTI == EULER_FORWARD ? 0.0 : (GTI == EULER_BACKWARD ? 0.125 : 0.5));  */
-    const double implicit = (GTI == EULER_FORWARD ? 0.0 : (GTI == EULER_BACKWARD ? 1.0 : 0.5));
-    const double implicit_reg = (implicit == 0.0 ? 1.0 : implicit);
-	
+    	
 	ConsVars pdSol, ppdSol, pFluxes, pflux, ppflux;
-    double *pbuoy, *ppbuoy, *pbuoyS, *ppbuoyS;
-    double *pdp2, *pS, *pSbg;
     
 	double flux_weight_old, flux_weight_new;
     double flux_rhoY_weight_old, flux_rhoY_weight_new;
@@ -139,41 +122,13 @@ void Explicit_step_and_flux(
     icx = elem->icx;
         
     /* bring dummy cells in the current space direction up to date  */
-    Bound(Sol, HydroState, lambda, n, SplitStep, 0);
-
-    double *p2_store = W0;
-    double *S_ave = W1;
-
-    assert(elem->ndim == 2); /* lateral averaging for 3D not yet implemented */
-    
-    if (gravity_on_off) {
-        for (int ic=0; ic<elem->nc; ic++) {
-            p2_store[ic] = Sol->rhoZ[PRES][ic];
-            S_ave[ic]    = Sol->rho[ic]/Sol->rhoY[ic];
-        }
-        for(int j=1; j<elem->icy-1; j++) {
-            int njk = j*elem->icx;
-            for(int i=0; i<elem->icx; i++) {
-                int nijk  = njk + i;
-                int nijkp = nijk + elem->icx;
-                int nijkm = nijk - elem->icx;
-                /* selected weights should correspond to weights in the cell-centered Laplacian */
-                Sol->rhoZ[PRES][nijk]  = (ud.latw[0]*p2_store[nijkp] + ud.latw[1]*p2_store[nijk] + ud.latw[2]*p2_store[nijkm]);
-            }
-        }
-    }
-    
+    Bound(Sol, lambda, n, SplitStep, 0);
+        
     States_setp(Solk, Sol, 0);
     nmax = MIN_own(ncache, n);
-    States_HydroState(Solk, HydroState, elem, 0, nmax, 0, SplitStep);
 	
 	ConsVars_setp(&pdSol, dSol, 0);
 	ConsVars_setp(&pflux, flux, 0);
-	pbuoy   = (SplitStep == 0 ? buoy->x : (SplitStep == 1 ? buoy->y : buoy->z));
-	pdp2    = dp2;
-    pbuoyS  = buoyS;
-    pS   = S_ave;
-    pSbg = Sbg;
     
 	count = 0;
 	for (kcache = 0; kcache * njump < n - elem->igx; kcache++) {
@@ -186,7 +141,7 @@ void Explicit_step_and_flux(
         }
         
 		/* flux computation*/
-        recovery_gravity(Lefts, Rights, gravity_source, pbuoy, pS, pSbg, gravity_strength, Solk, Fluxes, Solk->Y, Solk->rhoZ[PRES], dp2, lambda, nmax, RK_stage, implicit, adv_fluxes_from, muscl_on_off, gravity_on_off);
+        recovery(Lefts, Rights, Solk, Fluxes, lambda, nmax, adv_fluxes_from, muscl_on_off);
         check_flux_bcs(Lefts, Rights, nmax, kcache, njump, elem, SplitStep);
                     
         hllestar(Fluxes, Lefts, Rights, Solk, lambda, nmax, adv_fluxes_from);
@@ -194,36 +149,17 @@ void Explicit_step_and_flux(
 		/* time updates for conservative variables */
 		ConsVars_setp(&ppdSol, &pdSol, elem->igx);
 		ConsVars_setp(&ppflux, &pflux, elem->igx);
-        ppbuoyS = &pbuoyS[elem->igx];
-        ppbuoy  = &pbuoy[elem->igx];
 		count  += elem->igx;
 		ConsVars_setp(&pFluxes, Fluxes, elem->igx-1);
 		
 		/* flux_weight = 0.5; */
 		flux_weight_old = ud.tips.flux_frac[RK_stage][0];
 		flux_weight_new = ud.tips.flux_frac[RK_stage][1];
-        if (ud.time_integrator == SI_MIDPT) {
-            flux_rhoY_weight_old = 1.0;
-            flux_rhoY_weight_new = 0.0;
-        } else {
-            flux_rhoY_weight_old = flux_weight_old;
-            flux_rhoY_weight_new = flux_weight_new;
-        }
+        flux_rhoY_weight_old = 1.0;
+        flux_rhoY_weight_new = 0.0;
 				
 		for(i = elem->igx; i < nmax - elem->igx; i++) { 
 						
-			/* pressure gradient and gravity source terms */
-#ifdef GRAVITY_IMPLICIT_1
-            double dSbgdy     = (Solk->S0[i+1] - Solk->S0[i-1]) / (2.0*dh);
-            double Nsqsc      = - implicit*implicit*dt*dt * (g/Msq) * Solk->Y[i] * dSbgdy; /* CHECK FACTOR OF 0.25 for all "implicit" options */
-            double ooopNsqsc  = 1.0 / (1.0 + Nsqsc); 
-            /* gravity_source[i] = ooopNsqsc * (gravity_source[i] - Nsqsc * Solk->rhou[i]) / lambda; */
-            gravity_source[i] = ooopNsqsc * (gravity_source[i] - (1.0/implicit_reg) * Nsqsc * Solk->rhou[i]) / lambda; 
-            /* CHECK FACTOR OF 2.0 for all "implicit" options */
-#endif
-            *ppbuoy             = flux_weight_old * *ppbuoy + flux_weight_new * gravity_source[i];
-			*ppdSol.rhou       += gravity_on_off * lambda * gravity_source[i];
-
             *ppdSol.rho  += lambda * (*pFluxes.rho  - pFluxes.rho[1]);  
 			*ppdSol.rhou += lambda * (*pFluxes.rhou - pFluxes.rhou[1]);
 			*ppdSol.rhov += lambda * (*pFluxes.rhov - pFluxes.rhov[1]);
@@ -257,8 +193,6 @@ void Explicit_step_and_flux(
 			count++;
 			ConsVars_addp(&ppdSol, 1);
 			ConsVars_addp(&ppflux, 1);
-            ppbuoyS++;
-            ppbuoy++;
 			if(count % icx == 0) {
 				ConsVars_addp(&ppflux, 1);
 				ConsVars_addp(&pflux, 1);
@@ -267,13 +201,7 @@ void Explicit_step_and_flux(
 		if(last == WRONG) {
 			ConsVars_addp(&pdSol, njump);
 			ConsVars_addp(&pflux, njump); 
-            pbuoyS+=njump;
-            pbuoy+=njump;
-            pS+=njump;
-            pSbg+=njump;
-            pdp2+=njump;
 			States_addp(Solk, njump); 
-			States_HydroState(Solk, HydroState, elem, 0, nmax, (kcache+1)*njump, SplitStep);
 			count -= elem->igx;
 		}
 		else { 
@@ -289,18 +217,10 @@ void Explicit_step_and_flux(
 		}
 	}
 	
-    if (ud.time_integrator == OP_SPLIT || 
-        ud.time_integrator == OP_SPLIT_MD_UPDATE || 
-        ud.time_integrator == SI_MIDPT) {
-        Explicit_step_update(Sol, n); 
-    }    
-
-    for (int ic=0; ic<elem->nc; ic++) {
-        Sol->rhoZ[PRES][ic] = p2_store[ic];
-    }
+    Explicit_step_update(Sol, n); 
     
     /* bring dummy cells in the current space direction up to date  */
-    Bound(Sol, HydroState, lambda, n, SplitStep, 0);
+    Bound(Sol, lambda, n, SplitStep, 0);
 
 }
 
@@ -432,8 +352,6 @@ void Explicit_step_update(
 void fullD_explicit_updates(ConsVars* Sol, 
                             ConsVars* Sol0,
                             ConsVars* flux[3], 
-                            double* buoyS,
-                            VectorField* buoy,
                             const ElemSpaceDiscr* elem, 
                             const double dt,
                             const int RK_stage) 
@@ -469,9 +387,7 @@ void fullD_explicit_updates(ConsVars* Sol,
     int mcx, mcy, mfx, mfy, mfz;
     int ncx, ncy, nfx, nfy, nfz;
     int nfxp, nfyp, nfzp;
-    
-    double buoymax = 0.0; 
-    
+        
 	switch (elem->ndim) {
 		case 1:
 			ERROR("\n\n1D-case of recompute_updates() not implemented");
@@ -510,7 +426,6 @@ void fullD_explicit_updates(ConsVars* Sol,
                     deltax        = - lambda_x * (flux[0]->rhou[nfxp]   - flux[0]->rhou[nfx]);
 					deltay        = - lambda_y * (flux[1]->rhou[nfyp]   - flux[1]->rhou[nfy]);
 					delta         = deltax + deltay;
-                    delta        += lambda_x * buoy->x[ncx];
                     deltaSol      = Sol->rhou[nc] - Sol0->rhou[nc];
                     ddelmaxu       = MAX_own(ddelmaxu, fabs(delta-deltaSol));
                     Sol->rhou[nc] = Sol0->rhou[nc] + delta;
@@ -518,13 +433,10 @@ void fullD_explicit_updates(ConsVars* Sol,
                     deltax        = - lambda_x * (flux[0]->rhov[nfxp]   - flux[0]->rhov[nfx]);
 					deltay        = - lambda_y * (flux[1]->rhov[nfyp]   - flux[1]->rhov[nfy]);
 					delta         = deltax + deltay;
-                    delta        += lambda_y * buoy->y[ncy];
                     deltaSol      = Sol->rhov[nc] - Sol0->rhov[nc];
                     ddelmaxv       = MAX_own(ddelmaxv, fabs(delta-deltaSol));
                     Sol->rhov[nc] = Sol0->rhov[nc] + delta;
                     
-                    buoymax = MAX_own(buoymax, fabs(buoy->y[ncy]));
-
                     deltax        = - lambda_x * (flux[0]->rhow[nfxp]   - flux[0]->rhow[nfx]);
 					deltay        = - lambda_y * (flux[1]->rhow[nfyp]   - flux[1]->rhow[nfy]);
 					delta         = deltax + deltay;
@@ -555,9 +467,6 @@ void fullD_explicit_updates(ConsVars* Sol,
             /* 
             printf("ddelmax, -u, -v, -Y = %e, %e, %e, %e\n", ddelmax, ddelmaxu, ddelmaxv, ddelmaxY); 
              */
-            printf("buoymax = %e\n", buoymax); 
-             
-            memset(buoyS, 0.0, elem->nc*sizeof(double));
 
 			break;
 		case 3:
@@ -611,7 +520,6 @@ void fullD_explicit_updates(ConsVars* Sol,
                         deltay        = - lambda_y * (flux[1]->rhov[nfyp]   - flux[1]->rhov[nfy]);
                         deltaz        = - lambda_z * (flux[2]->rhov[nfzp]   - flux[2]->rhov[nfz]);
                         delta         = deltax + deltay + deltaz;
-                        delta        += lambda_y * buoy->y[ncy];
                         Sol->rhov[nc] = Sol0->rhov[nc] + delta;
                         
                         deltax        = - lambda_x * (flux[0]->rhow[nfxp]   - flux[0]->rhow[nfx]);
@@ -646,8 +554,6 @@ void fullD_explicit_updates(ConsVars* Sol,
                 }			
 			}	
             
-            memset(buoyS, 0.0, elem->nc*sizeof(double));
-
             break;
 		default:
 			ERROR("\n\nwe are not doing string theory");;

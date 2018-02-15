@@ -220,19 +220,6 @@ typedef struct {
     double* X[NSPEC];
 } Characters;
 
-
-/*------------------------------------------------------------------------------
- 
- ------------------------------------------------------------------------------*/
-void States_HydroState(
-					   States *Solk, 
-					   const States *HydroState, 
-					   const ElemSpaceDiscr *elem, 
-					   const int nstart_Solk,
-					   const int nmax_Solk,
-					   const int nstart_full_field, 
-					   const int SplitStep);
-
 /*------------------------------------------------------------------------------
  
  ------------------------------------------------------------------------------*/

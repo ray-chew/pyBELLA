@@ -545,9 +545,6 @@ void adjust_pi(
 	    
     double alpha = ud.compressibility; 
     
-    /* double dp2_ell_factor = 1.0 + ud.compressibility; */ /* 1.0; */
-    double dp2_ell_factor = DP2_ELL_FACTOR; /* 0.0; 0.5; 1.0; */
-		
 	const double scalefac = 1.0 / ud.Msq;
     
      const int igx = elem->igx;
@@ -565,23 +562,10 @@ void adjust_pi(
                 double dp2_rhoY     = scalefac * (pow(Sol->rhoY[n],th.gamm) - pow(Sol0->rhoY[n],th.gamm));
                 double dp2_elliptic = mpv->dp2_cells[n]; 
 
-                Sol->rhoZ[PRES][n]  = p2_old + weight * (alpha * dp2_rhoY + (1.0-alpha) * dp2_ell_factor*dp2_elliptic);
+                Sol->rhoZ[PRES][n]  = p2_old + weight * (alpha * dp2_rhoY + (1.0-alpha) * dp2_elliptic);
 			}
 		}
 	}
-     
-    
-    for (int n=0; n<elem->nc; n++) {
-        /*
-        double p2_old       = Sol0->rhoZ[PRES][n];
-        double dp2_rhoY     = scalefac * (pow(Sol->rhoY[n],th.gamm) - pow(Sol0->rhoY[n],th.gamm));
-        double dp2_elliptic = mpv->dp2_cells[n];
-        
-        Sol->rhoZ[PRES][n]  = (p2_old + weight * (alpha * dp2_rhoY + (1.0-alpha) * dp2_ell_factor*dp2_elliptic));
-        */
-        Sol->rhoZ[SOLD][n]  = Sol->rho[n]/Sol->rhoY[n];
-    }
-    
 }
 
 /*------------------------------------------------------------------------------

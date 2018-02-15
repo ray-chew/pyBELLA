@@ -8,12 +8,6 @@
 
 #define NAUX  2
 #define PRES  0
-#define SOLD  1
-
-
-/*
- */
-#define ADVECT_THETA_PRIME 0.0
 
 #define PERTURBED_WALL
 
@@ -37,24 +31,12 @@
 
 #define GRAVITY_IMPLICIT
 
-/*  
- #define GRAVITY_IMPLICIT_1   (buoyancy directly from conserved quantities)
- */  
-#ifdef GRAVITY_IMPLICIT
-#define GRAVITY_IMPLICIT_1
-#define DP2_ELL_FACTOR 0.5
-  /* #define CENTERED_UPDATE_1ST_PROJ */
-#endif
-
 /* solver options ==============================
  #define SOLVER_1_CR2
  #define SOLVER_1_BICGSTAB
  
  #define SOLVER_2_CR2
  #define SOLVER_2_BICGSTAB
-
- #define CONTROL_PRECONDITIONED_RESIDUAL_PROJ1
- #define CONTROL_PRECONDITIONED_RESIDUAL_PROJ2
  */
 
 #define SOLVER_1_BICGSTAB
@@ -78,25 +60,10 @@
 
 /* First projection options */
 #define PROJECTION1 1
-#define CONTROL_PRECONDITIONED_RESIDUAL_PROJ1
 #define TIME_AVERAGED_COEFFS_PROJ1 
-
-/*
- #define NO_UPWIND_PROJ1          IMPORTANT: Upwinding in the correction induces NOISE  
- */
-#define NO_UPWIND_PROJ1
-
-/*
- #define THIRD_ORDER_UPWIND_CORRECTION
- #define SECOND_ORDER_CENTRAL_CORRECTION
- #define FIRST_ORDER_UPWIND_CORRECTION
- */
-#define SECOND_ORDER_CENTRAL_CORRECTION
-
 
 /* Second projection options */
 #define PROJECTION2 1
-#define CONTROL_PRECONDITIONED_RESIDUAL_PROJ2
 #define DIV_CONTROL_LOCAL
 #define P2_FULL_STENCIL 1.0 /* 0.0, 1.0 */
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0 */

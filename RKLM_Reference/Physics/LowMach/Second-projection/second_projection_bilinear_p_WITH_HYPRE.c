@@ -1132,7 +1132,6 @@ void euler_forward_non_advective(ConsVars* Sol,
     extern Thermodynamic th;
     
     double *p2n       = mpv->p2_nodes;
-    double *dp2n      = mpv->dp2_nodes;
     
     const double g    = ud.gravity_strength[1];
     const double Msq  = ud.Msq;

@@ -123,18 +123,7 @@ void putout(
 			break;
 		}
 		case HDF: {
-			
-			/* rotate forward and set boundary data          
-			for(int i = 0; i < ndim; i++) { 
-				const double lambda = 1.0;
-				Bound(Sol, mpv->HydroState, lambda, nc, SplitStep+i, 0); 
-				if(i < ndim - 1) (*rotate[ndim - 1])(Sol, mpv->Level[0]->rhs, Sbg, buoyS, FORWARD);
-			}         
-			for(int i = ndim-1; i > 0; i--) {
-				(*rotate[ndim - 1])(Sol, mpv->Level[0]->rhs, Sbg, buoyS, BACKWARD);
-			}
-             */
-            
+			            
             if (writeout == 0) {
                 return;
             }
@@ -260,12 +249,6 @@ void putout(
             if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
             sprintf(fieldname, "rhoZp_%s_%s", field_name, step_string);
             WriteHDF(prhoYfile, icx, icy, icz, ndim, Sol->rhoZ[PRES], fn, fieldname);
-
-            /* rho Z - buoyancy */
-            sprintf(fn, "%s/rhoZB/rhoZB_%s.hdf", dir_name, step_string);
-            if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
-            sprintf(fieldname, "rhoZB_%s_%s", field_name, step_string);
-            WriteHDF(prhoYfile, icx, icy, icz, ndim, Sol->rhoZ[SOLD], fn, fieldname);
 
             for (nsp = 0; nsp < ud.nspec; nsp++) {
                 

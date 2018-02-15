@@ -38,7 +38,6 @@ BiCGSTABData* BiCGSTABData_new(
     var->s_j       = (double*)malloc(size * sizeof(double));
     var->t_j       = (double*)malloc(size * sizeof(double));
     var->help_vec  = (double*)malloc(size * sizeof(double));
-    var->help_vec2 = (double*)malloc(size * sizeof(double));
     
 #ifdef SOLVER_CR2
     var->Lr_0      = (double*)malloc(size * sizeof(double));
@@ -60,7 +59,6 @@ void BiCGSTABData_free(BiCGSTABData* var) {
     free(var->s_j);
     free(var->t_j);
     free(var->help_vec);
-    free(var->help_vec2);
     
 #ifdef SOLVER_CR2
     free(var->Lr_0);
@@ -313,7 +311,6 @@ double SOLVER(
     double* s_j = data->s_j;
     double* t_j = data->t_j;
     double* rhs_prec   = data->help_vec;
-    double* r_j_unprec = data->help_vec2;
     
     const int nc  = elem->nc;
     const int igx = elem->igx;
@@ -353,7 +350,6 @@ double SOLVER(
         }
     }
     
-#ifdef CONTROL_PRECONDITIONED_RESIDUAL_PROJ1
     tmp = 0.0;
     tmp_local = 0.0;
     for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
@@ -364,20 +360,6 @@ double SOLVER(
             }
         }
     }
-#else /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ1 */ 
-    precon_c_apply(r_j_unprec, r_j, elem);
-    
-    tmp = 0.0;
-    tmp_local = 0.0;
-    for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
-        for(j = igy; j < icy - igy; j++) {m = l + j * icx;
-            for(i = igx; i < icx - igx; i++) {n = m + i;
-                tmp += r_j_unprec[n] * r_j_unprec[n];
-                tmp_local = MAX_own(tmp_local, fabs(r_j_unprec[n]));
-            }
-        }
-    }
-#endif /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ1 */ 
     
     alpha = omega = rho1 = 1.;
     tmp_local *= 0.5*dt/(precon_inv_scale*local_precision);
@@ -459,7 +441,6 @@ double SOLVER(
             }
         }
         
-#ifdef CONTROL_PRECONDITIONED_RESIDUAL_PROJ1
         tmp       = 0.0;
         tmp_local = 0.0;
         for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
@@ -470,20 +451,6 @@ double SOLVER(
                 }
             }
         }
-#else /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ1 */
-        precon_c_apply(r_j_unprec, r_j, elem);
-        
-        tmp       = 0.0;
-        tmp_local = 0.0;
-        for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
-            for(j = igy; j < icy - igy; j++) {m = l + j * icx;
-                for(i = igx; i < icx - igx; i++) {n = m + i;
-                    tmp      += r_j_unprec[n] * r_j_unprec[n];
-                    tmp_local = MAX_own(tmp_local, fabs(r_j_unprec[n])); 
-                }
-            }
-        }
-#endif /* CONTROL_PRECONDITIONED_RESIDUAL_PROJ1 */
         
         rho1 = rho2;
         tmp_local *= 0.5*dt/(precon_inv_scale*local_precision);

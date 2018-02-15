@@ -8,15 +8,6 @@
 
 #include "enumerator.h"
 
-void update(
-			ConsVars* sol, 
-			const ConsVars *flux[3], 
-            const double* buoyS,
-			const VectorField* buoy,
-			const ElemSpaceDiscr* elem, 
-			const double dt);
-
-
 /*------------------------------------------------------------------------------
  global array memory managment: allocates (if allocate) or releases 
  (if !allocate) memory for global arrays

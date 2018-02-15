@@ -29,7 +29,6 @@ void close_bdry(
 
 void Bound(
 		   ConsVars* Sol, 
-		   const States* HydroState,
 		   const double lambda, 
 		   const int n, 
            const int SplitStep, 

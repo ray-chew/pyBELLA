@@ -37,20 +37,14 @@ void Explicit_free();
  Explicit step and flux computation
  ------------------------------------------------------------------------------*/
 void Explicit_step_and_flux(
-							ConsVars* Sol,
-							ConsVars* flux,
-                            double* buoyS,
-                            VectorField* buoy,
-                            double* dp2,
-							const States* HydroState,
-							const double lambda, 
-							const int n, 
-							const int SplitStep,
+                            ConsVars* Sol,
+                            ConsVars* flux,
+                            const double lambda, 
+                            const int n, 
+                            const int SplitStep,
                             const int RK_stage,
-                            const enum FluxesFrom adv_fluxes_from,
-                            const enum GravityTimeIntegrator GTI, 
-                            const enum MUSCL_ON_OFF muscl_on_off,
-                            const enum GRAVITY_ON_OFF gravity_on_off);
+                            const enum FluxesFrom adv_fluxes_from, 
+                            const enum MUSCL_ON_OFF muscl_on_off);
 
 
 /*------------------------------------------------------------------------------
@@ -87,12 +81,10 @@ void Explicit_step_update(
  ------------------------------------------------------------------------------*/
 void fullD_explicit_updates(ConsVars* Sol, 
                             ConsVars* Sol0,
-                            ConsVars* flux[3],
-                            double* buoyS,
-                            VectorField* buoy, 
+                            ConsVars* flux[3], 
                             const ElemSpaceDiscr* elem, 
                             const double dt,
-                            const int RK_stage);
+                            const int RK_stage) ;
 
 void Explicit_Coriolis(ConsVars *Sol, const ElemSpaceDiscr* elem, const double dt);
 

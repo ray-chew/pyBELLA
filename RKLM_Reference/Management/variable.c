@@ -340,49 +340,6 @@ void States_addp(States* obj, const int n) {
 	obj->geopot += n;
 }
 
-
-void States_HydroState(
-					   States *Solk, 
-					   const States *HydroState, 
-					   const ElemSpaceDiscr *elem, 
-					   const int nstart_Solk,
-					   const int nmax_Solk,
-					   const int nstart_full_field, 
-					   const int SplitStep) {     
-    
-    extern User_Data ud;
-	
-    const double icxicy  = elem->icx*elem->icy;
-    const double icx     = elem->icx;
-    const int A[3][3][3] = {{{0,1,2},{0,0,0},{0,0,0}},
-		{{0,1,2},{1,0,2},{0,0,0}},
-		{{0,1,2},{2,0,1},{1,2,0}}};   /* args: ndim, SplitStep, gravity_direction*/
-    
-    int n_hydro, nn, n;
-    int gravity_direction, ii[3];
-    
-    gravity_direction = A[elem->ndim-1][SplitStep][ud.gravity_direction];
-	
-    /* map hydrostatic background state into States-array */
-    for(nn=0; nn<nmax_Solk; nn++) {
-        n = nstart_full_field + nn;
-		
-        /* field counters in flipped coordinates */
-        ii[2] = n/icxicy;
-        ii[1] = (n-ii[2]*icxicy)/icx;
-        ii[0] = n-ii[2]*icxicy-ii[1]*icx;
-        
-        n_hydro = ii[gravity_direction];
-        
-        Solk->p0[nn]   = HydroState->p0[n_hydro];
-        Solk->rho0[nn] = HydroState->rho0[n_hydro];
-        Solk->S0[nn]   = HydroState->S0[n_hydro];
-        Solk->Y0[nn]  = HydroState->Y0[n_hydro];
-        
-    }
-}
-
-
 Characters* Characters_new(const int size) {
     extern User_Data ud;
 	int nsp;

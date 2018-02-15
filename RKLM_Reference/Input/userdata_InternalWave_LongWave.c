@@ -1,7 +1,5 @@
 /*******************************************************************************
  File:   userdata.c
- Author: Nicola
- Date:   Fri Feb 27 09:34:03 CET 1998
  *******************************************************************************/
 #include <math.h>
 #include <float.h>
@@ -30,7 +28,7 @@ double rho_function(double psi);
 
 double molly(double x);
 
-static double scalefactor = 20.0;   /* 20.0; 1.0; test commit and push */
+static double scalefactor = 20.0;   /* 20.0; 1.0; */
 
 void User_Data_init(User_Data* ud) {
     
@@ -286,8 +284,6 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const int igy = elem->igy;
     
     const int icxn = node->icx;
-    const int icyn = node->icy;
-    const int iczn = node->icz;
     
     int i, j, m, n, nm, nn;
     double x, y, xn, yn, ym;
@@ -380,18 +376,6 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     for(i=0; i<elem->nc; i++) {
         Sol->rhoZ[PRES][i]  = mpv->p2_cells[i];
     }
-    
-    /*set nodal pressures 
-    for(int k = 0; k < iczn; k++) {int l = k * icxn * icyn;   
-        for(int j = 0; j < icyn; j++) {int m = l + j * icxn;                
-            double p    = mpv->HydroState_n->p0[j];
-            double rhoY = mpv->HydroState_n->rhoY0[j];
-            for(int i = 0; i < icxn; i++) {int n = m + i;
-                mpv->p2_nodes[n] = (p/rhoY) / ud.Msq;
-            }
-        }
-    }                     
-     */
 }
 
 #else /* HYDRO_BALANCED_INIT_DATA */
