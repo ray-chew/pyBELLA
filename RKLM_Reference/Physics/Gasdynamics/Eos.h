@@ -210,11 +210,9 @@ double rhoe(
 /*------------------------------------------------------------------------------
  
  ------------------------------------------------------------------------------*/
-void adjust_pi(ConsVars* Sol,
-               MPV* mpv,
-			   const ConsVars* Sol0,
-			   const ElemSpaceDiscr* elem, 
-               const double weight);
+void adjust_pi_cells(MPV* mpv,
+                     const ConsVars* Sol,
+                     const ElemSpaceDiscr* elem);
 
 
 /*------------------------------------------------------------------------------

@@ -471,6 +471,28 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
         }
     }
     
+    if (ud.is_compressible) {
+        for (int i=igx; i<icx-igx; i++) {
+            int nci     = i;
+            for (int j=igy; j<icy-igy; j++) {
+                int ncij      = nci + j*icx;
+                double pi     = ud.Msq * (mpv->p2_cells[ncij] + NoBG * mpv->HydroState->p20[j]);
+                double Y      = Sol->rhoY[ncij]/Sol->rho[ncij];
+                double rhoold = Sol->rho[ncij];
+                Sol->rhoY[ncij] = pow(pi, th.gm1inv);
+                Sol->rho[ncij]  = Sol->rhoY[ncij] / Y;
+                Sol->rhou[ncij]*= Sol->rho[ncij] / rhoold;
+                Sol->rhov[ncij]*= Sol->rho[ncij] / rhoold;
+                Sol->rhow[ncij]*= Sol->rho[ncij] / rhoold;
+                Sol->rhoe[ncij]*= Sol->rho[ncij] / rhoold;
+                for (int nsp=0; nsp<ud.nspec; nsp++) {
+                    Sol->rhoX[nsp][ncij]*= Sol->rho[ncij] / rhoold;
+                }
+            }
+        }
+
+    }
+    
     free(beta);
     free(bdpdx);
     free(pibot);

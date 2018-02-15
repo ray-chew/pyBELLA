@@ -91,7 +91,7 @@ void flux_correction(ConsVars* flux[3],
     double*  hS          = mpv->Level[0]->wgrav;
 	
 	double* rhs          = mpv->Level[0]->rhs;
-	double* dp2		     = mpv->Level[0]->p;
+	double* p2		     = mpv->Level[0]->p;
         
     double rhsmax;
     
@@ -104,6 +104,8 @@ void flux_correction(ConsVars* flux[3],
 	operator_coefficients(hplus, hcenter, hS, elem, Sol, Sol0, mpv, dt);
 
     rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
+    printf("\nrhs_max = %e\n", rhsmax);
+
     assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
     if (ud.is_compressible) {
         for (int nc=0; nc<elem->nc; nc++) {
@@ -146,12 +148,12 @@ void flux_correction(ConsVars* flux[3],
 
     
     /**/
-    variable_coefficient_poisson_cells(dp2, rhs, (const double **)hplus, hcenter, Sol, elem, node, implicitness);
-    set_ghostcells_p2(dp2, (const double **)hplus, elem, elem->igx);
+    variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, Sol, elem, node, implicitness);
+    set_ghostcells_p2(p2, (const double **)hplus, elem, elem->igx);
 
     /* Note: flux will contain only the flux-correction after this routine; 
      it is thus overwritten under the SI_MIDPT time integration sequence */
-    flux_correction_due_to_pressure_gradients(flux, buoy, elem, Sol, Sol0, mpv, hplus, hS, dp2, t, dt, implicitness);
+    flux_correction_due_to_pressure_gradients(flux, buoy, elem, Sol, Sol0, mpv, hplus, hS, p2, t, dt, implicitness);
     
 #if 0
     sprintf(fn2, "%s/Tests/frhoY_y_post.hdf", ud.file_name);
@@ -199,7 +201,9 @@ void flux_correction(ConsVars* flux[3],
     /* store results in mpv-fields */
     for(n=0; n<elem->nc; n++) {
         /* goal is to actually compute full deviation from background pressure here to begin with */
-        mpv->dp2_cells[n] = mpv->p2_cells[n] = dp2[n];
+        mpv->dp2_cells[n] = p2[n] - mpv->p2_cells[n];
+        /* mpv->p2_cells[n]  = p2[n] + ud.is_compressible*mpv->dp2_cells[n]; */
+        mpv->p2_cells[n]  = p2[n];
     }
     
 	set_ghostcells_p2(mpv->p2_cells, (const double **)hplus, elem, elem->igx);

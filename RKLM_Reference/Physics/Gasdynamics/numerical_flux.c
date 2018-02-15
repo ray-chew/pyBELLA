@@ -244,7 +244,7 @@ void update_advective_fluxes(ConsVars* flux[3],
             flux[2]->rhoY[nf] += adv_flux->z[nf];
         }            
     }
-#if 1
+#if 0
     extern User_Data ud;
     double rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
     printf("rhsmax = %e", rhsmax);

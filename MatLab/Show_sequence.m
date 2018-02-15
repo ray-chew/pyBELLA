@@ -2,6 +2,13 @@
 % distribution loaded directly from the .hdf-file for
 % the Bryan-Bubble-output
 
+%modelstr = '';
+modelstr = 'comp';
+%modelstr = 'psinc';
+%modelstr = 'psinc_w_adv_Ndt=3';
+%modelstr = 'psinc_Ndt=3';
+%modelstr = 'psinc_w_adv_Ndt=05';
+
 %test_case = 'Equatorial-Long-Wave';
 test_case = 'Internal-Wave-Long-Wave';
 %test_case = 'Internal-Wave-Strong-Strat';
@@ -36,14 +43,6 @@ title_true = 1;
 kmin = 0;
 kmax = 601;
 dk   = 1;
-
-%modelstr = '';
-%modelstr = 'comp';
-modelstr = 'psinc';
-%modelstr = 'psinc_w_adv_Ndt=3';
-%modelstr = 'psinc_Ndt=3';
-%modelstr = 'psinc_w_adv_Ndt=05';
-
 
 if strcmp(test_case, 'Equatorial-Long-Wave')
     scalefactor = 2.0;

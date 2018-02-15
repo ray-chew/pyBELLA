@@ -522,21 +522,13 @@ double rhoe(
 /*------------------------------------------------------------------------------
  
  ------------------------------------------------------------------------------*/
-void adjust_pi(
-			   ConsVars* Sol,
-               MPV* mpv,
-			   const ConsVars* Sol0,
-			   const ElemSpaceDiscr* elem, 
-               const double weight) {
+void adjust_pi_cells(MPV* mpv,
+                     const ConsVars* Sol,
+                     const ElemSpaceDiscr* elem) {
 	
     /*
-     NOTICE: in the fully compressible case I obtain the update for
-     Z from the update of rhoY == P; 
-     In the psinc case and in case of one of the intermediate models, 
-     dp2_elliptic is accounted for as well. In these cases the inter-
-     pretation of this quantity is extremely important. Is it a full
-     pressure update over one time step or is it half of that or, 
-     for the intermediate models, something in between?
+     Here we recompute the cell-centered Exner pressure from the 
+     cell-centered  rhoY = P
      */
     
     
@@ -555,14 +547,9 @@ void adjust_pi(
      const int icz = elem->icz; 
     for(int k = igz; k < icz - igz; k++) {int l = k * icx * icy;
 		for(int j = igy; j < icy - igy; j++) {int m = l + j * icx;
+            double p2bg = mpv->HydroState->p20[j];
 			for(int i = igx; i < icx - igx; i++) {int n = m + i;
-
-                /* double p2_old    = Sol0->rhoZ[PRES][n]; */
-                double p2_old       = mpv->p2_cells[n];
-                double dp2_rhoY     = scalefac * (pow(Sol->rhoY[n],th.gamm) - pow(Sol0->rhoY[n],th.gamm));
-                double dp2_elliptic = mpv->dp2_cells[n]; 
-
-                Sol->rhoZ[PRES][n]  = p2_old + weight * (alpha * dp2_rhoY + (1.0-alpha) * dp2_elliptic);
+                mpv->p2_cells[n] = scalefac * pow(Sol->rhoY[n],th.gm1) - p2bg;
 			}
 		}
 	}

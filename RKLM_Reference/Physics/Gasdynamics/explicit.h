@@ -30,7 +30,7 @@ void Explicit_malloc(const int size);
 /*------------------------------------------------------------------------------
  Releases memory for the arrays used by Explicit_step() and  Explicit_flux()
  ------------------------------------------------------------------------------*/
-void Explicit_free();
+void Explicit_free( void );
 
 
 /*------------------------------------------------------------------------------

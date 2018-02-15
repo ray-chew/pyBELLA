@@ -295,6 +295,10 @@ int main( void )
              that is after second projection, seems slightly better (see below) */
             printf("\nCoriolis 2 ---------------------------------- \n");                
             Explicit_Coriolis(Sol, elem, 0.5*dt); 
+            
+            if (ud.is_compressible) {
+                adjust_pi_cells(mpv, Sol, elem); 
+            }
             Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
             
 #if OUTPUT_SUBSTEPS  /* 16 */
