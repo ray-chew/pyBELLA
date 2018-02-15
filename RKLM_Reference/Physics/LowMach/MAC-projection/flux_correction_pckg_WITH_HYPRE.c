@@ -120,15 +120,20 @@ void flux_correction(ConsVars* flux[3],
 
     if (ud.time_integrator == SI_MIDPT) {
         rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
-        /* printf("rhsmax = %e", rhsmax); */
+        assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
+        if (ud.is_compressible) {
+            for (int nc=0; nc<elem->nc; nc++) {
+                rhs[nc] += hcenter[nc]*mpv->p2_cells[nc];
+            }
+        }
     } else {
         controlled_variable_change_explicit(rhs, elem, Sol, Sol0, dt, mpv);        
+        assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
     }
     
-    assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
     rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
     
-#if 1
+#if 0
     extern User_Data ud;
     FILE *prhsfile = NULL;
     char fn2[200], fieldname2[90];
@@ -213,14 +218,13 @@ void flux_correction(ConsVars* flux[3],
     
     /**/
     variable_coefficient_poisson_cells(dp2, rhs, (const double **)hplus, hcenter, Sol, elem, node, implicitness);
-
     set_ghostcells_p2(dp2, (const double **)hplus, elem, elem->igx);
 
     /* Note: flux will contain only the flux-correction after this routine; 
      it is thus overwritten under the SI_MIDPT time integration sequence */
     flux_correction_due_to_pressure_gradients(flux, buoy, elem, Sol, Sol0, mpv, hplus, hS, dp2, t, dt, implicitness);
     
-#if 1
+#if 0
     sprintf(fn2, "%s/Tests/frhoY_y_post.hdf", ud.file_name);
     sprintf(fieldname2, "frhoY_y_post.hdf");
     
@@ -277,14 +281,8 @@ void flux_correction(ConsVars* flux[3],
         }
     } else {
         for(n=0; n<elem->nc; n++) {
-#if 1
-            /* mpv->dp2_cells[n] = 2.0*dp2[n]; */
             mpv->dp2_cells[n] = Sol->rhoZ[PRES][n] + (1.0-DP2_ELL_FACTOR)*dp2[n] - mpv->p2_cells[n];
             mpv->p2_cells[n]  = mpv->p2_cells[n] + mpv->dp2_cells[n];
-#else
-            mpv->dp2_cells[n] = 1.0*dp2[n];
-            mpv->p2_cells[n]  = mpv->p2_cells[n] + mpv->dp2_cells[n];
-#endif
         }        
     }
     
@@ -329,6 +327,7 @@ double controlled_variable_flux_divergence(double* rhs,
             int nfx = mfx + i;
             int nfy = mfy + i*ify;
             rhs[nc] = factor * ((flux[0]->rhoY[nfx+1] - flux[0]->rhoY[nfx])/dx + (flux[1]->rhoY[nfy+1] - flux[1]->rhoY[nfy])/dy);
+            /* rhs[nc]+= hcenter[nc]*mpv->p2_cells[nc]; */
             rhsmax  = MAX_own(rhsmax, fabs(rhs[nc]));
         }
     }
@@ -540,13 +539,14 @@ void operator_coefficients(
     const int impl_grav_th = ud.implicit_gravity_theta;
     
 	const double implicitness = ud.implicitness;
-    const double ccw = 2.0; /* ccenterweight   4.0 */
-	const double ccenter = - ccw * (ud.compressibility*ud.Msq)*th.gamminv/(mpv->dt*mpv->dt); 
-    /* for ccw = 4.0: 
-       first factor 2.0 from reinterpretation of Helmholtz-solution as 
-       (p^{n+1}-p^{n}) and SECOND-ORDER update to t^{n+1/2} in the first projection 
+    const double ccw = (ud.time_integrator == SI_MIDPT ? 4.0 : 2.0); 
+    /* when p2 is perturbation pressure:
+     const double ccenter = - ccw * (ud.compressibility*ud.Msq)*th.gamminv/(mpv->dt*mpv->dt); 
+     const double cexp    = 1.0-th.gamm;
      */
-	const double cexp    = 1.0-th.gamm;
+    /* when p2 is Exner pressure: */
+    const double ccenter = - ccw * (ud.compressibility*ud.Msq)*th.gm1inv/(mpv->dt*mpv->dt); 
+    const double cexp    = 2.0-th.gamm;
 	
 	switch(ndim) {
 		case 1: {    

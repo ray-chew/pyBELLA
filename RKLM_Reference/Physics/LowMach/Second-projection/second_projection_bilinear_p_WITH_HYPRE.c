@@ -108,6 +108,9 @@ void second_projection(
 	
     double rhs_max;
     
+    double rhs_weight_new;
+    double rhs_weight_old;
+
 	int x_periodic, y_periodic, z_periodic;
 	int ii;
 	
@@ -127,22 +130,34 @@ void second_projection(
 	
     /* KEEP_OLD_POISSON_SOLUTIONS */
 	for(ii=0; ii<nc; ii++){
-		p2[ii] = mpv->dp2_nodes[ii];
+		p2[ii] = mpv->p2_nodes[ii];
 		rhs[ii] = 0.0;
 	}
     
-    double rhs_weight_new = 2.0;
-    double rhs_weight_old = 2.0*ud.compressibility;
-    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv->eta, mpv, bdry, dt, rhs_weight_new);
-    /* for psinc, this can be commented out */
-    if (ud.compressibility) {
-        divergence_nodes(rhs, elem, node, Sol0, mpv->eta0, mpv, bdry, dt, rhs_weight_old); 
+    if (ud.time_integrator == SI_MIDPT) {
+        rhs_weight_new = 1.0;
+        rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv->eta, mpv, bdry, dt, rhs_weight_new);
+        catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
+        assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED); 
+        if (ud.is_compressible) {
+            for (int nn=0; nn<node->nc; nn++) {
+                rhs[nn] += hcenter[nn]*mpv->p2_nodes[nn];
+            }
+        }
+    } else {
+        rhs_weight_new = 1.0;
+        rhs_weight_old = 1.0*ud.compressibility;
+        rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv->eta, mpv, bdry, dt, rhs_weight_new);
+        if (ud.is_compressible) {
+            divergence_nodes(rhs, elem, node, Sol0, mpv->eta0, mpv, bdry, dt, rhs_weight_old); 
+        }
+        catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
+        assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED); 
     }
         
-	catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
 
     /* test */
-#if 1
+#if 0
     FILE *prhsfile = NULL;
     char fn[120], fieldname[90];
     sprintf(fn, "%s/rhs_nodes/rhs_nodes_000.hdf", ud.file_name);
@@ -150,9 +165,7 @@ void second_projection(
     WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
 #endif
      
-	assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED); 
 	operator_coefficients_nodes(hplus, hcenter, hS, elem, node, Sol, Sol0, mpv, dt);
-	
 	variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, x_periodic, y_periodic, z_periodic, dt);
     
 #if 0
@@ -194,7 +207,7 @@ void second_projection(
 
 #endif
         
-#if 1
+#if 0
     extern double *W0;
     int imax, jmax;
     rhs_max = 0.0;
@@ -217,7 +230,7 @@ void second_projection(
     rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv->eta, mpv, bdry, dt, rhs_weight_new);
     catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
 
-#if 1
+#if 0
     FILE *prhs2file = NULL;
     char fn2[120], fieldname2[90];
     sprintf(fn2, "%s/rhs_nodes/rhs_nodes_002.hdf", ud.file_name);
@@ -242,7 +255,7 @@ void second_projection(
     }
     printf("rhs_max after  = %e\n", rhs_max);
     
-#if 1   /* check coefficients */
+#if 0   /* check coefficients */
     sprintf(fn2, "%s/hplus_nodes/hplusx.hdf", ud.file_name);
     sprintf(fieldname2, "hplusx");
     WriteHDF(prhs2file, elem->icx, elem->icy, elem->icz, elem->ndim, hplus[0], fn2, fieldname2);
@@ -257,9 +270,15 @@ void second_projection(
 #endif
     
     if (ud.time_integrator == SI_MIDPT) {
-        for(ii=0; ii<nc; ii++) {
-            /* hunt down factor of 0.5 in the next line !! */
-            mpv->p2_nodes[ii] = mpv->dp2_nodes[ii] = p2[ii];
+        if (ud.is_compressible) {
+            for(ii=0; ii<nc; ii++) {
+                mpv->dp2_nodes[ii] = p2[ii] - mpv->p2_nodes[ii];
+                mpv->p2_nodes[ii]  = p2[ii];
+            }
+        } else {
+            for(ii=0; ii<nc; ii++) {
+                mpv->p2_nodes[ii]  = mpv->dp2_nodes[ii] = p2[ii];
+            }
         }
     } else {
         for(ii=0; ii<nc; ii++) {
@@ -283,6 +302,11 @@ static double divergence_nodes(
 							 const double dt,
 							 const double weight) {
 	
+    /* with weight = 1.0, this routine computes 
+          rhs_out = rhs_in + (2/dt) * div(rhoY\vec{v}) 
+       from the current Sol. 
+     */
+
 	extern User_Data ud;
 	
 	const int ndim = node->ndim;
@@ -314,11 +338,10 @@ static double divergence_nodes(
 			const double dy = node->dy;
 			const double oodxdt = 1.0 / (dx * dt);
 			const double oodydt = 1.0 / (dy * dt);
-			const double oow = 1.0 / 2.0;
             const double todt = 2.0 / dt;
-			const double oowdxdt = weight * oow * oodxdt;
-			const double oowdydt = weight * oow * oodydt;
-			
+			const double oowdxdt = weight * oodxdt;
+			const double oowdydt = weight * oodydt;
+			            
 			double Y;
 			
 			/* predicted time level divergence via scattering */
@@ -658,9 +681,12 @@ static void operator_coefficients_nodes(
 			double* hplusy  = hplus[1];
 			double* hc      = hcenter;
 
-			const double ccenter = - 4.0*(ud.compressibility*ud.Msq)*th.gamminv/(mpv->dt*mpv->dt);
-
-            const double cexp    = 1.0-th.gamm;
+            /*  const double ccenter = - 4.0*(ud.compressibility*ud.Msq)*th.gamminv/(mpv->dt*mpv->dt); 
+                const double cexp    = 1.0-th.gamm;
+             */
+			const double ccenter = - 4.0*(ud.compressibility*ud.Msq)*th.gm1inv/(mpv->dt*mpv->dt);
+            const double cexp    = 2.0-th.gamm;
+            
             int i, j, m, n;
             
             for(i=0; i<elem->nc; i++) hc[i] = hplusx[i] = hplusy[i] = 0.0;
@@ -1106,6 +1132,7 @@ void euler_forward_non_advective(ConsVars* Sol,
     extern Thermodynamic th;
     
     double *p2n       = mpv->p2_nodes;
+    double *dp2n      = mpv->dp2_nodes;
     
     const double g    = ud.gravity_strength[1];
     const double Msq  = ud.Msq;
@@ -1127,6 +1154,13 @@ void euler_forward_non_advective(ConsVars* Sol,
     
     assert(elem->ndim == 2);
     
+    /* half an Euler forward step for impl. trapezoidal rule for p2_nodes */
+    if (ud.is_compressible) {
+        for (int nn=0; nn<node->nc; nn++) {
+            mpv->p2_nodes[nn] += mpv->dp2_nodes[nn];
+        }
+    }
+
     for (int k=igz; k<icz-igz; k++) {
         int lc = k*icy*icx;
         int ln = k*iny*inx;
