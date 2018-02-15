@@ -2,6 +2,7 @@
 % distribution loaded directly from the .hdf-file for
 % the Bryan-Bubble-output
 
+%test_case = 'Equatorial-Long-Wave';
 test_case = 'Internal-Wave-Long-Wave';
 %test_case = 'Internal-Wave-Strong-Strat';
 %test_case = 'Skamarock-Klemp-Internal-Wave';
@@ -44,7 +45,18 @@ modelstr = 'psinc';
 %modelstr = 'psinc_w_adv_Ndt=05';
 
 
-if strcmp(test_case, 'Internal-Wave-Long-Wave')
+if strcmp(test_case, 'Equatorial-Long-Wave')
+    scalefactor = 2.0;
+    %ncx = 300; 
+    %ncy = 10;  
+    ncx = 300; 
+    ncy = 40;  
+    L   = 8*300.0 * scalefactor;  % 
+    x0  = 0.0*L;
+    H   = 10.0;  %
+    aspect = [64 1 1];
+    velosc = 100;  % velocity unit of RKLM code
+elseif strcmp(test_case, 'Internal-Wave-Long-Wave')
     scalefactor = 2.0;
     %ncx = 300; 
     %ncy = 10;  
@@ -54,6 +66,7 @@ if strcmp(test_case, 'Internal-Wave-Long-Wave')
     x0  = 0.0*L;
     H   = 10.0;  %
     aspect = [8 1 1];
+    velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Internal-Wave-Strong-Strat')
     scalefactor = 1.0;
     ncx = 1200; 
@@ -62,6 +75,7 @@ elseif strcmp(test_case, 'Internal-Wave-Strong-Strat')
     x0  = 0.5*L;
     H   = 10.0;  %
     aspect = [8 1 1];
+    velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Skamarock-Klemp-Internal-Wave')
     scalefactor = 1.0;
     ncx = 600; 
@@ -70,6 +84,7 @@ elseif strcmp(test_case, 'Skamarock-Klemp-Internal-Wave')
     x0  = 0.5*L;
     H   = 10.0;  %
     aspect = [8 1 1];
+    velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Rising-Bubble')
     ncx = 160;  
     ncy =  80;  
@@ -77,6 +92,7 @@ elseif strcmp(test_case, 'Rising-Bubble')
     x0  = 1.0;
     H   = 1.0; 
     aspect = [1 1 1];
+    velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Travelling-Vortex')
     ncx = 128;  % 512; 256;
     ncy = 128;  % 512; 256;
@@ -84,6 +100,7 @@ elseif strcmp(test_case, 'Travelling-Vortex')
     x0  = 0.5;
     H   = 1.0; 
     aspect = [1 1 1];
+    velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Straka')
     ncx = 512;  
     ncy = 64;  
@@ -91,6 +108,7 @@ elseif strcmp(test_case, 'Straka')
     x0 = 0.0*L;
     H  = 6.4;  %
     aspect = [1 1 1];
+    velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Smolarkiewicz-Margolin-Breaking-Wave')
     ncx = 240;  
     ncy = 120;  
@@ -98,6 +116,7 @@ elseif strcmp(test_case, 'Smolarkiewicz-Margolin-Breaking-Wave')
     x0  =  60.0;
     H   =  60.0;  %
     aspect = [1 1 1];
+    velosc = 100;  % velocity unit of RKLM code
 end
     
 % auxiliary adjustments of grid parameters
@@ -254,6 +273,8 @@ for k = kmin:dk:kmax
             figure(figure1)
             if strcmp(varstr, 'flux_rhou')
                 contourf(x,z,th./th(:,1),25,'LineColor','auto');
+            elseif (strcmp(varstr, 'u') || strcmp(varstr, 'v') || strcmp(varstr, 'w'))
+                contourf(x,z,th*velosc,25,'LineColor','auto');
             else
                 contourf(x,z,th,25,'LineColor','auto');
             end
