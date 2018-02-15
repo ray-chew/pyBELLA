@@ -24,7 +24,6 @@ void second_projection(
                        const double t,
                        const double dt);
 
-#ifdef GRAVITY_IMPLICIT
 void euler_backward_gravity(ConsVars* Sol,
                             const MPV* mpv,
                             const ElemSpaceDiscr* elem,
@@ -35,8 +34,6 @@ void euler_forward_non_advective(ConsVars* Sol,
                                  const ElemSpaceDiscr* elem,
                                  const NodeSpaceDiscr* node,
                                  const double dt);
-#endif
-
 
 #endif /* SECOND_PROJECTION_H */
 

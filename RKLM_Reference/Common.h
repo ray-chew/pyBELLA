@@ -21,15 +21,10 @@
 /* ============================================= 
  Initial Data Options
  ============================================= */
-/*
- */
-#define HYDRO_BALANCED_INIT_DATA
 
 /* ============================================= 
  Elliptic Solver Options
  ============================================= */
-
-#define GRAVITY_IMPLICIT
 
 /* solver options ==============================
  #define SOLVER_1_CR2
@@ -54,7 +49,6 @@
 #ifdef PRECON
 #define PRECON_VERTICAL_COLUMN_1ST_PROJ
 #define PRECON_VERTICAL_COLUMN_2ND_PROJ
-/* #define PRECON_LEGACY  */
 #endif
 
 

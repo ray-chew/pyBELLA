@@ -1,7 +1,5 @@
-    /*******************************************************************************
+/*******************************************************************************
  File:   Main.c
- Author: Rupert 
- Date:   ?
  *******************************************************************************/
 #include "Common.h"
 #include <stdio.h>
@@ -22,7 +20,6 @@
 #include "Eos.h"
 #include "recovery.h"
 #include "boundary.h"
-/* #include "space_discretization.h" */
 #include "flux_correction.h"
 #include "second_projection_bilinear_p.h"
 #include "set_ghostcells_p.h"
@@ -355,15 +352,3 @@ int main( void )
     
 	return(1);
 }
-
-/*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
- $Log: Main.c,v $
- Revision 1.2  1998/03/07 09:56:44  nicola
- Added flux computation and multiple pressure variables.
- 
- Revision 1.1  1998/03/01 18:43:32  nicola
- This is the initial revision of 3d. It comes out after two weeks of work on
- Matthias' version of Rupert's F3D code. It is the starting point for imple
- menting a low Mach number extension.
- 
- LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL*/

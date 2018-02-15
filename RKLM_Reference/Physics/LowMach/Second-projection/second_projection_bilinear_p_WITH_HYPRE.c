@@ -917,9 +917,8 @@ void correction_nodes(
 					  const double dt) {
 	
 	extern User_Data ud;
-#ifdef GRAVITY_IMPLICIT
     extern MPV* mpv;
-#endif
+
 	const int ndim = elem->ndim;
 	    
 	switch(ndim) {
@@ -1072,7 +1071,6 @@ void correction_nodes(
 	}
 }
 
-#ifdef GRAVITY_IMPLICIT
 /* ========================================================================== */
 
 void euler_backward_gravity(ConsVars* Sol,
@@ -1194,9 +1192,6 @@ void euler_forward_non_advective(ConsVars* Sol,
         }
     }
 }
-
-#endif
-
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log:$

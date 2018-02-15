@@ -56,8 +56,6 @@ typedef struct {
     TimeIntegratorParams tips;
 
     /* Space discretization */
-    enum Boolean p_flux_correction;
-    double latw[3];
     double p_extrapol;
 
 	enum RecoveryOrder recovery_order;
