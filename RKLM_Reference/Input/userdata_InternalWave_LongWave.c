@@ -28,7 +28,7 @@ double rho_function(double psi);
 
 double molly(double x);
 
-static double scalefactor = 20.0;   /* 20.0; 1.0; */
+static double scalefactor = 1.0;   /* 20.0; 1.0; */
 
 void User_Data_init(User_Data* ud) {
     
@@ -76,7 +76,7 @@ void User_Data_init(User_Data* ud) {
     ud->naux        = NAUX;
 
     /* Low Mach */
-    ud->is_compressible   = 1;   /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_compressible   = 0;   /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep = 0; /* 0;  1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
     
@@ -135,8 +135,8 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = SI_MIDPT; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, SI_MIDPT */
     ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 600.0 / ud->t_ref;
-    ud->dtfixed                = 600.0 / ud->t_ref;
+    ud->dtfixed0               = 12.0 / ud->t_ref;
+    ud->dtfixed                = 12.0 / ud->t_ref;
     ud->no_of_steps_to_CFL     = 1;
     ud->no_of_steps_to_dtfixed = 1;
     
@@ -144,7 +144,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Grid and space discretization */
     ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =   40+1; /* 321; 161;  81;  65; 41;  */
+    ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
     ud->inz = 1;
     ud->h   = MIN_own((ud->xmax-ud->xmin)/(ud->inx),MIN_own((ud->ymax-ud->ymin)/(ud->iny),(ud->zmax-ud->zmin)/(ud->inz)));
     
@@ -162,7 +162,7 @@ void User_Data_init(User_Data* ud) {
     ud->kY = 1.4;
     ud->kZ = 1.4; /* 2.0 */
         
-    ud->ncache = 304*44; /* 604*44; (ud->inx+3); */
+    ud->ncache = (ud->inx+3)*(ud->iny+3); /* 71+4; 304*44; 604*44; (ud->inx+3); */
     
     /* linear solver-stuff */
     ud->which_projection_first = 1;

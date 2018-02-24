@@ -71,7 +71,7 @@ void recovery(States* Lefts,
     
     const double internal_flux = (adv_fluxes_from == FLUX_INTERNAL ? 1.0 : 0.0);
     
-    double u[nmax];
+    double u[nmax], ul[nmax], ur[nmax];
 	int i, nsp;  
     
 	assert(allocated == CORRECT); 
@@ -82,7 +82,9 @@ void recovery(States* Lefts,
 	primitives(Sol, 0, nmax);
 		
     for( i = 1; i < nmax-1; i++ ) { 
-        u[i] = internal_flux * Sol->u[i] + (1.0-internal_flux) * (0.5*(Fluxes->rhoY[i]+Fluxes->rhoY[i+1])/Sol->rhoY[i]);    
+        u[i]  = internal_flux * Sol->u[i] + (1.0-internal_flux) * (0.5*(Fluxes->rhoY[i]+Fluxes->rhoY[i+1])/Sol->rhoY[i]);    
+        ul[i] = internal_flux * Sol->u[i] + (1.0-internal_flux) * Fluxes->rhoY[i]/(0.5*(Sol->rhoY[i]+Sol->rhoY[i-1]));    
+        ur[i] = internal_flux * Sol->u[i] + (1.0-internal_flux) * Fluxes->rhoY[i+1]/(0.5*(Sol->rhoY[i]+Sol->rhoY[i+1]));    
     }
     
 	/* differences of primitive quantities */
@@ -106,13 +108,18 @@ void recovery(States* Lefts,
 	
 	/* half-timestep */
 	for( i = 1; i < nmax-1; i++ ) { 
-		Ampls->entro[i]   = 0.5 * Slopes->entro[i] * ( 1 - lambda * u[i] ); /* entro-entry abused for u */
-		Ampls->v[i]       = 0.5 * Slopes->v[i]     * ( 1 - lambda * u[i] );
-		Ampls->w[i]       = 0.5 * Slopes->w[i]     * ( 1 - lambda * u[i] );
+#ifdef EGDE_VELOCITIES_IN_MUSCL_STEP
+        double uu = ur[i];
+#else
+        double uu = u[i];
+#endif
+		Ampls->entro[i]   = 0.5 * Slopes->entro[i] * ( 1 - lambda * uu ); /* entro-entry abused for u */
+		Ampls->v[i]       = 0.5 * Slopes->v[i]     * ( 1 - lambda * uu );
+		Ampls->w[i]       = 0.5 * Slopes->w[i]     * ( 1 - lambda * uu );
         for (nsp = 0; nsp < ud.nspec; nsp++) {
-            Ampls->X[nsp][i]     = 0.5 * Slopes->X[nsp][i] * ( 1 - lambda * u[i] );
+            Ampls->X[nsp][i]     = 0.5 * Slopes->X[nsp][i] * ( 1 - lambda * uu );
         }                                
-		Ampls->Y[i]     = 0.5 * Slopes->Y[i] * ( 1 - lambda * u[i] );
+		Ampls->Y[i]     = 0.5 * Slopes->Y[i] * ( 1 - lambda * uu );
 	}
 	
 	for( i = 1; i < nmax-1; i++ ) {
@@ -132,13 +139,18 @@ void recovery(States* Lefts,
 	
 	/* half-timestep */  
 	for( i = 1; i < nmax-1; i++ ) {
-		Ampls->entro[i] = -0.5 * Slopes->entro[i] * ( 1 + lambda * u[i] );
-		Ampls->v[i]     = -0.5 * Slopes->v[i]     * ( 1 + lambda * u[i] );
-		Ampls->w[i]     = -0.5 * Slopes->w[i]     * ( 1 + lambda * u[i] );
+#ifdef EGDE_VELOCITIES_IN_MUSCL_STEP
+        double uu = ul[i];
+#else
+        double uu = u[i];
+#endif
+		Ampls->entro[i] = -0.5 * Slopes->entro[i] * ( 1 + lambda * uu );
+		Ampls->v[i]     = -0.5 * Slopes->v[i]     * ( 1 + lambda * uu );
+		Ampls->w[i]     = -0.5 * Slopes->w[i]     * ( 1 + lambda * uu );
         for (nsp = 0; nsp < ud.nspec; nsp++) {
-            Ampls->X[nsp][i]     = -0.5 * Slopes->X[nsp][i] * ( 1 + lambda * u[i] );
+            Ampls->X[nsp][i]     = -0.5 * Slopes->X[nsp][i] * ( 1 + lambda * uu );
         }                                
-		Ampls->Y[i]     = -0.5 * Slopes->Y[i] * ( 1 + lambda * u[i] );
+		Ampls->Y[i]     = -0.5 * Slopes->Y[i] * ( 1 + lambda * uu );
 	}
 	
 	for( i = 1; i < nmax-1; i++ ) {
