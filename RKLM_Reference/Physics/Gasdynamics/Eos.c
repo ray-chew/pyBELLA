@@ -534,22 +534,25 @@ void adjust_pi_cells(MPV* mpv,
     
 	extern User_Data ud;
 	extern Thermodynamic th;
-	    
-    double alpha = ud.compressibility; 
-    
+	        
 	const double scalefac = 1.0 / ud.Msq;
     
-     const int igx = elem->igx;
-     const int igy = elem->igy;
-     const int igz = elem->igz;
-     const int icx = elem->icx;
-     const int icy = elem->icy;
-     const int icz = elem->icz; 
+    const int igx = elem->igx;
+    const int igy = elem->igy;
+    const int igz = elem->igz;
+    const int icx = elem->icx;
+    const int icy = elem->icy;
+    const int icz = elem->icz; 
+    
     for(int k = igz; k < icz - igz; k++) {int l = k * icx * icy;
 		for(int j = igy; j < icy - igy; j++) {int m = l + j * icx;
-            double p2bg = mpv->HydroState->p20[j];
 			for(int i = igx; i < icx - igx; i++) {int n = m + i;
+#ifdef NO_PI_SYNC
+                mpv->p2_cells[n] += mpv->dp2_cells[n];
+#else
+                double p2bg = mpv->HydroState->p20[j];
                 mpv->p2_cells[n] = scalefac * pow(Sol->rhoY[n],th.gm1) - p2bg;
+#endif
 			}
 		}
 	}

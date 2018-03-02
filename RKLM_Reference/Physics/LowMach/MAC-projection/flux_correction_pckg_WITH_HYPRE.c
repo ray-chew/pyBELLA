@@ -176,10 +176,11 @@ void flux_correction(ConsVars* flux[3],
        subtracted flux from the first sequence will make up for the ``bad guess''
        of the flux divergence in the explicity advection cycle.
      */
+    /*
     for (int ii=0; ii<elem->nfx; ii++) flux[0]->rhoY[ii] += adv_flux_diff->x[ii];
     if (elem->ndim > 1) for (int ii=0; ii<elem->nfy; ii++) flux[1]->rhoY[ii] += adv_flux_diff->y[ii];
     if (elem->ndim > 2) for (int ii=0; ii<elem->nfz; ii++) flux[2]->rhoY[ii] += adv_flux_diff->z[ii];
-    
+     */
 
 #if 0
     sprintf(fn2, "%s/Tests/frhoY_y_post2.hdf", ud.file_name);

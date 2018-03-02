@@ -3,8 +3,8 @@
 % the Bryan-Bubble-output
 
 %modelstr = '';
-%modelstr = 'comp';
-modelstr = 'psinc';
+modelstr = 'comp';
+%modelstr = 'psinc';
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
@@ -20,7 +20,7 @@ test_case = 'Skamarock-Klemp-Internal-Wave';
 
 showmode = 1;
 separate_signs = 1;
-filledcontours = 0;
+filledcontours = 1;
 fixed_contours = 1;
 fixed_contour_step = 0;
 no_of_contours = 10;
@@ -46,14 +46,14 @@ dk   = 1;
 
 if strcmp(test_case, 'Equatorial-Long-Wave')
     scalefactor = 2.0;
-    %ncx = 300; 
-    %ncy = 10;  
     ncx = 300; 
-    ncy = 40;  
-    L   = 8*300.0 * scalefactor;  % 
+    ncy = 10;  
+    %ncx = 600; 
+    %ncy = 80;  
+    L   = 8*3000.0 * scalefactor;  % 
     x0  = 0.0*L;
     H   = 10.0;  %
-    aspect = [64 1 1];
+    aspect = [L/H/3 1 1];
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Internal-Wave-Long-Wave')
     scalefactor = 2.0;
@@ -61,28 +61,28 @@ elseif strcmp(test_case, 'Internal-Wave-Long-Wave')
     %ncy = 10;  
     ncx = 600; 
     ncy = 80;  
-    L   = 300.0 * scalefactor;  % 
+    L   = 3000.0 * scalefactor;  % 
     x0  = 0.0*L;
     H   = 10.0;  %
-    aspect = [8 1 1];
+    aspect = [L/H/3 1 1];
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Internal-Wave-Strong-Strat')
     scalefactor = 1.0;
     ncx = 1200; 
     ncy = 40;  
-    L   = 300.0 * scalefactor;  % 
+    L   = 3000.0 * scalefactor;  % 
     x0  = 0.5*L;
     H   = 10.0;  %
-    aspect = [8 1 1];
+    aspect = [80 1 1];
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Skamarock-Klemp-Internal-Wave')
     scalefactor = 1.0;
     ncx = 300; 
-    ncy = 10;  
+    ncy = 20;  
     L   = 300.0 * scalefactor;  % 
     x0  = 0.5*L;
     H   = 10.0;  %
-    aspect = [12 1 1];
+    aspect = [16 1 1];
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Rising-Bubble')
     ncx = 160;  
@@ -143,9 +143,9 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'p'; folderstr = 'p'; titlestr = 'p'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'S'; folderstr = 'S'; titlestr = 'S'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy]; rhoY_diff = 1;
-%varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
+varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy];
+%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
@@ -174,7 +174,7 @@ varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = 
 
 
 scrsz = get(0,'ScreenSize');
-figure1 = figure('Position',[1 scrsz(4)/2 scrsz(3)/1 scrsz(4)/2.5]);
+figure1 = figure('Position',[1 scrsz(4)/2 scrsz(3)/2 1*scrsz(4)/3]);
 if abs(symmetry) == 1 
     figure2 = figure('Position',[scrsz(4)/2 0 scrsz(3)/1 scrsz(4)/2.5]);
 end
@@ -215,8 +215,9 @@ for k = kmin:dk:kmax
         plot(x,th, 'r+');
 
         % Create xlabel
-        xlabel('x [10 km]','FontSize',18,'FontName','Helvetica');
-        
+        % xlabel('x [10 km]','FontSize',18,'FontName','Helvetica');
+        xlabel('x [km]','FontSize',18,'FontName','Helvetica');
+
         % Create ylabel
         ylabel(titlestr,'FontSize',18,'FontName','Helvetica');
 
@@ -317,7 +318,8 @@ for k = kmin:dk:kmax
             title(strcat(titlestr,kstr));
         end
         % Create xlabel
-        xlabel('x [10 km]','FontSize',18,'FontName','Helvetica');
+        % xlabel('x [10 km]','FontSize',18,'FontName','Helvetica');
+        xlabel('x [km]','FontSize',18,'FontName','Helvetica');
         
         % Create ylabel
         ylabel('z [km]','FontSize',18,'FontName','Helvetica');

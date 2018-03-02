@@ -1474,6 +1474,121 @@ pressure boundary conditions, e.g., periodic ones.
 % ===========================================================================
 % ===========================================================================
 
+\section{Newton iteration for the $P$-equation}
+\label{sec:NewtonP}
+
+The determination of the advective fluxes $P\vv$ at the half time level involve
+a backward Euler discretization of the half time step for
+%
+\begin{equation}
+P_t + \nabla\cdot(P\vv) = 0\,.
+\end{equation}
+%
+Starting from an initial explicit guess that already includes the advection
+terms, the semi-implicit discretization is written for the Exner pressure
+variable as
+%
+\begin{equation}\label{eq:SemiImplicitNonlinearP}
+\frac{P(\pi^{n+\half}) - P^n}{\Delta t/2}
++ \nabla\cdot
+  \left( (P\vv)^{*} - \frac{\Delta t}{2} P\theta\nabla\pi^{n+\half}
+  \right) 
+  = 0\,.
+\end{equation}
+%
+The function $P(\pi)$ is nonlinear and we intend to solve 
+\eq{eq:SemiImplicitNonlinearP} by a Newton iteration.
+Let $\nu$ denote the Newton iteration counter and
+%
+\begin{equation}
+\delta\pi^{\nu} = \pi^{n+\half,\nu+1}-\pi^{n+\half,\nu}\,,
+\end{equation}
+% 
+then the linearization of the pressure function according to Newton's method yields
+%
+\begin{equation}\label{eq:NewtonPrelimI}
+\frac{\frac{\partial P}{\partial \pi}\delta\pi^\nu + P(\pi^{n+\half,\nu}) - P^n}{\Delta t/2}
++ \nabla\cdot
+  \left( (P\vv)^{*} - \frac{\Delta t}{2} P\theta\nabla\left[\pi^{n+\half,\nu} + \delta\pi^{\nu}\right]
+  \right) 
+  = 0\,,
+\end{equation}
+%
+where we assume the coefficients $\frac{\partial P}{\partial \pi}$ and
+$P\theta$ to be constant as assessed after the first explicit half time
+step. Improvements can be developed later as part of the iteration.
+
+Thus, the Newton iteration requires the solution of
+%
+\begin{equation}\label{eq:NewtonPrelimIa}
+-\frac{4}{\Delta t^2}\frac{\partial P}{\partial \pi}\delta\pi^\nu
++ \nabla\cdot
+  \left( P\theta\nabla\delta\pi^{\nu}
+  \right) 
+  = \frac{4}{\Delta t^2} \left(P(\pi^{n+\half,\nu}) - P^n\right)
+    + \frac{2}{\Delta t}\nabla\cdot \left( (P\vv)^{n+\half,\nu} \right)\,.
+\end{equation}
+%
+Considering \eq{eq:NewtonPrelimI} with $\nu$ replaced with $\nu-1$ and 
+recalling that $\pi^{n+\half,\nu-1} + \delta\pi^{\nu-1} = \pi^{n+\half,\nu}$, 
+we have
+%
+\begin{equation}\label{eq:NewtonPrelimII}
+\frac{2}{\Delta t} \nabla\cdot \left( (P\vv)^{n+\half,\nu} \right) = 
+- \frac{4}{\Delta t^2}
+\left(\frac{\partial P}{\partial \pi}\delta\pi^{\nu-1} + P(\pi^{n+\half,\nu-1}) - P^n\right)\,,
+\end{equation}
+%
+and re-insertion into \eq{eq:NewtonPrelimII} yields
+%
+\begin{equation}
+-\frac{4}{\Delta t^2}\frac{\partial P}{\partial \pi}\delta\pi^\nu
++ \nabla\cdot
+  \left( P\theta\nabla\delta\pi^{\nu}
+  \right) 
+  = \frac{4}{\Delta t^2} 
+    \left( \left[P(\pi^{n+\half,\nu}) - P(\pi^{n+\half,\nu-1})\right] 
+         - \frac{\partial P}{\partial \pi}\delta\pi^{\nu-1}\right)\,.
+\end{equation}
+%
+and this constitutes the recursion relation for the right hand side of 
+subsequent Newton steps.
+
+The start of the iteration consists of the original step in which the
+nonlinear $P$-$\pi$-relation is simply linearized, i.e., we let
+%
+\begin{equation}
+\pi^{n+\half,0} = \pi^n
+\qquad\text{and}\qquad
+P(\pi^{n+\half,0}) - P^n = 0
+\end{equation}
+%
+according to the result of the iteration in the previous time step 
+as a first guess, and then \eq{eq:NewtonPrelimI} can be cast into 
+the standard form for the semi-implicit, linearized scheme for
+$\pi^{n+\half,1} = \pi^{n} + \delta\pi^0$, 
+%
+\begin{equation}
+-\frac{4}{\Delta t^2}
+\frac{\partial P}{\partial \pi}\pi^{n+\half,1}
++ \nabla\cdot
+  \left(P\theta\nabla\left[\pi^{n+\half,1}\right]
+  \right) 
+  = -\frac{4}{\Delta t^2} \frac{\partial P}{\partial \pi}\pi^{n}
++ \frac{2}{\Delta t}\nabla\cdot (P\vv)^{*}\,,
+\end{equation}
+%
+and then the iteration starts with
+%
+\begin{equation}
+\delta\pi^0 = \pi^{n+\half,1} - \pi^{n}  \,.
+\end{equation}
+%
+
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+
 \bibliographystyle{FluidMechanics}
 \bibliography{Bibliography}
 
