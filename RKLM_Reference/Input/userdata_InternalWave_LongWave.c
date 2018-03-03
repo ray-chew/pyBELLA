@@ -28,7 +28,7 @@ double rho_function(double psi);
 
 double molly(double x);
 
-static double scalefactor = 1.0;   /* 8*20.0; 20.0; 1.0; */
+static double scalefactor = 8*20.0;   /* 8*20.0; 20.0; 1.0; */
 
 void User_Data_init(User_Data* ud) {
     
@@ -135,8 +135,8 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = SI_MIDPT; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, SI_MIDPT */
     ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 8*600.0 / ud->t_ref;
-    ud->dtfixed                = 8*600.0 / ud->t_ref;
+    ud->dtfixed0               = scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed                = scalefactor*30.0 / ud->t_ref;
     ud->no_of_steps_to_CFL     = 1;
     ud->no_of_steps_to_dtfixed = 1;
     

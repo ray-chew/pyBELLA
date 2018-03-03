@@ -120,19 +120,11 @@ void flux_correction(ConsVars* flux[3],
     printf("\nrhs_max = %e\n", rhsmax);
 
     assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
-#ifdef NONLINEAR_EOS_IN_1st_PROJECTION
     if (ud.is_compressible) {
         for (int nc=0; nc<elem->nc; nc++) {
             rhs[nc] += hcenter[nc]*mpv->p2_cells[nc];
         }
     }
-#else
-    if (ud.is_compressible) {
-        for (int nc=0; nc<elem->nc; nc++) {
-            rhs[nc] += hcenter[nc]*mpv->p2_cells[nc];
-        }
-    }
-#endif
     
     rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
     
@@ -178,8 +170,9 @@ void flux_correction(ConsVars* flux[3],
 
 #ifdef NONLINEAR_EOS_IN_1st_PROJECTION
     /* Nonlinear iteration for the \partial P/\partial t  term in the P-equation */
-    ud.flux_correction_precision       *= 1e-5;
-    ud.flux_correction_local_precision *= 1e-5;
+    double precision_factor = 1.0;
+    ud.flux_correction_precision       *= precision_factor;
+    ud.flux_correction_local_precision *= precision_factor;
     for (int nc=0; nc<elem->nc; nc++) {
         pi[nc]  = p2[nc];
         p2[nc] -= mpv->p2_cells[nc];        
@@ -196,8 +189,8 @@ void flux_correction(ConsVars* flux[3],
     for (int nc=0; nc<elem->nc; nc++) {
         p2[nc] = pi[nc];        
     }
-    ud.flux_correction_precision       *= 1e+5;
-    ud.flux_correction_local_precision *= 1e+5;
+    ud.flux_correction_precision       /= precision_factor;
+    ud.flux_correction_local_precision /= precision_factor;
 #endif
 
     

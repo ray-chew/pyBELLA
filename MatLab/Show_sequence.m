@@ -10,9 +10,9 @@ modelstr = 'comp';
 %modelstr = 'psinc_w_adv_Ndt=05';
 
 %test_case = 'Equatorial-Long-Wave';
-%test_case = 'Internal-Wave-Long-Wave';
+test_case = 'Internal-Wave-Long-Wave';
 %test_case = 'Internal-Wave-Strong-Strat';
-test_case = 'Skamarock-Klemp-Internal-Wave';
+%test_case = 'Skamarock-Klemp-Internal-Wave';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
@@ -21,7 +21,7 @@ test_case = 'Skamarock-Klemp-Internal-Wave';
 showmode = 1;
 separate_signs = 1;
 filledcontours = 1;
-fixed_contours = 0;
+fixed_contours = 1;
 fixed_contour_step = 0;
 no_of_contours = 10;
 show_increments = 0;
@@ -57,10 +57,10 @@ if strcmp(test_case, 'Equatorial-Long-Wave')
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Internal-Wave-Long-Wave')
     scalefactor = 2.0;
-    %ncx = 300; 
-    %ncy = 10;  
-    ncx = 600; 
-    ncy = 80;  
+    ncx = 300; 
+    ncy = 20;  
+    %ncx = 600; 
+    %ncy = 80;  
     L   = 3000.0 * scalefactor;  % 
     x0  = 0.0*L;
     H   = 10.0;  %
@@ -143,7 +143,7 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'p'; folderstr = 'p'; titlestr = 'p'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'S'; folderstr = 'S'; titlestr = 'S'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy]; rhoY_diff = 1;
-varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
+%varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
@@ -165,7 +165,7 @@ varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysiz
 %varstr = 'dpdim';  folderstr = 'dpdime'; titlestr = 'dp [Pa]'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhs_cells';  folderstr = 'rhs_cells'; titlestr = 'rhs_c'; ndummy = 2; arraysize = [ncx ncy];
 
-%varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
+varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'rhs_nodes';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n';    ndummy = 2; arraysize = [nnx nny];
 

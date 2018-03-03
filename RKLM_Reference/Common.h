@@ -33,8 +33,8 @@
  Semi-implicit solver options  
  ============================================= */
 /* 
+ #define NO_PI_SYNC
  */
-#define NO_PI_SYNC
 #define NONLINEAR_EOS_IN_1st_PROJECTION
 
 /* ============================================= 
