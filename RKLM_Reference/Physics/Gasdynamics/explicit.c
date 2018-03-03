@@ -61,6 +61,27 @@ void Explicit_free() {
 
 /* ================================================================================ */
 
+void copy_fluxes1(double *F, 
+                  const double *f, 
+                  const int kcache,
+                  const int nmax, 
+                  const int njump, 
+                  const ElemSpaceDiscr* elem)
+{
+    /* here *f points to the very beginning of the flux array */
+    
+    for (int i=0; i<nmax; i++) {
+        int nc = kcache*njump+i;
+        int kc = nc/(elem->icy*elem->icx);
+        int jc = (nc-kc*(elem->icy*elem->icx))/elem->icx;
+        int ic = nc-kc*(elem->icy*elem->icx)-jc*elem->icx;
+        int ii = kc*elem->icy*elem->ifx + jc*elem->ifx + ic + 1;
+        F[i]   = f[ii];
+    }
+}
+
+/* ================================================================================ */
+
 void copy_fluxes(double *F, 
                  const double *f, 
                  const int kcache,
@@ -99,7 +120,6 @@ void Explicit_step_and_flux(
 	extern ElemSpaceDiscr* elem;
 	extern ConsVars* dSol;
 	extern States* Solk; 
-    extern double *W0, *W1, *W2;
 	
 	const int ncache = ud.ncache;
 	const int njump  = ncache - 2*elem->igx;
@@ -137,7 +157,8 @@ void Explicit_step_and_flux(
 		const enum Boolean last = ((kcache + 1) * njump < n - elem->igx) ? WRONG : CORRECT;
 		
         if (adv_fluxes_from == FLUX_EXTERNAL) {
-            copy_fluxes(Fluxes->rhoY, &pflux.rhoY[1], kcache, nmax, njump, elem);            
+            copy_fluxes1(Fluxes->rhoY, flux->rhoY, kcache, nmax, njump, elem);        
+            /* copy_fluxes(Fluxes->rhoY, &pflux.rhoY[1], kcache, nmax, njump, elem);    */      
         }
         
 		/* flux computation*/

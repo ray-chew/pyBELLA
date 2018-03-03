@@ -1,19 +1,14 @@
-#define NSPEC 1
-#define BUOY  0
-#define QV    1   /* water vapor */
-#define QC    2   /* cloud water */
-#define QR    3   /* rain water  */
-
-#define YMOM  1
-
-#define NAUX  2
-#define PRES  0
-
-#define PERTURBED_WALL
+#define NSPEC 1   /* no of advected scalars */
+#define BUOY  0   /* auxiliary pot. temp. perturbation variable */
+#define QV    1   /* foreseen for: water vapor */
+#define QC    2   /* foreseen for: cloud water */
+#define QR    3   /* foreseen for: rain water  */
 
 /* Output parameters */
 #define HDFFORMAT
-#define OUTPUT_SUBSTEPS 0
+
+/* Output options in main.c for debugging;  1 -> output */
+#define OUTPUT_SUBSTEPS 0 
 #define OUTPUT_SPLITSTEPS 0
 #define OUTPUT_SUBSTEPS_PREDICTOR 0
 
@@ -27,13 +22,15 @@
  ============================================= */
 /* 
 #define EGDE_VELOCITIES_IN_MUSCL_STEP
+ #define HALF_STEP_FLUX_EXTERNAL
  */
 
 /* ============================================= 
  Semi-implicit solver options  
  ============================================= */
 /* 
- #define NO_PI_SYNC
+ #define NONLINEAR_EOS_IN_1st_PROJECTION -- Newton for  P(pi)
+ #define NO_PI_SYNC                      -- P doesn't overwrite pi each time step
  */
 #define NONLINEAR_EOS_IN_1st_PROJECTION
 
@@ -42,14 +39,13 @@
  ============================================= */
 
 /* solver options ==============================
- #define SOLVER_1_CR2
+ #define SOLVER_1_CR2      ->  Piotr's Conjugate Residual
  #define SOLVER_1_BICGSTAB
  
- #define SOLVER_2_CR2
  #define SOLVER_2_BICGSTAB
  */
 
-#define SOLVER_1_BICGSTAB
+#define SOLVER_1_CR2
 #define SOLVER_2_BICGSTAB
 
 /* preconditioning options ======================
@@ -68,8 +64,11 @@
 
 
 /* First projection options */
+/*
+ #define TIME_AVERAGED_COEFFS_PROJ1 
+*/
+
 #define PROJECTION1 1
-#define TIME_AVERAGED_COEFFS_PROJ1 
 
 /* Second projection options */
 #define PROJECTION2 1

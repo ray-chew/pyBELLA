@@ -46,11 +46,6 @@ void ElemSpaceDiscr_ghost_rhoY(
 							   const ElemSpaceDiscr* elem, 
 							   const int ig);
 
-void ElemSpaceDiscr_ghost_rhoZ(
-							   double** rhoZ, 
-							   const ElemSpaceDiscr* elem, 
-							   const int ig);
-
 /* ================================================================== */
 
 void NodeSpaceDiscr_ghost(
@@ -85,11 +80,6 @@ void NodeSpaceDiscr_ghost_rhoe(
 
 void NodeSpaceDiscr_ghost_rhoY(
 							   double* rhoY, 
-							   const NodeSpaceDiscr* node, 
-							   const int ig);
-
-void NodeSpaceDiscr_ghost_rhoZ(
-							   double** rhoZ, 
 							   const NodeSpaceDiscr* node, 
 							   const int ig);
 

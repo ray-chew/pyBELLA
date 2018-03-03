@@ -22,7 +22,6 @@ typedef struct {
 	double* rhow;
 	double* rhoe;
 	double* rhoY;
-	double* rhoZ[NAUX];
     double* rhoX[NSPEC];
 	double* geopot;
 } ConsVars;
@@ -125,7 +124,6 @@ typedef struct {
 	double* rhow;
 	double* rhoe;
 	double* rhoY;
-	double* rhoZ[NAUX];
     double* rhoX[NSPEC];
 	double* geopot;
 	double* u;
@@ -202,7 +200,7 @@ void States_setp(States* obj, const ConsVars* src, const int i);
 
 
 /*------------------------------------------------------------------------------
- Adds n to the pointers of obj (only rho, rhou, rhov, rhow, rhoe, rhoY, rhoZ)
+ Adds n to the pointers of obj (only rho, rhou, rhov, rhow, rhoe, rhoY)
  ------------------------------------------------------------------------------*/
 void States_addp(States* obj, const int n);
 

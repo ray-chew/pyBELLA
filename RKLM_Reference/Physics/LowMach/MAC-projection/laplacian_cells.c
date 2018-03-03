@@ -434,9 +434,7 @@ void EnthalpyWeightedLap_bilinear_p(
             const int ify = elem->ify;
             const double dx = elem->dx;
             const double dy = elem->dy;
-            
-            /* for MG-scaling with elem->scale_factor; see old version of routine */
-        
+                    
             const double oodx2     = 1.0 / (dx * dx);
             const double oody2     = 1.0 / (dy * dy);
             

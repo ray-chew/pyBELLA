@@ -61,9 +61,9 @@ int main( void )
     extern double* buoyS;
     extern VectorField* buoy; 
     
-    extern double* W0;
-    extern double* W1;
     extern double* Sbg;
+    
+    enum FluxesFrom advec_flux;
 	
 	Speeds a_u_max;
     TimeStepInfo dt_info;
@@ -159,6 +159,13 @@ int main( void )
             
             substep = 0;
             
+#ifdef HALF_STEP_FLUX_EXTERNAL
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
+            advec_flux = FLUX_EXTERNAL;
+#else
+            advec_flux = FLUX_INTERNAL;
+#endif
+            
             printf("\nCoriolis 0 ---------------------------------- \n");                
             Explicit_Coriolis(Sol, elem, 0.5*dt); 
             Set_Explicit_Boundary_Data(Sol, elem, mpv, 0);
@@ -167,7 +174,7 @@ int main( void )
             stage = 0;
             for(Split = 0; Split < elem->ndim; Split++) {
                 lambda = 0.5*dt/elem->dx;
-                Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, FLUX_INTERNAL, WITH_MUSCL);
+                Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, advec_flux, WITH_MUSCL);
                 substep++;
                 
 #if OUTPUT_SUBSTEPS_PREDICTOR  /* 2, 3 */

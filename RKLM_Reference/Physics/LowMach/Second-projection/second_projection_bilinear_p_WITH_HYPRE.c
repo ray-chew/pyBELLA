@@ -108,9 +108,6 @@ void second_projection(
 	
     double rhs_max;
     
-    double rhs_weight_new;
-    double rhs_weight_old;
-
 	int x_periodic, y_periodic, z_periodic;
 	int ii;
 	
@@ -134,8 +131,7 @@ void second_projection(
 		rhs[ii] = 0.0;
 	}
     
-    rhs_weight_new = 1.0;
-    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv->eta, mpv, bdry, dt, rhs_weight_new);
+    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv->eta, mpv, bdry, dt, 1.0);
     printf("\nrhsmax = %e\n", rhs_max);
 
     catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
@@ -145,123 +141,13 @@ void second_projection(
             rhs[nn] += hcenter[nn]*mpv->p2_nodes[nn];
         }
     }
-    
-    /* test */
-#if 0
-    FILE *prhsfile = NULL;
-    char fn[120], fieldname[90];
-    sprintf(fn, "%s/rhs_nodes/rhs_nodes_000.hdf", ud.file_name);
-    sprintf(fieldname, "rhs-nodes");
-    WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
-#endif
-     
+         
 	operator_coefficients_nodes(hplus, hcenter, hS, elem, node, Sol, Sol0, mpv, dt);
 	variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, x_periodic, y_periodic, z_periodic, dt);
-    
-#if 0
-    FILE *prhs1file = NULL;
-    char fn1[120], fieldname1[90];
-    rhs_max = 0.0;
-    double rhs_min = 100000.0;
-    double hx_max  = 0.0;
-    double hy_max  = 0.0;
-    double p2_max  = 0.0;
-    double hx_min  = 100000.0;
-    double hy_min  = 100000.0;
-    double p2_min  = 100000.0;
-    for (int in = 0; in<node->nc; in++) {
-        rhs_max = MAX_own(rhs_max, fabs(rhs[in]));
-        rhs_min = MIN_own(rhs_min, fabs(rhs[in]));
-    }
-    for (int jn = elem->igy; jn < elem->icy-elem->igy; jn++) {
-        for (int in = elem->igx; in < elem->icx-elem->igx; in++) {
-            int nn = jn*elem->icx + in;
-            hx_max = MAX_own(hx_max, fabs(hplus[0][nn]));
-            hx_min = MIN_own(hx_min, fabs(hplus[0][nn]));
-            hy_max = MAX_own(hy_max, fabs(hplus[1][nn]));
-            hy_min = MIN_own(hy_min, fabs(hplus[1][nn]));
-        }
-    }
-    for (int jn = node->igy; jn < node->icy-node->igy; jn++) {
-        for (int in = node->igx; in < node->icx-node->igx; in++) {
-            int nn = jn*node->icx + in;
-            p2_max = MAX_own(p2_max, p2[nn]);
-            p2_min = MIN_own(p2_min, p2[nn]);
-        }
-    }
-    printf("rhs_max, rhs_min, h1_max, h1_min, h2_max, h2_max, p2_min, p2_max = %e, %e, %e, %e, %e, %e, %e, %e\n", rhs_max, rhs_min, hx_max, hx_min, hy_max, hy_min, p2_min, p2_max);
-
-    sprintf(fn1, "%s/rhs_nodes/rhs_nodes_001.hdf", ud.file_name);
-    sprintf(fieldname1, "rhs-nodes");
-    WriteHDF(prhs1file, node->icx, node->icy, node->icz, node->ndim, rhs, fn1, fieldname1);
-
-#endif
-        
-#if 0
-    extern double *W0;
-    int imax, jmax;
-    rhs_max = 0.0;
-    for (int jn=node->igy; jn<node->icy-node->igy; jn++) {
-        int mn = jn*node->icx;
-        for (int in=node->igx; in<node->icx-node->igx; in++) {
-            int nn = mn+in;
-            if (rhs_max < fabs(rhs[nn])) {
-                rhs_max = fabs(rhs[nn]);
-                imax = in;
-                jmax = jn;
-            } 
-        }
-    }
-    printf("rhs_max before = %e\n", rhs_max);
-    correction_nodes(Sol, elem, node, (const double **)hplus, p2, t, dt);
-    EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, p2, (const double **)hplus, hcenter, x_periodic, y_periodic, z_periodic, W0);
-    precon_apply(W0,W0,node);
-    for(ii=0; ii<nc; ii++) rhs[ii] = 0.0;
-    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv->eta, mpv, bdry, dt, rhs_weight_new);
-    catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
-
-#if 0
-    FILE *prhs2file = NULL;
-    char fn2[120], fieldname2[90];
-    sprintf(fn2, "%s/rhs_nodes/rhs_nodes_002.hdf", ud.file_name);
-    sprintf(fieldname2, "rhs-nodes-post");
-    WriteHDF(prhs2file, node->icx, node->icy, node->icz, node->ndim, rhs, fn2, fieldname2);
-    sprintf(fn2, "%s/rhs_nodes/rhs_nodes_003.hdf", ud.file_name);
-    sprintf(fieldname2, "lap-final");
-    WriteHDF(prhs2file, node->icx, node->icy, node->icz, node->ndim, W0, fn2, fieldname2);
-#endif
-
-    rhs_max = 0.0;
-    for (int jn=node->igy+1; jn<node->icy-node->igy-1; jn++) {
-        int mn = jn*node->icx;
-        for (int in=node->igx+1; in<node->icx-node->igx-1; in++) {
-            int nn = mn+in;
-            if (rhs_max < fabs(rhs[nn])) {
-                rhs_max = fabs(rhs[nn]);
-                imax = in;
-                jmax = jn;
-            } 
-        }
-    }
-    printf("rhs_max after  = %e\n", rhs_max);
-    
-#if 0   /* check coefficients */
-    sprintf(fn2, "%s/hplus_nodes/hplusx.hdf", ud.file_name);
-    sprintf(fieldname2, "hplusx");
-    WriteHDF(prhs2file, elem->icx, elem->icy, elem->icz, elem->ndim, hplus[0], fn2, fieldname2);
-    sprintf(fn2, "%s/hplus_nodes/hplusy.hdf", ud.file_name);
-    sprintf(fieldname2, "hplusy");
-    WriteHDF(prhs2file, elem->icx, elem->icy, elem->icz, elem->ndim, hplus[1], fn2, fieldname2);
-#endif
-
-    
-#else
     correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);
-#endif
     
     for(ii=0; ii<nc; ii++) {
         mpv->dp2_nodes[ii] = p2[ii] - mpv->p2_nodes[ii];
-        /* mpv->p2_nodes[ii]  = p2[ii] + ud.is_compressible*mpv->dp2_nodes[ii]; */
         mpv->p2_nodes[ii]  = p2[ii];
     }
 }

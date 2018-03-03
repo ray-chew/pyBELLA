@@ -21,7 +21,6 @@ double maxspeed(const ConsVars* Sol, const int n)
 	extern User_Data ud;
 	extern ElemSpaceDiscr* elem;
 	extern Thermodynamic th;
-	extern double* W0;
 	
 	const double gamm = th.gamm;
 	const int igx = elem->igx;
@@ -33,13 +32,9 @@ double maxspeed(const ConsVars* Sol, const int n)
 	
 	const double Minv = 1.0 / ud.Msq;
 	
-	double *p;
 	double invrho, c, umax, amax; 
 	int i, j, k, nk, njk, nijk;
-	
-	p = W0;
-	pressure(p, Sol, 0, 0, n);
-	
+		
 	amax = umax = 0.0;
 	
 	for(k = igz; k < icz - igz; k++) {
@@ -50,7 +45,8 @@ double maxspeed(const ConsVars* Sol, const int n)
 				nijk = njk + i; 
 				
 				invrho = 1.0 / Sol->rho[nijk]; 
-				c = sqrt(gamm * p[nijk] * invrho) * Minv;
+                double p = pow(Sol->rhoY[nijk],th.gamm);
+				c = sqrt(gamm * p * invrho) * Minv;
 				umax = ABS(Sol->rhou[nijk] * invrho);
 				umax = MAX_own(umax, ABS(Sol->rhov[nijk] * invrho));
 				umax = MAX_own(umax, ABS(Sol->rhow[nijk] * invrho));
@@ -70,7 +66,6 @@ Speeds maxspeeds(const ConsVars* Sol, const int n)
 	extern User_Data ud;
 	extern ElemSpaceDiscr* elem;
 	extern Thermodynamic th;
-	extern double* W0;
 	
 	const double gamm = th.gamm;
 	const int igx = elem->igx;
@@ -82,13 +77,9 @@ Speeds maxspeeds(const ConsVars* Sol, const int n)
 	
 	const double Minv = 1.0 / sqrt(ud.Msq);
 	
-	double *p;
 	double invrho, c, umax; 
 	int i, j, k, nk, njk, nijk;
-	
-	p = W0;
-	pressure(p, Sol, 0, 0, n);
-	
+		
 	Speeds speeds;
 	
 	speeds.u = 0.0;
@@ -102,7 +93,8 @@ Speeds maxspeeds(const ConsVars* Sol, const int n)
 				nijk = njk + i; 
 				
 				invrho = 1.0 / Sol->rho[nijk]; 
-				c = sqrt(gamm * p[nijk] * invrho) * Minv;
+                double p = pow(Sol->rhoY[nijk],th.gamm);
+				c = sqrt(gamm * p * invrho) * Minv;
 				umax = ABS(Sol->rhou[nijk] * invrho);
 				umax = MAX_own(umax, ABS(Sol->rhov[nijk] * invrho));
 				umax = MAX_own(umax, ABS(Sol->rhow[nijk] * invrho));
@@ -126,7 +118,6 @@ TimeStepInfo dynamic_timestep(
 
     extern User_Data ud;
     extern Thermodynamic th;
-    extern double* W0;
     
     const double gamm = th.gamm;
     const int igx = elem->igx;
@@ -138,9 +129,6 @@ TimeStepInfo dynamic_timestep(
 
     const double Minv = 1.0 / sqrt(ud.Msq);
     const double CFL  = ud.CFL;
-
-    double* p = W0;
-    pressure(p, Sol, 0, 0, elem->nc);
 
     TimeStepInfo TSI;
     
@@ -165,7 +153,8 @@ TimeStepInfo dynamic_timestep(
                 int nijk = njk + i;
                 
                 double invrho = 1.0 / Sol->rho[nijk];
-                double c = sqrt(gamm * p[nijk] * invrho) * Minv;
+                double p = pow(Sol->rhoY[nijk],th.gamm);
+                double c = sqrt(gamm * p * invrho) * Minv;
                 double u = ABS(Sol->rhou[nijk] * invrho);
                 double v = ABS(Sol->rhov[nijk] * invrho);
                 double w = ABS(Sol->rhow[nijk] * invrho);

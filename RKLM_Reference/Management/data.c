@@ -57,8 +57,6 @@ ConsVars* flux[3];        /* full size (M < 1.0) */
 
 States* Solk;             /* cache size */
 double* W0;               /* full nG-length double array */
-double* W1; 	   	      /* full nG-length double array */
-double* W2;               /* full nG-length double array */
 double* Sbg; 	   	  /* full nG-length double array */
 
 
@@ -137,8 +135,6 @@ void Data_init() {
     n_aux *= (node->ndim > 2 ? node->ifz : 1);
     
     W0  = (double*)malloc((unsigned)(n_aux * sizeof(double)));
-	W1  = (double*)malloc((unsigned)(n_aux * sizeof(double)));
-    W2  = (double*)malloc((unsigned)(n_aux * sizeof(double)));
     Sbg = (double*)malloc((unsigned)(n_aux * sizeof(double)));
 	
 	{
@@ -190,8 +186,6 @@ void Data_free() {
     VectorField_free(adv_flux0);
 	States_small_free(Solk);
 	free(W0);
-	free(W1);
-    free(W2);
 	{
 		ConsVars_free(Sol0);
 		if(ndim > 2) ConsVars_free(flux[2]);

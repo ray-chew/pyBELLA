@@ -52,9 +52,6 @@ void rotate2D(ConsVars* Sol, double* rhs, double *Sbg, double* buoyS, const enum
     for (nsp = 0; nsp < ud.nspec; nsp++) {
         flip2D(Sol->rhoX[nsp], icx, icy, nc, W0);
     }
-    for (nsp = 0; nsp < ud.naux; nsp++) {
-        flip2D(Sol->rhoZ[nsp], icx, icy, nc, W0);
-    }
 	flip2D(Sol->geopot, icx, icy, nc, W0); 
 	
 	flip2D(rhs, icx, icy, nc, W0);
@@ -184,9 +181,6 @@ void rotate3D(ConsVars* Sol, double *rhs, double *Sbg, double* buoyS, const enum
 		flip3D_f( Sol->rhoY, icx, icy, icz, nc, W0 );       
         for (int nsp = 0; nsp < ud.nspec; nsp++) {
             flip3D_f(Sol->rhoX[nsp], icx, icy, icz, nc, W0);
-        }
-        for (int nsp = 0; nsp < ud.naux; nsp++) {
-            flip3D_f(Sol->rhoZ[nsp], icx, icy, icz, nc, W0);
         }
 		flip3D_f( Sol->geopot, icx, icy, icz, nc, W0 );       
 		
@@ -451,9 +445,6 @@ void rotate3D(ConsVars* Sol, double *rhs, double *Sbg, double* buoyS, const enum
 		flip3D_b( Sol->rhoY, icx, icy, icz, nc, W0 );       
         for (int nsp = 0; nsp < ud.nspec; nsp++) {
             flip3D_b(Sol->rhoX[nsp], icx, icy, icz, nc, W0);
-        }
-        for (int nsp = 0; nsp < ud.naux; nsp++) {
-            flip3D_b(Sol->rhoZ[nsp], icx, icy, icz, nc, W0);
         }
 		flip3D_b( Sol->geopot, icx, icy, icz, nc, W0 );       
 		

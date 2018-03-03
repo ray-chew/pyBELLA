@@ -52,7 +52,6 @@ void hllestar(
     Fluxes->rhov[0] = Fluxes->rhov[n-2] = Fluxes->rhov[n-1] = 0.0;
     Fluxes->rhow[0] = Fluxes->rhow[n-2] = Fluxes->rhow[n-1] = 0.0;
     Fluxes->rhoe[0] = Fluxes->rhoe[n-2] = Fluxes->rhoe[n-1] = 0.0;
-    Fluxes->rhoZ[PRES][0] = Fluxes->rhoZ[PRES][n-2] = Fluxes->rhoZ[PRES][n-1] = 0.0;
 
     for (nsp = 0; nsp < ud.nspec; nsp++) {
         Fluxes->rhoX[nsp][0] = Fluxes->rhoX[nsp][n-2] = Fluxes->rhoX[nsp][n-1] = 0.0;
@@ -141,6 +140,11 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                       const ConsVars* Sol, 
                       const ElemSpaceDiscr* elem)
 {
+    /* make sure fluxes cannot inadvertently contain weird data */
+    for (int nf=0; nf<elem->nfx; nf++) flux[0]->rhoY[nf] = 0.0;
+    if (elem->ndim>1) for (int nf=0; nf<elem->nfy; nf++) flux[1]->rhoY[nf] = 0.0;
+    if (elem->ndim>2) for (int nf=0; nf<elem->nfz; nf++) flux[2]->rhoY[nf] = 0.0;
+    
     /* recompute advective flux at fixed time level from cell averages */
     switch (elem->ndim) {
         case 1: {
@@ -201,8 +205,6 @@ void update_advective_fluxes(ConsVars* flux[3],
                              const double dt)
 {
     extern User_Data ud;
-    extern double *W0;
-    double *rhs = W0;
     
     /* advective fluxes in adv_flux get updated by increments in flux and
        stored in the latter field
@@ -243,23 +245,5 @@ void update_advective_fluxes(ConsVars* flux[3],
             }
             flux[2]->rhoY[nf] += adv_flux->z[nf];
         }            
-    }
-#if 0
-    extern User_Data ud;
-    double rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
-    printf("rhsmax = %e", rhsmax);
-    FILE *prhs2file = NULL;
-    char fn2[120], fieldname2[90];
-    sprintf(fn2, "%s/rhs_cells/rhs_post.hdf", ud.file_name);
-    sprintf(fieldname2, "rhs_post");
-    WriteHDF(prhs2file, elem->icx, elem->icy, elem->icz, elem->ndim, rhs, fn2, fieldname2);
-    sprintf(fn2, "%s/fluxes/flux_rhoY_x.hdf", ud.file_name);
-    sprintf(fieldname2, "flux_rhoY_x");
-    WriteHDF(prhs2file, elem->ifx, elem->icy, elem->icz, elem->ndim, flux[0]->rhoY, fn2, fieldname2);
-    sprintf(fn2, "%s/fluxes/flux_rhoY_y.hdf", ud.file_name);
-    sprintf(fieldname2, "flux_rhoY_y");
-    WriteHDF(prhs2file, elem->ify, elem->icx, elem->icz, elem->ndim, flux[1]->rhoY, fn2, fieldname2);
-#endif
-    
-    
+    }    
 }

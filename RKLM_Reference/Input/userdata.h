@@ -94,7 +94,6 @@ typedef struct {
 	/* Thermodynamics and chemistry */
 	double gamm;
     double nspec;
-    double naux;
 	double Rg_over_Rv; 
 	double Q; 
 	double Ea;

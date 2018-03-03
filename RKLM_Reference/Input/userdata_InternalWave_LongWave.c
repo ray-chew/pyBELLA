@@ -28,7 +28,8 @@ double rho_function(double psi);
 
 double molly(double x);
 
-static double scalefactor = 8*20.0;   /* 8*20.0; 20.0; 1.0; */
+/* horizontal stretch for S&K94 IGWs: planetary -> 8*20.0;  long-wave -> 20.0;  standard -> 1.0; */
+static double scalefactor = 1.0;   
 
 void User_Data_init(User_Data* ud) {
     
@@ -73,7 +74,6 @@ void User_Data_init(User_Data* ud) {
     
     /* number of advected species */
     ud->nspec       = NSPEC;
-    ud->naux        = NAUX;
 
     /* Low Mach */
     ud->is_compressible   = 1;   /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
@@ -162,7 +162,7 @@ void User_Data_init(User_Data* ud) {
     ud->kY = 1.4;
     ud->kZ = 1.4; /* 2.0 */
         
-    ud->ncache = (ud->inx+3)*(ud->iny+3); /* 71+4; 304*44; 604*44; (ud->inx+3); */
+    ud->ncache = 27; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
     
     /* linear solver-stuff */
     ud->which_projection_first = 1;
@@ -197,25 +197,6 @@ void User_Data_init(User_Data* ud) {
     ud->tout[0] = scalefactor * 3000.0 / ud->t_ref;
     ud->tout[1] = -1.0;
 
-    /* output times  
-    ud->tout[0] = scalefactor *  500.0 / ud->t_ref;
-    ud->tout[1] = scalefactor * 1000.0 / ud->t_ref;
-    ud->tout[2] = scalefactor * 2000.0 / ud->t_ref;
-    ud->tout[3] = scalefactor * 3000.0 / ud->t_ref;
-    ud->tout[4] = -1.0;
-     */
-    /*
-    ud->tout[0] = scalefactor *  500.0 / ud->t_ref;
-    ud->tout[1] = scalefactor * 1000.0 / ud->t_ref;
-    ud->tout[2] = scalefactor * 1500.0 / ud->t_ref;
-    ud->tout[3] = scalefactor * 2000.0 / ud->t_ref;
-    ud->tout[4] = scalefactor * 3000.0 / ud->t_ref;
-    ud->tout[5] = scalefactor * 4000.0 / ud->t_ref;
-    ud->tout[6] = scalefactor * 5000.0 / ud->t_ref;
-    ud->tout[7] = scalefactor * 6000.0 / ud->t_ref;
-    ud->tout[8] = scalefactor * 7000.0 / ud->t_ref;
-    ud->tout[9] = -1.0;
-    */
     ud->stepmax = 10000;
     
     ud->write_stdout = ON;
@@ -243,7 +224,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     extern Thermodynamic th;
     extern User_Data ud;
     extern MPV* mpv;
-    extern double *W0, *W1, *Sbg;
+    extern double *Sbg;
     
     const int compressible = (ud.is_compressible == 0 ? 0 : 1);
     
@@ -346,11 +327,6 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
         for(i = 0; i < icx; i++) {n = m + i;
             Sol->geopot[n] = g * y;
         }
-    }
-    
-    /* put p2_cells into Z for intermediate storage */
-    for(i=0; i<elem->nc; i++) {
-        Sol->rhoZ[PRES][i]  = mpv->p2_cells[i];
     }
 }
 
