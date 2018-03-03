@@ -35,6 +35,7 @@
 /* 
  */
 #define NO_PI_SYNC
+#define NONLINEAR_EOS_IN_1st_PROJECTION
 
 /* ============================================= 
  Elliptic Solver Options

@@ -63,6 +63,16 @@ static void flux_correction_due_to_pressure_gradients(
 													  const double dt,
 													  const double implicitness);
 
+#ifdef NONLINEAR_EOS_IN_1st_PROJECTION
+double Newton_rhs(double* rhs,
+                  const double* dpi,
+                  const double* pi,
+                  const double* rhoY0,
+                  const MPV* mpv,
+                  const ElemSpaceDiscr* elem);
+
+#endif
+
 /* ========================================================================== */
 
 #if 0
@@ -92,11 +102,14 @@ void flux_correction(ConsVars* flux[3],
 	
 	double* rhs          = mpv->Level[0]->rhs;
 	double* p2		     = mpv->Level[0]->p;
+    double* pi           = (double*)malloc(elem->nc*sizeof(double));
         
     double rhsmax;
     
 	int n;
-        
+    
+    for (int nc=0; nc<elem->nc; nc++) pi[nc] = 0.0;
+    
     printf("\n\n====================================================");
     printf("\nFirst Projection");
     printf("\n====================================================\n");
@@ -107,11 +120,19 @@ void flux_correction(ConsVars* flux[3],
     printf("\nrhs_max = %e\n", rhsmax);
 
     assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
+#ifdef NONLINEAR_EOS_IN_1st_PROJECTION
     if (ud.is_compressible) {
         for (int nc=0; nc<elem->nc; nc++) {
             rhs[nc] += hcenter[nc]*mpv->p2_cells[nc];
         }
     }
+#else
+    if (ud.is_compressible) {
+        for (int nc=0; nc<elem->nc; nc++) {
+            rhs[nc] += hcenter[nc]*mpv->p2_cells[nc];
+        }
+    }
+#endif
     
     rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
     
@@ -147,10 +168,40 @@ void flux_correction(ConsVars* flux[3],
 #endif
 
     
-    /**/
+    /* Newton iteration for the nonlinear equation of state rhoY = P(\pi) = \pi^{gamma-1} 
+     The first sweep computes the half time level Exner pressure based on the linearization
+     of P(.). The further iterates yield updates to this quantity until convergence 
+     tolerance is reached.
+     */
     variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, Sol, elem, node, implicitness);
     set_ghostcells_p2(p2, (const double **)hplus, elem, elem->igx);
 
+#ifdef NONLINEAR_EOS_IN_1st_PROJECTION
+    /* Nonlinear iteration for the \partial P/\partial t  term in the P-equation */
+    ud.flux_correction_precision       *= 1e-5;
+    ud.flux_correction_local_precision *= 1e-5;
+    for (int nc=0; nc<elem->nc; nc++) {
+        pi[nc]  = p2[nc];
+        p2[nc] -= mpv->p2_cells[nc];        
+    }
+    rhsmax = Newton_rhs(rhs, (const double*)p2, (const double*)pi, (const double*)Sol->rhoY, (const MPV*)mpv, (const ElemSpaceDiscr*)elem);
+
+    while (rhsmax > ud.flux_correction_precision) {
+        variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, Sol, elem, node, implicitness);
+        set_ghostcells_p2(p2, (const double **)hplus, elem, elem->igx);
+        for (int nc=0; nc<elem->nc; nc++) pi[nc] += p2[nc];
+        rhsmax = Newton_rhs(rhs, (const double*)p2, (const double*)pi, (const double*)Sol->rhoY, (const MPV*)mpv, (const ElemSpaceDiscr*)elem);
+    }
+
+    for (int nc=0; nc<elem->nc; nc++) {
+        p2[nc] = pi[nc];        
+    }
+    ud.flux_correction_precision       *= 1e+5;
+    ud.flux_correction_local_precision *= 1e+5;
+#endif
+
+    
+    
     /* Note: flux will contain only the flux-correction after this routine; 
      it is thus overwritten under the SI_MIDPT time integration sequence */
     flux_correction_due_to_pressure_gradients(flux, buoy, elem, Sol, Sol0, mpv, hplus, hS, p2, t, dt, implicitness);
@@ -175,11 +226,6 @@ void flux_correction(ConsVars* flux[3],
        The sum in the bracket is a divergence-controlled flux, while the 
        subtracted flux from the first sequence will make up for the ``bad guess''
        of the flux divergence in the explicity advection cycle.
-     */
-    /*
-    for (int ii=0; ii<elem->nfx; ii++) flux[0]->rhoY[ii] += adv_flux_diff->x[ii];
-    if (elem->ndim > 1) for (int ii=0; ii<elem->nfy; ii++) flux[1]->rhoY[ii] += adv_flux_diff->y[ii];
-    if (elem->ndim > 2) for (int ii=0; ii<elem->nfz; ii++) flux[2]->rhoY[ii] += adv_flux_diff->z[ii];
      */
 
 #if 0
@@ -208,6 +254,8 @@ void flux_correction(ConsVars* flux[3],
     }
     
 	set_ghostcells_p2(mpv->p2_cells, (const double **)hplus, elem, elem->igx);
+    
+    free(pi);
 }
 
 
@@ -987,10 +1035,51 @@ void update_SI_MIDPT_buoyancy(ConsVars* Sol,
         default:
             break;
     }
-    
-    
 }
 
+#ifdef NONLINEAR_EOS_IN_1st_PROJECTION
+double Newton_rhs(double* rhs,
+                  const double* dpi,
+                  const double* pi,
+                  const double* rhoY0,
+                  const MPV* mpv,
+                  const ElemSpaceDiscr* elem)
+{
+    extern User_Data ud;
+    extern Thermodynamic th;
+    
+    double rhsmax = 0.0;
+    
+    const double cc1  = 4.0/(mpv->dt*mpv->dt);
+    const double cc2  = cc1*ud.Msq*th.gm1inv; 
+    const double cexp = 2.0-th.gamm;
+    
+    const int icx = elem->icx;
+    const int igx = elem->igx;
+    const int icy = elem->icy;
+    const int igy = elem->igy;
+    const int icz = elem->icz;
+    const int igz = elem->igz;
+    
+    for (int k=igz; k < icz-igz ; k++) {
+        int lc = k*icx*icy;
+        for (int j=igy; j < icy-igy ; j++) {
+            int mc = lc+j*icx;
+            for (int i=igx; i < icx-igx ; i++) {
+                int nc = mc + i;
+                double pexn = ud.Msq*(mpv->HydroState->p20[j]+pi[nc]);
+                double pexo = ud.Msq*(mpv->HydroState->p20[j]+pi[nc]-dpi[nc]);
+                double rhoYn = pow(pexn,th.gm1inv);
+                double rhoYo = pow(pexo,th.gm1inv);
+                rhs[nc] = cc1*(rhoYn - rhoYo) - cc2*pow(rhoYn,cexp)*dpi[nc];
+                rhsmax  = MAX_own(rhsmax, fabs(rhs[nc]));
+            }
+        }
+    }
+    
+    return rhsmax;
+}
+#endif
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log:$
