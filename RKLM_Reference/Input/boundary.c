@@ -244,7 +244,6 @@ void Bound(
         extern Thermodynamic th;
         extern ElemSpaceDiscr* elem;
         const double g = ud.gravity_strength[SplitStep];
-		const double M_LH_sq = ud.Msq;
         const int compressible = ud.is_compressible;
 		
         double dh = elem->dx;   /* it is "dx" because Bound() is called during OPSPLIT steps; */
@@ -650,7 +649,6 @@ static void dirichlet_min(ConsVars* Sol, const int njk, const int i)
 	double p_outer   = mpv->HydroState->p0[j];
 	double rho_outer = mpv->HydroState->rho0[j];
 	double S2_outer  = mpv->HydroState->Y0[j];
-	double p2_outer  = mpv->HydroState->p20[j];
 	double u_outer   = velo_background(t);
 	
 	nijk    = njk + elem->igx-1 - i;
@@ -677,7 +675,6 @@ static void dirichlet_max(ConsVars* Sol, const int njk, const int i)
 	double p_outer   = mpv->HydroState->p0[j];
 	double rho_outer = mpv->HydroState->rho0[j];
 	double S2_outer  = mpv->HydroState->Y0[j];
-	double p2_outer  = mpv->HydroState->p20[j];
 	double u_outer   = velo_background(t);
 	
 	nijk = njk + i;
@@ -881,7 +878,6 @@ void check_flux_bcs(
 						double p   = mpv->HydroState->p0[jfull];
 						double y   = elem->y[jfull];
 						double S2  = mpv->HydroState->Y0[jfull];
-						double p2  = mpv->HydroState->p20[jfull];
 						
 						Rights->rho[i]  = Lefts->rho[i-1]  = rho;
 						Rights->rhou[i] = Lefts->rhou[i-1] = rho * ud.wind_speed;
@@ -924,7 +920,6 @@ void check_flux_bcs(
 						double p   = mpv->HydroState->p0[jfull];
 						double y   = elem->y[jfull];
 						double S2  = mpv->HydroState->Y0[jfull];
-						double p2  = mpv->HydroState->p20[jfull];
 						
 						Lefts->rho[i-1]  = Rights->rho[i]  = rho;
 						Lefts->rhou[i-1] = Rights->rhou[i] = rho * ud.wind_speed;

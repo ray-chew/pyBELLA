@@ -70,7 +70,6 @@ double SOLVER(
               const ConsVars* Sol,
               const MPV* mpv,
               const double dt,
-              const double theta,
               double* rhs,
               double* p2);
 #endif

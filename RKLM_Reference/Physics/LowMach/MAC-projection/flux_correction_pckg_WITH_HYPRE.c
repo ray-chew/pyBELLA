@@ -60,8 +60,7 @@ static void flux_correction_due_to_pressure_gradients(
                                                       double* hS,
 													  double* dp2,
 													  const double t,
-													  const double dt,
-													  const double implicitness);
+													  const double dt);
 
 #ifdef NONLINEAR_EOS_IN_1st_PROJECTION
 double Newton_rhs(double* rhs,
@@ -87,7 +86,6 @@ void flux_correction(ConsVars* flux[3],
 					 ConsVars* Sol0, 
 					 const double t,
 					 const double dt,
-					 const double implicitness,
                      const int step) {
 	
     extern User_Data ud;
@@ -165,7 +163,7 @@ void flux_correction(ConsVars* flux[3],
      of P(.). The further iterates yield updates to this quantity until convergence 
      tolerance is reached.
      */
-    variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, Sol, elem, node, implicitness);
+    variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, Sol, elem, node);
     set_ghostcells_p2(p2, (const double **)hplus, elem, elem->igx);
 
 #ifdef NONLINEAR_EOS_IN_1st_PROJECTION
@@ -180,7 +178,7 @@ void flux_correction(ConsVars* flux[3],
     rhsmax = Newton_rhs(rhs, (const double*)p2, (const double*)pi, (const double*)Sol->rhoY, (const MPV*)mpv, (const ElemSpaceDiscr*)elem);
 
     while (rhsmax > ud.flux_correction_precision) {
-        variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, Sol, elem, node, implicitness);
+        variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, Sol, elem, node);
         set_ghostcells_p2(p2, (const double **)hplus, elem, elem->igx);
         for (int nc=0; nc<elem->nc; nc++) pi[nc] += p2[nc];
         rhsmax = Newton_rhs(rhs, (const double*)p2, (const double*)pi, (const double*)Sol->rhoY, (const MPV*)mpv, (const ElemSpaceDiscr*)elem);
@@ -197,7 +195,7 @@ void flux_correction(ConsVars* flux[3],
     
     /* Note: flux will contain only the flux-correction after this routine; 
      it is thus overwritten under the SI_MIDPT time integration sequence */
-    flux_correction_due_to_pressure_gradients(flux, buoy, elem, Sol, Sol0, mpv, hplus, hS, p2, t, dt, implicitness);
+    flux_correction_due_to_pressure_gradients(flux, buoy, elem, Sol, Sol0, mpv, hplus, hS, p2, t, dt);
     
 #if 0
     sprintf(fn2, "%s/Tests/frhoY_y_post.hdf", ud.file_name);
@@ -420,10 +418,7 @@ void operator_coefficients(
 	
     const double Gammainv = th.Gammainv;
 	const int ndim = elem->ndim;
-	
-    const int impl_grav_th = ud.implicit_gravity_theta;
-    
-	const double implicitness = ud.implicitness;
+	    
     const double ccw = (ud.time_integrator == SI_MIDPT ? 4.0 : 2.0); 
     /* when p2 is perturbation pressure:
      const double ccenter = - ccw * (ud.compressibility*ud.Msq)*th.gamminv/(mpv->dt*mpv->dt); 
@@ -473,7 +468,7 @@ void operator_coefficients(
                     him   = Sol->rhoY[icm] * Sol->rhoY[icm] / Sol->rho[icm] * Gammainv;
 #endif
                     
-					hx[n] = 0.5 * (hi + him) * implicitness;
+					hx[n] = 0.5 * (hi + him);
                     
 					assert(hx[n] > 0.0);
 				}
@@ -503,12 +498,11 @@ void operator_coefficients(
                     double Y     = 0.5 * (Sol->rhoY[jc]  / Sol->rho[jc]  + Sol0->rhoY[jc]  / Sol0->rho[jc]);
                     double Ym    = 0.5 * (Sol->rhoY[jcm] / Sol->rho[jcm] + Sol0->rhoY[jcm] / Sol0->rho[jcm]);
                     double Nsq   = - (g/Msq) * 0.5*(Y+Ym) * (S-Sm)/dy;
-                    /* double Nsqsc = impl_grav_th*0.5*dt*dt*Nsq; */
-                    double Nsqsc = impl_grav_th*0.25*dt*dt*Nsq;
+                    double Nsqsc = 0.25*dt*dt*Nsq;
                      
                     gimp  = 1.0 / (1.0 + Nsqsc);
                     
-					hy[m] = 0.5 * (hj + hjm) * implicitness * gimp;
+					hy[m] = 0.5 * (hj + hjm) * gimp;
                     hS[m] = Nsqsc * gimp * Gammainv / (g/Msq) / Y;
                                         
 					assert(hy[m] > 0.0);
@@ -563,7 +557,7 @@ void operator_coefficients(
 					
                         /* optional with new time level data only as in 2D part of routine ... */
 
-                        hx[n] = 0.5 * (hi + him) * implicitness;
+                        hx[n] = 0.5 * (hi + him);
                         assert(hx[n] > 0.0);
                     }
                 }
@@ -589,9 +583,9 @@ void operator_coefficients(
                         double Ym  = 0.5 * (Sol->rhoY[jcm] / Sol->rho[jcm] + Sol0->rhoY[jcm] / Sol0->rho[jcm]);
                         double Nsq = - (g/Msq) * 0.5*(Y+Ym) * (S-Sm)/dy;
                         
-                        gimp  = 1.0 / (1.0 + impl_grav_th*0.5*dt*dt*Nsq);
+                        gimp  = 1.0 / (1.0 + 0.5*dt*dt*Nsq);
                     
-                        hy[n] = 0.5 * (hj + hjm) * implicitness * gimp;
+                        hy[n] = 0.5 * (hj + hjm) * gimp;
                         
                         assert(hy[n] > 0.0);
                     }
@@ -612,7 +606,7 @@ void operator_coefficients(
 
                         /* optional with new time level data only as in 2D part of routine ... */
                     
-                        hz[n] = 0.5 * (hk + hkm) * implicitness;
+                        hz[n] = 0.5 * (hk + hkm);
                         assert(hz[n] > 0.0); 
                     }
                 }
@@ -646,8 +640,7 @@ static void flux_correction_due_to_pressure_gradients(
                                                       double* hS,
                                                       double* dp2,
                                                       const double t,
-                                                      const double dt,
-                                                      const double implicitness) {
+                                                      const double dt) {
     
     extern User_Data ud;
     
@@ -668,8 +661,8 @@ static void flux_correction_due_to_pressure_gradients(
             const int icy = elem->icy;
             const int ify = elem->ify;
             
-            const double dto2dx = implicitness * 0.5 * dt / elem->dx;
-            const double dto2dy = implicitness * 0.5 * dt / elem->dy;
+            const double dto2dx = 0.5 * dt / elem->dx;
+            const double dto2dy = 0.5 * dt / elem->dy;
             
             ConsVars* f = flux[0];
             ConsVars* g = flux[1];
@@ -724,9 +717,9 @@ static void flux_correction_due_to_pressure_gradients(
             const int icz = elem->icz;
             const int ifz = elem->ifz;
             
-            const double dto2dx = implicitness * 0.5 * dt / elem->dx;
-            const double dto2dy = implicitness * 0.5 * dt / elem->dy;
-            const double dto2dz = implicitness * 0.5 * dt / elem->dz;
+            const double dto2dx = 0.5 * dt / elem->dx;
+            const double dto2dy = 0.5 * dt / elem->dy;
+            const double dto2dz = 0.5 * dt / elem->dz;
             
             const int dix = 1;
             const int diy = icx; 
@@ -839,7 +832,6 @@ static void rhs_fix_for_open_boundaries(
 	extern User_Data ud;
 	
 	const States* HydroState = mpv->HydroState;
-	const double implicitness = 0.5*ud.implicitness;
 	
 	double** hplus       = mpv->Level[0]->wplus;
 	
@@ -857,7 +849,7 @@ static void rhs_fix_for_open_boundaries(
 				
 			case 2: {
 				
-				const double factor = 1.0 / (implicitness * elem->dx * dt);
+				const double factor = 1.0 / (elem->dx * dt);
 				
 				const int igx = elem->igx;
 				const int icx = elem->icx;

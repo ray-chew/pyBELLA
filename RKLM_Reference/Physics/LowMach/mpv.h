@@ -41,9 +41,6 @@ typedef struct {
 
 typedef struct {
 	
-    int max_no_of_levels;
-    int no_of_levels;
-    
 	double p0;
 	double p00;
     double *p2_cells;    
@@ -82,8 +79,6 @@ void initialize_MG_projection(
 							  const double y1, 
 							  const double z0, 
 							  const double z1,
-							  const int max_no_of_levels,
-							  const int no_of_levels,
 							  const enum BdryType left, 
 							  const enum BdryType right, 
 							  const enum BdryType bottom, 
@@ -98,10 +93,7 @@ void initialize_HydroState(
 						   int nc,
                            int nn);
 
-MPV* MPV_new(
-			 const int max_no_of_levels, 
-			 const int no_of_levels, 
-			 const Grid* base_grid);
+MPV* MPV_new(const Grid* base_grid);
 
 void MPV_free(
 			  MPV* var);

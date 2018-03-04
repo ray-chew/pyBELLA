@@ -180,7 +180,7 @@ TimeStepInfo dynamic_timestep(
         dt_cfl = MIN_own(dt_cfl, dty);
         dt_cfl = MIN_own(dt_cfl, dtz);
         
-        dt  = MIN_own(dt_cfl, ud.dtfixed0 + MIN_own(step, ud.no_of_steps_to_dtfixed) * (ud.dtfixed - ud.dtfixed0) / ud.no_of_steps_to_dtfixed);
+        dt  = MIN_own(dt_cfl, ud.dtfixed0 + MIN_own(step, 1) * (ud.dtfixed - ud.dtfixed0));
         
         if (2.0*dt > time_output - time) {
             dt = 0.5 * (time_output - time) + ud.eps_Machine;
@@ -203,9 +203,9 @@ TimeStepInfo dynamic_timestep(
         dt_cfl  = MIN_own(dt_cfl, dty);
         dt_cfl  = MIN_own(dt_cfl, dtz);
         
-        dt  = MIN_own(dt_cfl, ud.dtfixed0 + MIN_own(step, ud.no_of_steps_to_dtfixed) * (ud.dtfixed - ud.dtfixed0) / ud.no_of_steps_to_dtfixed);
+        dt  = MIN_own(dt_cfl, ud.dtfixed0 + MIN_own(step, 1) * (ud.dtfixed - ud.dtfixed0));
         
-        dt *= MIN_own((float)(step+1) / (float)(ud.no_of_steps_to_CFL), 1.0);
+        dt *= MIN_own((float)(step+1), 1.0);
         
         if (2.0*dt > time_output - time) {
             dt = 0.5 * (time_output - time) + ud.eps_Machine;

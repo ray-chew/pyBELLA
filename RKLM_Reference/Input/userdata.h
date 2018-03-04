@@ -50,8 +50,6 @@ typedef struct {
 	double tout[20];
     double dtfixed0;
 	double dtfixed;
-    int no_of_steps_to_CFL;
-    int no_of_steps_to_dtfixed;
     enum TimeIntegrator time_integrator;
     TimeIntegratorParams tips;
 
@@ -112,28 +110,18 @@ typedef struct {
 	double gravity_strength[3];
 	int i_gravity[3];
 	int gravity_direction;
-    int implicit_gravity_theta;
-    int implicit_gravity_theta2;
 
     double coriolis_strength[3];
 	int i_coriolis[3];
 	int coriolis_direction;
     
 	/* linear solver stuff */
-    int which_projection_first;
-	enum SolverType Solver;
-	enum SolverType Solver_Node;
-    enum Boolean precondition;
 	double flux_correction_precision;
 	double flux_correction_local_precision;
 	double second_projection_precision;
 	double second_projection_local_precision;
-	double implicitness;
 	int flux_correction_max_iterations;
 	int second_projection_max_iterations;
-	int flux_correction_max_MG_cycles;
-	int flux_correction_output_period;
-	int max_projection_iterations;
 	
 	/* Multigrid */
 	int max_no_of_multigrid_levels;

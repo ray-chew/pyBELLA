@@ -65,15 +65,15 @@
 
 /* First projection options */
 /*
- #define TIME_AVERAGED_COEFFS_PROJ1 
+ #define TIME_AVERAGED_COEFFS_PROJ1   if def'd Poisson coefficients avrged between old & new time  
 */
 
-#define PROJECTION1 1
+#define PROJECTION1 1              /* switch for first projection should be on "1" normally       */
 
 /* Second projection options */
-#define PROJECTION2 1
-#define DIV_CONTROL_LOCAL
-#define P2_FULL_STENCIL 1.0 /* 0.0, 1.0 */
-#define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0 */
+#define PROJECTION2 1              /* switch for second projection should be on "1" normally      */
+#define DIV_CONTROL_LOCAL          /* if def'd, div is controlled in L_\infty, otherwise in L2    */
+#define P2_FULL_STENCIL 1.0        /* values: 0.0, 1.0;  0.0 = 5/7pt stencil,  1.0=9/27pt stencil */
+#define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
 
 #include <assert.h> 

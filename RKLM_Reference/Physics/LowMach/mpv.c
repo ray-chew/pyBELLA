@@ -26,8 +26,6 @@ void initialize_MG_projection(
 							  const double y1, 
 							  const double z0, 
 							  const double z1,
-							  const int max_no_of_levels,
-							  const int no_of_levels,
 							  const enum BdryType left, 
 							  const enum BdryType right, 
 							  const enum BdryType bottom, 
@@ -37,23 +35,13 @@ void initialize_MG_projection(
 {
 	/* allocate multigrid structure for first and second projections */
     Grid* grid;
-	int maximum_coarsening, ici_x, ici_y, ici_z, i, nc, nn;
-	
-    ici_x = inx-1;
-    ici_y = iny-1;
-    ici_z = inz-1;
-    
-    /* maximum_coarsening = integer_power(2,max_no_of_levels-1); */
-    maximum_coarsening = 1;
-    assert(ici_x%maximum_coarsening == 0);
-    assert(ici_y%maximum_coarsening == 0);
-    assert(ici_z%maximum_coarsening == 0);
-	
+	int i, nc, nn;
+    	
     grid = Grid_new(inx, iny, inz, 
                     x0, x1, y0, y1, z0, z1, 
                     left, right, bottom, top, back, front); 
 	
-    mpv = MPV_new(max_no_of_levels, no_of_levels, grid);
+    mpv = MPV_new(grid);
     Grid_free(grid); 
 	
 	nc = mpv->Level[0]->elem->nc;	
@@ -134,23 +122,12 @@ void initialize_HydroState(
 
 /* ========================================================================== */
 
-MPV* MPV_new(
-			 const int max_no_of_levels, 
-			 const int no_of_levels, 
-			 const Grid* base_grid)
-{
-    int l;
-	
+MPV* MPV_new(const Grid* base_grid)
+{	
     MPV* mpv=(MPV*)malloc(sizeof(MPV));
-    
-    mpv->max_no_of_levels = max_no_of_levels;
-    mpv->no_of_levels     = no_of_levels;
-    
-    mpv->Level=(LowMachMGLevel**)malloc(max_no_of_levels*sizeof(LowMachMGLevel*));
-	
-    for(l = 0; l < max_no_of_levels; l++) {
-		mpv->Level[l] = LowMachMGLevel_new(l, base_grid);
-    }
+        
+    mpv->Level    = (LowMachMGLevel**)malloc(sizeof(LowMachMGLevel*));
+    mpv->Level[0] = LowMachMGLevel_new(0, base_grid);
 	
     return(mpv);
 }
@@ -243,12 +220,8 @@ LowMachMGLevel* LowMachMGLevel_new(const int level, const Grid* base_grid)
 /* ========================================================================== */
 
 void MPV_free(MPV* var)
-{
-    int l;
-    
-    for(l = 0; l < var->no_of_levels; l++) {
-		LowMachMGLevel_free(var->Level[l]);
-    }
+{    
+    LowMachMGLevel_free(var->Level[0]);
 	
     free(var);
 }

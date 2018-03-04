@@ -95,12 +95,6 @@ enum LimiterType {
     NO_SLOPE,
     NUMBER_OF_LIMITER};
 
-enum SolverType {
-    JACOBI,
-	BICGSTAB, 
-    BICGSTAB_PRECON};
-
-
 enum ToWhichEdge {
     TO_THE_RIGHT,
     TO_THE_LEFT};

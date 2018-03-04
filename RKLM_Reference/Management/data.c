@@ -155,8 +155,6 @@ void Data_init() {
 		initialize_MG_projection(
 								 inx,iny,inz,
 								 x0, x1, y0, y1, z0, z1,
-								 ud.max_no_of_multigrid_levels,
-								 ud.no_of_multigrid_levels,
 								 left,right,bottom,top,back,front);
 	}
 	

@@ -415,7 +415,6 @@ void EnthalpyWeightedLap_bilinear_p(
                                     const ConsVars* Sol,
                                     const MPV* mpv, 
                                     const double dt,
-                                    const double theta,
                                     double* lap) {
     
     const int ndim = elem->ndim;

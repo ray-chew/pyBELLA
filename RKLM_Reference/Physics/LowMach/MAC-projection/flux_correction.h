@@ -33,7 +33,6 @@ void flux_correction(ConsVars* flux[3],
 					 ConsVars* Sol0, 
 					 const double t,
 					 const double dt,
-					 const double theta,
                      const int step);
 
 void operator_coefficients(double* hplus[3], 

@@ -529,9 +529,7 @@ static void operator_coefficients_nodes(
     const double Gammainv = th.Gammainv;
     
     const int ndim = node->ndim;
-    
-    const int impl_grav_th2 = ud.implicit_gravity_theta2;
-                
+                    
 	switch(ndim) {
 		case 1: {    
 			ERROR("interface_enthalpy_nodes() not implemented for 1D\n");
@@ -579,7 +577,7 @@ static void operator_coefficients_nodes(
 
                     /* TODO: first factor 0.25 or 0.5 ? */
                     double Nsqsc = 0.25*dt*dt * (g/Msq) * strat;                    
-                    double gimpy = 1.0 / (1.0 + impl_grav_th2*Nsqsc);
+                    double gimpy = 1.0 / (1.0 + Nsqsc);
                                         
                     hplusx[n]    = coeff;
                     hplusy[n]    = coeff * gimpy;
@@ -633,7 +631,7 @@ static void operator_coefficients_nodes(
                              */
                             /* TODO: first factor 0.25 or 0.5 ? */
                             double Nsqsc = - 0.25*dt*dt * (g/Msq) * 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]) * dSdy;                    
-                            double gimpy = 1.0 / (1.0 + impl_grav_th2*Nsqsc);
+                            double gimpy = 1.0 / (1.0 + Nsqsc);
                             
                             hplusx[n]  = coeff;
                             hplusy[n]  = coeff * gimpy;

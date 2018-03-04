@@ -80,7 +80,6 @@ double SOLVER(
               const ConsVars* Sol,
               const MPV* mpv,
               const double dt,
-              const double theta,
               double* rhs,
               double* p2) {
     
@@ -118,7 +117,7 @@ double SOLVER(
     /* initialization */
     /* initial residual; intermediate abuse of the field */
     set_ghostcells_p2(p2, hplus, elem, 1);
-    EnthalpyWeightedLap_bilinear_p(elem, node, p2, hplus, hcenter, Sol, mpv, dt, theta, r_0);
+    EnthalpyWeightedLap_bilinear_p(elem, node, p2, hplus, hcenter, Sol, mpv, dt, r_0);
     
     precon_c_invert(rhs, rhs, elem);
     
@@ -134,7 +133,7 @@ double SOLVER(
     
     /* initialization of iteration coefficients; residual norm */
     set_ghostcells_p2(r_0, hplus, elem, 1);
-    EnthalpyWeightedLap_bilinear_p(elem, node, r_0, hplus, hcenter, Sol, mpv, dt, theta, Lr_0);
+    EnthalpyWeightedLap_bilinear_p(elem, node, r_0, hplus, hcenter, Sol, mpv, dt, Lr_0);
     
     /* norm of residuum */
     tmp = 0.0;
@@ -216,7 +215,7 @@ double SOLVER(
         
         /* AB */
         set_ghostcells_p2(r_0, hplus, elem, 1);
-        EnthalpyWeightedLap_bilinear_p(elem, node, r_0, hplus, hcenter, Sol, mpv, dt, theta, Lr_0);
+        EnthalpyWeightedLap_bilinear_p(elem, node, r_0, hplus, hcenter, Sol, mpv, dt, Lr_0);
         
         AB = 0.0;
         for(k = igz; k < icz - igz; k++) {l = k * icx * icy;

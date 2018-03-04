@@ -74,7 +74,6 @@ int main( void )
 	int output_switch = 0;
 	int time_step_switch = 0;
     int stage;
-    int which_projection = ud.which_projection_first;
          
     const double stepfrac[] = {1.0, 1.0, 1.0, 1.0};
         
@@ -112,7 +111,6 @@ int main( void )
     mpv->dt = dt;
 
     ConsVars_set(Sol0, Sol, elem->nc);
-    which_projection = 1;
 
 	/* Main loop over the sequence of time values of tout */
 	while(t < *tout && step < ud.stepmax) {
@@ -205,7 +203,7 @@ int main( void )
             /* divergence-controlled advective fluxes at the half time level */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
             store_advective_fluxes(adv_flux, (const ConsVars**)flux, elem);
-            flux_correction(flux, adv_flux_diff, buoy, elem, Sol, Sol0, t, dt, ud.implicitness, step);                
+            flux_correction(flux, adv_flux_diff, buoy, elem, Sol, Sol0, t, dt, step);                
             update_advective_fluxes(flux, (const VectorField*)adv_flux, elem, node, dt);    
 #if OUTPUT_SUBSTEPS  /* 6 */
             putout(Sol, t, *tout , step, 0, ud.file_name, "Sol", 1);

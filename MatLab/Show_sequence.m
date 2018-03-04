@@ -2,6 +2,9 @@
 % distribution loaded directly from the .hdf-file for
 % the Bryan-Bubble-output
 
+% Hint: 
+% saving figures as .eps:     print(gcf, 'TestPlot', '-depsc');
+
 %modelstr = '';
 modelstr = 'comp';
 %modelstr = 'psinc';

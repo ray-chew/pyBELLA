@@ -22,27 +22,24 @@
 #include "memory.h"
 #include "Hydrostatics.h"
 
-double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma);
-
-double rho_function(double psi);
-
+/* mollification function used in the Skamarock-Klemp 1994 tests for theta perturbations */
 double molly(double x);
 
-/* horizontal stretch for S&K94 IGWs: planetary -> 8*20.0;  long-wave -> 20.0;  standard -> 1.0; */
+/* horizontal stretch for S&K94 IGWs: planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0; */
 static double scalefactor = 1.0;   
 
 void User_Data_init(User_Data* ud) {
     
-    int i, max_no_of_levels; 
+    int i; 
     
     /* ================================================================================== */
     /* =====  PROBLEM SET UP  =========================================================== */
     /* ================================================================================== */
     
     /* Earth */
-    double grav     = 9.81;             /* [m/s^2]                */
-    double omega    = 0.0*0.0001;     /* 1.454 */
-    /* double omega  = sin(0.5*PI) * 2.0 * 0.00007272205217;   */
+    double grav     = 9.81;             /* gravitational acceleration [m/s^2]    */
+    double omega    = 0.0*0.0001;       /* Coriolis parameter [1/s]              */
+                                        /* sin(0.5*PI) * 2.0 * 0.00007272205217; */
     
     /* thermodynamics and chemistry */
     double R_gas    = 287.4;            /* [J/kg/K]               */
@@ -56,16 +53,17 @@ void User_Data_init(User_Data* ud) {
     double T_ref    = 300.00;                /* [K]               */
     double p_ref    = 10e+5;                 /* [Pa]              */
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
-    /* double rho_ref = p_ref / (R_gas*T_ref); [kg/m^3]          */
+    double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
     
-    /* reference stratification */
-    double Nsq_ref  = 1.0e-4;           /* [1/s^2]                */
+    /* reference stratification as (buoyancy frequency)^2 */
+    double Nsq_ref  = 1.0e-4;                /* [1/s^2]           */
     
     ud->h_ref       = h_ref;
     ud->t_ref       = t_ref;
     ud->T_ref       = T_ref;
     ud->p_ref       = p_ref;
     ud->u_ref       = u_ref;
+    ud->rho_ref     = rho_ref;
     ud->Nsq_ref     = Nsq_ref;
     ud->g_ref       = grav;
     ud->gamm        = gamma;
@@ -76,8 +74,8 @@ void User_Data_init(User_Data* ud) {
     ud->nspec       = NSPEC;
 
     /* Low Mach */
-    ud->is_compressible   = 1;   /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
-    ud->acoustic_timestep = 0; /* 0;  1; */
+    ud->is_compressible   = 1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->acoustic_timestep = 0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
     
     /* geo-stuff */
@@ -101,10 +99,7 @@ void User_Data_init(User_Data* ud) {
             ud->i_coriolis[i] = 1;
         }
     }
-    
-    ud->implicit_gravity_theta  = 1;
-    ud->implicit_gravity_theta2 = 1;
-    
+        
     /* flow domain */
     ud->xmin = -15.0 * scalefactor;
     ud->xmax =  15.0 * scalefactor;
@@ -133,12 +128,10 @@ void User_Data_init(User_Data* ud) {
     /* ================================================================================== */
     
     /* time discretization */
-    ud->time_integrator        = SI_MIDPT; /*OP_SPLIT, OP_SPLIT_MD_UPDATE, SI_MIDPT */
+    ud->time_integrator        = SI_MIDPT; /* this code version has only one option */
     ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
     ud->dtfixed0               = scalefactor*30.0 / ud->t_ref;
     ud->dtfixed                = scalefactor*30.0 / ud->t_ref;
-    ud->no_of_steps_to_CFL     = 1;
-    ud->no_of_steps_to_dtfixed = 1;
     
     set_time_integrator_parameters(ud);
     
@@ -162,30 +155,17 @@ void User_Data_init(User_Data* ud) {
     ud->kY = 1.4;
     ud->kZ = 1.4; /* 2.0 */
         
-    ud->ncache = 27; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
+    /* al explicit predictor operations are done on ncache-size data worms to save memory */ 
+    ud->ncache = 75; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
     
     /* linear solver-stuff */
-    ud->which_projection_first = 1;
-    ud->Solver = BICGSTAB_PRECON;        /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
-    ud->Solver_Node = BICGSTAB_PRECON;   /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
-    ud->precondition = CORRECT;
-    double tol = 1.e-10;
-    ud->flux_correction_precision = tol;
-    ud->flux_correction_local_precision = tol;   /* 1.e-05 should be enough */
-    ud->second_projection_precision = tol;
-    ud->second_projection_local_precision = tol;   /* 1.e-05 should be enough */
-    ud->implicitness = 1.0;
-    ud->flux_correction_max_MG_cycles = 100;
-    ud->flux_correction_output_period = 50;
-    ud->max_projection_iterations = 1;
-    ud->flux_correction_max_iterations = 6000;
-    ud->second_projection_max_iterations = 6000;
-    
-    
-    /* Code could do geometric multigrid some time ago; that's no longer true. Therefore ... */
-    max_no_of_levels = 1;
-    ud->max_no_of_multigrid_levels = max_no_of_levels;
-    ud->no_of_multigrid_levels     = max_no_of_levels-1; 
+    double tol                            = 1.e-10;
+    ud->flux_correction_precision         = tol;
+    ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
+    ud->second_projection_precision       = tol;
+    ud->second_projection_local_precision = tol;  /* 1.e-05 should be enough */
+    ud->flux_correction_max_iterations    = 6000;
+    ud->second_projection_max_iterations  = 6000;
     
     /* numerics parameters */
     ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -228,13 +208,12 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     
     const int compressible = (ud.is_compressible == 0 ? 0 : 1);
     
-    const double u0 = ud.wind_speed;
-    const double v0 = 0.0;
-    const double w0 = 0.0;
-    const double delth = 0.01 / ud.T_ref;  /* standard:  0.01 / ud.T_ref */
+    const double u0    = ud.wind_speed;
+    const double v0    = 0.0;
+    const double w0    = 0.0;
+    const double delth = 0.01 / ud.T_ref;                    /* standard:  0.01 / ud.T_ref */
     const double xc    = -1.0*scalefactor*60.0e+03/ud.h_ref; /* -1000.0e+03/ud.h_ref;  -50.0e+03/ud.h_ref; 0.0; */
-    /* const double a     = scalefactor * 5.0e+03/ud.h_ref; */
-    const double a     = scalefactor*5.0e+03/ud.h_ref;   /* 1.0e+05/ud.h_ref;  1.0e+05/ud.h_ref/20; */
+    const double a     = scalefactor*5.0e+03/ud.h_ref;       /* 1.0e+05/ud.h_ref;  1.0e+05/ud.h_ref/20; */
     
     const int icx = elem->icx;
     const int icy = elem->icy;
@@ -328,41 +307,6 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             Sol->geopot[n] = g * y;
         }
     }
-}
-
-
-/* ================================================================================== */
-
-double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma){
-    return pow((pow(p0,Gamma) + Gamma*S0*Msq*u_theta*u_theta*(1.0 - pow((1.0-r),5.0)*(5.0*r+1.0))/30.0), (1.0/Gamma));
-}
-
-/* ================================================================================== */
-
-double rho_function(double psi){
-    
-    double rhomax = 1.0;
-    double percent = 0.0;
-    double delta   = 0.1;
-    
-    double smooth, cosine, sgncos;
-    
-    cosine = cos(PI*(fabs(psi) - (0.5 - 0.5*delta)) / delta);
-    sgncos = SIGNnull(cosine);
-    
-    smooth = 0.5*(1.0 - sgncos*sqrt(sqrt(sqrt(sgncos*cosine))) );
-    
-    /* return(1.0 - 0.2 * (psi*psi)); */
-    /* return(rhomax * (1.0 - percent * (fabs(psi) < 0.5 ? 0.0 : 1.0 )) ); */
-    return(rhomax * (1.0 - percent * (fabs(psi) < 0.5 - 0.5*delta ?
-                                      0.0 :
-                                      (fabs(psi) > 0.5 + 0.5*delta ?
-                                       1.0 :
-                                       smooth
-                                       )
-                                      )
-                     )
-           );
 }
 
 /* ================================================================================== */

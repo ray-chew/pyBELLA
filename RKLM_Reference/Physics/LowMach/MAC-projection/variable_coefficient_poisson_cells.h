@@ -18,7 +18,6 @@ void variable_coefficient_poisson_cells(
 										const double *hcenter,
 										const ConsVars* Sol,
                                         const ElemSpaceDiscr* elem,
-                                        const NodeSpaceDiscr* node,
-										const double theta);
+                                        const NodeSpaceDiscr* node);
 
 #endif
