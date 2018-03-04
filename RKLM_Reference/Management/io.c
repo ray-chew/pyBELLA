@@ -70,14 +70,8 @@ static FILE *pdYfile       = NULL;
 static FILE *pqfile        = NULL;
 static FILE *pp2file       = NULL;     
 static FILE *dpdimfile     = NULL;     
-static FILE *pgeopotfile   = NULL;     
 
-void putout(
-			ConsVars* Sol, 
-			const double t, 
-			const double tout, 
-			const int step,
-			const int SplitStep, 
+void putout(ConsVars* Sol, 
 			char* dir_name, 
 			char* field_name,
             const int writeout) {
@@ -90,7 +84,7 @@ void putout(
 	
 	/* Arrays */
 	extern MPV* mpv;
-	extern double *W0, *Sbg;
+	extern double *W0;
 
 	static int output_counter = 0;
 
@@ -105,11 +99,6 @@ void putout(
 	int nsp;
 	
 	switch(ud.file_format) {
-		case ASCII: {
-            assert(0);
-			sprintf(fn, "%s.ascii.%d", ud.file_name, step);
-			break;
-		}
 		case HDF: {
 			            
             if (writeout == 0) {
@@ -143,13 +132,7 @@ void putout(
             var = W0;
 			
 			if(ud.write_stdout == ON) printf("\n");
-			
-			/* geopotential */
-			sprintf(fn, "%s/geopot/geopot_%s.hdf", dir_name, step_string);
-			if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
-			sprintf(fieldname, "geopot_%s_%s", field_name, step_string);
-			WriteHDF(pgeopotfile, icx, icy, icz, ndim, Sol->geopot, fn, fieldname);
-			
+						
 			/* density */
 			sprintf(fn, "%s/rho/rho_%s.hdf", dir_name, step_string);
 			if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
@@ -314,91 +297,10 @@ void putout(
             
 			break;
 		}
-		case SILO: {
-            assert(0);
-			sprintf(fn, "%s.silo.%d", ud.file_name, step);
-			/* putoutSILO(fn); */
-			break;
-		}
 		default: 
 			ERROR("file format not available");
 	}
 	
-}
-
-/* ----------------------------------------------------------------------- */
-
-void WriteTimeHistories(const ConsVars* Sol,
-                               const ElemSpaceDiscr* elem,
-                               const double time,
-                               const int step,
-                               const int first_running_last){
-    
-    extern User_Data ud;
-    extern Thermodynamic th;
-    
-    static FILE* EnergyHistoryFile = NULL;
-    
-    static double e_total_0;
-    static double e_internal_0;
-    static double e_kinetic_0;
-    static double e_potential_0;
-    
-    const int icx = elem->icx;
-    const int icy = elem->icy;
-    const int icz = elem->icz;
-
-    const int igx = elem->igx;
-    const int igy = elem->igy;
-    const int igz = elem->igz;
-    
-    const double dV = elem->dxyz[0] * (elem->ndim > 1 ? elem->dxyz[1] : 1.0) * (elem->ndim > 2 ? elem->dxyz[2] : 1.0);
-    
-    double e_total_sum, e_internal_sum, e_kinetic_sum, e_potential_sum;
-    
-    int i, j, k, l, m, n;
-    
-    assert(ud.i_gravity[1]);
-    
-    if (first_running_last == -1) {
-        fclose(EnergyHistoryFile);
-        return;
-    }
-    
-    /* collect energy components */
-    e_internal_sum  = 0.0;
-    e_kinetic_sum   = 0.0;
-    e_potential_sum = 0.0;
-    
-    for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
-        for(j = igy; j < icy - igy; j++) {m = l + j * icx;
-            for(i = igx; i < icx - igx; i++) {n = m + i;
-                e_internal_sum  += th.gm1inv * pow(Sol->rhoY[n], th.gamm);
-                e_kinetic_sum   += 0.5*(  Sol->rhou[n]*Sol->rhou[n] 
-                                       + Sol->rhov[n]*Sol->rhov[n] 
-                                       + Sol->rhow[n]*Sol->rhow[n]
-                                       ) / Sol->rho[n];
-                e_potential_sum += ud.gravity_strength[1] * Sol->rho[n] * elem->y[j];
-            }
-        }
-    }
-    e_internal_sum  *= dV;
-    e_kinetic_sum   *= dV*ud.Msq;
-    e_potential_sum *= dV;
-    e_total_sum      = e_internal_sum + e_kinetic_sum + e_potential_sum;
-
-    if (first_running_last == 0) {
-        fprintf(EnergyHistoryFile, "%d\t %f\t %e\t %e\t %e\t %e\n", step, time, e_internal_sum - e_internal_0, e_kinetic_sum - e_kinetic_0, e_potential_sum - e_potential_0, e_total_sum - e_total_0);
-    } else if (first_running_last == 1) {
-        EnergyHistoryFile = fopen("EnergyHistory.txt", "w+");
-        fprintf(EnergyHistoryFile, "step\t time\t de_int\t de_kin\t de_pot\t de_tot\n");
-        fprintf(EnergyHistoryFile, "%d\t %f\t %e\t %e\t %e\t %e\n", step, time, 0.0, 0.0, 0.0, 0.0);
-        e_total_0     = e_total_sum;
-        e_internal_0  = e_internal_sum;
-        e_kinetic_0   = e_kinetic_sum;
-        e_potential_0 = e_potential_sum;
-        return;
-    }
 }
 
 /* ----------------------------------------------------------------------- */

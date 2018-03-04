@@ -23,7 +23,6 @@ void Hydrostatics_Column(States* HydroState,
                          const NodeSpaceDiscr* node);
 
 void Hydrostatics_State(MPV* mpv, 
-                        double *Sbg, 
                         const ElemSpaceDiscr* elem, 
                         const NodeSpaceDiscr* node);
 

@@ -20,7 +20,7 @@
 
 /* ================================================================================ */
 
-void rotate2D(ConsVars* Sol, double* rhs, double *Sbg, double* buoyS, const enum Direction direction) 
+void rotate2D(ConsVars* Sol, const enum Direction direction) 
 {
 	
 	/* User data */
@@ -52,12 +52,7 @@ void rotate2D(ConsVars* Sol, double* rhs, double *Sbg, double* buoyS, const enum
     for (nsp = 0; nsp < ud.nspec; nsp++) {
         flip2D(Sol->rhoX[nsp], icx, icy, nc, W0);
     }
-	flip2D(Sol->geopot, icx, icy, nc, W0); 
-	
-	flip2D(rhs, icx, icy, nc, W0);
-    flip2D(Sbg, icx, icy, nc, W0);
-    flip2D(buoyS, icx, icy, nc, W0);
-	
+		
 	/* rotation of grid parameters */
 	/* control volumes (elem) */
     i         = elem->nfx;
@@ -148,7 +143,7 @@ void rotate2D(ConsVars* Sol, double* rhs, double *Sbg, double* buoyS, const enum
 
 /* ================================================================================ */
 
-void rotate3D(ConsVars* Sol, double *rhs, double *Sbg, double* buoyS, const enum Direction direction) {
+void rotate3D(ConsVars* Sol, const enum Direction direction) {
 	
 	/* User data */
 	extern User_Data ud;
@@ -182,12 +177,7 @@ void rotate3D(ConsVars* Sol, double *rhs, double *Sbg, double* buoyS, const enum
         for (int nsp = 0; nsp < ud.nspec; nsp++) {
             flip3D_f(Sol->rhoX[nsp], icx, icy, icz, nc, W0);
         }
-		flip3D_f( Sol->geopot, icx, icy, icz, nc, W0 );       
-		
-		flip3D_f( rhs, icx, icy, icz, nc, W0 );       
-        flip3D_f( Sbg, icx, icy, icz, nc, W0 );       
-        flip3D_f( buoyS, icx, icy, icz, nc, W0 );       
-		
+				
 		/* rotation of grid parameters */
 		/* control volumes (elem) */
         i         = elem->nfy;
@@ -446,15 +436,9 @@ void rotate3D(ConsVars* Sol, double *rhs, double *Sbg, double* buoyS, const enum
         for (int nsp = 0; nsp < ud.nspec; nsp++) {
             flip3D_b(Sol->rhoX[nsp], icx, icy, icz, nc, W0);
         }
-		flip3D_b( Sol->geopot, icx, icy, icz, nc, W0 );       
-		
-		flip3D_b( rhs, icx, icy, icz, nc, W0 );       
-        flip3D_b( Sbg, icx, icy, icz, nc, W0 );       
-        flip3D_b( buoyS, icx, icy, icz, nc, W0 );       
-		
 	}
 	else {
-		ERROR("which stupid direction shall i rotate the stuff, eehhh ?");
+		ERROR("to which direction shall i rotate the fields?");
 	}
 }  
 

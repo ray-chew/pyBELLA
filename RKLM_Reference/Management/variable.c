@@ -25,7 +25,6 @@ ConsVars* ConsVars_new(const int size) {
     for (int nsp=0; nsp<ud.nspec; nsp++) {
         var->rhoX[nsp] = (double*)malloc(size * sizeof(double));
     }
-	var->geopot = (double*)malloc(size * sizeof(double));
 	return var;
 }
 
@@ -41,7 +40,6 @@ void ConsVars_free(ConsVars* var) {
     for (nsp=0; nsp<ud.nspec; nsp++) {
         free(var->rhoX[nsp]);
     }
-	free(var->geopot);
 	free(var); 
 }
 
@@ -57,7 +55,6 @@ void ConsVars_setp(ConsVars* obj, const ConsVars* src, const int i) {
     for (nsp=0; nsp<ud.nspec; nsp++) {
         obj->rhoX[nsp] = &src->rhoX[nsp][i];
     }
-	obj->geopot = &src->geopot[i];
 }
 
 void ConsVars_addp(ConsVars* obj, const int n) {
@@ -71,7 +68,6 @@ void ConsVars_addp(ConsVars* obj, const int n) {
     for (int nsp=0; nsp<ud.nspec; nsp++) {
         obj->rhoX[nsp] += n;
     }
-	obj->geopot += n;
 }
 
 /* this functions should be written more efficiently */
@@ -88,7 +84,6 @@ void ConsVars_setzero(ConsVars* obj, const int n) {
         for (nsp=0; nsp<ud.nspec; nsp++) {
             obj->rhoX[nsp][i] = 0.0;
         }
-		/* will not do that for the geopotential */
 	}
 }
 
@@ -106,7 +101,6 @@ void ConsVars_set(ConsVars* obj, const ConsVars* src, const int n) {
     for (nsp=0; nsp<ud.nspec; nsp++) {
         memcpy(obj->rhoX[nsp], src->rhoX[nsp], n * sizeof(double));
     }
-	memcpy(obj->geopot, src->geopot, n * sizeof(double));
 }
 
 
@@ -176,7 +170,6 @@ States* States_new(const int size) {
     for (int nsp=0; nsp<ud.nspec; nsp++) {
         var->rhoX[nsp] = (double*)malloc(size * sizeof(double));
     }
-	var->geopot = (double*)malloc(size * sizeof(double));
 	var->u    = (double*)malloc(size * sizeof(double));
 	var->v    = (double*)malloc(size * sizeof(double));
 	var->w    = (double*)malloc(size * sizeof(double));
@@ -211,7 +204,6 @@ void States_free(States* var) {
     for (int nsp=0; nsp<ud.nspec; nsp++) {
         free(var->rhoX[nsp]);
     }
-	free(var->geopot);
 	free(var->u);
 	free(var->v);
 	free(var->w);
@@ -293,7 +285,6 @@ void States_setp(States* obj, const ConsVars* src, const int i) {
     for (int nsp=0; nsp<ud.nspec; nsp++) {
         obj->rhoX[nsp] = &src->rhoX[nsp][i];
     }
-	obj->geopot= &src->geopot[i];
 }
 
 void States_addp(States* obj, const int n) {
@@ -307,7 +298,6 @@ void States_addp(States* obj, const int n) {
     for (int nsp=0; nsp<ud.nspec; nsp++) {
         obj->rhoX[nsp] += n;
     }
-	obj->geopot += n;
 }
 
 Characters* Characters_new(const int size) {

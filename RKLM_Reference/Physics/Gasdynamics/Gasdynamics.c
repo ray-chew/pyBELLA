@@ -109,12 +109,13 @@ Speeds maxspeeds(const ConsVars* Sol, const int n)
 
 /* -------------------------------------------------------------------------- */
 
-TimeStepInfo dynamic_timestep(
-                              const ConsVars* Sol,
-                              const double time,
-                              const double time_output,
-                              const ElemSpaceDiscr* elem,
-                              const int step) {
+void dynamic_timestep(TimeStepInfo* TSI,
+                      MPV* mpv,
+                      const ConsVars* Sol,
+                      const double time,
+                      const double time_output,
+                      const ElemSpaceDiscr* elem,
+                      const int step) {
 
     extern User_Data ud;
     extern Thermodynamic th;
@@ -129,8 +130,6 @@ TimeStepInfo dynamic_timestep(
 
     const double Minv = 1.0 / sqrt(ud.Msq);
     const double CFL  = ud.CFL;
-
-    TimeStepInfo TSI;
     
     double umax = ud.eps_Machine;
     double vmax = ud.eps_Machine;
@@ -143,7 +142,10 @@ TimeStepInfo dynamic_timestep(
     double dt;
     double cfl, cfl_ac, cfl_adv;
     
-    int time_step_switch = 0;
+    if (TSI->time_step_switch) {
+        TSI->time_step_switch = 1;
+        return;
+    };
     
     for(int k = igz; k < icz - igz; k++) {
         int nk = k * icx * icy;
@@ -184,7 +186,7 @@ TimeStepInfo dynamic_timestep(
         
         if (2.0*dt > time_output - time) {
             dt = 0.5 * (time_output - time) + ud.eps_Machine;
-            time_step_switch = 1;
+            TSI->time_step_switch = 1;
         }
         
         cfl = cfl_ac = CFL * dt / dt_cfl;
@@ -209,7 +211,7 @@ TimeStepInfo dynamic_timestep(
         
         if (2.0*dt > time_output - time) {
             dt = 0.5 * (time_output - time) + ud.eps_Machine;
-            time_step_switch = 1;
+            TSI->time_step_switch = 1;
         }
 
         cfl = cfl_adv = CFL * dt / dt_cfl;
@@ -219,20 +221,18 @@ TimeStepInfo dynamic_timestep(
         cfl_ac = MAX_own(cfl_ac, dt * wpcmax / elem->dz);
     }
     
-    TSI.flow_speed.x           = umax;
-    TSI.flow_speed.y           = vmax;
-    TSI.flow_speed.z           = wmax;
-    TSI.flow_and_sound_speed.x = upcmax;
-    TSI.flow_and_sound_speed.y = vpcmax;
-    TSI.flow_and_sound_speed.z = wpcmax;
-    TSI.cfl                    = cfl;
-    TSI.cfl_ac                 = cfl_ac;
-    TSI.cfl_adv                = cfl_adv;
-    TSI.cfl_gravity            = 99999999;
-    TSI.time_step              = dt;
-    TSI.time_step_switch       = time_step_switch;
-    
-    return TSI;
+    TSI->flow_speed.x           = umax;
+    TSI->flow_speed.y           = vmax;
+    TSI->flow_speed.z           = wmax;
+    TSI->flow_and_sound_speed.x = upcmax;
+    TSI->flow_and_sound_speed.y = vpcmax;
+    TSI->flow_and_sound_speed.z = wpcmax;
+    TSI->cfl                    = cfl;
+    TSI->cfl_ac                 = cfl_ac;
+    TSI->cfl_adv                = cfl_adv;
+    TSI->cfl_gravity            = 99999999;
+    TSI->time_step              = dt;
+    mpv->dt                     = dt;
 }
 
 

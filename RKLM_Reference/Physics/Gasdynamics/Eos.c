@@ -11,6 +11,7 @@
 #include "mpv.h"
 #include "math_own.h"
 #include "Eos.h"
+#include "io.h"
 #include "set_ghostcells_p.h"
 
 
@@ -73,7 +74,7 @@ void conservatives(
             U->rhoX[nsp][i] = U->X[nsp][i] * U->rho[i];
         }
 		q = 0.5 * Msq * (U->u[i] * U->u[i] + U->v[i] * U->v[i] + U->w[i] * U->w[i]);
-		U->rhoe[i] = gm1_inv * U->p[i] + U->rho[i] * (q + U->geopot[i]);
+		U->rhoe[i] = gm1_inv * U->p[i] + U->rho[i] * q;
 	}
 }
 
@@ -105,7 +106,7 @@ void conservatives_from_entro_vars(
             U->rhoX[nsp][i] = U->X[nsp][i] * U->rho[i];
         }
 		q = 0.5 * Msq * (U->u[i] * U->u[i] + U->v[i] * U->v[i] + U->w[i] * U->w[i]);
-		U->rhoe[i] = gm1_inv * U->p[i] + rho * (q + U->geopot[i]);
+		U->rhoe[i] = gm1_inv * U->p[i] + rho * q;
 	}
 }
 
@@ -135,7 +136,7 @@ void conservatives_from_primitives(
             U->rhoX[nsp][i] = U->X[nsp][i] * U->rho[i];
         }
 		q = 0.5 * Msq * (U->u[i] * U->u[i] + U->v[i] * U->v[i] + U->w[i] * U->w[i]);
-		U->rhoe[i] = gm1_inv * U->p[i] + rho * (q + U->geopot[i]);
+		U->rhoe[i] = gm1_inv * U->p[i] + rho * q;
 	}
 }
 
@@ -155,7 +156,6 @@ void conservatives_from_uvwYZ(
 	
 	for(i = nstart; i < nende; i++) {
 		double rho = U->rhoY[i] / U->Y[i];
-		double geopot = U->geopot[i];
         double u = U->u[i];
         double v = U->v[i];
         double w = U->w[i];
@@ -171,7 +171,7 @@ void conservatives_from_uvwYZ(
         }
         
 		p = pow(U->rhoY[i] , th.gamminv);  
-		U->rhoe[i] = rhoe(rho, u, v, w, p, geopot);
+		U->rhoe[i] = rhoe(rho, u, v, w, p);
 	}
 }
 
@@ -507,8 +507,7 @@ double rhoe(
 			const double u, 
 			const double v, 
 			const double w,
-			const double p,
-			const double geopot) {
+			const double p) {
 	
 	extern User_Data ud;
 	extern Thermodynamic th;
@@ -516,7 +515,7 @@ double rhoe(
 	const double Msq = ud.compressibility * ud.Msq;
 	const double gm1inv = th.gm1inv;
 	
-	return p * gm1inv + 0.5 * Msq * rho * (u * u + v * v + w * w) + rho * geopot;
+	return p * gm1inv + 0.5 * Msq * rho * (u * u + v * v + w * w);
 }
 
 /*------------------------------------------------------------------------------
@@ -575,6 +574,11 @@ void reset_Y_perturbation(ConsVars* Sol,
             }
         }
     }
+
+#if OUTPUT_SUBSTEPS  /* 1 */
+    extern User_Data ud;
+    putout(Sol, ud.file_name, "Sol", 1);
+#endif
 }
 
 

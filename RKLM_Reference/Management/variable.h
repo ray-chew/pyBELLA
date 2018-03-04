@@ -23,7 +23,6 @@ typedef struct {
 	double* rhoe;
 	double* rhoY;
     double* rhoX[NSPEC];
-	double* geopot;
 } ConsVars;
 
 /*------------------------------------------------------------------------------
@@ -125,7 +124,6 @@ typedef struct {
 	double* rhoe;
 	double* rhoY;
     double* rhoX[NSPEC];
-	double* geopot;
 	double* u;
 	double* v;
 	double* w;
@@ -240,7 +238,6 @@ void Characters_free(Characters* var);
 typedef struct {
     double Y[5];
     double S[5];
-    double Sbg[5];
     double p[5];
     double p2[5];
     double rho[5];

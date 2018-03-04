@@ -18,9 +18,13 @@
 #include "thermodynamic.h"
 #include "variable.h"
 #include "explicit.h"
-#include "io.h"
 #include "set_ghostcells_p.h"
 #include "enumerator.h"
+#include "memory.h"
+
+#if (OUTPUT_SUBSTEPS_PREDICTOR > 0) || (OUTPUT_SUBSTEPS_PREDICTOR > 0)
+#include "io.h"
+#endif
 
 static enum Boolean allocated = WRONG;
 
@@ -33,6 +37,10 @@ static States* Rights;
 static ConsVars* Fluxes;
 
 static double* gravity_source;
+
+#if OUTPUT_SUBSTEPS_PREDICTOR  /* 2, 3 */
+static void (*rotate[])(ConsVars* Sol, const enum Direction dir) = {NULL, rotate2D, rotate3D};
+#endif
 
 /* ============================================================ */
 
@@ -242,6 +250,17 @@ void Explicit_step_and_flux(
     
     /* bring dummy cells in the current space direction up to date  */
     Bound(Sol, lambda, n, SplitStep, 0);
+
+    
+#if OUTPUT_SUBSTEPS_PREDICTOR  /* 2, 3 */
+    if (SplitStep == 1)  {
+        (*rotate[elem->ndim - 1])(Sol, BACKWARD);
+    }
+    Set_Explicit_Boundary_Data(Sol, elem, 0);
+    if (SplitStep == 1)  {
+        (*rotate[elem->ndim - 1])(Sol, FORWARD);
+    }
+#endif
 
 }
 
@@ -579,6 +598,11 @@ void fullD_explicit_updates(ConsVars* Sol,
 		default:
 			ERROR("\n\nwe are not doing string theory");;
 	}
+
+#if OUTPUT_SUBSTEPS /* 4 */
+    putout(Sol, ud.file_name, "Sol", 1);
+#endif
+
 }
 
 /*------------------------------------------------------------------------------

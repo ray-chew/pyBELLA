@@ -51,7 +51,6 @@ static void flux_fix_for_open_boundaries(
 
 static void flux_correction_due_to_pressure_gradients(
 													  ConsVars* flux[3],
-													  VectorField* buoy,
 													  const ElemSpaceDiscr* elem,
 													  ConsVars* Sol,
 													  ConsVars* Sol0,
@@ -79,8 +78,6 @@ static int rhs_output_count = 0;
 #endif
 
 void flux_correction(ConsVars* flux[3],
-                     VectorField* adv_flux_diff,
-					 VectorField* buoy,
 					 const ElemSpaceDiscr* elem_base_grid,
 					 ConsVars* Sol, 
 					 ConsVars* Sol0, 
@@ -195,7 +192,7 @@ void flux_correction(ConsVars* flux[3],
     
     /* Note: flux will contain only the flux-correction after this routine; 
      it is thus overwritten under the SI_MIDPT time integration sequence */
-    flux_correction_due_to_pressure_gradients(flux, buoy, elem, Sol, Sol0, mpv, hplus, hS, p2, t, dt);
+    flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2, t, dt);
     
 #if 0
     sprintf(fn2, "%s/Tests/frhoY_y_post.hdf", ud.file_name);
@@ -631,7 +628,6 @@ void operator_coefficients(
 
 static void flux_correction_due_to_pressure_gradients(
                                                       ConsVars* flux[3],
-                                                      VectorField* buoy,
                                                       const ElemSpaceDiscr* elem,
                                                       ConsVars* Sol,
                                                       ConsVars* Sol0,

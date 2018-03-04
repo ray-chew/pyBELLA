@@ -8,7 +8,7 @@
 #define HDFFORMAT
 
 /* Output options in main.c for debugging;  1 -> output */
-#define OUTPUT_SUBSTEPS 0 
+#define OUTPUT_SUBSTEPS 0
 #define OUTPUT_SPLITSTEPS 0
 #define OUTPUT_SUBSTEPS_PREDICTOR 0
 
@@ -22,7 +22,6 @@
  ============================================= */
 /* 
 #define EGDE_VELOCITIES_IN_MUSCL_STEP
- #define HALF_STEP_FLUX_EXTERNAL
  */
 
 /* ============================================= 

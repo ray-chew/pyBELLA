@@ -221,7 +221,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     
     const int icxn = node->icx;
     
-    int i, j, m, n, nm, nn;
+    int i, j, n, nm, nn;
     double x, y, xn, yn, ym;
     double rho, u, v, w, p, rhoY;
     
@@ -237,7 +237,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     HyStn = States_new(node->icy);
     Yn    = (double*)malloc(node->icy*sizeof(double));
     
-    Hydrostatics_State(mpv, Sbg, elem, node);
+    Hydrostatics_State(mpv, elem, node);
     
     for(i = 0; i < icx; i++) {
         
@@ -276,9 +276,8 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             Sol->rhou[n]   = rho * u;
             Sol->rhov[n]   = rho * v;
             Sol->rhow[n]   = rho * w;
-            Sol->rhoe[n]   = rhoe(rho, u, v, w, p, g*y);
+            Sol->rhoe[n]   = rhoe(rho, u, v, w, p);
             Sol->rhoY[n]   = rhoY;
-            Sol->geopot[n] = g * y;
             
             mpv->p2_cells[n]   = HySt->p20[j];
             Sol->rhoX[BUOY][n] = Sol->rho[n] * ( Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
@@ -290,23 +289,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     }
     
     /* Pressure distribution for the hydrostatic model */
-    Hydrostatic_Initial_Pressure(Sol, mpv, elem, node);
-    
-    /* set all dummy cells */
-    /* geopotential in bottom and top dummy cells */
-    for(j = 0; j < igy; j++) {m = j * icx;
-        y = elem->y[j];
-        for(i = 0; i < icx; i++) {n = m + i;
-            Sol->geopot[n] = g * y;
-        }
-    }
-    
-    for(j = icy-igy; j < icy; j++) {m = j * icx;
-        y = elem->y[j];
-        for(i = 0; i < icx; i++) {n = m + i;
-            Sol->geopot[n] = g * y;
-        }
-    }
+    Hydrostatic_Initial_Pressure(Sol, mpv, elem, node);    
 }
 
 /* ================================================================================== */

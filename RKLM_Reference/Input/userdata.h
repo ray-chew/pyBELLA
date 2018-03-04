@@ -25,7 +25,6 @@ typedef struct {
 	int write_stdout_period;
 	enum Switch write_file;
 	int write_file_period;
-    int write_history;
 	enum FileFormat file_format;
 	char file_name[FILENAME_MAX];
     char test_dir_name[FILENAME_MAX];
@@ -54,8 +53,6 @@ typedef struct {
     TimeIntegratorParams tips;
 
     /* Space discretization */
-    double p_extrapol;
-
 	enum RecoveryOrder recovery_order;
 	enum LimiterType limiter_type_scalars;
 	enum LimiterType limiter_type_velocity;
@@ -82,7 +79,6 @@ typedef struct {
     double wind_shear;
 	double hill_height;
 	double hill_length_scale;
-    double epsmu;
 	
 	/* Boundary condition */
 	enum BdryType bdrytype_min[3];
@@ -122,18 +118,8 @@ typedef struct {
 	double second_projection_local_precision;
 	int flux_correction_max_iterations;
 	int second_projection_max_iterations;
-	
-	/* Multigrid */
-	int max_no_of_multigrid_levels;
-	int no_of_multigrid_levels;
-	
-	/* Front related stuff */
-	double G_layer_scale;
-	double spread_overlap_scale;
-	double epsiter;
-	double epsVF;  
-	double epsVF_source;
-	double eps_Dspread; 
+		
+    /* auxiliary:  effective machine accuracy */
 	double eps_Machine;
 } User_Data;
 

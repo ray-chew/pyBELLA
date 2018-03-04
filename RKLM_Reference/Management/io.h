@@ -19,25 +19,10 @@
 /*------------------------------------------------------------------------------
  putout: write out grid and solution
  ------------------------------------------------------------------------------*/
-void putout(
-			ConsVars* Sol, 
-			const double t, 
-			const double tout, 
-			const int step, 
-			const int SplitStep,
-			char* dir_name, 
-			char* field_name, 
-            const int writeout);
-
-
-/*------------------------------------------------------------------------------
- 
- ------------------------------------------------------------------------------*/
-void WriteTimeHistories(const ConsVars* Sol,
-                               const ElemSpaceDiscr* elem,
-                               const double time,
-                               const int step,
-                               const int first_running_last);
+void putout(ConsVars* Sol, 
+            char* dir_name, 
+            char* field_name,
+            const int writeout) ;
 
 /*------------------------------------------------------------------------------
  
@@ -51,29 +36,6 @@ void WriteHDF(
 			  double* Data, 
 			  char* file_name, 
 			  char* var_name);
-
-
-/*------------------------------------------------------------------------------
- 
- ------------------------------------------------------------------------------*/
-void ElemSpaceDiscrWriteASCII(
-							  double* var, 
-							  const ElemSpaceDiscr* elem,
-							  const char* filename,
-							  const char* varname);
-
-
-/*------------------------------------------------------------------------------
- 
- ------------------------------------------------------------------------------*/
-void NodeSpaceDiscrWriteASCII(
-							  double* var, 
-							  const NodeSpaceDiscr* node,
-							  const char* filename,
-							  const char* varname);
-
-
-
 
 #endif /* IO_H */
 

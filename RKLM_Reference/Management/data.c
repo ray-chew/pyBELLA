@@ -49,15 +49,11 @@ Thermodynamic th;
 ConsVars* Sol;            /* full size */
 ConsVars* Sol0;           /* full size (M < 1.0) */
 ConsVars* dSol;           /* full size */
-double* buoyS;            /* full size */
-VectorField* buoy;        /* full size */
 VectorField* adv_flux;    /* full size, components located on primary cell faces */
-VectorField* adv_flux0;    /* full size, components located on primary cell faces */
 ConsVars* flux[3];        /* full size (M < 1.0) */
 
 States* Solk;             /* cache size */
 double* W0;               /* full nG-length double array */
-double* Sbg; 	   	  /* full nG-length double array */
 
 
 void Data_init() {
@@ -123,10 +119,7 @@ void Data_init() {
 	/* Arrays */
 	Sol  = ConsVars_new(elem->nc);
 	dSol = ConsVars_new(elem->nc);
-    buoyS = (double*)malloc((unsigned)(elem->nc * sizeof(double)));
-	buoy  = VectorField_new(elem->nc);
     adv_flux  = VectorField_new(node->nc);
-    adv_flux0 = VectorField_new(node->nc);
 	Solk = States_small_new(3 * ud.ncache / 2);
     
     /* auxiliary space */
@@ -135,7 +128,6 @@ void Data_init() {
     n_aux *= (node->ndim > 2 ? node->ifz : 1);
     
     W0  = (double*)malloc((unsigned)(n_aux * sizeof(double)));
-    Sbg = (double*)malloc((unsigned)(n_aux * sizeof(double)));
 	
 	{
 		Sol0    = ConsVars_new(elem->nc);
@@ -178,10 +170,7 @@ void Data_free() {
 	NodeSpaceDiscr_free(node);
 	ConsVars_free(Sol);
 	ConsVars_free(dSol);
-    free(buoyS);
-	VectorField_free(buoy);
     VectorField_free(adv_flux);
-    VectorField_free(adv_flux0);
 	States_small_free(Solk);
 	free(W0);
 	{

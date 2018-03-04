@@ -16,12 +16,13 @@ double maxspeed(const ConsVars* Sol, const int n);
 
 Speeds maxspeeds(const ConsVars* Sol, const int n);
 
-TimeStepInfo dynamic_timestep(
-                              const ConsVars* Sol,
-                              const double time,
-                              const double time_output,
-                              const ElemSpaceDiscr* elem,
-                              const int step);
+void dynamic_timestep(TimeStepInfo* TSI,
+                      MPV* mpv,
+                      const ConsVars* Sol,
+                      const double time,
+                      const double time_output,
+                      const ElemSpaceDiscr* elem,
+                      const int step);
 
 #endif /* GASDYNAMICS_H */
 

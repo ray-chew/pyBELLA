@@ -203,8 +203,7 @@ double rhoe(
 			const double u, 
 			const double v, 
 			const double w,
-			const double p,
-			const double geopot);
+			const double p);
 
 
 /*------------------------------------------------------------------------------

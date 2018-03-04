@@ -52,8 +52,6 @@ void Explicit_step_and_flux(
  ------------------------------------------------------------------------------*/
 void Explicit_pressure_and_gravity(
                                    ConsVars* Sol,
-                                   double* buoyS,
-                                   VectorField* buoy,
                                    const MPV* mpv,
                                    const ElemSpaceDiscr* elem,
                                    const NodeSpaceDiscr* node,

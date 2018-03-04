@@ -16,6 +16,11 @@
 #include "math_own.h"
 #include "memory.h"
 
+#if OUTPUT_SUBSTEPS 
+#include "io.h"
+#endif
+
+
 BDRY* bdry;
 
 static void void_min(ConsVars* Sol, const int njk, const int i);
@@ -299,7 +304,7 @@ void Bound(
 						Sol->rhou[nimage] = rho*u;
 						Sol->rhov[nimage] = rho*v;
 						Sol->rhow[nimage] = rho*w;
-						Sol->rhoe[nimage] = rhoe(rho, u, v, w, p, Sol->geopot[nimage]);
+						Sol->rhoe[nimage] = rhoe(rho, u, v, w, p);
 						Sol->rhoY[nimage] = rhoY;				  /* should probably be adjusted not to take HydroState values*/
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
                             Sol->rhoX[nsp][nimage] = rho*X[nsp];
@@ -346,7 +351,7 @@ void Bound(
 						Sol->rhou[nimage] = rho*u;
 						Sol->rhov[nimage] = rho*v;
 						Sol->rhow[nimage] = rho*w;
-						Sol->rhoe[nimage] = rhoe(rho, u, v, w, p, Sol->geopot[nimage]);
+						Sol->rhoe[nimage] = rhoe(rho, u, v, w, p);
 						Sol->rhoY[nimage] = rhoY;       /* should probably be adjusted not to take HydroState values*/
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
                             Sol->rhoX[nsp][nimage] = rho*X[nsp];
@@ -657,7 +662,7 @@ static void dirichlet_min(ConsVars* Sol, const int njk, const int i)
 	Sol->rhou[nijk]   = rho_outer * u_outer;
 	Sol->rhov[nijk]   = 0.0;
 	Sol->rhow[nijk]   = 0.0;
-	Sol->rhoe[nijk]   = rhoe(rho_outer, u_outer, 0.0, 0.0, p_outer, Sol->geopot[nijk]);
+	Sol->rhoe[nijk]   = rhoe(rho_outer, u_outer, 0.0, 0.0, p_outer);
 	Sol->rhoY[nijk]   = rho_outer * S2_outer;
 }
 
@@ -683,7 +688,7 @@ static void dirichlet_max(ConsVars* Sol, const int njk, const int i)
 	Sol->rhou[nijk]   = rho_outer * u_outer;
 	Sol->rhov[nijk]   = 0.0;
 	Sol->rhow[nijk]   = 0.0;
-	Sol->rhoe[nijk]   = rhoe(rho_outer, u_outer, 0.0, 0.0, p_outer, Sol->geopot[nijk]);
+	Sol->rhoe[nijk]   = rhoe(rho_outer, u_outer, 0.0, 0.0, p_outer);
 	Sol->rhoY[nijk]   = rho_outer * S2_outer;
 }
 
@@ -801,9 +806,7 @@ void check_flux_bcs(
 					const int SplitStep) {
 	
 	extern User_Data ud;
-	
-	const double g = ud.gravity_strength[ud.gravity_direction];
-	
+		
     int i, nfull, ifull, jfull, nsp; 
     
 	switch (SplitStep) {
@@ -876,14 +879,13 @@ void check_flux_bcs(
 					if(ifull==elem->igx) {
 						double rho = mpv->HydroState->rho0[jfull];
 						double p   = mpv->HydroState->p0[jfull];
-						double y   = elem->y[jfull];
 						double S2  = mpv->HydroState->Y0[jfull];
 						
 						Rights->rho[i]  = Lefts->rho[i-1]  = rho;
 						Rights->rhou[i] = Lefts->rhou[i-1] = rho * ud.wind_speed;
 						Rights->rhov[i] = Lefts->rhov[i-1] = 0.0;
 						Rights->rhow[i] = Lefts->rhow[i-1] = 0.0;
-						Rights->rhoe[i] = Lefts->rhoe[i-1] = rhoe(rho, ud.wind_speed, 0.0, 0.0, p, g*y);
+						Rights->rhoe[i] = Lefts->rhoe[i-1] = rhoe(rho, ud.wind_speed, 0.0, 0.0, p);
 						Rights->rhoY[i] = Lefts->rhoY[i-1] = rho * S2; 
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
                             Rights->rhoX[nsp][i] = Lefts->rhoX[nsp][i-1] = 99999.9;
@@ -918,14 +920,13 @@ void check_flux_bcs(
 					if(ifull == elem->icx - elem->igx) {
 						double rho = mpv->HydroState->rho0[jfull];
 						double p   = mpv->HydroState->p0[jfull];
-						double y   = elem->y[jfull];
 						double S2  = mpv->HydroState->Y0[jfull];
 						
 						Lefts->rho[i-1]  = Rights->rho[i]  = rho;
 						Lefts->rhou[i-1] = Rights->rhou[i] = rho * ud.wind_speed;
 						Lefts->rhov[i-1] = Rights->rhov[i] = 0.0;
 						Lefts->rhow[i-1] = Rights->rhow[i] = 0.0;
-						Lefts->rhoe[i-1] = Rights->rhoe[i] = rhoe(rho, ud.wind_speed, 0.0, 0.0, p, g*y);
+						Lefts->rhoe[i-1] = Rights->rhoe[i] = rhoe(rho, ud.wind_speed, 0.0, 0.0, p);
 						Lefts->rhoY[i-1] = Rights->rhoY[i] = rho * S2;
                         for (nsp = 0; nsp < ud.nspec; nsp++) {
                             Lefts->rhoX[nsp][i-1] = Rights->rhoX[nsp][i] = 9999.9;
@@ -940,29 +941,26 @@ void check_flux_bcs(
 
 /* ============================================================================= */
 
-static void (*rotate[])(ConsVars* Sol, double* rhs, double *Sbg, double *buoyS, const enum Direction dir) = {NULL, rotate2D, rotate3D};
+static void (*rotate[])(ConsVars* Sol, const enum Direction dir) = {NULL, rotate2D, rotate3D};
 
 void Set_Explicit_Boundary_Data(
                                 ConsVars* Sol,
                                 const ElemSpaceDiscr* elem,
-                                const MPV* mpv,
                                 const int setZ) 
 {
-    extern double *Sbg;
-    extern double *buoyS;
     int SplitStep;
     
     for(SplitStep = 0; SplitStep < elem->ndim; SplitStep++) { 
         const double lambda = 1.0;
         Bound(Sol, lambda, elem->nc, SplitStep, setZ); 
-        /* if(SplitStep < elem->ndim - 1) */
-        (*rotate[elem->ndim - 1])(Sol, mpv->Level[0]->rhs, Sbg, buoyS, FORWARD);
-    }         
-    /* rotate back           
-    for(SplitStep = elem->ndim-1; SplitStep > 0; SplitStep--) {
-        (*rotate[elem->ndim - 1])(Sol, mpv->Level[0]->rhs, Sbg, buoyS, BACKWARD);
-    }
-     */
+        (*rotate[elem->ndim - 1])(Sol, FORWARD);
+    }   
+    
+#if OUTPUT_SUBSTEPS /* 5 */
+    extern User_Data ud;
+    putout(Sol, ud.file_name, "Sol", 1);
+#endif
+
 }
 
 

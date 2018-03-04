@@ -75,7 +75,6 @@ void Hydrostatics_Column(States* HydroState,
         p_hydro     = pow(pi_hydro,Gamma_inv);
         rhoY_hydro  = pow(pi_hydro,gm1_inv);
         
-        HydroState->geopot[j] = g * y_p;
         HydroState->rho0[j]   = rhoY_hydro * S_p;
         HydroState->p0[j]     = p_hydro;
         HydroState->p20[j]    = pi_hydro/ud.Msq;
@@ -120,7 +119,6 @@ void Hydrostatics_Column(States* HydroState,
         p_hydro     = pow(pi_hydro,Gamma_inv);
         rhoY_hydro  = pow(pi_hydro,gm1_inv);
         
-        HydroState->geopot[j] = g * y_p;
         HydroState->rho0[j]   = rhoY_hydro * S_p;
         HydroState->p0[j]     = p_hydro;
         HydroState->p20[j]    = pi_hydro/ud.Msq;
@@ -154,7 +152,6 @@ void Hydrostatics_Column(States* HydroState,
 /* ================================================================================== */
 
 void Hydrostatics_State(MPV* mpv, 
-                        double *Sbg, 
                         const ElemSpaceDiscr* elem, 
                         const NodeSpaceDiscr* node) 
 {
@@ -209,7 +206,6 @@ void Hydrostatics_State(MPV* mpv,
         p_hydro     = pow(pi_hydro, Gamma_inv);
         rhoY_hydro  = pow(pi_hydro, gm1_inv);
         
-        mpv->HydroState->geopot[j] = g * y_p;
         mpv->HydroState->rhoY0[j]  = rhoY_hydro;
         mpv->HydroState->rho0[j]   = rhoY_hydro * S_p;
         mpv->HydroState->p0[j]     = p_hydro;
@@ -258,7 +254,6 @@ void Hydrostatics_State(MPV* mpv,
         p_hydro     = pow(pi_hydro, Gamma_inv);
         rhoY_hydro  = pow(pi_hydro, gm1_inv);
         
-        mpv->HydroState->geopot[j] = g * y_p;
         mpv->HydroState->rho0[j]   = rhoY_hydro * S_p;
         mpv->HydroState->p0[j]     = p_hydro;
         mpv->HydroState->p20[j]    = pi_hydro/ud.Msq;
@@ -291,22 +286,6 @@ void Hydrostatics_State(MPV* mpv,
         Sn_p           = 1.0/stratification(yn_p);
         Sn_integral_m  = Sn_integral_p;
         Sn_integral_p += 0.5*elem->dy*(Sn_m + Sn_p);
-}
-        
-    /* HydroStates in an auxiliary field */
-    /* */
-    for (int k = 0; k < elem->icz; k++) {
-        int nk = k*elem->icx*elem->icy;
-        
-        for (int j = 0; j < elem->icy; j++) {
-            int njk = nk + j*elem->icx;
-            
-            for (int i = 0; i < elem->icx; i++) {
-                int nijk = njk + i;
-                
-                Sbg[nijk] = mpv->HydroState->S0[j];
-            }
-        }
     }
 }
 

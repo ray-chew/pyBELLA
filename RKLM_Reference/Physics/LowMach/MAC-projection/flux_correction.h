@@ -26,8 +26,6 @@
  ------------------------------------------------------------------------------*/
 
 void flux_correction(ConsVars* flux[3],
-                     VectorField* adv_flux_diff,
-					 VectorField* buoy,
 					 const ElemSpaceDiscr* elem,
 					 ConsVars* Sol, 
 					 ConsVars* Sol0, 
