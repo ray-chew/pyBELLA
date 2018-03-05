@@ -34,6 +34,18 @@ void Explicit_free( void );
 
 
 /*------------------------------------------------------------------------------
+ Advection cast into a single call routine
+ ------------------------------------------------------------------------------*/
+void advect(
+            ConsVars *Sol, 
+            ConsVars* flux[3],
+            const double dt, 
+            const ElemSpaceDiscr* elem,
+            const enum FluxesFrom adv_fluxes_from, 
+            const enum MUSCL_ON_OFF muscl_on_off, 
+            const enum No_of_Strang_Sweeps no_of_sweeps);
+
+/*------------------------------------------------------------------------------
  Explicit step and flux computation
  ------------------------------------------------------------------------------*/
 void Explicit_step_and_flux(
@@ -61,9 +73,10 @@ void Explicit_pressure_and_gravity(
  Boundary Absorber
  ------------------------------------------------------------------------------*/
 void Absorber(
-			  ConsVars* Sol,
-			  double time,
-			  double dt);
+              ConsVars* Sol,
+              const ElemSpaceDiscr* elem,
+              const double time,
+              const double dt);
 
 /*------------------------------------------------------------------------------
  Update

@@ -28,6 +28,10 @@ enum FileFormat {
     HDF,
     SILO};
 
+enum No_of_Strang_Sweeps {
+    SINGLE_STRANG_SWEEP,
+    DOUBLE_STRANG_SWEEP};
+
 enum RecoveryOrder {
     FIRST,
     SECOND};

@@ -412,7 +412,7 @@ void set_wall_massflux(
                     flux_sum += bdry->wall_massflux[i];
                 }
                 
-                printf("wall flux sum = %e\n", flux_sum);
+                /* printf("wall flux sum = %e\n", flux_sum); */
             }
             break;
         }

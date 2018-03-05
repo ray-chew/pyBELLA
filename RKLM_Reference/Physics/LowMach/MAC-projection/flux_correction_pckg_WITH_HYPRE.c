@@ -235,9 +235,7 @@ void flux_correction(ConsVars* flux[3],
 
     /* store results in mpv-fields */
     for(n=0; n<elem->nc; n++) {
-        /* goal is to actually compute full deviation from background pressure here to begin with */
         mpv->dp2_cells[n] = p2[n] - mpv->p2_cells[n];
-        /* mpv->p2_cells[n]  = p2[n] + ud.is_compressible*mpv->dp2_cells[n]; */
         mpv->p2_cells[n]  = p2[n];
     }
     
@@ -1013,6 +1011,7 @@ void update_SI_MIDPT_buoyancy(ConsVars* Sol,
         default:
             break;
     }
+    Set_Explicit_Boundary_Data(Sol, elem);
 }
 
 #ifdef NONLINEAR_EOS_IN_1st_PROJECTION

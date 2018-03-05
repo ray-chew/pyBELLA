@@ -148,6 +148,8 @@ void second_projection(
         mpv->dp2_nodes[ii] = p2[ii] - mpv->p2_nodes[ii];
         mpv->p2_nodes[ii]  = p2[ii];
     }
+
+    Set_Explicit_Boundary_Data(Sol, elem);
 }
 
 /* ========================================================================== */
@@ -975,6 +977,7 @@ void euler_backward_gravity(ConsVars* Sol,
             }
         }
     }
+    Set_Explicit_Boundary_Data(Sol, elem);
 }
 
 /* ========================================================================== */
@@ -1055,7 +1058,7 @@ void euler_forward_non_advective(ConsVars* Sol,
             mpv->p2_nodes[nn] += mpv->dp2_nodes[nn];
         }
     }
-
+    Set_Explicit_Boundary_Data(Sol, elem);
 }
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL

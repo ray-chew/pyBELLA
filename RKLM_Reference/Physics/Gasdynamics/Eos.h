@@ -210,7 +210,7 @@ double rhoe(
  
  ------------------------------------------------------------------------------*/
 void adjust_pi_cells(MPV* mpv,
-                     const ConsVars* Sol,
+                     ConsVars* Sol,
                      const ElemSpaceDiscr* elem);
 
 

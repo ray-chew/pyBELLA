@@ -37,9 +37,8 @@ static ConsVars* Fluxes;
 
 static double* gravity_source;
 
-#if OUTPUT_SUBSTEPS_PREDICTOR  /* 2, 3 */
 static void (*rotate[])(ConsVars* Sol, const enum Direction dir) = {NULL, rotate2D, rotate3D};
-#endif
+
 
 /* ============================================================ */
 
@@ -54,7 +53,6 @@ void Explicit_malloc(const int size) {
 }
 
 
-/* ================================================================================ */
 
 void Explicit_free() {
 	extern User_Data ud;
@@ -267,11 +265,11 @@ void Explicit_step_and_flux(
 
 void Absorber(
 			  ConsVars* Sol,
-			  double time,
-			  double dt) {
+              const ElemSpaceDiscr* elem,
+			  const double time,
+			  const double dt) {
 	
 	extern User_Data ud;
-    extern ElemSpaceDiscr* elem;
 	extern MPV* mpv;
     extern ConsVars* dSol;
 	
@@ -335,6 +333,7 @@ void Absorber(
             }
         }
     }
+    Set_Explicit_Boundary_Data(Sol, elem);
 }
 
 
@@ -385,6 +384,45 @@ void Explicit_step_update(
 	}
 }
 
+/* ================================================================================ */
+
+void advect(
+            ConsVars *Sol, 
+            ConsVars* flux[3],
+            const double dt, 
+            const ElemSpaceDiscr* elem,
+            const enum FluxesFrom adv_fluxes_from, 
+            const enum MUSCL_ON_OFF muscl_on_off, 
+            const enum No_of_Strang_Sweeps no_of_sweeps)
+{
+    
+    double time_step = (no_of_sweeps == DOUBLE_STRANG_SWEEP ? 0.5*dt : dt);
+    
+    printf("\n\n====================================================");
+    printf("\nAdvection, dt = %e", dt);
+    printf("\n====================================================\n");
+
+    int stage = 0;
+    for(int Split = 0; Split < elem->ndim; Split++) {
+        double lambda = time_step/elem->dx;
+        Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);                
+        (*rotate[elem->ndim - 1])(Sol, FORWARD);
+        
+    }
+    
+    if (no_of_sweeps == DOUBLE_STRANG_SWEEP) {
+        stage = 1;
+        for(int i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
+            int Split = (elem->ndim - 1) - i_OpSplit;
+            
+            (*rotate[elem->ndim - 1])(Sol, BACKWARD);
+            
+            double lambda = time_step/elem->dx;
+            Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);
+        }
+    }
+    Set_Explicit_Boundary_Data(Sol, elem);
+}
 
 /* ================================================================================ */
 
@@ -627,6 +665,11 @@ void Explicit_Coriolis(ConsVars *Sol, const ElemSpaceDiscr* elem, const double d
     double ooopfsqsc = 1.0 / (1.0 + fsqsc);
     double omfsqsc   = 1.0 - fsqsc;
     
+    
+    printf("\n\n====================================================");
+    printf("\nCoriolis");
+    printf("\n====================================================\n");
+
     /* implicit trapezoidal rule for large time steps and energy conservation*/
     for (int k=igz; k<icz-igz; k++) {int nk = k*icy*icx;
         for (int j=igy; j<icy-igy; j++) {int njk = nk + j*icx;
@@ -637,6 +680,8 @@ void Explicit_Coriolis(ConsVars *Sol, const ElemSpaceDiscr* elem, const double d
             }
         }
     }
+
+    Set_Explicit_Boundary_Data(Sol, elem);
 }
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL

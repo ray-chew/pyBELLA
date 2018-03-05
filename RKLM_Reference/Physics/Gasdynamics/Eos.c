@@ -12,6 +12,7 @@
 #include "math_own.h"
 #include "Eos.h"
 #include "io.h"
+#include "boundary.h"
 
 
 /*------------------------------------------------------------------------------
@@ -521,7 +522,7 @@ double rhoe(
  
  ------------------------------------------------------------------------------*/
 void adjust_pi_cells(MPV* mpv,
-                     const ConsVars* Sol,
+                     ConsVars* Sol,
                      const ElemSpaceDiscr* elem) {
 	
     /*
@@ -554,6 +555,7 @@ void adjust_pi_cells(MPV* mpv,
 			}
 		}
 	}
+    Set_Explicit_Boundary_Data(Sol, elem);
 }
 
 /*------------------------------------------------------------------------------
