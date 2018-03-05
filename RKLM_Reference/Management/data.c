@@ -144,10 +144,9 @@ void Data_init() {
 		
 		initialize_bdry(elem);
 		
-		initialize_MG_projection(
-								 inx,iny,inz,
-								 x0, x1, y0, y1, z0, z1,
-								 left,right,bottom,top,back,front);
+		initialize_projection(inx,iny,inz,
+                              x0, x1, y0, y1, z0, z1,
+                              left,right,bottom,top,back,front);
 	}
 	
 	for (i=0; i<3; i++) {

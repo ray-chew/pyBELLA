@@ -137,7 +137,6 @@ void User_Data_init(User_Data* ud) {
     ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
     ud->iny =   20+1; /* 321; 161;  81;  65; 41;  */
     ud->inz = 1;
-    ud->h   = MIN_own((ud->xmax-ud->xmin)/(ud->inx),MIN_own((ud->ymax-ud->ymin)/(ud->iny),(ud->zmax-ud->zmin)/(ud->inz)));
     
     /* explicit predictor step */
     /* Recovery */
@@ -202,16 +201,17 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     extern Thermodynamic th;
     extern User_Data ud;
     extern MPV* mpv;
-    extern double *Sbg;
     
     const int compressible = (ud.is_compressible == 0 ? 0 : 1);
     
+    
+    /* Skamarock-Klemp 1994 - type test */
     const double u0    = ud.wind_speed;
     const double v0    = 0.0;
     const double w0    = 0.0;
-    const double delth = 0.01 / ud.T_ref;                    /* standard:  0.01 / ud.T_ref */
-    const double xc    = -1.0*scalefactor*60.0e+03/ud.h_ref; /* -1000.0e+03/ud.h_ref;  -50.0e+03/ud.h_ref; 0.0; */
-    const double a     = scalefactor*5.0e+03/ud.h_ref;       /* 1.0e+05/ud.h_ref;  1.0e+05/ud.h_ref/20; */
+    const double delth = 0.01 / ud.T_ref;                    /* pot. temp. perturbation amplitude; standard:  0.01 / ud.T_ref */
+    const double xc    = -1.0*scalefactor*60.0e+03/ud.h_ref; /* initial position of center of pot temp perturbation */
+    const double a     = scalefactor*5.0e+03/ud.h_ref;       /* characteristic width of the witch of Agnesi type mollifier */
     
     const int icx = elem->icx;
     const int icy = elem->icy;
@@ -230,13 +230,15 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     
     g = ud.gravity_strength[1];
     
+    /* store background hydrostatic state in mpv auxiliary struct */
+    Hydrostatics_State(mpv, elem, node);
+    
+    /* Aux space for cell- and node-based column-wise hydrostatics */
     HySt  = States_new(node->icy);
     Y     = (double*)malloc(node->icy*sizeof(double));
     HyStn = States_new(node->icy);
     Yn    = (double*)malloc(node->icy*sizeof(double));
-    
-    Hydrostatics_State(mpv, elem, node);
-    
+        
     for(i = 0; i < icx; i++) {
         
         /* set potential temperature stratification in the column */
@@ -250,6 +252,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             yn    = node->y[j];
             Yn[j] = stratification(yn)  + delth * molly(xn) * sin(PI*yn)  / (1.0 + (xn-xc)*(xn-xc) / (a*a));
         }        
+        /* determine hydrostatic pressure distributions column-wise (lateral relation still neglected) */
         Hydrostatics_Column(HySt, HyStn, Y, Yn, elem, node);
         
         /* initialization of field variables */
@@ -286,7 +289,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
         }
     }
     
-    /* Pressure distribution for the hydrostatic model */
+    /* Find hydrostatic surface pressure and readjust pressure in the columns */
     Hydrostatic_Initial_Pressure(Sol, mpv, elem, node);    
 }
 

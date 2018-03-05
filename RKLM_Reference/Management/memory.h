@@ -48,13 +48,6 @@ void flip2D(double *f, int ix, int iy, int n, double *W );
 
 #endif /* MEMORY_H */
 
-/*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
- $Log: memory.h,v $
- Revision 1.1  1998/03/01 18:43:35  nicola
- This is the initial revision of 3d. It comes out after two weeks of work on
- Matthias' version of Rupert's F3D code. It is the starting point for imple
- menting a low Mach number extension.
- 
- LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL*/
+/* LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL */
 
 

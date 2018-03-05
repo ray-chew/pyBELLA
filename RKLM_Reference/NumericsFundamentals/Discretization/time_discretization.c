@@ -28,6 +28,5 @@ void set_time_integrator_parameters(User_Data *ud)
             assert(0);
             break;
     }
-    
 }
 

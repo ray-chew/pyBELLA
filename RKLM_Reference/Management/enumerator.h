@@ -14,10 +14,6 @@ enum Boolean {
     WRONG,
     CORRECT};
 
-enum PoissonCentering {
-    CELLPOISSON,
-    NODEPOISSON};
-
 enum Constraint {
     VIOLATED,
     SATISFIED};
@@ -26,6 +22,7 @@ enum Switch {
     OFF,
     ON};
 
+/* only HDF available in March 2018 code */
 enum FileFormat {
     ASCII,
     HDF,
@@ -35,11 +32,9 @@ enum RecoveryOrder {
     FIRST,
     SECOND};
 
-enum InitialCondition {
-    ZERO,
-    SOD1D,
-    ONE_FLAME_BALL};
-
+/* Only the SI_MIDPT option is implemented in the March 2018 code;
+   other options were available in oder versions of the code
+ */
 enum TimeIntegrator {
     OP_SPLIT,
     OP_SPLIT_MD_UPDATE,
@@ -48,17 +43,6 @@ enum TimeIntegrator {
     RK3_SKAMA,
     RK3_TEST,
     SI_MIDPT};
-
-enum GravityTimeIntegrator {
-    EULER_FORWARD,
-    EULER_BACKWARD,
-    IMPLICIT_TRAPEZOIDAL
-};
-
-enum GRID {
-    CELL_CENTERED,
-    NODE_CENTERED
-};
 
 enum FluxesFrom {
     FLUX_EXTERNAL,
@@ -69,15 +53,6 @@ enum MUSCL_ON_OFF {
     WITHOUT_MUSCL,
     WITH_MUSCL
 };
-
-enum GRAVITY_ON_OFF {
-    WITHOUT_GRAVITY,
-    WITH_GRAVITY
-};
-
-enum TimeLevel {
-    OLD,
-    NEW};
 
 enum Direction {
     BACKWARD,
@@ -94,10 +69,6 @@ enum LimiterType {
 	RUPE,
     NO_SLOPE,
     NUMBER_OF_LIMITER};
-
-enum ToWhichEdge {
-    TO_THE_RIGHT,
-    TO_THE_LEFT};
 
 #endif /* ENUMERATOR_H */
 

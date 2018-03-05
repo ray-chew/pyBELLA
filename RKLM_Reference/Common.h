@@ -12,6 +12,9 @@
 #define OUTPUT_SPLITSTEPS 0
 #define OUTPUT_SUBSTEPS_PREDICTOR 0
 
+/*
+#define OUTPUT_FLUXES
+ */
 
 /* ============================================= 
  Initial Data Options
@@ -63,9 +66,6 @@
 
 
 /* First projection options */
-/*
- #define TIME_AVERAGED_COEFFS_PROJ1   if def'd Poisson coefficients avrged between old & new time  
-*/
 
 #define PROJECTION1 1              /* switch for first projection should be on "1" normally       */
 

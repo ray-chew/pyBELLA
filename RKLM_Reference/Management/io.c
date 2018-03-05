@@ -1,21 +1,6 @@
 /*******************************************************************************
  File:   io.c
- Author: Nicola 
- Date:   Wed Feb 18 08:53:35 CET 1998
- 
- Notice: the functions WriteASCII, WriteSILO and WriteGNU should be re-designed 
- according to the following guidelines (priority according to order):
- 
- - avoid the use of global structures
- 
- - use the state equations made available in Eos (instead of implementing 
- their own version of the state equation!)
- 
- - grid and solution in distinct files!
- 
- - a different file for each variable (as in Rupert's WriteHDF)? 
- 
- - merge WriteASCII and WriteGNU (why two different routines?)
+ WriteSILO() has not been tested!
  *******************************************************************************/
 #include <stdio.h>
 #include <string.h>
@@ -33,7 +18,6 @@
 #include "enumerator.h"
 #include "thermodynamic.h"
 #include "variable.h"
-/* #include "space_discretization.h" */
 #include "boundary.h"
 #include "mpv.h"
 #include "memory.h"
@@ -45,6 +29,7 @@
 #endif
 #include  "/opt/local/include/dfsd.h" 
 #endif
+
 #ifdef SILOFORMAT
 #include "silo.h"
 #endif
@@ -114,7 +99,7 @@ void putout(ConsVars* Sol,
             }
             output_counter++;
             
-#if 0
+#ifdef OUTPUT_FLUXES
             extern ConsVars* flux[3];
             extern User_Data ud;
             FILE *prhs2file = NULL;
@@ -376,109 +361,9 @@ void WriteHDF(
 #endif
 }
 
-
-#if 0
-
-void ElemSpaceDiscrWriteASCII(
-							  double* var, 
-							  const ElemSpaceDiscr* elem,
-							  const char* filename,
-							  const char* varname) {
-	
-	int ndim = elem->ndim;
-	
-	FILE* file;
-	
-	file = fopen(filename, "w+");
-	if(!file) ERROR("cannot open file");
-	
-	switch(ndim) {
-		case 1: {
-			ERROR("function not available");
-			break;
-		}  
-		case 2: {
-			const int igx = elem->igx;
-			const int igy = elem->igy;
-			const int icx = elem->icx;
-			const int icy = elem->icy;
-			const char form[] = {"%e   %e   %e\n"};
-			const char head[] = {"# x y %s\n"}; 
-			int i, j, m, n;
-			fprintf(file, head);
-			for(j = igy; j < icy - igy; j++) {m = j * icx;  
-				for(i = igx; i < icx - igx; i++) {n = m + i;	       
-					fprintf(file, form, elem->x[i], elem->y[j], var[n]);
-				}
-				fprintf(file, "\n"); /* block separation */
-			}
-			fclose(file);
-			break;
-		}
-		case 3: {
-			ERROR("function not available");
-			break;
-		}
-		default: {
-			fclose(file); 
-			ERROR("bad dimension");
-		}
-	}
-}
-
-
-void NodeSpaceDiscrWriteASCII(
-							  double* var, 
-							  const NodeSpaceDiscr* node,
-							  const char* filename,
-							  const char* varname) {
-	
-	int ndim = node->ndim;
-	
-	FILE* file;
-	
-	file = fopen(filename, "w+");
-	if(!file) ERROR("cannot open file");
-	
-	switch(ndim) {
-		case 1: {
-			ERROR("function not available");
-			break;
-		}  
-		case 2: {
-			const int igx = node->igx;
-			const int igy = node->igy;
-			const int icx = node->icx;
-			const int icy = node->icy;
-			const char form[] = {"%e   %e   %e\n"};
-			const char head[] = {"# x y %s\n"}; 
-			int i, j, m, n;
-			fprintf(file, head);
-			for(j = igy; j < icy - igy; j++) {m = j * icx;  
-				for(i = igx; i < icx - igx; i++) {n = m + i;	       
-					fprintf(file, form, node->x[i], node->y[j], var[n]);
-				}
-				fprintf(file, "\n"); /* block separation */
-			}
-			fclose(file);
-			break;
-		}
-		case 3: {
-			ERROR("function not available");
-			break;
-		}
-		default: {
-			fclose(file); 
-			ERROR("bad dimension");
-		}
-	}
-}
-
 #ifdef SILOFORMAT
 static void putoutSILO(char* file_name) {
-	
-#ifdef SILOFORMAT
-	
+		
 	/* User data */
 	extern User_Data ud;
 	
@@ -551,17 +436,10 @@ static void putoutSILO(char* file_name) {
 		}
 		default: 
 			ERROR("bad dimension");
-	}
-	
-#else
-	
-	ERROR("function not available");
-	
-#endif
+	}	
 }
 #endif
 
-#endif /* 0 */
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log: io.c,v $

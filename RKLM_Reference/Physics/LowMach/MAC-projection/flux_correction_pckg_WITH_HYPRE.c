@@ -457,13 +457,12 @@ void operator_coefficients(
                     ic    = n - j;
 					icm   = ic - 1; 
 					
-#ifdef TIME_AVERAGED_COEFFS_PROJ1
-                    hi    = 0.5 * ( Sol->rhoY[ic] * Sol->rhoY[ic] / Sol->rho[ic] + Sol0->rhoY[ic] * Sol0->rhoY[ic] / Sol0->rho[ic] ) * Gammainv;   
-                    him   = 0.5 * ( Sol->rhoY[icm] * Sol->rhoY[icm] / Sol->rho[icm] + Sol0->rhoY[icm] * Sol0->rhoY[icm] / Sol0->rho[icm] ) * Gammainv;
-#else
+                    /*
+                    hi    = Sol0->rhoY[ic] * Sol0->rhoY[ic] / Sol0->rho[ic]    * Gammainv;   
+                    him   = Sol0->rhoY[icm] * Sol0->rhoY[icm] / Sol0->rho[icm] * Gammainv;
+                     */
                     hi    = Sol->rhoY[ic] * Sol->rhoY[ic] / Sol->rho[ic]    * Gammainv;   
                     him   = Sol->rhoY[icm] * Sol->rhoY[icm] / Sol->rho[icm] * Gammainv;
-#endif
                     
 					hx[n] = 0.5 * (hi + him);
                     
@@ -481,14 +480,13 @@ void operator_coefficients(
                     m     = n + j;
                     jc    = j * icx + i;
 					jcm   = jc - icx;          
-				
-#ifdef TIME_AVERAGED_COEFFS_PROJ1
-                    hj    = 0.5 * ( Sol->rhoY[jc] * Sol->rhoY[jc] / Sol->rho[jc] + Sol0->rhoY[jc] * Sol0->rhoY[jc] / Sol0->rho[jc]) * Gammainv;
-                    hjm   = 0.5 * ( Sol->rhoY[jcm] * Sol->rhoY[jcm] / Sol->rho[jcm] + Sol0->rhoY[jcm] * Sol0->rhoY[jcm] / Sol0->rho[jcm]) * Gammainv;
-#else
+
+                    /*
+                     hj    = Sol0->rhoY[jc] * Sol0->rhoY[jc] / Sol0->rho[jc] * Gammainv;
+                     hjm   = Sol0->rhoY[jcm] * Sol0->rhoY[jcm] / Sol0->rho[jcm] * Gammainv;
+                     */
                     hj    = Sol->rhoY[jc] * Sol->rhoY[jc] / Sol->rho[jc] * Gammainv;
                     hjm   = Sol->rhoY[jcm] * Sol->rhoY[jcm] / Sol->rho[jcm] * Gammainv;
-#endif
                     
                     double S     = mpv->HydroState->S0[j];
                     double Sm    = mpv->HydroState->S0[j-1];
@@ -508,11 +506,10 @@ void operator_coefficients(
             
 			for(j = igy; j < icy - igy; j++) {m = j * icx;
 				for(i = igx; i < icx - igx; i++) {n = m + i;
-#ifdef TIME_AVERAGED_COEFFS_PROJ1
-					hc[n] = ccenter * pow(0.5*(Sol->rhoY[n]+Sol0->rhoY[n]),cexp);
-#else
+                    /*
                     hc[n] = ccenter * pow(Sol0->rhoY[n],cexp);
-#endif
+                     */
+                    hc[n] = ccenter * pow(Sol->rhoY[n],cexp);
 				}
 			}
 			

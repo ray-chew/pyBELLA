@@ -16,7 +16,7 @@ MPV* mpv;
 
 /* ========================================================================== */
 
-void initialize_MG_projection(
+void initialize_projection(
 							  const int inx,
 							  const int iny,
 							  const int inz,

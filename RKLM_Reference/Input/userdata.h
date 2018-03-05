@@ -29,7 +29,6 @@ typedef struct {
 	char file_name[FILENAME_MAX];
     char test_dir_name[FILENAME_MAX];
 	int ncache;
-	int nhist;
 	
     /* reference quantities */
     double h_ref;
@@ -72,7 +71,6 @@ typedef struct {
 	double ymax;
 	double zmin;
 	double zmax;
-	double h;
 	
 	/* initial conditions -- highly case-dependent! */
 	double wind_speed;
@@ -100,7 +98,6 @@ typedef struct {
 	int is_compressible;
 	double compressibility;
 	double Msq;
-	double M;
 	
 	/* Geo-stuff */
 	double gravity_strength[3];

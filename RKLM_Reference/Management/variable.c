@@ -341,14 +341,4 @@ void Hydro_free(Hydro* var) {
 }
 
 
-/*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
- $Log: variable.c,v $
- Revision 1.2  1998/03/07 09:56:48  nicola
- Added flux computation and multiple pressure variables.
- 
- Revision 1.1  1998/03/01 18:43:37  nicola
- This is the initial revision of 3d. It comes out after two weeks of work on
- Matthias' version of Rupert's F3D code. It is the starting point for imple
- menting a low Mach number extension.
- 
- LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL*/
+/* LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL */
