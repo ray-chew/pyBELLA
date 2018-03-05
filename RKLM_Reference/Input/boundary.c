@@ -986,11 +986,11 @@ void set_ghostcells_p2(
     const int zperiodic = (ud.bdrytype_min[2] == PERIODIC ? 1 : 0);
     
     /* x-direction */
-    for (int k=igz; k<icz-igz; k++) {
+    for (int k=0; k<icz; k++) {
         int lc = k*icx*icy;
-        for (int j=igy; j<icy-igy; j++) {
+        for (int j=0; j<icy; j++) {
             int mc  = lc + j*icx;
-            for (int i=igx-1; i>=2-ig; i--) {
+            for (int i=igx-1; i>=igx-ig; i--) {
                 int nc0_obj = mc + i;
                 int nc0_src = mc + xperiodic*(icx-4+i) + (1-xperiodic)*(igx+1-i);
                 int nc1_obj = mc + icx-1-i;
@@ -1004,11 +1004,11 @@ void set_ghostcells_p2(
     
     /* y-direction */
     if (elem->ndim > 1) {
-        for (int i=igx; i<icx-igx; i++) {
+        for (int i=0; i<icx; i++) {
             int lc = i;
-            for (int k=igz; k<icz-igz; k++) {
+            for (int k=0; k<icz; k++) {
                 int mc  = lc + k*icx*icy;
-                for (int j=igy-1; j>=2-ig; j--) {
+                for (int j=igy-1; j>=igy-ig; j--) {
                     int nc0_obj = mc + j*icx;
                     int nc0_src = mc + (yperiodic*(icy-4+j) + (1-yperiodic)*(igy+1-j))*icx;
                     int nc1_obj = mc + (icy-1-j)*icx;
@@ -1023,11 +1023,11 @@ void set_ghostcells_p2(
 
     /* z-direction */
     if (elem->ndim > 2) {
-        for (int j=igy; j<icy-igy; j++) {
+        for (int j=0; j<icy; j++) {
             int lc = j*icx;
-            for (int i=igx; i<icx-igx; i++) {
+            for (int i=0; i<icx; i++) {
                 int mc  = lc + i;
-                for (int k=igz-1; k>=2-ig; k--) {
+                for (int k=igz-1; k>=igz-ig; k--) {
                     int nc0_obj = mc + k*icx*icy;
                     int nc0_src = mc + (zperiodic*(icz-4+k) + (1-zperiodic)*(igz+1-k))*icx*icy;
                     int nc1_obj = mc + (icz-1-k)*icx*icy;

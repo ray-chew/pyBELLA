@@ -16,7 +16,6 @@
 #include "space_discretization.h"
 #include "thermodynamic.h"
 #include "Eos.h"
-#include "set_ghostcells_p.h"
 #include "boundary.h"
 #include "memory.h"
 #include "Hydrostatics.h"
