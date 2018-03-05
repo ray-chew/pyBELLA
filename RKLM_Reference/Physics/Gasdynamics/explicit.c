@@ -18,7 +18,6 @@
 #include "thermodynamic.h"
 #include "variable.h"
 #include "explicit.h"
-#include "set_ghostcells_p.h"
 #include "enumerator.h"
 #include "memory.h"
 
@@ -150,7 +149,7 @@ void Explicit_step_and_flux(
     icx = elem->icx;
         
     /* bring dummy cells in the current space direction up to date  */
-    Bound(Sol, lambda, n, SplitStep, 0);
+    Bound(Sol, lambda, n, SplitStep);
         
     States_setp(Solk, Sol, 0);
     nmax = MIN_own(ncache, n);
@@ -249,7 +248,7 @@ void Explicit_step_and_flux(
     Explicit_step_update(Sol, n); 
     
     /* bring dummy cells in the current space direction up to date  */
-    Bound(Sol, lambda, n, SplitStep, 0);
+    Bound(Sol, lambda, n, SplitStep);
 
     
 #if OUTPUT_SUBSTEPS_PREDICTOR  /* 2, 3 */

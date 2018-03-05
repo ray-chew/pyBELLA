@@ -12,7 +12,6 @@
 #include <tgmath.h>
 #include "Common.h"
 #include "BiCGSTAB.h"
-#include "set_ghostnodes_p.h"
 #include "variable.h"
 #include "mpv.h"
 #include "error.h"
@@ -32,7 +31,6 @@
 #include "laplacian_nodes.h"
 #include "numerical_flux.h"
 #include "flux_correction.h"
-#include "set_ghostcells_p.h"
 
 static double divergence_nodes(
 							 double* rhs,

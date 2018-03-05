@@ -11,11 +11,6 @@
 		9A21BF841DA5847F006A6F34 /* libdf.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A21BF831DA5847F006A6F34 /* libdf.dylib */; };
 		9A3E59951DE89FD000D57447 /* userdata_InternalWave_LongWave.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A3E59941DE89FD000D57447 /* userdata_InternalWave_LongWave.c */; };
 		9AC4F9841DA3F06F00AED455 /* boundary.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9231DA3F06F00AED455 /* boundary.c */; };
-		9AC4F9861DA3F06F00AED455 /* set_ghostcells_p.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9271DA3F06F00AED455 /* set_ghostcells_p.c */; };
-		9AC4F9871DA3F06F00AED455 /* set_ghostfaces_h_over_rho.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9291DA3F06F00AED455 /* set_ghostfaces_h_over_rho.c */; };
-		9AC4F9881DA3F06F00AED455 /* set_ghostnodes_p.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F92B1DA3F06F00AED455 /* set_ghostnodes_p.c */; };
-		9AC4F9891DA3F06F00AED455 /* set_ghostnodes_rhs.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F92D1DA3F06F00AED455 /* set_ghostnodes_rhs.c */; };
-		9AC4F98A1DA3F06F00AED455 /* space_discretization.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F92F1DA3F06F00AED455 /* space_discretization.c */; };
 		9AC4F9911DA3F06F00AED455 /* data.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9391DA3F06F00AED455 /* data.c */; };
 		9AC4F9921DA3F06F00AED455 /* io.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F93D1DA3F06F00AED455 /* io.c */; };
 		9AC4F9931DA3F06F00AED455 /* Main.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F93F1DA3F06F00AED455 /* Main.c */; };
@@ -69,16 +64,6 @@
 		9AC4F9231DA3F06F00AED455 /* boundary.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = boundary.c; sourceTree = "<group>"; };
 		9AC4F9241DA3F06F00AED455 /* boundary.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = boundary.h; sourceTree = "<group>"; };
 		9AC4F9261DA3F06F00AED455 /* enum_bdry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = enum_bdry.h; sourceTree = "<group>"; };
-		9AC4F9271DA3F06F00AED455 /* set_ghostcells_p.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = set_ghostcells_p.c; sourceTree = "<group>"; };
-		9AC4F9281DA3F06F00AED455 /* set_ghostcells_p.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = set_ghostcells_p.h; sourceTree = "<group>"; };
-		9AC4F9291DA3F06F00AED455 /* set_ghostfaces_h_over_rho.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = set_ghostfaces_h_over_rho.c; sourceTree = "<group>"; };
-		9AC4F92A1DA3F06F00AED455 /* set_ghostfaces_h_over_rho.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = set_ghostfaces_h_over_rho.h; sourceTree = "<group>"; };
-		9AC4F92B1DA3F06F00AED455 /* set_ghostnodes_p.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = set_ghostnodes_p.c; sourceTree = "<group>"; };
-		9AC4F92C1DA3F06F00AED455 /* set_ghostnodes_p.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = set_ghostnodes_p.h; sourceTree = "<group>"; };
-		9AC4F92D1DA3F06F00AED455 /* set_ghostnodes_rhs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = set_ghostnodes_rhs.c; sourceTree = "<group>"; };
-		9AC4F92E1DA3F06F00AED455 /* set_ghostnodes_rhs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = set_ghostnodes_rhs.h; sourceTree = "<group>"; };
-		9AC4F92F1DA3F06F00AED455 /* space_discretization.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = space_discretization.c; sourceTree = "<group>"; };
-		9AC4F9301DA3F06F00AED455 /* space_discretization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = space_discretization.h; sourceTree = "<group>"; };
 		9AC4F9311DA3F06F00AED455 /* userdata.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = userdata.h; sourceTree = "<group>"; };
 		9AC4F9391DA3F06F00AED455 /* data.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = data.c; sourceTree = "<group>"; };
 		9AC4F93A1DA3F06F00AED455 /* data.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = data.h; sourceTree = "<group>"; };
@@ -237,16 +222,6 @@
 				9AC4F9231DA3F06F00AED455 /* boundary.c */,
 				9AC4F9241DA3F06F00AED455 /* boundary.h */,
 				9AC4F9261DA3F06F00AED455 /* enum_bdry.h */,
-				9AC4F9271DA3F06F00AED455 /* set_ghostcells_p.c */,
-				9AC4F9281DA3F06F00AED455 /* set_ghostcells_p.h */,
-				9AC4F9291DA3F06F00AED455 /* set_ghostfaces_h_over_rho.c */,
-				9AC4F92A1DA3F06F00AED455 /* set_ghostfaces_h_over_rho.h */,
-				9AC4F92B1DA3F06F00AED455 /* set_ghostnodes_p.c */,
-				9AC4F92C1DA3F06F00AED455 /* set_ghostnodes_p.h */,
-				9AC4F92D1DA3F06F00AED455 /* set_ghostnodes_rhs.c */,
-				9AC4F92E1DA3F06F00AED455 /* set_ghostnodes_rhs.h */,
-				9AC4F92F1DA3F06F00AED455 /* space_discretization.c */,
-				9AC4F9301DA3F06F00AED455 /* space_discretization.h */,
 			);
 			path = Input;
 			sourceTree = "<group>";
@@ -451,13 +426,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				9AE5E7022019C80300399B1A /* Hydrostatics.c in Sources */,
-				9AC4F9891DA3F06F00AED455 /* set_ghostnodes_rhs.c in Sources */,
 				9AC4F9911DA3F06F00AED455 /* data.c in Sources */,
 				9AC4F9A71DA3F06F00AED455 /* flux_correction_pckg_WITH_HYPRE.c in Sources */,
 				9AC4F9991DA3F06F00AED455 /* SimpleUtilities.c in Sources */,
 				9AC4F9AB1DA3F06F00AED455 /* mpv.c in Sources */,
-				9AC4F9871DA3F06F00AED455 /* set_ghostfaces_h_over_rho.c in Sources */,
-				9AC4F98A1DA3F06F00AED455 /* space_discretization.c in Sources */,
 				9AC4F9971DA3F06F00AED455 /* time_discretization.c in Sources */,
 				9AC4F9841DA3F06F00AED455 /* boundary.c in Sources */,
 				9AC4F9951DA3F06F00AED455 /* variable.c in Sources */,
@@ -470,7 +442,6 @@
 				9ADB58891E07C77E0032A9F2 /* Thomas_Algorithmus_2.c in Sources */,
 				9AC4F9931DA3F06F00AED455 /* Main.c in Sources */,
 				9AC4F9A31DA3F06F00AED455 /* thermodynamic.c in Sources */,
-				9AC4F9861DA3F06F00AED455 /* set_ghostcells_p.c in Sources */,
 				9AC4F9A01DA3F06F00AED455 /* numerical_flux.c in Sources */,
 				9A3E59951DE89FD000D57447 /* userdata_InternalWave_LongWave.c in Sources */,
 				9AC4F9A21DA3F06F00AED455 /* recovery.c in Sources */,
@@ -480,7 +451,6 @@
 				9AC4F99B1DA3F06F00AED455 /* Eos.c in Sources */,
 				9AC4F9A81DA3F06F00AED455 /* laplacian_cells.c in Sources */,
 				9AC4F9AC1DA3F06F00AED455 /* laplacian_nodes.c in Sources */,
-				9AC4F9881DA3F06F00AED455 /* set_ghostnodes_p.c in Sources */,
 				9AC4F9961DA3F06F00AED455 /* kgrid.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

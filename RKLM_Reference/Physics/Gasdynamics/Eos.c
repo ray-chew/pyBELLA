@@ -12,7 +12,6 @@
 #include "math_own.h"
 #include "Eos.h"
 #include "io.h"
-#include "set_ghostcells_p.h"
 
 
 /*------------------------------------------------------------------------------

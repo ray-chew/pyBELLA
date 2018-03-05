@@ -34,8 +34,6 @@
 #include "thermodynamic.h"
 #include "variable.h"
 /* #include "space_discretization.h" */
-#include "set_ghostcells_p.h"
-#include "set_ghostnodes_p.h"
 #include "boundary.h"
 #include "mpv.h"
 #include "memory.h"

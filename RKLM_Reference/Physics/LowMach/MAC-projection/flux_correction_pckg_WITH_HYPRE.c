@@ -10,7 +10,6 @@
 #include <string.h>
 #include <stdio.h>
 #include "Common.h"
-#include "set_ghostcells_p.h"
 #include "mpv.h"
 #include "memory.h"
 #include "flux_correction.h"
@@ -27,6 +26,7 @@
 #include "math_own.h"
 #include "recovery.h"
 #include "laplacian_cells.h"
+#include "boundary.h"
 
 static enum Constraint integral_condition(ConsVars* flux[3],
 										  double* rhs, 
@@ -161,7 +161,7 @@ void flux_correction(ConsVars* flux[3],
      tolerance is reached.
      */
     variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, Sol, elem, node);
-    set_ghostcells_p2(p2, (const double **)hplus, elem, elem->igx);
+    set_ghostcells_p2(p2, elem, elem->igx);
 
 #ifdef NONLINEAR_EOS_IN_1st_PROJECTION
     /* Nonlinear iteration for the \partial P/\partial t  term in the P-equation */
@@ -176,7 +176,7 @@ void flux_correction(ConsVars* flux[3],
 
     while (rhsmax > ud.flux_correction_precision) {
         variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, Sol, elem, node);
-        set_ghostcells_p2(p2, (const double **)hplus, elem, elem->igx);
+        set_ghostcells_p2(p2, elem, elem->igx);
         for (int nc=0; nc<elem->nc; nc++) pi[nc] += p2[nc];
         rhsmax = Newton_rhs(rhs, (const double*)p2, (const double*)pi, (const double*)Sol->rhoY, (const MPV*)mpv, (const ElemSpaceDiscr*)elem);
     }
@@ -241,7 +241,7 @@ void flux_correction(ConsVars* flux[3],
         mpv->p2_cells[n]  = p2[n];
     }
     
-	set_ghostcells_p2(mpv->p2_cells, (const double **)hplus, elem, elem->igx);
+	set_ghostcells_p2(mpv->p2_cells, elem, elem->igx);
     
     free(pi);
 }

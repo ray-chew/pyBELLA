@@ -209,8 +209,7 @@ void Bound(
 		   ConsVars* Sol, 
 		   const double lambda, 
 		   const int n, 
-		   const int SplitStep, 
-           const int setZ) 
+		   const int SplitStep) 
 {
 	
 	/* User data */
@@ -945,14 +944,13 @@ static void (*rotate[])(ConsVars* Sol, const enum Direction dir) = {NULL, rotate
 
 void Set_Explicit_Boundary_Data(
                                 ConsVars* Sol,
-                                const ElemSpaceDiscr* elem,
-                                const int setZ) 
+                                const ElemSpaceDiscr* elem) 
 {
     int SplitStep;
     
     for(SplitStep = 0; SplitStep < elem->ndim; SplitStep++) { 
         const double lambda = 1.0;
-        Bound(Sol, lambda, elem->nc, SplitStep, setZ); 
+        Bound(Sol, lambda, elem->nc, SplitStep); 
         (*rotate[elem->ndim - 1])(Sol, FORWARD);
     }   
     
@@ -963,6 +961,85 @@ void Set_Explicit_Boundary_Data(
 
 }
 
+/* ============================================================================= */
+
+void set_ghostcells_p2(
+                       double* p,
+                       const ElemSpaceDiscr* elem, 
+                       const int ig) {
+    
+    extern User_Data ud;
+    
+    /* I am implementing a simple, rudimentary version just for homogeneous
+     Neumann and periodic conditions
+     */
+
+    const int icx = elem->icx;
+    const int igx = elem->igx;
+    const int icy = elem->icy;
+    const int igy = elem->igy;
+    const int icz = elem->icz;
+    const int igz = elem->igz;
+    
+    const int xperiodic = (ud.bdrytype_min[0] == PERIODIC ? 1 : 0);
+    const int yperiodic = (ud.bdrytype_min[1] == PERIODIC ? 1 : 0);
+    const int zperiodic = (ud.bdrytype_min[2] == PERIODIC ? 1 : 0);
+    
+    /* x-direction */
+    for (int k=igz; k<icz-igz; k++) {
+        int lc = k*icx*icy;
+        for (int j=igy; j<icy-igy; j++) {
+            int mc  = lc + j*icx;
+            for (int i=igx-1; i>=2-ig; i--) {
+                int nc0_obj = mc + i;
+                int nc0_src = mc + xperiodic*(icx-4+i) + (1-xperiodic)*(igx+1-i);
+                int nc1_obj = mc + icx-1-i;
+                int nc1_src = mc + xperiodic*(igx+1-i) + (1-xperiodic)*(icx-4+i);
+                
+                p[nc0_obj] = p[nc0_src];
+                p[nc1_obj] = p[nc1_src];
+            }
+        }
+    } 
+    
+    /* y-direction */
+    if (elem->ndim > 1) {
+        for (int i=igx; i<icx-igx; i++) {
+            int lc = i;
+            for (int k=igz; k<icz-igz; k++) {
+                int mc  = lc + k*icx*icy;
+                for (int j=igy-1; j>=2-ig; j--) {
+                    int nc0_obj = mc + j*icx;
+                    int nc0_src = mc + (yperiodic*(icy-4+j) + (1-yperiodic)*(igy+1-j))*icx;
+                    int nc1_obj = mc + (icy-1-j)*icx;
+                    int nc1_src = mc + (yperiodic*(igy+1-j) + (1-yperiodic)*(icy-4+j))*icx;
+                    
+                    p[nc0_obj] = p[nc0_src];
+                    p[nc1_obj] = p[nc1_src];
+                }
+            }
+        } 
+    }
+
+    /* z-direction */
+    if (elem->ndim > 2) {
+        for (int j=igy; j<icy-igy; j++) {
+            int lc = j*icx;
+            for (int i=igx; i<icx-igx; i++) {
+                int mc  = lc + i;
+                for (int k=igz-1; k>=2-ig; k--) {
+                    int nc0_obj = mc + k*icx*icy;
+                    int nc0_src = mc + (zperiodic*(icz-4+k) + (1-zperiodic)*(igz+1-k))*icx*icy;
+                    int nc1_obj = mc + (icz-1-k)*icx*icy;
+                    int nc1_src = mc + (zperiodic*(igz+1-k) + (1-zperiodic)*(icz-4+k))*icx*icy;
+                        
+                    p[nc0_obj] = p[nc0_src];
+                    p[nc1_obj] = p[nc1_src];
+                }
+            }
+        } 
+    }
+}
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log: boundary.c,v $

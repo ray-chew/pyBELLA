@@ -16,8 +16,8 @@
 #include "variable.h"
 #include "mpv.h"
 #include "math_own.h"
-#include "set_ghostcells_p.h"
 #include "laplacian_cells.h"
+#include "boundary.h"
 
 
 BiCGSTABData* BiCGSTABData_new(
@@ -116,7 +116,7 @@ double SOLVER(
     
     /* initialization */
     /* initial residual; intermediate abuse of the field */
-    set_ghostcells_p2(p2, hplus, elem, 1);
+    set_ghostcells_p2(p2, elem, 1);
     EnthalpyWeightedLap_bilinear_p(elem, node, p2, hplus, hcenter, Sol, mpv, dt, r_0);
     
     precon_c_invert(rhs, rhs, elem);
@@ -132,7 +132,7 @@ double SOLVER(
     }
     
     /* initialization of iteration coefficients; residual norm */
-    set_ghostcells_p2(r_0, hplus, elem, 1);
+    set_ghostcells_p2(r_0, elem, 1);
     EnthalpyWeightedLap_bilinear_p(elem, node, r_0, hplus, hcenter, Sol, mpv, dt, Lr_0);
     
     /* norm of residuum */
@@ -214,7 +214,7 @@ double SOLVER(
         }
         
         /* AB */
-        set_ghostcells_p2(r_0, hplus, elem, 1);
+        set_ghostcells_p2(r_0, elem, 1);
         EnthalpyWeightedLap_bilinear_p(elem, node, r_0, hplus, hcenter, Sol, mpv, dt, Lr_0);
         
         AB = 0.0;
@@ -275,7 +275,7 @@ double SOLVER(
         }
     }
     
-    set_ghostcells_p2(p2, hplus, elem, 1);
+    set_ghostcells_p2(p2, elem, 1);
     
     printf(" iter = %d,  residual = %e,  local residual = %e,  gridsize = %d\n", cnt, tmp, tmp_local, nc);
     
@@ -330,7 +330,7 @@ double SOLVER(
     
     double precon_inv_scale = precon_c_prepare(node, elem, hplus, hcenter);
     
-    set_ghostcells_p2(p2, hplus, elem, 1);
+    set_ghostcells_p2(p2, elem, 1);
     EnthalpyWeightedLap_bilinear_p(elem, node, p2, hplus, hcenter, Sol, mpv, dt, theta, v_j);
     
     precon_c_invert(rhs_prec, rhs, elem);
@@ -393,7 +393,7 @@ double SOLVER(
             }
         }
         
-        set_ghostcells_p2(p_j, hplus, elem, 1);
+        set_ghostcells_p2(p_j, elem, 1);
         EnthalpyWeightedLap_bilinear_p(elem, node, p_j, hplus, hcenter, Sol, mpv, dt, theta, v_j);
         
         sigma = 0.0; 
@@ -415,7 +415,7 @@ double SOLVER(
             }
         }
         
-        set_ghostcells_p2(s_j, hplus, elem, 1);
+        set_ghostcells_p2(s_j, elem, 1);
         EnthalpyWeightedLap_bilinear_p(elem, node, s_j, hplus, hcenter, Sol, mpv, dt, theta, t_j);
         
         omega = 0.0; 

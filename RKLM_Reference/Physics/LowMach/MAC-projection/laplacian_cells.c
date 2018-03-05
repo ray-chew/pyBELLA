@@ -10,7 +10,6 @@ Date:   Fri Mar 13 07:56:56 CET 1998  Feb. 2004
 #include <string.h>
 
 #include "Common.h"
-#include "set_ghostcells_p.h"
 #include "laplacian_cells.h"
 #include "error.h"
 #include "userdata.h"

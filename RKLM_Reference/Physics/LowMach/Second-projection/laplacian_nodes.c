@@ -6,7 +6,6 @@
 #include <float.h>
 #include <string.h>
 #include <math.h>
-#include "set_ghostnodes_p.h"
 #include "laplacian_nodes.h"
 #include "userdata.h"
 #include "error.h"

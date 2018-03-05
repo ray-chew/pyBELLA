@@ -23,8 +23,6 @@
 #include "thermodynamic.h"
 
 #include "variable_coefficient_poisson_nodes.h"
-#include "set_ghostnodes_p.h"
-#include "set_ghostnodes_rhs.h"
 
 #include "BiCGSTAB.h"
 #include "laplacian_nodes.h"

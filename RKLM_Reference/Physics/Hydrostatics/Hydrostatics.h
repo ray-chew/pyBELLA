@@ -10,7 +10,6 @@
 #define Hydrostatics_h
 
 #include <stdio.h>
-#include "space_discretization.h"
 #include "mpv.h"
 
 /* ================================================================================== */

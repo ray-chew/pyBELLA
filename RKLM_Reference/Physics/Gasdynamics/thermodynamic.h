@@ -8,7 +8,6 @@
 
 #include "userdata.h"
 #include "variable.h"
-#include "space_discretization.h"
 
 /*------------------------------------------------------------------------------
  

@@ -24,7 +24,6 @@
 #include "thermodynamic.h"
 #include "io.h"
 #include "math_own.h"
-#include "set_ghostcells_p.h"
 #include "variable.h"
 #include "kgrid.h"
 

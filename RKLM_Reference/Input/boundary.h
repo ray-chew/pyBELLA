@@ -31,8 +31,7 @@ void Bound(
 		   ConsVars* Sol, 
 		   const double lambda, 
 		   const int n, 
-           const int SplitStep, 
-           const int setZ);
+           const int SplitStep);
 
 void set_wall_massflux(
 					   BDRY* bdry, 
@@ -65,19 +64,18 @@ void check_flux_bcs(
 
 void Set_Explicit_Boundary_Data(
                                 ConsVars* Sol,
-                                const ElemSpaceDiscr* elem,
-                                const int setZ);
+                                const ElemSpaceDiscr* elem);
 
 
-/*
- void check_bdry_fluxes(
- ConsVars* Fluxes,
- const int nmax,
- const int kcache,
- const int njump,
- ElemSpaceDiscr* elem,
- const int SplitStep);
- */				    
+
+/* ============================================================================= */
+
+void set_ghostcells_p2(
+                       double* p,                        
+                       const ElemSpaceDiscr* elem, 
+                       const int ig);
+
+
 #endif /* BOUNDARY_H */
 
 
