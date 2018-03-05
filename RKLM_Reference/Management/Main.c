@@ -164,7 +164,7 @@ int main( void )
                 printf("\nstep %d done,  t=%f,  dt=%f,  cfl=%f, cfl_ac=%f, cfl_adv=%f", step, t, dt, dt_info.cfl, dt_info.cfl_ac, dt_info.cfl_adv);
                 printf("\n############################################################################################\n");
             }
-		}
+		}  
         
 		if(ud.write_file == ON) putout(Sol, ud.file_name, "Sol", 1);
 		tout++;

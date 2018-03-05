@@ -71,7 +71,7 @@ void Set_Explicit_Boundary_Data(
 /* ============================================================================= */
 
 void set_ghostcells_p2(
-                       double* p,                        
+                       double* p,                          
                        const ElemSpaceDiscr* elem, 
                        const int ig);
 
