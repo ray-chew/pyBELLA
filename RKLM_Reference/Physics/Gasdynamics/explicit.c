@@ -389,6 +389,7 @@ void Explicit_step_update(
 void advect(
             ConsVars *Sol, 
             ConsVars* flux[3],
+            VectorField* adv_flux,
             const double dt, 
             const ElemSpaceDiscr* elem,
             const enum FluxesFrom adv_fluxes_from, 

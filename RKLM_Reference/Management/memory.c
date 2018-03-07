@@ -133,11 +133,10 @@ void rotate2D(ConsVars* Sol, const enum Direction direction)
 	Sol->rhou  = Sol->rhov;
 	Sol->rhov  = phelp;
 	
-	{
-		phelp = flux[1]->rhou;
-		flux[1]->rhou = flux[1]->rhov;
-		flux[1]->rhov = phelp;
-	}
+    phelp = flux[1]->rhou;
+    flux[1]->rhou = flux[1]->rhov;
+    flux[1]->rhov = phelp;
+	
 }
 
 /* ================================================================================ */
@@ -281,20 +280,18 @@ void rotate3D(ConsVars* Sol, const enum Direction direction) {
 		Sol->rhow = Sol->rhou;
 		Sol->rhou = phelp;
 		
-		{
-			phelp = flux[0]->rhov;
-			flux[0]->rhov = flux[0]->rhow;
-			flux[0]->rhow = flux[0]->rhou;
-			flux[0]->rhou = phelp;
-			phelp = flux[1]->rhov;
-			flux[1]->rhov = flux[1]->rhow;
-			flux[1]->rhow = flux[1]->rhou;
-			flux[1]->rhou = phelp;
-			phelp = flux[2]->rhov;
-			flux[2]->rhov = flux[2]->rhow;
-			flux[2]->rhow = flux[2]->rhou;
-			flux[2]->rhou = phelp;
-		}
+        phelp = flux[0]->rhov;
+        flux[0]->rhov = flux[0]->rhow;
+        flux[0]->rhow = flux[0]->rhou;
+        flux[0]->rhou = phelp;
+        phelp = flux[1]->rhov;
+        flux[1]->rhov = flux[1]->rhow;
+        flux[1]->rhow = flux[1]->rhou;
+        flux[1]->rhou = phelp;
+        phelp = flux[2]->rhov;
+        flux[2]->rhov = flux[2]->rhow;
+        flux[2]->rhow = flux[2]->rhou;
+        flux[2]->rhou = phelp;
 	}
 	else if(direction == BACKWARD) {
 		
@@ -405,21 +402,19 @@ void rotate3D(ConsVars* Sol, const enum Direction direction) {
 		Sol->rhov = Sol->rhou;
 		Sol->rhou = phelp;
 		
-		{
-			phelp = flux[0]->rhow;
-			flux[0]->rhow = flux[0]->rhov;
-			flux[0]->rhov = flux[0]->rhou;
-			flux[0]->rhou = phelp;
-			phelp = flux[1]->rhow;
-			flux[1]->rhow = flux[1]->rhov;
-			flux[1]->rhov = flux[1]->rhou;
-			flux[1]->rhou = phelp;
-			phelp = flux[2]->rhow;
-			flux[2]->rhow = flux[2]->rhov;
-			flux[2]->rhov = flux[2]->rhou;
-			flux[2]->rhou = phelp;
-		}
-		
+        phelp = flux[0]->rhow;
+        flux[0]->rhow = flux[0]->rhov;
+        flux[0]->rhov = flux[0]->rhou;
+        flux[0]->rhou = phelp;
+        phelp = flux[1]->rhow;
+        flux[1]->rhow = flux[1]->rhov;
+        flux[1]->rhov = flux[1]->rhou;
+        flux[1]->rhou = phelp;
+        phelp = flux[2]->rhow;
+        flux[2]->rhow = flux[2]->rhov;
+        flux[2]->rhov = flux[2]->rhou;
+        flux[2]->rhou = phelp;
+        
 		nc  = elem->nc; 
 		icx = elem->icx;
 		icy = elem->icy;

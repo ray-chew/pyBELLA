@@ -137,8 +137,8 @@ void add_advective_fluxes(VectorField* fd,
  store advective flux
  ------------------------------------------------------------------------------*/
 void recompute_advective_fluxes(ConsVars* flux[3], 
-                      const ConsVars* Sol, 
-                      const ElemSpaceDiscr* elem)
+                                const ConsVars* Sol, 
+                                const ElemSpaceDiscr* elem)
 {
     /* make sure fluxes cannot inadvertently contain weird data */
     for (int nf=0; nf<elem->nfx; nf++) flux[0]->rhoY[nf] = 0.0;

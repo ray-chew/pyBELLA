@@ -13,7 +13,7 @@
 #include "userdata.h"
 #include "data.h"
 #include "kgrid.h"
-/* #include "space_discretization.h" */#include "thermodynamic.h"
+#include "thermodynamic.h"
 #include "Gasdynamics.h"
 #include "recovery.h"
 #include "boundary.h"
@@ -50,6 +50,7 @@ ConsVars* Sol;            /* full size */
 ConsVars* Sol0;           /* full size (M < 1.0) */
 ConsVars* dSol;           /* full size */
 VectorField* adv_flux;    /* full size, components located on primary cell faces */
+
 ConsVars* flux[3];        /* full size (M < 1.0) */
 
 States* Solk;             /* cache size */
@@ -128,28 +129,28 @@ void Data_init() {
     n_aux *= (node->ndim > 2 ? node->ifz : 1);
     
     W0  = (double*)malloc((unsigned)(n_aux * sizeof(double)));
-	
-	{
-		Sol0    = ConsVars_new(elem->nc);
-		flux[0] = ConsVars_new(elem->nfx);
-		ConsVars_setzero(flux[0], elem->nfx);
-		if(ndim > 1) {
-			flux[1] = ConsVars_new(elem->nfy);
-			ConsVars_setzero(flux[1], elem->nfy);
-		}
-		if(ndim > 2) {
-			flux[2] = ConsVars_new(elem->nfz);
-			ConsVars_setzero(flux[2], elem->nfz);
-		}
-		
-		initialize_bdry(elem);
-		
-		initialize_projection(inx,iny,inz,
-                              x0, x1, y0, y1, z0, z1,
-                              left,right,bottom,top,back,front);
-	}
-	
-	for (i=0; i<3; i++) {
+    
+    Sol0    = ConsVars_new(elem->nc);
+
+    flux[0] = ConsVars_new(elem->nfx);
+    ConsVars_setzero(flux[0], elem->nfx);
+    if(ndim > 1) {
+        flux[1] = ConsVars_new(elem->nfy);
+        ConsVars_setzero(flux[1], elem->nfy);
+    }
+    if(ndim > 2) {
+        flux[2] = ConsVars_new(elem->nfz);
+        ConsVars_setzero(flux[2], elem->nfz);
+    }
+    
+    initialize_bdry(elem);
+    
+    initialize_projection(inx,iny,inz,
+                          x0, x1, y0, y1, z0, z1,
+                          left,right,bottom,top,back,front);
+    
+    
+    for (i=0; i<3; i++) {
 		if (ud.i_gravity[i]) initialize_HydroState(elem->ic[i], node->ic[i]);
 	}
 	
@@ -172,13 +173,13 @@ void Data_free() {
     VectorField_free(adv_flux);
 	States_small_free(Solk);
 	free(W0);
-	{
-		ConsVars_free(Sol0);
-		if(ndim > 2) ConsVars_free(flux[2]);
-		if(ndim > 1) ConsVars_free(flux[1]);
-		ConsVars_free(flux[0]); 
-		terminate_MG_projection();
-	}
+    ConsVars_free(Sol0);
+
+    if(ndim > 2) ConsVars_free(flux[2]);
+    if(ndim > 1) ConsVars_free(flux[1]);
+    ConsVars_free(flux[0]);
+
+    terminate_MG_projection();
     
     close_bdry();
 }
