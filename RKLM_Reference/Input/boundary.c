@@ -85,9 +85,9 @@ void initialize_bdry(
 					 const ElemSpaceDiscr* elem)
 {
 	const int icx = elem->icx;
-	const int icy = elem->icy;
+    const int icz = elem->icz;
 	const int igx = elem->igx;
-	const int igy = elem->igy;
+    const int igz = elem->igz;
 
     double slope_sum, slope_sum_inv;
     int i;
@@ -136,47 +136,48 @@ void initialize_bdry(
         }
         
         case 3: {
-            bdry->wall_massflux = (double*)malloc(icx*icy*sizeof(double));
-            bdry->wall_slope    = (double*)malloc(icx*icy*sizeof(double));
-            bdry->wall_relative_slope = (double*)malloc(icx*icy*sizeof(double));
+            /* note that the y-direction is my "vertical" */
+            bdry->wall_massflux = (double*)malloc(icx*icz*sizeof(double));
+            bdry->wall_slope    = (double*)malloc(icx*icz*sizeof(double));
+            bdry->wall_relative_slope = (double*)malloc(icx*icz*sizeof(double));
             
             slope_sum = 0.0;
-            for (int j = igy; j < icy-igy; j++) {
-                int nj = j*icx;
+            for (int k = igz; k < icz-igz; k++) {
+                int nk = k*icx;
                 for (int i = igx; i < icx-igx; i++) {
-                    int nij = nj + i;
-                    double slope = slanted_wall_slope_3D(elem->x[i], elem->y[j]);
-                    bdry->wall_slope[nij] = slope;
+                    int nik = nk + i;
+                    double slope = slanted_wall_slope_3D(elem->x[i], elem->z[k]);
+                    bdry->wall_slope[nik] = slope;
                     slope_sum += fabs(slope);
                 }
             }
             
             if(slope_sum <= sqrt(DBL_EPSILON)) {
-                for (int j = igy; j < icy-igy; j++) {
-                    int nj = j*icx;
+                for (int k = igz; k < icz-igz; k++) {
+                    int nk = k*icx;
                     for (int i = igx; i < icx-igx; i++) {
-                        int nij = nj + i;
-                        bdry->wall_relative_slope[nij] = 0.0;
+                        int nik = nk + i;
+                        bdry->wall_relative_slope[nik] = 0.0;
                     }
                 }
             }
             else {
                 slope_sum_inv = 1.0/slope_sum;
-                for (int j = igy; j < icy-igy; j++) {
-                    int nj = j*icx;
+                for (int k = igz; k < icz-igz; k++) {
+                    int nk = k*icx;
                     for (int i = igx; i < icx-igx; i++) {
-                        int nij = nj + i;
-                        bdry->wall_relative_slope[nij] = slope_sum_inv * fabs(bdry->wall_slope[nij]);
+                        int nik = nk + i;
+                        bdry->wall_relative_slope[nik] = slope_sum_inv * fabs(bdry->wall_slope[nik]);
                     }
                 }
                 
                 /*	*/
                 slope_sum = 0.0;
-                for (int j = igy; j < icy-igy; j++) {
-                    int nj = j*icx;
+                for (int k = igz; k < icz-igz; k++) {
+                    int nk = k*icx;
                     for (int i = igx; i < icx-igx; i++) {
-                        int nij = nj + i;
-                        slope_sum += bdry->wall_relative_slope[nij];
+                        int nik = nk + i;
+                        slope_sum += bdry->wall_relative_slope[nik];
                     }
                 }
                 
@@ -247,6 +248,7 @@ void Bound(
     else {
         extern Thermodynamic th;
         extern ElemSpaceDiscr* elem;
+        
         const double g = ud.gravity_strength[SplitStep];
         const int compressible = ud.is_compressible;
 		
@@ -372,9 +374,11 @@ void set_wall_massflux(
 {
 	const int icx = elem->icx;
 	const int icy = elem->icy;
+    const int icz = elem->icz;
 	const int igx = elem->igx;
-	const int igy = elem->igy;
-	double wall_mf, wall_flux_balance;
+    const int igz = elem->igz;
+
+    double wall_mf, wall_flux_balance;
 	int i;
 	
     switch (elem->ndim) {
@@ -418,58 +422,59 @@ void set_wall_massflux(
         }
             
         case 3: {
-            const int nstart = elem->igz*elem->icx*elem->icy;
+            /* y-direction is vertical; wall flux bdry is the bottom  x-z-surface */
+            const int nstart = elem->igy*elem->icx;
 
             /* first guess for wall mass fluxes before total flux correction (for elliptic solvability cond.) */
             wall_flux_balance = 0.0;
-            for (int j = igy; j < icy-igy; j++) {
-                int njk = nstart + j*icx;
-                int nj  = j*icx;
+            for (int k = igz; k < icz-igz; k++) {
+                int njk = nstart + k*icx*icy;
+                int nk  = k*icx;
                 for (int i = igx; i < icx-igx; i++) {
                     int nijk = njk + i;
-                    int nij  = nj  + i;
-                    wall_mf = wall_massflux(elem->x[i], elem->y[i], Sol0->rhou[nijk]/Sol0->rho[nijk], Sol0->rhov[nijk]/Sol0->rho[nijk]);
-                    bdry->wall_massflux[nij] = wall_mf;
+                    int nik  = nk  + i;
+                    wall_mf = wall_massflux(elem->x[i], elem->z[k], Sol0->rhou[nijk]/Sol0->rho[nijk], Sol0->rhov[nijk]/Sol0->rho[nijk]);
+                    bdry->wall_massflux[nik] = wall_mf;
                     wall_flux_balance += wall_mf;
                 }
             }
             
             /* set wall flux in dummy cells to zero */
-            for(int j=0; j<icy; j++) {
-                int nj = j * icx;
+            for(int k=0; k<icz; k++) {
+                int nk = k * icx;
                 for(int i=0; i<igx; i++) {
-                    int nij_left  = nj + i;
-                    int nij_right = nj + icx-1-i;
-                    bdry->wall_massflux[nij_left] = bdry->wall_massflux[nij_right] = 0.0; 
+                    int nik_left  = nk + i;
+                    int nik_right = nk + icx-1-i;
+                    bdry->wall_massflux[nik_left] = bdry->wall_massflux[nik_right] = 0.0; 
                 }
             }            
 
             for(int i=0; i<icx; i++) {
                 int ni = i;
-                for(int j=0; j<igy; j++) {
-                    int nij_left  = ni + j*icx;
-                    int nij_right = ni + (icy-1-j)*icx;
-                    bdry->wall_massflux[nij_left] = bdry->wall_massflux[nij_right] = 0.0; 
+                for(int k=0; k<igz; k++) {
+                    int nik_left  = ni + k*icx;
+                    int nik_right = ni + (icz-1-k)*icx;
+                    bdry->wall_massflux[nik_left] = bdry->wall_massflux[nik_right] = 0.0; 
                 }
             }            
             
             /* correction for zero net flux (needed for elliptic solvability) */
-            for (int j = igy; j < icy-igy; j++) {
-                int nj = j * icx;
+            for (int k = igz; k < icz-igz; k++) {
+                int nk = k * icx;
                 for (int i = igx; i < icx-igx; i++) {
-                    int nij  = nj + i;
-                    bdry->wall_massflux[nij] -= wall_flux_balance * bdry->wall_relative_slope[nij];
+                    int nik  = nk + i;
+                    bdry->wall_massflux[nik] -= wall_flux_balance * bdry->wall_relative_slope[nik];
                 }
             }
             
             /*	*/
             {
                 double flux_sum = 0.0;
-                for (int j = igy; j < icy-igy; j++) {
-                    int nj = j * icx;
+                for (int k = igz; k < icz-igz; k++) {
+                    int nk = k * icx;
                     for (int i = igx; i < icx-igx; i++) {
-                        int nij  = nj + i;
-                        flux_sum += bdry->wall_massflux[nij];
+                        int nik  = nk + i;
+                        flux_sum += bdry->wall_massflux[nik];
                     }
                 }
                 
@@ -779,7 +784,7 @@ double velo_background(double t){
 	 */
 }
 
-double wall_massflux(double x, double y, double wind_speed_x, double wind_speed_y){
+double wall_massflux(double x, double z, double wind_speed_x, double wind_speed_z){
 	extern User_Data ud;
     
 	double hill_height  = ud.hill_height;
@@ -790,7 +795,7 @@ double wall_massflux(double x, double y, double wind_speed_x, double wind_speed_
 	return(- wind_speed * hill_height * 2.0*x_sc / ((1.0 + x_sc*x_sc)*(1.0 + x_sc*x_sc)) * length_scale_inv);
      */
     return(- wind_speed_x * hill_height * 2.0*x_sc / ((1.0 + x_sc*x_sc)*(1.0 + x_sc*x_sc)) * length_scale_inv
-           - wind_speed_y * 0.0 );
+           - wind_speed_z * 0.0 );
 }
 
 /* ========================================================================= */

@@ -114,10 +114,10 @@ void User_Data_init(User_Data* ud) {
     
     ud->bdrytype_min[0] = PERIODIC; /* DIRICHLET; PERIODIC; WALL; */
     ud->bdrytype_min[1] = WALL; /* SLANTED_WALL; */
-    ud->bdrytype_min[2] = WALL;
+    ud->bdrytype_min[2] = PERIODIC;
     ud->bdrytype_max[0] = PERIODIC; /* DIRICHLET; PERIODIC; WALL; */
     ud->bdrytype_max[1] = WALL;
-    ud->bdrytype_max[2] = WALL;
+    ud->bdrytype_max[2] = PERIODIC;
     
     ud->absorber = WRONG; /* CORRECT;  WRONG; */ /*  BREAKING WAVE CHANGE */
     
@@ -134,9 +134,9 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =   20+1; /* 321; 161;  81;  65; 41;  */
-    ud->inz = 1;
+    ud->inx =  150+1; /* 641; 321; 161; 129; 81; */
+    ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
+    ud->inz =    5+1;
     
     /* explicit predictor step */
     /* Recovery */
@@ -215,9 +215,11 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     
     const int icx = elem->icx;
     const int icy = elem->icy;
+    const int icz = elem->icz;
     const int igy = elem->igy;
     
     const int icxn = node->icx;
+    const int icyn = node->icy;
     
     int i, j, n, nm, nn;
     double x, y, xn, yn, ym;
@@ -227,6 +229,12 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     
     States *HySt, *HyStn;
     double *Y, *Yn;
+    
+    /* This will become a 3Dified 2D test case. So I first compute
+     the 2D vertical slice data and then simply copy them into all
+     the vertical slices for different z values.
+     (y is the vertical coordinate!)
+     */
     
     g = ud.gravity_strength[1];
     
@@ -238,7 +246,8 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     Y     = (double*)malloc(node->icy*sizeof(double));
     HyStn = States_new(node->icy);
     Yn    = (double*)malloc(node->icy*sizeof(double));
-        
+     
+    /* computations for the vertical slice at  k=0 */
     for(i = 0; i < icx; i++) {
         
         /* set potential temperature stratification in the column */
@@ -290,7 +299,33 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     }
     
     /* Find hydrostatic surface pressure and readjust pressure in the columns */
-    Hydrostatic_Initial_Pressure(Sol, mpv, elem, node);    
+    Hydrostatic_Initial_Pressure(Sol, mpv, elem, node);  
+    
+    /* Copy the data just generated into all the parallel vertical slices */
+    for (int j=0; j<icy; j++) {
+        int mc = j*icx;
+        int mn = j*icxn;
+        for (int i=0; i<icx; i++) {
+            int nc = mc + i;
+            int nn = mn + i;
+            for (int k=1; k<icz; k++) {
+                int lc = nc + k*icx*icy;
+                int ln = nn + k*icxn*icyn;
+                
+                Sol->rho[lc]    = Sol->rho[nc] ;
+                Sol->rhou[lc]   = Sol->rhou[nc];
+                Sol->rhov[lc]   = Sol->rhov[nc];
+                Sol->rhow[lc]   = Sol->rhow[nc];
+                Sol->rhoe[lc]   = Sol->rhoe[nc];
+                Sol->rhoY[lc]   = Sol->rhoY[nc];
+                
+                Sol->rhoX[BUOY][lc] = Sol->rhoX[BUOY][nc];
+                mpv->p2_cells[lc]   = mpv->p2_cells[nc];
+                
+                mpv->p2_nodes[ln] = mpv->p2_nodes[nn];
+            }
+        }
+    }
 }
 
 /* ================================================================================== */

@@ -35,8 +35,6 @@ static States* Rights;
 
 static ConsVars* Fluxes;
 
-static double* gravity_source;
-
 static void (*rotate[])(ConsVars* Sol, const enum Direction dir) = {NULL, rotate2D, rotate3D};
 
 
@@ -47,7 +45,6 @@ void Explicit_malloc(const int size) {
 	Fluxes = ConsVars_new(size);
     Lefts = States_new(size);
     Rights = States_new(size);
-    gravity_source = (double*)malloc(size * sizeof(double));
 	allocated = CORRECT; 
 	arraysize = size;
 }
@@ -59,7 +56,6 @@ void Explicit_free() {
 	ConsVars_free(Fluxes); 
     States_free(Lefts);
     States_free(Rights);
-    free(gravity_source);
 	allocated = WRONG;
 	arraysize = 0;
 }
@@ -548,6 +544,8 @@ void fullD_explicit_updates(ConsVars* Sol,
 
 			break;
 		case 3:
+            
+            assert(0);  /* not sure this routine has been properly adapted to 3D */
             
             delmax  = 0.0;
             ddelmax = 0.0;

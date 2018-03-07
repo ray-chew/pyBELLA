@@ -61,6 +61,11 @@ static void flux_correction_due_to_pressure_gradients(
 													  const double t,
 													  const double dt);
 
+double controlled_variable_flux_divergence(double* rhs, 
+                                           const ConsVars* flux[3],
+                                           const double dt, 
+                                           const ElemSpaceDiscr* elem);
+
 #ifdef NONLINEAR_EOS_IN_1st_PROJECTION
 double Newton_rhs(double* rhs,
                   const double* dpi,
@@ -262,28 +267,71 @@ double controlled_variable_flux_divergence(double* rhs,
     const int igy = elem->igy;
     const int icy = elem->icy;
     const int ify = elem->ify;
+    const int igz = elem->igz;
+    const int icz = elem->icz;
+    const int ifz = elem->ifz;
     
     const double factor = 2.0 / dt;
     const double dx = elem->dx;
     const double dy = elem->dy;
+    const double dz = elem->dz;
     
     double rhsmax = 0.0;
-    
-    assert(elem->ndim == 2);
-    
+        
     for(int i=0; i<elem->nc; i++) rhs[i] = 0.0;
     
-    for(int j = igy; j < icy - igy; j++) {
-        int mc  = j * icx;
-        int mfx = j * ifx; 
-        int mfy = j;
-        for(int i = igx; i < icx - igx; i++) {
-            int nc  = mc  + i;
-            int nfx = mfx + i;
-            int nfy = mfy + i*ify;
-            rhs[nc] = factor * ((flux[0]->rhoY[nfx+1] - flux[0]->rhoY[nfx])/dx + (flux[1]->rhoY[nfy+1] - flux[1]->rhoY[nfy])/dy);
-            rhsmax  = MAX_own(rhsmax, fabs(rhs[nc]));
-        }
+    switch (elem->ndim) {
+        case 1:
+            for(int i = igx; i < icx - igx; i++) {
+                int nc  = i;
+                int nfx = i;
+                rhs[nc] = factor * (flux[0]->rhoY[nfx+1] - flux[0]->rhoY[nfx])/dx;
+                rhsmax  = MAX_own(rhsmax, fabs(rhs[nc]));
+            }
+            break;
+            
+        case 2:
+            for(int j = igy; j < icy - igy; j++) {
+                int mc  = j * icx;
+                int mfx = j * ifx; 
+                int mfy = j;
+                for(int i = igx; i < icx - igx; i++) {
+                    int nc  = mc  + i;
+                    int nfx = mfx + i;
+                    int nfy = mfy + i*ify;
+                    rhs[nc] = factor * ((flux[0]->rhoY[nfx+1] - flux[0]->rhoY[nfx])/dx + (flux[1]->rhoY[nfy+1] - flux[1]->rhoY[nfy])/dy);
+                    rhsmax  = MAX_own(rhsmax, fabs(rhs[nc]));
+                }
+            }
+            break;
+            
+        case 3:
+            for(int k = igz; k < icz - igz; k++) {
+                int lc = k*icx*icy;
+                int lfx = k*ifx*icy;
+                int lfy = k*ify;
+                int lfz = k;
+                for(int j = igy; j < icy - igy; j++) {
+                    int mc  = lc  + j*icx;
+                    int mfx = lfx + j*ifx; 
+                    int mfy = lfy + j;
+                    int mfz = lfz + j*ifz*icx;
+                    for(int i = igx; i < icx - igx; i++) {
+                        int nc  = mc  + i;
+                        int nfx = mfx + i;
+                        int nfy = mfy + i*ify*icz;
+                        int nfz = mfz + i*ifz;
+                        rhs[nc] = factor * (  (flux[0]->rhoY[nfx+1] - flux[0]->rhoY[nfx])/dx \
+                                            + (flux[1]->rhoY[nfy+1] - flux[1]->rhoY[nfy])/dy \
+                                            + (flux[2]->rhoY[nfz+1] - flux[2]->rhoY[nfz])/dz);
+                        rhsmax  = MAX_own(rhsmax, fabs(rhs[nc]));
+                    }
+                }
+            }
+            break;
+            
+        default:
+            break;
     }
     
 #if 0
@@ -348,43 +396,37 @@ static enum Constraint integral_condition(
         }
 			
 		case 3: {
-			int i, j, k, l, m, n;
-			const int igx = elem->igx;
-			const int icx = elem->icx;
-			const int ifx = elem->ifx;
-			const int igy = elem->igy;
-			const int icy = elem->icy;
-			const int ify = elem->ify;
-			const int igz = elem->igz;
-			const int icz = elem->icz;
-			const int ifz = elem->ifz;
-			const int ifxicy = ifx * icy;
-			const int ifyicz = ify * icz;
-			const int ifzicx = ifz * icx;
-			const ConsVars* f = flux[0];
-			const ConsVars* g = flux[1];
-			const ConsVars* h = flux[2];
-			double F, G, H;
-						
-			for(k = igz, F = 0.0; k < icz - igz; k++) {l = k * ifxicy;
-				for(j = igy; j < icy - igy; j++) {m = l + j * ifx;
-					F += f->rhoY[m + icx - igx] - f->rhoY[m +  igx];
-				} 
-			}
-			for(i = igx, G = 0.0; i < icx - igx; i++) {m = i * ifyicz;
-				for(k = igz; k < icz - igz; k++) {n = m + k * ify;
-					G += g->rhoY[n + icy - igy] - g->rhoY[n + igy];
-				} 
-			}
-			for(j = igy, H = 0.0; j < icy - igy; j++) {n = j * ifzicx;
-				for(i = igx; i < icx - igx; i++) {l = n + i * ifz;
-					H += h->rhoY[l + icz - igz] - h->rhoY[l + igz];
-				}
-			}  
-			if(fabs(F * elem->dy + G * elem->dx * H * elem->dz) > 100*DBL_EPSILON) 
-				return VIOLATED;
-			else
-				return SATISFIED;
+            const int igx = elem->igx;
+            const int icx = elem->icx;
+            const int igy = elem->igy;
+            const int icy = elem->icy;
+            const int igz = elem->igz;
+            const int icz = elem->icz;
+            
+            double tmp = 0.0;
+            double rhs_max = 0.0;
+            double threshold = 1000*DBL_EPSILON;
+            int cnt = 0;
+            int i,j,k,l,m,n;
+            for(k = igz; k < icz - igz; k++) {l = k*icx*icy;
+                for(j = igy; j < icy - igy; j++) {m = + + j*icx;
+                    for(i = igx; i < icx - igx; i++) {n = m + i;
+                        tmp += rhs[n];
+                        rhs_max = MAX_own(fabs(rhs[n]),rhs_max);
+                        cnt++;
+                    }
+                }
+            }
+            tmp /= cnt;
+            if(fabs(tmp) < threshold) {
+                printf("integral_condition_cells = OK; tmp = %e\n", fabs(tmp));
+                return(SATISFIED);
+            }
+            else {
+                printf("integral_condition_cells = VIOLATED; tmp = %e\n", fabs(tmp));
+                return(SATISFIED);
+            }
+            
 			break;
 		}
 			
@@ -544,9 +586,13 @@ void operator_coefficients(
                         ic  = k*icx*icy + j*icx + i;
                         icm = ic - 1; 
 
+                        /*
                         hi    = 0.5 * (Sol->rhoY[ic] *Sol->rhoY[ic] /Sol->rho[ic]  + Sol0->rhoY[ic] *Sol0->rhoY[ic] /Sol0->rho[ic] ) * Gammainv;   
                         him   = 0.5 * (Sol->rhoY[icm]*Sol->rhoY[icm]/Sol->rho[icm] + Sol0->rhoY[icm]*Sol0->rhoY[icm]/Sol0->rho[icm]) * Gammainv;
-					
+                         */
+                        hi    = (Sol->rhoY[ic] *Sol->rhoY[ic] /Sol->rho[ic] ) * Gammainv;   
+                        him   = (Sol->rhoY[icm]*Sol->rhoY[icm]/Sol->rho[icm]) * Gammainv;
+
                         /* optional with new time level data only as in 2D part of routine ... */
 
                         hx[n] = 0.5 * (hi + him);
@@ -564,8 +610,12 @@ void operator_coefficients(
                         jc  = k*icx*icy + j*icx + i;
                         jcm = jc - icx;          
 
+                        /*
                         hj       = 0.5 * (Sol->rhoY[jc] *Sol->rhoY[jc] /Sol->rho[jc] + Sol0->rhoY[jc] *Sol0->rhoY[jc] /Sol0->rho[jc] ) * Gammainv;
                         hjm      = 0.5 * (Sol->rhoY[jcm]*Sol->rhoY[jcm]/Sol->rho[jcm]+ Sol0->rhoY[jcm]*Sol0->rhoY[jcm]/Sol0->rho[jcm]) * Gammainv;
+                         */
+                        hj       = (Sol->rhoY[jc] *Sol->rhoY[jc] /Sol->rho[jc] ) * Gammainv;
+                        hjm      = (Sol->rhoY[jcm]*Sol->rhoY[jcm]/Sol->rho[jcm]) * Gammainv;
 
                         /* optional with new time level data only as in 2D part of routine ... */
 
@@ -593,8 +643,13 @@ void operator_coefficients(
                         kc  = k*icx*icy + j*icx + i;
                         kcm = kc - icx*icy;          
 
+                        /*
                         hk       = 0.5 * (Sol->rhoY[kc] *Sol->rhoY[kc] /Sol->rho[kc] + Sol0->rhoY[kc] *Sol0->rhoY[kc] /Sol0->rho[kc] ) * Gammainv;
                         hkm      = 0.5 * (Sol->rhoY[kcm]*Sol->rhoY[kcm]/Sol->rho[kcm]+ Sol0->rhoY[kcm]*Sol0->rhoY[kcm]/Sol0->rho[kcm]) * Gammainv;
+                         */
+                        
+                        hk       = (Sol->rhoY[kc] *Sol->rhoY[kc] /Sol->rho[kc] ) * Gammainv;
+                        hkm      = (Sol->rhoY[kcm]*Sol->rhoY[kcm]/Sol->rho[kcm]) * Gammainv;
 
                         /* optional with new time level data only as in 2D part of routine ... */
                     
@@ -824,7 +879,7 @@ static void rhs_fix_for_open_boundaries(
 	
 	const States* HydroState = mpv->HydroState;
 	
-	double** hplus       = mpv->Level[0]->wplus;
+	double** hplus = mpv->Level[0]->wplus;
 	
 	int ndim = elem->ndim;
 	
@@ -979,7 +1034,8 @@ void update_SI_MIDPT_buoyancy(ConsVars* Sol,
     
     switch (ndim) {
         case 1:
-            ERROR("Routine not implemented for 1D\n");
+            printf("Gravity not implemented for 1D\n");
+            return;
             break;
 
         case 2: {
@@ -1004,8 +1060,33 @@ void update_SI_MIDPT_buoyancy(ConsVars* Sol,
             }
             break;
         }
-        case 3:
-            ERROR("Routine not implemented for 3D\n");
+        case 3: {
+            
+            const int icx = elem->icx;
+            const int igx = elem->igx;
+            const int icy = elem->icy;
+            const int igy = elem->igy;
+            const int ify = elem->ify;
+            const int icz = elem->icz;
+            const int igz = elem->igz;
+            
+            for (int k=igz; k<icz-igz; k++) {
+                int nck = k*icy*icx;
+                int nfk = k*ify;
+                for (int j=igy; j<icy-igy; j++) {
+                    int nckj = nck + j*icx;
+                    int nfkj = nfk + j;
+                    double S0p = mpv->HydroState_n->S0[j+1];
+                    double S0m = mpv->HydroState_n->S0[j];
+                    double S0c = mpv->HydroState->S0[j];
+                    for (int i=igx; i<icx-igx; i++) {
+                        int nckji = nckj+i;
+                        int nfkji = nfkj+i*ify*icz;
+                        Sol->rhoX[BUOY][nckji] += -lambda*(flux[1]->rhoY[nfkji+1]*(S0p-S0c) + flux[1]->rhoY[nfkji]*(S0c-S0m));
+                    }
+                }
+            }
+        }
             break;
 
         default:

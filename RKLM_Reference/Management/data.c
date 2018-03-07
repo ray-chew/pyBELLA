@@ -181,6 +181,8 @@ void Data_free() {
 
     terminate_MG_projection();
     
+    Explicit_free();
+    recovery_free();    
     close_bdry();
 }
 

@@ -361,6 +361,8 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
                                   const NodeSpaceDiscr *node)
 {
     /* 
+     TODO: Currently implemented only for 2D vertical slices;
+     
      Computes the pressure field corresponding to the linear hydrostatic
      and pseudo-incompressible approximation for a vertical slice model 
      and x-periodic conditions. 

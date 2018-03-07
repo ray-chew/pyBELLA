@@ -333,8 +333,8 @@
 		9AC4F96C1DA3F06F00AED455 /* MAC-projection */ = {
 			isa = PBXGroup;
 			children = (
-				9AC4F96D1DA3F06F00AED455 /* flux_correction.h */,
 				9AC4F96F1DA3F06F00AED455 /* flux_correction_pckg_WITH_HYPRE.c */,
+				9AC4F96D1DA3F06F00AED455 /* flux_correction.h */,
 				9AC4F9701DA3F06F00AED455 /* laplacian_cells.c */,
 				9AC4F9711DA3F06F00AED455 /* laplacian_cells.h */,
 				9AC4F9731DA3F06F00AED455 /* variable_coefficient_poisson_cells.c */,
