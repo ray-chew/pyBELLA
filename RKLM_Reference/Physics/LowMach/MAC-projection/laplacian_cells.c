@@ -161,14 +161,6 @@ void precon_c_invert(
 
 #ifdef PRECON_VERTICAL_COLUMN_1ST_PROJ /* ===================================================== */
 
-#ifdef UN_AVERAGE_PROJ1
-static enum Boolean vec_ave_x_is_allocated = WRONG;
-static double *vec_ave_x;
-static double lambda;
-static double rhs_scale;
-static int size_x;
-#endif
-
 static enum Boolean tridiago_is_allocated = WRONG;
 static double *diaginv_c;
 static double *diag_c;
@@ -290,10 +282,93 @@ double precon_c_prepare(
             break;
         }
         case 3: {
-            ERROR("function not available for 3D");
-            break;
+            const int igx       = elem->igx;
+            const int icx       = elem->icx;
+            const int ifx       = elem->ifx;
+            const int igy       = elem->igy;
+            const int icy       = elem->icy;
+            const int ify       = elem->ify;
+            const int igz       = elem->igz;
+            const int icz       = elem->icz;
+            const int ifz       = elem->ifz;
+            const double dx     = elem->dx;
+            const double dy     = elem->dy;
+            const double dz     = elem->dz;
+            const double oody2  = 1.0 / (dy * dy);
+            const double oodx2  = 1.0 / (dx * dx);
+            const double oodz2  = 1.0 / (dz * dz);
+            
+            const double* hplusx = hplus[0];
+            const double* hplusy = hplus[1];
+            const double* hplusz = hplus[2];
+            const double* hc     = hcenter;
+            
+            for (int k=0; k<3; k++) {
+                for(int nn=0; nn<elem->nc; nn++) tridiago[k][nn] = 0.0;
+            }
+            
+            for(int k = igz; k < icz - igz; k++) {
+                int lc = k * icx*icy;
+                
+                for(int j = igy; j < icy - igy; j++) {
+                    int mc = lc + j * icx;
+                    
+                    for(int i = igx; i < icx - igx; i++) {
+                        int nc  = mc + i;
+                        
+                        int ox  = k*ifx*icy + j*ifx + i;
+                        int o_e = ox + 1;
+                        int o_w = ox;
+                        
+                        int oy  = i*ify*icz + k*ify + j;
+                        int o_n = oy + 1;
+                        int o_s = oy;
+                        
+                        int oz  = j*ifz*icx + i*ifz + k;
+                        int o_f = oz + 1;
+                        int o_b = oz;
+                        
+                        tridiago[0][nc] = oody2 * hplusy[o_s]; 
+                        
+                        tridiago[1][nc] = - oodx2 * (hplusx[o_e] + hplusx[o_w]) 
+                                          - oody2 * (hplusy[o_n] + hplusy[o_s]) 
+                                          - oodz2 * (hplusz[o_f] + hplusz[o_b]) 
+                                          + hc[nc];
+                        
+                        tridiago[2][nc] = oody2 * hplusy[o_n]; 
+                        
+                        diag_c[nc]  = oodx2 * ( -0.5625*(hplusx[o_e] + hplusx[o_w]) );
+                        
+                        diag_c[nc] += oody2 * ( -0.5625*(hplusy[o_n] + hplusy[o_s]) );
+
+                        diag_c[nc] += oodz2 * ( -0.5625*(hplusz[o_f] + hplusz[o_b]) );
+
+                        diag_c[nc] += hc[nc];
+                        
+                    }
+                }
+            }
+            
+            diag_scale = 1.0;
+            
+            precon_inv_scale = 0.0;
+            
+            for (int k = igz; k < icz-igz; k++) {
+                int lc = k*icx*icy;
+                for (int j = igy; j < icy-igy; j++) {
+                    int mc = lc + j*icx;
+                    for (int i = igx; i < icx-igx; i++) {
+                        int nc = mc + i;
+                        diag_c[nc]   *= diag_scale;
+                        diaginv_c[nc] = 1.0/diag_c[nc];
+                        precon_inv_scale = MAX_own(precon_inv_scale, fabs(diaginv_c[nc]));
+                    }  
+                }
+            }
         }
-        default: ERROR("ndim not in {1, 2, 3}");
+        default: 
+            ERROR("ndim not in {1, 2, 3}");
+            break;
     }
     
     return precon_inv_scale;
@@ -309,19 +384,24 @@ void precon_c_apply(
 
     const int icxe = elem->icx;
     const int icye = elem->icy;
+    const int icze = elem->icz;
     
     const int igxe = elem->igx;
     const int igye = elem->igy;
+    const int igze = elem->igz;
     
-    for (int i = igxe; i<icxe-igxe; i++) {
-        for (int j = igye; j<icye-igye; j++) {
-            int nn0 = (j-1)*icxe+i;
-            int nn1 =   j  *icxe+i;
-            int nn2 = (j+1)*icxe+i;
-            vec_out[nn1] = tridiago[0][nn1]*vec_in[nn0]+tridiago[1][nn1]*vec_in[nn1]+tridiago[2][nn1]*vec_in[nn2];
-        }
-    }        
-
+    for (int k = igze; k<icze-igze; k++) {
+        int lc = k*icxe*icye;
+        for (int i = igxe; i<icxe-igxe; i++) {
+            int mc = lc + i;
+            for (int j = igye; j<icye-igye; j++) {
+                int nn0 = mc + (j-1)*icxe;
+                int nn1 = mc +   j  *icxe;
+                int nn2 = mc + (j+1)*icxe;
+                vec_out[nn1] = tridiago[0][nn1]*vec_in[nn0]+tridiago[1][nn1]*vec_in[nn1]+tridiago[2][nn1]*vec_in[nn2];
+            }
+        }        
+    }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -338,37 +418,44 @@ void precon_c_invert(
     
     const int icxe = elem->icx;
     const int icye = elem->icy;
+    const int icze = elem->icz;
     
     const int igxe = elem->igx;
     const int igye = elem->igy;
+    const int igze = elem->igz;
         
-    for (int i=igxe; i<icxe-igxe; i++) {
-        int jbot, jtop;
-
-        for (int j=igye; j<icye-igye; j++) {
-            int j_inc = j-igye;
-            int nc    = j*icxe+i;
-            lower[j_inc] = tridiago[0][nc]*diaginv_c[nc];
-            diago[j_inc] = tridiago[1][nc]*diaginv_c[nc];
-            upper[j_inc] = tridiago[2][nc]*diaginv_c[nc];
-            v_in[j_inc]  = vec_in[nc]*diaginv_c[nc];
-        }
+    for (int k=igze; k<icze-igze; k++) {
+        int lc = k*icxe*icye;
         
-        /* fix diagonal entries in the first and last row for boundary condition consistency */
-        jbot = 0;
-        jtop = icye-2*igxe-1;
-        
-        diago[jbot] += lower[jbot];
-        lower[jbot]  = 0.0;
-        diago[jtop] += upper[jtop];
-        upper[jtop]  = 0.0;
-
-        Thomas_Algorithm(v_out, v_in, upper, diago, lower, size);
-
-        for (int j=igye; j<icye-igye; j++) {
-            int j_inc = j-igye;
-            int nc    = j*icxe+i;
-            vec_out[nc] = v_out[j_inc];
+        for (int i=igxe; i<icxe-igxe; i++) {
+            int jbot, jtop;
+            int mc = lc + i;
+            
+            for (int j=igye; j<icye-igye; j++) {
+                int j_inc = j-igye;
+                int nc    = mc + j*icxe;
+                lower[j_inc] = tridiago[0][nc]*diaginv_c[nc];
+                diago[j_inc] = tridiago[1][nc]*diaginv_c[nc];
+                upper[j_inc] = tridiago[2][nc]*diaginv_c[nc];
+                v_in[j_inc]  = vec_in[nc]*diaginv_c[nc];
+            }
+            
+            /* fix diagonal entries in the first and last row for boundary condition consistency */
+            jbot = 0;
+            jtop = icye-2*igye-1;
+            
+            diago[jbot] += lower[jbot];
+            lower[jbot]  = 0.0;
+            diago[jtop] += upper[jtop];
+            upper[jtop]  = 0.0;
+            
+            Thomas_Algorithm(v_out, v_in, upper, diago, lower, size);
+            
+            for (int j=igye; j<icye-igye; j++) {
+                int j_inc = j-igye;
+                int nc    = mc + j*icxe;
+                vec_out[nc] = v_out[j_inc];
+            }
         }
     }
 }
