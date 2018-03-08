@@ -24,6 +24,7 @@ static enum Boolean diaginv_is_allocated = WRONG;
 static double *diaginv;
 static double *diag;
 
+/* ========================================================================== */
 
 double precon_prepare(
                     const NodeSpaceDiscr* node,
@@ -196,6 +197,8 @@ double precon_prepare(
     return precon_inv_scale;
 }
 
+/* ========================================================================== */
+
 void precon_apply(
                   double* vec_out,
                   const double* vec_in,
@@ -204,6 +207,8 @@ void precon_apply(
         vec_out[nn] = vec_in[nn]*diag[nn];
     }
 }
+
+/* ========================================================================== */
 
 void precon_invert(
                    double* vec_out,
@@ -218,6 +223,8 @@ void precon_invert(
 #ifdef PRECON_VERTICAL_COLUMN_2ND_PROJ /* ==================================================== */
 static enum Boolean tridiago_is_allocated = WRONG;
 static double *tridiago[3];
+
+/* ========================================================================== */
 
 double precon_prepare(
                     const NodeSpaceDiscr* node,
@@ -236,11 +243,14 @@ double precon_prepare(
      diagonal value from a full stencil.
      */
     
+    double *tridiaux[3];
+    
     double precon_inv_scale;
     
     if (tridiago_is_allocated == WRONG) {
         for (int k=0; k<3; k++) {
             tridiago[k] = (double*)malloc(node->nc*sizeof(double));
+            tridiaux[k] = tridiago[k];
         }
         tridiago_is_allocated = CORRECT;
     }
@@ -341,16 +351,128 @@ double precon_prepare(
         }
             break;
         case 3: {
-            ERROR("function not available");
-            break;
+            
+            const int igxe = elem->igx;
+            const int icxe = elem->icx;
+            const int igye = elem->igy;
+            const int icye = elem->icy;
+            const int igze = elem->igz;
+            const int icze = elem->icz;
+            
+            const int icxn = node->icx;
+            const int igxn = node->igx;
+            const int icyn = node->icy;
+            const int igyn = node->igy;
+            const int iczn = node->icz;
+            const int igzn = node->igz;
+            
+            const double dx = node->dx;
+            const double dy = node->dy;
+            const double dz = node->dz;
+            
+            const double* hplusx   = hplus[0];
+            const double* hplusy   = hplus[1];
+            const double* hplusz   = hplus[2];
+            const double* hcenter  = wcenter;
+            
+            const double oodx2 = 0.5 / (dx * dx);
+            const double oody2 = 0.5 / (dy * dy);
+            const double oodz2 = 0.5 / (dz * dz);
+            
+            double flux_x, flux_y, flux_z;
+            double hc;
+            
+            int i, j, k, le, ln, me, mn, ne, nn; 
+            int nn000, nn001, nn010, nn011;
+            int nn100, nn101, nn110, nn111;
+            
+            for (int k=0; k<3; k++) {
+                for(nn=0; nn<node->nc; nn++) tridiago[k][nn] = 0.0;
+            }
+            
+            for (k = igze; k < icze - igze; k++) {
+                le = k * icxe*icye;
+                ln = k * icxn*icyn;
+                
+                for(j = igye; j < icye - igye; j++) {
+                    me   = le + j * icxe;
+                    mn   = ln + j * icxn;
+                    
+                    for(i = igxe; i < icxe - igxe; i++) {
+                        ne    = me + i;
+                        nn    = mn + i; 
+                        
+                        nn000 = nn;
+                        nn001 = nn + 1;
+                        nn010 = nn + icxn;
+                        nn011 = nn + 1 + icxn;
+                        nn100 = nn + icxn*icyn;
+                        nn101 = nn + icxn*icyn + 1;
+                        nn110 = nn + icxn*icyn + icxn;
+                        nn111 = nn + icxn*icyn + icxn + 1;
+                        
+                        flux_x  = hplusx[ne] * oodx2;
+                        flux_y  = hplusy[ne] * oody2;
+                        flux_z  = hplusz[ne] * oodz2;
+                                    
+                        
+                        /* summand 1.0 takes care of singularity of the tridiagoonal matrix */
+                        hc            = 0.25 * hcenter[ne];
+                        
+                        /* eventually I should transpose the tridiago[][] field for better memory efficiency */
+                        /* eventually I should let tridiago[] run from  -1 to +1 */
+                        
+                        tridiago[1][nn000] += - flux_x - flux_y - flux_z + hc;
+                        tridiago[2][nn000] +=   flux_y;
+                        
+                        tridiago[1][nn001] += - flux_x - flux_y - flux_z + hc;
+                        tridiago[2][nn001] +=   flux_y;
+                        
+                        tridiago[0][nn010] +=   flux_y;
+                        tridiago[1][nn010] += - flux_x - flux_y - flux_z + hc;
+                        
+                        tridiago[0][nn011] +=   flux_y;
+                        tridiago[1][nn011] += - flux_x - flux_y - flux_z + hc;                    
+
+                        tridiago[1][nn100] += - flux_x - flux_y - flux_z + hc;
+                        tridiago[2][nn100] +=   flux_y;
+                        
+                        tridiago[1][nn101] += - flux_x - flux_y - flux_z + hc;
+                        tridiago[2][nn101] +=   flux_y;
+                        
+                        tridiago[0][nn110] +=   flux_y;
+                        tridiago[1][nn110] += - flux_x - flux_y - flux_z + hc;
+                        
+                        tridiago[0][nn111] +=   flux_y;
+                        tridiago[1][nn111] += - flux_x - flux_y - flux_z + hc;                    
+                    }
+                }
+            }
+            
+            /* normalization */
+            precon_inv_scale = 0.0;
+            
+            for(k = igzn; k < iczn - igzn; k++) {
+                ln   = k*icxn*icyn;
+                for(j = igyn; j < icyn - igyn; j++) {
+                    mn   = ln + j*icxn;
+                    for(i = igxn; i < icxn - igxn; i++) {
+                        nn = mn + i;
+                        precon_inv_scale = MAX_own(precon_inv_scale, fabs(1.0/tridiago[1][nn]));                
+                    }
+                }
+            }
         }
+            break;
             
-            
-        default: ERROR("ndim not in {1, 2, 3}");
+        default: 
+            ERROR("ndim not in {1, 2, 3}");
     }
 
     return precon_inv_scale;
 }
+
+/* ========================================================================== */
 
 void precon_apply(
                   double* vec_out,
@@ -359,19 +481,27 @@ void precon_apply(
     
     const int icxn = node->icx;
     const int icyn = node->icy;
+    const int iczn = node->icz;
     
     const int igxn = node->igx;
     const int igyn = node->igy;
+    const int igzn = node->igz;
     
-    for (int i = igxn; i<icxn-igxn; i++) {
-        for (int j = igyn; j<icyn-igyn; j++) {
-            int nn0 = (j-1)*icxn+i;
-            int nn1 =   j  *icxn+i;
-            int nn2 = (j+1)*icxn+i;
-            vec_out[nn1] = tridiago[0][nn1]*vec_in[nn0]+tridiago[1][nn1]*vec_in[nn1]+tridiago[2][nn1]*vec_in[nn2];
+    for (int k = igzn; k<iczn-igzn; k++) {
+        int ln = k*icxn*icyn;
+        for (int i = igxn; i<icxn-igxn; i++) {
+            int mn = ln + i;
+            for (int j = igyn; j<icyn-igyn; j++) {
+                int nn0 = mn + (j-1)*icxn;
+                int nn1 = mn +   j  *icxn;
+                int nn2 = mn + (j+1)*icxn;
+                vec_out[nn1] = tridiago[0][nn1]*vec_in[nn0]+tridiago[1][nn1]*vec_in[nn1]+tridiago[2][nn1]*vec_in[nn2];
+            }
         }
     }
 }
+
+/* ========================================================================== */
 
 void precon_invert(
                    double* vec_out,
@@ -385,9 +515,11 @@ void precon_invert(
     
     const int icxn = node->icx;
     const int icyn = node->icy;
+    const int iczn = node->icz;
     
     const int igxn = node->igx;
     const int igyn = node->igy;
+    const int igzn = node->igz;
     
     const int size = icyn-2*igyn;
     
@@ -397,26 +529,24 @@ void precon_invert(
     double* v_in   = (double*)malloc(size*sizeof(double));
     double* v_out  = (double*)malloc(size*sizeof(double));
         
-    for (int i=igxn; i<icxn-igxn; i++) {
-        for (int j=igyn; j<icyn-igyn; j++) {
-            int j_inn = j-igyn;
-            int nn    = j*icxn+i;
-            /*
-            lower[j_inn] = tridiago[0][nn];
-            diago[j_inn] = tridiago[1][nn];
-            upper[j_inn] = tridiago[2][nn];
-            v_in[j_inn]  = vec_in[nn];
-             */
-            lower[j_inn] = tridiago[0][nn]/tridiago[1][nn];
-            diago[j_inn] = 1.0;
-            upper[j_inn] = tridiago[2][nn]/tridiago[1][nn];
-            v_in[j_inn]  = vec_in[nn]/tridiago[1][nn];
-        }
-        Thomas_Algorithm(v_out, v_in, upper, diago, lower, size);
-        for (int j=igyn; j<icyn-igyn; j++) {
-            int j_inn = j-igyn;
-            int nn    = j*icxn+i;
-            vec_out[nn] = v_out[j_inn];
+    for (int k=igzn; k<iczn-igzn; k++) {
+        int ln = k*icxn*icyn;
+        for (int i=igxn; i<icxn-igxn; i++) {
+            int mn = ln + i;
+            for (int j=igyn; j<icyn-igyn; j++) {
+                int j_inn = j-igyn;
+                int nn    = mn + j*icxn;
+                lower[j_inn] = tridiago[0][nn]/tridiago[1][nn];
+                diago[j_inn] = 1.0;
+                upper[j_inn] = tridiago[2][nn]/tridiago[1][nn];
+                v_in[j_inn]  = vec_in[nn]/tridiago[1][nn];
+            }
+            Thomas_Algorithm(v_out, v_in, upper, diago, lower, size);
+            for (int j=igyn; j<icyn-igyn; j++) {
+                int j_inn = j-igyn;
+                int nn    = j*icxn+i;
+                vec_out[nn] = v_out[j_inn];
+            }
         }
     }
 
@@ -427,9 +557,12 @@ void precon_invert(
     free(v_out);
     
 }
-#endif /* PRECON_VERTICAL_COLUMN_2ND_PROJ ==================================================== */
+#endif /* PRECON_VERTICAL_COLUMN_2ND_PROJ =================================== */
 
-#else  /* PRECON ============================================================================= */
+#else  /* PRECON ============================================================ */
+
+/* ========================================================================== */
+
 double precon_prepare(
                            const NodeSpaceDiscr* node,
                            const ElemSpaceDiscr* elem,
@@ -440,18 +573,22 @@ double precon_prepare(
                            const int z_periodic) {
 }
 
+/* ========================================================================== */
+
 void precon_apply(
                   double* vec_out,
                   const double* vec_in,
                   const NodeSpaceDiscr *node) {
 }
 
+/* ========================================================================== */
+
 void precon_invert(
                    double* vec_out,
                    const double* vec_in,
                    const NodeSpaceDiscr *node) {
 }
-#endif /* PRECON ============================================================================= */
+#endif /* PRECON ============================================================ */
 
 /* ========================================================================== */
 
@@ -581,9 +718,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             const double a10 = 3.0/64.0;
             const double a01 = 3.0/64.0;
             const double a11 = 1.0/64.0;
-            
-            assert(0); /* implicit gravity not implemented for 3D yet */
-            
+                        
             int i, j, k;
             
             memset(lap, 0.0, node->nc*sizeof(double));

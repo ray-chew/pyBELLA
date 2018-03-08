@@ -62,7 +62,6 @@ static void	catch_periodic_directions(
 static void operator_coefficients_nodes(
 										double* Splus[3], 
 										double* wcenter,
-                                        double* hS,
 										const ElemSpaceDiscr* elem,
 										const NodeSpaceDiscr* node,
 										ConsVars* Sol,
@@ -99,7 +98,6 @@ void second_projection(
 	
 	double** hplus   = mpv->Level[0]->wplus;
 	double*  hcenter = mpv->Level[0]->wcenter;
-    double*  hS      = mpv->Level[0]->wgrav;
 	
 	double* rhs      = mpv->Level[0]->rhs;
 	double* p2       = mpv->Level[0]->p;
@@ -140,7 +138,7 @@ void second_projection(
         }
     }
          
-	operator_coefficients_nodes(hplus, hcenter, hS, elem, node, Sol, Sol0, mpv, dt);
+	operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
 	variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, x_periodic, y_periodic, z_periodic, dt);
     correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);
     
@@ -185,11 +183,6 @@ static double divergence_nodes(
 		}
         case 2: {
             
-            /*
-             const int igxn = node->igx;
-             const int igyn = node->igy;
-             const int icyn = node->icy;
-             */
             const int icxn = node->icx;
             
             const int igxe = elem->igx;
@@ -353,29 +346,7 @@ static double divergence_nodes(
                     rhs[nn01] += - tmpy;
                     rhs[nn11] += - tmpy;
                 }
-            }
-			
-			/* set ghost values of rhs to zero 
-			j = igyn - 1;
-			l = j * icxn;
-			for(i = 0; i < icxn; i++) 
-				rhs[l + i] = 0.0;
-			
-			j = icyn - igyn;
-			l = j * icxn;
-			for(i = 0; i < icxn; i++)
-				rhs[l + i] = 0.0;
-			
-			i = igxn - 1;
-			l = i;
-			for(j = 0; j < icyn; j++)
-				rhs[l + j * icxn] = 0.0;
-			
-			i = icxn - igxn;
-			l = i;
-			for(j = 0; j < icyn; j++) 
-				rhs[l + j * icxn] = 0.0;
-			*/
+            }			
 			break;
 		}
 		default: ERROR("ndim not in {1, 2, 3}");
@@ -414,13 +385,17 @@ static enum Constraint integral_condition_nodes(
 	const int icz = node->icz;
 	const int icxicy = icx * icy;
     
+    const int imax = MAX_own(1, icx - igx - x_periodic);
+    const int jmax = MAX_own(1, icy - igy - y_periodic);
+    const int kmax = MAX_own(1, icz - igz - z_periodic);
+    
     const double del = DBL_EPSILON * node->nc;
     
 	double tmp = 0.0, rhs_max=0.0;
 	
-	for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icxicy;
-		for(j = igy; j < icy - igy - y_periodic; j++) {m = l + j * icx; 
-			for(i = igx; i < icx - igx - x_periodic; i++) {n = m + i;
+	for(k = igz; k < kmax; k++) {l = k * icxicy;
+		for(j = igy; j < jmax; j++) {m = l + j * icx; 
+			for(i = igx; i < imax; i++) {n = m + i;
 				tmp += rhs[n];
                 if(fabs(rhs[n])>rhs_max) rhs_max = fabs(rhs[n]);
 			}
@@ -479,7 +454,7 @@ static void	catch_periodic_directions(
 		}
 	}
 	
-	if(y_periodic == 1){
+	if(node->ndim > 1 && y_periodic == 1){
 		for(k = igz; k < icz - igz; k++) {l = k * icxicy; 
 			m0 = l + igy * icx;
 			m1 = l + (icy-igy-1) * icx;
@@ -492,7 +467,7 @@ static void	catch_periodic_directions(
 		}
 	}
 	
-	if(z_periodic == 1){
+	if(node->ndim > 2 && z_periodic == 1){
 		l0 = igz * icxicy;
 		l1 = (icz-igz-1) * icxicy; 
 		for(j = igy; j < icy - igy; j++) {
@@ -513,7 +488,6 @@ static void	catch_periodic_directions(
 static void operator_coefficients_nodes(
 										double* hplus[3], 
 										double* hcenter,
-                                        double* hS,
 										const ElemSpaceDiscr* elem,
 										const NodeSpaceDiscr* node,
 										ConsVars* Sol,
@@ -566,16 +540,8 @@ static void operator_coefficients_nodes(
                 for(i = igx; i < icx - igx; i++) {
                     n = m + i;     
                     
-
                     double Y     = 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]); 
-                    
-                    /*  TODO: Check what effect the following choice is having 
-                        -- this is the version before implementation of implicit gravity in Oct. 2016: 
-                    double coeff = Gammainv * Sol->rhoY[n]*Sol->rhoY[n] / Sol->rho[n];
-                     */
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
-
-                    /* TODO: first factor 0.25 or 0.5 ? */
                     double Nsqsc = 0.25*dt*dt * (g/Msq) * strat;                    
                     double gimpy = 1.0 / (1.0 + Nsqsc);
                                         
@@ -618,21 +584,17 @@ static void operator_coefficients_nodes(
 			for(k = igz; k < icz - igz; k++) {l = k * icx*icy;
                 
                 for(j = igy; j < icy - igy; j++) {m = l + j * icx;
-
-                    double dSdy  = (mpv->HydroState_n->S0[j+1] - mpv->HydroState_n->S0[j]) / dy;
                     
+                    double strat = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j]) \
+                                        /(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
+
                     for(i = igx; i < icx - igx; i++) {n = m + i;
-                        {
-                            /* double Y     = 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]); */
-                            double Y     = Sol->rhoY[n]/Sol->rho[n];
+                        {             
+                            double Y     = 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]); 
                             double coeff = Gammainv * Sol->rhoY[n] * Y;
-                            /*
-                             double coeff   = Gammainv * Sol->rhoY[n]*Sol->rhoY[n] / Sol->rho[n];
-                             */
-                            /* TODO: first factor 0.25 or 0.5 ? */
-                            double Nsqsc = - 0.25*dt*dt * (g/Msq) * 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]) * dSdy;                    
+                            double Nsqsc = 0.25*dt*dt * (g/Msq) * strat;                    
                             double gimpy = 1.0 / (1.0 + Nsqsc);
-                            
+
                             hplusx[n]  = coeff;
                             hplusy[n]  = coeff * gimpy;
                             hplusz[n]  = coeff;
@@ -835,15 +797,7 @@ void correction_nodes(
 					const double Dpx   = 0.5 * (p[n1]   - p[n] + p[n1icx] - p[nicx]);
 					const double Dpy   = 0.5 * (p[nicx] - p[n] + p[n1icx] - p[n1]);
                     const double thinv = Sol->rho[ne] / Sol->rhoY[ne];
-					
-                    /* currently this is only a half time step, not a full one; 
-                       This WILL get me divergence-free velocities, but it is not
-                       appropriate for getting second order. In fact, the implicit
-                       midpoint discretization will be div-controlled at the half
-                       time level, but will overshoot to its previous divergence
-                       level at the next full time level
-                     */
-                    
+					                    
                     Sol->rhou[ne] += - dtowdx * thinv * hplusx[ne] * Dpx;
 					Sol->rhov[ne] += - dtowdy * thinv * hplusy[ne] * Dpy;
 				}
@@ -851,88 +805,75 @@ void correction_nodes(
 			
 			break;
 		}
-		case 3: {
-			
-			extern User_Data ud;
-			
-			const int igxe = elem->igx;
-			const int icxe = elem->icx;
-			const int igye = elem->igy;
-			const int icye = elem->icy;
-			const int igze = elem->igz;
-			const int icze = elem->icz;
+        case 3: {
             
-			const int dixe = 1;
-			const int diye = icxe;
-			const int dize = icxe*icye;
-			
-			const int icxn = node->icx;
-			const int icyn = node->icy;
-            /*
-			const int iczn = node->icz;    
-             */
-            const int dixn = 1;
-			const int diyn = icxn;
-			const int dizn = icxn*icyn;
+            const int igx = node->igx;
+            const int icx = node->icx;
+            const int igy = node->igy;
+            const int icy = node->icy;
+            const int igz = node->igz;
+            const int icz = node->icz;
             
-			const double dx = node->dx;
-			const double dy = node->dy;
-			const double dz = node->dz;
-			const double oodx = 1.0 / dx;
-			const double oody = 1.0 / dy;
-			const double oodz = 1.0 / dz;
-			const double dtowdx = 0.5*dt * oodx;
-			const double dtowdy = 0.5*dt * oody;
-			const double dtowdz = 0.5*dt * oodz;
-			
-			int i, j, k, ln, mn, nn, le, me, ne;
-			
-			for(k = igze; k < icze - igze; k++) {
-				le = k * dize; 
-				ln = k * dizn;
-								
-				for(j = igye; j < icye - igye; j++) {
-					me = le + j * diye; 
-					mn = ln + j * diyn;
-                    
-					for(i = igxe; i < icxe - igxe; i++) {
-						ne = me + i * dixe;
-						nn = mn + i * dixn;
+            const int icxe = node->icx - 1;
+            const int icye = node->icy - 1;
+            
+            const double dx = node->dx;
+            const double dy = node->dy;
+            const double dz = node->dz;
+            const double oodx = 1.0 / dx;
+            const double oody = 1.0 / dy;
+            const double oodz = 1.0 / dz;
+            
+            double dtowdx;
+            double dtowdy;
+            double dtowdz;
+            
+            if (ud.time_integrator == SI_MIDPT) {
+                dtowdx = 0.5*dt * oodx; /* 1.0*dt * oodx; */
+                dtowdy = 0.5*dt * oody; /* 1.0*dt * oody; */
+                dtowdz = 0.5*dt * oodz; /* 1.0*dt * oodz; */
+            } else {
+                dtowdx = 0.5*dt * oodx;
+                dtowdy = 0.5*dt * oody;                
+                dtowdz = 0.5*dt * oodz;                
+            }
+            
+            const double* hplusx = hplus[0];
+            const double* hplusy = hplus[1];
+            const double* hplusz = hplus[2];
                         
-						const int nn000 = nn;
-						const int nn010 = nn        + diyn;
-						const int nn011 = nn        + diyn + dizn;
-						const int nn001 = nn               + dizn;
-						const int nn100 = nn + dixn;
-						const int nn110 = nn + dixn + diyn;
-						const int nn111 = nn + dixn + diyn + dizn;
-						const int nn101 = nn + dixn        + dizn;
-						
-						const double Dpx = 0.25 * (  p[nn100] - p[nn000]
-                                                   + p[nn110] - p[nn010]
-                                                   + p[nn111] - p[nn011]
-                                                   + p[nn101] - p[nn001]
-                                                   );
-						
-						const double Dpy = 0.25 * (  p[nn010] - p[nn000]
-                                                   + p[nn110] - p[nn100]
-                                                   + p[nn111] - p[nn101]
-                                                   + p[nn011] - p[nn001]
-                                                   );
-						
-						const double Dpz = 0.25 * (  p[nn001] - p[nn000]
-                                                   + p[nn101] - p[nn100]
-						                           + p[nn111] - p[nn110]
-						                           + p[nn011] - p[nn010]
-                                                   );
-						Sol->rhou[ne] += - dtowdx * Dpx;
-						Sol->rhov[ne] += - dtowdy * Dpy;
-						Sol->rhow[ne] += - dtowdz * Dpz;
-					}
-				} 
-			} 
-			break;
-		}
+            for(int k = igz; k < icz-igz-1; k++) {
+                int l  = k*icx*icy;
+                int le = k*icxe*icye;
+                for(int j = igy; j < icy - igy - 1; j++) {
+                    int m  = l  + j*icx; 
+                    int me = le + j*icxe;
+                    for(int i = igx; i < icx - igx - 1; i++) {
+                        int n000 = m + i;
+                        int n010 = n000 + icx;
+                        int n001 = n000 + 1;
+                        int n011 = n000 + 1 + icx;
+                        int n100 = m + i + icx*icy;
+                        int n110 = n100 + icx;
+                        int n101 = n100 + 1;
+                        int n111 = n100 + 1 + icx;
+
+                        int ne   = me + i; 
+                        
+                        double Dpx   = 0.25 * (p[n001] - p[n000] + p[n011] - p[n010] + p[n101] - p[n100] + p[n111] - p[n110]);
+                        double Dpy   = 0.25 * (p[n010] - p[n000] + p[n011] - p[n001] + p[n110] - p[n100] + p[n111] - p[n101]);
+                        double Dpz   = 0.25 * (p[n100] - p[n000] + p[n110] - p[n010] + p[n101] - p[n001] + p[n111] - p[n011]);
+                        double thinv = Sol->rho[ne] / Sol->rhoY[ne];
+                        
+                        Sol->rhou[ne] += - dtowdx * thinv * hplusx[ne] * Dpx;
+                        Sol->rhov[ne] += - dtowdy * thinv * hplusy[ne] * Dpy;
+                        Sol->rhow[ne] += - dtowdz * thinv * hplusz[ne] * Dpz;
+                    }
+                } 
+            }
+            
+            break;
+        }
 		default: ERROR("ndim not in {1, 2,3}");
 	}
 }
@@ -963,8 +904,8 @@ void euler_backward_gravity(ConsVars* Sol,
         int l = k*icy*icx;
         for (int j=0; j<icy; j++) {
             int m = l + j*icx;
-            double strat  = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j])/(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
-            /* double chibar = mpv->HydroState->S0[j]; */
+            double strat = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j])/(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
+
             for (int i=0; i<icx; i++) {
                 int n        = m + i;
                 double Nsqsc = dt*dt * (g/Msq) * strat;
@@ -1015,9 +956,8 @@ void euler_forward_non_advective(ConsVars* Sol,
     
     const double dx = node->dx;
     const double dy = node->dy;
-    
-    assert(elem->ndim == 2);
-    
+    const double dz = node->dz;
+        
     for (int k=igz; k<icz-igz; k++) {
         int lc = k*icy*icx;
         int ln = k*iny*inx;
@@ -1026,28 +966,35 @@ void euler_forward_non_advective(ConsVars* Sol,
             int mn = ln + j*inx;
             double S0p    = mpv->HydroState_n->S0[j+1];
             double S0m    = mpv->HydroState_n->S0[j];
-            /* double chibar = mpv->HydroState->S0[j]; */
             
             for (int i=igx; i<icx-igx; i++) {
                 int nc        = mc + i;
-                int nn        = mn + i;
-                int nn1       = nn+1;
-                int nninx     = nn+inx;
-                int nn1inx    = nn+inx+1;
+
+                int n000 = mn   + i;
+                int n010 = n000 + inx;
+                int n001 = n000 + 1;
+                int n011 = n000 + 1 + inx;
+                int n100 = mn   + i + inx*iny;
+                int n110 = n100 + inx;
+                int n101 = n100 + 1;
+                int n111 = n100 + 1 + inx;
+
                 
-                double dpdx   = 0.5*(p2n[nn1]+p2n[nn1inx]   - (p2n[nn]+p2n[nninx]))/dx;
-                double dpdy   = 0.5*(p2n[nninx]+p2n[nn1inx] - (p2n[nn1]+p2n[nn]  ))/dy;
+                double dpdx   = 0.25*(p2n[n001]-p2n[n000]+p2n[n011]-p2n[n010]+p2n[n101]-p2n[n100]+p2n[n111]-p2n[n110])/dx;
+                double dpdy   = 0.25*(p2n[n010]-p2n[n000]+p2n[n011]-p2n[n001]+p2n[n110]-p2n[n100]+p2n[n111]-p2n[n101])/dy;
+                double dpdz   = 0.25*(p2n[n100]-p2n[n000]+p2n[n110]-p2n[n010]+p2n[n101]-p2n[n001]+p2n[n111]-p2n[n011])/dz;
                 double dSdy   = (S0p-S0m) / dy;
                 
-                double YovG   = Ginv*Sol->rhoY[nc]/Sol->rho[nc];
-                double v      = Sol->rhov[nc]/Sol->rho[nc];
-                double dchi   = Sol->rhoX[BUOY][nc]/Sol->rho[nc];
-                double chi    = Sol->rho[nc]/Sol->rhoY[nc];
-                double dbuoy  = -dchi/chi;  /* -dchi/chibar; */
+                double rhoYovG = Ginv*Sol->rhoY[nc];
+                double v       = Sol->rhov[nc]/Sol->rho[nc];
+                double dchi    = Sol->rhoX[BUOY][nc]/Sol->rho[nc];
+                double chi     = Sol->rho[nc]/Sol->rhoY[nc];
+                double dbuoy   = -Sol->rho[nc]*dchi/chi;  /* -dchi/chibar; */
                 
-                Sol->rhou[nc]       += dt * Sol->rho[nc] * ( - YovG * dpdx);
-                Sol->rhov[nc]       += dt * Sol->rho[nc] * ( - YovG * dpdy + (g/Msq) * dbuoy);
-                Sol->rhoX[BUOY][nc] += dt * Sol->rho[nc] * ( - v * dSdy);
+                Sol->rhou[nc]       += dt * ( - rhoYovG * dpdx);
+                Sol->rhov[nc]       += dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy);
+                Sol->rhow[nc]       += dt * ( - rhoYovG * dpdz);
+                Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
             }
         }
     }

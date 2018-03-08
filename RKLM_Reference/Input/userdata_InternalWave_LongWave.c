@@ -114,10 +114,10 @@ void User_Data_init(User_Data* ud) {
     
     ud->bdrytype_min[0] = PERIODIC; /* DIRICHLET; PERIODIC; WALL; */
     ud->bdrytype_min[1] = WALL; /* SLANTED_WALL; */
-    ud->bdrytype_min[2] = PERIODIC;
+    ud->bdrytype_min[2] = WALL;
     ud->bdrytype_max[0] = PERIODIC; /* DIRICHLET; PERIODIC; WALL; */
     ud->bdrytype_max[1] = WALL;
-    ud->bdrytype_max[2] = PERIODIC;
+    ud->bdrytype_max[2] = WALL;
     
     ud->absorber = WRONG; /* CORRECT;  WRONG; */ /*  BREAKING WAVE CHANGE */
     
@@ -134,9 +134,9 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx =  150+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
-    ud->inz =    5+1;
+    ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
+    ud->iny =   20+1; /* 321; 161;  81;  65; 41;  */
+    ud->inz =    1;
     
     /* explicit predictor step */
     /* Recovery */
@@ -179,7 +179,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 10;
+    ud->write_file_period = 1;
     ud->file_format = HDF;
     
     {

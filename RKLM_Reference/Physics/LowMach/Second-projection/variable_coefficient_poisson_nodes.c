@@ -64,7 +64,7 @@ void set_periodic_data(double *p,
             }
         }
     }
-    if (y_periodic) {
+    if (node->ndim > 1 && y_periodic) {
         for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
             for(i = igx; i < icx - igx; i++) {m = l + i;
                 n_left  = m + igy * icx;
@@ -73,7 +73,7 @@ void set_periodic_data(double *p,
             }
         }
     }
-    if (z_periodic) {
+    if (node->ndim > 2 && z_periodic) {
         for(i = igx; i < icx - igx; i++) {l = i;
             for(j = igy; j < icy - igy; j++) {m = l + j * icx;
                 n_left  = m + igz * icx * icy;
@@ -125,6 +125,10 @@ static double BiCGSTAB_MG_nodes(
 	double rho1, alpha, beta, rho2, omega, sigma, tmp, tmp_local;
 	double precision = precision0;
 	
+    const int imax = MAX_own(1,icx - igx - x_periodic);
+    const int jmax = MAX_own(1,icy - igy - y_periodic);
+    const int kmax = MAX_own(1,icz - igz - z_periodic);
+    
 	assert(data->size >= node->nc);                          /* Rupert: This could be dangerous. */
     
     
@@ -138,9 +142,9 @@ static double BiCGSTAB_MG_nodes(
     
     cell_cnt = 0;
 	
-	for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
-		for(j = igy; j < icy - igy - y_periodic; j++) {m = l + j * icx;
-			for(i = igx; i < icx - igx - x_periodic; i++) {n = m + i;
+	for(k = igz; k < kmax; k++) {l = k * icx * icy;
+		for(j = igy; j < jmax; j++) {m = l + j * icx;
+			for(i = igx; i < imax; i++) {n = m + i;
 				r_j[n] = r_0[n] = rhs_prec[n] - v_j[n];
 				p_j[n] = 0.0;
 				v_j[n] = 0.0; 
@@ -152,9 +156,9 @@ static double BiCGSTAB_MG_nodes(
 
     tmp = 0.0;
     tmp_local = 0.0;
-    for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
-        for(j = igy; j < icy - igy - y_periodic; j++) {m = l + j * icx;
-            for(i = igx; i < icx - igx - x_periodic; i++) {n = m + i;
+    for(k = igz; k < kmax; k++) {l = k * icx * icy;
+        for(j = igy; j < jmax; j++) {m = l + j * icx;
+            for(i = igx; i < imax; i++) {n = m + i;
                 tmp += r_j[n] * r_j[n];
                 tmp_local = MAX_own(tmp_local, fabs(r_j[n]));
             }
@@ -176,9 +180,9 @@ static double BiCGSTAB_MG_nodes(
 	{
 #endif
 		rho2 = 0.0; 
-		for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
-			for(j = igy; j < icy - igy - y_periodic; j++) {m = l + j * icx;
-				for(i = igx; i < icx - igx - x_periodic; i++) {n = m + i;
+		for(k = igz; k < kmax; k++) {l = k * icx * icy;
+			for(j = igy; j < jmax; j++) {m = l + j * icx;
+				for(i = igx; i < imax; i++) {n = m + i;
 					rho2 += r_j[n] * r_0[n];
 				}
 			}
@@ -186,9 +190,9 @@ static double BiCGSTAB_MG_nodes(
 		
 		beta = (rho2 * alpha) / (rho1 * omega);
 		
-		for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
-			for(j = igy; j < icy - igy - y_periodic; j++) {m = l + j * icx;
-				for(i = igx; i < icx - igx - x_periodic; i++) {n = m + i;
+		for(k = igz; k < kmax; k++) {l = k * icx * icy;
+			for(j = igy; j < jmax; j++) {m = l + j * icx;
+				for(i = igx; i < imax; i++) {n = m + i;
 					p_j[n] = r_j[n] + beta * (p_j[n] - omega * v_j[n]);
 				}
 			}
@@ -199,9 +203,9 @@ static double BiCGSTAB_MG_nodes(
         EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, p_j, hplus, hcenter, x_periodic, y_periodic, z_periodic, v_j);
 
 		sigma = 0.0; 
-		for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
-			for(j = igy; j < icy - igy - y_periodic; j++) {m = l + j * icx;
-				for(i = igx; i < icx - igx - x_periodic; i++) {n = m + i;
+		for(k = igz; k < kmax; k++) {l = k * icx * icy;
+			for(j = igy; j < jmax; j++) {m = l + j * icx;
+				for(i = igx; i < imax; i++) {n = m + i;
 					sigma += v_j[n] * r_0[n];
 				}
 			}
@@ -209,9 +213,9 @@ static double BiCGSTAB_MG_nodes(
 		
 		alpha = rho2 / sigma;
 		
-		for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
-			for(j = igy; j < icy - igy - y_periodic; j++) {m = l + j * icx;
-				for(i = igx; i < icx - igx - x_periodic; i++) {n = m + i;
+		for(k = igz; k < kmax; k++) {l = k * icx * icy;
+			for(j = igy; j < jmax; j++) {m = l + j * icx;
+				for(i = igx; i < imax; i++) {n = m + i;
 					s_j[n] = r_j[n] - alpha * v_j[n];
 				}
 			}
@@ -223,9 +227,9 @@ static double BiCGSTAB_MG_nodes(
 
 		omega = 0.0; 
 		tmp = 0.0; 
-		for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
-			for(j = igy; j < icy - igy - y_periodic; j++) {m = l + j * icx;
-				for(i = igx; i < icx - igx - x_periodic; i++) {n = m + i;
+		for(k = igz; k < kmax; k++) {l = k * icx * icy;
+			for(j = igy; j < jmax; j++) {m = l + j * icx;
+				for(i = igx; i < imax; i++) {n = m + i;
 					omega += s_j[n] * t_j[n];
 					tmp += t_j[n] * t_j[n];
 				}
@@ -234,9 +238,9 @@ static double BiCGSTAB_MG_nodes(
 		
 		omega /= tmp;
 		
-		for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
-			for(j = igy; j < icy - igy - y_periodic; j++) {m = l + j * icx;
-				for(i = igx; i < icx - igx - x_periodic; i++) {n = m + i;
+		for(k = igz; k < kmax; k++) {l = k * icx * icy;
+			for(j = igy; j < jmax; j++) {m = l + j * icx;
+				for(i = igx; i < imax; i++) {n = m + i;
 					solution_io[n] += alpha * p_j[n] + omega * s_j[n];
 					r_j[n] = s_j[n] - omega * t_j[n];
 				}
@@ -245,9 +249,9 @@ static double BiCGSTAB_MG_nodes(
         
         tmp = 0.0;
         tmp_local = 0.0;
-        for(k = igz; k < icz - igz - z_periodic; k++) {l = k * icx * icy;
-            for(j = igy; j < icy - igy - y_periodic; j++) {m = l + j * icx;
-                for(i = igx; i < icx - igx - x_periodic; i++) {n = m + i;
+        for(k = igz; k < kmax; k++) {l = k * icx * icy;
+            for(j = igy; j < jmax; j++) {m = l + j * icx;
+                for(i = igx; i < imax; i++) {n = m + i;
                     tmp      += r_j[n] * r_j[n];
                     tmp_local = MAX_own(tmp_local, fabs(r_j[n]));
                 }

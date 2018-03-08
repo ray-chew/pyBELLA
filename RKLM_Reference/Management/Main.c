@@ -171,8 +171,6 @@ int main( void )
 	
 	/* data release */
 	Data_free();
-	Explicit_free(); 
-	recovery_free();
 	    
 	return(1);
 }
