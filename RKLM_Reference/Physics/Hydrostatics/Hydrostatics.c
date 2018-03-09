@@ -15,6 +15,7 @@
 #include "userdata.h"
 #include "variable.h"
 #include "math_own.h"
+#include "boundary.h"
 
 
 /* ================================================================================== */
@@ -450,6 +451,10 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
             mpv->p2_nodes[nnij] += pin0 - NoBG * mpv->HydroState_n->p20[j];
         }
     }
+    
+    set_ghostcells_p2(mpv->p2_cells, elem, 2);    
+    set_ghostnodes_p2(mpv->p2_nodes, node, 2);    
+
     
     if (ud.is_compressible) {
         for (int i=igx; i<icx-igx; i++) {

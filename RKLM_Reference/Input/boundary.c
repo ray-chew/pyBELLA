@@ -1046,6 +1046,85 @@ void set_ghostcells_p2(
     }
 }
 
+/* ============================================================================= */
+
+void set_ghostnodes_p2(
+                       double* p,
+                       const NodeSpaceDiscr* node, 
+                       const int ig) {
+    
+    extern User_Data ud;
+    
+    /* I am implementing a simple, rudimentary version just for homogeneous
+     Neumann and periodic conditions
+     */
+    
+    const int icx = node->icx;
+    const int igx = node->igx;
+    const int icy = node->icy;
+    const int igy = node->igy;
+    const int icz = node->icz;
+    const int igz = node->igz;
+    
+    const int xperiodic = (ud.bdrytype_min[0] == PERIODIC ? 1 : 0);
+    const int yperiodic = (ud.bdrytype_min[1] == PERIODIC ? 1 : 0);
+    const int zperiodic = (ud.bdrytype_min[2] == PERIODIC ? 1 : 0);
+    
+    /* x-direction */
+    for (int k=0; k<icz; k++) {
+        int lc = k*icx*icy;
+        for (int j=0; j<icy; j++) {
+            int mc  = lc + j*icx;
+            for (int i=igx; i>=igx-ig; i--) {
+                int nc0_obj = mc + i;
+                int nc0_src = mc + xperiodic*(icx-5+i) + (1-xperiodic)*(igx+2-i);
+                int nc1_obj = mc + icx-1-i;
+                int nc1_src = mc + xperiodic*(igx+2-i) + (1-xperiodic)*(icx-5+i);
+                
+                p[nc0_obj] = p[nc0_src];
+                p[nc1_obj] = p[nc1_src];
+            }
+        }
+    } 
+    
+    /* y-direction */
+    if (node->ndim > 1) {
+        for (int i=0; i<icx; i++) {
+            int lc = i;
+            for (int k=0; k<icz; k++) {
+                int mc  = lc + k*icx*icy;
+                for (int j=igy; j>=igy-ig; j--) {
+                    int nc0_obj = mc + j*icx;
+                    int nc0_src = mc + (yperiodic*(icy-5+j) + (1-yperiodic)*(igy+2-j))*icx;
+                    int nc1_obj = mc + (icy-1-j)*icx;
+                    int nc1_src = mc + (yperiodic*(igy+2-j) + (1-yperiodic)*(icy-5+j))*icx;
+                    
+                    p[nc0_obj] = p[nc0_src];
+                    p[nc1_obj] = p[nc1_src];
+                }
+            }
+        } 
+    }
+    
+    /* z-direction */
+    if (node->ndim > 2) {
+        for (int j=0; j<icy; j++) {
+            int lc = j*icx;
+            for (int i=0; i<icx; i++) {
+                int mc  = lc + i;
+                for (int k=igz; k>=igz-ig; k--) {
+                    int nc0_obj = mc + k*icx*icy;
+                    int nc0_src = mc + (zperiodic*(icz-5+k) + (1-zperiodic)*(igz+2-k))*icx*icy;
+                    int nc1_obj = mc + (icz-1-k)*icx*icy;
+                    int nc1_src = mc + (zperiodic*(igz+2-k) + (1-zperiodic)*(icz-5+k))*icx*icy;
+                    
+                    p[nc0_obj] = p[nc0_src];
+                    p[nc1_obj] = p[nc1_src];
+                }
+            }
+        } 
+    }
+}
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log: boundary.c,v $
  Revision 1.1  1998/03/01 18:43:32  nicola

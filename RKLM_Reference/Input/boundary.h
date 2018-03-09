@@ -75,6 +75,12 @@ void set_ghostcells_p2(
                        const ElemSpaceDiscr* elem, 
                        const int ig);
 
+/* ============================================================================= */
+
+void set_ghostnodes_p2(
+                       double* p,
+                       const NodeSpaceDiscr* node, 
+                       const int ig); 
 
 #endif /* BOUNDARY_H */
 

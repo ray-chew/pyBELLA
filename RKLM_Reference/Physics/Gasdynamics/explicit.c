@@ -249,7 +249,7 @@ void Explicit_step_and_flux(
     if (SplitStep == 1)  {
         (*rotate[elem->ndim - 1])(Sol, BACKWARD);
     }
-    Set_Explicit_Boundary_Data(Sol, elem, 0);
+    Set_Explicit_Boundary_Data(Sol, elem);
     if (SplitStep == 1)  {
         (*rotate[elem->ndim - 1])(Sol, FORWARD);
     }

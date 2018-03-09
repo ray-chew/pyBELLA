@@ -24,7 +24,7 @@
 double molly(double x);
 
 /* horizontal stretch for S&K94 IGWs: planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0; */
-static double scalefactor = 1.0;   
+static double scalefactor = 20.0;   
 
 void User_Data_init(User_Data* ud) {
     
@@ -36,7 +36,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Earth */
     double grav     = 9.81;             /* gravitational acceleration [m/s^2]    */
-    double omega    = 0.0*0.0001;       /* Coriolis parameter [1/s]              */
+    double omega    = 1.0*0.0001;       /* Coriolis parameter [1/s]              */
                                         /* sin(0.5*PI) * 2.0 * 0.00007272205217; */
     
     /* thermodynamics and chemistry */
@@ -179,7 +179,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 1;
+    ud->write_file_period = 10;
     ud->file_format = HDF;
     
     {
@@ -321,8 +321,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
                 
                 Sol->rhoX[BUOY][lc] = Sol->rhoX[BUOY][nc];
                 mpv->p2_cells[lc]   = mpv->p2_cells[nc];
-                
-                mpv->p2_nodes[ln] = mpv->p2_nodes[nn];
+                mpv->p2_nodes[ln]   = mpv->p2_nodes[nn];
             }
         }
     }
