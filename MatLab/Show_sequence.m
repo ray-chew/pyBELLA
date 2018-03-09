@@ -12,8 +12,8 @@ modelstr = 'comp';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
 
-%test_case = 'Equatorial-Long-Wave';
-test_case = 'Internal-Wave-Long-Wave';
+test_case = 'Equatorial-Long-Wave';
+%test_case = 'Internal-Wave-Long-Wave';
 %test_case = 'Internal-Wave-Strong-Strat';
 %test_case = 'Skamarock-Klemp-Internal-Wave';
 %test_case = 'Rising-Bubble';
@@ -50,7 +50,7 @@ dk   = 1;
 if strcmp(test_case, 'Equatorial-Long-Wave')
     scalefactor = 2.0;
     ncx = 300; 
-    ncy = 10;  
+    ncy = 20;  
     %ncx = 600; 
     %ncy = 80;  
     L   = 8*3000.0 * scalefactor;  % 

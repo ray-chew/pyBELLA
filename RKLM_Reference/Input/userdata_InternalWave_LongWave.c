@@ -24,7 +24,7 @@
 double molly(double x);
 
 /* horizontal stretch for S&K94 IGWs: planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0; */
-static double scalefactor = 20.0;   
+static double scalefactor = 1.0;   
 
 void User_Data_init(User_Data* ud) {
     
