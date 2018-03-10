@@ -1,6 +1,5 @@
-% this m-file assumes Y to be the potential temperature
-% distribution loaded directly from the .hdf-file for
-% the Bryan-Bubble-output
+% Script collecting some convenient data views on the hdf4 output
+% of the RKLM code family
 
 % Hint: 
 % saving figures as .eps:     print(gcf, 'TestPlot', '-depsc');

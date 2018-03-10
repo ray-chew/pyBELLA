@@ -15,6 +15,10 @@
 /*------------------------------------------------------------------------------
  Mupltiple pressure variables embedded in a Multigrid structure
  ------------------------------------------------------------------------------*/
+/* TODO:  Get rid of "Level[]"s in mpv, as these are legacy from a former 
+ multigrid version of the code - which only dilute the focus in the present
+ reference implementation 
+ */
 typedef struct {
 	
     int level_number;

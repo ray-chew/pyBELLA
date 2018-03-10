@@ -1,68 +1,195 @@
-% this m-file assumes Y to be the potential temperature
-% distribution loaded directly from the .hdf-file for
-% the Bryan-Bubble-output
 
-slice = 'xy'; %  'xy' 'zy' 'full3D'
+% Hint: 
+% saving figures as .eps:     print(gcf, 'TestPlot', '-depsc');
+
+%modelstr = '';
+modelstr = 'comp';
+%modelstr = 'psinc';
+%modelstr = 'psinc_w_adv_Ndt=3';
+%modelstr = 'psinc_Ndt=3';
+%modelstr = 'psinc_w_adv_Ndt=05';
+
+%test_case = 'Equatorial-Long-Wave';
+%test_case = 'Internal-Wave-Long-Wave';
+%test_case = 'Internal-Wave-Strong-Strat';
+test_case = 'Skamarock-Klemp-Internal-Wave';
+%test_case = 'Rising-Bubble';
+%test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
+%test_case = 'Straka';
+%test_case = 'Travelling-Vortex';
+
+slice = 'xy'; % options:  'xy' 'zy' 'full3D'
 showmode = 1;
-filledcontours = 1;
-fixed_contours = 0;
+separate_signs = 1;
+filledcontours = 0;
+fixed_contours = 1;
+fixed_contour_step = 0;
+no_of_contours = 10;
+show_increments = 0;
+symmetry = 0;        % in {0,1}
+symmetrytest = 0;
+showdummycells = 0;
+
+% th0 = -0.0015/300;
+% dth = 5e-4/300;
+% contour_values = [th0 th0+dth th0+2*dth th0+3*dth th0+4*dth th0+5*dth th0+6*dth th0+7*dth th0+8*dth th0+9*dth th0+10*dth];
+dtheta = 0.5e-3/300;
+contour_values = [-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dtheta, 2*dtheta, 3*dtheta, 4*dtheta, 5*dtheta];
 %contour_values = [1.0001 1.0011 1.0022 1.0022 1.0033 1.0044 1.0055 1.0065];
-contour_values = linspace(-0.01,0.01,41) / 288.15;
+%contour_values = linspace(-0.01,0.01,41) / 288.15;
 title_true = 1;
 
-kmin = 1;
-kmax = 11;
+%kmin = 50;
+%kmax = 53;
+kmin = 0;
+kmax = 601;
 dk   = 1;
-%modelstr = '';
-%modelstr = 'psinc';
-modelstr = 'comp';
 
-if strcmp(slice, 'xy')
-    ncx = 160;  nnx = ncx+1;
-    ncy =  80;  nny = ncy+1;
-    ncz =   1;  nnz = ncz+1;
-elseif strcmp(slice, 'zy')
-    ncx =   1;  nnx = ncx+1;
-    ncy =  80;  nny = ncy+1;
-    ncz = 160;  nnz = ncz+1;
-elseif strcmp(slice, 'full3D')
-    ncx =  80;  nnx = ncx+1;
-    ncy =  40;  nny = ncy+1;
-    ncz =  80;  nnz = ncz+1;
+if strcmp(test_case, 'Equatorial-Long-Wave')
+    scalefactor = 2.0;
+    ncx = 300; 
+    ncy = 20;  
+    %ncx = 600; 
+    %ncy = 80;  
+    L   = 8*3000.0 * scalefactor;  % 
+    x0  = 0.0*L;
+    H   = 10.0;  %
+    aspect = [L/H/3 1 1];
+    velosc = 100;  % velocity unit of RKLM code
+elseif strcmp(test_case, 'Internal-Wave-Long-Wave')
+    scalefactor = 2.0;
+    ncx = 300; 
+    ncy = 20;  
+    %ncx = 600; 
+    %ncy = 80;  
+    L   = 3000.0 * scalefactor;  % 
+    x0  = 0.0*L;
+    H   = 10.0;  %
+    aspect = [L/H/3 1 1];
+    velosc = 100;  % velocity unit of RKLM code
+elseif strcmp(test_case, 'Internal-Wave-Strong-Strat')
+    scalefactor = 1.0;
+    ncx = 1200; 
+    ncy = 40;  
+    L   = 3000.0 * scalefactor;  % 
+    x0  = 0.5*L;
+    H   = 10.0;  %
+    aspect = [80 1 1];
+    velosc = 100;  % velocity unit of RKLM code
+elseif strcmp(test_case, 'Skamarock-Klemp-Internal-Wave')
+    scalefactor = 1.0;
+    ncx = 300; 
+    ncy = 20;
+    ncz = 5;
+    L   = 300.0 * scalefactor;  % [km] 
+    x0  = 0.5*L;
+    H   = 10.0;    % [km] 
+    B   = 20.0;    % [km]
+    aspect = [16 1 1];
+    velosc = 100;  % [m/s] velocity unit of RKLM code
+elseif strcmp(test_case, 'Rising-Bubble')
+    ncx = 160;  
+    ncy =  80;  
+    L   = 2.0;  
+    x0  = 1.0;
+    H   = 1.0; 
+    aspect = [1 1 1];
+    velosc = 100;  % velocity unit of RKLM code
+elseif strcmp(test_case, 'Travelling-Vortex')
+    ncx = 128;  % 512; 256;
+    ncy = 128;  % 512; 256;
+    L   = 1.0;  
+    x0  = 0.5;
+    H   = 1.0; 
+    aspect = [1 1 1];
+    velosc = 100;  % velocity unit of RKLM code
+elseif strcmp(test_case, 'Straka')
+    ncx = 512;  
+    ncy = 64;  
+    L  = 52.2;  % 
+    x0 = 0.0*L;
+    H  = 6.4;  %
+    aspect = [1 1 1];
+    velosc = 100;  % velocity unit of RKLM code
+elseif strcmp(test_case, 'Smolarkiewicz-Margolin-Breaking-Wave')
+    ncx = 240;  
+    ncy = 120;  
+    L   = 120.0;  % 
+    x0  =  60.0;
+    H   =  60.0;  %
+    aspect = [1 1 1];
+    velosc = 100;  % velocity unit of RKLM code
+end
     
+% auxiliary adjustments of grid parameters
+nnx = ncx+1;
+dumsx = 2;
+if ncy == 1
+    nny = 1;
+    dumsy = 0;
+else
+    nny = ncy+1;
+    dumsy = 2;
+end
+if ncz == 1
+    nnz = 1;
+    dumsz = 0;
+else
+    nnz = ncz+1;
+    dumsz = 2;
+end
+
+modelfigstr = strcat('  (',modelstr,')');
+
+rhoY_diff = 0;
+rhoZ_diff = 0;
+transp    = 0;
+
+if strcmp(slice, 'full3D')
     kkmin = ncz/2;
     dkk   =  1;
     kkmax = ncz/2;
 end
 
-L = 2;  %
-H = 1;  %
-B = 2;  %
-
-aspect = [1 1 1];
-%aspect = [10 1 1];
-
-modelfigstr = strcat('  (',modelstr,')');
+folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Mach_gravity_',modelstr);
 
 % cell-centered fields
 %varstr = 'rho'; folderstr = 'rho'; titlestr = 'rho'; ndummy = 2; arraysize = [ncx ncy ncz];
-%varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy ncz];
+%varstr = 'p'; folderstr = 'p'; titlestr = 'p'; ndummy = 2; arraysize = [ncx ncy ncz];
+%varstr = 'S'; folderstr = 'S'; titlestr = 'S'; ndummy = 2; arraysize = [ncx ncy ncz];
+%varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy ncz]; rhoY_diff = 1;
+%varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy ncz];
+%varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy ncz];
+varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy ncz];
+%varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy ncz];
+%varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy ncz];
+%varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'rhoZ';  folderstr = 'rhoZ'; titlestr = 'rhoZ'; ndummy = 2; arraysize = [ncx ncy ncz];
-varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy ncz];
-%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy ncz];
-%varstr = 'Z';  folderstr = 'Z'; titlestr = 'Z'; ndummy = 2; arraysize = [ncx ncy ncz];
-%varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy ncz];
-%varstr = 'v';  folderstr = 'v'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy ncz];
+%varstr = 'Z';  folderstr = 'Z'; titlestr = 'Z'; ndummy = 2; arraysize = [ncx ncy ncz]; rhoZ_diff = 0;
+%varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy ncz]; symmetry = -1*symmetry;
+%varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy ncz];
+%varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'qc';  folderstr = 'qc'; titlestr = 'qc'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'qr';  folderstr = 'qr'; titlestr = 'qr'; ndummy = 2; arraysize = [ncx ncy ncz];
-%varstr = 'dp2_c';  folderstr = 'dp2_c'; titlestr = 'd\pi'; ndummy = 2; arraysize = [ncx ncy ncz];
-%varstr = 'p2_c';  folderstr = 'p2_c'; titlestr = 'p2_c'; ndummy = 2; arraysize = [ncx ncy ncz];
-%varstr = 'dpdim';  folderstr = 'dpdime'; titlestr = 'dp [Pa]'; ndummy = 2; arraysize = [ncx ncy ncz];
+%varstr = 'flux_rhou';  folderstr = 'fluxes'; titlestr = 'flux_rhou'; ndummy = 2; arraysize = [ncx+1 ncy ncz]; symmetry = -1*symmetry;
+%varstr = 'flux_rhov';  folderstr = 'fluxes'; titlestr = 'flux_rhov'; ndummy = 2; arraysize = [ncy+1 ncz ncx]; symmetry = -1*symmetry;
+%varstr = 'flux_rhov';  folderstr = 'fluxes'; titlestr = 'flux_rhov'; ndummy = 2; arraysize = [ncz+1 ncx ncy]; symmetry = -1*symmetry;
 
-% node-centered fields
-%varstr = 'dp2_n';  folderstr = 'p2_nodes'; titlestr = 'd\pi';    ndummy = 2; arraysize = [nnx nny nnz];
+%varstr = 'p2_c';  folderstr = 'p2_c'; titlestr = '\pi'; ndummy = 2; arraysize = [ncx ncy ncz];
+%varstr = 'dp2_c';  folderstr = 'dp2_c'; titlestr = 'd\pi'; ndummy = 2; arraysize = [ncx ncy ncz];
+%varstr = 'dpdim';  folderstr = 'dpdime'; titlestr = 'dp [Pa]'; ndummy = 2; arraysize = [ncx ncy ncz];
+%varstr = 'rhs_cells';  folderstr = 'rhs_cells'; titlestr = 'rhs_c'; ndummy = 2; arraysize = [ncx ncy ncz];
+
+%varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny nnz];
+%varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny nnz];
 %varstr = 'rhs_nodes';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n';    ndummy = 2; arraysize = [nnx nny nnz];
+
+%varstr = 'advflux_x';  folderstr = 'advflux'; titlestr = 'advflux_x'; ndummy = 2; arraysize = [ncx+1 ncy ncz]; symmetry = -1*symmetry;
+%varstr = 'advflux_y';  folderstr = 'advflux'; titlestr = 'advflux_y'; ndummy = 2; arraysize = [ncy+1 ncz ncx]; symmetry = -1*symmetry; transp = 1;
+%varstr = 'advflux_z';  folderstr = 'advflux'; titlestr = 'advflux_z'; ndummy = 2; arraysize = [ncz+1 ncx ncy]; symmetry = -1*symmetry; transp = 1;
+
+
 
 scrsz = get(0,'ScreenSize');
 figure1 = figure('Position',[1 scrsz(4)/1.5 scrsz(3)/1.5 scrsz(4)/1.75]);
@@ -75,11 +202,12 @@ end
 for k = kmin:dk:kmax
     kstr = num2str(k);
     if k < 10
-        filestr = strcat('/Users/work/Documents/Computation/LowMach_MG/low_Mach_gravity_',modelstr,'/',folderstr,'/',varstr,'_00',kstr,'.hdf');
-    else if k < 100
-            filestr = strcat('/Users/work/Documents/Computation/LowMach_MG/low_Mach_gravity_',modelstr,'/',folderstr,'/',varstr,'_0',kstr,'.hdf');
+        filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_00',kstr,'.hdf');
+    else
+        if k < 100
+            filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_0',kstr,'.hdf');
         else
-            filestr = strcat('/Users/work/Documents/Computation/LowMach_MG/low_Mach_gravity_',modelstr,'/',folderstr,'/',varstr,'_',kstr,'.hdf');
+            filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_',kstr,'.hdf');
         end
     end
     v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1  1],[1  1  1],[arraysize(1)+2*ndummy  arraysize(2)+2*ndummy  arraysize(3)+2*ndummy]});
@@ -117,6 +245,7 @@ for k = kmin:dk:kmax
                 contourf(x,y,transpose(th(:,:,kk)),15,'LineColor','auto');
                 colormap Jet;
                 colorbar('FontSize',14,'FontName','Helvetica');
+                pause;
             end
         else
             if fixed_contours

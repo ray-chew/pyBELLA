@@ -544,7 +544,7 @@ void precon_invert(
             Thomas_Algorithm(v_out, v_in, upper, diago, lower, size);
             for (int j=igyn; j<icyn-igyn; j++) {
                 int j_inn = j-igyn;
-                int nn    = j*icxn+i;
+                int nn    = mn + j*icxn;
                 vec_out[nn] = v_out[j_inn];
             }
         }

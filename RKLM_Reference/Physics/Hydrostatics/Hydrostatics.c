@@ -382,9 +382,7 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
     double *beta, *bdpdx, *pibot, *coeff;
     double dotPU;
     double NoBG = (ud.time_integrator == SI_MIDPT ? 1.0 : 0.0);
-    
-    assert(elem->ndim == 2);
-    
+        
     beta  = (double*)malloc(elem->icx*sizeof(double));
     bdpdx = (double*)malloc(elem->icx*sizeof(double));
     pibot = (double*)malloc(elem->icx*sizeof(double));
@@ -475,7 +473,6 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
                 }
             }
         }
-
     }
     
     free(beta);

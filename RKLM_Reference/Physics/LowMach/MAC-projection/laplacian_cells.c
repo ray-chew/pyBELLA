@@ -366,6 +366,7 @@ double precon_c_prepare(
                 }
             }
         }
+            break;
         default: 
             ERROR("ndim not in {1, 2, 3}");
             break;

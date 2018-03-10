@@ -341,7 +341,7 @@ static double divergence_nodes(
                     const int mn = ln + j * icxn; 
                     for(i = igxe; i < icxe - igxe; i++) {
                         const int ne = me + i; 
-                        const int nn000  = mn + i;
+                        const int nn000  = mn + i;  /* foresee consistent interpretation of "abc" in nnabc between parts of code */
                         const int nn010  = nn000 + diyn;
                         const int nn011  = nn000 + diyn + dizn;
                         const int nn001  = nn000        + dizn;
@@ -390,7 +390,18 @@ static double divergence_nodes(
                     rhs[nn01] += - tmpy;
                     rhs[nn11] += - tmpy;
                 }
-            }			
+            }		
+
+            for(k = igze+1; k < icze - igze; k++) {
+                int ln = k*icxn*icyn; 
+                for(j = igye+1; j < icye - igye; j++) {
+                    int mn = ln + j * icxn; 
+                    for(i = igxe+1; i < icxe - igxe; i++) {
+                        int nn  = mn + i;
+                        div_max = MAX_own(div_max, fabs(rhs[nn]));
+                    }
+                }
+            }
 			break;
 		}
 		default: ERROR("ndim not in {1, 2, 3}");

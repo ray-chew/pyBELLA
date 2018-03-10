@@ -188,7 +188,47 @@ void recompute_advective_fluxes(ConsVars* flux[3],
         }
             
         case 3: {
-            ERROR("recompute_advective_fluxes() not implemented in 3D yet.");
+            int icx = elem->icx;
+            int icy = elem->icy;
+            int icz = elem->icz;
+            int ifx = elem->ifx;
+            int ify = elem->ify;
+            int ifz = elem->ifz;
+            for (int k=1; k<icz; k++) {
+                int nck  = k*icx*icy;
+                int nfxk = k*ifx*icy;
+                int nfyk = k*ify;
+                int nfzk = k;
+                for (int j=1; j<icy; j++) {
+                    int ncjk  = nck  + j*icx;
+                    int nfxjk = nfxk + j*ifx;
+                    int nfyjk = nfyk + j;
+                    int nfzjk = nfzk + j*ifz*icx;
+                    for(int i=1; i<icx; i++) {
+                        int ncijk  = ncjk  + i;
+                        int nfxijk = nfxjk + i;
+                        int nfyijk = nfyjk + i*ify*icz;
+                        int nfzijk = nfzjk + i*ifz;
+                        
+                        double u_c     = Sol->rhou[ncijk]/Sol->rho[ncijk];
+                        double u_m     = Sol->rhou[ncijk-1]/Sol->rho[ncijk-1];
+                        double rhoY_c  = Sol->rhoY[ncijk];
+                        double rhoY_mx = Sol->rhoY[ncijk-1];
+                        
+                        double v_c     = Sol->rhov[ncijk]/Sol->rho[ncijk];
+                        double v_m     = Sol->rhov[ncijk-icx]/Sol->rho[ncijk-icx];
+                        double rhoY_my = Sol->rhoY[ncijk-icx];
+                        
+                        double w_c     = Sol->rhow[ncijk]/Sol->rho[ncijk];
+                        double w_m     = Sol->rhow[ncijk-icx*icy]/Sol->rho[ncijk-icx*icy];
+                        double rhoY_mz = Sol->rhoY[ncijk-icx*icy];
+                        
+                        flux[0]->rhoY[nfxijk] = 0.25*(u_c+u_m)*(rhoY_c+rhoY_mx);
+                        flux[1]->rhoY[nfyijk] = 0.25*(v_c+v_m)*(rhoY_c+rhoY_my);
+                        flux[2]->rhoY[nfzijk] = 0.25*(w_c+w_m)*(rhoY_c+rhoY_mz);
+                    }
+                }
+            }
             break;
         }
     }
