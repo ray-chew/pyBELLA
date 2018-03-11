@@ -169,28 +169,30 @@ void flux_correction(ConsVars* flux[3],
     set_ghostcells_p2(p2, elem, elem->igx);
 
 #ifdef NONLINEAR_EOS_IN_1st_PROJECTION
-    /* Nonlinear iteration for the \partial P/\partial t  term in the P-equation */
-    double precision_factor = 1.0;
-    ud.flux_correction_precision       *= precision_factor;
-    ud.flux_correction_local_precision *= precision_factor;
-    for (int nc=0; nc<elem->nc; nc++) {
-        pi[nc]  = p2[nc];
-        p2[nc] -= mpv->p2_cells[nc];        
-    }
-    rhsmax = Newton_rhs(rhs, (const double*)p2, (const double*)pi, (const double*)Sol->rhoY, (const MPV*)mpv, (const ElemSpaceDiscr*)elem);
-
-    while (rhsmax > ud.flux_correction_precision) {
-        variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, Sol, elem, node);
-        set_ghostcells_p2(p2, elem, elem->igx);
-        for (int nc=0; nc<elem->nc; nc++) pi[nc] += p2[nc];
+    if (ud.is_compressible) {
+        /* Nonlinear iteration for the \partial P/\partial t  term in the P-equation */
+        double precision_factor = 1.0;
+        ud.flux_correction_precision       *= precision_factor;
+        ud.flux_correction_local_precision *= precision_factor;
+        for (int nc=0; nc<elem->nc; nc++) {
+            pi[nc]  = p2[nc];
+            p2[nc] -= mpv->p2_cells[nc];        
+        }
         rhsmax = Newton_rhs(rhs, (const double*)p2, (const double*)pi, (const double*)Sol->rhoY, (const MPV*)mpv, (const ElemSpaceDiscr*)elem);
+        
+        while (rhsmax > ud.flux_correction_precision) {
+            variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, Sol, elem, node);
+            set_ghostcells_p2(p2, elem, elem->igx);
+            for (int nc=0; nc<elem->nc; nc++) pi[nc] += p2[nc];
+            rhsmax = Newton_rhs(rhs, (const double*)p2, (const double*)pi, (const double*)Sol->rhoY, (const MPV*)mpv, (const ElemSpaceDiscr*)elem);
+        }
+        
+        for (int nc=0; nc<elem->nc; nc++) {
+            p2[nc] = pi[nc];        
+        }
+        ud.flux_correction_precision       /= precision_factor;
+        ud.flux_correction_local_precision /= precision_factor;
     }
-
-    for (int nc=0; nc<elem->nc; nc++) {
-        p2[nc] = pi[nc];        
-    }
-    ud.flux_correction_precision       /= precision_factor;
-    ud.flux_correction_local_precision /= precision_factor;
 #endif
 
     

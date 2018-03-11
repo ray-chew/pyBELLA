@@ -53,10 +53,6 @@ void initialize_projection(
     mpv->dp2_cells = (double*)malloc(nc*sizeof(double));
     mpv->p2_nodes  = (double*)malloc(nn*sizeof(double));
     mpv->dp2_nodes = (double*)malloc(nn*sizeof(double));
-    mpv->eta_hyp0  = (double*)malloc(nn*sizeof(double));
-    mpv->eta_hyp   = (double*)malloc(nn*sizeof(double));
-    mpv->eta       = (double*)malloc(nn*sizeof(double));
-    mpv->eta0      = (double*)malloc(nn*sizeof(double));
 	
     for(i=0; i<nc; i++){
 		mpv->p2_cells[i]  = 0.0;
@@ -66,10 +62,6 @@ void initialize_projection(
     for(i=0; i<nn; i++){
 		mpv->p2_nodes[i]  = 0.0;
 		mpv->dp2_nodes[i] = 0.0;
-        mpv->eta_hyp0[i]  = 0.0;
-        mpv->eta_hyp[i]   = 0.0;
-        mpv->eta0[i]      = 0.0;
-        mpv->eta[i]       = 0.0;
 	}
 }
 

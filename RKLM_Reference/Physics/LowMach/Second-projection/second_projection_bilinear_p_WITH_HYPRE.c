@@ -37,7 +37,6 @@ static double divergence_nodes(
 							 const ElemSpaceDiscr* elem,
 							 const NodeSpaceDiscr* node,
 							 const ConsVars* Sol,
-                             double* eta,
 							 const MPV* mpv,
 							 const BDRY* bdry,
 							 const double dt,
@@ -129,15 +128,28 @@ void second_projection(
 		rhs[ii] = 0.0;
 	}
     
-    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv->eta, mpv, bdry, dt, 1.0);
+    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry, dt, 1.0);
     printf("\nrhsmax = %e\n", rhs_max);
+
+    catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
 
 #if 1
     extern User_Data ud;
     FILE *prhsfile = NULL;
-    char fn2[200], fieldname2[90];
+    char fn2[200], fieldname2[90], step_string[30];
     
-    sprintf(fn2, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
+    if(rhs_output_count<10) {
+        sprintf(step_string, "00%d", rhs_output_count);
+    }
+    else if(rhs_output_count<100) {
+        sprintf(step_string, "0%d", rhs_output_count);
+    }
+    else {
+        sprintf(step_string, "%d", rhs_output_count);
+    }
+    
+
+    sprintf(fn2, "%s/rhs_nodes/rhs_nodes_%s.hdf", ud.file_name, step_string);
     sprintf(fieldname2, "rhs_c");
     
     WriteHDF(prhsfile,
@@ -153,8 +165,6 @@ void second_projection(
     
 #endif
 
-    
-    catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
     assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED); 
     
     if (ud.is_compressible) {
@@ -164,8 +174,19 @@ void second_projection(
     }
      
          
-#if 1    
-    sprintf(fn2, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
+#if 0   
+    
+    if(rhs_output_count<10) {
+        sprintf(step_string, "00%d", rhs_output_count);
+    }
+    else if(rhs_output_count<100) {
+        sprintf(step_string, "0%d", rhs_output_count);
+    }
+    else {
+        sprintf(step_string, "%d", rhs_output_count);
+    }
+
+    sprintf(fn2, "%s/rhs_nodes/rhs_nodes_%s.hdf", ud.file_name, step_string);
     sprintf(fieldname2, "rhs_c");
     
     WriteHDF(prhsfile,
@@ -185,6 +206,42 @@ void second_projection(
 	variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, x_periodic, y_periodic, z_periodic, dt);
     correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);
     
+#if 1   
+    for(ii=0; ii<nc; ii++) rhs[ii] = 0.0;
+
+    if(rhs_output_count<10) {
+        sprintf(step_string, "00%d", rhs_output_count);
+    }
+    else if(rhs_output_count<100) {
+        sprintf(step_string, "0%d", rhs_output_count);
+    }
+    else {
+        sprintf(step_string, "%d", rhs_output_count);
+    }
+
+    
+    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry, dt, 1.0);
+    printf("\nrhsmax = %e, test-output\n", rhs_max);
+    catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
+
+    
+    sprintf(fn2, "%s/rhs_nodes/rhs_nodes_%s.hdf", ud.file_name, step_string);
+    sprintf(fieldname2, "rhs_c");
+    
+    WriteHDF(prhsfile,
+             mpv->Level[0]->node->icx,
+             mpv->Level[0]->node->icy,
+             mpv->Level[0]->node->icz,
+             mpv->Level[0]->node->ndim,
+             rhs,
+             fn2,
+             fieldname2);
+    
+    rhs_output_count++;
+    
+#endif
+
+    
     for(ii=0; ii<nc; ii++) {
         mpv->dp2_nodes[ii] = p2[ii] - mpv->p2_nodes[ii];
         mpv->p2_nodes[ii]  = p2[ii];
@@ -201,7 +258,6 @@ static double divergence_nodes(
 							 const ElemSpaceDiscr* elem,
 							 const NodeSpaceDiscr* node,
 							 const ConsVars* Sol,
-                             double* eta,
 							 const MPV* mpv,
 							 const BDRY* bdry,
 							 const double dt,
@@ -238,7 +294,6 @@ static double divergence_nodes(
             const double dy = node->dy;
             const double oodxdt = 1.0 / (dx * dt);
             const double oodydt = 1.0 / (dy * dt);
-            const double todt = 2.0 / dt;
             const double oowdxdt = weight * oodxdt;
             const double oowdydt = weight * oodydt;
             
@@ -255,17 +310,16 @@ static double divergence_nodes(
                     const int n1icx = n1 + icxn;
                     
                     const int ne = me + i; 
-                    double tmpfx, tmpfy, tmpfe;
+                    double tmpfx, tmpfy;
                     
                     Y = Sol->rhoY[ne] / Sol->rho[ne];
                     tmpfx = oowdxdt * Y * Sol->rhou[ne];
                     tmpfy = oowdydt * Y * Sol->rhov[ne];
-                    tmpfe = todt * eta[ne];
                     
-                    rhs[n]           += + tmpfx + tmpfy - tmpfe;
-                    rhs[n1]          += - tmpfx + tmpfy + tmpfe;
-                    rhs[n1icx]       += - tmpfx - tmpfy - tmpfe;
-                    rhs[nicx]        += + tmpfx - tmpfy + tmpfe;
+                    rhs[n]           += + tmpfx + tmpfy;
+                    rhs[n1]          += - tmpfx + tmpfy;
+                    rhs[n1icx]       += - tmpfx - tmpfy;
+                    rhs[nicx]        += + tmpfx - tmpfy;
                 }
             } 
             
@@ -297,12 +351,6 @@ static double divergence_nodes(
 
         case 3: {
             
-            /*
-			const int igxn = node->igx;
-			const int igyn = node->igy;
-			const int igzn = node->igz;
-			const int iczn = node->icz;
-             */
 			const int icxn = node->icx;
 			const int icyn = node->icy;
 			
@@ -846,7 +894,7 @@ void correction_nodes(
 					const int n     = m + i;
 					const int nicx  = n + icx;
 					const int n1    = n + 1;
-					const int n1icx = n1 + icx;
+					const int n1icx = n + 1 + icx;
 					const int ne    = me + i; 
 					
 					const double Dpx   = 0.5 * (p[n1]   - p[n] + p[n1icx] - p[nicx]);

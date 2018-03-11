@@ -16,17 +16,16 @@
 #include "math_own.h"
 
 
-#ifdef PRECON /* ============================================================================= */
-
-#ifdef PRECON_DIAGONAL_2ND_PROJ 
-
 static enum Boolean diaginv_is_allocated = WRONG;
 static double *diaginv;
 static double *diag;
 
+static enum Boolean tridiago_is_allocated = WRONG;
+static double *tridiago[3];
+
 /* ========================================================================== */
 
-double precon_prepare(
+double precon_diag_prepare(
                     const NodeSpaceDiscr* node,
                     const ElemSpaceDiscr* elem,
                     const double* hplus[3],
@@ -48,7 +47,7 @@ double precon_prepare(
     extern MPV* mpv;
     
     double precon_inv_scale;
-        
+    
     if (diaginv_is_allocated == WRONG) {
         diag    = (double*)malloc(node->nc*sizeof(double));
         diaginv = (double*)malloc(node->nc*sizeof(double));
@@ -57,149 +56,141 @@ double precon_prepare(
     
     const int ndim = node->ndim;
     
-    if (ud.precondition == WRONG) {
-        for(int nn=0; nn<node->nc; nn++) diag[nn] = diaginv[nn] = 1.0;
-        precon_inv_scale = 1.0;
-    }
-    else {
-        switch(ndim) {
-            case 1: {
-                ERROR("function not available");
-                break;
-            }
-            case 2: {
-                const int igxn = node->igx;
-                const int icxn = node->icx;
-                const int igyn = node->igy;
-                const int icyn = node->icy;
+    switch(ndim) {
+        case 1: {
+            ERROR("function not available");
+            break;
+        }
+        case 2: {
+            const int igxn = node->igx;
+            const int icxn = node->icx;
+            const int igyn = node->igy;
+            const int icyn = node->icy;
+            
+            const int igxe = elem->igx;
+            const int icxe = elem->icx;
+            const int igye = elem->igy;
+            const int icye = elem->icy;
+            
+            const double dx = node->dx;
+            const double dy = node->dy;
+            
+            const double* hplusx   = hplus[0];
+            const double* hplusy   = hplus[1];
+            const double* hcenter  = wcenter;
+                        
+            const double oodx2 = 0.5 / (dx * dx);
+            const double oody2 = 0.5 / (dy * dy);
+            const double nine_pt = (0.25 * (1.0 + P2_DIAGONAL_FIVE_POINT)) * P2_FULL_STENCIL;
+            
+            double flux_x_lower, flux_x_upper, flux_y_left, flux_y_right, hc;
+            double dsq_p_dxdy;
+            
+            double pnn      = 1.0;
+            double pnn1     = 1.0;
+            double pnnicxn  = 1.0;
+            double pnn1icxn = 1.0;
+            
+            int i, j, me, mn, ne, nn, nn1, nnicxn, nn1icxn;
+            
+            for(nn=0; nn<node->nc; nn++) diag[nn] = diaginv[nn] = 0.0;
+            
+            for(j = igye; j < icye - igye; j++) {
+                me   = j * icxe;
+                mn   = j * icxn;
                 
-                const int igxe = elem->igx;
-                const int icxe = elem->icx;
-                const int igye = elem->igy;
-                const int icye = elem->icy;
-                
-                const double dx = node->dx;
-                const double dy = node->dy;
-                
-                const double* hplusx   = hplus[0];
-                const double* hplusy   = hplus[1];
-                const double* hcenter  = wcenter;
-                
-                const double oody  = 0.5 / dy;
-                
-                const double oodx2 = 0.5 / (dx * dx);
-                const double oody2 = 0.5 / (dy * dy);
-                const double nine_pt = (0.25 * (1.0 + P2_DIAGONAL_FIVE_POINT)) * P2_FULL_STENCIL;
-                
-                double flux_x_lower, flux_x_upper, flux_y_left, flux_y_right, hc;
-                double dsq_p_dxdy;
-                
-                double pnn      = 1.0;
-                double pnn1     = 1.0;
-                double pnnicxn  = 1.0;
-                double pnn1icxn = 1.0;
-                
-                int i, j, me, mn, ne, nn, nn1, nnicxn, nn1icxn;
-                
-                for(nn=0; nn<node->nc; nn++) diag[nn] = diaginv[nn] = 0.0;
-                
-                for(j = igye; j < icye - igye; j++) {
-                    me   = j * icxe;
-                    mn   = j * icxn;
+                for(i = igxe; i < icxe - igxe; i++) {
+                    ne       = me + i;
                     
-                    for(i = igxe; i < icxe - igxe; i++) {
-                        ne       = me + i;
-                        
-                        nn       = mn + i;
-                        nn1      = nn + 1;
-                        nnicxn   = nn + icxn;
-                        nn1icxn  = nn + 1 + icxn;
-                        
-                        /* location nn */
-                        dsq_p_dxdy    = pnn;
-                        
-                        flux_x_lower  = hplusx[ne] * oodx2 * ( - pnn + nine_pt * dsq_p_dxdy);
-                        flux_x_upper  = hplusx[ne] * oodx2 * (       - nine_pt * dsq_p_dxdy);
-                        
-                        flux_y_left   = hplusy[ne] * oody2 * ( - pnn + nine_pt * dsq_p_dxdy);
-                        flux_y_right  = hplusy[ne] * oody2 * (       - nine_pt * dsq_p_dxdy);
-                        
-                        hc            = 0.25 * hcenter[ne];
-                        
-                        diag[nn]      += (  flux_x_lower + flux_y_left ) + hc*pnn;
-                        
-                        
-                        
-                        /* location nn1 */
-                        dsq_p_dxdy    = - pnn1;
-                        
-                        flux_x_lower  = hplusx[ne] * oodx2 * ( pnn1 + nine_pt * dsq_p_dxdy);
-                        flux_x_upper  = hplusx[ne] * oodx2 * (      - nine_pt * dsq_p_dxdy);
-                        
-                        flux_y_left   = hplusy[ne] * oody2 * (      + nine_pt * dsq_p_dxdy);
-                        flux_y_right  = hplusy[ne] * oody2 * (-pnn1 - nine_pt * dsq_p_dxdy);
-                        
-                        hc            = 0.25 * hcenter[ne];
-                        
-                        diag[nn1]     += (- flux_x_lower + flux_y_right) + hc*pnn1;
-                        
-                        
-                        
-                        /* location nnicxn */
-                        dsq_p_dxdy    = - pnnicxn;
-                        
-                        flux_x_lower  = hplusx[ne] * oodx2 * (         + nine_pt * dsq_p_dxdy);
-                        flux_x_upper  = hplusx[ne] * oodx2 * (-pnnicxn - nine_pt * dsq_p_dxdy);
-                        
-                        flux_y_left   = hplusy[ne] * oody2 * ( pnnicxn + nine_pt * dsq_p_dxdy);
-                        flux_y_right  = hplusy[ne] * oody2 * (         - nine_pt * dsq_p_dxdy);
-                        
-                        hc            = 0.25 * hcenter[ne];
-                        
-                        diag[nnicxn]  += (  flux_x_upper - flux_y_left ) + hc*pnnicxn ;
-                        
-                        
-                        
-                        /* location nn1icxn */
-                        dsq_p_dxdy    = pnn1icxn;
-                        
-                        flux_x_lower  = hplusx[ne] * oodx2 * (          + nine_pt * dsq_p_dxdy);
-                        flux_x_upper  = hplusx[ne] * oodx2 * ( pnn1icxn - nine_pt * dsq_p_dxdy);
-                        
-                        flux_y_left   = hplusy[ne] * oody2 * (          + nine_pt * dsq_p_dxdy);
-                        flux_y_right  = hplusy[ne] * oody2 * ( pnn1icxn - nine_pt * dsq_p_dxdy);
-                        
-                        hc            = 0.25 * hcenter[ne];
-                        
-                        diag[nn1icxn] += (- flux_x_upper - flux_y_right) + hc*pnn1icxn;
-                    }
+                    nn       = mn + i;
+                    nn1      = nn + 1;
+                    nnicxn   = nn + icxn;
+                    nn1icxn  = nn + 1 + icxn;
+                    
+                    /* location nn */
+                    dsq_p_dxdy    = pnn;
+                    
+                    flux_x_lower  = hplusx[ne] * oodx2 * ( - pnn + nine_pt * dsq_p_dxdy);
+                    flux_x_upper  = hplusx[ne] * oodx2 * (       - nine_pt * dsq_p_dxdy);
+                    
+                    flux_y_left   = hplusy[ne] * oody2 * ( - pnn + nine_pt * dsq_p_dxdy);
+                    flux_y_right  = hplusy[ne] * oody2 * (       - nine_pt * dsq_p_dxdy);
+                    
+                    hc            = 0.25 * hcenter[ne];
+                    
+                    diag[nn]      += (  flux_x_lower + flux_y_left ) + hc*pnn;
+                    
+                    
+                    
+                    /* location nn1 */
+                    dsq_p_dxdy    = - pnn1;
+                    
+                    flux_x_lower  = hplusx[ne] * oodx2 * ( pnn1 + nine_pt * dsq_p_dxdy);
+                    flux_x_upper  = hplusx[ne] * oodx2 * (      - nine_pt * dsq_p_dxdy);
+                    
+                    flux_y_left   = hplusy[ne] * oody2 * (      + nine_pt * dsq_p_dxdy);
+                    flux_y_right  = hplusy[ne] * oody2 * (-pnn1 - nine_pt * dsq_p_dxdy);
+                    
+                    hc            = 0.25 * hcenter[ne];
+                    
+                    diag[nn1]     += (- flux_x_lower + flux_y_right) + hc*pnn1;
+                    
+                    
+                    
+                    /* location nnicxn */
+                    dsq_p_dxdy    = - pnnicxn;
+                    
+                    flux_x_lower  = hplusx[ne] * oodx2 * (         + nine_pt * dsq_p_dxdy);
+                    flux_x_upper  = hplusx[ne] * oodx2 * (-pnnicxn - nine_pt * dsq_p_dxdy);
+                    
+                    flux_y_left   = hplusy[ne] * oody2 * ( pnnicxn + nine_pt * dsq_p_dxdy);
+                    flux_y_right  = hplusy[ne] * oody2 * (         - nine_pt * dsq_p_dxdy);
+                    
+                    hc            = 0.25 * hcenter[ne];
+                    
+                    diag[nnicxn]  += (  flux_x_upper - flux_y_left ) + hc*pnnicxn ;
+                    
+                    
+                    
+                    /* location nn1icxn */
+                    dsq_p_dxdy    = pnn1icxn;
+                    
+                    flux_x_lower  = hplusx[ne] * oodx2 * (          + nine_pt * dsq_p_dxdy);
+                    flux_x_upper  = hplusx[ne] * oodx2 * ( pnn1icxn - nine_pt * dsq_p_dxdy);
+                    
+                    flux_y_left   = hplusy[ne] * oody2 * (          + nine_pt * dsq_p_dxdy);
+                    flux_y_right  = hplusy[ne] * oody2 * ( pnn1icxn - nine_pt * dsq_p_dxdy);
+                    
+                    hc            = 0.25 * hcenter[ne];
+                    
+                    diag[nn1icxn] += (- flux_x_upper - flux_y_right) + hc*pnn1icxn;
                 }
-                
-                precon_inv_scale = 0.0;
-
-                for (j = igyn; j < icyn-igyn; j++) {mn = j*icxn;
-                    for (i = igxn; i < icxn-igxn; i++) {nn = mn + i;
-                        diaginv[nn] = 1.0/diag[nn];
-                        precon_inv_scale = MAX_own(precon_inv_scale, fabs(diaginv[nn]));
-                    }
+            }
+            
+            precon_inv_scale = 0.0;
+            
+            for (j = igyn; j < icyn-igyn; j++) {mn = j*icxn;
+                for (i = igxn; i < icxn-igxn; i++) {nn = mn + i;
+                    diaginv[nn] = 1.0/diag[nn];
+                    precon_inv_scale = MAX_own(precon_inv_scale, fabs(diaginv[nn]));
                 }
-                
-                break;
             }
-            case 3: {
-                ERROR("function not available");
-                break;
-            }
-                
-            default: ERROR("ndim not in {1, 2, 3}");
-        }  
-    }
+            
+            break;
+        }
+        case 3: {
+            ERROR("function not available");
+            break;
+        }
+            
+        default: ERROR("ndim not in {1, 2, 3}");
+    }  
     return precon_inv_scale;
 }
 
 /* ========================================================================== */
 
-void precon_apply(
+void precon_diag_apply(
                   double* vec_out,
                   const double* vec_in,
                   const NodeSpaceDiscr *node) {
@@ -210,7 +201,7 @@ void precon_apply(
 
 /* ========================================================================== */
 
-void precon_invert(
+void precon_diag_invert(
                    double* vec_out,
                    const double* vec_in,
                    const NodeSpaceDiscr *node) {
@@ -218,15 +209,10 @@ void precon_invert(
         vec_out[nn] = vec_in[nn]*diaginv[nn];
     }
 }
-#endif /* PRECON_DIAGONAL_2ND_PROJ =========================================================== */
-
-#ifdef PRECON_VERTICAL_COLUMN_2ND_PROJ /* ==================================================== */
-static enum Boolean tridiago_is_allocated = WRONG;
-static double *tridiago[3];
 
 /* ========================================================================== */
 
-double precon_prepare(
+double precon_column_prepare(
                     const NodeSpaceDiscr* node,
                     const ElemSpaceDiscr* elem,
                     const double* hplus[3],
@@ -474,7 +460,7 @@ double precon_prepare(
 
 /* ========================================================================== */
 
-void precon_apply(
+void precon_column_apply(
                   double* vec_out,
                   const double* vec_in,
                   const NodeSpaceDiscr *node) {
@@ -503,7 +489,7 @@ void precon_apply(
 
 /* ========================================================================== */
 
-void precon_invert(
+void precon_column_invert(
                    double* vec_out,
                    const double* vec_in,
                    const NodeSpaceDiscr *node) {
@@ -557,38 +543,58 @@ void precon_invert(
     free(v_out);
     
 }
-#endif /* PRECON_VERTICAL_COLUMN_2ND_PROJ =================================== */
-
-#else  /* PRECON ============================================================ */
 
 /* ========================================================================== */
 
 double precon_prepare(
-                           const NodeSpaceDiscr* node,
-                           const ElemSpaceDiscr* elem,
-                           const double* hplus[3],
-                           const double* wcenter,
-                           const int x_periodic,
-                           const int y_periodic,
-                           const int z_periodic) {
+                      const NodeSpaceDiscr* node,
+                      const ElemSpaceDiscr* elem,
+                      const double* hplus[3],
+                      const double* wcenter,
+                      const int x_periodic,
+                      const int y_periodic,
+                      const int z_periodic) 
+{
+    extern User_Data ud;
+    
+    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+        return precon_column_prepare(node, elem, hplus, wcenter, x_periodic, y_periodic, z_periodic);
+    } else {
+        return precon_diag_prepare(node, elem, hplus, wcenter, x_periodic, y_periodic, z_periodic);        
+    }
 }
 
 /* ========================================================================== */
 
 void precon_apply(
-                  double* vec_out,
-                  const double* vec_in,
-                  const NodeSpaceDiscr *node) {
+                       double* vec_out,
+                       const double* vec_in,
+                       const NodeSpaceDiscr *node) 
+{
+    extern User_Data ud;
+    
+    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+        precon_column_apply(vec_out, vec_in, node);
+    } else {
+        precon_diag_apply(vec_out, vec_in, node);        
+    }    
 }
 
 /* ========================================================================== */
 
 void precon_invert(
-                   double* vec_out,
-                   const double* vec_in,
-                   const NodeSpaceDiscr *node) {
+                  double* vec_out,
+                  const double* vec_in,
+                  const NodeSpaceDiscr *node) 
+{
+    extern User_Data ud;
+    
+    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+        precon_column_invert(vec_out, vec_in, node);
+    } else {
+        precon_diag_invert(vec_out, vec_in, node);        
+    }    
 }
-#endif /* PRECON ============================================================ */
 
 /* ========================================================================== */
 

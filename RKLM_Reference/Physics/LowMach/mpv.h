@@ -51,10 +51,6 @@ typedef struct {
     double *dp2_cells;    
     double *p2_nodes;
     double *dp2_nodes;
-    double *eta_hyp0;
-    double *eta_hyp;
-    double *eta;
-    double *eta0;
 	
     States *HydroState;
     States *HydroState_n;

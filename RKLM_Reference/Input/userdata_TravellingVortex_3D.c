@@ -96,15 +96,15 @@ void User_Data_init(User_Data* ud) {
 	}
     
 	/* flow domain */
-	ud->xmin = - 0.5;  
-	ud->xmax =   0.5;  
-	ud->ymin = - 0.5;
-	ud->ymax =   0.5; 
-	ud->zmin = - 0.5;
-	ud->zmax =   0.5;
+	ud->xmin = - 5000/ud->h_ref;  
+	ud->xmax =   5000/ud->h_ref;  
+	ud->ymin = - 5000/ud->h_ref;
+	ud->ymax =   5000/ud->h_ref; 
+	ud->zmin = - 5000/ud->h_ref;
+	ud->zmax =   5000/ud->h_ref;
 
 	/* boundary/initial conditions */
-	ud->wind_speed        =  1.0;              /* velocity in [u_ref] */
+	ud->wind_speed        = 10.0/ud->u_ref;              /* velocity in [u_ref] */
 	ud->wind_shear        = -0.0;              /* velocity in [u_ref/h_ref] */             
 	ud->hill_height       =  0.0;              /* height   in [h_ref]   */ 
 	ud->hill_length_scale =  99999.9;          /* width    in [h_ref]   */   
@@ -123,10 +123,10 @@ void User_Data_init(User_Data* ud) {
 	/* ======================================================================== */
 	
     /* time discretization */
-    ud->time_integrator      = OP_SPLIT;  /* OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT; RK3_SKAMA; RK3_TEST */
-	ud->CFL                  = 0.96;       /* 0.9; 0.8; 1.1*sqrt(0.5) */
+    ud->time_integrator      = SI_MIDPT;  
+	ud->CFL                  = 0.96;       
     ud->dtfixed0             = 10000.999;
-    ud->dtfixed              = 10000.999;     /* ud->dtfixed = 0.5/ud->t_ref;  */
+    ud->dtfixed              = 10000.999;   
     
     set_time_integrator_parameters(ud);
     
@@ -168,7 +168,7 @@ void User_Data_init(User_Data* ud) {
     /* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
     
-    ud->tout[0] = 3000.0;      
+    ud->tout[0] = (ud->xmax-ud->xmin)/ud->wind_speed;      
     ud->tout[1] = -1.0;
 
     ud->stepmax = 10000;
@@ -176,7 +176,7 @@ void User_Data_init(User_Data* ud) {
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 1;
+	ud->write_file_period = 10;
 	ud->file_format = HDF;
 
     {
@@ -202,7 +202,7 @@ void Sol_initial(ConsVars* Sol,
     extern MPV* mpv;
     
 	const double u0    = 1.0*ud.wind_speed;
-	const double v0    = 1.0*ud.wind_speed;
+	const double v0    = 0.0*ud.wind_speed;
 	const double w0    = 0.0;
     
     const double rotdir = -1.0;
@@ -211,10 +211,13 @@ void Sol_initial(ConsVars* Sol,
     const double del_rho = 0.5;  /* 0.0; for homentropic */
     const double R0      = 0.4;
     const double fac     = 1*1024.0; /* 4*1024.0 */
+    const double xc      = 0.0;
+    const double yc      = 0.0;
 			
 	const int icx  = elem->icx;
 	const int icy  = elem->icy;
 	const int icz  = elem->icz;
+    const int igx  = elem->igx;
 	const int igy  = elem->igy;
 	const int igz  = elem->igz;
 
@@ -245,7 +248,7 @@ void Sol_initial(ConsVars* Sol,
             for(i = 0; i < icx; i++) {
                 n = m + i;                
                 x       = elem->x[i];
-                r       = sqrt(x*x + y*y);
+                r       = sqrt((x-xc)*(x-xc) + (y-yc)*(y-yc));
                 uth     = rotdir * (r < R0 ? fac * pow( 1.0-r/R0, 6) * pow( r/R0, 6) : 0.0);
                 
                 u       = u0 + uth * (-y/r);
@@ -311,20 +314,26 @@ void Sol_initial(ConsVars* Sol,
             }            
 		}                
 	}  
+    set_ghostcells_p2(mpv->p2_cells, elem, igx);
 
-    /*set nodal pressures */
+    /*set nodal pressures; rough approximation by interpolation of cell pressures */
     for(int k = 0; k < iczn; k++) {
-        int l = k * icxn * icyn;   
-        for(int j = 0; j < icyn; j++) {
-            int m = l + j * icxn;                
-            double p    = mpv->HydroState->p0[j];
-            double rhoY = mpv->HydroState->rhoY0[j];
-            for(int i = 0; i < icxn; i++) {
-                int n = m + i;
-                mpv->p2_nodes[n] = (p/rhoY) / ud.Msq;
+        int ln = k * icxn * icyn;   
+        int lc = k * icx  * icy;
+        for(int j = 1; j < icyn-1; j++) {
+            int mn = ln + j * icxn;
+            int mc = lc + j * icx;
+            for(int i = 1; i < icxn-1; i++) {
+                int nn   = mn + i;
+                int ncne = mc + i;
+                int ncnw = mc + i - 1;
+                int ncsw = mc + i - 1 - icx;
+                int ncse = mc + i     - icx;
+                mpv->p2_nodes[nn] = 0.25*(mpv->p2_cells[ncne]+mpv->p2_cells[ncnw]+mpv->p2_cells[ncsw]+mpv->p2_cells[ncse]);
             }
         }
-    }                      
+    }
+    set_ghostnodes_p2(mpv->p2_nodes, node, igx);
 }
 
 /* ================================================================================== */
