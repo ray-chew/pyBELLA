@@ -245,12 +245,12 @@ void Explicit_step_and_flux(
     Bound(Sol, lambda, n, SplitStep);
 
     
-#if OUTPUT_SUBSTEPS_PREDICTOR  /* 2, 3 */
-    if (SplitStep == 1)  {
+#if OUTPUT_SUBSTEPS_PREDICTOR  
+    for (int i=SplitStep; i > 0; i--)  {
         (*rotate[elem->ndim - 1])(Sol, BACKWARD);
     }
     Set_Explicit_Boundary_Data(Sol, elem);
-    if (SplitStep == 1)  {
+    for (int i = 0; i < SplitStep; i++)  {
         (*rotate[elem->ndim - 1])(Sol, FORWARD);
     }
 #endif

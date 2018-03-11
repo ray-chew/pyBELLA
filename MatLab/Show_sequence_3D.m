@@ -18,10 +18,10 @@ test_case = 'Skamarock-Klemp-Internal-Wave';
 %test_case = 'Straka';
 %test_case = 'Travelling-Vortex';
 
-slice = 'xy'; % options:  'xy' 'zy' 'full3D'
+slice = 'zy'; % options:  'xy' 'zy' 'full3D'
 showmode = 1;
 separate_signs = 1;
-filledcontours = 0;
+filledcontours = 1;
 fixed_contours = 1;
 fixed_contour_step = 0;
 no_of_contours = 10;
@@ -79,7 +79,7 @@ elseif strcmp(test_case, 'Internal-Wave-Strong-Strat')
 elseif strcmp(test_case, 'Skamarock-Klemp-Internal-Wave')
     scalefactor = 1.0;
     ncx = 300; 
-    ncy = 20;
+    ncy = 10;
     ncz = 5;
     L   = 300.0 * scalefactor;  % [km] 
     x0  = 0.5*L;
@@ -160,13 +160,13 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy ncz]; rhoY_diff = 1;
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy ncz];
-varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy ncz];
+%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'rhoZ';  folderstr = 'rhoZ'; titlestr = 'rhoZ'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'Z';  folderstr = 'Z'; titlestr = 'Z'; ndummy = 2; arraysize = [ncx ncy ncz]; rhoZ_diff = 0;
-%varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy ncz]; symmetry = -1*symmetry;
+varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy ncz]; symmetry = -1*symmetry;
 %varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy ncz];

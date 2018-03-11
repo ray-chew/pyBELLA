@@ -115,8 +115,16 @@ void store_advective_fluxes(VectorField* adv_flux_full,
     
     /* copy the advective fluxes */
     memcpy(adv_flux_full->x, flux[0]->rhoY, elem->nfx*sizeof(double));
-    if (elem->ndim > 1) memcpy(adv_flux_full->y, flux[1]->rhoY, elem->nfy*sizeof(double));
-    if (elem->ndim > 2) memcpy(adv_flux_full->z, flux[2]->rhoY, elem->nfz*sizeof(double));
+    for (int nf=0; nf<elem->nfx; nf++) flux[0]->rhoY[nf] = 0.0;
+    
+    if (elem->ndim > 1) {
+        memcpy(adv_flux_full->y, flux[1]->rhoY, elem->nfy*sizeof(double));
+        for (int nf=0; nf<elem->nfy; nf++) flux[1]->rhoY[nf] = 0.0;
+    }
+    if (elem->ndim > 2) {
+        memcpy(adv_flux_full->z, flux[2]->rhoY, elem->nfz*sizeof(double));
+        for (int nf=0; nf<elem->nfz; nf++) flux[2]->rhoY[nf] = 0.0;
+    }
 }
 
 /*------------------------------------------------------------------------------
