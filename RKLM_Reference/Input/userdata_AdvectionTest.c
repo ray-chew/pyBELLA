@@ -57,8 +57,8 @@ void User_Data_init(User_Data* ud) {
     ud->t_ref       = t_ref;
     ud->T_ref       = T_ref;
     ud->p_ref       = p_ref;
-    ud->u_ref       = u_ref;
     ud->rho_ref     = rho_ref;
+    ud->u_ref       = u_ref;
     ud->Nsq_ref     = Nsq_ref;
     ud->g_ref       = grav;
     ud->gamm        = gamma;
@@ -69,7 +69,7 @@ void User_Data_init(User_Data* ud) {
     ud->nspec       = NSPEC;
 
     /* Low Mach */
-    ud->is_compressible   = 1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_compressible   = 1;    /* 0: psinc;  1: comp;  -1: transition (see compressibility()) */
     ud->acoustic_timestep = 0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
     
@@ -193,7 +193,9 @@ void User_Data_init(User_Data* ud) {
 
 /* ================================================================================== */
 
-void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr* node) {
+void Sol_initial(ConsVars* Sol, 
+                 const ElemSpaceDiscr* elem, 
+                 const NodeSpaceDiscr* node) {
     
     extern Thermodynamic th;
     extern User_Data ud;
@@ -208,11 +210,11 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const double u0    = cos(phi)*cos(theta)*ud.wind_speed;
     const double v0    = sin(phi)*cos(theta)*ud.wind_speed;
     const double w0    = sin(theta)*ud.wind_speed;
-    const double delth = 0.25;                               /* pot. temp. perturbation amplitude; standard:  0.01 / ud.T_ref */
-    const double xc    = 0.0;                                /* initial position of center of pot temp perturbation */
-    const double yc    = 0.0;                                /* initial position of center of pot temp perturbation */
-    const double zc    = 0.0;                                /* initial position of center of pot temp perturbation */
-    const double a     = 0.25;                               /* characteristic width of the witch of Agnesi type mollifier */
+    const double delth = 0.25; /* pot. temp. perturbation amplitude; standard:  0.01 / ud.T_ref */
+    const double xc    = 0.0;  /* initial position of center of pot temp perturbation */
+    const double yc    = 0.0;  /* initial position of center of pot temp perturbation */
+    const double zc    = 0.0;  /* initial position of center of pot temp perturbation */
+    const double a     = 0.25; /* characteristic width of the witch of Agnesi type mollifier */
     
     const int icx = elem->icx;
     const int icy = elem->icy;
