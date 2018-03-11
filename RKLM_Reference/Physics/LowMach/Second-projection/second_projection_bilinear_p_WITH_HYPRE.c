@@ -458,12 +458,12 @@ static enum Constraint integral_condition_nodes(
 	}
     
     /* if(fabs(tmp) > 100*del) { */
-    if(fabs(tmp) > 10000*del*rhs_max) {
+    if(fabs(tmp) > 10000*del) {
         printf("CHEATING:  tmp = %e,  rhs_max = %e, (tmp/rhs_max)/del = %e\n", tmp/rhs_max, rhs_max, (tmp/rhs_max)/del);
         /* return VIOLATED; */
         return VIOLATED;
     }
-    else if(fabs(tmp) > 100*del*rhs_max) {
+    else if(fabs(tmp) > 100*del) {
         printf("integral_condition_nodes = barely OK; tmp = %e,  rhs_max = %e, (tmp/rhs_max)/del = %e\n", tmp/rhs_max, rhs_max, (tmp/rhs_max)/del);
         return SATISFIED;
     }

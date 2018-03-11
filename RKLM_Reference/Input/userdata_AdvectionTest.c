@@ -20,11 +20,8 @@
 #include "memory.h"
 #include "Hydrostatics.h"
 
-/* mollification function used in the Skamarock-Klemp 1994 tests for theta perturbations */
-double molly(double x);
-
-/* horizontal stretch for S&K94 IGWs: planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0; */
-static double scalefactor = 1.0;   
+/* mollification function to set a localized potential temperature perturbation for advection */
+double molly(double r, const double a);
 
 void User_Data_init(User_Data* ud) {
     
@@ -35,8 +32,8 @@ void User_Data_init(User_Data* ud) {
     /* ================================================================================== */
     
     /* Earth */
-    double grav     = 9.81;             /* gravitational acceleration [m/s^2]    */
-    double omega    = 1.0*0.0001;       /* Coriolis parameter [1/s]              */
+    double grav     = 0.0;              /* gravitational acceleration [m/s^2]    */
+    double omega    = 0.0;              /* Coriolis parameter [1/s]              */
                                         /* sin(0.5*PI) * 2.0 * 0.00007272205217; */
     
     /* thermodynamics and chemistry */
@@ -54,7 +51,7 @@ void User_Data_init(User_Data* ud) {
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
     
     /* reference stratification as (buoyancy frequency)^2 */
-    double Nsq_ref  = 1.0e-4;                /* [1/s^2]           */
+    double Nsq_ref  = 0.0;                   /* [1/s^2]           */
     
     ud->h_ref       = h_ref;
     ud->t_ref       = t_ref;
@@ -99,9 +96,9 @@ void User_Data_init(User_Data* ud) {
     }
         
     /* flow domain; all lengths in units of  href  */
-    ud->xmin = -15.0 * scalefactor;
-    ud->xmax =  15.0 * scalefactor;
-    ud->ymin =   0.0;
+    ud->xmin = - 1.0;
+    ud->xmax =   1.0;
+    ud->ymin = - 1.0;
     ud->ymax =   1.0;
     ud->zmin = - 1.0;
     ud->zmax =   1.0;
@@ -113,10 +110,10 @@ void User_Data_init(User_Data* ud) {
     ud->hill_length_scale = 0.1535;   /* hill_length * l_ref = 1.0 km */
     
     ud->bdrytype_min[0] = PERIODIC; /* DIRICHLET; PERIODIC; WALL; */
-    ud->bdrytype_min[1] = WALL; /* SLANTED_WALL; */
+    ud->bdrytype_min[1] = PERIODIC; /* SLANTED_WALL; */
     ud->bdrytype_min[2] = PERIODIC;
     ud->bdrytype_max[0] = PERIODIC; /* DIRICHLET; PERIODIC; WALL; */
-    ud->bdrytype_max[1] = WALL;
+    ud->bdrytype_max[1] = PERIODIC;
     ud->bdrytype_max[2] = PERIODIC;
     
     ud->absorber = WRONG; /* CORRECT;  WRONG; */ /*  BREAKING WAVE CHANGE */
@@ -128,15 +125,15 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = SI_MIDPT; /* this code version has only one option */
     ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = scalefactor*30.0 / ud->t_ref;
-    ud->dtfixed                = scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed0               = 9999.9;
+    ud->dtfixed                = 9999.9;
     
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
-    ud->inz =    5+1;
+    ud->inx =  31+1; /* 641; 321; 161; 129; 81; */
+    ud->iny =  31+1; /* 321; 161;  81;  65; 41;  */
+    ud->inz =  31+1;
     
     /* explicit predictor step */
     /* Recovery */
@@ -171,7 +168,7 @@ void User_Data_init(User_Data* ud) {
     /* =====  CODE FLOW CONTROL  ======================================================== */
     /* ================================================================================== */
     
-    ud->tout[0] = scalefactor * 3000.0 / ud->t_ref;
+    ud->tout[0] = 3000.0 / ud->t_ref;
     ud->tout[1] = -1.0;
 
     ud->stepmax = 10000;
@@ -205,31 +202,31 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const int compressible = (ud.is_compressible == 0 ? 0 : 1);
     
     
-    /* Skamarock-Klemp 1994 - type test */
-    const double u0    = ud.wind_speed;
-    const double v0    = 0.0;
-    const double w0    = 0.0;
-    const double delth = 0.01 / ud.T_ref;                    /* pot. temp. perturbation amplitude; standard:  0.01 / ud.T_ref */
-    const double xc    = -1.0*scalefactor*60.0e+03/ud.h_ref; /* initial position of center of pot temp perturbation */
-    const double a     = scalefactor*5.0e+03/ud.h_ref;       /* characteristic width of the witch of Agnesi type mollifier */
+    /* advection test */
+    const double phi   = 2.0*PI/4.0;
+    const double theta = 2.0*PI/4.0;
+    const double u0    = cos(phi)*cos(theta)*ud.wind_speed;
+    const double v0    = sin(phi)*cos(theta)*ud.wind_speed;
+    const double w0    = sin(theta)*ud.wind_speed;
+    const double delth = 0.25;                               /* pot. temp. perturbation amplitude; standard:  0.01 / ud.T_ref */
+    const double xc    = 0.0;                                /* initial position of center of pot temp perturbation */
+    const double yc    = 0.0;                                /* initial position of center of pot temp perturbation */
+    const double zc    = 0.0;                                /* initial position of center of pot temp perturbation */
+    const double a     = 0.25;                               /* characteristic width of the witch of Agnesi type mollifier */
     
     const int icx = elem->icx;
     const int icy = elem->icy;
     const int icz = elem->icz;
+    const int igx = elem->igx;
     const int igy = elem->igy;
     
     const int icxn = node->icx;
     const int icyn = node->icy;
     
-    int i, j, n, nm, nn;
-    double x, y, xn, yn, ym;
     double rho, u, v, w, p, rhoY;
     
     double g;
-    
-    States *HySt, *HyStn;
-    double *Y, *Yn;
-    
+        
     /* This will become a 3Dified 2D test case. So I first compute
      the 2D vertical slice data and then simply copy them into all
      the vertical slices for different z values.
@@ -237,93 +234,44 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
      */
     
     g = ud.gravity_strength[1];
-    
+
     /* store background hydrostatic state in mpv auxiliary struct */
     Hydrostatics_State(mpv, elem, node);
-    
-    /* Aux space for cell- and node-based column-wise hydrostatics */
-    HySt  = States_new(node->icy);
-    Y     = (double*)malloc(node->icy*sizeof(double));
-    HyStn = States_new(node->icy);
-    Yn    = (double*)malloc(node->icy*sizeof(double));
-     
-    /* computations for the vertical slice at  k=0 */
-    for(i = 0; i < icx; i++) {
+
+    /* store background hydrostatic state in mpv auxiliary struct */
+    Hydrostatics_State(mpv, elem, node);
         
-        /* set potential temperature stratification in the column */
-        for(j = 0; j < elem->icy; j++) {
-            x     = elem->x[i];
-            y     = elem->y[j];
-            Y[j]  = stratification(y)  + delth * molly(x) * sin(PI*y)  / (1.0 + (x-xc)*(x-xc) / (a*a));
-        }        
-        for(j = 0; j < node->icy; j++) {
-            xn    = node->x[i];
-            yn    = node->y[j];
-            Yn[j] = stratification(yn)  + delth * molly(xn) * sin(PI*yn)  / (1.0 + (xn-xc)*(xn-xc) / (a*a));
-        }        
-        /* determine hydrostatic pressure distributions column-wise (lateral relation still neglected) */
-        Hydrostatics_Column(HySt, HyStn, Y, Yn, elem, node);
-        
-        /* initialization of field variables */
-        for(j = igy; j < icy - igy + 1; j++) {
-            
-            n  = j*icx + i;
-            nm = n-icx;
-            
-            x  = elem->x[i];
-            y  = elem->y[j];
-            ym = elem->y[j-1];
-            
-            u   = u0;
-            v   = v0;
-            w   = w0;
-            
-            p    = (compressible ? HySt->p0[j] : mpv->HydroState->p0[j]);            
-            rhoY = (compressible ? HySt->rhoY0[j] : mpv->HydroState->rhoY0[j]);
-            rho  = rhoY/Y[j];
-            
-            Sol->rho[n]    = rho;
-            Sol->rhou[n]   = rho * u;
-            Sol->rhov[n]   = rho * v;
-            Sol->rhow[n]   = rho * w;
-            Sol->rhoe[n]   = rhoe(rho, u, v, w, p);
-            Sol->rhoY[n]   = rhoY;
-            
-            mpv->p2_cells[n]   = HySt->p20[j];
-            Sol->rhoX[BUOY][n] = Sol->rho[n] * ( Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
-        
-            /* nodal pressure */
-            nn   = j*icxn+i;
-            mpv->p2_nodes[nn] = HyStn->p20[j];
-        }
-    }
-    
-    /* Find hydrostatic surface pressure and readjust pressure in the columns */
-    Hydrostatic_Initial_Pressure(Sol, mpv, elem, node);  
-    
-    /* Copy the data just generated into all the parallel vertical slices */
-    for (int j=0; j<icy; j++) {
-        int mc = j*icx;
-        int mn = j*icxn;
-        for (int i=0; i<icx; i++) {
-            int nc = mc + i;
-            int nn = mn + i;
-            for (int k=1; k<icz; k++) {
-                int lc = nc + k*icx*icy;
-                int ln = nn + k*icxn*icyn;
+    /* initialization of field variables */
+    for(int k = 0; k < icz; k++) {
+        int lc = k*icx*icy;
+        for(int j = 0; j < icy; j++) {
+            int mc = lc + j*icx;
+            for(int i = 0; i < icx; i++) {
+                int nc = mc + i;
                 
-                Sol->rho[lc]    = Sol->rho[nc] ;
-                Sol->rhou[lc]   = Sol->rhou[nc];
-                Sol->rhov[lc]   = Sol->rhov[nc];
-                Sol->rhow[lc]   = Sol->rhow[nc];
-                Sol->rhoe[lc]   = Sol->rhoe[nc];
-                Sol->rhoY[lc]   = Sol->rhoY[nc];
+                double x = elem->x[i];
+                double y = elem->y[j];
+                double z = elem->z[k];
+                double Y = 1.0 + delth*molly(sqrt((x-xc)*(x-xc)+(y-yc)*(y-yc)+(z-zc)*(z-zc)), a);
                 
-                Sol->rhoX[BUOY][lc] = Sol->rhoX[BUOY][nc];
-                mpv->p2_cells[lc]   = mpv->p2_cells[nc];
-                mpv->p2_nodes[ln]   = mpv->p2_nodes[nn];
+                double p    = mpv->HydroState->p0[j];            
+                double rhoY = mpv->HydroState->rhoY0[j];
+                double rho  = rhoY/Y;
+                
+                Sol->rho[nc]    = rho;
+                Sol->rhou[nc]   = rho * u0;
+                Sol->rhov[nc]   = rho * v0;
+                Sol->rhow[nc]   = rho * w0;
+                Sol->rhoe[nc]   = rhoe(rho, u0, v0, w0, p);
+                Sol->rhoY[nc]   = rhoY;
+                
+                mpv->p2_cells[nc]   = 0.0;
+                Sol->rhoX[BUOY][nc] = Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - mpv->HydroState->S0[j]);
             }
         }
+    }
+    for (int nn=0; nn < node->nc; nn++) {
+        mpv->p2_nodes[nn] = 0.0;
     }
 }
 
@@ -337,23 +285,19 @@ double stratification(
     double Nsq = ud.Nsq_ref * ud.t_ref * ud.t_ref;
     double g   = ud.gravity_strength[1] / ud.Msq;
     
-    return( exp(Nsq*y/g) );
+    return( exp(Nsq*y/MAX_own(ud.eps_Machine, g)) );
 }
 
 
 /* ================================================================================== */
 
 double molly(
-             double x) {
+             double r,
+             const double a) {
     
     extern User_Data ud;
-    
-    const double del  = 0.25;
-    const double L    = ud.xmax-ud.xmin;
-    const double xi_l = MIN_own(1.0, (x-ud.xmin)/(del*L));
-    const double xi_r = MIN_own(1.0, (ud.xmax-x)/(del*L));
-    
-    return(0.5* MIN_own(1.0-cos(PI*xi_l), 1.0-cos(PI*xi_r)));
+        
+    return(0.5*(1.0+cos(MIN_own(0.5*PI*r/a,PI))));
 }
 
 

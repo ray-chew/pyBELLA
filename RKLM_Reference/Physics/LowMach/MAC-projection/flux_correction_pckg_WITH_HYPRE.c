@@ -424,7 +424,7 @@ static enum Constraint integral_condition(
             }
             else {
                 printf("integral_condition_cells = VIOLATED; tmp = %e\n", fabs(tmp));
-                return(SATISFIED);
+                return(VIOLATED);
             }
             
 			break;

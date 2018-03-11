@@ -12,13 +12,14 @@ modelstr = 'comp';
 %test_case = 'Equatorial-Long-Wave';
 %test_case = 'Internal-Wave-Long-Wave';
 %test_case = 'Internal-Wave-Strong-Strat';
-test_case = 'Skamarock-Klemp-Internal-Wave';
+%test_case = 'Skamarock-Klemp-Internal-Wave';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
 %test_case = 'Travelling-Vortex';
+test_case = 'Advection';
 
-slice = 'zy'; % options:  'xy' 'zy' 'full3D'
+slice = 'xy'; % options:  'xy' 'zy' 'full3D'
 showmode = 1;
 separate_signs = 1;
 filledcontours = 1;
@@ -119,6 +120,16 @@ elseif strcmp(test_case, 'Smolarkiewicz-Margolin-Breaking-Wave')
     H   =  60.0;  %
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
+elseif strcmp(test_case, 'Advection')
+    ncx = 31;  
+    ncy = 31;  
+    ncz = 31;  
+    L  = 2.0;  % 
+    x0 = 0.0*L;
+    H  = 2.0;
+    B  = 2.0;%
+    aspect = [1 1 1];
+    velosc = 100;  % velocity unit of RKLM code
 end
     
 % auxiliary adjustments of grid parameters
@@ -146,9 +157,11 @@ rhoZ_diff = 0;
 transp    = 0;
 
 if strcmp(slice, 'full3D')
-    kkmin = ncz/2;
-    dkk   =  1;
-    kkmax = ncz/2;
+    kkmin = 1;
+    dkk   = 5;
+    kkmax = 31;
+else
+    nslice = 16;
 end
 
 folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Mach_gravity_',modelstr);
@@ -159,14 +172,14 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'S'; folderstr = 'S'; titlestr = 'S'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy ncz]; rhoY_diff = 1;
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy ncz];
-%varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy ncz];
+varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'rhoZ';  folderstr = 'rhoZ'; titlestr = 'rhoZ'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'Z';  folderstr = 'Z'; titlestr = 'Z'; ndummy = 2; arraysize = [ncx ncy ncz]; rhoZ_diff = 0;
-varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy ncz]; symmetry = -1*symmetry;
+%varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy ncz]; symmetry = -1*symmetry;
 %varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy ncz];
@@ -240,11 +253,13 @@ for k = kmin:dk:kmax
         %patch(fvc);
 
         % Create contours
+
         if filledcontours
             for kk = kkmin:dkk:kkmax
                 contourf(x,y,transpose(th(:,:,kk)),15,'LineColor','auto');
                 colormap Jet;
                 colorbar('FontSize',14,'FontName','Helvetica');
+                set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
                 pause;
             end
         else
@@ -253,9 +268,9 @@ for k = kmin:dk:kmax
             else
                 contour(x,z,th,10,'LineColor','k');
             end
+            set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
         end
 
-        set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
         if title_true
             title(strcat(titlestr,kstr));
         end
@@ -273,9 +288,9 @@ for k = kmin:dk:kmax
         
         % for now let's take it slice by slice
         if strcmp(slice, 'xy')
-            velo = v(:,:,ndummy+1);
+            velo = v(:,:,nslice);
         elseif strcmp(slice, 'zy')
-            velo = transpose(reshape(v(ndummy+1,:,:), [arraysize(2)+2*ndummy, arraysize(3)+2*ndummy]));
+            velo = transpose(reshape(v(nslice,:,:), [arraysize(2)+2*ndummy, arraysize(3)+2*ndummy]));
         end
         
         if strcmp(varstr, 'rhs_nodes')
@@ -307,6 +322,7 @@ for k = kmin:dk:kmax
         % Create contour
         if filledcontours
             contourf(x,z,th,15,'LineColor','auto');
+            %contourf(x,z,th,[1.01 1.05 1.1 1.15 1.2 1.24],'LineColor','auto');
             colormap Jet
             colorbar('FontSize',14,'FontName','Helvetica')
         else
