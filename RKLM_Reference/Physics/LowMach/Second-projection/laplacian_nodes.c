@@ -167,6 +167,29 @@ double precon_diag_prepare(
                 }
             }
             
+            /* periodicity */
+            if (x_periodic) {
+                for(j=igyn; j<icyn-igyn; j++) {
+                    int nleft  = j * icxn + igxn;
+                    int nright = j * icxn + icxn - igxn - 1;
+                    
+                    diag[nleft]  += diag[nright];
+                    diag[nright]  = 9999.0;
+                }
+            }
+            
+            if (y_periodic) {
+                for(i=igxn; i<icxn-igxn; i++) {
+                    int nbottom  = i + igyn * icxn;
+                    int ntop     = i + (icyn - igyn - 1) * icxn;
+                    
+                    diag[nbottom]  += diag[ntop];
+                    diag[ntop]      = 7777.0;
+                }
+            }
+             
+            
+            /* prepare for the inversion of the preconditioner */
             precon_inv_scale = 0.0;
             
             for (j = igyn; j < icyn-igyn; j++) {mn = j*icxn;
@@ -191,22 +214,60 @@ double precon_diag_prepare(
 /* ========================================================================== */
 
 void precon_diag_apply(
-                  double* vec_out,
-                  const double* vec_in,
-                  const NodeSpaceDiscr *node) {
-    for (int nn=0; nn<node->nc; nn++) {
-        vec_out[nn] = vec_in[nn]*diag[nn];
+                       double* vec_out,
+                       const double* vec_in,
+                       const NodeSpaceDiscr *node,
+                       const int x_periodic,
+                       const int y_periodic,
+                       const int z_periodic) {
+    
+    const int icx = node->icx;
+    const int icy = node->icy;
+    const int icz = node->icz;
+    
+    const int igx = node->igx;
+    const int igy = node->igy;
+    const int igz = node->igz;
+    
+    for (int k=igz; k<MAX_own(1,icz-igz-z_periodic); k++) {
+        int ln = k*icx*icy;
+        for (int j=igy; j<MAX_own(1, icy-igy-y_periodic); j++) {
+            int mn = ln + j*icx;
+            for (int i=igx; i<MAX_own(1, icx-igx-x_periodic); i++) {
+                int nn = mn + i;
+                vec_out[nn] = vec_in[nn]*diag[nn];
+            }
+        }
     }
 }
 
 /* ========================================================================== */
 
 void precon_diag_invert(
-                   double* vec_out,
-                   const double* vec_in,
-                   const NodeSpaceDiscr *node) {
-    for (int nn=0; nn<node->nc; nn++) {
-        vec_out[nn] = vec_in[nn]*diaginv[nn];
+                        double* vec_out,
+                        const double* vec_in,
+                        const NodeSpaceDiscr *node,
+                        const int x_periodic,
+                        const int y_periodic,
+                        const int z_periodic) {
+    
+    const int icx = node->icx;
+    const int icy = node->icy;
+    const int icz = node->icz;
+    
+    const int igx = node->igx;
+    const int igy = node->igy;
+    const int igz = node->igz;
+    
+    for (int k=igz; k<MAX_own(1,icz-igz-z_periodic); k++) {
+        int ln = k*icx*icy;
+        for (int j=igy; j<MAX_own(1, icy-igy-y_periodic); j++) {
+            int mn = ln + j*icx;
+            for (int i=igx; i<MAX_own(1, icx-igx-x_periodic); i++) {
+                int nn = mn + i;
+                vec_out[nn] = vec_in[nn]*diaginv[nn];
+            }
+        }
     }
 }
 
@@ -463,7 +524,10 @@ double precon_column_prepare(
 void precon_column_apply(
                   double* vec_out,
                   const double* vec_in,
-                  const NodeSpaceDiscr *node) {
+                         const NodeSpaceDiscr *node,
+                         const int x_periodic,
+                         const int y_periodic,
+                         const int z_periodic) {
     
     const int icxn = node->icx;
     const int icyn = node->icy;
@@ -492,7 +556,10 @@ void precon_column_apply(
 void precon_column_invert(
                    double* vec_out,
                    const double* vec_in,
-                   const NodeSpaceDiscr *node) {
+                          const NodeSpaceDiscr *node,
+                          const int x_periodic,
+                          const int y_periodic,
+                          const int z_periodic) {
     
     /* It will be more efficient to immediately store tridiago in the y-first ordering
      to avoid the transposition and intermediate storage in upper, diago, lower,
@@ -567,16 +634,19 @@ double precon_prepare(
 /* ========================================================================== */
 
 void precon_apply(
-                       double* vec_out,
-                       const double* vec_in,
-                       const NodeSpaceDiscr *node) 
+                  double* vec_out,
+                  const double* vec_in,
+                  const NodeSpaceDiscr *node,
+                  const int x_periodic,
+                  const int y_periodic,
+                  const int z_periodic) 
 {
     extern User_Data ud;
     
     if (ud.gravity_strength[ud.gravity_direction] > 0) {
-        precon_column_apply(vec_out, vec_in, node);
+        precon_column_apply(vec_out, vec_in, node, x_periodic, y_periodic, z_periodic);
     } else {
-        precon_diag_apply(vec_out, vec_in, node);        
+        precon_diag_apply(vec_out, vec_in, node, x_periodic, y_periodic, z_periodic);        
     }    
 }
 
@@ -585,14 +655,17 @@ void precon_apply(
 void precon_invert(
                   double* vec_out,
                   const double* vec_in,
-                  const NodeSpaceDiscr *node) 
+                   const NodeSpaceDiscr *node,
+                   const int x_periodic,
+                   const int y_periodic,
+                   const int z_periodic) 
 {
     extern User_Data ud;
     
     if (ud.gravity_strength[ud.gravity_direction] > 0) {
-        precon_column_invert(vec_out, vec_in, node);
+        precon_column_invert(vec_out, vec_in, node, x_periodic, y_periodic, z_periodic);
     } else {
-        precon_diag_invert(vec_out, vec_in, node);        
+        precon_diag_invert(vec_out, vec_in, node, x_periodic, y_periodic, z_periodic);        
     }    
 }
 
@@ -672,9 +745,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                     lap[nn1icxn] += (- flux_x_upper - flux_y_right) + hc*p[nn1icxn];
                 }
             }
-            
-            precon_invert(lap, lap, node);
-            
+                        
             if (x_periodic) {
                 for(j=igyn; j<icyn-igyn; j++) {
                     int nleft  = j * icxn + igxn;
@@ -694,6 +765,9 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                     lap[ntop]      = 0.0;
                 }
             }
+            
+            precon_invert(lap, lap, node, x_periodic, y_periodic, z_periodic);
+
             break;
         }
         case 3: {
@@ -797,7 +871,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             }
             
 #ifdef PRECON
-            precon_invert(lap, lap, node);
+            precon_invert(lap, lap, node, x_periodic, y_periodic, z_periodic);
 #endif
             
             if (x_periodic) {

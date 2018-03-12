@@ -1081,8 +1081,9 @@ void set_ghostnodes_p2(
                 int nc1_obj = mc + icx-1-i;
                 int nc1_src = mc + xperiodic*(igx+2-i) + (1-xperiodic)*(icx-5+i);
                 
-                p[nc0_obj] = p[nc0_src];
+                /* for the periodic case it the sequence "first 1 then 0" should count */
                 p[nc1_obj] = p[nc1_src];
+                p[nc0_obj] = p[nc0_src];
             }
         }
     } 
@@ -1099,8 +1100,8 @@ void set_ghostnodes_p2(
                     int nc1_obj = mc + (icy-1-j)*icx;
                     int nc1_src = mc + (yperiodic*(igy+2-j) + (1-yperiodic)*(icy-5+j))*icx;
                     
-                    p[nc0_obj] = p[nc0_src];
                     p[nc1_obj] = p[nc1_src];
+                    p[nc0_obj] = p[nc0_src];
                 }
             }
         } 
@@ -1118,8 +1119,8 @@ void set_ghostnodes_p2(
                     int nc1_obj = mc + (icz-1-k)*icx*icy;
                     int nc1_src = mc + (zperiodic*(igz+2-k) + (1-zperiodic)*(icz-5+k))*icx*icy;
                     
-                    p[nc0_obj] = p[nc0_src];
                     p[nc1_obj] = p[nc1_src];
+                    p[nc0_obj] = p[nc0_src];
                 }
             }
         } 

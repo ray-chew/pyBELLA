@@ -138,7 +138,7 @@ static double BiCGSTAB_MG_nodes(
     
     EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, solution_io, hplus, hcenter, x_periodic, y_periodic, z_periodic, v_j);
 
-    precon_invert(rhs_prec, rhs, node);
+    precon_invert(rhs_prec, rhs, node, x_periodic, y_periodic, z_periodic);
     
     cell_cnt = 0;
 	

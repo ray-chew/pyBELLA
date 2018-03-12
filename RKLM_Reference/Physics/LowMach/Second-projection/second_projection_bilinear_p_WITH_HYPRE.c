@@ -236,7 +236,20 @@ void second_projection(
              rhs,
              fn2,
              fieldname2);
+
+    /*
+    sprintf(fn2, "%s/hplus_nodes/hplus_nodes_x_%s.hdf", ud.file_name, step_string);
+    sprintf(fieldname2, "hplus_nodes_x");
     
+    WriteHDF(prhsfile,
+             mpv->Level[0]->elem->icx,
+             mpv->Level[0]->elem->icy,
+             mpv->Level[0]->elem->icz,
+             mpv->Level[0]->elem->ndim,
+             hplus[0],
+             fn2,
+             fieldname2);
+     */
     rhs_output_count++;
     
 #endif

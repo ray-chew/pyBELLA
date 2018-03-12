@@ -22,12 +22,18 @@ double precon_prepare(
 void precon_apply(
                   double* vec_out,
                   const double* vec_in,
-                  const NodeSpaceDiscr *node);
+                  const NodeSpaceDiscr *node,
+                  const int x_periodic,
+                  const int y_periodic,
+                  const int z_periodic);
 
 void precon_invert(
                    double* vec_out,
                    const double* vec_in,
-                   const NodeSpaceDiscr *node);
+                   const NodeSpaceDiscr *node,
+                   const int x_periodic,
+                   const int y_periodic,
+                   const int z_periodic);
 
 void EnthalpyWeightedLap_Node_bilinear_p_scatter(
 												 const NodeSpaceDiscr* node, 
