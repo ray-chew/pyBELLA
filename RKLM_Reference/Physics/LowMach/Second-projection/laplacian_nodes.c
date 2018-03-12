@@ -870,9 +870,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                 }
             }
             
-#ifdef PRECON
             precon_invert(lap, lap, node, x_periodic, y_periodic, z_periodic);
-#endif
             
             if (x_periodic) {
                 for(k=igzn; k<iczn-igzn; k++) {

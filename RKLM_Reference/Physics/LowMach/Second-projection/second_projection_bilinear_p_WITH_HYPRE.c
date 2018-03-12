@@ -133,7 +133,7 @@ void second_projection(
 
     catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
 
-#if 1
+#if 0
     extern User_Data ud;
     FILE *prhsfile = NULL;
     char fn2[200], fieldname2[90], step_string[30];
@@ -206,7 +206,7 @@ void second_projection(
 	variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, x_periodic, y_periodic, z_periodic, dt);
     correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);
     
-#if 1   
+#if 0   
     for(ii=0; ii<nc; ii++) rhs[ii] = 0.0;
 
     if(rhs_output_count<10) {
@@ -731,123 +731,6 @@ static void operator_coefficients_nodes(
 		default: ERROR("ndim not in {1,2,3}");
 	}
 }
-
-
-#if 0
-/* ========================================================================== */
-
-static void diagonal_preconditioner(
-									double* diaginv, 
-									const ElemSpaceDiscr* elem,
-									const NodeSpaceDiscr* node,
-									ConsVars* Sol) {
-	
-	extern User_Data ud;
-	
-	const int ndim = node->ndim;
-	
-	switch(ndim) {
-		case 1: {    
-			ERROR("interface_enthalpy_nodes() not implemented for 1D\n");
-			break;
-		}
-		case 2: {
-			
-			int n;
-			
-#ifdef PRECON
-			int i, j, m;
-			const int igxn = node->igx;
-			const int icxn = node->icx;
-			const int igyn = node->igy;
-			const int icyn = node->icy;
-			
-			const int icxe = elem->icx;
-			
-			for(j = igyn; j < icyn - igyn; j++) {m = j * icxn;
-				for(i = igxn; i < icxn - igxn; i++) {n = m + i;
-					{
-						int nne, nnw, nse, nsw;
-						
-						nne  =   i   +   j   * icxe;
-						nnw  = (i-1) +   j   * icxe;
-						nsw  = (i-1) + (j-1) * icxe;
-						nse  =   i   + (j-1) * icxe;
-						
-						/* diaginv[n] = 4.0 / (Sol->rhoY[nne] + Sol->rhoY[nnw] + Sol->rhoY[nsw] + Sol->rhoY[nse]); */
-
-                        diaginv[n] = 4.0 / (  Sol->rhoY[nne] / Sol->rho[nne]
-											+ Sol->rhoY[nnw] / Sol->rho[nnw] 
-											+ Sol->rhoY[nsw] / Sol->rho[nsw]
-											+ Sol->rhoY[nse] / Sol->rho[nse]);
-					}
-				}
-			}
-#else
-			for(n=0; n<node->nc; n++) {
-				diaginv[n] = 1.0;
-			}	
-#endif
-			
-			break;
-		}
-		case 3: {
-						
-#ifdef PRECON
-			int i, j, k, l, m, n;
-			const int igxn = node->igx;
-			const int icxn = node->icx;
-			const int igyn = node->igy;
-			const int icyn = node->icy;
-			const int igzn = node->igz;
-			const int iczn = node->icz;
-			
-			const int icxe = elem->icx;
-			const int icye = elem->icy;
-            
-            const int dixe = 1;
-            const int diye = icxe;
-            const int dize = icxe*icye;
-			
-			for(k = igzn; k < iczn - igzn; k++) {l = k * icxn*icyn;
-                for(j = igyn; j < icyn - igyn; j++) {m = l + j * icxn;
-                    for(i = igxn; i < icxn - igxn; i++) {n = m + i;
-						int nc     = (k-1)*dize + (j-1)*diye + (i-1)*dixe;
-						int nc000  = nc;
-						int nc010  = nc        + diye;
-						int nc011  = nc        + diye + dize;
-						int nc001  = nc               + dize;
-						int nc100  = nc + dixe;
-						int nc110  = nc + dixe + diye;
-						int nc111  = nc + dixe + diye + dize;
-						int nc101  = nc + dixe        + dize;
-						
-						/* diaginv[n] = 4.0 / (Sol->rhoY[nne] + Sol->rhoY[nnw] + Sol->rhoY[nsw] + Sol->rhoY[nse]); */
-						diaginv[n] = 8.0 / (  Sol->rhoY[nc000] / Sol->rho[nc000]
-											+ Sol->rhoY[nc010] / Sol->rho[nc010] 
-											+ Sol->rhoY[nc011] / Sol->rho[nc011]
-											+ Sol->rhoY[nc001] / Sol->rho[nc001]
-                                            + Sol->rhoY[nc100] / Sol->rho[nc100]
-											+ Sol->rhoY[nc110] / Sol->rho[nc110] 
-											+ Sol->rhoY[nc111] / Sol->rho[nc111]
-											+ Sol->rhoY[nc101] / Sol->rho[nc101]);
-                    }
-                }
-			}
-#else /* PRECON */
-            int n;
-
-			for(n=0; n<node->nc; n++) {
-				diaginv[n] = 1.0;
-			}	
-#endif
-			
-			break;
-		}
-		default: ERROR("ndim not in {1,2,3}");
-	}
-}
-#endif
 
 /* ========================================================================== */
 

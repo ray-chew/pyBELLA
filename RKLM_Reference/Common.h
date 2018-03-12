@@ -45,25 +45,17 @@
  #define SOLVER_1_BICGSTAB
  
  #define SOLVER_2_BICGSTAB
+
+ Currently, a simple diagonal (no gravity) and a column-wise 
+ preconditioner (in the gravity direction) are implemented 
+ for both projections/linear implicit steps. They are always
+ on and selected on the fly depending on whether or not 
+ gravity is on or off.
+ 
  */
 
 #define SOLVER_1_CR2
 #define SOLVER_2_BICGSTAB
-
-/* preconditioning options ======================
- #define PRECON
- #define PRECON_DIAGONAL_1ST_PROJ
- #define PRECON_DIAGONAL_2ND_PROJ
- #define PRECON_VERTICAL_COLUMN_1ST_PROJ
- #define PRECON_VERTICAL_COLUMN_2ND_PROJ
-*/
-
-#define PRECON
-#ifdef PRECON
-#define PRECON_VERTICAL_COLUMN_1ST_PROJ
-#define PRECON_DIAGONAL_2ND_PROJ
-#endif
-
 
 /* First projection options */
 

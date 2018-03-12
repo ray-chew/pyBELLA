@@ -105,8 +105,12 @@ int main( void )
             /* First order splitting for Corilis - just for the advection flux prediction */
             Explicit_Coriolis(Sol, elem, 0.5*dt); 
             
-            /* explicit advection half time step preparing advection flux calculation */
-            advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP);
+            /* explicit advection half time step preparing advection flux calculation 
+             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP);
+             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP);
+             */
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
+            advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP);
 
             /* explicit part of Euler backward gravity over half time step */
             euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt);

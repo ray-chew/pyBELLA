@@ -19,16 +19,14 @@ Date:   Fri Mar 13 07:56:56 CET 1998  Feb. 2004
 #include "ThomasAlgorithmus.h"
 
 /* ========================================================================== */
-#ifdef PRECON
 
-#ifdef PRECON_DIAGONAL_1ST_PROJ
 static enum Boolean diaginv_c_is_allocated = WRONG;
 static double *diaginv_c;
 static double *diag_c;
 
 /* -------------------------------------------------------------------------- */
 
-double precon_c_prepare(
+double precon_c_diag_prepare(
                       const NodeSpaceDiscr* node,
                       const ElemSpaceDiscr* elem,
                       const double* hplus[3],
@@ -138,7 +136,7 @@ double precon_c_prepare(
 
 /* -------------------------------------------------------------------------- */
 
-void precon_c_apply(
+void precon_c_diag_apply(
                     double* vec_out,
                     const double* vec_in,
                     const ElemSpaceDiscr *elem) {
@@ -149,7 +147,7 @@ void precon_c_apply(
 
 /* -------------------------------------------------------------------------- */
 
-void precon_c_invert(
+void precon_c_diag_invert(
                      double* vec_out,
                      const double* vec_in,
                      const ElemSpaceDiscr *elem) {
@@ -157,9 +155,8 @@ void precon_c_invert(
         vec_out[nc] = vec_in[nc]*diaginv_c[nc];
     }
 }
-#endif /* PRECON_DIAGONAL_1ST_PROJ  =========================================================== */
 
-#ifdef PRECON_VERTICAL_COLUMN_1ST_PROJ /* ===================================================== */
+/* ========================================================================== */
 
 static enum Boolean tridiago_is_allocated = WRONG;
 static double *diaginv_c;
@@ -174,7 +171,7 @@ static int size;
 
 /* -------------------------------------------------------------------------- */
 
-double precon_c_prepare(
+double precon_c_column_prepare(
                         const NodeSpaceDiscr* node,
                         const ElemSpaceDiscr* elem,
                         const double* hplus[3],
@@ -378,7 +375,7 @@ double precon_c_prepare(
 
 /* -------------------------------------------------------------------------- */
 
-void precon_c_apply(
+void precon_c_column_apply(
                     double* vec_out,
                     const double* vec_in,
                     const ElemSpaceDiscr *elem) {
@@ -407,7 +404,7 @@ void precon_c_apply(
 
 /* -------------------------------------------------------------------------- */
 
-void precon_c_invert(
+void precon_c_column_invert(
                      double* vec_out,
                      const double* vec_in,
                      const ElemSpaceDiscr *elem) {
@@ -460,9 +457,7 @@ void precon_c_invert(
         }
     }
 }
-#endif /* PRECON_VERTICAL_COLUMN */
 
-#else  /* PRECON */
 
 /* -------------------------------------------------------------------------- */
 
@@ -471,6 +466,14 @@ double precon_c_prepare(
                       const ElemSpaceDiscr* elem,
                       const double* hplus[3],
                       const double* hcenter) {
+
+    extern User_Data ud;
+    
+    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+        return precon_c_column_prepare(node, elem, hplus, hcenter);
+    } else {
+        return precon_c_diag_prepare(node, elem, hplus, hcenter);        
+    }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -479,6 +482,14 @@ void precon_c_apply(
                     double* vec_out,
                     const double* vec_in,
                     const ElemSpaceDiscr *elem) {
+    
+    extern User_Data ud;
+    
+    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+        precon_c_column_apply(vec_out, vec_in, elem);
+    } else {
+        precon_c_diag_apply(vec_out, vec_in, elem);        
+    }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -487,8 +498,15 @@ void precon_c_invert(
                      double* vec_out,
                      const double* vec_in,
                      const ElemSpaceDiscr *elem) {
+    
+    extern User_Data ud;
+    
+    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+        precon_c_column_invert(vec_out, vec_in, elem);
+    } else {
+        precon_c_diag_invert(vec_out, vec_in, elem);        
+    }
 }
-#endif /* PRECON */
 
 
 /* ========================================================================== */
@@ -577,11 +595,9 @@ void EnthalpyWeightedLap_bilinear_p(
                     
                 }
             }    
-            
-            
-#ifdef PRECON
+                        
             precon_c_invert(lap, lap, elem);
-#endif
+
             break;
         }
         case 3: {
@@ -680,9 +696,8 @@ void EnthalpyWeightedLap_bilinear_p(
                 }    
             }    
             
-#ifdef PRECON
             precon_c_invert(lap, lap, elem);
-#endif
+
             break;
         }
         default: ERROR("ndim not in {1, 2, 3}");
