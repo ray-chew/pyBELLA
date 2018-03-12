@@ -201,14 +201,14 @@ void Sol_initial(ConsVars* Sol,
 	extern User_Data ud;
     extern MPV* mpv;
     
-	const double u0    = 1.0*ud.wind_speed;
-	const double v0    = 0.0*ud.wind_speed;
+	const double u0    = 0.0*ud.wind_speed;
+	const double v0    = 1.0*ud.wind_speed;
 	const double w0    = 0.0;
     
     const double rotdir = -1.0;
     
-	const double rho0    = 0.5;
-    const double del_rho = 0.5;  /* 0.0; for homentropic */
+    const double rho0    = 0.5;  /* 0.5 standard;  1.0 stable configuration; */
+    const double del_rho = 0.0;  /* 0.5 standard; -0.5 stable configuration; 0.0; for homentropic */
     const double R0      = 0.4;
     const double fac     = 1*1024.0; /* 4*1024.0 */
     const double xc      = 0.0;
