@@ -108,6 +108,7 @@ int main( void )
             /* explicit advection half time step preparing advection flux calculation 
              advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP);
              advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP);
+             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP);
              */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP);

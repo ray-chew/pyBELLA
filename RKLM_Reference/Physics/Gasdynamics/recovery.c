@@ -82,9 +82,9 @@ void recovery(States* Lefts,
 	primitives(Sol, 0, nmax);
 		
     for( i = 1; i < nmax-1; i++ ) { 
-        u[i]  = internal_flux * Sol->u[i] + (1.0-internal_flux) * (0.5*(Fluxes->rhoY[i]+Fluxes->rhoY[i+1])/Sol->rhoY[i]);    
-        ul[i] = internal_flux * Sol->u[i] + (1.0-internal_flux) * Fluxes->rhoY[i]/(0.5*(Sol->rhoY[i]+Sol->rhoY[i-1]));    
-        ur[i] = internal_flux * Sol->u[i] + (1.0-internal_flux) * Fluxes->rhoY[i+1]/(0.5*(Sol->rhoY[i]+Sol->rhoY[i+1]));    
+        u[i]  = internal_flux * Sol->u[i] + (1.0-internal_flux) * (0.5*(Fluxes->rhoY[i]+Fluxes->rhoY[i-1])/Sol->rhoY[i]);    
+        ul[i] = internal_flux * Sol->u[i] + (1.0-internal_flux) * Fluxes->rhoY[i-1]/(0.5*(Sol->rhoY[i]+Sol->rhoY[i-1]));    
+        ur[i] = internal_flux * Sol->u[i] + (1.0-internal_flux) * Fluxes->rhoY[i]/(0.5*(Sol->rhoY[i]+Sol->rhoY[i+1]));    
     }
     
 	/* differences of primitive quantities */
