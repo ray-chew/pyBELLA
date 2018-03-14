@@ -5,7 +5,7 @@
 #define QR    3   /* foreseen for: rain water  */
 
 /* Output parameters */
-#define HDFFORMAT
+#define HDFFORMAT  
 
 /* Output options in main.c for debugging;  1 -> output */
 #define OUTPUT_SUBSTEPS 0
