@@ -26,6 +26,7 @@
 
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{amsthm}
 
 %\usepackage[squaren]{SIunits}
 \usepackage{graphicx}
@@ -50,6 +51,10 @@
 \newcommand{\black}[1]{\textcolor{black}{#1}}
 \newcommand{\grey}[1]{\textcolor{heavy}{#1}}
 \newcommand{\lightgrey}[1]{\textcolor{light}{#1}}
+
+\theoremstyle{definition}
+\newtheorem{algorithm}{Algorithm}
+
 
 %----------------------------------------------------------------------------
 %---- Kommentare ------------------------------------------------------------
@@ -129,6 +134,8 @@
 \newcommand{\Lopfirst}{{\cal L}^{\rm 1st}}
 
 \newcommand{\pibar}{\overline{\pi}}
+
+
 
 % ===========================================================================
 % ===========================================================================
@@ -1584,6 +1591,230 @@ and then the iteration starts with
 \delta\pi^0 = \pi^{n+\half,1} - \pi^{n}  \,.
 \end{equation}
 %
+% ===========================================================================
+\newpage
+\section{Summary of the numerical scheme}
+
+\small
+
+Here we report for comparison the summary of the numerical scheme as in \cite{Benacchio2014} \benacchio{In addition to the numerical differences, your code also works with Exner $\pi$ rather than $p$.}
+%
+\begin{algorithm}[Compressible scheme]
+\ \\
+\begin{description}
+%
+\item[\emph{Predictor}]
+%
+\begin{enumerate}\item[]
+\item[(i)] Compute linearly reconstructed $u\in\{P,\,\vv\}$-values at the interfaces ($x_{i+1/2},\,y_j$) via     
+\begin{subequations}
+\label{eq: vel_lin_recon}
+\begin{align}
+\dss
+u_L
+& =
+\dss
+u_i+\half\psi(u_i-u_{i-1}, u_{i+1}-u_i)
+\\
+u_R
+& =
+\dss
+u_{i+1}-\half\psi(u_{i+1}-u_i, u_{i+2}-u_{i+1})
+\end{align}
+\end{subequations}
+%
+where $\psi$ is a slope function. In particular, we have:
+%
+\begin{equation}
+\dss
+\psi(a, b)=\dfrac{a+b}{2}
+\end{equation} 
+%
+for centred slopes and compute advecting upwind fluxes of $P$ via
+\begin{equation}
+\label{eq: avg_l_r_flux_P}
+\dss
+F(P)=F^+(P)+F^-(P)
+\end{equation} 
+%
+where:
+%
+\begin{equation}
+\dss
+F^+(P)=P_L\max(\vu, 0),\qquad F^-(P)=P_R\min(\vu, 0) 
+\end{equation} 
+\item[(ii)] Linearly reconstruct $1/\theta$ and $\vv/\theta$ at the cell interfaces and compute the remaining advecting fluxes via \begin{equation}
+\label{eq: avg_l_r_flux_phi}
+\dss
+F(\phi)=F^+(P)\phi_L+F^-(P)\phi_R
+\end{equation} 
+where: 
+$\phi\in\left\{\theta^{-1}, \vv\theta^{-1}\right\}$. 
+
+
+For the momentum, interpolate the nodal pressure values to the cell interface centres for the flux computation;
+\item[(iii)] Compute new-time-level predicted quantities using:
+\begin{subequations}\label{eq: disc_syst_pred}
+\begin{alignat}{4}
+\dss 
+\rho_C^{n+1, *}  
+& =  
+& \dss 
+\rho_C^{n} 
+& -   
+\dss 
+\Delta t 
+\left(\widetilde{\nabla}\cdot
+\left(P\vv \, \theta^{-1}  
+\right)
+\right)^{n+\frac{1}{2}, *}_C\, ,
+\label{eq: predconteq}
+\\
+\dss 
+\left(\rho\vv\right)_C^{n+1, *}  
+& = 
+& \dss \
+\left(\rho\vv\right)_C^{n}
+& -  
+\dss 
+\Delta t 
+\left( \widetilde{\nabla}\cdot
+\left(P\vv \circ \vv\theta^{-1} + p^n\mathbb{I}
+\right)
+\right)^{n+\frac{1}{2}, *}_C
+- 
+\dss 
+\Delta t \, 
+g\vk
+\left( \rho \right)^{n+\frac{1}{2}, *}_C \, ,
+\label{eq: pred_mom_disc}
+\\
+\dss P^{n+1, *}_C  
+& = 
+&  \dss 
+P_C^{n} 
+& -
+\dss 
+\Delta t 
+\left(\widetilde{\nabla}\cdot
+\left(P\vv  
+\right)
+\right)^{n+\frac{1}{2}, *}_C\, . 
+\label{eq: pred_enP_disc}
+\end{alignat}
+\end{subequations}
+
+\end{enumerate}
+%
+
+\benacchio{The above was done with Runge-Kutta time integration in \cite{Benacchio2014}. Instead, (one version of) your code has MUSCL-like reconstructions, i.e. eqs. (56) and (57), and time-marching, eq. (55),
+in \cite{KleinTCFD2009}. As discussed back in January, this has now changed  and the target scheme is an implicit-then-explicit predictor with two half steps along the lines of sections 1 and 2 in
+this document.}
+
+\item[\emph{First Correction}]
+%
+\begin{enumerate}\item[]
+\item[(i)] Solve the Helmholtz equation
+%
+\begin{equation}
+\label{eq: first_corr_helm_eq2_xi1}
+\dss 
+-\left(\dfrac{\mathcal{C}_H^{n+\half, *}}{\Delta t}\delta p\right)_C
++
+\dss
+\widetilde{\nabla}\cdot\left[\frac{\Delta t}{2}\theta^{n+\half, *}\nabla\delta p\right]_C
+=
+\dss
+\widetilde{\nabla}\cdot[(P\vv)^{n+\half. *}]_C
+\end{equation} 
+%
+for cell-centred pressure increments;
+\item[(ii)] Use the solution to correct advecting fluxes via
+\begin{subequations}\label{eq: first_corr_pred_val_adj}
+\begin{align}
+\dss
+&
+\rho_C^{n+1}
+=
+\dss
+\rho_C^{n+1, *}
+-
+\dss
+\Delta t\widetilde{\nabla}\cdot\left(\delta P\vv\theta^{-1}\right)_C
+\\
+\dss 
+&
+(\rho\vv)_C^{n+1, **}
+=
+(\rho\vv)_C^{n+1, *}
+-
+\dss
+\Delta t\widetilde{\nabla}\cdot\left(\delta P\vv\circ\vv\theta^{-1}\right)_C\label{eq: first_corr_mom_corr}
+\\
+\dss
+&
+P_C^{n+1}
+=
+\dss
+P_C^{n+1, *}
+-
+\dss
+\Delta t\widetilde{\nabla}\cdot\left(\delta P\vv\right)_C.\label{eq: first_corr_en_corr}
+\end{align}
+\end{subequations}
+%
+\end{enumerate}
+%
+\benacchio{In (one version of) your code, the first projection, including implicit gravity treatment, is now ported between the two half steps in the predictor step. The mean potential temperature advection is captured inside
+the corrector, while the perturbations are handled in the explicit step (I am not sure I understand this, I think we are talking about equations (78) and (85) in the other document, RKLM$\_$Documentation.pdf).}
+
+\item[\emph{Second Correction}]
+%
+
+\begin{enumerate}\item[]
+\item[(i)] Solve the Helmholtz equation:
+%
+\begin{equation}
+\label{eq: second_corr_helmholtz}
+\dss
+\left(-\dfrac{\mathcal{C}^{n+1}_H}{\Delta t}\delta p_\nu\right)_{\overline{C}}
++
+\widetilde{\nabla}\cdot\left(\theta\frac{\Delta t}{2}\theta^{n+1}\nabla\delta p_\nu\right)_{\overline{C}}
+= \widetilde{\nabla}\cdot\left[\theta(P\vv)^{n+1, **}+(1-\theta)(P\vv)^n\right]_{\overline{C}}
+\end{equation}  
+%
+for node-centred pressure increments;
+\benacchio{Presumably this changes to include buoyancy terms along the lines of Chapter 6 \cite{Benacchio2014}, i.e. incorporating the terms containing the mean $\theta$?}
+
+\item[(ii)] Interpolate the solution on cell interface centres and correct momentum flux via 
+\begin{equation}
+\label{eq: final_mom_upd}
+\dss
+(\rho\vv)^{n+1}_C 
+= 
+(\rho\vv)^{n+1,**}_C 
+-
+\dss
+\dfrac{\Delta t}{2}\widetilde{\nabla}\cdot(\delta p\mathbb{I})_C.
+\end{equation}
+\end{enumerate}
+%
+\item[\emph{Pressure update}]\ \\ Synchronise the energy and pressure via the equation of state using the binding formula 
+%
+\begin{equation}
+\label{eq: final_press_update_eos}
+\dss
+p_C^{n+1}
+=
+\dss
+\left(\dfrac{P^{n+1}}{\rho_\textrm{ref} T_\textrm{ref}}\right)^\gamma p_{\textrm{ref}}.
+\end{equation} 
+%
+\benacchio{I understand you have an option for this in your code? If so, is it used in all cases and is it the case that results are better with it than without it as it was for my model?}
+\end{description}
+\end{algorithm}
+
+
 
 % ===========================================================================
 % ===========================================================================
