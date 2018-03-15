@@ -106,12 +106,12 @@ int main( void )
             Explicit_Coriolis(Sol, elem, 0.5*dt); 
             
             /* explicit advection half time step preparing advection flux calculation 
-             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP);
-             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP);
-             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP);
+             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
+             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
              */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
-            advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP);
+            advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
 
             /* explicit part of Euler backward gravity over half time step */
             euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt);
@@ -124,7 +124,9 @@ int main( void )
             update_advective_fluxes(flux, (const VectorField*)adv_flux, elem, node, dt);    
 #endif
             ConsVars_set(Sol, Sol0, elem->nc);
-            
+            // if (step == 0) cell_pressure_to_nodal_pressure(mpv, elem, node);
+            if (1) cell_pressure_to_nodal_pressure(mpv, elem, node);
+
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nfull time step with predicted advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
@@ -136,7 +138,7 @@ int main( void )
             euler_forward_non_advective(Sol, (const MPV*)mpv, elem, node, 0.5*dt); 
                         
             /* explicit full time step advection using div-controlled advective fluxes */
-            advect(Sol, flux, adv_flux, dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP);
+            advect(Sol, flux, adv_flux, dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
                         
             /* implicit EULER half time step for gravity and pressure gradient */ 
             euler_backward_gravity(Sol, mpv, elem, 0.5*dt);

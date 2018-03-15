@@ -97,7 +97,7 @@ void User_Data_init(User_Data* ud) {
     
 	/* flow domain */
 	ud->xmin = - 5000/ud->h_ref;  
-	ud->xmax =  15000/ud->h_ref;  
+	ud->xmax =   5000/ud->h_ref;  
 	ud->ymin = - 5000/ud->h_ref;
 	ud->ymax =   5000/ud->h_ref; 
 	ud->zmin = - 5000/ud->h_ref;
@@ -124,15 +124,15 @@ void User_Data_init(User_Data* ud) {
 	
     /* time discretization */
     ud->time_integrator      = SI_MIDPT;  
-	ud->CFL                  = 0.96;       
+	ud->CFL                  = 0.45;       
     ud->dtfixed0             = 10000.999;
     ud->dtfixed              = 10000.999;   
     
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 128+1; /*  */
-	ud->iny =  64+1; /*  */
+	ud->inx =  192+1; /*  */
+	ud->iny =  192+1; /*  */
 	ud->inz =  1;
 
     /* explicit predictor step */
@@ -168,7 +168,7 @@ void User_Data_init(User_Data* ud) {
     /* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
     
-    ud->tout[0] = (ud->xmax-ud->xmin)/ud->wind_speed;      
+    ud->tout[0] = 1.0 * (ud->xmax-ud->xmin)/ud->wind_speed;      
     ud->tout[1] = -1.0;
 
     ud->stepmax = 10000;
@@ -176,7 +176,7 @@ void User_Data_init(User_Data* ud) {
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 10;
+	ud->write_file_period = 20;
 	ud->file_format = HDF;
 
     {
@@ -202,13 +202,13 @@ void Sol_initial(ConsVars* Sol,
     extern MPV* mpv;
     
 	const double u0    = 1.0*ud.wind_speed;
-	const double v0    = 0.0*ud.wind_speed;
+	const double v0    = 1.0*ud.wind_speed;
 	const double w0    = 0.0;
     
     const double rotdir = -1.0;
     
     const double rho0    = 0.5;  /* 0.5 standard;  1.0 stable configuration; */
-    const double del_rho = 0.0;  /* 0.5 standard; -0.5 stable configuration; 0.0; for homentropic */
+    const double del_rho = 0.5;  /* 0.5 standard; -0.5 stable configuration; 0.0; for homentropic */
     const double R0      = 0.4;
     const double fac     = 1*1024.0; /* 4*1024.0 */
     const double xc      = 0.0;
@@ -226,10 +226,6 @@ void Sol_initial(ConsVars* Sol,
     const int igx  = elem->igx;
 	const int igy  = elem->igy;
 	const int igz  = elem->igz;
-
-    const int icxn = node->icx;
-    const int icyn = node->icy;
-    const int iczn = node->icz;
 
 	int i, j, k, l, m, n;
 	double x, y, z;
@@ -327,24 +323,7 @@ void Sol_initial(ConsVars* Sol,
 	}  
     set_ghostcells_p2(mpv->p2_cells, elem, igx);
 
-    /*set nodal pressures; rough approximation by interpolation of cell pressures */
-    for(int k = 0; k < iczn; k++) {
-        int ln = k * icxn * icyn;   
-        int lc = k * icx  * icy;
-        for(int j = 1; j < icyn-1; j++) {
-            int mn = ln + j * icxn;
-            int mc = lc + j * icx;
-            for(int i = 1; i < icxn-1; i++) {
-                int nn   = mn + i;
-                int ncne = mc + i;
-                int ncnw = mc + i - 1;
-                int ncsw = mc + i - 1 - icx;
-                int ncse = mc + i     - icx;
-                mpv->p2_nodes[nn] = 0.25*(mpv->p2_cells[ncne]+mpv->p2_cells[ncnw]+mpv->p2_cells[ncsw]+mpv->p2_cells[ncse]);
-            }
-        }
-    }
-    set_ghostnodes_p2(mpv->p2_nodes, node, igx);
+    // cell_pressure_to_nodal_pressure(mpv, elem, node);
 }
 
 /* ================================================================================== */

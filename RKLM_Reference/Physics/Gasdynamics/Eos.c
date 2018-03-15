@@ -655,7 +655,42 @@ double compressibility(const double t)
     }    
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 
+void cell_pressure_to_nodal_pressure(
+                                     MPV* mpv,
+                                     const ElemSpaceDiscr* elem,
+                                     const NodeSpaceDiscr* node)
+{
+    const int icx  = elem->icx;
+    const int icy  = elem->icy;
+    const int igx  = elem->igx;
+    
+    const int icxn = node->icx;
+    const int icyn = node->icy;
+    const int iczn = node->icz;
+
+    /*set nodal pressures; rough approximation by interpolation of cell pressures */
+    for(int k = 0; k < iczn; k++) {
+        int ln = k * icxn * icyn;   
+        int lc = k * icx  * icy;
+        for(int j = 1; j < icyn-1; j++) {
+            int mn = ln + j * icxn;
+            int mc = lc + j * icx;
+            for(int i = 1; i < icxn-1; i++) {
+                int nn   = mn + i;
+                int ncne = mc + i;
+                int ncnw = mc + i - 1;
+                int ncsw = mc + i - 1 - icx;
+                int ncse = mc + i     - icx;
+                mpv->p2_nodes[nn] = 0.25*(mpv->p2_cells[ncne]+mpv->p2_cells[ncnw]+mpv->p2_cells[ncsw]+mpv->p2_cells[ncse]);
+            }
+        }
+    }
+    set_ghostnodes_p2(mpv->p2_nodes, node, igx);
+}
 
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL

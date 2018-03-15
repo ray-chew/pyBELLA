@@ -44,7 +44,8 @@ void advect(
             const ElemSpaceDiscr* elem,
             const enum FluxesFrom adv_fluxes_from, 
             const enum MUSCL_ON_OFF muscl_on_off, 
-            const enum No_of_Strang_Sweeps no_of_sweeps);
+            const enum No_of_Strang_Sweeps no_of_sweeps,
+            const int odd);
 
 /*------------------------------------------------------------------------------
  Explicit step and flux computation

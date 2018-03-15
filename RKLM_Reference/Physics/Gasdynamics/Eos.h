@@ -238,6 +238,15 @@ void fluctuation(double *var, const double *var0, const ElemSpaceDiscr *elem);
  ------------------------------------------------------------------------------*/
 double compressibility(const double t);
 
+
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
+void cell_pressure_to_nodal_pressure(
+                                     MPV* mpv,
+                                     const ElemSpaceDiscr* elem,
+                                     const NodeSpaceDiscr* node);
+
 #endif /* EOS_H */
 
 
