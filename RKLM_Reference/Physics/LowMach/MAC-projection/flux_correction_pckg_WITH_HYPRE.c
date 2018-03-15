@@ -1,4 +1,4 @@
-    /*******************************************************************************
+/*******************************************************************************
  File:   flux_correction.c
  Author: Rupert
  Date:   Feb  14  2004
@@ -29,37 +29,37 @@
 #include "boundary.h"
 
 static enum Constraint integral_condition(ConsVars* flux[3],
-										  double* rhs, 
-										  ConsVars* Sol,
-										  const double dt,
-										  const ElemSpaceDiscr* elem,
-										  MPV* mpv);
+                                          double* rhs, 
+                                          ConsVars* Sol,
+                                          const double dt,
+                                          const ElemSpaceDiscr* elem,
+                                          MPV* mpv);
 
 static void rhs_fix_for_open_boundaries(
-										double* rhs, 
-										const ElemSpaceDiscr* elem, 
-										ConsVars* Sol_new, 
-										ConsVars* Sol_old, 
-										ConsVars* flux[3],
-										double dt,
-										MPV* mpv);
+                                        double* rhs, 
+                                        const ElemSpaceDiscr* elem, 
+                                        ConsVars* Sol_new, 
+                                        ConsVars* Sol_old, 
+                                        ConsVars* flux[3],
+                                        double dt,
+                                        MPV* mpv);
 
 static void flux_fix_for_open_boundaries(
-										 ConsVars* flux[3],
-										 const ElemSpaceDiscr* elem, 
-										 MPV* mpv);
+                                         ConsVars* flux[3],
+                                         const ElemSpaceDiscr* elem, 
+                                         MPV* mpv);
 
 static void flux_correction_due_to_pressure_gradients(
-													  ConsVars* flux[3],
-													  const ElemSpaceDiscr* elem,
-													  ConsVars* Sol,
-													  ConsVars* Sol0,
-													  const MPV* mpv, 
-													  double* hplus[3],
+                                                      ConsVars* flux[3],
+                                                      const ElemSpaceDiscr* elem,
+                                                      ConsVars* Sol,
+                                                      ConsVars* Sol0,
+                                                      const MPV* mpv, 
+                                                      double* hplus[3],
                                                       double* hS,
-													  double* dp2,
-													  const double t,
-													  const double dt);
+                                                      double* dp2,
+                                                      const double t,
+                                                      const double dt);
 
 double controlled_variable_flux_divergence(double* rhs, 
                                            const ConsVars* flux[3],
@@ -83,42 +83,42 @@ static int rhs_output_count = 0;
 #endif
 
 void flux_correction(ConsVars* flux[3],
-					 const ElemSpaceDiscr* elem_base_grid,
-					 ConsVars* Sol, 
-					 ConsVars* Sol0, 
-					 const double t,
-					 const double dt,
+                     const ElemSpaceDiscr* elem_base_grid,
+                     ConsVars* Sol, 
+                     ConsVars* Sol0, 
+                     const double t,
+                     const double dt,
                      const int step) {
-	
+    
     extern User_Data ud;
-	extern MPV* mpv;
-	
-	const ElemSpaceDiscr* elem = mpv->Level[0]->elem;
+    extern MPV* mpv;
+    
+    const ElemSpaceDiscr* elem = mpv->Level[0]->elem;
     const NodeSpaceDiscr* node = mpv->Level[0]->node;
-
-	double** hplus       = mpv->Level[0]->wplus;
-	double*  hcenter     = mpv->Level[0]->wcenter;
+    
+    double** hplus       = mpv->Level[0]->wplus;
+    double*  hcenter     = mpv->Level[0]->wcenter;
     double*  hS          = mpv->Level[0]->wgrav;
-	
-	double* rhs          = mpv->Level[0]->rhs;
-	double* p2		     = mpv->Level[0]->p;
+    
+    double* rhs          = mpv->Level[0]->rhs;
+    double* p2		     = mpv->Level[0]->p;
     double* pi           = (double*)malloc(elem->nc*sizeof(double));
-        
+    
     double rhsmax;
     
-	int n;
+    int n;
     
     for (int nc=0; nc<elem->nc; nc++) pi[nc] = 0.0;
     
     printf("\n\n====================================================");
     printf("\nFirst Projection");
     printf("\n====================================================\n");
-	    
-	operator_coefficients(hplus, hcenter, hS, elem, Sol, Sol0, mpv, dt);
-
+    
+    operator_coefficients(hplus, hcenter, hS, elem, Sol, Sol0, mpv, dt);
+    
     rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
     printf("\nrhs_max = %e\n", rhsmax);
-
+    
     assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
     if (ud.is_compressible) {
         for (int nc=0; nc<elem->nc; nc++) {
@@ -158,7 +158,7 @@ void flux_correction(ConsVars* flux[3],
              fn2,
              fieldname2);
 #endif
-
+    
     
     /* Newton iteration for the nonlinear equation of state rhoY = P(\pi) = \pi^{gamma-1} 
      The first sweep computes the half time level Exner pressure based on the linearization
@@ -167,7 +167,7 @@ void flux_correction(ConsVars* flux[3],
      */
     variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, Sol, elem, node);
     set_ghostcells_p2(p2, elem, elem->igx);
-
+    
 #ifdef NONLINEAR_EOS_IN_1st_PROJECTION
     if (ud.is_compressible) {
         /* Nonlinear iteration for the \partial P/\partial t  term in the P-equation */
@@ -194,12 +194,17 @@ void flux_correction(ConsVars* flux[3],
         ud.flux_correction_local_precision /= precision_factor;
     }
 #endif
-
+    
     
     
     /* Note: flux will contain only the flux-correction after this routine; 
      it is thus overwritten under the SI_MIDPT time integration sequence */
     flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2, t, dt);
+    
+#ifdef CORRECT_FLUX_RIGHT_AWAY
+    /* test whether divergence is actually controlled */
+    rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
+#endif
     
 #if 0
     sprintf(fn2, "%s/Tests/frhoY_y_post.hdf", ud.file_name);
@@ -216,13 +221,13 @@ void flux_correction(ConsVars* flux[3],
 #endif
     
     /* under the SI_MIDPT time integrator sequence, after this step flux will contain:
-       (flux_correction + recomputed flux after first advection sequence)
-        - flux accumulated over first advection sequence
-       The sum in the bracket is a divergence-controlled flux, while the 
-       subtracted flux from the first sequence will make up for the ``bad guess''
-       of the flux divergence in the explicity advection cycle.
+     (flux_correction + recomputed flux after first advection sequence)
+     - flux accumulated over first advection sequence
+     The sum in the bracket is a divergence-controlled flux, while the 
+     subtracted flux from the first sequence will make up for the ``bad guess''
+     of the flux divergence in the explicity advection cycle.
      */
-
+    
 #if 0
     sprintf(fn2, "%s/Tests/frhoY_y_post2.hdf", ud.file_name);
     sprintf(fieldname2, "frhoY_y_post2.hdf");
@@ -236,17 +241,18 @@ void flux_correction(ConsVars* flux[3],
              fn2,
              fieldname2);
 #endif
-
+    
     
     flux_fix_for_open_boundaries(flux, elem, mpv);  
-
+    
     /* store results in mpv-fields */
     for(n=0; n<elem->nc; n++) {
         mpv->dp2_cells[n] = p2[n] - mpv->p2_cells[n];
         mpv->p2_cells[n]  = p2[n];
     }
     
-	set_ghostcells_p2(mpv->p2_cells, elem, elem->igx);
+    set_ghostcells_p2(mpv->p2_cells, elem, elem->igx);
+    Set_Explicit_Boundary_Data(Sol, elem);
     
     free(pi);
 }
@@ -279,7 +285,7 @@ double controlled_variable_flux_divergence(double* rhs,
     const double dz = elem->dz;
     
     double rhsmax = 0.0;
-        
+    
     for(int i=0; i<elem->nc; i++) rhs[i] = 0.0;
     
     switch (elem->ndim) {
@@ -350,22 +356,22 @@ double controlled_variable_flux_divergence(double* rhs,
 /* ========================================================================== */
 
 static enum Constraint integral_condition(
-										  ConsVars* flux[3],
-										  double* rhs,
-										  ConsVars* Sol,
-										  const double dt,
-										  const ElemSpaceDiscr* elem,
-										  MPV* mpv) {
-	
-	const int ndim = elem->ndim;
-	
-	switch(ndim) {
-			
-		case 1: {
-			ERROR("function not available");
-			break;
-		}
-			
+                                          ConsVars* flux[3],
+                                          double* rhs,
+                                          ConsVars* Sol,
+                                          const double dt,
+                                          const ElemSpaceDiscr* elem,
+                                          MPV* mpv) {
+    
+    const int ndim = elem->ndim;
+    
+    switch(ndim) {
+            
+        case 1: {
+            ERROR("function not available");
+            break;
+        }
+            
         case 2: {
             const int igx = elem->igx;
             const int icx = elem->icx;
@@ -396,8 +402,8 @@ static enum Constraint integral_condition(
             
             break;
         }
-			
-		case 3: {
+            
+        case 3: {
             const int igx = elem->igx;
             const int icx = elem->icx;
             const int igy = elem->igy;
@@ -429,15 +435,15 @@ static enum Constraint integral_condition(
                 return(VIOLATED);
             }
             
-			break;
-		}
-			
-		default: ERROR("ndim not in {1, 2, 3}");
-			return(VIOLATED);
-			
+            break;
+        }
+            
+        default: ERROR("ndim not in {1, 2, 3}");
+            return(VIOLATED);
+            
     }
-	
-	return(VIOLATED);
+    
+    return(VIOLATED);
 }
 
 /* ========================================================================== */
@@ -451,13 +457,13 @@ void operator_coefficients(
                            const ConsVars* Sol0,
                            const MPV* mpv, 
                            const double dt) {
-	
-	extern User_Data ud;
-	extern Thermodynamic th;
-	
+    
+    extern User_Data ud;
+    extern Thermodynamic th;
+    
     const double Gammainv = th.Gammainv;
-	const int ndim = elem->ndim;
-	    
+    const int ndim = elem->ndim;
+    
     const double ccw = (ud.time_integrator == SI_MIDPT ? 4.0 : 2.0); 
     /* when p2 is perturbation pressure:
      const double ccenter = - ccw * (ud.compressibility*ud.Msq)*th.gamminv/(mpv->dt*mpv->dt); 
@@ -466,69 +472,71 @@ void operator_coefficients(
     /* when p2 is Exner pressure: */
     const double ccenter = - ccw * (ud.compressibility*ud.Msq)*th.gm1inv/(mpv->dt*mpv->dt); 
     const double cexp    = 2.0-th.gamm;
-	
-	switch(ndim) {
-		case 1: {    
-			ERROR("function not available");
-			break;
-		}
-		case 2: {
-			const int igx = elem->igx;
-			const int icx = elem->icx;
-			const int ifx = elem->ifx;
-			const int igy = elem->igy;
-			const int icy = elem->icy;
-			const int ify = elem->ify;
+    
+    switch(ndim) {
+        case 1: {    
+            ERROR("function not available");
+            break;
+        }
+        case 2: {
+            const int igx = elem->igx;
+            const int icx = elem->icx;
+            const int ifx = elem->ifx;
+            const int igy = elem->igy;
+            const int icy = elem->icy;
+            const int ify = elem->ify;
             const double dy = elem->dy;
-			double* hx = hplus[0];
-			double* hy = hplus[1];
-			double* hc = wcenter;
-			
-			double hi, him, hj, hjm, g, gimp, Msq;
-			
-			int i, j, m, n, ic, icm, jc, jcm;
+            double* hx = hplus[0];
+            double* hy = hplus[1];
+            double* hc = wcenter;
+            
+            double hi, him, hj, hjm, g, gimp, Msq;
+            
+            int i, j, m, n, ic, icm, jc, jcm;
             
             Msq = ud.Msq;
             g   = ud.gravity_strength[0];
             
-			for(j = igy-1; j < icy - igy+1; j++) {
+            for(j = igy-1; j < icy - igy+1; j++) {
                 m = j * ifx;
-				
+                
                 for(i = igx-1; i < ifx - igx+1; i++) {
                     n     = m + i;
                     ic    = n - j;
-					icm   = ic - 1; 
-					
-                    /*
+                    icm   = ic - 1; 
+                    
+#if 0
                     hi    = Sol0->rhoY[ic] * Sol0->rhoY[ic] / Sol0->rho[ic]    * Gammainv;   
                     him   = Sol0->rhoY[icm] * Sol0->rhoY[icm] / Sol0->rho[icm] * Gammainv;
-                     */
+#else
                     hi    = Sol->rhoY[ic] * Sol->rhoY[ic] / Sol->rho[ic]    * Gammainv;   
                     him   = Sol->rhoY[icm] * Sol->rhoY[icm] / Sol->rho[icm] * Gammainv;
+#endif
                     
-					hx[n] = 0.5 * (hi + him);
+                    hx[n] = 0.5 * (hi + him);
                     
-					assert(hx[n] > 0.0);
-				}
-			}
-			
+                    assert(hx[n] > 0.0);
+                }
+            }
+            
             
             g = ud.gravity_strength[1];
             
-			for(i = 0; i < icx; i++) {
+            for(i = 0; i < icx; i++) {
                 n = i * ify;
-				
+                
                 for(j = igy-1; j < ify - igy+1; j++) {
                     m     = n + j;
                     jc    = j * icx + i;
-					jcm   = jc - icx;          
-
-                    /*
-                     hj    = Sol0->rhoY[jc] * Sol0->rhoY[jc] / Sol0->rho[jc] * Gammainv;
-                     hjm   = Sol0->rhoY[jcm] * Sol0->rhoY[jcm] / Sol0->rho[jcm] * Gammainv;
-                     */
+                    jcm   = jc - icx;          
+                    
+#if 0
+                    hj    = Sol0->rhoY[jc] * Sol0->rhoY[jc] / Sol0->rho[jc] * Gammainv;
+                    hjm   = Sol0->rhoY[jcm] * Sol0->rhoY[jcm] / Sol0->rho[jcm] * Gammainv;
+#else
                     hj    = Sol->rhoY[jc] * Sol->rhoY[jc] / Sol->rho[jc] * Gammainv;
                     hjm   = Sol->rhoY[jcm] * Sol->rhoY[jcm] / Sol->rho[jcm] * Gammainv;
+#endif
                     
                     double S     = mpv->HydroState->S0[j];
                     double Sm    = mpv->HydroState->S0[j-1];
@@ -536,91 +544,91 @@ void operator_coefficients(
                     double Ym    = 0.5 * (Sol->rhoY[jcm] / Sol->rho[jcm] + Sol0->rhoY[jcm] / Sol0->rho[jcm]);
                     double Nsq   = - (g/Msq) * 0.5*(Y+Ym) * (S-Sm)/dy;
                     double Nsqsc = 0.25*dt*dt*Nsq;
-                     
+                    
                     gimp  = 1.0 / (1.0 + Nsqsc);
                     
-					hy[m] = 0.5 * (hj + hjm) * gimp;
+                    hy[m] = 0.5 * (hj + hjm) * gimp;
                     hS[m] = Nsqsc * gimp * Gammainv / (g/Msq) / Y;
-                                        
-					assert(hy[m] > 0.0);
-				}
-			}
+                    
+                    assert(hy[m] > 0.0);
+                }
+            }
             
-			for(j = igy; j < icy - igy; j++) {m = j * icx;
-				for(i = igx; i < icx - igx; i++) {n = m + i;
+            for(j = igy; j < icy - igy; j++) {m = j * icx;
+                for(i = igx; i < icx - igx; i++) {n = m + i;
                     /*
-                    hc[n] = ccenter * pow(Sol0->rhoY[n],cexp);
+                     hc[n] = ccenter * pow(Sol0->rhoY[n],cexp);
                      */
                     hc[n] = ccenter * pow(Sol->rhoY[n],cexp);
-				}
-			}
-			
-			
-			break;
-		}
-		case 3: {
-			const int igx = elem->igx;
-			const int icx = elem->icx;
-			const int ifx = elem->ifx;
-			const int igy = elem->igy;
-			const int icy = elem->icy;
-			const int ify = elem->ify;
-			const int igz = elem->igz;
-			const int icz = elem->icz;
-			const int ifz = elem->ifz;
+                }
+            }
+            
+            
+            break;
+        }
+        case 3: {
+            const int igx = elem->igx;
+            const int icx = elem->icx;
+            const int ifx = elem->ifx;
+            const int igy = elem->igy;
+            const int icy = elem->icy;
+            const int ify = elem->ify;
+            const int igz = elem->igz;
+            const int icz = elem->icz;
+            const int ifz = elem->ifz;
             const double dy = elem->dy;
-			double* hx = hplus[0];
-			double* hy = hplus[1];
-			double* hz = hplus[2];
-			double* hc = wcenter;
-			
-			double hi, him, hj, hjm, hk, hkm, g, gimp, Msq;
-			
-			int i, j, k, l, m, n, ic, icm, jc, jcm, kc, kcm;
+            double* hx = hplus[0];
+            double* hy = hplus[1];
+            double* hz = hplus[2];
+            double* hc = wcenter;
+            
+            double hi, him, hj, hjm, hk, hkm, g, gimp, Msq;
+            
+            int i, j, k, l, m, n, ic, icm, jc, jcm, kc, kcm;
             
             Msq = ud.Msq;
             g   = ud.gravity_strength[0];
             assert(g==0.0); /* implicit gravity only for y-direction */
             
-			for(k = igz; k < icz - igz; k++) {l = k * ifx*icy;
+            for(k = igz; k < icz - igz; k++) {l = k * ifx*icy;
                 for(j = igy; j < icy - igy; j++) {m = l + j * ifx;
                     for(i = igx; i < ifx - igx; i++) {n = m + i;
                         ic  = k*icx*icy + j*icx + i;
                         icm = ic - 1; 
-
+                        
                         /*
-                        hi    = 0.5 * (Sol->rhoY[ic] *Sol->rhoY[ic] /Sol->rho[ic]  + Sol0->rhoY[ic] *Sol0->rhoY[ic] /Sol0->rho[ic] ) * Gammainv;   
-                        him   = 0.5 * (Sol->rhoY[icm]*Sol->rhoY[icm]/Sol->rho[icm] + Sol0->rhoY[icm]*Sol0->rhoY[icm]/Sol0->rho[icm]) * Gammainv;
+                         hi    = 0.5 * (Sol->rhoY[ic] *Sol->rhoY[ic] /Sol->rho[ic]  + Sol0->rhoY[ic] *Sol0->rhoY[ic] /Sol0->rho[ic] ) * Gammainv;   
+                         him   = 0.5 * (Sol->rhoY[icm]*Sol->rhoY[icm]/Sol->rho[icm] + Sol0->rhoY[icm]*Sol0->rhoY[icm]/Sol0->rho[icm]) * Gammainv;
                          */
                         hi    = (Sol->rhoY[ic] *Sol->rhoY[ic] /Sol->rho[ic] ) * Gammainv;   
                         him   = (Sol->rhoY[icm]*Sol->rhoY[icm]/Sol->rho[icm]) * Gammainv;
-
+                        
                         /* optional with new time level data only as in 2D part of routine ... */
-
+                        
                         hx[n] = 0.5 * (hi + him);
                         assert(hx[n] > 0.0);
                     }
                 }
             }
-			
+            
             
             g = ud.gravity_strength[1];
             
-			for(i = igx; i < icx - igx; i++) {l = i * ify*icz;
+            for(i = igx; i < icx - igx; i++) {l = i * ify*icz;
                 for(k = igz; k < icz - igz; k++) {m = l + k * ify;
                     for(j = igy; j < ify - igy; j++) {n = m + j;
                         jc  = k*icx*icy + j*icx + i;
                         jcm = jc - icx;          
-
+                        
                         /*
-                        hj       = 0.5 * (Sol->rhoY[jc] *Sol->rhoY[jc] /Sol->rho[jc] + Sol0->rhoY[jc] *Sol0->rhoY[jc] /Sol0->rho[jc] ) * Gammainv;
-                        hjm      = 0.5 * (Sol->rhoY[jcm]*Sol->rhoY[jcm]/Sol->rho[jcm]+ Sol0->rhoY[jcm]*Sol0->rhoY[jcm]/Sol0->rho[jcm]) * Gammainv;
+                         hj       = 0.5 * (Sol->rhoY[jc] *Sol->rhoY[jc] /Sol->rho[jc] + Sol0->rhoY[jc] *Sol0->rhoY[jc] /Sol0->rho[jc] ) * Gammainv;
+                         hjm      = 0.5 * (Sol->rhoY[jcm]*Sol->rhoY[jcm]/Sol->rho[jcm]+ Sol0->rhoY[jcm]*Sol0->rhoY[jcm]/Sol0->rho[jcm]) * Gammainv;
                          */
                         hj       = (Sol->rhoY[jc] *Sol->rhoY[jc] /Sol->rho[jc] ) * Gammainv;
                         hjm      = (Sol->rhoY[jcm]*Sol->rhoY[jcm]/Sol->rho[jcm]) * Gammainv;
-
+                        
                         /* optional with new time level data only as in 2D part of routine ... */
-
+                        
                         double S   = mpv->HydroState->S0[j];
                         double Sm  = mpv->HydroState->S0[j-1];
                         double Y   = 0.5 * (Sol->rhoY[jc]  / Sol->rho[jc]  + Sol0->rhoY[jc]  / Sol0->rho[jc]);
@@ -628,38 +636,38 @@ void operator_coefficients(
                         double Nsq = - (g/Msq) * 0.5*(Y+Ym) * (S-Sm)/dy;
                         
                         gimp  = 1.0 / (1.0 + 0.5*dt*dt*Nsq);
-                    
+                        
                         hy[n] = 0.5 * (hj + hjm) * gimp;
                         
                         assert(hy[n] > 0.0);
                     }
                 }
             }
-
+            
             g = ud.gravity_strength[2];
             assert(g==0.0); /* implicit gravity only for y-direction */
             
-			for(j = igy; j < icy - igy; j++) {l = j * ifz*icx;
-				for(i = igx; i < icx - igx; i++) {m = l + i * ifz;
+            for(j = igy; j < icy - igy; j++) {l = j * ifz*icx;
+                for(i = igx; i < icx - igx; i++) {m = l + i * ifz;
                     for(k = igz; k < ifz - igz; k++) {n = m + k;
                         kc  = k*icx*icy + j*icx + i;
                         kcm = kc - icx*icy;          
-
+                        
                         /*
-                        hk       = 0.5 * (Sol->rhoY[kc] *Sol->rhoY[kc] /Sol->rho[kc] + Sol0->rhoY[kc] *Sol0->rhoY[kc] /Sol0->rho[kc] ) * Gammainv;
-                        hkm      = 0.5 * (Sol->rhoY[kcm]*Sol->rhoY[kcm]/Sol->rho[kcm]+ Sol0->rhoY[kcm]*Sol0->rhoY[kcm]/Sol0->rho[kcm]) * Gammainv;
+                         hk       = 0.5 * (Sol->rhoY[kc] *Sol->rhoY[kc] /Sol->rho[kc] + Sol0->rhoY[kc] *Sol0->rhoY[kc] /Sol0->rho[kc] ) * Gammainv;
+                         hkm      = 0.5 * (Sol->rhoY[kcm]*Sol->rhoY[kcm]/Sol->rho[kcm]+ Sol0->rhoY[kcm]*Sol0->rhoY[kcm]/Sol0->rho[kcm]) * Gammainv;
                          */
                         
                         hk       = (Sol->rhoY[kc] *Sol->rhoY[kc] /Sol->rho[kc] ) * Gammainv;
                         hkm      = (Sol->rhoY[kcm]*Sol->rhoY[kcm]/Sol->rho[kcm]) * Gammainv;
-
+                        
                         /* optional with new time level data only as in 2D part of routine ... */
-                    
+                        
                         hz[n] = 0.5 * (hk + hkm);
                         assert(hz[n] > 0.0); 
                     }
                 }
-			}
+            }
             
             for(k = igz; k < icz - igz; k++) {l = k*icx*icy;
                 for(j = igy; j < icy - igy; j++) {m = l + j*icx;
@@ -668,12 +676,12 @@ void operator_coefficients(
                     }
                 }
             }
-			
-			
-			break;
-		}
-		default: ERROR("ndim not in {1,2,3}");
-	}
+            
+            
+            break;
+        }
+        default: ERROR("ndim not in {1,2,3}");
+    }
 }
 
 /* ========================================================================== */
@@ -693,7 +701,7 @@ static void flux_correction_due_to_pressure_gradients(
     extern User_Data ud;
     
     const int ndim = elem->ndim;
-        
+    
     switch(ndim) {
         case 1: {
             ERROR("function not available");
@@ -701,7 +709,7 @@ static void flux_correction_due_to_pressure_gradients(
         }
             
         case 2: {
-                        
+            
             const int igx = elem->igx;
             const int icx = elem->icx;
             const int ifx = elem->ifx;
@@ -726,11 +734,18 @@ static void flux_correction_due_to_pressure_gradients(
                     int ns   = mc + i - ifx;
                     int ic   = j*icx + i;
                     int icm  = ic - 1;
-                                        
+                    
+#ifdef CORRECT_FLUX_RIGHT_AWAY
+                    f->rhoY[nc] -= dto2dx * (  0.75  *   hplusx[nc] * (dp2[ic]     - dp2[icm]    )  
+                                             + 0.125 * ( hplusx[nc] * (dp2[ic+icx] - dp2[icm+icx])  
+                                                        + hplusx[nc] * (dp2[ic-icx] - dp2[icm-icx])  
+                                                        ));
+#else
                     f->rhoY[nc] = - dto2dx * (  0.75  *   hplusx[nc] * (dp2[ic]     - dp2[icm]    )  
-                                       + 0.125 * ( hplusx[nn] * (dp2[ic+icx] - dp2[icm+icx])  
-                                                 + hplusx[ns] * (dp2[ic-icx] - dp2[icm-icx])  
-                                                  ));
+                                              + 0.125 * ( hplusx[nn] * (dp2[ic+icx] - dp2[icm+icx])  
+                                                         + hplusx[ns] * (dp2[ic-icx] - dp2[icm-icx])  
+                                                         ));
+#endif
                 }
             }  
             
@@ -744,10 +759,18 @@ static void flux_correction_due_to_pressure_gradients(
                     int jc  = j * icx + i;
                     int jcm = jc - icx;
                     
+#ifdef CORRECT_FLUX_RIGHT_AWAY
+                    g->rhoY[mc]  -= dto2dy * (  0.75  *   hplusy[mc] * (dp2[jc]   - dp2[jcm]  ) 
+                                              + 0.125 * ( hplusy[mc] * (dp2[jc+1] - dp2[jcm+1]) 
+                                                         + hplusy[mc] * (dp2[jc-1] - dp2[jcm-1]) 
+                                                         ));
+#else
                     g->rhoY[mc]  = - dto2dy * (  0.75  *   hplusy[mc] * (dp2[jc]   - dp2[jcm]  ) 
-                                       + 0.125 * ( hplusy[me] * (dp2[jc+1] - dp2[jcm+1]) 
-                                                 + hplusy[mw] * (dp2[jc-1] - dp2[jcm-1]) 
-                                                  ));
+                                               + 0.125 * ( hplusy[me] * (dp2[jc+1] - dp2[jcm+1]) 
+                                                          + hplusy[mw] * (dp2[jc-1] - dp2[jcm-1]) 
+                                                          ));
+#endif
+                    
                 }   
             }
             
@@ -772,7 +795,7 @@ static void flux_correction_due_to_pressure_gradients(
             const int dix = 1;
             const int diy = icx; 
             const int diz = icx*icy;            
-                        
+            
             const double cstencil  = 1.0/64.0;
             
             ConsVars* fx = flux[0];
@@ -782,7 +805,7 @@ static void flux_correction_due_to_pressure_gradients(
             const double* hplusx   = hplus[0];
             const double* hplusy   = hplus[1];
             const double* hplusz   = hplus[2];
-                                    
+            
             for(int k = igz; k < icz - igz; k++) {
                 int l = k * ifx*icy;
                 for(int j = igy; j < icy - igy; j++) {
@@ -791,7 +814,7 @@ static void flux_correction_due_to_pressure_gradients(
                         int n = m + i;
                         int ic   = k*diz + j*diy + i*dix;
                         int icm  = ic - dix;
-                                                
+                        
                         fx->rhoY[n] = - dto2dx * hplusx[n] * cstencil *
                         (  36.0 *  (dp2[ic] - dp2[icm])  
                          +  6.0 * (  (dp2[ic+diy] - dp2[icm+diy]) 
@@ -869,150 +892,150 @@ static void flux_correction_due_to_pressure_gradients(
 /* ========================================================================== */
 
 static void rhs_fix_for_open_boundaries(
-										double* rhs, 
-										const ElemSpaceDiscr* elem, 
-										ConsVars* Sol_new, 
-										ConsVars* Sol_old, 
-										ConsVars* flux[3],
-										double dt,
-										MPV* mpv) {
-	
-	extern User_Data ud;
-	
-	const States* HydroState = mpv->HydroState;
-	
-	double** hplus = mpv->Level[0]->wplus;
-	
-	int ndim = elem->ndim;
-	
-	if (elem->left == OPEN) {
-		
-		assert(elem->left == elem->right); /* if you get thrown out here: one-sided open domain not yet impltd */
-		
-		switch(ndim) {
-			case 1: {
-				ERROR("function not available");
-				break;
-			}
-				
-			case 2: {
-				
-				const double factor = 1.0 / (elem->dx * dt);
-				
-				const int igx = elem->igx;
-				const int icx = elem->icx;
-				const int ifx = elem->ifx;
-				
-				const int igy = elem->igy;
-				const int icy = elem->icy;
-				
-				double* hplusx  = hplus[0];
-				
-				double rhs_sum, coeff_sum_right, coeff_sum_left, du;
-				int j, mc, nc_left, nc_right, mf, nf_left, nf_right, count;
-				
-				count = 0;
-				rhs_sum  = 0.0;
-				coeff_sum_left  = 0.0;
-				coeff_sum_right = 0.0;
-				
-				for(j = igy; j < icy - igy; j++) {
-					mf = j * ifx;
-					nf_left  = mf + igx;
-					nf_right = mf + ifx - igx - 1;
-					
-					rhs_sum         += (flux[0]->rhoe[nf_right] - flux[0]->rhoe[nf_left]);
-					coeff_sum_left  += HydroState->rho0[j] * hplusx[nf_left]; 
-					coeff_sum_right += HydroState->rho0[j] * hplusx[nf_right];
-					
-					count++; 
-				} 
-				
-				rhs_sum         /= count;
-				coeff_sum_left  /= count;
-				coeff_sum_right /= count;
-				du = - rhs_sum / (coeff_sum_left + coeff_sum_right);
-				
-				for(j = igy; j < icy - igy; j++) {
-					mc = j * icx;
-					mf = j * ifx;
-					nc_left  = mc + igx;
-					nc_right = mc + icx - igx - 1;
-					nf_left  = mf + igx;
-					nf_right = mf + ifx - igx - 1;
-					
-					rhs[nc_left]  -= factor * du * HydroState->rho0[j] * hplusx[nf_left];
-					rhs[nc_right] += factor * du * HydroState->rho0[j] * hplusx[nf_right];
-					
-				}
-				
-				mpv->du = du;
-				
-				break;
-			}
-			case 3: {
-				ERROR("ndim = 3 - option not implemented (kinetic_energy_change_explicit() )");
-			}
-			default: ERROR("ndim not in {1, 2, 3}");
-		}
-	}
+                                        double* rhs, 
+                                        const ElemSpaceDiscr* elem, 
+                                        ConsVars* Sol_new, 
+                                        ConsVars* Sol_old, 
+                                        ConsVars* flux[3],
+                                        double dt,
+                                        MPV* mpv) {
+    
+    extern User_Data ud;
+    
+    const States* HydroState = mpv->HydroState;
+    
+    double** hplus = mpv->Level[0]->wplus;
+    
+    int ndim = elem->ndim;
+    
+    if (elem->left == OPEN) {
+        
+        assert(elem->left == elem->right); /* if you get thrown out here: one-sided open domain not yet impltd */
+        
+        switch(ndim) {
+            case 1: {
+                ERROR("function not available");
+                break;
+            }
+                
+            case 2: {
+                
+                const double factor = 1.0 / (elem->dx * dt);
+                
+                const int igx = elem->igx;
+                const int icx = elem->icx;
+                const int ifx = elem->ifx;
+                
+                const int igy = elem->igy;
+                const int icy = elem->icy;
+                
+                double* hplusx  = hplus[0];
+                
+                double rhs_sum, coeff_sum_right, coeff_sum_left, du;
+                int j, mc, nc_left, nc_right, mf, nf_left, nf_right, count;
+                
+                count = 0;
+                rhs_sum  = 0.0;
+                coeff_sum_left  = 0.0;
+                coeff_sum_right = 0.0;
+                
+                for(j = igy; j < icy - igy; j++) {
+                    mf = j * ifx;
+                    nf_left  = mf + igx;
+                    nf_right = mf + ifx - igx - 1;
+                    
+                    rhs_sum         += (flux[0]->rhoe[nf_right] - flux[0]->rhoe[nf_left]);
+                    coeff_sum_left  += HydroState->rho0[j] * hplusx[nf_left]; 
+                    coeff_sum_right += HydroState->rho0[j] * hplusx[nf_right];
+                    
+                    count++; 
+                } 
+                
+                rhs_sum         /= count;
+                coeff_sum_left  /= count;
+                coeff_sum_right /= count;
+                du = - rhs_sum / (coeff_sum_left + coeff_sum_right);
+                
+                for(j = igy; j < icy - igy; j++) {
+                    mc = j * icx;
+                    mf = j * ifx;
+                    nc_left  = mc + igx;
+                    nc_right = mc + icx - igx - 1;
+                    nf_left  = mf + igx;
+                    nf_right = mf + ifx - igx - 1;
+                    
+                    rhs[nc_left]  -= factor * du * HydroState->rho0[j] * hplusx[nf_left];
+                    rhs[nc_right] += factor * du * HydroState->rho0[j] * hplusx[nf_right];
+                    
+                }
+                
+                mpv->du = du;
+                
+                break;
+            }
+            case 3: {
+                ERROR("ndim = 3 - option not implemented (kinetic_energy_change_explicit() )");
+            }
+            default: ERROR("ndim not in {1, 2, 3}");
+        }
+    }
 }
 
 /* ========================================================================== */
 
 static void flux_fix_for_open_boundaries(
-										 ConsVars* flux[3],
-										 const ElemSpaceDiscr* elem, 
-										 MPV* mpv) {
-	
-	const States* HydroState = mpv->HydroState;    
-	double** hplus           = mpv->Level[0]->wplus;
-	double du                = mpv->du;
-	double Sdu               = mpv->Sdu;
-	
-	int ndim = elem->ndim;
-	
-	if (elem->left == OPEN) {
-		
-		assert(elem->left == elem->right); /* if you get thrown out here: one-sided open domain not yet impltd */
-		
-		switch(ndim) {
-			case 1: {
-				ERROR("function not available");
-				break;
-			}
-				
-			case 2: {
-				
-				const int igx = elem->igx;
-				const int ifx = elem->ifx;
-				
-				const int igy = elem->igy;
-				const int icy = elem->icy;
-				
-				double* hplusx  = hplus[0];
-				
-				int j, mf, nf_left, nf_right;
-				
-				for(j = igy; j < icy - igy; j++) {
-					mf = j * ifx;
-					nf_left  = mf + igx;
-					nf_right = mf + ifx - igx - 1;
-					
-					flux[0]->rho[nf_left]   -= Sdu * HydroState->rho0[j];
-					flux[0]->rho[nf_right]  += Sdu * HydroState->rho0[j];
-					flux[0]->rhoe[nf_left]  -= du  * HydroState->rho0[j] * hplusx[nf_left];
-					flux[0]->rhoe[nf_right] += du  * HydroState->rho0[j] * hplusx[nf_right];
-				} 
-				
-				break;
-			}
-			case 3: {
-				ERROR("ndim = 3 - option not implemented (kinetic_energy_change_explicit() )");
-			}
-			default: ERROR("ndim not in {1, 2, 3}");
-		}
-	}
+                                         ConsVars* flux[3],
+                                         const ElemSpaceDiscr* elem, 
+                                         MPV* mpv) {
+    
+    const States* HydroState = mpv->HydroState;    
+    double** hplus           = mpv->Level[0]->wplus;
+    double du                = mpv->du;
+    double Sdu               = mpv->Sdu;
+    
+    int ndim = elem->ndim;
+    
+    if (elem->left == OPEN) {
+        
+        assert(elem->left == elem->right); /* if you get thrown out here: one-sided open domain not yet impltd */
+        
+        switch(ndim) {
+            case 1: {
+                ERROR("function not available");
+                break;
+            }
+                
+            case 2: {
+                
+                const int igx = elem->igx;
+                const int ifx = elem->ifx;
+                
+                const int igy = elem->igy;
+                const int icy = elem->icy;
+                
+                double* hplusx  = hplus[0];
+                
+                int j, mf, nf_left, nf_right;
+                
+                for(j = igy; j < icy - igy; j++) {
+                    mf = j * ifx;
+                    nf_left  = mf + igx;
+                    nf_right = mf + ifx - igx - 1;
+                    
+                    flux[0]->rho[nf_left]   -= Sdu * HydroState->rho0[j];
+                    flux[0]->rho[nf_right]  += Sdu * HydroState->rho0[j];
+                    flux[0]->rhoe[nf_left]  -= du  * HydroState->rho0[j] * hplusx[nf_left];
+                    flux[0]->rhoe[nf_right] += du  * HydroState->rho0[j] * hplusx[nf_right];
+                } 
+                
+                break;
+            }
+            case 3: {
+                ERROR("ndim = 3 - option not implemented (kinetic_energy_change_explicit() )");
+            }
+            default: ERROR("ndim not in {1, 2, 3}");
+        }
+    }
 }
 
 /* ========================================================================== */
@@ -1039,7 +1062,7 @@ void update_SI_MIDPT_buoyancy(ConsVars* Sol,
             printf("Gravity not implemented for 1D\n");
             return;
             break;
-
+            
         case 2: {
             
             const int icx = elem->icx;
@@ -1047,7 +1070,7 @@ void update_SI_MIDPT_buoyancy(ConsVars* Sol,
             const int icy = elem->icy;
             const int igy = elem->igy;
             const int ify = elem->ify;
-                        
+            
             for (int j=igy; j<icy-igy; j++) {
                 int ncj = j*icx;
                 int nfj = j;
@@ -1090,7 +1113,7 @@ void update_SI_MIDPT_buoyancy(ConsVars* Sol,
             }
         }
             break;
-
+            
         default:
             break;
     }

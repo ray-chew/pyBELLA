@@ -8,9 +8,9 @@
 #define HDFFORMAT  
 
 /* Output options in main.c for debugging;  1 -> output */
-#define OUTPUT_SUBSTEPS 0
-#define OUTPUT_SPLITSTEPS 0
-#define OUTPUT_SUBSTEPS_PREDICTOR 0
+#define OUTPUT_SUBSTEPS 1
+#define OUTPUT_SPLITSTEPS 1
+#define OUTPUT_SUBSTEPS_PREDICTOR 1
 
 /*
 #define OUTPUT_FLUXES
@@ -60,6 +60,7 @@
 /* First projection options */
 
 #define PROJECTION1 1              /* switch for first projection should be on "1" normally       */
+#define CORRECT_FLUX_RIGHT_AWAY
 
 /* Second projection options */
 #define PROJECTION2 1              /* switch for second projection should be on "1" normally      */

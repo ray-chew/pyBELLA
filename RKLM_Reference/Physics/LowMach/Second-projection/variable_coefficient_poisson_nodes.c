@@ -68,7 +68,7 @@ void set_periodic_data(double *p,
         for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
             for(i = igx; i < icx - igx; i++) {m = l + i;
                 n_left  = m + igy * icx;
-                n_right = m + (icx - igx - 1) * icx;
+                n_right = m + (icy - igy - 1) * icx;
                 p[n_right] = p[n_left];
             }
         }

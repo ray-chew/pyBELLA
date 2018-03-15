@@ -174,7 +174,7 @@ void second_projection(
     }
      
          
-#if 0   
+#if 0  
     
     if(rhs_output_count<10) {
         sprintf(step_string, "00%d", rhs_output_count);
@@ -206,7 +206,7 @@ void second_projection(
 	variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, x_periodic, y_periodic, z_periodic, dt);
     correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);
     
-#if 0   
+#if 0
     for(ii=0; ii<nc; ii++) rhs[ii] = 0.0;
 
     if(rhs_output_count<10) {

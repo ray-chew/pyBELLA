@@ -119,8 +119,10 @@ int main( void )
             /* divergence-controlled advective fluxes at the half time level */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
             store_advective_fluxes(adv_flux, (const ConsVars**)flux, elem);
-            flux_correction(flux, elem, Sol, Sol0, t, dt, step);                
+            flux_correction(flux, elem, Sol, Sol0, t, dt, step);            
+#ifndef CORRECT_FLUX_RIGHT_AWAY
             update_advective_fluxes(flux, (const VectorField*)adv_flux, elem, node, dt);    
+#endif
             ConsVars_set(Sol, Sol0, elem->nc);
             
             printf("\n\n-----------------------------------------------------------------------------------------");

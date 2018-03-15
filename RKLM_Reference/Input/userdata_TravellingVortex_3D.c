@@ -97,7 +97,7 @@ void User_Data_init(User_Data* ud) {
     
 	/* flow domain */
 	ud->xmin = - 5000/ud->h_ref;  
-	ud->xmax =   5000/ud->h_ref;  
+	ud->xmax =  15000/ud->h_ref;  
 	ud->ymin = - 5000/ud->h_ref;
 	ud->ymax =   5000/ud->h_ref; 
 	ud->zmin = - 5000/ud->h_ref;
@@ -131,7 +131,7 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx =  64+1; /*  */
+	ud->inx = 128+1; /*  */
 	ud->iny =  64+1; /*  */
 	ud->inz =  1;
 
@@ -213,6 +213,12 @@ void Sol_initial(ConsVars* Sol,
     const double fac     = 1*1024.0; /* 4*1024.0 */
     const double xc      = 0.0;
     const double yc      = 0.0;
+    
+    /*periodic setting: */
+    const double xcm     = xc-(ud.xmax-ud.xmin);
+    const double xcp     = xc+(ud.xmax-ud.xmin);
+    const double ycm     = yc-(ud.ymax-ud.ymin);
+    const double ycp     = yc+(ud.ymax-ud.ymin);
 			
 	const int icx  = elem->icx;
 	const int icy  = elem->icy;
@@ -224,11 +230,12 @@ void Sol_initial(ConsVars* Sol,
     const int icxn = node->icx;
     const int icyn = node->icy;
     const int iczn = node->icz;
-	    
+
 	int i, j, k, l, m, n;
 	double x, y, z;
 	double rho, u, v, w, rhoY, theta, T, p_hydro;
     double r, uth;
+    double xcc, ycc;
 	
     double g;
 	                
@@ -245,14 +252,18 @@ void Sol_initial(ConsVars* Sol,
             m = l + j * icx;
             y = elem->y[j];
 			
+            ycc = (fabs(y-yc) < fabs(y-ycm) ? (fabs(y-yc) < fabs(y-ycm) ? yc : ycp) : ycm);
+            
             for(i = 0; i < icx; i++) {
                 n = m + i;                
                 x       = elem->x[i];
-                r       = sqrt((x-xc)*(x-xc) + (y-yc)*(y-yc));
+                xcc = (fabs(x-xc) < fabs(x-xcm) ? (fabs(x-xc) < fabs(x-xcm) ? xc : xcp) : xcm);
+
+                r       = sqrt((x-xcc)*(x-xcc) + (y-ycc)*(y-ycc));
                 uth     = rotdir * (r < R0 ? fac * pow( 1.0-r/R0, 6) * pow( r/R0, 6) : 0.0);
                 
-                u       = u0 + uth * (-y/r);
-                v       = v0 + uth * (+x/r);
+                u       = u0 + uth * (-(y-ycc)/r);
+                v       = v0 + uth * (+(x-xcc)/r);
                 w       = w0;
                 p_hydro = mpv->HydroState->p0[j];
                 rhoY    = mpv->HydroState->rhoY0[j];

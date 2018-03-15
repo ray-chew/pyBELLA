@@ -573,21 +573,15 @@ void EnthalpyWeightedLap_bilinear_p(
                     o_n   = oy + 1;
                     o_s   = oy;
                     
-                    lap[n]  = oodx2 * ( (  hplusx[o_e] * (p[n_e ] - p[n_c ]) - hplusx[o_w] * (p[n_c ] - p[n_w ]) 
-                                         ) 
-                                       + 0.125 * (  hplusx[o_e] * (  (p[n_ne] - p[n_n ] ) - (p[n_e ] - p[n_c ] ) ) 
-                                                  - hplusx[o_w] * (  (p[n_n ] - p[n_nw] ) - (p[n_c ] - p[n_w ] ) )  
-                                                  - hplusx[o_e] * (  (p[n_e ] - p[n_c ] ) - (p[n_se] - p[n_s ] ) ) 
-                                                  + hplusx[o_w] * (  (p[n_c ] - p[n_w ] ) - (p[n_s ] - p[n_sw] ) ) 
+                    lap[n]  = oodx2 * (  0.75  * ( hplusx[o_e] * (p[n_e ] - p[n_c ]) - hplusx[o_w] * (p[n_c ] - p[n_w ]) ) 
+                                       + 0.125 * ( hplusx[o_e] * ( ( p[n_ne] - p[n_n ] ) + ( p[n_se] - p[n_s ] ) ) 
+                                                 - hplusx[o_w] * ( ( p[n_n ] - p[n_nw] ) + ( p[n_s ] - p[n_sw] ) )  
                                                   )
                                        );
                     
-                    lap[n] += oody2 * ( (  hplusy[o_n] * ( p[n_n ] - p[n_c ] ) - hplusy[o_s] * ( p[n_c ] - p[n_s ] ) 
-                                         )
-                                       + 0.125 * (  hplusy[o_n] * (  (p[n_ne] - p[n_e ] ) - (p[n_n ] - p[n_c ] ) ) 
-                                                  - hplusy[o_s] * (  (p[n_e ] - p[n_se] ) - (p[n_c ] - p[n_s ] ) ) 
-                                                  - hplusy[o_n] * (  (p[n_n ] - p[n_c ] ) - (p[n_nw] - p[n_w ] ) ) 
-                                                  + hplusy[o_s] * (  (p[n_c ] - p[n_s ] ) - (p[n_w ] - p[n_sw] ) ) 
+                    lap[n] += oody2 * (  0.75  * ( hplusy[o_n] * (p[n_n ] - p[n_c ]) - hplusy[o_s] * (p[n_c ] - p[n_s ]) )
+                                       + 0.125 * ( hplusy[o_n] * ( ( p[n_ne] - p[n_e ] ) + ( p[n_nw] - p[n_w ] ) ) 
+                                                 - hplusy[o_s] * ( ( p[n_e ] - p[n_se] ) + ( p[n_w ] - p[n_sw] ) ) 
                                                   )
                                        );
                     
