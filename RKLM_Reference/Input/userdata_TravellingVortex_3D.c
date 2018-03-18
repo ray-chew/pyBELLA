@@ -100,8 +100,8 @@ void User_Data_init(User_Data* ud) {
 	ud->xmax =   5000/ud->h_ref;  
 	ud->ymin = - 5000/ud->h_ref;
 	ud->ymax =   5000/ud->h_ref; 
-	ud->zmin = - 5000/ud->h_ref;
-	ud->zmax =   5000/ud->h_ref;
+	ud->zmin = - 5000/ud->h_ref/8.0;
+	ud->zmax =   5000/ud->h_ref/8.0;
 
 	/* boundary/initial conditions */
 	ud->wind_speed        = 10.0/ud->u_ref;              /* velocity in [u_ref] */
@@ -124,16 +124,16 @@ void User_Data_init(User_Data* ud) {
 	
     /* time discretization */
     ud->time_integrator      = SI_MIDPT;  
-	ud->CFL                  = 0.45;       
+	ud->CFL                  = 0.96;       
     ud->dtfixed0             = 10000.999;
     ud->dtfixed              = 10000.999;   
     
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx =  192+1; /*  */
-	ud->iny =  192+1; /*  */
-	ud->inz =  1;
+	ud->inx =  64+1; /*  */
+	ud->iny =  64+1; /*  */
+	ud->inz =     1;
 
     /* explicit predictor step */
 	/* Recovery */

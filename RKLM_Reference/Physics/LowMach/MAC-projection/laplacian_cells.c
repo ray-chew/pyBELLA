@@ -67,12 +67,13 @@ double precon_c_diag_prepare(
             const double dy     = elem->dy;
             const double oodx2  = 1.0 / (dx * dx);
             const double oody2  = 1.0 / (dy * dy);
-            
-            const double pnc    = 1.0;
-            
+                        
             const double* hplusx = hplus[0];
             const double* hplusy = hplus[1];
             const double* hc     = hcenter;
+
+            const double b = P1_ALTERNATIVE_STENCIL_WEIGHT; 
+            const double a = 1.0-2.0*b;
             
             for(int nc=0; nc<elem->nc; nc++) diag_c[nc] = diaginv_c[nc] = 0.0;
             
@@ -86,25 +87,10 @@ double precon_c_diag_prepare(
                     int o_n = oy + 1;
                     int o_s = oy;
                     
-                    diag_c[nc]  = oodx2 * ( (  hplusx[o_e] * (-pnc) - hplusx[o_w] * pnc
-                                         )
-                                       + 0.125 * (  hplusx[o_e] * (   pnc )
-                                                  - hplusx[o_w] * ( - pnc )
-                                                  - hplusx[o_e] * ( - pnc )
-                                                  + hplusx[o_w] * (   pnc )
-                                                  )
-                                       );
+                    diag_c[nc]  = - a * oodx2 * ( hplusx[o_e] + hplusx[o_w] );
+                    diag_c[nc] += - a * oody2 * ( hplusy[o_n] + hplusy[o_s] );
                     
-                    diag_c[nc] += oody2 * ( (  hplusy[o_n] * ( - pnc ) - hplusy[o_s] * ( pnc )
-                                         )
-                                       + 0.125 * (  hplusy[o_n] * (  pnc )
-                                                  - hplusy[o_s] * (- pnc )
-                                                  - hplusy[o_n] * (- pnc )
-                                                  + hplusy[o_s] * (  pnc )
-                                                  )
-                                       );
-                    
-                    diag_c[nc] += hc[nc] * pnc;
+                    diag_c[nc] += hc[nc];
                 }
             }
 
@@ -245,6 +231,9 @@ double precon_c_column_prepare(
                     int oy  = i * ify + j;
                     int o_n = oy + 1;
                     int o_s = oy;
+                    
+                    /* !!!! this could need fixing for the  P1_ALTERNATIVE_STENCIL  option ! */
+                    assert(0);
                     
                     tridiago[0][nc] = oody2 * hplusy[o_s]; 
                     tridiago[1][nc] = - oody2 * (hplusy[o_n] + hplusy[o_s])
@@ -551,6 +540,10 @@ void EnthalpyWeightedLap_bilinear_p(
             
             int i, j, m, n;
             
+            const double b = P1_ALTERNATIVE_STENCIL_WEIGHT;  
+            const double a = 1.0-2.0*b;
+
+            
             for(j = igy; j < icy - igy; j++) {m = j * icx;				
                 for(i = igx; i < icx - igx; i++) {n  = m + i;
                     
@@ -573,16 +566,16 @@ void EnthalpyWeightedLap_bilinear_p(
                     o_n   = oy + 1;
                     o_s   = oy;
                     
-                    lap[n]  = oodx2 * (  0.75  * ( hplusx[o_e] * (p[n_e ] - p[n_c ]) - hplusx[o_w] * (p[n_c ] - p[n_w ]) ) 
-                                       + 0.125 * ( hplusx[o_e] * ( ( p[n_ne] - p[n_n ] ) + ( p[n_se] - p[n_s ] ) ) 
-                                                 - hplusx[o_w] * ( ( p[n_n ] - p[n_nw] ) + ( p[n_s ] - p[n_sw] ) )  
-                                                  )
+                    lap[n]  = oodx2 * (  a * ( hplusx[o_e] * (p[n_e ] - p[n_c ]) - hplusx[o_w] * (p[n_c ] - p[n_w ]) ) 
+                                       + b * ( hplusx[o_e] * ( ( p[n_ne] - p[n_n ] ) + ( p[n_se] - p[n_s ] ) ) 
+                                             - hplusx[o_w] * ( ( p[n_n ] - p[n_nw] ) + ( p[n_s ] - p[n_sw] ) )  
+                                             )
                                        );
                     
-                    lap[n] += oody2 * (  0.75  * ( hplusy[o_n] * (p[n_n ] - p[n_c ]) - hplusy[o_s] * (p[n_c ] - p[n_s ]) )
-                                       + 0.125 * ( hplusy[o_n] * ( ( p[n_ne] - p[n_e ] ) + ( p[n_nw] - p[n_w ] ) ) 
-                                                 - hplusy[o_s] * ( ( p[n_e ] - p[n_se] ) + ( p[n_w ] - p[n_sw] ) ) 
-                                                  )
+                    lap[n] += oody2 * (  a * ( hplusy[o_n] * (p[n_n ] - p[n_c ]) - hplusy[o_s] * (p[n_c ] - p[n_s ]) )
+                                       + b * ( hplusy[o_n] * ( ( p[n_ne] - p[n_e ] ) + ( p[n_nw] - p[n_w ] ) ) 
+                                             - hplusy[o_s] * ( ( p[n_e ] - p[n_se] ) + ( p[n_w ] - p[n_sw] ) ) 
+                                             )
                                        );
                     
                     lap[n] += hc[n] * p[n_c];

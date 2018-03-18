@@ -62,6 +62,9 @@ int main( void )
 
     set_wall_massflux(bdry, Sol, elem);
     Set_Explicit_Boundary_Data(Sol, elem);
+    second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 1.0, 0.0, 1.0);
+    cell_pressure_to_nodal_pressure(mpv, elem, node);
+    
     ud.compressibility = compressibility(0);
         
 	if(ud.write_file == ON) 
@@ -109,9 +112,10 @@ int main( void )
              advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
              advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
              advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+             - symmetrized splitting instead of simple splitting does not improve vortex symmetry  
              */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
-            advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+            advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
 
             /* explicit part of Euler backward gravity over half time step */
             euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt);
@@ -125,7 +129,7 @@ int main( void )
 #endif
             ConsVars_set(Sol, Sol0, elem->nc);
             // if (step == 0) cell_pressure_to_nodal_pressure(mpv, elem, node);
-            if (1) cell_pressure_to_nodal_pressure(mpv, elem, node);
+            // if (1) cell_pressure_to_nodal_pressure(mpv, elem, node);
 
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nfull time step with predicted advective flux");

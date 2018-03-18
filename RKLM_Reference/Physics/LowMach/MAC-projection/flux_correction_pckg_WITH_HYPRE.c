@@ -509,8 +509,8 @@ void operator_coefficients(
                     hi    = Sol0->rhoY[ic] * Sol0->rhoY[ic] / Sol0->rho[ic]    * Gammainv;   
                     him   = Sol0->rhoY[icm] * Sol0->rhoY[icm] / Sol0->rho[icm] * Gammainv;
 #else
-                    hi    = Sol->rhoY[ic] * Sol->rhoY[ic] / Sol->rho[ic]    * Gammainv;   
-                    him   = Sol->rhoY[icm] * Sol->rhoY[icm] / Sol->rho[icm] * Gammainv;
+                    hi    = Sol0->rhoY[ic] * Sol->rhoY[ic] / Sol->rho[ic]    * Gammainv;   
+                    him   = Sol0->rhoY[icm] * Sol->rhoY[icm] / Sol->rho[icm] * Gammainv;
 #endif
                     
                     hx[n] = 0.5 * (hi + him);
@@ -534,8 +534,8 @@ void operator_coefficients(
                     hj    = Sol0->rhoY[jc] * Sol0->rhoY[jc] / Sol0->rho[jc] * Gammainv;
                     hjm   = Sol0->rhoY[jcm] * Sol0->rhoY[jcm] / Sol0->rho[jcm] * Gammainv;
 #else
-                    hj    = Sol->rhoY[jc] * Sol->rhoY[jc] / Sol->rho[jc] * Gammainv;
-                    hjm   = Sol->rhoY[jcm] * Sol->rhoY[jcm] / Sol->rho[jcm] * Gammainv;
+                    hj    = Sol0->rhoY[jc] * Sol->rhoY[jc] / Sol->rho[jc] * Gammainv;
+                    hjm   = Sol0->rhoY[jcm] * Sol->rhoY[jcm] / Sol->rho[jcm] * Gammainv;
 #endif
                     
                     double S     = mpv->HydroState->S0[j];
@@ -719,7 +719,10 @@ static void flux_correction_due_to_pressure_gradients(
             
             const double dto2dx = 0.5 * dt / elem->dx;
             const double dto2dy = 0.5 * dt / elem->dy;
-            
+
+            const double b = P1_ALTERNATIVE_STENCIL_WEIGHT; 
+            const double a = 1.0-2.0*b;
+
             ConsVars* f = flux[0];
             ConsVars* g = flux[1];
             
@@ -736,15 +739,15 @@ static void flux_correction_due_to_pressure_gradients(
                     int icm  = ic - 1;
                     
 #ifdef CORRECT_FLUX_RIGHT_AWAY
-                    f->rhoY[nc] -= dto2dx * (  0.75  *   hplusx[nc] * (dp2[ic]     - dp2[icm]    )  
-                                             + 0.125 * ( hplusx[nc] * (dp2[ic+icx] - dp2[icm+icx])  
-                                                        + hplusx[nc] * (dp2[ic-icx] - dp2[icm-icx])  
-                                                        ));
+                    f->rhoY[nc] -= dto2dx * (  a *   hplusx[nc] * (dp2[ic]     - dp2[icm]    )  
+                                             + b * ( hplusx[nc] * (dp2[ic+icx] - dp2[icm+icx])  
+                                                   + hplusx[nc] * (dp2[ic-icx] - dp2[icm-icx])  
+                                                   ));
 #else
-                    f->rhoY[nc] = - dto2dx * (  0.75  *   hplusx[nc] * (dp2[ic]     - dp2[icm]    )  
-                                              + 0.125 * ( hplusx[nn] * (dp2[ic+icx] - dp2[icm+icx])  
-                                                         + hplusx[ns] * (dp2[ic-icx] - dp2[icm-icx])  
-                                                         ));
+                    f->rhoY[nc] = -dto2dx * (  a *   hplusx[nc] * (dp2[ic]     - dp2[icm]    )  
+                                             + b * ( hplusx[nn] * (dp2[ic+icx] - dp2[icm+icx])  
+                                                   + hplusx[ns] * (dp2[ic-icx] - dp2[icm-icx])  
+                                                   ));
 #endif
                 }
             }  
@@ -760,15 +763,15 @@ static void flux_correction_due_to_pressure_gradients(
                     int jcm = jc - icx;
                     
 #ifdef CORRECT_FLUX_RIGHT_AWAY
-                    g->rhoY[mc]  -= dto2dy * (  0.75  *   hplusy[mc] * (dp2[jc]   - dp2[jcm]  ) 
-                                              + 0.125 * ( hplusy[mc] * (dp2[jc+1] - dp2[jcm+1]) 
-                                                         + hplusy[mc] * (dp2[jc-1] - dp2[jcm-1]) 
-                                                         ));
+                    g->rhoY[mc]  -= dto2dy * (  a *   hplusy[mc] * (dp2[jc]   - dp2[jcm]  ) 
+                                              + b * ( hplusy[mc] * (dp2[jc+1] - dp2[jcm+1]) 
+                                                    + hplusy[mc] * (dp2[jc-1] - dp2[jcm-1]) 
+                                                    ));
 #else
-                    g->rhoY[mc]  = - dto2dy * (  0.75  *   hplusy[mc] * (dp2[jc]   - dp2[jcm]  ) 
-                                               + 0.125 * ( hplusy[me] * (dp2[jc+1] - dp2[jcm+1]) 
-                                                          + hplusy[mw] * (dp2[jc-1] - dp2[jcm-1]) 
-                                                          ));
+                    g->rhoY[mc]  = -dto2dy * (  a *   hplusy[mc] * (dp2[jc]   - dp2[jcm]  ) 
+                                              + b * ( hplusy[me] * (dp2[jc+1] - dp2[jcm+1]) 
+                                                    + hplusy[mw] * (dp2[jc-1] - dp2[jcm-1]) 
+                                                    ));
 #endif
                     
                 }   

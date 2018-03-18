@@ -22,14 +22,14 @@ test_case = 'Travelling-Vortex';
 
 showmode = 1;
 separate_signs = 1;
-filledcontours = 1;
-fixed_contours = 1;
+filledcontours = 0;
+fixed_contours = 0;
 fixed_contour_step = 0;
 no_of_contours = 10;
 show_increments = 0;
 symmetry = 0;        % in {0,1}
 symmetrytest = 0;
-showdummycells = 1;
+showdummycells = 0;
 
 % th0 = -0.0015/300;
 % dth = 5e-4/300;
@@ -95,8 +95,8 @@ elseif strcmp(test_case, 'Rising-Bubble')
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Travelling-Vortex')
-    ncx = 192;  
-    ncy = 192; 
+    ncx = 64;  
+    ncy = 64; 
     L   = 1.0;  
     x0  = 0.5;
     H   = 1.0; 

@@ -164,6 +164,7 @@ void Explicit_step_and_flux(
         
 		/* flux computation*/
         recovery(Lefts, Rights, Solk, Fluxes, lambda, nmax, adv_fluxes_from, muscl_on_off);
+        /* recovery(Lefts, Rights, Solk, Fluxes, lambda, nmax, FLUX_INTERNAL, muscl_on_off); */
         check_flux_bcs(Lefts, Rights, nmax, kcache, njump, elem, SplitStep);
                     
         hllestar(Fluxes, Lefts, Rights, Solk, lambda, nmax, adv_fluxes_from);

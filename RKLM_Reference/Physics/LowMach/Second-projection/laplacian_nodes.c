@@ -82,19 +82,15 @@ double precon_diag_prepare(
             const double oodx2 = 0.5 / (dx * dx);
             const double oody2 = 0.5 / (dy * dy);
             const double nine_pt = (0.25 * (1.0 + P2_DIAGONAL_FIVE_POINT)) * P2_FULL_STENCIL;
-            
-            double flux_x_lower, flux_x_upper, flux_y_left, flux_y_right, hc;
-            double dsq_p_dxdy;
-            
-            double pnn      = 1.0;
-            double pnn1     = 1.0;
-            double pnnicxn  = 1.0;
-            double pnn1icxn = 1.0;
-            
+                        
             int i, j, me, mn, ne, nn, nn1, nnicxn, nn1icxn;
             
-            for(nn=0; nn<node->nc; nn++) diag[nn] = diaginv[nn] = 0.0;
+            double wx = (-1.0+nine_pt) * oodx2;
+            double wy = (-1.0+nine_pt) * oody2;
             
+
+            for(nn=0; nn<node->nc; nn++) diag[nn] = diaginv[nn] = 0.0;
+
             for(j = igye; j < icye - igye; j++) {
                 me   = j * icxe;
                 mn   = j * icxn;
@@ -107,66 +103,15 @@ double precon_diag_prepare(
                     nnicxn   = nn + icxn;
                     nn1icxn  = nn + 1 + icxn;
                     
-                    /* location nn */
-                    dsq_p_dxdy    = pnn;
-                    
-                    flux_x_lower  = hplusx[ne] * oodx2 * ( - pnn + nine_pt * dsq_p_dxdy);
-                    flux_x_upper  = hplusx[ne] * oodx2 * (       - nine_pt * dsq_p_dxdy);
-                    
-                    flux_y_left   = hplusy[ne] * oody2 * ( - pnn + nine_pt * dsq_p_dxdy);
-                    flux_y_right  = hplusy[ne] * oody2 * (       - nine_pt * dsq_p_dxdy);
-                    
-                    hc            = 0.25 * hcenter[ne];
-                    
-                    diag[nn]      += (  flux_x_lower + flux_y_left ) + hc*pnn;
-                    
-                    
-                    
-                    /* location nn1 */
-                    dsq_p_dxdy    = - pnn1;
-                    
-                    flux_x_lower  = hplusx[ne] * oodx2 * ( pnn1 + nine_pt * dsq_p_dxdy);
-                    flux_x_upper  = hplusx[ne] * oodx2 * (      - nine_pt * dsq_p_dxdy);
-                    
-                    flux_y_left   = hplusy[ne] * oody2 * (      + nine_pt * dsq_p_dxdy);
-                    flux_y_right  = hplusy[ne] * oody2 * (-pnn1 - nine_pt * dsq_p_dxdy);
-                    
-                    hc            = 0.25 * hcenter[ne];
-                    
-                    diag[nn1]     += (- flux_x_lower + flux_y_right) + hc*pnn1;
-                    
-                    
-                    
-                    /* location nnicxn */
-                    dsq_p_dxdy    = - pnnicxn;
-                    
-                    flux_x_lower  = hplusx[ne] * oodx2 * (         + nine_pt * dsq_p_dxdy);
-                    flux_x_upper  = hplusx[ne] * oodx2 * (-pnnicxn - nine_pt * dsq_p_dxdy);
-                    
-                    flux_y_left   = hplusy[ne] * oody2 * ( pnnicxn + nine_pt * dsq_p_dxdy);
-                    flux_y_right  = hplusy[ne] * oody2 * (         - nine_pt * dsq_p_dxdy);
-                    
-                    hc            = 0.25 * hcenter[ne];
-                    
-                    diag[nnicxn]  += (  flux_x_upper - flux_y_left ) + hc*pnnicxn ;
-                    
-                    
-                    
-                    /* location nn1icxn */
-                    dsq_p_dxdy    = pnn1icxn;
-                    
-                    flux_x_lower  = hplusx[ne] * oodx2 * (          + nine_pt * dsq_p_dxdy);
-                    flux_x_upper  = hplusx[ne] * oodx2 * ( pnn1icxn - nine_pt * dsq_p_dxdy);
-                    
-                    flux_y_left   = hplusy[ne] * oody2 * (          + nine_pt * dsq_p_dxdy);
-                    flux_y_right  = hplusy[ne] * oody2 * ( pnn1icxn - nine_pt * dsq_p_dxdy);
-                    
-                    hc            = 0.25 * hcenter[ne];
-                    
-                    diag[nn1icxn] += (- flux_x_upper - flux_y_right) + hc*pnn1icxn;
+                    double ddiag = wx*hplusx[ne] + wy*hplusy[ne] + 0.25 * hcenter[ne];
+
+                    diag[nn]      += ddiag;
+                    diag[nn1]     += ddiag;
+                    diag[nnicxn]  += ddiag;
+                    diag[nn1icxn] += ddiag;
                 }
             }
-            
+
             /* periodicity */
             if (x_periodic) {
                 for(j=igyn; j<icyn-igyn; j++) {
@@ -202,11 +147,131 @@ double precon_diag_prepare(
             break;
         }
         case 3: {
-            ERROR("function not available");
+            const int igxn = node->igx;
+            const int icxn = node->icx;
+            const int igyn = node->igy;
+            const int icyn = node->icy;
+            const int igzn = node->igz;
+            const int iczn = node->icz;
+            
+            const int igxe = elem->igx;
+            const int icxe = elem->icx;
+            const int igye = elem->igy;
+            const int icye = elem->icy;
+            const int igze = elem->igz;
+            const int icze = elem->icz;
+            
+            const double dx = node->dx;
+            const double dy = node->dy;
+            const double dz = node->dz;
+            
+            const double* hplusx   = hplus[0];
+            const double* hplusy   = hplus[1];
+            const double* hplusz   = hplus[2];
+            const double* hcenter  = wcenter;
+                                                
+            int i, j, k, le, ln, me, mn, ne; 
+            int nn000, nn001, nn010, nn011, nn100, nn101, nn110, nn111;
+            
+            for(int nn=0; nn<node->nc; nn++) diag[nn] = diaginv[nn] = 0.0;
+            
+            double wx = 0.0625 / (dx * dx);
+            double wy = 0.0625 / (dy * dy);
+            double wz = 0.0625 / (dz * dz);
+
+            for(k = igze; k < icze - igze; k++) {
+                le = k * icxe*icye;
+                ln = k * icxn*icyn;
+                
+                for(j = igye; j < icye - igye; j++) {
+                    me   = le + j * icxe;
+                    mn   = ln + j * icxn;
+                    
+                    for(i = igxe; i < icxe - igxe; i++) {
+                        ne    = me + i;
+                        
+                        nn000 = mn + i;
+                        nn001 = mn + i + 1;
+                        nn010 = mn + i     + icxn;
+                        nn011 = mn + i + 1 + icxn;
+                        nn100 = mn + i              + icxn*icyn;
+                        nn101 = mn + i + 1          + icxn*icyn;
+                        nn110 = mn + i     + icxn   + icxn*icyn;
+                        nn111 = mn + i + 1 + icxn   + icxn*icyn;
+                        
+                        double ddiag = - wx*hplusx[ne] - wy*hplusy[ne] - wz*hplusz[ne] + 0.125 * hcenter[ne];
+
+                        diag[nn000] += ddiag; 
+                        diag[nn001] += ddiag;  
+                        diag[nn010] += ddiag; 
+                        diag[nn011] += ddiag; 
+                        diag[nn100] += ddiag; 
+                        diag[nn101] += ddiag;  
+                        diag[nn110] += ddiag; 
+                        diag[nn111] += ddiag; 
+                    }
+                }
+            }
+            
+            /* periodicity */
+            if (x_periodic) {
+                for(k=igzn; k<iczn-igzn; k++) {
+                    ln = k*icxn*icyn;
+                    for(j=igyn; j<icyn-igyn; j++) {
+                        int nleft  = ln + j*icxn + igxn;
+                        int nright = ln + j*icxn + icxn - igxn - 1;
+                        
+                        diag[nleft]  += diag[nright];
+                        diag[nright]  = 9999.0;
+                    }
+                }
+            }
+            
+            if (y_periodic) {
+                for(i=igxn; i<icxn-igxn; i++) {
+                    ln = i;
+                    for(k=igzn; k<iczn-igzn; k++) {
+                        int nbottom  = ln + k*icxn*icyn + igyn * icxn;
+                        int ntop     = ln + k*icxn*icyn + (icyn - igyn - 1) * icxn;
+                    
+                        diag[nbottom]  += diag[ntop];
+                        diag[ntop]      = 8888.0;
+                    }
+                }
+            }
+
+            if (z_periodic) {
+                for(j=igyn; j<icyn-igyn; j++) {
+                    ln = j*icxn;
+                    for(i=igxn; i<icxn-igxn; i++) {
+                        int nback  = ln + i + igzn * icxn*icyn;
+                        int nfront = ln + i + (iczn - igzn - 1) * icxn*icyn;
+                        
+                        diag[nback]  += diag[nfront];
+                        diag[nfront]  = 7777.0;
+                    }
+                }
+            }
+            
+            
+            /* prepare for the inversion of the preconditioner */
+            precon_inv_scale = 0.0;
+            
+            for (k = igzn; k < iczn-igzn; k++) {
+                int ln = k*icxn*icyn;
+                for (j = igyn; j < icyn-igyn; j++) {
+                    int mn = ln + j*icxn;
+                    for (i = igxn; i < icxn-igxn; i++) {
+                        int nn = mn + i;
+                        diaginv[nn] = 1.0/diag[nn];
+                        precon_inv_scale = MAX_own(precon_inv_scale, fabs(diaginv[nn]));
+                    }
+                }
+            }
             break;
         }
-            
-        default: ERROR("ndim not in {1, 2, 3}");
+        default: 
+            ERROR("ndim not in {1, 2, 3}");
     }  
     return precon_inv_scale;
 }
@@ -794,15 +859,85 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             const double oodx2[3] = {1.0/(dx*dx), 1.0/(dy*dy), 1.0/(dz*dz)};
             const int dis[3][3]   = {{1, icxn, icxn*icyn}, {icxn, icxn*icyn, 1}, {icxn*icyn, 1, icxn}};
             
-            const double a00 = 9.0/64.0;
-            const double a10 = 3.0/64.0;
-            const double a01 = 3.0/64.0;
-            const double a11 = 1.0/64.0;
                         
             int i, j, k;
             
             memset(lap, 0.0, node->nc*sizeof(double));
-            
+#if 1
+            for(k = igze; k < icze - igze; k++) {
+                int le   = k * icxe*icye;
+                int ln   = k * icxn*icyn;
+                
+                for(j = igye; j < icye - igye; j++) {
+                    int me   = le + j * icxe;
+                    int mn   = ln + j * icxn;
+                    
+                    for(i = igxe; i < icxe - igxe; i++) {
+                        int ne = me + i;
+                        int nn = mn + i;
+                        
+                        int nmsw, nmse, nmne, nmnw, npsw, npse, npne, npnw;
+                        
+                        for (int idim = 0; idim<elem->ndim; idim++) {
+                            nmsw = nn;
+                            nmse = nn                + dis[idim][1];
+                            nmne = nn                + dis[idim][1] + dis[idim][2];
+                            nmnw = nn                               + dis[idim][2];
+                            npsw = nn + dis[idim][0];
+                            npse = nn + dis[idim][0] + dis[idim][1];
+                            npne = nn + dis[idim][0] + dis[idim][1] + dis[idim][2];
+                            npnw = nn + dis[idim][0]                + dis[idim][2];
+                            
+                            double weight = 0.0625 * hplus[idim][ne] * oodx2[idim];
+                            
+                            double dp_sw = (p[npsw] - p[nmsw]);
+                            double dp_se = (p[npse] - p[nmse]);
+                            double dp_ne = (p[npne] - p[nmne]);
+                            double dp_nw = (p[npnw] - p[nmnw]);
+                            
+                            double flux_sw = weight * dp_sw;
+                            double flux_se = weight * dp_se;
+                            double flux_ne = weight * dp_ne;
+                            double flux_nw = weight * dp_nw;
+                            
+                            lap[nmsw] += flux_sw;
+                            lap[nmse] += flux_se;
+                            lap[nmne] += flux_ne;
+                            lap[nmnw] += flux_nw;
+                            lap[npsw] -= flux_sw;
+                            lap[npse] -= flux_se;
+                            lap[npne] -= flux_ne;
+                            lap[npnw] -= flux_nw;
+                        }
+                        
+                        double hc = 0.125 * hcenter[ne];
+                        
+                        nmsw = nn;
+                        nmse = nn             + dis[0][1];
+                        nmne = nn             + dis[0][1] + dis[0][2];
+                        nmnw = nn                         + dis[0][2];
+                        npsw = nn + dis[0][0];
+                        npse = nn + dis[0][0] + dis[0][1];
+                        npne = nn + dis[0][0] + dis[0][1] + dis[0][2];
+                        npnw = nn + dis[0][0]             + dis[0][2];
+                        
+                        lap[nmsw] += hc*p[nmsw];
+                        lap[nmse] += hc*p[nmse];
+                        lap[nmne] += hc*p[nmne];
+                        lap[nmnw] += hc*p[nmnw];
+                        lap[npsw] += hc*p[npsw];
+                        lap[npse] += hc*p[npse];
+                        lap[npne] += hc*p[npne];
+                        lap[npnw] += hc*p[npnw];
+                    }
+                }
+            }
+#else
+            const double a00 = 9.0/64.0;
+            const double a10 = 3.0/64.0;
+            const double a01 = 3.0/64.0;
+            const double a11 = 1.0/64.0;
+
             for(k = igze; k < icze - igze; k++) {
                 int le   = k * icxe*icye;
                 int ln   = k * icxn*icyn;
@@ -869,6 +1004,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                     }
                 }
             }
+#endif
             
             precon_invert(lap, lap, node, x_periodic, y_periodic, z_periodic);
             
