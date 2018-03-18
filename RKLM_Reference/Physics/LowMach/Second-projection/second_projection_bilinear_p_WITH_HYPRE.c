@@ -79,7 +79,9 @@ void correction_nodes(
 
 /* ========================================================================== */
 
+#if 0
 static int rhs_output_count = 0;
+#endif
 
 void second_projection(
                        ConsVars* Sol,

@@ -5,8 +5,8 @@
 % saving figures as .eps:     print(gcf, 'TestPlot', '-depsc');
 
 %modelstr = '';
-modelstr = 'comp';
-%modelstr = 'psinc';
+%modelstr = 'comp';
+modelstr = 'psinc';
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
@@ -14,16 +14,16 @@ modelstr = 'comp';
 %test_case = 'Equatorial-Long-Wave';
 %test_case = 'Internal-Wave-Long-Wave';
 %test_case = 'Internal-Wave-Strong-Strat';
-test_case = 'Skamarock-Klemp-Internal-Wave';
+%test_case = 'Skamarock-Klemp-Internal-Wave';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
-%test_case = 'Travelling-Vortex';
+test_case = 'Travelling-Vortex';
 
 showmode = 1;
 separate_signs = 1;
 filledcontours = 0;
-fixed_contours = 1;
+fixed_contours = 0;
 fixed_contour_step = 0;
 no_of_contours = 10;
 show_increments = 0;
@@ -141,13 +141,13 @@ transp    = 0;
 folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Mach_gravity_',modelstr);
 
 % cell-centered fields
-%varstr = 'rho'; folderstr = 'rho'; titlestr = 'rho'; ndummy = 2; arraysize = [ncx ncy];
+varstr = 'rho'; folderstr = 'rho'; titlestr = 'rho'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'p'; folderstr = 'p'; titlestr = 'p'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'S'; folderstr = 'S'; titlestr = 'S'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy]; rhoY_diff = 1;
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy];
+%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
