@@ -62,9 +62,10 @@ int main( void )
 
     set_wall_massflux(bdry, Sol, elem);
     Set_Explicit_Boundary_Data(Sol, elem);
+    /*
     second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 1.0, 0.0, 1.0);
     cell_pressure_to_nodal_pressure(mpv, elem, node);
-    
+     */
     ud.compressibility = compressibility(0);
         
 	if(ud.write_file == ON) 
@@ -115,7 +116,7 @@ int main( void )
              - symmetrized splitting instead of simple splitting does not improve vortex symmetry  
              */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
-            advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
+            advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, 1);
 
             /* explicit part of Euler backward gravity over half time step */
             euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt);
@@ -142,7 +143,7 @@ int main( void )
             euler_forward_non_advective(Sol, (const MPV*)mpv, elem, node, 0.5*dt); 
                         
             /* explicit full time step advection using div-controlled advective fluxes */
-            advect(Sol, flux, adv_flux, dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+            advect(Sol, flux, adv_flux, dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, 1);
                         
             /* implicit EULER half time step for gravity and pressure gradient */ 
             euler_backward_gravity(Sol, mpv, elem, 0.5*dt);

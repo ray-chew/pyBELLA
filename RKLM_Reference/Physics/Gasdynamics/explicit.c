@@ -400,8 +400,8 @@ void advect(
      odd = 1:  odd  time steps
      used to steer alternatinging Strang sequences.
      */
-    
-    const double lambda = (no_of_sweeps == DOUBLE_STRANG_SWEEP ? 0.5*dt : dt)/elem->dx;
+        
+    double time_step = (no_of_sweeps == DOUBLE_STRANG_SWEEP ? 0.5*dt : dt);
     
     printf("\n\n====================================================");
     printf("\nAdvection, dt = %e", dt);
@@ -410,6 +410,7 @@ void advect(
     int stage = 0;
     if (odd) {
         for(int Split = 0; Split < elem->ndim; Split++) {
+            const double lambda = time_step/elem->dx;
             Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);                
             (*rotate[elem->ndim - 1])(Sol, FORWARD);
         }
@@ -417,6 +418,7 @@ void advect(
         for(int i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
             int Split = (elem->ndim - 1) - i_OpSplit;
             (*rotate[elem->ndim - 1])(Sol, BACKWARD);
+            const double lambda = time_step/elem->dx;
             Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);
         }        
     }
@@ -427,10 +429,12 @@ void advect(
             for(int i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
                 int Split = (elem->ndim - 1) - i_OpSplit;
                 (*rotate[elem->ndim - 1])(Sol, BACKWARD);
+                const double lambda = time_step/elem->dx;
                 Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);
             }
         } else {
             for(int Split = 0; Split < elem->ndim; Split++) {
+                const double lambda = time_step/elem->dx;
                 Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);                
                 (*rotate[elem->ndim - 1])(Sol, FORWARD);
             }            

@@ -24,7 +24,7 @@
 double molly(double x);
 
 /* horizontal stretch for S&K94 IGWs: planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0; */
-static double scalefactor = 1.0;   
+static double scalefactor = 160.0;   
 
 void User_Data_init(User_Data* ud) {
     
@@ -36,7 +36,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Earth */
     double grav     = 9.81;             /* gravitational acceleration [m/s^2]    */
-    double omega    = 1.0*0.0001;       /* Coriolis parameter [1/s]              */
+    double omega    = 0.0*0.0001;       /* Coriolis parameter [1/s]              */
                                         /* sin(0.5*PI) * 2.0 * 0.00007272205217; */
     
     /* thermodynamics and chemistry */
@@ -114,10 +114,10 @@ void User_Data_init(User_Data* ud) {
     
     ud->bdrytype_min[0] = PERIODIC; /* DIRICHLET; PERIODIC; WALL; */
     ud->bdrytype_min[1] = WALL; /* SLANTED_WALL; */
-    ud->bdrytype_min[2] = PERIODIC;
+    ud->bdrytype_min[2] = WALL;
     ud->bdrytype_max[0] = PERIODIC; /* DIRICHLET; PERIODIC; WALL; */
     ud->bdrytype_max[1] = WALL;
-    ud->bdrytype_max[2] = PERIODIC;
+    ud->bdrytype_max[2] = WALL;
     
     ud->absorber = WRONG; /* CORRECT;  WRONG; */ /*  BREAKING WAVE CHANGE */
     
@@ -136,7 +136,7 @@ void User_Data_init(User_Data* ud) {
     /* Grid and space discretization */
     ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
     ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
-    ud->inz =    5+1;
+    ud->inz =      1;
     
     /* explicit predictor step */
     /* Recovery */
@@ -179,7 +179,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 1;
+    ud->write_file_period = 10;
     ud->file_format = HDF;
     
     {

@@ -232,8 +232,9 @@ double precon_c_column_prepare(
                     int o_n = oy + 1;
                     int o_s = oy;
                     
-                    /* !!!! this could need fixing for the  P1_ALTERNATIVE_STENCIL  option ! */
+                    /* !!!! this could need fixing for the  P1_ALTERNATIVE_STENCIL  option ! 
                     assert(0);
+                     */
                     
                     tridiago[0][nc] = oody2 * hplusy[o_s]; 
                     tridiago[1][nc] = - oody2 * (hplusy[o_n] + hplusy[o_s])
