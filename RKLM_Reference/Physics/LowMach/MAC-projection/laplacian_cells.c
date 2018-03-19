@@ -49,7 +49,6 @@ double precon_c_diag_prepare(
     }
     
     const int ndim = elem->ndim;
-    double diagscale;
     
     switch(ndim) {
         case 1: {
@@ -94,14 +93,10 @@ double precon_c_diag_prepare(
                 }
             }
 
-            /* diagscale = 3.0 /(elem->dx*elem->dx) + 3.0 /(elem->dy*elem->dy); */
-            diagscale = 1.0;
-
             precon_inv_scale = 0.0;
             
             for (int j = igy; j < icy-igy; j++) {int mc = j*icx;
                 for (int i = igx; i < icx-igx; i++) {int nc = mc + i;
-                    diag_c[nc]   *= diagscale;
                     diaginv_c[nc] = 1.0/diag_c[nc];
                     precon_inv_scale = MAX_own(precon_inv_scale, fabs(diaginv_c[nc]));
                 }
@@ -110,7 +105,62 @@ double precon_c_diag_prepare(
             break;
         }
         case 3: {
-            ERROR("function not available for 3D");
+            const int igx   = elem->igx;
+            const int icx   = elem->icx;
+            const int ifx   = elem->ifx;
+            
+            const int igy   = elem->igy;
+            const int icy   = elem->icy;
+            const int ify   = elem->ify;
+            
+            const int igz   = elem->igz;
+            const int icz   = elem->icz;
+            const int ifz   = elem->ifz;
+
+            const double dx = elem->dx;
+            const double dy = elem->dy;
+            const double dz = elem->dz;            
+                        
+            for(int nc=0; nc<elem->nc; nc++) diag_c[nc] = diaginv_c[nc] = 0.0;
+            
+            const double codsq[3] = {1.0/(64.0*dx*dx), 1.0/(64.0*dy*dy), 1.0/(64.0*dz*dz)}; 
+            
+            const int ics[3][3] = {{icx,icy,icz}, {icy,icz,icx}, {icz,icx,icy}};
+            const int ifs[3][3] = {{ifx,ify,ifz}, {ify,ifz,ifx}, {ifz,ifx,ify}};
+            
+            int i, j, k, l, m, n, idim;
+                        
+            for(k = igz; k < icz - igz; k++) {l = k * icx*icy;                
+                for(j = igy; j < icy - igy; j++) {m = l + j * icx;                
+                    for(i = igx; i < icx - igx; i++) {n = m + i;
+                        
+                        int ijk[3][3] = {{i,j,k}, {j,k,i}, {k,i,j}};
+                        
+                        for(idim = 0; idim < 3; idim++) {
+                            int o_m = ijk[idim][2] * ics[idim][1] * ifs[idim][0] + ijk[idim][1] * ifs[idim][0] + ijk[idim][0];
+                            int o_p = o_m + 1;
+                            
+                            double h_p = hplus[idim][o_p];
+                            double h_m = hplus[idim][o_m];
+                                                        
+                            diag_c[n] -= codsq[idim] * 36.0 * (h_p + h_m);
+                        }
+                        diag_c[n] += hcenter[n];
+                    }
+                }    
+            }
+                        
+            precon_inv_scale = 0.0;
+            
+            for (int k = igz; k < icz-igz; k++) {int lc = k*icx*icy;
+                for (int j = igy; j < icy-igy; j++) {int mc = lc + j*icx;
+                    for (int i = igx; i < icx-igx; i++) {int nc = mc + i;
+                        diaginv_c[nc] = 1.0/diag_c[nc];
+                        precon_inv_scale = MAX_own(precon_inv_scale, fabs(diaginv_c[nc]));
+                    }
+                }
+            }
+            
             break;
         }
         default: ERROR("ndim not in {1, 2, 3}");

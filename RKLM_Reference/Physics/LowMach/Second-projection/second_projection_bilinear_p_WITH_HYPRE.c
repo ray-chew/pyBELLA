@@ -875,7 +875,7 @@ void correction_nodes(
             
             break;
         }
-		default: ERROR("ndim not in {1, 2,3}");
+		default: ERROR("ndim not in {1, 2, 3}");
 	}
 }
 

@@ -117,7 +117,7 @@ void flux_correction(ConsVars* flux[3],
     operator_coefficients(hplus, hcenter, hS, elem, Sol, Sol0, mpv, dt);
     
     rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
-    printf("\nrhs_max = %e\n", rhsmax);
+    printf("\nrhs_max = %e (before projection)\n", rhsmax);
     
     assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
     if (ud.is_compressible) {
@@ -204,6 +204,7 @@ void flux_correction(ConsVars* flux[3],
 #ifdef CORRECT_FLUX_RIGHT_AWAY
     /* test whether divergence is actually controlled */
     rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
+    printf("\nrhs_max = %e (after projection)\n", rhsmax);
 #endif
     
 #if 0
@@ -493,10 +494,7 @@ void operator_coefficients(
             double hi, him, hj, hjm, g, gimp, Msq;
             
             int i, j, m, n, ic, icm, jc, jcm;
-            
-            Msq = ud.Msq;
-            g   = ud.gravity_strength[0];
-            
+                        
             for(j = igy-1; j < icy - igy+1; j++) {
                 m = j * ifx;
                 
@@ -504,7 +502,6 @@ void operator_coefficients(
                     n     = m + i;
                     ic    = n - j;
                     icm   = ic - 1; 
-                    
 #if 0
                     hi    = Sol0->rhoY[ic] * Sol0->rhoY[ic] / Sol0->rho[ic]    * Gammainv;   
                     him   = Sol0->rhoY[icm] * Sol0->rhoY[icm] / Sol0->rho[icm] * Gammainv;
@@ -512,15 +509,14 @@ void operator_coefficients(
                     hi    = Sol0->rhoY[ic] * Sol->rhoY[ic] / Sol->rho[ic]    * Gammainv;   
                     him   = Sol0->rhoY[icm] * Sol->rhoY[icm] / Sol->rho[icm] * Gammainv;
 #endif
-                    
                     hx[n] = 0.5 * (hi + him);
                     
                     assert(hx[n] > 0.0);
                 }
             }
             
-            
-            g = ud.gravity_strength[1];
+            Msq = ud.Msq;
+            g   = ud.gravity_strength[1];
             
             for(i = 0; i < icx; i++) {
                 n = i * ify;
@@ -529,7 +525,6 @@ void operator_coefficients(
                     m     = n + j;
                     jc    = j * icx + i;
                     jcm   = jc - icx;          
-                    
 #if 0
                     hj    = Sol0->rhoY[jc] * Sol0->rhoY[jc] / Sol0->rho[jc] * Gammainv;
                     hjm   = Sol0->rhoY[jcm] * Sol0->rhoY[jcm] / Sol0->rho[jcm] * Gammainv;
@@ -537,7 +532,6 @@ void operator_coefficients(
                     hj    = Sol0->rhoY[jc] * Sol->rhoY[jc] / Sol->rho[jc] * Gammainv;
                     hjm   = Sol0->rhoY[jcm] * Sol->rhoY[jcm] / Sol->rho[jcm] * Gammainv;
 #endif
-                    
                     double S     = mpv->HydroState->S0[j];
                     double Sm    = mpv->HydroState->S0[j-1];
                     double Y     = 0.5 * (Sol->rhoY[jc]  / Sol->rho[jc]  + Sol0->rhoY[jc]  / Sol0->rho[jc]);
@@ -585,50 +579,40 @@ void operator_coefficients(
             double hi, him, hj, hjm, hk, hkm, g, gimp, Msq;
             
             int i, j, k, l, m, n, ic, icm, jc, jcm, kc, kcm;
-            
-            Msq = ud.Msq;
-            g   = ud.gravity_strength[0];
-            assert(g==0.0); /* implicit gravity only for y-direction */
-            
+                        
             for(k = igz; k < icz - igz; k++) {l = k * ifx*icy;
                 for(j = igy; j < icy - igy; j++) {m = l + j * ifx;
                     for(i = igx; i < ifx - igx; i++) {n = m + i;
                         ic  = k*icx*icy + j*icx + i;
                         icm = ic - 1; 
-                        
-                        /*
-                         hi    = 0.5 * (Sol->rhoY[ic] *Sol->rhoY[ic] /Sol->rho[ic]  + Sol0->rhoY[ic] *Sol0->rhoY[ic] /Sol0->rho[ic] ) * Gammainv;   
-                         him   = 0.5 * (Sol->rhoY[icm]*Sol->rhoY[icm]/Sol->rho[icm] + Sol0->rhoY[icm]*Sol0->rhoY[icm]/Sol0->rho[icm]) * Gammainv;
-                         */
+#if 0
                         hi    = (Sol->rhoY[ic] *Sol->rhoY[ic] /Sol->rho[ic] ) * Gammainv;   
                         him   = (Sol->rhoY[icm]*Sol->rhoY[icm]/Sol->rho[icm]) * Gammainv;
-                        
-                        /* optional with new time level data only as in 2D part of routine ... */
-                        
+#else
+                        hi    = (Sol0->rhoY[ic] *Sol->rhoY[ic] /Sol->rho[ic] ) * Gammainv;   
+                        him   = (Sol0->rhoY[icm]*Sol->rhoY[icm]/Sol->rho[icm]) * Gammainv;
+#endif
                         hx[n] = 0.5 * (hi + him);
                         assert(hx[n] > 0.0);
                     }
                 }
             }
             
-            
-            g = ud.gravity_strength[1];
+            Msq = ud.Msq;
+            g   = ud.gravity_strength[1];
             
             for(i = igx; i < icx - igx; i++) {l = i * ify*icz;
                 for(k = igz; k < icz - igz; k++) {m = l + k * ify;
                     for(j = igy; j < ify - igy; j++) {n = m + j;
                         jc  = k*icx*icy + j*icx + i;
                         jcm = jc - icx;          
-                        
-                        /*
-                         hj       = 0.5 * (Sol->rhoY[jc] *Sol->rhoY[jc] /Sol->rho[jc] + Sol0->rhoY[jc] *Sol0->rhoY[jc] /Sol0->rho[jc] ) * Gammainv;
-                         hjm      = 0.5 * (Sol->rhoY[jcm]*Sol->rhoY[jcm]/Sol->rho[jcm]+ Sol0->rhoY[jcm]*Sol0->rhoY[jcm]/Sol0->rho[jcm]) * Gammainv;
-                         */
+#if 0
                         hj       = (Sol->rhoY[jc] *Sol->rhoY[jc] /Sol->rho[jc] ) * Gammainv;
                         hjm      = (Sol->rhoY[jcm]*Sol->rhoY[jcm]/Sol->rho[jcm]) * Gammainv;
-                        
-                        /* optional with new time level data only as in 2D part of routine ... */
-                        
+#else
+                        hj       = (Sol0->rhoY[jc] *Sol->rhoY[jc] /Sol->rho[jc] ) * Gammainv;
+                        hjm      = (Sol0->rhoY[jcm]*Sol->rhoY[jcm]/Sol->rho[jcm]) * Gammainv;
+#endif
                         double S   = mpv->HydroState->S0[j];
                         double Sm  = mpv->HydroState->S0[j-1];
                         double Y   = 0.5 * (Sol->rhoY[jc]  / Sol->rho[jc]  + Sol0->rhoY[jc]  / Sol0->rho[jc]);
@@ -643,26 +627,19 @@ void operator_coefficients(
                     }
                 }
             }
-            
-            g = ud.gravity_strength[2];
-            assert(g==0.0); /* implicit gravity only for y-direction */
-            
+                        
             for(j = igy; j < icy - igy; j++) {l = j * ifz*icx;
                 for(i = igx; i < icx - igx; i++) {m = l + i * ifz;
                     for(k = igz; k < ifz - igz; k++) {n = m + k;
                         kc  = k*icx*icy + j*icx + i;
                         kcm = kc - icx*icy;          
-                        
-                        /*
-                         hk       = 0.5 * (Sol->rhoY[kc] *Sol->rhoY[kc] /Sol->rho[kc] + Sol0->rhoY[kc] *Sol0->rhoY[kc] /Sol0->rho[kc] ) * Gammainv;
-                         hkm      = 0.5 * (Sol->rhoY[kcm]*Sol->rhoY[kcm]/Sol->rho[kcm]+ Sol0->rhoY[kcm]*Sol0->rhoY[kcm]/Sol0->rho[kcm]) * Gammainv;
-                         */
-                        
+#if 0                        
                         hk       = (Sol->rhoY[kc] *Sol->rhoY[kc] /Sol->rho[kc] ) * Gammainv;
                         hkm      = (Sol->rhoY[kcm]*Sol->rhoY[kcm]/Sol->rho[kcm]) * Gammainv;
-                        
-                        /* optional with new time level data only as in 2D part of routine ... */
-                        
+#else
+                        hk       = (Sol0->rhoY[kc] *Sol->rhoY[kc] /Sol->rho[kc] ) * Gammainv;
+                        hkm      = (Sol0->rhoY[kcm]*Sol->rhoY[kcm]/Sol->rho[kcm]) * Gammainv;
+#endif                        
                         hz[n] = 0.5 * (hk + hkm);
                         assert(hz[n] > 0.0); 
                     }
@@ -672,7 +649,11 @@ void operator_coefficients(
             for(k = igz; k < icz - igz; k++) {l = k*icx*icy;
                 for(j = igy; j < icy - igy; j++) {m = l + j*icx;
                     for(i = igx; i < icx - igx; i++) {n = m + i;
+                        /*
                         hc[n] = ccenter * pow(0.5*(Sol->rhoY[n]+Sol0->rhoY[n]),cexp);
+                        hc[n] = ccenter * pow(Sol0->rhoY[n],cexp);
+                         */
+                        hc[n] = ccenter * pow(Sol->rhoY[n],cexp);
                     }
                 }
             }
@@ -738,7 +719,10 @@ static void flux_correction_due_to_pressure_gradients(
                     int ic   = j*icx + i;
                     int icm  = ic - 1;
                     
-#ifdef CORRECT_FLUX_RIGHT_AWAY
+#ifdef CORRECT_FLUX_RIGHT_AWAY  
+                    /* It seems this should be the active version, but test against alternative 
+                     for IGW before removing this option, looking especially for vertical velocity
+                     in the compressible case towards the end of the standard test run. */
                     f->rhoY[nc] -= dto2dx * (  a *   hplusx[nc] * (dp2[ic]     - dp2[icm]    )  
                                              + b * ( hplusx[nc] * (dp2[ic+icx] - dp2[icm+icx])  
                                                    + hplusx[nc] * (dp2[ic-icx] - dp2[icm-icx])  
@@ -818,6 +802,20 @@ static void flux_correction_due_to_pressure_gradients(
                         int ic   = k*diz + j*diy + i*dix;
                         int icm  = ic - dix;
                         
+#ifdef CORRECT_FLUX_RIGHT_AWAY
+                        fx->rhoY[n] -= dto2dx * hplusx[n] * cstencil *
+                        (  36.0 *  (dp2[ic] - dp2[icm])  
+                         +  6.0 * (  (dp2[ic+diy] - dp2[icm+diy]) 
+                                   + (dp2[ic-diy] - dp2[icm-diy])  
+                                   + (dp2[ic+diz] - dp2[icm+diz])  
+                                   + (dp2[ic-diz] - dp2[icm-diz])
+                                   )
+                         +  1.0 * (  (dp2[ic+diy+diz] - dp2[icm+diy+diz]) 
+                                   + (dp2[ic-diy+diz] - dp2[icm-diy+diz])  
+                                   + (dp2[ic+diy-diz] - dp2[icm+diy-diz])  
+                                   + (dp2[ic-diy-diz] - dp2[icm-diy-diz])
+                                   ));   
+#else
                         fx->rhoY[n] = - dto2dx * hplusx[n] * cstencil *
                         (  36.0 *  (dp2[ic] - dp2[icm])  
                          +  6.0 * (  (dp2[ic+diy] - dp2[icm+diy]) 
@@ -829,7 +827,8 @@ static void flux_correction_due_to_pressure_gradients(
                                    + (dp2[ic-diy+diz] - dp2[icm-diy+diz])  
                                    + (dp2[ic+diy-diz] - dp2[icm+diy-diz])  
                                    + (dp2[ic-diy-diz] - dp2[icm-diy-diz])
-                                   ));                        
+                                   ));   
+#endif
                     }
                 } 
             }
@@ -844,6 +843,20 @@ static void flux_correction_due_to_pressure_gradients(
                         int jc   = k*diz + j*diy + i*dix;
                         int jcm  = jc - diy;
                         
+#ifdef CORRECT_FLUX_RIGHT_AWAY
+                        fy->rhoY[n] -= dto2dy * hplusy[n] * cstencil *
+                        (  36.0 *    (dp2[jc] - dp2[jcm])  
+                         +  6.0 * (  (dp2[jc+diz] - dp2[jcm+diz]) 
+                                   + (dp2[jc-diz] - dp2[jcm-diz])  
+                                   + (dp2[jc+dix] - dp2[jcm+dix])  
+                                   + (dp2[jc-dix] - dp2[jcm-dix])
+                                   )
+                         +  1.0 * (  (dp2[jc+diz+dix] - dp2[jcm+diz+dix]) 
+                                   + (dp2[jc-diz+dix] - dp2[jcm-diz+dix])  
+                                   + (dp2[jc+diz-dix] - dp2[jcm+diz-dix])  
+                                   + (dp2[jc-diz-dix] - dp2[jcm-diz-dix])
+                                   ));
+#else
                         fy->rhoY[n] = - dto2dy * hplusy[n] * cstencil *
                         (  36.0 *    (dp2[jc] - dp2[jcm])  
                          +  6.0 * (  (dp2[jc+diz] - dp2[jcm+diz]) 
@@ -856,6 +869,7 @@ static void flux_correction_due_to_pressure_gradients(
                                    + (dp2[jc+diz-dix] - dp2[jcm+diz-dix])  
                                    + (dp2[jc-diz-dix] - dp2[jcm-diz-dix])
                                    ));
+#endif
                     }   
                 }
             }
@@ -870,6 +884,20 @@ static void flux_correction_due_to_pressure_gradients(
                         int kc  = k*diz + j*diy + i*dix;
                         int kcm = kc - diz;
                         
+#ifdef CORRECT_FLUX_RIGHT_AWAY
+                        fz->rhoY[n] -= dto2dz * hplusz[n] * cstencil *
+                        (  36.0 *    (dp2[kc] - dp2[kcm])  
+                         +  6.0 * (  (dp2[kc+diz] - dp2[kcm+diz]) 
+                                   + (dp2[kc-diz] - dp2[kcm-diz])  
+                                   + (dp2[kc+dix] - dp2[kcm+dix])  
+                                   + (dp2[kc-dix] - dp2[kcm-dix])
+                                   )
+                         +  1.0 * (  (dp2[kc+diz+dix] - dp2[kcm+diz+dix]) 
+                                   + (dp2[kc-diz+dix] - dp2[kcm-diz+dix])  
+                                   + (dp2[kc+diz-dix] - dp2[kcm+diz-dix])  
+                                   + (dp2[kc-diz-dix] - dp2[kcm-diz-dix])
+                                   ));
+#else
                         fz->rhoY[n] = - dto2dz * hplusz[n] * cstencil *
                         (  36.0 *    (dp2[kc] - dp2[kcm])  
                          +  6.0 * (  (dp2[kc+diz] - dp2[kcm+diz]) 
@@ -881,8 +909,8 @@ static void flux_correction_due_to_pressure_gradients(
                                    + (dp2[kc-diz+dix] - dp2[kcm-diz+dix])  
                                    + (dp2[kc+diz-dix] - dp2[kcm+diz-dix])  
                                    + (dp2[kc-diz-dix] - dp2[kcm-diz-dix])
-                                   )
-                         );
+                                   ));
+#endif
                     }
                 }
             }			
@@ -977,7 +1005,8 @@ static void rhs_fix_for_open_boundaries(
                 break;
             }
             case 3: {
-                ERROR("ndim = 3 - option not implemented (kinetic_energy_change_explicit() )");
+                printf("3D version of rhs_fix_for_open_boundaries() not yet implemented) )");
+                break;
             }
             default: ERROR("ndim not in {1, 2, 3}");
         }
@@ -1034,7 +1063,8 @@ static void flux_fix_for_open_boundaries(
                 break;
             }
             case 3: {
-                ERROR("ndim = 3 - option not implemented (kinetic_energy_change_explicit() )");
+                printf("3D version of flux_fix_for_open_boundaries() not yet implemented) )");
+                break;
             }
             default: ERROR("ndim not in {1, 2, 3}");
         }
