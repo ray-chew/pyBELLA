@@ -22,8 +22,8 @@ test_case = 'Travelling-Vortex';
 slice = 'xy'; % options:  'xy' 'zy' 'full3D'
 showmode = 1;
 separate_signs = 1;
-filledcontours = 1;
-fixed_contours = 1;
+filledcontours = 0;
+fixed_contours = 0;
 fixed_contour_step = 0;
 no_of_contours = 10;
 show_increments = 0;
@@ -42,7 +42,7 @@ title_true = 1;
 
 %kmin = 50;
 %kmax = 53;
-kmin = 1;
+kmin = 0;
 kmax = 601;
 dk   = 1;
 
@@ -99,7 +99,7 @@ elseif strcmp(test_case, 'Rising-Bubble')
 elseif strcmp(test_case, 'Travelling-Vortex')
     ncx = 64;  % 512; 256;
     ncy = 64;  % 512; 256;
-    ncz =  8;  % 512; 256;
+    ncz =  4;  % 512; 256;
     L   = 1.0;  
     x0  = 0.5;
     H   = 1.0;

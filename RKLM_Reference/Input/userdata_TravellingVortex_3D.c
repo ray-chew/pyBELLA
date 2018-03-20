@@ -133,7 +133,7 @@ void User_Data_init(User_Data* ud) {
 	/* Grid and space discretization */
 	ud->inx =  64+1; /*  */
 	ud->iny =  64+1; /*  */
-	ud->inz =   8+1;
+	ud->inz =   4+1;
 
     /* explicit predictor step */
 	/* Recovery */
@@ -212,7 +212,7 @@ void Sol_initial(ConsVars* Sol,
     const double R0      = 0.4;
     const double fac     = 1*1024.0; /* 4*1024.0 */
     const double xc      = 0.0;
-    const double yc      = 0.4;
+    const double yc      = 0.0;
     
     /*periodic setting: */
     const double xcm     = xc-(ud.xmax-ud.xmin);
