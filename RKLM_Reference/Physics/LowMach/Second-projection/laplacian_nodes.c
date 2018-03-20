@@ -62,6 +62,7 @@ double precon_diag_prepare(
             break;
         }
         case 2: {
+#if 0
             const int igxn = node->igx;
             const int icxn = node->icx;
             const int igyn = node->igy;
@@ -111,7 +112,54 @@ double precon_diag_prepare(
                     diag[nn1icxn] += ddiag;
                 }
             }
+#else
+            const int igxn = node->igx;
+            const int icxn = node->icx;
+            const int igyn = node->igy;
+            const int icyn = node->icy;
 
+            const int igxe = elem->igx;
+            const int icxe = elem->icx;
+            const int igye = elem->igy;
+            const int icye = elem->icy;
+
+            
+            const double dx = node->dx;
+            const double dy = node->dy;
+            
+            const double* hplusx   = hplus[0];
+            const double* hplusy   = hplus[1];
+            const double* hcenter  = wcenter;
+            
+            int i, j, me, mn, ne; 
+            int nn00, nn01, nn10, nn11;
+            
+            for(int nn=0; nn<node->nc; nn++) diag[nn] = diaginv[nn] = 0.0;
+            
+            double wx = 0.25 / (dx * dx);
+            double wy = 0.25 / (dy * dy);
+            
+            for(j = igye; j < icye - igye; j++) {
+                me   = j * icxe;
+                mn   = j * icxn;
+                
+                for(i = igxe; i < icxe - igxe; i++) {
+                    ne    = me + i;
+                    
+                    nn00 = mn + i;
+                    nn01 = mn + i + 1;
+                    nn10 = mn + i      + icxn;
+                    nn11 = mn + i + 1  + icxn;
+
+                    double ddiag = - wx*hplusx[ne] - wy*hplusy[ne] + 0.125 * hcenter[ne];
+                    
+                    diag[nn00] += ddiag; 
+                    diag[nn01] += ddiag;  
+                    diag[nn10] += ddiag; 
+                    diag[nn11] += ddiag; 
+                }
+            }
+#endif
             /* periodicity */
             if (x_periodic) {
                 for(j=igyn; j<icyn-igyn; j++) {
@@ -137,8 +185,8 @@ double precon_diag_prepare(
             /* prepare for the inversion of the preconditioner */
             precon_inv_scale = 0.0;
             
-            for (j = igyn; j < icyn-igyn; j++) {mn = j*icxn;
-                for (i = igxn; i < icxn-igxn; i++) {nn = mn + i;
+            for (j = igyn; j < icyn-igyn; j++) {int mn = j*icxn;
+                for (i = igxn; i < icxn-igxn; i++) {int nn = mn + i;
                     diaginv[nn] = 1.0/diag[nn];
                     precon_inv_scale = MAX_own(precon_inv_scale, fabs(diaginv[nn]));
                 }
@@ -768,22 +816,22 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             
             const double dx = node->dx;
             const double dy = node->dy;
-            
+                                                                        
+            for(int nn=0; nn<node->nc; nn++) lap[nn] = 0.0;
+#if 0
             const double* hplusx   = hplus[0];
             const double* hplusy   = hplus[1];
             const double* hcenter  = wcenter;
-                        
-            const double oodx2 = 0.5 / (dx * dx);
-            const double oody2 = 0.5 / (dy * dy);
-            const double nine_pt = (0.25 * (1.0 + P2_DIAGONAL_FIVE_POINT)) * P2_FULL_STENCIL;
             
             double flux_x_lower, flux_x_upper, flux_y_left, flux_y_right, hc;
             double dsq_p_dxdy;
             
             int i, j, me, mn, ne, nn, nn1, nnicxn, nn1icxn;
-            
-            for(nn=0; nn<node->nc; nn++) lap[nn] = 0.0;
-            
+
+            const double oodx2 = 0.5 / (dx * dx);
+            const double oody2 = 0.5 / (dy * dy);
+            const double nine_pt = (0.25 * (1.0 + P2_DIAGONAL_FIVE_POINT)) * P2_FULL_STENCIL;
+
             for(j = igye; j < icye - igye; j++) {
                 me   = j * icxe;
                 mn   = j * icxn;
@@ -812,9 +860,59 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                     lap[nn1icxn] += (- flux_x_upper - flux_y_right) + hc*p[nn1icxn];
                 }
             }
+#else
+            const double* hcenter  = wcenter;
+
+            const double oodx2[2] = {1.0/(dx*dx), 1.0/(dy*dy)};
+            const int dis[2][2]   = {{1, icxn}, {icxn, 1}};
+
+            const double a0 = 1.0/4.0;
+            const double a1 = 1.0/4.0;
+            
+            for(int j = igye; j < icye - igye; j++) {
+                int me   = j * icxe;
+                int mn   = j * icxn;
+                
+                for(int i = igxe; i < icxe - igxe; i++) {
+                    int ne = me + i;
+                    int nn = mn + i;
+                    
+                    int nmw, nme, npw, npe;
+                    
+                    for (int idim = 0; idim<elem->ndim; idim++) {
+                        nmw = nn;
+                        nme = nn                + dis[idim][1];
+                        npw = nn + dis[idim][0];
+                        npe = nn + dis[idim][0] + dis[idim][1];
                         
+                        double dp_w = (p[npw] - p[nmw]);
+                        double dp_e = (p[npe] - p[nme]);
+                        
+                        double flux_w = hplus[idim][ne] * oodx2[idim] * ( a0 * dp_w + a1 * dp_e);
+                        double flux_e = hplus[idim][ne] * oodx2[idim] * ( a1 * dp_w + a0 * dp_e);
+                        
+                        lap[nmw] += flux_w;
+                        lap[nme] += flux_e;
+                        lap[npw] -= flux_w;
+                        lap[npe] -= flux_e;
+                    }
+                    
+                    double hc = 0.125 *hcenter[ne];
+                    
+                    nmw = nn;
+                    nme = nn             + dis[0][1];
+                    npw = nn + dis[0][0];
+                    npe = nn + dis[0][0] + dis[0][1];
+
+                    lap[nmw] += hc*p[nmw];
+                    lap[nme] += hc*p[nme];
+                    lap[npw] += hc*p[npw];
+                    lap[npe] += hc*p[npe];
+                }
+            }
+#endif
             if (x_periodic) {
-                for(j=igyn; j<icyn-igyn; j++) {
+                for(int j=igyn; j<icyn-igyn; j++) {
                     int nleft  = j * icxn + igxn;
                     int nright = j * icxn + icxn - igxn - 1;
                     
@@ -824,7 +922,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             }
             
             if (y_periodic) {
-                for(i=igxn; i<icxn-igxn; i++) {
+                for(int i=igxn; i<icxn-igxn; i++) {
                     int nbottom  = i + igyn * icxn;
                     int ntop     = i + (icyn - igyn - 1) * icxn;
                     
@@ -833,7 +931,6 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                 }
             }
             
-            /* TODO: remove comment-characters */
             precon_invert(lap, lap, node, x_periodic, y_periodic, z_periodic);
 
             break;
@@ -866,73 +963,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             int i, j, k;
             
             memset(lap, 0.0, node->nc*sizeof(double));
-#if 0
-            for(k = igze; k < icze - igze; k++) {
-                int le   = k * icxe*icye;
-                int ln   = k * icxn*icyn;
-                
-                for(j = igye; j < icye - igye; j++) {
-                    int me   = le + j * icxe;
-                    int mn   = ln + j * icxn;
-                    
-                    for(i = igxe; i < icxe - igxe; i++) {
-                        int ne = me + i;
-                        int nn = mn + i;
-                        
-                        int nmsw, nmse, nmne, nmnw, npsw, npse, npne, npnw;
-                        
-                        for (int idim = 0; idim<elem->ndim; idim++) {
-                            nmsw = nn;
-                            nmse = nn                + dis[idim][1];
-                            nmne = nn                + dis[idim][1] + dis[idim][2];
-                            nmnw = nn                               + dis[idim][2];
-                            npsw = nn + dis[idim][0];
-                            npse = nn + dis[idim][0] + dis[idim][1];
-                            npne = nn + dis[idim][0] + dis[idim][1] + dis[idim][2];
-                            npnw = nn + dis[idim][0]                + dis[idim][2];
-                            
-                            double weight = 0.0625 * hplus[idim][ne] * oodx2[idim];
-                            
-                            double dp_sw = (p[npsw] - p[nmsw]);
-                            double dp_se = (p[npse] - p[nmse]);
-                            double dp_ne = (p[npne] - p[nmne]);
-                            double dp_nw = (p[npnw] - p[nmnw]);
-                            
-                            double flux  = weight * (dp_sw + dp_se + dp_ne + dp_nw);
-                            
-                            lap[nmsw] += flux;
-                            lap[nmse] += flux;
-                            lap[nmne] += flux;
-                            lap[nmnw] += flux;
-                            lap[npsw] -= flux;
-                            lap[npse] -= flux;
-                            lap[npne] -= flux;
-                            lap[npnw] -= flux;
-                        }
-                        
-                        double hc = 0.125 * hcenter[ne];
-                        
-                        nmsw = nn;
-                        nmse = nn             + dis[0][1];
-                        nmne = nn             + dis[0][1] + dis[0][2];
-                        nmnw = nn                         + dis[0][2];
-                        npsw = nn + dis[0][0];
-                        npse = nn + dis[0][0] + dis[0][1];
-                        npne = nn + dis[0][0] + dis[0][1] + dis[0][2];
-                        npnw = nn + dis[0][0]             + dis[0][2];
-                        
-                        lap[nmsw] += hc*p[nmsw];
-                        lap[nmse] += hc*p[nmse];
-                        lap[nmne] += hc*p[nmne];
-                        lap[nmnw] += hc*p[nmnw];
-                        lap[npsw] += hc*p[npsw];
-                        lap[npse] += hc*p[npse];
-                        lap[npne] += hc*p[npne];
-                        lap[npnw] += hc*p[npnw];
-                    }
-                }
-            }
-#else
+
             /*
             const double a00 = 9.0/64.0;
             const double a10 = 3.0/64.0;
@@ -1010,7 +1041,6 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                     }
                 }
             }
-#endif
             
             if (x_periodic) {
                 for(k=igzn; k<iczn-igzn; k++) {
@@ -1051,7 +1081,6 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                 }
             }
 
-            /* TODO: remove comment-characters */
             precon_invert(lap, lap, node, x_periodic, y_periodic, z_periodic);
 
             break;

@@ -783,7 +783,15 @@ static void flux_correction_due_to_pressure_gradients(
             const int diy = icx; 
             const int diz = icx*icy;            
             
-            const double cstencil  = 1.0/64.0;
+            const double a  = 36.0/64.0;
+            const double b  =  6.0/64.0;
+            const double c  =  1.0/64.0;
+            /*
+            const double a  =  4.0/16.0;
+            const double b  =  2.0/16.0;
+            const double c  =  1.0/16.0;
+             */
+            
             
             ConsVars* fx = flux[0];
             ConsVars* fy = flux[1];
@@ -803,27 +811,27 @@ static void flux_correction_due_to_pressure_gradients(
                         int icm  = ic - dix;
                         
 #ifdef CORRECT_FLUX_RIGHT_AWAY
-                        fx->rhoY[n] -= dto2dx * hplusx[n] * cstencil *
-                        (  36.0 *  (dp2[ic] - dp2[icm])  
-                         +  6.0 * (  (dp2[ic+diy] - dp2[icm+diy]) 
+                        fx->rhoY[n] -= dto2dx * hplusx[n] * 
+                        (     a *  (dp2[ic] - dp2[icm])  
+                         +    b * (  (dp2[ic+diy] - dp2[icm+diy]) 
                                    + (dp2[ic-diy] - dp2[icm-diy])  
                                    + (dp2[ic+diz] - dp2[icm+diz])  
                                    + (dp2[ic-diz] - dp2[icm-diz])
                                    )
-                         +  1.0 * (  (dp2[ic+diy+diz] - dp2[icm+diy+diz]) 
+                         +    c * (  (dp2[ic+diy+diz] - dp2[icm+diy+diz]) 
                                    + (dp2[ic-diy+diz] - dp2[icm-diy+diz])  
                                    + (dp2[ic+diy-diz] - dp2[icm+diy-diz])  
                                    + (dp2[ic-diy-diz] - dp2[icm-diy-diz])
                                    ));   
 #else
                         fx->rhoY[n] = - dto2dx * hplusx[n] * cstencil *
-                        (  36.0 *  (dp2[ic] - dp2[icm])  
-                         +  6.0 * (  (dp2[ic+diy] - dp2[icm+diy]) 
+                        (     a *  (dp2[ic] - dp2[icm])  
+                         +    b * (  (dp2[ic+diy] - dp2[icm+diy]) 
                                    + (dp2[ic-diy] - dp2[icm-diy])  
                                    + (dp2[ic+diz] - dp2[icm+diz])  
                                    + (dp2[ic-diz] - dp2[icm-diz])
                                    )
-                         +  1.0 * (  (dp2[ic+diy+diz] - dp2[icm+diy+diz]) 
+                         +    c * (  (dp2[ic+diy+diz] - dp2[icm+diy+diz]) 
                                    + (dp2[ic-diy+diz] - dp2[icm-diy+diz])  
                                    + (dp2[ic+diy-diz] - dp2[icm+diy-diz])  
                                    + (dp2[ic-diy-diz] - dp2[icm-diy-diz])
@@ -844,27 +852,27 @@ static void flux_correction_due_to_pressure_gradients(
                         int jcm  = jc - diy;
                         
 #ifdef CORRECT_FLUX_RIGHT_AWAY
-                        fy->rhoY[n] -= dto2dy * hplusy[n] * cstencil *
-                        (  36.0 *    (dp2[jc] - dp2[jcm])  
-                         +  6.0 * (  (dp2[jc+diz] - dp2[jcm+diz]) 
+                        fy->rhoY[n] -= dto2dy * hplusy[n] * 
+                        (     a *    (dp2[jc] - dp2[jcm])  
+                         +    b * (  (dp2[jc+diz] - dp2[jcm+diz]) 
                                    + (dp2[jc-diz] - dp2[jcm-diz])  
                                    + (dp2[jc+dix] - dp2[jcm+dix])  
                                    + (dp2[jc-dix] - dp2[jcm-dix])
                                    )
-                         +  1.0 * (  (dp2[jc+diz+dix] - dp2[jcm+diz+dix]) 
+                         +    c * (  (dp2[jc+diz+dix] - dp2[jcm+diz+dix]) 
                                    + (dp2[jc-diz+dix] - dp2[jcm-diz+dix])  
                                    + (dp2[jc+diz-dix] - dp2[jcm+diz-dix])  
                                    + (dp2[jc-diz-dix] - dp2[jcm-diz-dix])
                                    ));
 #else
                         fy->rhoY[n] = - dto2dy * hplusy[n] * cstencil *
-                        (  36.0 *    (dp2[jc] - dp2[jcm])  
-                         +  6.0 * (  (dp2[jc+diz] - dp2[jcm+diz]) 
+                        (     a *    (dp2[jc] - dp2[jcm])  
+                         +    b * (  (dp2[jc+diz] - dp2[jcm+diz]) 
                                    + (dp2[jc-diz] - dp2[jcm-diz])  
                                    + (dp2[jc+dix] - dp2[jcm+dix])  
                                    + (dp2[jc-dix] - dp2[jcm-dix])
                                    )
-                         +  1.0 * (  (dp2[jc+diz+dix] - dp2[jcm+diz+dix]) 
+                         +    c * (  (dp2[jc+diz+dix] - dp2[jcm+diz+dix]) 
                                    + (dp2[jc-diz+dix] - dp2[jcm-diz+dix])  
                                    + (dp2[jc+diz-dix] - dp2[jcm+diz-dix])  
                                    + (dp2[jc-diz-dix] - dp2[jcm-diz-dix])
@@ -885,14 +893,14 @@ static void flux_correction_due_to_pressure_gradients(
                         int kcm = kc - diz;
                         
 #ifdef CORRECT_FLUX_RIGHT_AWAY
-                        fz->rhoY[n] -= dto2dz * hplusz[n] * cstencil *
-                        (  36.0 *    (dp2[kc] - dp2[kcm])  
-                         +  6.0 * (  (dp2[kc+diz] - dp2[kcm+diz]) 
+                        fz->rhoY[n] -= dto2dz * hplusz[n] *  
+                        (     a *    (dp2[kc] - dp2[kcm])  
+                         +    b * (  (dp2[kc+diz] - dp2[kcm+diz]) 
                                    + (dp2[kc-diz] - dp2[kcm-diz])  
                                    + (dp2[kc+dix] - dp2[kcm+dix])  
                                    + (dp2[kc-dix] - dp2[kcm-dix])
                                    )
-                         +  1.0 * (  (dp2[kc+diz+dix] - dp2[kcm+diz+dix]) 
+                         +    c * (  (dp2[kc+diz+dix] - dp2[kcm+diz+dix]) 
                                    + (dp2[kc-diz+dix] - dp2[kcm-diz+dix])  
                                    + (dp2[kc+diz-dix] - dp2[kcm+diz-dix])  
                                    + (dp2[kc-diz-dix] - dp2[kcm-diz-dix])

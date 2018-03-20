@@ -22,7 +22,7 @@ test_case = 'Travelling-Vortex';
 slice = 'xy'; % options:  'xy' 'zy' 'full3D'
 showmode = 1;
 separate_signs = 1;
-filledcontours = 0;
+filledcontours = 1;
 fixed_contours = 0;
 fixed_contour_step = 0;
 no_of_contours = 10;
@@ -99,7 +99,7 @@ elseif strcmp(test_case, 'Rising-Bubble')
 elseif strcmp(test_case, 'Travelling-Vortex')
     ncx = 64;  % 512; 256;
     ncy = 64;  % 512; 256;
-    ncz =  4;  % 512; 256;
+    ncz =  2;  % 512; 256;
     L   = 1.0;  
     x0  = 0.5;
     H   = 1.0;
@@ -158,14 +158,6 @@ rhoY_diff = 0;
 rhoZ_diff = 0;
 transp    = 0;
 
-if strcmp(slice, 'full3D')
-    kkmin = 1;
-    dkk   = 1;
-    kkmax = ncz;
-else
-    nslice = floor(ncz/2);
-end
-
 folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Mach_gravity_',modelstr);
 
 % cell-centered fields
@@ -205,6 +197,13 @@ varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; 
 %varstr = 'advflux_y';  folderstr = 'advflux'; titlestr = 'advflux_y'; ndummy = 2; arraysize = [ncy+1 ncz ncx]; symmetry = -1*symmetry; transp = 1;
 %varstr = 'advflux_z';  folderstr = 'advflux'; titlestr = 'advflux_z'; ndummy = 2; arraysize = [ncz+1 ncx ncy]; symmetry = -1*symmetry; transp = 1;
 
+if strcmp(slice, 'full3D')
+    kkmin = 1;
+    dkk   = 1;
+    kkmax = ncz;
+else
+    nslice = floor((ncz+2*ndummy)/2);
+end
 
 
 scrsz = get(0,'ScreenSize');

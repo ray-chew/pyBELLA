@@ -227,9 +227,22 @@ void second_projection(
     printf("\nrhsmax = %e, test-output\n", rhs_max);
     catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
 
+    /**/
+    for(int k = node->igz; k < node->icz - node->igz; k++) {
+        const int ln = k * node->icy * node->icx; 
+        for(int j = node->igy; j < node->icy - node->igy; j++) {
+            const int mn = ln + j * node->icx; 
+            for(int i = node->igx; i < node->icx - node->igx; i++) {
+                const int nn = mn + i;
+                if (fabs(rhs[nn]) > 1.0e-3) {
+                    printf("\nHere we go! (i,j,k) = (%d, %d, %d); rhs = %e\n", i,j,k, rhs[nn]);
+                }
+            }
+        }
+    }
     
     sprintf(fn2, "%s/rhs_nodes/rhs_nodes_%s.hdf", ud.file_name, step_string);
-    sprintf(fieldname2, "rhs_c");
+    sprintf(fieldname2, "rhs_nodes");
     
     WriteHDF(prhsfile,
              mpv->Level[0]->node->icx,
@@ -240,7 +253,7 @@ void second_projection(
              fn2,
              fieldname2);
     
-    /**/
+    /*
     EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, mpv->p2_nodes, (const double**)hplus, hcenter, x_periodic, y_periodic, z_periodic, rhs);
     
     sprintf(fn2, "%s/lap_nodes/lap_nodes_%s.hdf", ud.file_name, step_string);
@@ -256,7 +269,7 @@ void second_projection(
              fieldname2);
     
     assert(0);
-     
+     */
     /*
     sprintf(fn2, "%s/p2_nodes/p2_n_%s.hdf", ud.file_name, step_string);
     sprintf(fieldname2, "p2_nodes");
@@ -271,7 +284,6 @@ void second_projection(
              fieldname2);
     */
     
-
     rhs_output_count++;
     
 #endif
@@ -325,12 +337,12 @@ static double divergence_nodes(
             const int igye = elem->igy;
             const int icye = elem->icy;
             
-            const double dx = node->dx;
-            const double dy = node->dy;
-            const double oodxdt = 1.0 / (dx * dt);
-            const double oodydt = 1.0 / (dy * dt);
-            const double oowdxdt = weight * oodxdt;
-            const double oowdydt = weight * oodydt;
+            const double dx      = node->dx;
+            const double dy      = node->dy;
+            const double oodx    = 1.0 / dx;
+            const double oody    = 1.0 / dy;
+            const double oowdxdt = (2.0/dt) * weight * 0.5 * oodx;
+            const double oowdydt = (2.0/dt) * weight * 0.5 * oody;
             
             double Y;
             
@@ -400,14 +412,13 @@ static double divergence_nodes(
 			const double dy = node->dy;
 			const double dz = node->dz;
 
-			const double oodxdt = 1.0 / (dx * dt);
-			const double oodydt = 1.0 / (dy * dt);
-			const double oodzdt = 1.0 / (dz * dt);
+			const double oodx = 1.0 / dx;
+			const double oody = 1.0 / dy;
+			const double oodz = 1.0 / dz;
             
-			const double oow = 1.0 / 4.0;
-			const double oowdxdt = weight * oow * oodxdt;
-			const double oowdydt = weight * oow * oodydt;
-			const double oowdzdt = weight * oow * oodzdt;
+			const double oowdxdt = (2.0/dt) * weight * 0.25 * oodx;
+			const double oowdydt = (2.0/dt) * weight * 0.25 * oody;
+			const double oowdzdt = (2.0/dt) * weight * 0.25 * oodz;
             
             const int dixn = 1;
             const int diyn = icxn;
@@ -452,6 +463,8 @@ static double divergence_nodes(
                 } 
 			} 
 			
+            
+            
 			/* account for influx bottom boundary */
 			j = igye;
 			Y  = mpv->HydroState->Y0[j];
@@ -785,24 +798,16 @@ void correction_nodes(
 			
 			const int icxe = node->icx - 1;
 			
-			const double dx = node->dx;
-			const double dy = node->dy;
-			const double oodx = 1.0 / dx;
-			const double oody = 1.0 / dy;
-            
-            double dtowdx;
-            double dtowdy;
-            if (ud.time_integrator == SI_MIDPT) {
-                dtowdx = 0.5*dt * oodx; /* 1.0*dt * oodx; */
-                dtowdy = 0.5*dt * oody; /* 1.0*dt * oody; */
-            } else {
-                dtowdx = 0.5*dt * oodx;
-                dtowdy = 0.5*dt * oody;                
-            }
-            
             const double* hplusx = hplus[0];
             const double* hplusy = hplus[1];
-			
+
+			const double dx     = node->dx;
+			const double dy     = node->dy;
+			const double oodx   = 1.0 / dx;
+			const double oody   = 1.0 / dy;
+            const double dtowdx = 0.5*dt * oodx;
+            const double dtowdy = 0.5*dt * oody;                
+            			
 			int i, j, m, me;
 			
 			for(j = igy; j < icy - igy - 1; j++) {
@@ -837,32 +842,21 @@ void correction_nodes(
             
             const int icxe = node->icx - 1;
             const int icye = node->icy - 1;
-            
-            const double dx = node->dx;
-            const double dy = node->dy;
-            const double dz = node->dz;
-            const double oodx = 1.0 / dx;
-            const double oody = 1.0 / dy;
-            const double oodz = 1.0 / dz;
-            
-            double dtowdx;
-            double dtowdy;
-            double dtowdz;
-            
-            if (ud.time_integrator == SI_MIDPT) {
-                dtowdx = 0.5*dt * oodx; /* 1.0*dt * oodx; */
-                dtowdy = 0.5*dt * oody; /* 1.0*dt * oody; */
-                dtowdz = 0.5*dt * oodz; /* 1.0*dt * oodz; */
-            } else {
-                dtowdx = 0.5*dt * oodx;
-                dtowdy = 0.5*dt * oody;                
-                dtowdz = 0.5*dt * oodz;                
-            }
-            
+                                                
             const double* hplusx = hplus[0];
             const double* hplusy = hplus[1];
             const double* hplusz = hplus[2];
-                        
+            
+            const double dx     = node->dx;
+            const double dy     = node->dy;
+            const double dz     = node->dz;
+            const double oodx   = 1.0 / dx;
+            const double oody   = 1.0 / dy;
+            const double oodz   = 1.0 / dz;            
+            const double dtowdx = 0.5*dt * oodx;
+            const double dtowdy = 0.5*dt * oody;                
+            const double dtowdz = 0.5*dt * oodz;                
+
             for(int k = igz; k < icz-igz-1; k++) {
                 int l  = k*icx*icy;
                 int le = k*icxe*icye;
