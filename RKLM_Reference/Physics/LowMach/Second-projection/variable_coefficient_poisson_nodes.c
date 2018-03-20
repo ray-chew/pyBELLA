@@ -173,7 +173,8 @@ static double BiCGSTAB_MG_nodes(
 
 	cnt = 0;
 #ifdef DIV_CONTROL_LOCAL
-	while(tmp > 1.0 && tmp_local > 1.0 && cnt < max_iterations)
+    // while(tmp > 1.0 && tmp_local > 1.0 && cnt < 1 )
+	while(tmp > 1.0 && tmp_local > 1.0 && cnt < max_iterations )
     {
 #else
     while(tmp > 1.0 && cnt < max_iterations)

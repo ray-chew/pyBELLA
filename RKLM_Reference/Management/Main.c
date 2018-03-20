@@ -65,9 +65,9 @@ int main( void )
     /* This pre-projection is beneficial for getting a nodal pressure that
        is free of the multipole perturbations due to basic divergence errors
        that come simply from the divergence approximation on the nodal grid.
+     */
     second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 1.0, 0.0, 1.0);
     cell_pressure_to_nodal_pressure(mpv, elem, node);
-     */
     ud.compressibility = compressibility(0);
         
 	if(ud.write_file == ON) 

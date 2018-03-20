@@ -212,7 +212,7 @@ void Sol_initial(ConsVars* Sol,
     const double R0      = 0.4;
     const double fac     = 1*1024.0; /* 4*1024.0 */
     const double xc      = 0.0;
-    const double yc      = 0.0;
+    const double yc      = 0.4;
     
     /*periodic setting: */
     const double xcm     = xc-(ud.xmax-ud.xmin);
@@ -273,7 +273,7 @@ void Sol_initial(ConsVars* Sol,
                 Sol->rhow[n] = rho * w;
                 Sol->rhoe[n] = rhoe(rho, u, v, w, p_hydro);
                 Sol->rhoY[n] = rhoY;
-                                                
+                                 
                 if ( r/R0 < 1.0 ) {
                     
                     int ii;
@@ -315,7 +315,7 @@ void Sol_initial(ConsVars* Sol,
                 else {
                     mpv->p2_cells[n] = 0.0;
                 }
-                
+
                 /* Exner pressure */
                 mpv->p2_cells[n]  = th.Gamma*fac*fac*mpv->p2_cells[n]/mpv->HydroState->rhoY0[j];
             }            
@@ -323,7 +323,35 @@ void Sol_initial(ConsVars* Sol,
 	}  
     set_ghostcells_p2(mpv->p2_cells, elem, igx);
 
-    // cell_pressure_to_nodal_pressure(mpv, elem, node);
+    
+    /* TODO:  Wipe this out after testing */
+    /* Testing the Laplacian 
+    for(k = 0; k < icz; k++) {
+        l = k * icx * icy; 
+        z = elem->z[k];
+        
+        for(j = 0; j < icy; j++) {
+            m = l + j * icx;
+            y = elem->y[j];
+            
+            ycc = (fabs(y-yc) < fabs(y-ycm) ? (fabs(y-yc) < fabs(y-ycm) ? yc : ycp) : ycm);
+            
+            for(i = 0; i < icx; i++) {
+                n = m + i;                
+                x       = elem->x[i];
+                xcc = (fabs(x-xc) < fabs(x-xcm) ? (fabs(x-xc) < fabs(x-xcm) ? xc : xcp) : xcm);
+                
+                r = sqrt((x-xcc)*(x-xcc) + (y-ycc)*(y-ycc));
+                // r =(x-xcc);
+                mpv->p2_cells[n] = pow(r/R0,2);
+            }
+        }
+    }
+     */
+    
+    for (int nn=0; nn<node->nc; nn++) {
+        mpv->p2_nodes[nn] = 0.0;
+    }
 }
 
 /* ================================================================================== */

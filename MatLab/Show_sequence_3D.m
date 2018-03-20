@@ -19,7 +19,7 @@ modelstr = 'psinc';
 test_case = 'Travelling-Vortex';
 %test_case = 'Advection';
 
-slice = 'full3D'; % options:  'xy' 'zy' 'full3D'
+slice = 'xy'; % options:  'xy' 'zy' 'full3D'
 showmode = 1;
 separate_signs = 1;
 filledcontours = 1;
@@ -42,7 +42,7 @@ title_true = 1;
 
 %kmin = 50;
 %kmax = 53;
-kmin = 0;
+kmin = 1;
 kmax = 601;
 dk   = 1;
 
@@ -160,7 +160,7 @@ transp    = 0;
 
 if strcmp(slice, 'full3D')
     kkmin = 1;
-    dkk   = 2;
+    dkk   = 1;
     kkmax = ncz;
 else
     nslice = floor(ncz/2);
@@ -181,7 +181,7 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'rhoZ';  folderstr = 'rhoZ'; titlestr = 'rhoZ'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'Z';  folderstr = 'Z'; titlestr = 'Z'; ndummy = 2; arraysize = [ncx ncy ncz]; rhoZ_diff = 0;
-varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy ncz]; symmetry = -1*symmetry;
+%varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy ncz]; symmetry = -1*symmetry;
 %varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy ncz];
@@ -197,8 +197,9 @@ varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy
 %varstr = 'rhs_cells';  folderstr = 'rhs_cells'; titlestr = 'rhs_c'; ndummy = 2; arraysize = [ncx ncy ncz];
 
 %varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny nnz];
-%varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny nnz];
+varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny nnz];
 %varstr = 'rhs_nodes';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n';    ndummy = 2; arraysize = [nnx nny nnz];
+%varstr = 'lap_nodes';  folderstr = 'lap_nodes'; titlestr = 'lap_n';    ndummy = 2; arraysize = [nnx nny nnz];
 
 %varstr = 'advflux_x';  folderstr = 'advflux'; titlestr = 'advflux_x'; ndummy = 2; arraysize = [ncx+1 ncy ncz]; symmetry = -1*symmetry;
 %varstr = 'advflux_y';  folderstr = 'advflux'; titlestr = 'advflux_y'; ndummy = 2; arraysize = [ncy+1 ncz ncx]; symmetry = -1*symmetry; transp = 1;
@@ -258,7 +259,7 @@ for k = kmin:dk:kmax
 
         if filledcontours
             for kk = kkmin:dkk:kkmax
-                contourf(x,y,transpose(th(:,:,kk)),15,'LineColor','auto');
+                contourf(x,y,transpose(th(:,:,kk)),25,'LineColor','auto');
                 colormap Jet;
                 colorbar('FontSize',14,'FontName','Helvetica');
                 set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
@@ -323,7 +324,7 @@ for k = kmin:dk:kmax
         
         % Create contour
         if filledcontours
-            contourf(x,z,th,15,'LineColor','auto');
+            contourf(x,z,th,25,'LineColor','auto');
             %contourf(x,z,th,[1.01 1.05 1.1 1.15 1.2 1.24],'LineColor','auto');
             colormap Jet
             colorbar('FontSize',14,'FontName','Helvetica')

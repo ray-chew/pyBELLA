@@ -79,7 +79,8 @@ void correction_nodes(
 
 /* ========================================================================== */
 
-#if 0
+#define OUTPUT_RHS 0
+#if OUTPUT_RHS
 static int rhs_output_count = 0;
 #endif
 
@@ -135,7 +136,7 @@ void second_projection(
 
     catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
 
-#if 0
+#if OUTPUT_RHS
     extern User_Data ud;
     FILE *prhsfile = NULL;
     char fn2[200], fieldname2[90], step_string[30];
@@ -208,7 +209,7 @@ void second_projection(
 	variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, x_periodic, y_periodic, z_periodic, dt);
     correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);
     
-#if 0
+#if OUTPUT_RHS
     for(ii=0; ii<nc; ii++) rhs[ii] = 0.0;
 
     if(rhs_output_count<10) {
@@ -238,20 +239,39 @@ void second_projection(
              rhs,
              fn2,
              fieldname2);
-
-    /*
-    sprintf(fn2, "%s/hplus_nodes/hplus_nodes_x_%s.hdf", ud.file_name, step_string);
-    sprintf(fieldname2, "hplus_nodes_x");
+    
+    /**/
+    EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, mpv->p2_nodes, (const double**)hplus, hcenter, x_periodic, y_periodic, z_periodic, rhs);
+    
+    sprintf(fn2, "%s/lap_nodes/lap_nodes_%s.hdf", ud.file_name, step_string);
+    sprintf(fieldname2, "lap_nodes");
     
     WriteHDF(prhsfile,
-             mpv->Level[0]->elem->icx,
-             mpv->Level[0]->elem->icy,
-             mpv->Level[0]->elem->icz,
-             mpv->Level[0]->elem->ndim,
-             hplus[0],
+             mpv->Level[0]->node->icx,
+             mpv->Level[0]->node->icy,
+             mpv->Level[0]->node->icz,
+             mpv->Level[0]->node->ndim,
+             rhs,
              fn2,
              fieldname2);
-     */
+    
+    assert(0);
+     
+    /*
+    sprintf(fn2, "%s/p2_nodes/p2_n_%s.hdf", ud.file_name, step_string);
+    sprintf(fieldname2, "p2_nodes");
+    
+    WriteHDF(prhsfile,
+             mpv->Level[0]->node->icx,
+             mpv->Level[0]->node->icy,
+             mpv->Level[0]->node->icz,
+             mpv->Level[0]->node->ndim,
+             mpv->p2_nodes,
+             fn2,
+             fieldname2);
+    */
+    
+
     rhs_output_count++;
     
 #endif
@@ -642,7 +662,7 @@ static void operator_coefficients_nodes(
             /*  const double ccenter = - 4.0*(ud.compressibility*ud.Msq)*th.gamminv/(mpv->dt*mpv->dt); 
                 const double cexp    = 1.0-th.gamm;
              */
-			const double ccenter = - 4.0*(ud.compressibility*ud.Msq)*th.gm1inv/(mpv->dt*mpv->dt);
+			const double ccenter = - 4.0*(ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt);
             const double cexp    = 2.0-th.gamm;
             
             int i, j, m, n;
@@ -692,7 +712,7 @@ static void operator_coefficients_nodes(
 			double* hplusz  = hplus[2];
 			double* hc      = hcenter;
             
-			const double ccenter = - 4.0*(ud.compressibility*ud.Msq)*th.gamminv/(mpv->dt*mpv->dt);
+			const double ccenter = - 4.0*(ud.compressibility*ud.Msq)*th.gamminv/(dt*dt);
             
 			const double cexp    = 1.0-th.gamm;
 			int i, j, k, l, m, n;

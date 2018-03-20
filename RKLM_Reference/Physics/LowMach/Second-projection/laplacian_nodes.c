@@ -727,6 +727,8 @@ void precon_invert(
 {
     extern User_Data ud;
     
+    // return;
+    
     if (ud.gravity_strength[ud.gravity_direction] > 0) {
         precon_column_invert(vec_out, vec_in, node, x_periodic, y_periodic, z_periodic);
     } else {
@@ -831,6 +833,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                 }
             }
             
+            /* TODO: remove comment-characters */
             precon_invert(lap, lap, node, x_periodic, y_periodic, z_periodic);
 
             break;
@@ -863,7 +866,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             int i, j, k;
             
             memset(lap, 0.0, node->nc*sizeof(double));
-#if 1
+#if 0
             for(k = igze; k < icze - igze; k++) {
                 int le   = k * icxe*icye;
                 int ln   = k * icxn*icyn;
@@ -895,19 +898,16 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                             double dp_ne = (p[npne] - p[nmne]);
                             double dp_nw = (p[npnw] - p[nmnw]);
                             
-                            double flux_sw = weight * dp_sw;
-                            double flux_se = weight * dp_se;
-                            double flux_ne = weight * dp_ne;
-                            double flux_nw = weight * dp_nw;
+                            double flux  = weight * (dp_sw + dp_se + dp_ne + dp_nw);
                             
-                            lap[nmsw] += flux_sw;
-                            lap[nmse] += flux_se;
-                            lap[nmne] += flux_ne;
-                            lap[nmnw] += flux_nw;
-                            lap[npsw] -= flux_sw;
-                            lap[npse] -= flux_se;
-                            lap[npne] -= flux_ne;
-                            lap[npnw] -= flux_nw;
+                            lap[nmsw] += flux;
+                            lap[nmse] += flux;
+                            lap[nmne] += flux;
+                            lap[nmnw] += flux;
+                            lap[npsw] -= flux;
+                            lap[npse] -= flux;
+                            lap[npne] -= flux;
+                            lap[npnw] -= flux;
                         }
                         
                         double hc = 0.125 * hcenter[ne];
@@ -933,10 +933,16 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                 }
             }
 #else
+            /*
             const double a00 = 9.0/64.0;
             const double a10 = 3.0/64.0;
             const double a01 = 3.0/64.0;
             const double a11 = 1.0/64.0;
+             */
+            const double a00 = 1.0/16.0;
+            const double a10 = 1.0/16.0;
+            const double a01 = 1.0/16.0;
+            const double a11 = 1.0/16.0;
 
             for(k = igze; k < icze - igze; k++) {
                 int le   = k * icxe*icye;
@@ -1006,8 +1012,6 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             }
 #endif
             
-            precon_invert(lap, lap, node, x_periodic, y_periodic, z_periodic);
-            
             if (x_periodic) {
                 for(k=igzn; k<iczn-igzn; k++) {
                     int ln = k*icxn*icyn;
@@ -1046,6 +1050,10 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                     }
                 }
             }
+
+            /* TODO: remove comment-characters */
+            precon_invert(lap, lap, node, x_periodic, y_periodic, z_periodic);
+
             break;
         }
         default: ERROR("ndim not in {1, 2, 3}");
