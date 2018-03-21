@@ -44,17 +44,18 @@ contourf(thasyy,20,'LineColor','auto');
 colorbar
 colormap Jet
 set(gca,'DataAspectRatio', aspect);
-title('asy m')
+title('asy y')
 %
 subplot(2,3,3)
 contourf(thsymm,20,'LineColor','auto');
 colorbar
 colormap Jet
 set(gca,'DataAspectRatio', aspect);
+title('sym m')
 %
-title('asy m')
 subplot(2,3,6)
 contourf(thasym,20,'LineColor','auto');
 colorbar
 colormap Jet
 set(gca,'DataAspectRatio', aspect);
+title('asy m')

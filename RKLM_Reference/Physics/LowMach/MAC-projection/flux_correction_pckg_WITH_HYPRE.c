@@ -82,7 +82,8 @@ double Newton_rhs(double* rhs,
 
 /* ========================================================================== */
 
-#if 0
+#define RHS_OUTPUT 0
+#if RHS_OUTPUT
 static int rhs_output_count = 0;
 #endif
 
@@ -132,13 +133,12 @@ void flux_correction(ConsVars* flux[3],
     
     rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
     
-#if 0
+#if RHS_OUTPUT
     extern User_Data ud;
     FILE *prhsfile = NULL;
     char fn2[200], fieldname2[90];
     
     sprintf(fn2, "%s/rhs_cells/rhs_cells_00%d.hdf", ud.file_name, rhs_output_count);
-    rhs_output_count++;
     sprintf(fieldname2, "rhs_c");
     
     WriteHDF(prhsfile,
@@ -149,18 +149,8 @@ void flux_correction(ConsVars* flux[3],
              rhs,
              fn2,
              fieldname2);
-    
-    sprintf(fn2, "%s/Tests/frhoY_y_pre.hdf", ud.file_name);
-    sprintf(fieldname2, "frhoY_y_pre.hdf");
-    
-    WriteHDF(prhsfile,
-             mpv->Level[0]->elem->ify,
-             mpv->Level[0]->elem->icx,
-             mpv->Level[0]->elem->icz,
-             mpv->Level[0]->elem->ndim,
-             flux[1]->rhoY,
-             fn2,
-             fieldname2);
+
+    rhs_output_count++;
 #endif
     
     
@@ -209,45 +199,42 @@ void flux_correction(ConsVars* flux[3],
     rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
     printf("\nrhs_max = %e (after projection)\n", rhsmax);
     
-#if 0
-    sprintf(fn2, "%s/Tests/frhoY_y_post.hdf", ud.file_name);
-    sprintf(fieldname2, "frhoY_y_post.hdf");
-    
-    WriteHDF(prhsfile,
-             mpv->Level[0]->elem->ify,
-             mpv->Level[0]->elem->icx,
-             mpv->Level[0]->elem->icz,
-             mpv->Level[0]->elem->ndim,
-             flux[1]->rhoY,
-             fn2,
-             fieldname2);
-#endif
-    
-    /* under the SI_MIDPT time integrator sequence, after this step flux will contain:
-     (flux_correction + recomputed flux after first advection sequence)
-     - flux accumulated over first advection sequence
-     The sum in the bracket is a divergence-controlled flux, while the 
-     subtracted flux from the first sequence will make up for the ``bad guess''
-     of the flux divergence in the explicity advection cycle.
-     */
-    
-#if 0
-    sprintf(fn2, "%s/Tests/frhoY_y_post2.hdf", ud.file_name);
-    sprintf(fieldname2, "frhoY_y_post2.hdf");
-    
-    WriteHDF(prhsfile,
-             mpv->Level[0]->elem->ify,
-             mpv->Level[0]->elem->icx,
-             mpv->Level[0]->elem->icz,
-             mpv->Level[0]->elem->ndim,
-             flux[1]->rhoY,
-             fn2,
-             fieldname2);
-#endif
-    
-    
     flux_fix_for_open_boundaries(flux, elem, mpv);  
     
+#if RHS_OUTPUT
+    extern double *W0;
+    double* lap = W0;
+    
+    sprintf(fn2, "%s/rhs_cells/rhs_cells_00%d.hdf", ud.file_name, rhs_output_count);
+    sprintf(fieldname2, "rhs_c");
+    
+    WriteHDF(prhsfile,
+             mpv->Level[0]->elem->icx,
+             mpv->Level[0]->elem->icy,
+             mpv->Level[0]->elem->icz,
+             mpv->Level[0]->elem->ndim,
+             rhs,
+             fn2,
+             fieldname2);
+    
+    EnthalpyWeightedLap_bilinear_p(elem, node,p2, (const double**)hplus, hcenter, Sol, mpv, dt, lap);
+    
+    sprintf(fn2, "%s/lap_cells/lap_cells_000.hdf", ud.file_name);
+    sprintf(fieldname2, "lap_c");
+    
+    WriteHDF(prhsfile,
+             mpv->Level[0]->elem->icx,
+             mpv->Level[0]->elem->icy,
+             mpv->Level[0]->elem->icz,
+             mpv->Level[0]->elem->ndim,
+             lap,
+             fn2,
+             fieldname2);
+    
+    rhs_output_count++;
+
+#endif
+
     /* store results in mpv-fields */
     for(n=0; n<elem->nc; n++) {
         mpv->dp2_cells[n] = p2[n] - mpv->p2_cells[n];
@@ -788,6 +775,7 @@ static void flux_correction_due_to_pressure_gradients(
             const double* hplusy   = hplus[1];
             const double* hplusz   = hplus[2];
             
+            /* fluxes in the x-direction */
             for(int k = igz; k < icz - igz; k++) {
                 int l = k * ifx*icy;
                 for(int j = igy; j < icy - igy; j++) {
@@ -851,15 +839,15 @@ static void flux_correction_due_to_pressure_gradients(
                         
                         fz->rhoY[n] -= dto2dz * hplusz[n] *  
                         (     a *    (dp2[kc] - dp2[kcm])  
-                         +    b * (  (dp2[kc+diz] - dp2[kcm+diz]) 
-                                   + (dp2[kc-diz] - dp2[kcm-diz])  
-                                   + (dp2[kc+dix] - dp2[kcm+dix])  
-                                   + (dp2[kc-dix] - dp2[kcm-dix])
+                         +    b * (  (dp2[kc+dix] - dp2[kcm+dix]) 
+                                   + (dp2[kc-dix] - dp2[kcm-dix])  
+                                   + (dp2[kc+diy] - dp2[kcm+diy])  
+                                   + (dp2[kc-diy] - dp2[kcm-diy])
                                    )
-                         +    c * (  (dp2[kc+diz+dix] - dp2[kcm+diz+dix]) 
-                                   + (dp2[kc-diz+dix] - dp2[kcm-diz+dix])  
-                                   + (dp2[kc+diz-dix] - dp2[kcm+diz-dix])  
-                                   + (dp2[kc-diz-dix] - dp2[kcm-diz-dix])
+                         +    c * (  (dp2[kc+dix+diy] - dp2[kcm+dix+diy]) 
+                                   + (dp2[kc-dix+diy] - dp2[kcm-dix+diy])  
+                                   + (dp2[kc+dix-diy] - dp2[kcm+dix-diy])  
+                                   + (dp2[kc-dix-diy] - dp2[kcm-dix-diy])
                                    ));
                     }
                 }

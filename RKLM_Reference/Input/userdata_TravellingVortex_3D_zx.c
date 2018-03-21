@@ -104,7 +104,7 @@ void User_Data_init(User_Data* ud) {
 	ud->zmax =   5000/ud->h_ref;
 
 	/* boundary/initial conditions */
-	ud->wind_speed        = 10.0/ud->u_ref;              /* velocity in [u_ref] */
+	ud->wind_speed        = 1.0*10.0/ud->u_ref;              /* velocity in [u_ref] */
 	ud->wind_shear        = -0.0;              /* velocity in [u_ref/h_ref] */             
 	ud->hill_height       =  0.0;              /* height   in [h_ref]   */ 
 	ud->hill_length_scale =  99999.9;          /* width    in [h_ref]   */   
@@ -205,7 +205,7 @@ void Sol_initial(ConsVars* Sol,
 	const double v0    = 0.0;
 	const double w0    = 1.0*ud.wind_speed;
     
-    const double rotdir = -1.0;
+    const double rotdir = 1.0;
     
     const double rho0    = 0.5;  /* 0.5 standard;  1.0 stable configuration; */
     const double del_rho = 0.5;  /* 0.5 standard; -0.5 stable configuration; 0.0; for homentropic */

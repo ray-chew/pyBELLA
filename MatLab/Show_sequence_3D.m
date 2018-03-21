@@ -27,8 +27,7 @@ fixed_contours = 0;
 fixed_contour_step = 0;
 no_of_contours = 10;
 show_increments = 0;
-symmetry = 0;        % in {0,1}
-symmetrytest = 0;
+symmetrytest = 1;
 showdummycells = 0;
 
 % th0 = -0.0015/300;
@@ -100,6 +99,9 @@ elseif strcmp(test_case, 'Travelling-Vortex')
     ncx = 64;  % 512; 256;
     ncy = 2;  % 512; 256;
     ncz = 64;  % 512; 256;
+    %ncx = 64;  % 512; 256;
+    %ncy = 64;  % 512; 256;
+    %ncz = 2;  % 512; 256;
     L   = 1.0;  
     x0  = 0.5;
     H   = 1.0;
@@ -161,10 +163,10 @@ transp    = 0;
 folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Mach_gravity_',modelstr);
 
 % cell-centered fields
-%varstr = 'rho'; folderstr = 'rho'; titlestr = 'rho'; ndummy = 2; arraysize = [ncx ncy ncz];
+varstr = 'rho'; folderstr = 'rho'; titlestr = 'rho'; ndummy = 2; arraysize = [ncx ncy ncz]; filledcontours = 0; fixed_contours = 0;
 %varstr = 'p'; folderstr = 'p'; titlestr = 'p'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'S'; folderstr = 'S'; titlestr = 'S'; ndummy = 2; arraysize = [ncx ncy ncz];
-varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy ncz]; rhoY_diff = 1;
+%varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy ncz]; rhoY_diff = 1;
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy ncz];
@@ -187,6 +189,7 @@ varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize =
 %varstr = 'dp2_c';  folderstr = 'dp2_c'; titlestr = 'd\pi'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'dpdim';  folderstr = 'dpdime'; titlestr = 'dp [Pa]'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'rhs_cells';  folderstr = 'rhs_cells'; titlestr = 'rhs_c'; ndummy = 2; arraysize = [ncx ncy ncz];
+%varstr = 'lap_cells';  folderstr = 'lap_cells'; titlestr = 'lap_c'; ndummy = 2; arraysize = [ncx ncy ncz];
 
 %varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny nnz];
 %varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny nnz];
@@ -214,6 +217,10 @@ end
 
 scrsz = get(0,'ScreenSize');
 figure1 = figure('Position',[1 scrsz(4)/1.5 scrsz(3)/1.5 scrsz(4)/1.75]);
+if abs(symmetry) == 1 
+    figure2 = figure('Position',[scrsz(4)/2 0 scrsz(3)/1 scrsz(4)/2.5]);
+end
+
 if title_true
     texthandle = annotation('textbox', [0.45 0.95 0.2 0.05]);
     set(texthandle, 'String', strcat(titlestr,modelfigstr,' 3D'), 'FontSize', 18, 'FontName', 'Helvetica', 'LineStyle', 'none');
@@ -351,9 +358,13 @@ for k = kmin:dk:kmax
         
         % Create ylabel
         ylabel('z','FontSize',18,'FontName','Helvetica');
-        
-        pause
     end
+         
+    if symmetrytest == 1
+        SymmetryTests(transpose(th),55);
+        figure(figure1)
+    end
+    pause
 end
 
 
