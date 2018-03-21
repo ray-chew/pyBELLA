@@ -201,11 +201,9 @@ void flux_correction(ConsVars* flux[3],
      it is thus overwritten under the SI_MIDPT time integration sequence */
     flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2, t, dt);
     
-#ifdef CORRECT_FLUX_RIGHT_AWAY
     /* test whether divergence is actually controlled */
     rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
     printf("\nrhs_max = %e (after projection)\n", rhsmax);
-#endif
     
 #if 0
     sprintf(fn2, "%s/Tests/frhoY_y_post.hdf", ud.file_name);
@@ -719,7 +717,6 @@ static void flux_correction_due_to_pressure_gradients(
                     int ic   = j*icx + i;
                     int icm  = ic - 1;
                     
-#ifdef CORRECT_FLUX_RIGHT_AWAY  
                     /* It seems this should be the active version, but test against alternative 
                      for IGW before removing this option, looking especially for vertical velocity
                      in the compressible case towards the end of the standard test run. */
@@ -727,12 +724,6 @@ static void flux_correction_due_to_pressure_gradients(
                                              + b * ( hplusx[nc] * (dp2[ic+icx] - dp2[icm+icx])  
                                                    + hplusx[nc] * (dp2[ic-icx] - dp2[icm-icx])  
                                                    ));
-#else
-                    f->rhoY[nc] = -dto2dx * (  a *   hplusx[nc] * (dp2[ic]     - dp2[icm]    )  
-                                             + b * ( hplusx[nn] * (dp2[ic+icx] - dp2[icm+icx])  
-                                                   + hplusx[ns] * (dp2[ic-icx] - dp2[icm-icx])  
-                                                   ));
-#endif
                 }
             }  
             
@@ -746,18 +737,10 @@ static void flux_correction_due_to_pressure_gradients(
                     int jc  = j * icx + i;
                     int jcm = jc - icx;
                     
-#ifdef CORRECT_FLUX_RIGHT_AWAY
                     g->rhoY[mc]  -= dto2dy * (  a *   hplusy[mc] * (dp2[jc]   - dp2[jcm]  ) 
                                               + b * ( hplusy[mc] * (dp2[jc+1] - dp2[jcm+1]) 
                                                     + hplusy[mc] * (dp2[jc-1] - dp2[jcm-1]) 
-                                                    ));
-#else
-                    g->rhoY[mc]  = -dto2dy * (  a *   hplusy[mc] * (dp2[jc]   - dp2[jcm]  ) 
-                                              + b * ( hplusy[me] * (dp2[jc+1] - dp2[jcm+1]) 
-                                                    + hplusy[mw] * (dp2[jc-1] - dp2[jcm-1]) 
-                                                    ));
-#endif
-                    
+                                                    ));                    
                 }   
             }
             
@@ -810,7 +793,6 @@ static void flux_correction_due_to_pressure_gradients(
                         int ic   = k*diz + j*diy + i*dix;
                         int icm  = ic - dix;
                         
-#ifdef CORRECT_FLUX_RIGHT_AWAY
                         fx->rhoY[n] -= dto2dx * hplusx[n] * 
                         (     a *  (dp2[ic] - dp2[icm])  
                          +    b * (  (dp2[ic+diy] - dp2[icm+diy]) 
@@ -823,20 +805,6 @@ static void flux_correction_due_to_pressure_gradients(
                                    + (dp2[ic+diy-diz] - dp2[icm+diy-diz])  
                                    + (dp2[ic-diy-diz] - dp2[icm-diy-diz])
                                    ));   
-#else
-                        fx->rhoY[n] = - dto2dx * hplusx[n] * cstencil *
-                        (     a *  (dp2[ic] - dp2[icm])  
-                         +    b * (  (dp2[ic+diy] - dp2[icm+diy]) 
-                                   + (dp2[ic-diy] - dp2[icm-diy])  
-                                   + (dp2[ic+diz] - dp2[icm+diz])  
-                                   + (dp2[ic-diz] - dp2[icm-diz])
-                                   )
-                         +    c * (  (dp2[ic+diy+diz] - dp2[icm+diy+diz]) 
-                                   + (dp2[ic-diy+diz] - dp2[icm-diy+diz])  
-                                   + (dp2[ic+diy-diz] - dp2[icm+diy-diz])  
-                                   + (dp2[ic-diy-diz] - dp2[icm-diy-diz])
-                                   ));   
-#endif
                     }
                 } 
             }
@@ -851,7 +819,6 @@ static void flux_correction_due_to_pressure_gradients(
                         int jc   = k*diz + j*diy + i*dix;
                         int jcm  = jc - diy;
                         
-#ifdef CORRECT_FLUX_RIGHT_AWAY
                         fy->rhoY[n] -= dto2dy * hplusy[n] * 
                         (     a *    (dp2[jc] - dp2[jcm])  
                          +    b * (  (dp2[jc+diz] - dp2[jcm+diz]) 
@@ -864,20 +831,6 @@ static void flux_correction_due_to_pressure_gradients(
                                    + (dp2[jc+diz-dix] - dp2[jcm+diz-dix])  
                                    + (dp2[jc-diz-dix] - dp2[jcm-diz-dix])
                                    ));
-#else
-                        fy->rhoY[n] = - dto2dy * hplusy[n] * cstencil *
-                        (     a *    (dp2[jc] - dp2[jcm])  
-                         +    b * (  (dp2[jc+diz] - dp2[jcm+diz]) 
-                                   + (dp2[jc-diz] - dp2[jcm-diz])  
-                                   + (dp2[jc+dix] - dp2[jcm+dix])  
-                                   + (dp2[jc-dix] - dp2[jcm-dix])
-                                   )
-                         +    c * (  (dp2[jc+diz+dix] - dp2[jcm+diz+dix]) 
-                                   + (dp2[jc-diz+dix] - dp2[jcm-diz+dix])  
-                                   + (dp2[jc+diz-dix] - dp2[jcm+diz-dix])  
-                                   + (dp2[jc-diz-dix] - dp2[jcm-diz-dix])
-                                   ));
-#endif
                     }   
                 }
             }
@@ -892,7 +845,6 @@ static void flux_correction_due_to_pressure_gradients(
                         int kc  = k*diz + j*diy + i*dix;
                         int kcm = kc - diz;
                         
-#ifdef CORRECT_FLUX_RIGHT_AWAY
                         fz->rhoY[n] -= dto2dz * hplusz[n] *  
                         (     a *    (dp2[kc] - dp2[kcm])  
                          +    b * (  (dp2[kc+diz] - dp2[kcm+diz]) 
@@ -905,20 +857,6 @@ static void flux_correction_due_to_pressure_gradients(
                                    + (dp2[kc+diz-dix] - dp2[kcm+diz-dix])  
                                    + (dp2[kc-diz-dix] - dp2[kcm-diz-dix])
                                    ));
-#else
-                        fz->rhoY[n] = - dto2dz * hplusz[n] * cstencil *
-                        (  36.0 *    (dp2[kc] - dp2[kcm])  
-                         +  6.0 * (  (dp2[kc+diz] - dp2[kcm+diz]) 
-                                   + (dp2[kc-diz] - dp2[kcm-diz])  
-                                   + (dp2[kc+dix] - dp2[kcm+dix])  
-                                   + (dp2[kc-dix] - dp2[kcm-dix])
-                                   )
-                         +  1.0 * (  (dp2[kc+diz+dix] - dp2[kcm+diz+dix]) 
-                                   + (dp2[kc-diz+dix] - dp2[kcm-diz+dix])  
-                                   + (dp2[kc+diz-dix] - dp2[kcm+diz-dix])  
-                                   + (dp2[kc-diz-dix] - dp2[kcm-diz-dix])
-                                   ));
-#endif
                     }
                 }
             }			

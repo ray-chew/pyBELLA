@@ -64,7 +64,6 @@
 */
 #define PROJECTION1 1              /* switch for first projection should be on "1" normally       */
 #define P1_ALTERNATIVE_STENCIL_WEIGHT 0.125 
-#define CORRECT_FLUX_RIGHT_AWAY
 
 /* Second projection options */
 #define PROJECTION2 1              /* switch for second projection should be on "1" normally      */

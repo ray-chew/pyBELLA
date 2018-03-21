@@ -114,11 +114,12 @@ int main( void )
             /* explicit advection half time step preparing advection flux calculation 
              advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
              advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
              advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
              - symmetrized splitting instead of simple splitting does not improve vortex symmetry  
              */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
-            advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
+            advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
 
             /* explicit part of Euler backward gravity over half time step */
             euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt);
@@ -127,9 +128,7 @@ int main( void )
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
             store_advective_fluxes(adv_flux, (const ConsVars**)flux, elem);
             flux_correction(flux, elem, Sol, Sol0, t, dt, step);            
-#ifndef CORRECT_FLUX_RIGHT_AWAY
-            update_advective_fluxes(flux, (const VectorField*)adv_flux, elem, node, dt);    
-#endif
+
             ConsVars_set(Sol, Sol0, elem->nc);
             // if (step == 0) cell_pressure_to_nodal_pressure(mpv, elem, node);
             // if (1) cell_pressure_to_nodal_pressure(mpv, elem, node);
