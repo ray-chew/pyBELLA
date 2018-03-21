@@ -61,10 +61,14 @@ static void flux_correction_due_to_pressure_gradients(
                                                       const double t,
                                                       const double dt);
 
-double controlled_variable_flux_divergence(double* rhs, 
-                                           const ConsVars* flux[3],
-                                           const double dt, 
-                                           const ElemSpaceDiscr* elem);
+void operator_coefficients(double* hplus[3], 
+                           double* wcenter, 
+                           double* hS, 
+                           const ElemSpaceDiscr* elem,
+                           const ConsVars* Sol,
+                           const ConsVars* Sol0,
+                           const MPV* mpv,
+                           const double dt); 
 
 #ifdef NONLINEAR_EOS_IN_1st_PROJECTION
 double Newton_rhs(double* rhs,

@@ -33,14 +33,10 @@ void flux_correction(ConsVars* flux[3],
 					 const double dt,
                      const int step);
 
-void operator_coefficients(double* hplus[3], 
-                           double* wcenter, 
-                           double* hS, 
-                           const ElemSpaceDiscr* elem,
-                           const ConsVars* Sol,
-                           const ConsVars* Sol0,
-                           const MPV* mpv,
-                           const double dt); 
+double controlled_variable_flux_divergence(double* rhs, 
+                                           const ConsVars* flux[3],
+                                           const double dt, 
+                                           const ElemSpaceDiscr* elem);
 
 void update_SI_MIDPT_buoyancy(ConsVars* Sol, 
                               const ConsVars* flux[3], 

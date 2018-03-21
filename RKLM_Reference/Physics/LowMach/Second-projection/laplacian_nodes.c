@@ -818,7 +818,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             const double dy = node->dy;
                                                                         
             for(int nn=0; nn<node->nc; nn++) lap[nn] = 0.0;
-#if 0
+#if 1
             const double* hplusx   = hplus[0];
             const double* hplusy   = hplus[1];
             const double* hcenter  = wcenter;

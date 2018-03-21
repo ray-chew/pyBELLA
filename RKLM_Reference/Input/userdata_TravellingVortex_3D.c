@@ -201,8 +201,8 @@ void Sol_initial(ConsVars* Sol,
 	extern User_Data ud;
     extern MPV* mpv;
     
-	const double u0    = 1.0*ud.wind_speed;
-	const double v0    = 1.0*ud.wind_speed;
+	const double u0    = -1.0*ud.wind_speed;
+	const double v0    = -1.0*ud.wind_speed;
 	const double w0    = 0.0;
     
     const double rotdir = -1.0;

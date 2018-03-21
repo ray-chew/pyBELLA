@@ -23,7 +23,10 @@
 /* ============================================= 
  Advection options
  ============================================= */
-/**/ 
+/*
+ #define EGDE_VELOCITIES_IN_MUSCL_STEP
+ #define FOURTH_ORDER_ADV_FLUXES
+ */ 
 #define EGDE_VELOCITIES_IN_MUSCL_STEP
  
 
