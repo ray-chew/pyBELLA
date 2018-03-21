@@ -98,10 +98,10 @@ void User_Data_init(User_Data* ud) {
 	/* flow domain */
 	ud->xmin = - 5000/ud->h_ref;  
 	ud->xmax =   5000/ud->h_ref;  
-	ud->ymin = - 5000/ud->h_ref;
-	ud->ymax =   5000/ud->h_ref; 
-	ud->zmin = - 5000/ud->h_ref/8.0;
-	ud->zmax =   5000/ud->h_ref/8.0;
+	ud->ymin = - 5000/ud->h_ref/8.0;
+	ud->ymax =   5000/ud->h_ref/8.0; 
+	ud->zmin = - 5000/ud->h_ref;
+	ud->zmax =   5000/ud->h_ref;
 
 	/* boundary/initial conditions */
 	ud->wind_speed        = 10.0/ud->u_ref;              /* velocity in [u_ref] */
@@ -110,11 +110,11 @@ void User_Data_init(User_Data* ud) {
 	ud->hill_length_scale =  99999.9;          /* width    in [h_ref]   */   
 	
 	ud->bdrytype_min[0] = PERIODIC; /* DIRICHLET; */
-	ud->bdrytype_min[1] = PERIODIC; /* SLANTED_WALL; */
-	ud->bdrytype_min[2] = WALL;
+	ud->bdrytype_min[1] = WALL; /* SLANTED_WALL; */
+	ud->bdrytype_min[2] = PERIODIC;
 	ud->bdrytype_max[0] = PERIODIC; /* DIRICHLET; */  
-	ud->bdrytype_max[1] = PERIODIC;  
-	ud->bdrytype_max[2] = WALL;
+	ud->bdrytype_max[1] = WALL;  
+	ud->bdrytype_max[2] = PERIODIC;
 	
 	ud->absorber = WRONG; /* CORRECT; */ 
 	
@@ -132,8 +132,8 @@ void User_Data_init(User_Data* ud) {
     
 	/* Grid and space discretization */
 	ud->inx =  64+1; /*  */
-	ud->iny =  64+1; /*  */
-	ud->inz =   2+1;
+	ud->iny =   2+1; /*  */
+	ud->inz =  64+1;
 
     /* explicit predictor step */
 	/* Recovery */
@@ -201,9 +201,9 @@ void Sol_initial(ConsVars* Sol,
 	extern User_Data ud;
     extern MPV* mpv;
     
-	const double u0    = -1.0*ud.wind_speed;
-	const double v0    = -1.0*ud.wind_speed;
-	const double w0    = 0.0;
+	const double u0    = 1.0*ud.wind_speed;
+	const double v0    = 0.0;
+	const double w0    = 1.0*ud.wind_speed;
     
     const double rotdir = -1.0;
     
@@ -212,13 +212,13 @@ void Sol_initial(ConsVars* Sol,
     const double R0      = 0.4;
     const double fac     = 1*1024.0; /* 4*1024.0 */
     const double xc      = 0.0;
-    const double yc      = 0.0;
+    const double zc      = 0.0;
     
     /*periodic setting: */
     const double xcm     = xc-(ud.xmax-ud.xmin);
     const double xcp     = xc+(ud.xmax-ud.xmin);
-    const double ycm     = yc-(ud.ymax-ud.ymin);
-    const double ycp     = yc+(ud.ymax-ud.ymin);
+    const double zcm     = zc-(ud.zmax-ud.zmin);
+    const double zcp     = zc+(ud.zmax-ud.zmin);
 			
 	const int icx  = elem->icx;
 	const int icy  = elem->icy;
@@ -231,7 +231,7 @@ void Sol_initial(ConsVars* Sol,
 	double x, y, z;
 	double rho, u, v, w, rhoY, theta, T, p_hydro;
     double r, uth;
-    double xcc, ycc;
+    double xcc, zcc;
 	
     double g;
 	                
@@ -244,23 +244,23 @@ void Sol_initial(ConsVars* Sol,
         l = k * icx * icy; 
 		z = elem->z[k];
         
+        zcc = (fabs(z-zc) < fabs(z-zcm) ? (fabs(z-zc) < fabs(z-zcm) ? zc : zcp) : zcm);
+
         for(j = igy; j < icy - igy; j++) {
             m = l + j * icx;
             y = elem->y[j];
-			
-            ycc = (fabs(y-yc) < fabs(y-ycm) ? (fabs(y-yc) < fabs(y-ycm) ? yc : ycp) : ycm);
-            
+			            
             for(i = 0; i < icx; i++) {
                 n = m + i;                
                 x       = elem->x[i];
                 xcc = (fabs(x-xc) < fabs(x-xcm) ? (fabs(x-xc) < fabs(x-xcm) ? xc : xcp) : xcm);
 
-                r       = sqrt((x-xcc)*(x-xcc) + (y-ycc)*(y-ycc));
+                r       = sqrt((x-xcc)*(x-xcc) + (z-zcc)*(z-zcc));
                 uth     = rotdir * (r < R0 ? fac * pow( 1.0-r/R0, 6) * pow( r/R0, 6) : 0.0);
                 
-                u       = u0 + uth * (-(y-ycc)/r);
-                v       = v0 + uth * (+(x-xcc)/r);
-                w       = w0;
+                u       = u0 + uth * (-(z-zcc)/r);
+                v       = v0;
+                w       = w0 + uth * (+(x-xcc)/r);
                 p_hydro = mpv->HydroState->p0[j];
                 rhoY    = mpv->HydroState->rhoY0[j];
                 theta   = stratification(y);
@@ -323,32 +323,6 @@ void Sol_initial(ConsVars* Sol,
 	}  
     set_ghostcells_p2(mpv->p2_cells, elem, igx);
 
-    
-    /* TODO:  Wipe this out after testing */
-    /* Testing the Laplacian 
-    for(k = 0; k < icz; k++) {
-        l = k * icx * icy; 
-        z = elem->z[k];
-        
-        for(j = 0; j < icy; j++) {
-            m = l + j * icx;
-            y = elem->y[j];
-            
-            ycc = (fabs(y-yc) < fabs(y-ycm) ? (fabs(y-yc) < fabs(y-ycm) ? yc : ycp) : ycm);
-            
-            for(i = 0; i < icx; i++) {
-                n = m + i;                
-                x       = elem->x[i];
-                xcc = (fabs(x-xc) < fabs(x-xcm) ? (fabs(x-xc) < fabs(x-xcm) ? xc : xcp) : xcm);
-                
-                r = sqrt((x-xcc)*(x-xcc) + (y-ycc)*(y-ycc));
-                // r =(x-xcc);
-                mpv->p2_cells[n] = pow(r/R0,2);
-            }
-        }
-    }
-     */
-    
     for (int nn=0; nn<node->nc; nn++) {
         mpv->p2_nodes[nn] = 0.0;
     }

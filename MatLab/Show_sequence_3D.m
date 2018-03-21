@@ -19,7 +19,7 @@ modelstr = 'psinc';
 test_case = 'Travelling-Vortex';
 %test_case = 'Advection';
 
-slice = 'xy'; % options:  'xy' 'zy' 'full3D'
+slice = 'zx'; % options:  'xy' 'yz' 'zx' 'full3D'
 showmode = 1;
 separate_signs = 1;
 filledcontours = 1;
@@ -98,8 +98,8 @@ elseif strcmp(test_case, 'Rising-Bubble')
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Travelling-Vortex')
     ncx = 64;  % 512; 256;
-    ncy = 64;  % 512; 256;
-    ncz =  2;  % 512; 256;
+    ncy = 2;  % 512; 256;
+    ncz = 64;  % 512; 256;
     L   = 1.0;  
     x0  = 0.5;
     H   = 1.0;
@@ -164,7 +164,7 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'rho'; folderstr = 'rho'; titlestr = 'rho'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'p'; folderstr = 'p'; titlestr = 'p'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'S'; folderstr = 'S'; titlestr = 'S'; ndummy = 2; arraysize = [ncx ncy ncz];
-%varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy ncz]; rhoY_diff = 1;
+varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy ncz]; rhoY_diff = 1;
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy ncz];
@@ -183,7 +183,7 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'flux_rhov';  folderstr = 'fluxes'; titlestr = 'flux_rhov'; ndummy = 2; arraysize = [ncy+1 ncz ncx]; symmetry = -1*symmetry;
 %varstr = 'flux_rhov';  folderstr = 'fluxes'; titlestr = 'flux_rhov'; ndummy = 2; arraysize = [ncz+1 ncx ncy]; symmetry = -1*symmetry;
 
-varstr = 'p2_c';  folderstr = 'p2_c'; titlestr = '\pi'; ndummy = 2; arraysize = [ncx ncy ncz];
+%varstr = 'p2_c';  folderstr = 'p2_c'; titlestr = '\pi'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'dp2_c';  folderstr = 'dp2_c'; titlestr = 'd\pi'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'dpdim';  folderstr = 'dpdime'; titlestr = 'dp [Pa]'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'rhs_cells';  folderstr = 'rhs_cells'; titlestr = 'rhs_c'; ndummy = 2; arraysize = [ncx ncy ncz];
@@ -202,7 +202,13 @@ if strcmp(slice, 'full3D')
     dkk   = 1;
     kkmax = ncz;
 else
-    nslice = floor((ncz+2*ndummy)/2);
+    if strcmp(slice, 'xy')
+        nslice = floor((ncz+2*ndummy)/2);
+    elseif strcmp(slice, 'yz')
+        nslice = floor((ncx+2*ndummy)/2);
+    else
+        nslice = floor((ncy+2*ndummy)/2);
+    end
 end
 
 
@@ -291,8 +297,10 @@ for k = kmin:dk:kmax
         % for now let's take it slice by slice
         if strcmp(slice, 'xy')
             velo = v(:,:,nslice);
-        elseif strcmp(slice, 'zy')
+        elseif strcmp(slice, 'yz')
             velo = transpose(reshape(v(nslice,:,:), [arraysize(2)+2*ndummy, arraysize(3)+2*ndummy]));
+        elseif strcmp(slice, 'zx')
+            velo = transpose(reshape(v(:,nslice,:), [arraysize(1)+2*ndummy, arraysize(3)+2*ndummy]));
         end
         
         if strcmp(varstr, 'rhs_nodes')
