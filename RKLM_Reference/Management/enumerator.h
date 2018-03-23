@@ -58,6 +58,11 @@ enum MUSCL_ON_OFF {
     WITH_MUSCL
 };
 
+enum EXPLICIT_PRESSURE {
+    WITHOUT_PRESSURE,
+    WITH_PRESSURE
+};
+
 enum Direction {
     BACKWARD,
     FORWARD};

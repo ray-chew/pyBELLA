@@ -90,7 +90,6 @@ void second_projection(
                        const ConsVars* Sol0,
                        const ElemSpaceDiscr* elem,
                        const NodeSpaceDiscr* node,
-                       const double p_update,
                        const double t,
                        const double dt) 
 {
@@ -270,7 +269,7 @@ void second_projection(
     
     assert(0);
      */
-    /*
+    /**/
     sprintf(fn2, "%s/p2_nodes/p2_n_%s.hdf", ud.file_name, step_string);
     sprintf(fieldname2, "p2_nodes");
     
@@ -279,10 +278,10 @@ void second_projection(
              mpv->Level[0]->node->icy,
              mpv->Level[0]->node->icz,
              mpv->Level[0]->node->ndim,
-             mpv->p2_nodes,
+             p2,
              fn2,
              fieldname2);
-    */
+    
     
     rhs_output_count++;
     
@@ -809,7 +808,11 @@ static void operator_coefficients_nodes(
 										const MPV* mpv,
                                         const double dt) {
 	
-	extern User_Data ud;
+    /* Note: the pressure and gravity terms may come in with different
+       time step sizes!
+     */
+    
+    extern User_Data ud;
 	extern Thermodynamic th;
 	
     const double g   = ud.gravity_strength[1];
@@ -1105,7 +1108,8 @@ void euler_forward_non_advective(ConsVars* Sol,
                                  const MPV* mpv,
                                  const ElemSpaceDiscr* elem,
                                  const NodeSpaceDiscr* node,
-                                 const double dt)
+                                 const double dt,
+                                 const enum EXPLICIT_PRESSURE with_pressure)
 {
     /* 
      evaluates Euler forward for the pressure gradient, gravity, 
@@ -1114,8 +1118,8 @@ void euler_forward_non_advective(ConsVars* Sol,
      */
     extern User_Data ud;
     extern Thermodynamic th;
-    
-    double *p2n       = mpv->p2_nodes;
+
+    double* p2n = mpv->p2_nodes;
     
     const double g    = ud.gravity_strength[1];
     const double Msq  = ud.Msq;
@@ -1134,7 +1138,7 @@ void euler_forward_non_advective(ConsVars* Sol,
                 int n0 = i;
                 int n1 = i+1;
                 
-                double dpdx   = (p2n[n1]-p2n[n0])/dx;
+                double dpdx   = with_pressure*(p2n[n1]-p2n[n0])/dx;
                 double rhoYovG = Ginv*Sol->rhoY[nc];
                 
                 Sol->rhou[nc]       += dt * ( - rhoYovG * dpdx);
@@ -1168,8 +1172,8 @@ void euler_forward_non_advective(ConsVars* Sol,
                     int n01 = n00 + 1;
                     int n11 = n00 + 1 + inx;
                     
-                    double dpdx   = 0.5*(p2n[n01]-p2n[n00]+p2n[n11]-p2n[n10])/dx;
-                    double dpdy   = 0.5*(p2n[n10]-p2n[n00]+p2n[n11]-p2n[n01])/dy;
+                    double dpdx   = with_pressure*0.5*(p2n[n01] - p2n[n00] + p2n[n11] - p2n[n10])/dx;
+                    double dpdy   = with_pressure*0.5*(p2n[n10] - p2n[n00] + p2n[n11] - p2n[n01])/dy;
                     double dSdy   = (S0p-S0m) / dy;
                     
                     double rhoYovG = Ginv*Sol->rhoY[nc];
@@ -1223,9 +1227,9 @@ void euler_forward_non_advective(ConsVars* Sol,
                         int n101 = n100 + 1;
                         int n111 = n100 + 1 + inx;
                         
-                        double dpdx   = 0.25*(p2n[n001]-p2n[n000]+p2n[n011]-p2n[n010]+p2n[n101]-p2n[n100]+p2n[n111]-p2n[n110])/dx;
-                        double dpdy   = 0.25*(p2n[n010]-p2n[n000]+p2n[n011]-p2n[n001]+p2n[n110]-p2n[n100]+p2n[n111]-p2n[n101])/dy;
-                        double dpdz   = 0.25*(p2n[n100]-p2n[n000]+p2n[n110]-p2n[n010]+p2n[n101]-p2n[n001]+p2n[n111]-p2n[n011])/dz;
+                        double dpdx   = with_pressure*0.25*(p2n[n001]-p2n[n000]+p2n[n011]-p2n[n010]+p2n[n101]-p2n[n100]+p2n[n111]-p2n[n110])/dx;
+                        double dpdy   = with_pressure*0.25*(p2n[n010]-p2n[n000]+p2n[n011]-p2n[n001]+p2n[n110]-p2n[n100]+p2n[n111]-p2n[n101])/dy;
+                        double dpdz   = with_pressure*0.25*(p2n[n100]-p2n[n000]+p2n[n110]-p2n[n010]+p2n[n101]-p2n[n001]+p2n[n111]-p2n[n011])/dz;
                         double dSdy   = (S0p-S0m) / dy;
                         
                         double rhoYovG = Ginv*Sol->rhoY[nc];

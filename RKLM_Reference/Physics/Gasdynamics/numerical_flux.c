@@ -286,7 +286,7 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                     int nfxij = nfxj + i;
                     int nfyij = nfyj + i*ify;
                     
-#if 0
+#if 1
                     double u_c     = Sol->rhou[ncij]/Sol->rho[ncij];
                     double u_m     = Sol->rhou[ncij-1]/Sol->rho[ncij-1];
                     double rhoY_c  = Sol->rhoY[ncij];

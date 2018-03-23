@@ -66,8 +66,12 @@ int main( void )
        is free of the multipole perturbations due to basic divergence errors
        that come simply from the divergence approximation on the nodal grid.
      */
-    second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 1.0, 0.0, 1.0);
+    second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, 1.0);
     cell_pressure_to_nodal_pressure(mpv, elem, node);
+    for (int nn=0; nn<node->nc; nn++) {
+        mpv->dp2_nodes[nn] = 0;
+    }
+    
     ud.compressibility = compressibility(0);
         
 	if(ud.write_file == ON) 
@@ -121,6 +125,7 @@ int main( void )
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, (step+1)%2);
 
+            
             /* explicit part of Euler backward gravity over half time step */
             euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt);
             
@@ -141,14 +146,14 @@ int main( void )
             Explicit_Coriolis(Sol, elem, 0.5*dt); 
                         
             /* explicit EULER half time step for gravity and pressure gradient */ 
-            // euler_forward_non_advective(Sol, (const MPV*)mpv, elem, node, 0.5*dt); //  CHANGED HERE (a)
+            euler_forward_non_advective(Sol, (const MPV*)mpv, elem, node, 0.5*dt, WITH_PRESSURE); //  CHANGED HERE (a)
                         
             /* explicit full time step advection using div-controlled advective fluxes */
             advect(Sol, flux, adv_flux, dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, (step+1)%2);
                         
             /* implicit EULER half time step for gravity and pressure gradient */ 
             euler_backward_gravity(Sol, mpv, elem, 0.5*dt);
-            second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 1.0, t, 2.0*dt); //  CHANGED HERE (a)
+            second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, dt); //  CHANGED HERE (a)
             
             /* auxiliary buoyancy update by vertical advection of background stratification */
             update_SI_MIDPT_buoyancy(Sol, (const ConsVars**)flux, mpv, elem, 0.5*dt);

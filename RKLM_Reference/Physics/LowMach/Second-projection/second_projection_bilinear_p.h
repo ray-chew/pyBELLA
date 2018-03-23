@@ -20,7 +20,6 @@ void second_projection(
                        const ConsVars* Sol0,
                        const ElemSpaceDiscr* elem,
                        const NodeSpaceDiscr* node,
-                       const double p_update,
                        const double t,
                        const double dt);
 
@@ -33,7 +32,8 @@ void euler_forward_non_advective(ConsVars* Sol,
                                  const MPV* mpv,
                                  const ElemSpaceDiscr* elem,
                                  const NodeSpaceDiscr* node,
-                                 const double dt);
+                                 const double dt,
+                                 const enum EXPLICIT_PRESSURE with_pressure);
 
 #endif /* SECOND_PROJECTION_H */
 

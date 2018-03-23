@@ -250,6 +250,7 @@ void flux_correction(ConsVars* flux[3],
 
 
 /* ========================================================================== */
+#define TEST_WALL_BC 0
 
 double controlled_variable_flux_divergence(double* rhs, 
                                            const ConsVars* flux[3],
@@ -276,6 +277,12 @@ double controlled_variable_flux_divergence(double* rhs,
     
     double rhsmax = 0.0;
     
+#if TEST_WALL_BC
+    double fint_bot    = 0.0;
+    double fint_top    = 0.0;
+    double fdiffint_lr = 0.0;
+#endif
+
     for(int i=0; i<elem->nc; i++) rhs[i] = 0.0;
     
     switch (elem->ndim) {
@@ -299,6 +306,11 @@ double controlled_variable_flux_divergence(double* rhs,
                     int nfy = mfy + i*ify;
                     rhs[nc] = factor * ((flux[0]->rhoY[nfx+1] - flux[0]->rhoY[nfx])/dx + (flux[1]->rhoY[nfy+1] - flux[1]->rhoY[nfy])/dy);
                     rhsmax  = MAX_own(rhsmax, fabs(rhs[nc]));
+#if TEST_WALL_BC
+                    fint_bot    += (j == igy ? fabs(flux[1]->rhoY[nfy]) : 0.0);
+                    fint_top    += (j == icy-igy-1 ? fabs(flux[1]->rhoY[nfy+1]) : 0.0);
+                    fdiffint_lr += (i == igx ? fabs(flux[0]->rhoY[nfx] - flux[0]->rhoY[nfx+(icx-2*igx)+1]) : 0.0);
+#endif
                 }
             }
             break;
@@ -702,11 +714,13 @@ static void flux_correction_due_to_pressure_gradients(
             for(int j = igy; j < icy - igy; j++) {
                 int mc    = j * ifx;                
                 for(int i = igx; i < ifx - igx; i++) {
-                    int nn   = mc + i + ifx;
                     int nc   = mc + i;
-                    int ns   = mc + i - ifx;
                     int ic   = j*icx + i;
                     int icm  = ic - 1;
+                    /*
+                    int nn   = mc + i + ifx;
+                    int ns   = mc + i - ifx;
+                    */
                     
                     /* It seems this should be the active version, but test against alternative 
                      for IGW before removing this option, looking especially for vertical velocity
@@ -722,11 +736,13 @@ static void flux_correction_due_to_pressure_gradients(
             for(int i = igx; i < icx - igx; i++) {
                 int nc = i * ify;
                 for(int j = igy; j < ify - igy; j++) {
-                    int me  = nc + j + ify;
                     int mc  = nc + j;
-                    int mw  = nc + j - ify;
                     int jc  = j * icx + i;
                     int jcm = jc - icx;
+                    /*
+                    int me  = nc + j + ify;
+                    int mw  = nc + j - ify;
+                    */
                     
                     g->rhoY[mc]  -= dto2dy * (  a *   hplusy[mc] * (dp2[jc]   - dp2[jcm]  ) 
                                               + b * ( hplusy[mc] * (dp2[jc+1] - dp2[jcm+1]) 

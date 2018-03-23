@@ -14,11 +14,11 @@ modelstr = 'psinc';
 %test_case = 'Equatorial-Long-Wave';
 %test_case = 'Internal-Wave-Long-Wave';
 %test_case = 'Internal-Wave-Strong-Strat';
-%test_case = 'Skamarock-Klemp-Internal-Wave';
+test_case = 'Skamarock-Klemp-Internal-Wave';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
-test_case = 'Travelling-Vortex';
+%test_case = 'Travelling-Vortex';
 
 showmode = 1;
 separate_signs = 1;
@@ -40,7 +40,7 @@ contour_values = [-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dthe
 %contour_values = linspace(-0.01,0.01,41) / 288.15;
 title_true = 1;
 
-kmin = 0;
+kmin = 1;
 kmax = 601;
 dk   = 1;
 
@@ -139,13 +139,13 @@ transp    = 0;
 folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Mach_gravity_',modelstr);
 
 % cell-centered fields
-varstr = 'rho'; folderstr = 'rho'; titlestr = 'rho'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 0;
+%varstr = 'rho'; folderstr = 'rho'; titlestr = 'rho'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 0;
 %varstr = 'p'; folderstr = 'p'; titlestr = 'p'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'S'; folderstr = 'S'; titlestr = 'S'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy]; rhoY_diff = 1;
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy];
+varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
@@ -264,11 +264,11 @@ for k = kmin:dk:kmax
         if filledcontours
             figure(figure1)
             if strcmp(varstr, 'flux_rhou')
-                contourf(x,z,th./th(:,1),25,'LineColor','auto');
+                contourf(x,z,th./th(:,1),7,'LineColor','k');
             elseif (strcmp(varstr, 'u') || strcmp(varstr, 'v') || strcmp(varstr, 'w'))
-                contourf(x,z,th*velosc,25,'LineColor','auto');
+                contourf(x,z,th*velosc,7,'LineColor','k');
             else
-                contourf(x,z,th,25,'LineColor','auto');
+                contourf(x,z,th,7,'LineColor','k');
             end
             colormap Jet
             colorbar('FontSize',14,'FontName','Helvetica')
@@ -320,7 +320,7 @@ for k = kmin:dk:kmax
         if show_increments
             if k>kmin
                 figure(80)
-                contourf(x,z,th-th_old,25,'LineColor','auto');
+                contourf(x,z,th-th_old,7,'LineColor','k');
                 colormap Jet
                 colorbar('FontSize',14,'FontName','Helvetica')
             end
