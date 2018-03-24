@@ -68,10 +68,6 @@ int main( void )
      */
     second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, 1.0);
     cell_pressure_to_nodal_pressure(mpv, elem, node);
-    for (int nn=0; nn<node->nc; nn++) {
-        mpv->dp2_nodes[nn] = 0;
-    }
-    
     ud.compressibility = compressibility(0);
         
 	if(ud.write_file == ON) 
@@ -116,10 +112,9 @@ int main( void )
             Explicit_Coriolis(Sol, elem, 0.5*dt); 
             
             /* explicit advection half time step preparing advection flux calculation 
-             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, (step+1)%2);
-             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, (step+1)%2);
-             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, (step+1)%2);
-             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, (step+1)%2);
+             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
+             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
              - symmetrized splitting instead of simple splitting does not improve vortex symmetry  
              */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
@@ -148,11 +143,11 @@ int main( void )
             euler_forward_non_advective(Sol, (const MPV*)mpv, elem, node, 0.5*dt, WITH_PRESSURE); 
                         
             /* explicit full time step advection using div-controlled advective fluxes */
-            advect(Sol, flux, adv_flux, dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2); // 0 -> (step+1)%2
+            advect(Sol, flux, adv_flux, dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
                         
             /* implicit EULER half time step for gravity and pressure gradient */ 
             euler_backward_gravity(Sol, mpv, elem, 0.5*dt);
-            second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, dt);  
+            second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, dt);
             
             /* auxiliary buoyancy update by vertical advection of background stratification */
             update_SI_MIDPT_buoyancy(Sol, (const ConsVars**)flux, mpv, elem, 0.5*dt);
