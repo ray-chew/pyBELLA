@@ -205,7 +205,7 @@ void Sol_initial(ConsVars* Sol,
 	const double v0    = 1.0*ud.wind_speed;
 	const double w0    = 0.0;
     
-    const double rotdir = -1.0;
+    const double rotdir = -1.0;  /* the origin of the March 24 - trouble ... ;^) */
     
     const double rho0    = 0.5;  /* 0.5 standard;  1.0 stable configuration; */
     const double del_rho = 0.5;  /* 0.5 standard; -0.5 stable configuration; 0.0; for homentropic */
