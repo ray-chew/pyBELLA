@@ -226,19 +226,6 @@ void second_projection(
     printf("\nrhsmax = %e, test-output\n", rhs_max);
     catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
 
-    /**/
-    for(int k = node->igz; k < node->icz - node->igz; k++) {
-        const int ln = k * node->icy * node->icx; 
-        for(int j = node->igy; j < node->icy - node->igy; j++) {
-            const int mn = ln + j * node->icx; 
-            for(int i = node->igx; i < node->icx - node->igx; i++) {
-                const int nn = mn + i;
-                if (fabs(rhs[nn]) > 1.0e-3) {
-                    printf("\nHere we go! (i,j,k) = (%d, %d, %d); rhs = %e\n", i,j,k, rhs[nn]);
-                }
-            }
-        }
-    }
     
     sprintf(fn2, "%s/rhs_nodes/rhs_nodes_%s.hdf", ud.file_name, step_string);
     sprintf(fieldname2, "rhs_nodes");
@@ -322,7 +309,186 @@ static double divergence_nodes(
     
     int i, j, k, mn;
     
-#ifdef FOURTH_ORDER_ADV_FLUXES
+#ifndef FOURTH_ORDER_ADV_FLUXES
+    switch(ndim) {
+        case 1: {
+            ERROR("divergence_nodes() not implemented for 1D\n");
+            break;
+        }
+        case 2: {
+            
+            const int icxn = node->icx;
+            
+            const int igxe = elem->igx;
+            const int icxe = elem->icx;
+            const int igye = elem->igy;
+            const int icye = elem->icy;
+            
+            const double dx      = node->dx;
+            const double dy      = node->dy;
+            const double oodx    = 1.0 / dx;
+            const double oody    = 1.0 / dy;
+            const double oowdxdt = (2.0/dt) * weight * 0.5 * oodx;
+            const double oowdydt = (2.0/dt) * weight * 0.5 * oody;
+            
+            double Y;
+            
+            /* predicted time level divergence via scattering */
+            for(j = igye; j < icye - igye; j++) {
+                const int me = j * icxe;
+                const int mn = j * icxn; 
+                for(i = igxe; i < icxe - igxe; i++) {
+                    const int n     = mn + i;
+                    const int nicx  = n  + icxn;
+                    const int n1    = n  + 1;
+                    const int n1icx = n1 + icxn;
+                    
+                    const int ne = me + i; 
+                    double tmpfx, tmpfy;
+                    
+                    Y = Sol->rhoY[ne] / Sol->rho[ne];
+                    tmpfx = oowdxdt * Y * Sol->rhou[ne];
+                    tmpfy = oowdydt * Y * Sol->rhov[ne];
+                    
+                    rhs[n]           += + tmpfx + tmpfy;
+                    rhs[n1]          += - tmpfx + tmpfy;
+                    rhs[n1icx]       += - tmpfx - tmpfy;
+                    rhs[nicx]        += + tmpfx - tmpfy;
+                }
+            } 
+            
+            
+            /* account for influx bottom boundary */
+            j = igye;
+            mn = j * icxn; 
+            Y  = mpv->HydroState->Y0[j];
+            for(i = igxe; i < icxe - igxe; i++) {
+                const int n     = mn + i;
+                const int n1    = n  + 1;
+                
+                double rhov_wall = bdry->wall_massflux[i]; 
+                double tmpy = oowdydt * Y * rhov_wall;
+                
+                rhs[n]  += - tmpy;
+                rhs[n1] += - tmpy;
+            }
+            
+            for(j = igye+1; j < icye - igye; j++) {
+                const int mn = j * icxn; 
+                for(i = igxe+1; i < icxe - igxe; i++) {
+                    int nn    = mn + i;
+                    div_max = MAX_own(div_max, fabs(rhs[nn]));
+                }
+            }
+            break;
+        }
+
+        case 3: {
+            
+            const int icxn = node->icx;
+            const int icyn = node->icy;
+            
+            const int igxe = elem->igx;
+            const int icxe = elem->icx;
+            const int igye = elem->igy;
+            const int icye = elem->icy;
+            const int igze = elem->igz;
+            const int icze = elem->icz;
+            
+            const double dx = node->dx;
+            const double dy = node->dy;
+            const double dz = node->dz;
+            
+            const double oodx = 1.0 / dx;
+            const double oody = 1.0 / dy;
+            const double oodz = 1.0 / dz;
+            
+            /* TODO: check factor  0.25:  should this be 0.125? */
+            const double oowdxdt = (2.0/dt) * weight * 0.25 * oodx;
+            const double oowdydt = (2.0/dt) * weight * 0.25 * oody;
+            const double oowdzdt = (2.0/dt) * weight * 0.25 * oodz;
+            
+            const int dixn = 1;
+            const int diyn = icxn;
+            const int dizn = icxn*icyn;
+            
+            double Y;
+            
+            /* predicted time level divergence via scattering */
+            for(k = igze; k < icze - igze; k++) {
+                const int le = k * icye * icxe;
+                const int ln = k * icyn * icxn; 
+                for(j = igye; j < icye - igye; j++) {
+                    const int me = le + j * icxe;
+                    const int mn = ln + j * icxn; 
+                    for(i = igxe; i < icxe - igxe; i++) {
+                        const int ne = me + i; 
+                        const int nn000  = mn + i;  /* foresee consistent interpretation of "abc" in nnabc between parts of code */
+                        const int nn010  = nn000 + diyn;
+                        const int nn011  = nn000 + diyn + dizn;
+                        const int nn001  = nn000        + dizn;
+                        const int nn100  = nn000 + dixn;
+                        const int nn110  = nn000 + dixn + diyn;
+                        const int nn111  = nn000 + dixn + diyn + dizn;
+                        const int nn101  = nn000 + dixn        + dizn;
+                        
+                        double tmpfx, tmpfy, tmpfz;
+                        
+                        Y = Sol->rhoY[ne] / Sol->rho[ne];
+                        tmpfx = oowdxdt * Y * Sol->rhou[ne]; /* (rhou*Y) * 0.5 * / (dx*dt) */
+                        tmpfy = oowdydt * Y * Sol->rhov[ne];
+                        tmpfz = oowdzdt * Y * Sol->rhow[ne];
+                        
+                        rhs[nn000]       += + tmpfx + tmpfy + tmpfz;
+                        rhs[nn010]       += + tmpfx - tmpfy + tmpfz;
+                        rhs[nn011]       += + tmpfx - tmpfy - tmpfz;
+                        rhs[nn001]       += + tmpfx + tmpfy - tmpfz;
+                        rhs[nn100]       += - tmpfx + tmpfy + tmpfz;
+                        rhs[nn110]       += - tmpfx - tmpfy + tmpfz;
+                        rhs[nn111]       += - tmpfx - tmpfy - tmpfz;
+                        rhs[nn101]       += - tmpfx + tmpfy - tmpfz;
+                    }
+                } 
+            } 
+            
+            /* account for influx bottom boundary */
+            j = igye;
+            Y  = mpv->HydroState->Y0[j];
+            for(k = igze; k < icze - igze; k++) {
+                int ln = k * icyn*icxn;
+                int mn = ln + j*icxn;
+                for(i = igxe; i < icxe - igxe; i++) {
+                    int nn   = mn + i;
+                    int nn00 = nn;
+                    int nn10 = nn + dixn;
+                    int nn11 = nn + dixn + dizn;
+                    int nn01 = nn +      + dizn;
+                    
+                    double rhov_wall = bdry->wall_massflux[i]; 
+                    double tmpy = oowdydt * Y * rhov_wall;
+                    
+                    rhs[nn00] += - tmpy;
+                    rhs[nn10] += - tmpy;
+                    rhs[nn01] += - tmpy;
+                    rhs[nn11] += - tmpy;
+                }
+            }        
+            
+            for(k = igze+1; k < icze - igze; k++) {
+                int ln = k*icxn*icyn; 
+                for(j = igye+1; j < icye - igye; j++) {
+                    int mn = ln + j * icxn; 
+                    for(i = igxe+1; i < icxe - igxe; i++) {
+                        int nn  = mn + i;
+                        div_max = MAX_own(div_max, fabs(rhs[nn]));
+                    }
+                }
+            }
+            break;
+        }
+        default: ERROR("ndim not in {1, 2, 3}");
+    }
+#else
     extern ConsVars* flux[3];
     extern double* W0;
     
@@ -339,14 +505,14 @@ static double divergence_nodes(
             const int icxe = elem->icx;
             const int igye = elem->igy;
             const int icye = elem->icy;
-                        
+            
             double Y, rhsmax;
             double *rhs_cell = W0;
             
             /* build nodal divergence from cell-centered divergence averaged to nodes */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
             rhsmax = controlled_variable_flux_divergence(rhs_cell, (const ConsVars**)flux, dt, elem);
-
+            
             /* predicted time level divergence via scattering */
             for(j = igye; j < icye - igye; j++) {
                 const int me = j * icxe;
@@ -357,7 +523,7 @@ static double divergence_nodes(
                     const int nicx  = n  + icxn;
                     const int n1    = n  + 1;
                     const int n1icx = n1 + icxn;
-                                        
+                    
                     rhs[n]     += 0.25*rhs_cell[ne];
                     rhs[n1]    += 0.25*rhs_cell[ne];
                     rhs[n1icx] += 0.25*rhs_cell[ne];
@@ -482,187 +648,7 @@ static double divergence_nodes(
             break;
         }
         default: ERROR("ndim not in {1, 2, 3}");
-    }
-#else
-    switch(ndim) {
-        case 1: {
-            ERROR("divergence_nodes() not implemented for 1D\n");
-            break;
-        }
-        case 2: {
-            
-            const int icxn = node->icx;
-            
-            const int igxe = elem->igx;
-            const int icxe = elem->icx;
-            const int igye = elem->igy;
-            const int icye = elem->icy;
-            
-            const double dx      = node->dx;
-            const double dy      = node->dy;
-            const double oodx    = 1.0 / dx;
-            const double oody    = 1.0 / dy;
-            const double oowdxdt = (2.0/dt) * weight * 0.5 * oodx;
-            const double oowdydt = (2.0/dt) * weight * 0.5 * oody;
-            
-            double Y;
-            
-            /* predicted time level divergence via scattering */
-            for(j = igye; j < icye - igye; j++) {
-                const int me = j * icxe;
-                const int mn = j * icxn; 
-                for(i = igxe; i < icxe - igxe; i++) {
-                    const int n     = mn + i;
-                    const int nicx  = n  + icxn;
-                    const int n1    = n  + 1;
-                    const int n1icx = n1 + icxn;
-                    
-                    const int ne = me + i; 
-                    double tmpfx, tmpfy;
-                    
-                    Y = Sol->rhoY[ne] / Sol->rho[ne];
-                    tmpfx = oowdxdt * Y * Sol->rhou[ne];
-                    tmpfy = oowdydt * Y * Sol->rhov[ne];
-                    
-                    rhs[n]           += + tmpfx + tmpfy;
-                    rhs[n1]          += - tmpfx + tmpfy;
-                    rhs[n1icx]       += - tmpfx - tmpfy;
-                    rhs[nicx]        += + tmpfx - tmpfy;
-                }
-            } 
-            
-            
-            /* account for influx bottom boundary */
-            j = igye;
-            mn = j * icxn; 
-            Y  = mpv->HydroState->Y0[j];
-            for(i = igxe; i < icxe - igxe; i++) {
-                const int n     = mn + i;
-                const int n1    = n  + 1;
-                
-                double rhov_wall = bdry->wall_massflux[i]; 
-                double tmpy = oowdydt * Y * rhov_wall;
-                
-                rhs[n]  += - tmpy;
-                rhs[n1] += - tmpy;
-            }
-            
-            for(j = igye+1; j < icye - igye; j++) {
-                const int mn = j * icxn; 
-                for(i = igxe+1; i < icxe - igxe; i++) {
-                    int nn    = mn + i;
-                    div_max = MAX_own(div_max, fabs(rhs[nn]));
-                }
-            }
-            break;
-        }
-            
-        case 3: {
-            
-            const int icxn = node->icx;
-            const int icyn = node->icy;
-            
-            const int igxe = elem->igx;
-            const int icxe = elem->icx;
-            const int igye = elem->igy;
-            const int icye = elem->icy;
-            const int igze = elem->igz;
-            const int icze = elem->icz;
-            
-            const double dx = node->dx;
-            const double dy = node->dy;
-            const double dz = node->dz;
-            
-            const double oodx = 1.0 / dx;
-            const double oody = 1.0 / dy;
-            const double oodz = 1.0 / dz;
-            
-            const double oowdxdt = (2.0/dt) * weight * 0.25 * oodx;
-            const double oowdydt = (2.0/dt) * weight * 0.25 * oody;
-            const double oowdzdt = (2.0/dt) * weight * 0.25 * oodz;
-            
-            const int dixn = 1;
-            const int diyn = icxn;
-            const int dizn = icxn*icyn;
-            
-            double Y;
-            
-            /* predicted time level divergence via scattering */
-            for(k = igze; k < icze - igze; k++) {
-                const int le = k * icye * icxe;
-                const int ln = k * icyn * icxn; 
-                for(j = igye; j < icye - igye; j++) {
-                    const int me = le + j * icxe;
-                    const int mn = ln + j * icxn; 
-                    for(i = igxe; i < icxe - igxe; i++) {
-                        const int ne = me + i; 
-                        const int nn000  = mn + i;  /* foresee consistent interpretation of "abc" in nnabc between parts of code */
-                        const int nn010  = nn000 + diyn;
-                        const int nn011  = nn000 + diyn + dizn;
-                        const int nn001  = nn000        + dizn;
-                        const int nn100  = nn000 + dixn;
-                        const int nn110  = nn000 + dixn + diyn;
-                        const int nn111  = nn000 + dixn + diyn + dizn;
-                        const int nn101  = nn000 + dixn        + dizn;
-                        
-                        double tmpfx, tmpfy, tmpfz;
-                        
-                        Y = Sol->rhoY[ne] / Sol->rho[ne];
-                        tmpfx = oowdxdt * Y * Sol->rhou[ne]; /* (rhou*Y) * 0.5 * / (dx*dt) */
-                        tmpfy = oowdydt * Y * Sol->rhov[ne];
-                        tmpfz = oowdzdt * Y * Sol->rhow[ne];
-                        
-                        rhs[nn000]       += + tmpfx + tmpfy + tmpfz;
-                        rhs[nn010]       += + tmpfx - tmpfy + tmpfz;
-                        rhs[nn011]       += + tmpfx - tmpfy - tmpfz;
-                        rhs[nn001]       += + tmpfx + tmpfy - tmpfz;
-                        rhs[nn100]       += - tmpfx + tmpfy + tmpfz;
-                        rhs[nn110]       += - tmpfx - tmpfy + tmpfz;
-                        rhs[nn111]       += - tmpfx - tmpfy - tmpfz;
-                        rhs[nn101]       += - tmpfx + tmpfy - tmpfz;
-                    }
-                } 
-            } 
-            
-            
-            
-            /* account for influx bottom boundary */
-            j = igye;
-            Y  = mpv->HydroState->Y0[j];
-            for(k = igze; k < icze - igze; k++) {
-                int ln = k * icyn*icxn;
-                int mn = ln + j*icxn;
-                for(i = igxe; i < icxe - igxe; i++) {
-                    int nn   = mn + i;
-                    int nn00 = nn;
-                    int nn10 = nn + dixn;
-                    int nn11 = nn + dixn + dizn;
-                    int nn01 = nn +      + dizn;
-                    
-                    double rhov_wall = bdry->wall_massflux[i]; 
-                    double tmpy = oowdydt * Y * rhov_wall;
-                    
-                    rhs[nn00] += - tmpy;
-                    rhs[nn10] += - tmpy;
-                    rhs[nn01] += - tmpy;
-                    rhs[nn11] += - tmpy;
-                }
-            }        
-            
-            for(k = igze+1; k < icze - igze; k++) {
-                int ln = k*icxn*icyn; 
-                for(j = igye+1; j < icye - igye; j++) {
-                    int mn = ln + j * icxn; 
-                    for(i = igxe+1; i < icxe - igxe; i++) {
-                        int nn  = mn + i;
-                        div_max = MAX_own(div_max, fabs(rhs[nn]));
-                    }
-                }
-            }
-            break;
-        }
-        default: ERROR("ndim not in {1, 2, 3}");
-    }
+    }    
 #endif
     
 #if 0
@@ -960,17 +946,19 @@ void correction_nodes(
 			
 			const int icxe = node->icx - 1;
 			
-            const double* hplusx = hplus[0];
-            const double* hplusy = hplus[1];
 
 			const double dx     = node->dx;
 			const double dy     = node->dy;
 			const double oodx   = 1.0 / dx;
 			const double oody   = 1.0 / dy;
+            
             const double dtowdx = 0.5*dt * oodx;
             const double dtowdy = 0.5*dt * oody;                
             			
-			int i, j, m, me;
+            const double* hplusx = hplus[0];
+            const double* hplusy = hplus[1];
+            
+            int i, j, m, me;
 			
 			for(j = igy; j < icy - igy - 1; j++) {
 				m = j * icx; 
@@ -1004,21 +992,23 @@ void correction_nodes(
             
             const int icxe = node->icx - 1;
             const int icye = node->icy - 1;
-                                                
-            const double* hplusx = hplus[0];
-            const double* hplusy = hplus[1];
-            const double* hplusz = hplus[2];
             
             const double dx     = node->dx;
             const double dy     = node->dy;
             const double dz     = node->dz;
             const double oodx   = 1.0 / dx;
             const double oody   = 1.0 / dy;
-            const double oodz   = 1.0 / dz;            
+            const double oodz   = 1.0 / dz;
+            
             const double dtowdx = 0.5*dt * oodx;
             const double dtowdy = 0.5*dt * oody;                
             const double dtowdz = 0.5*dt * oodz;                
 
+            
+            const double* hplusx = hplus[0];
+            const double* hplusy = hplus[1];
+            const double* hplusz = hplus[2];
+                        
             for(int k = igz; k < icz-igz-1; k++) {
                 int l  = k*icx*icy;
                 int le = k*icxe*icye;
@@ -1168,8 +1158,8 @@ void euler_forward_non_advective(ConsVars* Sol,
                     int n01 = n00 + 1;
                     int n11 = n00 + 1 + inx;
                     
-                    double dpdx   = with_pressure*0.5*(p2n[n01] - p2n[n00] + p2n[n11] - p2n[n10])/dx;
-                    double dpdy   = with_pressure*0.5*(p2n[n10] - p2n[n00] + p2n[n11] - p2n[n01])/dy;
+                    double dpdx   = with_pressure*0.5*(p2n[n01]-p2n[n00]+p2n[n11]-p2n[n10])/dx;
+                    double dpdy   = with_pressure*0.5*(p2n[n10]-p2n[n00]+p2n[n11]-p2n[n01])/dy;
                     double dSdy   = (S0p-S0m) / dy;
                     
                     double rhoYovG = Ginv*Sol->rhoY[nc];

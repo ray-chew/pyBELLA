@@ -50,6 +50,7 @@ ConsVars* Sol;            /* full size */
 ConsVars* Sol0;           /* full size (M < 1.0) */
 ConsVars* dSol;           /* full size */ /* TODO: Can I work without full-size dSol arrays? */
 VectorField* adv_flux;    /* full size, components located on primary cell faces */
+
 ConsVars* flux[3];        /* full size (M < 1.0) */
 
 #ifdef SYMMETRIC_ADVECTION

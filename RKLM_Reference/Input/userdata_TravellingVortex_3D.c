@@ -124,7 +124,7 @@ void User_Data_init(User_Data* ud) {
 	
     /* time discretization */
     ud->time_integrator      = SI_MIDPT;  
-	ud->CFL                  = 1.92;       
+	ud->CFL                  = 0.96;       
     ud->dtfixed0             = 10000.999;
     ud->dtfixed              = 10000.999;   
     
@@ -133,7 +133,7 @@ void User_Data_init(User_Data* ud) {
 	/* Grid and space discretization */
 	ud->inx =  64+1; /*  */
 	ud->iny =  64+1; /*  */
-	ud->inz =   2+1;
+	ud->inz =   1;
 
     /* explicit predictor step */
 	/* Recovery */
@@ -176,7 +176,7 @@ void User_Data_init(User_Data* ud) {
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 10;
+	ud->write_file_period = 20;
 	ud->file_format = HDF;
 
     {
@@ -201,8 +201,8 @@ void Sol_initial(ConsVars* Sol,
 	extern User_Data ud;
     extern MPV* mpv;
     
-	const double u0    = -1.0*ud.wind_speed;
-	const double v0    = -1.0*ud.wind_speed;
+	const double u0    = 1.0*ud.wind_speed;
+	const double v0    = 1.0*ud.wind_speed;
 	const double w0    = 0.0;
     
     const double rotdir = -1.0;

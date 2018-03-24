@@ -642,11 +642,9 @@ void EnthalpyWeightedLap_bilinear_p(
             const int igx = elem->igx;
             const int icx = elem->icx;
             const int ifx = elem->ifx;
-            
             const int igy = elem->igy;
             const int icy = elem->icy;
             const int ify = elem->ify;
-            
             const int igz = elem->igz;
             const int icz = elem->icz;
             const int ifz = elem->ifz;

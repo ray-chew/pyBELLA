@@ -400,7 +400,7 @@ void advect(
      odd = 1:  odd  time steps
      used to steer alternatinging Strang sequences.
      */
-
+        
 #ifndef SYMMETRIC_ADVECTION
     double time_step = (no_of_sweeps == DOUBLE_STRANG_SWEEP ? 0.5*dt : dt);
     

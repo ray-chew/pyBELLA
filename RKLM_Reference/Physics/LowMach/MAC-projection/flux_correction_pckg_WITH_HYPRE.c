@@ -717,10 +717,6 @@ static void flux_correction_due_to_pressure_gradients(
                     int nc   = mc + i;
                     int ic   = j*icx + i;
                     int icm  = ic - 1;
-                    /*
-                    int nn   = mc + i + ifx;
-                    int ns   = mc + i - ifx;
-                    */
                     
                     /* It seems this should be the active version, but test against alternative 
                      for IGW before removing this option, looking especially for vertical velocity
@@ -739,10 +735,6 @@ static void flux_correction_due_to_pressure_gradients(
                     int mc  = nc + j;
                     int jc  = j * icx + i;
                     int jcm = jc - icx;
-                    /*
-                    int me  = nc + j + ify;
-                    int mw  = nc + j - ify;
-                    */
                     
                     g->rhoY[mc]  -= dto2dy * (  a *   hplusy[mc] * (dp2[jc]   - dp2[jcm]  ) 
                                               + b * ( hplusy[mc] * (dp2[jc+1] - dp2[jcm+1]) 
@@ -853,7 +845,7 @@ static void flux_correction_due_to_pressure_gradients(
                         int kc  = k*diz + j*diy + i*dix;
                         int kcm = kc - diz;
                         
-                        fz->rhoY[n] -= dto2dz * hplusz[n] *  
+                        fz->rhoY[n] -= dto2dz * hplusz[n] * 
                         (     a *    (dp2[kc] - dp2[kcm])  
                          +    b * (  (dp2[kc+dix] - dp2[kcm+dix]) 
                                    + (dp2[kc-dix] - dp2[kcm-dix])  

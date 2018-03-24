@@ -816,22 +816,23 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             
             const double dx = node->dx;
             const double dy = node->dy;
-                                                                        
-            for(int nn=0; nn<node->nc; nn++) lap[nn] = 0.0;
+            
 #if 1
             const double* hplusx   = hplus[0];
             const double* hplusy   = hplus[1];
             const double* hcenter  = wcenter;
+                        
+            const double oodx2 = 0.5 / (dx * dx);
+            const double oody2 = 0.5 / (dy * dy);
+            const double nine_pt = (0.25 * (1.0 + P2_DIAGONAL_FIVE_POINT)) * P2_FULL_STENCIL;
             
             double flux_x_lower, flux_x_upper, flux_y_left, flux_y_right, hc;
             double dsq_p_dxdy;
             
             int i, j, me, mn, ne, nn, nn1, nnicxn, nn1icxn;
-
-            const double oodx2 = 0.5 / (dx * dx);
-            const double oody2 = 0.5 / (dy * dy);
-            const double nine_pt = (0.25 * (1.0 + P2_DIAGONAL_FIVE_POINT)) * P2_FULL_STENCIL;
-
+            
+            for(nn=0; nn<node->nc; nn++) lap[nn] = 0.0;
+            
             for(j = igye; j < icye - igye; j++) {
                 me   = j * icxe;
                 mn   = j * icxn;
@@ -869,6 +870,8 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             const double a0 = 1.0/4.0;
             const double a1 = 1.0/4.0;
             
+            for(int nn=0; nn<node->nc; nn++) lap[nn] = 0.0;
+
             for(int j = igye; j < icye - igye; j++) {
                 int me   = j * icxe;
                 int mn   = j * icxn;
