@@ -19,7 +19,7 @@ modelstr = 'psinc';
 test_case = 'Travelling-Vortex';
 %test_case = 'Advection';
 
-slice = 'zx'; % options:  'xy' 'yz' 'zx' 'full3D'
+slice = 'xy'; % options:  'xy' 'yz' 'zx' 'full3D'
 showmode = 1;
 separate_signs = 1;
 filledcontours = 1;
@@ -97,8 +97,8 @@ elseif strcmp(test_case, 'Rising-Bubble')
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Travelling-Vortex')
     ncx = 64;  % 512; 256;
-    ncy = 2;  % 512; 256;
-    ncz = 64;  % 512; 256;
+    ncy = 64;  % 512; 256;
+    ncz = 2;  % 512; 256;
     %ncx = 64;  % 512; 256;
     %ncy = 64;  % 512; 256;
     %ncz = 2;  % 512; 256;
@@ -191,8 +191,8 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'rhs_cells';  folderstr = 'rhs_cells'; titlestr = 'rhs_c'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'lap_cells';  folderstr = 'lap_cells'; titlestr = 'lap_c'; ndummy = 2; arraysize = [ncx ncy ncz];
 
-%varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny nnz];
-varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny nnz];
+varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny nnz];
+%varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny nnz];
 %varstr = 'rhs_nodes';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n';    ndummy = 2; arraysize = [nnx nny nnz];
 %varstr = 'lap_nodes';  folderstr = 'lap_nodes'; titlestr = 'lap_n';    ndummy = 2; arraysize = [nnx nny nnz];
 
