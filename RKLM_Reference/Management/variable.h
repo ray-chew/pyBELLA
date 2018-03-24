@@ -105,6 +105,22 @@ void ConsVars_set(ConsVars* obj, const ConsVars* src, const int n);
 /*------------------------------------------------------------------------------
  
  ------------------------------------------------------------------------------*/
+void ConsVars_add(ConsVars* obj,
+                  const ConsVars* src,
+                  const int n);
+
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
+void ConsVars_multiply_by_scalar(ConsVars* obj,
+                                 const double factor,
+                                 const int n);
+
+
+
+/*------------------------------------------------------------------------------
+
+ ------------------------------------------------------------------------------*/
 void scalar_set(double* obj, const double* src, const int n);
 void scalar_add(double* obj, const double* src, const int nstart, const int nend);
 

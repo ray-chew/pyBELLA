@@ -14,15 +14,17 @@ modelstr = 'psinc';
 %test_case = 'Equatorial-Long-Wave';
 %test_case = 'Internal-Wave-Long-Wave';
 %test_case = 'Internal-Wave-Strong-Strat';
-test_case = 'Skamarock-Klemp-Internal-Wave';
+%test_case = 'Skamarock-Klemp-Internal-Wave';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
-%test_case = 'Travelling-Vortex';
+test_case = 'Travelling-Vortex';
 
 showmode = 1;
 separate_signs = 1;
 filledcontours = 1;
+linecolor      = 'default';  % 'k', 'default' ...
+no_of_lines    = 25;
 fixed_contours = 0;
 fixed_contour_step = 0;
 no_of_contours = 10;
@@ -145,7 +147,7 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy]; rhoY_diff = 1;
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
+%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
@@ -164,7 +166,7 @@ varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = 
 %varstr = 'dpdim';  folderstr = 'dpdime'; titlestr = 'dp [Pa]'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhs_cells';  folderstr = 'rhs_cells'; titlestr = 'rhs_c'; ndummy = 2; arraysize = [ncx ncy];
 
-%varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
+varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'rhs_nodes';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'lap_nodes';  folderstr = 'lap_nodes'; titlestr = 'lap_n';    ndummy = 2; arraysize = [nnx nny nnz];
@@ -264,25 +266,25 @@ for k = kmin:dk:kmax
         if filledcontours
             figure(figure1)
             if strcmp(varstr, 'flux_rhou')
-                contourf(x,z,th./th(:,1),7,'LineColor','k');
+                contourf(x,z,th./th(:,1),no_of_lines,'LineColor',linecolor);
             elseif (strcmp(varstr, 'u') || strcmp(varstr, 'v') || strcmp(varstr, 'w'))
-                contourf(x,z,th*velosc,7,'LineColor','k');
+                contourf(x,z,th*velosc,no_of_lines,'LineColor',linecolor);
             else
-                contourf(x,z,th,7,'LineColor','k');
+                contourf(x,z,th,no_of_lines,'LineColor',linecolor);
             end
             colormap Jet
             colorbar('FontSize',14,'FontName','Helvetica')
         else
             if fixed_contours
                 if separate_signs == 1
-                    contour(x,z,max(0.0,th),contour_values,'LineColor','k','LineWidth',1.0);
-                    % contour(x,z,max(0.0,th),contour_values,'LineColor','k');
+                    contour(x,z,max(0.0,th),contour_values,'LineColor',linecolor,'LineWidth',1.0);
+                    % contour(x,z,max(0.0,th),contour_values,'LineColor',linecolor);
                     hold                    
-                    contour(x,z,min(0.0,th),contour_values,'LineColor','k');
-                    % contour(x,z,min(0.0,th),contour_values,'LineColor','k','LineStyle','--');
+                    contour(x,z,min(0.0,th),contour_values,'LineColor',linecolor);
+                    % contour(x,z,min(0.0,th),contour_values,'LineColor',linecolor,'LineStyle','--');
                     hold
                 else
-                    contour(x,z,th,contour_values,'LineColor','k');
+                    contour(x,z,th,contour_values,'LineColor',linecolor);
                 end
             elseif fixed_contour_step
                 if separate_signs == 1
@@ -320,7 +322,7 @@ for k = kmin:dk:kmax
         if show_increments
             if k>kmin
                 figure(80)
-                contourf(x,z,th-th_old,7,'LineColor','k');
+                contourf(x,z,th-th_old,no_of_lines,'LineColor',linecolor);
                 colormap Jet
                 colorbar('FontSize',14,'FontName','Helvetica')
             end

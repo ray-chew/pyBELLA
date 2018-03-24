@@ -26,9 +26,10 @@
 /*
  #define EGDE_VELOCITIES_IN_MUSCL_STEP
  #define FOURTH_ORDER_ADV_FLUXES
+ #define SYMMETRIC_ADVECTION
  */ 
 #define EGDE_VELOCITIES_IN_MUSCL_STEP
- 
+#define SYMMETRIC_ADVECTION
 
 /* ============================================= 
  Semi-implicit solver options  

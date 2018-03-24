@@ -87,6 +87,44 @@ void ConsVars_setzero(ConsVars* obj, const int n) {
 	}
 }
 
+void ConsVars_add(ConsVars* obj,
+                  const ConsVars* src,
+                  const int n)
+{
+    extern User_Data ud;
+    int i, nsp;
+    for(i = 0; i < n; i++) {
+        obj->rho[i]  += src->rho[i] ;
+        obj->rhou[i] += src->rhou[i];
+        obj->rhov[i] += src->rhov[i];
+        obj->rhow[i] += src->rhow[i];
+        obj->rhoe[i] += src->rhoe[i];
+        obj->rhoY[i] += src->rhoY[i];
+        for (nsp=0; nsp<ud.nspec; nsp++) {
+            obj->rhoX[nsp][i] += src->rhoX[nsp][i];
+        }
+    }    
+}
+
+void ConsVars_multiply_by_scalar(ConsVars* obj,
+                                 const double factor,
+                                 const int n)
+{
+    extern User_Data ud;
+    int i, nsp;
+    for(i = 0; i < n; i++) {
+        obj->rho[i]  *= factor;
+        obj->rhou[i] *= factor;
+        obj->rhov[i] *= factor;
+        obj->rhow[i] *= factor;
+        obj->rhoe[i] *= factor;
+        obj->rhoY[i] *= factor;
+        for (nsp=0; nsp<ud.nspec; nsp++) {
+            obj->rhoX[nsp][i] *= factor;
+        }
+    }    
+}
+
 /* void memcpy(double *a,  double *b,  int n_length); */
 
 void ConsVars_set(ConsVars* obj, const ConsVars* src, const int n) {

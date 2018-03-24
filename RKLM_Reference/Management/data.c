@@ -50,8 +50,11 @@ ConsVars* Sol;            /* full size */
 ConsVars* Sol0;           /* full size (M < 1.0) */
 ConsVars* dSol;           /* full size */ /* TODO: Can I work without full-size dSol arrays? */
 VectorField* adv_flux;    /* full size, components located on primary cell faces */
-
 ConsVars* flux[3];        /* full size (M < 1.0) */
+
+#ifdef SYMMETRIC_ADVECTION
+ConsVars* Sol1;           /* full size (M < 1.0; needed to test x-y-symmetric advection for the travelling vortex) */
+#endif
 
 States* Solk;             /* cache size */
 double* W0;               /* full nG-length double array */
@@ -131,7 +134,10 @@ void Data_init() {
     W0  = (double*)malloc((unsigned)(n_aux * sizeof(double)));
     
     Sol0    = ConsVars_new(elem->nc);
-
+#ifdef SYMMETRIC_ADVECTION
+    Sol1    = ConsVars_new(elem->nc);
+#endif
+    
     flux[0] = ConsVars_new(elem->nfx);
     ConsVars_setzero(flux[0], elem->nfx);
     if(ndim > 1) {
@@ -157,7 +163,11 @@ void Data_init() {
 	Sol_initial(Sol, elem, node);
 	ConsVars_set(Sol0, Sol, elem->nc);
 	ConsVars_setzero(dSol, elem->nc);
-	
+
+#ifdef SYMMETRIC_ADVECTION
+    ConsVars_setzero(Sol1, elem->nc);
+#endif
+    
     Explicit_malloc(3 * ud.ncache / 2);
 	recovery_malloc(3 * ud.ncache / 2);  
 
