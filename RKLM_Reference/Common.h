@@ -29,7 +29,6 @@
  #define SYMMETRIC_ADVECTION
  */ 
 #define EGDE_VELOCITIES_IN_MUSCL_STEP
-#define SYMMETRIC_ADVECTION
 
 /* ============================================= 
  Semi-implicit solver options  

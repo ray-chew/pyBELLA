@@ -808,10 +808,6 @@ static void operator_coefficients_nodes(
 										const MPV* mpv,
                                         const double dt) {
 	
-    /* Note: the pressure and gravity terms may come in with different
-       time step sizes!
-     */
-    
     extern User_Data ud;
 	extern Thermodynamic th;
 	
