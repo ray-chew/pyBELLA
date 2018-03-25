@@ -130,7 +130,7 @@ int main( void )
 
             ConsVars_set(Sol, Sol0, elem->nc);
             // if (step == 0) cell_pressure_to_nodal_pressure(mpv, elem, node);
-            // if (1) cell_pressure_to_nodal_pressure(mpv, elem, node);
+            if (1) cell_pressure_to_nodal_pressure(mpv, elem, node);
 
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nfull time step with predicted advective flux");

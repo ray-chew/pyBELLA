@@ -89,6 +89,7 @@ void hllestar(
         Fluxes->rhoY[i] = given_flux * Fluxes->rhoY[i] + (1.0-given_flux) * 0.25 * (rhol*Yl+rhor*Yr)*(ul + ur);
         
         upwind = 0.5 * ( 1.0 + SIGN(Fluxes->rhoY[i]));
+        //upwind = 0.5;
         
         upl    = upwind / Yl;
         upr    = (1.0 - upwind) / Yr;
