@@ -106,11 +106,13 @@ void copy_fluxes(double *F,
 void Explicit_step_and_flux(
 							ConsVars* Sol,
 							ConsVars* flux,
+                            double* force,
 							const double lambda, 
 							const int n, 
 							const int SplitStep,
                             const int RK_stage,
                             const enum FluxesFrom adv_fluxes_from, 
+                            const enum FORCES_ON_OFF forces_on_off, 
                             const enum MUSCL_ON_OFF muscl_on_off) {
 	
     /* TODO: Can I get away without ever computing the theta-perturbation evolution,
@@ -126,6 +128,7 @@ void Explicit_step_and_flux(
 	const int njump  = ncache - 2*elem->igx;
     	
 	ConsVars pdSol, ppdSol, pFluxes, pflux, ppflux;
+    double *pforce, *ppforce;
     
 	double flux_weight_old, flux_weight_new;
     double flux_rhoY_weight_old, flux_rhoY_weight_new;
@@ -136,6 +139,8 @@ void Explicit_step_and_flux(
     if (lambda == 0.0) {
         return;
     }
+    
+    double dt_force = forces_on_off * lambda * elem->dx;
     
     assert(allocated == CORRECT);
 	assert(arraysize >= ncache);
@@ -150,6 +155,7 @@ void Explicit_step_and_flux(
 	
 	ConsVars_setp(&pdSol, dSol, 0);
 	ConsVars_setp(&pflux, flux, 0);
+    pforce = force;
     
 	count = 0;
 	for (kcache = 0; kcache * njump < n - elem->igx; kcache++) {
@@ -163,8 +169,7 @@ void Explicit_step_and_flux(
         }
         
 		/* flux computation*/
-        recovery(Lefts, Rights, Solk, Fluxes, lambda, nmax, adv_fluxes_from, muscl_on_off);
-        /* recovery(Lefts, Rights, Solk, Fluxes, lambda, nmax, FLUX_INTERNAL, muscl_on_off); */
+        recovery(Lefts, Rights, Solk, Fluxes, pforce, lambda, dt_force, nmax, adv_fluxes_from, muscl_on_off);
         check_flux_bcs(Lefts, Rights, nmax, kcache, njump, elem, SplitStep);
                     
         hllestar(Fluxes, Lefts, Rights, Solk, lambda, nmax, adv_fluxes_from);
@@ -172,8 +177,9 @@ void Explicit_step_and_flux(
 		/* time updates for conservative variables */
 		ConsVars_setp(&ppdSol, &pdSol, elem->igx);
 		ConsVars_setp(&ppflux, &pflux, elem->igx);
-		count  += elem->igx;
+        ppforce = &pforce[elem->igx];
 		ConsVars_setp(&pFluxes, Fluxes, elem->igx-1);
+        count  += elem->igx;
 		
 		/* flux_weight = 0.5; */
 		flux_weight_old = ud.tips.flux_frac[RK_stage][0];
@@ -184,7 +190,7 @@ void Explicit_step_and_flux(
 		for(i = elem->igx; i < nmax - elem->igx; i++) { 
 						
             *ppdSol.rho  += lambda * (*pFluxes.rho  - pFluxes.rho[1]);  
-			*ppdSol.rhou += lambda * (*pFluxes.rhou - pFluxes.rhou[1]);
+			*ppdSol.rhou += lambda * (*pFluxes.rhou - pFluxes.rhou[1]) + dt_force * *ppforce;
 			*ppdSol.rhov += lambda * (*pFluxes.rhov - pFluxes.rhov[1]);
 			*ppdSol.rhow += lambda * (*pFluxes.rhow - pFluxes.rhow[1]);  
 			*ppdSol.rhoe += lambda * (*pFluxes.rhoe - pFluxes.rhoe[1]);
@@ -216,6 +222,7 @@ void Explicit_step_and_flux(
 			count++;
 			ConsVars_addp(&ppdSol, 1);
 			ConsVars_addp(&ppflux, 1);
+            ppforce++;
 			if(count % icx == 0) {
 				ConsVars_addp(&ppflux, 1);
 				ConsVars_addp(&pflux, 1);
@@ -224,6 +231,7 @@ void Explicit_step_and_flux(
 		if(last == WRONG) {
 			ConsVars_addp(&pdSol, njump);
 			ConsVars_addp(&pflux, njump); 
+            pforce+=njump;
 			States_addp(Solk, njump); 
 			count -= elem->igx;
 		}
@@ -386,10 +394,11 @@ void Explicit_step_update(
 void advect(
             ConsVars *Sol, 
             ConsVars* flux[3],
-            VectorField* adv_flux,
+            double* force[3],
             const double dt, 
             const ElemSpaceDiscr* elem,
             const enum FluxesFrom adv_fluxes_from, 
+            const enum FORCES_ON_OFF forces_on_off, 
             const enum MUSCL_ON_OFF muscl_on_off, 
             const enum No_of_Strang_Sweeps no_of_sweeps,
             const int odd)
@@ -412,7 +421,7 @@ void advect(
     if (odd) {
         for(int Split = 0; Split < elem->ndim; Split++) {
             const double lambda = time_step/elem->dx;
-            Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);                
+            Explicit_step_and_flux(Sol, flux[Split], force[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, forces_on_off, muscl_on_off);                
             (*rotate[elem->ndim - 1])(Sol, FORWARD);
         }
     } else {
@@ -420,7 +429,7 @@ void advect(
             int Split = (elem->ndim - 1) - i_OpSplit;
             (*rotate[elem->ndim - 1])(Sol, BACKWARD);
             const double lambda = time_step/elem->dx;
-            Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);
+            Explicit_step_and_flux(Sol, flux[Split], force[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, forces_on_off, muscl_on_off);
         }        
     }
     
@@ -431,12 +440,12 @@ void advect(
                 int Split = (elem->ndim - 1) - i_OpSplit;
                 (*rotate[elem->ndim - 1])(Sol, BACKWARD);
                 const double lambda = time_step/elem->dx;
-                Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);
+                Explicit_step_and_flux(Sol, flux[Split], force[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, forces_on_off, muscl_on_off);
             }
         } else {
             for(int Split = 0; Split < elem->ndim; Split++) {
                 const double lambda = time_step/elem->dx;
-                Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);                
+                Explicit_step_and_flux(Sol, flux[Split], force[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, forces_on_off, muscl_on_off);                
                 (*rotate[elem->ndim - 1])(Sol, FORWARD);
             }            
         }
@@ -466,7 +475,7 @@ void advect(
         if (cycle) {
             for(int Split = 0; Split < elem->ndim; Split++) {
                 const double lambda = time_step/elem->dx;
-                Explicit_step_and_flux(Sols[cycle], flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);                
+                Explicit_step_and_flux(Sols[cycle], flux[Split], force[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, forces_on_off, muscl_on_off);                
                 (*rotate[elem->ndim - 1])(Sols[cycle], FORWARD);
             }
         } else {
@@ -474,7 +483,7 @@ void advect(
                 int Split = (elem->ndim - 1) - i_OpSplit;
                 (*rotate[elem->ndim - 1])(Sols[cycle], BACKWARD);
                 const double lambda = time_step/elem->dx;
-                Explicit_step_and_flux(Sols[cycle], flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);
+                Explicit_step_and_flux(Sols[cycle], flux[Split], force[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, forces_on_off, muscl_on_off);
             }        
         }
         
@@ -485,12 +494,12 @@ void advect(
                     int Split = (elem->ndim - 1) - i_OpSplit;
                     (*rotate[elem->ndim - 1])(Sols[cycle], BACKWARD);
                     const double lambda = time_step/elem->dx;
-                    Explicit_step_and_flux(Sols[cycle], flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);
+                    Explicit_step_and_flux(Sols[cycle], flux[Split], force[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, forces_on_off, muscl_on_off);
                 }
             } else {
                 for(int Split = 0; Split < elem->ndim; Split++) {
                     const double lambda = time_step/elem->dx;
-                    Explicit_step_and_flux(Sols[cycle], flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);                
+                    Explicit_step_and_flux(Sols[cycle], flux[Split], force[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, forces_on_off, muscl_on_off);                
                     (*rotate[elem->ndim - 1])(Sols[cycle], FORWARD);
                 }            
             }

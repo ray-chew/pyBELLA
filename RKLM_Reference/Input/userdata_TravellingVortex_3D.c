@@ -104,7 +104,7 @@ void User_Data_init(User_Data* ud) {
 	ud->zmax =   5000/ud->h_ref/8.0;
 
 	/* boundary/initial conditions */
-	ud->wind_speed        = 1.0*10.0/ud->u_ref;              /* velocity in [u_ref] */
+	ud->wind_speed        = 0.0*10.0/ud->u_ref;              /* velocity in [u_ref] */
 	ud->wind_shear        = -0.0;              /* velocity in [u_ref/h_ref] */             
 	ud->hill_height       =  0.0;              /* height   in [h_ref]   */ 
 	ud->hill_length_scale =  99999.9;          /* width    in [h_ref]   */   

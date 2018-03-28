@@ -106,41 +106,6 @@ void hllestar(
     }
 }
 
-/*------------------------------------------------------------------------------
- store advective flux
- ------------------------------------------------------------------------------*/
-void store_advective_fluxes(VectorField* adv_flux_full, 
-                            const ConsVars* flux[3], 
-                            const ElemSpaceDiscr* elem)
-{
-    
-    /* copy the advective fluxes */
-    memcpy(adv_flux_full->x, flux[0]->rhoY, elem->nfx*sizeof(double));
-    // for (int nf=0; nf<elem->nfx; nf++) flux[0]->rhoY[nf] = 0.0;
-    
-    if (elem->ndim > 1) {
-        memcpy(adv_flux_full->y, flux[1]->rhoY, elem->nfy*sizeof(double));
-        // for (int nf=0; nf<elem->nfy; nf++) flux[1]->rhoY[nf] = 0.0;
-    }
-    if (elem->ndim > 2) {
-        memcpy(adv_flux_full->z, flux[2]->rhoY, elem->nfz*sizeof(double));
-        // for (int nf=0; nf<elem->nfz; nf++) flux[2]->rhoY[nf] = 0.0;
-    }
-}
-
-/*------------------------------------------------------------------------------
- store advective flux difference
- ------------------------------------------------------------------------------*/
-void add_advective_fluxes(VectorField* fd,
-                          const ConsVars* flux[3], 
-                          const int sign, 
-                          const VectorField* ff,
-                          const ElemSpaceDiscr* elem)
-{
-    for (int i=0; i<elem->nfx; i++) fd->x[i] = flux[0]->rhoY[i] + sign*ff->x[i]; 
-    if (elem->ndim >1) for (int i=0; i<elem->nfy; i++) fd->y[i] = flux[1]->rhoY[i] + sign*ff->y[i]; 
-    if (elem->ndim >2) for (int i=0; i<elem->nfz; i++) fd->z[i] = flux[2]->rhoY[i] + sign*ff->z[i]; 
-}
 
 /*------------------------------------------------------------------------------
  store advective flux
@@ -358,56 +323,3 @@ void recompute_advective_fluxes(ConsVars* flux[3],
 #endif
 }
 
-
-/*------------------------------------------------------------------------------
- update advective flux
- ------------------------------------------------------------------------------*/
-void update_advective_fluxes(ConsVars* flux[3], 
-                             const VectorField* adv_flux, 
-                             const ElemSpaceDiscr* elem, 
-                             const NodeSpaceDiscr* node,
-                             const double dt)
-{
-    extern User_Data ud;
-    
-    /* advective fluxes in adv_flux get updated by increments in flux and
-       stored in the latter field
-     */
-    for (int nf=0; nf<elem->nfx; nf++) {
-        flux[0]->rho[nf]  = 0.0;
-        flux[0]->rhou[nf] = 0.0;
-        flux[0]->rhov[nf] = 0.0;
-        flux[0]->rhow[nf] = 0.0;
-        flux[0]->rhoe[nf] = 0.0;
-        for (int nsp=0; nsp<ud.nspec; nsp++) {
-            flux[0]->rhoX[nsp][nf] = 0.0;
-        }
-        flux[0]->rhoY[nf] += adv_flux->x[nf];
-    }            
-    if (elem->ndim > 1) {
-        for (int nf=0; nf<elem->nfy; nf++) {
-            flux[1]->rho[nf]  = 0.0;
-            flux[1]->rhou[nf] = 0.0;
-            flux[1]->rhov[nf] = 0.0;
-            flux[1]->rhow[nf] = 0.0;
-            flux[1]->rhoe[nf] = 0.0;
-            for (int nsp=0; nsp<ud.nspec; nsp++) {
-                flux[1]->rhoX[nsp][nf] = 0.0;
-            }
-            flux[1]->rhoY[nf] += adv_flux->y[nf];
-        }            
-    }
-    if (elem->ndim > 2) {
-        for (int nf=0; nf<elem->nfz; nf++) {
-            flux[2]->rho[nf]  = 0.0;
-            flux[2]->rhou[nf] = 0.0;
-            flux[2]->rhov[nf] = 0.0;
-            flux[2]->rhow[nf] = 0.0;
-            flux[2]->rhoe[nf] = 0.0;
-            for (int nsp=0; nsp<ud.nspec; nsp++) {
-                flux[2]->rhoX[nsp][nf] = 0.0;
-            }
-            flux[2]->rhoY[nf] += adv_flux->z[nf];
-        }            
-    }    
-}

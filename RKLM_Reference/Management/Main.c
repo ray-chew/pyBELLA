@@ -50,9 +50,9 @@ int main( void )
 	/* Arrays */
 	extern ConsVars* Sol; 
 	extern ConsVars* Sol0; 
-    extern VectorField* adv_flux;
+    extern double* force[3];
     extern ConsVars* flux[3];
-    
+        
     TimeStepInfo dt_info;
 	const double* tout = ud.tout;
 	int output_switch = 0;
@@ -112,20 +112,19 @@ int main( void )
             Explicit_Coriolis(Sol, elem, 0.5*dt); 
             
             /* explicit advection half time step preparing advection flux calculation 
-             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
-             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_INTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
-             advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+             advect(Sol, flux, force, 0.5*dt, elem, FLUX_INTERNAL, WITHOUT_FORCES, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
+             advect(Sol, flux, force, 0.5*dt, elem, FLUX_INTERNAL, WITHOUT_FORCES, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+             advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITHOUT_FORCES, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
              - symmetrized splitting instead of simple splitting does not improve vortex symmetry  
              */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
-            advect(Sol, flux, adv_flux, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
+            advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITHOUT_FORCES, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
 
             /* explicit part of Euler backward gravity over half time step */
             euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt);
             
             /* divergence-controlled advective fluxes at the half time level */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
-            store_advective_fluxes(adv_flux, (const ConsVars**)flux, elem);
             flux_correction(flux, elem, Sol, Sol0, t, dt, step);            
 
             ConsVars_set(Sol, Sol0, elem->nc);
@@ -140,10 +139,14 @@ int main( void )
             Explicit_Coriolis(Sol, elem, 0.5*dt); 
                         
             /* explicit EULER half time step for gravity and pressure gradient */ 
+#ifdef FORCES_UNDER_OPSPLIT
+            pressure_gradient_forces(force, Sol, (const MPV*)mpv, elem, node);
+#else 
             euler_forward_non_advective(Sol, (const MPV*)mpv, elem, node, 0.5*dt, WITH_PRESSURE); 
+#endif
                         
             /* explicit full time step advection using div-controlled advective fluxes */
-            advect(Sol, flux, adv_flux, dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+            advect(Sol, flux, force, dt, elem, FLUX_EXTERNAL, WITH_FORCES, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
                         
             /* implicit EULER half time step for gravity and pressure gradient */ 
             euler_backward_gravity(Sol, mpv, elem, 0.5*dt);

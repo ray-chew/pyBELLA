@@ -49,13 +49,14 @@ Thermodynamic th;
 ConsVars* Sol;            /* full size */
 ConsVars* Sol0;           /* full size (M < 1.0) */
 ConsVars* dSol;           /* full size */ /* TODO: Can I work without full-size dSol arrays? */
-VectorField* adv_flux;    /* full size, components located on primary cell faces */
 
+double* force[3];
 ConsVars* flux[3];        /* full size (M < 1.0) */
 
 #ifdef SYMMETRIC_ADVECTION
 ConsVars* Sol1;           /* full size (M < 1.0; needed to test x-y-symmetric advection for the travelling vortex) */
 #endif
+
 
 States* Solk;             /* cache size */
 double* W0;               /* full nG-length double array */
@@ -124,7 +125,6 @@ void Data_init() {
 	/* Arrays */
 	Sol  = ConsVars_new(elem->nc);
 	dSol = ConsVars_new(elem->nc);
-    adv_flux  = VectorField_new(node->nc);
 	Solk = States_small_new(3 * ud.ncache / 2);
     
     /* auxiliary space */
@@ -138,6 +138,11 @@ void Data_init() {
 #ifdef SYMMETRIC_ADVECTION
     Sol1    = ConsVars_new(elem->nc);
 #endif
+    for (int idim = 0; idim < elem->ndim; idim++) {
+        force[idim]    = (double*)malloc(node->nc*(sizeof(double)));
+        for (int nc = 0; nc < node->nc; nc++) force[idim][nc] = 0.0;
+    }
+
     
     flux[0] = ConsVars_new(elem->nfx);
     ConsVars_setzero(flux[0], elem->nfx);
@@ -181,14 +186,14 @@ void Data_free() {
 	NodeSpaceDiscr_free(node);
 	ConsVars_free(Sol);
 	ConsVars_free(dSol);
-    VectorField_free(adv_flux);
 	States_small_free(Solk);
 	free(W0);
     ConsVars_free(Sol0);
 
-    if(ndim > 2) ConsVars_free(flux[2]);
-    if(ndim > 1) ConsVars_free(flux[1]);
-    ConsVars_free(flux[0]);
+    for (int idim = 0; idim < ndim; idim++) {
+        ConsVars_free(flux[idim]);
+        free(force[idim]);
+    }
 
     terminate_MG_projection();
     

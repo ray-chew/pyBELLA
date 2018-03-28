@@ -21,16 +21,18 @@
  ============================================= */
 
 /* ============================================= 
- Advection options
+ Explicit predictor options
  ============================================= */
 /*
  #define EGDE_VELOCITIES_IN_MUSCL_STEP
  #define FOURTH_ORDER_ADV_FLUXES
  #define SYMMETRIC_ADVECTION
+ #define FORCES_UNDER_OPSPLIT
  */ 
 #define EGDE_VELOCITIES_IN_MUSCL_STEP
 #define FOURTH_ORDER_ADV_FLUXES
 #define SYMMETRIC_ADVECTION
+#define FORCES_UNDER_OPSPLIT
 
 /* ============================================= 
  Semi-implicit solver options  

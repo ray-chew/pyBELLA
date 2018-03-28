@@ -42,7 +42,7 @@ contour_values = [-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dthe
 %contour_values = linspace(-0.01,0.01,41) / 288.15;
 title_true = 1;
 
-kmin = 1;
+kmin = 0;
 kmax = 601;
 dk   = 1;
 

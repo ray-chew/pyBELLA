@@ -39,10 +39,11 @@ void Explicit_free( void );
 void advect(
             ConsVars *Sol, 
             ConsVars* flux[3],
-            VectorField* adv_flux,
+            double* force[3],
             const double dt, 
             const ElemSpaceDiscr* elem,
             const enum FluxesFrom adv_fluxes_from, 
+            const enum FORCES_ON_OFF forces_on_off, 
             const enum MUSCL_ON_OFF muscl_on_off, 
             const enum No_of_Strang_Sweeps no_of_sweeps,
             const int odd);
@@ -53,11 +54,13 @@ void advect(
 void Explicit_step_and_flux(
                             ConsVars* Sol,
                             ConsVars* flux,
+                            double* force,
                             const double lambda, 
                             const int n, 
                             const int SplitStep,
                             const int RK_stage,
                             const enum FluxesFrom adv_fluxes_from, 
+                            const enum FORCES_ON_OFF forces_on_off, 
                             const enum MUSCL_ON_OFF muscl_on_off);
 
 
