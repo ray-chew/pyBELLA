@@ -95,8 +95,8 @@ elseif strcmp(test_case, 'Rising-Bubble')
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Travelling-Vortex')
-    ncx = 64;  
-    ncy = 64; 
+    ncx = 256;  
+    ncy = 256; 
     L   = 1.0;  
     x0  = 0.5;
     H   = 1.0; 

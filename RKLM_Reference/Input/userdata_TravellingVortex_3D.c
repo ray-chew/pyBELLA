@@ -104,7 +104,7 @@ void User_Data_init(User_Data* ud) {
 	ud->zmax =   5000/ud->h_ref/8.0;
 
 	/* boundary/initial conditions */
-	ud->wind_speed        = 0.0*10.0/ud->u_ref;              /* velocity in [u_ref] */
+	ud->wind_speed        = 1.0*10.0/ud->u_ref;              /* velocity in [u_ref] */
 	ud->wind_shear        = -0.0;              /* velocity in [u_ref/h_ref] */             
 	ud->hill_height       =  0.0;              /* height   in [h_ref]   */ 
 	ud->hill_length_scale =  99999.9;          /* width    in [h_ref]   */   
@@ -131,8 +131,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx =  64+1; /*  */
-	ud->iny =  64+1; /*  */
+	ud->inx =  256+1; /*  */
+	ud->iny =  256+1; /*  */
 	ud->inz =   1;
 
     /* explicit predictor step */
@@ -153,7 +153,7 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  201; /* (ud->inx+3); */
 	
 	/* linear solver-stuff */
-    double tol = 1.e-6;
+    double tol = 1.e-10;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -168,7 +168,7 @@ void User_Data_init(User_Data* ud) {
     /* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
     
-    ud->tout[0] = 1.0 * (ud->xmax-ud->xmin)/ud->wind_speed;      
+    ud->tout[0] =  1.0 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
     ud->tout[1] = -1.0;
 
     ud->stepmax = 10000;
@@ -176,7 +176,7 @@ void User_Data_init(User_Data* ud) {
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 20;
+	ud->write_file_period = 40;
 	ud->file_format = HDF;
 
     {

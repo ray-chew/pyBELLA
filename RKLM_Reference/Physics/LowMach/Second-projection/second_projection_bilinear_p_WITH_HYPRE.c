@@ -125,10 +125,17 @@ void second_projection(
 	if(ud.bdrytype_min[2] == PERIODIC) z_periodic = 1;
 	
     /* KEEP_OLD_POISSON_SOLUTIONS */
+#ifdef FORCES_UNDER_OPSPLIT
+    for(ii=0; ii<nc; ii++){
+        p2[ii] = mpv->dp2_nodes[ii];
+        rhs[ii] = 0.0;
+    }
+#else
 	for(ii=0; ii<nc; ii++){
 		p2[ii] = mpv->p2_nodes[ii];
 		rhs[ii] = 0.0;
 	}
+#endif
     
     rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry, dt, 1.0);
     printf("\nrhsmax = %e\n", rhs_max);
@@ -275,11 +282,18 @@ void second_projection(
 #endif
 
     
+#ifdef FORCES_UNDER_OPSPLIT
+    for(ii=0; ii<nc; ii++) {
+        mpv->dp2_nodes[ii] = p2[ii];
+        mpv->p2_nodes[ii] += p2[ii];
+    }
+#else
     for(ii=0; ii<nc; ii++) {
         mpv->dp2_nodes[ii] = p2[ii] - mpv->p2_nodes[ii];
         mpv->p2_nodes[ii]  = p2[ii];
     }
-
+#endif
+    
     Set_Explicit_Boundary_Data(Sol, elem);
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);    
 }
@@ -1264,6 +1278,7 @@ void pressure_gradient_forces(
     extern Thermodynamic th;
     
     double* p2n = mpv->p2_nodes;
+    double timestep_fraction = 1.0;
     
     const double Ginv = th.Gammainv; 
     
@@ -1283,7 +1298,7 @@ void pressure_gradient_forces(
                 double dpdx   = (p2n[n1]-p2n[n0])/dx;
                 double rhoYovG = Ginv*Sol->rhoY[nc];
                 
-                force[0][nc] = -0.5*rhoYovG * dpdx;
+                force[0][nc] = -timestep_fraction*rhoYovG * dpdx;
             }
         }
             break;
@@ -1330,8 +1345,8 @@ void pressure_gradient_forces(
                     double dbuoy   = -Sol->rho[nc]*dchi/chi;  
                     */
                     
-                    force[0][ncx]  = -0.5*rhoYovG * dpdx;
-                    force[1][ncy]  = -0.5*rhoYovG * dpdy;
+                    force[0][ncx]  = -timestep_fraction*rhoYovG * dpdx;
+                    force[1][ncy]  = -timestep_fraction*rhoYovG * dpdy;
                     /* 
                      Sol->rhov[nc]       = ( - rhoYovG * dpdy + (g/Msq) * dbuoy);
                      Sol->rhoX[BUOY][nc] = ( - v * dSdy) * Sol->rho[nc]; 
@@ -1397,9 +1412,9 @@ void pressure_gradient_forces(
                         double chi     = Sol->rho[nc]/Sol->rhoY[nc];
                         double dbuoy   = -Sol->rho[nc]*dchi/chi;   
                         */
-                        force[0][ncx] = -0.5*rhoYovG * dpdx;
-                        force[1][ncy] = -0.5*rhoYovG * dpdy;
-                        force[2][ncz] = -0.5*rhoYovG * dpdz;
+                        force[0][ncx] = -timestep_fraction*rhoYovG * dpdx;
+                        force[1][ncy] = -timestep_fraction*rhoYovG * dpdy;
+                        force[2][ncz] = -timestep_fraction*rhoYovG * dpdz;
                         
                         /*
                          Sol->rhoX[BUOY][nc] = ( - v * dSdy) * Sol->rho[nc];
