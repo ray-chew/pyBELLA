@@ -52,6 +52,7 @@
 
 /* Begin PBXFileReference section */
 		9A1CB849206CACEA0095DC98 /* userdata_InternalWave_LongWave.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_InternalWave_LongWave.c; sourceTree = "<group>"; };
+		9A1ED37C206D0C9200D622A9 /* PrimaryAndDualGrid.eps */ = {isa = PBXFileReference; lastKnownFileType = file; path = PrimaryAndDualGrid.eps; sourceTree = "<group>"; };
 		9A21BF811DA58470006A6F34 /* libmfhdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmfhdf.dylib; path = ../../../../../opt/local/lib/libmfhdf.dylib; sourceTree = "<group>"; };
 		9A21BF831DA5847F006A6F34 /* libdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libdf.dylib; path = ../../../../../opt/local/lib/libdf.dylib; sourceTree = "<group>"; };
 		9AC4F90B1DA3F02D00AED455 /* RKLM_Reference */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = RKLM_Reference; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -206,6 +207,7 @@
 			isa = PBXGroup;
 			children = (
 				9AC4F91A1DA3F06F00AED455 /* PrimaryAndDualGrid.pdf */,
+				9A1ED37C206D0C9200D622A9 /* PrimaryAndDualGrid.eps */,
 			);
 			path = Graphics;
 			sourceTree = "<group>";

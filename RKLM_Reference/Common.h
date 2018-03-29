@@ -27,7 +27,7 @@
  #define EGDE_VELOCITIES_IN_MUSCL_STEP
  #define SYMMETRIC_ADVECTION
  #define FOURTH_ORDER_ADV_FLUXES
- #define FORCES_UNDER_OPSPLIT
+ #define FORCES_UNDER_OPSPLIT        --   NOT to be used with nonzero gravity thus far!
  */ 
 #define EGDE_VELOCITIES_IN_MUSCL_STEP
 #define SYMMETRIC_ADVECTION
