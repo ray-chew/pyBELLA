@@ -59,6 +59,11 @@ int main( void )
                              	
 	/* data allocation and initialization */
 	Data_init();
+    
+#ifdef FORCES_UNDER_OPSPLIT
+    /* FORCES_UNDER_OPSPLIT not yet implemented for implicit gravity */
+    assert(ud.g_ref < sqrt(DBL_EPSILON));  
+#endif
 
     set_wall_massflux(bdry, Sol, elem);
     Set_Explicit_Boundary_Data(Sol, elem);
