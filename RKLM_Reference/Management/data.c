@@ -48,7 +48,8 @@ Thermodynamic th;
 /* Arrays */
 ConsVars* Sol;            /* full size */
 ConsVars* Sol0;           /* full size (M < 1.0) */
-ConsVars* dSol;           /* full size */ /* TODO: Can I work without full-size dSol arrays? */
+ConsVars* dSol;           /* full size */ /* TODO: Can I work without full-size dSol arrays? 
+                                           -> No: currently still needed in Explicit_step_update */
 
 double* force[3];
 ConsVars* flux[3];        /* full size (M < 1.0) */

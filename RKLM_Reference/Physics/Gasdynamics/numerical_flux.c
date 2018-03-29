@@ -114,6 +114,8 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                                 const ConsVars* Sol, 
                                 const ElemSpaceDiscr* elem)
 {
+    extern User_Data ud;
+    
     /* make sure fluxes cannot inadvertently contain weird data */
     for (int nf=0; nf<elem->nfx; nf++) flux[0]->rhoY[nf] = 0.0;
     if (elem->ndim>1) for (int nf=0; nf<elem->nfy; nf++) flux[1]->rhoY[nf] = 0.0;
@@ -217,7 +219,24 @@ void recompute_advective_fluxes(ConsVars* flux[3],
             break;
         }
     }
-#else
+#else /* FOURTH_ORDER_ADV_FLUXES */ 
+    
+    /* TODO: 
+     7) Make sure, the fourth order computation of the advective fluxes is implemented
+     compatibly with rigid wall boundary conditions. 
+     */
+    int igx = elem->igx;
+    int igy = elem->igy;
+    int igz = elem->igz;
+    
+    int icx = elem->icx;
+    int icy = elem->icy;
+    int icz = elem->icz;
+    
+    int ifx = elem->ifx;
+    int ify = elem->ify;
+    int ifz = elem->ifz;
+
     switch (elem->ndim) {
         case 1: {
             for(int i=1; i<elem->icx; i++) {
@@ -231,13 +250,6 @@ void recompute_advective_fluxes(ConsVars* flux[3],
         } 
             
         case 2: {
-            int igx = elem->igx;
-            int icx = elem->icx;
-            int igy = elem->igy;
-            int icy = elem->icy;
-            int ifx = elem->ifx;
-            int ify = elem->ify;
-            
             for (int j=igy; j<icy-1; j++) {
                 int ncj  = j*icx;
                 int nfxj = j*ifx;
@@ -260,25 +272,12 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                     
                     flux[0]->rhoY[nfxij] = (-rhoYu_p + 7.0*(rhoYu_c+rhoYu_m) - rhoYu_mm)/12.0;
                     flux[1]->rhoY[nfyij] = (-rhoYv_p + 7.0*(rhoYv_c+rhoYv_m) - rhoYv_mm)/12.0;
-                    
                 }
             }
             break;
         }
             
-        case 3: {
-            int igx = elem->igx;
-            int igy = elem->igy;
-            int igz = elem->igz;
-            
-            int icx = elem->icx;
-            int icy = elem->icy;
-            int icz = elem->icz;
-            
-            int ifx = elem->ifx;
-            int ify = elem->ify;
-            int ifz = elem->ifz;
-            
+        case 3: {            
             for (int k=igz; k<icz-1; k++) {
                 int nck  = k*icx*icy;
                 int nfxk = k*ifx*icy;
@@ -320,6 +319,31 @@ void recompute_advective_fluxes(ConsVars* flux[3],
             break;
         }
     }
-#endif
+    
+    /* Check wall boundary conditions in the vertical */
+    if (ud.bdrytype_min[1] == WALL) {
+        for (int k=igz; k<icz-igz; k++) {
+            int nfyk = k*ify;
+            for(int i=igx; i<icx-1; i++) {
+                int nfyik = nfyk + i*ify*icz;
+                int j=igy;
+                int nfyijk = nfyik + j;
+                flux[1]->rhoY[nfyijk] = 0.0;
+            }
+        }
+    }
+    if (ud.bdrytype_max[1] == WALL) {
+        for (int k=igz; k<icz-igz; k++) {
+            int nfyk = k*ify;
+            for(int i=igx; i<icx-1; i++) {
+                int nfyik = nfyk + i*ify*icz;
+                int j=ify-igx-1;
+                int nfyijk = nfyik + j;
+                flux[1]->rhoY[nfyijk] = 0.0;
+            }
+        }
+    }
+    
+#endif /* FOURTH_ORDER_ADV_FLUXES */ 
 }
 

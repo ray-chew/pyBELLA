@@ -25,7 +25,6 @@
  ============================================= */
 /*
  #define EGDE_VELOCITIES_IN_MUSCL_STEP
- #define FOURTH_ORDER_ADV_FLUXES
  #define SYMMETRIC_ADVECTION
  #define FORCES_UNDER_OPSPLIT
  */ 
@@ -76,5 +75,35 @@
 #define DIV_CONTROL_LOCAL          /* if def'd, div is controlled in L_\infty, otherwise in L2    */
 #define P2_FULL_STENCIL 1.0        /* values: 0.0, 1.0;  0.0 = 5/7pt stencil,  1.0=9/27pt stencil */
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
+
+
+/* TODO: Code cleaning / maintainance
+ 
+ 1) Make all appearances of "extern ..." disappear except for those of
+ User_Data ud;
+ double* W0;
+ 
+ 2) Whereever the auxiliary double array W0 is used, introduce an external "W0_in_use" flag, so 
+    that other routines can query whether or not this aux array is currently occupied.
+ 
+ 3) Get rid of the full-size dSol arrays
+ 
+ 4) Can I get away without ever computing the advective theta-perturbation evolution,
+    just modifying the momentum balance to include the semi-implicit effects?
+ 
+ 5) Implement   Hydrostatic_Initial_Pressure()  for 3D.
+ 
+ 6) Get rid of "Level[]"s in the  MPV struct.
+ 
+ 7) Make sure, the fourth order computation of the advective fluxes is implemented
+    compatibly with rigid wall boundary conditions. 
+ 
+ 8) Rewrite  slanted_wall_min() and related routines for cross-wall advective flux  
+    rhoYu  instead of for rhou to improve compatibility with the pseudo-incompressible
+    model
+ 
+ 
+ */
+
 
 #include <assert.h> 

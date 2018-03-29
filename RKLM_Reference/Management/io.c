@@ -61,7 +61,7 @@ void putout(ConsVars* Sol,
 	
 	/* User data */
 	extern User_Data ud;
-	
+	    
 	/* Grid and space discretization */
 	extern ElemSpaceDiscr* elem;
 	

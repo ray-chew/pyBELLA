@@ -516,6 +516,7 @@ static void slanted_wall_min(ConsVars* Sol, const int njk, const int i)
 	 
 	 I only take into account the "y-direction", and only the "min"-
      boundary. 
+     
 	 */
 	
 	extern ElemSpaceDiscr* elem;
@@ -525,6 +526,15 @@ static void slanted_wall_min(ConsVars* Sol, const int njk, const int i)
 	double rhou_wall, dhdx;
 	int image, nijk, jj, kk;
 	
+#ifdef FOURTH_ORDER_ADV_FLUXES
+    /* 
+     TODO: rewrite this for cross-wall advective flux  rhoYu  instead
+     of for rhou to improve compatibility with the pseudo-incompressible
+     model
+     */   
+    assert(0);
+#endif
+    
 	nijk    = njk + elem->igx-1 - i; 
 	image   = njk + elem->igx + i; 
 	
