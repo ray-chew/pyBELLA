@@ -26,10 +26,10 @@
 /*
  #define EGDE_VELOCITIES_IN_MUSCL_STEP
  #define SYMMETRIC_ADVECTION
+ #define FOURTH_ORDER_ADV_FLUXES
  #define FORCES_UNDER_OPSPLIT
  */ 
 #define EGDE_VELOCITIES_IN_MUSCL_STEP
-#define FOURTH_ORDER_ADV_FLUXES
 #define SYMMETRIC_ADVECTION
 
 /* ============================================= 
