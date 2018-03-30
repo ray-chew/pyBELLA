@@ -618,6 +618,41 @@ double qv_sat_from_p_T(const double p, const double T)
     return(a * ees / (p - ees));
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
+double nonhydrostasy(const double t) 
+{    
+    extern User_Data ud;
+    
+    switch (ud.is_nonhydrostatic) {
+        case 0:
+            return(0.0);
+            break;
+        case 1:
+            return(1.0);
+            break;
+        case -1:
+        {
+            /*
+             double a = 0.00225;
+             double b = 1.0 / 0.00225;
+             return(MIN_own(1.0, MAX_own(0.0, b*(t-a))));
+             */
+            double a = 12.5;
+            double b = 1.0 / 24.0;
+            double c = MIN_own(1.0, MAX_own(0.0, b*(t-a)));
+            return c;
+            /*
+             return(0.0);
+             */
+        }
+            break;
+        default:
+            assert(0);
+            break;
+    }    
+}
 
 /*------------------------------------------------------------------------------
  

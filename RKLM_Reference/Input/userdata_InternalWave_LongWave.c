@@ -72,6 +72,7 @@ void User_Data_init(User_Data* ud) {
     ud->nspec       = NSPEC;
 
     /* Low Mach */
+    ud->is_nonhydrostatic = 0;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
     ud->is_compressible   = 0;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep = 0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);

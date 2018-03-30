@@ -74,6 +74,7 @@ int main( void )
     second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, 1.0);
     cell_pressure_to_nodal_pressure(mpv, elem, node);
 
+    ud.hydrostasy      = nonhydrostasy(0);
     ud.compressibility = compressibility(0);
         
 	if(ud.write_file == ON) 
@@ -176,6 +177,7 @@ int main( void )
 			t += dt;
 			step++;
 			            			
+            ud.nonhydrostasy   = nonhydrostasy(t);
             ud.compressibility = compressibility(t);
             
 			if((ud.write_file == ON && (step % ud.write_file_period  == 0)) || output_switch) 

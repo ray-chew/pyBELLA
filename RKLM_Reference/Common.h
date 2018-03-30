@@ -30,7 +30,6 @@
  #define FORCES_UNDER_OPSPLIT        --   NOT to be used with nonzero gravity thus far!
  */ 
 #define EGDE_VELOCITIES_IN_MUSCL_STEP
-#define SYMMETRIC_ADVECTION
 
 /* ============================================= 
  Semi-implicit solver options  

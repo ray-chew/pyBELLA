@@ -95,9 +95,13 @@ typedef struct {
 	
 	/* Low Mach */
 	int acoustic_timestep;
+    
+    int is_nonhydrostatic;
+    double hydrostasy;
 	int is_compressible;
 	double compressibility;
-	double Msq;
+	
+    double Msq;
 	
 	/* Geo-stuff */
 	double gravity_strength[3];
