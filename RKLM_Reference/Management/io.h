@@ -22,6 +22,8 @@
 void putout(ConsVars* Sol, 
             char* dir_name, 
             char* field_name,
+            const ElemSpaceDiscr *elem,
+            const NodeSpaceDiscr *node,
             const int writeout) ;
 
 /*------------------------------------------------------------------------------

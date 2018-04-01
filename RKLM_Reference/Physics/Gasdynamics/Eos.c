@@ -578,7 +578,7 @@ void reset_Y_perturbation(ConsVars* Sol,
 
 #if OUTPUT_SUBSTEPS  /* 1 */
     extern User_Data ud;
-    putout(Sol, ud.file_name, "Sol", 1);
+    putout(Sol, ud.file_name, "Sol", elem, node, 1);
 #endif
 }
 

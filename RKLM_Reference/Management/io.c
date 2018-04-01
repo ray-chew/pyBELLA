@@ -57,14 +57,18 @@ static FILE *dpdimfile     = NULL;
 void putout(ConsVars* Sol, 
 			char* dir_name, 
 			char* field_name,
+            const ElemSpaceDiscr *elem,
+            const NodeSpaceDiscr *node,
             const int writeout) {
 	
+    /* TODO:  Each call to putout() seems to increase the
+     occupied memory by a little bit. I have not found the
+     allocation/release mismatch yet.
+     */
+    
 	/* User data */
 	extern User_Data ud;
-	    
-	/* Grid and space discretization */
-	extern ElemSpaceDiscr* elem;
-	
+	    	
 	/* Arrays */
 	extern MPV* mpv;
 	extern double *W0;
@@ -230,10 +234,10 @@ void putout(ConsVars* Sol,
 			if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
 			sprintf(fieldname, "dp2_nodes_%s_%s", field_name, step_string);
 			WriteHDF(pp2file, 
-					 mpv->Level[0]->node->icx, 
-					 mpv->Level[0]->node->icy, 
-					 mpv->Level[0]->node->icz, 
-					 mpv->Level[0]->node->ndim, 
+					 node->icx, 
+					 node->icy, 
+					 node->icz, 
+					 node->ndim, 
 					 mpv->dp2_nodes,   
 					 fn, 
 					 fieldname);
@@ -242,10 +246,10 @@ void putout(ConsVars* Sol,
             if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
             sprintf(fieldname, "p2_nodes_%s_%s", field_name, step_string);
             WriteHDF(pp2file,
-                     mpv->Level[0]->node->icx,
-                     mpv->Level[0]->node->icy,
-                     mpv->Level[0]->node->icz,
-                     mpv->Level[0]->node->ndim,
+                     node->icx,
+                     node->icy,
+                     node->icz,
+                     node->ndim,
                      mpv->p2_nodes,   
                      fn, 
                      fieldname);
@@ -256,10 +260,10 @@ void putout(ConsVars* Sol,
 			if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
 			sprintf(fieldname, "p2_c_%s", step_string);
 			WriteHDF(pp2file, 
-					 mpv->Level[0]->elem->icx, 
-					 mpv->Level[0]->elem->icy, 
-					 mpv->Level[0]->elem->icz, 
-					 mpv->Level[0]->elem->ndim, 
+					 elem->icx, 
+					 elem->icy, 
+					 elem->icz, 
+					 elem->ndim, 
 					 var,
 					 fn, 
 					 fieldname);
@@ -270,10 +274,10 @@ void putout(ConsVars* Sol,
 			if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
             sprintf(fieldname, "dp2_c_%s", step_string);
 			WriteHDF(pp2file, 
-					 mpv->Level[0]->elem->icx, 
-					 mpv->Level[0]->elem->icy, 
-					 mpv->Level[0]->elem->icz, 
-					 mpv->Level[0]->elem->ndim, 
+					 elem->icx, 
+					 elem->icy, 
+					 elem->icz, 
+					 elem->ndim, 
 					 var, 
 					 fn, 
 					 fieldname);

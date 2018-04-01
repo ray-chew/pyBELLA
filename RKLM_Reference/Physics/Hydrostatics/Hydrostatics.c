@@ -45,7 +45,7 @@ void Hydrostatics_Column(States* HydroState,
     double y_p, y_m;
     double p0, pi0;
     
-    double S_integral_m, S_integral_p, Sn_integral_m, Sn_integral_p, g;
+    double S_integral_p, Sn_integral_p, g;
     double S_m, S_p, Sn_m, Sn_p, pi_hydro, p_hydro, rhoY_hydro, rhoY_hydro_n, pi_hydro_n;
     
     int j;
@@ -88,12 +88,10 @@ void Hydrostatics_Column(States* HydroState,
         y_p           = y_m - elem->dy;
         S_m           = S_p;
         S_p           = 1.0/Y[MAX_own(j-1, 0)];
-        S_integral_m  = S_integral_p;
         S_integral_p -= 0.5*elem->dy*(S_m + S_p);
         
         Sn_m           = Sn_p;
         Sn_p           = 1.0/Y_n[j];
-        Sn_integral_m  = Sn_integral_p;
         Sn_integral_p -= 0.5*elem->dy*(Sn_m + Sn_p);
         
         pi_hydro_n     = pi0 - Gamma*g*Sn_integral_p;
@@ -132,12 +130,10 @@ void Hydrostatics_Column(States* HydroState,
         y_p           = y_m + elem->dy;
         S_m           = S_p;
         S_p           = 1.0/Y[j+1];
-        S_integral_m  = S_integral_p;
         S_integral_p += 0.5*elem->dy*(S_m + S_p);
 
         Sn_m           = Sn_p;
         Sn_p           = 1.0/Y_n[j+1];
-        Sn_integral_m  = Sn_integral_p;
         Sn_integral_p += 0.5*elem->dy*(Sn_m + Sn_p);
         
         pi_hydro_n     = pi0 - Gamma*g*Sn_integral_p;
@@ -174,9 +170,9 @@ void Hydrostatics_State(MPV* mpv,
     double p0, pi0;
     
     double g;
-    double y_p,  y_m,  S_integral_m,  S_integral_p,  S_m,  S_p; 
-    double yn_p, yn_m, Sn_integral_m, Sn_integral_p, Sn_m, Sn_p;
-    double p_hydro, p_hydro_n, pi_hydro, pi_hydro_n, rhoY_hydro, rhoY_hydro_n;
+    double y_p,  y_m,  S_integral_p,  S_m,  S_p; 
+    double yn_p, yn_m, Sn_integral_p, Sn_m, Sn_p;
+    double p_hydro, pi_hydro, pi_hydro_n, rhoY_hydro, rhoY_hydro_n;
     
     int j;
     
@@ -219,24 +215,21 @@ void Hydrostatics_State(MPV* mpv,
         y_p           = y_m - elem->dy;
         S_m           = S_p;
         S_p           = 1.0/stratification(y_p);
-        S_integral_m  = S_integral_p;
         S_integral_p -= elem->dy*0.5*(S_m + S_p);
                 
         pi_hydro_n    = pi0 - Gamma*g*Sn_integral_p;
-        p_hydro_n     = pow(pi_hydro_n, Gamma_inv);
         rhoY_hydro_n  = pow(pi_hydro_n, gm1_inv);
         mpv->HydroState_n->rhoY0[j] = rhoY_hydro_n;
         mpv->HydroState_n->Y0[j]    = stratification(0.5*(y_p+y_m));
         mpv->HydroState_n->rho0[j]  = rhoY_hydro_n / mpv->HydroState_n->Y0[j];
         mpv->HydroState_n->S0[j]    = 1.0/mpv->HydroState_n->Y0[j];
-        mpv->HydroState_n->p0[j]    = p_hydro_n;
+        mpv->HydroState_n->p0[j]    = pow(rhoY_hydro_n,th.gamm);
         mpv->HydroState_n->p20[j]   = pi_hydro_n/ud.Msq;
 
         yn_m           = yn_p;
         yn_p           = yn_m - node->dy;
         Sn_m           = Sn_p;
         Sn_p           = 1.0/stratification(yn_p);
-        Sn_integral_m  = Sn_integral_p;
         Sn_integral_p -= elem->dy*0.5*(Sn_m + Sn_p);
     }
     
@@ -267,11 +260,9 @@ void Hydrostatics_State(MPV* mpv,
         y_p           = y_m + elem->dy;
         S_m           = S_p;
         S_p           = 1.0/stratification(y_p);
-        S_integral_m  = S_integral_p;
         S_integral_p += 0.5*elem->dy*(S_m + S_p);
         
         pi_hydro_n    = pi0 - Gamma*g*Sn_integral_p;
-        p_hydro_n     = pow(pi_hydro_n, Gamma_inv);
         rhoY_hydro_n  = pow(pi_hydro_n, gm1_inv);
 
         mpv->HydroState_n->rhoY0[j+1] = rhoY_hydro_n;
@@ -285,7 +276,6 @@ void Hydrostatics_State(MPV* mpv,
         yn_p           = yn_m + elem->dy;
         Sn_m           = Sn_p;
         Sn_p           = 1.0/stratification(yn_p);
-        Sn_integral_m  = Sn_integral_p;
         Sn_integral_p += 0.5*elem->dy*(Sn_m + Sn_p);
     }
 }
@@ -307,7 +297,7 @@ void Hydrostatic_Exner_pressure(
     
     const double Gamma = th.gm1 / th.gamm;
     
-    double S_integral_m, S_integral_p, g;
+    double S_integral_p, g;
     double S_m, S_p;
     
     int j;
@@ -324,7 +314,6 @@ void Hydrostatic_Exner_pressure(
                 
         S_m           = S_p;
         S_p           = S[MAX_own(0,j-1)];
-        S_integral_m  = S_integral_p;
         S_integral_p -= 0.5*dh*(S_m + S_p);        
     }
     
@@ -338,7 +327,6 @@ void Hydrostatic_Exner_pressure(
         
         S_m           = S_p;
         S_p           = S[j+1];
-        S_integral_m  = S_integral_p;
         S_integral_p += 0.5*dh*(S_m + S_p);
     }
     
@@ -349,7 +337,6 @@ void Hydrostatic_Exner_pressure(
         
         S_m           = S_p;
         S_p           = S[MIN_own(n-1, j+1)];
-        S_integral_m  = S_integral_p;
         S_integral_p += 0.5*dh*(S_m + S_p);
     }
 }

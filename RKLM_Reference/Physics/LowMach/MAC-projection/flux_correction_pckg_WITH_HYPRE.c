@@ -39,7 +39,7 @@ static void rhs_fix_for_open_boundaries(
                                         double* rhs, 
                                         const ElemSpaceDiscr* elem, 
                                         ConsVars* Sol_new, 
-                                        ConsVars* Sol_old, 
+                                        const ConsVars* Sol_old, 
                                         ConsVars* flux[3],
                                         double dt,
                                         MPV* mpv);
@@ -53,7 +53,7 @@ static void flux_correction_due_to_pressure_gradients(
                                                       ConsVars* flux[3],
                                                       const ElemSpaceDiscr* elem,
                                                       ConsVars* Sol,
-                                                      ConsVars* Sol0,
+                                                      const ConsVars* Sol0,
                                                       const MPV* mpv, 
                                                       double* hplus[3],
                                                       double* hS,
@@ -76,7 +76,8 @@ double Newton_rhs(double* rhs,
                   const double* pi,
                   const double* rhoY0,
                   const MPV* mpv,
-                  const ElemSpaceDiscr* elem);
+                  const ElemSpaceDiscr* elem,
+                  const double dt);
 
 #endif
 
@@ -88,9 +89,10 @@ static int rhs_output_count = 0;
 #endif
 
 void flux_correction(ConsVars* flux[3],
-                     const ElemSpaceDiscr* elem_base_grid,
                      ConsVars* Sol, 
-                     ConsVars* Sol0, 
+                     const ConsVars* Sol0, 
+                     const ElemSpaceDiscr* elem,
+                     const NodeSpaceDiscr* node,
                      const double t,
                      const double dt,
                      const int step) {
@@ -98,23 +100,17 @@ void flux_correction(ConsVars* flux[3],
     extern User_Data ud;
     extern MPV* mpv;
     
-    const ElemSpaceDiscr* elem = mpv->Level[0]->elem;
-    const NodeSpaceDiscr* node = mpv->Level[0]->node;
+    double** hplus       = mpv->wplus;
+    double*  hcenter     = mpv->wcenter;
+    double*  hS          = mpv->wgrav;
     
-    double** hplus       = mpv->Level[0]->wplus;
-    double*  hcenter     = mpv->Level[0]->wcenter;
-    double*  hS          = mpv->Level[0]->wgrav;
-    
-    double* rhs          = mpv->Level[0]->rhs;
-    double* p2		     = mpv->Level[0]->p;
-    double* pi           = (double*)malloc(elem->nc*sizeof(double));
+    double* rhs          = mpv->rhs;
+    double* p2		     = mpv->dp2_cells;
     
     double rhsmax;
     
     int n;
-    
-    for (int nc=0; nc<elem->nc; nc++) pi[nc] = 0.0;
-    
+        
     printf("\n\n====================================================");
     printf("\nFirst Projection");
     printf("\n====================================================\n");
@@ -142,10 +138,10 @@ void flux_correction(ConsVars* flux[3],
     sprintf(fieldname2, "rhs_c");
     
     WriteHDF(prhsfile,
-             mpv->Level[0]->elem->icx,
-             mpv->Level[0]->elem->icy,
-             mpv->Level[0]->elem->icz,
-             mpv->Level[0]->elem->ndim,
+             elem->icx,
+             elem->icy,
+             elem->icz,
+             elem->ndim,
              rhs,
              fn2,
              fieldname2);
@@ -153,16 +149,17 @@ void flux_correction(ConsVars* flux[3],
     rhs_output_count++;
 #endif
     
+    variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, Sol, elem, node);
+    set_ghostcells_p2(p2, elem, elem->igx);
     
+#ifdef NONLINEAR_EOS_IN_1st_PROJECTION
     /* Newton iteration for the nonlinear equation of state rhoY = P(\pi) = \pi^{gamma-1} 
      The first sweep computes the half time level Exner pressure based on the linearization
      of P(.). The further iterates yield updates to this quantity until convergence 
      tolerance is reached.
      */
-    variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, Sol, elem, node);
-    set_ghostcells_p2(p2, elem, elem->igx);
-    
-#ifdef NONLINEAR_EOS_IN_1st_PROJECTION
+    double* pi = (double*)malloc(elem->nc*sizeof(double));
+    for (int nc=0; nc<elem->nc; nc++) pi[nc] = 0.0;
     if (ud.is_compressible) {
         /* Nonlinear iteration for the \partial P/\partial t  term in the P-equation */
         double precision_factor = 1.0;
@@ -172,13 +169,13 @@ void flux_correction(ConsVars* flux[3],
             pi[nc]  = p2[nc];
             p2[nc] -= mpv->p2_cells[nc];        
         }
-        rhsmax = Newton_rhs(rhs, (const double*)p2, (const double*)pi, (const double*)Sol->rhoY, (const MPV*)mpv, (const ElemSpaceDiscr*)elem);
+        rhsmax = Newton_rhs(rhs, p2, pi, Sol->rhoY, mpv, elem, dt);
         
         while (rhsmax > ud.flux_correction_precision) {
             variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, Sol, elem, node);
             set_ghostcells_p2(p2, elem, elem->igx);
             for (int nc=0; nc<elem->nc; nc++) pi[nc] += p2[nc];
-            rhsmax = Newton_rhs(rhs, (const double*)p2, (const double*)pi, (const double*)Sol->rhoY, (const MPV*)mpv, (const ElemSpaceDiscr*)elem);
+            rhsmax = Newton_rhs(rhs, p2, pi, Sol->rhoY, mpv, elem, dt);
         }
         
         for (int nc=0; nc<elem->nc; nc++) {
@@ -187,12 +184,9 @@ void flux_correction(ConsVars* flux[3],
         ud.flux_correction_precision       /= precision_factor;
         ud.flux_correction_local_precision /= precision_factor;
     }
+    free(pi);
 #endif
-    
-    
-    
-    /* Note: flux will contain only the flux-correction after this routine; 
-     it is thus overwritten under the SI_MIDPT time integration sequence */
+
     flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2, t, dt);
     
     /* test whether divergence is actually controlled */
@@ -209,10 +203,10 @@ void flux_correction(ConsVars* flux[3],
     sprintf(fieldname2, "rhs_c");
     
     WriteHDF(prhsfile,
-             mpv->Level[0]->elem->icx,
-             mpv->Level[0]->elem->icy,
-             mpv->Level[0]->elem->icz,
-             mpv->Level[0]->elem->ndim,
+             elem->icx,
+             elem->icy,
+             elem->icz,
+             elem->ndim,
              rhs,
              fn2,
              fieldname2);
@@ -223,10 +217,10 @@ void flux_correction(ConsVars* flux[3],
     sprintf(fieldname2, "lap_c");
     
     WriteHDF(prhsfile,
-             mpv->Level[0]->elem->icx,
-             mpv->Level[0]->elem->icy,
-             mpv->Level[0]->elem->icz,
-             mpv->Level[0]->elem->ndim,
+             elem->icx,
+             elem->icy,
+             elem->icz,
+             elem->ndim,
              lap,
              fn2,
              fieldname2);
@@ -237,14 +231,13 @@ void flux_correction(ConsVars* flux[3],
 
     /* store results in mpv-fields */
     for(n=0; n<elem->nc; n++) {
-        mpv->dp2_cells[n] = p2[n] - mpv->p2_cells[n];
-        mpv->p2_cells[n]  = p2[n];
+        double p2_new     = p2[n];
+        mpv->dp2_cells[n] = p2_new - mpv->p2_cells[n];
+        mpv->p2_cells[n]  = p2_new;
     }
     
     set_ghostcells_p2(mpv->p2_cells, elem, elem->igx);
-    Set_Explicit_Boundary_Data(Sol, elem);
-    
-    free(pi);
+    Set_Explicit_Boundary_Data(Sol, elem);    
 }
 
 
@@ -419,7 +412,7 @@ static enum Constraint integral_condition(
             int cnt = 0;
             int i,j,k,l,m,n;
             for(k = igz; k < icz - igz; k++) {l = k*icx*icy;
-                for(j = igy; j < icy - igy; j++) {m = + + j*icx;
+                for(j = igy; j < icy - igy; j++) {m = l + j*icx;
                     for(i = igx; i < icx - igx; i++) {n = m + i;
                         tmp += rhs[n];
                         rhs_max = MAX_own(fabs(rhs[n]),rhs_max);
@@ -468,11 +461,11 @@ void operator_coefficients(
     
     const double ccw = (ud.time_integrator == SI_MIDPT ? 4.0 : 2.0); 
     /* when p2 is perturbation pressure:
-     const double ccenter = - ccw * (ud.compressibility*ud.Msq)*th.gamminv/(mpv->dt*mpv->dt); 
+     const double ccenter = - ccw * (ud.compressibility*ud.Msq)*th.gamminv/(dt*dt); 
      const double cexp    = 1.0-th.gamm;
      */
     /* when p2 is Exner pressure: */
-    const double ccenter = - ccw * (ud.compressibility*ud.Msq)*th.gm1inv/(mpv->dt*mpv->dt); 
+    const double ccenter = - ccw * (ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt); 
     const double cexp    = 2.0-th.gamm;
     
     switch(ndim) {
@@ -672,7 +665,7 @@ static void flux_correction_due_to_pressure_gradients(
                                                       ConsVars* flux[3],
                                                       const ElemSpaceDiscr* elem,
                                                       ConsVars* Sol,
-                                                      ConsVars* Sol0,
+                                                      const ConsVars* Sol0,
                                                       const MPV* mpv, 
                                                       double* hplus[3],
                                                       double* hS,
@@ -872,7 +865,7 @@ static void rhs_fix_for_open_boundaries(
                                         double* rhs, 
                                         const ElemSpaceDiscr* elem, 
                                         ConsVars* Sol_new, 
-                                        ConsVars* Sol_old, 
+                                        const ConsVars* Sol_old, 
                                         ConsVars* flux[3],
                                         double dt,
                                         MPV* mpv) {
@@ -881,7 +874,7 @@ static void rhs_fix_for_open_boundaries(
     
     const States* HydroState = mpv->HydroState;
     
-    double** hplus = mpv->Level[0]->wplus;
+    double** hplus = mpv->wplus;
     
     int ndim = elem->ndim;
     
@@ -967,7 +960,7 @@ static void flux_fix_for_open_boundaries(
                                          MPV* mpv) {
     
     const States* HydroState = mpv->HydroState;    
-    double** hplus           = mpv->Level[0]->wplus;
+    double** hplus           = mpv->wplus;
     double du                = mpv->du;
     double Sdu               = mpv->Sdu;
     
@@ -1105,7 +1098,8 @@ double Newton_rhs(double* rhs,
                   const double* pi,
                   const double* rhoY0,
                   const MPV* mpv,
-                  const ElemSpaceDiscr* elem)
+                  const ElemSpaceDiscr* elem,
+                  const double dt)
 {
     extern User_Data ud;
     extern Thermodynamic th;

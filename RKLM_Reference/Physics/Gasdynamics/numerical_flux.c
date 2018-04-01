@@ -35,8 +35,8 @@ void hllestar(
     
     extern User_Data ud;
     
-    double rhol, ul, vl, wl, pl, rhoul, Hl, Yl;
-    double rhor, ur, vr, wr, pr, rhour, Hr, Yr;
+    double rhol, ul, vl, wl, pl, Hl, Yl;
+    double rhor, ur, vr, wr, pr, Hr, Yr;
     double Xl[NSPEC], Xr[NSPEC];
     double upwind, upl, upr;
     int i, nsp;
@@ -69,7 +69,6 @@ void hllestar(
             Xl[nsp]    = Lefts->X[nsp][i];
         }
         
-        rhoul = Lefts->rhou[i];
         Hl = Lefts->rhoe[i] + pl;
         
         rhor  = Rights->rho[i+1];
@@ -83,7 +82,6 @@ void hllestar(
             Xr[nsp]    = Rights->X[nsp][i+1];
         }
         
-        rhour = Rights->rhou[i+1];
         Hr    = Rights->rhoe[i+1] + pr;
         
         Fluxes->rhoY[i] = given_flux * Fluxes->rhoY[i] + (1.0-given_flux) * 0.25 * (rhol*Yl+rhor*Yr)*(ul + ur);

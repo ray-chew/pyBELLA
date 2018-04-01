@@ -84,8 +84,8 @@ typedef struct {
 	enum Boolean absorber;
 	
 	/* Thermodynamics and chemistry */
+    int nspec;
 	double gamm;
-    double nspec;
 	double Rg_over_Rv; 
 	double Q; 
 	double Ea;
@@ -97,7 +97,7 @@ typedef struct {
 	int acoustic_timestep;
     
     int is_nonhydrostatic;
-    double hydrostasy;
+    double nonhydrostasy;
 	int is_compressible;
 	double compressibility;
 	

@@ -74,11 +74,11 @@ int main( void )
     second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, 1.0);
     cell_pressure_to_nodal_pressure(mpv, elem, node);
 
-    ud.hydrostasy      = nonhydrostasy(0);
+    ud.nonhydrostasy   = nonhydrostasy(0);
     ud.compressibility = compressibility(0);
         
 	if(ud.write_file == ON) 
-        putout(Sol, ud.file_name, "Sol", 1);
+        putout(Sol, ud.file_name, "Sol", elem, node, 1);
         
     ConsVars_set(Sol0, Sol, elem->nc);
     	    
@@ -132,7 +132,7 @@ int main( void )
             
             /* divergence-controlled advective fluxes at the half time level */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
-            flux_correction(flux, elem, Sol, Sol0, t, dt, step);            
+            flux_correction(flux, Sol, Sol0, elem, node, t, dt, step);            
 
             ConsVars_set(Sol, Sol0, elem->nc);
             // if (step == 0) cell_pressure_to_nodal_pressure(mpv, elem, node);
@@ -181,7 +181,7 @@ int main( void )
             ud.compressibility = compressibility(t);
             
 			if((ud.write_file == ON && (step % ud.write_file_period  == 0)) || output_switch) 
-				putout(Sol, ud.file_name, "Sol", 1);
+				putout(Sol, ud.file_name, "Sol", elem, node, 1);
 			
             if((ud.write_stdout == ON && step % ud.write_stdout_period == 0) || output_switch) {
                 printf("\n############################################################################################");
@@ -190,7 +190,8 @@ int main( void )
             }
 		}  
         
-		if(ud.write_file == ON) putout(Sol, ud.file_name, "Sol", 1);
+		if(ud.write_file == ON) 
+            putout(Sol, ud.file_name, "Sol", elem, node, 1);
 		tout++;
 	}
 	

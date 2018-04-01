@@ -27,12 +27,6 @@
 /* User data */
 User_Data ud;
 
-/* Context */
-int ndim;
-int H1;
-int H2;
-int H3; 
-
 /* Time discretization */
 int step;
 double t;
@@ -41,6 +35,10 @@ double dt;
 /* Grid and space discretization */
 ElemSpaceDiscr* elem;
 NodeSpaceDiscr* node;
+
+/* surface grid needed for hydrostatics etc. */
+ElemSpaceDiscr* elem_surf;
+NodeSpaceDiscr* node_surf;
 
 /* Thermodynamics */
 Thermodynamic th;
@@ -58,21 +56,28 @@ ConsVars* flux[3];        /* full size (M < 1.0) */
 ConsVars* Sol1;           /* full size (M < 1.0; needed to test x-y-symmetric advection for the travelling vortex) */
 #endif
 
+/* Infrastructure for semi-implicit scheme */
+MPV* mpv;
 
 States* Solk;             /* cache size */
 double* W0;               /* full nG-length double array */
 
 
+/*------------------------------------------------------------------------------
+ acquire memory
+ ------------------------------------------------------------------------------*/
+
 void Data_init() {
 	
-	int i, inx, iny, inz, n_aux;
+	int inx, iny, inz, n_aux;
 	double x0, x1, y0, y1, z0, z1;
 	enum BdryType left, right, bottom, top, back, front;
 	Grid* grid;
 	
-	/* User data */
+	/* User data / problem parameters */
 	User_Data_init(&ud);
 	
+    /* allocate memory for code infrastructure */
 	inx = ud.inx;
 	iny = ud.iny;
 	inz = ud.inz;
@@ -89,41 +94,29 @@ void Data_init() {
 	back = ud.bdrytype_min[2];
 	front = ud.bdrytype_max[2];
 	
-	/* Context */
-	ndim = inz > 1 ? 3 : (iny > 1 ? 2 : 1);
-	H1 = HEAVISIDE(ndim);
-	H2 = HEAVISIDE(ndim - 1);
-	H3 = HEAVISIDE(ndim - 2);
-	
 	/* Time discretization */
 	step = 0;
 	t = 0.0;
 	
 	/* Grid and space discretization */
-	grid = Grid_new(
-					inx, 
-					iny, 
-					inz, 
-					x0, 
-					x1, 
-					y0, 
-					y1, 
-					z0, 
-					z1, 
-					left,
-					right,
-					bottom,
-					top,
-					back,
-					front); 
+	grid = Grid_new(inx,iny,inz,x0,x1,y0,y1,z0,z1,left,right,bottom,top,back,front); 
 	elem = ElemSpaceDiscr_new(grid);
 	node = NodeSpaceDiscr_new(grid);
 	Grid_free(grid); 
 	
+    /* assuming gravity is in the y-direction */
+    if (ud.g_ref == ud.eps_Machine) {
+        grid = Grid_new(inx,inz,1,x0,x1,z0,z1,0.0,1.0,left,right,back,front,bottom,top); 
+        elem_surf = ElemSpaceDiscr_new(grid);
+        node_surf = NodeSpaceDiscr_new(grid);
+        Grid_free(grid); 
+    }
+    
 	/* Thermodynamics */
 	Thermodynamic_init(&th, &ud);
 	
 	/* Arrays */
+    Sol0    = ConsVars_new(elem->nc);
 	Sol  = ConsVars_new(elem->nc);
 	dSol = ConsVars_new(elem->nc);
 	Solk = States_small_new(3 * ud.ncache / 2);
@@ -135,72 +128,78 @@ void Data_init() {
     
     W0  = (double*)malloc((unsigned)(n_aux * sizeof(double)));
     
-    Sol0    = ConsVars_new(elem->nc);
-#ifdef SYMMETRIC_ADVECTION
-    Sol1    = ConsVars_new(elem->nc);
-#endif
     for (int idim = 0; idim < elem->ndim; idim++) {
         force[idim]    = (double*)malloc(node->nc*(sizeof(double)));
         for (int nc = 0; nc < node->nc; nc++) force[idim][nc] = 0.0;
     }
-
     
     flux[0] = ConsVars_new(elem->nfx);
     ConsVars_setzero(flux[0], elem->nfx);
-    if(ndim > 1) {
+    if(elem->ndim > 1) {
         flux[1] = ConsVars_new(elem->nfy);
         ConsVars_setzero(flux[1], elem->nfy);
     }
-    if(ndim > 2) {
+    if(elem->ndim > 2) {
         flux[2] = ConsVars_new(elem->nfz);
         ConsVars_setzero(flux[2], elem->nfz);
     }
     
     initialize_bdry(elem);
     
-    initialize_projection(inx,iny,inz,
-                          x0, x1, y0, y1, z0, z1,
-                          left,right,bottom,top,back,front);
-    
-    
-    for (i=0; i<3; i++) {
-		if (ud.i_gravity[i]) initialize_HydroState(elem->ic[i], node->ic[i]);
-	}
-	
-	Sol_initial(Sol, elem, node);
-	ConsVars_set(Sol0, Sol, elem->nc);
-	ConsVars_setzero(dSol, elem->nc);
-
-#ifdef SYMMETRIC_ADVECTION
-    ConsVars_setzero(Sol1, elem->nc);
-#endif
-    
+    mpv = MPV_new(elem, node);
+            
     Explicit_malloc(3 * ud.ncache / 2);
 	recovery_malloc(3 * ud.ncache / 2);  
+
+#ifdef SYMMETRIC_ADVECTION
+    Sol1    = ConsVars_new(elem->nc);
+    ConsVars_setzero(Sol1, elem->nc);
+#endif
+
+    /* set initial data */
+    Sol_initial(Sol, elem, node);
+    ConsVars_set(Sol0, Sol, elem->nc);
+    ConsVars_setzero(dSol, elem->nc);
 
 }
 
 
-void Data_free() {
-	
-	ElemSpaceDiscr_free(elem);
-	NodeSpaceDiscr_free(node);
-	ConsVars_free(Sol);
-	ConsVars_free(dSol);
-	States_small_free(Solk);
-	free(W0);
-    ConsVars_free(Sol0);
+/*------------------------------------------------------------------------------
+ release memory
+ ------------------------------------------------------------------------------*/
 
-    for (int idim = 0; idim < ndim; idim++) {
+void Data_free() {
+	    
+#ifdef SYMMETRIC_ADVECTION
+    ConsVars* Sol1; 
+#endif
+
+    recovery_free();    
+    Explicit_free();
+
+    MPV_free(mpv, elem);
+
+    close_bdry();
+
+    for (int idim = 0; idim < elem->ndim; idim++) {
         ConsVars_free(flux[idim]);
         free(force[idim]);
     }
 
-    terminate_MG_projection();
-    
-    Explicit_free();
-    recovery_free();    
-    close_bdry();
+    free(W0);
+
+    States_small_free(Solk);
+    ConsVars_free(dSol);
+    ConsVars_free(Sol);
+    ConsVars_free(Sol0);
+
+    if (ud.g_ref == ud.eps_Machine) {
+        ElemSpaceDiscr_free(elem_surf);
+        NodeSpaceDiscr_free(node_surf);
+    }
+
+    ElemSpaceDiscr_free(elem);
+    NodeSpaceDiscr_free(node);
 }
 
 

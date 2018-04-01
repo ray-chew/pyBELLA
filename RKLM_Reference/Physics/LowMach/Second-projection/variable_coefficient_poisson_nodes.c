@@ -282,6 +282,8 @@ void variable_coefficient_poisson_nodes(
                                         const double *hplus[3],
                                         const double *hcenter,
                                         const double *rhs,
+                                        const ElemSpaceDiscr* elem,
+                                        const NodeSpaceDiscr* node,
                                         const int x_periodic,
                                         const int y_periodic,
                                         const int z_periodic,
@@ -289,10 +291,8 @@ void variable_coefficient_poisson_nodes(
 {
     extern User_Data ud;
     extern MPV* mpv;
-    const NodeSpaceDiscr* node = mpv->Level[0]->node;
-    const ElemSpaceDiscr* elem = mpv->Level[0]->elem;
-    
-    const int nc = mpv->Level[0]->node->nc;
+
+    const int nc = node->nc;
     
     const double precision0 = ud.second_projection_precision;   /* CHECK: precision for residual in L2-Norm */
     const double local_precision0 = ud.second_projection_local_precision;   /* CHECK: precision for residual in L2-Norm */

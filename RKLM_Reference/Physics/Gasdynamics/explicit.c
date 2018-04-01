@@ -151,7 +151,6 @@ void Explicit_step_and_flux(
     Bound(Sol, lambda, n, SplitStep);
         
     States_setp(Solk, Sol, 0);
-    nmax = MIN_own(ncache, n);
 	
 	ConsVars_setp(&pdSol, dSol, 0);
 	ConsVars_setp(&pflux, flux, 0);
@@ -554,9 +553,9 @@ void fullD_explicit_updates(ConsVars* Sol,
     double deltax, deltay, deltaz;
         
     int i, j, k, nc; 
-    int lcx, lcy, lfx, lfy, lfz;
-    int mcx, mcy, mfx, mfy, mfz;
-    int ncx, ncy, nfx, nfy, nfz;
+    int lcx, lfx, lfy, lfz;
+    int mcx, mfx, mfy, mfz;
+    int ncx, nfx, nfy, nfz;
     int nfxp, nfyp, nfzp;
         
 	switch (elem->ndim) {
@@ -573,13 +572,11 @@ void fullD_explicit_updates(ConsVars* Sol,
             
 			for (j = igy; j < icy-igy; j++) {
 				mcx = j*icx; 
-				mcy = j; 
 				mfx = j*ifx; 
 				mfy = j;
                                 
                 for (i = igx; i < icx-igx; i++) {
 					ncx  = mcx + i; 
-                    ncy  = mcy + i*icy;
 					nfx  = mfx + i;
 					nfxp = nfx + 1; 
 					nfy  = mfy + i*ify;
@@ -641,15 +638,12 @@ void fullD_explicit_updates(ConsVars* Sol,
 
 			break;
 		case 3:
-            
-            assert(0);  /* not sure this routine has been properly adapted to 3D */
-            
+                        
             delmax  = 0.0;
             ddelmax = 0.0;
             
 			for (k = igz; k < icz-igz; k++) {
                 lcx = k*icy*icx;
-                lcy = k*icy;
                 
                 lfx = k*icy*ifx;
                 lfy = k*ify;
@@ -657,7 +651,6 @@ void fullD_explicit_updates(ConsVars* Sol,
                 
                 for (j = igy; j < icy-igy; j++) {
                     mcx = lcx + j*icx; 
-                    mcy = lcy + j;
                     
                     mfx = lfx + j*ifx; 
                     mfy = lfy + j;
@@ -665,7 +658,6 @@ void fullD_explicit_updates(ConsVars* Sol,
                     
                     for (i = igx; i < icx-igx; i++) {
                         ncx  = mcx + i; 
-                        ncy  = mcy + i*icz*icy;
                         
                         nfx  = mfx + i;
                         nfy  = mfy + i*icz*ify;
@@ -733,7 +725,7 @@ void fullD_explicit_updates(ConsVars* Sol,
 	}
 
 #if OUTPUT_SUBSTEPS /* 4 */
-    putout(Sol, ud.file_name, "Sol", 1);
+    putout(Sol, ud.file_name, "Sol", elem, node, 1);
 #endif
 
 }

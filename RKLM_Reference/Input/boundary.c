@@ -280,7 +280,7 @@ void Bound(
                     /* copy wall-tangential velocities and scalars */
                     v = Sol->rhov[nsource] / Sol->rho[nsource]; 
                     w = Sol->rhow[nsource] / Sol->rho[nsource];
-                    for (nsp = 0; nsp < ud.nspec; nsp++) {
+                    for (nsp = 0; nsp < NSPEC; nsp++) {
                         X[nsp] = Sol->rhoX[nsp][nsource] / Sol->rho[nsource];
                     }
                     
@@ -307,8 +307,8 @@ void Bound(
 						Sol->rhow[nimage] = rho*w;
 						Sol->rhoe[nimage] = rhoe(rho, u, v, w, p);
 						Sol->rhoY[nimage] = rhoY;				  /* should probably be adjusted not to take HydroState values*/
-                        for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            Sol->rhoX[nsp][nimage] = rho*X[nsp];
+                        for (nsp = 0; nsp < NSPEC; nsp++) {
+                            Sol->rhoX[nsp][nimage] = rho * X[nsp];
                         }
 					}
                 }
@@ -354,8 +354,8 @@ void Bound(
 						Sol->rhow[nimage] = rho*w;
 						Sol->rhoe[nimage] = rhoe(rho, u, v, w, p);
 						Sol->rhoY[nimage] = rhoY;       /* should probably be adjusted not to take HydroState values*/
-                        for (nsp = 0; nsp < ud.nspec; nsp++) {
-                            Sol->rhoX[nsp][nimage] = rho*X[nsp];
+                        for (nsp = 0; nsp < NSPEC; nsp++) {
+                            Sol->rhoX[nsp][nimage] = rho * X[nsp];
                         }
 					}
                 }
@@ -971,7 +971,7 @@ void Set_Explicit_Boundary_Data(
     
 #if OUTPUT_SUBSTEPS /* 5 */
     extern User_Data ud;
-    putout(Sol, ud.file_name, "Sol", 1);
+    putout(Sol, ud.file_name, "Sol", elem, node, 1);
 #endif
 
 }

@@ -222,12 +222,10 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const int icxn = node->icx;
     const int icyn = node->icy;
     
-    int i, j, n, nm, nn;
-    double x, y, xn, yn, ym;
+    int i, j, n, nn;
+    double x, y, xn, yn;
     double rho, u, v, w, p, rhoY;
-    
-    double g;
-    
+        
     States *HySt, *HyStn;
     double *Y, *Yn;
     
@@ -236,9 +234,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
      the vertical slices for different z values.
      (y is the vertical coordinate!)
      */
-    
-    g = ud.gravity_strength[1];
-    
+        
     /* store background hydrostatic state in mpv auxiliary struct */
     Hydrostatics_State(mpv, elem, node);
     
@@ -269,12 +265,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
         for(j = igy; j < icy - igy + 1; j++) {
             
             n  = j*icx + i;
-            nm = n-icx;
-            
-            x  = elem->x[i];
-            y  = elem->y[j];
-            ym = elem->y[j-1];
-            
+                        
             u   = u0;
             v   = v0;
             w   = w0;
@@ -299,6 +290,11 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
         }
     }
     
+    States_free(HySt);
+    States_free(HyStn);
+    free(Y);
+    free(Yn);
+
     /* Find hydrostatic surface pressure and readjust pressure in the columns */
     Hydrostatic_Initial_Pressure(Sol, mpv, elem, node);  
     

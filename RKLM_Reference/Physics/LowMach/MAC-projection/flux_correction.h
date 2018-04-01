@@ -26,9 +26,10 @@
  ------------------------------------------------------------------------------*/
 
 void flux_correction(ConsVars* flux[3],
-					 const ElemSpaceDiscr* elem,
 					 ConsVars* Sol, 
-					 ConsVars* Sol0, 
+					 const ConsVars* Sol0, 
+                     const ElemSpaceDiscr* elem,
+                     const NodeSpaceDiscr* node,
 					 const double t,
 					 const double dt,
                      const int step);

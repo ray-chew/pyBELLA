@@ -99,11 +99,11 @@ void second_projection(
         
 	const int nc = node->nc;
 	
-	double** hplus   = mpv->Level[0]->wplus;
-	double*  hcenter = mpv->Level[0]->wcenter;
+	double** hplus   = mpv->wplus;
+	double*  hcenter = mpv->wcenter;
 	
-	double* rhs      = mpv->Level[0]->rhs;
-	double* p2       = mpv->Level[0]->p;
+	double* rhs      = mpv->rhs;
+	double* p2       = mpv->dp2_nodes;
 	
     double rhs_max;
     
@@ -127,7 +127,9 @@ void second_projection(
     /* KEEP_OLD_POISSON_SOLUTIONS */
 #ifdef FORCES_UNDER_OPSPLIT
     for(ii=0; ii<nc; ii++){
-        p2[ii] = mpv->dp2_nodes[ii];
+        /* p2 already maps to  dp2_nodes  
+            p2[ii] = mpv->dp2_nodes[ii];
+         */
         rhs[ii] = 0.0;
     }
 #else
@@ -212,7 +214,7 @@ void second_projection(
 #endif
     
 	operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
-	variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, x_periodic, y_periodic, z_periodic, dt);
+	variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
     correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);
     
 #if OUTPUT_RHS
@@ -284,13 +286,16 @@ void second_projection(
     
 #ifdef FORCES_UNDER_OPSPLIT
     for(ii=0; ii<nc; ii++) {
-        mpv->dp2_nodes[ii] = p2[ii];
+        /* p2 already maps to  dp2_nodes  
+           mpv->dp2_nodes[ii] = p2[ii];
+         */
         mpv->p2_nodes[ii] += p2[ii];
     }
 #else
     for(ii=0; ii<nc; ii++) {
-        mpv->dp2_nodes[ii] = p2[ii] - mpv->p2_nodes[ii];
-        mpv->p2_nodes[ii]  = p2[ii];
+        double p2_new      = p2[ii];
+        mpv->dp2_nodes[ii] = p2_new - mpv->p2_nodes[ii];
+        mpv->p2_nodes[ii]  = p2_new;
     }
 #endif
     

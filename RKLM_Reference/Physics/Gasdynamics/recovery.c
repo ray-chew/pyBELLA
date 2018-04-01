@@ -253,7 +253,7 @@ static void slopes(States* Sol,
         du     = Diffs->u[i-1];
         dv     = Diffs->v[i-1];
         dw     = Diffs->w[i-1];
-        for (nsp = 0; nsp < ud.nspec; nsp++) {
+        for (nsp = 0; nsp < NSPEC; nsp++) {
             dX[nsp] = Diffs->X[nsp][i-1];
         }                                
         dY     = Diffs->Y[i-1];
@@ -261,7 +261,7 @@ static void slopes(States* Sol,
         aul    = du;
         avl    = dv;
         awl    = dw;
-        for (nsp = 0; nsp < ud.nspec; nsp++) {
+        for (nsp = 0; nsp < NSPEC; nsp++) {
             aXl[nsp] = dX[nsp];
         }                                
         aYl    = dY;
@@ -271,7 +271,7 @@ static void slopes(States* Sol,
         du     = Diffs->u[i];
         dv     = Diffs->v[i];
         dw     = Diffs->w[i];
-        for (nsp = 0; nsp < ud.nspec; nsp++) {
+        for (nsp = 0; nsp < NSPEC; nsp++) {
             dX[nsp] = Diffs->X[nsp][i];
         }                                
         dY     = Diffs->Y[i];
@@ -279,7 +279,7 @@ static void slopes(States* Sol,
         aur    = du;
         avr    = dv;
         awr    = dw;
-        for (nsp = 0; nsp < ud.nspec; nsp++) {
+        for (nsp = 0; nsp < NSPEC; nsp++) {
             aXr[nsp] = dX[nsp];
         }                                
         aYr    = dY;
@@ -288,7 +288,7 @@ static void slopes(States* Sol,
         Slopes->entro[i] = (*limiter[limiter_type_velocity])(aul, aur, kp);  /* entro abused for u */
         Slopes->v[i] = (*limiter[limiter_type_velocity])(avl, avr, kz);
         Slopes->w[i] = (*limiter[limiter_type_velocity])(awl, awr, kz);
-        for (nsp = 0; nsp < ud.nspec; nsp++) {
+        for (nsp = 0; nsp < NSPEC; nsp++) {
             Slopes->X[nsp][i] = (*limiter[limiter_type_scalars])(aXl[nsp], aXr[nsp], kz);
         }                                
         Slopes->Y[i] = (*limiter[limiter_type_scalars])(aYl, aYr, kY);
