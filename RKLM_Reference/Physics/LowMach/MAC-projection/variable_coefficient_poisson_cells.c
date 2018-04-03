@@ -15,6 +15,7 @@
 
 #include "error.h"
 
+
 #include "variable_coefficient_poisson_cells.h"
 #include "mpv.h"
 #include "BiCGSTAB.h"
@@ -33,7 +34,6 @@ void variable_coefficient_poisson_cells(
                                         double *rhs,
 										const double *hplus[3],
                                         const double *hcenter,
-										const ConsVars* Sol,
                                         const ElemSpaceDiscr* elem,
                                         const NodeSpaceDiscr* node)
 {
@@ -55,7 +55,7 @@ void variable_coefficient_poisson_cells(
 
 	data = BiCGSTABData_new(nc, precision, local_precision, max_iter, outperiod);
 		
-	tmp = SOLVER(data, elem, node, hplus, hcenter, Sol, mpv, mpv->dt, rhs, p2);
+	tmp = SOLVER(data, elem, node, hplus, hcenter, mpv, mpv->dt, rhs, p2);
     
     printf("residual 1st projection = %e * tol\n", tmp);
 	    

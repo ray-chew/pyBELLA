@@ -52,7 +52,29 @@ double precon_c_diag_prepare(
     
     switch(ndim) {
         case 1: {
-            ERROR("function not available for 1D");
+            const int igx       = elem->igx;
+            const int icx       = elem->icx;
+            const double dx     = elem->dx;
+            const double oodx2  = 1.0 / (dx * dx);
+            
+            const double* hplusx = hplus[0];
+            const double* hc     = hcenter;
+                        
+            for(int nc=0; nc<elem->nc; nc++) diag_c[nc] = diaginv_c[nc] = 0.0;
+            
+            for(int nc = igx; nc < icx - igx; nc++) {                
+                
+                diag_c[nc]  = - oodx2 * ( hplusx[nc+1] + hplusx[nc] );
+                diag_c[nc] += hc[nc];
+            }
+            
+            precon_inv_scale = 0.0;
+            
+            for (int nc = igx; nc < icx-igx; nc++) {
+                diaginv_c[nc] = 1.0/diag_c[nc];
+                precon_inv_scale = MAX_own(precon_inv_scale, fabs(diaginv_c[nc]));
+            }
+            
             break;
         }
         case 2: {
@@ -509,7 +531,7 @@ double precon_c_prepare(
 
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.is_nonhydrostatic) {
         return precon_c_column_prepare(node, elem, hplus, hcenter);
     } else {
         return precon_c_diag_prepare(node, elem, hplus, hcenter);        
@@ -541,7 +563,7 @@ void precon_c_invert(
     
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.is_nonhydrostatic) {
         precon_c_column_invert(vec_out, vec_in, elem);
     } else {
         precon_c_diag_invert(vec_out, vec_in, elem);        
@@ -557,7 +579,6 @@ void EnthalpyWeightedLap_bilinear_p(
                                     const double* p,
                                     const double* hplus[3],
                                     const double* hcenter,
-                                    const ConsVars* Sol,
                                     const MPV* mpv, 
                                     const double dt,
                                     double* lap) {
@@ -565,8 +586,21 @@ void EnthalpyWeightedLap_bilinear_p(
     const int ndim = elem->ndim;
     
     switch(ndim) {
-        case 1: {    
-            ERROR("function not available");
+        case 1: {
+            const int igx = elem->igx;
+            const int icx = elem->icx;
+            
+            const double dx    = elem->dx;            
+            const double oodx2 = 1.0 / (dx * dx);
+            
+            const double* hplusx = hplus[0];
+            const double* hc     = hcenter;
+                                                
+            for(int nc = igx; nc < icx - igx; nc++) {
+                lap[nc]  = oodx2 * ( hplusx[nc+1] * (p[nc+1] - p[nc]) - hplusx[nc] * (p[nc] - p[nc-1]) );
+                lap[nc] += hc[nc] * p[nc];
+            }
+            precon_c_invert(lap, lap, elem);
             break;
         }
         case 2: {

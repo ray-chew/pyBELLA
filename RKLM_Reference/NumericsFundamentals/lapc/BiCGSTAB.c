@@ -77,7 +77,6 @@ double SOLVER(
               const NodeSpaceDiscr* node,
               const double* hplus[3],
               const double* hcenter,
-              const ConsVars* Sol,
               const MPV* mpv,
               const double dt,
               double* rhs,
@@ -110,14 +109,14 @@ double SOLVER(
     int cnt, cell_cnt, i, j, k, l, m, n;
     double AA, AB, AC, BB, BC, tmp, tmp_local, alpha, beta;
     
-    assert(data->size >= elem->nc);                          /* Rupert: This could be dangerous. */
+    assert(data->size >= elem->nc); 
     
     double precon_inv_scale = precon_c_prepare(node, elem, hplus, hcenter);
     
     /* initialization */
     /* initial residual; intermediate abuse of the field */
     set_ghostcells_p2(p2, elem, 1);
-    EnthalpyWeightedLap_bilinear_p(elem, node, p2, hplus, hcenter, Sol, mpv, dt, r_0);
+    EnthalpyWeightedLap_bilinear_p(elem, node, p2, hplus, hcenter, mpv, dt, r_0);
     
     precon_c_invert(rhs, rhs, elem);
     
@@ -133,7 +132,7 @@ double SOLVER(
     
     /* initialization of iteration coefficients; residual norm */
     set_ghostcells_p2(r_0, elem, 1);
-    EnthalpyWeightedLap_bilinear_p(elem, node, r_0, hplus, hcenter, Sol, mpv, dt, Lr_0);
+    EnthalpyWeightedLap_bilinear_p(elem, node, r_0, hplus, hcenter, mpv, dt, Lr_0);
     
     /* norm of residuum */
     tmp = 0.0;
@@ -215,7 +214,7 @@ double SOLVER(
         
         /* AB */
         set_ghostcells_p2(r_0, elem, 1);
-        EnthalpyWeightedLap_bilinear_p(elem, node, r_0, hplus, hcenter, Sol, mpv, dt, Lr_0);
+        EnthalpyWeightedLap_bilinear_p(elem, node, r_0, hplus, hcenter, mpv, dt, Lr_0);
         
         AB = 0.0;
         for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
@@ -296,7 +295,6 @@ double SOLVER(
               const NodeSpaceDiscr* node,
               const double* hplus[3],
               const double* hcenter,
-              const ConsVars* Sol,
               const MPV* mpv,
               const double dt,
               double* rhs,
@@ -330,7 +328,7 @@ double SOLVER(
     double precon_inv_scale = precon_c_prepare(node, elem, hplus, hcenter);
     
     set_ghostcells_p2(p2, elem, 1);
-    EnthalpyWeightedLap_bilinear_p(elem, node, p2, hplus, hcenter, Sol, mpv, dt, v_j);
+    EnthalpyWeightedLap_bilinear_p(elem, node, p2, hplus, hcenter, mpv, dt, v_j);
     
     precon_c_invert(rhs_prec, rhs, elem);
     
@@ -393,7 +391,7 @@ double SOLVER(
         }
         
         set_ghostcells_p2(p_j, elem, 1);
-        EnthalpyWeightedLap_bilinear_p(elem, node, p_j, hplus, hcenter, Sol, mpv, dt, v_j);
+        EnthalpyWeightedLap_bilinear_p(elem, node, p_j, hplus, hcenter, mpv, dt, v_j);
         
         sigma = 0.0; 
         for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
@@ -415,7 +413,7 @@ double SOLVER(
         }
         
         set_ghostcells_p2(s_j, elem, 1);
-        EnthalpyWeightedLap_bilinear_p(elem, node, s_j, hplus, hcenter, Sol, mpv, dt, t_j);
+        EnthalpyWeightedLap_bilinear_p(elem, node, s_j, hplus, hcenter, mpv, dt, t_j);
         
         omega = 0.0; 
         tmp = 0.0; 

@@ -37,7 +37,6 @@ void EnthalpyWeightedLap_bilinear_p(
 									const double* p,
 									const double* hplus[3],
 									const double* hcenter,
-									const ConsVars* Sol,
 									const MPV* mpv, 
 									const double dt,
 									double* lap);

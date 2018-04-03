@@ -105,10 +105,12 @@ void Data_init() {
 	Grid_free(grid); 
 	
     /* assuming gravity is in the y-direction */
-    if (ud.g_ref == ud.eps_Machine) {
+    if (ud.g_ref > ud.eps_Machine) {
         grid = Grid_new(inx,inz,1,x0,x1,z0,z1,0.0,1.0,left,right,back,front,bottom,top); 
         elem_surf = ElemSpaceDiscr_new(grid);
+        elem_surf->normal = 1;
         node_surf = NodeSpaceDiscr_new(grid);
+        node_surf->normal = 1;
         Grid_free(grid); 
     }
     

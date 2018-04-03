@@ -1078,33 +1078,35 @@ void euler_backward_gravity(ConsVars* Sol,
      */
     extern User_Data ud;
     
-    const double g   = ud.gravity_strength[1];
-    const double Msq = ud.Msq;
-    const double dy  = elem->dy;
-    
-    const int icx = elem->icx;
-    const int icy = elem->icy;
-    const int icz = elem->icz;
+    if (ud.is_nonhydrostatic) {
+        const double g   = ud.gravity_strength[1];
+        const double Msq = ud.Msq;
+        const double dy  = elem->dy;
         
-    for (int k=0; k<icz; k++) {
-        int l = k*icy*icx;
-        for (int j=0; j<icy; j++) {
-            int m = l + j*icx;
-            double strat = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j])/(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
-
-            for (int i=0; i<icx; i++) {
-                int n        = m + i;
-                double Nsqsc = dt*dt * (g/Msq) * strat;
-                double v     = Sol->rhov[n]/Sol->rho[n];
-                double dchi  = Sol->rhoX[BUOY][n]/Sol->rho[n];
-                double chi   = Sol->rho[n]/Sol->rhoY[n];
-                double dbuoy = -dchi/chi;    /* -dchi/chibar; */
+        const int icx = elem->icx;
+        const int icy = elem->icy;
+        const int icz = elem->icz;
+        
+        for (int k=0; k<icz; k++) {
+            int l = k*icy*icx;
+            for (int j=0; j<icy; j++) {
+                int m = l + j*icx;
+                double strat = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j])/(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
                 
-                Sol->rhov[n] = Sol->rho[n] * (v + dt * (g/Msq) * dbuoy) / (1.0 + Nsqsc);
+                for (int i=0; i<icx; i++) {
+                    int n        = m + i;
+                    double Nsqsc = dt*dt * (g/Msq) * strat;
+                    double v     = Sol->rhov[n]/Sol->rho[n];
+                    double dchi  = Sol->rhoX[BUOY][n]/Sol->rho[n];
+                    double chi   = Sol->rho[n]/Sol->rhoY[n];
+                    double dbuoy = -dchi/chi;    /* -dchi/chibar; */
+                    
+                    Sol->rhov[n] = Sol->rho[n] * (v + dt * (g/Msq) * dbuoy) / (1.0 + Nsqsc);
+                }
             }
         }
+        Set_Explicit_Boundary_Data(Sol, elem);
     }
-    Set_Explicit_Boundary_Data(Sol, elem);
 }
 
 /* ========================================================================== */

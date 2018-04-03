@@ -6,6 +6,7 @@
 #include "Common.h"
 #include "kgrid.h"
 #include "math_own.h"
+#include "error.h"
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
@@ -126,7 +127,8 @@ ElemSpaceDiscr* ElemSpaceDiscr_new(Grid* g) {
 	assert(g->iny >= 1);
 	assert(g->inz >= 1);
 	
-	d->ndim = g->ndim;
+	d->ndim   = g->ndim;
+    d->normal = big;  /* default value */
 		
     d->igx = d->ig[0] = 2;
 	d->igy = d->ig[1] = g->iny > 1 ? 2 : 0;
@@ -141,10 +143,6 @@ ElemSpaceDiscr* ElemSpaceDiscr_new(Grid* g) {
     d->stride[0] = 1;
     d->stride[1] = g->iny > 1 ? d->icx : 0;  
     d->stride[2] = g->inz > 1 ? d->icx * d->icy : 0;
-	
-	d->nci = (g->inx - 1) 
-	* (g->iny > 1 ? g->iny - 1 : 1) 
-	* (g->inz > 1 ? g->inz - 1 : 1);
 	
 	d->ifx =              d->icx + 1    ;
 	d->ify = g->iny > 1 ? d->icy + 1 : 0;
@@ -285,4 +283,213 @@ void NodeSpaceDiscr_free(NodeSpaceDiscr* d) {
 	free(d);
 }
 
+/*------------------------------------------------------------------------------
+ derive surface elements from volume elements 
+ ------------------------------------------------------------------------------*/
+ElemSpaceDiscr* surface_elems(const ElemSpaceDiscr* elem)
+{
+    int i, j;
+    
+    ElemSpaceDiscr* elem_s = (ElemSpaceDiscr*)malloc(sizeof(ElemSpaceDiscr));
+        
+    elem_s->ndim = elem->ndim-1;
+    elem_s->normal = 1;   /* should have normal direction as parameter to fct. */
+    
+    elem_s->igx = elem_s->ig[0] = elem->igx;
+    elem_s->igy = elem_s->ig[1] = elem->igz;
+    elem_s->igz = elem_s->ig[2] = 0;
+    
+    elem_s->icx = elem_s->ic[0] = elem->icx;
+    elem_s->icy = elem_s->ic[1] = elem->icz;
+    elem_s->icz = elem_s->ic[2] = 1;
+    
+    elem_s->nc = elem_s->icx * elem_s->icy;
+    
+    elem_s->stride[0] = 1;
+    elem_s->stride[1] = (elem_s->ndim > 1 ? elem_s->icx : 0);  
+    elem_s->stride[2] = 0;
+        
+    elem_s->ifx = elem_s->icx + 1;
+    elem_s->ify = (elem_s->ndim > 1 ? elem_s->icy + 1 : 0);
+    elem_s->ifz = 0;
+    
+    elem_s->nfx =  elem_s->ifx * elem_s->icy * elem_s->icz;
+    elem_s->nfy =  elem_s->icx * elem_s->ify * elem_s->icz;
+    elem_s->nfz =  elem_s->icx * elem_s->icy * elem_s->ifz;
+    
+    elem_s->nf = elem_s->nfx + elem_s->nfy + elem_s->nfz;
+    
+    elem_s->dx = elem->dx;
+    elem_s->dy = elem->dz;
+    elem_s->dz = big;
+    elem_s->dxyz[0] = elem_s->dx;
+    elem_s->dxyz[1] = elem_s->dy;
+    elem_s->dxyz[2] = elem_s->dz;
+    
+    assert(elem_s->dx > 0.0);
+    assert(elem_s->dy > 0.0);
+    assert(elem_s->dz > 0.0); 
+    
+    elem_s->dxmin = MIN_own(elem_s->dx, elem_s->dy);    
+    elem_s->dxmin = MIN_own(elem_s->dxmin, elem_s->dz);    
+    
+    elem_s->x = (double*)malloc(elem_s->icx * sizeof(double));
+    elem_s->y = (double*)malloc(elem_s->icy * sizeof(double));
+    elem_s->z = (double*)malloc(elem_s->icz * sizeof(double));
+        
+    for(i = 0; i < elem_s->icx; i++) elem_s->x[i] = elem->x[i]; 
+    for(j = 0; j < elem_s->icy; j++) elem_s->y[j] = elem->z[j];
+    elem_s->z[0] = elem->y[0];  
+    
+    elem_s->left = elem->left;
+    elem_s->right = elem->right;
+    elem_s->bottom = elem->back;
+    elem_s->top = elem->front;
+    elem_s->back = elem->bottom;
+    elem_s->front = elem->top;
+    
+    elem_s->scale_factor = 1.0;  /* default value */
+        
+    return elem_s;
+}
+
+/*------------------------------------------------------------------------------
+ derive surface nodes from volume nodes 
+ ------------------------------------------------------------------------------*/
+NodeSpaceDiscr* surface_nodes(const NodeSpaceDiscr* node)
+{
+    int i, j;
+    
+    NodeSpaceDiscr* node_s = (NodeSpaceDiscr*)malloc(sizeof(NodeSpaceDiscr));
+    
+    node_s->ndim = node->ndim-1;
+    
+    node_s->igx = node_s->ig[0] = node->igx;
+    node_s->igy = node_s->ig[1] = node->igz;
+    node_s->igz = node_s->ig[2] = 0;
+    
+    node_s->icx = node_s->ic[0] = node->icx;
+    node_s->icy = node_s->ic[1] = node->icz;
+    node_s->icz = node_s->ic[2] = 1;
+    
+    node_s->nc = node_s->icx * node_s->icy * node_s->icz;
+    
+    node_s->stride[0] = 1;
+    node_s->stride[1] = (node_s->ndim > 1 ? node_s->icx : 0);  
+    node_s->stride[2] = 0;
+    
+    node_s->ifx = node->ifx;
+    node_s->ify = node->ifz;
+    node_s->ifz = 0;
+    
+    node_s->nfx = node_s->ifx * node_s->icy * node_s->icz;
+    node_s->nfy = node_s->icx * node_s->ify * node_s->icz;
+    node_s->nfz = node_s->icx * node_s->icy * node_s->ifz;
+    
+    node_s->nf = node_s->nfx + node_s->nfy + node_s->nfz;
+    
+    node_s->dx = node->dx;
+    node_s->dy = node->dz;
+    node_s->dz = big;
+    node_s->dxyz[0] = node_s->dx;
+    node_s->dxyz[1] = node_s->dy;
+    node_s->dxyz[2] = node_s->dz;
+    
+    assert(node_s->dx > 0.0);
+    assert(node_s->dy > 0.0);
+    assert(node_s->dz > 0.0); 
+    
+    node_s->dxmin = MIN_own(node_s->dx, node_s->dy);
+    node_s->dxmin = MIN_own(node_s->dxmin, node_s->dz);
+    
+    node_s->x = (double*)malloc(node_s->icx * sizeof(double));
+    node_s->y = (double*)malloc(node_s->icy * sizeof(double));
+    node_s->z = (double*)malloc(node_s->icz * sizeof(double));
+        
+    for(i = 0; i < node_s->icx; i++) node_s->x[i] = node->x[i]; 
+    for(j = 0; j < node_s->icy; j++) node_s->y[j] = node->z[j];
+    node_s->z[0] = node->y[0]; 
+    
+    node_s->left   = node->left;
+    node_s->right  = node->right;
+    node_s->bottom = node->back;
+    node_s->top    = node->front;
+    node_s->back   = node->bottom;
+    node_s->front  = node->top; 
+    
+    node_s->scale_factor = 1.0;  /* default value */
+    
+    return node_s;
+}
+
+/*------------------------------------------------------------------------------
+ extrude surface date to volume data 
+ ------------------------------------------------------------------------------*/
+
+void extrude(double* q_vol, 
+             const double* q_surf, 
+             const ElemSpaceDiscr* elem, 
+             const ElemSpaceDiscr* elem_surf)
+{
+    /* lift the surface quantity  q_surf  to the volume quantity  q_vol
+     by zeroeth order extrapolation
+     */
+    switch (elem_surf->normal) {
+            
+        case 0:
+            assert(elem->icy == elem_surf->icx);
+            assert(elem->icz == elem_surf->icy);
+            for (int j=0; j<elem->icy; j++) {
+                const int lcv = j*elem->stride[1];
+                const int lcs = j*elem_surf->stride[0];
+                for (int k=0; k<elem->icz; k++) {
+                    const int mcv = lcv + k*elem->stride[2];
+                    const int mcs = lcs + k*elem_surf->stride[1];
+                    for (int i=0; i<elem->icx; i++) {
+                        const int ncv = mcv + i*elem->stride[0];
+                        q_vol[ncv] = q_surf[mcs];
+                    }
+                }
+            }
+            break;
+            
+        case 1:
+            assert(elem->icx == elem_surf->icx);
+            assert(elem->icz == elem_surf->icy);
+            for (int k=0; k<elem->icz; k++) {
+                const int lcv = k*elem->stride[2];
+                const int lcs = k*elem_surf->stride[1];
+                for (int i=0; i<elem->icx; i++) {
+                    const int mcv = lcv + i*elem->stride[0];
+                    const int mcs = lcs + i*elem_surf->stride[0];
+                    for (int j=0; j<elem->icy; j++) {
+                        const int ncv = mcv + j*elem->stride[1];
+                        q_vol[ncv] = q_surf[mcs];
+                    }
+                }
+            }
+            break;
+            
+        case 2:
+            assert(elem->icx == elem_surf->icx);
+            assert(elem->icy == elem_surf->icy);
+            for (int j=0; j<elem->icy; j++) {
+                const int lcv = j*elem->stride[1];
+                const int lcs = j*elem_surf->stride[1];
+                for (int i=0; i<elem->icx; i++) {
+                    const int mcv = lcv + i*elem->stride[0];
+                    const int mcs = lcs + i*elem_surf->stride[0];
+                    for (int k=0; k<elem->icz; k++) {
+                        const int ncv = mcv + k*elem->stride[2];
+                        q_vol[ncv] = q_surf[mcs];
+                    }
+                }
+            }
+            break;
+            
+        default:
+            ERROR("\nNo plausible data extrusion direction provided.\n");
+            break;
+    }
+}
 

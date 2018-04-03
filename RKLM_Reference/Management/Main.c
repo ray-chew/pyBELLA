@@ -105,7 +105,7 @@ int main( void )
 			set_wall_massflux(bdry, Sol0, elem);
                        
             /* ======================================================================= */
-            /* Semi-implicit discretization of non-advective terms aka EULAG           */
+            /* Semi-implicit discretization of non-advective terms a la EULAG          */
             /* ======================================================================= */
             
             reset_Y_perturbation(Sol, (const MPV*)mpv, elem);
@@ -129,7 +129,7 @@ int main( void )
 
             /* explicit part of Euler backward gravity over half time step */
             euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt);
-            
+
             /* divergence-controlled advective fluxes at the half time level */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
             flux_correction(flux, Sol, Sol0, elem, node, t, dt, step);            
