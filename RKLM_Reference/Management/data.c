@@ -61,6 +61,7 @@ MPV* mpv;
 
 States* Solk;             /* cache size */
 double* W0;               /* full nG-length double array */
+enum Boolean W0_in_use = WRONG;
 
 
 /*------------------------------------------------------------------------------

@@ -130,12 +130,12 @@ void flux_correction(ConsVars* flux[3],
     double rhsmax;
     
     int n;
-    
-    printf("\n\n====================================================");
-    printf("\nFirst Projection");
-    printf("\n====================================================\n");
-        
+            
     if (ud.is_nonhydrostatic == 0) {
+        printf("\n\n====================================================");
+        printf("\nFirst Projection - Hydrostatic");
+        printf("\n====================================================\n");
+
         ElemSpaceDiscr *elem_surf = surface_elems(elem);
         NodeSpaceDiscr *node_surf = surface_nodes(node);
         double *rhs_surf = (double*)malloc(elem_surf->nc * sizeof(double));
@@ -156,7 +156,7 @@ void flux_correction(ConsVars* flux[3],
                 
         variable_coefficient_poisson_cells(p2_surf, rhs_surf, (const double **)hplus_surf, hcenter_surf, elem_surf, node_surf);
         set_ghostcells_p2(p2_surf, elem_surf, elem_surf->igx);
-        extrude(p2_aux, p2_surf, elem, elem_surf);
+        extrude_cells(p2_aux, p2_surf, elem, elem_surf);
         
         flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2_aux, t, dt);
         hydrostatic_vertical_flux(flux, elem);
@@ -186,6 +186,10 @@ void flux_correction(ConsVars* flux[3],
         NodeSpaceDiscr_free(node_surf);
         ElemSpaceDiscr_free(elem_surf);
     } else {
+        printf("\n\n====================================================");
+        printf("\nFirst Projection");
+        printf("\n====================================================\n");
+
         operator_coefficients(hplus, hcenter, hS, elem, Sol, Sol0, mpv, dt);
         rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
         rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
@@ -1221,8 +1225,8 @@ void aggregate_coefficients_cells(double* hplus_s[3],
                                   const double* hplus[3], 
                                   const ElemSpaceDiscr* elem)
 {
-    /* aggregate the source term for the full-dimensional projection in 
-     the gravity-direction to obtain the hydrostatic projection source term
+    /* aggregate the coefficients of the full Poisson operator in the vertical
+     to formulate the hydrostatic Poisson operator
      */
     const int igx = elem->igx;
     const int igy = elem->igy;

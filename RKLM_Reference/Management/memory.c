@@ -32,6 +32,7 @@ void rotate2D(ConsVars* Sol, const enum Direction direction)
 	/* Arrays */
 	extern ConsVars* flux[3];             
 	extern double *W0;   
+    extern enum Boolean W0_in_use;
 	
 	double *phelp;
 	double delta;
@@ -41,6 +42,9 @@ void rotate2D(ConsVars* Sol, const enum Direction direction)
 	int icy = elem->icy;
 	int nc  = elem->nc;
 	
+    assert(W0_in_use == WRONG);
+    W0_in_use = CORRECT;
+
 	/* rotation of solution */
 	flip2D(Sol->rho,  icx, icy, nc, W0);   
 	flip2D(Sol->rhou, icx, icy, nc, W0);       
@@ -136,7 +140,8 @@ void rotate2D(ConsVars* Sol, const enum Direction direction)
     phelp = flux[1]->rhou;
     flux[1]->rhou = flux[1]->rhov;
     flux[1]->rhov = phelp;
-	
+
+    W0_in_use = WRONG;
 }
 
 /* ================================================================================ */
@@ -153,10 +158,14 @@ void rotate3D(ConsVars* Sol, const enum Direction direction) {
 	/* Variables */
 	extern ConsVars* flux[3];   
 	extern double *W0; 
-	
+    extern enum Boolean W0_in_use;
+
 	double *phelp;
 	double delta;
 	int i;
+    
+    assert(W0_in_use == WRONG);
+    W0_in_use = CORRECT;
 	
 	if(direction == FORWARD) {
 		
@@ -434,6 +443,8 @@ void rotate3D(ConsVars* Sol, const enum Direction direction) {
 	else {
 		ERROR("to which direction shall i rotate the fields?");
 	}
+
+    W0_in_use = WRONG;
 }  
 
 /* ================================================================================ */

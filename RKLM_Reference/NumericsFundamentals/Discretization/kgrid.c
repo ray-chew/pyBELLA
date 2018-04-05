@@ -423,13 +423,13 @@ NodeSpaceDiscr* surface_nodes(const NodeSpaceDiscr* node)
 }
 
 /*------------------------------------------------------------------------------
- extrude surface date to volume data 
+ extrude surface date to volume data / cell-based
  ------------------------------------------------------------------------------*/
 
-void extrude(double* q_vol, 
-             const double* q_surf, 
-             const ElemSpaceDiscr* elem, 
-             const ElemSpaceDiscr* elem_surf)
+void extrude_cells(double* q_vol, 
+                   const double* q_surf, 
+                   const ElemSpaceDiscr* elem, 
+                   const ElemSpaceDiscr* elem_surf)
 {
     /* lift the surface quantity  q_surf  to the volume quantity  q_vol
      by zeroeth order extrapolation
@@ -481,6 +481,77 @@ void extrude(double* q_vol,
                     const int mcs = lcs + i*elem_surf->stride[0];
                     for (int k=0; k<elem->icz; k++) {
                         const int ncv = mcv + k*elem->stride[2];
+                        q_vol[ncv] = q_surf[mcs];
+                    }
+                }
+            }
+            break;
+            
+        default:
+            ERROR("\nNo plausible data extrusion direction provided.\n");
+            break;
+    }
+}
+
+/*------------------------------------------------------------------------------
+ extrude surface date to volume data / node-based
+ ------------------------------------------------------------------------------*/
+
+void extrude_nodes(double* q_vol, 
+                   const double* q_surf, 
+                   const NodeSpaceDiscr* node, 
+                   const NodeSpaceDiscr* node_surf)
+{
+    /* lift the surface quantity  q_surf  to the volume quantity  q_vol
+     by zeroeth order extrapolation
+     */
+    switch (node_surf->normal) {
+            
+        case 0:
+            assert(node->icy == node_surf->icx);
+            assert(node->icz == node_surf->icy);
+            for (int j=0; j<node->icy; j++) {
+                const int lcv = j*node->stride[1];
+                const int lcs = j*node_surf->stride[0];
+                for (int k=0; k<node->icz; k++) {
+                    const int mcv = lcv + k*node->stride[2];
+                    const int mcs = lcs + k*node_surf->stride[1];
+                    for (int i=0; i<node->icx; i++) {
+                        const int ncv = mcv + i*node->stride[0];
+                        q_vol[ncv] = q_surf[mcs];
+                    }
+                }
+            }
+            break;
+            
+        case 1:
+            assert(node->icx == node_surf->icx);
+            assert(node->icz == node_surf->icy);
+            for (int k=0; k<node->icz; k++) {
+                const int lcv = k*node->stride[2];
+                const int lcs = k*node_surf->stride[1];
+                for (int i=0; i<node->icx; i++) {
+                    const int mcv = lcv + i*node->stride[0];
+                    const int mcs = lcs + i*node_surf->stride[0];
+                    for (int j=0; j<node->icy; j++) {
+                        const int ncv = mcv + j*node->stride[1];
+                        q_vol[ncv] = q_surf[mcs];
+                    }
+                }
+            }
+            break;
+            
+        case 2:
+            assert(node->icx == node_surf->icx);
+            assert(node->icy == node_surf->icy);
+            for (int j=0; j<node->icy; j++) {
+                const int lcv = j*node->stride[1];
+                const int lcs = j*node_surf->stride[1];
+                for (int i=0; i<node->icx; i++) {
+                    const int mcv = lcv + i*node->stride[0];
+                    const int mcs = lcs + i*node_surf->stride[0];
+                    for (int k=0; k<node->icz; k++) {
+                        const int ncv = mcv + k*node->stride[2];
                         q_vol[ncv] = q_surf[mcs];
                     }
                 }

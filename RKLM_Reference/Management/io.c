@@ -72,7 +72,8 @@ void putout(ConsVars* Sol,
 	/* Arrays */
 	extern MPV* mpv;
 	extern double *W0;
-
+    extern enum Boolean W0_in_use;
+    
 	static int output_counter = 0;
 
 	const int ndim = elem->ndim;
@@ -116,6 +117,8 @@ void putout(ConsVars* Sol,
             WriteHDF(prhs2file, elem->ify, elem->icx, elem->icz, elem->ndim, flux[1]->rhou, fn2, fieldname2);
 #endif
 
+            assert(W0_in_use == WRONG);
+            W0_in_use = CORRECT;
             var = W0;
 			
 			if(ud.write_stdout == ON) printf("\n");
@@ -288,6 +291,7 @@ void putout(ConsVars* Sol,
 			ERROR("file format not available");
 	}
 	
+    W0_in_use = WRONG;
 }
 
 /* ----------------------------------------------------------------------- */
