@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		9A1CB84A206CACEA0095DC98 /* userdata_InternalWave_LongWave.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A1CB849206CACEA0095DC98 /* userdata_InternalWave_LongWave.c */; };
 		9A21BF821DA58470006A6F34 /* libmfhdf.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A21BF811DA58470006A6F34 /* libmfhdf.dylib */; };
 		9A21BF841DA5847F006A6F34 /* libdf.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A21BF831DA5847F006A6F34 /* libdf.dylib */; };
+		9A562E832076A52400D2B72B /* userdata_InternalWave_LongWave.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A562E822076A52400D2B72B /* userdata_InternalWave_LongWave.c */; };
 		9AC4F9841DA3F06F00AED455 /* boundary.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9231DA3F06F00AED455 /* boundary.c */; };
 		9AC4F9911DA3F06F00AED455 /* data.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9391DA3F06F00AED455 /* data.c */; };
 		9AC4F9921DA3F06F00AED455 /* io.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F93D1DA3F06F00AED455 /* io.c */; };
@@ -51,10 +51,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		9A1CB849206CACEA0095DC98 /* userdata_InternalWave_LongWave.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_InternalWave_LongWave.c; sourceTree = "<group>"; };
 		9A1ED37C206D0C9200D622A9 /* PrimaryAndDualGrid.eps */ = {isa = PBXFileReference; lastKnownFileType = file; path = PrimaryAndDualGrid.eps; sourceTree = "<group>"; };
 		9A21BF811DA58470006A6F34 /* libmfhdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmfhdf.dylib; path = ../../../../../opt/local/lib/libmfhdf.dylib; sourceTree = "<group>"; };
 		9A21BF831DA5847F006A6F34 /* libdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libdf.dylib; path = ../../../../../opt/local/lib/libdf.dylib; sourceTree = "<group>"; };
+		9A562E822076A52400D2B72B /* userdata_InternalWave_LongWave.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_InternalWave_LongWave.c; sourceTree = "<group>"; };
 		9AC4F90B1DA3F02D00AED455 /* RKLM_Reference */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = RKLM_Reference; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AC4F9151DA3F06F00AED455 /* Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
 		9AC4F9171DA3F06F00AED455 /* Bibliography.bib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Bibliography.bib; sourceTree = "<group>"; };
@@ -215,7 +215,7 @@
 		9AC4F9221DA3F06F00AED455 /* Input */ = {
 			isa = PBXGroup;
 			children = (
-				9A1CB849206CACEA0095DC98 /* userdata_InternalWave_LongWave.c */,
+				9A562E822076A52400D2B72B /* userdata_InternalWave_LongWave.c */,
 				9AC4F9311DA3F06F00AED455 /* userdata.h */,
 				9AC4F9231DA3F06F00AED455 /* boundary.c */,
 				9AC4F9241DA3F06F00AED455 /* boundary.h */,
@@ -432,7 +432,7 @@
 				9AC4F9841DA3F06F00AED455 /* boundary.c in Sources */,
 				9AC4F9951DA3F06F00AED455 /* variable.c in Sources */,
 				9AC4F9AA1DA3F06F00AED455 /* variable_coefficient_poisson_cells.c in Sources */,
-				9A1CB84A206CACEA0095DC98 /* userdata_InternalWave_LongWave.c in Sources */,
+				9A562E832076A52400D2B72B /* userdata_InternalWave_LongWave.c in Sources */,
 				9AC4F9921DA3F06F00AED455 /* io.c in Sources */,
 				9AC4F99D1DA3F06F00AED455 /* explicit.c in Sources */,
 				9AC4F9941DA3F06F00AED455 /* memory.c in Sources */,

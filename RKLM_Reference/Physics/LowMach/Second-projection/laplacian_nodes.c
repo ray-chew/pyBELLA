@@ -58,7 +58,53 @@ double precon_diag_prepare(
     
     switch(ndim) {
         case 1: {
-            ERROR("function not available");
+
+            const int igxn = node->igx;
+            const int icxn = node->icx;
+            
+            const int igxe = elem->igx;
+            const int icxe = elem->icx;            
+            
+            const double dx = node->dx;
+            
+            const double* hplusx   = hplus[0];
+            const double* hcenter  = wcenter;
+            
+            int i, j, me, mn, ne; 
+            int nn00, nn01, nn10, nn11;
+            
+            for(int nn=0; nn<node->nc; nn++) diag[nn] = diaginv[nn] = 0.0;
+            
+            double wx = 1.0 / (dx * dx);
+            
+            for(i = igxe; i < icxe - igxe; i++) {
+                ne   = i;
+                nn00 = i;
+                nn01 = i+1;
+                
+                double ddiag = - wx*hplusx[ne] - 0.5 * hcenter[ne];
+                
+                diag[nn00] += ddiag; 
+                diag[nn01] += ddiag;  
+            }
+
+            /* periodicity */
+            if (x_periodic) {
+                    int nleft  = igxn;
+                    int nright = icxn - igxn - 1;
+                    diag[nleft]  += diag[nright];
+                    diag[nright]  = 9999.0;
+            }
+                       
+            /* prepare for the inversion of the preconditioner */
+            precon_inv_scale = 0.0;
+            
+            for (i = igxn; i < icxn-igxn; i++) {
+                int nn = i;
+                diaginv[nn] = 1.0/diag[nn];
+                precon_inv_scale = MAX_own(precon_inv_scale, fabs(diaginv[nn]));
+            }
+            
             break;
         }
         case 2: {
@@ -464,10 +510,6 @@ double precon_column_prepare(
                     nnicxn   = nn + icxn;
                     nn1icxn  = nn + 1 + icxn;
                     
-                    /*
-                     flux_y_left   = hplusy[ne] * oody2 * ( (pnnicxn  - pnn    ) );
-                     flux_y_right  = hplusy[ne] * oody2 * ( (pnn1icxn - pnn1   ) );
-                     */
                     flux_y_left   = hplusy[ne] * oody2;
                     flux_y_right  = hplusy[ne] * oody2;
                     
@@ -737,7 +779,7 @@ double precon_prepare(
 {
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.is_nonhydrostatic) {
         return precon_column_prepare(node, elem, hplus, wcenter, x_periodic, y_periodic, z_periodic);
     } else {
         return precon_diag_prepare(node, elem, hplus, wcenter, x_periodic, y_periodic, z_periodic);        
@@ -756,7 +798,7 @@ void precon_apply(
 {
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.is_nonhydrostatic) {
         precon_column_apply(vec_out, vec_in, node, x_periodic, y_periodic, z_periodic);
     } else {
         precon_diag_apply(vec_out, vec_in, node, x_periodic, y_periodic, z_periodic);        
@@ -777,7 +819,7 @@ void precon_invert(
     
     // return;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.is_nonhydrostatic) {
         precon_column_invert(vec_out, vec_in, node, x_periodic, y_periodic, z_periodic);
     } else {
         precon_diag_invert(vec_out, vec_in, node, x_periodic, y_periodic, z_periodic);        
@@ -800,7 +842,46 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
     
     switch(ndim) {
         case 1: {
-            ERROR("function not available");
+            const int igxn = node->igx;
+            const int icxn = node->icx;
+            
+            const int igxe = elem->igx;
+            const int icxe = elem->icx;
+            
+            const double dx = node->dx;
+            
+            const double* hplusx   = hplus[0];
+            const double* hcenter  = wcenter;
+            
+            const double oodx2 = 1.0 / (dx * dx);
+            
+            double flux_x, hc;
+            
+            int i, j, me, mn, ne, nn, nn1, nnicxn, nn1icxn;
+            
+            for(nn=0; nn<node->nc; nn++) lap[nn] = 0.0;
+            
+            for(i = igxe; i < icxe - igxe; i++) {
+                ne     = i;
+                nn     = i;
+                nn1    = nn + 1;
+                                
+                flux_x = hplusx[ne] * oodx2 * (p[nn1] - p[nn]);
+                hc     = 0.5 * hcenter[ne];
+                
+                lap[nn]  +=   flux_x + hc*p[nn] ;
+                lap[nn1] += - flux_x + hc*p[nn1];
+            }
+
+            if (x_periodic) {
+                    int nleft    = igxn;
+                    int nright   = icxn - igxn - 1;
+                    lap[nleft]  += lap[nright];
+                    lap[nright]  = 0.0;
+            }
+            
+            precon_invert(lap, lap, node, x_periodic, y_periodic, z_periodic);
+            
             break;
         }
         case 2: {

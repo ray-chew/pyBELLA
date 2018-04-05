@@ -363,6 +363,7 @@ NodeSpaceDiscr* surface_nodes(const NodeSpaceDiscr* node)
     NodeSpaceDiscr* node_s = (NodeSpaceDiscr*)malloc(sizeof(NodeSpaceDiscr));
     
     node_s->ndim = node->ndim-1;
+    node_s->normal = 1;   /* should have normal direction as parameter to fct. */
     
     node_s->igx = node_s->ig[0] = node->igx;
     node_s->igy = node_s->ig[1] = node->igz;

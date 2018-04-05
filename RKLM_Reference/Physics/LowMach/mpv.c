@@ -127,7 +127,8 @@ MPV* MPV_new(
         mpv->wplus[idim] = (double*)malloc(nn*sizeof(double));
     }
 
-    if (ud.g_ref > ud.eps_Machine) HydroState_init(mpv, elem->ic[1], node->ic[1]);
+    /* if (ud.g_ref > ud.eps_Machine) */
+        HydroState_init(mpv, elem->ic[1], node->ic[1]);
 
     return mpv;
 }

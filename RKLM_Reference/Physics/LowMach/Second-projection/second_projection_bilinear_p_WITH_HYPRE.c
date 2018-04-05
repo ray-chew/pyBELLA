@@ -530,7 +530,9 @@ static double divergence_nodes(
             double *rhs_cell = W0;
             
             /* build nodal divergence from cell-centered divergence averaged to nodes */
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
+            double flux_weight_old = 0.0;
+            double flux_weight_new = 1.0;
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, flux_weight_old, flux_weight_new);
             rhsmax = controlled_variable_flux_divergence(rhs_cell, (const ConsVars**)flux, dt, elem);
             
             /* predicted time level divergence via scattering */
@@ -598,7 +600,9 @@ static double divergence_nodes(
             double *rhs_cell = W0;
             
             /* build nodal divergence from cell-centered divergence averaged to nodes */
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
+            double flux_weight_old = 0.0;
+            double flux_weight_new = 1.0;
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, flux_weight_old, flux_weight_new);
             rhsmax = controlled_variable_flux_divergence(rhs_cell, (const ConsVars**)flux, dt, elem);
             
             /* predicted time level divergence via scattering */
@@ -1520,7 +1524,7 @@ void aggregate_coefficients_nodes(double* hplus_s[3],
         }
     }
     
-    if (elem->ndim > 1) {
+    if (elem_s->ndim > 1) {
         for (int k=igz; k<icz-igz; k++) {
             int lcvz = k;
             int lcsy = k;
@@ -1672,6 +1676,18 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
         rhoYum = 0.5*Sol->rhoY[ncmm]*Sol->rhou[ncmm]/Sol->rho[ncmm];
         rhoYv[nfy] = dyovdx * (rhoYup - rhoYum);
     }
+    
+    /* cell-centered momenta from vertical rhoY fluxes on the vertical edges */
+    for (int j=igye; j<icye-igxe; j++) {
+        int mc = j*icxe;
+        int mf = j+1;
+        for (int i=igxe; i<icxe-igxe; i++) {
+            int nc = mc + i;
+            int nf = mf + i*ifyn;
+            Sol->rhov[nc] = 0.5*(rhoYv[nf] + rhoYv[nf+ifyn])*Sol->rho[nc]/Sol->rhoY[nc];
+        }
+    }
+    
     W0_in_use = WRONG;
 }
 

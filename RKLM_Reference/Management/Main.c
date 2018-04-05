@@ -92,7 +92,9 @@ int main( void )
 		
 		/* start major time stepping loop */
 		while( t < *tout && step < ud.stepmax ) { 
-			            
+
+            double flux_weight_old, flux_weight_new;
+            
             /* initialize fluxes in preparation of explicit predictor */
             ConsVars_setzero(flux[0], elem->nfx);
             if(elem->ndim > 1) ConsVars_setzero(flux[1], elem->nfy);
@@ -124,14 +126,32 @@ int main( void )
              advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITHOUT_FORCES, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
              - symmetrized splitting instead of simple splitting does not improve vortex symmetry  
              */
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
+            flux_weight_old = 0.0;
+            flux_weight_new = 1.0;
+
+#ifdef FULL_TIME_STEP_ADV_PREDICTOR
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, flux_weight_old, flux_weight_new);
+            advect(Sol, flux, force, dt, elem, FLUX_EXTERNAL, WITHOUT_FORCES, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
+
+            /* explicit part of Euler backward gravity over half time step */
+            euler_backward_gravity(Sol, (const MPV*)mpv, elem, dt);
+            
+            /* divergence-controlled advective fluxes at the half time level */
+            flux_weight_old = 0.5;
+            flux_weight_new = 0.5;
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, flux_weight_old, flux_weight_new);
+            flux_weight_old = 0.0;
+            flux_weight_new = 1.0;
+#else
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, flux_weight_old, flux_weight_new);
             advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITHOUT_FORCES, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
 
             /* explicit part of Euler backward gravity over half time step */
             euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt);
-
+            
             /* divergence-controlled advective fluxes at the half time level */
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, flux_weight_old, flux_weight_new);
+#endif
             flux_correction(flux, Sol, Sol0, elem, node, t, dt, step);            
 
             ConsVars_set(Sol, Sol0, elem->nc);

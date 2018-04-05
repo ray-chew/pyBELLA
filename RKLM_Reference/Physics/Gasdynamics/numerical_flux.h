@@ -21,6 +21,8 @@ void hllestar(
 
 void recompute_advective_fluxes(ConsVars* flux[3], 
                                 const ConsVars* Sol, 
-                                const ElemSpaceDiscr* elem);
+                                const ElemSpaceDiscr* elem, 
+                                const double weight_old,
+                                const double weight_new);
 
 #endif /* NUMERICAL_FLUX_H */
