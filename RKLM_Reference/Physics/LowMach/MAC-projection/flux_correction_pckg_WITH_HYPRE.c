@@ -95,6 +95,7 @@ void aggregate_coefficients_cells(double* hplus_surf[3],
 
 void hydrostatic_pressure_cells(double* p2, 
                                 const ConsVars* Sol,
+                                const MPV* mpv,
                                 const ElemSpaceDiscr* elem,
                                 const NodeSpaceDiscr* node);
 
@@ -148,7 +149,7 @@ void flux_correction(ConsVars* flux[3],
         operator_coefficients(hplus, hcenter, hS, elem, Sol, Sol0, mpv, dt);
         aggregate_coefficients_cells(hplus_surf, elem_surf, (const double **)hplus, elem);
 
-        hydrostatic_pressure_cells(p2, Sol, elem, node);
+        hydrostatic_pressure_cells(p2, Sol, mpv, elem, node);
         set_ghostcells_p2(p2, elem, elem->igx);        
         flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2, t, dt);
         rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
@@ -1277,11 +1278,14 @@ void aggregate_coefficients_cells(double* hplus_s[3],
 
 void hydrostatic_pressure_cells(double* p2, 
                                 const ConsVars* Sol,
+                                const MPV* mpv,
                                 const ElemSpaceDiscr* elem,
                                 const NodeSpaceDiscr* node)
 {
     extern User_Data ud;
     
+    double NoBG = (ud.time_integrator == SI_MIDPT ? 1.0 : 0.0);
+
     /* currently only implemented for a vertical slice */
     assert(elem->ndim == 2);
     
@@ -1314,7 +1318,8 @@ void hydrostatic_pressure_cells(double* p2,
         
         for(int j = igy; j < icy - igy + 1; j++) {
             int nc = mc + j*icx;
-            p2[nc] = (HySt->p20[j] - 1.0/ud.Msq);
+            /* p2[nc] = (HySt->p20[j] - 1.0/ud.Msq); */
+            p2[nc] = HySt->p20[j] - NoBG * mpv->HydroState->p20[j];
         }
     }
     

@@ -21,7 +21,7 @@
 #include "enumerator.h"
 #include "memory.h"
 
-#if (OUTPUT_SUBSTEPS_PREDICTOR > 0) || (OUTPUT_SUBSTEPS_PREDICTOR > 0)
+#if (OUTPUT_SUBSTEPS_PREDICTOR > 0) || (OUTPUT_SUBSTEPS_PREDICTOR > 0 || OUTPUT_SUBSTEPS)
 #include "io.h"
 #endif
 
@@ -725,6 +725,7 @@ void fullD_explicit_updates(ConsVars* Sol,
 	}
 
 #if OUTPUT_SUBSTEPS /* 4 */
+    extern NodeSpaceDiscr* node;
     putout(Sol, ud.file_name, "Sol", elem, node, 1);
 #endif
 

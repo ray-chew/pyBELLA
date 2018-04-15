@@ -90,9 +90,12 @@ void aggregate_coefficients_nodes(double* hplus_surf[3],
                                   const ElemSpaceDiscr* elem);
 
 void hydrostatic_pressure_nodes(double* p2, 
+                                const double* hplus[3],
                                 const ConsVars* Sol,
+                                const MPV* mpv,
                                 const ElemSpaceDiscr* elem,
-                                const NodeSpaceDiscr* node);
+                                const NodeSpaceDiscr* node,
+                                const double dt);
 
 void hydrostatic_vertical_velo(ConsVars* Sol,
                                const ElemSpaceDiscr* elem,
@@ -156,7 +159,7 @@ void second_projection(
         }
 #else
         for(ii=0; ii<nc; ii++){
-            p2[ii] = mpv->p2_nodes[ii];
+            p2[ii]  = 0.0;
             rhs[ii] = 0.0;
         }
 #endif
@@ -174,7 +177,7 @@ void second_projection(
         operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
         aggregate_coefficients_nodes(hplus_surf, elem_surf, (const double **)hplus, elem);
         
-        hydrostatic_pressure_nodes(p2, Sol, elem, node);
+        hydrostatic_pressure_nodes(p2, (const double**)hplus, Sol, mpv, elem, node, dt);        
         set_ghostnodes_p2(p2, node, node->igx);        
         correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);
         
@@ -191,7 +194,7 @@ void second_projection(
         set_ghostnodes_p2(p2_surf, node_surf, node_surf->igx);
         extrude_nodes(p2_aux, p2_surf, node, node_surf);
         
-        correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);
+        correction_nodes(Sol, elem, node, (const double**)hplus, p2_aux, t, dt);
         hydrostatic_vertical_velo(Sol, elem, node);
         for (int nc=0; nc<node->nc; nc++) p2[nc] += p2_aux[nc];
         
@@ -1085,7 +1088,9 @@ void euler_backward_gravity(ConsVars* Sol,
      */
     extern User_Data ud;
     
-    if (ud.is_nonhydrostatic) {
+    double nonhydro = ud.is_nonhydrostatic;
+    
+    /* if (ud.is_nonhydrostatic) { */
         const double g   = ud.gravity_strength[1];
         const double Msq = ud.Msq;
         const double dy  = elem->dy;
@@ -1103,17 +1108,17 @@ void euler_backward_gravity(ConsVars* Sol,
                 for (int i=0; i<icx; i++) {
                     int n        = m + i;
                     double Nsqsc = dt*dt * (g/Msq) * strat;
-                    double v     = Sol->rhov[n]/Sol->rho[n];
+                    double v     = nonhydro * (Sol->rhov[n]/Sol->rho[n]);
                     double dchi  = Sol->rhoX[BUOY][n]/Sol->rho[n];
                     double chi   = Sol->rho[n]/Sol->rhoY[n];
                     double dbuoy = -dchi/chi;    /* -dchi/chibar; */
-                    
-                    Sol->rhov[n] = Sol->rho[n] * (v + dt * (g/Msq) * dbuoy) / (1.0 + Nsqsc);
+                    double rhov  = Sol->rho[n] * (v + dt * (g/Msq) * dbuoy) / (1.0 + Nsqsc);
+                    Sol->rhov[n] = rhov;
                 }
             }
         }
         Set_Explicit_Boundary_Data(Sol, elem);
-    }
+    /* } */
 }
 
 /* ========================================================================== */
@@ -1545,22 +1550,42 @@ void aggregate_coefficients_nodes(double* hplus_s[3],
 /* ========================================================================== */
 
 void hydrostatic_pressure_nodes(double* p2, 
+                                const double* hplus[3],
                                 const ConsVars* Sol,
+                                const MPV* mpv,
                                 const ElemSpaceDiscr* elem,
-                                const NodeSpaceDiscr* node)
+                                const NodeSpaceDiscr* node,
+                                const double dt)
 {
+    /* 
+     I am assuming here that in cell  nc  
+       
+       rhoYv[nc] = Sol->rhov[nc]*Sol->rhoY[nc]/Sol->rho[nc] 
+                 = (dt/2) * (g/Msq) * (-rhoY * dchi/chi)[nc]/ (1 + (dt^2/4)*Nsq)
+       
+     where
+     
+       dchi = Sol->rhoX[BUOY][nc]/Sol->rho[nc]
+        chi = Sol->rho[nc]/Sol->rhoY[nc]
+     
+     and that the operator coefficients in cell  nc  satisfy
+     
+       hplus[1][nc] = Sol->rhoY[nc]*Sol->rhoY[nc]/Sol->rho[nc]*Gamminv / (1 + (dt^2/4)*Nsq)
+     
+     Under these assumptions, the present routine generates a hydrostatic
+     distribution of the pressure in each vertical column of nodes, given 
+     the pressure in the bottom node.
+    */
     extern User_Data ud;
+    extern Thermodynamic th;
     
-    /* currently only implemented for a vertical slice */
     assert(elem->ndim == 2);
     
-    /* auxiliary space */
-    States *HySt  = States_new(node->icy); 
-    double *Y     = (double*)malloc(node->icy*sizeof(double));
+    const int igxe = elem->igx;
+    const int igye = elem->igy;
     
-    /* auxiliary space - only needed to satisfy needs of fct.   Hydrostatics_Column()  */
-    States *HyStn = States_new(node->icy);;
-    double *Yn    = (double*)malloc(node->icy*sizeof(double));;
+    const int icxe = elem->icx;
+    const int icye = elem->icy;
     
     const int igxn = node->igx;
     const int igyn = node->igy;
@@ -1568,44 +1593,65 @@ void hydrostatic_pressure_nodes(double* p2,
     const int icxn = node->icx;
     const int icyn = node->icy;
     
-    const int icxe = elem->icx;
-    const int icye = elem->icy;
-    
+    const double twodyodt = 2.0*elem->dy/dt;
 
-    for(int i = igxn; i < icxn-igxn; i++) {
+    /* first compute just hydrostatic increments ... */
+    for (int i=igxe; i<icxe-igxe; i++) {
         int mn = i;
-        int mc = i;
-        int nc;
-        for(int j = 0; j < icye; j++) {
-            nc = mc + j*icxe;
-            Y[j]  = Sol->rhoY[nc]/Sol->rho[nc];
-        }        
-        for(int j = 1; j < icyn-1; j++) {
-            nc = mc + j*icxe;
-            Yn[j] = 0.25*( Sol->rhoY[nc]/Sol->rho[nc]
-                          +Sol->rhoY[nc]/Sol->rho[nc-1]
-                          +Sol->rhoY[nc]/Sol->rho[nc-icxe]
-                          +Sol->rhoY[nc]/Sol->rho[nc-1-icxe]);
-        }        
-        Yn[0] =  1.5*0.5*(Sol->rhoY[mc]/Sol->rho[mc]+Sol->rhoY[mc-1]/Sol->rho[mc-1])
-                -0.5*0.5*(Sol->rhoY[mc+icxe]/Sol->rho[mc+icxe]+Sol->rhoY[mc+icxe-1]/Sol->rho[mc+icxe-1]);
-        
-        nc = mc + (icye-1)*icxe;
-        Yn[icxn-1] = 1.5*0.5*(Sol->rhoY[nc]/Sol->rho[nc]+Sol->rhoY[nc-1]/Sol->rho[nc-1])
-                    -0.5*0.5*(Sol->rhoY[nc-icxe]/Sol->rho[nc-icxe]+Sol->rhoY[nc-icxe-1]/Sol->rho[nc-icxe-1]);
-        
-        Hydrostatics_Column(HySt, HyStn, Y, Yn, elem, node);
-        
-        for(int j = igyn; j < icyn - igyn; j++) {
-            int nn = mn + j*icxn;
-            p2[nn] = (HyStn->p20[j] - 1.0/ud.Msq);
+        int me = i;
+        for (int j=igye; j<icye-igye; j++) {
+            int nnp = mn + (j+1)*icxn + 1;
+            int nnm = mn + (j+1)*icxn;
+            int ne  = me +   j  *icxe;
+            double Pw = Sol->rhov[ne]*Sol->rhoY[ne]/Sol->rho[ne]/hplus[1][ne];
+            
+            /* debugging ...
+            double dp2_r = (ud.gravity_strength[1]/ud.Msq)*th.Gamma*(Sol->rhoY[ne]/Sol->rho[ne]/mpv->HydroState->Y0[j]-1.0)/mpv->HydroState->Y0[j]*elem->dy; 
+            double dp2_l = (ud.gravity_strength[1]/ud.Msq)*th.Gamma*(Sol->rhoY[ne-1]/Sol->rho[ne-1]/mpv->HydroState->Y0[j]-1.0)/mpv->HydroState->Y0[j]*elem->dy;
+            double dp2_lr = 0.5*(dp2_l+dp2_r);
+            
+            double dchiovchi   = Sol->rho[ne]/Sol->rhoY[ne]/mpv->HydroState->S0[j]-1.0;
+            double dchiovchiX  = Sol->rhoX[BUOY][ne]/Sol->rho[ne]/mpv->HydroState->S0[j];
+            double dYovY       = Sol->rhoY[ne]/Sol->rho[ne]/mpv->HydroState->Y0[j]-1.0;
+            */
+            
+            p2[nnm] += twodyodt * 0.5*Pw;
+            p2[nnp] += twodyodt * 0.5*Pw;
         }
     }
     
-    States_free(HySt);
-    States_free(HyStn);
-    free(Y);
-    free(Yn);    
+    /* ... then catch horizontal periodic boundary conditions ... */
+    if (ud.bdrytype_min[0] == PERIODIC) {
+        int mnl = igxn;
+        int mnr = icxn-igxn-1;
+        for (int j=igye; j<icye-igye; j++) {
+            int nnl = mnl + (j+1)*icxn;
+            int nnr = mnr + (j+1)*icxn;
+            p2[nnl] += p2[nnr];
+            p2[nnr]  = p2[nnl];
+        }
+    } else {
+        /* this corresponds to zeroeth order extrapolation of hplus-coeffs to dummy cells */
+        int mnl = igxn;
+        int mnr = icxn-igxn-1;
+        for (int j=igye; j<icye-igye; j++) {
+            int nnl = mnl + (j+1)*icxn;
+            int nnr = mnr + (j+1)*icxn;
+            p2[nnl] *= 2.0;
+            p2[nnr] *= 2.0;
+        }        
+    }
+    
+    /* then build hydrostatic distributions from the increments */
+    for (int i=igxn; i<icxn-igxn; i++) {
+        int mn = i;
+        p2[mn + igyn*icxn] = 0.0;
+        for (int j=igyn; j<icyn-igyn; j++) {
+            int nnm  = mn +   j  *icxn;
+            int nnp  = mn + (j+1)*icxn;
+            p2[nnp] += p2[nnm];
+        }
+    }
 }
 
 /* ========================================================================== */
@@ -1645,45 +1691,50 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
     const double dyovdx = elem->dy/elem->dx;
     
     for (int i=igxn; i<icxn-igxn; i++) {
-        int mc0 = i;
-        int mfy = i*ifyn;
+        int mc0  = i;
+        int mfy  = i*ifyn;
         int nc00 = mc0 + igye*icxe;
         int nc0m = nc00-1;
-        int nfy = mfy + igyn + 1;
+        int nfy  = mfy + igyn + 1;
+    
         int ncm0, ncmm;
+        
+        double diverr;
         
         double rhoYup = 0.5*Sol->rhoY[nc00]*Sol->rhou[nc00]/Sol->rho[nc00];
         double rhoYum = 0.5*Sol->rhoY[nc0m]*Sol->rhou[nc0m]/Sol->rho[nc0m];
         
         rhoYv[nfy] = - dyovdx * (rhoYup - rhoYum);
         
-        for (int j=igyn+2; j<ifyn-igyn-2; j++) {
+        for (int j=igyn+2; j<ifyn-igyn-1; j++) {
             nfy = mfy + j;
-            nc00 = mc0 + j*icxe;
-            nc0m = mc0 + j*icxe - 1;
-            ncm0 = mc0 + j*icxe - icxe;
-            ncmm = mc0 + j*icxe - 1 - icxe;
+            nc00 = mc0 + (j-1)*icxe;
+            nc0m = mc0 + (j-1)*icxe - 1;
+            ncm0 = mc0 + (j-1)*icxe - icxe;
+            ncmm = mc0 + (j-1)*icxe - 1 - icxe;
             rhoYup = 0.5*( Sol->rhoY[nc00]*Sol->rhou[nc00]/Sol->rho[nc00]
                           +Sol->rhoY[ncm0]*Sol->rhou[ncm0]/Sol->rho[ncm0]);
             rhoYum = 0.5*( Sol->rhoY[nc0m]*Sol->rhou[nc0m]/Sol->rho[nc0m]
                           +Sol->rhoY[ncmm]*Sol->rhou[ncmm]/Sol->rho[ncmm]);
             rhoYv[nfy] = rhoYv[nfy-1] - dyovdx * (rhoYup - rhoYum);
         }
+        /* test whether the vertically integrated divergence vanishes */
         nfy  = mfy + ifyn-igyn-2;
         ncm0 = mc0 + (icye-igxe-1)*icxe;
         ncmm = ncm0 - 1;
         rhoYup = 0.5*Sol->rhoY[ncm0]*Sol->rhou[ncm0]/Sol->rho[ncm0];
         rhoYum = 0.5*Sol->rhoY[ncmm]*Sol->rhou[ncmm]/Sol->rho[ncmm];
-        rhoYv[nfy] = dyovdx * (rhoYup - rhoYum);
+        diverr = rhoYv[nfy] - dyovdx * (rhoYup - rhoYum);
+        //  printf("diverr = %e\n", diverr);
     }
     
     /* cell-centered momenta from vertical rhoY fluxes on the vertical edges */
-    for (int j=igye; j<icye-igxe; j++) {
-        int mc = j*icxe;
-        int mf = j+1;
-        for (int i=igxe; i<icxe-igxe; i++) {
-            int nc = mc + i;
-            int nf = mf + i*ifyn;
+    for (int i=igxe; i<icxe-igxe; i++) {
+        int mc = i;
+        int mf = i*ifyn;
+        for (int j=igye; j<icye-igxe; j++) {
+            int nc = mc + j*icxe;
+            int nf = mf + j+1;
             Sol->rhov[nc] = 0.5*(rhoYv[nf] + rhoYv[nf+ifyn])*Sol->rho[nc]/Sol->rhoY[nc];
         }
     }

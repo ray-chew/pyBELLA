@@ -971,6 +971,7 @@ void Set_Explicit_Boundary_Data(
     
 #if OUTPUT_SUBSTEPS /* 5 */
     extern User_Data ud;
+    extern NodeSpaceDiscr* node;
     putout(Sol, ud.file_name, "Sol", elem, node, 1);
 #endif
 
