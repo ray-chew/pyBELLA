@@ -175,11 +175,10 @@ static double BiCGSTAB_MG_nodes(
 #ifdef DIV_CONTROL_LOCAL
     // while(tmp > 1.0 && tmp_local > 1.0 && cnt < 1 )
 	while((tmp > 1.0 || tmp_local > 1.0) && cnt < max_iterations )
-    {
 #else
     while(tmp > 1.0 && cnt < max_iterations)
-	{
 #endif
+    {
 		rho2 = 0.0; 
 		for(k = igz; k < kmax; k++) {l = k * icx * icy;
 			for(j = igy; j < jmax; j++) {m = l + j * icx;
@@ -267,6 +266,8 @@ static double BiCGSTAB_MG_nodes(
 		if(cnt % 100 == 0) printf(" iter = %d, residual = %e\n", cnt, tmp);  
         set_periodic_data(solution_io,	node, x_periodic, y_periodic, z_periodic);
 	}
+        
+    // assert(cnt == 23);
 	printf(" iter = %d,  residual = %e,  local residual = %e,  gridsize = %d\n", cnt, tmp, tmp_local, nc);  
 	
 	data->actual_iterations = cnt;

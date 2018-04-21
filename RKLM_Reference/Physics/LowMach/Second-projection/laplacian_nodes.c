@@ -70,8 +70,8 @@ double precon_diag_prepare(
             const double* hplusx   = hplus[0];
             const double* hcenter  = wcenter;
             
-            int i, j, me, mn, ne; 
-            int nn00, nn01, nn10, nn11;
+            int i, ne; 
+            int nn00, nn01;
             
             for(int nn=0; nn<node->nc; nn++) diag[nn] = diaginv[nn] = 0.0;
             
@@ -857,7 +857,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             
             double flux_x, hc;
             
-            int i, j, me, mn, ne, nn, nn1, nnicxn, nn1icxn;
+            int i, ne, nn, nn1;
             
             for(nn=0; nn<node->nc; nn++) lap[nn] = 0.0;
             
