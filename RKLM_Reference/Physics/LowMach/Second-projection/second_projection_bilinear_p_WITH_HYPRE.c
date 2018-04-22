@@ -106,7 +106,7 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
 
 /* ========================================================================== */
 
-#define OUTPUT_RHS 0
+#define OUTPUT_RHS 1
 #if OUTPUT_RHS
 static int rhs_output_count = 0;
 #endif
@@ -177,6 +177,10 @@ void second_projection(
         for (int idim = 0; idim < elem_surf->ndim; idim++) {
             hplus_surf[idim] = (double*)malloc(node_surf->nc * sizeof(double));
         }
+        for (int nn=0; nn<node_surf->nc; nn++) {
+            p2_surf[nn]  = 0.0;
+            rhs_surf[nn] = 0.0;
+        }
         
         operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
         aggregate_coefficients_nodes(hplus_surf, hcenter_surf, elem_surf, (const double **)hplus, hcenter, elem);
@@ -193,8 +197,10 @@ void second_projection(
             }
         }
         rhs_max = aggregate_rhs_nodes(rhs_surf, node_surf, rhs, node);
+        assert(integral_condition_nodes(rhs_surf, node_surf, x_periodic, y_periodic, z_periodic) != VIOLATED); 
+
         
-#if 1
+#if 0
         FILE *prhsfile = NULL;
         char fn[100], fieldname[90];
         sprintf(fn, "%s/surface/rhs_surf.hdf", ud.file_name);
@@ -225,11 +231,12 @@ void second_projection(
             }
         }
         rhs_max = aggregate_rhs_nodes(rhs_surf, node_surf, rhs, node);
+        assert(integral_condition_nodes(rhs_surf, node_surf, x_periodic, y_periodic, z_periodic) != VIOLATED); 
         
         double rhoYv_top_sum = 0.0;
         double rhs_aggre_max = 0.0;
         for (int i=node->igx; i<node->icx-node->igx; i++) {
-            rhoYv_top_sum += Sol->rhov[i*elem->ify + (elem->ify - elem->igy - 1) ]; ???
+            rhoYv_top_sum += Sol->rhov[i*elem->ify + (elem->ify - elem->igy - 1) ]; 
             rhs_aggre_max  = MAX_own(rhs_aggre_max, fabs(rhs_surf[i]));
         }
         printf("\nhydrostatic vertical velocity adjustment: rhoYv_top_sum = %e, rhs_aggre_sum = %e\n", rhoYv_top_sum, rhs_aggre_max);
@@ -295,6 +302,21 @@ void second_projection(
             }
         }
         
+#if 0
+        FILE *prhsfile = NULL;
+        char fn[120], fieldname[90];
+        if (rhs_output_count < 10) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
+        } else if(rhs_output_count < 100) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
+        } else {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
+        }
+        sprintf(fieldname, "rhs_nodes");    
+        WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+        rhs_output_count++;
+#endif
+
         operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
         variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
         correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);

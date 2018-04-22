@@ -180,7 +180,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 1;
+    ud->write_file_period = 10;
     ud->file_format = HDF;
     
     {

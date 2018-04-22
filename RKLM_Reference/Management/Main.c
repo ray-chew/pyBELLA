@@ -60,6 +60,10 @@ int main( void )
 	/* data allocation and initialization */
 	Data_init();
     
+    ud.nonhydrostasy   = nonhydrostasy(0);
+    ud.compressibility = compressibility(0);
+    
+
 #ifdef FORCES_UNDER_OPSPLIT
     /* FORCES_UNDER_OPSPLIT not yet implemented for implicit gravity */
     assert(ud.g_ref < sqrt(DBL_EPSILON));  
@@ -73,11 +77,8 @@ int main( void )
      */
     euler_backward_gravity(Sol, mpv, elem, 0.5);
     second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, 1.0);
-    // cell_pressure_to_nodal_pressure(mpv, elem, node);
+    cell_pressure_to_nodal_pressure(mpv, elem, node);
 
-    ud.nonhydrostasy   = nonhydrostasy(0);
-    ud.compressibility = compressibility(0);
-        
 	if(ud.write_file == ON) 
         putout(Sol, ud.file_name, "Sol", elem, node, 1);
         
@@ -111,7 +112,7 @@ int main( void )
             /* Semi-implicit discretization of non-advective terms a la EULAG          */
             /* ======================================================================= */
             
-            reset_Y_perturbation(Sol, (const MPV*)mpv, elem);
+            reset_Y_perturbation(Sol, (const MPV*)mpv, elem); // 4
             ConsVars_set(Sol0, Sol, elem->nc);            
                         
             printf("\n\n-----------------------------------------------------------------------------------------");
@@ -119,7 +120,7 @@ int main( void )
             printf("\n-----------------------------------------------------------------------------------------\n");
                                     
             /* First order splitting for Corilis - just for the advection flux prediction */
-            Explicit_Coriolis(Sol, elem, 0.5*dt); 
+            Explicit_Coriolis(Sol, elem, 0.5*dt);  // 5
             
             /* explicit advection half time step preparing advection flux calculation 
              advect(Sol, flux, force, 0.5*dt, elem, FLUX_INTERNAL, WITHOUT_FORCES, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
@@ -145,15 +146,15 @@ int main( void )
             flux_weight_new = 1.0;
 #else
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, flux_weight_old, flux_weight_new);
-            advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITHOUT_FORCES, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
+            advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITHOUT_FORCES, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2); // 6
 
             /* explicit part of Euler backward gravity over half time step */
-            euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt);
+            euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt); // 7
             
             /* divergence-controlled advective fluxes at the half time level */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, flux_weight_old, flux_weight_new);
 #endif
-            flux_correction(flux, Sol, Sol0, elem, node, t, dt, step);            
+            flux_correction(flux, Sol, Sol0, elem, node, t, dt, step);   // 8         
 
             ConsVars_set(Sol, Sol0, elem->nc);
             // if (step == 0) cell_pressure_to_nodal_pressure(mpv, elem, node);
@@ -164,27 +165,27 @@ int main( void )
             printf("\n-----------------------------------------------------------------------------------------\n");
             
             /* Strang splitting for Coriolis, first step */
-            Explicit_Coriolis(Sol, elem, 0.5*dt); 
+            Explicit_Coriolis(Sol, elem, 0.5*dt);  // 9
                         
             /* explicit EULER half time step for gravity and pressure gradient */ 
 #ifdef FORCES_UNDER_OPSPLIT
             pressure_gradient_forces(force, Sol, (const MPV*)mpv, elem, node);
 #else 
-            euler_forward_non_advective(Sol, (const MPV*)mpv, elem, node, 0.5*dt, WITH_PRESSURE); 
+            euler_forward_non_advective(Sol, (const MPV*)mpv, elem, node, 0.5*dt, WITH_PRESSURE); // 10
 #endif
                         
             /* explicit full time step advection using div-controlled advective fluxes */
-            advect(Sol, flux, force, dt, elem, FLUX_EXTERNAL, WITH_FORCES, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+            advect(Sol, flux, force, dt, elem, FLUX_EXTERNAL, WITH_FORCES, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2); // 11
                         
             /* implicit EULER half time step for gravity and pressure gradient */ 
-            euler_backward_gravity(Sol, mpv, elem, 0.5*dt);
-            second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, dt);
+            euler_backward_gravity(Sol, mpv, elem, 0.5*dt); // 12
+            second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, dt); // 13
             
             /* auxiliary buoyancy update by vertical advection of background stratification */
-            update_SI_MIDPT_buoyancy(Sol, (const ConsVars**)flux, mpv, elem, 0.5*dt);
+            update_SI_MIDPT_buoyancy(Sol, (const ConsVars**)flux, mpv, elem, 0.5*dt); // 14
             
             /* Strang splitting for Coriolis, second step */
-            Explicit_Coriolis(Sol, elem, 0.5*dt); 
+            Explicit_Coriolis(Sol, elem, 0.5*dt);  // 15
             
             if (ud.is_compressible) {
                 adjust_pi_cells(mpv, Sol, elem); 
