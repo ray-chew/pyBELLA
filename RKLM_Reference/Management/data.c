@@ -173,10 +173,6 @@ void Data_init() {
 
 void Data_free() {
 	    
-#ifdef SYMMETRIC_ADVECTION
-    ConsVars* Sol1; 
-#endif
-
     recovery_free();    
     Explicit_free();
 
@@ -194,7 +190,10 @@ void Data_free() {
     States_small_free(Solk);
     ConsVars_free(dSol);
     ConsVars_free(Sol);
-    ConsVars_free(Sol0);
+#ifdef SYMMETRIC_ADVECTION
+    ConsVars_free(Sol1);
+#endif
+    
 
     if (ud.g_ref == ud.eps_Machine) {
         ElemSpaceDiscr_free(elem_surf);

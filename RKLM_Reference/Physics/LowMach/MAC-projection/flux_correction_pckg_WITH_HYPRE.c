@@ -139,6 +139,8 @@ void flux_correction(ConsVars* flux[3],
         printf("\nFirst Projection - Hydrostatic");
         printf("\n====================================================\n");
         
+        double *p2_aux   = (double*)malloc(elem->nc * sizeof(double));
+
         operator_coefficients(hplus, hcenter, hS, elem, Sol, Sol0, mpv, dt);
 
         /* contribution from sheer hydrostatic pressure with homog. Dirichlet bottom bdry condition */
@@ -153,7 +155,6 @@ void flux_correction(ConsVars* flux[3],
             NodeSpaceDiscr *node_surf = surface_nodes(node);
             double *rhs_surf = (double*)malloc(elem_surf->nc * sizeof(double));
             double *p2_surf  = (double*)malloc(elem_surf->nc * sizeof(double));
-            double *p2_aux   = (double*)malloc(elem->nc * sizeof(double));
             double *hcenter_surf  = (double*)malloc(elem_surf->nc * sizeof(double));
             double *hplus_surf[3];
             for (int idim = 0; idim < elem_surf->ndim; idim++) hplus_surf[idim] = (double*)malloc(node_surf->nc * sizeof(double));
@@ -166,6 +167,7 @@ void flux_correction(ConsVars* flux[3],
             extrude_cells(p2_aux, p2_surf, elem, elem_surf);
             flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2_aux, t, dt);
             for (int nc=0; nc<elem->nc; nc++) p2[nc] += p2_aux[nc];            
+            set_ghostcells_p2(p2, elem, elem->igx);
 
             for (int idim = 0; idim < elem_surf->ndim; idim++) free(hplus_surf[idim]);
             free(hcenter_surf);
@@ -189,10 +191,11 @@ void flux_correction(ConsVars* flux[3],
         set_ghostcells_p2(p2_aux, elem, elem->igx);
         flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2_aux, t, dt);
         for (int nc=0; nc<elem->nc; nc++) p2[nc] += p2_aux[nc];
+        set_ghostcells_p2(p2, elem, elem->igx);
 #endif /* FULL_D_HYDRO_CORRECTION */
         
         hydrostatic_vertical_flux(flux, elem);
-        set_ghostcells_p2(p2, elem, elem->igx);
+        free(p2_aux);
         
     } else {
         

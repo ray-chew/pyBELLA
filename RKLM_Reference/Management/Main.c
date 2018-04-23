@@ -75,8 +75,8 @@ int main( void )
        is free of the multipole perturbations due to basic divergence errors
        that come simply from the divergence approximation on the nodal grid.
      */
-    euler_backward_gravity(Sol, mpv, elem, 0.5);
-    second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, 1.0);
+    euler_backward_gravity(Sol, mpv, elem, 5.0);
+    second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, 10.0);
     cell_pressure_to_nodal_pressure(mpv, elem, node);
 
 	if(ud.write_file == ON) 

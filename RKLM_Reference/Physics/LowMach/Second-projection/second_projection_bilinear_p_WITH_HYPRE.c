@@ -106,7 +106,7 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
 
 /* ========================================================================== */
 
-#define OUTPUT_RHS 1
+#define OUTPUT_RHS 0
 #if OUTPUT_RHS
 static int rhs_output_count = 0;
 #endif
@@ -151,104 +151,110 @@ void second_projection(
         printf("\nSecond Projection - Hydrostatic");
         printf("\n====================================================\n");
         
+        /* auxiliary field used for the cumulative pressure contributions */
+        double *p2_aux   = (double*)malloc(node->nc * sizeof(double));
+
         /* KEEP_OLD_POISSON_SOLUTIONS */
 #ifdef FORCES_UNDER_OPSPLIT
         for(ii=0; ii<nc; ii++){
             /* p2 already maps to  dp2_nodes  
              p2[ii] = mpv->dp2_nodes[ii];
              */
-            rhs[ii] = 0.0;
+            p2_aux[ii] = 0.0;
+            rhs[ii]    = 0.0;
         }
 #else
         for(ii=0; ii<nc; ii++){
-            p2[ii]  = 0.0;
-            rhs[ii] = 0.0;
+            p2[ii]     = 0.0;
+            p2_aux[ii] = 0.0;
+            rhs[ii]    = 0.0;
         }
 #endif
-        
-        /* ================= */ 
-        ElemSpaceDiscr *elem_surf = surface_elems(elem);
-        NodeSpaceDiscr *node_surf = surface_nodes(node);
-        double *rhs_surf = (double*)malloc(node_surf->nc * sizeof(double));
-        double *p2_surf  = (double*)malloc(node_surf->nc * sizeof(double));
-        double *p2_aux   = (double*)malloc(node->nc * sizeof(double));
-        double *hcenter_surf  = (double*)malloc(node_surf->nc * sizeof(double));
-        double *hplus_surf[3];
-        for (int idim = 0; idim < elem_surf->ndim; idim++) {
-            hplus_surf[idim] = (double*)malloc(node_surf->nc * sizeof(double));
-        }
-        for (int nn=0; nn<node_surf->nc; nn++) {
-            p2_surf[nn]  = 0.0;
-            rhs_surf[nn] = 0.0;
-        }
         
         operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
-        aggregate_coefficients_nodes(hplus_surf, hcenter_surf, elem_surf, (const double **)hplus, hcenter, elem);
-        
-        hydrostatic_pressure_nodes(p2, (const double**)hplus, Sol, mpv, elem, node, dt);        
-        set_ghostnodes_p2(p2, node, node->igx);        
-        correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);
-        
-        rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry, dt, 1.0);        
-        catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
-        if (ud.is_compressible) {
-            for (int nn=0; nn<node->nc; nn++) {
-                rhs[nn] += hcenter[nn]*mpv->p2_nodes[nn];
+
+#ifdef SURFACE_PRESSURE_CORRECTION
+        {
+            /* ================= */ 
+            ElemSpaceDiscr *elem_surf = surface_elems(elem);
+            NodeSpaceDiscr *node_surf = surface_nodes(node);
+            double *rhs_surf = (double*)malloc(node_surf->nc * sizeof(double));
+            double *p2_surf  = (double*)malloc(node_surf->nc * sizeof(double));
+            double *hcenter_surf  = (double*)malloc(node_surf->nc * sizeof(double));
+            double *hplus_surf[3];
+            for (int idim = 0; idim < elem_surf->ndim; idim++) {
+                hplus_surf[idim] = (double*)malloc(node_surf->nc * sizeof(double));
             }
-        }
-        rhs_max = aggregate_rhs_nodes(rhs_surf, node_surf, rhs, node);
-        assert(integral_condition_nodes(rhs_surf, node_surf, x_periodic, y_periodic, z_periodic) != VIOLATED); 
-
+            for (int nn=0; nn<node_surf->nc; nn++) {
+                p2_surf[nn]  = 0.0;
+                rhs_surf[nn] = 0.0;
+            }
+            
+            aggregate_coefficients_nodes(hplus_surf, hcenter_surf, elem_surf, (const double **)hplus, hcenter, elem);
+            hydrostatic_pressure_nodes(p2, (const double**)hplus, Sol, mpv, elem, node, dt);        
+            set_ghostnodes_p2(p2, node, node->igx);        
+            correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);
+            rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry, dt, 1.0);        
+            catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
+            if (ud.is_compressible) {
+                for (int nn=0; nn<node->nc; nn++) {
+                    rhs[nn] += hcenter[nn]*mpv->p2_nodes[nn];
+                }
+            }
+            rhs_max = aggregate_rhs_nodes(rhs_surf, node_surf, rhs, node);
+            assert(integral_condition_nodes(rhs_surf, node_surf, x_periodic, y_periodic, z_periodic) != VIOLATED); 
+            variable_coefficient_poisson_nodes(p2_surf, (const double **)hplus_surf, hcenter_surf, rhs_surf, elem_surf, node_surf, x_periodic, y_periodic, z_periodic, dt);
+            set_ghostnodes_p2(p2_surf, node_surf, node_surf->igx);
+            extrude_nodes(p2_aux, p2_surf, node, node_surf);
+            correction_nodes(Sol, elem, node, (const double**)hplus, p2_aux, t, dt);
+            for (int nc=0; nc<node->nc; nc++) p2[nc] += p2_aux[nc];
+            set_ghostnodes_p2(p2, node, node->igx);
+            
+            for (int idim = 0; idim < node_surf->ndim; idim++) free(hplus_surf[idim]);
+            free(hcenter_surf);
+            free(p2_surf);
+            free(rhs_surf);
+            NodeSpaceDiscr_free(node_surf);
+            ElemSpaceDiscr_free(elem_surf);
+        }  
+#endif /* SURFACE_PRESSURE_CORRECTION */
         
-#if 0
-        FILE *prhsfile = NULL;
-        char fn[100], fieldname[90];
-        sprintf(fn, "%s/surface/rhs_surf.hdf", ud.file_name);
-        sprintf(fieldname, "rhs-surf");    
-        WriteHDF(prhsfile, node_surf->icx, node_surf->icy, node_surf->icz, node_surf->ndim, rhs_surf, fn, fieldname);
-        sprintf(fn, "%s/surface/hplus_surf.hdf", ud.file_name);
-        sprintf(fieldname, "hplus-surf");    
-        WriteHDF(prhsfile, elem_surf->icx, elem_surf->icy, elem_surf->icz, elem_surf->ndim, hplus_surf[0], fn, fieldname);
+#ifdef FULL_D_HYDRO_CORRECTION
+        {
+            rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry, dt, 1.0);
+            catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);        
+      
+#if OUTPUT_RHS
+            FILE *prhsfile = NULL;
+            char fn[120], fieldname[90];
+            if (rhs_output_count < 10) {
+                sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
+            } else if(rhs_output_count < 100) {
+                sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
+            } else {
+                sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
+            }
+            sprintf(fieldname, "rhs_nodes");    
+            WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+            rhs_output_count++;
 #endif
-
-        variable_coefficient_poisson_nodes(p2_surf, (const double **)hplus_surf, hcenter_surf, rhs_surf, elem_surf, node_surf, x_periodic, y_periodic, z_periodic, dt);
-        set_ghostnodes_p2(p2_surf, node_surf, node_surf->igx);
-        extrude_nodes(p2_aux, p2_surf, node, node_surf);
+            assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED); 
+            if (ud.is_compressible) {
+                for (int nn=0; nn<node->nc; nn++) {
+                    rhs[nn] += hcenter[nn]*mpv->p2_nodes[nn];
+                }
+            }
+            for (int nn=0; nn<node->nc; nn++) {
+                p2_aux[nn] = 0.0;
+            }
+            variable_coefficient_poisson_nodes(p2_aux, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
+            correction_nodes(Sol, elem, node, (const double**)hplus, p2_aux, t, dt);
+            for (int nc=0; nc<node->nc; nc++) p2[nc] += p2_aux[nc];
+            set_ghostnodes_p2(p2, node, node->igx);
+        }
+#endif /* FULL_D_HYDRO_CORRECTION */
         
-        correction_nodes(Sol, elem, node, (const double**)hplus, p2_aux, t, dt);
         hydrostatic_vertical_velo(Sol, elem, node);
-        for (int nc=0; nc<node->nc; nc++) p2[nc] += p2_aux[nc];
-        
-        set_ghostnodes_p2(p2, node, node->igx);
-
-#if 0
-        /* test column-wise divergence */
-        rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry, dt, 1.0);        
-        catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
-        if (ud.is_compressible) {
-            for (int nn=0; nn<node->nc; nn++) {
-                rhs[nn] += hcenter[nn]*mpv->p2_nodes[nn];
-            }
-        }
-        rhs_max = aggregate_rhs_nodes(rhs_surf, node_surf, rhs, node);
-        assert(integral_condition_nodes(rhs_surf, node_surf, x_periodic, y_periodic, z_periodic) != VIOLATED); 
-        
-        double rhoYv_top_sum = 0.0;
-        double rhs_aggre_max = 0.0;
-        for (int i=node->igx; i<node->icx-node->igx; i++) {
-            rhoYv_top_sum += Sol->rhov[i*elem->ify + (elem->ify - elem->igy - 1) ]; 
-            rhs_aggre_max  = MAX_own(rhs_aggre_max, fabs(rhs_surf[i]));
-        }
-        printf("\nhydrostatic vertical velocity adjustment: rhoYv_top_sum = %e, rhs_aggre_sum = %e\n", rhoYv_top_sum, rhs_aggre_max);
-#endif
-        
-        for (int idim = 0; idim < node_surf->ndim; idim++) free(hplus_surf[idim]);
-        free(hcenter_surf);
-        free(p2_surf);
-        free(rhs_surf);
-        NodeSpaceDiscr_free(node_surf);
-        ElemSpaceDiscr_free(elem_surf);
-        
         
 #ifdef FORCES_UNDER_OPSPLIT
         for(ii=0; ii<nc; ii++) {
@@ -264,10 +270,9 @@ void second_projection(
             mpv->p2_nodes[ii]  = p2_new;
         }
 #endif
-        
-        Set_Explicit_Boundary_Data(Sol, elem);
-        set_ghostnodes_p2(mpv->p2_nodes, node, 2);  
-        
+
+        Set_Explicit_Boundary_Data(Sol, elem);        
+        free(p2_aux);
     } else {
         
         printf("\n\n====================================================");
@@ -291,11 +296,8 @@ void second_projection(
         
         rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry, dt, 1.0);
         printf("\nrhsmax = %e\n", rhs_max);
-        
         catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
-        
         assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED); 
-        
         if (ud.is_compressible) {
             for (int nn=0; nn<node->nc; nn++) {
                 rhs[nn] += hcenter[nn]*mpv->p2_nodes[nn];
