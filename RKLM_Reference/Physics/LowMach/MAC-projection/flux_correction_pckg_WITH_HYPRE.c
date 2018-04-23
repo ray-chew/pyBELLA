@@ -88,9 +88,11 @@ void aggregate_rhs_cells(double* rhs_surf,
                          const double* rhs, 
                          const ElemSpaceDiscr* elem);
 
-void aggregate_coefficients_cells(double* hplus_surf[3], 
-                                  const ElemSpaceDiscr* elem_surf, 
+void aggregate_coefficients_cells(double* hplus_s[3], 
+                                  double* hcenter_s, 
+                                  const ElemSpaceDiscr* elem_s, 
                                   const double* hplus[3], 
+                                  const double* hcenter, 
                                   const ElemSpaceDiscr* elem);
 
 void hydrostatic_pressure_cells(double* p2, 
@@ -136,57 +138,64 @@ void flux_correction(ConsVars* flux[3],
         printf("\n\n====================================================");
         printf("\nFirst Projection - Hydrostatic");
         printf("\n====================================================\n");
-
-        ElemSpaceDiscr *elem_surf = surface_elems(elem);
-        NodeSpaceDiscr *node_surf = surface_nodes(node);
-        double *rhs_surf = (double*)malloc(elem_surf->nc * sizeof(double));
-        double *p2_surf  = (double*)malloc(elem_surf->nc * sizeof(double));
-        double *p2_aux   = (double*)malloc(elem->nc * sizeof(double));
-        double *hcenter_surf  = (double*)malloc(elem_surf->nc * sizeof(double));
-        double *hplus_surf[3];
-        for (int idim = 0; idim < elem_surf->ndim; idim++) hplus_surf[idim] = (double*)malloc(node_surf->nc * sizeof(double));
         
         operator_coefficients(hplus, hcenter, hS, elem, Sol, Sol0, mpv, dt);
-        aggregate_coefficients_cells(hplus_surf, elem_surf, (const double **)hplus, elem);
 
+        /* contribution from sheer hydrostatic pressure with homog. Dirichlet bottom bdry condition */
         hydrostatic_pressure_cells(p2, Sol, mpv, elem, node);
         set_ghostcells_p2(p2, elem, elem->igx);        
         flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2, t, dt);
+        
+#ifdef SURFACE_PRESSURE_CORRECTION
+        {
+            /* contribution from a surface pressure that zeros the vertically integrated horizontal divergence */
+            ElemSpaceDiscr *elem_surf = surface_elems(elem);
+            NodeSpaceDiscr *node_surf = surface_nodes(node);
+            double *rhs_surf = (double*)malloc(elem_surf->nc * sizeof(double));
+            double *p2_surf  = (double*)malloc(elem_surf->nc * sizeof(double));
+            double *p2_aux   = (double*)malloc(elem->nc * sizeof(double));
+            double *hcenter_surf  = (double*)malloc(elem_surf->nc * sizeof(double));
+            double *hplus_surf[3];
+            for (int idim = 0; idim < elem_surf->ndim; idim++) hplus_surf[idim] = (double*)malloc(node_surf->nc * sizeof(double));
+
+            rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
+            aggregate_rhs_cells(rhs_surf, elem_surf, rhs, elem);
+            aggregate_coefficients_cells(hplus_surf, hcenter_surf, elem_surf, (const double **)hplus, hcenter, elem);
+            variable_coefficient_poisson_cells(p2_surf, rhs_surf, (const double **)hplus_surf, hcenter_surf, elem_surf, node_surf);
+            set_ghostcells_p2(p2_surf, elem_surf, elem_surf->igx);
+            extrude_cells(p2_aux, p2_surf, elem, elem_surf);
+            flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2_aux, t, dt);
+            for (int nc=0; nc<elem->nc; nc++) p2[nc] += p2_aux[nc];            
+
+            for (int idim = 0; idim < elem_surf->ndim; idim++) free(hplus_surf[idim]);
+            free(hcenter_surf);
+            free(p2_surf);
+            free(rhs_surf);
+            NodeSpaceDiscr_free(node_surf);
+            ElemSpaceDiscr_free(elem_surf);
+        }
+#endif /* SURFACE_PRESSURE_CORRECTION */
+
+#ifdef FULL_D_HYDRO_CORRECTION
+        /* final full-dimensional solve to guarantee implicit theta-updates; re-use p2_aux !! */
         rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
-        aggregate_rhs_cells(rhs_surf, elem_surf, rhs, elem);
-                
-        variable_coefficient_poisson_cells(p2_surf, rhs_surf, (const double **)hplus_surf, hcenter_surf, elem_surf, node_surf);
-        set_ghostcells_p2(p2_surf, elem_surf, elem_surf->igx);
-        extrude_cells(p2_aux, p2_surf, elem, elem_surf);
-        
+        assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
+        if (ud.is_compressible) {
+            for (int nc=0; nc<elem->nc; nc++) {
+                rhs[nc] += hcenter[nc]*mpv->p2_cells[nc];
+            }
+        }
+        variable_coefficient_poisson_cells(p2_aux, rhs, (const double **)hplus, hcenter, elem, node);
+        set_ghostcells_p2(p2_aux, elem, elem->igx);
         flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2_aux, t, dt);
-        hydrostatic_vertical_flux(flux, elem);
         for (int nc=0; nc<elem->nc; nc++) p2[nc] += p2_aux[nc];
+#endif /* FULL_D_HYDRO_CORRECTION */
         
+        hydrostatic_vertical_flux(flux, elem);
         set_ghostcells_p2(p2, elem, elem->igx);
         
-        
-#if 0
-        /* test column-wise divergence */
-        rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
-        aggregate_rhs_cells(rhs_surf, elem_surf, rhs, elem);
-
-        double rhoYv_top_sum = 0.0;
-        double rhs_aggre_max = 0.0;
-        for (int i=elem->igx; i<elem->icx-elem->igx; i++) {
-            rhoYv_top_sum += flux[1]->rhoY[i*elem->ify + (elem->ify - elem->igy - 1) ];
-            rhs_aggre_max  = MAX_own(rhs_aggre_max, fabs(rhs_surf[i]));
-        }
-        printf("\nhydrostatic vertical flux adjustment: rhoYv_top_sum = %e, rhs_aggre_sum = %e\n", rhoYv_top_sum, rhs_aggre_max);
-#endif
-        
-        for (int idim = 0; idim < elem_surf->ndim; idim++) free(hplus_surf[idim]);
-        free(hcenter_surf);
-        free(p2_surf);
-        free(rhs_surf);
-        NodeSpaceDiscr_free(node_surf);
-        ElemSpaceDiscr_free(elem_surf);
     } else {
+        
         printf("\n\n====================================================");
         printf("\nFirst Projection");
         printf("\n====================================================\n");
@@ -479,6 +488,8 @@ void operator_coefficients(
     const double Gammainv = th.Gammainv;
     const int ndim = elem->ndim;
     
+    double nonhydro = ud.nonhydrostasy;
+    
     const double ccw = (ud.time_integrator == SI_MIDPT ? 4.0 : 2.0); 
     /* when p2 is perturbation pressure:
      const double ccenter = - ccw * (ud.compressibility*ud.Msq)*th.gamminv/(dt*dt); 
@@ -553,7 +564,7 @@ void operator_coefficients(
                     double Nsq   = - (g/Msq) * 0.5*(Y+Ym) * (S-Sm)/dy;
                     double Nsqsc = 0.25*dt*dt*Nsq;
                     
-                    gimp  = 1.0 / (1.0 + Nsqsc);
+                    gimp  = 1.0 / (nonhydro + Nsqsc);
                     
                     hy[m] = 0.5 * (hj + hjm) * gimp;
                     hS[m] = Nsqsc * gimp * Gammainv / (g/Msq) / Y;
@@ -633,7 +644,7 @@ void operator_coefficients(
                         double Ym  = 0.5 * (Sol->rhoY[jcm] / Sol->rho[jcm] + Sol0->rhoY[jcm] / Sol0->rho[jcm]);
                         double Nsq = - (g/Msq) * 0.5*(Y+Ym) * (S-Sm)/dy;
                         
-                        gimp  = 1.0 / (1.0 + 0.5*dt*dt*Nsq);
+                        gimp  = 1.0 / (nonhydro + 0.5*dt*dt*Nsq);
                         
                         hy[n] = 0.5 * (hj + hjm) * gimp;
                         
@@ -1222,13 +1233,17 @@ void aggregate_rhs_cells(double* rhs_s,
 /* ========================================================================== */
 
 void aggregate_coefficients_cells(double* hplus_s[3], 
+                                  double* hcenter_s, 
                                   const ElemSpaceDiscr* elem_s, 
                                   const double* hplus[3], 
+                                  const double* hcenter, 
                                   const ElemSpaceDiscr* elem)
 {
     /* aggregate the coefficients of the full Poisson operator in the vertical
      to formulate the hydrostatic Poisson operator
      */
+    extern User_Data ud;
+    
     const int igx = elem->igx;
     const int igy = elem->igy;
     const int igz = elem->igz;
@@ -1242,6 +1257,12 @@ void aggregate_coefficients_cells(double* hplus_s[3],
     
     const int ifxs = elem_s->ifx;
     const int ifys = elem_s->ify;
+
+    /* TODO: pressure time derivative in hydrostatic case yet to be addressed */
+    assert(ud.is_nonhydrostatic == 0);
+    for (int nc=0; nc<elem_s->nc; nc++) {
+        hcenter_s[nc] = 0.0;
+    }
 
     for (int k=igz; k<icz-igz; k++) {
         int lcvx = k*icy*ifx;

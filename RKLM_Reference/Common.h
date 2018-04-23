@@ -33,6 +33,7 @@
  #define SYMMETRIC_ADVECTION
  */ 
 #define EGDE_VELOCITIES_IN_MUSCL_STEP
+#define SYMMETRIC_ADVECTION
 
 /* ============================================= 
  Semi-implicit solver options  
@@ -63,6 +64,12 @@
 
 #define SOLVER_1_CR2
 #define SOLVER_2_BICGSTAB
+
+/* Hydrostatic solver options 
+ #define SURFACE_PRESSURE_CORRECTION
+ #define FULL_D_HYDRO_CORRECTION
+ */
+#define SURFACE_PRESSURE_CORRECTION
 
 /* First projection options */
 /* 

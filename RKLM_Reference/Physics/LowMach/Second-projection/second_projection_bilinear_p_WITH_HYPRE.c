@@ -877,6 +877,8 @@ static void operator_coefficients_nodes(
     const double Gammainv = th.Gammainv;
     
     const int ndim = node->ndim;
+    
+    double nonhydro = ud.nonhydrostasy;
                     
 	switch(ndim) {
 		case 1: {    
@@ -917,7 +919,7 @@ static void operator_coefficients_nodes(
                     double Y     = 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]); 
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
                     double Nsqsc = 0.25*dt*dt * (g/Msq) * strat;                    
-                    double gimpy = 1.0 / (1.0 + Nsqsc);
+                    double gimpy = 1.0 / (nonhydro + Nsqsc);
                                         
                     hplusx[n]    = coeff;
                     hplusy[n]    = coeff * gimpy;
@@ -967,7 +969,7 @@ static void operator_coefficients_nodes(
                             double Y     = 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]); 
                             double coeff = Gammainv * Sol->rhoY[n] * Y;
                             double Nsqsc = 0.25*dt*dt * (g/Msq) * strat;                    
-                            double gimpy = 1.0 / (1.0 + Nsqsc);
+                            double gimpy = 1.0 / (nonhydro + Nsqsc);
 
                             hplusx[n]  = coeff;
                             hplusy[n]  = coeff * gimpy;
