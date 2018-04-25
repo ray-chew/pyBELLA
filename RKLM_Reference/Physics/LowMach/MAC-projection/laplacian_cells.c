@@ -531,7 +531,7 @@ double precon_c_prepare(
 
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.is_nonhydrostatic) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0) {
         return precon_c_column_prepare(node, elem, hplus, hcenter);
     } else {
         return precon_c_diag_prepare(node, elem, hplus, hcenter);        
@@ -563,7 +563,7 @@ void precon_c_invert(
     
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.is_nonhydrostatic) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0) {
         precon_c_column_invert(vec_out, vec_in, elem);
     } else {
         precon_c_diag_invert(vec_out, vec_in, elem);        

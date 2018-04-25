@@ -779,7 +779,7 @@ double precon_prepare(
 {
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.is_nonhydrostatic) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0) {
         return precon_column_prepare(node, elem, hplus, wcenter, x_periodic, y_periodic, z_periodic);
     } else {
         return precon_diag_prepare(node, elem, hplus, wcenter, x_periodic, y_periodic, z_periodic);        
@@ -798,7 +798,7 @@ void precon_apply(
 {
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.is_nonhydrostatic) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0) {
         precon_column_apply(vec_out, vec_in, node, x_periodic, y_periodic, z_periodic);
     } else {
         precon_diag_apply(vec_out, vec_in, node, x_periodic, y_periodic, z_periodic);        
@@ -819,7 +819,7 @@ void precon_invert(
     
     // return;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.is_nonhydrostatic) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0) {
         precon_column_invert(vec_out, vec_in, node, x_periodic, y_periodic, z_periodic);
     } else {
         precon_diag_invert(vec_out, vec_in, node, x_periodic, y_periodic, z_periodic);        

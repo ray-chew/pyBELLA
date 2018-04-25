@@ -83,18 +83,6 @@ double Newton_rhs(double* rhs,
 #endif
 
 /* Functions needed for the hydrostatic case */
-void aggregate_rhs_cells(double* rhs_surf, 
-                         const ElemSpaceDiscr* elem_surf, 
-                         const double* rhs, 
-                         const ElemSpaceDiscr* elem);
-
-void aggregate_coefficients_cells(double* hplus_s[3], 
-                                  double* hcenter_s, 
-                                  const ElemSpaceDiscr* elem_s, 
-                                  const double* hplus[3], 
-                                  const double* hcenter, 
-                                  const ElemSpaceDiscr* elem);
-
 void hydrostatic_pressure_cells(double* p2, 
                                 const ConsVars* Sol,
                                 const MPV* mpv,
@@ -133,133 +121,67 @@ void flux_correction(ConsVars* flux[3],
     double rhsmax;
     
     int n;
-            
-    if (ud.is_nonhydrostatic == 0) {
-        printf("\n\n====================================================");
-        printf("\nFirst Projection - Hydrostatic");
-        printf("\n====================================================\n");
-        
-        double *p2_aux   = (double*)malloc(elem->nc * sizeof(double));
-
-        operator_coefficients(hplus, hcenter, hS, elem, Sol, Sol0, mpv, dt);
-
-        /* contribution from sheer hydrostatic pressure with homog. Dirichlet bottom bdry condition */
-        hydrostatic_pressure_cells(p2, Sol, mpv, elem, node);
-        set_ghostcells_p2(p2, elem, elem->igx);        
-        flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2, t, dt);
-        
-#ifdef SURFACE_PRESSURE_CORRECTION
-        {
-            /* contribution from a surface pressure that zeros the vertically integrated horizontal divergence */
-            ElemSpaceDiscr *elem_surf = surface_elems(elem);
-            NodeSpaceDiscr *node_surf = surface_nodes(node);
-            double *rhs_surf = (double*)malloc(elem_surf->nc * sizeof(double));
-            double *p2_surf  = (double*)malloc(elem_surf->nc * sizeof(double));
-            double *hcenter_surf  = (double*)malloc(elem_surf->nc * sizeof(double));
-            double *hplus_surf[3];
-            for (int idim = 0; idim < elem_surf->ndim; idim++) hplus_surf[idim] = (double*)malloc(node_surf->nc * sizeof(double));
-
-            rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
-            aggregate_rhs_cells(rhs_surf, elem_surf, rhs, elem);
-            aggregate_coefficients_cells(hplus_surf, hcenter_surf, elem_surf, (const double **)hplus, hcenter, elem);
-            variable_coefficient_poisson_cells(p2_surf, rhs_surf, (const double **)hplus_surf, hcenter_surf, elem_surf, node_surf);
-            set_ghostcells_p2(p2_surf, elem_surf, elem_surf->igx);
-            extrude_cells(p2_aux, p2_surf, elem, elem_surf);
-            flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2_aux, t, dt);
-            for (int nc=0; nc<elem->nc; nc++) p2[nc] += p2_aux[nc];            
-            set_ghostcells_p2(p2, elem, elem->igx);
-
-            for (int idim = 0; idim < elem_surf->ndim; idim++) free(hplus_surf[idim]);
-            free(hcenter_surf);
-            free(p2_surf);
-            free(rhs_surf);
-            NodeSpaceDiscr_free(node_surf);
-            ElemSpaceDiscr_free(elem_surf);
+    
+    printf("\n\n====================================================");
+    printf("\nFirst Projection");
+    printf("\n====================================================\n");
+    
+    operator_coefficients(hplus, hcenter, hS, elem, Sol, Sol0, mpv, dt);
+    rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
+    rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
+    printf("\nrhs_max = %e (before projection)\n", rhsmax);
+    
+    assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
+    if (ud.is_compressible) {
+        for (int nc=0; nc<elem->nc; nc++) {
+            rhs[nc] += hcenter[nc]*mpv->p2_cells[nc];
         }
-#endif /* SURFACE_PRESSURE_CORRECTION */
-
-#ifdef FULL_D_HYDRO_CORRECTION
-        /* final full-dimensional solve to guarantee implicit theta-updates; re-use p2_aux !! */
-        rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
-        assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
-        if (ud.is_compressible) {
-            for (int nc=0; nc<elem->nc; nc++) {
-                rhs[nc] += hcenter[nc]*mpv->p2_cells[nc];
-            }
-        }
-        variable_coefficient_poisson_cells(p2_aux, rhs, (const double **)hplus, hcenter, elem, node);
-        set_ghostcells_p2(p2_aux, elem, elem->igx);
-        flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2_aux, t, dt);
-        for (int nc=0; nc<elem->nc; nc++) p2[nc] += p2_aux[nc];
-        set_ghostcells_p2(p2, elem, elem->igx);
-#endif /* FULL_D_HYDRO_CORRECTION */
-        
-        hydrostatic_vertical_flux(flux, elem);
-        free(p2_aux);
-        
-    } else {
-        
-        printf("\n\n====================================================");
-        printf("\nFirst Projection");
-        printf("\n====================================================\n");
-
-        operator_coefficients(hplus, hcenter, hS, elem, Sol, Sol0, mpv, dt);
-        rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
-        rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
-        printf("\nrhs_max = %e (before projection)\n", rhsmax);
-        
-        assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 
-        if (ud.is_compressible) {
-            for (int nc=0; nc<elem->nc; nc++) {
-                rhs[nc] += hcenter[nc]*mpv->p2_cells[nc];
-            }
-        }
-        variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, elem, node);
-        set_ghostcells_p2(p2, elem, elem->igx);
-        
-#ifdef NONLINEAR_EOS_IN_1st_PROJECTION
-        /* Newton iteration for the nonlinear equation of state rhoY = P(\pi) = \pi^{gamma-1} 
-         The first sweep computes the half time level Exner pressure based on the linearization
-         of P(.). The further iterates yield updates to this quantity until convergence 
-         tolerance is reached.
-         */
-        double* pi = (double*)malloc(elem->nc*sizeof(double));
-        for (int nc=0; nc<elem->nc; nc++) pi[nc] = 0.0;
-        if (ud.is_compressible) {
-            /* Nonlinear iteration for the \partial P/\partial t  term in the P-equation */
-            double precision_factor = 1.0;
-            ud.flux_correction_precision       *= precision_factor;
-            ud.flux_correction_local_precision *= precision_factor;
-            for (int nc=0; nc<elem->nc; nc++) {
-                pi[nc]  = p2[nc];
-                p2[nc] -= mpv->p2_cells[nc];        
-            }
-            rhsmax = Newton_rhs(rhs, p2, pi, Sol->rhoY, mpv, elem, dt);
-            
-            while (rhsmax > ud.flux_correction_precision) {
-                variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, elem, node);
-                set_ghostcells_p2(p2, elem, elem->igx);
-                for (int nc=0; nc<elem->nc; nc++) pi[nc] += p2[nc];
-                rhsmax = Newton_rhs(rhs, p2, pi, Sol->rhoY, mpv, elem, dt);
-            }
-            
-            for (int nc=0; nc<elem->nc; nc++) {
-                p2[nc] = pi[nc];        
-            }
-            ud.flux_correction_precision       /= precision_factor;
-            ud.flux_correction_local_precision /= precision_factor;
-        }
-        free(pi);
-#endif
-        
-        flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2, t, dt);
-        
-        /* test whether divergence is actually controlled */
-        rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
-        printf("\nrhs_max = %e (after projection)\n", rhsmax);
-        
-        flux_fix_for_open_boundaries(flux, elem, mpv);  
     }
+    variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, elem, node);
+    set_ghostcells_p2(p2, elem, elem->igx);
+    
+#ifdef NONLINEAR_EOS_IN_1st_PROJECTION
+    /* Newton iteration for the nonlinear equation of state rhoY = P(\pi) = \pi^{gamma-1} 
+     The first sweep computes the half time level Exner pressure based on the linearization
+     of P(.). The further iterates yield updates to this quantity until convergence 
+     tolerance is reached.
+     */
+    double* pi = (double*)malloc(elem->nc*sizeof(double));
+    for (int nc=0; nc<elem->nc; nc++) pi[nc] = 0.0;
+    if (ud.is_compressible) {
+        /* Nonlinear iteration for the \partial P/\partial t  term in the P-equation */
+        double precision_factor = 1.0;
+        ud.flux_correction_precision       *= precision_factor;
+        ud.flux_correction_local_precision *= precision_factor;
+        for (int nc=0; nc<elem->nc; nc++) {
+            pi[nc]  = p2[nc];
+            p2[nc] -= mpv->p2_cells[nc];        
+        }
+        rhsmax = Newton_rhs(rhs, p2, pi, Sol->rhoY, mpv, elem, dt);
+        
+        while (rhsmax > ud.flux_correction_precision) {
+            variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, elem, node);
+            set_ghostcells_p2(p2, elem, elem->igx);
+            for (int nc=0; nc<elem->nc; nc++) pi[nc] += p2[nc];
+            rhsmax = Newton_rhs(rhs, p2, pi, Sol->rhoY, mpv, elem, dt);
+        }
+        
+        for (int nc=0; nc<elem->nc; nc++) {
+            p2[nc] = pi[nc];        
+        }
+        ud.flux_correction_precision       /= precision_factor;
+        ud.flux_correction_local_precision /= precision_factor;
+    }
+    free(pi);
+#endif
+    
+    flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2, t, dt);
+    
+    /* test whether divergence is actually controlled */
+    rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
+    printf("\nrhs_max = %e (after projection)\n", rhsmax);
+    
+    flux_fix_for_open_boundaries(flux, elem, mpv);  
     
     /* store results in mpv-fields */
     for(n=0; n<elem->nc; n++) {
@@ -646,8 +568,9 @@ void operator_coefficients(
                         double Y   = 0.5 * (Sol->rhoY[jc]  / Sol->rho[jc]  + Sol0->rhoY[jc]  / Sol0->rho[jc]);
                         double Ym  = 0.5 * (Sol->rhoY[jcm] / Sol->rho[jcm] + Sol0->rhoY[jcm] / Sol0->rho[jcm]);
                         double Nsq = - (g/Msq) * 0.5*(Y+Ym) * (S-Sm)/dy;
+                        double Nsqsc = 0.25*dt*dt*Nsq;
                         
-                        gimp  = 1.0 / (nonhydro + 0.5*dt*dt*Nsq);
+                        gimp  = 1.0 / (nonhydro + Nsqsc);
                         
                         hy[n] = 0.5 * (hj + hjm) * gimp;
                         
@@ -742,10 +665,10 @@ static void flux_correction_due_to_pressure_gradients(
             
             const double dto2dx = 0.5 * dt / elem->dx;
             const double dto2dy = 0.5 * dt / elem->dy;
-
+            
             const double b = P1_ALTERNATIVE_STENCIL_WEIGHT; 
             const double a = 1.0-2.0*b;
-
+            
             ConsVars* f = flux[0];
             ConsVars* g = flux[1];
             
@@ -764,26 +687,24 @@ static void flux_correction_due_to_pressure_gradients(
                      in the compressible case towards the end of the standard test run. */
                     f->rhoY[nc] -= dto2dx * (  a *   hplusx[nc] * (dp2[ic]     - dp2[icm]    )  
                                              + b * ( hplusx[nc] * (dp2[ic+icx] - dp2[icm+icx])  
-                                                   + hplusx[nc] * (dp2[ic-icx] - dp2[icm-icx])  
-                                                   ));
+                                                    + hplusx[nc] * (dp2[ic-icx] - dp2[icm-icx])  
+                                                    ));
                 }
             }  
             
-            if (ud.is_nonhydrostatic) {
-                /* fluxes in the y-direction */
-                for(int i = igx; i < icx - igx; i++) {
-                    int nc = i * ify;
-                    for(int j = igy; j < ify - igy; j++) {
-                        int mc  = nc + j;
-                        int jc  = j * icx + i;
-                        int jcm = jc - icx;
-                        
-                        g->rhoY[mc]  -= dto2dy * (  a *   hplusy[mc] * (dp2[jc]   - dp2[jcm]  ) 
-                                                  + b * ( hplusy[mc] * (dp2[jc+1] - dp2[jcm+1]) 
-                                                         + hplusy[mc] * (dp2[jc-1] - dp2[jcm-1]) 
-                                                         ));                    
-                    }   
-                }
+            /* fluxes in the y-direction */
+            for(int i = igx; i < icx - igx; i++) {
+                int nc = i * ify;
+                for(int j = igy; j < ify - igy; j++) {
+                    int mc  = nc + j;
+                    int jc  = j * icx + i;
+                    int jcm = jc - icx;
+                    
+                    g->rhoY[mc]  -= dto2dy * (  a *   hplusy[mc] * (dp2[jc]   - dp2[jcm]  ) 
+                                              + b * ( hplusy[mc] * (dp2[jc+1] - dp2[jcm+1]) 
+                                                     + hplusy[mc] * (dp2[jc-1] - dp2[jcm-1]) 
+                                                     ));                    
+                }   
             }
             
             break;
@@ -853,34 +774,32 @@ static void flux_correction_due_to_pressure_gradients(
                 } 
             }
             
-            if (ud.is_nonhydrostatic) {
-                /* fluxes in the y-direction */
-                for(int i = igx; i < icx - igx; i++) {
-                    int l = i * ify*icz;
-                    for(int k = igz; k < icz - igz; k++) {
-                        int m = l + k * ify;
-                        for(int j = igy; j < ify - igy; j++) {
-                            int n = m + j;
-                            int jc   = k*diz + j*diy + i*dix;
-                            int jcm  = jc - diy;
-                            
-                            fy->rhoY[n] -= dto2dy * hplusy[n] * 
-                            (     a *    (dp2[jc] - dp2[jcm])  
-                             +    b * (  (dp2[jc+diz] - dp2[jcm+diz]) 
-                                       + (dp2[jc-diz] - dp2[jcm-diz])  
-                                       + (dp2[jc+dix] - dp2[jcm+dix])  
-                                       + (dp2[jc-dix] - dp2[jcm-dix])
-                                       )
-                             +    c * (  (dp2[jc+diz+dix] - dp2[jcm+diz+dix]) 
-                                       + (dp2[jc-diz+dix] - dp2[jcm-diz+dix])  
-                                       + (dp2[jc+diz-dix] - dp2[jcm+diz-dix])  
-                                       + (dp2[jc-diz-dix] - dp2[jcm-diz-dix])
-                                       ));
-                        }   
-                    }
+            /* fluxes in the y-direction */
+            for(int i = igx; i < icx - igx; i++) {
+                int l = i * ify*icz;
+                for(int k = igz; k < icz - igz; k++) {
+                    int m = l + k * ify;
+                    for(int j = igy; j < ify - igy; j++) {
+                        int n = m + j;
+                        int jc   = k*diz + j*diy + i*dix;
+                        int jcm  = jc - diy;
+                        
+                        fy->rhoY[n] -= dto2dy * hplusy[n] * 
+                        (     a *    (dp2[jc] - dp2[jcm])  
+                         +    b * (  (dp2[jc+diz] - dp2[jcm+diz]) 
+                                   + (dp2[jc-diz] - dp2[jcm-diz])  
+                                   + (dp2[jc+dix] - dp2[jcm+dix])  
+                                   + (dp2[jc-dix] - dp2[jcm-dix])
+                                   )
+                         +    c * (  (dp2[jc+diz+dix] - dp2[jcm+diz+dix]) 
+                                   + (dp2[jc-diz+dix] - dp2[jcm-diz+dix])  
+                                   + (dp2[jc+diz-dix] - dp2[jcm+diz-dix])  
+                                   + (dp2[jc-diz-dix] - dp2[jcm-diz-dix])
+                                   ));
+                    }   
                 }
-            }
-            
+            } 
+
             /* fluxes in the z-direction */
             for(int j = igy; j < icy - igy; j++) {
                 int l = j * ifz*icx;
@@ -905,7 +824,8 @@ static void flux_correction_due_to_pressure_gradients(
                                    ));
                     }
                 }
-            }			
+            }		
+            
             break;
         }
         default: ERROR("ndim not in {1, 2, 3}");
@@ -1191,112 +1111,6 @@ double Newton_rhs(double* rhs,
     return rhsmax;
 }
 #endif
-
-/* ========================================================================== */
-
-void aggregate_rhs_cells(double* rhs_s, 
-                         const ElemSpaceDiscr* elem_s, 
-                         const double* rhs, 
-                         const ElemSpaceDiscr* elem)
-{
-    /* aggregate the source term for the full-dimensional projection in 
-     the gravity-direction to obtain the hydrostatic projection source term
-     */
-    const int igx = elem->igx;
-    const int igy = elem->igy;
-    const int igz = elem->igz;
-
-    const int icx = elem->icx;
-    const int icy = elem->icy;
-    const int icz = elem->icz;
-
-    const int stx = elem->stride[0];
-    const int sty = elem->stride[1];
-    const int stz = elem->stride[2];
-
-    const int stxs = elem_s->stride[0];
-    const int stys = elem_s->stride[1];
-
-    for (int k=igz; k<icz-igz; k++) {
-        int lcv = k*stz;
-        int lcs = k*stys;
-        for (int i=igx; i<icx-igx; i++) {
-            int mcv    = lcv + i*stx;
-            int mcs    = lcs + i*stxs;
-            rhs_s[mcs] = 0.0;
-            for (int j=igy; j<icy-igy; j++) {
-                int ncv = mcv + j*sty;
-                rhs_s[mcs] += rhs[ncv];
-            }
-            rhs_s[mcs] /= (icy - 2*igy); 
-        }
-    }
-}
-
-/* ========================================================================== */
-
-void aggregate_coefficients_cells(double* hplus_s[3], 
-                                  double* hcenter_s, 
-                                  const ElemSpaceDiscr* elem_s, 
-                                  const double* hplus[3], 
-                                  const double* hcenter, 
-                                  const ElemSpaceDiscr* elem)
-{
-    /* aggregate the coefficients of the full Poisson operator in the vertical
-     to formulate the hydrostatic Poisson operator
-     */
-    extern User_Data ud;
-    
-    const int igx = elem->igx;
-    const int igy = elem->igy;
-    const int igz = elem->igz;
-    
-    const int icx = elem->icx;
-    const int icy = elem->icy;
-    const int icz = elem->icz;
-    
-    const int ifx = elem->ifx;
-    const int ifz = elem->ifz;
-    
-    const int ifxs = elem_s->ifx;
-    const int ifys = elem_s->ify;
-
-    /* TODO: pressure time derivative in hydrostatic case yet to be addressed */
-    assert(ud.is_nonhydrostatic == 0);
-    for (int nc=0; nc<elem_s->nc; nc++) {
-        hcenter_s[nc] = 0.0;
-    }
-
-    for (int k=igz; k<icz-igz; k++) {
-        int lcvx = k*icy*ifx;
-        int lcsx = k*ifxs;
-        for (int i=igx; i<ifx-igx; i++) {
-            int mcvx  = lcvx + i;
-            int mcsx  = lcsx + i;
-            hplus_s[0][mcsx] = 0.0;
-            for (int j=igy; j<icy-igy; j++) {
-                int ncvx = mcvx + j*ifx;
-                hplus_s[0][mcsx] += hplus[0][ncvx];
-            }
-            hplus_s[0][mcsx] /= (icy - 2*igy);
-        }
-    }
-    
-    for (int k=igz; k<ifz-igz; k++) {
-        int lcvz = k;
-        int lcsy = k;
-        for (int i=igx; i<icx-igx; i++) {
-            int mcvz  = lcvz + i*ifz;
-            int mcsy  = lcsy + i*ifys;
-            hplus_s[1][mcsy] = 0.0;
-            for (int j=igy; j<icy-igy; j++) {
-                int ncvz = mcvz + j*icx*ifz;
-                hplus_s[1][mcsy] += hplus[2][ncvz];
-            }
-            hplus_s[1][mcsy] /= (icy - 2*igy);
-        }
-    }
-}
 
 /* ========================================================================== */
 
