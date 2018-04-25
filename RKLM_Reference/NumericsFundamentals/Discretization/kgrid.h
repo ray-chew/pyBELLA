@@ -187,29 +187,6 @@ NodeSpaceDiscr* NodeSpaceDiscr_new(Grid* g);
 
 void NodeSpaceDiscr_free(NodeSpaceDiscr* d);
 
-
-/*------------------------------------------------------------------------------
- derive surface grids from volume grids
- ------------------------------------------------------------------------------*/
-ElemSpaceDiscr* surface_elems(const ElemSpaceDiscr* elem);
-NodeSpaceDiscr* surface_nodes(const NodeSpaceDiscr* node);
-
-/*------------------------------------------------------------------------------
- extrude surface data to volume data / cell-based
- ------------------------------------------------------------------------------*/
-void extrude_cells(double* p2_aux, 
-                   const double* p2_surf, 
-                   const ElemSpaceDiscr* elem, 
-                   const ElemSpaceDiscr* elem_surf);
-
-/*------------------------------------------------------------------------------
- extrude surface data to volume data / node-based
- ------------------------------------------------------------------------------*/
-void extrude_nodes(double* p2_aux, 
-                   const double* p2_surf, 
-                   const NodeSpaceDiscr* node, 
-                   const NodeSpaceDiscr* node_surf);
-
 #endif /* KGRID_H */
 
 

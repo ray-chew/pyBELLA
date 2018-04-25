@@ -36,10 +36,6 @@ double dt;
 ElemSpaceDiscr* elem;
 NodeSpaceDiscr* node;
 
-/* surface grid needed for hydrostatics etc. */
-ElemSpaceDiscr* elem_surf;
-NodeSpaceDiscr* node_surf;
-
 /* Thermodynamics */
 Thermodynamic th;
 
@@ -105,16 +101,6 @@ void Data_init() {
 	node = NodeSpaceDiscr_new(grid);
 	Grid_free(grid); 
 	
-    /* assuming gravity is in the y-direction */
-    if (ud.g_ref > ud.eps_Machine) {
-        grid = Grid_new(inx,inz,1,x0,x1,z0,z1,0.0,1.0,left,right,back,front,bottom,top); 
-        elem_surf = ElemSpaceDiscr_new(grid);
-        elem_surf->normal = 1;
-        node_surf = NodeSpaceDiscr_new(grid);
-        node_surf->normal = 1;
-        Grid_free(grid); 
-    }
-    
 	/* Thermodynamics */
 	Thermodynamic_init(&th, &ud);
 	
@@ -194,12 +180,6 @@ void Data_free() {
     ConsVars_free(Sol1);
 #endif
     
-
-    if (ud.g_ref == ud.eps_Machine) {
-        ElemSpaceDiscr_free(elem_surf);
-        NodeSpaceDiscr_free(node_surf);
-    }
-
     ElemSpaceDiscr_free(elem);
     NodeSpaceDiscr_free(node);
 }
