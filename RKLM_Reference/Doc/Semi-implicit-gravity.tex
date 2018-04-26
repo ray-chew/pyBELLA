@@ -120,6 +120,10 @@
 \newcommand{\dz}{\Delta z}
 \newcommand{\chibar}{\overline{\chi}}
 \newcommand{\chitilde}{{\widetilde \chi}}
+\newcommand{\Thetabar}{\overline{\Theta}}
+\newcommand{\Thetatilde}{{\widetilde \Theta}}
+\newcommand{\pibar}{\overline{\pi}}
+\newcommand{\pitilde}{{\widetilde \pi}}
 
 \newcommand{\pp}[2]{\frac{\partial #1}{\partial #2}}
 \newcommand{\ppn}[3]{\frac{\partial^{#1} #2}{\partial #3^{#1}}}
@@ -130,10 +134,10 @@
 \newcommand{\reals}{\mathbb{R}}
 
 \newcommand{\eps}{\varepsilon}
+\newcommand{\rbeta}{\red{\vector{\beta}}}
+\newcommand{\balpha}{\blue{\vector{\alpha}}}
 
 \newcommand{\Lopfirst}{{\cal L}^{\rm 1st}}
-
-\newcommand{\pibar}{\overline{\pi}}
 
 
 
@@ -1227,6 +1231,305 @@ to obtain
 It is clear how to implement this in a split fashion outside of the advection
 routines. It needs to be implemented also, however, in the flux calculations, 
 and it is less clear how that could be achieved. 
+
+\newpage
+
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+
+\section{Blended hydrostatic--non-hydrostatic pseudo-incompressible model}
+\label{sec:HydroBlendPsinc}
+
+% ===========================================================================
+% ===========================================================================
+
+\subsection{EULAG-type time integration scheme}
+\label{ssec:EULAGTimeIntegrator}
+
+The scheme as of Spring 2018 adopts essentially the overall time integration 
+strategy developed by Piotr Smolarkiewicz for his EULAG model. The 
+pseudo-incompressible model may be written as 
+%
+\begin{subequations}\label{eq:PsincI}
+\begin{align}
+\label{eq:PsincMass}
+\dss \rho_t + \nabla_\parallel\cdot(\rho \vu) + (\rho w)_z
+  & = \dss 0
+      \\[5pt]
+\label{eq:PsincHorMom}
+\dss (\rho\vu)_t + \nabla_\parallel\cdot(\rho \vu\circ\vu) + (\rho w \vu)_z 
++ \frac{P}{\Gamma}\nabla_\parallel \pi
+  & = \dss 0
+      \\[5pt]
+\label{eq:PsincVerMom}
+\dss (\rho w)_t + \nabla_\parallel\cdot(\rho \vu w) + (\rho w^2)_z 
++ \frac{P}{\Gamma} \pi_z
+  & = \dss - \rho g
+      \\[5pt]
+\label{eq:PsincConstraint}
+\dss P_t + \nabla_\parallel\cdot(P\vu) + (Pw)_z
+  & = \dss 0\,.
+\end{align}
+\end{subequations}
+%
+Here $\pi$ is the Exner pressure, $P = \pi^{\frac{1}{\gamma-1}}$,
+and the other symbols should be clear from the con- and previous text.
+Given \eq{eq:PsincConstraint}, and defining 
+%
+\begin{equation}
+\rho = P\chi \equiv P/\Theta\, ,
+\end{equation}
+%
+The mass transport equation may be rewritten as a transport equation for
+$\chi = 1/\Theta$, 
+%
+\begin{equation}\label{eq:chiI}
+\rho_t + \nabla_\parallel\cdot(\rho \vu) + (\rho w)_z = 
+(P\chi)_t + \nabla_\parallel\cdot(P\chi \vu) + (P\chi w)_z = 0\,,
+\end{equation}
+%
+or equivalently, for differentiable solutions, as a transport equation
+
+%
+\begin{equation}\label{eq:chiII}
+\chi_t + \vu\cdot\nabla_\parallel \chi + w \chi_z = 0
+\end{equation}
+%
+which shows that $\chi = 1/\Theta$ is purely advected. 
+The equations in \eq{eq:PsincI} are then recast, using \eq{eq:chiI} and
+\eq{eq:chiII} and splitting $\chi(t,\vx,z) = \chitilde(t,\vx,z) + \chibar(z)$, 
+and introducing the blending parameters $\rbeta$ and $\balpha$ for 
+hydrostasy and pseudo-incompressibility, respectively,  
+%
+\begin{equation}\label{eq:PsincII}
+\begin{array}{rcrcl}
+\dss (P\chitilde)_t 
+  & + 
+    & \dss \nabla_\parallel\cdot(P\vu\, \chitilde) + (Pw\, \chitilde)_z
+      & = 
+        & \dss -\left[\nabla_\parallel\cdot(P\vu\, \chibar) + (Pw\, \chibar)_z\right]
+          \\[10pt]
+\dss (P\vu)_t 
+  & + 
+    & \dss \nabla_\parallel\cdot(P\vu\circ\vu) + (Pw\, \vu)_z 
+      & = 
+        & \dss - \frac{P\Theta}{\Gamma}\nabla_\parallel \pi
+          \\[10pt]
+\dss \rbeta\, \Bigl[(P w)_t 
+  & + 
+    & \dss \nabla_\parallel\cdot(P \vu\, w) + (Pw\, w)_z\Bigr] 
+      & = 
+        & \dss - \left(\frac{P\Theta}{\Gamma} \pi_z + P g\right)
+          \\[15pt]
+\balpha\, P_t
+  &  
+    & \dss \dss \nabla_\parallel\cdot(P\vu)  + (Pw)_z
+      & = 
+        & \dss 0\,.
+\end{array}
+\end{equation}
+%
+Here the second column of terms on the left represents advection of 
+$\Psi = (\chi, \vu, w)$ by the advecting fluxes $P\vv \equiv (P\vu, Pw)$, 
+which are divergence-controlled, and the right hand side column presents 
+the forces acting to change the momentum field. These equations are 
+written in compact form as
+%
+\begin{equation}
+(P\Psi)_t + \mathcal{A}(\Psi; P\vv) = R(\Psi)\, ,
+\end{equation}
+%
+and with this notation the EULAG-type time integration scheme for an update
+of the solution $\Psi$ from time $t^n$ to time $t^{n+1}$ reads 
+%
+\begin{equation}\label{eq:EULAGTimeIntegrator}
+\begin{array}{rcl}
+\dss \Psi^{*} 
+  & = 
+    & \dss \Psi^{*} + \frac{\Delta t}{2} R(\Psi^n)
+      \\
+\dss \Psi^{**} 
+  & = 
+    & \dss \mathcal{A}^{\Delta t}\left(\Psi^*; (P\vv)^{n+1/2}\right)
+      \\
+\dss \Psi^{n+1} 
+  & = 
+    & \dss \Psi^{**} + \frac{\Delta t}{2} R(\Psi^{n+1})\,.
+      \\
+\end{array}
+\end{equation}
+%
+Here $\mathcal{A}^{\Delta t}\left(\Psi; (P\vv)\right)$ denotes a
+second-order accurate explicit approximation of the \emph{linear} 
+advection of $\Psi$ by the \emph{given} advecting fluxes $(P\vv)$ 
+over a time increment $\Delta t$.
+
+The advecting fluxes $(P\vv)^{n+1/2}$ used in the advection step 
+are at least first order accurate approximations of the $P\vv$ field
+at the half time level $t^{n+1/2} = (t^n + t^{n+1})/2$ that can be
+determined in various ways. The default option in EULAG is extrapolation
+from the last two completed time levels, the option adopted here and
+in an alternative variant of EULAG is to carry out an intermediate 
+(possibly lower-order accurate) time step to the half time level to 
+evolve them from $(P\vv)^{n}$ without the need to recur to the $t^{n-1}$
+level solution. 
+
+With these preliminaries, the scheme in \eq{eq:EULAGTimeIntegrator} is
+best interpreted as the application of the implicit trapezoidal rule
+for time integrating the source terms $R(\Psi)$, anchored at the  
+beginning and end points of Lagrangian trajectories traced between the
+pertinent time levels. A forward Euler step is followed by a backward
+Euler step, with the advection step interleaved so as to represent
+the advancement of the Lagrangian paths.  
+
+An observation that should be important in analyzing the (remarkable)
+stability features of EULAG, which seems to be inherited by the current 
+implementation, is that for given $(P\vv)$ the advection step is \emph{linear}. 
+As a consequence, even if for rather large time steps the velocities 
+computed in the forward Euler step end up far away from the solutions 
+at time levels $n$ or $n+1$, these excursions do (i) not affect the 
+advecting fluxes $(P\vv)^{n+1/2}$, and they can (ii) properly be 
+post-corrected and pulled back to the reasonable range by the backward 
+Euler step. 
+
+The half time step predictor for the advecting fluxes needs to be first
+order accurate only to preserve second order accuracy of the entire 
+scheme, and thus it is legitimate to use the following simplified 
+version of \eq{eq:EULAGTimeIntegrator} for this purpose:
+%
+\begin{equation}\label{eq:EULAGHalfTimePredictor}
+\begin{array}{rcl}
+\dss \Psi^{\#} 
+  & = 
+    & \dss \mathcal{A}^{\frac{\Delta t}{2}}\left(\Psi^{n}; (P\vv)^{n}\right)
+      \\
+\dss \Psi^{n+1/2} 
+  & = 
+    & \dss \Psi^{\#} + \frac{\Delta t}{2} R(\Psi^{n+1/2})\,,
+      \\
+\end{array}
+\end{equation}
+%
+which corresponds to a simple first order splitting scheme.
+
+The large time step stability of the scheme is then determined by 
+the final implicit half time steps in \eq{eq:EULAGTimeIntegrator}
+and \eq{eq:EULAGHalfTimePredictor}, which are conceptually identical, 
+except that \eq{eq:EULAGTimeIntegrator} leads to divergence-controlled
+cell-centered velocities, whereas \eq{eq:EULAGTimeIntegrator} leads to
+divergence-controlled advective fluxes at the cell faces.
+
+% ===========================================================================
+% ===========================================================================
+
+\subsection{Blended backward Euler step}
+\label{ssec:BlendedBackwardEuler}
+
+The linearized backward Euler discretization for the equation 
+$\Psi_t = R(\Psi)$ between two time levels $n, n+1$ with time step
+$\Delta t$ reads
+%
+\begin{subequations}\label{eq:BackwardEulerStep}
+\begin{align}
+\label{eq:BWETheta}
+\dss \frac{(P\Thetatilde)^{n+1}-(P\Thetatilde)^{n}}{\Delta t} 
+  & = \dss - (Pw)^{n+1} \frac{d\Thetabar}{dz}
+      \\[5pt]
+\label{eq:BWEHorMom}
+\dss \frac{(P\vu)^{n+1} - (P\vu)^{n}}{\Delta t} 
+  & = \dss - \frac{(P\Theta)^*}{\Gamma}\nabla_\parallel \pitilde^{n+1}
+      \\[5pt]
+\label{eq:BWEVerMom}
+\dss \rbeta\ \frac{(Pw)^{n+1} - (Pw)^{n}}{\Delta t} 
+  & = \dss - \left(\frac{(P\Theta)^*}{\Gamma} \pitilde^{n+1}_z - \frac{(P\Thetatilde)^{n+1} g}{\Thetabar}\right)
+      \\[5pt]
+\label{eq:BWEConstraint}
+\dss \balpha\, \frac{P^{n+1} - P^n}{\Delta t}
++ \nabla_\parallel\cdot(P\vu)^{n+1} + (Pw)^{n+1}_z
+  & = \dss 0\,.
+\end{align}
+\end{subequations}
+%
+Here we have used the fact that if $\chi$ is an advected quantity, then so 
+is $\Theta = 1/\chi$, and we have subtracted a background hydrostatic 
+distribution from the Exner pressure to work with the perturbation  
+$\pitilde(t,\vx,z) = \pi(t,\vx,z) - \pibar(z)$. The background Exner
+pressure satisfies $\pibar_z = -\Gamma g/\Thetabar$; $\pibar(0) = 1$.
+ 
+ 
+% ===========================================================================
+
+\subsubsection{Hydrostatic--non-hydrostatic ``$\rbeta$''-blend for the psinc model ($\balpha = 0$)}
+\label{sssec:HydroBlend}
+
+Setting $\balpha = 0$ for now, 
+we aim to derive a Poisson-type equation for the Exner pressure perturbation, 
+$\pitilde^{n+1}$. To this end, we first reformulate \eq{eq:BWETheta} as
+%
+\begin{equation}
+\frac{g(P\Thetatilde)^{n+1}}{\Thetabar} 
+= \frac{g(P\Thetatilde)^{n}}{\Thetabar} - \Delta t\, (Pw)^{n+1} N^2\,,
+\end{equation}
+%
+where 
+%
+\begin{equation}
+N^2 = \frac{g}{\Thetabar}\frac{d\Thetabar}{dz}
+\end{equation}
+%
+is the Background Brunt-V\"ais\"al\"a frequency. Next we insert this 
+result in \eq{eq:BWEVerMom} and solve for 
+%
+\begin{equation}\label{eq:BWEWPrediction}
+(Pw)^{n+1} = 
+\frac{\rbeta (Pw)^{n} + \Delta t \frac{g(P\Thetatilde)^{n}}{\Thetabar}}%
+{\rbeta + \Delta t^2 N^2}
+- \Delta t\frac{(P\Theta)^*}{\Gamma (\rbeta + \Delta t^2 N^2)} \pitilde^{n+1}_z\,.
+\end{equation}
+%
+Similarly, the horizontal momentum equation \eq{eq:BWEHorMom} yields
+%
+\begin{equation}
+(P\vu)^{n+1} 
+= (P\vu)^{n} - \Delta t \, \frac{(P\Theta)^*}{\Gamma} \nabla_\parallel\pitilde
+\end{equation}
+%
+These last two expressions are next inserted in the divergence constraint 
+\eq{eq:BWEConstraint} to obtain the pressure perturbation equation
+%
+\begin{equation}
+\nabla_\parallel\cdot\left(\frac{(P\Theta)^*}{\Gamma}\nabla_\parallel\pitilde^{n+1}\right)
++ \left(\frac{(P\Theta)^*}{\Gamma(\rbeta + \Delta t^2 N^2)} \pitilde^{n+1}_z\right)_z
+= \frac{1}{\Delta t}\left(\nabla_\parallel\cdot(P\vu)^n + (Pw)^{*,\rbeta}_z\right)\,,
+\end{equation}
+%
+where $(Pw)^{*,\rbeta}$ is the first term on the right of 
+\eq{eq:BWEWPrediction}.
+
+As long as $\Delta t^2 N^2 > 0$, this equation allows us to continuously 
+blend from the non-hydrostatic case with $\rbeta = 1$ to the hydrostatic 
+one with $\rbeta = 0$ without any explicit ``{\tt if}''-decision switch.
+Result of the reference code for the planetary scale IGW test come out
+with virtually identical solutions. Also, for relatively large values of
+$\Delta t^2 N^2 > 0$, the condition of the elliptic problem is not affected
+by the blending parameter significantly, so that computational efficiency
+remains uniform throughout.
+
+% ===========================================================================
+
+\subsubsection{Compressible--psinc ``$\balpha$''-blend for 
+the non-hydrostatic case ($\rbeta = 1$)}
+\label{sssec:PsincBlend}
+
+To be done.
+
+% ===========================================================================
+
+\subsubsection{Full compressible--psinc / hydro--non-hydro ``$\rbeta, \balpha$''-blend}
+\label{sssec:HydroPsincBlend}
+
+To be done.
 
 \newpage
 
