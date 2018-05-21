@@ -42,7 +42,9 @@ clean:
 	$(TEXFILE:.tex=.bbl) \
         $(TEXFILE:.tex=.blg) \
         $(TEXFILE:.tex=.log) \
+        $(TEXFILE:.tex=.lot) \
 	$(TEXFILE:.tex=.out) \
+	$(TEXFILE:.tex=.ttt) \
 	$(TEXFILE:.tex=.dvi) \
 	$(TEXFILE:.tex=.pdf) \
 	$(TEXFILE:.tex=.ps)
