@@ -136,19 +136,10 @@ void second_projection(
     printf("\n====================================================\n");
     
     /* KEEP_OLD_POISSON_SOLUTIONS */
-#ifdef FORCES_UNDER_OPSPLIT
-    for(ii=0; ii<nc; ii++){
-        /* p2 already maps to  dp2_nodes  
-         p2[ii] = mpv->dp2_nodes[ii];
-         */
-        rhs[ii] = 0.0;
-    }
-#else
     for(ii=0; ii<nc; ii++){
         p2[ii] = mpv->p2_nodes[ii];
         rhs[ii] = 0.0;
     }
-#endif
 
     operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
     rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry, dt, 1.0);
@@ -182,20 +173,11 @@ void second_projection(
     variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
     correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);
     
-#ifdef FORCES_UNDER_OPSPLIT
-    for(ii=0; ii<nc; ii++) {
-        /* p2 already maps to  dp2_nodes  
-         mpv->dp2_nodes[ii] = p2[ii];
-         */
-        mpv->p2_nodes[ii] += p2[ii];
-    }
-#else
     for(ii=0; ii<nc; ii++) {
         double p2_new      = p2[ii];
         mpv->dp2_nodes[ii] = p2_new - mpv->p2_nodes[ii];
         mpv->p2_nodes[ii]  = p2_new;
     }
-#endif
     
     Set_Explicit_Boundary_Data(Sol, elem);
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
@@ -1369,176 +1351,6 @@ void euler_forward_non_advective(ConsVars* Sol,
     
     free(cnt);
 }
-
-
-#ifdef FORCES_UNDER_OPSPLIT
-/* ========================================================================== */
-
-void pressure_gradient_forces(
-                              double* force[3], 
-                              const ConsVars *Sol, 
-                              const MPV *mpv, 
-                              const ElemSpaceDiscr *elem, 
-                              const NodeSpaceDiscr *node)
-{
-    /* 
-     evaluates pressure gradient terms  
-     */
-    extern User_Data ud;
-    extern Thermodynamic th;
-    
-    double* p2n = mpv->p2_nodes;
-    double timestep_fraction = 1.0;
-    
-    const double Ginv = th.Gammainv; 
-    
-    switch (elem->ndim) {
-        case 1:
-        {
-            const int icx = elem->icx;
-            
-            const int    igx = elem->igx;
-            const double dx  = node->dx;
-            
-            for (int i=igx; i<icx-igx; i++) {
-                int nc = i;
-                int n0 = i;
-                int n1 = i+1;
-                
-                double dpdx   = (p2n[n1]-p2n[n0])/dx;
-                double rhoYovG = Ginv*Sol->rhoY[nc];
-                
-                force[0][nc] = -timestep_fraction*rhoYovG * dpdx;
-            }
-        }
-            break;
-        case 2:
-        {
-            const int icx = elem->icx;
-            const int icy = elem->icy;
-            
-            const int igx = elem->igx;
-            const int igy = elem->igy;
-            
-            const int inx = node->icx;
-            
-            const double dx = node->dx;
-            const double dy = node->dy;
-            
-            for (int j=igy; j<icy-igy; j++) {
-                int mcx = j*icx;
-                int mcy = j;
-                int mn  = j*inx;
-                /*
-                double S0p    = mpv->HydroState_n->S0[j+1];
-                double S0m    = mpv->HydroState_n->S0[j];
-                */
-                
-                for (int i=igx; i<icx-igx; i++) {
-                    int ncx = mcx + i;
-                    int ncy = mcy + i*icy;
-                    
-                    int n00 = mn  + i;
-                    int n10 = n00 + inx;
-                    int n01 = n00 + 1;
-                    int n11 = n00 + 1 + inx;
-                    
-                    double dpdx   = 0.5*(p2n[n01]-p2n[n00]+p2n[n11]-p2n[n10])/dx;
-                    double dpdy   = 0.5*(p2n[n10]-p2n[n00]+p2n[n11]-p2n[n01])/dy;
-                    
-                    double rhoYovG = Ginv*Sol->rhoY[ncx];
-                    /*
-                    double dSdy   = (S0p-S0m) / dy;
-                    double v       = Sol->rhov[nc]/Sol->rho[nc];
-                    double dchi    = Sol->rhoX[BUOY][nc]/Sol->rho[nc];
-                    double chi     = Sol->rho[nc]/Sol->rhoY[nc];
-                    double dbuoy   = -Sol->rho[nc]*dchi/chi;  
-                    */
-                    
-                    force[0][ncx]  = -timestep_fraction*rhoYovG * dpdx;
-                    force[1][ncy]  = -timestep_fraction*rhoYovG * dpdy;
-                    /* 
-                     Sol->rhov[nc]       = ( - rhoYovG * dpdy + (g/Msq) * dbuoy);
-                     Sol->rhoX[BUOY][nc] = ( - v * dSdy) * Sol->rho[nc]; 
-                     */
-                }
-            }
-        }
-            break;
-        case 3: 
-        {
-            const int icx = elem->icx;
-            const int icy = elem->icy;
-            const int icz = elem->icz;
-            
-            const int igx = elem->igx;
-            const int igy = elem->igy;
-            const int igz = elem->igz;
-            
-            const int inx = node->icx;
-            const int iny = node->icy;
-            
-            const double dx = node->dx;
-            const double dy = node->dy;
-            const double dz = node->dz;
-            
-            for (int k=igz; k<icz-igz; k++) {
-                int lcx = k*icy*icx;
-                int lcy = k*icy;
-                int lcz = k;
-                int ln  = k*iny*inx;
-                for (int j=igy; j<icy-igy; j++) {
-                    int mcx = lcx + j*icx;
-                    int mcy = lcy + j;
-                    int mcz = lcz + j*icx*icz;
-                    int mn  = ln  + j*inx;
-
-                    for (int i=igx; i<icx-igx; i++) {
-                        int ncx  = mcx + i;
-                        int ncy  = mcy + i*icz*icy;
-                        int ncz  = mcz + i*icz;
-                        
-                        int n000 = mn   + i;
-                        int n010 = n000 + inx;
-                        int n001 = n000 + 1;
-                        int n011 = n000 + 1 + inx;
-                        int n100 = mn   + i + inx*iny;
-                        int n110 = n100 + inx;
-                        int n101 = n100 + 1;
-                        int n111 = n100 + 1 + inx;
-                        
-                        double dpdx   = 0.25*(p2n[n001]-p2n[n000]+p2n[n011]-p2n[n010]+p2n[n101]-p2n[n100]+p2n[n111]-p2n[n110])/dx;
-                        double dpdy   = 0.25*(p2n[n010]-p2n[n000]+p2n[n011]-p2n[n001]+p2n[n110]-p2n[n100]+p2n[n111]-p2n[n101])/dy;
-                        double dpdz   = 0.25*(p2n[n100]-p2n[n000]+p2n[n110]-p2n[n010]+p2n[n101]-p2n[n001]+p2n[n111]-p2n[n011])/dz;
-                        
-                        double rhoYovG = Ginv*Sol->rhoY[ncx];
-                        /*
-                        double v       = Sol->rhov[nc]/Sol->rho[nc];
-                        double dSdy   = (S0p-S0m) / dy;
-                        double dchi    = Sol->rhoX[BUOY][nc]/Sol->rho[nc];
-                        double chi     = Sol->rho[nc]/Sol->rhoY[nc];
-                        double dbuoy   = -Sol->rho[nc]*dchi/chi;   
-                        */
-                        force[0][ncx] = -timestep_fraction*rhoYovG * dpdx;
-                        force[1][ncy] = -timestep_fraction*rhoYovG * dpdy;
-                        force[2][ncz] = -timestep_fraction*rhoYovG * dpdz;
-                        
-                        /*
-                         Sol->rhoX[BUOY][nc] = ( - v * dSdy) * Sol->rho[nc];
-                         Sol->rhov[nc]       = ( - rhoYovG * dpdy + (g/Msq) * dbuoy);
-                         */
-                    }
-                }
-            }
-        }
-            break;
-            
-        default:
-            break;
-    }    
-}
-#endif /* FORCES_UNDER_OPSPLIT */
-
 
 /* ========================================================================== */
 

@@ -26,14 +26,12 @@
 /*
  #define EGDE_VELOCITIES_IN_MUSCL_STEP
  #define SYMMETRIC_ADVECTION
- #define FORCES_UNDER_OPSPLIT        --   NOT to be used with nonzero gravity thus far!
  #define FOURTH_ORDER_ADV_FLUXES
- #define FULL_TIME_STEP_ADV_PREDICTOR
  #define SYMMETRIC_ADVECTION
- #define ADVECTION
  */ 
 #define EGDE_VELOCITIES_IN_MUSCL_STEP
 #define SYMMETRIC_ADVECTION
+#define ADVECTION
 
 /* ============================================= 
  Semi-implicit solver options  

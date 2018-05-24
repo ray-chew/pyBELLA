@@ -173,14 +173,7 @@ void recovery(States* Lefts,
         - OrderTwo * 0.5*lambda*(Sol->u[i+1]*Sol->rhoY[i+1]-Sol->u[i]*Sol->rhoY[i]);
         Lefts->p0[i]   = Rights->p0[i+1]   = pow(Lefts->rhoY[i], gamm);
     }
-    
-#ifdef FORCES_UNDER_OPSPLIT
-    for( i = 0; i < nmax-1;  i++) {        
-        Rights->u[i] += 0.5*dt_force * force[i]/Sol->rho[i];
-        Lefts->u[i]  += 0.5*dt_force * force[i]/Sol->rho[i];
-    }    
-#endif
-    
+        
     conservatives_from_uvwYZ(Rights, 1, nmax-1); 
     conservatives_from_uvwYZ(Lefts, 1, nmax-1);
 }
