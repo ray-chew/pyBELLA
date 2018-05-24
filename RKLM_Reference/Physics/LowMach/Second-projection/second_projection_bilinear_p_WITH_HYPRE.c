@@ -179,8 +179,8 @@ void second_projection(
         mpv->p2_nodes[ii]  = p2_new;
     }
     
-    Set_Explicit_Boundary_Data(Sol, elem);
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
+    Set_Explicit_Boundary_Data(Sol, elem);
 }
 
 /* ========================================================================== */
@@ -1094,6 +1094,7 @@ void euler_forward_non_advective(ConsVars* Sol,
         
     memset(cnt, 0.0, node->nc*sizeof(double));    
     memset(dp2n, 0.0, node->nc*sizeof(double));
+    memset(div, 0.0, node->nc*sizeof(double));
 
     /* TODO: call to divergence_nodes() might be unnecessary at least after the first
      step, because mpv->dp2_nodes[] should contain the relevant information already
@@ -1106,11 +1107,11 @@ void euler_forward_non_advective(ConsVars* Sol,
     switch (elem->ndim) {
         case 1:
         {
-            const int icx = elem->icx;
-            
-            const int    igx = elem->igx;
-            const double dx  = node->dx;
-            
+            const int xper  = (ud.bdrytype_max[0] == PERIODIC ? 1 : 0);
+            const int icx   = elem->icx;
+            const int igx   = elem->igx;
+            const double dx = node->dx;
+                        
             for (int i=igx; i<icx-igx; i++) {
                 int nc = i;
                 int nn0 = i;
@@ -1134,17 +1135,14 @@ void euler_forward_non_advective(ConsVars* Sol,
                 cnt[nn0] += 1.0;
                 cnt[nn1] += 1.0;
             }
-            
-            if (ud.bdrytype_max[0] == PERIODIC) {
-                int nnl = node->igx;
-                int nnr = node->icx - node->igx - 1;
-                mpv->dp2_nodes[nnl] = 0.5 *(mpv->dp2_nodes[nnl] + mpv->dp2_nodes[nnr]);
-                mpv->dp2_nodes[nnr] = mpv->dp2_nodes[nnl];
-            }
+            ERROR("boundary fix in  euler_forward_non_advective()  not implemented in 1D yet\n");           
         }
             break;
         case 2:
         {
+            const int xper  = (ud.bdrytype_max[0] == PERIODIC ? 1 : 0);
+            const int yper  = (ud.bdrytype_max[1] == PERIODIC ? 1 : 0);
+
             const int igxe = elem->igx;
             const int icxe = elem->icx;
             const int igye = elem->igy;
@@ -1154,6 +1152,32 @@ void euler_forward_non_advective(ConsVars* Sol,
             
             const double dx = node->dx;
             const double dy = node->dy;
+            
+            /* (nodal) div is computed via scattering from the primary cells; this requires fixing
+             weights for boundary nodes
+             */                
+            for (int j = node->igy; j < node->icy - node->igy; j++) {
+                int nnl0 = j*node->icx + node->igx;
+                int nnl1 = nnl0 + xper * (node->icx - 2*node->igx - 1);
+                int nnr0 = j*node->icx + (node->icx - node->igx - 1);
+                int nnr1 = nnr0 - xper * (node->icx - 2*node->igx - 1);
+                double divl = div[nnl0] + div[nnl1];
+                double divr = div[nnr0] + div[nnr1];
+                div[nnl0] = divl;
+                div[nnr0] = divr;
+            }
+            
+            for (int i = node->igx; i < node->icx-node->igx; i++) {
+                int nnl0 = i + node->igy*node->icx;
+                int nnl1 = nnl0 + yper * (node->icy - 2*node->igy - 1);
+                int nnr0 = i + (node->icy - node->igy - 1)*node->icx;
+                int nnr1 = nnr0 - yper * (node->icy - 2*node->igy - 1);
+                double divl = div[nnl0] + div[nnl1];
+                double divr = div[nnr0] + div[nnr1];
+                div[nnl0] = divl;
+                div[nnr0] = divr;
+            }
+
             
             for (int j=igye; j<icye-igye; j++) {
                 int mc = j*icxe;
@@ -1198,23 +1222,6 @@ void euler_forward_non_advective(ConsVars* Sol,
                     cnt[nn01] += 1.0;
                     cnt[nn11] += 1.0;
                     cnt[nn10] += 1.0;
-                }
-            }
-            
-            if (ud.bdrytype_max[0] == PERIODIC) {
-                for (int j = 0; j < node->icy; j++) {
-                    int nnl = j*node->icx + node->igx;
-                    int nnr = j*node->icx + (node->icx - node->igx - 1);
-                    mpv->dp2_nodes[nnl] = 0.5 *(mpv->dp2_nodes[nnl] + mpv->dp2_nodes[nnr]);
-                    mpv->dp2_nodes[nnr] = mpv->dp2_nodes[nnl];
-                }
-            }
-            if (ud.bdrytype_max[1] == PERIODIC) {
-                for (int i = 0; i < node->icx; i++) {
-                    int nnl = node->igy*node->icx + i;
-                    int nnr = (node->icy - node->igy - 1)*node->icx + i;
-                    mpv->dp2_nodes[nnl] = 0.5 *(mpv->dp2_nodes[nnl] + mpv->dp2_nodes[nnr]);
-                    mpv->dp2_nodes[nnr] = mpv->dp2_nodes[nnl];
                 }
             }
         }
@@ -1300,39 +1307,7 @@ void euler_forward_non_advective(ConsVars* Sol,
                     }
                 }
             }
-            if (ud.bdrytype_max[0] == PERIODIC) {
-                for (int k = 0; k < node->icz; k++) {
-                    int m = k*node->icx*node->icy;
-                    for (int j = 0; j < node->icy; j++) {
-                        int nnl = m + j*node->icx + node->igx;
-                        int nnr = m + j*node->icx + (node->icx - node->igx - 1);
-                        mpv->dp2_nodes[nnl] = 0.5 *(mpv->dp2_nodes[nnl] + mpv->dp2_nodes[nnr]);
-                        mpv->dp2_nodes[nnr] = mpv->dp2_nodes[nnl];
-                    }
-                }
-            }
-            if (ud.bdrytype_max[1] == PERIODIC) {
-                for (int i = 0; i < node->icx; i++) {
-                    int m = i;
-                    for (int k = 0; k < node->icz; k++) {
-                        int nnl = m + k*node->igy*node->icx + node->igy*node->icx;
-                        int nnr = m + k*node->igy*node->icx + (node->icy - node->igy - 1)*node->icx;
-                        mpv->dp2_nodes[nnl] = 0.5 *(mpv->dp2_nodes[nnl] + mpv->dp2_nodes[nnr]);
-                        mpv->dp2_nodes[nnr] = mpv->dp2_nodes[nnl];
-                    }
-                }
-            }
-            if (ud.bdrytype_max[2] == PERIODIC) {
-                for (int j = 0; j < node->icy; j++) {
-                    int m = j*node->icx;
-                    for (int i = 0; i < node->icx; i++) {
-                        int nnl = m + i + node->igz*(node->icx*node->icy);
-                        int nnr = m + i + (node->icz - node->igz - 1)*(node->icx*node->icy);
-                        mpv->dp2_nodes[nnl] = 0.5 *(mpv->dp2_nodes[nnl] + mpv->dp2_nodes[nnr]);
-                        mpv->dp2_nodes[nnr] = mpv->dp2_nodes[nnl];
-                    }
-                }
-            }
+            ERROR("boundary fix in  euler_forward_non_advective()  not implemented in 3D yet\n");
         }
             break;
 
@@ -1347,6 +1322,7 @@ void euler_forward_non_advective(ConsVars* Sol,
             mpv->p2_nodes[nn] += mpv->dp2_nodes[nn] / MAX_own(1.0, cnt[nn]);
         }
     }
+    set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
     Set_Explicit_Boundary_Data(Sol, elem);
     
     free(cnt);

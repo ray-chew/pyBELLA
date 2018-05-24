@@ -140,15 +140,15 @@ int main( void )
 
             ConsVars_set(Sol, Sol0, elem->nc);
             // if (step == 0) cell_pressure_to_nodal_pressure(mpv, elem, node);
-            // if (1) cell_pressure_to_nodal_pressure(mpv, elem, node);
+            // cell_pressure_to_nodal_pressure(mpv, elem, node);
             
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nfull time step with predicted advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
             
-            /* Strang splitting for Coriolis, first step 
+            /* Strang splitting for Coriolis, first step */
             Explicit_Coriolis(Sol, elem, 0.5*dt);  
-             */
+             
                         
             /* explicit EULER half time step for gravity and pressure gradient */ 
             euler_forward_non_advective(Sol, (const MPV*)mpv, elem, node, 0.5*dt, WITH_PRESSURE);

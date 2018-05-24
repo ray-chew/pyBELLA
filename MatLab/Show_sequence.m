@@ -4,6 +4,8 @@
 % Hint: 
 % saving figures as .eps:     print(gcf, 'TestPlot', '-depsc');
 
+extrafigno = 52;
+
 %modelstr = '';
 modelstr = 'comp';
 %modelstr = 'psinc' ;  
@@ -197,6 +199,9 @@ if title_true == 0
 end
 %set(texthandle, 'String', titlestr, 'FontSize', 14, 'FontName', 'Optima');
 
+figure(extrafigno)
+hold
+
 for k = kmin:dk:kmax
     kstr = num2str(k);
     if k < 10
@@ -353,6 +358,10 @@ for k = kmin:dk:kmax
         SymmetryTests(transpose(th),55);
         figure(figure1)
     end
+    
+    figure(extrafigno)
+    plot(th(5,:))
+    
     pause
 end
 

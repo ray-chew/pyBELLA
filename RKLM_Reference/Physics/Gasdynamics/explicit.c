@@ -21,7 +21,7 @@
 #include "enumerator.h"
 #include "memory.h"
 
-#if (OUTPUT_SUBSTEPS_PREDICTOR > 0) || (OUTPUT_SUBSTEPS_PREDICTOR > 0 || OUTPUT_SUBSTEPS)
+#if (OUTPUT_SUBSTEPS)
 #include "io.h"
 #endif
 
@@ -251,18 +251,6 @@ void Explicit_step_and_flux(
     
     /* bring dummy cells in the current space direction up to date  */
     Bound(Sol, lambda, n, SplitStep);
-
-    
-#if OUTPUT_SUBSTEPS_PREDICTOR  
-    for (int i=SplitStep; i > 0; i--)  {
-        (*rotate[elem->ndim - 1])(Sol, BACKWARD);
-    }
-    Set_Explicit_Boundary_Data(Sol, elem);
-    for (int i = 0; i < SplitStep; i++)  {
-        (*rotate[elem->ndim - 1])(Sol, FORWARD);
-    }
-#endif
-
 }
 
 /* ================================================================================ */
