@@ -43,13 +43,13 @@ void User_Data_init(User_Data* ud) {
     double R_gas    = 287.4;            /* [J/kg/K]               */
     double R_vap    = 461.00;           /* [J/kg/K]               */
     double Q_vap    = 2.53e+06;         /* [J]                    */
-    double gamma    = 1.4;              /* dimensionless          */
+    double gamma    = 1.4;              /* dimensionless; 5.0/3.0       */
 
     /* references for non-dimensionalization */
     double h_ref    = 10000;                 /* [m]               */
     double t_ref    = 100;                   /* [s]               */
     double T_ref    = 300.00;                /* [K]               */
-    double p_ref    = 10e+5;                 /* [Pa]              */
+    double p_ref    = 10e+5;        FIX THIS         /* [Pa]              */
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
     
@@ -129,14 +129,14 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = SI_MIDPT; /* this code version has only one option */
     ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = scalefactor*30.0 / ud->t_ref;
-    ud->dtfixed                = scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed0               = 0.0625*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed                = 0.0625*scalefactor*30.0 / ud->t_ref;
     
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
     ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
+    ud->iny =  300+1; /* 321; 161;  81;  65; 41;  */
     ud->inz =      1;
     
     /* explicit predictor step */
@@ -180,7 +180,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 10;
+    ud->write_file_period = 80;
     ud->file_format = HDF;
     
     {

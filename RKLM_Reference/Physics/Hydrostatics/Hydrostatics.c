@@ -278,6 +278,38 @@ void Hydrostatics_State(MPV* mpv,
         Sn_p           = 1.0/stratification(yn_p);
         Sn_integral_p += 0.5*elem->dy*(Sn_m + Sn_p);
     }
+    
+#if 0
+    {
+        extern User_Data ud;
+        FILE* phydrofile = NULL;
+        char fn2[120];
+        sprintf(fn2, "%s/hydrostate/model.hse.igw", ud.file_name);
+        phydrofile = fopen(fn2, "w+");
+        fprintf(phydrofile, "# npts = %d\n", elem->icy-2*elem->igx);
+        fprintf(phydrofile, "# num of variables = 4\n");
+        fprintf(phydrofile, "# density\n");
+        fprintf(phydrofile, "# temperature\n");
+        fprintf(phydrofile, "# pressure\n");
+        fprintf(phydrofile, "# X\n");
+        
+        /* Translation to MAESTRO's cgs-units; my basic unit system being SI */
+        double L_ratio   = ud.h_ref   * (1.0 / 0.01);  
+        double rho_ratio = ud.rho_ref * (1.0e3 * 1.0e-6);
+        double p_ratio   = ud.p_ref   * (1.0e+3 / 1.0e+2);
+        double R_ratio   = ud.p_ref/(ud.rho_ref*ud.T_ref) * (1.0);
+        
+        for(int j=elem->igx; j<elem->icy-elem->igx; j++) {
+            fprintf(phydrofile, "%10f %10f %10f %10f %10f\n", \
+                    elem->y[j] * L_ratio, \
+                    mpv->HydroState->rho0[j] * rho_ratio, \
+                    mpv->HydroState->p0[j]/mpv->HydroState->rho0[j] * (p_ratio/(R_ratio*rho_ratio)), \
+                    mpv->HydroState->p0[j] * p_ratio, 1.0);
+        }
+        
+        fclose(phydrofile);        
+    }
+#endif
 }
 
 /* ================================================================================== */

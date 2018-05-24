@@ -127,8 +127,8 @@ void flux_correction(ConsVars* flux[3],
     printf("\n====================================================\n");
     
     operator_coefficients(hplus, hcenter, hS, elem, Sol, Sol0, mpv, dt);
-    rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
     rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
+    rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
     printf("\nrhs_max = %e (before projection)\n", rhsmax);
     
     assert(integral_condition(flux, rhs, Sol, dt, elem, mpv) != VIOLATED); 

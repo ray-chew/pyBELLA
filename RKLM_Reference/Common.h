@@ -8,9 +8,9 @@
 #define HDFFORMAT  
 
 /* Output options in main.c for debugging;  1 -> output */
-#define OUTPUT_SUBSTEPS 0
-#define OUTPUT_SPLITSTEPS 0
-#define OUTPUT_SUBSTEPS_PREDICTOR 0
+#define OUTPUT_SUBSTEPS 1
+#define OUTPUT_SPLITSTEPS 1
+#define OUTPUT_SUBSTEPS_PREDICTOR 1
 
 /*
 #define OUTPUT_FLUXES
@@ -26,11 +26,11 @@
 /*
  #define EGDE_VELOCITIES_IN_MUSCL_STEP
  #define SYMMETRIC_ADVECTION
- #define FOURTH_ORDER_ADV_FLUXES
  #define FORCES_UNDER_OPSPLIT        --   NOT to be used with nonzero gravity thus far!
  #define FOURTH_ORDER_ADV_FLUXES
  #define FULL_TIME_STEP_ADV_PREDICTOR
  #define SYMMETRIC_ADVECTION
+ #define ADVECTION
  */ 
 #define EGDE_VELOCITIES_IN_MUSCL_STEP
 #define SYMMETRIC_ADVECTION
@@ -42,7 +42,6 @@
  #define NONLINEAR_EOS_IN_1st_PROJECTION -- Newton for  P(pi)
  #define NO_PI_SYNC                      -- P doesn't overwrite pi each time step
  */
-#define NONLINEAR_EOS_IN_1st_PROJECTION
 
 /* ============================================= 
  Elliptic Solver Options
