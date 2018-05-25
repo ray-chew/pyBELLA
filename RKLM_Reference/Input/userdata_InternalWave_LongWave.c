@@ -49,7 +49,7 @@ void User_Data_init(User_Data* ud) {
     double h_ref    = 10000;                 /* [m]               */
     double t_ref    = 100;                   /* [s]               */
     double T_ref    = 300.00;                /* [K]               */
-    double p_ref    = 10e+5;        FIX THIS         /* [Pa]              */
+    double p_ref    = 1e+5;                  /* [Pa]              */
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
     
@@ -72,8 +72,8 @@ void User_Data_init(User_Data* ud) {
     ud->nspec       = NSPEC;
 
     /* Low Mach */
-    ud->is_nonhydrostatic = 0;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
-    ud->is_compressible   = 0;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_nonhydrostatic = 1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
+    ud->is_compressible   = 1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep = 0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
     
@@ -129,14 +129,14 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = SI_MIDPT; /* this code version has only one option */
     ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 0.0625*scalefactor*30.0 / ud->t_ref;
-    ud->dtfixed                = 0.0625*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed0               = 0.25*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed                = 0.25*scalefactor*30.0 / ud->t_ref;
     
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
     ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =  300+1; /* 321; 161;  81;  65; 41;  */
+    ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
     ud->inz =      1;
     
     /* explicit predictor step */
@@ -180,7 +180,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 80;
+    ud->write_file_period = 10;
     ud->file_format = HDF;
     
     {
