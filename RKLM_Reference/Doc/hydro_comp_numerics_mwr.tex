@@ -1,0 +1,293 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% hydro_comp_numerics_mwr.tex --  LaTeX-based template for submissions to American 
+% Meteorological Society journals
+%
+% Template developed by Amy Hendrickson, 2013, TeXnology Inc., 
+% amyh@texnology.com, http://www.texnology.com
+% following earlier work by Brian Papa, American Meteorological Society
+%
+% Email questions to latex@ametsoc.org.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PREAMBLE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Start with one of the following:
+% DOUBLE-SPACED VERSION FOR SUBMISSION TO THE AMS
+\documentclass{ametsoc}
+
+% TWO-COLUMN JOURNAL PAGE LAYOUT---FOR AUTHOR USE ONLY
+% \documentclass[twocol]{ametsoc}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% To be entered only if twocol option is used
+
+\journal{mwr}
+
+%  Please choose a journal abbreviation to use above from the following list:
+% 
+%   jamc     (Journal of Applied Meteorology and Climatology)
+%   jtech     (Journal of Atmospheric and Oceanic Technology)
+%   jhm      (Journal of Hydrometeorology)
+%   jpo     (Journal of Physical Oceanography)
+%   jas      (Journal of Atmospheric Sciences)	
+%   jcli      (Journal of Climate)
+%   mwr      (Monthly Weather Review)
+%   wcas      (Weather, Climate, and Society)
+%   waf       (Weather and Forecasting)
+%   bams (Bulletin of the American Meteorological Society)
+%   ei    (Earth Interactions)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Citations should be of the form ``author year''  not ``author, year''
+\bibpunct{(}{)}{;}{a}{}{,}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+
+%\usepackage[squaren]{SIunits}
+\usepackage{graphicx}
+
+%----------------------------------------------------------------------------
+%---- Farben und Macros zur Textmarkierung ----------------------------------
+%----------------------------------------------------------------------------
+\usepackage{color}
+\definecolor{light}{gray}{0.50}
+\definecolor{heavy}{gray}{0.35}
+\definecolor{black}{gray}{0.0}
+\definecolor{dgreen}{rgb}{0.0,0.7,0}
+\definecolor{dred}{rgb}{0.9959,0,0}
+\definecolor{green}{rgb}{0.0,0.99599,0.0}
+\definecolor{purple}{rgb}{0.6,0.0,0.4}
+
+\newcommand{\red}[1]{\textcolor{dred}{#1}}
+\newcommand{\green}[1]{\textcolor{green}{#1}}
+\newcommand{\dgreen}[1]{\textcolor{dgreen}{#1}}
+\newcommand{\purple}[1]{\textcolor{purple}{#1}}
+\newcommand{\blue}[1]{\textcolor{blue}{#1}}
+\newcommand{\black}[1]{\textcolor{black}{#1}}
+\newcommand{\grey}[1]{\textcolor{heavy}{#1}}
+\newcommand{\lightgrey}[1]{\textcolor{light}{#1}}
+
+\theoremstyle{definition}
+\newtheorem{algorithm}{Algorithm}
+
+
+%----------------------------------------------------------------------------
+%---- Kommentare ------------------------------------------------------------
+%----------------------------------------------------------------------------
+
+\newcommand{\klein}[1]{\textcolor{blue}{#1}}
+\newcounter{kleincommentno}
+\setcounter{kleincommentno}{1}
+\newcommand{\kleincomment}[1]{{\small\bfseries\textcolor{blue}{ {\small\bfseries${}^{[\arabic{kleincommentno}]}$}}%
+\marginpar{\textcolor{blue}{{\small{\bfseries[\arabic{kleincommentno}]}\ \small #1}}\addtocounter{kleincommentno}{1}}}}
+
+\newcommand{\benacchio}[1]{\textcolor{red}{#1}}
+\newcounter{benacchiocommentno}
+\setcounter{benacchiocommentno}{1}
+\newcommand{\benacchiocomment}[1]{{\small\bfseries\textcolor{red}{ {\small\bfseries${}^{[\arabic{benacchiocommentno}]}$}}%
+\marginpar{\textcolor{red}{{\small{\bfseries[\arabic{benacchiocommentno}]}\ \small #1}}\addtocounter{benacchiocommentno}{1}}}}
+
+%----------------------------------------------------------------------------
+%---- Eigene Macros ---------------------------------------------------------
+%----------------------------------------------------------------------------
+\newcommand{\hsc}{h_{\rm sc}}
+\newcommand{\order}[1]{^{(#1)}}
+\let\dss=\displaystyle
+
+\renewcommand{\vector}[1]{\relax\ifmmode\mathchoice
+{\mbox{\boldmath$\displaystyle#1$}}
+{\mbox{\boldmath$\displaystyle#1$}}
+{\mbox{\boldmath$\scriptstyle#1$}}
+{\mbox{\boldmath$\scriptscriptstyle#1$}}\else
+\hbox{\boldmath$\textstyle#1$}\fi}
+
+\newcommand{\eq}[1]{(\ref{#1})}
+
+\newcommand{\cbar}{\overline{c}}
+\newcommand{\thetabar}{\overline{\theta}}
+\newcommand{\thetatilde}{\widetilde{\theta}}
+
+\newcommand{\vk}{\vector{k}}
+\newcommand{\vu}{\vector{u}}
+\newcommand{\vv}{\vector{v}}
+\newcommand{\vx}{\vector{x}}
+
+\newcommand{\ubar}{\overline{u}}
+\newcommand{\vbar}{\overline{v}}
+
+\newcommand{\advection}[1]{\mathcal{A}\left[#1\right]}
+\newcommand{\advectionNum}[1]{\widetilde{\mathcal{A}}\left[#1\right]}
+\newcommand{\rhs}[1]{\mathcal{R}\left[#1\right]}
+\newcommand{\source}[1]{S\left(#1\right)}
+\newcommand{\Id}{{\rm Id}}
+
+\newcommand{\pprime}{p'}
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\quart}{\frac{1}{4}}
+\newcommand{\eightth}{\frac{1}{8}}
+
+\newcommand{\ie}{\emph{i.e.}}
+
+\newcommand{\Nsq}{N^2}
+\newcommand{\Nscsq}{(\tau N)^2}
+
+\newcommand{\dt}{\Delta t}
+\newcommand{\dz}{\Delta z}
+\newcommand{\chibar}{\overline{\chi}}
+\newcommand{\chitilde}{{\widetilde \chi}}
+\newcommand{\Thetabar}{\overline{\Theta}}
+\newcommand{\Thetatilde}{{\widetilde \Theta}}
+\newcommand{\pibar}{\overline{\pi}}
+\newcommand{\pitilde}{{\widetilde \pi}}
+
+\newcommand{\pp}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\ppn}[3]{\frac{\partial^{#1} #2}{\partial #3^{#1}}}
+
+\newcommand{\bigoh}[1]{\mathcal{O}\left(#1\right)}
+\newcommand{\littleoh}[1]{{\scriptstyle\mathcal{O}}\left(#1\right)}
+
+\newcommand{\reals}{\mathbb{R}}
+
+\newcommand{\eps}{\varepsilon}
+\newcommand{\rbeta}{\red{\vector{\beta}}}
+\newcommand{\balpha}{\blue{\vector{\alpha}}}
+
+\newcommand{\Lopfirst}{{\cal L}^{\rm 1st}}
+
+
+
+%%% To be entered by author:
+
+%% May use \\ to break lines in title:
+
+\title{A blended semi-implicit numerical model for small-to-planetary scale atmospheric dynamics}
+
+%%% Enter authors' names, as you see in this example:
+%%% Use \correspondingauthor{} and \thanks{Current Affiliation:...}
+%%% immediately following the appropriate author.
+%%%
+%%% Note that the \correspondingauthor{} command is NECESSARY.
+%%% The \thanks{} commands are OPTIONAL.
+
+\authors{Tommaso Benacchio\correspondingauthor{Tommaso  Benacchio, Met Office,
+FitzRoy Road, Exeter EX1 3PB, UK.}}
+
+\email{tommaso.benacchio@metoffice.gov.uk}
+
+\affiliation{Met Office, Exeter, UK}
+
+\extraauthor{Rupert Klein}
+
+\extraaffil{FB Mathematik \& Informatik, Freie Universit\"at Berlin, Germany}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ABSTRACT
+%
+% Enter your Abstract here
+
+\abstract{} 
+
+\begin{document}
+
+%% Necessary!
+\maketitle
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MAIN BODY OF PAPER
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\section{Introduction}
+
+\section{Methods}
+
+\section{Numerical Results}
+
+\section{Discussion and conclusion}
+
+\acknowledgments T.B.'s contribution is \copyright~British Crown Copyright 2018.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% FIGURES---PLACE AT END OF DOCUMENT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{figure}[h]
+% \centerline{\includegraphics[width=19pc]{figure01.pdf}}
+%  \caption{Enter the caption for your figure here.  Repeat as
+%  necessary for each of your figures. Figure from \protect\cite{Knutti2008}.}\label{f1}
+%\end{figure}
+%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TABLES---PLACE AT END OF DOCUMENT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{table}[h]
+%\caption{This is a sample table caption and table layout.  
+%Table from Lorenz (1963).}\label{t1}
+%\begin{center}
+%\begin{tabular}{ccccrrcrc}
+%\topline
+%$N$ & $X$ & $Y$ & $Z$\\
+%\midline
+% 0000 & 0000 & 0010 & 0000 \\
+% 0005 & 0004 & 0012 & 0000 \\
+% 0010 & 0009 & 0020 & 0000 \\
+% 0015 & 0016 & 0036 & 0002 \\
+% 0020 & 0030 & 0066 & 0007 \\
+% 0025 & 0054 & 0115 & 0024 \\
+%\botline
+%\end{tabular}
+%\end{center}
+%\end{table}
+%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% APPENDIXES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% If only one appendix, use
+%%\appendix%
+
+%% If more than one appendix, use \appendix[<letter>], e.g.,
+% \appendix[A] 
+
+%\appendixtitle{Title of Appendix}
+
+
+%\subsection{Appendix section}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%APPENDIX FIGURE AND TABLE EXAMPLES---PLACE AT END OF DOCUMENT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%\begin{table}
+%\appendcaption{A1}{Here is the appendix table caption.}
+%\centering
+%\begin{tabular}{ccc}
+%a&b&c\\
+%d&e&f
+%\end{tabular}
+%\end{table}
+%
+%\begin{figure}
+%\centerline{(illustration here)}
+%\appendcaption{A1}{Here is the appendix figure caption.}
+%\end{figure}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% REFERENCES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\bibliographystyle{ametsoc2014}
+\bibliography{Bibliography}
+
+\end{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% END OF HYDRO_COMP_NUMERICS_MWR.TEX
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
