@@ -194,8 +194,10 @@ int main( void )
             }
 		}  
         
-		if(ud.write_file == ON) 
+        if(ud.write_file == ON) {
             putout(Sol, ud.file_name, "Sol", elem, node, 1);
+            dt_info.time_step_switch = 0;
+        }
 		tout++;
 	}
 	

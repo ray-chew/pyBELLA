@@ -91,7 +91,7 @@ elseif strcmp(test_case, 'Skamarock-Klemp-Internal-Wave')
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Acoustic-Wave')
     scalefactor = 1.0;
-    ncx = 300; 
+    ncx = 150; 
     ncy = 10;  
     L   = 300.0 * scalefactor;  % 
     x0  = 0.5*L;
@@ -156,7 +156,7 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'rho'; folderstr = 'rho'; titlestr = 'rho'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 0;
 %varstr = 'p'; folderstr = 'p'; titlestr = 'p'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'S'; folderstr = 'S'; titlestr = 'S'; ndummy = 2; arraysize = [ncx ncy];
-varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy]; rhoY_diff = 1;
+%varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy]; rhoY_diff = 1;
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
@@ -164,7 +164,7 @@ varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize =
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZ';  folderstr = 'rhoZ'; titlestr = 'rhoZ'; ndummy = 2; arraysize = [ncx ncy];
-%varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
+varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
 %varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy];
