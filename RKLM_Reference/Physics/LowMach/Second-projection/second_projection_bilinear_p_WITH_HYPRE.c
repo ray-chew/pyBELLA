@@ -144,7 +144,7 @@ void second_projection(
     operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
     rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry, dt, 1.0);
     printf("\nrhsmax = %e\n", rhs_max);
-#if 1
+
     if (ud.is_compressible) {
         rhs_from_p_old(rhs, elem, node, mpv, hcenter);
         catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
@@ -153,9 +153,8 @@ void second_projection(
         catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
         assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);         
     }
-#endif
     
-#if 1
+#if 0
     FILE *prhsfile = NULL;
     char fn[120], fieldname[90];
     if (rhs_output_count < 10) {

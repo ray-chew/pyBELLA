@@ -419,7 +419,7 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
     
     double Gammainv = th.Gammainv;
     
-    /* vertical averages (see docs; Semi-Implicit-Gravity.tex, section \ref{sec:HydroInit}) */
+    /* vertical averages (see docs; Semi-Implicit-Gravity.tex, section   \ref{sec:HydroInit}) */
     memset(beta,0.0,elem->icx*sizeof(double));
     memset(bdpdx,0.0,elem->icx*sizeof(double));
     for (int i=1; i<icx-1; i++) {

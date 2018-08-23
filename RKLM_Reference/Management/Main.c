@@ -6,6 +6,10 @@
 #include <float.h>
 #ifdef MACPROFILE
 #include <profiler.h> 
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #endif
 #include "error.h"
 #include "math_own.h"
@@ -56,7 +60,18 @@ int main( void )
     TimeStepInfo dt_info;
 	const double* tout = ud.tout;
 	int output_switch = 0;
-                             	
+    
+#ifdef ONE_POINT_TIME_SERIES
+    int nts = 500;
+    int its = 0;
+    int i_ts, j_ts, n_ts;
+    double *time_series = (double*)malloc(nts*sizeof(double));
+    for (int i = 0; i < nts; i++) {
+        time_series[i] = 0.0;
+    };
+    its++;
+#endif
+    
 	/* data allocation and initialization */
 	Data_init();
     
@@ -72,7 +87,7 @@ int main( void )
     if (ud.initial_projection == CORRECT) {
         euler_backward_gravity(Sol, mpv, elem, 5.0);
         second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, 10.0);
-        cell_pressure_to_nodal_pressure(mpv, elem, node);
+        // cell_pressure_to_nodal_pressure(mpv, elem, node);
     }
 
 	if(ud.write_file == ON) 
@@ -140,7 +155,7 @@ int main( void )
 
             ConsVars_set(Sol, Sol0, elem->nc);
             // if (step == 0) cell_pressure_to_nodal_pressure(mpv, elem, node);
-            // cell_pressure_to_nodal_pressure(mpv, elem, node);
+            cell_pressure_to_nodal_pressure(mpv, elem, node);
             
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nfull time step with predicted advective flux");
@@ -180,6 +195,15 @@ int main( void )
             
 			t += dt;
 			step++;
+            
+#ifdef ONE_POINT_TIME_SERIES
+            i_ts  = 1*elem->icx/3;
+            j_ts  = 4*elem->icy/5;
+            n_ts = j_ts*elem->icx + i_ts;
+            its  = MIN_own(nts-1, step);
+            time_series[its] = Sol->rhov[n_ts]/Sol->rho[n_ts];
+#endif
+
 			            			
             ud.nonhydrostasy   = nonhydrostasy(t);
             ud.compressibility = compressibility(t);
@@ -204,5 +228,15 @@ int main( void )
 	/* data release */
 	Data_free();
 	    
+#ifdef ONE_POINT_TIME_SERIES
+    char fn[200];
+    sprintf(fn, "%s/time_series.txt", ud.file_name);
+    FILE *TSfile = fopen(fn, "w+");
+    for(int i=0; i<nts; i++) {
+        fprintf(TSfile, "%e \n", time_series[i]);
+    }
+    fclose(TSfile);
+#endif
+
 	return(1);
 }

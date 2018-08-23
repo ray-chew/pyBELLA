@@ -15,6 +15,8 @@
 #define OUTPUT_FLUXES
  */
 
+#define ONE_POINT_TIME_SERIES
+
 /* ============================================= 
  Initial Data Options
  ============================================= */

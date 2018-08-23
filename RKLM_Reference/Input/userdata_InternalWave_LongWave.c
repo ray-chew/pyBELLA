@@ -72,7 +72,7 @@ void User_Data_init(User_Data* ud) {
     ud->nspec       = NSPEC;
 
     /* Low Mach */
-    ud->is_nonhydrostatic = 0;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
+    ud->is_nonhydrostatic = 1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
     ud->is_compressible   = 1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep = 0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
@@ -128,9 +128,9 @@ void User_Data_init(User_Data* ud) {
     
     /* time discretization */
     ud->time_integrator        = SI_MIDPT; /* this code version has only one option */
-    ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = scalefactor*30.0 / ud->t_ref;
-    ud->dtfixed                = scalefactor*30.0 / ud->t_ref;
+    ud->CFL                    = 0.9; /* 0.45; 0.9; 0.8; */
+    ud->dtfixed0               = 0.25*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed                = 0.25*scalefactor*30.0 / ud->t_ref;
     
     set_time_integrator_parameters(ud);
     
@@ -142,8 +142,8 @@ void User_Data_init(User_Data* ud) {
     /* explicit predictor step */
     /* Recovery */
     ud->recovery_order = SECOND; /* FIRST, SECOND */ 
-    ud->limiter_type_scalars  = NONE; 
-    ud->limiter_type_velocity = NONE; 
+    ud->limiter_type_scalars  = MONOTONIZED_CENTRAL; 
+    ud->limiter_type_velocity = MONOTONIZED_CENTRAL; 
     /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
     
     /* parameters for SWEBY_MUNZ limiter family */
@@ -164,6 +164,7 @@ void User_Data_init(User_Data* ud) {
     ud->second_projection_local_precision = tol;  /* 1.e-05 should be enough */
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
+    ud->initial_projection                = CORRECT;
     
     /* numerics parameters */
     ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -172,7 +173,7 @@ void User_Data_init(User_Data* ud) {
     /* =====  CODE FLOW CONTROL  ======================================================== */
     /* ================================================================================== */
     
-    ud->tout[0] = scalefactor * 3000.0 / ud->t_ref;
+    ud->tout[0] = scalefactor * 1500.0 / ud->t_ref; /* 3000 */
     ud->tout[1] = -1.0;
 
     ud->stepmax = 10000;
@@ -251,12 +252,20 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
         for(j = 0; j < elem->icy; j++) {
             x     = elem->x[i];
             y     = elem->y[j];
+#if 0
+            Y[j]  = stratification(y)  + delth * sin(PI*y);
+#else
             Y[j]  = stratification(y)  + delth * molly(x) * sin(PI*y)  / (1.0 + (x-xc)*(x-xc) / (a*a));
+#endif
         }        
         for(j = 0; j < node->icy; j++) {
             xn    = node->x[i];
             yn    = node->y[j];
+#if 0
+            Yn[j] = stratification(yn)  + delth * sin(PI*yn);
+#else
             Yn[j] = stratification(yn)  + delth * molly(xn) * sin(PI*yn)  / (1.0 + (xn-xc)*(xn-xc) / (a*a));
+#endif
         }        
         /* determine hydrostatic pressure distributions column-wise (lateral relation still neglected) */
         Hydrostatics_Column(HySt, HyStn, Y, Yn, elem, node);
