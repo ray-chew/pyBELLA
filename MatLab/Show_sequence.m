@@ -7,8 +7,8 @@
 extrafigno = 52;
 
 %modelstr = '';
-modelstr = 'comp';
-%modelstr = 'psinc' ;  
+%modelstr = 'comp';
+modelstr = 'psinc' ;  
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
@@ -83,8 +83,8 @@ elseif strcmp(test_case, 'Internal-Wave-Strong-Strat')
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Skamarock-Klemp-Internal-Wave')
     scalefactor = 1.0;
-    ncx = 300; 
-    ncy = 10;  
+    ncx = 600; 
+    ncy = 40;  
     L   = 300.0 * scalefactor;  % 
     x0  = 0.5*L;
     H   = 10.0;  %

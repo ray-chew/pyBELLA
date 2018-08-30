@@ -1322,7 +1322,6 @@ void euler_forward_non_advective(ConsVars* Sol,
             break;
     }
     
-    
     /* last half Euler backward step equals first half Euler forward step */
     if (ud.is_compressible) {
         for (int nn=0; nn<node->nc; nn++) {
