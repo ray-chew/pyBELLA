@@ -1325,7 +1325,7 @@ void euler_forward_non_advective(ConsVars* Sol,
     /* last half Euler backward step equals first half Euler forward step */
     if (ud.is_compressible) {
         for (int nn=0; nn<node->nc; nn++) {
-#if 0
+#if 0 
             mpv->p2_nodes[nn] += dp2n[nn] / MAX_own(1.0, cnt[nn]);
 #else        
             mpv->p2_nodes[nn] += mpv->dp2_nodes[nn];
