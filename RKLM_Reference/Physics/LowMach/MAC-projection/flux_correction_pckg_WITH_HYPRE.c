@@ -105,7 +105,7 @@ void flux_correction(ConsVars* flux[3],
                      const ElemSpaceDiscr* elem,
                      const NodeSpaceDiscr* node,
                      const double t,
-                     const double dt,
+                     const double dt_in,
                      const int step) {
     
     extern User_Data ud;
@@ -121,6 +121,13 @@ void flux_correction(ConsVars* flux[3],
     double rhsmax;
     
     int n;
+    
+    /* all routines here had originally been written to perform a half time step
+     of  0.5*dt  given the value of dt in the list of arguments; I have changed
+     this to make usage of the routine more transparent. With the following line
+     implemented, it essentially computed the fluxes corresponding to an EULER
+     backward step over  dt  */
+    double dt = 2.0*dt_in;
     
     printf("\n\n====================================================");
     printf("\nFirst Projection");

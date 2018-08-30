@@ -72,9 +72,9 @@ void User_Data_init(User_Data* ud) {
     ud->nspec       = NSPEC;
 
     /* Low Mach */
-    ud->is_nonhydrostatic = 1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
-    ud->is_compressible   = 1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
-    ud->acoustic_timestep = 0;    /* advective time step -> 0;  acoustic time step -> 1; */
+    ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
+    ud->is_compressible   =  1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->acoustic_timestep =  0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
     
     /* geo-stuff */
@@ -173,7 +173,7 @@ void User_Data_init(User_Data* ud) {
     /* =====  CODE FLOW CONTROL  ======================================================== */
     /* ================================================================================== */
     
-    ud->tout[0] = scalefactor * 1500.0 / ud->t_ref; /* 3000 */
+    ud->tout[0] = scalefactor * 0.5 * 3000.0 / ud->t_ref; /* 3000 */
     ud->tout[1] = -1.0;
 
     ud->stepmax = 10000;
@@ -181,7 +181,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 10;
+    ud->write_file_period = 20;
     ud->file_format = HDF;
     
     {

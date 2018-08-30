@@ -518,6 +518,46 @@ double rhoe(
 	return p * gm1inv + 0.5 * Msq * rho * (u * u + v * v + w * w);
 }
 
+
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
+void dt_average(ConsVars *Sol, 
+                MPV *mpv,
+                const ConsVars * Sol0,
+                const ElemSpaceDiscr *elem)
+{
+    extern User_Data ud;
+    
+    /* average last two time steps to see whether this eliminates the 
+     on-flip-per-time-step fast oscillations in the compressible setting
+     */
+    const int icx = elem->icx;
+    const int igx = elem->igx;
+    const int icy = elem->icy;
+    const int igy = elem->igy;
+    const int icz = elem->icz;
+    const int igz = elem->igz;
+
+    for (int k = igz; k<icz-igz; k++) {
+        for (int j = igy; j<icy-igy; j++) {
+            for (int i = igx; i<icx-igx; i++) {
+                int nijk = k*icx*icy + j*icx + i;
+                
+                Sol->rho[nijk]  = 0.5*(Sol->rho[nijk] +Sol0->rho[nijk]);
+                Sol->rhou[nijk] = 0.5*(Sol->rhou[nijk]+Sol0->rhou[nijk]);
+                Sol->rhov[nijk] = 0.5*(Sol->rhov[nijk]+Sol0->rhov[nijk]);
+                Sol->rhow[nijk] = 0.5*(Sol->rhow[nijk]+Sol0->rhow[nijk]);
+                Sol->rhoe[nijk] = 0.5*(Sol->rhoe[nijk]+Sol0->rhoe[nijk]);
+                Sol->rhoY[nijk] = 0.5*(Sol->rhoY[nijk]+Sol0->rhoY[nijk]);
+                for (int isp = 0; isp < ud.nspec; isp++) { 
+                    Sol->rhoX[isp][nijk] = 0.5*(Sol->rhoX[isp][nijk]+Sol0->rhoX[isp][nijk]);
+                }
+            }
+        }
+    }
+}
+
 /*------------------------------------------------------------------------------
  
  ------------------------------------------------------------------------------*/
@@ -676,9 +716,11 @@ double compressibility(const double t)
              double b = 1.0 / 0.00225;
              return(MIN_own(1.0, MAX_own(0.0, b*(t-a))));
              */
-            double a = 12.5;
-            double b = 1.0 / 48.0;
-            double c = MIN_own(1.0, MAX_own(0.0, b*(t-a)));
+            double dtloc = 12.0;
+            double a     = 0.0 * dtloc;
+            double b     = 1.0 / dtloc / 20.0;
+            double tau   = MIN_own(1.0, MAX_own(0.0, b*(t-a)));
+            double c     = 0.5 * (1.0 - cos(PI*tau));
             return c;
             /*
             return(0.0);

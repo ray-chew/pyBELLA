@@ -31,7 +31,7 @@ void flux_correction(ConsVars* flux[3],
                      const ElemSpaceDiscr* elem,
                      const NodeSpaceDiscr* node,
 					 const double t,
-					 const double dt,
+					 const double dt_in,
                      const int step);
 
 double controlled_variable_flux_divergence(double* rhs, 

@@ -1106,7 +1106,6 @@ void euler_forward_non_advective(ConsVars* Sol,
     switch (elem->ndim) {
         case 1:
         {
-            const int xper  = (ud.bdrytype_max[0] == PERIODIC ? 1 : 0);
             const int icx   = elem->icx;
             const int igx   = elem->igx;
             const double dx = node->dx;
@@ -1128,8 +1127,8 @@ void euler_forward_non_advective(ConsVars* Sol,
                 Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
                 Sol->rhoY[nc]  = Sol->rhoY[nc] - dt * div[nc];
                 
-                mpv->dp2_nodes[nn0] -= dt * dpidP * div[nn0];
-                mpv->dp2_nodes[nn1] -= dt * dpidP * div[nn1];
+                dp2n[nn0] -= dt * dpidP * div[nn0];
+                dp2n[nn1] -= dt * dpidP * div[nn1];
 
                 cnt[nn0] += 1.0;
                 cnt[nn1] += 1.0;
@@ -1212,10 +1211,10 @@ void euler_forward_non_advective(ConsVars* Sol,
                     Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
                     Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
 
-                    mpv->dp2_nodes[nn00] -= dt * dpidP * div[nn00];
-                    mpv->dp2_nodes[nn01] -= dt * dpidP * div[nn01];
-                    mpv->dp2_nodes[nn11] -= dt * dpidP * div[nn11];
-                    mpv->dp2_nodes[nn10] -= dt * dpidP * div[nn10];
+                    dp2n[nn00] -= dt * dpidP * div[nn00];
+                    dp2n[nn01] -= dt * dpidP * div[nn01];
+                    dp2n[nn11] -= dt * dpidP * div[nn11];
+                    dp2n[nn10] -= dt * dpidP * div[nn10];
                     
                     cnt[nn00] += 1.0;
                     cnt[nn01] += 1.0;
@@ -1285,14 +1284,14 @@ void euler_forward_non_advective(ConsVars* Sol,
                         Sol->rhoY[nc]  = Sol->rhoY[nc] - dt * div[nc];
                         Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
                         
-                        mpv->dp2_nodes[nn000] -= dt * dpidP * div[nn000];
-                        mpv->dp2_nodes[nn001] -= dt * dpidP * div[nn001];
-                        mpv->dp2_nodes[nn011] -= dt * dpidP * div[nn011];
-                        mpv->dp2_nodes[nn010] -= dt * dpidP * div[nn010];
-                        mpv->dp2_nodes[nn100] -= dt * dpidP * div[nn100];
-                        mpv->dp2_nodes[nn101] -= dt * dpidP * div[nn101];
-                        mpv->dp2_nodes[nn111] -= dt * dpidP * div[nn111];
-                        mpv->dp2_nodes[nn110] -= dt * dpidP * div[nn110];
+                        dp2n[nn000] -= dt * dpidP * div[nn000];
+                        dp2n[nn001] -= dt * dpidP * div[nn001];
+                        dp2n[nn011] -= dt * dpidP * div[nn011];
+                        dp2n[nn010] -= dt * dpidP * div[nn010];
+                        dp2n[nn100] -= dt * dpidP * div[nn100];
+                        dp2n[nn101] -= dt * dpidP * div[nn101];
+                        dp2n[nn111] -= dt * dpidP * div[nn111];
+                        dp2n[nn110] -= dt * dpidP * div[nn110];
                         
                         cnt[nn000] += 1.0;
                         cnt[nn001] += 1.0;

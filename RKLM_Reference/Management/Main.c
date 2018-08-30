@@ -60,21 +60,31 @@ int main( void )
     TimeStepInfo dt_info;
 	const double* tout = ud.tout;
 	int output_switch = 0;
+        
+	/* data allocation and initialization */
+	Data_init();
     
 #ifdef ONE_POINT_TIME_SERIES
     int nts = 500;
     int its = 0;
     int i_ts, j_ts, n_ts;
-    double *time_series = (double*)malloc(nts*sizeof(double));
+    ConsVars *time_series = ConsVars_new(nts);
+    /*
     for (int i = 0; i < nts; i++) {
-        time_series[i] = 0.0;
+        time_series->rho[i]  = 0.0;
+        time_series->rhou[i] = 0.0;
+        time_series->rhov[i] = 0.0;
+        time_series->rhow[i] = 0.0;
+        time_series->rhoe[i] = 0.0;
+        time_series->rhoY[i] = 0.0;
+        for (int nsp = 0; nsp < ud.nspec; nsp++) {
+            time_series->rhoX[nsp][i] = 0.0;
+        }
     };
     its++;
+     */
 #endif
-    
-	/* data allocation and initialization */
-	Data_init();
-    
+
     ud.nonhydrostasy   = nonhydrostasy(0);
     ud.compressibility = compressibility(0);
     
@@ -107,6 +117,7 @@ int main( void )
 		while( t < *tout && step < ud.stepmax ) { 
 
             double flux_weight_old, flux_weight_new;
+            double dt_adv_flux;
             
             /* initialize fluxes in preparation of explicit predictor */
             ConsVars_setzero(flux[0], elem->nfx);
@@ -129,14 +140,16 @@ int main( void )
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nhalf-time prediction of advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
-                                    
+                              
+            dt_adv_flux = 0.5*dt;
+            
             /* First order splitting for Corilis - just for the advection flux prediction */
-            Explicit_Coriolis(Sol, elem, 0.5*dt);
+            Explicit_Coriolis(Sol, elem, dt_adv_flux);
             
             /* explicit advection half time step preparing advection flux calculation 
-             advect(Sol, flux, force, 0.5*dt, elem, FLUX_INTERNAL, WITHOUT_FORCES, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
-             advect(Sol, flux, force, 0.5*dt, elem, FLUX_INTERNAL, WITHOUT_FORCES, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
-             advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITHOUT_FORCES, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+             advect(Sol, flux, force, dt_adv_flux, elem, FLUX_INTERNAL, WITHOUT_FORCES, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
+             advect(Sol, flux, force, dt_adv_flux, elem, FLUX_INTERNAL, WITHOUT_FORCES, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+             advect(Sol, flux, force, dt_adv_flux, elem, FLUX_EXTERNAL, WITHOUT_FORCES, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
              - symmetrized splitting instead of simple splitting does not improve vortex symmetry  
              */
             flux_weight_old = 0.0;
@@ -144,19 +157,19 @@ int main( void )
 
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, flux_weight_old, flux_weight_new);
 #ifdef ADVECTION
-            advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITHOUT_FORCES, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
+            advect(Sol, flux, force, dt_adv_flux, elem, FLUX_EXTERNAL, WITHOUT_FORCES, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
 #endif
             /* explicit part of Euler backward gravity over half time step */
-            euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt);
+            euler_backward_gravity(Sol, (const MPV*)mpv, elem, dt_adv_flux);
             
             /* divergence-controlled advective fluxes at the half time level */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, flux_weight_old, flux_weight_new);
-            flux_correction(flux, Sol, Sol0, elem, node, t, dt, step);        
+            flux_correction(flux, Sol, Sol0, elem, node, t, dt_adv_flux, step);        
 
             ConsVars_set(Sol, Sol0, elem->nc);
-            // if (step == 0) cell_pressure_to_nodal_pressure(mpv, elem, node);
             cell_pressure_to_nodal_pressure(mpv, elem, node);
-            
+            // if (step == 0) cell_pressure_to_nodal_pressure(mpv, elem, node);
+          
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nfull time step with predicted advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
@@ -164,7 +177,6 @@ int main( void )
             /* Strang splitting for Coriolis, first step */
             Explicit_Coriolis(Sol, elem, 0.5*dt);  
              
-                        
             /* explicit EULER half time step for gravity and pressure gradient */ 
             euler_forward_non_advective(Sol, (const MPV*)mpv, elem, node, 0.5*dt, WITH_PRESSURE);
                         
@@ -185,26 +197,35 @@ int main( void )
               */
             
             if (ud.is_compressible) {
-                adjust_pi_cells(mpv, Sol, elem); 
+                if (step%10 == 0 && 0) {
+                  dt_average(Sol, mpv, Sol0, elem);  
+                } 
+                adjust_pi_cells(mpv, Sol, elem);
             }
                         
             if (ud.absorber) {
                 Absorber(Sol, (const ElemSpaceDiscr*)elem, (const double)t, (const double)dt); 
             }                                    
-            
-            
-			t += dt;
-			step++;
-            
+                        
 #ifdef ONE_POINT_TIME_SERIES
-            i_ts  = 1*elem->icx/3;
-            j_ts  = 4*elem->icy/5;
+            i_ts  = 2*elem->icx/3;
+            j_ts  = 2*elem->icy/3;
             n_ts = j_ts*elem->icx + i_ts;
             its  = MIN_own(nts-1, step);
-            time_series[its] = Sol->rhov[n_ts]/Sol->rho[n_ts];
+            time_series->rho[its] = Sol->rho[n_ts];
+            time_series->rhou[its] = Sol->rhou[n_ts];
+            time_series->rhov[its] = Sol->rhov[n_ts];
+            time_series->rhow[its] = Sol->rhow[n_ts];
+            time_series->rhoe[its] = Sol->rhoe[n_ts];
+            time_series->rhoY[its] = Sol->rhoY[n_ts];
+            for (int nsp = 0; nsp < ud.nspec; nsp++) {
+                time_series->rhoX[nsp][its] = Sol->rhoX[nsp][n_ts];
+            }
 #endif
-
-			            			
+            
+            t += dt;
+            step++;
+        
             ud.nonhydrostasy   = nonhydrostasy(t);
             ud.compressibility = compressibility(t);
             
@@ -232,10 +253,18 @@ int main( void )
     char fn[200];
     sprintf(fn, "%s/time_series.txt", ud.file_name);
     FILE *TSfile = fopen(fn, "w+");
+    fprintf(TSfile, "rho_ts rhou_ts rhov_ts rhow_ts rhoe_ts rhoY_ts \n");
     for(int i=0; i<nts; i++) {
-        fprintf(TSfile, "%e \n", time_series[i]);
+        fprintf(TSfile, "%e %e %e %e %e %e \n", 
+                time_series->rho[i], 
+                time_series->rhou[i], 
+                time_series->rhov[i], 
+                time_series->rhow[i], 
+                time_series->rhoe[i], 
+                time_series->rhoY[i]-time_series->rhoY[0]);
     }
     fclose(TSfile);
+    ConsVars_free(time_series);
 #endif
 
 	return(1);
