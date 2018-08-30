@@ -1075,9 +1075,18 @@ void euler_forward_non_advective(ConsVars* Sol,
     extern Thermodynamic th;
     extern BDRY* bdry;
 
+    extern double *W0;
+    extern enum Boolean W0_in_use;
+
     double nonhydro = ud.nonhydrostasy;
 
+    /*
     double* dp2n = mpv->dp2_nodes;
+     */
+    assert(W0_in_use == WRONG);
+    W0_in_use = CORRECT;
+    double* dp2n = W0;
+
     double* p2n  = mpv->p2_nodes;
     
     const double g        = ud.gravity_strength[1];
@@ -1317,14 +1326,24 @@ void euler_forward_non_advective(ConsVars* Sol,
     /* last half Euler backward step equals first half Euler forward step */
     if (ud.is_compressible) {
         for (int nn=0; nn<node->nc; nn++) {
-            mpv->p2_nodes[nn] += mpv->dp2_nodes[nn] / MAX_own(1.0, cnt[nn]);
+#if 0
+            mpv->p2_nodes[nn] += dp2n[nn] / MAX_own(1.0, cnt[nn]);
+#else        
+            mpv->p2_nodes[nn] += mpv->dp2_nodes[nn];
+#endif
         }
     }
+
+    W0_in_use = WRONG;
+
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
     Set_Explicit_Boundary_Data(Sol, elem);
     
     free(cnt);
+
+
 }
+
 
 /* ========================================================================== */
 
