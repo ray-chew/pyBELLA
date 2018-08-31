@@ -81,7 +81,6 @@ void correction_nodes(
 					  const NodeSpaceDiscr* node,
                       const double* hplus[3], 
 					  double* p2, 
-					  const double t,
 					  const double dt);
 
 /* Functions needed for the hydrostatic case */
@@ -92,7 +91,7 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
 
 /* ========================================================================== */
 
-#define OUTPUT_RHS 1
+#define OUTPUT_RHS 0
 #if OUTPUT_RHS
 static int rhs_output_count = 0;
 #endif
@@ -170,7 +169,7 @@ void second_projection(
 #endif
     
     variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
-    correction_nodes(Sol, elem, node, (const double**)hplus, p2, t, dt);
+    correction_nodes(Sol, elem, node, (const double**)hplus, p2, dt);
     
     for(ii=0; ii<nc; ii++) {
         double p2_new      = p2[ii];
@@ -805,8 +804,11 @@ static void operator_coefficients_nodes(
 
                 for(i = igx; i < icx - igx; i++) {
                     n = m + i;     
-                    
+#ifdef TIME_AVED_OPCOEFFS_2ND
                     double Y     = 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]); 
+#else
+                    double Y     = Sol->rhoY[n]/Sol->rho[n]; 
+#endif
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
                     double Nsqsc = 0.25*dt*dt * (g/Msq) * strat;                    
                     double gimpy = 1.0 / (nonhydro + Nsqsc);
@@ -818,7 +820,11 @@ static void operator_coefficients_nodes(
 									
 			for(j = igy; j < icy - igy; j++) {m = j * icx;
 				for(i = igx; i < icx - igx; i++) {n = m + i;
+#ifdef TIME_AVED_OPCOEFFS_2ND
 					hc[n] = ccenter * pow(0.5*(Sol->rhoY[n]+Sol0->rhoY[n]),cexp);
+#else
+                    hc[n] = ccenter * pow(Sol->rhoY[n],cexp);
+#endif
 				}
 			}
 			break;
@@ -856,7 +862,11 @@ static void operator_coefficients_nodes(
 
                     for(i = igx; i < icx - igx; i++) {n = m + i;
                         {             
+#ifdef TIME_AVED_OPCOEFFS_2ND
                             double Y     = 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]); 
+#else
+                            double Y     = Sol->rhoY[n]/Sol->rho[n]; 
+#endif
                             double coeff = Gammainv * Sol->rhoY[n] * Y;
                             double Nsqsc = 0.25*dt*dt * (g/Msq) * strat;                    
                             double gimpy = 1.0 / (nonhydro + Nsqsc);
@@ -872,7 +882,11 @@ static void operator_coefficients_nodes(
 			for(k = igz; k < icz - igz; k++) {l = k * icx*icy;
                 for(j = igy; j < icy - igy; j++) {m = l + j * icx;
                     for(i = igx; i < icx - igx; i++) {n = m + i;
+#ifdef TIME_AVED_OPCOEFFS_2ND
                         hc[n] = ccenter * pow(0.5*(Sol->rhoY[n]+Sol0->rhoY[n]),cexp);
+#else
+                        hc[n] = ccenter * pow(Sol->rhoY[n],cexp);
+#endif
                     }
                 }
 			}
@@ -890,7 +904,6 @@ void correction_nodes(
 					  const NodeSpaceDiscr* node,
                       const double* hplus[3], 
 					  double* p, 
-					  const double t,
 					  const double dt) {
 	
 	extern User_Data ud;
@@ -1012,6 +1025,20 @@ void correction_nodes(
 	}
 }
 
+
+/* ========================================================================== */
+
+void momentum_increments(MPV* mpv, 
+                         const ConsVars *Sol, 
+                         const ElemSpaceDiscr *elem)
+{
+    for (int i=0; i<elem->nc; i++) {
+        mpv->drhou_cells[i] = Sol->rhou[i] - mpv->drhou_cells[i];
+        mpv->drhov_cells[i] = Sol->rhov[i] - mpv->drhov_cells[i];
+        mpv->drhow_cells[i] = Sol->rhow[i] - mpv->drhow_cells[i];
+    }
+}
+
 /* ========================================================================== */
 
 void euler_backward_gravity(ConsVars* Sol,
@@ -1057,10 +1084,41 @@ void euler_backward_gravity(ConsVars* Sol,
     Set_Explicit_Boundary_Data(Sol, elem);
 }
 
+#ifdef EULER_FORWARD_NON_ADVECTIVE_NEW
+
 /* ========================================================================== */
 
 void euler_forward_non_advective(ConsVars* Sol,
-                                 const MPV* mpv,
+                                 MPV* mpv,
+                                 const ConsVars* Sol0,
+                                 const ElemSpaceDiscr* elem,
+                                 const NodeSpaceDiscr* node,
+                                 const double dt,
+                                 const enum EXPLICIT_PRESSURE wp)
+{
+    for (int i=0; i<elem->nc; i++) {
+        Sol->rhou[i] += mpv->drhou_cells[i];
+        Sol->rhov[i] += mpv->drhov_cells[i];
+        Sol->rhow[i] += mpv->drhow_cells[i];
+        mpv->drhou_cells[i] = 0.0;
+        mpv->drhov_cells[i] = 0.0;
+        mpv->drhow_cells[i] = 0.0;
+    }
+    
+    for(int nn=0; nn<node->nc; nn++) {
+        mpv->p2_nodes[nn] += mpv->dp2_nodes[nn];
+    }
+    
+    set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
+    Set_Explicit_Boundary_Data(Sol, elem);
+}
+#else
+
+/* ========================================================================== */
+
+void euler_forward_non_advective(ConsVars* Sol,
+                                 MPV* mpv,
+                                 const ConsVars* Sol0,
                                  const ElemSpaceDiscr* elem,
                                  const NodeSpaceDiscr* node,
                                  const double dt,
@@ -1097,10 +1155,7 @@ void euler_forward_non_advective(ConsVars* Sol,
 
     double *div = mpv->rhs;
     double div_max;
-    
-    double *cnt = (double*)malloc(node->nc*sizeof(double));
-        
-    memset(cnt, 0.0, node->nc*sizeof(double));    
+            
     memset(dp2n, 0.0, node->nc*sizeof(double));
     memset(div, 0.0, node->nc*sizeof(double));
 
@@ -1108,10 +1163,19 @@ void euler_forward_non_advective(ConsVars* Sol,
      step, because mpv->dp2_nodes[] should contain the relevant information already
      from the last time step 
      */
-    /* last two arguments equal -> they cancel each other -> pure divergence calculation */
+    /* last two arguments to  divergence_nodes() tuned to pure divergence calculation */
+    int x_periodic, y_periodic, z_periodic;    
+    x_periodic = 0;
+    y_periodic = 0;
+    z_periodic = 0;
+    if(ud.bdrytype_min[0] == PERIODIC) x_periodic = 1;
+    if(ud.bdrytype_min[1] == PERIODIC) y_periodic = 1;
+    if(ud.bdrytype_min[2] == PERIODIC) z_periodic = 1;
+
     double weight = dt * pow(2.0, -(elem->ndim-1));
     div_max = divergence_nodes(div, elem, node, (const ConsVars*)Sol, mpv, bdry, dt, weight);
-    
+    catch_periodic_directions(div, node, elem, x_periodic, y_periodic, z_periodic);
+
     switch (elem->ndim) {
         case 1:
         {
@@ -1119,7 +1183,7 @@ void euler_forward_non_advective(ConsVars* Sol,
             const int igx   = elem->igx;
             const double dx = node->dx;
                         
-            for (int i=igx; i<icx-igx; i++) {
+            for (int i=igx; i<icx-igx+1; i++) {
                 int nc = i;
                 int nn0 = i;
                 int nn1 = i+1;
@@ -1127,7 +1191,8 @@ void euler_forward_non_advective(ConsVars* Sol,
                 double dpdx    = wp*(p2n[nn1]-p2n[nn0])/dx;
                 double rhoYovG = Ginv*Sol->rhoY[nc];
                 double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
-                double dpidP   = th.gm1 * pow(Sol->rhoY[nc], th.gamm - 2.0) / ud.Msq;
+                double dpidP   = (th.gm1 / ud.Msq) * \
+                                0.5 * (pow(Sol->rhoY[nc], th.gamm - 2.0) + pow(Sol->rhoY[nc-1], th.gamm - 2.0));
                 /* alternative without need to call pow():  
                  double dpidP   = th.gm1 * mpv->p2_cells[nc] / Sol->rhoY[nc]; 
                  */
@@ -1137,19 +1202,12 @@ void euler_forward_non_advective(ConsVars* Sol,
                 Sol->rhoY[nc]  = Sol->rhoY[nc] - dt * div[nc];
                 
                 dp2n[nn0] -= dt * dpidP * div[nn0];
-                dp2n[nn1] -= dt * dpidP * div[nn1];
-
-                cnt[nn0] += 1.0;
-                cnt[nn1] += 1.0;
             }
             ERROR("boundary fix in  euler_forward_non_advective()  not implemented in 1D yet\n");           
         }
             break;
         case 2:
         {
-            const int xper  = (ud.bdrytype_max[0] == PERIODIC ? 1 : 0);
-            const int yper  = (ud.bdrytype_max[1] == PERIODIC ? 1 : 0);
-
             const int igxe = elem->igx;
             const int icxe = elem->icx;
             const int igye = elem->igy;
@@ -1160,39 +1218,13 @@ void euler_forward_non_advective(ConsVars* Sol,
             const double dx = node->dx;
             const double dy = node->dy;
             
-            /* (nodal) div is computed via scattering from the primary cells; this requires fixing
-             weights for boundary nodes
-             */                
-            for (int j = node->igy; j < node->icy - node->igy; j++) {
-                int nnl0 = j*node->icx + node->igx;
-                int nnl1 = nnl0 + xper * (node->icx - 2*node->igx - 1);
-                int nnr0 = j*node->icx + (node->icx - node->igx - 1);
-                int nnr1 = nnr0 - xper * (node->icx - 2*node->igx - 1);
-                double divl = div[nnl0] + div[nnl1];
-                double divr = div[nnr0] + div[nnr1];
-                div[nnl0] = divl;
-                div[nnr0] = divr;
-            }
-            
-            for (int i = node->igx; i < node->icx-node->igx; i++) {
-                int nnl0 = i + node->igy*node->icx;
-                int nnl1 = nnl0 + yper * (node->icy - 2*node->igy - 1);
-                int nnr0 = i + (node->icy - node->igy - 1)*node->icx;
-                int nnr1 = nnr0 - yper * (node->icy - 2*node->igy - 1);
-                double divl = div[nnl0] + div[nnl1];
-                double divr = div[nnr0] + div[nnr1];
-                div[nnl0] = divl;
-                div[nnr0] = divr;
-            }
-
-            
-            for (int j=igye; j<icye-igye; j++) {
+            for (int j=igye; j<icye-igye+1; j++) {
                 int mc = j*icxe;
                 int mn = j*icxn;
                 double S0p = mpv->HydroState_n->S0[j+1];
                 double S0m = mpv->HydroState_n->S0[j];
                 
-                for (int i=igxe; i<icxe-igxe; i++) {
+                for (int i=igxe; i<icxe-igxe+1; i++) {
                     int nc  = mc + i;
                     
                     int nn00 = mn  + i;
@@ -1210,7 +1242,9 @@ void euler_forward_non_advective(ConsVars* Sol,
                     double chi     = Sol->rho[nc]/Sol->rhoY[nc];
                     double dbuoy   = -Sol->rho[nc]*dchi/chi;  /* -dchi/chibar; */
                     double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
-                    double dpidP   = th.gm1 * pow(Sol->rhoY[nc], th.gamm - 2.0) / ud.Msq;
+                    double dpidP   = (th.gm1 / ud.Msq) * \
+                                        0.25 * (pow(Sol->rhoY[nc], th.gamm - 2.0)      + pow(Sol->rhoY[nc-1], th.gamm - 2.0) + \
+                                                pow(Sol->rhoY[nc-icxe], th.gamm - 2.0) + pow(Sol->rhoY[nc-icxe-1], th.gamm - 2.0));
                     /* alternative without need to call pow():  
                      double dpidP   = th.gm1 * mpv->p2_cells[nc] / Sol->rhoY[nc]; 
                      */
@@ -1221,14 +1255,6 @@ void euler_forward_non_advective(ConsVars* Sol,
                     Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
 
                     dp2n[nn00] -= dt * dpidP * div[nn00];
-                    dp2n[nn01] -= dt * dpidP * div[nn01];
-                    dp2n[nn11] -= dt * dpidP * div[nn11];
-                    dp2n[nn10] -= dt * dpidP * div[nn10];
-                    
-                    cnt[nn00] += 1.0;
-                    cnt[nn01] += 1.0;
-                    cnt[nn11] += 1.0;
-                    cnt[nn10] += 1.0;
                 }
             }
         }
@@ -1238,6 +1264,7 @@ void euler_forward_non_advective(ConsVars* Sol,
             const int icx = elem->icx;
             const int icy = elem->icy;
             const int icz = elem->icz;
+            const int icxy = icx*icy;
             
             const int igx = elem->igx;
             const int igy = elem->igy;
@@ -1250,16 +1277,16 @@ void euler_forward_non_advective(ConsVars* Sol,
             const double dy = node->dy;
             const double dz = node->dz;
             
-            for (int k=igz; k<icz-igz; k++) {
+            for (int k=igz; k<icz-igz+1; k++) {
                 int lc = k*icy*icx;
                 int ln = k*iny*inx;
-                for (int j=igy; j<icy-igy; j++) {
+                for (int j=igy; j<icy-igy+1; j++) {
                     int mc = lc + j*icx;
                     int mn = ln + j*inx;
                     double S0p    = mpv->HydroState_n->S0[j+1];
                     double S0m    = mpv->HydroState_n->S0[j];
                     
-                    for (int i=igx; i<icx-igx; i++) {
+                    for (int i=igx; i<icx-igx+1; i++) {
                         int nc        = mc + i;
                         
                         int nn000 = mn   + i;
@@ -1282,7 +1309,11 @@ void euler_forward_non_advective(ConsVars* Sol,
                         double chi     = Sol->rho[nc]/Sol->rhoY[nc];
                         double dbuoy   = -Sol->rho[nc]*dchi/chi;  /* -dchi/chibar; */
                         double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
-                        double dpidP   = th.gm1 * pow(Sol->rhoY[nc], th.gamm - 2.0) / ud.Msq;
+                        double dpidP   = (th.gm1 / ud.Msq) * \
+                                            0.125 * (pow(Sol->rhoY[nc], th.gamm - 2.0)          + pow(Sol->rhoY[nc-1], th.gamm - 2.0) + \
+                                                     pow(Sol->rhoY[nc-icx], th.gamm - 2.0)      + pow(Sol->rhoY[nc-icx-1], th.gamm - 2.0) + \
+                                                     pow(Sol->rhoY[nc-icxy], th.gamm - 2.0)     + pow(Sol->rhoY[nc-1-icxy], th.gamm - 2.0) + \
+                                                     pow(Sol->rhoY[nc-icx-icxy], th.gamm - 2.0) + pow(Sol->rhoY[nc-icx-1-icxy], th.gamm - 2.0));
                         /* alternative without need to call pow():  
                          double dpidP   = th.gm1 * mpv->p2_cells[nc] / Sol->rhoY[nc]; 
                          */
@@ -1294,23 +1325,6 @@ void euler_forward_non_advective(ConsVars* Sol,
                         Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
                         
                         dp2n[nn000] -= dt * dpidP * div[nn000];
-                        dp2n[nn001] -= dt * dpidP * div[nn001];
-                        dp2n[nn011] -= dt * dpidP * div[nn011];
-                        dp2n[nn010] -= dt * dpidP * div[nn010];
-                        dp2n[nn100] -= dt * dpidP * div[nn100];
-                        dp2n[nn101] -= dt * dpidP * div[nn101];
-                        dp2n[nn111] -= dt * dpidP * div[nn111];
-                        dp2n[nn110] -= dt * dpidP * div[nn110];
-                        
-                        cnt[nn000] += 1.0;
-                        cnt[nn001] += 1.0;
-                        cnt[nn011] += 1.0;
-                        cnt[nn010] += 1.0;
-                        cnt[nn100] += 1.0;
-                        cnt[nn101] += 1.0;
-                        cnt[nn111] += 1.0;
-                        cnt[nn110] += 1.0;
-
                     }
                 }
             }
@@ -1325,8 +1339,8 @@ void euler_forward_non_advective(ConsVars* Sol,
     /* last half Euler backward step equals first half Euler forward step */
     if (ud.is_compressible) {
         for (int nn=0; nn<node->nc; nn++) {
-#if 0 
-            mpv->p2_nodes[nn] += dp2n[nn] / MAX_own(1.0, cnt[nn]);
+#if 1
+            mpv->p2_nodes[nn] += dp2n[nn];
 #else        
             mpv->p2_nodes[nn] += mpv->dp2_nodes[nn];
 #endif
@@ -1338,11 +1352,9 @@ void euler_forward_non_advective(ConsVars* Sol,
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
     Set_Explicit_Boundary_Data(Sol, elem);
     
-    free(cnt);
-
-
 }
 
+#endif
 
 /* ========================================================================== */
 

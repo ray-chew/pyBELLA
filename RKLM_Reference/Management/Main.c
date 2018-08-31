@@ -167,8 +167,9 @@ int main( void )
             flux_correction(flux, Sol, Sol0, elem, node, t, dt_adv_flux, step);        
 
             ConsVars_set(Sol, Sol0, elem->nc);
+#ifndef EULER_FORWARD_NON_ADVECTIVE_NEW
             cell_pressure_to_nodal_pressure(mpv, elem, node);
-            // if (step == 0) cell_pressure_to_nodal_pressure(mpv, elem, node);
+#endif
           
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nfull time step with predicted advective flux");
@@ -178,7 +179,7 @@ int main( void )
             Explicit_Coriolis(Sol, elem, 0.5*dt);  
              
             /* explicit EULER half time step for gravity and pressure gradient */ 
-            euler_forward_non_advective(Sol, (const MPV*)mpv, elem, node, 0.5*dt, WITH_PRESSURE);
+            euler_forward_non_advective(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.5*dt, WITH_PRESSURE);
                         
 #ifdef ADVECTION
             /* explicit full time step advection using div-controlled advective fluxes */
@@ -186,9 +187,14 @@ int main( void )
 #endif
             
             /* implicit EULER half time step for gravity and pressure gradient */ 
+#ifdef EULER_FORWARD_NON_ADVECTIVE_NEW
+            momentum_increments(mpv, (const ConsVars*)Sol, (const ElemSpaceDiscr*)elem);
+#endif         
             euler_backward_gravity(Sol, mpv, elem, 0.5*dt);
             second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, dt);
-            
+#ifdef EULER_FORWARD_NON_ADVECTIVE_NEW
+            momentum_increments(mpv, (const ConsVars*)Sol, (const ElemSpaceDiscr*)elem);
+#endif         
             /* auxiliary buoyancy update by vertical advection of background stratification */
             update_SI_MIDPT_buoyancy(Sol, (const ConsVars**)flux, mpv, elem, 0.5*dt);
             

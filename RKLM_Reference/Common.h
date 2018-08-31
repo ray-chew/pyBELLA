@@ -84,6 +84,12 @@
 #define P2_FULL_STENCIL 1.0        /* values: 0.0, 1.0;  0.0 = 5/7pt stencil,  1.0=9/27pt stencil */
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
 
+/*
+ #define TIME_AVED_OPCOEFFS_2ND
+ #define EULER_FORWARD_NON_ADVECTIVE_NEW
+ */
+#define EULER_FORWARD_NON_ADVECTIVE_NEW
+
 
 /* TODO: Code cleaning / maintainance
  

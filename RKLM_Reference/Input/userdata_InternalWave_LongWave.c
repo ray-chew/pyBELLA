@@ -135,8 +135,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx =  600+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =   40+1; /* 321; 161;  81;  65; 41;  */
+    ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
+    ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
     ud->inz =      1;
     
     /* explicit predictor step */
@@ -181,7 +181,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 80;
+    ud->write_file_period = 40;
     ud->file_format = HDF;
     
     {

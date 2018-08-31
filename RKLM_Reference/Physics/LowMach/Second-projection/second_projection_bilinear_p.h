@@ -23,13 +23,18 @@ void second_projection(
                        const double t,
                        const double dt);
 
+void momentum_increments(MPV* mpv, 
+                         const ConsVars *Sol, 
+                         const ElemSpaceDiscr *elem);
+
 void euler_backward_gravity(ConsVars* Sol,
                             const MPV* mpv,
                             const ElemSpaceDiscr* elem,
                             const double dt);
 
 void euler_forward_non_advective(ConsVars* Sol,
-                                 const MPV* mpv,
+                                 MPV* mpv,
+                                 const ConsVars* Sol0,
                                  const ElemSpaceDiscr* elem,
                                  const NodeSpaceDiscr* node,
                                  const double dt,
