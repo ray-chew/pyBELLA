@@ -68,7 +68,6 @@ double SOLVER(
               const double* hplus[3],
               const double* hcenter,
               const MPV* mpv,
-              const double dt,
               double* rhs,
               double* p2);
 #endif

@@ -39,9 +39,7 @@ static double divergence_nodes(
 							 const NodeSpaceDiscr* node,
 							 const ConsVars* Sol,
 							 const MPV* mpv,
-							 const BDRY* bdry,
-							 const double dt,
-							 const double weight);
+							 const BDRY* bdry);
 
 static void rhs_from_p_old(
                            double* rhs,
@@ -105,6 +103,14 @@ void second_projection(
                        const double t,
                        const double dt) {
     
+    /* as of August 31, 2018, this routine is to be interpreted
+     as carrying out an implicit Euler step for the linearized 
+     fast system without advection. This changes in particular
+     the interpretation of "dt" from having been the overall 
+     time step of the total solver previously to now just being
+     whatever time step the implicit Euler step is to be performed
+     over. 
+     */
     extern User_Data ud;
     extern BDRY* bdry;
     
@@ -136,12 +142,18 @@ void second_projection(
     
     /* KEEP_OLD_POISSON_SOLUTIONS */
     for(ii=0; ii<nc; ii++){
-        p2[ii] = mpv->p2_nodes[ii];
+        /* p2[ii] = mpv->p2_nodes[ii]; */
+        p2[ii]  = 0.0;
         rhs[ii] = 0.0;
     }
 
     operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
-    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry, dt, 1.0);
+    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
+    
+    /* rescaling of flux divergence for r.h.s. of the elliptic pressure equation */ 
+    for (int i=0; i<node->nc; i++) {
+        rhs[i] /= dt;
+    }
     printf("\nrhsmax = %e\n", rhs_max);
 
     if (ud.is_compressible) {
@@ -189,12 +201,10 @@ static double divergence_nodes(
 							 const NodeSpaceDiscr* node,
 							 const ConsVars* Sol,
 							 const MPV* mpv,
-							 const BDRY* bdry,
-							 const double dt,
-							 const double weight) {
+							 const BDRY* bdry) {
 	
     /* with weight = 1.0, this routine computes 
-          rhs_out = rhs_in + (2/dt) * div(rhoY\vec{v}) 
+          rhs_out = rhs_in + div(rhoY\vec{v}) 
        from the current Sol. 
      */
 
@@ -225,8 +235,6 @@ static double divergence_nodes(
             const double dy      = node->dy;
             const double oodx    = 1.0 / dx;
             const double oody    = 1.0 / dy;
-            const double oowdxdt = (2.0/dt) * weight * 0.5 * oodx;
-            const double oowdydt = (2.0/dt) * weight * 0.5 * oody;
             
             double Y;
             
@@ -244,8 +252,8 @@ static double divergence_nodes(
                     double tmpfx, tmpfy;
                     
                     Y = Sol->rhoY[ne] / Sol->rho[ne];
-                    tmpfx = oowdxdt * Y * Sol->rhou[ne];
-                    tmpfy = oowdydt * Y * Sol->rhov[ne];
+                    tmpfx = 0.5 * oodx * Y * Sol->rhou[ne];
+                    tmpfy = 0.5 * oody * Y * Sol->rhov[ne];
                     
                     rhs[n]           += + tmpfx + tmpfy;
                     rhs[n1]          += - tmpfx + tmpfy;
@@ -264,7 +272,7 @@ static double divergence_nodes(
                 const int n1    = n  + 1;
                 
                 double rhov_wall = bdry->wall_massflux[i]; 
-                double tmpy = oowdydt * Y * rhov_wall; 
+                double tmpy = 0.5 * oody * Y * rhov_wall; 
                 
                 rhs[n]  += - tmpy;
                 rhs[n1] += - tmpy;
@@ -299,12 +307,7 @@ static double divergence_nodes(
             const double oodx = 1.0 / dx;
             const double oody = 1.0 / dy;
             const double oodz = 1.0 / dz;
-            
-            /* TODO: check factor  0.25:  should this be 0.125? */
-            const double oowdxdt = (2.0/dt) * weight * 0.25 * oodx;
-            const double oowdydt = (2.0/dt) * weight * 0.25 * oody;
-            const double oowdzdt = (2.0/dt) * weight * 0.25 * oodz;
-            
+                        
             const int dixn = 1;
             const int diyn = icxn;
             const int dizn = icxn*icyn;
@@ -332,9 +335,9 @@ static double divergence_nodes(
                         double tmpfx, tmpfy, tmpfz;
                         
                         Y = Sol->rhoY[ne] / Sol->rho[ne];
-                        tmpfx = oowdxdt * Y * Sol->rhou[ne]; /* (rhou*Y) * 0.5 * / (dx*dt) */
-                        tmpfy = oowdydt * Y * Sol->rhov[ne];
-                        tmpfz = oowdzdt * Y * Sol->rhow[ne];
+                        tmpfx = 0.25 * oodx * Y * Sol->rhou[ne]; 
+                        tmpfy = 0.25 * oody * Y * Sol->rhov[ne];
+                        tmpfz = 0.25 * oodz * Y * Sol->rhow[ne];
                         
                         rhs[nn000]       += + tmpfx + tmpfy + tmpfz;
                         rhs[nn010]       += + tmpfx - tmpfy + tmpfz;
@@ -362,7 +365,7 @@ static double divergence_nodes(
                     int nn01 = nn +      + dizn;
                     
                     double rhov_wall = bdry->wall_massflux[i]; 
-                    double tmpy = oowdydt * Y * rhov_wall;
+                    double tmpy = 0.25 * oody * Y * rhov_wall;
                     
                     rhs[nn00] += - tmpy;
                     rhs[nn10] += - tmpy;
@@ -414,7 +417,7 @@ static double divergence_nodes(
             double flux_weight_new = 1.0;
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, flux_weight_old, flux_weight_new);
             
-            rhsmax = controlled_variable_flux_divergence(rhs_cell, (const ConsVars**)flux, dt, elem);
+            rhsmax = controlled_variable_flux_divergence(rhs_cell, (const ConsVars**)flux, elem);
             
             /* predicted time level divergence via scattering */
             for(j = igye; j < icye - igye; j++) {
@@ -443,9 +446,8 @@ static double divergence_nodes(
                 const int n     = mn + i;
                 const int n1    = n  + 1;
                 
-                double oowdydt   = (2.0/dt) * weight * 0.25 / elem->dy;
                 double rhov_wall = bdry->wall_massflux[i]; 
-                double tmpy      = oowdydt * Y * rhov_wall;  
+                double tmpy      = 0.25 * oody * Y * rhov_wall;  
                 
                 rhs[n]  += - tmpy;
                 rhs[n1] += - tmpy;
@@ -485,7 +487,7 @@ static double divergence_nodes(
             double flux_weight_new = 1.0;
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, flux_weight_old, flux_weight_new);
 
-            rhsmax = controlled_variable_flux_divergence(rhs_cell, (const ConsVars**)flux, dt, elem);
+            rhsmax = controlled_variable_flux_divergence(rhs_cell, (const ConsVars**)flux, elem);
             
             /* predicted time level divergence via scattering */
             for(k = igze; k < icze - igze; k++) {
@@ -530,9 +532,8 @@ static double divergence_nodes(
                     int nn11 = nn + dixn + dizn;
                     int nn01 = nn +      + dizn;
                     
-                    double oowdydt = (2.0/dt) * weight * 0.25 / elem->dy;
                     double rhov_wall = bdry->wall_massflux[i]; 
-                    double tmpy = oowdydt * Y * rhov_wall; 
+                    double tmpy = 0.25 * oody * Y * rhov_wall; 
                     
                     rhs[nn00] += - tmpy;
                     rhs[nn10] += - tmpy;
@@ -786,10 +787,7 @@ static void operator_coefficients_nodes(
 			double* hplusy  = hplus[1];
 			double* hc      = hcenter;
 
-            /*  const double ccenter = - 4.0*(ud.compressibility*ud.Msq)*th.gamminv/(mpv->dt*mpv->dt); 
-                const double cexp    = 1.0-th.gamm;
-             */
-			const double ccenter = - 4.0*(ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt);
+			const double ccenter = - (ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt);
             const double cexp    = 2.0-th.gamm;
             
             int i, j, m, n;
@@ -810,7 +808,7 @@ static void operator_coefficients_nodes(
                     double Y     = Sol->rhoY[n]/Sol->rho[n]; 
 #endif
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
-                    double Nsqsc = 0.25*dt*dt * (g/Msq) * strat;                    
+                    double Nsqsc = dt*dt * (g/Msq) * strat;                    
                     double gimpy = 1.0 / (nonhydro + Nsqsc);
                                         
                     hplusx[n]    = coeff;
@@ -846,7 +844,7 @@ static void operator_coefficients_nodes(
 			double* hplusz  = hplus[2];
 			double* hc      = hcenter;
             
-			const double ccenter = - 4.0*(ud.compressibility*ud.Msq)*th.gamminv/(dt*dt);
+			const double ccenter = - (ud.compressibility*ud.Msq)*th.gamminv/(dt*dt);
             
 			const double cexp    = 1.0-th.gamm;
 			int i, j, k, l, m, n;
@@ -868,7 +866,7 @@ static void operator_coefficients_nodes(
                             double Y     = Sol->rhoY[n]/Sol->rho[n]; 
 #endif
                             double coeff = Gammainv * Sol->rhoY[n] * Y;
-                            double Nsqsc = 0.25*dt*dt * (g/Msq) * strat;                    
+                            double Nsqsc = dt*dt * (g/Msq) * strat;                    
                             double gimpy = 1.0 / (nonhydro + Nsqsc);
 
                             hplusx[n]  = coeff;
@@ -932,8 +930,8 @@ void correction_nodes(
 			const double oodx   = 1.0 / dx;
 			const double oody   = 1.0 / dy;
             
-            const double dtowdx = 0.5*dt * oodx;
-            const double dtowdy = 0.5*dt * oody;                
+            const double dtowdx = dt * oodx;
+            const double dtowdy = dt * oody;                
             			
             const double* hplusx = hplus[0];
             const double* hplusy = hplus[1];
@@ -980,9 +978,9 @@ void correction_nodes(
             const double oody   = 1.0 / dy;
             const double oodz   = 1.0 / dz;
             
-            const double dtowdx = 0.5*dt * oodx;
-            const double dtowdy = 0.5*dt * oody;                
-            const double dtowdz = 0.5*dt * oodz;                
+            const double dtowdx = dt * oodx;
+            const double dtowdy = dt * oody;                
+            const double dtowdz = dt * oodz;                
 
             
             const double* hplusx = hplus[0];
@@ -1172,8 +1170,7 @@ void euler_forward_non_advective(ConsVars* Sol,
     if(ud.bdrytype_min[1] == PERIODIC) y_periodic = 1;
     if(ud.bdrytype_min[2] == PERIODIC) z_periodic = 1;
 
-    double weight = dt * pow(2.0, -(elem->ndim-1));
-    div_max = divergence_nodes(div, elem, node, (const ConsVars*)Sol, mpv, bdry, dt, weight);
+    div_max = divergence_nodes(div, elem, node, (const ConsVars*)Sol, mpv, bdry);
     catch_periodic_directions(div, node, elem, x_periodic, y_periodic, z_periodic);
 
     switch (elem->ndim) {
@@ -1336,7 +1333,7 @@ void euler_forward_non_advective(ConsVars* Sol,
             break;
     }
     
-    /* last half Euler backward step equals first half Euler forward step */
+    /* last half Euler backward step equals first half Euler forward step 
     if (ud.is_compressible) {
         for (int nn=0; nn<node->nc; nn++) {
 #if 1
@@ -1346,6 +1343,7 @@ void euler_forward_non_advective(ConsVars* Sol,
 #endif
         }
     }
+     */
 
     W0_in_use = WRONG;
 

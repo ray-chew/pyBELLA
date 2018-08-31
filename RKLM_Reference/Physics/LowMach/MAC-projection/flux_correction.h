@@ -36,7 +36,6 @@ void flux_correction(ConsVars* flux[3],
 
 double controlled_variable_flux_divergence(double* rhs, 
                                            const ConsVars* flux[3],
-                                           const double dt, 
                                            const ElemSpaceDiscr* elem);
 
 void update_SI_MIDPT_buoyancy(ConsVars* Sol, 

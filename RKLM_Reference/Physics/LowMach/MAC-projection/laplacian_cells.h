@@ -38,7 +38,6 @@ void EnthalpyWeightedLap_bilinear_p(
 									const double* hplus[3],
 									const double* hcenter,
 									const MPV* mpv, 
-									const double dt,
 									double* lap);
 
 #endif /* LAPLACIAN_CELLS_H */

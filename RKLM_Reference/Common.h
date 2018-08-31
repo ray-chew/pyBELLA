@@ -88,7 +88,6 @@
  #define TIME_AVED_OPCOEFFS_2ND
  #define EULER_FORWARD_NON_ADVECTIVE_NEW
  */
-#define EULER_FORWARD_NON_ADVECTIVE_NEW
 
 
 /* TODO: Code cleaning / maintainance

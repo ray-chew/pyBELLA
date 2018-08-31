@@ -166,8 +166,8 @@ static double BiCGSTAB_MG_nodes(
     }
 
     alpha = omega = rho1 = 1.;
-	tmp_local *= 0.5*dt/(precon_inv_scale*precision);
-    tmp = 0.5*dt*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
+	tmp_local *= dt/(precon_inv_scale*precision);
+    tmp = dt*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
 	
     printf(" iter = 0,  residual = %e,  local residual = %e,  gridsize = %d\n", tmp, tmp_local, nc);
 
@@ -259,8 +259,8 @@ static double BiCGSTAB_MG_nodes(
         }
         
 		rho1 = rho2;
-		tmp_local *= 0.5*dt/(precon_inv_scale*precision);
-        tmp = 0.5*dt*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
+		tmp_local *= dt/(precon_inv_scale*precision);
+        tmp = dt*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
 		cnt++;
 		
 		if(cnt % 100 == 0) printf(" iter = %d, residual = %e\n", cnt, tmp);  

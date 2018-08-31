@@ -78,7 +78,6 @@ double SOLVER(
               const double* hplus[3],
               const double* hcenter,
               const MPV* mpv,
-              const double dt,
               double* rhs,
               double* p2) {
     
@@ -116,7 +115,7 @@ double SOLVER(
     /* initialization */
     /* initial residual; intermediate abuse of the field */
     set_ghostcells_p2(p2, elem, 1);
-    EnthalpyWeightedLap_bilinear_p(elem, node, p2, hplus, hcenter, mpv, dt, r_0);
+    EnthalpyWeightedLap_bilinear_p(elem, node, p2, hplus, hcenter, mpv, r_0);
     
     precon_c_invert(rhs, rhs, elem);
     
@@ -132,7 +131,7 @@ double SOLVER(
     
     /* initialization of iteration coefficients; residual norm */
     set_ghostcells_p2(r_0, elem, 1);
-    EnthalpyWeightedLap_bilinear_p(elem, node, r_0, hplus, hcenter, mpv, dt, Lr_0);
+    EnthalpyWeightedLap_bilinear_p(elem, node, r_0, hplus, hcenter, mpv, Lr_0);
     
     /* norm of residuum */
     tmp = 0.0;
@@ -151,8 +150,8 @@ double SOLVER(
             }
         }
     }
-    tmp_local *= 0.5*dt/(precon_inv_scale*local_precision);
-    tmp = 0.5*dt*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
+    tmp_local *= 1.0/(precon_inv_scale*local_precision);
+    tmp = 1.0*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
     
     alpha = 1.0;
     beta  = - AA / BB;
@@ -188,8 +187,8 @@ double SOLVER(
                 }
             }
         }
-        tmp_local *= 0.5*dt/(precon_inv_scale*local_precision);
-        tmp = 0.5*dt*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
+        tmp_local *= 1.0/(precon_inv_scale*local_precision);
+        tmp = 1.0*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
         
         /* finish loop and reshuffle pointers */
         pshuffle = r_m;
@@ -214,7 +213,7 @@ double SOLVER(
         
         /* AB */
         set_ghostcells_p2(r_0, elem, 1);
-        EnthalpyWeightedLap_bilinear_p(elem, node, r_0, hplus, hcenter, mpv, dt, Lr_0);
+        EnthalpyWeightedLap_bilinear_p(elem, node, r_0, hplus, hcenter, mpv, Lr_0);
         
         AB = 0.0;
         for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
@@ -296,7 +295,6 @@ double SOLVER(
               const double* hplus[3],
               const double* hcenter,
               const MPV* mpv,
-              const double dt,
               double* rhs,
               double* p2) {
     
@@ -328,7 +326,7 @@ double SOLVER(
     double precon_inv_scale = precon_c_prepare(node, elem, hplus, hcenter);
     
     set_ghostcells_p2(p2, elem, 1);
-    EnthalpyWeightedLap_bilinear_p(elem, node, p2, hplus, hcenter, mpv, dt, v_j);
+    EnthalpyWeightedLap_bilinear_p(elem, node, p2, hplus, hcenter, mpv, v_j);
     
     precon_c_invert(rhs_prec, rhs, elem);
     
@@ -358,8 +356,8 @@ double SOLVER(
     }
     
     alpha = omega = rho1 = 1.;
-    tmp_local *= 0.5*dt/(precon_inv_scale*local_precision);
-    tmp = 0.5*dt*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
+    tmp_local *= 1.0/(precon_inv_scale*local_precision);
+    tmp = 1.0*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
     
     cnt = 0;
     printf(" iter = 0,  residual = %e,  local residual = %e,  gridsize = %d\n", tmp, tmp_local, nc);
@@ -391,7 +389,7 @@ double SOLVER(
         }
         
         set_ghostcells_p2(p_j, elem, 1);
-        EnthalpyWeightedLap_bilinear_p(elem, node, p_j, hplus, hcenter, mpv, dt, v_j);
+        EnthalpyWeightedLap_bilinear_p(elem, node, p_j, hplus, hcenter, mpv, v_j);
         
         sigma = 0.0; 
         for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
@@ -413,7 +411,7 @@ double SOLVER(
         }
         
         set_ghostcells_p2(s_j, elem, 1);
-        EnthalpyWeightedLap_bilinear_p(elem, node, s_j, hplus, hcenter, mpv, dt, t_j);
+        EnthalpyWeightedLap_bilinear_p(elem, node, s_j, hplus, hcenter, mpv, t_j);
         
         omega = 0.0; 
         tmp = 0.0; 
@@ -449,8 +447,8 @@ double SOLVER(
         }
         
         rho1 = rho2;
-        tmp_local *= 0.5*dt/(precon_inv_scale*local_precision);
-        tmp = 0.5*dt*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
+        tmp_local *= 1.0/(precon_inv_scale*local_precision);
+        tmp = 1.0*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
         
         cnt++;
         if(cnt % 100 == 0) printf(" iter = %d,  residual = %e\n", cnt, tmp);

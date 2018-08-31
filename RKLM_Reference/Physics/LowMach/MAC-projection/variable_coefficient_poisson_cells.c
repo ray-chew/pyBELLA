@@ -55,7 +55,7 @@ void variable_coefficient_poisson_cells(
 
 	data = BiCGSTABData_new(nc, precision, local_precision, max_iter, outperiod);
 		
-	tmp = SOLVER(data, elem, node, hplus, hcenter, mpv, mpv->dt, rhs, p2);
+	tmp = SOLVER(data, elem, node, hplus, hcenter, mpv, rhs, p2);
     
     printf("residual 1st projection = %e * tol\n", tmp);
 	    

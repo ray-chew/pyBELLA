@@ -105,7 +105,7 @@ void flux_correction(ConsVars* flux[3],
                      const ElemSpaceDiscr* elem,
                      const NodeSpaceDiscr* node,
                      const double t,
-                     const double dt_in,
+                     const double dt,
                      const int step) {
     
     extern User_Data ud;
@@ -122,19 +122,21 @@ void flux_correction(ConsVars* flux[3],
     
     int n;
     
-    /* all routines here had originally been written to perform a half time step
-     of  0.5*dt  given the value of dt in the list of arguments; I have changed
-     this to make usage of the routine more transparent. With the following line
-     implemented, it essentially computed the fluxes corresponding to an EULER
-     backward step over  dt  */
-    double dt = 2.0*dt_in;
+    /* notation changed so it becomes clear that this routine just
+     does an implicit Euler step for the fast subsystem
+     */
     
     printf("\n\n====================================================");
     printf("\nFirst Projection");
     printf("\n====================================================\n");
     
     operator_coefficients(hplus, hcenter, hS, elem, Sol, Sol0, mpv, dt);
-    rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
+    rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, elem);
+    
+    /* rescale for r.h.s. of the elliptic pressure equation */
+    for (int i=0; i<elem->nc; i++) {
+        rhs[i] /= dt;
+    }
     rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
     printf("\nrhs_max = %e (before projection)\n", rhsmax);
     
@@ -185,7 +187,10 @@ void flux_correction(ConsVars* flux[3],
     flux_correction_due_to_pressure_gradients(flux, elem, Sol, Sol0, mpv, hplus, hS, p2, t, dt);
     
     /* test whether divergence is actually controlled */
-    rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, dt, elem);
+    rhsmax = controlled_variable_flux_divergence(rhs, (const ConsVars**)flux, elem);
+    for (int i=0; i<elem->nc; i++) {
+        rhs[i] /= dt;
+    }
     printf("\nrhs_max = %e (after projection)\n", rhsmax);
     
     flux_fix_for_open_boundaries(flux, elem, mpv);  
@@ -208,7 +213,6 @@ void flux_correction(ConsVars* flux[3],
 
 double controlled_variable_flux_divergence(double* rhs, 
                                            const ConsVars* flux[3],
-                                           const double dt, 
                                            const ElemSpaceDiscr* elem)
 {
     /* right hand side of pressure equation via advective flux divergence */
@@ -224,7 +228,6 @@ double controlled_variable_flux_divergence(double* rhs,
     const int icz = elem->icz;
     const int ifz = elem->ifz;
     
-    const double factor = 2.0 / dt;
     const double dx = elem->dx;
     const double dy = elem->dy;
     const double dz = elem->dz;
@@ -244,7 +247,7 @@ double controlled_variable_flux_divergence(double* rhs,
             for(int i = igx; i < icx - igx; i++) {
                 int nc  = i;
                 int nfx = i;
-                rhs[nc] = factor * (flux[0]->rhoY[nfx+1] - flux[0]->rhoY[nfx])/dx;
+                rhs[nc] = (flux[0]->rhoY[nfx+1] - flux[0]->rhoY[nfx])/dx;
                 rhsmax  = MAX_own(rhsmax, fabs(rhs[nc]));
             }
             break;
@@ -258,7 +261,7 @@ double controlled_variable_flux_divergence(double* rhs,
                     int nc  = mc  + i;
                     int nfx = mfx + i;
                     int nfy = mfy + i*ify;
-                    rhs[nc] = factor * ((flux[0]->rhoY[nfx+1] - flux[0]->rhoY[nfx])/dx + (flux[1]->rhoY[nfy+1] - flux[1]->rhoY[nfy])/dy);
+                    rhs[nc] = ((flux[0]->rhoY[nfx+1] - flux[0]->rhoY[nfx])/dx + (flux[1]->rhoY[nfy+1] - flux[1]->rhoY[nfy])/dy);
                     rhsmax  = MAX_own(rhsmax, fabs(rhs[nc]));
 #if TEST_WALL_BC
                     fint_bot    += (j == igy ? fabs(flux[1]->rhoY[nfy]) : 0.0);
@@ -285,9 +288,9 @@ double controlled_variable_flux_divergence(double* rhs,
                         int nfx = mfx + i;
                         int nfy = mfy + i*ify*icz;
                         int nfz = mfz + i*ifz;
-                        rhs[nc] = factor * (  (flux[0]->rhoY[nfx+1] - flux[0]->rhoY[nfx])/dx \
-                                            + (flux[1]->rhoY[nfy+1] - flux[1]->rhoY[nfy])/dy \
-                                            + (flux[2]->rhoY[nfz+1] - flux[2]->rhoY[nfz])/dz);
+                        rhs[nc] = (  (flux[0]->rhoY[nfx+1] - flux[0]->rhoY[nfx])/dx \
+                                    + (flux[1]->rhoY[nfy+1] - flux[1]->rhoY[nfy])/dy \
+                                    + (flux[2]->rhoY[nfz+1] - flux[2]->rhoY[nfz])/dz);
                         rhsmax  = MAX_own(rhsmax, fabs(rhs[nc]));
                     }
                 }
@@ -422,13 +425,7 @@ void operator_coefficients(
     
     double nonhydro = ud.nonhydrostasy;
     
-    const double ccw = (ud.time_integrator == SI_MIDPT ? 4.0 : 2.0); 
-    /* when p2 is perturbation pressure:
-     const double ccenter = - ccw * (ud.compressibility*ud.Msq)*th.gamminv/(dt*dt); 
-     const double cexp    = 1.0-th.gamm;
-     */
-    /* when p2 is Exner pressure: */
-    const double ccenter = - ccw * (ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt); 
+    const double ccenter = - (ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt); 
     const double cexp    = 2.0-th.gamm;
     
     switch(ndim) {
@@ -494,7 +491,7 @@ void operator_coefficients(
                     double Y     = 0.5 * (Sol->rhoY[jc]  / Sol->rho[jc]  + Sol0->rhoY[jc]  / Sol0->rho[jc]);
                     double Ym    = 0.5 * (Sol->rhoY[jcm] / Sol->rho[jcm] + Sol0->rhoY[jcm] / Sol0->rho[jcm]);
                     double Nsq   = - (g/Msq) * 0.5*(Y+Ym) * (S-Sm)/dy;
-                    double Nsqsc = 0.25*dt*dt*Nsq;
+                    double Nsqsc = dt*dt*Nsq;
                     
                     gimp  = 1.0 / (nonhydro + Nsqsc);
                     
@@ -575,7 +572,7 @@ void operator_coefficients(
                         double Y   = 0.5 * (Sol->rhoY[jc]  / Sol->rho[jc]  + Sol0->rhoY[jc]  / Sol0->rho[jc]);
                         double Ym  = 0.5 * (Sol->rhoY[jcm] / Sol->rho[jcm] + Sol0->rhoY[jcm] / Sol0->rho[jcm]);
                         double Nsq = - (g/Msq) * 0.5*(Y+Ym) * (S-Sm)/dy;
-                        double Nsqsc = 0.25*dt*dt*Nsq;
+                        double Nsqsc = dt*dt*Nsq;
                         
                         gimp  = 1.0 / (nonhydro + Nsqsc);
                         
@@ -647,7 +644,7 @@ static void flux_correction_due_to_pressure_gradients(
             const int igx = elem->igx;
             const int ifx = elem->ifx;
             
-            const double dto2dx  = 0.5 * dt / elem->dx;
+            const double dto2dx  = dt / elem->dx;
             const double* hplusx = hplus[0];
 
             ConsVars* f = flux[0];
@@ -670,8 +667,8 @@ static void flux_correction_due_to_pressure_gradients(
             const int icy = elem->icy;
             const int ify = elem->ify;
             
-            const double dto2dx = 0.5 * dt / elem->dx;
-            const double dto2dy = 0.5 * dt / elem->dy;
+            const double dto2dx = dt / elem->dx;
+            const double dto2dy = dt / elem->dy;
             
             const double b = P1_ALTERNATIVE_STENCIL_WEIGHT; 
             const double a = 1.0-2.0*b;
@@ -729,9 +726,9 @@ static void flux_correction_due_to_pressure_gradients(
             const int icz = elem->icz;
             const int ifz = elem->ifz;
             
-            const double dto2dx = 0.5 * dt / elem->dx;
-            const double dto2dy = 0.5 * dt / elem->dy;
-            const double dto2dz = 0.5 * dt / elem->dz;
+            const double dto2dx = dt / elem->dx;
+            const double dto2dy = dt / elem->dy;
+            const double dto2dz = dt / elem->dz;
             
             const int dix = 1;
             const int diy = icx; 
@@ -870,7 +867,8 @@ static void rhs_fix_for_open_boundaries(
                 
             case 2: {
                 
-                const double factor = 1.0 / (elem->dx * dt);
+                assert(0); /* factor 2.0 of dt in the following line erroneous? */
+                const double factor = 1.0 / (elem->dx * (2.0*dt));  
                 
                 const int igx = elem->igx;
                 const int icx = elem->icx;
@@ -1088,7 +1086,7 @@ double Newton_rhs(double* rhs,
     
     double rhsmax = 0.0;
     
-    const double cc1  = 4.0/(mpv->dt*mpv->dt);
+    const double cc1  = 1.0/(dt*dt);
     const double cc2  = cc1*ud.Msq*th.gm1inv; 
     const double cexp = 2.0-th.gamm;
     
