@@ -69,20 +69,6 @@ int main( void )
     int its = 0;
     int i_ts, j_ts, n_ts;
     ConsVars *time_series = ConsVars_new(nts);
-    /*
-    for (int i = 0; i < nts; i++) {
-        time_series->rho[i]  = 0.0;
-        time_series->rhou[i] = 0.0;
-        time_series->rhov[i] = 0.0;
-        time_series->rhow[i] = 0.0;
-        time_series->rhoe[i] = 0.0;
-        time_series->rhoY[i] = 0.0;
-        for (int nsp = 0; nsp < ud.nspec; nsp++) {
-            time_series->rhoX[nsp][i] = 0.0;
-        }
-    };
-    its++;
-     */
 #endif
 
     ud.nonhydrostasy   = nonhydrostasy(0);
@@ -164,9 +150,7 @@ int main( void )
             flux_correction(flux, Sol, Sol0, elem, node, t, 0.5*dt, step);        
 
             ConsVars_set(Sol, Sol0, elem->nc);
-#ifndef EULER_FORWARD_NON_ADVECTIVE_NEW
             cell_pressure_to_nodal_pressure(mpv, elem, node);
-#endif
           
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nfull time step with predicted advective flux");
@@ -184,14 +168,8 @@ int main( void )
 #endif
             
             /* implicit EULER half time step for gravity and pressure gradient */ 
-#ifdef EULER_FORWARD_NON_ADVECTIVE_NEW
-            momentum_increments(mpv, (const ConsVars*)Sol, (const ElemSpaceDiscr*)elem);
-#endif         
             euler_backward_gravity(Sol, mpv, elem, 0.5*dt);
             second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt);
-#ifdef EULER_FORWARD_NON_ADVECTIVE_NEW
-            momentum_increments(mpv, (const ConsVars*)Sol, (const ElemSpaceDiscr*)elem);
-#endif         
             /* auxiliary buoyancy update by vertical advection of background stratification */
             update_SI_MIDPT_buoyancy(Sol, (const ConsVars**)flux, mpv, elem, 0.5*dt);
             
@@ -200,9 +178,6 @@ int main( void )
               */
             
             if (ud.is_compressible) {
-                if (step%10 == 0 && 0) {
-                  dt_average(Sol, mpv, Sol0, elem);  
-                } 
                 adjust_pi_cells(mpv, Sol, elem);
             }
                         

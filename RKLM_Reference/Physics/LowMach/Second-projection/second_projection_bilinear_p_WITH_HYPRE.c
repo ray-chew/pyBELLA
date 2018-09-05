@@ -1082,36 +1082,6 @@ void euler_backward_gravity(ConsVars* Sol,
     Set_Explicit_Boundary_Data(Sol, elem);
 }
 
-#ifdef EULER_FORWARD_NON_ADVECTIVE_NEW
-
-/* ========================================================================== */
-
-void euler_forward_non_advective(ConsVars* Sol,
-                                 MPV* mpv,
-                                 const ConsVars* Sol0,
-                                 const ElemSpaceDiscr* elem,
-                                 const NodeSpaceDiscr* node,
-                                 const double dt,
-                                 const enum EXPLICIT_PRESSURE wp)
-{
-    for (int i=0; i<elem->nc; i++) {
-        Sol->rhou[i] += mpv->drhou_cells[i];
-        Sol->rhov[i] += mpv->drhov_cells[i];
-        Sol->rhow[i] += mpv->drhow_cells[i];
-        mpv->drhou_cells[i] = 0.0;
-        mpv->drhov_cells[i] = 0.0;
-        mpv->drhow_cells[i] = 0.0;
-    }
-    
-    for(int nn=0; nn<node->nc; nn++) {
-        mpv->p2_nodes[nn] += mpv->dp2_nodes[nn];
-    }
-    
-    set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
-    Set_Explicit_Boundary_Data(Sol, elem);
-}
-#else
-
 /* ========================================================================== */
 
 void euler_forward_non_advective(ConsVars* Sol,
@@ -1351,8 +1321,6 @@ void euler_forward_non_advective(ConsVars* Sol,
     Set_Explicit_Boundary_Data(Sol, elem);
     
 }
-
-#endif
 
 /* ========================================================================== */
 
