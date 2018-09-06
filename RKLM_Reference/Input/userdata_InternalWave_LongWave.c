@@ -173,7 +173,7 @@ void User_Data_init(User_Data* ud) {
     /* =====  CODE FLOW CONTROL  ======================================================== */
     /* ================================================================================== */
     
-    ud->tout[0] = scalefactor * 1.0 * 3000.0 / ud->t_ref; /* 3000 */
+    ud->tout[0] = scalefactor * 1.5 * 3000.0 / ud->t_ref; /* 3000 */
     ud->tout[1] = -1.0;
 
     ud->stepmax = 10000;
@@ -184,6 +184,8 @@ void User_Data_init(User_Data* ud) {
     ud->write_file_period = 40;
     ud->file_format = HDF;
     
+    ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
+
     {
         char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";

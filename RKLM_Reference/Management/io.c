@@ -54,6 +54,8 @@ static FILE *pqfile        = NULL;
 static FILE *pp2file       = NULL;     
 static FILE *dpdimfile     = NULL;     
 
+/* ============================================================================= */
+
 void putout(ConsVars* Sol, 
 			char* dir_name, 
 			char* field_name,
@@ -447,6 +449,68 @@ static void putoutSILO(char* file_name) {
 	}	
 }
 #endif
+
+
+#ifdef ONE_POINT_TIME_SERIES
+static ConsVars *time_series;
+
+/* ============================================================================= */
+
+void initialize_time_series(void)
+{
+    extern User_Data ud;
+    
+    time_series = ConsVars_new(ud.n_time_series);
+}
+
+/* ============================================================================= */
+
+void store_time_series_entry(const ConsVars *Sol,
+                             const ElemSpaceDiscr *elem,
+                             const int step)
+{
+    extern User_Data ud;
+    
+    int i_ts  = 2*elem->icx/3;
+    int j_ts  = 2*elem->icy/3; 
+    int n_ts = j_ts*elem->icx + i_ts;
+    int its  = MIN_own(ud.n_time_series-1, step);
+    time_series->rho[its]  = Sol->rho[n_ts];
+    time_series->rhou[its] = Sol->rhou[n_ts];
+    time_series->rhov[its] = Sol->rhov[n_ts];
+    time_series->rhow[its] = Sol->rhow[n_ts];
+    time_series->rhoe[its] = Sol->rhoe[n_ts];
+    time_series->rhoY[its] = Sol->rhoY[n_ts];
+    for (int nsp = 0; nsp < ud.nspec; nsp++) {
+        time_series->rhoX[nsp][its] = Sol->rhoX[nsp][n_ts];
+    }
+}
+
+/* ============================================================================= */
+
+void close_time_series()
+{
+    extern User_Data ud;
+    
+    char fn[200];
+    sprintf(fn, "%s/time_series.txt", ud.file_name);
+    FILE *TSfile = fopen(fn, "w+");
+    fprintf(TSfile, "rho_ts rhou_ts rhov_ts rhow_ts rhoe_ts rhoY_ts \n");
+    for(int i=0; i<ud.n_time_series; i++) {
+        fprintf(TSfile, "%e %e %e %e %e %e \n",  
+                time_series->rho[i], 
+                time_series->rhou[i], 
+                time_series->rhov[i], 
+                time_series->rhow[i], 
+                time_series->rhoe[i], 
+                time_series->rhoY[i]-time_series->rhoY[0]);
+    }
+    fclose(TSfile);
+    ConsVars_free(time_series);
+}
+
+
+#endif /* ONE_POINT_TIME_SERIES */
 
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL

@@ -63,13 +63,10 @@ int main( void )
         
 	/* data allocation and initialization */
 	Data_init();
-    
-#ifdef ONE_POINT_TIME_SERIES
-    int nts = 500;
-    int its = 0;
-    int i_ts, j_ts, n_ts;
-    ConsVars *time_series = ConsVars_new(nts);
-#endif
+        
+    if (ud.n_time_series > 0) {
+        initialize_time_series();
+    }
 
     ud.nonhydrostasy   = nonhydrostasy(0);
     ud.compressibility = compressibility(0);
@@ -83,7 +80,6 @@ int main( void )
     if (ud.initial_projection == CORRECT) {
         euler_backward_gravity(Sol, mpv, elem, 5.0);
         second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, 10.0);
-        // cell_pressure_to_nodal_pressure(mpv, elem, node);
     }
 
 	if(ud.write_file == ON) 
@@ -144,7 +140,6 @@ int main( void )
             flux_correction(flux, Sol, Sol0, elem, node, t, 0.5*dt, step);        
 
             ConsVars_set(Sol, Sol0, elem->nc);
-            // cell_pressure_to_nodal_pressure(mpv, elem, node, 1.0);
             cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
           
             printf("\n\n-----------------------------------------------------------------------------------------");
@@ -169,9 +164,9 @@ int main( void )
             /* auxiliary buoyancy update by vertical advection of background stratification */
             update_SI_MIDPT_buoyancy(Sol, (const ConsVars**)flux, mpv, elem, 0.5*dt);
             
-            /* Strang splitting for Coriolis, second step
+            /* Strang splitting for Coriolis, second step */
             Explicit_Coriolis(Sol, elem, 0.5*dt);  
-              */
+              
             
             if (ud.is_compressible) {
                 adjust_pi_cells(mpv, Sol, elem);
@@ -182,21 +177,9 @@ int main( void )
                 Absorber(Sol, (const ElemSpaceDiscr*)elem, (const double)t, (const double)dt); 
             }                                    
                         
-#ifdef ONE_POINT_TIME_SERIES
-            i_ts  = 2*elem->icx/3;
-            j_ts  = 2*elem->icy/3;
-            n_ts = j_ts*elem->icx + i_ts;
-            its  = MIN_own(nts-1, step);
-            time_series->rho[its] = Sol->rho[n_ts];
-            time_series->rhou[its] = Sol->rhou[n_ts];
-            time_series->rhov[its] = Sol->rhov[n_ts];
-            time_series->rhow[its] = Sol->rhow[n_ts];
-            time_series->rhoe[its] = Sol->rhoe[n_ts];
-            time_series->rhoY[its] = Sol->rhoY[n_ts];
-            for (int nsp = 0; nsp < ud.nspec; nsp++) {
-                time_series->rhoX[nsp][its] = Sol->rhoX[nsp][n_ts];
-            }
-#endif
+            if (ud.n_time_series > 0) {
+                store_time_series_entry(Sol, elem, step);
+            }            
             
             t += dt;
             step++;
@@ -221,23 +204,9 @@ int main( void )
 	/* data release */
 	Data_free();
 	    
-#ifdef ONE_POINT_TIME_SERIES
-    char fn[200];
-    sprintf(fn, "%s/time_series.txt", ud.file_name);
-    FILE *TSfile = fopen(fn, "w+");
-    fprintf(TSfile, "rho_ts rhou_ts rhov_ts rhow_ts rhoe_ts rhoY_ts \n");
-    for(int i=0; i<nts; i++) {
-        fprintf(TSfile, "%e %e %e %e %e %e \n", 
-                time_series->rho[i], 
-                time_series->rhou[i], 
-                time_series->rhov[i], 
-                time_series->rhow[i], 
-                time_series->rhoe[i], 
-                time_series->rhoY[i]-time_series->rhoY[0]);
+    if (ud.n_time_series > 0) {
+        close_time_series();
     }
-    fclose(TSfile);
-    ConsVars_free(time_series);
-#endif
 
 	return(1);
 }

@@ -29,7 +29,10 @@ typedef struct {
 	char file_name[FILENAME_MAX];
     char test_dir_name[FILENAME_MAX];
 	int ncache;
-	
+#ifdef ONE_POINT_TIME_SERIES
+    int n_time_series;
+#endif	
+    
     /* reference quantities */
     double h_ref;
     double t_ref;

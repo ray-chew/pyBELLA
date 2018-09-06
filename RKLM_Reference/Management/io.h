@@ -39,6 +39,18 @@ void WriteHDF(
 			  char* file_name, 
 			  char* var_name);
 
+
+#ifdef ONE_POINT_TIME_SERIES
+
+void initialize_time_series(void);
+void store_time_series_entry(const ConsVars *Sol,
+                             const ElemSpaceDiscr *elem,
+                             const int step);
+void close_time_series(void);
+
+#endif /* ONE_POINT_TIME_SERIES */
+
+
 #endif /* IO_H */
 
 

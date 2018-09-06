@@ -187,7 +187,7 @@ double acoustic_order(const double t,
             int nsteps = 10;
             return(1.0 + MIN_own(1.0, t/(nsteps*dt))); 
              */
-            return(1.9); /* 1.0, 2.0*/
+            return(1.0); /* 1.0, 2.0*/
         }
             break;
         case -1:
