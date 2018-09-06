@@ -451,10 +451,9 @@ static void putoutSILO(char* file_name) {
 #endif
 
 
-#ifdef ONE_POINT_TIME_SERIES
-static ConsVars *time_series;
 
 /* ============================================================================= */
+static ConsVars *time_series;
 
 void initialize_time_series(void)
 {
@@ -508,10 +507,6 @@ void close_time_series()
     fclose(TSfile);
     ConsVars_free(time_series);
 }
-
-
-#endif /* ONE_POINT_TIME_SERIES */
-
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log: io.c,v $

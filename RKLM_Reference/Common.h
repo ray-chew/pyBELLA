@@ -15,8 +15,6 @@
 #define OUTPUT_FLUXES
  */
 
-#define ONE_POINT_TIME_SERIES
-
 /* ============================================= 
  Initial Data Options
  ============================================= */
@@ -33,6 +31,7 @@
 #define EGDE_VELOCITIES_IN_MUSCL_STEP
 #define SYMMETRIC_ADVECTION
 #define ADVECTION
+#define NODAL_PRESSURE_GRADIENT
 
 /* ============================================= 
  Semi-implicit solver options  

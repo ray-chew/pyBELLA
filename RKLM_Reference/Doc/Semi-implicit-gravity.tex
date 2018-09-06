@@ -175,7 +175,7 @@
 
 The scheme borrows heavily from the overall forward-in-time integration 
 strategy for computational fluid dynamcis developed by Piotr Smolarkiewicz for
-the EULAG model \citep{EULAG-Numerics-Reference}. The governing equations for 
+the EULAG model \citep{PrusaEtAl2008}. The governing equations for 
 the adiabatic compressible model version and for an inert ideal gas with 
 constant specific heat capacities may be written in dimensionless form as 
 %
@@ -201,30 +201,26 @@ constant specific heat capacities may be written in dimensionless form as
 \end{align}
 \end{subequations}
 %
-Here ... is ..., ... is ..., $\pi$ is the Exner pressure, and 
-$P = \pi^{\frac{1}{\gamma-1}}$ \klein{(definitions to be filled in)}.
-Given \eq{eq:PsincConstraint}, and defining 
+Here $\rho$ is the density, $\vu, w$ are the horizontal and vertical components 
+of the flow velocity, $\pi$ is the Exner pressure, and $P = \pi^{\frac{1}{\gamma-1}}$. 
+Given \eq{eq:PsincMass} and \eq{eq:PsincConstraint}, the potential temperature
+$\Theta = P/\rho$ satisfies the usual advection equation
 %
 \begin{equation}
-\rho = P\chi \equiv P/\Theta\, .
+\Theta_t + \vu\cdot\nabla_\parallel \Theta + w \Theta_z = 0\,.
 \end{equation}
 %
-The mass transport equation can be cast in the form of a transport 
-equation for $\chi = 1/\Theta$, 
+Of course, the inverse $\chi = 1/\Theta$ satisfies the same equation. 
+With this observation, the mass transport equation can be cast in the form of a 
+transport equation for $\chi$, 
 %
 \begin{equation}\label{eq:chiI}
 \rho_t + \nabla_\parallel\cdot(\rho \vu) + (\rho w)_z = 
-(P\chi)_t + \nabla_\parallel\cdot(P\chi \vu) + (P\chi w)_z = 0\,,
+(P\chi)_t + \nabla_\parallel\cdot(P\chi \vu) + (P\chi w)_z = 0\,.
 \end{equation}
 %
-or equivalently, for differentiable solutions, as an advection equation
-%
-\begin{equation}\label{eq:chiII}
-\chi_t + \vu\cdot\nabla_\parallel \chi + w \chi_z = 0\,.
-\end{equation}
-%
-The equations in \eq{eq:PsincI} are then recast, using \eq{eq:chiI} and
-\eq{eq:chiII} and splitting $\chi(t,\vx,z) = \chitilde(t,\vx,z) + \chibar(z)$, 
+The equations in \eq{eq:PsincI} are recast, using \eq{eq:chiI} and the advection 
+equation for $\chi$ and splitting $\chi(t,\vx,z) = \chitilde(t,\vx,z) + \chibar(z)$, 
 and introducing the blending parameters $\rbeta$ and $\balpha$ for 
 hydrostasy and pseudo-incompressibility, respectively,  
 %
@@ -232,34 +228,35 @@ hydrostasy and pseudo-incompressibility, respectively,
 \begin{array}{rcrcl}
 \dss (P\chitilde)_t 
   & + 
-    & \dss \nabla_\parallel\cdot(P\vu\, \chitilde) + (Pw\, \chitilde)_z
+    & \dss \nabla_\parallel\cdot(P\vu\, \chitilde) + (Pw\, \chitilde)_z \hfil
       & = 
         & \dss -\left[\nabla_\parallel\cdot(P\vu\, \chibar) + (Pw\, \chibar)_z\right]
           \\[10pt]
 \dss (P\vu)_t 
   & + 
-    & \dss \nabla_\parallel\cdot(P\vu\circ\vu) + (Pw\, \vu)_z 
+    & \dss \nabla_\parallel\cdot(P\vu\circ\vu) + (Pw\, \vu)_z  \hfil
       & = 
         & \dss - \frac{P\Theta}{\Gamma}\nabla_\parallel \pi
           \\[10pt]
 \dss \rbeta\, \Bigl[(P w)_t 
   & + 
-    & \dss \nabla_\parallel\cdot(P \vu\, w) + (Pw\, w)_z\Bigr] 
+    & \dss \nabla_\parallel\cdot(P \vu\, w) + (Pw\, w)_z\Bigr]  \hfil
       & = 
         & \dss - \left(\frac{P\Theta}{\Gamma} \pi_z + P g\right)
           \\[15pt]
 \balpha\, f(\pi) \pi_t
-  &  
-    & \dss \dss \nabla_\parallel\cdot(P\vu)  + (Pw)_z
+  &  +
+    & \dss \dss \nabla_\parallel\cdot(P\vu)  + (Pw)_z  \hfil
       & = 
         & \dss 0\,.
 \end{array}
 \end{equation}
 %
-Here the second column of terms on the left represents advection of 
-$\Psi = (\chi, \vu, w)$ by the advecting fluxes $P\vv \equiv (P\vu, Pw)$, 
-and the right hand side column presents the forces acting to change the 
-momentum field. These equations are written in compact form as
+The second column of terms on the left represents advection of 
+$\Psi = (\chitilde, \vu, w)$ by the advecting fluxes $P\vv \equiv (P\vu, Pw)$, 
+and the right hand side column represents generalized forces that change the 
+momentum and potential temperature perturbation field. These equations in 
+\eq{PsincII} are written in compact form as
 %
 \begin{equation}
 (P\Psi)_t + \mathcal{A}(\Psi; P\vv) = PR(\Psi)\, ,
@@ -268,22 +265,24 @@ momentum field. These equations are written in compact form as
 and with this notation the EULAG-type time integration scheme for an update
 of the solution $\Psi$ from time $t^n$ to time $t^{n+1}$ reads 
 %
-\begin{equation}\label{eq:EULAGTimeIntegrator}
-\begin{array}{rcl}
+\begin{subequations}\label{eq:EULAGTimeIntegrator}
+\begin{eqnarray}
+\label{eq:EULAGExplicitEulerStep}
 \dss \Psi^{*} 
   & = 
     & \dss \Psi^{*} + \frac{\Delta t}{2} R(\Psi^n)
       \\
+\label{eq:EULAGAdvectionStep}
 \dss \Psi^{**} 
   & = 
     & \dss \mathcal{A}^{\Delta t}\left(\Psi^*; (P\vv)^{n+1/2}\right)
       \\
+\label{eq:EULAGImplicitEulerStep}
 \dss \Psi^{n+1} 
   & = 
     & \dss \Psi^{**} + \frac{\Delta t}{2} R(\Psi^{n+1})\,.
-      \\
-\end{array}
-\end{equation}
+\end{eqnarray}
+\end{subequations}
 %
 Here $\mathcal{A}^{\Delta t}\left(\Psi; (P\vv)\right)$ denotes a
 second-order accurate explicit approximation of the \emph{linear} 
@@ -309,28 +308,30 @@ are at least first order accurate approximations of the $P\vv$ field
 at the half time level $t^{n+1/2} = (t^n + t^{n+1})/2$ that can be
 determined in various ways. The default option in EULAG is extrapolation
 from the last two completed time levels, the option adopted here and
-in an alternative variant of EULAG is to carry out an intermediate 
-(possibly lower-order accurate) time step to the half time level to 
-evolve them from $(P\vv)^{n}$ without the need to recur to the $t^{n-1}$
-level solution. 
+in alternative variants of EULAG is to carry out an intermediate, at 
+least first order accurate, time step to the half time level to 
+evolve $(P\vv)^{n}$ to $(P\vv)^{n+\half}$ without a need to recur to 
+the $t^{n-1}$ level solution. 
 
-With these preliminaries, the scheme in \eq{eq:EULAGTimeIntegrator} is
-best interpreted as the application of the implicit trapezoidal rule
-for time integrating the source terms $R(\Psi)$, anchored at the  
-beginning and end points of Lagrangian trajectories traced between the
-pertinent time levels. A forward Euler step is followed by a backward
-Euler step, with the advection step interleaved so as to represent
-the advancement of the Lagrangian paths.  
+With these preliminaries, and following \cite{SmolarkiewiczMargolin1997}, 
+the scheme in \eq{eq:EULAGTimeIntegrator} may be interpreted as the 
+application of the implicit trapezoidal rule for time integrating the 
+source terms $R(\Psi)$, anchored at the beginning and end points of 
+Lagrangian trajectories traced between the pertinent time levels. A 
+forward Euler step is followed by a backward Euler step, with the 
+advection step interleaved so as to represent the advancement of the 
+Lagrangian paths. 
 
-An observation that should be important in analyzing the (remarkable)
-stability features of EULAG, which seems to be inherited by the current 
-implementation, is that for given $(P\vv)$ the advection step is \emph{linear}. 
+An observation that may in part explain the good stability features of 
+EULAG, which seems to be inherited by the scheme proposed here, is that 
+for given $(P\vv)^{n+\half}$ the advection step is \emph{linear}. 
 As a consequence, even if for rather large time steps the velocities 
-computed in the forward Euler step end up far away from the solutions 
-at time levels $n$ or $n+1$, these excursions do (i) not affect the 
-advecting fluxes $(P\vv)^{n+1/2}$, and they can (ii) properly be 
-post-corrected and pulled back to the reasonable range by the backward 
-Euler step. 
+computed in the forward Euler step \eq{eq:EULAGExplicitEulerStep} end 
+up far away from the solutions at time levels $n$ or $n+1$ for large
+$\Delta t$, these excursions do (i) not affect the advecting fluxes 
+$(P\vv)^{n+1/2}$, and they can (ii) properly be post-corrected and 
+pulled back to the reasonable range by the backward Euler step in 
+\eq{eq:EULAGImplicitEulerStep}. 
 
 The half time step predictor for the advecting fluxes needs to be first
 order accurate only to preserve second order accuracy of the entire 
@@ -350,14 +351,20 @@ version of \eq{eq:EULAGTimeIntegrator} for this purpose:
 \end{array}
 \end{equation}
 %
-which corresponds to a simple first order splitting scheme.
+which corresponds to a simple first order splitting scheme. This intermediate
+solution is generated exclusively to provide the advecting fluxes 
+$(P\vv)^{n+\half}$ needed in the advection step \eq{eq:EULAGAdvectionStep}.
 
 The large time step stability of the scheme is then determined by 
 the final implicit half time steps in \eq{eq:EULAGTimeIntegrator}
 and \eq{eq:EULAGHalfTimePredictor}, which are conceptually identical, 
 except that \eq{eq:EULAGTimeIntegrator} leads to divergence-controlled
-cell-centered velocities, whereas \eq{eq:EULAGTimeIntegrator} leads to
+cell-centered velocities, whereas \eq{eq:EULAGHalfTimePredictor} leads to
 divergence-controlled advective fluxes at the cell faces.
+
+
+\bibliographystyle{FluidMechanics}
+\bibliography{Bibliography}
 
 \end{document}
 

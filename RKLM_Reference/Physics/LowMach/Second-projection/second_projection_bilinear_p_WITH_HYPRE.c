@@ -1123,6 +1123,7 @@ void euler_forward_non_advective(ConsVars* Sol,
     double* dp2n = W0;
 
     double* p2n  = mpv->p2_nodes;
+    double* p2c  = mpv->p2_cells;
     
     const double g        = ud.gravity_strength[1];
     const double Msq      = ud.Msq;
@@ -1212,12 +1213,17 @@ void euler_forward_non_advective(ConsVars* Sol,
                     int nc  = mc + i;
                     
                     int nn00 = mn  + i;
+   
+#ifdef NODAL_PRESSURE_GRADIENT
                     int nn10 = nn00 + icxn;
                     int nn01 = nn00 + 1;
                     int nn11 = nn00 + 1 + icxn;
-                    
                     double dpdx    = wp*0.5*(p2n[nn01]-p2n[nn00]+p2n[nn11]-p2n[nn10])/dx;
                     double dpdy    = wp*0.5*(p2n[nn10]-p2n[nn00]+p2n[nn11]-p2n[nn01])/dy;
+#else
+                    double dpdx    = wp*0.5*(p2c[nc+1]-p2n[nc-1])/dx;
+                    double dpdy    = wp*0.5*(p2c[nc+icxe]-p2c[nc-icxe])/dy;
+#endif
                     double dSdy    = (S0p-S0m) / dy;
                     
                     double rhoYovG = Ginv*Sol->rhoY[nc];
