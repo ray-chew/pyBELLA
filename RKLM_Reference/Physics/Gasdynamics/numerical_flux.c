@@ -110,17 +110,10 @@ void hllestar(
  ------------------------------------------------------------------------------*/
 void recompute_advective_fluxes(ConsVars* flux[3], 
                                 const ConsVars* Sol, 
-                                const ElemSpaceDiscr* elem, 
-                                const double weight_old,
-                                const double weight_new)
+                                const ElemSpaceDiscr* elem)
 {
     extern User_Data ud;
     
-    /* make sure fluxes cannot inadvertently contain weird data */
-    for (int nf=0; nf<elem->nfx; nf++) flux[0]->rhoY[nf] *= weight_old;
-    if (elem->ndim>1) for (int nf=0; nf<elem->nfy; nf++) flux[1]->rhoY[nf] *= weight_old;
-    if (elem->ndim>2) for (int nf=0; nf<elem->nfz; nf++) flux[2]->rhoY[nf] *= weight_old;
-
 #ifndef FOURTH_ORDER_ADV_FLUXES
     /* recompute advective flux at fixed time level from cell averages */
     switch (elem->ndim) {
@@ -130,7 +123,7 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                 double u_m    = Sol->rhou[i-1]/Sol->rho[i-1];
                 double rhoY_c = Sol->rhoY[i];
                 double rhoY_m = Sol->rhoY[i-1];
-                flux[0]->rhoY[i] = weight_old*flux[0]->rhoY[i] + weight_new*0.25*(u_c+u_m)*(rhoY_c+rhoY_m);
+                flux[0]->rhoY[i] = 0.25*(u_c+u_m)*(rhoY_c+rhoY_m);
             }
             break;
         } 
@@ -159,15 +152,15 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                     double v_m     = Sol->rhov[ncij-icx]/Sol->rho[ncij-icx];
                     double rhoY_my = Sol->rhoY[ncij-icx];
                     
-                    flux[0]->rhoY[nfxij] += weight_new*0.25*(u_c+u_m)*(rhoY_c+rhoY_mx);
-                    flux[1]->rhoY[nfyij] += weight_new*0.25*(v_c+v_m)*(rhoY_c+rhoY_my);
+                    flux[0]->rhoY[nfxij] = 0.25*(u_c+u_m)*(rhoY_c+rhoY_mx);
+                    flux[1]->rhoY[nfyij] = 0.25*(v_c+v_m)*(rhoY_c+rhoY_my);
 #else
                     double rhoYu_c  = (Sol->rhoY[ncij]/Sol->rho[ncij])*Sol->rhou[ncij];
                     double rhoYu_mx = (Sol->rhoY[ncij-1]/Sol->rho[ncij-1])*Sol->rhou[ncij-1];
                     double rhoYv_c  = (Sol->rhoY[ncij]/Sol->rho[ncij])*Sol->rhov[ncij];
                     double rhoYv_my = (Sol->rhoY[ncij-icx]/Sol->rho[ncij-icx])*Sol->rhov[ncij-icx];
-                    flux[0]->rhoY[nfxij] += weight_new*0.5*(rhoYu_c+rhoYu_mx);
-                    flux[1]->rhoY[nfyij] += weight_new*0.5*(rhoYv_c+rhoYv_my);
+                    flux[0]->rhoY[nfxij] = 0.5*(rhoYu_c+rhoYu_mx);
+                    flux[1]->rhoY[nfyij] = 0.5*(rhoYv_c+rhoYv_my);
 #endif
                 }
             }
@@ -210,9 +203,9 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                         double w_m     = Sol->rhow[ncijk-icx*icy]/Sol->rho[ncijk-icx*icy];
                         double rhoY_mz = Sol->rhoY[ncijk-icx*icy];
                         
-                        flux[0]->rhoY[nfxijk] += weight_new*0.25*(u_c+u_m)*(rhoY_c+rhoY_mx);
-                        flux[1]->rhoY[nfyijk] += weight_new*0.25*(v_c+v_m)*(rhoY_c+rhoY_my);
-                        flux[2]->rhoY[nfzijk] += weight_new*0.25*(w_c+w_m)*(rhoY_c+rhoY_mz);
+                        flux[0]->rhoY[nfxijk] = 0.25*(u_c+u_m)*(rhoY_c+rhoY_mx);
+                        flux[1]->rhoY[nfyijk] = 0.25*(v_c+v_m)*(rhoY_c+rhoY_my);
+                        flux[2]->rhoY[nfzijk] = 0.25*(w_c+w_m)*(rhoY_c+rhoY_mz);
                     }
                 }
             }
@@ -244,7 +237,7 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                 double u_m    = Sol->rhou[i-1]/Sol->rho[i-1];
                 double rhoY_c = Sol->rhoY[i];
                 double rhoY_m = Sol->rhoY[i-1];
-                flux[0]->rhoY[i] += weight_new*0.25*(u_c+u_m)*(rhoY_c+rhoY_m);
+                flux[0]->rhoY[i] = 0.25*(u_c+u_m)*(rhoY_c+rhoY_m);
             }
             break;
         } 
@@ -270,8 +263,8 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                     double rhoYv_m  = (Sol->rhoY[ncij-icx]/Sol->rho[ncij-icx])*Sol->rhov[ncij-icx];
                     double rhoYv_mm = (Sol->rhoY[ncij-2*icx]/Sol->rho[ncij-2*icx])*Sol->rhov[ncij-2*icx];
                     
-                    flux[0]->rhoY[nfxij] += weight_new*(-rhoYu_p + 7.0*(rhoYu_c+rhoYu_m) - rhoYu_mm)/12.0;
-                    flux[1]->rhoY[nfyij] += weight_new*(-rhoYv_p + 7.0*(rhoYv_c+rhoYv_m) - rhoYv_mm)/12.0;
+                    flux[0]->rhoY[nfxij] = (-rhoYu_p + 7.0*(rhoYu_c+rhoYu_m) - rhoYu_mm)/12.0;
+                    flux[1]->rhoY[nfyij] = (-rhoYv_p + 7.0*(rhoYv_c+rhoYv_m) - rhoYv_mm)/12.0;
                 }
             }
             break;
@@ -310,9 +303,9 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                         double rhoYw_m  = (Sol->rhoY[ncijk-diz]/Sol->rho[ncijk-diz])*Sol->rhow[ncijk-diz];
                         double rhoYw_mm = (Sol->rhoY[ncijk-2*diz]/Sol->rho[ncijk-2*diz])*Sol->rhow[ncijk-2*diz];
                         
-                        flux[0]->rhoY[nfxijk] += weight_new*(-rhoYu_p + 7.0*(rhoYu_c+rhoYu_m) - rhoYu_mm)/12.0;
-                        flux[1]->rhoY[nfyijk] += weight_new*(-rhoYv_p + 7.0*(rhoYv_c+rhoYv_m) - rhoYv_mm)/12.0;
-                        flux[2]->rhoY[nfzijk] += weight_new*(-rhoYw_p + 7.0*(rhoYw_c+rhoYw_m) - rhoYw_mm)/12.0;
+                        flux[0]->rhoY[nfxijk] = (-rhoYu_p + 7.0*(rhoYu_c+rhoYu_m) - rhoYu_mm)/12.0;
+                        flux[1]->rhoY[nfyijk] = (-rhoYv_p + 7.0*(rhoYv_c+rhoYv_m) - rhoYv_mm)/12.0;
+                        flux[2]->rhoY[nfzijk] = (-rhoYw_p + 7.0*(rhoYw_c+rhoYw_m) - rhoYw_mm)/12.0;
                     }
                 }
             }

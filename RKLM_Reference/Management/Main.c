@@ -101,8 +101,6 @@ int main( void )
 		
 		/* start major time stepping loop */
 		while( t < *tout && step < ud.stepmax ) { 
-
-            double flux_weight_old, flux_weight_new;
             
             /* Timestep computation */
             dynamic_timestep(&dt_info, mpv, Sol, t, *tout, elem, step);
@@ -134,16 +132,7 @@ int main( void )
             /* First order splitting for Corilis - just for the advection flux prediction */
             Explicit_Coriolis(Sol, elem, 0.5*dt);
             
-            /* explicit advection half time step preparing advection flux calculation 
-             advect(Sol, flux, force, 0.5*dt, elem, FLUX_INTERNAL, WITHOUT_FORCES, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
-             advect(Sol, flux, force, 0.5*dt, elem, FLUX_INTERNAL, WITHOUT_FORCES, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
-             advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITHOUT_FORCES, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
-             - symmetrized splitting instead of simple splitting does not improve vortex symmetry  
-             */
-            flux_weight_old = 0.0;
-            flux_weight_new = 1.0;
-
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, flux_weight_old, flux_weight_new);
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
 #ifdef ADVECTION
             advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITHOUT_FORCES, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
 #endif
@@ -151,7 +140,7 @@ int main( void )
             euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt);
             
             /* divergence-controlled advective fluxes at the half time level */
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, flux_weight_old, flux_weight_new);
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
             flux_correction(flux, Sol, Sol0, elem, node, t, 0.5*dt, step);        
 
             ConsVars_set(Sol, Sol0, elem->nc);

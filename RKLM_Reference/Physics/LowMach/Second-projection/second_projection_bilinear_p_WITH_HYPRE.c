@@ -426,9 +426,7 @@ static double divergence_nodes(
             double *rhs_cell = W0;
             
             /* build nodal divergence from cell-centered divergence averaged to nodes */
-            double flux_weight_old = 0.0;
-            double flux_weight_new = 1.0;
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, flux_weight_old, flux_weight_new);
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
             
             rhsmax = controlled_variable_flux_divergence(rhs_cell, (const ConsVars**)flux, elem);
             
@@ -496,9 +494,7 @@ static double divergence_nodes(
             double *rhs_cell = W0;
             
             /* build nodal divergence from cell-centered divergence averaged to nodes */
-            double flux_weight_old = 0.0;
-            double flux_weight_new = 1.0;
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, flux_weight_old, flux_weight_new);
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
 
             rhsmax = controlled_variable_flux_divergence(rhs_cell, (const ConsVars**)flux, elem);
             
