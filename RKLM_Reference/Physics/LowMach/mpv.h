@@ -57,6 +57,16 @@ void MPV_free(
 			  MPV* var,
               const ElemSpaceDiscr *elem);
 
+
+/*------------------------------------------------------------------------------
+ control of acoustic mode time stepping scheme 
+ ------------------------------------------------------------------------------*/
+
+double acoustic_order(const double t,
+                      const double dt); 
+
+
+
 #endif /* MPV_H */
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL

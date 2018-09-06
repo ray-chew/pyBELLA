@@ -100,6 +100,8 @@ typedef struct {
     double nonhydrostasy;
 	int is_compressible;
 	double compressibility;
+    
+    double acoustic_order;
 	
     double Msq;
 	

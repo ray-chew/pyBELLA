@@ -39,7 +39,6 @@
  ============================================= */
 /* 
  #define NONLINEAR_EOS_IN_1st_PROJECTION -- Newton for  P(pi)
- #define NO_PI_SYNC                      -- P doesn't overwrite pi each time step
  */
 #define NONLINEAR_EOS_IN_1st_PROJECTION
 
@@ -87,7 +86,6 @@
 /*
  #define TIME_AVED_OPCOEFFS_2ND
  */
-
 
 /* TODO: Code cleaning / maintainance
  

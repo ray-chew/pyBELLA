@@ -586,12 +586,8 @@ void adjust_pi_cells(MPV* mpv,
     for(int k = igz; k < icz - igz; k++) {int l = k * icx * icy;
 		for(int j = igy; j < icy - igy; j++) {int m = l + j * icx;
 			for(int i = igx; i < icx - igx; i++) {int n = m + i;
-#ifdef NO_PI_SYNC
-                mpv->p2_cells[n] += mpv->dp2_cells[n];
-#else
                 double p2bg = mpv->HydroState->p20[j];
                 mpv->p2_cells[n] = scalefac * pow(Sol->rhoY[n],th.gm1) - p2bg;
-#endif
 			}
 		}
 	}
@@ -740,8 +736,9 @@ double compressibility(const double t)
 void cell_pressure_to_nodal_pressure(
                                      MPV* mpv,
                                      const ElemSpaceDiscr* elem,
-                                     const NodeSpaceDiscr* node)
-{
+                                     const NodeSpaceDiscr* node,
+                                     const double weight)
+{    
     const int icx  = elem->icx;
     const int icy  = elem->icy;
     const int igx  = elem->igx;
@@ -749,7 +746,11 @@ void cell_pressure_to_nodal_pressure(
     const int icxn = node->icx;
     const int icyn = node->icy;
     const int iczn = node->icz;
-
+    
+    if (weight == 0.0) {
+        return;
+    }
+    
     /*set nodal pressures; rough approximation by interpolation of cell pressures */
     for(int k = 0; k < iczn; k++) {
         int ln = k * icxn * icyn;   
@@ -763,7 +764,8 @@ void cell_pressure_to_nodal_pressure(
                 int ncnw = mc + i - 1;
                 int ncsw = mc + i - 1 - icx;
                 int ncse = mc + i     - icx;
-                mpv->p2_nodes[nn] = 0.25*(mpv->p2_cells[ncne]+mpv->p2_cells[ncnw]+mpv->p2_cells[ncsw]+mpv->p2_cells[ncse]);
+                double p2_cells   = 0.25*(mpv->p2_cells[ncne]+mpv->p2_cells[ncnw]+mpv->p2_cells[ncsw]+mpv->p2_cells[ncse]);
+                mpv->p2_nodes[nn] = (1.0 - weight) * mpv->p2_nodes[nn] + weight * p2_cells;
             }
         }
     }

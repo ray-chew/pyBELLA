@@ -104,14 +104,19 @@ int main( void )
 
             double flux_weight_old, flux_weight_new;
             
+            /* Timestep computation */
+            dynamic_timestep(&dt_info, mpv, Sol, t, *tout, elem, step);
+            dt = dt_info.time_step;
+
+            /* model and numerics controls */
+            ud.nonhydrostasy   = nonhydrostasy(t);
+            ud.compressibility = compressibility(t);
+            ud.acoustic_order  = acoustic_order(t, dt);
+
             /* initialize fluxes in preparation of explicit predictor */
             ConsVars_setzero(flux[0], elem->nfx);
             if(elem->ndim > 1) ConsVars_setzero(flux[1], elem->nfy);
             if(elem->ndim > 2) ConsVars_setzero(flux[2], elem->nfz);            
-
-            /* Timestep computation */
-            dynamic_timestep(&dt_info, mpv, Sol, t, *tout, elem, step);
-            dt = dt_info.time_step;
 			            
 			set_wall_massflux(bdry, Sol0, elem);
                        
@@ -150,7 +155,8 @@ int main( void )
             flux_correction(flux, Sol, Sol0, elem, node, t, 0.5*dt, step);        
 
             ConsVars_set(Sol, Sol0, elem->nc);
-            cell_pressure_to_nodal_pressure(mpv, elem, node);
+            // cell_pressure_to_nodal_pressure(mpv, elem, node, 1.0);
+            cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
           
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nfull time step with predicted advective flux");
@@ -170,6 +176,7 @@ int main( void )
             /* implicit EULER half time step for gravity and pressure gradient */ 
             euler_backward_gravity(Sol, mpv, elem, 0.5*dt);
             second_projection(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt);
+            
             /* auxiliary buoyancy update by vertical advection of background stratification */
             update_SI_MIDPT_buoyancy(Sol, (const ConsVars**)flux, mpv, elem, 0.5*dt);
             
@@ -179,6 +186,7 @@ int main( void )
             
             if (ud.is_compressible) {
                 adjust_pi_cells(mpv, Sol, elem);
+                cell_pressure_to_nodal_pressure(mpv, elem, node, 1.0);
             }
                         
             if (ud.absorber) {
@@ -203,10 +211,7 @@ int main( void )
             
             t += dt;
             step++;
-        
-            ud.nonhydrostasy   = nonhydrostasy(t);
-            ud.compressibility = compressibility(t);
-            
+                    
 			if((ud.write_file == ON && (step % ud.write_file_period  == 0)) || output_switch) 
 				putout(Sol, ud.file_name, "Sol", elem, node, 1);
 			

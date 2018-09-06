@@ -191,6 +191,19 @@ void second_projection(
     
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
     Set_Explicit_Boundary_Data(Sol, elem);
+    
+#if 0
+    memset(rhs, 0.0, node->nc*sizeof(double));
+    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
+    catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
+
+    rhs_max = 0.0;
+    for (int nn=0; nn<node->nc; nn++) {
+        rhs_max = MAX_own(rhs_max, rhs[nn]);
+    }
+    printf("\n div_max = %e -- second_projection()", rhs_max);
+#endif
+
 }
 
 /* ========================================================================== */
@@ -1143,6 +1156,14 @@ void euler_forward_non_advective(ConsVars* Sol,
     div_max = divergence_nodes(div, elem, node, (const ConsVars*)Sol, mpv, bdry);
     catch_periodic_directions(div, node, elem, x_periodic, y_periodic, z_periodic);
 
+#if 0
+    div_max = 0.0;
+    for (int nn=0; nn<node->nc; nn++) {
+        div_max = MAX_own(div_max, div[nn]);
+    }
+    printf("\n div_max = %e -- euler_forward_non_advective()", div_max);
+#endif
+    
     switch (elem->ndim) {
         case 1:
         {
@@ -1303,18 +1324,13 @@ void euler_forward_non_advective(ConsVars* Sol,
             break;
     }
     
-    /* last half Euler backward step equals first half Euler forward step 
     if (ud.is_compressible) {
+        double weight = ud.acoustic_order - 1.0;
         for (int nn=0; nn<node->nc; nn++) {
-#if 1
-            mpv->p2_nodes[nn] += dp2n[nn];
-#else        
-            mpv->p2_nodes[nn] += mpv->dp2_nodes[nn];
-#endif
+            mpv->p2_nodes[nn] += weight*dp2n[nn];
         }
     }
-     */
-
+     
     W0_in_use = WRONG;
 
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       

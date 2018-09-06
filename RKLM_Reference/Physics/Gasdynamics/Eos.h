@@ -258,7 +258,8 @@ double compressibility(const double t);
 void cell_pressure_to_nodal_pressure(
                                      MPV* mpv,
                                      const ElemSpaceDiscr* elem,
-                                     const NodeSpaceDiscr* node);
+                                     const NodeSpaceDiscr* node,
+                                     const double weight);
 
 #endif /* EOS_H */
 

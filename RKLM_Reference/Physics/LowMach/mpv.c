@@ -11,6 +11,7 @@
 #include "kgrid.h"
 #include "error.h"
 #include "SimpleUtilities.h"
+#include "math_own.h"
 
 /* ========================================================================== */
 
@@ -168,6 +169,52 @@ void MPV_free(
     if (ud.g_ref > ud.eps_Machine) HydroState_free(mpv);
     
     free(mpv);    
+}
+
+/* ========================================================================== */
+
+double acoustic_order(const double t, 
+                      const double dt) 
+{    
+    extern User_Data ud;
+    
+    switch (ud.is_compressible) {
+        case 0:
+            return(2.0);
+            break;
+        case 1: {
+            /*
+            int nsteps = 10;
+            return(1.0 + MIN_own(1.0, t/(nsteps*dt))); 
+             */
+            return(1.9); /* 1.0, 2.0*/
+        }
+            break;
+        case -1:
+        {
+            assert(0);
+            /*
+             double a = 0.00225;
+             double b = 1.0 / 0.00225;
+             return(MIN_own(1.0, MAX_own(0.0, b*(t-a))));
+             */
+            /*
+            double dtloc = 12.0;
+            double a     = 0.0 * dtloc;
+            double b     = 1.0 / dtloc / 20.0;
+            double tau   = MIN_own(1.0, MAX_own(0.0, b*(t-a)));
+            double c     = 0.5 * (1.0 - cos(PI*tau));
+            return c;
+             */
+            /*
+             return(0.0);
+             */
+        }
+            break;
+        default:
+            assert(0);
+            break;
+    }    
 }
 
 
