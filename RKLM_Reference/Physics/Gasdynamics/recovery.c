@@ -55,9 +55,7 @@ void recovery(States* Lefts,
               States* Rights,
               States* Sol,
               ConsVars* Fluxes,
-              const double* force,
               const double lambda_input, 
-              const double dt_force, 
               const int nmax,
               const enum FluxesFrom adv_fluxes_from, 
               const enum MUSCL_ON_OFF muscl_on_off) {
@@ -69,7 +67,7 @@ void recovery(States* Lefts,
     const double gamm   = th.gamm;
     const double lambda = (muscl_on_off == 1 ? lambda_input : 0.0);
     
-    int OrderTwo  = ((ud.recovery_order == SECOND) ? 1 : 0);
+    int OrderTwo  = ((ud.recovery_order == SECOND && muscl_on_off) ? 1 : 0);
     
     const double internal_flux = (adv_fluxes_from == FLUX_INTERNAL ? 1.0 : 0.0);
     
@@ -85,7 +83,7 @@ void recovery(States* Lefts,
 		
     for( i = 1; i < nmax-1; i++ ) { 
         u[i]  = internal_flux * Sol->u[i] + (1.0-internal_flux) * (0.5*(Fluxes->rhoY[i]+Fluxes->rhoY[i-1])/Sol->rhoY[i]);    
-        ul[i] = internal_flux * Sol->u[i] + (1.0-internal_flux) * Fluxes->rhoY[i-1]/(0.5*(Sol->rhoY[i]+Sol->rhoY[i-1]));    
+        ul[i] = internal_flux * Sol->u[i] + (1.0-internal_flux) * Fluxes->rhoY[i-1]/(0.5*(Sol->rhoY[i]+Sol->rhoY[i-1]));  
         ur[i] = internal_flux * Sol->u[i] + (1.0-internal_flux) * Fluxes->rhoY[i]/(0.5*(Sol->rhoY[i]+Sol->rhoY[i+1]));    
     }
     

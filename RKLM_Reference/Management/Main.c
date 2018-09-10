@@ -130,7 +130,7 @@ int main( void )
             
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
 #ifdef ADVECTION
-            advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITHOUT_FORCES, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
+            advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
 #endif
             /* explicit part of Euler backward gravity over half time step */
             euler_backward_gravity(Sol, (const MPV*)mpv, elem, 0.5*dt);
@@ -154,7 +154,7 @@ int main( void )
                         
 #ifdef ADVECTION
             /* explicit full time step advection using div-controlled advective fluxes */
-            advect(Sol, flux, force, dt, elem, FLUX_EXTERNAL, WITH_FORCES, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+            advect(Sol, flux, force, dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
 #endif
             
             /* implicit EULER half time step for gravity and pressure gradient */ 

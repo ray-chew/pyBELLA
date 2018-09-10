@@ -142,8 +142,8 @@ void User_Data_init(User_Data* ud) {
     /* explicit predictor step */
     /* Recovery */
     ud->recovery_order = SECOND; /* FIRST, SECOND */ 
-    ud->limiter_type_scalars  = MONOTONIZED_CENTRAL; 
-    ud->limiter_type_velocity = MONOTONIZED_CENTRAL; 
+    ud->limiter_type_scalars  = NONE; 
+    ud->limiter_type_velocity = NONE; 
     /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
     
     /* parameters for SWEBY_MUNZ limiter family */
@@ -173,7 +173,7 @@ void User_Data_init(User_Data* ud) {
     /* =====  CODE FLOW CONTROL  ======================================================== */
     /* ================================================================================== */
     
-    ud->tout[0] = scalefactor * 1.5 * 3000.0 / ud->t_ref; /* 3000 */
+    ud->tout[0] = scalefactor * 1.0 * 3000.0 / ud->t_ref; /* 3000 */
     ud->tout[1] = -1.0;
 
     ud->stepmax = 10000;

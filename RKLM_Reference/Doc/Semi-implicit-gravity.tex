@@ -27,6 +27,7 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsthm}
+\usepackage{IEEEtrantools}
 
 %\usepackage[squaren]{SIunits}
 \usepackage{graphicx}
@@ -97,6 +98,8 @@
 \newcommand{\vv}{\vector{v}}
 \newcommand{\vx}{\vector{x}}
 
+\newcommand{\vV}{\vector{V}}
+
 \newcommand{\ubar}{\overline{u}}
 \newcommand{\vbar}{\overline{v}}
 
@@ -139,14 +142,15 @@
 
 \newcommand{\Lopfirst}{{\cal L}^{\rm 1st}}
 
+\newcommand{\Sol}{U}
 
-
+\newcommand{\rfr}[1]{#1_{\text{ref}}}
 % ===========================================================================
 % ===========================================================================
 % ===========================================================================
 % ===========================================================================
 
-\title{Semi-implicit gravity}
+\title{``Catchy Name'' -- Semi-implicit gravity}
 \author{T.~Benacchio, MetOffice, Exeter, UK\\ 
         R.~Klein, Mathematics \& Informatics, Freie Universit\"at Berlin}
 
@@ -159,50 +163,69 @@
 % ===========================================================================
 % ===========================================================================
 
+\section{Introduction}
+\label{sec:Intro}
+
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+
 \section{Summary of the discretization}
 \label{sec:DiscretizationSummary}
 
 % ===========================================================================
 % ===========================================================================
 
-\subsection{Overview}
-\label{sec:DiscretizationOverview}
-
-% ===========================================================================
-
-\subsection{Time discretization}
-\label{sec:TimeDiscretizationOverview}
+\subsection{Semi-implicit time discretization for compressible flow}
+\label{ssec:TimeDiscretizationOverview}
 
 The scheme borrows heavily from the overall forward-in-time integration 
 strategy for computational fluid dynamcis developed by Piotr Smolarkiewicz for
 the EULAG model \citep{PrusaEtAl2008}. The governing equations for 
 the adiabatic compressible model version and for an inert ideal gas with 
-constant specific heat capacities may be written in dimensionless form as 
+constant specific heat capacities may be written as 
 %
 \begin{subequations}\label{eq:PsincI}
-\begin{align}
+\begin{IEEEeqnarray}{rCl}
 \label{eq:PsincMass}
 \dss \rho_t + \nabla_\parallel\cdot(\rho \vu) + (\rho w)_z
-  & = \dss 0
+  & = 
+    & \dss 0
       \\[5pt]
 \label{eq:PsincHorMom}
 \dss (\rho\vu)_t + \nabla_\parallel\cdot(\rho \vu\circ\vu) + (\rho w \vu)_z 
-+ \frac{P}{\Gamma}\nabla_\parallel \pi
-  & = \dss 0
++ c_p  P \nabla_\parallel \pi
+  & = 
+    & \dss - f(y) \vk \times \rho\vu
       \\[5pt]
 \label{eq:PsincVerMom}
 \dss (\rho w)_t + \nabla_\parallel\cdot(\rho \vu w) + (\rho w^2)_z 
-+ \frac{P}{\Gamma} \pi_z
-  & = \dss - \rho g
++ c_p P \pi_z
+  & = 
+    & \dss - \rho g
       \\[5pt]
 \label{eq:PsincConstraint}
 \dss P_t + \nabla_\parallel\cdot(P\vu) + (Pw)_z
-  & = \dss 0\,.
-\end{align}
+  & = 
+    & \dss 0\,.
+\end{IEEEeqnarray}
 \end{subequations}
 %
 Here $\rho$ is the density, $\vu, w$ are the horizontal and vertical components 
-of the flow velocity, $\pi$ is the Exner pressure, and $P = \pi^{\frac{1}{\gamma-1}}$. 
+of the flow velocity, 
+%
+\begin{equation}
+\pi = \left(\frac{p}{\rfr{p}}\right)^{\frac{R}{c_p}}
+\qquad\text{and}\qquad
+P = \frac{\rfr{p}}{R} \left(\frac{p}{\rfr{p}}\right)^{\frac{c_v}{c_p}} \equiv \rho\Theta
+\end{equation}
+%
+are the Exner pressure and the density weighted potential temperature, $\Theta$, respectively, 
+with $\rfr{p}$ as suitable reference pressure, $R$ the gas constant and $c_p$ and $c_v$ the 
+specific heat capacities at constant pressure and constant volume. Furthermore, $g$ is the
+(constant) acceleration of gravity, $f(y) = f_0 + \beta y$ the local Coriolis parameter in 
+the ``$\beta$-plane'', and $\vk$ the vertical unit vector. 
+
 Given \eq{eq:PsincMass} and \eq{eq:PsincConstraint}, the potential temperature
 $\Theta = P/\rho$ satisfies the usual advection equation
 %
@@ -210,7 +233,13 @@ $\Theta = P/\rho$ satisfies the usual advection equation
 \Theta_t + \vu\cdot\nabla_\parallel \Theta + w \Theta_z = 0\,.
 \end{equation}
 %
-Of course, the inverse $\chi = 1/\Theta$ satisfies the same equation. 
+Of course, the inverse 
+%
+\begin{equation}
+\chi = 1/\Theta
+\end{equation}
+% 
+satisfies the same equation. 
 With this observation, the mass transport equation can be cast in the form of a 
 transport equation for $\chi$, 
 %
@@ -219,115 +248,126 @@ transport equation for $\chi$,
 (P\chi)_t + \nabla_\parallel\cdot(P\chi \vu) + (P\chi w)_z = 0\,.
 \end{equation}
 %
-The equations in \eq{eq:PsincI} are recast, using \eq{eq:chiI} and the advection 
-equation for $\chi$ and splitting $\chi(t,\vx,z) = \chitilde(t,\vx,z) + \chibar(z)$, 
-and introducing the blending parameters $\rbeta$ and $\balpha$ for 
-hydrostasy and pseudo-incompressibility, respectively,  
+The equations in \eq{eq:PsincI} are recast using \eq{eq:chiI} and the advection 
+equation for $\chi$ and splitting 
 %
-\begin{equation}\label{eq:PsincII}
-\begin{array}{rcrcl}
-\dss (P\chitilde)_t 
+\begin{equation}
+\chi(t,\vx,z) = \chitilde(t,\vx,z) + \chibar(z)
+\end{equation}
+% 
+to obtain
+%
+\begin{subequations}\label{eq:PsincII}
+\begin{IEEEeqnarray}{rCrCl}
+\dss \rho_t 
   & + 
     & \dss \nabla_\parallel\cdot(P\vu\, \chitilde) + (Pw\, \chitilde)_z \hfil
       & = 
         & \dss -\left[\nabla_\parallel\cdot(P\vu\, \chibar) + (Pw\, \chibar)_z\right]
           \\[10pt]
-\dss (P\vu)_t 
+\dss (\rho\vu)_t 
   & + 
-    & \dss \nabla_\parallel\cdot(P\vu\circ\vu) + (Pw\, \vu)_z  \hfil
+    & \dss \nabla_\parallel\cdot(P\vu\circ\chi\vu) + (Pw\, \chi\vu)_z  \hfil
       & = 
-        & \dss - \frac{P\Theta}{\Gamma}\nabla_\parallel \pi
+        & \dss - \frac{P}{\Gamma}\nabla_\parallel \pi
           \\[10pt]
-\dss \rbeta\, \Bigl[(P w)_t 
+\dss (\rho w)_t 
   & + 
-    & \dss \nabla_\parallel\cdot(P \vu\, w) + (Pw\, w)_z\Bigr]  \hfil
+    & \dss \nabla_\parallel\cdot(P \vu\, \chi w) + (Pw\, \chi w)_z \hfil
       & = 
-        & \dss - \left(\frac{P\Theta}{\Gamma} \pi_z + P g\right)
+        & \dss - \left(\frac{P}{\Gamma} \pi_z + \rho g\right)
           \\[15pt]
-\balpha\, f(\pi) \pi_t
+\label{eq:Peqn}
+P_t
   &  +
     & \dss \dss \nabla_\parallel\cdot(P\vu)  + (Pw)_z  \hfil
       & = 
         & \dss 0\,.
-\end{array}
-\end{equation}
-%
-The second column of terms on the left represents advection of 
-$\Psi = (\chitilde, \vu, w)$ by the advecting fluxes $P\vv \equiv (P\vu, Pw)$, 
-and the right hand side column represents generalized forces that change the 
-momentum and potential temperature perturbation field. These equations in 
-\eq{PsincII} are written in compact form as
-%
-\begin{equation}
-(P\Psi)_t + \mathcal{A}(\Psi; P\vv) = PR(\Psi)\, ,
-\end{equation}
-%
-and with this notation the EULAG-type time integration scheme for an update
-of the solution $\Psi$ from time $t^n$ to time $t^{n+1}$ reads 
-%
-\begin{subequations}\label{eq:EULAGTimeIntegrator}
-\begin{eqnarray}
-\label{eq:EULAGExplicitEulerStep}
-\dss \Psi^{*} 
-  & = 
-    & \dss \Psi^{*} + \frac{\Delta t}{2} R(\Psi^n)
-      \\
-\label{eq:EULAGAdvectionStep}
-\dss \Psi^{**} 
-  & = 
-    & \dss \mathcal{A}^{\Delta t}\left(\Psi^*; (P\vv)^{n+1/2}\right)
-      \\
-\label{eq:EULAGImplicitEulerStep}
-\dss \Psi^{n+1} 
-  & = 
-    & \dss \Psi^{**} + \frac{\Delta t}{2} R(\Psi^{n+1})\,.
-\end{eqnarray}
+\end{IEEEeqnarray}
 \end{subequations}
 %
-Here $\mathcal{A}^{\Delta t}\left(\Psi; (P\vv)\right)$ denotes a
-second-order accurate explicit approximation of the \emph{linear} 
-advection of $\Psi$ by the \emph{given} advecting fluxes $(P\vv)$ 
-over a time increment $\Delta t$, i.e., a solution over a half 
-time step of the combined equations 
+The second column of terms on the left represents advection of 
 %
 \begin{equation}
-\begin{array}{rcl}
-\dss P_t + \nabla\cdot(P\vv)
-  & =
-    & 0
-      \\[5pt]
-\dss (P\psi)_t + \nabla\cdot(P\vv\,\psi)
-  & =
-    & 0
-\end{array}\,.
+\Psi = (\chitilde, \chi\vu, \chi w, 1)
 \end{equation}
+% 
+by the advecting fluxes 
+%
+\begin{equation}
+P\vv \equiv (P\vu, Pw)\,,
+\end{equation}
+% 
+where by ``advection of 1'' we refer to solving \eq{eq:Peqn}. The right hand 
+side column in \eq{eq:PsincII} collects all non-advective forcings. In compact 
+notation \eq{eq:PsincII} reads as
+%
+\begin{equation}
+(P\Psi)_t + \mathcal{A}(\Psi; P\vv) = R(P\Psi)\, ,
+\end{equation}
+%
+and with this notation an EULAG-type time integration scheme for the update
+of the solution from time $t^n$ to time $t^{n+1}$ reads 
+%
+\begin{subequations}\label{eq:EULAGTimeIntegrator}
+\begin{IEEEeqnarray}{rCl}
+\label{eq:EULAGExplicitEulerStep}
+\dss (P\Psi)^{*} 
+  & = 
+    & \dss (P\Psi)^{n} + \frac{\Delta t}{2} R\left((P\Psi)^n\right)
+      \\
+\label{eq:EULAGAdvectionStep}
+\dss (P\Psi)^{**} 
+  & = 
+    & \dss \mathcal{A}_{2\text{nd}}^{\Delta t}\left((P\Psi)^*; (P\vv)^{n+1/2}\right)
+      \\
+\label{eq:EULAGImplicitEulerStep}
+\dss (P\Psi)^{n+1} 
+  & = 
+    & \dss (P\Psi)^{**} + \frac{\Delta t}{2} R\left((P\Psi)^{n+1}\right)\,.
+\end{IEEEeqnarray}
+\end{subequations}
+%
+Here $\mathcal{A}_{2\text{nd}}^{\Delta t}\left(\Psi; \vV\right)$ denotes a
+second-order accurate explicit approximation of the \emph{linear} 
+advection of $\Psi$ by the \emph{given} advecting fluxes $\vV$ 
+over a time increment $\Delta t$, i.e., a solution over a half 
+time step of 
+%
+\begin{IEEEeqnarray}{rCl}
+\dss (P\Psi)_t + \nabla\cdot(\vV\,\Psi)
+  & =
+    & 0\,.
+\end{IEEEeqnarray}
 %
 
 The advecting fluxes $(P\vv)^{n+1/2}$ used in the advection step 
-are at least first order accurate approximations of the $P\vv$ field
-at the half time level $t^{n+1/2} = (t^n + t^{n+1})/2$ that can be
-determined in various ways. The default option in EULAG is extrapolation
-from the last two completed time levels, the option adopted here and
-in alternative variants of EULAG is to carry out an intermediate, at 
-least first order accurate, time step to the half time level to 
-evolve $(P\vv)^{n}$ to $(P\vv)^{n+\half}$ without a need to recur to 
+\eq{eq:EULAGAdvectionStep} are at least first order accurate approximations 
+of the $P\vv$ field at the half time level $t^{n+1/2} = (t^n + t^{n+1})/2$ 
+that can be determined in various ways. The default option in EULAG is 
+extrapolation from the last two completed time levels at $t^{n-1}$ and
+$t^{n}$, which makes the method a three time level scheme. The option adopted 
+here and in alternative truly two time level variants of EULAG is to carry out 
+an intermediate, at least first order accurate, time step to the half time 
+level to evolve $(P\vv)^{n}$ to $(P\vv)^{n+\half}$ without a need to recur to 
 the $t^{n-1}$ level solution. 
 
 With these preliminaries, and following \cite{SmolarkiewiczMargolin1997}, 
 the scheme in \eq{eq:EULAGTimeIntegrator} may be interpreted as the 
 application of the implicit trapezoidal rule for time integrating the 
-source terms $R(\Psi)$, anchored at the beginning and end points of 
-Lagrangian trajectories traced between the pertinent time levels. A 
+compatibility condition  
+$D\Psi/Dt \equiv (\partial_t + \vv\cdot\nabla) \Psi = R(P\Psi)/P$ 
+that holds along Lagrangian characteristics of \eq{eq:PsincII}.  A 
 forward Euler step is followed by a backward Euler step, with the 
 advection step interleaved so as to represent the advancement of the 
 Lagrangian paths. 
 
-An observation that may in part explain the good stability features of 
-EULAG, which seems to be inherited by the scheme proposed here, is that 
-for given $(P\vv)^{n+\half}$ the advection step is \emph{linear}. 
-As a consequence, even if for rather large time steps the velocities 
-computed in the forward Euler step \eq{eq:EULAGExplicitEulerStep} end 
-up far away from the solutions at time levels $n$ or $n+1$ for large
+An observation that may in part explain the excellent stability features of 
+EULAG, which are essentially inherited by the scheme proposed here, is that 
+for given advecting flux $\vV = (P\vv)^{n+\half}$ the advection step is 
+\emph{linear}. As a consequence, even if for rather large time steps the 
+velocities computed in the forward Euler step \eq{eq:EULAGExplicitEulerStep} 
+end up far away from the solutions at time levels $n$ or $n+1$ for large
 $\Delta t$, these excursions do (i) not affect the advecting fluxes 
 $(P\vv)^{n+1/2}$, and they can (ii) properly be post-corrected and 
 pulled back to the reasonable range by the backward Euler step in 
@@ -335,38 +375,223 @@ pulled back to the reasonable range by the backward Euler step in
 
 The half time step predictor for the advecting fluxes needs to be first
 order accurate only to preserve second order accuracy of the entire 
-scheme, and thus it is legitimate to use the following simplified 
-version of \eq{eq:EULAGTimeIntegrator} for this purpose:
+scheme. Thus it is legitimate to use the following simplified first order 
+splitting version of \eq{eq:EULAGTimeIntegrator} for this purpose,
 %
-\begin{equation}\label{eq:EULAGHalfTimePredictor}
-\begin{array}{rcl}
-\dss \Psi^{\#} 
+\begin{subequations}\label{eq:EULAGHalfTimePredictor}
+\begin{IEEEeqnarray}{rCl}
+\label{eq:EULAGHalfTimePredictorAdvection}
+\dss (P\Psi)^{\#} 
   & = 
-    & \dss \mathcal{A}^{\frac{\Delta t}{2}}\left(\Psi^{n}; (P\vv)^{n}\right)
+    & \dss \mathcal{A}_{1\text{st}}^{\frac{\Delta t}{2}}\left(\Psi^{n}; (P\vv)^{n}\right)
       \\
-\dss \Psi^{n+1/2} 
+\label{eq:EULAGHalfTimePredictorRHS}
+\dss (P\Psi)^{n+1/2} 
   & = 
-    & \dss \Psi^{\#} + \frac{\Delta t}{2} R(\Psi^{n+1/2})\,,
-      \\
-\end{array}
-\end{equation}
+    & \dss (P\Psi)^{\#} + \frac{\Delta t}{2} R\left((P\Psi)^{n+1/2}\right)\,,
+\end{IEEEeqnarray}
+\end{subequations}
 %
-which corresponds to a simple first order splitting scheme. This intermediate
+where $\mathcal{A}_{1\text{st}}^{\Delta t}$ denotes a first order
+accurate version of our advection scheme (see section~\ref{ssec:Advection}).
+This intermediate
 solution is generated exclusively to provide the advecting fluxes 
 $(P\vv)^{n+\half}$ needed in the advection step \eq{eq:EULAGAdvectionStep}.
 
 The large time step stability of the scheme is then determined by 
-the final implicit half time steps in \eq{eq:EULAGTimeIntegrator}
-and \eq{eq:EULAGHalfTimePredictor}, which are conceptually identical, 
-except that \eq{eq:EULAGTimeIntegrator} leads to divergence-controlled
-cell-centered velocities, whereas \eq{eq:EULAGHalfTimePredictor} leads to
-divergence-controlled advective fluxes at the cell faces.
+the final implicit half time steps in \eq{eq:EULAGImplicitEulerStep}
+and \eq{eq:EULAGHalfTimePredictorRHS}, which are conceptually identical, 
+except that \eq{eq:EULAGImplicitEulerStep} leads to divergence-controlled
+cell-centered velocities, whereas \eq{eq:EULAGHalfTimePredictorRHS} generates
+divergence-controlled advective fluxes at the cell faces that comply with 
+the pressure equation \eq{eq:Peqn}.
 
+% ===========================================================================
+% ===========================================================================
+
+\subsection{Cartesian cell centered grid arrangement}
+\label{ssec:GridArrangement}
+
+In this paper we describe our scheme for two-dimensional flows. Extension 
+to three space dimensions is straightforward and implemented in our 
+research code. The scheme is fully cell centered on control volumes 
+$C_{i,j}$ formed by a cartesian mesh, with constant grid increments 
+$\Delta x, \Delta y$, and grid indices $i = 0, ..., I-1$ and 
+$j = 0, ..., J-1$. The discrete approximate solution involves averages of 
+the solution variables over grid cells, i.e., 
+%
+\begin{equation}
+\Sol_{i,j}^n \approx 
+\frac{1}{\Delta x \Delta y}\int\limits_{C_{i,j}} \Sol(\vx,t^n)\, d^2\vx
+\qquad\text{where}\qquad 
+\Sol = \left(
+\begin{array}{c}
+\rho \\ \rho\vu \\ \rho w \\ P
+\end{array}
+\right)\,.
+\end{equation}
+%
+The scheme is second order accurate, so that -- within the approximation
+order -- we can interchangeably interpret $\Sol_{i,j}^n$ as the cell average, 
+as above, or as a point value of $\Sol$ at the center of mass of the grid 
+cell.  
+
+% ===========================================================================
+% ===========================================================================
+
+\subsection{Advection}
+\label{ssec:Advection}
+
+Any robust numerical scheme capable of performing advection of a scalar in
+compressible flows is a good candidate for the generic discrete
+advection operator $\mathcal{A}^{\Delta t}$ introduced above. EULAG uses 
+variants of the ``multi-dimensional positive definite advection transport 
+algorithm'' (MPDATA) \cite{PrusaEtAl2008}. The present implementation involves
+a directionally split ``monotone upwind scheme for conservation laws'' (MUSCL): 
+
+Suppose the half time predictor step from \eq{eq:EULAGHalfTimePredictor}, 
+the details of which will be described shortly, has been completed. Then, 
+the advecting flux in the $x$ direction is approximated as, 
+%
+\begin{equation}
+(Pu)^{n+\half}_{i+\half,j} 
+= 
+\frac{1}{2}\left((Pu)^{n+\half}_{i,j} + (Pu)^{n+\half}_{i+1,j}\right)
+\end{equation}
+%
+and an analogous formula holds for $(Pv)^{n+\half}_{i,j+\half}$. Given these
+fluxes, the advection step in \eq{eq:EULAGAdvectionStep} is discretized via
+Strang splitting, so that
+%
+\begin{equation}\label{eq:AdvectionStrangSplitting}
+\Sol_{i,j}^{**} 
+=
+\mathcal{A}_{2\text{nd}}^{\Delta t} \Sol_{i,j}^{*} 
+\equiv
+\mathcal{A}^{\frac{\Delta t}{2}}_x 
+\mathcal{A}^{\frac{\Delta t}{2}}_y 
+\mathcal{A}^{\frac{\Delta t}{2}}_y 
+\mathcal{A}^{\frac{\Delta t}{2}}_x\, \Sol_{i,j}^{*} \,,
+\end{equation}
+%
+where
+%
+\begin{equation}
+\mathcal{A}^{\frac{\Delta t}{2}}_x\, \Sol_{i,j} 
+= \Sol_{i,j}
+- \frac{\Delta t}{2\Delta x} 
+  \left((Pu)^{n+\half}_{i+\half,j}\, \Psi_{i+\half,j} 
+      - (Pu)^{n+\half}_{i-\half,j}\, \Psi_{i-\half,j} \right)
+\end{equation}
+%
+with 
+%
+\begin{subequations}\label{eq:AdvSpecifics}
+\begin{IEEEeqnarray}{rCl}
+\Psi_{i+\half,j} 
+  & = 
+    & \sigma \Psi^{-}_{i+\half,j} + (1-\sigma)\Psi^{+}_{i+\half,j}\,,
+      \\[8pt]
+\sigma 
+  & = 
+    & \text{sign}\left((Pu)^{n+\half}_{i+\half,j}\right)\,,
+      \\[8pt]
+\Psi^{-}_{i+\half,j} 
+  & = 
+    & \Psi_{i,j} + \frac{\Delta x}{2} \left(1 - C^{n+\half}_{i+\half,j} \right)  s_{i,j}\,,
+      \\[8pt]
+\Psi^{+}_{i+\half,j} 
+  & = 
+    & \Psi_{i+1,j} - \frac{\Delta x}{2} \left(1 + C^{n+\half}_{i+\half,j} \right)  s_{i+1,j}\,,
+      \\[8pt]
+\label{eq:AdvSpecificsCourantNo}
+C^{n+\half}_{i+\half,j}
+  & =
+    & \frac{\Delta t}{\Delta x} \frac{(Pu)^{n+\half}_{i+\half,j}}{(P_{i,j} + P_{i+1,j})/2}\,,
+      \\[8pt]
+\label{eq:AdvSpecificsSlopes}
+s_{i,j}
+  & =
+    & \text{Lim}
+      \left(\frac{U_{i,j}-U_{i-1,j}}{\Delta x}, \frac{U_{i+1,j}-U_{i,j}}{\Delta x}\right)\,,
+\end{IEEEeqnarray}
+\end{subequations}
+%
+where $P_{i,j}$ in \eq{eq:AdvSpecificsCourantNo} denotes the fourth component 
+of $U_{i,j}$, and $\text{Lim}(a,b)$ is a slope limiting function (see 
+\cite{Sweby1984}). The effect of the slope limiting procedure on our simulation
+results will be discussed in section~\ref{sec:Results} below. Analogous formulae 
+hold for $\mathcal{A}^{\frac{\Delta t}{2}}_y U_{i,j}$. 
+
+Importantly, the advecting fluxes 
+$(Pu)^{n+\half}_{i+\half,j}, (Pv)^{n+\half}_{i,j+\half}$
+are maintained unchanged throughout the Strang splitting cycle 
+\eq{eq:AdvectionStrangSplitting}.
+
+The first order accurate advection operator $\mathcal{A}_{1\text{st}}^{\Delta t}$
+used in \eq{eq:EULAGHalfTimePredictorAdvection} is a simplified version
+of the above in that, 
+%
+\begin{equation}
+\mathcal{A}_{1\text{st}}^{\frac{\Delta t}{2}}
+=
+\mathcal{A}^{\frac{\Delta t}{2}}_x 
+\mathcal{A}^{\frac{\Delta t}{2}}_y 
+\qquad\text{and}\qquad
+s_{i,j} \equiv 0\,,
+\end{equation}
+%
+in our standard configuration. We will demonstrate below that such a 
+reduction to first order accuracy in the predictor step not only does not
+affect the formal order of consistency of the scheme, but also hardly 
+influences the solution quality at finite resolution.
+
+% ===========================================================================
+% ===========================================================================
+
+\subsection{Explicit Euler step for the generalized source terms}
+\label{ssec:ExplicitEuler}
+
+
+% ===========================================================================
+% ===========================================================================
+
+\subsection{(Linearized) implicit Euler step for the generalized source terms}
+\label{ssec:ImplicitEuler}
+
+
+
+
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+
+\section{Results}
+\label{sec:Results}
+
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+
+\section{Conclusions}
+\label{sec:Conclusions}
+
+
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
 
 \bibliographystyle{FluidMechanics}
 \bibliography{Bibliography}
 
 \end{document}
+
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
+% ===========================================================================
 
 \newpage
 
@@ -2335,8 +2560,6 @@ p_C^{n+1}
 \benacchio{I understand you have an option for this in your code? If so, is it used in all cases and is it the case that results are better with it than without it as it was for my model?}
 \end{description}
 \end{algorithm}
-
-
 
 % ===========================================================================
 % ===========================================================================

@@ -1123,8 +1123,9 @@ void euler_forward_non_advective(ConsVars* Sol,
     double* dp2n = W0;
 
     double* p2n  = mpv->p2_nodes;
+#ifndef NODAL_PRESSURE_GRADIENT
     double* p2c  = mpv->p2_cells;
-    
+#endif
     const double g        = ud.gravity_strength[1];
     const double Msq      = ud.Msq;
     const double Ginv     = th.Gammainv; 
