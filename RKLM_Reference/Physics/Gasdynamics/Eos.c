@@ -561,7 +561,7 @@ void dt_average(ConsVars *Sol,
 /*------------------------------------------------------------------------------
  
  ------------------------------------------------------------------------------*/
-void adjust_pi_cells(MPV* mpv,
+void synchronize_variables(MPV* mpv,
                      ConsVars* Sol,
                      const ElemSpaceDiscr* elem) {
 	
@@ -591,6 +591,9 @@ void adjust_pi_cells(MPV* mpv,
 			}
 		}
 	}
+    
+    reset_Y_perturbation(Sol, (const MPV*)mpv, elem);
+
     Set_Explicit_Boundary_Data(Sol, elem);
 }
 

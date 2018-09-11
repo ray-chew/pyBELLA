@@ -118,7 +118,6 @@ int main( void )
             /* Semi-implicit discretization of non-advective terms a la EULAG          */
             /* ======================================================================= */
             
-            reset_Y_perturbation(Sol, (const MPV*)mpv, elem);
             ConsVars_set(Sol0, Sol, elem->nc);            
                         
             printf("\n\n-----------------------------------------------------------------------------------------");
@@ -169,7 +168,7 @@ int main( void )
               
             
             if (ud.is_compressible) {
-                adjust_pi_cells(mpv, Sol, elem);
+                synchronize_variables(mpv, Sol, elem);
                 cell_pressure_to_nodal_pressure(mpv, elem, node, 1.0);
             }
                         

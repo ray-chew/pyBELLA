@@ -217,7 +217,7 @@ void dt_average(ConsVars *Sol,
 /*------------------------------------------------------------------------------
  
  ------------------------------------------------------------------------------*/
-void adjust_pi_cells(MPV* mpv,
+void synchronize_variables(MPV* mpv,
                      ConsVars* Sol,
                      const ElemSpaceDiscr* elem);
 
