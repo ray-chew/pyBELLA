@@ -1,0 +1,16 @@
+12.09.2018:
+-----------
+
+Idea: Can we replace the current EULAG-inspired "(semi-)implicit trapezoidal rule along 
+Lagrangian trajectories" with an analogous "(semi-)implicit midpoint rule"? This would
+imply interleaving the operators as 
+    Advection(dt/2)  implicit Euler(dt/2) explicit Euler (dt/2) Advection (dt/2)
+and would have the potential advantage that the combination of the implicit and explicit
+Euler steps amounts to a simple overextrapolation of the update obtained from the implicit
+Euler (dt/2) step. That could make the scheme a bit more transparent and cheaper, if it
+worked. ... to be tested at some point.
+
+Question: Do we have to do advection by $P\vv$, or could we switch to the more familiar
+advection by $\rho\vv$ relatively easily? What would this mean for the construction of
+the blended schemes?
+
