@@ -94,7 +94,7 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
 static int rhs_output_count = 0;
 #endif
 
-void second_projection(
+void euler_backward_non_advective_impl_part(
                        ConsVars* Sol,
                        MPV* mpv,
                        const ConsVars* Sol0,
@@ -201,7 +201,7 @@ void second_projection(
     for (int nn=0; nn<node->nc; nn++) {
         rhs_max = MAX_own(rhs_max, rhs[nn]);
     }
-    printf("\n div_max = %e -- second_projection()", rhs_max);
+    printf("\n div_max = %e -- euler_backward_non_advective_impl_part()", rhs_max);
 #endif
 
 }
@@ -1048,7 +1048,7 @@ void momentum_increments(MPV* mpv,
 
 /* ========================================================================== */
 
-void euler_backward_gravity(ConsVars* Sol,
+void euler_backward_non_advective_expl_part(ConsVars* Sol,
                             const MPV* mpv,
                             const ElemSpaceDiscr* elem,
                             const double dt)

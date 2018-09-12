@@ -218,8 +218,9 @@ void dt_average(ConsVars *Sol,
  
  ------------------------------------------------------------------------------*/
 void synchronize_variables(MPV* mpv,
-                     ConsVars* Sol,
-                     const ElemSpaceDiscr* elem);
+                           ConsVars* Sol,
+                           const ElemSpaceDiscr* elem, 
+                           const NodeSpaceDiscr* node);
 
 
 /*------------------------------------------------------------------------------

@@ -183,22 +183,22 @@ may be written as
 %
 \begin{subequations}\label{eq:CompressibleEuler}
 \begin{IEEEeqnarray}{rCl}
-\label{eq:PsincMass}
+\label{eq:EulerMass}
 \dss \rho_t + \nabla_\parallel\cdot(\rho \vu) + (\rho w)_z
   & = 
     & \dss 0
       \\[5pt]
-\label{eq:PsincHorMom}
+\label{eq:EulerHorMom}
 \dss (\rho\vu)_t + \nabla_\parallel\cdot(\rho \vu\circ\vu) + (\rho w \vu)_z 
   & = 
     & \dss - \left( c_p  P \nabla_\parallel \pi + f(y) \vk \times \rho\vu \right)
       \\[5pt]
-\label{eq:PsincVerMom}
+\label{eq:EulerVerMom}
 \dss (\rho w)_t + \nabla_\parallel\cdot(\rho \vu w) + (\rho w^2)_z 
   & = 
     & \dss - \left(  c_p P \pi_z + \rho g \right)
       \\[5pt]
-\label{eq:PsincConstraint}
+\label{eq:EulerPressure}
 \dss P_t + \nabla_\parallel\cdot(P\vu) + (Pw)_z
   & = 
     & \dss 0\,.
@@ -208,19 +208,20 @@ may be written as
 Here $\rho$ is the density, $\vu, w$ are the horizontal and vertical components 
 of the flow velocity, 
 %
-\begin{equation}
+\begin{equation}\label{eq:EOSpiP}
 \pi = \left(\frac{p}{\rfr{p}}\right)^{\frac{R}{c_p}}
 \qquad\text{and}\qquad
 P = \frac{\rfr{p}}{R} \left(\frac{p}{\rfr{p}}\right)^{\frac{c_v}{c_p}} \equiv \rho\Theta
 \end{equation}
 %
-are the Exner pressure and the density weighted potential temperature, $\Theta$, respectively, 
-with $\rfr{p}$ as suitable reference pressure, $R$ the gas constant and $c_p$ and $c_v$ the 
+are the Exner pressure and the density weighted potential temperature, respectively, 
+with $\rfr{p}$ a suitable reference pressure, $R$ the gas constant and $c_p$ and $c_v$ the 
 specific heat capacities at constant pressure and constant volume. Furthermore, $g$ is the
 (constant) acceleration of gravity, $f(y) = f_0 + \beta y$ the local Coriolis parameter in 
-the ``$\beta$-plane'', and $\vk$ the vertical unit vector. 
+the ``$\beta$-plane'' with suitable constants $f_0$ and $\beta$, and $\vk$ the vertical 
+unit vector. 
 
-Given \eq{eq:PsincMass} and \eq{eq:PsincConstraint}, the potential temperature
+Given \eq{eq:EulerMass} and \eq{eq:EulerPressure}, the potential temperature
 $\Theta = P/\rho$ satisfies the usual advection equation
 %
 \begin{equation}
@@ -230,14 +231,28 @@ $\Theta = P/\rho$ satisfies the usual advection equation
 % ===========================================================================
 % ===========================================================================
 
+\subsection{Perturbation vs.\ full variables and conservation form}
+\label{ssec:PertFullCons}
+
+\klein{Here we should point out difficulties others have had in formulating
+a scheme that systematically advances full variables, and in formulating
+a scheme in conservation form that is implicit w.r.t.\ buoyancs (e.g.,
+Hilary's MWR paper). What else ... ?}
+
+% ===========================================================================
+% ===========================================================================
+
 \subsection{EULAG: Implicit trapezoidal rule applied along Lagrangian trajectories}
-\label{ssec:Intro}
+\label{ssec:EULAG}
+
+\klein{Not sure we will need this section in this form, but find it helpful 
+to have a summary of the EULAG strategy written down somewhere.}
 
 The semi-implicit time integration procedure implemented in EULAG, 
 \citep{PrusaEtAl2008}, \citep{SmolarkiewiczEtAl2014}, relies on introducing
 a perturbation potential temperature via
 %
-\begin{equation}
+\begin{equation}\label{eq:ThetaSplit}
 \Theta(t,\vx,z) = \Thetatilde(t,\vx,z) + \Thetabar(z)
 \end{equation}
 %
@@ -272,7 +287,7 @@ and reformulating \eq{eq:CompressibleEuler} as
 %
 In a compact notation, these equations combine the mass balance from \eq{eq:EULAGRhoEqn} with
 %
-\begin{IEEEeqnarray}{rCl}
+\begin{IEEEeqnarray}{rCl}\label{eq:RhoBasedAdvection}
 (\rho\Phi)_t + \mathcal{A}(\Phi; \rho\vv) 
   & = 
     & R(\Phi; \rho)\, ,
@@ -284,9 +299,9 @@ where
 \Phi = (\vu, w, \Thetatilde)^t\, ,
 \end{equation}
 %
-and where $\mathcal{A}(\Phi; \rho\vv)$ and $R(\rho, \Phi)$ denote the advection terms 
-on the left and the right hand side terms of 
-\eq{eq:EULAGHorMomEqn}--\eq{eq:EULAGThetaTildeEqn}, respectively. 
+and where $\mathcal{A}(\Phi; \rho\vv)$ denotes the advection terms on the left of
+\eq{eq:EULAGHorMomEqn}--\eq{eq:EULAGThetaTildeEqn}, while and $R(\Phi, \rho)$ 
+collects all terms on the right. 
 
 Based on this notation, an update of the solution from time $t^n$ to time $t^{n+1}$ according
 to EULAG's non-oscillatory forward-in-time integration strategy then involves first the
@@ -323,10 +338,11 @@ is updated through the following three-step procedure,
       \label{eq:EULAGImplicitEulerStep}
 \end{IEEEeqnarray}
 %
-Here $\mathcal{A}_{\text{\tiny MPDATA}}^{\Delta t}\left(\Phi; \vV\right)$ denotes 
-a robust second-order accurate explicit approximation of the \emph{linear} 
-advection\footnote{MPDATA: Multidimensional Positive Definite Advection Transport 
-Algorithm} of $\Phi$ by the \emph{given} advecting fluxes $\vV$ 
+Here $\mathcal{A}_{\text{\tiny MPDATA}}^{\Delta t}\left(\Phi; \vV\right)$ denotes
+a time step by the ``Multidimensional Positive Definite Advection Transport 
+Algorithm'' (MPDATA) \citep[see, e.g.,][]{SmolarkiewiczMPDATA2006}, which is a robust 
+second-order accurate explicit approximation of the \emph{linear} 
+advection of $\Phi$ by the \emph{given} advecting fluxes $\vV$ 
 over a time increment $\Delta t$, i.e., a solution over a half 
 time step of 
 %
@@ -374,129 +390,201 @@ backward Euler step in \eq{eq:EULAGImplicitEulerStep}.
 % ===========================================================================
 % ===========================================================================
 
-\subsection{Semi-implicit time discretization for compressible flow}
-\label{ssec:TimeDiscretizationOverview}
+\subsection{Reformulation of the governing equations}
+\label{ssec:Reformulation}
 
-
-%
-Of course, the inverse 
+\cite{BenacchioEtAl2014} suggested a seamless ``blended'' discretization of the 
+compressible and pseudo-incompressible \citep{Durran1989} Euler equations. Following
+\citet{KleinTCFD2009,KleinEtAl2010}, they observed that the pseudo-incompressible
+model is obtained from the compressible equations in \eq{eq:CompressibleEuler} 
+by simply dropping the time derivative of $P = \rho\Theta$ from \eq{eq:EulerPressure}.
+To take advantage of this simple structural model relationship, they introduced 
+the inverse of the potential temperature,
 %
 \begin{equation}
-\chi = 1/\Theta
+\chi = 1/\Theta\,,
 \end{equation}
 % 
-satisfies the same equation. 
-With this observation, the mass transport equation can be cast in the form of a 
-transport equation for $\chi$, 
+and recast the mass balance \eq{eq:EulerMass} as a transport equation for $\chi$, 
 %
 \begin{equation}\label{eq:chiI}
 \rho_t + \nabla_\parallel\cdot(\rho \vu) + (\rho w)_z = 
-(P\chi)_t + \nabla_\parallel\cdot(P\chi \vu) + (P\chi w)_z = 0\,.
+(P\chi)_t + \nabla_\parallel\cdot(P\chi \vu) + (P\chi w)_z = 0\,,
 \end{equation}
 %
-The equations in \eq{eq:PsincI} are recast using \eq{eq:chiI} and the advection 
-equation for $\chi$ and splitting 
+in which the field $(P\vv)$ now takes the role of the ``advecting flux''. 
+Using this interpretation consistently throughout the equation system we obtain, 
 %
-\begin{equation}
-\chi(t,\vx,z) = \chitilde(t,\vx,z) + \chibar(z)
-\end{equation}
-% 
-to obtain
-%
-\begin{IEEEeqnarray}{rCrCl}\label{eq:PsincII}
+\begin{IEEEeqnarray}{rCrCl}\label{eq:EulerP}
 \dss \rho_t 
   & + 
     & \dss \nabla_\parallel\cdot(P\vu\, \chi) + (Pw\, \chi)_z \hfil
       & = 
         & \dss 0
-          \IEEEyesnumber\IEEEyessubnumber*\label{eq:RhoEqn}\\[5pt]
+          \IEEEyesnumber\IEEEyessubnumber*\label{eq:EulerPMass}\\[5pt]
 \dss (\rho\vu)_t 
   & + 
     & \dss \nabla_\parallel\cdot(P\vu\circ\chi\vu) + (Pw\, \chi\vu)_z  \hfil
       & = 
         & \dss - \left( c_p P\nabla_\parallel \pi + f(y) \vk\times\rho\vu\right)
-          \\[5pt]
+          \label{eq:EulerPHorMom}\\[5pt]
 \dss (\rho w)_t 
   & + 
     & \dss \nabla_\parallel\cdot(P \vu\, \chi w) + (Pw\, \chi w)_z \hfil
       & = 
         & \dss - \left( c_p P \pi_z + \rho g\right)
-          \\[5pt]
+          \label{eq:EulerPVerMom}\\[5pt]
 P_t
   &  +
     & \dss \dss \nabla_\parallel\cdot(P\vu)  + (Pw)_z  \hfil
       & = 
-        & \dss 0
-        \label{eq:Peqn}\\[5pt]
+        & \dss 0\,,
+        \label{eq:EulerPP}
+\end{IEEEeqnarray}
+%
+and this formulation is the basis for the discretization proposed below. 
+
+In formulating a scheme that is implicit with respect to buoyancy and potential temperature
+advection, it is crucial to have separate access to a large-scale mean background stratification
+of potential temperature, or of its inverse, and to its local perturbations. Thus, in analogy
+with \eq{eq:ThetaSplit} we split $\chi$ into
+%
+\begin{equation}\label{eq:ChiSplit}
+\chi(t,\vx,z) = \chitilde(t,\vx,z) + \chibar(z)
+\end{equation}
+% 
+and obtain a perturbation version of the mass balance as
+%
+\begin{IEEEeqnarray}{rCrCl}\label{eq:EulerPChiTilde}
 \dss (P\chitilde)_t 
   & + 
     & \dss \nabla_\parallel\cdot(P\vu\, \chitilde) + (Pw\, \chitilde)_z \hfil
       & = 
-        & \dss -\left[\nabla_\parallel\cdot(P\vu\, \chibar) + (Pw\, \chibar)_z\right]\,,
+        & \dss -\left[\nabla_\parallel\cdot(P\vu\, \chibar) + (Pw\, \chibar)_z\right]\,.
         \label{eq:ChiTildeEqn}
 \end{IEEEeqnarray}
 %
-where \eq{eq:ChiTildeEqn} is redundant relative to \eq{eq:RhoEqn} but turns out
-to be useful as an auxiliary equation in the construction of a semi-implicit 
-discretization of buoyancy effects.
+In formulating the semi-implicit discretization, we will carry $\chitilde$ as an
+auxiliary variable through a time step and utilize the full and perturbation versions
+of the mass balance in \eq{eq:EulerPMass} and \eq{eq:EulerPChiTilde} alternatively 
+depending on the context. At the end of each time step, the variables are synchronized 
+again to match with the computed full density, $\rho$, and internal energy variable, $P$. 
 
-The second column of terms on the left represents advection of 
+In analogy with the split of the Euler equations into the mass transport and
+forced advection equations in section~\ref{ssec:EULAG}, see \eq{eq:RhoBasedAdvection}, 
+we split the augmented equations from \eq{eq:EulerP} and \eq{eq:EulerPChiTilde}
+into the internal energy equation, \eq{eq:EulerPP}, and a set of forced advection 
+equations
 %
-\begin{equation}
-\Psi = (\chi, \chi\vu, \chi w, 1, \chitilde)
+\begin{equation}\label{eq:ForcedPAdvection}
+(P\Psi)_t + \mathcal{A}(\Psi; P\vv) = Q(\Psi; P)\, ,
+\end{equation}
+%
+where
+%
+\begin{equation}\label{eq:PsiDefinition}
+\Psi = (\chi, \chi\vu, \chi w, \chitilde)\,,
 \end{equation}
 % 
-by the advecting fluxes 
+and where advection is now mediated by the $P$-fluxes,  
 %
 \begin{equation}
-P\vv \equiv (P\vu, Pw)\,,
+P\vv \equiv (P\vu, Pw)\,.
 \end{equation}
 % 
-where by ``advection of 1'' we refer to solving \eq{eq:Peqn} for \emph{given}
-advective fluxes $P\vv$. The right hand 
-side column in \eq{eq:PsincII} collects all non-advective forcings. In compact 
-notation \eq{eq:PsincII} reads as
-%
-\begin{equation}
-(P\Psi)_t + \mathcal{A}(\Psi; P\vv) = R(P\Psi)\, ,
-\end{equation}
-%
 
 
-The large time step stability of the scheme is then determined by 
-the final implicit half time steps in \eq{eq:EULAGImplicitEulerStep}
-and \eq{eq:EULAGHalfTimePredictorRHS}, which are conceptually identical, 
-except that \eq{eq:EULAGImplicitEulerStep} leads to divergence-controlled
-cell-centered velocities, whereas \eq{eq:EULAGHalfTimePredictorRHS} generates
-divergence-controlled advective fluxes at the cell faces that comply with 
-the pressure equation \eq{eq:Peqn}.
+% ===========================================================================
+% ===========================================================================
 
+\subsection{Semi-implicit time discretization for compressible flow}
+\label{ssec:TimeDiscretizationOverview}
+
+% ===========================================================================
+
+\subsubsection{Advective fluxes at the half time level}
+\label{sssec:AdvectiveFluxes}
+
+In analogy with EULAG's forward-in-time integration strategy, the first step
+in our scheme is the determination of at least first order accurate advective 
+fluxes $(P\vv)^{n+\half}$ at the half time level 
+$t^{n+\half} = (t^{n} + t^{n+1})/2$. This is achieved applying standard splitting
+into advective and non-advective terms in \eq{eq:EulerP}, \eq{eq:EulerPChiTilde}. 
+Thus we first advance the advected scalars $\Psi$ from \eq{eq:PsiDefinition} by
+half a time step utilizing advective fluxes computed at the old time level, 
 %
-\begin{IEEEeqnarray}{rCl}\label{eq:EULAGHalfTimePredictor}
+\begin{IEEEeqnarray}{rCl}\label{eq:EULAGHalfTimePredictorAdvection}
 \dss (P\Psi)^{\#} 
   & = 
     & \dss \mathcal{A}_{1\text{st}}^{\frac{\Delta t}{2}}\left(\Psi^{n}; (P\vv)^{n}\right)
-      \IEEEyesnumber\IEEEyessubnumber*\label{eq:EULAGHalfTimePredictorAdvection}\\
-\dss (P\Psi)^{n+1/2} 
+      \label{eq:EULAGHalfTimePredictorAdvection}\,.
+\end{IEEEeqnarray}
+%
+Here $\mathcal{A}_{1\text{st}}^{\Delta t}$ denotes an at least first order
+accurate version of our advection scheme (see section~\ref{ssec:Advection}).  
+Then, the half time level fluxes $(P\vv)^{n+\half}$ are obtained as a result
+of an implicit Euler discretization of the full system,\kleincomment{double-check notation when details are written up.} 
+%
+\begin{IEEEeqnarray}{rCl}\label{eq:EULAGHalfTimePredictorFluxCorrection}
+\dss (P\Psi)^{n+\half} 
   & = 
-    & \dss (P\Psi)^{\#} + \frac{\Delta t}{2} R\left((P\Psi)^{n+1/2}\right)\,,
+    & \dss (P\Psi)^{\#} + \frac{\Delta t}{2} Q\left(\Psi^{n+1/2}; P^{n+\half}\right)\,,
+      \label{eq:EULAGHalfTimePredictorRHS}
+      \IEEEyesnumber\IEEEyessubnumber*\\
+\dss P^{n+\half} 
+  & = 
+    & \dss P^{n} - \frac{\Delta t}{2} \nabla\cdot(P\vv)^{n+\half}\,.
       \label{eq:EULAGHalfTimePredictorRHS}
 \end{IEEEeqnarray}
 %
-where $\mathcal{A}_{1\text{st}}^{\Delta t}$ denotes a first order
-accurate version of our advection scheme (see section~\ref{ssec:Advection}).
-This intermediate
-solution is generated exclusively to provide the advecting fluxes 
-$(P\vv)^{n+\half}$ needed in the advection step \eq{eq:EULAGAdvectionStep}.
+This may or may not be combined with a linearization of the equations of state 
+\eq{eq:EOSpiP} which relate $P$ and $\pi$, i.e.,  
+%     
+\begin{IEEEeqnarray}{rCl}\label{eq:EULAGHalfTimePredictorPLinearization}
+\dss P^{n+\half} 
+  & = 
+    & \dss P^{n} 
+      + \left(\frac{\partial P}{\partial \pi}\right)^{\#} 
+        \left(\pi^{n+\half} - \pi^{n}\right)\,.
+\end{IEEEeqnarray}
+%
+With the linearization, the implicit step involves a single linear elliptic solve
+for $\pi^{n+\half}$, while without the linearization an outer (Newton) iteration 
+must be invoked to guarantee consistency with the equation of state up to the 
+desired accuracy. 
 
+These preliminary calculations serve to provide the advecting fluxes 
+$(P\vv)^{n+\half}$ subsequently needed in the advection step of the final
+time stepping algorithm, \eq{eq:AdvectionStep}.
 
-There is one notable conceptual difference between the present approach for 
-compressible flow and the ``consistent framework for discrete integrations 
-of soundproof and compressible {P}{D}{E}s of atmospheric dynamics'' by 
-\citet{SmolarkiewiczEtAl2014}, which also builds on the general 
-forward-in-time integration strategy reviewed by \citet{PrusaEtAl2008} 
-and summarized above: 
+% ===========================================================================
 
+\subsubsection{Full time step with given advective fluxes}
+\label{sssec:FullTimeStep}
+
+\klein{I am tempted to propose our scheme looks quite like a variant of EULAG, 
+i.e., yet I have my doubts regarding the treatment of the Exner pressure in the
+momentum equations. I am not sure the $P$-$\pi$ coupling through the equations
+of state is correctly captured in \eq{eq:ImplicitEulerStep}.
+%
+\begin{IEEEeqnarray}{rCl}\label{eq:TimeIntegrator}
+\dss (P\Psi)^{*} 
+  & = 
+    & \dss (P\Psi)^{n} + \frac{\Delta t}{2} R\left(\Psi^n; P^n\right)
+      \IEEEyesnumber\IEEEyessubnumber*\label{eq:ExplicitEulerStep}\\
+\dss (P\Psi)^{**} 
+  & = 
+    & \dss \mathcal{A}_{2\text{\tiny nd}}^{\Delta t}\left(\Psi^*; (P\vv)^{n+1/2}\right)
+      \label{eq:AdvectionStep}\\
+\dss (P\Psi)^{n+1} 
+  & = 
+    & \dss (P\Psi)^{**} + \frac{\Delta t}{2} R\left(\Psi^{n+1}; P^{n+1}\right)\,.
+      \label{eq:ImplicitEulerStep}
+\end{IEEEeqnarray}
+%
+To sort this out, I guess I need to first spell out the details faithfully along the 
+lines of the code and then go back an try to formulate the scheme in a compact notation.
+}
 
 % ===========================================================================
 % ===========================================================================
@@ -739,6 +827,25 @@ approximations
 \section{Conclusions}
 \label{sec:Conclusions}
 
+\begin{itemize}
+
+\item differences relative to the compressible EULAG
+
+\item differences to Hilary's scheme
+
+\item differences to ENDGAME, GUNGHO and the like
+
+\item differences to George Bryan's model
+
+\item differences to COSMO, ICON etc. ... 
+
+\item differences to ASAM
+
+\item differences to Michael Dumbser's approach
+
+\item what else?
+
+\end{itemize}
 
 % ===========================================================================
 % ===========================================================================

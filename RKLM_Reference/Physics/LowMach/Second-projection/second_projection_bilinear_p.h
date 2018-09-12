@@ -14,7 +14,7 @@
  
  ------------------------------------------------------------------------------*/
 
-void second_projection(
+void euler_backward_non_advective_impl_part(
                        ConsVars* Sol,
                        MPV* mpv,
                        const ConsVars* Sol0,
@@ -27,7 +27,7 @@ void momentum_increments(MPV* mpv,
                          const ConsVars *Sol, 
                          const ElemSpaceDiscr *elem);
 
-void euler_backward_gravity(ConsVars* Sol,
+void euler_backward_non_advective_expl_part(ConsVars* Sol,
                             const MPV* mpv,
                             const ElemSpaceDiscr* elem,
                             const double dt);
