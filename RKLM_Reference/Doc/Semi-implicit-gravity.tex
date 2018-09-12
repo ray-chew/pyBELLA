@@ -525,16 +525,16 @@ accurate version of our advection scheme (see section~\ref{ssec:Advection}).
 Then, the half time level fluxes $(P\vv)^{n+\half}$ are obtained as a result
 of an implicit Euler discretization of the full system,\kleincomment{double-check notation when details are written up.} 
 %
-\begin{IEEEeqnarray}{rCl}\label{eq:EULAGHalfTimePredictorFluxCorrection}
+\begin{IEEEeqnarray}{rCl}\label{eq:HalfTimePredictorFluxCorrection}
 \dss (P\Psi)^{n+\half} 
   & = 
     & \dss (P\Psi)^{\#} + \frac{\Delta t}{2} Q\left(\Psi^{n+1/2}; P^{n+\half}\right)\,,
-      \label{eq:EULAGHalfTimePredictorRHS}
+      \label{eq:HalfTimePredictorRHS}
       \IEEEyesnumber\IEEEyessubnumber*\\
 \dss P^{n+\half} 
   & = 
     & \dss P^{n} - \frac{\Delta t}{2} \nabla\cdot(P\vv)^{n+\half}\,.
-      \label{eq:EULAGHalfTimePredictorRHS}
+      \label{eq:HalfTimePredictorRHS}
 \end{IEEEeqnarray}
 %
 This may or may not be combined with a linearization of the equations of state 
@@ -619,18 +619,18 @@ cell.
 % ===========================================================================
 % ===========================================================================
 
-\subsection{Pressure synchronization}
-\label{ssec:PressureSynchronization}
+\subsection{Synchronization of auxiliary variables}
+\label{ssec:Synchronization}
 
 The pressure $p$ plays a multiple roles in the compressible Euler equations
-as formulated in \eq{eq:PsincI}. The cell-centered volume average of 
-$P = (\rfr{p}/R) (p/\rfr{p})^{c_v/c_p}$ is representative of the energy
+as formulated in \eq{eq:CompressibleEuler}. The cell-centered volume average of 
+$P = (\rfr{p}/R) (p/\rfr{p})^{c_v/c_p}$ is representative of the internal energy
 budget of the flow, whereas the gradient of the Exner pressure 
 $\pi = (p/\rfr{p})^{R/c_p}$ arises in the coupling of the momentum field to
 the pressure. As a consequence, in controlling both the momenta $(\rho \vv)$ 
 at the cell centers and the advective fluxes $(P\vv)$ at cell faces through 
-the implicit Euler steps in \eq{eq:EULAGImplicitEulerStep} and 
-\eq{eq:EULAGHalfTimePredictorRHS}, respectively, we will need both 
+the implicit Euler steps in \eq{eq:HalfTimePredictorFluxCorrection} and 
+\eq{eq:TimeIntegrator}, respectively, we will need both 
 node and cell centered approximations of the Exner pressure (see 
 sections~\ref{ssec:DivControlledAdvectiveFluxes} and 
 \ref{ssec:ExplicitImplicitEuler}).
@@ -651,6 +651,20 @@ step with the primary cell centered variable $P^n_{i,j}$ through
 \end{IEEEeqnarray}
 %
 
+Similarly, the split of the full (inverse of) the potential temperature 
+$\chi = \chitilde + \chibar$ and the subsequent separate updates of  
+$\chi$ and $\chitilde$ require re-synchronization. Thus, after completion
+of a time step we let
+%
+\begin{equation}
+\chitilde^{n} = \chi^{n} - \chibar^{n}\,,
+\end{equation}
+%
+where in all subsequent simulations we have frozen $\chibar^{n} \equiv \chibar^{0}$. 
+An alternative option better suited for large scale, long time simulations
+would be to invoke a horizontal, possibly local, averaging procedure to extract
+$\chibar$ from $\chi$ at least every few time steps. We leave testing this option
+to future work.	 
 
 % ===========================================================================
 % ===========================================================================
