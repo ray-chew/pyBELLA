@@ -17,7 +17,6 @@
 #include "error.h"
 #include "numerical_flux.h"
 #include "boundary.h"
-#include "boundary.h"
 #include "flux_correction.h"
 #include "io.h"
 

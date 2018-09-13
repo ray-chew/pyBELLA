@@ -8,7 +8,6 @@
 #include "Common.h"
 #include "enumerator.h"
 #include "math_own.h"
-#include "float.h"
 #include "variable.h"
 #include "userdata.h"
 #include "data.h"

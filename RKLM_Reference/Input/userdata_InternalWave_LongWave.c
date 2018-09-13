@@ -5,9 +5,9 @@
 #include <float.h>
 #include <stdlib.h>
 
-#include "enumerator.h"
 #include "Common.h"
 #include "userdata.h"
+#include "enumerator.h"
 #include "time_discretization.h"
 #include "error.h"
 #include "variable.h"

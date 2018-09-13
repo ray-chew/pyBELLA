@@ -11,7 +11,7 @@
 #include "boundary.h"
 #include "userdata.h"
 #include "variable.h"
-#include "EOS.h"
+#include "Eos.h"
 #include "thermodynamic.h"
 #include "math_own.h"
 #include "memory.h"

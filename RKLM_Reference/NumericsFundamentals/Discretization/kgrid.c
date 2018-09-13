@@ -3,13 +3,13 @@
  Author: Nicola                         Rupert 
  Date:   Thu Feb 26 10:25:23 CET 1998   Feb. 2004
  *******************************************************************************/
+#include <stdlib.h>
+#include <assert.h>
+#include <math.h>
 #include "Common.h"
 #include "kgrid.h"
 #include "math_own.h"
 #include "error.h"
-#include <stdlib.h>
-#include <assert.h>
-#include <math.h>
 
 Grid* Grid_new(
 			   const int inx, 

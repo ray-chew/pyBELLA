@@ -563,9 +563,11 @@ time stepping algorithm, \eq{eq:AdvectionStep}.
 \label{sssec:FullTimeStep}
 
 \klein{I am tempted to propose our scheme looks quite like a variant of EULAG, 
-i.e., yet I have my doubts regarding the treatment of the Exner pressure in the
-momentum equations. I am not sure the $P$-$\pi$ coupling through the equations
-of state is correctly captured in \eq{eq:ImplicitEulerStep}.
+i.e., like \eq{eq:EULAGTimeIntegrator}, as spelled out in \eq{eq:TimeIntegrator} 
+below.  Yet, I have my doubts regarding the 
+treatment of the Exner pressure in the momentum equations. I am not sure the 
+$P$-$\pi$ coupling through the equations of state is correctly captured in 
+\eq{eq:ImplicitEulerStep}.
 %
 \begin{IEEEeqnarray}{rCl}\label{eq:TimeIntegrator}
 \dss (P\Psi)^{*} 

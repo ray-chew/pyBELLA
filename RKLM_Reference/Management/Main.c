@@ -26,7 +26,7 @@
 #include "recovery.h"
 #include "boundary.h"
 #include "flux_correction.h"
-#include "second_projection_bilinear_p.h"
+#include "second_projection.h"
 #include "mpv.h"
 #include "boundary.h"
 #include "numerical_flux.h"

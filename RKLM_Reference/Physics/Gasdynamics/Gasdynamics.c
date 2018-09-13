@@ -9,7 +9,7 @@
 #include "Eos.h"
 #include "thermodynamic.h"
 #include "variable.h"
-/* #include "space_discretization.h" */#include "enumerator.h"
+#include "enumerator.h"
 #include "mpv.h"
 #include "error.h"
 #include "Gasdynamics.h"

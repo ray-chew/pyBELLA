@@ -3,6 +3,11 @@
  Author: Rupert, Nicola
  Date:   
  *******************************************************************************/
+#include <math.h>
+#include <float.h>
+#include <stdlib.h>
+#include <assert.h>
+
 #include "Common.h"
 #include "variable.h"
 #include "math_own.h"
@@ -11,14 +16,9 @@
 #include "numerical_flux.h"
 #include "userdata.h"
 #include "thermodynamic.h"
-#include <assert.h>
 #include "limiter.h"
 #include "recovery.h"
 #include "enumerator.h"
-
-#include <math.h>
-#include <float.h>
-#include <stdlib.h>
 
 static enum Boolean allocated = WRONG;
 
