@@ -17,13 +17,10 @@
 
 #include "error.h"
 #include "SimpleUtilities.h"
-
 #include "kgrid.h"
 #include "mpv.h"
 #include "thermodynamic.h"
-
 #include "variable_coefficient_poisson_nodes.h"
-
 #include "BiCGSTAB.h"
 #include "laplacian_nodes.h"
 #include "userdata.h"

@@ -12,10 +12,7 @@
 #include <string.h>
 
 #include "Common.h"
-
 #include "error.h"
-
-
 #include "variable_coefficient_poisson_cells.h"
 #include "mpv.h"
 #include "BiCGSTAB.h"
