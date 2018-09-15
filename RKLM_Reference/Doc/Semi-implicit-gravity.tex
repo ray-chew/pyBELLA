@@ -110,7 +110,8 @@
 \newcommand{\Id}{{\rm Id}}
 
 \newcommand{\pprime}{p'}
-\newcommand{\half}{\frac{1}{2}}
+%\newcommand{\half}{\frac{1}{2}}
+\newcommand{\half}{1/2}
 \newcommand{\quart}{\frac{1}{4}}
 \newcommand{\eightth}{\frac{1}{8}}
 
@@ -384,8 +385,8 @@ backward Euler step in \eq{eq:EULAGImplicitEulerStep}.
 % ===========================================================================
 % ===========================================================================
 
-\section{Summary of the discretization}
-\label{sec:DiscretizationSummary}
+\section{Compact description of the time integration scheme}
+\label{sec:TimeDiscretizationSummary}
 
 % ===========================================================================
 % ===========================================================================
@@ -513,11 +514,14 @@ into advective and non-advective terms in \eq{eq:EulerP}, \eq{eq:EulerPChiTilde}
 Thus we first advance the advected scalars $\Psi$ from \eq{eq:PsiDefinition} by
 half a time step utilizing advective fluxes computed at the old time level, 
 %
-\begin{IEEEeqnarray}{rCl}\label{eq:EULAGHalfTimePredictorAdvection}
+\begin{IEEEeqnarray}{rCl}\label{eq:HalfTimePredictorAdvection}
 \dss (P\Psi)^{\#} 
   & = 
     & \dss \mathcal{A}_{1\text{st}}^{\frac{\Delta t}{2}}\left(\Psi^{n}; (P\vv)^{n}\right)
-      \label{eq:EULAGHalfTimePredictorAdvection}\,.
+      \IEEEyesnumber\IEEEyessubnumber*\\
+\dss P^{\#} 
+  & = 
+    & \dss P^{n} - \frac{\Delta t}{2} \nabla\cdot(P\vv)^{n}\,.
 \end{IEEEeqnarray}
 %
 Here $\mathcal{A}_{1\text{st}}^{\Delta t}$ denotes an at least first order
@@ -529,18 +533,17 @@ of an implicit Euler discretization of the full system,\kleincomment{double-chec
 \dss (P\Psi)^{n+\half} 
   & = 
     & \dss (P\Psi)^{\#} + \frac{\Delta t}{2} Q\left(\Psi^{n+1/2}; P^{n+\half}\right)\,,
-      \label{eq:HalfTimePredictorRHS}
-      \IEEEyesnumber\IEEEyessubnumber*\\
+      \IEEEyesnumber\IEEEyessubnumber*\label{eq:HalfTimePredictorRHS}\\
 \dss P^{n+\half} 
   & = 
     & \dss P^{n} - \frac{\Delta t}{2} \nabla\cdot(P\vv)^{n+\half}\,.
-      \label{eq:HalfTimePredictorRHS}
+      \label{eq:HalfTimePredictorDivControl}
 \end{IEEEeqnarray}
 %
 This may or may not be combined with a linearization of the equations of state 
 \eq{eq:EOSpiP} which relate $P$ and $\pi$, i.e.,  
 %     
-\begin{IEEEeqnarray}{rCl}\label{eq:EULAGHalfTimePredictorPLinearization}
+\begin{IEEEeqnarray}{rCl}\label{eq:HalfTimePredictorPLinearization}
 \dss P^{n+\half} 
   & = 
     & \dss P^{n} 
@@ -548,14 +551,23 @@ This may or may not be combined with a linearization of the equations of state
         \left(\pi^{n+\half} - \pi^{n}\right)\,.
 \end{IEEEeqnarray}
 %
-With the linearization, the implicit step involves a single linear elliptic solve
+With the linearization, this implicit step involves a single linear elliptic solve
 for $\pi^{n+\half}$, while without the linearization an outer (Newton) iteration 
 must be invoked to guarantee consistency with the equation of state up to the 
 desired accuracy. 
 
 These preliminary calculations serve to provide the advecting fluxes 
 $(P\vv)^{n+\half}$ subsequently needed in the advection step of the final
-time stepping algorithm, \eq{eq:AdvectionStep}.
+time stepping algorithm, see \eq{eq:TimeIntegrator} below. We note in particular
+that for given advective fluxes the update of the internal energy variable,
+$P$ is determined, i.e., 
+%
+\begin{equation}
+P^{n+1} = P^{n} - \Delta t \,\nablatilde \cdot (P\vv)^{n+\half}
+\end{equation}
+%
+is known and the remainder of the time stepping procedure serves to update
+the vector of specific variables $\Psi$ from \eq{eq:PsiDefinition}. 
 
 % ===========================================================================
 
@@ -563,11 +575,11 @@ time stepping algorithm, \eq{eq:AdvectionStep}.
 \label{sssec:FullTimeStep}
 
 \klein{I am tempted to propose our scheme looks quite like a variant of EULAG, 
-i.e., like \eq{eq:EULAGTimeIntegrator}, as spelled out in \eq{eq:TimeIntegrator} 
+i.e., like \eq{eq:EULAGTimeIntegrator}, as spelled out in \eq{eq:TimeIntegrator}
 below.  Yet, I have my doubts regarding the 
 treatment of the Exner pressure in the momentum equations. I am not sure the 
-$P$-$\pi$ coupling through the equations of state is correctly captured in 
-\eq{eq:ImplicitEulerStep}.
+$P$-$\pi$ coupling through the equations of state as currently done in the code
+is correctly captured by the notation in \eq{eq:ImplicitEulerStep}.
 %
 \begin{IEEEeqnarray}{rCl}\label{eq:TimeIntegrator}
 \dss (P\Psi)^{*} 
@@ -588,24 +600,40 @@ To sort this out, I guess I need to first spell out the details faithfully along
 lines of the code and then go back an try to formulate the scheme in a compact notation.
 }
 
+
+% ===========================================================================
 % ===========================================================================
 % ===========================================================================
 
-\subsection{Cartesian cell centered grid arrangement}
+\section{Discretization details}
+\label{sec:DiscretizationDetails}
+
+% ===========================================================================
+% ===========================================================================
+
+\subsection{Cartesian grid arrangement}
 \label{ssec:GridArrangement}
+
+
+\begin{figure}
+\centering
+ \red{Sketch of grid arrangement}
+\caption{Sketch of grid arrangement \label{fig:GridArrangement}}
+\end{figure}
 
 In this paper we describe our scheme for two-dimensional flows. Extension 
 to three space dimensions is straightforward and implemented in our 
 research code. The scheme is fully cell centered on control volumes 
 $C_{i,j}$ formed by a cartesian mesh, with constant grid increments 
 $\Delta x, \Delta y$, and grid indices $i = 0, ..., I-1$ and 
-$j = 0, ..., J-1$. The discrete approximate solution involves averages of 
-the solution variables over grid cells, i.e., 
+$j = 0, ..., J-1$ (see Fig.~\ref{fig:GridArrangement}). 
+The primary variables of the discrete approximate 
+solution consists of averages of grid cell averages 
 %
 \begin{equation}
 \Sol_{i,j}^n \approx 
 \frac{1}{\Delta x \Delta y}\int\limits_{C_{i,j}} \Sol(\vx,t^n)\, d^2\vx
-\qquad\text{where}\qquad 
+\qquad\text{of}\qquad 
 \Sol = \left(
 \begin{array}{c}
 \rho \\ \rho\vu \\ \rho w \\ P
@@ -618,56 +646,104 @@ order -- we can interchangeably interpret $\Sol_{i,j}^n$ as the cell average,
 as above, or as a point value of $\Sol$ at the center of mass of the grid 
 cell.  
 
+Advection of the specific variables $\Psi$ is mediated by fluxes defined 
+on cell faces, i.e.,
+%
+\begin{equation}
+(Pu \Psi)^{n+\half}_{i+\half,j} 
+\qquad\text{and}\qquad
+(Pv \Psi)^{n+\half}_{i,j+\half} 
+\end{equation}
+%
+determined by some robust second order advection scheme, see 
+section~\ref{sssec:AdvectiveFluxes} for the present implentation using
+a ``monotone upwind scheme for conservation laws'' (MUSCL) 
+following \citep[see, e.g.,][]{vanLeer2006}. 
+Similarly, $(Pu)^{n+\half}_{i+\half,j}$ and $(Pv)^{n+\half}_{i,j+\half}$ 
+are staggered-grid components of the advective fluxes $(P\vv)^{n+\half}$.
+
+Two different incarnations of the Exner pressure gradient are needed in 
+the implicit Euler steps summarized in \eq{eq:HalfTimePredictorFluxCorrection} 
+and \eq{eq:ImplicitEulerStep}. The former determines the cell interface
+based fluxes $(Pu)^{n+\half}_{i+\half,j}$ and $(Pv)^{n+\half}_{i,j+\half}$
+and naturally works with cell- and timestep-centered values of the Exner 
+pressure. The latter corrects the cell-centered momenta and requires 
+integrals of the Exner pressure over grid cell faces, which we compute 
+from node-centered values by the trapezoidal rule. Thus we compute both
+%
+\begin{equation}\label{eq:ExnerPressures}
+\pi_{i,j}^{n+\half} 
+\qquad\text{and}\qquad
+\pi_{i+\half,j+\half}^{n+1} 
+\end{equation}
+%
+in the course of a time step $t^{n} \to t^{n+1}$ by solving implicit 
+pressure equations. 
+
 % ===========================================================================
 % ===========================================================================
 
 \subsection{Synchronization of auxiliary variables}
 \label{ssec:Synchronization}
 
-The pressure $p$ plays a multiple roles in the compressible Euler equations
+The pressure $p$ plays multiple roles in the compressible Euler equations
 as formulated in \eq{eq:CompressibleEuler}. The cell-centered volume average of 
 $P = (\rfr{p}/R) (p/\rfr{p})^{c_v/c_p}$ is representative of the internal energy
 budget of the flow, whereas the gradient of the Exner pressure 
 $\pi = (p/\rfr{p})^{R/c_p}$ arises in the coupling of the momentum field to
-the pressure. As a consequence, in controlling both the momenta $(\rho \vv)$ 
-at the cell centers and the advective fluxes $(P\vv)$ at cell faces through 
+the pressure. As a consequence, in controlling both the advective fluxes 
+$(Pu)_{i+\half,j}, (Pv)_{i,j+\half}$ at cell faces and the momenta 
+$(\rho \vv)_{i,j}$ at the cell centers through 
 the implicit Euler steps in \eq{eq:HalfTimePredictorFluxCorrection} and 
-\eq{eq:TimeIntegrator}, respectively, we will need both 
-node and cell centered approximations of the Exner pressure (see 
+\eq{eq:TimeIntegrator}, respectively, we employ both node and cell centered 
+approximations of the Exner pressure (see \eq{eq:ExnerPressures} and
 sections~\ref{ssec:DivControlledAdvectiveFluxes} and 
-\ref{ssec:ExplicitImplicitEuler}).
+\ref{ssec:ExplicitImplicitEuler} below). This is in agreement with our previous
+developments in \citep{KleinTCFD2009,BenacchioEtAl2014}, and with the 
+established combination of ``MAC'' and cell-centered projections for 
+zero Mach number flow solvers in \citep[e.g.,][]{BellEtAl1989,AlmgrenEtAl2006}.
 
-These auxiliary fields are synchronized at the end of, say, the $n$th time
+
+These auxiliary fields are synchronized upon completion of the $n$th time
 step with the primary cell centered variable $P^n_{i,j}$ through
 %
 \begin{IEEEeqnarray}{rCl}
 \pi^{n}_{i,j} 
   & =
-    & \left(\frac{RP}{\rfr{p}}\right)^{\frac{R}{c_v}}
+    & \left(\frac{RP_{i,j}}{\rfr{p}}\right)^{\frac{R}{c_v}}
       \IEEEyesnumber\IEEEyessubnumber*\\[10pt]
 \pi^{n}_{i+\half,j+\half}
   & =
     & \frac{1}{4} 
       \left(\pi^{n}_{i,j} + \pi^{n}_{i+1,j} + \pi^{n}_{i,j+1} + \pi^{n}_{i+1,j+1} 
       \right)\,.
+      \label{eq:CenterToNodeInterpolation}
 \end{IEEEeqnarray}
 %
+The formula in \eq{eq:CenterToNodeInterpolation} is also used to generate 
+half time level nodal pressures $\pi^{n+\half}_{i+\half,j+\half}$ from
+the cell-centered solution $\pi^{n+\half}_{i,j}$ of the advection flux 
+calculation scheme in \eq{eq:HalfTimePredictorFluxCorrection}, 
+\eq{eq:HalfTimePredictorPLinearization}.
 
-Similarly, the split of the full (inverse of) the potential temperature 
-$\chi = \chitilde + \chibar$ and the subsequent separate updates of  
-$\chi$ and $\chitilde$ require re-synchronization. Thus, after completion
-of a time step we let
+Similarly, the split of the full inverse of the potential temperature 
+$\chi = \chitilde + \chibar$ according to \eq{eq:ChiSplit} and the subsequent 
+separate updates of  $\chi$ and $\chitilde$ governed by discrete versions
+of the full and perturbed mass balances in \eq{eq:chiI} and 
+\eq{eq:EulerPChiTilde}, respectively, require re-synchronization. Thus, 
+after completion of a time step we let
 %
 \begin{equation}
-\chitilde^{n} = \chi^{n} - \chibar^{n}\,,
+\chitilde_{i,j}^{n} = \chi_{i,j}^{n} - \chibar_{j}^{n}\,,
 \end{equation}   
 %
-where in all subsequent simulations we have frozen $\chibar^{n} \equiv \chibar^{0}$. 
-An alternative option better suited for large scale, long time simulations
-would be to invoke a horizontal, possibly local, averaging procedure to extract
-$\chibar$ from $\chi$ at least every few time steps. We leave testing this option
-to future work.	 
-
+where we have assumed gravity to be aligned with the second coordinate
+direction so that $\chibar$ depends on the $z$-coordinate only. Also, in 
+all subsequent simulations we set $\chibar_j^{n} \equiv \chibar_j^{0}$. 
+An alternative option better suited for large scale, long time simulations 
+is to invoke a horizontal, possibly local, averaging procedure to extract 
+$\chibar$ from $\chi$ at least every few time steps. We leave testing 
+this option to future work.	 
 
 % ===========================================================================
 % ===========================================================================
@@ -680,24 +756,14 @@ compressible flows is a good candidate for the generic discrete
 advection operator $\mathcal{A}^{\Delta t}$ introduced above. EULAG uses 
 variants of the ``multi-dimensional positive definite advection transport 
 algorithm'' (MPDATA) \citet{PrusaEtAl2008}. The present implementation involves
-a directionally split ``monotone upwind scheme for conservation laws'' (MUSCL): 
+a directionally split ``monotone upwind scheme for conservation laws'' (MUSCL)
+\citep[see, e.g.,][]{vanLeer2006}: 
 
-Suppose the half time predictor step from \eq{eq:EULAGHalfTimePredictor}, 
+Suppose the half time predictor step from \eq{eq:HalfTimePredictorFluxCorrection}, 
 the details of which will be described shortly, has been completed. Then, 
-the advecting flux in the $x$ direction is approximated as, 
-%
-\begin{IEEEeqnarray}{rCl}
-(Pu)^{n+\half}_{i+\half,j} 
-  & = 
-    & \frac{1}{2}\left((Pu)^{n+\half}_{i,j} + (Pu)^{n+\half}_{i+1,j}\right)
-      \IEEEyesnumber\IEEEyessubnumber*\\
-(Pv)^{n+\half}_{i,j+\half} 
-  & = 
-    & \frac{1}{2}\left((Pv)^{n+\half}_{i,j} + (Pv)^{n+\half}_{i,j+1}\right)\,.
-\end{IEEEeqnarray}
-%
-Given these fluxes, the advection step in \eq{eq:EULAGAdvectionStep} is discretized 
-via Strang splitting, so that
+the advecting fluxes $(Pu)^{n+\half}_{i+\half,j}$ and $(Pv)^{n+\half}_{i,j+\half}$ 
+have become available as part of this calculation. Given these fluxes, the advection 
+step in \eq{eq:AdvectionStep} is discretized via Strang splitting, so that
 %
 \begin{equation}\label{eq:AdvectionStrangSplitting}
 \Sol_{i,j}^{**} 
@@ -751,10 +817,10 @@ s_{i,j}
 \end{IEEEeqnarray}
 %
 where $P_{i,j}$ in \eq{eq:AdvSpecificsCourantNo} denotes the fourth component 
-of $U_{i,j}$, and $\text{Lim}(a,b)$ is a slope limiting function (see 
-\citet{Sweby1984}). The effect of the slope limiting procedure on our simulation
+of $U_{i,j}$, and $\text{Lim}(a,b)$ is a slope limiting function 
+\citep[see, e.g.,][]{Sweby1984}. The effect of the slope limiting procedure on our simulation
 results will be discussed in section~\ref{sec:Results} below. Analogous formulae 
-hold for $\mathcal{A}^{\frac{\Delta t}{2}}_y U_{i,j}$. 
+hold for $\mathcal{A}^{\Delta t/2}_y U_{i,j}$. 
 
 Importantly, the advecting fluxes 
 $(Pu)^{n+\half}_{i+\half,j}, (Pv)^{n+\half}_{i,j+\half}$
@@ -762,7 +828,7 @@ are maintained unchanged throughout the Strang splitting cycle
 \eq{eq:AdvectionStrangSplitting}.
 
 The first order accurate advection operator $\mathcal{A}_{1\text{st}}^{\Delta t}$
-used in \eq{eq:EULAGHalfTimePredictorAdvection} is a simplified version
+used in \eq{eq:HalfTimePredictorAdvection} is a simplified version
 of the above in that (i) the advective fluxes are approximated at the old time level
 %
 \begin{IEEEeqnarray}{rCl}
@@ -787,16 +853,65 @@ s_{i,j} \equiv 0\,,
 \end{equation}
 %
 in our standard configuration. We will demonstrate below that such a 
-reduction to first order accuracy in the predictor step does not only not
-affect the formal order of consistency of the scheme, but also hardly 
+reduction to first order accuracy in the predictor step neither
+affects the formal order of consistency of the scheme nor
 influences the solution quality at finite resolution.\kleincomment{t.b.d.}
 
 % ===========================================================================
 % ===========================================================================
 
-\subsection{Divergence controlled advective fluxes via eqn.\
-\eq{eq:EULAGHalfTimePredictorRHS}}
+\subsection{Divergence controlled advective fluxes via 
+\eq{eq:HalfTimePredictorFluxCorrection}}
 \label{ssec:DivControlledAdvectiveFluxes}
+
+The goal of solving \eq{eq:HalfTimePredictorFluxCorrection} is to obtain first
+order accurate approximations of the advecting fluxes 
+$(Pu)^{n+\half}_{i+\half,j}$ and $(Pv)^{n+\half}_{i,j+\half}$ which are 
+located at the grid cell faces. Having completed the advection predictor, 
+\eq{eq:HalfTimePredictorAdvection}, we first generate face centered 
+approximations
+%
+\begin{IEEEeqnarray}{rCl}
+(Pu)^{\#}_{i+\half,j} 
+  & = 
+    & (\rho u\chi)^{\#}_{i,j} + (\rho u\chi)^{\#}_{i+1,j}
+      \IEEEyesnumber\IEEEyessubnumber*\\
+(Pw)^{\#}_{i,j+\half} 
+  & = 
+    & (\rho w\chi)^{\#}_{i,j} + (\rho w\chi)^{\#}_{i,j+1}
+\end{IEEEeqnarray}
+%
+of the advective fluxes. These differ from the corresponding data at time
+level $t^n$ only through the effect of the advection step, so that a consistent
+first order approximation at $t^{n+\half}$ requires us to account for the
+influence of the right hand side $Q$ of \eq{eq:ForcedPAdvection} as well. 
+Specifically,\kleincomment{Oooops, need to very closely monitor what's in the code.}
+%
+\begin{IEEEeqnarray}{rCl}
+(Pu)^{n+\half}_{i+\half,j} 
+  & = 
+    & (Pu)^{\#}_{i+\half,j} 
+      - \frac{\Delta t}{2}
+        \left( c_p\left(\frac{P}{\chi}\right)^{\#}_{i+\half,j}
+               \frac{\pi^{n+\half}_{i+1,j} - \pi^{n+\half}_{i,j}}{\Delta x}
+      + f_0 (Pv)^{n+\half}_{i+\half,j}
+    \right)
+      \IEEEyesnumber\IEEEyessubnumber*\\
+(Pv)^{n+\half}_{i+\half,j} 
+  & = 
+    & (Pv)^{\#}_{i+\half,j} 
+      - \frac{\Delta t}{2} f_0 (Pu)^{n+\half}_{i+\half,j}
+      \\
+(Pw)^{n+\half}_{i,j+\half} 
+  & = 
+    & (Pw)^{\#}_{i,j+\half} 
+      - \frac{\Delta t}{2}
+        \left( c_p\left(\frac{P}{\chi}\right)^{\#}_{i,j+\half}
+               \frac{\pi^{n+\half}_{i,j+1} - \pi^{n+\half}_{i,j}}{\Delta z}
+      + g P^{n+\half}_{i,j+\half}
+    \right)
+\end{IEEEeqnarray}
+%
 
 
 % ===========================================================================
@@ -804,24 +919,6 @@ influences the solution quality at finite resolution.\kleincomment{t.b.d.}
 \subsection{Explicit \eq{eq:EULAGExplicitEulerStep} and implicit  
 \eq{eq:EULAGImplicitEulerStep} Euler steps for the generalized sources}
 \label{ssec:ExplicitImplicitEuler}
-
-In solving \eq{eq:EULAGHalfTimePredictorRHS}, the goal is to obtain first
-order accurate approximations of the advecting fluxes 
-$(Pu)^{n+\half}_{i+\half,j}$ and $(Pv)^{n+\half}_{i,j+\half}$ which are 
-located at the grid cell faces. Having completed the advection predictor, 
-\eq{eq:EULAGHalfTimePredictorAdvection}, we first generate face centered 
-approximations
-%
-\begin{IEEEeqnarray}{rCl}
-(Pu)^{\#}_{i+\half,j} 
-  & = 
-    & (Pu)^{\#}_{i,j} + (Pu)^{\#}_{i+1,j}
-      \IEEEyesnumber\IEEEyessubnumber*\\
-(Pu)^{\#}_{i,j+\half} 
-  & = 
-    & (Pv)^{\#}_{i,j} + (Pu)^{\#}_{i,j+1}
-\end{IEEEeqnarray}
-%
 
 
 % ===========================================================================
