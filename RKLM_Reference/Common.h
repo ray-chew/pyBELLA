@@ -29,6 +29,7 @@
  */ 
 #define ADVECTION
 #define NODAL_PRESSURE_GRADIENT
+#define CORIOLIS_EXPLICIT
 
 /* ============================================= 
  Semi-implicit solver options  

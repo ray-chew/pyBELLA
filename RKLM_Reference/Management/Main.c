@@ -125,8 +125,10 @@ int main( void )
             printf("\nhalf-time prediction of advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
                                           
-            /* First order splitting for Corilis - just for the advection flux prediction */
-            Explicit_Coriolis(Sol, elem, 0.5*dt);
+#ifdef CORIOLIS_EXPLICIT
+            /* First order splitting for Corilis - just for the advection flux prediction */ 
+             Explicit_Coriolis(Sol, elem, 0.5*dt);
+#endif
             
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
 #ifdef ADVECTION
@@ -144,9 +146,11 @@ int main( void )
             printf("\nfull time step with predicted advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
             
+#ifdef CORIOLIS_EXPLICIT
             /* Strang splitting for Coriolis, first step */
-            Explicit_Coriolis(Sol, elem, 0.5*dt);  
-             
+             Explicit_Coriolis(Sol, elem, 0.5*dt);  
+#endif
+            
             /* explicit EULER half time step for gravity and pressure gradient */ 
             euler_forward_non_advective(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.5*dt, WITH_PRESSURE);
                         
@@ -159,9 +163,11 @@ int main( void )
             euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt);
             euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt);
                         
+#ifdef CORIOLIS_EXPLICIT
             /* Strang splitting for Coriolis, second step */
-            Explicit_Coriolis(Sol, elem, 0.5*dt);  
-              
+             Explicit_Coriolis(Sol, elem, 0.5*dt);  
+#endif
+            
             if (ud.is_compressible) {
                 synchronize_variables(mpv, Sol, elem, node);
             }

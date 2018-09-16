@@ -423,6 +423,10 @@ void operator_coefficients(
     const double Gammainv = th.Gammainv;
     const int ndim = elem->ndim;
     
+    const double coriolis  = ud.coriolis_strength[0];
+    const double fsqsc     = dt*dt*coriolis*coriolis;
+    const double ooopfsqsc = 1.0 / (1.0 + fsqsc);
+
     double nonhydro = ud.nonhydrostasy;
     
     const double ccenter = - (ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt); 
@@ -457,11 +461,11 @@ void operator_coefficients(
                     ic    = n - j;
                     icm   = ic - 1; 
 #if 0
-                    hi    = Sol0->rhoY[ic] * Sol0->rhoY[ic] / Sol0->rho[ic]    * Gammainv;   
-                    him   = Sol0->rhoY[icm] * Sol0->rhoY[icm] / Sol0->rho[icm] * Gammainv;
+                    hi    = ooopfsqsc * Sol0->rhoY[ic] * Sol0->rhoY[ic] / Sol0->rho[ic]    * Gammainv;   
+                    him   = ooopfsqsc * Sol0->rhoY[icm] * Sol0->rhoY[icm] / Sol0->rho[icm] * Gammainv;
 #else
-                    hi    = Sol0->rhoY[ic] * Sol->rhoY[ic] / Sol->rho[ic]    * Gammainv;   
-                    him   = Sol0->rhoY[icm] * Sol->rhoY[icm] / Sol->rho[icm] * Gammainv;
+                    hi    = ooopfsqsc * Sol0->rhoY[ic] * Sol->rhoY[ic] / Sol->rho[ic]    * Gammainv;   
+                    him   = ooopfsqsc * Sol0->rhoY[icm] * Sol->rhoY[icm] / Sol->rho[icm] * Gammainv;
 #endif
                     hx[n] = 0.5 * (hi + him);
                     

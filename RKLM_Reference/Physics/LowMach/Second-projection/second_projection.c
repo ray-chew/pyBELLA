@@ -1066,6 +1066,15 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
     const double Msq = ud.Msq;
     const double dy  = elem->dy;
     
+#ifdef CORIOLIS_EXPLICIT
+    const double coriolis  = 0.0;
+#else
+    const double coriolis  = ud.coriolis_strength[0];
+#endif
+    const double u0        = ud.wind_speed;
+    const double fsqsc     = dt*dt*coriolis*coriolis;
+    const double ooopfsqsc = 1.0 / (1.0 + fsqsc);
+
     const int icx = elem->icx;
     const int icy = elem->icy;
     const int icz = elem->icz;
@@ -1078,6 +1087,8 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
             
             for (int i=0; i<icx; i++) {
                 int n        = m + i;
+                
+                /* implicit gravity */
                 double Nsqsc = dt*dt * (g/Msq) * strat;
                 double v     = Sol->rhov[n]/Sol->rho[n];
                 double dchi  = Sol->rhoX[BUOY][n]/Sol->rho[n];
@@ -1085,6 +1096,11 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
                 double dbuoy = -dchi/chi;    /* -dchi/chibar; */
                 double rhov  = Sol->rho[n] * (nonhydro * v + dt * (g/Msq) * dbuoy) / (nonhydro + Nsqsc);
                 Sol->rhov[n] = rhov;
+                
+                /* implicit Coriolis */
+                double drhou = Sol->rhou[n] - u0*Sol->rho[n];
+                Sol->rhou[n] = u0*Sol->rho[n] + ooopfsqsc * (drhou - dt * coriolis * Sol->rhow[n]);
+                Sol->rhow[n] = ooopfsqsc * (Sol->rhow[n] + dt * coriolis * drhou);
             }
         }
     }
@@ -1129,7 +1145,12 @@ void euler_forward_non_advective(ConsVars* Sol,
     const double g        = ud.gravity_strength[1];
     const double Msq      = ud.Msq;
     const double Ginv     = th.Gammainv; 
-    const double coriolis = ud.coriolis_strength[0];
+    
+#ifdef CORIOLIS_EXPLICIT
+    const double coriolis  = 0.0;
+#else
+    const double coriolis  = ud.coriolis_strength[0];
+#endif
     const double u0       = ud.wind_speed;
 
     double *div = mpv->rhs;
@@ -1183,8 +1204,8 @@ void euler_forward_non_advective(ConsVars* Sol,
                  double dpidP   = th.gm1 * mpv->p2_cells[nc] / Sol->rhoY[nc]; 
                  */
 
-                Sol->rhou[nc]  = u0*Sol->rho[nc] + dt * (- rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
-                Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
+                Sol->rhou[nc]  = u0*Sol->rho[nc] + dt * (- rhoYovG * dpdx - coriolis * Sol->rhow[nc]);
+                Sol->rhow[nc]  = Sol->rhow[nc] + dt * coriolis * drhou;
                 Sol->rhoY[nc]  = Sol->rhoY[nc] - dt * div[nc];
                 
                 dp2n[nn0] -= dt * dpidP * div[nn0];
