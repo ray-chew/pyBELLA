@@ -778,10 +778,17 @@ static void operator_coefficients_nodes(
     const int ndim = node->ndim;
     
     double nonhydro = ud.nonhydrostasy;
+    
+#ifdef CORIOLIS_EXPLICIT
+    const double coriolis  = 0.0;
+#else
+    const double coriolis  = ud.coriolis_strength[0];
+#endif
+
                     
 	switch(ndim) {
 		case 1: {    
-			ERROR("interface_enthalpy_nodes() not implemented for 1D\n");
+			ERROR("operator_coefficients_nodes() not implemented for 1D\n");
 			break;
 		}
 		case 2: {			
@@ -811,27 +818,21 @@ static void operator_coefficients_nodes(
 
                 for(i = igx; i < icx - igx; i++) {
                     n = m + i;     
-#ifdef TIME_AVED_OPCOEFFS_2ND
-                    double Y     = 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]); 
-#else
                     double Y     = Sol->rhoY[n]/Sol->rho[n]; 
-#endif
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
+                    double fsqsc = dt*dt * coriolis*coriolis;
+                    double fimp  = 1.0 / (nonhydro + fsqsc);
                     double Nsqsc = dt*dt * (g/Msq) * strat;                    
-                    double gimpy = 1.0 / (nonhydro + Nsqsc);
-                                        
-                    hplusx[n]    = coeff;
-                    hplusy[n]    = coeff * gimpy;
+                    double gimp  = 1.0 / (nonhydro + Nsqsc);
+                                                            
+                    hplusx[n]    = coeff * fimp;
+                    hplusy[n]    = coeff * gimp;
 				}
 			}
 									
 			for(j = igy; j < icy - igy; j++) {m = j * icx;
 				for(i = igx; i < icx - igx; i++) {n = m + i;
-#ifdef TIME_AVED_OPCOEFFS_2ND
-					hc[n] = ccenter * pow(0.5*(Sol->rhoY[n]+Sol0->rhoY[n]),cexp);
-#else
                     hc[n] = ccenter * pow(Sol->rhoY[n],cexp);
-#endif
 				}
 			}
 			break;
@@ -869,18 +870,16 @@ static void operator_coefficients_nodes(
 
                     for(i = igx; i < icx - igx; i++) {n = m + i;
                         {             
-#ifdef TIME_AVED_OPCOEFFS_2ND
-                            double Y     = 0.5 * (Sol->rhoY[n]/Sol->rho[n] + Sol0->rhoY[n]/Sol0->rho[n]); 
-#else
                             double Y     = Sol->rhoY[n]/Sol->rho[n]; 
-#endif
                             double coeff = Gammainv * Sol->rhoY[n] * Y;
+                            double fsqsc = dt*dt * coriolis*coriolis;
+                            double fimp  = 1.0 / (nonhydro + fsqsc);
                             double Nsqsc = dt*dt * (g/Msq) * strat;                    
-                            double gimpy = 1.0 / (nonhydro + Nsqsc);
+                            double gimp  = 1.0 / (nonhydro + Nsqsc);
 
-                            hplusx[n]  = coeff;
-                            hplusy[n]  = coeff * gimpy;
-                            hplusz[n]  = coeff;
+                            hplusx[n]  = coeff * fimp;
+                            hplusy[n]  = coeff * gimp;
+                            hplusz[n]  = coeff * fimp;
                         }
                     }
                 }
@@ -889,11 +888,7 @@ static void operator_coefficients_nodes(
 			for(k = igz; k < icz - igz; k++) {l = k * icx*icy;
                 for(j = igy; j < icy - igy; j++) {m = l + j * icx;
                     for(i = igx; i < icx - igx; i++) {n = m + i;
-#ifdef TIME_AVED_OPCOEFFS_2ND
-                        hc[n] = ccenter * pow(0.5*(Sol->rhoY[n]+Sol0->rhoY[n]),cexp);
-#else
                         hc[n] = ccenter * pow(Sol->rhoY[n],cexp);
-#endif
                     }
                 }
 			}
@@ -1099,8 +1094,8 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
                 
                 /* implicit Coriolis */
                 double drhou = Sol->rhou[n] - u0*Sol->rho[n];
-                Sol->rhou[n] = u0*Sol->rho[n] + ooopfsqsc * (drhou - dt * coriolis * Sol->rhow[n]);
-                Sol->rhow[n] = ooopfsqsc * (Sol->rhow[n] + dt * coriolis * drhou);
+                Sol->rhou[n] = u0*Sol->rho[n] + ooopfsqsc * (drhou + dt * coriolis * Sol->rhow[n]);
+                Sol->rhow[n] = ooopfsqsc * (Sol->rhow[n] - dt * coriolis * drhou);
             }
         }
     }
@@ -1204,8 +1199,8 @@ void euler_forward_non_advective(ConsVars* Sol,
                  double dpidP   = th.gm1 * mpv->p2_cells[nc] / Sol->rhoY[nc]; 
                  */
 
-                Sol->rhou[nc]  = u0*Sol->rho[nc] + dt * (- rhoYovG * dpdx - coriolis * Sol->rhow[nc]);
-                Sol->rhow[nc]  = Sol->rhow[nc] + dt * coriolis * drhou;
+                Sol->rhou[nc]  = u0*Sol->rho[nc] + dt * (- rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
+                Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
                 Sol->rhoY[nc]  = Sol->rhoY[nc] - dt * div[nc];
                 
                 dp2n[nn0] -= dt * dpidP * div[nn0];
@@ -1273,6 +1268,11 @@ void euler_forward_non_advective(ConsVars* Sol,
             break;
         case 3: 
         {
+            
+#ifndef CORIOLIS_EXPLICIT
+            assert(0); /* Implicit Coriolis not yet implemented for 3D */
+#endif
+
             const int icx = elem->icx;
             const int icy = elem->icy;
             const int icz = elem->icz;

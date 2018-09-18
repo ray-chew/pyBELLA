@@ -26,10 +26,10 @@
  #define EGDE_VELOCITIES_IN_MUSCL_STEP
  #define SYMMETRIC_ADVECTION
  #define FOURTH_ORDER_ADV_FLUXES
+ #define CORIOLIS_EXPLICIT
  */ 
 #define ADVECTION
 #define NODAL_PRESSURE_GRADIENT
-#define CORIOLIS_EXPLICIT
 
 /* ============================================= 
  Semi-implicit solver options  
@@ -42,6 +42,8 @@
 /* ============================================= 
  Elliptic Solver Options
  ============================================= */
+
+#define NEW_LAP
 
 /* solver options ==============================
  #define SOLVER_1_CR2      ->  Piotr's Conjugate Residual
@@ -79,10 +81,6 @@
 #define DIV_CONTROL_LOCAL          /* if def'd, div is controlled in L_\infty, otherwise in L2    */
 #define P2_FULL_STENCIL 1.0        /* values: 0.0, 1.0;  0.0 = 5/7pt stencil,  1.0=9/27pt stencil */
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
-
-/*
- #define TIME_AVED_OPCOEFFS_2ND
- */
 
 /* TODO: Code cleaning / maintainance
  

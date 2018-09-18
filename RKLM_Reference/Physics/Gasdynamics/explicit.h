@@ -100,7 +100,13 @@ void fullD_explicit_updates(ConsVars* Sol,
                             const double dt,
                             const int RK_stage) ;
 
+#ifdef CORIOLIS_EXPLICIT
+/*------------------------------------------------------------------------------
+ explicit step for the Coriolis effect
+ ------------------------------------------------------------------------------*/
+
 void Explicit_Coriolis(ConsVars *Sol, const ElemSpaceDiscr* elem, const double dt);
+#endif
 
 #endif /* EXPLICIT_H */
 

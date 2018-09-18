@@ -1046,6 +1046,13 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                         
             int i, j, k;
             
+#ifdef CORIOLIS_EXPLICIT
+            /* const double coriolis  = 0.0; */
+#else
+            assert(0); /* Modification of Laplacian for implicit Coriolis not implemented yet */
+            /* const double coriolis  = ud.coriolis_strength[0]; */
+#endif
+
             memset(lap, 0.0, node->nc*sizeof(double));
 
             /*

@@ -709,6 +709,9 @@ void fullD_explicit_updates(ConsVars* Sol,
 
 }
 
+
+#ifdef CORIOLIS_EXPLICIT
+
 /*------------------------------------------------------------------------------
  explicit step for the Coriolis effect
  ------------------------------------------------------------------------------*/
@@ -732,6 +735,7 @@ void Explicit_Coriolis(ConsVars *Sol, const ElemSpaceDiscr* elem, const double d
     double ooopfsqsc = 1.0 / (1.0 + fsqsc);
     double omfsqsc   = 1.0 - fsqsc;
     
+    assert(elem->ndim < 3);
     
     printf("\n\n====================================================");
     printf("\nCoriolis");
@@ -750,6 +754,7 @@ void Explicit_Coriolis(ConsVars *Sol, const ElemSpaceDiscr* elem, const double d
 
     Set_Explicit_Boundary_Data(Sol, elem);
 }
+#endif 
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log: explicit.c,v $

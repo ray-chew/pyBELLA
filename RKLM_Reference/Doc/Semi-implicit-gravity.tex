@@ -124,6 +124,7 @@
 \newcommand{\dz}{\Delta z}
 \newcommand{\chibar}{\overline{\chi}}
 \newcommand{\chitilde}{{\widetilde \chi}}
+\newcommand{\Xtilde}{{\widetilde X}}
 \newcommand{\Thetabar}{\overline{\Theta}}
 \newcommand{\Thetatilde}{{\widetilde \Theta}}
 \newcommand{\pibar}{\overline{\pi}}
@@ -885,7 +886,86 @@ of the advective fluxes. These differ from the corresponding data at time
 level $t^n$ only through the effect of the advection step, so that a consistent
 first order approximation at $t^{n+\half}$ requires us to account for the
 influence of the right hand side $Q$ of \eq{eq:ForcedPAdvection} as well. 
-Specifically,\kleincomment{Oooops, need to very closely monitor what's in the code.}
+Specifically, we include these effects through a linearized implicit Euler
+step. Since both $\rho$ and $P$ are frozen in this split step, the relevant 
+linearized equations may be written as
+%
+\begin{IEEEeqnarray}{rCl}\label{eq:LinearizedNonAdvectiveSystem}
+U_t
+  & = 
+    & - c_p (P\Theta)^* \pi'_x - f V
+      \IEEEyesnumber\IEEEyessubnumber*\\[7pt]
+V_t
+  & = 
+    & - c_p (P\Theta)^* \pi'_y + f U
+      \\[0pt]
+W_t
+  & =
+    & - c_p (P\Theta)^* \pi'_z + g \frac{\Thetatilde}{\Thetabar}
+      \\
+\Thetatilde_t
+  & =
+    & - W\frac{d\Thetabar}{dz}
+      \\
+\left(\frac{\partial P}{\partial \pi}\right)^*\pi'_t
+  & =
+    & - U_x - V_y - W_z
+\end{IEEEeqnarray}
+%
+where we have abbreviated
+%
+\begin{equation}
+(U,V,W,\Xtilde) = (P u, P v, P w, P\chitilde)
+\end{equation}
+%
+and where the coefficient $(P\Theta)^*$ is time independent and prescribed.  
+
+The implicit Euler semi-discretization of \eq{eq:LinearizedNonAdvectiveSystem} 
+in time reads
+%
+\begin{IEEEeqnarray}{rCl}\label{eq:LinearizedNonAdvectiveImplicitEuler}
+U^{n+1}
+  & = 
+    & U^{n} - \Delta t \left( c_p (P\Theta)^* {\pi'}^{n+1}_x + f V^{n+1}\right)
+      \IEEEyesnumber\IEEEyessubnumber*\\[7pt]
+V^{n+1}
+  & = 
+    & V^n - \Delta t \left( c_p (P\Theta)^* {\pi'}^{n+1}_y - f U^{n+1} \right)
+      \\[0pt]
+W^{n+1}
+  & =
+    &  W^n - \Delta t 
+       \left( c_p (P\Theta)^* {\pi'}^{n+1}_z - g \frac{{\Thetatilde}^{n+1}}{\Thetabar} 
+       \right)
+      \\
+{\Thetatilde}^{n+1}
+  & =
+    & {\Thetatilde}^{n} - \Delta t\, W^{n+1}\frac{d\Thetabar}{dz}
+      \\
+\left(\frac{\partial P}{\partial \pi}\right)^* {\pi'}^{n+1}
+  & =
+    & \left(\frac{\partial P}{\partial \pi}\right)^* {\pi'}^{n} 
+    - \Delta t \left( U^{n+1}_x + V^{n+1}_y + W^{n+1}_z \right)\,.
+\end{IEEEeqnarray}
+%
+Straightforward manipulations yield
+%
+\begin{IEEEeqnarray}{rCl}\label{eq:LinearizedNonAdvectiveImplicitEulerSolI}
+U^{n+1} 
+  & =
+    & 
+      \IEEEyesnumber\IEEEyessubnumber*\\
+V^{n+1} 
+  & =
+    & 
+      \\
+W^{n+1} 
+  & =
+    & \frac{W^n + \Delta t\, g {\Thetatilde}^{n}/\Thetabar}{1 + (N\Delta t)^2}
+      - \Delta t \, \frac{c_p (P\Theta)^*}{1 + (N\Delta t)^2} \ {\pi'}^{n+1}_z
+\end{IEEEeqnarray}
+%
+
 %
 \begin{IEEEeqnarray}{rCl}
 (Pu)^{n+\half}_{i+\half,j} 

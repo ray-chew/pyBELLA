@@ -612,12 +612,16 @@ void EnthalpyWeightedLap_bilinear_p(
             const double dx = elem->dx;
             const double dy = elem->dy;
                     
-            const double oodx2     = 1.0 / (dx * dx);
-            const double oody2     = 1.0 / (dy * dy);
-            
-            const double* hplusx   = hplus[0];
-            const double* hplusy   = hplus[1];
-            const double* hc       = hcenter;
+#ifdef NEW_LAP
+            const double oodx    = 1.0 / dx;
+            const double oody    = 1.0 / dy;
+#else
+            const double oodx2   = 1.0 / (dx * dx);
+            const double oody2   = 1.0 / (dy * dy);
+#endif       
+            const double* hplusx = hplus[0];
+            const double* hplusy = hplus[1];
+            const double* hc     = hcenter;
             
             int n_c, n_e, n_ne, n_n, n_nw, n_w, n_sw, n_s, n_se;
             int o_e, o_n, o_w, o_s, ox, oy;
@@ -650,6 +654,27 @@ void EnthalpyWeightedLap_bilinear_p(
                     o_n   = oy + 1;
                     o_s   = oy;
                     
+#ifdef NEW_LAP
+                    double dpdx_e  = oodx * (p[n_e ] - p[n_c ]);
+                    double dpdx_ne = oodx * (p[n_ne] - p[n_n ]);
+                    double dpdx_se = oodx * (p[n_se] - p[n_s ]);
+                    double dpdx_w  = oodx * (p[n_c ] - p[n_w ]);
+                    double dpdx_nw = oodx * (p[n_n ] - p[n_nw]);
+                    double dpdx_sw = oodx * (p[n_s ] - p[n_sw]);
+                    
+                    lap[n]  = oodx * (a * ( hplusx[o_e] * dpdx_e            - hplusx[o_w] * dpdx_w ) 
+                                    + b * ( hplusx[o_e] * (dpdx_ne+dpdx_se) - hplusx[o_w] * (dpdx_nw+dpdx_sw)));
+                    
+                    double dpdy_n  = oody * (p[n_n ] - p[n_c ]);
+                    double dpdy_ne = oody * (p[n_ne] - p[n_e ]);
+                    double dpdy_nw = oody * (p[n_nw] - p[n_w ]);
+                    double dpdy_s  = oody * (p[n_c ] - p[n_s ]);
+                    double dpdy_se = oody * (p[n_e ] - p[n_se]);
+                    double dpdy_sw = oody * (p[n_w ] - p[n_sw]);
+                    
+                    lap[n] += oody * (a * ( hplusy[o_n] * dpdy_n            - hplusy[o_s] * dpdy_s )
+                                    + b * ( hplusy[o_n] * (dpdy_ne+dpdy_nw) - hplusy[o_s] * (dpdy_se+dpdy_sw)));
+#else               
                     lap[n]  = oodx2 * (  a * ( hplusx[o_e] * (p[n_e ] - p[n_c ]) - hplusx[o_w] * (p[n_c ] - p[n_w ]) ) 
                                        + b * ( hplusx[o_e] * ( ( p[n_ne] - p[n_n ] ) + ( p[n_se] - p[n_s ] ) ) 
                                              - hplusx[o_w] * ( ( p[n_n ] - p[n_nw] ) + ( p[n_s ] - p[n_sw] ) )  
@@ -661,6 +686,7 @@ void EnthalpyWeightedLap_bilinear_p(
                                              - hplusy[o_s] * ( ( p[n_e ] - p[n_se] ) + ( p[n_w ] - p[n_sw] ) ) 
                                              )
                                        );
+#endif
                     
                     lap[n] += hc[n] * p[n_c];
                     
@@ -686,6 +712,13 @@ void EnthalpyWeightedLap_bilinear_p(
             const double dy = elem->dy;
             const double dz = elem->dz;
             
+#ifdef CORIOLIS_EXPLICIT
+            /* const double coriolis  = 0.0; */
+#else
+            assert(0); /* Modification of Laplacian for implicit Coriolis not implemented yet */
+            /* const double coriolis  = ud.coriolis_strength[0]; */
+#endif
+
             /* for MG-scaling with elem->scale_factor; see old version of routine */
             
             const double codsq[3] = {1.0/(64.0*dx*dx), 1.0/(64.0*dy*dy), 1.0/(64.0*dz*dz)}; 

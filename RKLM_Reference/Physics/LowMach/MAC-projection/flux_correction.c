@@ -423,9 +423,11 @@ void operator_coefficients(
     const double Gammainv = th.Gammainv;
     const int ndim = elem->ndim;
     
+#ifdef CORIOLIS_EXPLICIT
+    const double coriolis  = 0.0;
+#else
     const double coriolis  = ud.coriolis_strength[0];
-    const double fsqsc     = dt*dt*coriolis*coriolis;
-    const double ooopfsqsc = 1.0 / (1.0 + fsqsc);
+#endif
 
     double nonhydro = ud.nonhydrostasy;
     
@@ -460,6 +462,8 @@ void operator_coefficients(
                     n     = m + i;
                     ic    = n - j;
                     icm   = ic - 1; 
+                    double fsqsc     = dt*dt*coriolis*coriolis;
+                    double ooopfsqsc = 1.0 / (1.0 + fsqsc);
 #if 0
                     hi    = ooopfsqsc * Sol0->rhoY[ic] * Sol0->rhoY[ic] / Sol0->rho[ic]    * Gammainv;   
                     him   = ooopfsqsc * Sol0->rhoY[icm] * Sol0->rhoY[icm] / Sol0->rho[icm] * Gammainv;
@@ -482,7 +486,7 @@ void operator_coefficients(
                 for(j = igy-1; j < ify - igy+1; j++) {
                     m     = n + j;
                     jc    = j * icx + i;
-                    jcm   = jc - icx;          
+                    jcm   = jc - icx;
 #if 0
                     hj    = Sol0->rhoY[jc] * Sol0->rhoY[jc] / Sol0->rho[jc] * Gammainv;
                     hjm   = Sol0->rhoY[jcm] * Sol0->rhoY[jcm] / Sol0->rho[jcm] * Gammainv;
@@ -538,17 +542,20 @@ void operator_coefficients(
             
             int i, j, k, l, m, n, ic, icm, jc, jcm, kc, kcm;
                         
+
             for(k = igz; k < icz - igz; k++) {l = k * ifx*icy;
                 for(j = igy; j < icy - igy; j++) {m = l + j * ifx;
                     for(i = igx; i < ifx - igx; i++) {n = m + i;
                         ic  = k*icx*icy + j*icx + i;
                         icm = ic - 1; 
+                        double fsqsc     = dt*dt*coriolis*coriolis;
+                        double ooopfsqsc = 1.0 / (1.0 + fsqsc);
 #if 0
-                        hi    = (Sol->rhoY[ic] *Sol->rhoY[ic] /Sol->rho[ic] ) * Gammainv;   
-                        him   = (Sol->rhoY[icm]*Sol->rhoY[icm]/Sol->rho[icm]) * Gammainv;
+                        hi    = ooopfsqsc * (Sol->rhoY[ic] *Sol->rhoY[ic] /Sol->rho[ic] ) * Gammainv;   
+                        him   = ooopfsqsc * (Sol->rhoY[icm]*Sol->rhoY[icm]/Sol->rho[icm]) * Gammainv;
 #else
-                        hi    = (Sol0->rhoY[ic] *Sol->rhoY[ic] /Sol->rho[ic] ) * Gammainv;   
-                        him   = (Sol0->rhoY[icm]*Sol->rhoY[icm]/Sol->rho[icm]) * Gammainv;
+                        hi    = ooopfsqsc * (Sol0->rhoY[ic] *Sol->rhoY[ic] /Sol->rho[ic] ) * Gammainv;   
+                        him   = ooopfsqsc * (Sol0->rhoY[icm]*Sol->rhoY[icm]/Sol->rho[icm]) * Gammainv;
 #endif
                         hx[n] = 0.5 * (hi + him);
                         assert(hx[n] > 0.0);
@@ -591,13 +598,15 @@ void operator_coefficients(
                 for(i = igx; i < icx - igx; i++) {m = l + i * ifz;
                     for(k = igz; k < ifz - igz; k++) {n = m + k;
                         kc  = k*icx*icy + j*icx + i;
-                        kcm = kc - icx*icy;          
+                        kcm = kc - icx*icy;
+                        double fsqsc     = dt*dt*coriolis*coriolis;
+                        double ooopfsqsc = 1.0 / (1.0 + fsqsc);
 #if 0                        
-                        hk       = (Sol->rhoY[kc] *Sol->rhoY[kc] /Sol->rho[kc] ) * Gammainv;
-                        hkm      = (Sol->rhoY[kcm]*Sol->rhoY[kcm]/Sol->rho[kcm]) * Gammainv;
+                        hk       = ooopfsqsc * (Sol->rhoY[kc] *Sol->rhoY[kc] /Sol->rho[kc] ) * Gammainv;
+                        hkm      = ooopfsqsc * (Sol->rhoY[kcm]*Sol->rhoY[kcm]/Sol->rho[kcm]) * Gammainv;
 #else
-                        hk       = (Sol0->rhoY[kc] *Sol->rhoY[kc] /Sol->rho[kc] ) * Gammainv;
-                        hkm      = (Sol0->rhoY[kcm]*Sol->rhoY[kcm]/Sol->rho[kcm]) * Gammainv;
+                        hk       = ooopfsqsc * (Sol0->rhoY[kc] *Sol->rhoY[kc] /Sol->rho[kc] ) * Gammainv;
+                        hkm      = ooopfsqsc * (Sol0->rhoY[kcm]*Sol->rhoY[kcm]/Sol->rho[kcm]) * Gammainv;
 #endif                        
                         hz[n] = 0.5 * (hk + hkm);
                         assert(hz[n] > 0.0); 
@@ -608,10 +617,6 @@ void operator_coefficients(
             for(k = igz; k < icz - igz; k++) {l = k*icx*icy;
                 for(j = igy; j < icy - igy; j++) {m = l + j*icx;
                     for(i = igx; i < icx - igx; i++) {n = m + i;
-                        /*
-                        hc[n] = ccenter * pow(0.5*(Sol->rhoY[n]+Sol0->rhoY[n]),cexp);
-                        hc[n] = ccenter * pow(Sol0->rhoY[n],cexp);
-                         */
                         hc[n] = ccenter * pow(Sol->rhoY[n],cexp);
                     }
                 }
