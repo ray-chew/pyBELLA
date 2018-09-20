@@ -122,12 +122,14 @@
 
 \newcommand{\chibar}{\overline{\chi}}
 \newcommand{\chitilde}{{\widetilde \chi}}
+\newcommand{\chiprime}{{\chi'}}
 \newcommand{\Xtilde}{{\widetilde X}}
 \newcommand{\Thetabar}{\overline{\Theta}}
 \newcommand{\Thetatilde}{{\widetilde \Theta}}
 \newcommand{\pibar}{\overline{\pi}}
 \newcommand{\pitilde}{{\widetilde \pi}}
 \newcommand{\pihat}{\widehat{\pi}}
+\newcommand{\piprime}{\pi'}
 \newcommand{\piprimehat}{\widehat{\pi}'}
 
 \newcommand{\Uhat}{\widehat{U}}
@@ -393,13 +395,21 @@ backward Euler step in \eq{eq:EULAGImplicitEulerStep}.
 \subsection{Reformulation of the governing equations}
 \label{ssec:Reformulation}
 
-\cite{BenacchioEtAl2014} suggested a seamless ``blended'' discretization of the 
-compressible and pseudo-incompressible \citep{Durran1989} Euler equations. Following
-\citet{KleinTCFD2009,KleinEtAl2010}, they observed that the pseudo-incompressible
-model is obtained from the compressible equations in \eq{eq:CompressibleEuler} 
-by simply dropping the time derivative of $P = \rho\Theta$ from \eq{eq:EulerPressure}.
-To take advantage of this simple structural model relationship, they introduced 
-the inverse of the potential temperature,
+% ===========================================================================
+
+\subsubsection{Evolution of the primary variables}
+\label{sssec:PrimaryVariables}
+
+The primary unknowns advanced in time by the present scheme are the same as
+in \eq{eq:CompressibleEuler}, i.e., $(\rho, \rho\vu, \rho w, P)$. 
+Introducing a seamless ``blended'' discretization of the compressible and
+pseudo-incompressible \citep{Durran1989} Euler equations and following
+\citep{KleinTCFD2009,KleinEtAl2010}, \citet{BenacchioEtAl2014} observed that 
+the pseudo-incompressible model is obtained from the compressible equations in 
+\eq{eq:CompressibleEuler} by simply dropping the time derivative of 
+$P = \rho\Theta$ from \eq{eq:EulerPressure}. To take advantage of this simple 
+structural model relationship, they introduced the inverse of the potential 
+temperature,
 %
 \begin{equation}
 \chi = 1/\Theta\,,
@@ -444,61 +454,77 @@ P_t
 %
 and this formulation is the basis for the discretization proposed below. 
 
-In formulating a scheme that is implicit with respect to buoyancy and potential temperature
-advection, it is crucial to have separate access to a large-scale mean background stratification
-of potential temperature, or of its inverse, and to its local perturbations. Thus, in analogy
-with \eq{eq:ThetaSplit} we split $\chi$ into
+% ===========================================================================
+
+\subsubsection{Auxilary perturbation variables and evolution equations}
+\label{sssec:AuxPerturbationVariables}
+
+In formulating a scheme that is implicit with respect to pressure as well as
+buoyancy and potential temperature advection, it is crucial to have separate 
+access to the large-scale mean background stratifications of pressure and 
+potential temperature, or of its inverse, and to their local perturbations. 
+Thus, in analogy with \eq{eq:ThetaSplit} we split the Exner pressure $\pi$ 
+and inverse potential temperature $\chi$ into
 %
-\begin{equation}\label{eq:ChiSplit}
-\chi(t,\vx,z) = \chitilde(t,\vx,z) + \chibar(z)
+\begin{equation}\label{eq:PerturbationVariables}
+\pi(t,\vx,z) = \piprime(t,\vx,z) + \pibar(z)
+\qquad\text{and}\qquad
+\chi(t,\vx,z) = \chiprime(t,\vx,z) + \chibar(z)\, ,
 \end{equation}
 % 
-and obtain a perturbation version of the mass balance as
+where the background variable satisfy the hydrostatic relation
 %
-\begin{IEEEeqnarray}{rCrCl}\label{eq:EulerPChiTilde}
-\dss (P\chitilde)_t 
+\begin{equation}\label{eq:BackgroundHydrostatics}
+\frac{d\pibar}{dz} = - \frac{g}{c_p} \chibar
+\qquad\text{with}\qquad
+\pibar(0) = 1\, .
+\end{equation}
+%
+
+Since $P$ can be expressed as a function of $\pi$ alone and as $\pibar$ is
+time independent across a time step, the perturbation Exner pressure satisfies
+%
+\begin{equation}\label{eq:EulerPiPrime}
+\left(\frac{\partial P}{\partial \pi}\right) \piprime_t
+= 
+- \nabla\cdot (P\vv)\,,
+\end{equation}
+%
+which is a direct consequence of \eq{eq:EulerPP}.
+
+In turn, the perturbation form of the mass balance serves as the evolution equation
+for $\chiprime$, i.e.,
+%
+\begin{IEEEeqnarray}{rCrCl}\label{eq:EulerPChiPrime}
+\dss (P\chiprime)_t 
   & + 
-    & \dss \nabla_\parallel\cdot(P\vu\, \chitilde) + (Pw\, \chitilde)_z \hfil
+    & \dss \nabla_\parallel\cdot(P\vu\, \chiprime) + (Pw\, \chiprime)_z \hfil
       & = 
         & \dss -\left[\nabla_\parallel\cdot(P\vu\, \chibar) + (Pw\, \chibar)_z\right]\,.
-        \label{eq:ChiTildeEqn}
+        \label{eq:ChiPrimeEqn}
 \end{IEEEeqnarray}
 %
-In the semi-implicit discretization we will carry $\chitilde$ as an
-auxiliary variable through a time step and utilize the full and perturbation versions
-of the mass balance in \eq{eq:EulerPMass} and \eq{eq:EulerPChiTilde} alternatively 
-depending on the context. At the end of each time step, the variables are synchronized 
-again to match with the computed full density, $\rho$, and internal energy variable, $P$. 
 
-In analogy with the split of the Euler equations into the mass transport and
-forced advection equations in the ``EULAG-approach'' described in section~\ref{ssec:EULAG}, 
-see \eq{eq:RhoBasedAdvection}, we split the augmented equations from \eq{eq:EulerP} and 
-\eq{eq:EulerPChiTilde} into the internal energy equation, \eq{eq:EulerPP}, and a set of 
-forced advection equations
-%
-\begin{equation}\label{eq:ForcedPAdvection}
-(P\Psi)_t + \mathcal{A}(\Psi; P\vv) = Q(\Psi; P)\, ,
-\end{equation}
-%
-where
-%
-\begin{equation}\label{eq:PsiDefinition}
-\Psi = (\chi, \chi\vu, \chi w, \chitilde)\,,
-\end{equation}
-% 
-and where advection is now mediated by the $P$-fluxes,  
-%
-\begin{equation}
-P\vv \equiv (P\vu, Pw)\,.
-\end{equation}
-% 
-
+Auxiliary discretizations of equations \eq{eq:EulerPiPrime} and 
+\eq{eq:EulerPChiPrime} will be used in constructing a numerical scheme
+for the full variable form of the governing equations in \eq{eq:EulerP}
+that is stable for time steps limited only by the advection Courant 
+number. After completion of a time step, the perturbation variables
+are synchronized with the full variables based on the definitions
+in \eq{eq:PerturbationVariables} and \eq{eq:BackgroundHydrostatics}.
 
 % ===========================================================================
 % ===========================================================================
 
 \subsection{Summary of the semi-implicit time discretization}
 \label{ssec:TimeDiscretizationOverview}
+
+
+\klein{Tommaso, please check critically whether you find the birds-eye
+view of the scheme presented in this section useful at all. It might 
+appear a bit odd upon first reading, but be helpful as a reference on
+the overal structure when reading the more detailed stuff further down. 
+But it might also simply be confusing. I am not sure.}
 
 % ===========================================================================
 
@@ -509,7 +535,7 @@ In analogy with EULAG's forward-in-time integration strategy, the first step
 in our scheme is the determination of at least first order accurate advective 
 fluxes $(P\vv)^{n+\half}$ at the half time level 
 $t^{n+\half} = (t^{n} + t^{n+1})/2$. This is achieved by applying standard splitting
-into advective and non-advective terms in \eq{eq:EulerP}, \eq{eq:EulerPChiTilde}. 
+into advective and non-advective terms in \eq{eq:EulerP}, \eq{eq:EulerPChiPrime}. 
 Thus we first advance the advected scalars $\Psi$ from \eq{eq:PsiDefinition} by
 half a time step utilizing advective fluxes computed at the old time level, 
 %
@@ -574,12 +600,8 @@ the vector of specific variables $\Psi$ from \eq{eq:PsiDefinition}.
 \subsubsection{Full time step with given advective fluxes}
 \label{sssec:FullTimeStep}
 
-\klein{I am tempted to propose our scheme looks quite like a variant of EULAG, 
-i.e., like \eq{eq:EULAGTimeIntegrator}, as spelled out in \eq{eq:TimeIntegrator}
-below.  Yet, I have my doubts regarding the 
-treatment of the Exner pressure in the momentum equations. I am not sure the 
-$P$-$\pi$ coupling through the equations of state as currently done in the code
-is correctly captured by the notation in \eq{eq:ImplicitEulerStep}.
+Given the advective fluxes, $(P\vv)^{n+\half}$, the full second order 
+semi-implicit time step of the proposed scheme reads
 %
 \begin{IEEEeqnarray}{rCl}\label{eq:TimeIntegrator}
 \dss (P\Psi)^{*} 
@@ -596,9 +618,20 @@ is correctly captured by the notation in \eq{eq:ImplicitEulerStep}.
       \label{eq:ImplicitEulerStep}
 \end{IEEEeqnarray}
 %
-To sort this out, I guess I need to first spell out the details faithfully along the 
-lines of the code and then go back an try to formulate the scheme in a compact notation.
-}
+For future reference we notice that the two equations without source term
+for $\rho$ and $P$ are not involved in \eq{eq:ExplicitEulerStep} and
+\eq{eq:ImplicitEulerStep}. The updates to $\rho^{n+1}$ and $P^{n+1}$ are
+entirely determined by the advection step in \eq{eq:AdvectionStep}. Therefore,
+the unknowns that effectively get updated in the explicit and implicit Euler 
+steps are $(\vu, w, \chiprime)$ only. Nevertheless, to obtain an appropriate 
+approximation of the Exner pressure field needed in the momentum equation, 
+an auxiliary, redundant discretization of the energy equation 
+\eq{eq:EulerPP} is utilized as described in more detail in 
+section~\ref{ssec:SemiImplicitForcing} below. 
+
+After completion of the steps in \eq{eq:TimeIntegrator} the values of the
+auxiliary variables $(\chiprime, \pi')$ are re-computed from the primary
+unknowns $(\rho, \rho\vu, \rho w, P)$ at the new time level.
 
 
 % ===========================================================================
@@ -732,14 +765,14 @@ calculation scheme in \eq{eq:HalfTimePredictorFluxCorrection},
 \eq{eq:HalfTimePredictorPLinearization}.
 
 Similarly, the split of the full inverse of the potential temperature 
-$\chi = \chitilde + \chibar$ according to \eq{eq:ChiSplit} and the subsequent 
-separate updates of  $\chi$ and $\chitilde$ governed by discrete versions
+$\chi = \chiprime + \chibar$ according to \eq{eq:ChiSplit} and the subsequent 
+separate updates of  $\chi$ and $\chiprime$ governed by discrete versions
 of the full and perturbed mass balances in \eq{eq:chiI} and 
-\eq{eq:EulerPChiTilde}, respectively, require re-synchronization. Thus, 
+\eq{eq:EulerPChiPrime}, respectively, require re-synchronization. Thus, 
 after completion of a time step we let
 %
 \begin{equation}
-\chitilde_{i,j}^{n} = \chi_{i,j}^{n} - \chibar_{j}^{n}\,,
+\chiprime_{i,j}^{n} = \chi_{i,j}^{n} - \chibar_{j}^{n}\,,
 \end{equation}   
 %
 where we have assumed gravity to be aligned with the second coordinate
@@ -888,7 +921,7 @@ sections~\ref{sssec:DivControlledAdvectiveFluxes} and
 Since both $\rho$ and $P$ are frozen in this split step because their 
 evolution equations \eq{eq:EulerPMass} and \eq{eq:EulerPP} do not carry a 
 right hand side, the relevant linearized equations, including the 
-auxiliary potential temperature perturbation equation \eq{eq:EulerPChiTilde} 
+auxiliary potential temperature perturbation equation \eq{eq:EulerPChiPrime} 
 may be written as
 %
 \begin{IEEEeqnarray}{rCl}\label{eq:LinearizedNonAdvectiveSystem}
@@ -916,7 +949,7 @@ W_t
 where we have abbreviated
 %
 \begin{equation}
-(U,V,W,\Xtilde) = (P u, P v, P w, P\chitilde)\,,
+(U,V,W,\Xtilde) = (P u, P v, P w, P\chiprime)\,,
 \end{equation}
 %
 and where the coefficients $(P\Theta)^*$ and $(\partial P/\partial \pi)^*$ 
@@ -2103,7 +2136,7 @@ w^{n+\quart} = \frac{1}{2}\left(w^{n+\half} + w^{n}\right)
 \\
   & \equiv 
     & \frac{1}{1 + \left(\frac{N\dt}{4}\right)^2}\,
-      \left( w^n -\frac{\dt}{4} g\theta\,\chitilde^n
+      \left( w^n -\frac{\dt}{4} g\theta\,\chiprime^n
       \right)
 \end{eqnarray}
 %
@@ -2111,7 +2144,7 @@ With this we find, neglecting the error term for the moment, and with an
 obvious abbreviation for the vertical $\chi$ derivative,
 %
 \begin{eqnarray}
-P_j^{n+\quart*} \left(\chitilde_j^{n+\half} - \chitilde_j^{n}\right)
+P_j^{n+\quart*} \left(\chiprime_j^{n+\half} - \chiprime_j^{n}\right)
   & =  
     & - \frac{\dt}{4}\left((P w)_{j+\half}^{n+\quart} + (P w)_{j-\half}^{n+\quart}\right) 
         \left.\pp{\chi}{z}\right|_j^{n+\quart}     
@@ -2127,8 +2160,8 @@ P_j^{n+\quart*} \left(\chitilde_j^{n+\half} - \chitilde_j^{n}\right)
   &
     & - \left(\frac{N^*_j \dt}{4}\right)^2  
        \left(
-        \frac{P_{j+\half}^{n+\quart} \chitilde_{j+\half}^{n}}{1 + \left(\frac{N_{j+\half}\dt}{4}\right)^2} 
-      + \frac{P_{j-\half}^{n+\quart} \chitilde_{j-\half}^{n}}{1 + \left(\frac{N_{j-\half}\dt}{4}\right)^2}
+        \frac{P_{j+\half}^{n+\quart} \chiprime_{j+\half}^{n}}{1 + \left(\frac{N_{j+\half}\dt}{4}\right)^2} 
+      + \frac{P_{j-\half}^{n+\quart} \chiprime_{j-\half}^{n}}{1 + \left(\frac{N_{j-\half}\dt}{4}\right)^2}
         \right)  
 \end{eqnarray}
 %
@@ -2139,18 +2172,18 @@ where
 \end{equation}
 %
 and where, on the left hand side, we have replace the $\chi$-difference by
-the $\chitilde$-difference by adding a zero.
+the $\chiprime$-difference by adding a zero.
 
 Thus, what we obtain is
 %
 \begin{eqnarray}
-\chitilde_j^{n+\half} 
+\chiprime_j^{n+\half} 
   & =  
-    & \chitilde_j^{n} 
+    & \chiprime_j^{n} 
       - \frac{\left(\frac{N^*_j \dt}{4}\right)^2}{P_j^{n+\quart*}}  
         \left(
-        \frac{P_{j+\half}^{n+\quart} \chitilde_{j+\half}^{n}}{1 + \left(\frac{N_{j+\half}\dt}{4}\right)^2} 
-      + \frac{P_{j-\half}^{n+\quart} \chitilde_{j-\half}^{n}}{1 + \left(\frac{N_{j-\half}\dt}{4}\right)^2}
+        \frac{P_{j+\half}^{n+\quart} \chiprime_{j+\half}^{n}}{1 + \left(\frac{N_{j+\half}\dt}{4}\right)^2} 
+      + \frac{P_{j-\half}^{n+\quart} \chiprime_{j-\half}^{n}}{1 + \left(\frac{N_{j-\half}\dt}{4}\right)^2}
         \right)  
       \\ 
   &
@@ -2170,16 +2203,16 @@ Of interest is the limit behavior as $\dt\to\infty$ with everything
 else fixed. What we obtain is
 %
 \begin{equation}
-\chitilde_j^{n+\half} \to  \chitilde_j^{n} - 2 \chitilde_j^{n*}
+\chiprime_j^{n+\half} \to  \chiprime_j^{n} - 2 \chiprime_j^{n*}
 \end{equation}
 %
 where
 %
 \begin{equation}
-\chitilde_j^{n*} 
+\chiprime_j^{n*} 
 = \frac{1}{2}\frac{N^2_{j*}}{P_j^{n+\quart*}}
-  \left(\frac{ P_{j+\half}^{n+\quart}}{N^2_{j+\half}}\chitilde^n_{j+\half}
-      + \frac{P_{j-\half}^{n+\quart}}{N^2_{j-\half}}\chitilde^n_{j-\half}
+  \left(\frac{ P_{j+\half}^{n+\quart}}{N^2_{j+\half}}\chiprime^n_{j+\half}
+      + \frac{P_{j-\half}^{n+\quart}}{N^2_{j-\half}}\chiprime^n_{j-\half}
   \right)\, .
 \end{equation}
 %
@@ -2370,15 +2403,15 @@ or equivalently, for differentiable solutions, as a transport equation
 %
 which shows that $\chi = 1/\Theta$ is purely advected. 
 The equations in \eq{eq:PsincI} are then recast, using \eq{eq:chiI} and
-\eq{eq:chiII} and splitting $\chi(t,\vx,z) = \chitilde(t,\vx,z) + \chibar(z)$, 
+\eq{eq:chiII} and splitting $\chi(t,\vx,z) = \chiprime(t,\vx,z) + \chibar(z)$, 
 and introducing the blending parameters $\rbeta$ and $\balpha$ for 
 hydrostasy and pseudo-incompressibility, respectively,  
 %
 \begin{equation}\label{eq:PsincII}
 \begin{array}{rcrcl}
-\dss (P\chitilde)_t 
+\dss (P\chiprime)_t 
   & + 
-    & \dss \nabla_\parallel\cdot(P\vu\, \chitilde) + (Pw\, \chitilde)_z
+    & \dss \nabla_\parallel\cdot(P\vu\, \chiprime) + (Pw\, \chiprime)_z
       & = 
         & \dss -\left[\nabla_\parallel\cdot(P\vu\, \chibar) + (Pw\, \chibar)_z\right]
           \\[10pt]
