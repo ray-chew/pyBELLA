@@ -74,7 +74,7 @@
  #define P1_ALTERNATIVE_STENCIL_WEIGHT 0.0     value for standard five-point Laplacian
 */
 #define PROJECTION1 1              /* switch for first projection should be on "1" normally       */
-#define P1_ALTERNATIVE_STENCIL_WEIGHT 0.125 
+#define P1_ALTERNATIVE_STENCIL_WEIGHT 0.125
 
 /* Second projection options */
 #define PROJECTION2 1              /* switch for second projection should be on "1" normally      */
