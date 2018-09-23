@@ -262,6 +262,13 @@ void cell_pressure_to_nodal_pressure(
                                      const NodeSpaceDiscr* node,
                                      const double weight);
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
+void reset_rhoY(ConsVars *Sol, 
+                const ConsVars *Sol0, 
+                const ElemSpaceDiscr *elem);
+
 #endif /* EOS_H */
 
 

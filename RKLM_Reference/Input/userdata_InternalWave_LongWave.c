@@ -24,7 +24,7 @@
 double molly(double x);
 
 /* horizontal stretch for S&K94 IGWs: planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0; */
-static double scalefactor = 20.0;   
+static double scalefactor = 160.0;   
 
 void User_Data_init(User_Data* ud) {
     
@@ -36,7 +36,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Earth */
     double grav     = 9.81;             /* gravitational acceleration [m/s^2]    */
-    double omega    = 1.0*0.0001;       /* Coriolis parameter [1/s]              */
+    double omega    = 0.0*0.0001;       /* Coriolis parameter [1/s]              */
                                         /* sin(0.5*PI) * 2.0 * 0.00007272205217; */
     
     /* thermodynamics and chemistry */
@@ -129,8 +129,8 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = SI_MIDPT; /* this code version has only one option */
     ud->CFL                    = 0.9; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 0.25*scalefactor*30.0 / ud->t_ref;
-    ud->dtfixed                = 0.25*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed0               = (12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed                = (12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
     
     set_time_integrator_parameters(ud);
     
@@ -164,7 +164,7 @@ void User_Data_init(User_Data* ud) {
     ud->second_projection_local_precision = tol;  /* 1.e-05 should be enough */
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
-    ud->initial_projection                = CORRECT;
+    ud->initial_projection                = WRONG; /* WRONG;  CORRECT; */
     
     /* numerics parameters */
     ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -214,7 +214,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const double v0    = 0.0;
     const double w0    = 0.0;
     const double delth = 0.01 / ud.T_ref;                    /* pot. temp. perturbation amplitude; standard:  0.01 / ud.T_ref */
-    const double xc    = -1.0*scalefactor*60.0e+03/ud.h_ref; /* initial position of center of pot temp perturbation */
+    const double xc    = -1.0*scalefactor*50.0e+03/ud.h_ref; /* initial position of center of pot temp perturbation */
     const double a     = scalefactor*5.0e+03/ud.h_ref;       /* characteristic width of the witch of Agnesi type mollifier */
     
     const int icx = elem->icx;

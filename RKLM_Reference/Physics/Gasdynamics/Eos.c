@@ -780,6 +780,28 @@ void cell_pressure_to_nodal_pressure(
 }
 
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
+
+void reset_rhoY(ConsVars *Sol, 
+                const ConsVars *Sol0, 
+                const ElemSpaceDiscr *elem)
+{
+    extern User_Data ud;
+    
+    for (int ic=0; ic<elem->nc; ic++) {
+        Sol->rho[ic]  *= Sol0->rhoY[ic]/Sol->rhoY[ic];  
+        Sol->rhou[ic] *= Sol0->rhoY[ic]/Sol->rhoY[ic];  
+        Sol->rhov[ic] *= Sol0->rhoY[ic]/Sol->rhoY[ic];  
+        Sol->rhow[ic] *= Sol0->rhoY[ic]/Sol->rhoY[ic];  
+        for (int isp=0; isp<ud.nspec; isp++) {
+            Sol->rhoX[isp][ic] *= Sol0->rhoY[ic]/Sol->rhoY[ic];  
+        }
+    }
+}
+
+
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log: Eos.c,v $
  Revision 1.2  1998/03/07 09:56:43  nicola

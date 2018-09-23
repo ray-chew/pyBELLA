@@ -13,10 +13,10 @@ modelstr = 'comp';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
 
-%test_case = 'Equatorial-Long-Wave';
-test_case = 'Internal-Wave-Long-Wave';
-%test_case = 'Internal-Wave-Strong-Strat';
 %test_case = 'Skamarock-Klemp-Internal-Wave';
+%test_case = 'Internal-Wave-Long-Wave';
+test_case = 'Equatorial-Long-Wave';
+%test_case = 'Internal-Wave-Strong-Strat';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
@@ -53,7 +53,7 @@ dk   = 1;
 if strcmp(test_case, 'Equatorial-Long-Wave')
     scalefactor = 2.0;
     ncx = 300; 
-    ncy = 20;  
+    ncy = 10;  
     %ncx = 600; 
     %ncy = 80;  
     L   = 8*3000.0 * scalefactor;  % 
@@ -62,13 +62,13 @@ if strcmp(test_case, 'Equatorial-Long-Wave')
     aspect = [L/H/3 1 1];
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Internal-Wave-Long-Wave')
-    scalefactor = 2.0;
+    scalefactor = 20.0;
     ncx = 300; 
     ncy = 10;  
     %ncx = 600; 
     %ncy = 80;  
-    L   = 3000.0 * scalefactor;  % 
-    x0  = 0.0*L;
+    L   = 300.0 * scalefactor;  % 
+    x0  = 0.0;
     H   = 10.0;  %
     aspect = [L/H/3 1 1];
     velosc = 100;  % velocity unit of RKLM code
@@ -86,9 +86,9 @@ elseif strcmp(test_case, 'Skamarock-Klemp-Internal-Wave')
     ncx = 300; 
     ncy = 10;  
     L   = 300.0 * scalefactor;  % 
-    x0  = 0.5*L;
+    x0  = 0.0;
     H   = 10.0;  %
-    aspect = [16 1 1];
+    aspect = [L/H/3 1 1];
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Acoustic-Wave')
     scalefactor = 1.0;
@@ -164,7 +164,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy]; rhoY_diff = 1;
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
+%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
@@ -329,6 +329,7 @@ for k = kmin:dk:kmax
         end
                 
         set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
+        axis tight;
         if title_true
             title(strcat(titlestr,kstr));
         end

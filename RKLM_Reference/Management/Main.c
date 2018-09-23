@@ -79,6 +79,7 @@ int main( void )
        that come simply from the divergence approximation on the nodal grid.
      */
     if (ud.initial_projection == CORRECT) {
+        assert(0);  /* MAKE SURE THE TIME STEP SIZE PARAMETERS ARE OK IN THE FOLLOWING CALLS!! */
         euler_backward_non_advective_expl_part(Sol, mpv, elem, 5.0);
         euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, 10.0);
     }
@@ -133,6 +134,7 @@ int main( void )
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
 #ifdef ADVECTION
             advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
+            // reset_rhoY(Sol, Sol0, elem);
 #endif
             /* divergence-controlled advective fluxes at the half time level */
             euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt);            
