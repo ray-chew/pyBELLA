@@ -584,21 +584,22 @@ void synchronize_variables(MPV* mpv,
     const int icy = elem->icy;
     const int icz = elem->icz; 
     
-    for(int k = igz; k < icz - igz; k++) {int l = k * icx * icy;
-		for(int j = igy; j < icy - igy; j++) {int m = l + j * icx;
-			for(int i = igx; i < icx - igx; i++) {int n = m + i;
-                double p2bg = mpv->HydroState->p20[j];
-                mpv->p2_cells[n] = scalefac * pow(Sol->rhoY[n],th.gm1) - p2bg;
-			}
-		}
-	}
+    if (ud.is_compressible) {
+        for(int k = igz; k < icz - igz; k++) {int l = k * icx * icy;
+            for(int j = igy; j < icy - igy; j++) {int m = l + j * icx;
+                for(int i = igx; i < icx - igx; i++) {int n = m + i;
+                    double p2bg = mpv->HydroState->p20[j];
+                    mpv->p2_cells[n] = scalefac * pow(Sol->rhoY[n],th.gm1) - p2bg;
+                }
+            }
+        }
+    }
     
     reset_Y_perturbation(Sol, (const MPV*)mpv, elem);
 
     Set_Explicit_Boundary_Data(Sol, elem);
     
     cell_pressure_to_nodal_pressure(mpv, elem, node, 1.0);
-
 }
 
 /*------------------------------------------------------------------------------

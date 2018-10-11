@@ -170,9 +170,8 @@ int main( void )
              Explicit_Coriolis(Sol, elem, 0.5*dt);  
 #endif
             
-            if (ud.is_compressible) {
-                synchronize_variables(mpv, Sol, elem, node);
-            }
+            synchronize_variables(mpv, Sol, elem, node);
+
                         
             if (ud.absorber) {
                 Absorber(Sol, (const ElemSpaceDiscr*)elem, (const double)t, (const double)dt); 
