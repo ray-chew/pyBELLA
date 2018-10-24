@@ -85,7 +85,6 @@
 /* 
 #define P2_FULL_CELLS_ON_BDRY
 */
-#define P2_FULL_CELLS_ON_BDRY
 
 /* TODO: Code cleaning / maintainance
  
