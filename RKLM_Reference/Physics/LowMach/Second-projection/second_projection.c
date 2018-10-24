@@ -89,7 +89,7 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
 
 /* ========================================================================== */
 
-#define OUTPUT_RHS 1
+#define OUTPUT_RHS 0
 #if OUTPUT_RHS
 static int rhs_output_count = 0;
 #endif

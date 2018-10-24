@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		9A21BF821DA58470006A6F34 /* libmfhdf.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A21BF811DA58470006A6F34 /* libmfhdf.dylib */; };
 		9A21BF841DA5847F006A6F34 /* libdf.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A21BF831DA5847F006A6F34 /* libdf.dylib */; };
-		9A7A55AC2180CCA300446950 /* userdata_InternalWave_LongWave.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A7A55AB2180CCA300446950 /* userdata_InternalWave_LongWave.c */; };
+		9A7A55AE2180DC4300446950 /* userdata_AcousticWave.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A7A55AD2180DC4300446950 /* userdata_AcousticWave.c */; };
 		9A8840B3214A9D1A00FC83CB /* flux_correction.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A8840B2214A9D1A00FC83CB /* flux_correction.c */; };
 		9A8840B6214A9D5000FC83CB /* second_projection.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A8840B4214A9D4F00FC83CB /* second_projection.c */; };
 		9AA6E68B214C14D9008A9B8D /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 9AA6E68A214C14D9008A9B8D /* Makefile */; };
@@ -55,7 +55,7 @@
 		9A1ED37C206D0C9200D622A9 /* PrimaryAndDualGrid.eps */ = {isa = PBXFileReference; lastKnownFileType = file; path = PrimaryAndDualGrid.eps; sourceTree = "<group>"; };
 		9A21BF811DA58470006A6F34 /* libmfhdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmfhdf.dylib; path = ../../../../../opt/local/lib/libmfhdf.dylib; sourceTree = "<group>"; };
 		9A21BF831DA5847F006A6F34 /* libdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libdf.dylib; path = ../../../../../opt/local/lib/libdf.dylib; sourceTree = "<group>"; };
-		9A7A55AB2180CCA300446950 /* userdata_InternalWave_LongWave.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_InternalWave_LongWave.c; sourceTree = "<group>"; };
+		9A7A55AD2180DC4300446950 /* userdata_AcousticWave.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_AcousticWave.c; sourceTree = "<group>"; };
 		9A8840AE2148EB2700FC83CB /* RandomNotes.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = RandomNotes.txt; sourceTree = "<group>"; };
 		9A8840B2214A9D1A00FC83CB /* flux_correction.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = flux_correction.c; sourceTree = "<group>"; };
 		9A8840B4214A9D4F00FC83CB /* second_projection.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = second_projection.c; sourceTree = "<group>"; };
@@ -232,7 +232,7 @@
 		9AC4F9221DA3F06F00AED455 /* Input */ = {
 			isa = PBXGroup;
 			children = (
-				9A7A55AB2180CCA300446950 /* userdata_InternalWave_LongWave.c */,
+				9A7A55AD2180DC4300446950 /* userdata_AcousticWave.c */,
 				9AC4F9311DA3F06F00AED455 /* userdata.h */,
 				9AC4F9231DA3F06F00AED455 /* boundary.c */,
 				9AC4F9241DA3F06F00AED455 /* boundary.h */,
@@ -458,11 +458,11 @@
 				9A8840B6214A9D5000FC83CB /* second_projection.c in Sources */,
 				9AC4F9931DA3F06F00AED455 /* Main.c in Sources */,
 				9AC4F9A31DA3F06F00AED455 /* thermodynamic.c in Sources */,
+				9A7A55AE2180DC4300446950 /* userdata_AcousticWave.c in Sources */,
 				9AC4F9A01DA3F06F00AED455 /* numerical_flux.c in Sources */,
 				9AC4F9A21DA3F06F00AED455 /* recovery.c in Sources */,
 				9AC4F99E1DA3F06F00AED455 /* Gasdynamics.c in Sources */,
 				9AC4F99F1DA3F06F00AED455 /* limiter.c in Sources */,
-				9A7A55AC2180CCA300446950 /* userdata_InternalWave_LongWave.c in Sources */,
 				9AC4F99B1DA3F06F00AED455 /* Eos.c in Sources */,
 				9AC4F9A81DA3F06F00AED455 /* laplacian_cells.c in Sources */,
 				9AC4F9AC1DA3F06F00AED455 /* laplacian_nodes.c in Sources */,
