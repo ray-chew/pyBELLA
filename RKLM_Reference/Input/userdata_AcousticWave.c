@@ -79,7 +79,7 @@ void User_Data_init(User_Data* ud) {
     
     /* geo-stuff */
     for(i=0; i<3; i++) {
-        ud->gravity_strength[i]  = 0.0;   /* corresponds to  M^2 / Fr^2  =  g href / R Tref */
+        ud->gravity_strength[i]  = 0.0;  /* corresponds to  M^2 / Fr^2  =  g href / R Tref */
         ud->coriolis_strength[i] = 0.0;
     }
     ud->gravity_strength[1]  = grav * h_ref / (R_gas * T_ref);
@@ -102,8 +102,8 @@ void User_Data_init(User_Data* ud) {
     /* flow domain; all lengths in units of  href  */
     ud->xmin = -15.0 * scalefactor;
     ud->xmax =  15.0 * scalefactor;
-    ud->ymin =   0.0;
-    ud->ymax =   1.0;
+    ud->ymin =   0.0 * scalefactor;
+    ud->ymax =   1.0 * scalefactor;
     ud->zmin = - 1.0;
     ud->zmax =   1.0;
     
@@ -135,8 +135,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx =  150+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
+    ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
+    ud->iny =  10+1; /* 321; 161;  81;  65; 41;  */
     ud->inz =      1;
     
     /* explicit predictor step */
@@ -157,16 +157,17 @@ void User_Data_init(User_Data* ud) {
     ud->ncache = 75; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
     
     /* linear solver-stuff */
-    double tol                            = 1.e-10;
+    double tol                            = 1.e-8;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
     ud->second_projection_local_precision = tol;  /* 1.e-05 should be enough */
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
-    
     ud->initial_projection                = CORRECT;
      
+    ud->synchronize_nodal_pressure        = WRONG;
+    
     /* numerics parameters */
     ud->eps_Machine = sqrt(DBL_EPSILON);
     
@@ -175,8 +176,8 @@ void User_Data_init(User_Data* ud) {
     /* ================================================================================== */
     
     double t_period = sqrt(ud->Msq)*(ud->xmax-ud->xmin)/sqrt(ud->gamm);
-    ud->tout[0] = 1.0*t_period;
-    ud->tout[1] = 2.0*t_period;
+    ud->tout[0] = 16.0*t_period;
+    ud->tout[1] = -2.0*t_period;
     ud->tout[2] = 3.0*t_period;
     ud->tout[3] = 4.0*t_period;
     ud->tout[4] = 5.0*t_period;
@@ -187,7 +188,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 1000000;
+    ud->write_file_period = 10;
     ud->file_format = HDF;
     
     {
@@ -254,7 +255,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             w   = w0;
             
             /* p    = mpv->HydroState->p0[j] * (1.0 + del * molly(x) / (1.0 + (x-xc)*(x-xc) / (a*a))); */         
-            p    = mpv->HydroState->p0[j] * (1.0 + del * sin(wn*x));            
+            p    = mpv->HydroState->p0[j] * (1.0 + del * sin(wn*x));       
             rhoY = pow(p,th.gamminv);
             rho  = rhoY;
             c    = sqrt(th.gamm * p / rho);
@@ -308,8 +309,6 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
 
     set_ghostcells_p2(mpv->p2_cells, elem, elem->igx);
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
-
-
 }
 
 /* ================================================================================== */

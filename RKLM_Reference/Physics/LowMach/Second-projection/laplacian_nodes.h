@@ -10,6 +10,13 @@
 #include "kgrid.h"
 #include "mpv.h"
 
+
+void rescale_bdry_node_values(
+                              double* rhs,  
+                              const NodeSpaceDiscr* node, 
+                              const ElemSpaceDiscr* elem,
+                              const double factor);
+
 double precon_prepare(
                     const NodeSpaceDiscr* node,
                     const ElemSpaceDiscr* elem,

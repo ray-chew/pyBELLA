@@ -564,7 +564,8 @@ void dt_average(ConsVars *Sol,
 void synchronize_variables(MPV* mpv,
                            ConsVars* Sol,
                            const ElemSpaceDiscr* elem, 
-                           const NodeSpaceDiscr* node) {
+                           const NodeSpaceDiscr* node, 
+                           enum Boolean synchronize_nodal_pressure) {
 	
     /*
      Here we recompute the cell-centered Exner pressure from the 
@@ -595,11 +596,15 @@ void synchronize_variables(MPV* mpv,
         }
     }
     
+    set_ghostcells_p2(mpv->p2_cells, elem, elem->igx);
+
     reset_Y_perturbation(Sol, (const MPV*)mpv, elem);
 
     Set_Explicit_Boundary_Data(Sol, elem);
     
-    cell_pressure_to_nodal_pressure(mpv, elem, node, 1.0);
+    if (synchronize_nodal_pressure == CORRECT) {
+        cell_pressure_to_nodal_pressure(mpv, elem, node, 1.0);
+    }
 }
 
 /*------------------------------------------------------------------------------

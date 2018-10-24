@@ -170,7 +170,12 @@ int main( void )
              Explicit_Coriolis(Sol, elem, 0.5*dt);  
 #endif
             
-            synchronize_variables(mpv, Sol, elem, node);
+#if 0
+            if((ud.write_file == ON && ((step+1) % ud.write_file_period  == 0)) || output_switch) 
+                putout(Sol, ud.file_name, "Sol", elem, node, 1);
+#endif
+            
+            synchronize_variables(mpv, Sol, elem, node, ud.synchronize_nodal_pressure);
 
                         
             if (ud.absorber) {
@@ -183,10 +188,10 @@ int main( void )
             
             t += dt;
             step++;
-                    
-			if((ud.write_file == ON && (step % ud.write_file_period  == 0)) || output_switch) 
-				putout(Sol, ud.file_name, "Sol", elem, node, 1);
-			
+#if 1
+            if((ud.write_file == ON && (step % ud.write_file_period  == 0)) || output_switch) 
+                putout(Sol, ud.file_name, "Sol", elem, node, 1);
+#endif        
             if((ud.write_stdout == ON && step % ud.write_stdout_period == 0) || output_switch) {
                 printf("\n############################################################################################");
                 printf("\nstep %d done,  t=%f,  dt=%f,  cfl=%f, cfl_ac=%f, cfl_adv=%f", step, t, dt, dt_info.cfl, dt_info.cfl_ac, dt_info.cfl_adv);

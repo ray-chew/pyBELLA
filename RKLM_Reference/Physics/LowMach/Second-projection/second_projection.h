@@ -47,6 +47,14 @@ void pressure_gradient_forces(
                               const ElemSpaceDiscr *elem, 
                               const NodeSpaceDiscr *node);
 
+void catch_rigid_walls(
+                       double* rhs,  
+                       const NodeSpaceDiscr* node, 
+                       const ElemSpaceDiscr* elem,
+                       const double factor);
+
+
+
 #endif /* SECOND_PROJECTION_H */
 
 

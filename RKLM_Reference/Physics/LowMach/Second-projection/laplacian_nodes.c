@@ -23,6 +23,81 @@ static double *diag;
 static enum Boolean tridiago_is_allocated = WRONG;
 static double *tridiago[3];
 
+
+/* ========================================================================== */
+
+void rescale_bdry_node_values(
+                              double* rhs,  
+                              const NodeSpaceDiscr* node, 
+                              const ElemSpaceDiscr* elem,
+                              const double factor) {
+    
+    /* nodal contol volumes at the boundaries are by factors of
+     2, 4, 8, smaller than those within the domain. This is accounted
+     for in the present routine for rigid wall boundary conditions.
+     */
+    extern User_Data ud;
+    
+    int i, j, k, l, m, l0, l1, m0, m1, n0, n1;
+    
+    const int igx = node->igx;
+    const int icx = node->icx;
+    const int igy = node->igy;
+    const int icy = node->icy;
+    const int igz = node->igz;
+    const int icz = node->icz;
+    const int icxicy = icx * icy;
+    
+    for(k = igz; k < icz - igz; k++) {l = k * icxicy; 
+        for(j = igy; j < icy - igy; j++) {m = l + j * icx; 
+            n0 = m + igx;
+            rhs[n0] *= factor;
+        }
+    }
+    
+    for(k = igz; k < icz - igz; k++) {l = k * icxicy; 
+        for(j = igy; j < icy - igy; j++) {m = l + j * icx; 
+            n1 = m + icx-igx-1;
+            rhs[n1] *= factor;
+        }
+    }
+    
+    if(node->ndim > 1){
+        for(k = igz; k < icz - igz; k++) {l = k * icxicy; 
+            m0 = l + igy * icx;
+            for(i = igx; i < icx - igx; i++) {
+                n0 = m0 + i;
+                rhs[n0] *= factor;
+            }
+        }
+        for(k = igz; k < icz - igz; k++) {l = k * icxicy; 
+            m1 = l + (icy-igy-1) * icx;
+            for(i = igx; i < icx - igx; i++) {
+                n1 = m1 + i;
+                rhs[n1] *= factor;
+            }
+        }
+    }
+    
+    if(node->ndim > 2){
+        l0 = igz * icxicy;
+        for(j = igy; j < icy - igy; j++) {
+            m0 = l0 + j * icx; 
+            for(i = igx; i < icx - igx; i++) {
+                n0 = m0 + i;
+                rhs[n0] *= factor;
+            }
+        }
+        l1 = (icz-igz-1) * icxicy; 
+        for(j = igy; j < icy - igy; j++) {
+            m1 = l1 + j * icx; 
+            for(i = igx; i < icx - igx; i++) {
+                n1 = m1 + i;
+                rhs[n1] *= factor;
+            }
+        }
+    }
+}
 /* ========================================================================== */
 
 double precon_diag_prepare(
@@ -898,11 +973,18 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             const double dx = node->dx;
             const double dy = node->dy;
             
+#ifdef P2_FULL_CELLS_ON_BDRY
+            int nodc = 1;
+#else
+            int nodc = 0;
+#endif
+
+            
 #if 1
             const double* hplusx   = hplus[0];
             const double* hplusy   = hplus[1];
             const double* hcenter  = wcenter;
-                        
+            
             const double oodx2 = 0.5 / (dx * dx);
             const double oody2 = 0.5 / (dy * dy);
             const double nine_pt = (0.25 * (1.0 + P2_DIAGONAL_FIVE_POINT)) * P2_FULL_STENCIL;
@@ -914,11 +996,11 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             
             for(nn=0; nn<node->nc; nn++) lap[nn] = 0.0;
             
-            for(j = igye; j < icye - igye; j++) {
+            for(j = igye-nodc; j < icye-igye+nodc; j++) {
                 me   = j * icxe;
                 mn   = j * icxn;
                 
-                for(i = igxe; i < icxe - igxe; i++) {
+                for(i = igxe-nodc; i < icxe-igxe+nodc; i++) {
                     ne       = me + i;
                     
                     nn       = mn + i;
@@ -944,20 +1026,20 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             }
 #else
             const double* hcenter  = wcenter;
-
+            
             const double oodx2[2] = {1.0/(dx*dx), 1.0/(dy*dy)};
             const int dis[2][2]   = {{1, icxn}, {icxn, 1}};
-
+            
             const double a0 = 1.0/4.0;
             const double a1 = 1.0/4.0;
             
             for(int nn=0; nn<node->nc; nn++) lap[nn] = 0.0;
-
-            for(int j = igye; j < icye - igye; j++) {
+            
+            for(int j = igye-nodc; j < icye-igye+nodc; j++) {
                 int me   = j * icxe;
                 int mn   = j * icxn;
                 
-                for(int i = igxe; i < icxe - igxe; i++) {
+                for(int i = igxe-nodc; i < icxe-igxe+nodc; i++) {
                     int ne = me + i;
                     int nn = mn + i;
                     
@@ -987,7 +1069,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                     nme = nn             + dis[0][1];
                     npw = nn + dis[0][0];
                     npe = nn + dis[0][0] + dis[0][1];
-
+                    
                     lap[nmw] += hc*p[nmw];
                     lap[nme] += hc*p[nme];
                     lap[npw] += hc*p[npw];
@@ -995,11 +1077,17 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                 }
             }
 #endif
+            
+#ifdef P2_FULL_CELLS_ON_BDRY
+            rescale_bdry_node_values(lap, node, elem, 0.5);
+#endif
+
             if (x_periodic) {
                 for(int j=igyn; j<icyn-igyn; j++) {
                     int nleft  = j * icxn + igxn;
                     int nright = j * icxn + icxn - igxn - 1;
                     
+                    /* lap[nleft]  += (1.0-nodc)*lap[nright]; */
                     lap[nleft]  += lap[nright];
                     lap[nright]  = 0.0;
                 }
@@ -1010,6 +1098,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                     int nbottom  = i + igyn * icxn;
                     int ntop     = i + (icyn - igyn - 1) * icxn;
                     
+                    /* lap[nbottom]  += (1.0-nodc)*lap[ntop]; */
                     lap[nbottom]  += lap[ntop];
                     lap[ntop]      = 0.0;
                 }

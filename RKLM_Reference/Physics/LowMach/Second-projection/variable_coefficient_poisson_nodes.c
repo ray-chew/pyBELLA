@@ -26,6 +26,10 @@
 #include "userdata.h"
 #include "math_own.h"
 
+#ifdef P2_FULL_CELLS_ON_BDRY
+#include "boundary.h"
+#endif
+
 #define DEBUG_OUTPUT 
 #ifdef DEBUG_OUTPUT
 #include "userdata.h"
@@ -83,6 +87,13 @@ void set_periodic_data(double *p,
 
 /* ========================================================================== */
 
+#define OUTPUT_LAP 1
+#if OUTPUT_LAP
+static int lap_output_count = 0;
+#endif
+
+
+
 static double BiCGSTAB_MG_nodes(
 								BiCGSTABData* data,
 								const NodeSpaceDiscr* node,
@@ -131,9 +142,28 @@ static double BiCGSTAB_MG_nodes(
     
     double precon_inv_scale = precon_prepare(node, elem, hplus, hcenter, x_periodic, y_periodic, z_periodic);
     
-    set_periodic_data(solution_io,	node, x_periodic, y_periodic, z_periodic);
-    
+#ifdef P2_FULL_CELLS_ON_BDRY
+    set_ghostnodes_p2(solution_io, node, 2);       
+#else
+    set_periodic_data(solution_io, node, x_periodic, y_periodic, z_periodic);
+#endif
+
     EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, solution_io, hplus, hcenter, x_periodic, y_periodic, z_periodic, v_j);
+
+#if OUTPUT_LAP
+    FILE *plapfile = NULL;
+    char fn[120], fieldname[90];
+    if (lap_output_count < 10) {
+        sprintf(fn, "%s/lap_nodes/lap_nodes_00%d.hdf", ud.file_name, lap_output_count);
+    } else if(lap_output_count < 100) {
+        sprintf(fn, "%s/lap_nodes/lap_nodes_0%d.hdf", ud.file_name, lap_output_count);
+    } else {
+        sprintf(fn, "%s/lap_nodes/lap_nodes_%d.hdf", ud.file_name, lap_output_count);
+    }
+    sprintf(fieldname, "lap_nodes");    
+    WriteHDF(plapfile, node->icx, node->icy, node->icz, node->ndim, v_j, fn, fieldname);
+    lap_output_count++;
+#endif
 
     precon_invert(rhs_prec, rhs, node, x_periodic, y_periodic, z_periodic);
     
@@ -195,9 +225,26 @@ static double BiCGSTAB_MG_nodes(
 			}
 		}
 		
-        set_periodic_data(p_j,	node, x_periodic, y_periodic, z_periodic);
-        
+#ifdef P2_FULL_CELLS_ON_BDRY
+        set_ghostnodes_p2(p_j, node, 2);       
+#else
+        set_periodic_data(p_j, node, x_periodic, y_periodic, z_periodic);
+#endif
+
         EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, p_j, hplus, hcenter, x_periodic, y_periodic, z_periodic, v_j);
+
+#if OUTPUT_LAP
+        if (lap_output_count < 10) {
+            sprintf(fn, "%s/lap_nodes/lap_nodes_00%d.hdf", ud.file_name, lap_output_count);
+        } else if(lap_output_count < 100) {
+            sprintf(fn, "%s/lap_nodes/lap_nodes_0%d.hdf", ud.file_name, lap_output_count);
+        } else {
+            sprintf(fn, "%s/lap_nodes/lap_nodes_%d.hdf", ud.file_name, lap_output_count);
+        }
+        sprintf(fieldname, "lap_nodes");    
+        WriteHDF(plapfile, node->icx, node->icy, node->icz, node->ndim, v_j, fn, fieldname);
+        lap_output_count++;
+#endif
 
 		sigma = 0.0; 
 		for(k = igz; k < kmax; k++) {l = k * icx * icy;
@@ -218,9 +265,26 @@ static double BiCGSTAB_MG_nodes(
 			}
 		}
 		
-        set_periodic_data(s_j,	node, x_periodic, y_periodic, z_periodic);
+#ifdef P2_FULL_CELLS_ON_BDRY
+        set_ghostnodes_p2(s_j, node, 2);       
+#else
+        set_periodic_data(s_j, node, x_periodic, y_periodic, z_periodic);
+#endif
 
         EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, s_j, hplus, hcenter, x_periodic, y_periodic, z_periodic, t_j);
+
+#if OUTPUT_LAP
+        if (lap_output_count < 10) {
+            sprintf(fn, "%s/lap_nodes/lap_nodes_00%d.hdf", ud.file_name, lap_output_count);
+        } else if(lap_output_count < 100) {
+            sprintf(fn, "%s/lap_nodes/lap_nodes_0%d.hdf", ud.file_name, lap_output_count);
+        } else {
+            sprintf(fn, "%s/lap_nodes/lap_nodes_%d.hdf", ud.file_name, lap_output_count);
+        }
+        sprintf(fieldname, "lap_nodes");    
+        WriteHDF(plapfile, node->icx, node->icy, node->icz, node->ndim, t_j, fn, fieldname);
+        lap_output_count++;
+#endif
 
 		omega = 0.0; 
 		tmp = 0.0; 
@@ -261,7 +325,11 @@ static double BiCGSTAB_MG_nodes(
 		cnt++;
 		
 		if(cnt % 100 == 0) printf(" iter = %d, residual = %e\n", cnt, tmp);  
-        set_periodic_data(solution_io,	node, x_periodic, y_periodic, z_periodic);
+#ifdef P2_FULL_CELLS_ON_BDRY
+        set_ghostnodes_p2(solution_io, node, 2);       
+#else
+        set_periodic_data(solution_io, node, x_periodic, y_periodic, z_periodic);
+#endif
 	}
         
     // assert(cnt == 23);

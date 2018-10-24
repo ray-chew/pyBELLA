@@ -82,6 +82,11 @@
 #define P2_FULL_STENCIL 1.0        /* values: 0.0, 1.0;  0.0 = 5/7pt stencil,  1.0=9/27pt stencil */
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
 
+/* 
+#define P2_FULL_CELLS_ON_BDRY
+*/
+#define P2_FULL_CELLS_ON_BDRY
+
 /* TODO: Code cleaning / maintainance
  
  1) Make all appearances of "extern ..." disappear except for those of

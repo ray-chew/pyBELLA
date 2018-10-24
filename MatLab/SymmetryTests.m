@@ -1,6 +1,6 @@
-function SymmetryTests(v,n)
+function SymmetryTests(v,n,aspect)
 
-aspect = [1 1 1];
+%aspect = [1 1 1];
 
 vt = transpose(v);
 

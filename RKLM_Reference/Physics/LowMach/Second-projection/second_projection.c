@@ -89,7 +89,7 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
 
 /* ========================================================================== */
 
-#define OUTPUT_RHS 0
+#define OUTPUT_RHS 1
 #if OUTPUT_RHS
 static int rhs_output_count = 0;
 #endif
@@ -142,8 +142,8 @@ void euler_backward_non_advective_impl_part(
     
     /* KEEP_OLD_POISSON_SOLUTIONS */
     for(ii=0; ii<nc; ii++){
-        /* p2[ii] = mpv->p2_nodes[ii]; */
-        p2[ii]  = 0.0;
+        p2[ii] = mpv->p2_nodes[ii]; 
+        /* p2[ii]  = 0.0;  */
         rhs[ii] = 0.0;
     }
 
@@ -165,7 +165,7 @@ void euler_backward_non_advective_impl_part(
         assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);         
     }
     
-#if 0
+#if OUTPUT_RHS
     FILE *prhsfile = NULL;
     char fn[120], fieldname[90];
     if (rhs_output_count < 10) {
@@ -591,6 +591,14 @@ static void rhs_from_p_old(
                            const MPV* mpv,
                            const double* hcenter) {
         
+    extern double *W0;
+    extern enum Boolean W0_in_use;
+
+    assert(W0_in_use == WRONG);
+    W0_in_use = CORRECT;
+
+    double *rhs_hh = W0;
+    
     const int ndim = node->ndim;
     
     const int igxe = elem->igx;
@@ -609,6 +617,10 @@ static void rhs_from_p_old(
         }
         case 2: {
                                     
+            for (int ic=0; ic<node->nc; ic++) {
+                rhs_hh[ic] = 0.0;
+            }
+            
             /* old time level entry from pressure time derivative */
             for(j = igye; j < icye - igye; j++) {
                 const int me = j * icxe;
@@ -620,13 +632,17 @@ static void rhs_from_p_old(
                     const int n1    = n  + 1;
                     const int n1icx = n1 + icxn;
 
-                    rhs[n]     += 0.25*hcenter[ne]*mpv->p2_nodes[n];
-                    rhs[n1]    += 0.25*hcenter[ne]*mpv->p2_nodes[n1];
-                    rhs[n1icx] += 0.25*hcenter[ne]*mpv->p2_nodes[n1icx];
-                    rhs[nicx]  += 0.25*hcenter[ne]*mpv->p2_nodes[nicx];
+                    rhs_hh[n]     += 0.25*hcenter[ne]*mpv->p2_nodes[n];
+                    rhs_hh[n1]    += 0.25*hcenter[ne]*mpv->p2_nodes[n1];
+                    rhs_hh[n1icx] += 0.25*hcenter[ne]*mpv->p2_nodes[n1icx];
+                    rhs_hh[nicx]  += 0.25*hcenter[ne]*mpv->p2_nodes[nicx];
                 }
             } 
             
+            for (int ic=0; ic<node->nc; ic++) {
+                rhs[ic] += rhs_hh[ic];
+            }
+
             break;
         }
             
@@ -635,6 +651,8 @@ static void rhs_from_p_old(
             break;
         default: ERROR("ndim not in {1, 2, 3}");
     }    
+    
+    W0_in_use = WRONG;
 }
 
 /* ========================================================================== */
@@ -758,6 +776,91 @@ static void	catch_periodic_directions(
 
 /* ========================================================================== */
 
+void catch_rigid_walls(
+                       double* rhs,  
+                       const NodeSpaceDiscr* node, 
+                       const ElemSpaceDiscr* elem,
+                       const double factor) {
+    
+    /* nodal contol volumes at the boundaries are by factors of
+     2, 4, 8, smaller than those within the domain. This is accounted
+     for in the present routine for rigid wall boundary conditions.
+     */
+    extern User_Data ud;
+    
+    int i, j, k, l, m, l0, l1, m0, m1, n0, n1;
+    
+    const int igx = node->igx;
+    const int icx = node->icx;
+    const int igy = node->igy;
+    const int icy = node->icy;
+    const int igz = node->igz;
+    const int icz = node->icz;
+    const int icxicy = icx * icy;
+    
+    if(ud.bdrytype_min[0] == WALL){
+        for(k = igz; k < icz - igz; k++) {l = k * icxicy; 
+            for(j = igy; j < icy - igy; j++) {m = l + j * icx; 
+                n0 = m + igx;
+                rhs[n0] *= factor;
+            }
+        }
+    }
+
+    if(ud.bdrytype_max[0] == WALL){
+        for(k = igz; k < icz - igz; k++) {l = k * icxicy; 
+            for(j = igy; j < icy - igy; j++) {m = l + j * icx; 
+                n1 = m + icx-igx-1;
+                rhs[n1] *= factor;
+            }
+        }
+    }
+
+    if(node->ndim > 1){
+        if(ud.bdrytype_min[1] == WALL){
+            for(k = igz; k < icz - igz; k++) {l = k * icxicy; 
+                m0 = l + igy * icx;
+                for(i = igx; i < icx - igx; i++) {
+                    n0 = m0 + i;
+                    rhs[n0] *= factor;
+                }
+            }
+        }
+        if(ud.bdrytype_max[1] == WALL){
+            for(k = igz; k < icz - igz; k++) {l = k * icxicy; 
+                m1 = l + (icy-igy-1) * icx;
+                for(i = igx; i < icx - igx; i++) {
+                    n1 = m1 + i;
+                    rhs[n1] *= factor;
+                }
+            }
+        }
+    }
+    if(node->ndim > 2){
+        if(ud.bdrytype_min[2] == WALL){
+            l0 = igz * icxicy;
+            for(j = igy; j < icy - igy; j++) {
+                m0 = l0 + j * icx; 
+                for(i = igx; i < icx - igx; i++) {
+                    n0 = m0 + i;
+                    rhs[n0] *= factor;
+                }
+            }
+        }
+        if(ud.bdrytype_max[2] == WALL){
+            l1 = (icz-igz-1) * icxicy; 
+            for(j = igy; j < icy - igy; j++) {
+                m1 = l1 + j * icx; 
+                for(i = igx; i < icx - igx; i++) {
+                    n1 = m1 + i;
+                    rhs[n1] *= factor;
+                }
+            }
+        }
+    }
+}
+/* ========================================================================== */
+
 static void operator_coefficients_nodes(
 										double* hplus[3], 
 										double* hcenter,
@@ -808,15 +911,23 @@ static void operator_coefficients_nodes(
             
             int i, j, m, n;
             
-            for(i=0; i<elem->nc; i++) hc[i] = hplusx[i] = hplusy[i] = 0.0;
-						                        
-			for(j = igy; j < icy - igy; j++) {
-                m = j * icx;
-				
-                double strat = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j]) \
-                                    /(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
 
-                for(i = igx; i < icx - igx; i++) {
+#ifdef P2_FULL_CELLS_ON_BDRY
+            int nodc = 1;
+#else
+            int nodc = 0;
+#endif
+            
+            
+            for(i=0; i<elem->nc; i++) hc[i] = hplusx[i] = hplusy[i] = 0.0;
+            
+            for(j = igy-nodc; j < icy-igy+nodc; j++) {
+                m = j * icx;
+                
+                double strat = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j]) \
+                /(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
+                
+                for(i = igx-nodc; i < icx-igx+nodc; i++) {
                     n = m + i;     
                     double Y     = Sol->rhoY[n]/Sol->rho[n]; 
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
@@ -824,18 +935,19 @@ static void operator_coefficients_nodes(
                     double fimp  = 1.0 / (nonhydro + fsqsc);
                     double Nsqsc = dt*dt * (g/Msq) * strat;                    
                     double gimp  = 1.0 / (nonhydro + Nsqsc);
-                                                            
+                    
                     hplusx[n]    = coeff * fimp;
                     hplusy[n]    = coeff * gimp;
-				}
-			}
-									
-			for(j = igy; j < icy - igy; j++) {m = j * icx;
-				for(i = igx; i < icx - igx; i++) {n = m + i;
+                }
+            }
+            
+            for(j = igy-nodc; j < icy-igy+nodc; j++) {m = j * icx;
+                for(i = igx-nodc; i < icx-igx+nodc; i++) {n = m + i;
                     hc[n] = ccenter * pow(Sol->rhoY[n],cexp);
-				}
-			}
-			break;
+                }
+            }
+            
+            break;
 		}
 		case 3: {			
 			const int igx = elem->igx;
@@ -1169,6 +1281,7 @@ void euler_forward_non_advective(ConsVars* Sol,
 
     div_max = divergence_nodes(div, elem, node, (const ConsVars*)Sol, mpv, bdry);
     catch_periodic_directions(div, node, elem, x_periodic, y_periodic, z_periodic);
+    catch_rigid_walls(div, node, elem, 2.0);
 
 #if 0
     div_max = 0.0;

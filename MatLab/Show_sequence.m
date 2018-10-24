@@ -7,18 +7,18 @@
 extrafigno = 52;
 
 %modelstr = '';
-%modelstr = 'comp';
-modelstr = 'psinc' ;  
+modelstr = 'comp';
+%modelstr = 'psinc' ;  
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
 
-test_case = 'Internal-Wave-Tests';
+%test_case = 'Internal-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
 %test_case = 'Travelling-Vortex';
-%test_case = 'Acoustic-Wave';
+test_case = 'Acoustic-Wave';
 
 showmode = 1;
 separate_signs = 1;
@@ -32,7 +32,8 @@ show_increments = 0;
 symmetry = 0;        % in {0,1}
 symmetrytest = 0;
 showdummycells = 0;
-showslice = 0;
+showslice = 1;
+diff_rel_to_bottom = 0;
 
 % th0 = -0.0015/300;
 % dth = 5e-4/300;
@@ -63,7 +64,7 @@ if strcmp(test_case, 'Internal-Wave-Tests')
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Acoustic-Wave')
     scalefactor = 1.0;
-    ncx = 150; 
+    ncx = 300; 
     ncy = 10;  
     L   = 300.0 * scalefactor;  % 
     x0  = 0.5*L;
@@ -135,7 +136,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy]; rhoY_diff = 1;
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
+%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
@@ -154,10 +155,10 @@ varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = 
 %varstr = 'dpdim';  folderstr = 'dpdime'; titlestr = 'dp [Pa]'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhs_cells';  folderstr = 'rhs_cells'; titlestr = 'rhs_c'; ndummy = 2; arraysize = [ncx ncy];
 
-%varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
+varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'rhs_nodes';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n';    ndummy = 2; arraysize = [nnx nny];
-%varstr = 'lap_nodes';  folderstr = 'lap_nodes'; titlestr = 'lap_n';    ndummy = 2; arraysize = [nnx nny nnz];
+%varstr = 'lap_nodes';  folderstr = 'lap_nodes'; titlestr = 'lap_n';    ndummy = 2; arraysize = [nnx nny];
 
 %varstr = 'advflux_x';  folderstr = 'advflux'; titlestr = 'advflux_x'; ndummy = 2; arraysize = [ncx+1 ncy]; symmetry = -1*symmetry;
 %varstr = 'advflux_y';  folderstr = 'advflux'; titlestr = 'advflux_y'; ndummy = 2; arraysize = [ncy+1 ncx]; symmetry = -1*symmetry; transp = 1;
@@ -176,7 +177,7 @@ end
 %set(texthandle, 'String', titlestr, 'FontSize', 14, 'FontName', 'Optima');
 
 if showslice
-    figure(extrafigno)
+figure3 = figure('Position',[scrsz(4)/2 2*scrsz(4)/3 scrsz(4)/2 1*scrsz(4)/3]);
 end
 
 for k = kmin:dk:kmax
@@ -262,6 +263,9 @@ for k = kmin:dk:kmax
             elseif (strcmp(varstr, 'u') || strcmp(varstr, 'v') || strcmp(varstr, 'w'))
                 contourf(x,z,th*velosc,no_of_lines,'LineColor',linecolor);
             else
+                if diff_rel_to_bottom
+                    th = th-th(3,:);
+                end
                 contourf(x,z,th,no_of_lines,'LineColor',linecolor);
             end
             colormap Jet
@@ -333,12 +337,12 @@ for k = kmin:dk:kmax
     end
          
     if symmetrytest == 1
-        SymmetryTests(transpose(th),55);
+        SymmetryTests(transpose(th),55,[4 1 1]);
         figure(figure1)
     end
     
     if showslice
-        figure(extrafigno)
+        figure(figure3)
         hold
         plot(th(5,:))
         hold
