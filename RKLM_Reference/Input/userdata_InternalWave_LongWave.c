@@ -256,12 +256,9 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
         for(j = 0; j < elem->icy; j++) {
             x     = elem->x[i];
             y     = elem->y[j];
-#if 0
-            Y[j]  = stratification(y)  + delth * sin(PI*y);
-#else
             Y[j]  = stratification(y)  + delth * molly(x) * sin(PI*y)  / (1.0 + (x-xc)*(x-xc) / (a*a));
-#endif
-        }        
+        }  
+        
         for(j = 0; j < node->icy; j++) {
             xn    = node->x[i];
             yn    = node->y[j];
