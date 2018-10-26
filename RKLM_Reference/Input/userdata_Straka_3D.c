@@ -20,36 +20,6 @@
 #include "memory.h"
 #include "Hydrostatics.h"
 
-/*
- Monitor configurations:
- 
- OpSplit:
- compressible case
- unless otherwise listed, I tested options at fixed:
- CFL           0.96,
- grid          100x100,
- t_end         4.0;
- tol           1.0e-09,
- limiters      NONE,
- ud.p_extrapol 1.0
- ccenterweight 2.0
- HYDROSTATES_USING_dp2 off
- Diagonal Five Point in second projection
- ud->p_flux_correction = CORRECT
- ud->p_average = WRONG
- DP_AVERAGE off in ProjectionType.h
- 
- Results:
- -- CFL 0.96                         -> very nice
- 
- PREV:   VORTEX
- NEXT:   1D ACOUSTIC WAVE
- 
- */
-
-
-
-
 void User_Data_init(User_Data* ud) {
 	
 	int i;
