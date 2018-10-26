@@ -95,7 +95,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Low Mach */
     ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
-    ud->is_compressible   =  1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_compressible   =  0;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep =  0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
 	
@@ -178,7 +178,7 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  333; /* (ud->inx+3); */
 	
     /* linear solver-stuff */
-    double tol                            = 1.e-10;
+    double tol                            = 1.e-6;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -207,7 +207,7 @@ void User_Data_init(User_Data* ud) {
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 200000;
+	ud->write_file_period = 10000000;
 	ud->file_format = HDF;
     
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
@@ -287,7 +287,7 @@ void Sol_initial(ConsVars* Sol,
             y     = elem->y[j];
             r     = sqrt((x-x0)*(x-x0)/(rx*rx) + (y-y0)*(y-y0)/(ry*ry));
             dtemp = delT * (r < 1.0 ? 0.5 * (1.0 + cos(PI*r)) : 0.0);
-            Y[j]  = stratification(y) - dtemp;
+            Y[j]  = stratification(y) - dtemp/(ud.Msq*mpv->HydroState->p20[j]);
         }  
         
         for(int j = 0; j < node->icy; j++) {
@@ -296,8 +296,11 @@ void Sol_initial(ConsVars* Sol,
             yn    = node->y[j];
             rn    = sqrt((xn-x0)*(xn-x0)/(rx*rx) + (yn-y0)*(yn-y0)/(ry*ry));
             dtemp = delT * (rn < 1.0 ? 0.5 * (1.0 + cos(PI*rn)) : 0.0);
-            Yn[j] = stratification(yn) - dtemp;
-        }        
+            Yn[j] = stratification(yn) - dtemp/(ud.Msq*mpv->HydroState_n->p20[j]);
+        }    
+        
+        /* determine hydrostatic pressure distributions column-wise (lateral relation still neglected) */
+        Hydrostatics_Column(HySt, HyStn, Y, Yn, elem, node);
 
         /* initialization of field variables */
         for(int j = igy; j < icy - igy + 1; j++) {
