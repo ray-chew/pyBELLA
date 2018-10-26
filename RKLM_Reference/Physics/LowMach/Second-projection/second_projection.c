@@ -403,10 +403,8 @@ static double divergence_nodes(
     }
 #else
     extern ConsVars* flux[3];
-    extern double* W0;
-    extern enum Boolean W0_in_use;
-    assert(W0_in_use == WRONG);
-    W0_in_use = CORRECT;
+    
+    double* W1 = (double*)malloc(node->nc*sizeof(double));
     
     switch(ndim) {
         case 1: {
@@ -422,8 +420,13 @@ static double divergence_nodes(
             const int igye = elem->igy;
             const int icye = elem->icy;
             
+            const double dx      = node->dx;
+            const double dy      = node->dy;
+            const double oodx    = 1.0 / dx;
+            const double oody    = 1.0 / dy;
+            
             double Y, rhsmax;
-            double *rhs_cell = W0;
+            double *rhs_cell = W1;
             
             /* build nodal divergence from cell-centered divergence averaged to nodes */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
@@ -486,12 +489,20 @@ static double divergence_nodes(
             const int igze = elem->igz;
             const int icze = elem->icz;
             
+            const double dx = node->dx;
+            const double dy = node->dy;
+            const double dz = node->dz;
+            
+            const double oodx = 1.0 / dx;
+            const double oody = 1.0 / dy;
+            const double oodz = 1.0 / dz;
+
             const int dixn = 1;
             const int diyn = icxn;
             const int dizn = icxn*icyn;
             
             double Y, rhsmax;
-            double *rhs_cell = W0;
+            double *rhs_cell = W1;
             
             /* build nodal divergence from cell-centered divergence averaged to nodes */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
@@ -565,8 +576,8 @@ static double divergence_nodes(
         }
         default: ERROR("ndim not in {1, 2, 3}");
     }  
-    
-    W0_in_use = WRONG;
+  
+    free(W1);
 #endif
     
 #if 0

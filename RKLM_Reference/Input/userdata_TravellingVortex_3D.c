@@ -5,9 +5,9 @@
 #include <float.h>
 #include <stdlib.h>
 
-#include "enumerator.h"
 #include "Common.h"
 #include "userdata.h"
+#include "enumerator.h"
 #include "time_discretization.h"
 #include "error.h"
 #include "variable.h"
@@ -19,10 +19,6 @@
 #include "boundary.h"
 #include "memory.h"
 #include "Hydrostatics.h"
-
-double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma);
-
-double rho_function(double psi);
 
 void User_Data_init(User_Data* ud) {
 	
@@ -50,7 +46,6 @@ void User_Data_init(User_Data* ud) {
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
 
-    /* reference stratification as (buoyancy frequency)^2 */
     double Nsq_ref  = 0.0;                   /* [1/s^2]           */
 
     ud->h_ref       = h_ref;
@@ -70,7 +65,7 @@ void User_Data_init(User_Data* ud) {
 
 	/* Low Mach */
     ud->is_nonhydrostatic = 1;
-    ud->is_compressible = 0;
+    ud->is_compressible   = 1;
     ud->acoustic_timestep =  0; /* 0;  1; */
 	ud->Msq =  u_ref*u_ref / (R_gas*T_ref); 
 	
@@ -161,6 +156,8 @@ void User_Data_init(User_Data* ud) {
     ud->second_projection_local_precision = tol;  /* 1.e-05 should be enough */
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
+    
+    ud->synchronize_nodal_pressure        = WRONG;
             
 	/* numerics parameters */
 	ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -179,6 +176,8 @@ void User_Data_init(User_Data* ud) {
 	ud->write_file = ON;
 	ud->write_file_period = 40;
 	ud->file_format = HDF;
+
+    ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
 
     {
         char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
@@ -208,6 +207,7 @@ void Sol_initial(ConsVars* Sol,
     
     const double rotdir = -1.0;  /* the origin of the March 24 - trouble ... ;^) */
     
+    const double p0      = 1.0;
     const double rho0    = 0.5;  /* 0.5 standard;  1.0 stable configuration; */
     const double del_rho = 0.5;  /* 0.5 standard; -0.5 stable configuration; 0.0; for homentropic */
     const double R0      = 0.4;
@@ -227,6 +227,13 @@ void Sol_initial(ConsVars* Sol,
     const int igx  = elem->igx;
 	const int igy  = elem->igy;
 	const int igz  = elem->igz;
+
+    const int icxn  = node->icx;
+    const int icyn  = node->icy;
+    const int iczn  = node->icz;
+    const int igxn  = node->igx;
+    const int igyn  = node->igy;
+    const int igzn  = node->igz;
 
 	int i, j, k, l, m, n;
 	double x, y, z;
@@ -267,14 +274,7 @@ void Sol_initial(ConsVars* Sol,
                 theta   = stratification(y);
                 rho     =  (r < R0 ? (rho0 + del_rho*pow( 1-(r/R0)*(r/R0) , 6)) : rho0);
                 T       = T_from_p_rho(p_hydro,rho);
-                
-                Sol->rho[n]  = rho;
-                Sol->rhou[n] = rho * u;
-                Sol->rhov[n] = rho * v;
-                Sol->rhow[n] = rho * w;
-                Sol->rhoe[n] = rhoe(rho, u, v, w, p_hydro);
-                Sol->rhoY[n] = rhoY;
-                                 
+                                                 
                 if ( r/R0 < 1.0 ) {
                     
                     int ii;
@@ -319,75 +319,94 @@ void Sol_initial(ConsVars* Sol,
 
                 /* Exner pressure */
                 mpv->p2_cells[n]  = th.Gamma*fac*fac*mpv->p2_cells[n]/mpv->HydroState->rhoY0[j];
+
+                Sol->rho[n]  = rho;
+                Sol->rhou[n] = rho * u;
+                Sol->rhov[n] = rho * v;
+                Sol->rhow[n] = rho * w;
+                
+                if (ud.is_compressible) {
+                    double p     = p0 + ud.Msq*mpv->p2_cells[n];
+                    Sol->rhoY[n] = pow(p,th.gamminv);
+                    Sol->rhoe[n] = rhoe(rho, u, v, w, p);
+                } else {                    
+                    Sol->rhoe[n] = rhoe(rho, u, v, w, p_hydro);
+                    Sol->rhoY[n] = rhoY;
+                }
             }            
 		}                
 	}  
     set_ghostcells_p2(mpv->p2_cells, elem, igx);
 
-    
-    /* TODO:  Wipe this out after testing */
-    /* Testing the Laplacian 
-    for(k = 0; k < icz; k++) {
-        l = k * icx * icy; 
-        z = elem->z[k];
+    /* nodal pressure */
+    for(k = igzn; k < iczn - igzn; k++) {
+        l = k * icxn * icyn; 
+        z = node->z[k];
         
-        for(j = 0; j < icy; j++) {
-            m = l + j * icx;
-            y = elem->y[j];
+        for(j = igyn; j < icyn - igyn; j++) {
+            m = l + j * icxn;
+            y = node->y[j];
             
             ycc = (fabs(y-yc) < fabs(y-ycm) ? (fabs(y-yc) < fabs(y-ycm) ? yc : ycp) : ycm);
             
-            for(i = 0; i < icx; i++) {
+            for(i = igxn; i < icxn - igxn; i++) {
                 n = m + i;                
-                x       = elem->x[i];
+                x       = node->x[i];
                 xcc = (fabs(x-xc) < fabs(x-xcm) ? (fabs(x-xc) < fabs(x-xcm) ? xc : xcp) : xcm);
                 
-                r = sqrt((x-xcc)*(x-xcc) + (y-ycc)*(y-ycc));
-                // r =(x-xcc);
-                mpv->p2_cells[n] = pow(r/R0,2);
-            }
-        }
+                r       = sqrt((x-xcc)*(x-xcc) + (y-ycc)*(y-ycc));
+                
+                if ( r/R0 < 1.0 ) {
+                    
+                    int ii;
+                    double coe[25];
+                    
+                    coe[0]  =     1.0 / 12.0;
+                    coe[1]  = -  12.0 / 13.0;
+                    coe[2]  =     9.0 /  2.0;
+                    coe[3]  = - 184.0 / 15.0;
+                    coe[4]  =   609.0 / 32.0;
+                    coe[5]  = - 222.0 / 17.0;
+                    coe[6]  = -  38.0 /  9.0; 
+                    coe[7]  =    54.0 / 19.0;
+                    coe[8]  =   783.0 / 20.0;
+                    coe[9]  = - 558.0 /  7.0;
+                    coe[10] =  1053.0 / 22.0;
+                    coe[11] =  1014.0 / 23.0;
+                    coe[12] = -1473.0 / 16.0;
+                    coe[13] =   204.0 /  5.0;
+                    coe[14] =   510.0 / 13.0;
+                    coe[15] = -1564.0 / 27.0;
+                    coe[16] =   153.0 /  8.0;
+                    coe[17] =   450.0 / 29.0;
+                    coe[18] = - 269.0 / 15.0; /* Kadioglu et al.: 259; Papke: 269 */
+                    coe[19] =   174.0 / 31.0;
+                    coe[20] =    57.0 / 32.0;
+                    coe[21] = -  74.0 / 33.0;
+                    coe[22] =    15.0 / 17.0;
+                    coe[23] = -   6.0 / 35.0;
+                    coe[24] =     1.0 / 72.0;
+                    
+                    mpv->p2_nodes[n] = 0.0;
+                    
+                    for (ii = 0; ii < 25; ii++)
+                    {
+                        mpv->p2_nodes[n] += coe[ii] * (pow(r/R0 ,12+ii) - 1.0) * rotdir * rotdir;
+                    }
+                }
+                else {
+                    mpv->p2_nodes[n] = 0.0;
+                }
+                
+                /* Exner pressure */
+                mpv->p2_nodes[n]  = th.Gamma*fac*fac*mpv->p2_nodes[n]/mpv->HydroState->rhoY0[j];
+            }            
+        }                
     }
-     */
     
-    for (int nn=0; nn<node->nc; nn++) {
-        mpv->p2_nodes[nn] = 0.0;
-    }
 }
 
 /* ================================================================================== */
-
-double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma){
-	return pow((pow(p0,Gamma) + Gamma*S0*Msq*u_theta*u_theta*(1.0 - pow((1.0-r),5.0)*(5.0*r+1.0))/30.0), (1.0/Gamma));
-}
-
-/* ================================================================================== */
-
-double rho_function(double psi){
-	
-	double rhomax = 1.0;
-	double percent = 0.0;
-	double delta   = 0.1;
-	
-	double smooth, cosine, sgncos;
-	
-	cosine = cos(PI*(fabs(psi) - (0.5 - 0.5*delta)) / delta);
-	sgncos = SIGNnull(cosine);
-	
-	smooth = 0.5*(1.0 - sgncos*sqrt(sqrt(sqrt(sgncos*cosine))) );
-	
-	/* return(1.0 - 0.2 * (psi*psi)); */
-	/* return(rhomax * (1.0 - percent * (fabs(psi) < 0.5 ? 0.0 : 1.0 )) ); */
-	return(rhomax * (1.0 - percent * (fabs(psi) < 0.5 - 0.5*delta ?  
-									  0.0 : 
-									  (fabs(psi) > 0.5 + 0.5*delta ? 
-                                       1.0 : 
-                                       smooth
-									   ) 
-									  )
-					 ) 
-		   ); 
-}
 
 double stratification(
 					  double y) {

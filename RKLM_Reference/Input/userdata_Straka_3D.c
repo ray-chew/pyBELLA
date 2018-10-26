@@ -46,7 +46,7 @@ void User_Data_init(User_Data* ud) {
 	double u_ref = h_ref/t_ref;      /* Strouhal No == 1 always assumed */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
 
-    double Nsq   = grav*1.3e-05;     /* [] */
+    double Nsq_ref  = grav*1.3e-05;     /* [] */
     
     ud->h_ref       = h_ref;
     ud->t_ref       = t_ref;
@@ -54,7 +54,7 @@ void User_Data_init(User_Data* ud) {
     ud->p_ref       = p_ref;
     ud->u_ref       = u_ref;
     ud->rho_ref     = rho_ref;
-    ud->Nsq_ref     = Nsq;
+    ud->Nsq_ref     = Nsq_ref;
     ud->g_ref       = grav;
     ud->gamm        = gamma;
     ud->Rg_over_Rv  = R_gas/R_vap;
@@ -133,7 +133,7 @@ void User_Data_init(User_Data* ud) {
 	
 	/* explicit predictor step */
 	/* Recovery */
-	ud->recovery_order = SECOND;
+	ud->recovery_order        = SECOND;
 	ud->limiter_type_scalars  = NONE; 
 	ud->limiter_type_velocity = NONE; 
     /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */

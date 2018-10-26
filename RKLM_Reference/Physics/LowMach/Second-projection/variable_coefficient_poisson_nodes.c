@@ -87,7 +87,7 @@ void set_periodic_data(double *p,
 
 /* ========================================================================== */
 
-#define OUTPUT_LAP 1
+#define OUTPUT_LAP 0
 #if OUTPUT_LAP
 static int lap_output_count = 0;
 #endif
