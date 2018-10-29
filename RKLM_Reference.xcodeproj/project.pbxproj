@@ -56,6 +56,7 @@
 		9A21BF811DA58470006A6F34 /* libmfhdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmfhdf.dylib; path = ../../../../../opt/local/lib/libmfhdf.dylib; sourceTree = "<group>"; };
 		9A21BF831DA5847F006A6F34 /* libdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libdf.dylib; path = ../../../../../opt/local/lib/libdf.dylib; sourceTree = "<group>"; };
 		9A7A55B12182EBE600446950 /* userdata_TravellingVortex_3D.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_TravellingVortex_3D.c; sourceTree = "<group>"; };
+		9A7A55E521873A4400446950 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		9A8840AE2148EB2700FC83CB /* RandomNotes.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = RandomNotes.txt; sourceTree = "<group>"; };
 		9A8840B2214A9D1A00FC83CB /* flux_correction.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = flux_correction.c; sourceTree = "<group>"; };
 		9A8840B4214A9D4F00FC83CB /* second_projection.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = second_projection.c; sourceTree = "<group>"; };
@@ -208,6 +209,7 @@
 		9AC4F9161DA3F06F00AED455 /* Doc */ = {
 			isa = PBXGroup;
 			children = (
+				9A7A55E521873A4400446950 /* .gitignore */,
 				9A8840AE2148EB2700FC83CB /* RandomNotes.txt */,
 				9AC4F9171DA3F06F00AED455 /* Bibliography.bib */,
 				9AC4F9181DA3F06F00AED455 /* FluidMechanics.bst */,
