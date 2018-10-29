@@ -1,0 +1,9 @@
+#Ignore generated auxiliary tex files and pdfs
+*.aux
+*.bbl
+*.blg
+*.dvi
+*.log
+*.pdf
+*.tex.backup
+*.ps
