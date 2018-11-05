@@ -943,7 +943,7 @@ static void operator_coefficients_nodes(
                     double Y     = Sol->rhoY[n]/Sol->rho[n]; 
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
                     double fsqsc = dt*dt * coriolis*coriolis;
-                    double fimp  = 1.0 / (nonhydro + fsqsc);
+                    double fimp  = 1.0 / (1.0 + fsqsc);
                     double Nsqsc = dt*dt * (g/Msq) * strat;                    
                     double gimp  = 1.0 / (nonhydro + Nsqsc);
                     
@@ -996,7 +996,7 @@ static void operator_coefficients_nodes(
                             double Y     = Sol->rhoY[n]/Sol->rho[n]; 
                             double coeff = Gammainv * Sol->rhoY[n] * Y;
                             double fsqsc = dt*dt * coriolis*coriolis;
-                            double fimp  = 1.0 / (nonhydro + fsqsc);
+                            double fimp  = 1.0 / (1.0 + fsqsc);
                             double Nsqsc = dt*dt * (g/Msq) * strat;                    
                             double gimp  = 1.0 / (nonhydro + Nsqsc);
 
