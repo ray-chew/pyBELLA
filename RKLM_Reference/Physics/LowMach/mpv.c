@@ -179,7 +179,7 @@ double acoustic_order(const double t,
     
     switch (ud.is_compressible) {
         case 0:
-            return(2.0);
+            return(1.0);
             break;
         case 1: {
             /*
