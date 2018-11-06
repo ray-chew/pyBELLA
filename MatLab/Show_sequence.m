@@ -7,13 +7,14 @@
 extrafigno = 52;
 
 %modelstr = '';
-%modelstr = 'comp';
-modelstr = 'psinc' ;  
+modelstr = 'comp';
+%modelstr = 'psinc' ;  
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
 
-test_case = 'Internal-Wave-Tests';
+test_case = 'Deep-Internal-Wave-Tests';
+%test_case = 'Internal-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
@@ -48,7 +49,15 @@ kmin = 0;
 kmax = 601;
 dk   = 1;
 
-if strcmp(test_case, 'Internal-Wave-Tests')
+if strcmp(test_case, 'Deep-Internal-Wave-Tests')
+    ncx = 300; 
+    ncy = 30;  
+    L   = 40000.0;  % 
+    x0  = 0.0;
+    H   = 300.0;  %
+    aspect = [L/H/3 1 1];
+    velosc = 100;  % velocity unit of RKLM code
+elseif strcmp(test_case, 'Internal-Wave-Tests')
     % scalefactor   1.0   Skamarock-Klemp-1994 Fig.1
     % scalefactor  20.0   Skamarock-Klemp-1994 Fig.3
     % scalefactor 160.0   new, very long wave test
@@ -138,7 +147,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy]; rhoY_diff = 1;
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
+varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];

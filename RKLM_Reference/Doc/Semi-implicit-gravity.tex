@@ -149,7 +149,8 @@
 
 \newcommand{\Lopfirst}{{\cal L}^{\rm 1st}}
 
-\newcommand{\Sol}{U}
+%\newcommand{\Sol}{\boldsymbol{\mathcal{U}}}
+\newcommand{\Sol}{\mathcal{U}}
 
 \newcommand{\rfr}[1]{#1_{\text{ref}}}
 
@@ -431,7 +432,7 @@ the pseudo-incompressible model is obtained from the compressible equations in
 \eq{eq:CompressibleEuler} by simply dropping the time derivative of 
 $P = \rho\Theta$ from \eq{eq:EulerPressure}. To take advantage of this simple 
 structural model relationship in constructing a blended scheme that can be
-tuned seamlessly from solving the full compressible \benacchio{model equations}
+tuned seamlessly from solving the full compressible model equations
 to solving the 
 pseudo-incompressible model equations, they introduced the inverse of the 
 potential temperature,
@@ -545,7 +546,9 @@ e.g. ENDGame works with the old time-step profiles as reference. In our case
 the decompositions \eq{eq:PerturbationVariables} and \eq{eq:BackgroundHydrostatics} are only
 instrumental to constructing the elliptic problems in the correction steps.
 I shall go into the bells and whistles of other schemes to understand how
-they carry forward perturbations more than we do.}
+they carry forward perturbations more than we do.} \klein{That will be 
+very much appreciated! We need to be careful and don't want to claim too
+much in the end.}
 
 In the sequel, borrowing notation from \citet{SmolarkiewiczEtAl2014},
 see section~\ref{ssec:EULAG}, we introduce
@@ -600,15 +603,47 @@ P^{n} - \dt \,\nablatilde\cdot(P\vv)^{n+\half}\,.
 \end{equation}
 %
 where $\nablatilde \cdot$ is again the discrete approximation of the divergence.
+\klein{Note that this update corresponds to a time discretization of this equation
+using the \emph{implicit midpoint rule}. We recall here for future reference that
+an implementation of the implicit midpoint rule can be achieved by first applying
+a half time step based on the implicit Euler scheme followed by another half time
+step based on the explicit Euler method \citep{HairerEtAl2006}.}
 
-A first order accurate time integration from the last completed time step at 
-$t^n$ is sufficient for generating these half time level fluxes \benacchio{Perhaps it would
-be worth explaining this as it might not be immediate for some.}. To achieve
+To maintain second order accuracy of the overall scheme, a first order accurate 
+time integration from the last completed time step at $t^n$ is sufficient for 
+generating these half time level fluxes. \klein{[OK, here is a brief explanation:]} 
+This becomes transparent through a truncation error analysis for any equation of 
+the form $\dot y = R(y,t)$. First we observe that
+%
+\begin{equation}\label{eq:FirstOrderHTLUpdateI}
+\frac{y(t^{n+1})-y(t^n)}{\dt} = \dot y\left(t^{n+\half}\right) + \bigoh{\dt^2}
+\end{equation}
+%
+by straightforward Taylor expansion. Then, for any first-order approximation, 
+say $R^{n+\half}$, to the right hand side at the half time level we have  
+%
+\begin{equation}\label{eq:FirstOrderHTLUpdateII}
+\dot y\left(t^{n+\half}\right) 
+= R\left(y\left(t^{n+\half}\right)\right) 
+= R\left(y(t^n)\right) + \delta R^n + \bigoh{\dt^2} 
+=: R^{n+\half} + \bigoh{\dt^2}\,.
+\end{equation}
+%
+Re-inserting into \eq{eq:FirstOrderHTLUpdateI} we find
+%
+\begin{equation}
+\frac{y(t^{n+1})-y(t^n)}{\dt} = R^{n+\half} + \bigoh{\dt^2}\, ,
+\end{equation}
+%
+which indicates that second order accuracy can be achieved when the right hand
+side is locally approximated at the half time level only by a first order update
+from the old time level.  
+
+To achieve
 stability for large time steps, limited only by the advection Courant number,
 we invoke standard splitting into advective and non-advective terms in 
 \eq{eq:EulerP}, \eq{eq:EulerPChiPrime}, with explicit advection and 
 linearly implicit treatment of the right hand sides. 
-
 Thus we first advance the scalars from \eq{eq:PsiDefinition} by half an advection 
 time step utilizing advective fluxes computed at the old time level, 
 %
@@ -640,10 +675,13 @@ section~\ref{ssec:SemiImplicitForcing} for details),
       \label{eq:HalfTimePredictorDivControl}
 \end{IEEEeqnarray}
 %
-Note that in this step the relation between $P$, which is being updated by
-the flux divergence, and $\pi$, whose gradient is part of the momentum
-forcing terms, is invoked through a linearization of the equations of state 
-\eq{eq:EOSpiP}, i.e.,  
+\klein{We note that \eq{eq:HalfTimePredictorDivControl} corresponds to the
+implicit Euler update to the half time level, \emph{i.e.}, to the first step of 
+our implementation of the implicit midpoint rule for $P$.} 
+Furthermore, in this step the 
+relation between $P$, which is being updated by the flux divergence, and $\pi$, 
+whose gradient is part of the momentum forcing terms, is approximated through a 
+linearization of the equations of state \eq{eq:EOSpiP}, i.e.,  
 %     
 \begin{IEEEeqnarray}{rCl}\label{eq:HalfTimePredictorPLinearization}
 \dss P^{n+\half} 
@@ -653,22 +691,20 @@ forcing terms, is invoked through a linearization of the equations of state
         \left(\pi^{n+\half} - \pi^{n}\right)\,.
 \end{IEEEeqnarray}
 %
-With this linearization, the implicit step involves a single linear elliptic solve
-for $\pi^{n+\half}$ as will become clear below. Optionally, an outer iteration 
+With this linearization, this implicit Euler step involves a single linear elliptic 
+solve for $\pi^{n+\half}$ as will become clear below. Optionally, an outer iteration 
 of the linearly implicit step can be invoked to guarantee consistency with the 
 equation of state for $P(\pi)$ up to machine accuracy. 
 
-These preliminary calculations serve to provide both the update of $P$ to the
-new time level according to \eq{eq:PUpdate} in the sense of the implicit midpoint 
-rule, and the advecting fluxes $(P\vv)^{n+\half}$ needed subsequently in the 
-advection step of the final time stepping algorithm, see \eq{eq:AdvectionStep} 
-below. 
+\klein{These preliminary calculations serve to provide the fluxes $(P\vv)^{n+\half}$ 
+needed subsequently both for the concluding explicit Euler update of $P$ to the full
+time level $t^{n+1}$ and for the advection of the vector of specific variables $\Psi$ 
+from \eq{eq:PsiDefinition} as part of the overall time stepping algorithm, 
+see \eq{eq:AdvectionStep} below.}
 
-We note for future reference that for given $(P\vv)^{n+\half}$ the update of $P$ 
-is readily determined, so that the remainder of the time stepping procedure serves 
-to update the vector of specific variables $\Psi$ from \eq{eq:PsiDefinition}. 
-This is analogous to the role of the density update in the EULAG/FVM algorithm
-summarized in section~\ref{ssec:EULAG}. 
+\klein{We note in passing that our treatment of the $P$ variable is quite similar to how 
+density updates are handled and mass fluxes are utilized for advection in the 
+EULAG/FVM algorithm summarized in section~\ref{ssec:EULAG}.}
 
 % ===========================================================================
 
@@ -699,26 +735,54 @@ For future reference we notice that the two equations without source term
 for $\rho$ and $P$ are not involved in \eq{eq:ExplicitEulerStep} and
 \eq{eq:ImplicitEulerStep}. The updates to $\rho^{n+1}$ and $P^{n+1}$ are
 entirely determined by the advection step in \eq{eq:AdvectionStep} and
-by the implicit midpoint discretization of the $P$-equation in \eq{eq:PUpdate}. 
+by the implicit midpoint discretization of the $P$-component in \eq{eq:PUpdate}. 
+\klein{In fact, the $P$-component of \eq{eq:AdvectionStep} corresponds to 
+completing the implicit midpoint discretization for the $P$-equation.}
+
 \benacchio{From this it seems that \eq{eq:PUpdate} happens after \eq{eq:AdvectionStep},
 does it not? Or is it meant \eq{eq:AdvectionStep} for $\rho$(i.e. $P\chi$) and \eq{eq:PUpdate}
-for $P$?}
+for $P$?} \klein{Indeed, you are right. This is what happens. It is the usual 
+procedure for the implicit midpoint rule. You first compute the right hand side
+at the half time level advancing all variables by the implicit Euler discretization. 
+Then you extrapolate the obtained update all the way to the full time level. 
+\eq{eq:PUpdate}  -- or better \eq{eq:HalfTimePredictorDivControl} -- corresponds to 
+the first Euler backward half time step, while \eq{eq:AdvectionStep} for $P$ 
+corresponds to the extrapolation to the full time level.
+I have tried to make this more transparent in the above with a few additional sentences.
+Please check.}
+
 Therefore, the unknowns that effectively get updated in the explicit and 
-implicit Euler steps are $(\vu, w, \chiprime)$ only. Nevertheless, to obtain 
+implicit Euler steps \eq{eq:ExplicitEulerStep} and \eq{eq:ImplicitEulerStep}, respectively, 
+are $(\vu, w, \chiprime)$ only. Nevertheless, to obtain 
 an appropriate approximation of the Exner pressure gradient needed in the 
 momentum equation, an auxiliary implicit Euler discretization of the energy 
-equation in perturbation form for $\piprime$ (\benacchio{is this what was the second
-projection? or both the first and the second? It is not completely clear what the
+equation in perturbation form for $\piprime$ 
+
+(\benacchio{is this what was the second
+projection? \klein{Yes.} ... or both the first and the second? \klein{No.}
+It is not completely clear what the
 connection is between the new framework and the predictor corrector framework of
 Klein(2009) and Benacchio et al. (2014). If the predictor-corrector can be cast into
 the explicit-then-implicit framework then perhaps the translation could be detailed,
-and I think this is a potential element of novelty as well.}) from \eq{eq:EulerPiPrime} is 
+and I think this is a potential element of novelty as well.} \klein{The first projection
+from our earlier scheme corresponds directly with the procedure detailed in 
+section~\ref{sssec:AdvectiveFluxes}, the second projection is what happens here.
+I agree that we should point out the connections to and differences from our 
+earlier approach!}) 
+
+from \eq{eq:EulerPiPrime} is 
 utilized in formulating \eq{eq:ImplicitEulerStep}. See 
 section~\ref{ssec:SemiImplicitForcing} for details. 
 
 After completion of the steps in \eq{eq:TimeIntegrator}, the
 auxiliary variables $(\chiprime, \pi')$ are re-computed from the primary
-unknowns $(\rho, \rho\vu, \rho w, P)$ at the new time level. This ensures
+unknowns $(\rho, \rho\vu, \rho w, P)$ at the new time level.  \klein{[That
+actually turns out to fail in some tests. We'll have to discuss this. I get
+the best results if I drop the synchronization of cell-centered and nodal
+pressures entirely and just update these fields redundantly. Miraculously, 
+the stay very close in all tests that I ran. If we could explain this, that
+would be great!}
+This ensures
 consistency of all variables with respect to the equation of state and
 ensures that $(\chiprime, \pi')$ are approximated with the same, i.e., 
 second, order of accuracy as the primary variables across multiple time 
@@ -766,7 +830,7 @@ on control volumes $C_{i,j,k}$ formed by a cartesian mesh with constant
 grid increments $\dx, \dy, \dz$, and grid indices $i = 0, ..., I-1$,  
 $j = 0, ..., J-1$, $k = 0, ..., K-1$ (see Fig.~\ref{fig:GridArrangement}
 for a sketch of a two dimensional $x$-$y$ slice). The primary variables 
-of the discrete approximate solution consists of \benacchio{\cancel{averages of}} grid cell 
+of the discrete approximate solution consists of grid cell 
 averages 
 %
 \begin{equation}
@@ -810,8 +874,8 @@ Two different incarnations of the Exner pressure gradient are needed in
 the implicit Euler steps summarized in \eq{eq:HalfTimePredictorFluxCorrection} 
 and \eq{eq:ImplicitEulerStep}. The former determines the cell interface
 based fluxes from \eq{eq:DiscreteAdvectiveFluxes} and naturally works with 
-cell- and timestep-centered values of the Exner pressure \benacchio{($\pi_{i,j,k}^n$)}. The latter 
-corrects the cell-centered momenta and requires integrals of the Exner 
+cell- and timestep-centered values of the Exner pressure ($\pi_{i,j,k}^n$). 
+The latter corrects the cell-centered momenta and requires integrals of the Exner 
 pressure over grid cell faces to form a finite-volume discretization of 
 the gradient, and this is computed from node-centered values by the 
 trapezoidal rule quadrature. Thus we compute both
@@ -836,14 +900,12 @@ Euler equations as formulated in \eq{eq:CompressibleEuler}. The cell-centered
 volume average of $P = (\rfr{p}/R) (p/\rfr{p})^{c_v/c_p}$ is representative 
 of the internal energy budget of the flow, whereas the gradient of the Exner 
 pressure $\pi = (p/\rfr{p})^{R/c_p}$ arises in the coupling of the momentum 
-field to the pressure. As a consequence, \benacchio{
-the implicit Euler steps control} both the advective 
-fluxes $(P\vv)^{n+\half}$ at cell faces \benacchio{in 
-\eq{eq:HalfTimePredictorFluxCorrection}} and the momenta $(\rho \vv)$ at the 
-cell centers \benacchio{in \eq{eq:TimeIntegrator}}, 
-\benacchio{thereby employing} both cell\benacchio{-centred} and node-centred approximations of the 
-Exner pressure, see \eq{eq:ExnerPressures} and
-sections~\ref{sssec:DivControlledAdvectiveFluxes} and 
+field to the pressure. As a consequence, the implicit Euler steps control both 
+the advective fluxes $(P\vv)^{n+\half}$ at cell faces in 
+\eq{eq:HalfTimePredictorFluxCorrection} and the momenta $(\rho \vv)$ at the 
+cell centers in \eq{eq:TimeIntegrator}, thereby employing both cell-centered
+and node-centered approximations of the Exner pressure, see \eq{eq:ExnerPressures} 
+and sections~\ref{sssec:DivControlledAdvectiveFluxes} and 
 \ref{sssec:TrapezoidalRule} below. This is in agreement with our previous
 developments in \cite{KleinTCFD2009,BenacchioEtAl2014}, and with the 
 established combination of ``MAC'' and cell-centered projections for 
@@ -867,11 +929,18 @@ step with the primary cell centered variable $P^n_{i,j}$ through
       \label{eq:CenterToNodeInterpolation}
 \end{IEEEeqnarray}
 %
-The formula in \eq{eq:CenterToNodeInterpolation} is also used to generate 
+\klein{[As stated earlier, the latter synchronization step is detrimental 
+in some tests. Everything works smoothly if I just evolve the nodal pressures
+independently of the cell-centered variables. Synchronization of the cell-centered
+variables is OK, though. The reason, I surmise, is that the detrimental bit
+in \eq{eq:CenterToNodeInterpolation} is the interpolation, which destroys information.]}
+
+\purple{The formula in \eq{eq:CenterToNodeInterpolation} is also used to generate 
 half time level nodal pressures from the cell-centered solution 
 $\pi^{n+\half}_{i,j,k}$ arising in the advective flux 
 calculation scheme in \eq{eq:HalfTimePredictorFluxCorrection}, 
-\eq{eq:HalfTimePredictorPLinearization}.
+\eq{eq:HalfTimePredictorPLinearization}.} \klein{[That, too, is no longer needed
+in the most recent -- and so far best -- version of the scheme.]}
 
 Similarly, the split of the full inverse of the potential temperature 
 $\chi = \chiprime + \chibar$ according to \eq{eq:PerturbationVariables} and the subsequent 
@@ -891,7 +960,13 @@ all subsequent simulations we set $\chibar_k^{n} \equiv \chibar_k^{0}$.
 An alternative option better suited for large scale, long time simulations 
 is to invoke a horizontal, possibly local, averaging procedure to extract 
 $\chibar$ from $\chi$ at least every few time steps. \benacchio{Unified Model
-uses the state at the previous time step, we could perhaps try that as well?} We leave testing 
+uses the state at the previous time step, we could perhaps try that as well?} 
+\klein{I did, and I found it to be a bad idea: Suppose we wish to simulate
+a breaking internal wave that shows local overturning of the potential 
+temperature surfaces. This will routinely happen in a high-resolution simulation 
+at somewhat higher altitudes. If such a state were used as a reference for 
+linearization, $N^2$ would be zero locally, and I think that ellipticity of
+the linearized equation for $\pi'$ would be lost.} We leave testing 
 this option to future work.	 
 
 % ===========================================================================
@@ -911,7 +986,10 @@ a directionally split ``monotone upwind scheme for conservation laws'' (MUSCL)
 
 Suppose the half time predictor step from \eq{eq:HalfTimePredictorFluxCorrection}, 
 the details of which will be described shortly \benacchio{(could we not put the details
-- presumably \eq{eq:firstorder_Adv} - here instead and spare the reader a back-reference?)}, has been completed. Then, 
+- presumably \eq{eq:firstorder_Adv} - here instead and spare the reader a back-reference?)}
+\klein{[No, I don't think this helps. It is not just \eq{eq:firstorder_Adv}. We need
+the full result $(P\vv)^{n+\half}$ from section~\ref{sssec:AdvectiveFluxes}.]}, 
+has been completed. Then, 
 the components of the advecting fluxes $(P\vv)^{n+\half}$ at grid cell faces 
 have become available as part of this calculation. Given these fluxes, the advection 
 step in \eq{eq:AdvectionStep} is discretized via Strang splitting, so that
@@ -966,12 +1044,12 @@ C^{n+\half}_{i+\half}
 s_{i}
   & =
     & \text{Lim}
-      \left(\frac{U_{i}-U_{i-1}}{\dx}, \frac{U_{i+1}-U_{i}}{\dx}\right)\,,
+      \left(\frac{\Psi_{i}-\Psi_{i-1}}{\dx}, \frac{\Psi_{i+1}-\Psi_{i}}{\dx}\right)\,,
       \label{eq:AdvSpecificsSlopes}
 \end{IEEEeqnarray}
 %
 where $P_{i}$ in \eq{eq:AdvSpecificsCourantNo} denotes the fourth component 
-of $U_{i}$, and $\text{Lim}(a,b)$ is a slope limiting function 
+of $\Sol_{i}$, and $\text{Lim}(a,b)$ is a slope limiting function 
 \citep[see, e.g.,][]{Sweby1984}. The effect of the slope limiting procedure on our simulation
 results will be discussed in section~\ref{sec:Results} below.
 
@@ -1001,9 +1079,9 @@ s_{i,j} \equiv 0\,,
 \end{equation}
 %
 in our standard configuration \benacchio{OK so for the results we could use both first and second order option
-and check the difference.}. We will discuss the effects of such a 
-reduction to first order accuracy in the predictor step in 
-section~\ref{sec:Results} below.
+and check the difference.} \klein{[Yes. I have already played with this, and saw practically
+no difference.]}. We will discuss the effects of such a reduction to first order 
+accuracy in the predictor step in section~\ref{sec:Results} below.
 
 % ===========================================================================
 % ===========================================================================
@@ -1011,10 +1089,10 @@ section~\ref{sec:Results} below.
 \subsection{Semi-implicit integration of the forcing terms}
 \label{ssec:SemiImplicitForcing}
 
-The generalized \benacchio{forcing terms on the right-hand side of} \eq{eq:EulerP} are discretized in 
-time by the implicit trapezoidal rule. This requires an explicit Euler step 
-at the beginning and an implicit Euler step at the end of a time step. The 
-implicit Euler step is also needed to compute the fluxes $(P\vv)^{n+\half}$ 
+The generalized forcing terms on the right-hand side of \eq{eq:EulerP} are 
+discretized in time by the implicit trapezoidal rule. This requires an explicit 
+Euler step at the beginning and an implicit Euler step at the end of a time step. 
+The implicit Euler step is also needed to compute the fluxes $(P\vv)^{n+\half}$ 
 at the half time level as needed for the advection substep. In 
 section~\ref{sssec:ImplicitEuler} we summarize this implicit step in a 
 temporal semi-discretization. Depending on whether this scheme is used to 
@@ -1034,7 +1112,8 @@ right hand side, the relevant linearized equations, including the
 auxiliary potential temperature perturbation equation \eq{eq:EulerPChiPrime} 
 may be written as \benacchio{I am confused, $U$ was the notation used for the
 vector of unknowns earlier, could we not use another notation here, for example
-$\mathcal{U}$, $\mathcal{V}$, etc.?}
+$\mathcal{U}$, $\mathcal{V}$, etc.?} \klein{[OK, I fixed this by changing to
+``$\Sol$'' for the vector of densities of the unknowns.]}
 %
 \begin{IEEEeqnarray}{rCl}\label{eq:LinearizedNonAdvectiveSystem}
 U_t
@@ -1061,10 +1140,10 @@ W_t
 where we have abbreviated
 %
 \begin{equation}
-(U,V,W,\Xtilde) = (P u, P v, P w, P\chiprime)\,,
+(U,V,W,\Thetatilde) = (P u, P v, P w, P(1/\chi)')\,,
 \end{equation}
 %
-\benacchio{(is $\tilde{X}$ not $\Thetatilde$ instead?)} and where the coefficients $(P\Theta)^*$ and $(\partial P/\partial \pi)^*$ 
+and where the coefficients $(P\Theta)^*$ and $(\partial P/\partial \pi)^*$ 
 are prescribed or can be adjusted nonlinearly in an outer iteration loop 
 as described in a similar context by \citet{SmolarkiewiczEtAl2014}. The 
 implicit Euler semi-discretization of \eq{eq:LinearizedNonAdvectiveSystem} 
@@ -1132,13 +1211,7 @@ U \\ V
 \end{array}
 \right)^{n+1} 
   & =
-    &  F^{-1}
-%      \left(
-%        \begin{array}{cc}
-%         1 & \frac{-f_*^2}{1+f_*^2} \\ 
-%         \frac{f_*^2}{1+f_*^2} & 1
-%        \end{array}
-%      \right)
+    &  \frac{1}{1+(\dt f)^2}
       \left[
       \left(
         \begin{array}{c}
@@ -1153,50 +1226,66 @@ U \\ V
         \pi'_y - \dt\, f\, \pi'_x
         \end{array}
       \right)^{n+1}
-      \right]
+      \right] \quad
       \IEEEyesnumber\IEEEyessubnumber*\\
 W^{n+1} 
   & =
     & \left(\frac{W + \dt\, g {\Thetatilde}/\Thetabar}{1 + (\dt\, N)^2}\right)^n
-      - \dt \, \frac{c_p (P\Theta)^*}{1 + (\dt\, N)^2} \ {\pi'}^{n+1}_z
+      - \dt \, \frac{c_p (P\Theta)^*}{1 + (\dt\, N)^2} \ {\pi'}^{n+1}_z \,. 
 \end{IEEEeqnarray}
 %
-where
-%
-\begin{equation}
-F =
-\left(
-  \begin{array}{cc}
-   1 & (\dt\, f)^2 \\ 
-   -(\dt\, f)^2 & 1
-  \end{array}
-\right)\,.
-\end{equation}
-%
-\benacchio{I am not sure I understand the notation, I think both the $U$ equation
-and the $V$ equation should have a $1/[1+(\Delta t)^2]$ coefficient multiplying
-the right-hand side instead of the $F^{-1}$.}
+%where
+%%
+%\begin{equation}
+%F =
+%\left(
+%  \begin{array}{cc}
+%   1 & (\dt\, f)^2 \\ 
+%   -(\dt\, f)^2 & 1
+%  \end{array}
+%\right)\,.
+%\end{equation}
+%%
 Insertion of the expressions in \eq{eq:LinearizedNonAdvectiveImplicitEulerSolI}
 into the pressure equation \eq{eq:LinearizedNonAdvectiveImplicitEulerPi} 
 leads to a closed Helmholtz-type equation for ${\pi'}^{n+1}$. After its 
 solution, backward re-insertion yields $(U, V, W, \Thetatilde)^{n+1}$. 
-\benacchio{I tried and spelled this out:
+Specifically, \klein{[good, only two inner brackets were missing, ...]}
 %
  \begin{multline}\label{eq:helmholtz}
  \left(\dfrac{\partial P}{\partial\pi}\right)^*\pi'^{n+1}\\
--c_p\dt^2\left\{\dfrac{1}{1+(\dt f)^2}\left\{\left[\left(P\Theta\right)^*\pi'^{n+1}_x+\dt f\pi'^{n+1}_y\right]_x+\left[\left(P\Theta\right)^*\pi'^{n+1}_y-\dt f\pi'^{n+1}_x\right]_y\right\}\right.\\
-\left.+\dfrac{1}{1+(\dt N)^2}\left[\left(P\Theta\right)^*\pi'^{n+1}_z\right]_z\right\}=R^n
+-\left\{
+    \dfrac{c_p\dt^2}{1+(\dt f)^2} 
+    \left\{
+      \left[
+        \left(P\Theta\right)^*
+          \left(\pi'^{n+1}_x+\dt f\pi'^{n+1}_y
+          \right)
+        \rule{0pt}{12pt}\right]_x
+       +\left[
+          \left(P\Theta\right)^*
+            \left(\pi'^{n+1}_y-\dt f\pi'^{n+1}_x
+            \right)
+         \rule{0pt}{12pt}\right]_y
+      \right\}
+    \right.\\
+    \left.
+  + \dfrac{c_p\dt^2}{1+(\dt N)^2}
+      \left[\left(P\Theta\right)^*\pi'^{n+1}_z
+      \rule{0pt}{12pt}\right]_z
+    \right\}
+  = R^n
  \end{multline}
 %
 with the right-hand side:
 %
 \begin{multline}\label{eq:helmholtz_rhs}
 R^n=\left(\dfrac{\partial P}{\partial\pi}\right)^*\pi'^n-\\
-\Delta t\left\{\dfrac{1}{1+(\Delta t f)^2}\left[U^n_x+V^n_y+\Delta t f(V^n_x-U^n_y)\right]
-+\dfrac{1}{1+(\Delta t N)^2}\left[W^n_z+\Delta t g\left(\Thetatilde/\Thetabar\right)^n_z\right]\right\} 
+\left\{\dfrac{\dt}{1+(\dt f)^2}\left[U^n_x+V^n_y+\dt f(V^n_x-U^n_y)\right]
++\dfrac{\dt}{1+(\dt N)^2}\left[W^n_z+\dt\, g\left(\Thetatilde/\Thetabar\right)^n_z\right]\right\} \,.
 \end{multline}
 %
-}
+
 
 
 % ===========================================================================
@@ -1207,9 +1296,14 @@ R^n=\left(\dfrac{\partial P}{\partial\pi}\right)^*\pi'^n-\\
 
 \benacchio{The following appears to discuss the predictor once again, I am
 a bit lost... perhaps this subsection could be promoted further up?}
+\klein{[Well, above I abbreviated all discretized spacial derivatives by
+$\nablatilde$, while here I am giving the space discretization details.
+I split it this way so as to keep the earlier sections notationally reasonably
+compact. We can change this around if we come to find this arrangement to be
+too clumsy.]}
 Advection is discretized using standard cell-centered flux divergences.  
-Thus, the divergence of some vector field $\vV = (U,V,W)$ \benacchio{is this
-the same $U$ as above?} utilizes the discrete approximation
+Thus, the divergence of, e.g., the vector field $\vV = (U,V,W)$ utilizes the 
+discrete approximation
 %
 \begin{equation}
 \widetilde{\left(U_x\right)}_{i,j,k} 
@@ -1250,7 +1344,7 @@ pressure gradient is obtained from cell-centered values as
 \begin{equation}
 \widetilde{\left(\pi'_x\right)}_{i+\half,j,k} 
 = 
-\frac{1}{\dx} \left(\pi'_{i,j,k} + \pi'_{i+1,j,k}\right)\,,
+\frac{1}{\dx} \left(\pi'_{i+1,j,k} - \pi'_{i,j,k}\right)\,,
 \end{equation}
 %
 with analogous expressions for the other Cartesian directions, 
@@ -1261,13 +1355,13 @@ alternative approximation
 \begin{equation}\label{eq:NinePointStencilI}
 \widetilde{\left(\pi'_x\right)}_{i+\half,j,k} 
 \approx 
-\frac{1}{\dx} \left({\pibar}'_{i,j,k} + {\pibar}'_{i+1,j,k}\right)\,,
+\frac{1}{\dx} \left({\pibar}^{x,\prime}_{i+1,j,k} - {\pibar}^{x,\prime}_{i,j,k}\right)\,,
 \end{equation}
 %
 where
 %
 \begin{IEEEeqnarray}{rCl}\label{eq:NinePointStencilII}
-{\pibar}'_{i,j,k} = \frac{36}{64} \pi'_{i,j,k} 
+{\pibar}^{x,\prime}_{i,j,k} = \frac{36}{64} \pi'_{i,j,k} 
   & + 
     & \frac{6}{64} \left(\pi'_{i,j+1,k} + \pi'_{i,j-1,k} + \pi'_{i,j,k+1} + \pi'_{i,j,k-1}\right)
       \\
