@@ -113,6 +113,28 @@ void recompute_advective_fluxes(ConsVars* flux[3],
 {
     extern User_Data ud;
     
+#ifdef UPWIND_RHOY
+    double (*limiter[])(const double a, 
+                        const double b, 
+                        const double k) = {
+        None,
+        MinMod,
+        VanLeer,
+        VanLeerS,
+        Superbee,
+        MonotonizedCentral,
+        SwebyMunz,
+        Rupe,
+        NoSlope
+    };
+
+    const enum LimiterType limiter_type_velocity = ud.limiter_type_velocity;
+    const enum LimiterType limiter_type_scalars  = ud.limiter_type_scalars;
+    const double kp = ud.kp;
+    const double kz = ud.kz;
+    const double kY = ud.kY;  
+#endif
+    
 #ifndef FOURTH_ORDER_ADV_FLUXES
     /* recompute advective flux at fixed time level from cell averages */
     switch (elem->ndim) {
@@ -141,6 +163,34 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                     int nfxij = nfxj + i;
                     int nfyij = nfyj + i*ify;
                     
+#ifdef UPWIND_RHOY
+                    double rhoY, rhoY_p, rhoY_pp, rhoY_m, rhoY_mm, s_m, s_p; 
+                    double u_p      = Sol->rhou[ncij]/Sol->rho[ncij];
+                    double u_m      = Sol->rhou[ncij-1]/Sol->rho[ncij-1];
+                    double u        = 0.5 * (u_p+u_m);
+                    rhoY_p  = Sol->rhoY[ncij];
+                    rhoY_pp = Sol->rhoY[ncij+1];
+                    rhoY_m  = Sol->rhoY[ncij-1];
+                    rhoY_mm = Sol->rhoY[ncij-2];
+                    s_m     = (*limiter[limiter_type_scalars])(rhoY_m - rhoY_mm, rhoY_p - rhoY_m, kz);
+                    s_p     = (*limiter[limiter_type_scalars])(rhoY_p - rhoY_m, rhoY_pp - rhoY_p, kz);
+                    rhoY    = (u >= 0.0? rhoY_m + 0.5*s_m : rhoY_p - 0.5 * s_p);
+
+                    flux[0]->rhoY[nfxij] = u * rhoY;
+                    
+                    double v_p      = Sol->rhov[ncij]/Sol->rho[ncij];
+                    double v_m      = Sol->rhov[ncij-icx]/Sol->rho[ncij-icx];
+                    double v        = 0.5 * (v_p+v_m);
+                    rhoY_p  = Sol->rhoY[ncij];
+                    rhoY_pp = Sol->rhoY[ncij+icx];
+                    rhoY_m  = Sol->rhoY[ncij-icx];
+                    rhoY_mm = Sol->rhoY[ncij-2*icx];
+                    s_m     = (*limiter[limiter_type_scalars])(rhoY_m - rhoY_mm, rhoY_p - rhoY_m, kz);
+                    s_p     = (*limiter[limiter_type_scalars])(rhoY_p - rhoY_m, rhoY_pp - rhoY_p, kz);
+                    rhoY    = (v >= 0.0? rhoY_m + 0.5*s_m : rhoY_p - 0.5 * s_p);
+
+                    flux[1]->rhoY[nfyij] = v * rhoY;
+#else /* UPWIND_RHOY */
 #if 1
                     double u_c     = Sol->rhou[ncij]/Sol->rho[ncij];
                     double u_m     = Sol->rhou[ncij-1]/Sol->rho[ncij-1];
@@ -161,6 +211,7 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                     flux[0]->rhoY[nfxij] = 0.5*(rhoYu_c+rhoYu_mx);
                     flux[1]->rhoY[nfyij] = 0.5*(rhoYv_c+rhoYv_my);
 #endif
+#endif /* UPWIND_RHOY */
                 }
             }
             break;
