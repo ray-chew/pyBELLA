@@ -1373,12 +1373,16 @@ void euler_forward_non_advective(ConsVars* Sol,
                     double chi     = Sol->rho[nc]/Sol->rhoY[nc];
                     double dbuoy   = -Sol->rho[nc]*dchi/chi;  /* -dchi/chibar; */
                     double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
+#ifdef EXNER_NONLINEAR
+                    double dpidP   = 1.0;
+#else
                     double dpidP   = (th.gm1 / ud.Msq) * \
                                         0.25 * (pow(Sol->rhoY[nc], th.gamm - 2.0)      + pow(Sol->rhoY[nc-1], th.gamm - 2.0) + \
                                                 pow(Sol->rhoY[nc-icxe], th.gamm - 2.0) + pow(Sol->rhoY[nc-icxe-1], th.gamm - 2.0));
                     /* alternative without need to call pow():  
                      double dpidP   = th.gm1 * mpv->p2_cells[nc] / Sol->rhoY[nc]; 
                      */
+#endif
                     
                     Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                     Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
@@ -1445,6 +1449,9 @@ void euler_forward_non_advective(ConsVars* Sol,
                         double chi     = Sol->rho[nc]/Sol->rhoY[nc];
                         double dbuoy   = -Sol->rho[nc]*dchi/chi;  /* -dchi/chibar; */
                         double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
+#ifdef EXNER_NONLINEAR
+                        double dpidP   = 1.0;
+#else
                         double dpidP   = (th.gm1 / ud.Msq) * \
                                             0.125 * (pow(Sol->rhoY[nc], th.gamm - 2.0)          + pow(Sol->rhoY[nc-1], th.gamm - 2.0) + \
                                                      pow(Sol->rhoY[nc-icx], th.gamm - 2.0)      + pow(Sol->rhoY[nc-icx-1], th.gamm - 2.0) + \
@@ -1453,7 +1460,7 @@ void euler_forward_non_advective(ConsVars* Sol,
                         /* alternative without need to call pow():  
                          double dpidP   = th.gm1 * mpv->p2_cells[nc] / Sol->rhoY[nc]; 
                          */
-
+#endif
                         Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                         Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
                         Sol->rhow[nc]  = Sol->rhow[nc] + dt * ( - rhoYovG * dpdz - coriolis * drhou);
@@ -1474,9 +1481,24 @@ void euler_forward_non_advective(ConsVars* Sol,
     
     if (ud.is_compressible) {
         double weight = ud.acoustic_order - 1.0;
+#ifdef EXNER_NONLINEAR
+        const int icxn = node->icx;
+        const int icyn = node->icy;
         for (int nn=0; nn<node->nc; nn++) {
-            mpv->p2_nodes[nn] += weight*dp2n[nn];
+            int k = nn / (icxn*icyn);
+            int j = (nn - k*icxn*icyn)/icxn;
+            double rhoYo = pow(ud.Msq*(mpv->p2_nodes[nn] + mpv->HydroState_n->p20[j]),th.gm1inv);
+            double rhoYn = rhoYo+dp2n[nn];
+            double dpi   = (pow(rhoYn,th.gm1) - pow(rhoYo,th.gm1))/ud.Msq;
+            mpv->p2_nodes[nn]  += weight*dpi;
+            mpv->dp2_nodes[nn]  = weight*dpi;
         }
+#else
+        for (int nn=0; nn<node->nc; nn++) {
+            mpv->p2_nodes[nn]  += weight*dp2n[nn];
+            mpv->dp2_nodes[nn]  = weight*dp2n[nn]; 
+        }
+#endif
     }
      
     W0_in_use = WRONG;

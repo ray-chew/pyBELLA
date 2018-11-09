@@ -13,6 +13,10 @@
 #include "Common.h"
 /* #include "space_discretization.h" */
 
+#if OUTPUT_SUBSTEPS /* 5 */
+#include "io.h"
+#endif
+
 ConsVars* ConsVars_new(const int size) {
     extern User_Data ud;
 	ConsVars* var = (ConsVars*)malloc(sizeof(ConsVars));
@@ -139,6 +143,14 @@ void ConsVars_set(ConsVars* obj, const ConsVars* src, const int n) {
     for (nsp=0; nsp<ud.nspec; nsp++) {
         memcpy(obj->rhoX[nsp], src->rhoX[nsp], n * sizeof(double));
     }
+    
+#if OUTPUT_SUBSTEPS /* 5 */
+    extern User_Data ud;
+    extern ElemSpaceDiscr* elem;
+    extern NodeSpaceDiscr* node;
+    putout(obj, ud.file_name, "Sol", elem, node, 1);
+#endif
+
 }
 
 

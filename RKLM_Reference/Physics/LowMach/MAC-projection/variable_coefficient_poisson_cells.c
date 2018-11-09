@@ -48,7 +48,7 @@ void variable_coefficient_poisson_cells(
 	
 	BiCGSTABData* data;
 
-    memset(p2, 0.0, elem->nc*sizeof(double));
+    /* memset(p2, 0.0, elem->nc*sizeof(double)); */
 
 	data = BiCGSTABData_new(nc, precision, local_precision, max_iter, outperiod);
 		

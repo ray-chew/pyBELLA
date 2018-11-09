@@ -158,7 +158,7 @@ int main( void )
                         
 #ifdef ADVECTION
             /* explicit full time step advection using div-controlled advective fluxes */
-            advect(Sol, flux, force, dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+            advect(Sol, flux, force, 1.0*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
 #endif
             
             /* implicit EULER half time step for gravity and pressure gradient */ 

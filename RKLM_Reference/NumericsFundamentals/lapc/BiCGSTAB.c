@@ -71,6 +71,15 @@ void BiCGSTABData_free(BiCGSTABData* var) {
 /* ========================================================================== */
 /* Piotr's Conjugate Residual scheme */
 
+
+#define OUTPUT_RHS_SOLVER_CELLS 0
+#if OUTPUT_RHS_SOLVER_CELLS
+#include "userdata.h"
+#include "io.h"
+static int rhs_output_count = 0;
+#endif
+
+
 double SOLVER(
               BiCGSTABData* data,
               const ElemSpaceDiscr* elem,
@@ -118,6 +127,25 @@ double SOLVER(
     EnthalpyWeightedLap_bilinear_p(elem, node, p2, hplus, hcenter, mpv, r_0);
     
     precon_c_invert(rhs, rhs, elem);
+    
+#if OUTPUT_RHS_SOLVER_CELLS
+    extern User_Data ud;
+    FILE *prhsfile = NULL;
+    char fn[120], fieldname[90];
+    if (rhs_output_count < 10) {
+        sprintf(fn, "%s/rhs_cells/rhs_cells_00%d.hdf", ud.file_name, rhs_output_count);
+    } else if(rhs_output_count < 100) {
+        sprintf(fn, "%s/rhs_cells/rhs_cells_0%d.hdf", ud.file_name, rhs_output_count);
+    } else {
+        sprintf(fn, "%s/rhs_cells/rhs_cells_%d.hdf", ud.file_name, rhs_output_count);
+    }
+    sprintf(fieldname, "rhs_cells");    
+    WriteHDF(prhsfile, elem->icx, elem->icy, elem->icz, elem->ndim, rhs, fn, fieldname);
+    
+    rhs_output_count++;
+#endif
+    
+
     
     for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
         for(j = igy; j < icy - igy; j++) {m = l + j * icx;
