@@ -598,7 +598,7 @@ void synchronize_variables(MPV* mpv,
     
     set_ghostcells_p2(mpv->p2_cells, elem, elem->igx);
 
-    reset_Y_perturbation(Sol, (const MPV*)mpv, elem);
+    // reset_Y_perturbation(Sol, (const MPV*)mpv, elem);
 
     Set_Explicit_Boundary_Data(Sol, elem);
     

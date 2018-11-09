@@ -8,7 +8,7 @@
 #define HDFFORMAT  
 
 /* Output options in main.c for debugging;  1 -> output */
-#define OUTPUT_SUBSTEPS 1
+#define OUTPUT_SUBSTEPS 0
 #define OUTPUT_SPLITSTEPS 0
 
 /*

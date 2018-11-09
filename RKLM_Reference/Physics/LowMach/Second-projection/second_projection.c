@@ -1036,6 +1036,12 @@ void correction_nodes(
 
 	const int ndim = elem->ndim;
     	    
+#ifdef CORIOLIS_EXPLICIT
+    const double coriolis  = 0.0;
+#else
+    const double coriolis  = ud.coriolis_strength[0];
+#endif
+
 	switch(ndim) {
 		case 1: {
 			ERROR("function not available");
@@ -1056,10 +1062,7 @@ void correction_nodes(
 			const double dy     = node->dy;
 			const double oodx   = 1.0 / dx;
 			const double oody   = 1.0 / dy;
-            
-            const double dtowdx = dt * oodx;
-            const double dtowdy = dt * oody;                
-            			
+                        			
             const double* hplusx = hplus[0];
             const double* hplusy = hplus[1];
             
@@ -1068,6 +1071,9 @@ void correction_nodes(
 			for(j = igy; j < icy - igy - 1; j++) {
 				m = j * icx; 
 				me = j * icxe;
+                
+                double dSdy = (mpv->HydroState_n->S0[j+1] - mpv->HydroState_n->S0[j]) * oody;
+
 				for(i = igx; i < icx - igx - 1; i++) {
 					const int n     = m + i;
 					const int nicx  = n + icx;
@@ -1075,12 +1081,13 @@ void correction_nodes(
 					const int n1icx = n + 1 + icx;
 					const int ne    = me + i; 
 					
-					const double Dpx   = 0.5 * (p[n1]   - p[n] + p[n1icx] - p[nicx]);
-					const double Dpy   = 0.5 * (p[nicx] - p[n] + p[n1icx] - p[n1]);
+					const double Dpx   = 0.5 * oodx * (p[n1]   - p[n] + p[n1icx] - p[nicx]);
+					const double Dpy   = 0.5 * oody * (p[nicx] - p[n] + p[n1icx] - p[n1]);
                     const double thinv = Sol->rho[ne] / Sol->rhoY[ne];
 					                    
-                    Sol->rhou[ne] += - dtowdx * thinv * hplusx[ne] * Dpx;
-					Sol->rhov[ne] += - dtowdy * thinv * hplusy[ne] * Dpy;
+                    Sol->rhou[ne] += - dt * thinv * hplusx[ne] * Dpx;
+					Sol->rhov[ne] += - dt * thinv * hplusy[ne] * Dpy;
+                    Sol->rhoX[BUOY][ne] += - dt * dSdy * Sol->rhov[ne];
 				}
 			} 
 			
@@ -1104,12 +1111,7 @@ void correction_nodes(
             const double oodx   = 1.0 / dx;
             const double oody   = 1.0 / dy;
             const double oodz   = 1.0 / dz;
-            
-            const double dtowdx = dt * oodx;
-            const double dtowdy = dt * oody;                
-            const double dtowdz = dt * oodz;                
-
-            
+                        
             const double* hplusx = hplus[0];
             const double* hplusy = hplus[1];
             const double* hplusz = hplus[2];
@@ -1120,6 +1122,9 @@ void correction_nodes(
                 for(int j = igy; j < icy - igy - 1; j++) {
                     int m  = l  + j*icx; 
                     int me = le + j*icxe;
+
+                    double dSdy = (mpv->HydroState_n->S0[j+1] - mpv->HydroState_n->S0[j]) * oody;
+
                     for(int i = igx; i < icx - igx - 1; i++) {
                         int n000 = m + i;
                         int n010 = n000 + icx;
@@ -1132,14 +1137,15 @@ void correction_nodes(
 
                         int ne   = me + i; 
                         
-                        double Dpx   = 0.25 * (p[n001] - p[n000] + p[n011] - p[n010] + p[n101] - p[n100] + p[n111] - p[n110]);
-                        double Dpy   = 0.25 * (p[n010] - p[n000] + p[n011] - p[n001] + p[n110] - p[n100] + p[n111] - p[n101]);
-                        double Dpz   = 0.25 * (p[n100] - p[n000] + p[n110] - p[n010] + p[n101] - p[n001] + p[n111] - p[n011]);
+                        double Dpx   = 0.25 * oodx * (p[n001] - p[n000] + p[n011] - p[n010] + p[n101] - p[n100] + p[n111] - p[n110]);
+                        double Dpy   = 0.25 * oody * (p[n010] - p[n000] + p[n011] - p[n001] + p[n110] - p[n100] + p[n111] - p[n101]);
+                        double Dpz   = 0.25 * oodz * (p[n100] - p[n000] + p[n110] - p[n010] + p[n101] - p[n001] + p[n111] - p[n011]);
                         double thinv = Sol->rho[ne] / Sol->rhoY[ne];
                         
-                        Sol->rhou[ne] += - dtowdx * thinv * hplusx[ne] * Dpx;
-                        Sol->rhov[ne] += - dtowdy * thinv * hplusy[ne] * Dpy;
-                        Sol->rhow[ne] += - dtowdz * thinv * hplusz[ne] * Dpz;
+                        Sol->rhou[ne] += - dt * thinv * hplusx[ne] * (Dpx + dt * coriolis * Dpz);
+                        Sol->rhov[ne] += - dt * thinv * hplusy[ne] * Dpy;
+                        Sol->rhow[ne] += - dt * thinv * hplusz[ne] * (Dpz - dt * coriolis * Dpx);
+                        Sol->rhoX[BUOY][ne] += - dt * dSdy * Sol->rhov[ne];
                     }
                 } 
             }
@@ -1347,7 +1353,9 @@ void euler_forward_non_advective(ConsVars* Sol,
             for (int j=igye; j<icye-igye+1; j++) {
                 int mc = j*icxe;
                 int mn = j*icxn;
+                
                 double S0p = mpv->HydroState_n->S0[j+1];
+                double S0c = mpv->HydroState->S0[j];
                 double S0m = mpv->HydroState_n->S0[j];
                 
                 for (int i=igxe; i<icxe-igxe+1; i++) {
@@ -1373,6 +1381,7 @@ void euler_forward_non_advective(ConsVars* Sol,
                     double chi     = Sol->rho[nc]/Sol->rhoY[nc];
                     double dbuoy   = -Sol->rho[nc]*dchi/chi;  /* -dchi/chibar; */
                     double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
+                    double rhoXnew = Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c);
 #ifdef EXNER_NONLINEAR
                     double dpidP   = 1.0;
 #else
@@ -1387,7 +1396,10 @@ void euler_forward_non_advective(ConsVars* Sol,
                     Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                     Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
                     Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
-                    Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
+                    Sol->rhoX[BUOY][nc] = rhoXnew + dt * ( - v * dSdy) * Sol->rho[nc];
+                    /* 
+                     Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
+                     */
 
                     dp2n[nn00] -= dt * dpidP * div[nn00];
                 }
