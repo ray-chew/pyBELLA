@@ -1383,7 +1383,6 @@ void euler_forward_non_advective(ConsVars* Sol,
                     double chi     = Sol->rho[nc]/Sol->rhoY[nc];
                     double dbuoy   = -Sol->rho[nc]*dchi/chi;  /* -dchi/chibar; */
                     double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
-                    double rhoXnew = Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c);
 #ifdef EXNER_NONLINEAR
                     double dpidP   = 1.0;
 #else
@@ -1398,7 +1397,7 @@ void euler_forward_non_advective(ConsVars* Sol,
                     Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                     Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
                     Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
-                    Sol->rhoX[BUOY][nc] = rhoXnew + dt * ( - v * dSdy) * Sol->rho[nc];
+                    Sol->rhoX[BUOY][nc] = (Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c)) + dt * ( - v * dSdy) * Sol->rho[nc];
                     /* 
                      Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
                      */
@@ -1493,6 +1492,10 @@ void euler_forward_non_advective(ConsVars* Sol,
             break;
     }
     
+    
+    // cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
+    // cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
+
     if (ud.is_compressible) {
         double weight = ud.acoustic_order - 1.0;
 #ifdef EXNER_NONLINEAR
