@@ -7,8 +7,8 @@
 extrafigno = 52;
 
 %modelstr = '';
-modelstr = 'comp';
-%modelstr = 'psinc' ;  
+%modelstr = 'comp';
+modelstr = 'psinc' ;  
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
@@ -32,8 +32,8 @@ no_of_contours = 10;
 show_increments = 0;
 symmetry = 0;        % in {0,1}
 symmetrytest = 0;
-showdummycells = 1;
-showslice = 8;
+showdummycells = 0;
+showslice = 10;
 diff_rel_to_bottom = 0;
 
 % th0 = -0.0015/300;
@@ -47,7 +47,7 @@ title_true = 1;
 
 kmin = 0;
 kmax = 601;
-dk   = 2;
+dk   = 1;
 
 if strcmp(test_case, 'Deep-Internal-Wave-Tests')
     ncx = 300; 
