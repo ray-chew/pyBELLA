@@ -893,6 +893,8 @@ static void operator_coefficients_nodes(
     
     double nonhydro = ud.nonhydrostasy;
     
+    double pressure_time_offset_factor = 3.0 - ud.acoustic_order; 
+    
 #ifdef CORIOLIS_EXPLICIT
     const double coriolis  = 0.0;
 #else
@@ -917,7 +919,7 @@ static void operator_coefficients_nodes(
 			double* hplusy  = hplus[1];
 			double* hc      = hcenter;
 
-			const double ccenter = - (ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt);
+			const double ccenter = - (ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt)/pressure_time_offset_factor;
             const double cexp    = 2.0-th.gamm;
             
             int i, j, m, n;
@@ -977,7 +979,7 @@ static void operator_coefficients_nodes(
 			double* hplusz  = hplus[2];
 			double* hc      = hcenter;
             
-			const double ccenter = - (ud.compressibility*ud.Msq)*th.gamminv/(dt*dt);
+			const double ccenter = - (ud.compressibility*ud.Msq)*th.gamminv/(dt*dt)/pressure_time_offset_factor;
             
 			const double cexp    = 1.0-th.gamm;
 			int i, j, k, l, m, n;

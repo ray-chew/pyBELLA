@@ -142,7 +142,7 @@ int main( void )
             flux_correction(flux, Sol, Sol0, elem, node, t, 0.5*dt, step);        
 
             ConsVars_set(Sol, Sol0, elem->nc);
-            cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
+            // cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
           
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nfull time step with predicted advective flux");
