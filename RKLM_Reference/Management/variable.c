@@ -17,6 +17,9 @@
 #include "io.h"
 #endif
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 ConsVars* ConsVars_new(const int size) {
     extern User_Data ud;
 	ConsVars* var = (ConsVars*)malloc(sizeof(ConsVars));
@@ -32,6 +35,9 @@ ConsVars* ConsVars_new(const int size) {
 	return var;
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void ConsVars_free(ConsVars* var) {
     extern User_Data ud;
     int nsp;
@@ -47,6 +53,9 @@ void ConsVars_free(ConsVars* var) {
 	free(var); 
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void ConsVars_setp(ConsVars* obj, const ConsVars* src, const int i) {
     extern User_Data ud;
     int nsp;
@@ -61,6 +70,9 @@ void ConsVars_setp(ConsVars* obj, const ConsVars* src, const int i) {
     }
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void ConsVars_addp(ConsVars* obj, const int n) {
     extern User_Data ud;
 	obj->rho  += n;
@@ -74,7 +86,9 @@ void ConsVars_addp(ConsVars* obj, const int n) {
     }
 }
 
-/* this functions should be written more efficiently */
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void ConsVars_setzero(ConsVars* obj, const int n) {
     extern User_Data ud;
 	int i, nsp;
@@ -91,6 +105,9 @@ void ConsVars_setzero(ConsVars* obj, const int n) {
 	}
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void ConsVars_add(ConsVars* obj,
                   const ConsVars* src,
                   const int n)
@@ -110,6 +127,31 @@ void ConsVars_add(ConsVars* obj,
     }    
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
+void ConsVars_average(ConsVars* obj, 
+                      const ConsVars* src, 
+                      const int n)
+{
+    extern User_Data ud;
+    int i, nsp;
+    for(i = 0; i < n; i++) {
+        obj->rho[i]  = 0.5 * (obj->rho[i]  + src->rho[i] );
+        obj->rhou[i] = 0.5 * (obj->rhou[i] + src->rhou[i]);
+        obj->rhov[i] = 0.5 * (obj->rhov[i] + src->rhov[i]);
+        obj->rhow[i] = 0.5 * (obj->rhow[i] + src->rhow[i]);
+        obj->rhoe[i] = 0.5 * (obj->rhoe[i] + src->rhoe[i]);
+        obj->rhoY[i] = 0.5 * (obj->rhoY[i] + src->rhoY[i]);
+        for (nsp=0; nsp<ud.nspec; nsp++) {
+            obj->rhoX[nsp][i] = 0.5 * (obj->rhoX[nsp][i] + src->rhoX[nsp][i]);
+        }
+    }    
+}
+
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void ConsVars_multiply_by_scalar(ConsVars* obj,
                                  const double factor,
                                  const int n)
@@ -131,6 +173,9 @@ void ConsVars_multiply_by_scalar(ConsVars* obj,
 
 /* void memcpy(double *a,  double *b,  int n_length); */
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void ConsVars_set(ConsVars* obj, const ConsVars* src, const int n) {
     extern User_Data ud;
 	int nsp;
@@ -154,7 +199,9 @@ void ConsVars_set(ConsVars* obj, const ConsVars* src, const int n) {
 }
 
 
-/* this functions should be written more efficiently */
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void VectorField_setzero(VectorField* obj, const int n) {
 
     for(int i = 0; i < n; i++) {
@@ -164,6 +211,9 @@ void VectorField_setzero(VectorField* obj, const int n) {
     }
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 VectorField* VectorField_new(const int size) {
 	VectorField* var = (VectorField*)malloc(sizeof(VectorField));
 	var->x = (double*)malloc(size * sizeof(double));
@@ -172,6 +222,9 @@ VectorField* VectorField_new(const int size) {
 	return var;
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void VectorField_free(VectorField* var) {      
 	free(var->x);
 	free(var->y);
@@ -179,6 +232,9 @@ void VectorField_free(VectorField* var) {
 	free(var); 
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void VectorField_set(VectorField* obj, const VectorField* src, const int n, const int ndim) {
     memcpy(obj->x, src->x, n * sizeof(double));
     if (ndim > 1) memcpy(obj->y, src->y, n * sizeof(double));
@@ -188,6 +244,9 @@ void VectorField_set(VectorField* obj, const VectorField* src, const int n, cons
 
 
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void scalar_set(double* obj, const double* src, const int n){
 	memcpy(obj,  src,  n * sizeof(double));
 }
@@ -200,6 +259,9 @@ void scalar_add(double* obj, const double* src, const int nstart, const int nend
 
 
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 double L1_norm(double* u, const int nstart, const int nend){
 	double norm = 0.0;
 	int i;
@@ -208,6 +270,9 @@ double L1_norm(double* u, const int nstart, const int nend){
 }
 
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 States* States_new(const int size) {
     extern User_Data ud;
 	States* var = (States*)malloc(sizeof(States));
@@ -243,6 +308,9 @@ States* States_new(const int size) {
 	return var;
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void States_free(States* var) {     
     extern User_Data ud;
 	free(var->rho);
@@ -276,6 +344,9 @@ void States_free(States* var) {
 	free(var);
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 States* States_small_new(const int size) {
     extern User_Data ud;
 	int nsp;
@@ -301,6 +372,9 @@ States* States_small_new(const int size) {
 	return var;
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void States_small_free(States* var) {      
     extern User_Data ud;
 	int nsp;
@@ -324,6 +398,9 @@ void States_small_free(States* var) {
 	free(var->Y0);
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void States_setp(States* obj, const ConsVars* src, const int i) {
     extern User_Data ud;
 	obj->rho  = &src->rho[i];
@@ -337,6 +414,9 @@ void States_setp(States* obj, const ConsVars* src, const int i) {
     }
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void States_addp(States* obj, const int n) {
     extern User_Data ud;
 	obj->rho  += n;
@@ -350,6 +430,9 @@ void States_addp(States* obj, const int n) {
     }
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 Characters* Characters_new(const int size) {
     extern User_Data ud;
 	int nsp;
@@ -366,6 +449,9 @@ Characters* Characters_new(const int size) {
 	return var;
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void Characters_free(Characters* var) {   
     extern User_Data ud;
 	int nsp;
@@ -381,11 +467,17 @@ void Characters_free(Characters* var) {
 }
 
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 Hydro* Hydro_new(const int size) {
 	Hydro* var = (Hydro*)malloc(size * sizeof(Hydro));
 	return var;
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void Hydro_free(Hydro* var) {   
 	free(var);
 }

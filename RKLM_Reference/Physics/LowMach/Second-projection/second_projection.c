@@ -946,7 +946,7 @@ static void operator_coefficients_nodes(
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
                     double fsqsc = dt*dt * coriolis*coriolis;
                     double fimp  = 1.0 / (1.0 + fsqsc);
-                    double Nsqsc = dt*dt * (g/Msq) * strat;                    
+                    double Nsqsc = pressure_time_offset_factor * dt*dt * (g/Msq) * strat;                    
                     double gimp  = 1.0 / (nonhydro + Nsqsc);
                     
                     hplusx[n]    = coeff * fimp;
@@ -999,7 +999,7 @@ static void operator_coefficients_nodes(
                             double coeff = Gammainv * Sol->rhoY[n] * Y;
                             double fsqsc = dt*dt * coriolis*coriolis;
                             double fimp  = 1.0 / (1.0 + fsqsc);
-                            double Nsqsc = dt*dt * (g/Msq) * strat;                    
+                            double Nsqsc = pressure_time_offset_factor * dt*dt * (g/Msq) * strat;                    
                             double gimp  = 1.0 / (nonhydro + Nsqsc);
 
                             hplusx[n]  = coeff * fimp;
@@ -1043,6 +1043,9 @@ void correction_nodes(
 #else
     const double coriolis  = ud.coriolis_strength[0];
 #endif
+    
+    double time_offset_impl = 3.0 - ud.acoustic_order; 
+
 
 	switch(ndim) {
 		case 1: {
@@ -1089,7 +1092,7 @@ void correction_nodes(
 					                    
                     Sol->rhou[ne] += - dt * thinv * hplusx[ne] * Dpx;
 					Sol->rhov[ne] += - dt * thinv * hplusy[ne] * Dpy;
-                    Sol->rhoX[BUOY][ne] += - dt * dSdy * Sol->rhov[ne];
+                    Sol->rhoX[BUOY][ne] += - time_offset_impl * dt * dSdy * Sol->rhov[ne];
 				}
 			} 
 			
@@ -1147,7 +1150,7 @@ void correction_nodes(
                         Sol->rhou[ne] += - dt * thinv * hplusx[ne] * (Dpx + dt * coriolis * Dpz);
                         Sol->rhov[ne] += - dt * thinv * hplusy[ne] * Dpy;
                         Sol->rhow[ne] += - dt * thinv * hplusz[ne] * (Dpz - dt * coriolis * Dpx);
-                        Sol->rhoX[BUOY][ne] += - dt * dSdy * Sol->rhov[ne];
+                        Sol->rhoX[BUOY][ne] += - time_offset_impl * dt * dSdy * Sol->rhov[ne];
                     }
                 } 
             }
@@ -1192,6 +1195,8 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
     const double Msq = ud.Msq;
     const double dy  = elem->dy;
     
+    const double time_offset_impl = 3.0 - ud.acoustic_order;
+    
 #ifdef CORIOLIS_EXPLICIT
     const double coriolis  = 0.0;
 #else
@@ -1200,7 +1205,7 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
     const double u0        = ud.wind_speed;
     const double fsqsc     = dt*dt*coriolis*coriolis;
     const double ooopfsqsc = 1.0 / (1.0 + fsqsc);
-
+    
     const int icx = elem->icx;
     const int icy = elem->icy;
     const int icz = elem->icz;
@@ -1215,7 +1220,7 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
                 int n        = m + i;
                 
                 /* implicit gravity */
-                double Nsqsc = dt*dt * (g/Msq) * strat;
+                double Nsqsc = time_offset_impl * dt*dt * (g/Msq) * strat;
                 double v     = Sol->rhov[n]/Sol->rho[n];
                 double dchi  = Sol->rhoX[BUOY][n]/Sol->rho[n];
                 double chi   = Sol->rho[n]/Sol->rhoY[n];
@@ -1393,11 +1398,11 @@ void euler_forward_non_advective(ConsVars* Sol,
                      double dpidP   = th.gm1 * mpv->p2_cells[nc] / Sol->rhoY[nc]; 
                      */
 #endif
-                    
+                    double time_offset_expl = ud.acoustic_order - 1.0;
                     Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                     Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
                     Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
-                    Sol->rhoX[BUOY][nc] = (Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c)) + dt * ( - v * dSdy) * Sol->rho[nc];
+                    Sol->rhoX[BUOY][nc] = (Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c)) +  time_offset_expl * dt * ( - v * dSdy) * Sol->rho[nc];
                     /* 
                      Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
                      */
@@ -1436,8 +1441,10 @@ void euler_forward_non_advective(ConsVars* Sol,
                 for (int j=igy; j<icy-igy+1; j++) {
                     int mc = lc + j*icx;
                     int mn = ln + j*inx;
-                    double S0p    = mpv->HydroState_n->S0[j+1];
-                    double S0m    = mpv->HydroState_n->S0[j];
+                    
+                    double S0p = mpv->HydroState_n->S0[j+1];
+                    double S0c = mpv->HydroState->S0[j];
+                    double S0m = mpv->HydroState_n->S0[j];
                     
                     for (int i=igx; i<icx-igx+1; i++) {
                         int nc        = mc + i;
@@ -1474,11 +1481,12 @@ void euler_forward_non_advective(ConsVars* Sol,
                          double dpidP   = th.gm1 * mpv->p2_cells[nc] / Sol->rhoY[nc]; 
                          */
 #endif
+                        double time_offset_expl = ud.acoustic_order - 1.0;
                         Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                         Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
                         Sol->rhow[nc]  = Sol->rhow[nc] + dt * ( - rhoYovG * dpdz - coriolis * drhou);
                         Sol->rhoY[nc]  = Sol->rhoY[nc] - dt * div[nc];
-                        Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
+                        Sol->rhoX[BUOY][nc] = (Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c)) + time_offset_expl * dt * ( - v * dSdy) * Sol->rho[nc];
                         
                         dp2n[nn000] -= dt * dpidP * div[nn000];
                     }
