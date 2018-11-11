@@ -24,7 +24,7 @@
 double molly(double x);
 
 /* horizontal stretch for S&K94 IGWs: planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0; */
-static double scalefactor = 160.0;      
+static double scalefactor = 1.0;      
 
 void User_Data_init(User_Data* ud) {
     
@@ -164,9 +164,10 @@ void User_Data_init(User_Data* ud) {
     ud->second_projection_local_precision = tol;  /* 1.e-05 should be enough */
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
-    ud->initial_projection                = WRONG; /* WRONG;  CORRECT; */
+    ud->initial_projection                = WRONG;   /* WRONG;  CORRECT; */
     
-    ud->synchronize_nodal_pressure        = WRONG;  /* WRONG; */
+    ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
+    ud->synchronize_nodal_pressure        = WRONG;   /* WRONG; CORRECT; */
 
     /* numerics parameters */
     ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -183,7 +184,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 20;
+    ud->write_file_period = 40;
     ud->file_format = HDF;
     
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */

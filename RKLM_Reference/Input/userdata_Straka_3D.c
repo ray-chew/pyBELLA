@@ -65,7 +65,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Low Mach */
     ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
-    ud->is_compressible   =  0;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_compressible   =  1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep =  0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
 	
@@ -157,6 +157,7 @@ void User_Data_init(User_Data* ud) {
     ud->second_projection_max_iterations  = 6000;
     ud->initial_projection                = WRONG; /* WRONG;  CORRECT; */
     
+    ud->column_preconditioner             = WRONG;
     ud->synchronize_nodal_pressure        = WRONG;
     
 	/* numerics parameters */

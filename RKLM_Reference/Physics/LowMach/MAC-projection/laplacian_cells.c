@@ -531,7 +531,7 @@ double precon_c_prepare(
 
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.column_preconditioner == CORRECT) {
         return precon_c_column_prepare(node, elem, hplus, hcenter);
     } else {
         return precon_c_diag_prepare(node, elem, hplus, hcenter);        
@@ -546,10 +546,12 @@ void precon_c_apply(
                     const ElemSpaceDiscr *elem) 
 {
 #ifdef PRECON    
-    
+    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+     make sure the preconditioning calls are issued for  October 24 version */
+
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.column_preconditioner == CORRECT) {
         precon_c_column_apply(vec_out, vec_in, elem);
     } else {
         precon_c_diag_apply(vec_out, vec_in, elem);        
@@ -568,10 +570,12 @@ void precon_c_invert(
                      const ElemSpaceDiscr *elem) 
 {
 #ifdef PRECON
-    
+    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+     make sure the preconditioning calls are issued for  October 24 version */
+
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.column_preconditioner == CORRECT) {
         precon_c_column_invert(vec_out, vec_in, elem);
     } else {
         precon_c_diag_invert(vec_out, vec_in, elem);        

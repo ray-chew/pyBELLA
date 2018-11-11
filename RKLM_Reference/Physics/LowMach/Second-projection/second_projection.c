@@ -893,7 +893,9 @@ static void operator_coefficients_nodes(
     
     double nonhydro = ud.nonhydrostasy;
     
-    double pressure_time_offset_factor = 3.0 - ud.acoustic_order; 
+    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
+    // double time_offset = 3.0 - ud.acoustic_order; 
+    double time_offset = 1.0; 
     
 #ifdef CORIOLIS_EXPLICIT
     const double coriolis  = 0.0;
@@ -919,7 +921,7 @@ static void operator_coefficients_nodes(
 			double* hplusy  = hplus[1];
 			double* hc      = hcenter;
 
-			const double ccenter = - (ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt)/pressure_time_offset_factor;
+			const double ccenter = - (ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt)/time_offset;
             const double cexp    = 2.0-th.gamm;
             
             int i, j, m, n;
@@ -946,7 +948,7 @@ static void operator_coefficients_nodes(
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
                     double fsqsc = dt*dt * coriolis*coriolis;
                     double fimp  = 1.0 / (1.0 + fsqsc);
-                    double Nsqsc = pressure_time_offset_factor * dt*dt * (g/Msq) * strat;                    
+                    double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;                    
                     double gimp  = 1.0 / (nonhydro + Nsqsc);
                     
                     hplusx[n]    = coeff * fimp;
@@ -979,7 +981,7 @@ static void operator_coefficients_nodes(
 			double* hplusz  = hplus[2];
 			double* hc      = hcenter;
             
-			const double ccenter = - (ud.compressibility*ud.Msq)*th.gamminv/(dt*dt)/pressure_time_offset_factor;
+			const double ccenter = - (ud.compressibility*ud.Msq)*th.gamminv/(dt*dt)/time_offset;
             
 			const double cexp    = 1.0-th.gamm;
 			int i, j, k, l, m, n;
@@ -999,7 +1001,7 @@ static void operator_coefficients_nodes(
                             double coeff = Gammainv * Sol->rhoY[n] * Y;
                             double fsqsc = dt*dt * coriolis*coriolis;
                             double fimp  = 1.0 / (1.0 + fsqsc);
-                            double Nsqsc = pressure_time_offset_factor * dt*dt * (g/Msq) * strat;                    
+                            double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;                    
                             double gimp  = 1.0 / (nonhydro + Nsqsc);
 
                             hplusx[n]  = coeff * fimp;
@@ -1044,7 +1046,9 @@ void correction_nodes(
     const double coriolis  = ud.coriolis_strength[0];
 #endif
     
-    double time_offset_impl = 3.0 - ud.acoustic_order; 
+    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
+    // double time_offset = 3.0 - ud.acoustic_order; 
+    double time_offset = 1.0; 
 
 
 	switch(ndim) {
@@ -1092,7 +1096,9 @@ void correction_nodes(
 					                    
                     Sol->rhou[ne] += - dt * thinv * hplusx[ne] * Dpx;
 					Sol->rhov[ne] += - dt * thinv * hplusy[ne] * Dpy;
-                    Sol->rhoX[BUOY][ne] += - time_offset_impl * dt * dSdy * Sol->rhov[ne];
+                    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+                     the following line was not there on Oct. 24. */
+                    // Sol->rhoX[BUOY][ne] += - time_offset * dt * dSdy * Sol->rhov[ne];
 				}
 			} 
 			
@@ -1150,7 +1156,9 @@ void correction_nodes(
                         Sol->rhou[ne] += - dt * thinv * hplusx[ne] * (Dpx + dt * coriolis * Dpz);
                         Sol->rhov[ne] += - dt * thinv * hplusy[ne] * Dpy;
                         Sol->rhow[ne] += - dt * thinv * hplusz[ne] * (Dpz - dt * coriolis * Dpx);
-                        Sol->rhoX[BUOY][ne] += - time_offset_impl * dt * dSdy * Sol->rhov[ne];
+                        /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+                         the following line was not there on October 24 */
+                        // Sol->rhoX[BUOY][ne] += - time_offset * dt * dSdy * Sol->rhov[ne];
                     }
                 } 
             }
@@ -1195,7 +1203,9 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
     const double Msq = ud.Msq;
     const double dy  = elem->dy;
     
-    const double time_offset_impl = 3.0 - ud.acoustic_order;
+    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
+    // const double time_offset = 3.0 - ud.acoustic_order;
+    const double time_offset = 1.0;
     
 #ifdef CORIOLIS_EXPLICIT
     const double coriolis  = 0.0;
@@ -1220,7 +1230,7 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
                 int n        = m + i;
                 
                 /* implicit gravity */
-                double Nsqsc = time_offset_impl * dt*dt * (g/Msq) * strat;
+                double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;
                 double v     = Sol->rhov[n]/Sol->rho[n];
                 double dchi  = Sol->rhoX[BUOY][n]/Sol->rho[n];
                 double chi   = Sol->rho[n]/Sol->rhoY[n];
@@ -1388,6 +1398,9 @@ void euler_forward_non_advective(ConsVars* Sol,
                     double chi     = Sol->rho[nc]/Sol->rhoY[nc];
                     double dbuoy   = -Sol->rho[nc]*dchi/chi;  /* -dchi/chibar; */
                     double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
+
+                    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+                     Option EXNER_NONLINEAR did not exist on Oct. 24 */
 #ifdef EXNER_NONLINEAR
                     double dpidP   = 1.0;
 #else
@@ -1398,6 +1411,9 @@ void euler_forward_non_advective(ConsVars* Sol,
                      double dpidP   = th.gm1 * mpv->p2_cells[nc] / Sol->rhoY[nc]; 
                      */
 #endif
+
+                    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
+#if 0  /* November 11 version: 1;   October 24 version: 0 */
                     double time_offset_expl = ud.acoustic_order - 1.0;
                     Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                     Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
@@ -1406,7 +1422,12 @@ void euler_forward_non_advective(ConsVars* Sol,
                     /* 
                      Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
                      */
-
+#else
+                    Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
+                    Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
+                    Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
+                    Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
+#endif
                     dp2n[nn00] -= dt * dpidP * div[nn00];
                 }
             }
@@ -1469,6 +1490,9 @@ void euler_forward_non_advective(ConsVars* Sol,
                         double chi     = Sol->rho[nc]/Sol->rhoY[nc];
                         double dbuoy   = -Sol->rho[nc]*dchi/chi;  /* -dchi/chibar; */
                         double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
+
+                        /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+                         Option EXNER_NONLINEAR did not exist on Oct. 24 */
 #ifdef EXNER_NONLINEAR
                         double dpidP   = 1.0;
 #else
@@ -1481,13 +1505,22 @@ void euler_forward_non_advective(ConsVars* Sol,
                          double dpidP   = th.gm1 * mpv->p2_cells[nc] / Sol->rhoY[nc]; 
                          */
 #endif
-                        double time_offset_expl = ud.acoustic_order - 1.0;
+
+                        /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
+#if 0  /* November 11 version: 1;   October 24 version: 0 */
+double time_offset_expl = ud.acoustic_order - 1.0;
                         Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                         Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
                         Sol->rhow[nc]  = Sol->rhow[nc] + dt * ( - rhoYovG * dpdz - coriolis * drhou);
                         Sol->rhoY[nc]  = Sol->rhoY[nc] - dt * div[nc];
                         Sol->rhoX[BUOY][nc] = (Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c)) + time_offset_expl * dt * ( - v * dSdy) * Sol->rho[nc];
-                        
+#else
+                        Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
+                        Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
+                        Sol->rhow[nc]  = Sol->rhow[nc] + dt * ( - rhoYovG * dpdz - coriolis * drhou);
+                        Sol->rhoY[nc]  = Sol->rhoY[nc] - dt * div[nc];
+                        Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
+#endif
                         dp2n[nn000] -= dt * dpidP * div[nn000];
                     }
                 }
@@ -1502,10 +1535,13 @@ void euler_forward_non_advective(ConsVars* Sol,
     
     
     // cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
-    // cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
 
     if (ud.is_compressible) {
         double weight = ud.acoustic_order - 1.0;
+
+
+        /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+         Option EXNER_NONLINEAR did not exist on Oct. 24 */
 #ifdef EXNER_NONLINEAR
         const int icxn = node->icx;
         const int icyn = node->icy;
@@ -1521,7 +1557,9 @@ void euler_forward_non_advective(ConsVars* Sol,
 #else
         for (int nn=0; nn<node->nc; nn++) {
             mpv->p2_nodes[nn]  += weight*dp2n[nn];
-            mpv->dp2_nodes[nn]  = weight*dp2n[nn]; 
+            /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+             the following line did not exist in the October 24 version */            
+            // mpv->dp2_nodes[nn]  = weight*dp2n[nn]; 
         }
 #endif
     }

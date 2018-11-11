@@ -40,6 +40,9 @@
  #define NONLINEAR_EOS_IN_1st_PROJECTION -- Newton for  P(pi)
  #define NONLINEAR_EOS_IN_1st_PROJECTION
  */
+/* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+ this option was on on October 24 */
+#define NONLINEAR_EOS_IN_1st_PROJECTION
 
 /* ============================================= 
  Elliptic Solver Options

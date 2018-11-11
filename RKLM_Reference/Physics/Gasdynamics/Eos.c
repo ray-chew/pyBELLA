@@ -598,7 +598,10 @@ void synchronize_variables(MPV* mpv,
     
     set_ghostcells_p2(mpv->p2_cells, elem, elem->igx);
 
+    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+     the following line was commented out in the Nov. 11 version */
     // reset_Y_perturbation(Sol, (const MPV*)mpv, elem);
+    reset_Y_perturbation(Sol, (const MPV*)mpv, elem);
 
     Set_Explicit_Boundary_Data(Sol, elem);
     
