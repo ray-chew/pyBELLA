@@ -89,9 +89,11 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
 
 /* ========================================================================== */
 
-#define OUTPUT_RHS 0
+#define OUTPUT_RHS 1
 #if OUTPUT_RHS
 static int rhs_output_count = 0;
+static int first_output_step = 230;
+extern int step;  
 #endif
 
 void euler_backward_non_advective_impl_part(
@@ -168,16 +170,18 @@ void euler_backward_non_advective_impl_part(
 #if OUTPUT_RHS
     FILE *prhsfile = NULL;
     char fn[120], fieldname[90];
-    if (rhs_output_count < 10) {
-        sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
-    } else if(rhs_output_count < 100) {
-        sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
-    } else {
-        sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
+    if (step >= first_output_step) {
+        if (rhs_output_count < 10) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
+        } else if(rhs_output_count < 100) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
+        } else {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
+        }
+        sprintf(fieldname, "rhs_nodes");    
+        WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+        rhs_output_count++;
     }
-    sprintf(fieldname, "rhs_nodes");    
-    WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
-    rhs_output_count++;
 #endif
     
     variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
@@ -1098,7 +1102,7 @@ void correction_nodes(
 					Sol->rhov[ne] += - dt * thinv * hplusy[ne] * Dpy;
                     /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
                      the following line was not there on Oct. 24. */
-                    // Sol->rhoX[BUOY][ne] += - time_offset * dt * dSdy * Sol->rhov[ne];
+                    Sol->rhoX[BUOY][ne] += - time_offset * dt * dSdy * Sol->rhov[ne];
 				}
 			} 
 			
@@ -1158,7 +1162,7 @@ void correction_nodes(
                         Sol->rhow[ne] += - dt * thinv * hplusz[ne] * (Dpz - dt * coriolis * Dpx);
                         /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
                          the following line was not there on October 24 */
-                        // Sol->rhoX[BUOY][ne] += - time_offset * dt * dSdy * Sol->rhov[ne];
+                        Sol->rhoX[BUOY][ne] += - time_offset * dt * dSdy * Sol->rhov[ne];
                     }
                 } 
             }

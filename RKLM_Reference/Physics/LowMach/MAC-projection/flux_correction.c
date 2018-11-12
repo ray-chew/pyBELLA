@@ -94,9 +94,10 @@ void hydrostatic_vertical_flux(ConsVars* flux[3],
 
 /* ========================================================================== */
 
-#define OUTPUT_RHS_CELLS 0
+#define OUTPUT_RHS_CELLS 1
 #if OUTPUT_RHS_CELLS
 static int rhs_output_count = 0;
+static int first_output_step = 230;
 #endif
 
 void flux_correction(ConsVars* flux[3],
@@ -153,17 +154,18 @@ void flux_correction(ConsVars* flux[3],
 #if OUTPUT_RHS_CELLS
     FILE *prhsfile = NULL;
     char fn[120], fieldname[90];
-    if (rhs_output_count < 10) {
-        sprintf(fn, "%s/rhs_cells/rhs_cells_00%d.hdf", ud.file_name, rhs_output_count);
-    } else if(rhs_output_count < 100) {
-        sprintf(fn, "%s/rhs_cells/rhs_cells_0%d.hdf", ud.file_name, rhs_output_count);
-    } else {
-        sprintf(fn, "%s/rhs_cells/rhs_cells_%d.hdf", ud.file_name, rhs_output_count);
+    if (step >= first_output_step) {
+        if (rhs_output_count < 10) {
+            sprintf(fn, "%s/rhs_cells/rhs_cells_00%d.hdf", ud.file_name, rhs_output_count);
+        } else if(rhs_output_count < 100) {
+            sprintf(fn, "%s/rhs_cells/rhs_cells_0%d.hdf", ud.file_name, rhs_output_count);
+        } else {
+            sprintf(fn, "%s/rhs_cells/rhs_cells_%d.hdf", ud.file_name, rhs_output_count);
+        }
+        sprintf(fieldname, "rhs_cells");    
+        WriteHDF(prhsfile, elem->icx, elem->icy, elem->icz, elem->ndim, rhs, fn, fieldname);
+        rhs_output_count++;
     }
-    sprintf(fieldname, "rhs_cells");    
-    WriteHDF(prhsfile, elem->icx, elem->icy, elem->icz, elem->ndim, rhs, fn, fieldname);
-    
-    rhs_output_count++;
 #endif
 
     

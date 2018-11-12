@@ -179,7 +179,7 @@ double acoustic_order(const double t,
     
     switch (ud.is_compressible) {
         case 0:
-            return(1.0);
+            return(2.0);
             break;
         case 1: {
             /*
@@ -188,7 +188,7 @@ double acoustic_order(const double t,
              */
             /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
             // return(2.0-0.025); /* 1.0, 2.0, 2.0-0.025*/
-            return(1.0);
+            return(2.0);
         }
             break;
         case -1:
