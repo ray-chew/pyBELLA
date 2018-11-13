@@ -531,7 +531,7 @@ double precon_c_prepare(
 
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.column_preconditioner == CORRECT) {
         return precon_c_column_prepare(node, elem, hplus, hcenter);
     } else {
         return precon_c_diag_prepare(node, elem, hplus, hcenter);        
@@ -543,15 +543,23 @@ double precon_c_prepare(
 void precon_c_apply(
                     double* vec_out,
                     const double* vec_in,
-                    const ElemSpaceDiscr *elem) {
-    
+                    const ElemSpaceDiscr *elem) 
+{
+#ifdef PRECON    
+    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+     make sure the preconditioning calls are issued for  October 24 version */
+
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.column_preconditioner == CORRECT) {
         precon_c_column_apply(vec_out, vec_in, elem);
     } else {
         precon_c_diag_apply(vec_out, vec_in, elem);        
     }
+#else
+    return;
+#endif
+    
 }
 
 /* -------------------------------------------------------------------------- */
@@ -559,19 +567,31 @@ void precon_c_apply(
 void precon_c_invert(
                      double* vec_out,
                      const double* vec_in,
-                     const ElemSpaceDiscr *elem) {
-    
+                     const ElemSpaceDiscr *elem) 
+{
+#ifdef PRECON
+    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+     make sure the preconditioning calls are issued for  October 24 version */
+
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.column_preconditioner == CORRECT) {
         precon_c_column_invert(vec_out, vec_in, elem);
     } else {
         precon_c_diag_invert(vec_out, vec_in, elem);        
     }
+#else
+    return;
+#endif
 }
 
 
 /* ========================================================================== */
+#define OUTPUT_LAP_CELLS 0
+#if OUTPUT_LAP_CELLS
+#include "io.h"
+static int lap_output_count = 0;
+#endif
 
 void EnthalpyWeightedLap_bilinear_p(
                                     const ElemSpaceDiscr* elem, 
@@ -806,4 +826,22 @@ void EnthalpyWeightedLap_bilinear_p(
         }
         default: ERROR("ndim not in {1, 2, 3}");
     }
+    
+#if OUTPUT_LAP_CELLS
+    extern User_Data ud;
+    FILE *plapfile = NULL;
+    char fn[120], fieldname[90];
+    if (lap_output_count < 10) {
+        sprintf(fn, "%s/lap_cells/lap_cells_00%d.hdf", ud.file_name, lap_output_count);
+    } else if(lap_output_count < 100) {
+        sprintf(fn, "%s/lap_cells/lap_cells_0%d.hdf", ud.file_name, lap_output_count);
+    } else {
+        sprintf(fn, "%s/lap_cells/lap_cells_%d.hdf", ud.file_name, lap_output_count);
+    }
+    sprintf(fieldname, "lap_cells");    
+    WriteHDF(plapfile, elem->icx, elem->icy, elem->icz, elem->ndim, lap, fn, fieldname);
+    
+    lap_output_count++;
+#endif
+
 }

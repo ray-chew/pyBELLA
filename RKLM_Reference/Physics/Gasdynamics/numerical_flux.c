@@ -113,6 +113,8 @@ void recompute_advective_fluxes(ConsVars* flux[3],
 {
     extern User_Data ud;
     
+    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+     UPWIND_RHOY should be off to revive the October 24 version. */
 #ifdef UPWIND_RHOY
     double (*limiter[])(const double a, 
                         const double b, 

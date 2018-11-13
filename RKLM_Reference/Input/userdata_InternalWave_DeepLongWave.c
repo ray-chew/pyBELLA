@@ -24,7 +24,6 @@
 double molly(double x);
 
 /* horizontal stretch for S&K94 IGWs: planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0; */
-static double scalefactor = 1.0;      
 
 void User_Data_init(User_Data* ud) {
     
@@ -48,8 +47,8 @@ void User_Data_init(User_Data* ud) {
     /* references for non-dimensionalization */
     double h_ref    = 10000;                 /* [m]               */
     double t_ref    = 100;                   /* [s]               */
-    double T_ref    = 300.00;                /* [K]               */
-    double p_ref    = 1e+5;                  /* [Pa]              */
+    double T_ref    = 222.65;                /* [K]               */
+    double p_ref    = 0.237e+5;                  /* [Pa]              */
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
     
@@ -100,10 +99,10 @@ void User_Data_init(User_Data* ud) {
     }
         
     /* flow domain; all lengths in units of  href  */
-    ud->xmin = -15.0 * scalefactor;
-    ud->xmax =  15.0 * scalefactor;
-    ud->ymin =   0.0;
-    ud->ymax =   1.0;
+    ud->xmin = -20.0e+6/ud->h_ref;
+    ud->xmax =  20.0e+6/ud->h_ref;
+    ud->ymin =      0.0/ud->h_ref;
+    ud->ymax =   3.0e+5/ud->h_ref;
     ud->zmin = - 1.0;
     ud->zmax =   1.0;
     
@@ -129,14 +128,14 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = SI_MIDPT; /* this code version has only one option */
     ud->CFL                    = 0.9; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = (12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
-    ud->dtfixed                = (12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed0               = 2000 / ud->t_ref;
+    ud->dtfixed                = 2000 / ud->t_ref;
     
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
     ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
+    ud->iny =   30+1; /* 321; 161;  81;  65; 41;  */
     ud->inz =      1;
     
     /* explicit predictor step */
@@ -154,7 +153,7 @@ void User_Data_init(User_Data* ud) {
     ud->kZ = 1.4; /* 2.0 */
         
     /* al explicit predictor operations are done on ncache-size data worms to save memory */ 
-    ud->ncache = 154; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
+    ud->ncache = 75; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
     
     /* linear solver-stuff */
     double tol                            = 1.e-10;
@@ -164,10 +163,9 @@ void User_Data_init(User_Data* ud) {
     ud->second_projection_local_precision = tol;  /* 1.e-05 should be enough */
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
-    ud->initial_projection                = WRONG;   /* WRONG;  CORRECT; */
+    ud->initial_projection                = WRONG; /* WRONG;  CORRECT; */
     
-    ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
-    ud->synchronize_nodal_pressure        = WRONG;   /* WRONG; CORRECT; */
+    ud->synchronize_nodal_pressure        = WRONG;
 
     /* numerics parameters */
     ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -176,7 +174,7 @@ void User_Data_init(User_Data* ud) {
     /* =====  CODE FLOW CONTROL  ======================================================== */
     /* ================================================================================== */
     
-    ud->tout[0] = scalefactor * 1.0 * 3000.0 / ud->t_ref; /* 3000 */
+    ud->tout[0] = 45000.0 / ud->t_ref; /* 3000 */
     ud->tout[1] = -1.0;
 
     ud->stepmax = 10000;
@@ -217,8 +215,8 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const double v0    = 0.0;
     const double w0    = 0.0;
     const double delth = 0.01 / ud.T_ref;                    /* pot. temp. perturbation amplitude; standard:  0.01 / ud.T_ref */
-    const double xc    = -1.0*scalefactor*50.0e+03/ud.h_ref; /* initial position of center of pot temp perturbation */
-    const double a     = scalefactor*5.0e+03/ud.h_ref;       /* characteristic width of the witch of Agnesi type mollifier */
+    const double xc    = -15.0e+6/ud.h_ref; /* initial position of center of pot temp perturbation */
+    const double a     =   6.0e+5/ud.h_ref;       /* characteristic width of the witch of Agnesi type mollifier */
     
     const int icx = elem->icx;
     const int icy = elem->icy;
@@ -257,16 +255,16 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
         for(j = 0; j < elem->icy; j++) {
             x     = elem->x[i];
             y     = elem->y[j];
-            Y[j]  = stratification(y)  + delth * molly(x) * sin(PI*y)  / (1.0 + (x-xc)*(x-xc) / (a*a));
+            Y[j]  = stratification(y)  + delth * molly(x) * sin(PI*y/ud.ymax)  / (1.0 + (x-xc)*(x-xc) / (a*a));
         }  
         
         for(j = 0; j < node->icy; j++) {
             xn    = node->x[i];
             yn    = node->y[j];
 #if 0
-            Yn[j] = stratification(yn)  + delth * sin(PI*yn);
+            Yn[j] = stratification(yn)  + delth * sin(PI*yn/ud.ymax);
 #else
-            Yn[j] = stratification(yn)  + delth * molly(xn) * sin(PI*yn)  / (1.0 + (xn-xc)*(xn-xc) / (a*a));
+            Yn[j] = stratification(yn)  + delth * molly(xn) * sin(PI*yn/ud.ymax)  / (1.0 + (xn-xc)*(xn-xc) / (a*a));
 #endif
         }        
         /* determine hydrostatic pressure distributions column-wise (lateral relation still neglected) */
@@ -342,10 +340,9 @@ double stratification(
     
     extern User_Data ud;
     
-    double Nsq = ud.Nsq_ref * ud.t_ref * ud.t_ref;
-    double g   = ud.gravity_strength[1] / ud.Msq;
-    
-    return( exp(Nsq*y/g) );
+    double Hinv   = 4.08163e-5 * ud.h_ref;
+    double Theta0 = 222.65 / ud.T_ref;
+    return( Theta0*exp(Hinv*y) );
 }
 
 

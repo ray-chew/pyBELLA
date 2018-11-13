@@ -142,6 +142,8 @@ int main( void )
             flux_correction(flux, Sol, Sol0, elem, node, t, 0.5*dt, step);        
 
             ConsVars_set(Sol, Sol0, elem->nc);
+            /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
+            // cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
             cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
           
             printf("\n\n-----------------------------------------------------------------------------------------");
@@ -155,10 +157,11 @@ int main( void )
             
             /* explicit EULER half time step for gravity and pressure gradient */ 
             euler_forward_non_advective(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.5*dt, WITH_PRESSURE);
+
                         
 #ifdef ADVECTION
             /* explicit full time step advection using div-controlled advective fluxes */
-            advect(Sol, flux, force, dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+            advect(Sol, flux, force, 1.0*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
 #endif
             
             /* implicit EULER half time step for gravity and pressure gradient */ 

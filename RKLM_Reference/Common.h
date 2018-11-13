@@ -38,13 +38,18 @@
  ============================================= */
 /* 
  #define NONLINEAR_EOS_IN_1st_PROJECTION -- Newton for  P(pi)
+ #define NONLINEAR_EOS_IN_1st_PROJECTION
  */
+/* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+ this option was on on October 24 */
 #define NONLINEAR_EOS_IN_1st_PROJECTION
 
 /* ============================================= 
  Elliptic Solver Options
  ============================================= */
-
+/*
+ */
+#define PRECON
 #define NEW_LAP
 
 /* solver options ==============================
@@ -83,6 +88,10 @@
 #define DIV_CONTROL_LOCAL          /* if def'd, div is controlled in L_\infty, otherwise in L2    */
 #define P2_FULL_STENCIL 1.0        /* values: 0.0, 1.0;  0.0 = 5/7pt stencil,  1.0=9/27pt stencil */
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
+
+/*
+ #define EXNER_NONLINEAR
+*/
 
 /* 
 #define P2_FULL_CELLS_ON_BDRY

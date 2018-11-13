@@ -893,6 +893,10 @@ static void operator_coefficients_nodes(
     
     double nonhydro = ud.nonhydrostasy;
     
+    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
+    // double time_offset = 3.0 - ud.acoustic_order; 
+    double time_offset = 1.0; 
+    
 #ifdef CORIOLIS_EXPLICIT
     const double coriolis  = 0.0;
 #else
@@ -917,7 +921,7 @@ static void operator_coefficients_nodes(
 			double* hplusy  = hplus[1];
 			double* hc      = hcenter;
 
-			const double ccenter = - (ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt);
+			const double ccenter = - (ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt)/time_offset;
             const double cexp    = 2.0-th.gamm;
             
             int i, j, m, n;
@@ -944,7 +948,7 @@ static void operator_coefficients_nodes(
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
                     double fsqsc = dt*dt * coriolis*coriolis;
                     double fimp  = 1.0 / (1.0 + fsqsc);
-                    double Nsqsc = dt*dt * (g/Msq) * strat;                    
+                    double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;                    
                     double gimp  = 1.0 / (nonhydro + Nsqsc);
                     
                     hplusx[n]    = coeff * fimp;
@@ -977,7 +981,7 @@ static void operator_coefficients_nodes(
 			double* hplusz  = hplus[2];
 			double* hc      = hcenter;
             
-			const double ccenter = - (ud.compressibility*ud.Msq)*th.gamminv/(dt*dt);
+			const double ccenter = - (ud.compressibility*ud.Msq)*th.gamminv/(dt*dt)/time_offset;
             
 			const double cexp    = 1.0-th.gamm;
 			int i, j, k, l, m, n;
@@ -997,7 +1001,7 @@ static void operator_coefficients_nodes(
                             double coeff = Gammainv * Sol->rhoY[n] * Y;
                             double fsqsc = dt*dt * coriolis*coriolis;
                             double fimp  = 1.0 / (1.0 + fsqsc);
-                            double Nsqsc = dt*dt * (g/Msq) * strat;                    
+                            double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;                    
                             double gimp  = 1.0 / (nonhydro + Nsqsc);
 
                             hplusx[n]  = coeff * fimp;
@@ -1036,6 +1040,17 @@ void correction_nodes(
 
 	const int ndim = elem->ndim;
     	    
+#ifdef CORIOLIS_EXPLICIT
+    const double coriolis  = 0.0;
+#else
+    const double coriolis  = ud.coriolis_strength[0];
+#endif
+    
+    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
+    // double time_offset = 3.0 - ud.acoustic_order; 
+    double time_offset = 1.0; 
+
+
 	switch(ndim) {
 		case 1: {
 			ERROR("function not available");
@@ -1056,10 +1071,7 @@ void correction_nodes(
 			const double dy     = node->dy;
 			const double oodx   = 1.0 / dx;
 			const double oody   = 1.0 / dy;
-            
-            const double dtowdx = dt * oodx;
-            const double dtowdy = dt * oody;                
-            			
+                        			
             const double* hplusx = hplus[0];
             const double* hplusy = hplus[1];
             
@@ -1068,6 +1080,9 @@ void correction_nodes(
 			for(j = igy; j < icy - igy - 1; j++) {
 				m = j * icx; 
 				me = j * icxe;
+                
+                double dSdy = (mpv->HydroState_n->S0[j+1] - mpv->HydroState_n->S0[j]) * oody;
+
 				for(i = igx; i < icx - igx - 1; i++) {
 					const int n     = m + i;
 					const int nicx  = n + icx;
@@ -1075,12 +1090,15 @@ void correction_nodes(
 					const int n1icx = n + 1 + icx;
 					const int ne    = me + i; 
 					
-					const double Dpx   = 0.5 * (p[n1]   - p[n] + p[n1icx] - p[nicx]);
-					const double Dpy   = 0.5 * (p[nicx] - p[n] + p[n1icx] - p[n1]);
+					const double Dpx   = 0.5 * oodx * (p[n1]   - p[n] + p[n1icx] - p[nicx]);
+					const double Dpy   = 0.5 * oody * (p[nicx] - p[n] + p[n1icx] - p[n1]);
                     const double thinv = Sol->rho[ne] / Sol->rhoY[ne];
 					                    
-                    Sol->rhou[ne] += - dtowdx * thinv * hplusx[ne] * Dpx;
-					Sol->rhov[ne] += - dtowdy * thinv * hplusy[ne] * Dpy;
+                    Sol->rhou[ne] += - dt * thinv * hplusx[ne] * Dpx;
+					Sol->rhov[ne] += - dt * thinv * hplusy[ne] * Dpy;
+                    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+                     the following line was not there on Oct. 24. */
+                    // Sol->rhoX[BUOY][ne] += - time_offset * dt * dSdy * Sol->rhov[ne];
 				}
 			} 
 			
@@ -1104,12 +1122,7 @@ void correction_nodes(
             const double oodx   = 1.0 / dx;
             const double oody   = 1.0 / dy;
             const double oodz   = 1.0 / dz;
-            
-            const double dtowdx = dt * oodx;
-            const double dtowdy = dt * oody;                
-            const double dtowdz = dt * oodz;                
-
-            
+                        
             const double* hplusx = hplus[0];
             const double* hplusy = hplus[1];
             const double* hplusz = hplus[2];
@@ -1120,6 +1133,9 @@ void correction_nodes(
                 for(int j = igy; j < icy - igy - 1; j++) {
                     int m  = l  + j*icx; 
                     int me = le + j*icxe;
+
+                    double dSdy = (mpv->HydroState_n->S0[j+1] - mpv->HydroState_n->S0[j]) * oody;
+
                     for(int i = igx; i < icx - igx - 1; i++) {
                         int n000 = m + i;
                         int n010 = n000 + icx;
@@ -1132,14 +1148,17 @@ void correction_nodes(
 
                         int ne   = me + i; 
                         
-                        double Dpx   = 0.25 * (p[n001] - p[n000] + p[n011] - p[n010] + p[n101] - p[n100] + p[n111] - p[n110]);
-                        double Dpy   = 0.25 * (p[n010] - p[n000] + p[n011] - p[n001] + p[n110] - p[n100] + p[n111] - p[n101]);
-                        double Dpz   = 0.25 * (p[n100] - p[n000] + p[n110] - p[n010] + p[n101] - p[n001] + p[n111] - p[n011]);
+                        double Dpx   = 0.25 * oodx * (p[n001] - p[n000] + p[n011] - p[n010] + p[n101] - p[n100] + p[n111] - p[n110]);
+                        double Dpy   = 0.25 * oody * (p[n010] - p[n000] + p[n011] - p[n001] + p[n110] - p[n100] + p[n111] - p[n101]);
+                        double Dpz   = 0.25 * oodz * (p[n100] - p[n000] + p[n110] - p[n010] + p[n101] - p[n001] + p[n111] - p[n011]);
                         double thinv = Sol->rho[ne] / Sol->rhoY[ne];
                         
-                        Sol->rhou[ne] += - dtowdx * thinv * hplusx[ne] * Dpx;
-                        Sol->rhov[ne] += - dtowdy * thinv * hplusy[ne] * Dpy;
-                        Sol->rhow[ne] += - dtowdz * thinv * hplusz[ne] * Dpz;
+                        Sol->rhou[ne] += - dt * thinv * hplusx[ne] * (Dpx + dt * coriolis * Dpz);
+                        Sol->rhov[ne] += - dt * thinv * hplusy[ne] * Dpy;
+                        Sol->rhow[ne] += - dt * thinv * hplusz[ne] * (Dpz - dt * coriolis * Dpx);
+                        /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+                         the following line was not there on October 24 */
+                        // Sol->rhoX[BUOY][ne] += - time_offset * dt * dSdy * Sol->rhov[ne];
                     }
                 } 
             }
@@ -1184,6 +1203,10 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
     const double Msq = ud.Msq;
     const double dy  = elem->dy;
     
+    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
+    // const double time_offset = 3.0 - ud.acoustic_order;
+    const double time_offset = 1.0;
+    
 #ifdef CORIOLIS_EXPLICIT
     const double coriolis  = 0.0;
 #else
@@ -1192,7 +1215,7 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
     const double u0        = ud.wind_speed;
     const double fsqsc     = dt*dt*coriolis*coriolis;
     const double ooopfsqsc = 1.0 / (1.0 + fsqsc);
-
+    
     const int icx = elem->icx;
     const int icy = elem->icy;
     const int icz = elem->icz;
@@ -1207,7 +1230,7 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
                 int n        = m + i;
                 
                 /* implicit gravity */
-                double Nsqsc = dt*dt * (g/Msq) * strat;
+                double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;
                 double v     = Sol->rhov[n]/Sol->rho[n];
                 double dchi  = Sol->rhoX[BUOY][n]/Sol->rho[n];
                 double chi   = Sol->rho[n]/Sol->rhoY[n];
@@ -1347,7 +1370,9 @@ void euler_forward_non_advective(ConsVars* Sol,
             for (int j=igye; j<icye-igye+1; j++) {
                 int mc = j*icxe;
                 int mn = j*icxn;
+                
                 double S0p = mpv->HydroState_n->S0[j+1];
+                double S0c = mpv->HydroState->S0[j];
                 double S0m = mpv->HydroState_n->S0[j];
                 
                 for (int i=igxe; i<icxe-igxe+1; i++) {
@@ -1373,18 +1398,36 @@ void euler_forward_non_advective(ConsVars* Sol,
                     double chi     = Sol->rho[nc]/Sol->rhoY[nc];
                     double dbuoy   = -Sol->rho[nc]*dchi/chi;  /* -dchi/chibar; */
                     double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
+
+                    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+                     Option EXNER_NONLINEAR did not exist on Oct. 24 */
+#ifdef EXNER_NONLINEAR
+                    double dpidP   = 1.0;
+#else
                     double dpidP   = (th.gm1 / ud.Msq) * \
                                         0.25 * (pow(Sol->rhoY[nc], th.gamm - 2.0)      + pow(Sol->rhoY[nc-1], th.gamm - 2.0) + \
                                                 pow(Sol->rhoY[nc-icxe], th.gamm - 2.0) + pow(Sol->rhoY[nc-icxe-1], th.gamm - 2.0));
                     /* alternative without need to call pow():  
                      double dpidP   = th.gm1 * mpv->p2_cells[nc] / Sol->rhoY[nc]; 
                      */
-                    
+#endif
+
+                    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
+#if 0  /* November 11 version: 1;   October 24 version: 0 */
+                    double time_offset_expl = ud.acoustic_order - 1.0;
+                    Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
+                    Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
+                    Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
+                    Sol->rhoX[BUOY][nc] = (Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c)) +  time_offset_expl * dt * ( - v * dSdy) * Sol->rho[nc];
+                    /* 
+                     Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
+                     */
+#else
                     Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                     Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
                     Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
                     Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
-
+#endif
                     dp2n[nn00] -= dt * dpidP * div[nn00];
                 }
             }
@@ -1419,8 +1462,10 @@ void euler_forward_non_advective(ConsVars* Sol,
                 for (int j=igy; j<icy-igy+1; j++) {
                     int mc = lc + j*icx;
                     int mn = ln + j*inx;
-                    double S0p    = mpv->HydroState_n->S0[j+1];
-                    double S0m    = mpv->HydroState_n->S0[j];
+                    
+                    double S0p = mpv->HydroState_n->S0[j+1];
+                    double S0c = mpv->HydroState->S0[j];
+                    double S0m = mpv->HydroState_n->S0[j];
                     
                     for (int i=igx; i<icx-igx+1; i++) {
                         int nc        = mc + i;
@@ -1445,6 +1490,12 @@ void euler_forward_non_advective(ConsVars* Sol,
                         double chi     = Sol->rho[nc]/Sol->rhoY[nc];
                         double dbuoy   = -Sol->rho[nc]*dchi/chi;  /* -dchi/chibar; */
                         double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
+
+                        /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+                         Option EXNER_NONLINEAR did not exist on Oct. 24 */
+#ifdef EXNER_NONLINEAR
+                        double dpidP   = 1.0;
+#else
                         double dpidP   = (th.gm1 / ud.Msq) * \
                                             0.125 * (pow(Sol->rhoY[nc], th.gamm - 2.0)          + pow(Sol->rhoY[nc-1], th.gamm - 2.0) + \
                                                      pow(Sol->rhoY[nc-icx], th.gamm - 2.0)      + pow(Sol->rhoY[nc-icx-1], th.gamm - 2.0) + \
@@ -1453,13 +1504,23 @@ void euler_forward_non_advective(ConsVars* Sol,
                         /* alternative without need to call pow():  
                          double dpidP   = th.gm1 * mpv->p2_cells[nc] / Sol->rhoY[nc]; 
                          */
+#endif
 
+                        /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
+#if 0  /* November 11 version: 1;   October 24 version: 0 */
+double time_offset_expl = ud.acoustic_order - 1.0;
+                        Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
+                        Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
+                        Sol->rhow[nc]  = Sol->rhow[nc] + dt * ( - rhoYovG * dpdz - coriolis * drhou);
+                        Sol->rhoY[nc]  = Sol->rhoY[nc] - dt * div[nc];
+                        Sol->rhoX[BUOY][nc] = (Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c)) + time_offset_expl * dt * ( - v * dSdy) * Sol->rho[nc];
+#else
                         Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                         Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
                         Sol->rhow[nc]  = Sol->rhow[nc] + dt * ( - rhoYovG * dpdz - coriolis * drhou);
                         Sol->rhoY[nc]  = Sol->rhoY[nc] - dt * div[nc];
                         Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
-                        
+#endif
                         dp2n[nn000] -= dt * dpidP * div[nn000];
                     }
                 }
@@ -1472,11 +1533,35 @@ void euler_forward_non_advective(ConsVars* Sol,
             break;
     }
     
+    
+    // cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
+
     if (ud.is_compressible) {
         double weight = ud.acoustic_order - 1.0;
+
+
+        /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+         Option EXNER_NONLINEAR did not exist on Oct. 24 */
+#ifdef EXNER_NONLINEAR
+        const int icxn = node->icx;
+        const int icyn = node->icy;
         for (int nn=0; nn<node->nc; nn++) {
-            mpv->p2_nodes[nn] += weight*dp2n[nn];
+            int k = nn / (icxn*icyn);
+            int j = (nn - k*icxn*icyn)/icxn;
+            double rhoYo = pow(ud.Msq*(mpv->p2_nodes[nn] + mpv->HydroState_n->p20[j]),th.gm1inv);
+            double rhoYn = rhoYo+dp2n[nn];
+            double dpi   = (pow(rhoYn,th.gm1) - pow(rhoYo,th.gm1))/ud.Msq;
+            mpv->p2_nodes[nn]  += weight*dpi;
+            mpv->dp2_nodes[nn]  = weight*dpi;
         }
+#else
+        for (int nn=0; nn<node->nc; nn++) {
+            mpv->p2_nodes[nn]  += weight*dp2n[nn];
+            /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+             the following line did not exist in the October 24 version */            
+            // mpv->dp2_nodes[nn]  = weight*dp2n[nn]; 
+        }
+#endif
     }
      
     W0_in_use = WRONG;
