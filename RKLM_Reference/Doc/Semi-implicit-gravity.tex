@@ -1676,31 +1676,34 @@ For comparison, we summarize the operations performed by the Benacchio 2014 nume
 \section{Results}
 \label{sec:Results}
 
-Cases to be considered:
+Cases to be considered for the first paper. Only 2d slice. Running psinc, comp, and hydro options separately.
 
 \begin{itemize}
 
-\item Standard fluid dynamics tests (with minimal documentation) \benacchio{Kadioglu et al. 2008 vortex? Acoustic wave? Depends on the target journal as well.}.
+\item Vortex, \cite{KadiogluEtAl2008}, acoustic wave (CITATION), evt. test with rotation.
 
-\item Straka's, and rising bubble tests? \benacchio{If these give the same results as Benacchio et al. 2014 perhaps redundant here? }
+\item Straka test
 
-\benacchio{\item What about orography? How hard is it to run the standard Agnesi hills? If the code works 3d we could also do 3d medium-steep hill as in our GungHo Cartesian paper...}
-
-\item Skamarock-Klemp tests across the scales.
-
-\item 2D near geostrophic flow (corresponds to rotating shallow water)?
+\item Inertia-gravity wave of \cite{SkamarockKlemp1994}, non-hydrostatic, hydrostatic, and (NEW) planetary scale
 
 \item Run some of the tests with prescribed and dynamically computed 
       background states.
       
-\item \red{Blending in this paper or reserved for the next one?} \benacchio{I am starting to think that we should have two papers, a first one with the scheme details and the unblended results with the psinc and comp models separately, and another one with the work on the blending, possibly new limiters and perhaps more `meteorological' tests.}
-
 \item Influence of reduction of advection accuracy to first order in the
       advective flux predictor
       
-\item Influence of limiters on results.
-
 \end{itemize}
+
+Left for future papers, to be thought about:
+
+\begin{itemize}
+ \item Blending as in \cite{KleinBenacchio2016}
+ \item Orography implementation
+ \item Limiters
+ \item Three-dimensional extension
+ \item Spherical grids
+\end{itemize}
+
 
 % ===========================================================================
 % ===========================================================================
@@ -1720,17 +1723,58 @@ Cases to be considered:
   \item \blue{Identification of handles for model blending(?)}
   \end{itemize}
 
-\item differences to Hilary's scheme \cite{weller:2014}
+\item differences to Hilary's scheme \cite{WellerShahrokhi2014}, who use
+\begin{itemize}
+\item covariant (``tangent on faces'') components of velocity
+\item curl-free pressure gradients, no spurious source of vorticity. 
+\item Lorenz C grid (staggered), non off-centred. 
+\item Two loop of the solver. 
+\end{itemize}
 
-\item differences to ENDGAME, GUNGHO and the like \cite{wood:2013} \cite{melvin:2018}
+\item differences to ENDGAME, GUNGHO \cite{WoodEtAl2013}, \cite{MelvinEtAl2018}, who use
+\begin{itemize}
+\item advective/vector-invariant form
+\item non off-centred, incremental form
+\item GungHo: mixed FEM, mass matrices in implicit system
+\item Double outer-inner loop for solver, 4 solves
+\item Reference state is state at previous time level.
+\item Endgame: semi-Lagrangian advection
+\item Gungho: finite-volume advection (method of lines, then flux-form semi-Lagrangian, COSMIC)
+\end{itemize}
 
-\item differences to George Bryan's model \cite {bryan:2002}
+\item differences to George Bryan's model \cite {BryanFritsch2002}
+\begin{itemize}
+\item split-explicit
+\item divergence damping
+\end{itemize}
 
-\item differences to COSMO, ICON etc. ... \cite{baldauf:2011, zaengl:2015}
+\item differences to COSMO, ICON \cite{BaldaufEtAl2011},\cite{ZaenglEtAl2015}. ICON has:
+\begin{itemize}
+\item Triangular C-grid
+\item Time-explicit except vertical sound waves
+\item Divergence operator first-order accurate
+\item Flux form, vector invariant momentum equation.
+\item Thermodynamic equation in terms of Exner
+\end{itemize}
 
-\item differences to ASAM
+\item differences to ASAM, \cite{JaehnEtAl2015}, who have:
+\begin{itemize}
+\item linearly implicit, Rosenbrock-W method;
+\item implicit both for advection and wave part;
+\item Two-way splitting of Jacobian.
+\end{itemize}
 
-\item differences to Michael Dumbser's approach
+
+\item differences to Michael Dumbser's approach, \cite{DumbserEtAl2018}, who have:
+\begin{itemize}
+\item Convective (explicit) subsystem;
+\item Semi-implicit pressure subsystem on staggered grid;
+\item Locally and globally conservative for mass momentum and total energy.
+\end{itemize}
+
+\item ECMWF's tests \cite{YessadWedi2011}: could check that in our case as well the errors btw. HPE and NH are lower than errors coming from different discretizations.
+
+TBD find basic test of the code with rotation.
 
 \item what else? \benacchio{Crucially in my view, on what are we competitive/novel? 
 Two-time level, full variables, no off-centering, conservative (and of what), second-order, advection-explicit.
