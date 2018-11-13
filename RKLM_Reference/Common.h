@@ -8,7 +8,7 @@
 #define HDFFORMAT  
 
 /* Output options in main.c for debugging;  1 -> output */
-#define OUTPUT_SUBSTEPS 0
+#define OUTPUT_SUBSTEPS 1
 #define OUTPUT_SPLITSTEPS 0
 
 /*
@@ -32,6 +32,7 @@
  */ 
 #define ADVECTION
 #define NODAL_PRESSURE_GRADIENT
+#define HY_STATES_N_FROM_CELL_CENTERED_THETA
 
 /* ============================================= 
  Semi-implicit solver options  

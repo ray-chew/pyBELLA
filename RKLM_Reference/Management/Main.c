@@ -99,6 +99,7 @@ int main( void )
 		
 		/* start major time stepping loop */
 		while( t < *tout && step < ud.stepmax ) { 
+            double dt_factor;
             
             /* Timestep computation */
             dynamic_timestep(&dt_info, mpv, Sol, t, *tout, elem, step);
@@ -149,19 +150,21 @@ int main( void )
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nfull time step with predicted advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
-            
+
+            dt_factor = (step == 0 ? 0.5 : 1.0);
+
 #ifdef CORIOLIS_EXPLICIT
             /* Strang splitting for Coriolis, first step */
              Explicit_Coriolis(Sol, elem, 0.5*dt);  
 #endif
             
             /* explicit EULER half time step for gravity and pressure gradient */ 
-            euler_forward_non_advective(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.5*dt, WITH_PRESSURE);
+            euler_forward_non_advective(Sol, mpv, (const ConsVars*)Sol0, elem, node, (dt_factor-0.5)*dt, WITH_PRESSURE);
 
                         
 #ifdef ADVECTION
             /* explicit full time step advection using div-controlled advective fluxes */
-            advect(Sol, flux, force, 1.0*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+            advect(Sol, flux, force, dt_factor*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
 #endif
             
             /* implicit EULER half time step for gravity and pressure gradient */ 

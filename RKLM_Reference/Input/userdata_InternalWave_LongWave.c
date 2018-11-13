@@ -135,7 +135,7 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
+    ud->inx =  301+1; /* 641; 321; 161; 129; 81; */
     ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
     ud->inz =      1;
     
@@ -144,7 +144,7 @@ void User_Data_init(User_Data* ud) {
     ud->recovery_order = SECOND; /* FIRST, SECOND */ 
     ud->limiter_type_scalars  = NONE; 
     ud->limiter_type_velocity = NONE; 
-    /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
+    /* RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
     
     /* parameters for SWEBY_MUNZ limiter family */
     ud->kp = 1.4;
@@ -184,7 +184,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 40;
+    ud->write_file_period = 1;
     ud->file_format = HDF;
     
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */

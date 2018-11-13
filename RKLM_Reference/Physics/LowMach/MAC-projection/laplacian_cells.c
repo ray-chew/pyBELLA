@@ -220,11 +220,11 @@ static enum Boolean tridiago_is_allocated = WRONG;
 static double *diaginv_c;
 static double *diag_c;
 static double *tridiago[3];
-static double* upper;
-static double* diago;
-static double* lower;
-static double* v_in ;
-static double* v_out;
+static double* upper_c;
+static double* diago_c;
+static double* lower_c;
+static double* v_in_c;
+static double* v_out_c;
 static int size;
 
 /* -------------------------------------------------------------------------- */
@@ -256,11 +256,11 @@ double precon_c_column_prepare(
 
         diag_c    = (double*)malloc(node->nc*sizeof(double));
         diaginv_c = (double*)malloc(node->nc*sizeof(double));
-        upper     = (double*)malloc(size*sizeof(double));
-        diago     = (double*)malloc(size*sizeof(double));
-        lower     = (double*)malloc(size*sizeof(double));
-        v_in      = (double*)malloc(size*sizeof(double));
-        v_out     = (double*)malloc(size*sizeof(double));
+        upper_c   = (double*)malloc(size*sizeof(double));
+        diago_c   = (double*)malloc(size*sizeof(double));
+        lower_c   = (double*)malloc(size*sizeof(double));
+        v_in_c    = (double*)malloc(size*sizeof(double));
+        v_out_c   = (double*)malloc(size*sizeof(double));
 
         tridiago_is_allocated = CORRECT;
     }
@@ -313,6 +313,7 @@ double precon_c_column_prepare(
                                       - oodx2 * (hplusx[o_e] + hplusx[o_w]) + hc[nc];
                     tridiago[2][nc] = oody2 * hplusy[o_n]; 
 
+                    
                     diag_c[nc]  = oodx2 * ( -(hplusx[o_e] + hplusx[o_w])
                                            + 0.125 * (  hplusx[o_e] + hplusx[o_w] + hplusx[o_e] + hplusx[o_w])
                                            );
@@ -322,7 +323,7 @@ double precon_c_column_prepare(
                                            );
                     
                     diag_c[nc] += hc[nc];
-
+                    
                 }
             }
                         
@@ -494,27 +495,27 @@ void precon_c_column_invert(
             for (int j=igye; j<icye-igye; j++) {
                 int j_inc = j-igye;
                 int nc    = mc + j*icxe;
-                lower[j_inc] = tridiago[0][nc]*diaginv_c[nc];
-                diago[j_inc] = tridiago[1][nc]*diaginv_c[nc];
-                upper[j_inc] = tridiago[2][nc]*diaginv_c[nc];
-                v_in[j_inc]  = vec_in[nc]*diaginv_c[nc];
+                lower_c[j_inc] = tridiago[0][nc]*diaginv_c[nc];
+                diago_c[j_inc] = tridiago[1][nc]*diaginv_c[nc];
+                upper_c[j_inc] = tridiago[2][nc]*diaginv_c[nc];
+                v_in_c[j_inc]  = vec_in[nc]*diaginv_c[nc];
             }
             
             /* fix diagonal entries in the first and last row for boundary condition consistency */
             jbot = 0;
             jtop = icye-2*igye-1;
             
-            diago[jbot] += lower[jbot];
-            lower[jbot]  = 0.0;
-            diago[jtop] += upper[jtop];
-            upper[jtop]  = 0.0;
+            diago_c[jbot] += lower_c[jbot];
+            lower_c[jbot]  = 0.0;
+            diago_c[jtop] += upper_c[jtop];
+            upper_c[jtop]  = 0.0;
             
-            Thomas_Algorithm(v_out, v_in, upper, diago, lower, size);
+            Thomas_Algorithm(v_out_c, v_in_c, upper_c, diago_c, lower_c, size);
             
             for (int j=igye; j<icye-igye; j++) {
                 int j_inc = j-igye;
                 int nc    = mc + j*icxe;
-                vec_out[nc] = v_out[j_inc];
+                vec_out[nc] = v_out_c[j_inc];
             }
         }
     }
