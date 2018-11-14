@@ -139,7 +139,7 @@ void flux_correction(ConsVars* flux[3],
     for (int i=0; i<elem->nc; i++) {
         rhs[i] /= dt;
         /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
-        // p2[i]   = mpv->p2_cells[i];
+        p2[i]   = mpv->p2_cells[i];
     }
     rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
     printf("\nrhs_max = %e (before projection)\n", rhsmax);

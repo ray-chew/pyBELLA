@@ -50,7 +50,7 @@ void variable_coefficient_poisson_cells(
 
     /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
     /* memset(p2, 0.0, elem->nc*sizeof(double)); */
-    memset(p2, 0.0, elem->nc*sizeof(double)); 
+    // memset(p2, 0.0, elem->nc*sizeof(double)); 
 
     data = BiCGSTABData_new(nc, precision, local_precision, max_iter, outperiod);
 		
