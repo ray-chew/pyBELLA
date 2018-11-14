@@ -92,6 +92,11 @@ void set_periodic_data(double *p,
 static int lap_output_count = 0;
 #endif
 
+#define OUTPUT_RHS 0
+#if OUTPUT_RHS
+static int rhs_output_count = 0;
+#endif
+
 
 
 static double BiCGSTAB_MG_nodes(
@@ -166,7 +171,22 @@ static double BiCGSTAB_MG_nodes(
 #endif
 
     precon_invert(rhs_prec, rhs, node, x_periodic, y_periodic, z_periodic);
-    
+
+#if OUTPUT_RHS
+    FILE *prhsfile = NULL;
+    char fn[120], fieldname[90];
+    if (rhs_output_count < 10) {
+        sprintf(fn, "%s/rhs_nodes/rhs_nodes_prec_00%d.hdf", ud.file_name, rhs_output_count);
+    } else if(rhs_output_count < 100) {
+        sprintf(fn, "%s/rhs_nodes/rhs_nodes_prec_0%d.hdf", ud.file_name, rhs_output_count);
+    } else {
+        sprintf(fn, "%s/rhs_nodes/rhs_nodes_prec_%d.hdf", ud.file_name, rhs_output_count);
+    }
+    sprintf(fieldname, "rhs_nodes_prec");    
+    WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs_prec, fn, fieldname);
+    rhs_output_count++;
+#endif
+
     cell_cnt = 0;
 	
 	for(k = igz; k < kmax; k++) {l = k * icx * icy;
@@ -200,7 +220,6 @@ static double BiCGSTAB_MG_nodes(
 
 	cnt = 0;
 #ifdef DIV_CONTROL_LOCAL
-    // while(tmp > 1.0 && tmp_local > 1.0 && cnt < 1 )
 	while((tmp > 1.0 || tmp_local > 1.0) && cnt < max_iterations )
 #else
     while(tmp > 1.0 && cnt < max_iterations)

@@ -22,6 +22,11 @@ static double *diag;
 
 static enum Boolean tridiago_is_allocated = WRONG;
 static double *tridiago[3];
+static double* upper;
+static double* diago;
+static double* lower;
+static double* v_in ;
+static double* v_out;
 
 
 /* ========================================================================== */
@@ -529,10 +534,19 @@ double precon_column_prepare(
     double precon_inv_scale;
     
     if (tridiago_is_allocated == WRONG) {
+        int size = node->icy - 2*node->igy;
+                
+        upper  = (double*)malloc(size*sizeof(double));
+        diago  = (double*)malloc(size*sizeof(double));
+        lower  = (double*)malloc(size*sizeof(double));
+        v_in   = (double*)malloc(size*sizeof(double));
+        v_out  = (double*)malloc(size*sizeof(double));
+
         for (int k=0; k<3; k++) {
             tridiago[k] = (double*)malloc(node->nc*sizeof(double));
             tridiaux[k] = tridiago[k];
         }
+
         tridiago_is_allocated = CORRECT;
     }
     
@@ -805,13 +819,7 @@ void precon_column_invert(
     const int igzn = node->igz;
     
     const int size = icyn-2*igyn;
-    
-    double* upper  = (double*)malloc(size*sizeof(double));
-    double* diago  = (double*)malloc(size*sizeof(double));
-    double* lower  = (double*)malloc(size*sizeof(double));
-    double* v_in   = (double*)malloc(size*sizeof(double));
-    double* v_out  = (double*)malloc(size*sizeof(double));
-        
+            
     for (int k=igzn; k<iczn-igzn; k++) {
         int ln = k*icxn*icyn;
         for (int i=igxn; i<icxn-igxn; i++) {
@@ -831,14 +839,7 @@ void precon_column_invert(
                 vec_out[nn] = v_out[j_inn];
             }
         }
-    }
-
-    free(upper);
-    free(diago);
-    free(lower);
-    free(v_in );
-    free(v_out);
-    
+    }    
 }
 
 /* ========================================================================== */

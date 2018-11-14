@@ -94,10 +94,10 @@ void hydrostatic_vertical_flux(ConsVars* flux[3],
 
 /* ========================================================================== */
 
-#define OUTPUT_RHS_CELLS 1
+#define OUTPUT_RHS_CELLS 0
 #if OUTPUT_RHS_CELLS
 static int rhs_output_count = 0;
-static int first_output_step = 0;
+static int first_output_step = 230;
 #endif
 
 void flux_correction(ConsVars* flux[3],

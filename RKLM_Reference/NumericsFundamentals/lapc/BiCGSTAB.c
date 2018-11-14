@@ -133,13 +133,13 @@ double SOLVER(
     FILE *prhsfile = NULL;
     char fn[120], fieldname[90];
     if (rhs_output_count < 10) {
-        sprintf(fn, "%s/rhs_cells/rhs_cells_00%d.hdf", ud.file_name, rhs_output_count);
+        sprintf(fn, "%s/rhs_cells/rhs_cells_prec_00%d.hdf", ud.file_name, rhs_output_count);
     } else if(rhs_output_count < 100) {
-        sprintf(fn, "%s/rhs_cells/rhs_cells_0%d.hdf", ud.file_name, rhs_output_count);
+        sprintf(fn, "%s/rhs_cells/rhs_cells_prec_0%d.hdf", ud.file_name, rhs_output_count);
     } else {
-        sprintf(fn, "%s/rhs_cells/rhs_cells_%d.hdf", ud.file_name, rhs_output_count);
+        sprintf(fn, "%s/rhs_cells/rhs_cells_prec_%d.hdf", ud.file_name, rhs_output_count);
     }
-    sprintf(fieldname, "rhs_cells");    
+    sprintf(fieldname, "rhs_cells_prec");    
     WriteHDF(prhsfile, elem->icx, elem->icy, elem->icz, elem->ndim, rhs, fn, fieldname);
     
     rhs_output_count++;

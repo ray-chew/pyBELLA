@@ -89,10 +89,10 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
 
 /* ========================================================================== */
 
-#define OUTPUT_RHS 1
+#define OUTPUT_RHS 0
 #if OUTPUT_RHS
 static int rhs_output_count = 0;
-static int first_output_step = 0;
+static int first_output_step = 230;
 extern int step;  
 #endif
 
@@ -898,8 +898,8 @@ static void operator_coefficients_nodes(
     double nonhydro = ud.nonhydrostasy;
     
     /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
-    // double time_offset = 3.0 - ud.acoustic_order; 
-    double time_offset = 1.0; 
+    double time_offset = 3.0 - ud.acoustic_order; 
+    // double time_offset = 1.0; 
     
 #ifdef CORIOLIS_EXPLICIT
     const double coriolis  = 0.0;
@@ -1051,8 +1051,8 @@ void correction_nodes(
 #endif
     
     /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
-    // double time_offset = 3.0 - ud.acoustic_order; 
-    double time_offset = 1.0; 
+    double time_offset = 3.0 - ud.acoustic_order; 
+    // double time_offset = 1.0; 
 
 
 	switch(ndim) {
@@ -1208,8 +1208,8 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
     const double dy  = elem->dy;
     
     /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
-    // const double time_offset = 3.0 - ud.acoustic_order;
-    const double time_offset = 1.0;
+    const double time_offset = 3.0 - ud.acoustic_order;
+    // const double time_offset = 1.0;
     
 #ifdef CORIOLIS_EXPLICIT
     const double coriolis  = 0.0;
@@ -1417,7 +1417,7 @@ void euler_forward_non_advective(ConsVars* Sol,
 #endif
 
                     /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
-#if 0  /* November 11 version: 1;   October 24 version: 0 */
+#if 1  /* November 11 version: 1;   October 24 version: 0 */
                     double time_offset_expl = ud.acoustic_order - 1.0;
                     Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                     Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
@@ -1511,7 +1511,7 @@ void euler_forward_non_advective(ConsVars* Sol,
 #endif
 
                         /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
-#if 0  /* November 11 version: 1;   October 24 version: 0 */
+#if 1  /* November 11 version: 1;   October 24 version: 0 */
 double time_offset_expl = ud.acoustic_order - 1.0;
                         Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                         Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 

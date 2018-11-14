@@ -8,7 +8,7 @@
 #define HDFFORMAT  
 
 /* Output options in main.c for debugging;  1 -> output */
-#define OUTPUT_SUBSTEPS 1
+#define OUTPUT_SUBSTEPS 0
 #define OUTPUT_SPLITSTEPS 0
 
 /*
@@ -85,8 +85,12 @@
 #define P1_ALTERNATIVE_STENCIL_WEIGHT 0.125
 
 /* Second projection options */
+
+/* if def'd, div is controlled in L_\infty, otherwise in L2    
+ #define DIV_CONTROL_LOCAL
+ */
+
 #define PROJECTION2 1              /* switch for second projection should be on "1" normally      */
-#define DIV_CONTROL_LOCAL          /* if def'd, div is controlled in L_\infty, otherwise in L2    */
 #define P2_FULL_STENCIL 1.0        /* values: 0.0, 1.0;  0.0 = 5/7pt stencil,  1.0=9/27pt stencil */
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
 
