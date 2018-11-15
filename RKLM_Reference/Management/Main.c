@@ -132,21 +132,25 @@ int main( void )
              Explicit_Coriolis(Sol, elem, 0.5*dt);
 #endif
             
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, 0.5*dt);
 #ifdef ADVECTION
             advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
             // reset_rhoY(Sol, Sol0, elem);
 #endif
             /* divergence-controlled advective fluxes at the half time level */
             euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt);            
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, 0.5*dt);
             flux_correction(flux, Sol, Sol0, elem, node, t, 0.5*dt, step);        
 
             ConsVars_set(Sol, Sol0, elem->nc);
-            /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
-            // cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
-            cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
-          
+            /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
+             Note of Nov. 15, 2018: This call is void for ud.acoustic_order = 2.0, which is 
+             what I am aiming for now. The call would have an effect, though when the
+             acoustic_order is set to a smaller value, but I have implemented a time
+             offset for the nodal pressure evolution in a different way now.
+             cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
+             */
+         
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nfull time step with predicted advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");

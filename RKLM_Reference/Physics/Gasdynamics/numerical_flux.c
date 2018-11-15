@@ -109,12 +109,16 @@ void hllestar(
  ------------------------------------------------------------------------------*/
 void recompute_advective_fluxes(ConsVars* flux[3], 
                                 const ConsVars* Sol, 
-                                const ElemSpaceDiscr* elem)
+                                const ElemSpaceDiscr* elem,
+                                const double dt)
 {
     extern User_Data ud;
     
     /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
-     UPWIND_RHOY should be off to revive the October 24 version. */
+     UPWIND_RHOY should be off to revive the October 24 version. 
+     Nov. 15, 2018; I tested the UPWIND_RHOY option, but it does 
+     not seem to have any effect.
+     */
 #ifdef UPWIND_RHOY
     double (*limiter[])(const double a, 
                         const double b, 
@@ -130,11 +134,10 @@ void recompute_advective_fluxes(ConsVars* flux[3],
         NoSlope
     };
 
-    const enum LimiterType limiter_type_velocity = ud.limiter_type_velocity;
     const enum LimiterType limiter_type_scalars  = ud.limiter_type_scalars;
-    const double kp = ud.kp;
     const double kz = ud.kz;
-    const double kY = ud.kY;  
+    const double lambdax = dt/elem->dx;
+    const double lambday = dt/elem->dy;
 #endif
     
 #ifndef FOURTH_ORDER_ADV_FLUXES
@@ -176,7 +179,7 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                     rhoY_mm = Sol->rhoY[ncij-2];
                     s_m     = (*limiter[limiter_type_scalars])(rhoY_m - rhoY_mm, rhoY_p - rhoY_m, kz);
                     s_p     = (*limiter[limiter_type_scalars])(rhoY_p - rhoY_m, rhoY_pp - rhoY_p, kz);
-                    rhoY    = (u >= 0.0? rhoY_m + 0.5*s_m : rhoY_p - 0.5 * s_p);
+                    rhoY    = (u >= 0.0? rhoY_m + 0.5 * (1.0-u*lambdax) * s_m : rhoY_p - 0.5 * (1.0 + u*lambdax) * s_p);
 
                     flux[0]->rhoY[nfxij] = u * rhoY;
                     
@@ -189,11 +192,10 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                     rhoY_mm = Sol->rhoY[ncij-2*icx];
                     s_m     = (*limiter[limiter_type_scalars])(rhoY_m - rhoY_mm, rhoY_p - rhoY_m, kz);
                     s_p     = (*limiter[limiter_type_scalars])(rhoY_p - rhoY_m, rhoY_pp - rhoY_p, kz);
-                    rhoY    = (v >= 0.0? rhoY_m + 0.5*s_m : rhoY_p - 0.5 * s_p);
+                    rhoY    = (v >= 0.0? rhoY_m + 0.5 * (1.0-v*lambday) * s_m : rhoY_p - 0.5 * (1.0+v*lambday) * s_p);
 
                     flux[1]->rhoY[nfyij] = v * rhoY;
 #else /* UPWIND_RHOY */
-#if 1
                     double u_c     = Sol->rhou[ncij]/Sol->rho[ncij];
                     double u_m     = Sol->rhou[ncij-1]/Sol->rho[ncij-1];
                     double rhoY_c  = Sol->rhoY[ncij];
@@ -203,15 +205,20 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                     double v_m     = Sol->rhov[ncij-icx]/Sol->rho[ncij-icx];
                     double rhoY_my = Sol->rhoY[ncij-icx];
                     
+#if 1
+                    /* Nov. 15, 2018; Interesting observation: 
+                     The following option gives very good results for the 
+                     planetary IGW test, whereas the alternative (set 
+                     compiler directive to  #if 0) does not work AT ALL. 
+                     I am leaving the two options and the comment, 
+                     because they observation is so surprising, that
+                     one might need a warning when getting ideas later. 
+                     */
                     flux[0]->rhoY[nfxij] = 0.25*(u_c+u_m)*(rhoY_c+rhoY_mx);
                     flux[1]->rhoY[nfyij] = 0.25*(v_c+v_m)*(rhoY_c+rhoY_my);
 #else
-                    double rhoYu_c  = (Sol->rhoY[ncij]/Sol->rho[ncij])*Sol->rhou[ncij];
-                    double rhoYu_mx = (Sol->rhoY[ncij-1]/Sol->rho[ncij-1])*Sol->rhou[ncij-1];
-                    double rhoYv_c  = (Sol->rhoY[ncij]/Sol->rho[ncij])*Sol->rhov[ncij];
-                    double rhoYv_my = (Sol->rhoY[ncij-icx]/Sol->rho[ncij-icx])*Sol->rhov[ncij-icx];
-                    flux[0]->rhoY[nfxij] = 0.5*(rhoYu_c+rhoYu_mx);
-                    flux[1]->rhoY[nfyij] = 0.5*(rhoYv_c+rhoYv_my);
+                    flux[0]->rhoY[nfxij] = 0.5*(rhoY_c * u_c + rhoY_mx * u_m);
+                    flux[1]->rhoY[nfyij] = 0.5*(rhoY_c * v_c + rhoY_my * v_m);
 #endif
 #endif /* UPWIND_RHOY */
                 }

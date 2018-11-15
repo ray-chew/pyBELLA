@@ -89,7 +89,7 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
 
 /* ========================================================================== */
 
-#define OUTPUT_RHS 0
+#define OUTPUT_RHS 1
 #if OUTPUT_RHS
 static int rhs_output_count = 0;
 static int first_output_step = 230;
@@ -213,12 +213,12 @@ void euler_backward_non_advective_impl_part(
 /* ========================================================================== */
 
 static double divergence_nodes(
-							 double* rhs,
-							 const ElemSpaceDiscr* elem,
-							 const NodeSpaceDiscr* node,
-							 const ConsVars* Sol,
-							 const MPV* mpv,
-							 const BDRY* bdry) {
+							   double* rhs,
+							   const ElemSpaceDiscr* elem,
+							   const NodeSpaceDiscr* node,
+							   const ConsVars* Sol,
+							   const MPV* mpv,
+							   const BDRY* bdry) {
 	
     /* with weight = 1.0, this routine computes 
           rhs_out = rhs_in + div(rhoY\vec{v}) 
@@ -407,6 +407,7 @@ static double divergence_nodes(
     }
 #else
     extern ConsVars* flux[3];
+    extern double dt;  /* if this code branch gets revived, make  dt  an arg of the function */
     
     double* W1 = (double*)malloc(node->nc*sizeof(double));
     
@@ -433,7 +434,7 @@ static double divergence_nodes(
             double *rhs_cell = W1;
             
             /* build nodal divergence from cell-centered divergence averaged to nodes */
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, dt);
             
             rhsmax = controlled_variable_flux_divergence(rhs_cell, (const ConsVars**)flux, elem);
             
@@ -509,7 +510,7 @@ static double divergence_nodes(
             double *rhs_cell = W1;
             
             /* build nodal divergence from cell-centered divergence averaged to nodes */
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem);
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, dt);
 
             rhsmax = controlled_variable_flux_divergence(rhs_cell, (const ConsVars**)flux, elem);
             
@@ -1511,7 +1512,7 @@ void euler_forward_non_advective(ConsVars* Sol,
 #endif
 
                         /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
-#if 1  /* November 11 version: 1;   October 24 version: 0 */
+#if 1 /* November 11 version: 1;   October 24 version: 0 */
 double time_offset_expl = ud.acoustic_order - 1.0;
                         Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                         Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 

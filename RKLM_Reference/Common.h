@@ -95,8 +95,14 @@
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
 
 /*
- #define EXNER_NONLINEAR
+ Note, Nov. 15, 2018:
+ The option EXNER_NONLINEAR  slightly improves the stability
+ behavior for the planetary scale IGW test, but it does not
+ fully remove the remaining weak instability that shows near 
+ the top of the domain at late times. Not tested on other 
+ test cases thus far.
 */
+#define EXNER_NONLINEAR
 
 /* 
 #define P2_FULL_CELLS_ON_BDRY

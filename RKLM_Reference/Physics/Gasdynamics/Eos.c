@@ -599,11 +599,11 @@ void synchronize_variables(MPV* mpv,
     set_ghostcells_p2(mpv->p2_cells, elem, elem->igx);
 
     /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
-     the following line was commented out in the Nov. 11 version */
+     the following line was commented out in the Nov. 11 version. 
+     A call to Set_Explicit_Boundary_Data() is not needed if I don't
+     change the Sol-arrays. */
     // reset_Y_perturbation(Sol, (const MPV*)mpv, elem);
-    reset_Y_perturbation(Sol, (const MPV*)mpv, elem);
-
-    Set_Explicit_Boundary_Data(Sol, elem);
+    // Set_Explicit_Boundary_Data(Sol, elem);
     
     if (synchronize_nodal_pressure == CORRECT) {
         cell_pressure_to_nodal_pressure(mpv, elem, node, 1.0);
