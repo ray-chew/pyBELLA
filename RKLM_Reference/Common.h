@@ -101,8 +101,9 @@
  fully remove the remaining weak instability that shows near 
  the top of the domain at late times. Not tested on other 
  test cases thus far.
+
+ #define EXNER_NONLINEAR
 */
-#define EXNER_NONLINEAR
 
 /* 
 #define P2_FULL_CELLS_ON_BDRY

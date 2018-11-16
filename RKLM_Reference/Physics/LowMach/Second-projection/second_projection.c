@@ -92,7 +92,7 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
 #define OUTPUT_RHS 1
 #if OUTPUT_RHS
 static int rhs_output_count = 0;
-static int first_output_step = 230;
+static int first_output_step = 2000;
 extern int step;  
 #endif
 
@@ -158,6 +158,24 @@ void euler_backward_non_advective_impl_part(
     }
     printf("\nrhsmax = %e\n", rhs_max);
 
+    
+#if OUTPUT_RHS
+    FILE *prhsfile = NULL;
+    char fn[120], fieldname[90];
+    if (step >= first_output_step) {
+        if (rhs_output_count < 10) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
+        } else if(rhs_output_count < 100) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
+        } else {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
+        }
+        sprintf(fieldname, "rhs_nodes");    
+        WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+        rhs_output_count++;
+    }
+#endif
+
     if (ud.is_compressible) {
         rhs_from_p_old(rhs, elem, node, mpv, hcenter);
         catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
@@ -168,8 +186,8 @@ void euler_backward_non_advective_impl_part(
     }
     
 #if OUTPUT_RHS
-    FILE *prhsfile = NULL;
-    char fn[120], fieldname[90];
+    // FILE *prhsfile = NULL;
+    // char fn[120], fieldname[90];
     if (step >= first_output_step) {
         if (rhs_output_count < 10) {
             sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
