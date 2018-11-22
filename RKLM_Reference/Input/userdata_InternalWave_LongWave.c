@@ -129,8 +129,8 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = SI_MIDPT; /* this code version has only one option */
     ud->CFL                    = 0.9; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 0.2*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
-    ud->dtfixed                = 0.2*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed0               = 0.05*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed                = 0.05*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
     
     set_time_integrator_parameters(ud);
     
@@ -157,7 +157,7 @@ void User_Data_init(User_Data* ud) {
     ud->ncache = 154; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
     
     /* linear solver-stuff */
-    double tol                            = 1.e-11 * (ud->is_compressible == 1 ? 0.01 : 1.0);
+    double tol                            = 1.e-10 * (ud->is_compressible == 1 ? 0.01 : 1.0);
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -186,7 +186,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 20;
+    ud->write_file_period = 320;
     ud->file_format = HDF;
     
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
@@ -290,9 +290,15 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             v   = v0;
             w   = w0;
             
+#ifdef ADVECTION
             p    = (compressible ? HySt->p0[j] : mpv->HydroState->p0[j]);            
             rhoY = (compressible ? HySt->rhoY0[j] : mpv->HydroState->rhoY0[j]);
             rho  = rhoY/Y[j];
+#else
+            p    = mpv->HydroState->p0[j];            
+            rhoY = mpv->HydroState->rhoY0[j];
+            rho  = mpv->HydroState->rho0[j];
+#endif
             
             Sol->rho[n]    = rho;
             Sol->rhou[n]   = rho * u;
@@ -302,7 +308,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             Sol->rhoY[n]   = rhoY;
             
             mpv->p2_cells[n]   = HySt->p20[j];
-            Sol->rhoX[BUOY][n] = Sol->rho[n] * (Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
+            Sol->rhoX[BUOY][n] = Sol->rho[n] * (1.0/Y[j] - mpv->HydroState->S0[j]);
         
             /* nodal pressure */
             nn   = j*icxn+i;

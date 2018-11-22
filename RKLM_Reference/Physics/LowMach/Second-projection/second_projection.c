@@ -1560,14 +1560,16 @@ void euler_forward_non_advective(ConsVars* Sol,
 
                     /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
 #if 1  /* November 11 version: 1;   October 24 version: 0 */
-                    double time_offset_expl = ud.acoustic_order - 1.0;
                     Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                     Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
                     Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
+#ifdef ADVECTION
+                    double time_offset_expl = ud.acoustic_order - 1.0;
                     Sol->rhoX[BUOY][nc] = (Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c)) +  time_offset_expl * dt * ( - v * dSdy) * Sol->rho[nc];
-                    /* 
-                     Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
-                     */
+#else
+                    Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
+#endif
+
 #else
                     Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                     Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 

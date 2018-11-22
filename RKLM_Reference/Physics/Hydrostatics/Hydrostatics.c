@@ -683,6 +683,7 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
         mpv->dp2_nodes[nn] = 0.0;
     }
     
+#ifdef ADVECTION
     if (ud.is_compressible) {
         for (int i=igx; i<icx-igx; i++) {
             int nci     = i;
@@ -703,6 +704,7 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
             }
         }
     }
+#endif
     
     free(beta);
     free(bdpdx);
