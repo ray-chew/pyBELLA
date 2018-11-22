@@ -193,7 +193,10 @@ void ConsVars_set(ConsVars* obj, const ConsVars* src, const int n) {
     extern User_Data ud;
     extern ElemSpaceDiscr* elem;
     extern NodeSpaceDiscr* node;
-    putout(obj, ud.file_name, "Sol", elem, node, 1);
+    extern int step;
+    if (step >= OUTPUT_SUBSTEPS - 1) {
+        putout(obj, ud.file_name, "Sol", elem, node, 1);
+    }
 #endif
 
 }

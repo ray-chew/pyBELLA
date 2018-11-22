@@ -517,9 +517,9 @@ double precon_column_prepare(
                     const ElemSpaceDiscr* elem,
                     const double* hplus[3],
                     const double* wcenter,
-                    const int x_periodic,
-                    const int y_periodic,
-                    const int z_periodic) {
+                    const int is_x_periodic,
+                    const int is_y_periodic,
+                    const int is_z_periodic) {
     
     /*
      the following defines diag/diaginv directly through the calculations in
@@ -528,6 +528,13 @@ double precon_column_prepare(
      as opposed to what I did previously, when all the elements received the
      diagonal value from a full stencil.
      */
+    
+#ifdef P2_FULL_CELLS_ON_BDRY
+    int nodc = 1;
+#else
+    int nodc = 0;
+#endif
+
     
     double *tridiaux[3];
     
@@ -587,11 +594,11 @@ double precon_column_prepare(
                 for(nn=0; nn<node->nc; nn++) tridiago[k][nn] = 0.0;
             }
             
-            for(j = igye; j < icye - igye; j++) {
+            for(j = igye - is_y_periodic - nodc; j < icye - igye +  is_y_periodic + nodc; j++) {
                 me   = j * icxe;
                 mn   = j * icxn;
                 
-                for(i = igxe; i < icxe - igxe; i++) {
+                for(i = igxe - is_x_periodic - nodc; i < icxe - igxe + is_x_periodic + nodc; i++) {
                     ne       = me + i;
                     
                     nn       = mn + i;
@@ -643,6 +650,11 @@ double precon_column_prepare(
             break;
         case 3: {
             
+#ifdef P2_FULL_CELLS_ON_BDRY
+            assert(0); /* option not implemented in 3D yet */ 
+#endif
+
+            
             const int igxe = elem->igx;
             const int icxe = elem->icx;
             const int igye = elem->igy;
@@ -681,15 +693,15 @@ double precon_column_prepare(
                 for(nn=0; nn<node->nc; nn++) tridiago[k][nn] = 0.0;
             }
             
-            for (k = igze; k < icze - igze; k++) {
+            for (k = igze - is_z_periodic; k < icze - igze + is_z_periodic; k++) {
                 le = k * icxe*icye;
                 ln = k * icxn*icyn;
                 
-                for(j = igye; j < icye - igye; j++) {
+                for(j = igye - is_y_periodic; j < icye - igye + is_y_periodic; j++) {
                     me   = le + j * icxe;
                     mn   = ln + j * icxn;
                     
-                    for(i = igxe; i < icxe - igxe; i++) {
+                    for(i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
                         ne    = me + i;
                         nn    = mn + i; 
                         
@@ -910,9 +922,9 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                                                  const double* p,
                                                  const double* hplus[3],
                                                  const double* wcenter,
-                                                 const int x_periodic,
-                                                 const int y_periodic,
-                                                 const int z_periodic,
+                                                 const int is_x_periodic,
+                                                 const int is_y_periodic,
+                                                 const int is_z_periodic,
                                                  double* lap) {
     const int ndim = node->ndim;
     
@@ -937,7 +949,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             
             for(nn=0; nn<node->nc; nn++) lap[nn] = 0.0;
             
-            for(i = igxe; i < icxe - igxe; i++) {
+            for(i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
                 ne     = i;
                 nn     = i;
                 nn1    = nn + 1;
@@ -949,18 +961,21 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                 lap[nn1] += - flux_x + hc*p[nn1];
             }
 
-            if (x_periodic) {
+            /*
+            if (is_x_periodic) {
                     int nleft    = igxn;
                     int nright   = icxn - igxn - 1;
                     lap[nleft]  += lap[nright];
                     lap[nright]  = 0.0;
             }
+             */
             
-            precon_invert(lap, lap, node, x_periodic, y_periodic, z_periodic);
+            precon_invert(lap, lap, node, is_x_periodic, is_y_periodic, is_z_periodic);
             
             break;
         }
         case 2: {
+                        
             const int igxn = node->igx;
             const int icxn = node->icx;
             const int igyn = node->igy;
@@ -997,11 +1012,11 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             
             for(nn=0; nn<node->nc; nn++) lap[nn] = 0.0;
             
-            for(j = igye-nodc; j < icye-igye+nodc; j++) {
+            for(j = igye - is_y_periodic - nodc; j < icye - igye + is_y_periodic + nodc; j++) {
                 me   = j * icxe;
                 mn   = j * icxn;
                 
-                for(i = igxe-nodc; i < icxe-igxe+nodc; i++) {
+                for(i = igxe - is_x_periodic - nodc; i < icxe - igxe + is_x_periodic + nodc; i++) {
                     ne       = me + i;
                     
                     nn       = mn + i;
@@ -1036,11 +1051,11 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             
             for(int nn=0; nn<node->nc; nn++) lap[nn] = 0.0;
             
-            for(int j = igye-nodc; j < icye-igye+nodc; j++) {
+            for(int j = igye - is_y_periodic - nodc; j < icye - igye + is_y_periodic + nodc; j++) {
                 int me   = j * icxe;
                 int mn   = j * icxn;
                 
-                for(int i = igxe-nodc; i < icxe-igxe+nodc; i++) {
+                for(int i = igxe - is_x_periodic - nodc; i < icxe - igxe + is_x_periodic + nodc; i++) {
                     int ne = me + i;
                     int nn = mn + i;
                     
@@ -1080,32 +1095,35 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
 #endif
             
 #ifdef P2_FULL_CELLS_ON_BDRY
-            rescale_bdry_node_values(lap, node, elem, 0.5);
+            // rescale_bdry_node_values(lap, node, elem, 0.5);
 #endif
 
-            if (x_periodic) {
-                for(int j=igyn; j<icyn-igyn; j++) {
-                    int nleft  = j * icxn + igxn;
-                    int nright = j * icxn + icxn - igxn - 1;
-                    
-                    /* lap[nleft]  += (1.0-nodc)*lap[nright]; */
-                    lap[nleft]  += lap[nright];
-                    lap[nright]  = 0.0;
+
+            /* 1: new, 0: old   periodicity scheme 2nd projection 
+            if (nodc == 0) {
+                if (is_x_periodic) {
+                    for(int j=igyn; j<icyn-igyn; j++) {
+                        int nleft  = j * icxn + igxn;
+                        int nright = j * icxn + icxn - igxn - 1;
+                        
+                        lap[nleft]  += lap[nright];
+                        lap[nright]  = 0.0;
+                    }
+                }
+                
+                if (is_y_periodic) {
+                    for(int i=igxn; i<icxn-igxn; i++) {
+                        int nbottom  = i + igyn * icxn;
+                        int ntop     = i + (icyn - igyn - 1) * icxn;
+                        
+                        lap[nbottom]  += lap[ntop];
+                        lap[ntop]      = 0.0;
+                    }
                 }
             }
+             */
             
-            if (y_periodic) {
-                for(int i=igxn; i<icxn-igxn; i++) {
-                    int nbottom  = i + igyn * icxn;
-                    int ntop     = i + (icyn - igyn - 1) * icxn;
-                    
-                    /* lap[nbottom]  += (1.0-nodc)*lap[ntop]; */
-                    lap[nbottom]  += lap[ntop];
-                    lap[ntop]      = 0.0;
-                }
-            }
-            
-            precon_invert(lap, lap, node, x_periodic, y_periodic, z_periodic);
+            precon_invert(lap, lap, node, is_x_periodic, is_y_periodic, is_z_periodic);
 
             break;
         }
@@ -1136,6 +1154,14 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                         
             int i, j, k;
             
+#ifdef P2_FULL_CELLS_ON_BDRY
+            /* int nodc = 1; */
+            assert(0); /* option not implemented in 3D yet */
+#else
+            int nodc = 0;
+#endif
+
+            
 #ifdef CORIOLIS_EXPLICIT
             /* const double coriolis  = 0.0; */
 #else
@@ -1156,15 +1182,15 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             const double a01 = 1.0/16.0;
             const double a11 = 1.0/16.0;
 
-            for(k = igze; k < icze - igze; k++) {
+            for(k = igze - is_z_periodic; k < icze - igze + is_z_periodic; k++) {
                 int le   = k * icxe*icye;
                 int ln   = k * icxn*icyn;
                 
-                for(j = igye; j < icye - igye; j++) {
+                for(j = igye - is_y_periodic; j < icye - igye + is_y_periodic; j++) {
                     int me   = le + j * icxe;
                     int mn   = ln + j * icxn;
                     
-                    for(i = igxe; i < icxe - igxe; i++) {
+                    for(i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
                         int ne = me + i;
                         int nn = mn + i;
                         
@@ -1223,7 +1249,8 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                 }
             }
             
-            if (x_periodic) {
+            /*
+            if (is_x_periodic) {
                 for(k=igzn; k<iczn-igzn; k++) {
                     int ln = k*icxn*icyn;
                     for(j=igyn; j<icyn-igyn; j++) {
@@ -1236,7 +1263,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                 }
             }
             
-            if (y_periodic) {
+            if (is_y_periodic) {
                 for(i=igxn; i<icxn-igxn; i++) {
                     for(k=igzn; k<iczn-igzn; k++) {
                         int ln   = k*icxn*icyn;
@@ -1249,7 +1276,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                 }
             }
             
-            if (z_periodic) {
+            if (is_z_periodic) {
                 for(j=igyn; j<icyn-igyn; j++) {
                     int mn = j * icxn;
                     for(i=igxn; i<icxn-igxn; i++) {
@@ -1261,8 +1288,9 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                     }
                 }
             }
+             */
 
-            precon_invert(lap, lap, node, x_periodic, y_periodic, z_periodic);
+            precon_invert(lap, lap, node, is_x_periodic, is_y_periodic, is_z_periodic);
 
             break;
         }

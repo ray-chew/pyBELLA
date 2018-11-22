@@ -629,7 +629,7 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
     for (int nn=0; nn < node->nc; nn++) {
         mpv->dp2_nodes[nn] = mpv->p2_nodes[nn];
     }
-#if 0
+#if 1
     for (int j=igy; j<icyn-igy; j++) {
         int nnj = j*icxn;
         int sgn;
