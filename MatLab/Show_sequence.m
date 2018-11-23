@@ -35,14 +35,14 @@ show_increments = 0;
 symmetry = 0;        % in {0,1}
 symmetrytest = 0;
 showdummycells = 0;
-showslice = 7;
+showslice = 9;
 diff_rel_to_bottom = 0;
 
 % th0 = -0.0015/300;
 % dth = 5e-4/300;
 % contour_values = [th0 th0+dth th0+2*dth th0+3*dth th0+4*dth th0+5*dth th0+6*dth th0+7*dth th0+8*dth th0+9*dth th0+10*dth];
 dtheta = 0.5e-3/300;
-contour_values = 10.0*[-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dtheta, 2*dtheta, 3*dtheta, 4*dtheta, 5*dtheta];
+contour_values = [-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dtheta, 2*dtheta, 3*dtheta, 4*dtheta, 5*dtheta];
 %contour_values = [1.0001 1.0011 1.0022 1.0022 1.0033 1.0044 1.0055 1.0065];
 %contour_values = linspace(-0.01,0.01,41) / 288.15;
 title_true = 1;
@@ -71,8 +71,8 @@ elseif strcmp(test_case, 'Deep-Internal-Wave-Tests')
 elseif strcmp(test_case, 'Internal-Wave-Tests')
     % scalefactor = 1.0  % Skamarock-Klemp-1994 Fig.1
     % scalefactor = 20.0   % Skamarock-Klemp-1994 Fig.3
-    scalefactor = 160.0;   % new, very long wave test
-    ncx =301; 
+    scalefactor = 160.0   % new, very long wave test
+    ncx = 301; 
     ncy = 10;  
     %ncx = 600; 
     %ncy = 80;  
@@ -144,7 +144,7 @@ rhoY_diff = 0;
 rhoZ_diff = 0;
 transp    = 0;
 
-folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Mach_gravity_',modelstr);
+folderstring = strcat('/home/benacchio/workspace/RKLM_Reference/low_Mach_gravity_',modelstr);
 
 % for time series display
 ts_name = strcat(folderstring, '/time_series.txt');

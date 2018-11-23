@@ -1,9 +1,9 @@
 CC = gcc
 
-HDFLIBDIR	  = /opt/local/lib
-HDFINC		  = /opt/local/include
+HDFLIBDIR	  = /usr/lib
+HDFINC		  = /usr/local/HDF_Group/HDF/4.2.14/include
 
-CFLAGS		  = -Aa -I$(HDFINC) 
+CFLAGS		  = -Aa -fPIC -I$(HDFINC)
 
 DEST		  = ../MakeBuilds 
 
@@ -16,7 +16,7 @@ EXTHDRS		  = /usr/include/math.h \
 		/usr/include/time.h \
 #		/usr/include/varargs.h \
 		/usr/include/memory.h \
-		/opt/local/include/dfsd.h
+		/usr/include/hdf/dfsd.h
 
 HDRS		  = ../Common.h \
 		../Input/userdata.h \
@@ -64,8 +64,8 @@ LD		= $(CC)
 
 LDFLAGS		= 
 
-LIBS		= $(HDFLIBDIR)/libmfhdf.dylib \
-		$(HDFLIBDIR)/libdf.dylib  $(HDFLIBDIR)/libjpeg.a $(HDFLIBDIR)/libz.dylib -lm
+LIBS		= $(HDFLIBDIR)/libmfhdf.a \
+		$(HDFLIBDIR)/libdf.a  /home/benacchio/hdf4/CMake-hdf-4.2.14/build/bin/libjpeg.a $(HDFLIBDIR)/x86_64-linux-gnu/libz.a -lm -fPIC
 
 MAKEFILE	= Makefile
 

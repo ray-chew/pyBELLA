@@ -14,7 +14,7 @@
 #include "memory.h"
 #include "flux_correction.h"
 #include "variable_coefficient_poisson_cells.h"
-#include "BICGSTAB.h"
+#include "BiCGSTAB.h"
 #include "variable.h"
 #include "warning.h"
 #include "enumerator.h"
