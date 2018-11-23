@@ -73,7 +73,7 @@ void User_Data_init(User_Data* ud) {
 
     /* Low Mach */
     ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
-    ud->is_compressible   =  1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_compressible   =  0;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep =  0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
     
@@ -129,13 +129,13 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = SI_MIDPT; /* this code version has only one option */
     ud->CFL                    = 0.9; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 1.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
-    ud->dtfixed                = 1.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed0               = (12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed                = (12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
     
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx =  301+1; /* 641; 321; 161; 129; 81; */
+    ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
     ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
     ud->inz =      1;
     
@@ -144,7 +144,7 @@ void User_Data_init(User_Data* ud) {
     ud->recovery_order = SECOND; /* FIRST, SECOND */ 
     ud->limiter_type_scalars  = NONE; 
     ud->limiter_type_velocity = NONE; 
-    /* RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
+    /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
     
     /* parameters for SWEBY_MUNZ limiter family */
     ud->kp = 1.4;
@@ -154,20 +154,19 @@ void User_Data_init(User_Data* ud) {
     ud->kZ = 1.4; /* 2.0 */
         
     /* al explicit predictor operations are done on ncache-size data worms to save memory */ 
-    ud->ncache = 154; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
+    ud->ncache = 75; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
     
     /* linear solver-stuff */
-    double tol                            = 1.e-11 * (ud->is_compressible == 1 ? 0.01 : 1.0);
+    double tol                            = 1.e-10;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
     ud->second_projection_local_precision = tol;  /* 1.e-05 should be enough */
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
-    ud->initial_projection                = WRONG;   /* WRONG;  CORRECT; */
+    ud->initial_projection                = WRONG; /* WRONG;  CORRECT; */
     
-    ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
-    ud->synchronize_nodal_pressure        = WRONG;   /* WRONG; CORRECT; */
+    ud->synchronize_nodal_pressure        = WRONG;
 
     /* numerics parameters */
     ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -190,7 +189,7 @@ void User_Data_init(User_Data* ud) {
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
 
     {
-        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/benacchio/workspace/RKLM_Reference/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
@@ -252,28 +251,21 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
      
     /* computations for the vertical slice at  k=0 */
     for(i = 0; i < icx; i++) {
-        double xi;
         
         /* set potential temperature stratification in the column */
         for(j = 0; j < elem->icy; j++) {
             x     = elem->x[i];
             y     = elem->y[j];
-#if 1
-             Y[j]  = stratification(y)  + delth * molly(x) * sin(PI*y)  / (1.0 + (x-xc)*(x-xc) / (a*a));
-#else
-            xi = MIN_own(1.0,fabs((x-xc)/(10.0*a)));
-            Y[j]  = stratification(y)  + delth * sin(PI*y) * 0.5 * (1.0+cos(PI*xi));
-#endif
+            Y[j]  = stratification(y)  + delth * molly(x) * sin(PI*y)  / (1.0 + (x-xc)*(x-xc) / (a*a));
         }  
         
         for(j = 0; j < node->icy; j++) {
             xn    = node->x[i];
             yn    = node->y[j];
-#if 1
-             Yn[j] = stratification(yn)  + delth * molly(xn) * sin(PI*yn)  / (1.0 + (xn-xc)*(xn-xc) / (a*a));
+#if 0
+            Yn[j] = stratification(yn)  + delth * sin(PI*yn);
 #else
-            xi = MIN_own(1.0,fabs((xn-xc)/(10.0*a)));
-            Yn[j]  = stratification(yn)  + delth * sin(PI*yn) * 0.5 * (1.0+cos(PI*xi));
+            Yn[j] = stratification(yn)  + delth * molly(xn) * sin(PI*yn)  / (1.0 + (xn-xc)*(xn-xc) / (a*a));
 #endif
         }        
         /* determine hydrostatic pressure distributions column-wise (lateral relation still neglected) */

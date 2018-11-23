@@ -14,7 +14,7 @@
 #include "memory.h"
 #include "flux_correction.h"
 #include "variable_coefficient_poisson_cells.h"
-#include "BICGSTAB.h"
+#include "BiCGSTAB.h"
 #include "variable.h"
 #include "warning.h"
 #include "enumerator.h"
@@ -94,10 +94,9 @@ void hydrostatic_vertical_flux(ConsVars* flux[3],
 
 /* ========================================================================== */
 
-#define OUTPUT_RHS_CELLS 1
-#if OUTPUT_RHS_CELLS
+#define RHS_OUTPUT 0
+#if RHS_OUTPUT
 static int rhs_output_count = 0;
-static int first_output_step = 230;
 #endif
 
 void flux_correction(ConsVars* flux[3],
@@ -110,7 +109,6 @@ void flux_correction(ConsVars* flux[3],
                      const int step) {
     
     extern User_Data ud;
-    extern Thermodynamic th;
     extern MPV* mpv;
     
     double** hplus   = mpv->wplus;
@@ -138,8 +136,6 @@ void flux_correction(ConsVars* flux[3],
     /* rescale for r.h.s. of the elliptic pressure equation */
     for (int i=0; i<elem->nc; i++) {
         rhs[i] /= dt;
-        /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
-        p2[i]   = mpv->p2_cells[i];
     }
     rhs_fix_for_open_boundaries(rhs, elem, Sol, Sol0, flux, dt, mpv);
     printf("\nrhs_max = %e (before projection)\n", rhsmax);
@@ -150,25 +146,6 @@ void flux_correction(ConsVars* flux[3],
             rhs[nc] += hcenter[nc]*mpv->p2_cells[nc];
         }
     }
-    
-#if OUTPUT_RHS_CELLS
-    FILE *prhsfile = NULL;
-    char fn[120], fieldname[90];
-    if (step >= first_output_step) {
-        if (rhs_output_count < 10) {
-            sprintf(fn, "%s/rhs_cells/rhs_cells_00%d.hdf", ud.file_name, rhs_output_count);
-        } else if(rhs_output_count < 100) {
-            sprintf(fn, "%s/rhs_cells/rhs_cells_0%d.hdf", ud.file_name, rhs_output_count);
-        } else {
-            sprintf(fn, "%s/rhs_cells/rhs_cells_%d.hdf", ud.file_name, rhs_output_count);
-        }
-        sprintf(fieldname, "rhs_cells");    
-        WriteHDF(prhsfile, elem->icx, elem->icy, elem->icz, elem->ndim, rhs, fn, fieldname);
-        rhs_output_count++;
-    }
-#endif
-
-    
     variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, elem, node);
     set_ghostcells_p2(p2, elem, elem->igx);
     

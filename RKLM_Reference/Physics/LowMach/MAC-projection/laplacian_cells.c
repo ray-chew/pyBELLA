@@ -14,7 +14,7 @@ Date:   Fri Mar 13 07:56:56 CET 1998  Feb. 2004
 #include "error.h"
 #include "userdata.h"
 #include "thermodynamic.h"
-#include "EOS.h"
+#include "Eos.h"
 #include "math_own.h"
 #include "ThomasAlgorithmus.h"
 
@@ -220,11 +220,11 @@ static enum Boolean tridiago_is_allocated = WRONG;
 static double *diaginv_c;
 static double *diag_c;
 static double *tridiago[3];
-static double* upper_c;
-static double* diago_c;
-static double* lower_c;
-static double* v_in_c;
-static double* v_out_c;
+static double* upper;
+static double* diago;
+static double* lower;
+static double* v_in ;
+static double* v_out;
 static int size;
 
 /* -------------------------------------------------------------------------- */
@@ -256,11 +256,11 @@ double precon_c_column_prepare(
 
         diag_c    = (double*)malloc(node->nc*sizeof(double));
         diaginv_c = (double*)malloc(node->nc*sizeof(double));
-        upper_c   = (double*)malloc(size*sizeof(double));
-        diago_c   = (double*)malloc(size*sizeof(double));
-        lower_c   = (double*)malloc(size*sizeof(double));
-        v_in_c    = (double*)malloc(size*sizeof(double));
-        v_out_c   = (double*)malloc(size*sizeof(double));
+        upper     = (double*)malloc(size*sizeof(double));
+        diago     = (double*)malloc(size*sizeof(double));
+        lower     = (double*)malloc(size*sizeof(double));
+        v_in      = (double*)malloc(size*sizeof(double));
+        v_out     = (double*)malloc(size*sizeof(double));
 
         tridiago_is_allocated = CORRECT;
     }
@@ -313,7 +313,6 @@ double precon_c_column_prepare(
                                       - oodx2 * (hplusx[o_e] + hplusx[o_w]) + hc[nc];
                     tridiago[2][nc] = oody2 * hplusy[o_n]; 
 
-                    
                     diag_c[nc]  = oodx2 * ( -(hplusx[o_e] + hplusx[o_w])
                                            + 0.125 * (  hplusx[o_e] + hplusx[o_w] + hplusx[o_e] + hplusx[o_w])
                                            );
@@ -323,7 +322,7 @@ double precon_c_column_prepare(
                                            );
                     
                     diag_c[nc] += hc[nc];
-                    
+
                 }
             }
                         
@@ -495,27 +494,27 @@ void precon_c_column_invert(
             for (int j=igye; j<icye-igye; j++) {
                 int j_inc = j-igye;
                 int nc    = mc + j*icxe;
-                lower_c[j_inc] = tridiago[0][nc]*diaginv_c[nc];
-                diago_c[j_inc] = tridiago[1][nc]*diaginv_c[nc];
-                upper_c[j_inc] = tridiago[2][nc]*diaginv_c[nc];
-                v_in_c[j_inc]  = vec_in[nc]*diaginv_c[nc];
+                lower[j_inc] = tridiago[0][nc]*diaginv_c[nc];
+                diago[j_inc] = tridiago[1][nc]*diaginv_c[nc];
+                upper[j_inc] = tridiago[2][nc]*diaginv_c[nc];
+                v_in[j_inc]  = vec_in[nc]*diaginv_c[nc];
             }
             
             /* fix diagonal entries in the first and last row for boundary condition consistency */
             jbot = 0;
             jtop = icye-2*igye-1;
             
-            diago_c[jbot] += lower_c[jbot];
-            lower_c[jbot]  = 0.0;
-            diago_c[jtop] += upper_c[jtop];
-            upper_c[jtop]  = 0.0;
+            diago[jbot] += lower[jbot];
+            lower[jbot]  = 0.0;
+            diago[jtop] += upper[jtop];
+            upper[jtop]  = 0.0;
             
-            Thomas_Algorithm(v_out_c, v_in_c, upper_c, diago_c, lower_c, size);
+            Thomas_Algorithm(v_out, v_in, upper, diago, lower, size);
             
             for (int j=igye; j<icye-igye; j++) {
                 int j_inc = j-igye;
                 int nc    = mc + j*icxe;
-                vec_out[nc] = v_out_c[j_inc];
+                vec_out[nc] = v_out[j_inc];
             }
         }
     }
@@ -532,7 +531,7 @@ double precon_c_prepare(
 
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.column_preconditioner == CORRECT) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0) {
         return precon_c_column_prepare(node, elem, hplus, hcenter);
     } else {
         return precon_c_diag_prepare(node, elem, hplus, hcenter);        
@@ -544,23 +543,15 @@ double precon_c_prepare(
 void precon_c_apply(
                     double* vec_out,
                     const double* vec_in,
-                    const ElemSpaceDiscr *elem) 
-{
-#ifdef PRECON    
-    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
-     make sure the preconditioning calls are issued for  October 24 version */
-
+                    const ElemSpaceDiscr *elem) {
+    
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.column_preconditioner == CORRECT) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0) {
         precon_c_column_apply(vec_out, vec_in, elem);
     } else {
         precon_c_diag_apply(vec_out, vec_in, elem);        
     }
-#else
-    return;
-#endif
-    
 }
 
 /* -------------------------------------------------------------------------- */
@@ -568,31 +559,19 @@ void precon_c_apply(
 void precon_c_invert(
                      double* vec_out,
                      const double* vec_in,
-                     const ElemSpaceDiscr *elem) 
-{
-#ifdef PRECON
-    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
-     make sure the preconditioning calls are issued for  October 24 version */
-
+                     const ElemSpaceDiscr *elem) {
+    
     extern User_Data ud;
     
-    if (ud.gravity_strength[ud.gravity_direction] > 0 && ud.column_preconditioner == CORRECT) {
+    if (ud.gravity_strength[ud.gravity_direction] > 0) {
         precon_c_column_invert(vec_out, vec_in, elem);
     } else {
         precon_c_diag_invert(vec_out, vec_in, elem);        
     }
-#else
-    return;
-#endif
 }
 
 
 /* ========================================================================== */
-#define OUTPUT_LAP_CELLS 0
-#if OUTPUT_LAP_CELLS
-#include "io.h"
-static int lap_output_count = 0;
-#endif
 
 void EnthalpyWeightedLap_bilinear_p(
                                     const ElemSpaceDiscr* elem, 
@@ -827,22 +806,4 @@ void EnthalpyWeightedLap_bilinear_p(
         }
         default: ERROR("ndim not in {1, 2, 3}");
     }
-    
-#if OUTPUT_LAP_CELLS
-    extern User_Data ud;
-    FILE *plapfile = NULL;
-    char fn[120], fieldname[90];
-    if (lap_output_count < 10) {
-        sprintf(fn, "%s/lap_cells/lap_cells_00%d.hdf", ud.file_name, lap_output_count);
-    } else if(lap_output_count < 100) {
-        sprintf(fn, "%s/lap_cells/lap_cells_0%d.hdf", ud.file_name, lap_output_count);
-    } else {
-        sprintf(fn, "%s/lap_cells/lap_cells_%d.hdf", ud.file_name, lap_output_count);
-    }
-    sprintf(fieldname, "lap_cells");    
-    WriteHDF(plapfile, elem->icx, elem->icy, elem->icz, elem->ndim, lap, fn, fieldname);
-    
-    lap_output_count++;
-#endif
-
 }

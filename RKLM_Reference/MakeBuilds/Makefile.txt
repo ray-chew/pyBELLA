@@ -1,7 +1,7 @@
 CC = gcc
 
-HDFLIBDIR	  = /opt/local/lib
-HDFINC		  = /opt/local/include
+HDFLIBDIR	  = /usr/local/HDF_Group/HDF/4.2.14/lib
+HDFINC		  = /usr/local/HDF_Group/HDF/4.2.14/include
 
 CFLAGS		  = -Aa -I$(HDFINC) 
 
@@ -16,7 +16,7 @@ EXTHDRS		  = /usr/include/math.h \
 		/usr/include/time.h \
 #		/usr/include/varargs.h \
 		/usr/include/memory.h \
-		/opt/local/include/dfsd.h
+		/home/benacchio/hdf4/CMake-hdf-4.2.14/hdf-4.2.14/hdf/src/dfsd.h
 
 HDRS		  = ../Common.h \
 		../Input/userdata.h \
