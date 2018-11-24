@@ -207,6 +207,11 @@ int main( void )
                 printf("\nstep %d done,  t=%f,  dt=%f,  cfl=%f, cfl_ac=%f, cfl_adv=%f", step, t, dt, dt_info.cfl, dt_info.cfl_ac, dt_info.cfl_adv);
                 printf("\n############################################################################################\n");
             }
+            
+            if (step > 4780) {
+                ud.write_file_period = 1;
+                /* ud.gravity_strength[1] = 0.0; */
+            }
 		}  
         
         if(ud.write_file == ON) {
