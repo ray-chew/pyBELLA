@@ -29,10 +29,10 @@
  #define CORIOLIS_EXPLICIT
  #define FOURTH_ORDER_ADV_FLUXES
  #define UPWIND_RHOY
- #define ADVECTION
  */ 
 #define HY_STATES_N_FROM_CELL_CENTERED_THETA
 #define EVOLVE_NODAL_PRESSURE
+#define ADVECTION
 
 /* ============================================= 
  Semi-implicit solver options  

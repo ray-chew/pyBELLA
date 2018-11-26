@@ -208,11 +208,11 @@ int main( void )
                 printf("\n############################################################################################\n");
             }
             
-            /* debugging: */
+            /* debugging: 
             if (step > 4780) {
                 ud.write_file_period = 1;
-                /* ud.gravity_strength[1] = 0.0; */
             }
+             */
 		}  
         
         if(ud.write_file == ON) {
