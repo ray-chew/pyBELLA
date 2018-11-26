@@ -69,7 +69,11 @@ LIBS		= $(HDFLIBDIR)/libmfhdf.a \
 
 MAKEFILE	= Makefile
 
+<<<<<<< HEAD
 OBJS		= userdata_TravellingVortex_2D.o \
+=======
+OBJS		= userdata_TravellingVortex_3D.o \
+>>>>>>> Fix in shell script and in tests after merge.
 		boundary.o \
 		data.o \
 		io.o \
@@ -103,7 +107,11 @@ PROGRAM	   = rklm
 
 SHELL		  = /bin/sh
 
+<<<<<<< HEAD
 SRCS		  = ../Input/userdata_TravellingVortex_2D.c \
+=======
+SRCS		  = ../Input/userdata_TravellingVortex_3D.c \
+>>>>>>> Fix in shell script and in tests after merge.
 		../Input/boundary.c \
 		../Management/data.c \
 		../Management/io.c \
@@ -164,8 +172,13 @@ $(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)
 		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install
 
 ###
+<<<<<<< HEAD
 userdata_TravellingVortex_2D.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/userdata_TravellingVortex_2D.c
+=======
+userdata_TravellingVortex_3D.o : 
+	$(CC) -c $(HDRFLAGS) ../Input/userdata_TravellingVortex_3D.c
+>>>>>>> Fix in shell script and in tests after merge.
 
 boundary.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/boundary.c
