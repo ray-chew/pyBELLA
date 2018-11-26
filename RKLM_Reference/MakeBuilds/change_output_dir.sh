@@ -13,7 +13,7 @@
 # git checkout -- ../Input/userdata_test.c
 
 DEF="OutputBaseFolder      = .*;"
-DEF2="OutputBaseFolder      = $2"
+DEF2="OutputBaseFolder      = \"$2\""
 
 FILE_NAME="../Input/userdata_$1.c"
 

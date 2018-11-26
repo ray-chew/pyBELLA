@@ -73,7 +73,7 @@ void User_Data_init(User_Data* ud) {
 
     /* Low Mach */
     ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
-    ud->is_compressible   =  0;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_compressible   =  1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep =  0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
     
@@ -266,12 +266,12 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             Sol->rhoe[n]   = rhoe(rho, u, v, w, p);
             Sol->rhoY[n]   = rhoY;
             
-            mpv->p2_cells[n]   = mpv->HydroState->p20[j];
+            mpv->p2_cells[n]=0.0;//   = mpv->HydroState->p20[j];
             Sol->rhoX[BUOY][n] = Sol->rho[n] * (Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
         
             /* nodal pressure */
             nn   = j*icxn+i;
-            mpv->p2_nodes[nn] = mpv->HydroState_n->p20[j];
+            mpv->p2_nodes[nn]=0.0;// = mpv->HydroState_n->p20[j];
         }
     }
         
