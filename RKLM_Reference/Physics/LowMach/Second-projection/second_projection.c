@@ -673,14 +673,19 @@ static void rhs_from_p_old(
     
     const int ndim = node->ndim;
     
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+    const int igxn = node->igx;
+    const int icxn = node->icx;
+    const int igyn = node->igy;
+    const int icyn = node->icy;
+#else  /* HELMHOLTZ_COEFF_NODE_BASED */ 
     const int igxe = elem->igx;
     const int icxe = elem->icx;
     const int igye = elem->igy;
     const int icye = elem->icy;
-
     const int icxn = node->icx;
-
-    int i, j;
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */
+    
     
     switch(ndim) {
         case 1: {
@@ -699,23 +704,32 @@ static void rhs_from_p_old(
                 rhs_hh[ic] = 0.0;
             }
             
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+            for(int j = igyn; j < icyn - igyn; j++) {
+                const int mn = j * icxn; 
+                for(int i = igxn; i < icxn - igxn; i++) {
+                    const int nn = mn + i;
+                    rhs_hh[nn] += hcenter[nn]*mpv->p2_nodes[nn];
+                }
+            } 
+#else  /* HELMHOLTZ_COEFF_NODE_BASED */ 
             /* old time level entry from pressure time derivative */
-            for(j = igye - is_y_periodic - nodc; j < icye - igye + is_y_periodic + nodc; j++) {
+            for(int j = igye - is_y_periodic - nodc; j < icye - igye + is_y_periodic + nodc; j++) {
                 const int me = j * icxe;
                 const int mn = j * icxn; 
-                for(i = igxe - is_x_periodic - nodc; i < icxe - igxe + is_x_periodic + nodc; i++) {
+                for(int i = igxe - is_x_periodic - nodc; i < icxe - igxe + is_x_periodic + nodc; i++) {
                     const int ne    = me + i;
                     const int n     = mn + i;
                     const int nicx  = n  + icxn;
                     const int n1    = n  + 1;
                     const int n1icx = n1 + icxn;
-
                     rhs_hh[n]     += 0.25*hcenter[ne]*mpv->p2_nodes[n];
                     rhs_hh[n1]    += 0.25*hcenter[ne]*mpv->p2_nodes[n1];
                     rhs_hh[n1icx] += 0.25*hcenter[ne]*mpv->p2_nodes[n1icx];
                     rhs_hh[nicx]  += 0.25*hcenter[ne]*mpv->p2_nodes[nicx];
                 }
             } 
+#endif   /* HELMHOLTZ_COEFF_NODE_BASED */ 
             
             for (int ic=0; ic<node->nc; ic++) {
                 rhs[ic] += rhs_hh[ic];
@@ -907,7 +921,7 @@ static void	catch_periodic_directions(
 
 /* ========================================================================== */
 
-void catch_rigid_walls(
+void scale_wall_node_values(
                        double* rhs,  
                        const NodeSpaceDiscr* node, 
                        const ElemSpaceDiscr* elem,
@@ -1038,12 +1052,18 @@ static void operator_coefficients_nodes(
             if(ud.bdrytype_min[1] == PERIODIC) is_y_periodic = 1;
             
 			const int igx = elem->igx;
-			const int icx = elem->icx;
-			const int igy = elem->igy;
-			const int icy = elem->icy;
+            const int igy = elem->igy;
+
+            const int icxe = elem->icx;
+			const int icye = elem->icy;
 
             const double dy = elem->dy;
 			
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+            const int icxn = node->icx;
+            const int icyn = node->icy;
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */
+            
 			double* hplusx  = hplus[0];
 			double* hplusy  = hplus[1];
 			double* hc      = hcenter;
@@ -1063,13 +1083,13 @@ static void operator_coefficients_nodes(
             
             for(i=0; i<elem->nc; i++) hc[i] = hplusx[i] = hplusy[i] = 0.0;
             
-            for(j = igy - is_y_periodic - nodc; j < icy - igy + is_y_periodic + nodc; j++) {
-                m = j * icx;
+            for(j = igy - is_y_periodic - nodc; j < icye - igy + is_y_periodic + nodc; j++) {
+                m = j * icxe;
                 
                 double strat = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j]) \
                 /(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
                 
-                for(i = igx - is_x_periodic - nodc; i < icx - igx + is_x_periodic + nodc; i++) {
+                for(i = igx - is_x_periodic - nodc; i < icxe - igx + is_x_periodic + nodc; i++) {
                     n = m + i;     
                     double Y     = Sol->rhoY[n]/Sol->rho[n]; 
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
@@ -1083,11 +1103,29 @@ static void operator_coefficients_nodes(
                 }
             }
             
-            for(j = igy - is_y_periodic - nodc; j < icy - igy + is_y_periodic + nodc; j++) {m = j * icx;
-                for(i = igx - is_x_periodic - nodc; i < icx - igx + is_x_periodic + nodc; i++) {n = m + i;
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+            for(j = igy; j < icyn - igy; j++) {
+                int mn = j * icxn;
+                int me = j * icxe;
+                for(int i = igx; i < icxn - igx; i++) {
+                    int nn = mn + i;
+                    int ne00 = me + i;
+                    int ne10 = me + i - 1;
+                    int ne01 = me + i - icxe;
+                    int ne11 = me + i -icxe - 1;
+                    hc[nn] = ccenter * 0.25*(pow(Sol->rhoY[ne00],cexp) + pow(Sol->rhoY[ne01],cexp) + pow(Sol->rhoY[ne10],cexp) + pow(Sol->rhoY[ne11],cexp));
+                }
+            }
+            
+            scale_wall_node_values(hc, node, elem, 0.5);
+
+#else /* HELMHOLTZ_COEFF_NODE_BASED */
+            for(j = igy - is_y_periodic - nodc; j < icye - igy + is_y_periodic + nodc; j++) {m = j * icxe;
+                for(i = igx - is_x_periodic - nodc; i < icxe - igx + is_x_periodic + nodc; i++) {n = m + i;
                     hc[n] = ccenter * pow(Sol->rhoY[n],cexp);
                 }
             }
+#endif  /* HELMHOLTZ_COEFF_NODE_BASED */
             
             break;
 		}
@@ -1103,11 +1141,18 @@ static void operator_coefficients_nodes(
             
 
 			const int igx = elem->igx;
-			const int icx = elem->icx;
-			const int igy = elem->igy;
-			const int icy = elem->icy;
-			const int igz = elem->igz;
-			const int icz = elem->icz;
+            const int igy = elem->igy;
+            const int igz = elem->igz;
+
+            const int icxe = elem->icx;
+			const int icye = elem->icy;
+			const int icze = elem->icz;
+            
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+            const int icxn = node->icx;
+            const int icyn = node->icy;
+            const int iczn = node->icz;
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */            
             
             const double dy = elem->dy;
 
@@ -1121,41 +1166,76 @@ static void operator_coefficients_nodes(
 			const double ccenter = - (ud.compressibility*ud.Msq)*th.gamminv/(dt*dt)/time_offset;
             
 			const double cexp    = 1.0-th.gamm;
-			int i, j, k, l, m, n;
             
-            for(i=0; i<elem->nc; i++) hc[i] = hplusx[i] = hplusy[i] = hplusz[i] = 0.0;
+            for(int i=0; i<elem->nc; i++) hc[i] = hplusx[i] = hplusy[i] = hplusz[i] = 0.0;
             
-			for(k = igz - is_z_periodic; k < icz - igz + is_z_periodic; k++) {l = k * icx*icy;
+			for(int k = igz - is_z_periodic; k < icze - igz + is_z_periodic; k++) {
+                int l = k * icxe*icye;
                 
-                for(j = igy - is_y_periodic; j < icy - igy + is_y_periodic; j++) {m = l + j * icx;
+                for(int j = igy - is_y_periodic; j < icye - igy + is_y_periodic; j++) {
+                    int m = l + j * icxe;
                     
                     double strat = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j]) \
                                         /(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
 
-                    for(i = igx - is_x_periodic; i < icx - igx + is_x_periodic; i++) {n = m + i;
-                        {             
-                            double Y     = Sol->rhoY[n]/Sol->rho[n]; 
-                            double coeff = Gammainv * Sol->rhoY[n] * Y;
-                            double fsqsc = dt*dt * coriolis*coriolis;
-                            double fimp  = 1.0 / (1.0 + fsqsc);
-                            double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;                    
-                            double gimp  = 1.0 / (nonhydro + Nsqsc);
-
-                            hplusx[n]  = coeff * fimp;
-                            hplusy[n]  = coeff * gimp;
-                            hplusz[n]  = coeff * fimp;
-                        }
+                    for(int i = igx - is_x_periodic; i < icxe - igx + is_x_periodic; i++) {
+                        int n = m + i;
+                        double Y     = Sol->rhoY[n]/Sol->rho[n]; 
+                        double coeff = Gammainv * Sol->rhoY[n] * Y;
+                        double fsqsc = dt*dt * coriolis*coriolis;
+                        double fimp  = 1.0 / (1.0 + fsqsc);
+                        double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;                    
+                        double gimp  = 1.0 / (nonhydro + Nsqsc);
+                        
+                        hplusx[n]  = coeff * fimp;
+                        hplusy[n]  = coeff * gimp;
+                        hplusz[n]  = coeff * fimp;
                     }
                 }
 			}
             
-			for(k = igz - is_z_periodic; k < icz - igz + is_z_periodic; k++) {l = k * icx*icy;
-                for(j = igy - is_y_periodic; j < icy - igy + is_y_periodic; j++) {m = l + j * icx;
-                    for(i = igx - is_x_periodic; i < icx - igx + is_x_periodic; i++) {n = m + i;
+            
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+            for(int k = igz; k < iczn - igz; k++) {
+                int ln = k * icxn*icyn;
+                int le = k * icxe*icye;
+                for(int j = igy; j < icyn - igy; j++) {
+                    int mn = ln + j * icxn;
+                    int me = le + j * icxe;
+                    for(int i = igx; i < icxn - igx; i++) {
+                        int nn = mn + i;
+                        int ne000 = me + i;
+                        int ne100 = me + i - 1;
+                        int ne010 = me + i - icxe;
+                        int ne110 = me + i -icxe - 1;
+                        int ne001 = me + i;
+                        int ne101 = me + i - 1;
+                        int ne011 = me + i - icxe;
+                        int ne111 = me + i -icxe - 1;
+                        hc[nn] = ccenter * 0.125*(  pow(Sol->rhoY[ne000],cexp) \
+                                                  + pow(Sol->rhoY[ne010],cexp) \
+                                                  + pow(Sol->rhoY[ne100],cexp) \
+                                                  + pow(Sol->rhoY[ne110],cexp) \
+                                                  + pow(Sol->rhoY[ne001],cexp) \
+                                                  + pow(Sol->rhoY[ne011],cexp) \
+                                                  + pow(Sol->rhoY[ne101],cexp) \
+                                                  + pow(Sol->rhoY[ne111],cexp));
+                    }
+                }
+            }
+            
+            scale_wall_node_values(hc, node, elem, 0.5);
+
+#else /* HELMHOLTZ_COEFF_NODE_BASED */
+            for(int k = igz - is_z_periodic; k < icze - igz + is_z_periodic; k++) {int l = k * icxe*icye;
+                for(int j = igy - is_y_periodic; j < icye - igy + is_y_periodic; j++) {int m = l + j * icxe;
+                    for(int i = igx - is_x_periodic; i < icxe - igx + is_x_periodic; i++) {int n = m + i;
                         hc[n] = ccenter * pow(Sol->rhoY[n],cexp);
                     }
                 }
-			}
+            }
+#endif  /* HELMHOLTZ_COEFF_NODE_BASED */
+
 			break;
 		}
 		default: ERROR("ndim not in {1,2,3}");
@@ -1455,7 +1535,7 @@ void euler_forward_non_advective(ConsVars* Sol,
 
     div_max = divergence_nodes(div, elem, node, (const ConsVars*)Sol, mpv, bdry);
     // catch_periodic_directions(div, node, elem, x_periodic, y_periodic, z_periodic);
-    catch_rigid_walls(div, node, elem, 2.0);
+    scale_wall_node_values(div, node, elem, 2.0);
 
 #if 0
     div_max = 0.0;
@@ -1482,13 +1562,9 @@ void euler_forward_non_advective(ConsVars* Sol,
                 double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
                 double dpidP   = (th.gm1 / ud.Msq) * \
                                 0.5 * (pow(Sol->rhoY[nc], th.gamm - 2.0) + pow(Sol->rhoY[nc-1], th.gamm - 2.0));
-                /* alternative without need to call pow():  
-                 double dpidP   = th.gm1 * mpv->p2_cells[nc] / Sol->rhoY[nc]; 
-                 */
 
                 Sol->rhou[nc]  = u0*Sol->rho[nc] + dt * (- rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                 Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
-                Sol->rhoY[nc]  = Sol->rhoY[nc] - dt * div[nc];
                 
                 dp2n[nn0] -= dt * dpidP * div[nn0];
             }
@@ -1553,9 +1629,6 @@ void euler_forward_non_advective(ConsVars* Sol,
                     double dpidP   = (th.gm1 / ud.Msq) * \
                                         0.25 * (pow(Sol->rhoY[nc], th.gamm - 2.0)      + pow(Sol->rhoY[nc-1], th.gamm - 2.0) + \
                                                 pow(Sol->rhoY[nc-icxe], th.gamm - 2.0) + pow(Sol->rhoY[nc-icxe-1], th.gamm - 2.0));
-                    /* alternative without need to call pow():  
-                     double dpidP   = th.gm1 * mpv->p2_cells[nc] / Sol->rhoY[nc]; 
-                     */
 #endif
 
                     /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
@@ -1566,16 +1639,17 @@ void euler_forward_non_advective(ConsVars* Sol,
 #ifdef ADVECTION
                     double time_offset_expl = ud.acoustic_order - 1.0;
                     Sol->rhoX[BUOY][nc] = (Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c)) +  time_offset_expl * dt * ( - v * dSdy) * Sol->rho[nc];
-#else
+#else /* ADVECTION */
                     Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
-#endif
+#endif /* ADVECTION */
 
-#else
+#else /* November 11 version: 1;   October 24 version: 0 */
                     Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                     Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
                     Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
                     Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
-#endif
+#endif /* November 11 version: 1;   October 24 version: 0 */
+                    
                     dp2n[nn00] -= dt * dpidP * div[nn00];
                 }
             }

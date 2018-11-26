@@ -134,6 +134,9 @@ double precon_diag_prepare(
         diaginv_is_allocated = CORRECT;
     }
     
+    assert(0); /* diagonal preconditioner for nodal pressure solve needs to be revisited carefully */
+
+    
     const int ndim = node->ndim;
     
     switch(ndim) {
@@ -230,7 +233,12 @@ double precon_diag_prepare(
                     nnicxn   = nn + icxn;
                     nn1icxn  = nn + 1 + icxn;
                     
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+                    assert(0); /* to be implemented for diagonal precon */
                     double ddiag = wx*hplusx[ne] + wy*hplusy[ne] + 0.25 * hcenter[ne];
+#else /* HELMHOLTZ_COEFF_NODE_BASED */
+                    double ddiag = wx*hplusx[ne] + wy*hplusy[ne] + 0.25 * hcenter[ne];
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */
 
                     diag[nn]      += ddiag;
                     diag[nn1]     += ddiag;
@@ -277,7 +285,12 @@ double precon_diag_prepare(
                     nn10 = mn + i      + icxn;
                     nn11 = mn + i + 1  + icxn;
 
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+                    assert(0); /* to be implemented for diagonal precon */
                     double ddiag = - wx*hplusx[ne] - wy*hplusy[ne] + 0.125 * hcenter[ne];
+#else /* HELMHOLTZ_COEFF_NODE_BASED */
+                    double ddiag = - wx*hplusx[ne] - wy*hplusy[ne] + 0.125 * hcenter[ne];
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */
                     
                     diag[nn00] += ddiag; 
                     diag[nn01] += ddiag;  
@@ -373,7 +386,12 @@ double precon_diag_prepare(
                         nn110 = mn + i     + icxn   + icxn*icyn;
                         nn111 = mn + i + 1 + icxn   + icxn*icyn;
                         
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+                        assert(0); /* to be implemented for diagonal precon */
+                        double ddiag = - wx*hplusx[ne] - wy*hplusy[ne] + 0.125 * hcenter[ne];
+#else /* HELMHOLTZ_COEFF_NODE_BASED */
                         double ddiag = - wx*hplusx[ne] - wy*hplusy[ne] - wz*hplusz[ne] + 0.125 * hcenter[ne];
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */
 
                         diag[nn000] += ddiag; 
                         diag[nn001] += ddiag;  
@@ -612,13 +630,21 @@ double precon_column_prepare(
                     flux_x_lower  = hplusx[ne] * oodx2;
                     flux_x_upper  = hplusx[ne] * oodx2;
                     
+                    /* eventually I may have to transpose the tridiago[][] field for better memory efficiency */
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+                    tridiago[1][nn]      += - flux_x_lower - flux_y_left;
+                    tridiago[2][nn]      +=   flux_y_left;
                     
-                    /* summand 1.0 takes care of singularity of the tridiagoonal matrix */
-                    hc            = 0.25 * hcenter[ne];
-                                        
+                    tridiago[1][nn1]     += - flux_x_lower - flux_y_right;
+                    tridiago[2][nn1]     +=   flux_y_right;
                     
-                    /* eventually I should transpose the tridiago[][] field for better memory efficiency */
-                    /* eventually I should let tridiago[] run from  -1 to +1 */
+                    tridiago[0][nnicxn]  +=   flux_y_left;
+                    tridiago[1][nnicxn]  += - flux_x_upper - flux_y_left;
+                    
+                    tridiago[0][nn1icxn] +=   flux_y_right;
+                    tridiago[1][nn1icxn] += - flux_x_upper - flux_y_right;                    
+#else /* HELMHOLTZ_COEFF_NODE_BASED */
+                    hc = 0.25 * hcenter[ne];
                     
                     tridiago[1][nn]      += - flux_x_lower - flux_y_left + hc;
                     tridiago[2][nn]      +=   flux_y_left;
@@ -631,8 +657,20 @@ double precon_column_prepare(
                     
                     tridiago[0][nn1icxn] +=   flux_y_right;
                     tridiago[1][nn1icxn] += - flux_x_upper - flux_y_right + hc;                    
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */                             
+                                        
                 }
             }
+
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+            for(j = igyn; j < icyn - igyn; j++) {
+                mn   = j * icxn;                
+                for(i = igxn; i < icxn - igxn; i++) {                    
+                    nn       = mn + i;
+                    tridiago[1][nn] += hcenter[nn];
+                }
+            }
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */
             
             /* normalization */
             precon_inv_scale = 0.0;
@@ -718,12 +756,34 @@ double precon_column_prepare(
                         flux_y  = hplusy[ne] * oody2;
                         flux_z  = hplusz[ne] * oodz2;
                                     
+                        /* eventually I should transpose the tridiago[][] field for better memory efficiency */
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+                        tridiago[1][nn000] += - flux_x - flux_y - flux_z;
+                        tridiago[2][nn000] +=   flux_y;
                         
-                        /* summand 1.0 takes care of singularity of the tridiagoonal matrix */
+                        tridiago[1][nn001] += - flux_x - flux_y - flux_z;
+                        tridiago[2][nn001] +=   flux_y;
+                        
+                        tridiago[0][nn010] +=   flux_y;
+                        tridiago[1][nn010] += - flux_x - flux_y - flux_z;
+                        
+                        tridiago[0][nn011] +=   flux_y;
+                        tridiago[1][nn011] += - flux_x - flux_y - flux_z;                    
+                        
+                        tridiago[1][nn100] += - flux_x - flux_y - flux_z;
+                        tridiago[2][nn100] +=   flux_y;
+                        
+                        tridiago[1][nn101] += - flux_x - flux_y - flux_z;
+                        tridiago[2][nn101] +=   flux_y;
+                        
+                        tridiago[0][nn110] +=   flux_y;
+                        tridiago[1][nn110] += - flux_x - flux_y - flux_z;
+                        
+                        tridiago[0][nn111] +=   flux_y;
+                        tridiago[1][nn111] += - flux_x - flux_y - flux_z;   
+#else /* HELMHOLTZ_COEFF_NODE_BASED */
                         hc            = 0.25 * hcenter[ne];
                         
-                        /* eventually I should transpose the tridiago[][] field for better memory efficiency */
-                        /* eventually I should let tridiago[] run from  -1 to +1 */
                         
                         tridiago[1][nn000] += - flux_x - flux_y - flux_z + hc;
                         tridiago[2][nn000] +=   flux_y;
@@ -747,10 +807,24 @@ double precon_column_prepare(
                         tridiago[1][nn110] += - flux_x - flux_y - flux_z + hc;
                         
                         tridiago[0][nn111] +=   flux_y;
-                        tridiago[1][nn111] += - flux_x - flux_y - flux_z + hc;                    
+                        tridiago[1][nn111] += - flux_x - flux_y - flux_z + hc;   
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */
                     }
                 }
             }
+            
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+            for (k = igzn; k < iczn - igzn; k++) {
+                ln = k * icxn*icyn;
+                for(j = igyn; j < icyn - igyn; j++) {
+                    mn   = ln + j * icxn;
+                    for(i = igxn; i < icxn - igxn; i++) {
+                        nn    = mn + i; 
+                        tridiago[1][nn] += hcenter[nn];
+                    }
+                }
+            }
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */
             
             /* normalization */
             precon_inv_scale = 0.0;
@@ -955,11 +1029,22 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                 nn1    = nn + 1;
                                 
                 flux_x = hplusx[ne] * oodx2 * (p[nn1] - p[nn]);
-                hc     = 0.5 * hcenter[ne];
                 
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+                lap[nn]  +=   flux_x;
+                lap[nn1] += - flux_x;
+#else /* HELMHOLTZ_COEFF_NODE_BASED */
+                hc        = 0.5 * hcenter[ne];
                 lap[nn]  +=   flux_x + hc*p[nn] ;
                 lap[nn1] += - flux_x + hc*p[nn1];
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */
             }
+
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+            for(nn = igxn; nn < icxn - igxn; nn++) {
+                lap[nn]  += hcenter[nn] * p[nn];
+            }
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */
 
             /*
             if (is_x_periodic) {
@@ -1032,15 +1117,34 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                     flux_y_left   = hplusy[ne] * oody2 * ( (p[nnicxn]  - p[nn]    ) + nine_pt * dsq_p_dxdy);
                     flux_y_right  = hplusy[ne] * oody2 * ( (p[nn1icxn] - p[nn1]   ) - nine_pt * dsq_p_dxdy);
                     
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+                    lap[nn]      += (  flux_x_lower + flux_y_left );
+                    lap[nn1]     += (- flux_x_lower + flux_y_right);
+                    lap[nnicxn]  += (  flux_x_upper - flux_y_left );
+                    lap[nn1icxn] += (- flux_x_upper - flux_y_right);
+#else /* HELMHOLTZ_COEFF_NODE_BASED */
                     hc            = 0.25 * hcenter[ne];
                     
                     lap[nn]      += (  flux_x_lower + flux_y_left ) + hc*p[nn]     ;
                     lap[nn1]     += (- flux_x_lower + flux_y_right) + hc*p[nn1]    ;
                     lap[nnicxn]  += (  flux_x_upper - flux_y_left ) + hc*p[nnicxn] ;
                     lap[nn1icxn] += (- flux_x_upper - flux_y_right) + hc*p[nn1icxn];
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */
                 }
             }
+            
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+            for(j = igyn; j < icyn - igyn; j++) {
+                mn   = j * icxn;
+                for(i = igxn; i < icxn - igxn; i++) {                    
+                    nn       = mn + i;
+                    lap[nn] += hcenter[nn] * p[nn];
+                }
+            }
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */
+            
 #else
+            assert(0); /* this branch seems obsolete;  check carefully before trying it. */
             const double* hcenter  = wcenter;
             
             const double oodx2[2] = {1.0/(dx*dx), 1.0/(dy*dy)};
@@ -1226,6 +1330,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                             lap[npnw] -= flux_nw;
                         }
                         
+#ifndef HELMHOLTZ_COEFF_NODE_BASED  /* if NOT defined !! */
                         double hc = 0.125 *hcenter[ne];
                         
                         nmsw = nn;
@@ -1245,9 +1350,24 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                         lap[npse] += hc*p[npse];
                         lap[npne] += hc*p[npne];
                         lap[npnw] += hc*p[npnw];
+#endif /* not HELMHOLTZ_COEFF_NODE_BASED */
                     }
                 }
             }
+      
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+            for(k = igzn; k < iczn - igzn; k++) {
+                int ln   = k * icxn*icyn;
+                for(j = igyn; j < icyn - igyn; j++) {
+                    int mn   = ln + j * icxn;
+                    for(i = igxn; i < icxn - igxn; i++) {
+                        int nn = mn + i;
+                        lap[nn] += hcenter[nn] * p[nn];
+                    }
+                }
+            }
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */
+            
             
             /*
             if (is_x_periodic) {

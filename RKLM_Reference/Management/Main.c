@@ -208,6 +208,7 @@ int main( void )
                 printf("\n############################################################################################\n");
             }
             
+            /* debugging: */
             if (step > 4780) {
                 ud.write_file_period = 1;
                 /* ud.gravity_strength[1] = 0.0; */

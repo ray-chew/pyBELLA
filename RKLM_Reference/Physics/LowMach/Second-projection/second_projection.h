@@ -47,7 +47,7 @@ void pressure_gradient_forces(
                               const ElemSpaceDiscr *elem, 
                               const NodeSpaceDiscr *node);
 
-void catch_rigid_walls(
+void scale_wall_node_values(
                        double* rhs,  
                        const NodeSpaceDiscr* node, 
                        const ElemSpaceDiscr* elem,

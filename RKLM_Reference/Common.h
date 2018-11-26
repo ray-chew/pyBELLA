@@ -8,7 +8,7 @@
 #define HDFFORMAT  
 
 /* Output options in main.c for debugging;  1 -> output */
-#define OUTPUT_SUBSTEPS 0  /* time step after which detailed output is generated */
+#define OUTPUT_SUBSTEPS 0 /* time step after which detailed output is generated */
 #define OUTPUT_SPLITSTEPS 0
 
 /*
@@ -94,6 +94,7 @@
 #define PROJECTION2 1              /* switch for second projection should be on "1" normally      */
 #define P2_FULL_STENCIL 1.0        /* values: 0.0, 1.0;  0.0 = 5/7pt stencil,  1.0=9/27pt stencil */
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
+#define HELMHOLTZ_COEFF_NODE_BASED        
 
 /*
  Note, Nov. 15, 2018:
