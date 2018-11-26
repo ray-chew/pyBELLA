@@ -24,7 +24,7 @@
 double molly(double x);
 
 /* horizontal stretch for S&K94 IGWs: planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0; */
-static double scalefactor = 160.0;      
+static double scalefactor = 20.0;      
 
 void User_Data_init(User_Data* ud) {
     
@@ -36,7 +36,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Earth */
     double grav     = 9.81;             /* gravitational acceleration [m/s^2]    */
-    double omega    = 0.0*0.0001;       /* Coriolis parameter [1/s]              */
+    double omega    = 1.0*0.0001;       /* Coriolis parameter [1/s]              */
                                         /* sin(0.5*PI) * 2.0 * 0.00007272205217; */
     
     /* thermodynamics and chemistry */
@@ -129,9 +129,15 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = SI_MIDPT; /* this code version has only one option */
     ud->CFL                    = 0.9; /* 0.45; 0.9; 0.8; */
+    /* large time step test variant  (N*dt = 20.0, or  dt = 2000 s in the planetary IGW test) */
     ud->dtfixed0               = 1.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
     ud->dtfixed                = 1.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
-    
+     
+    /* short time step test variant  (N*dt = 1.0, or  dt = 100 s in the planetary IGW test)
+    ud->dtfixed0               = 0.05*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed                = 0.05*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+     */
+ 
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
@@ -186,7 +192,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 30;
+    ud->write_file_period = 15;
     ud->file_format = HDF;
     
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
