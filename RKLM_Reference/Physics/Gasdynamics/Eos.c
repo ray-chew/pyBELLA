@@ -606,7 +606,7 @@ void synchronize_variables(MPV* mpv,
     // Set_Explicit_Boundary_Data(Sol, elem);
     
     if (synchronize_nodal_pressure == CORRECT) {
-        cell_pressure_to_nodal_pressure(mpv, elem, node, 1.0);
+        cell_pressure_to_nodal_pressure(mpv, elem, node, ud.synchronize_weight);
     }
 }
 
@@ -631,7 +631,10 @@ void reset_Y_perturbation(ConsVars* Sol,
 #if OUTPUT_SUBSTEPS  /* 1 */
     extern User_Data ud;
     extern NodeSpaceDiscr* node;
-    putout(Sol, ud.file_name, "Sol", elem, node, 1);
+    extern int step;
+    if (step >= OUTPUT_SUBSTEPS - 1) {
+        putout(Sol, ud.file_name, "Sol", elem, node, 1);
+    }
 #endif
 }
 

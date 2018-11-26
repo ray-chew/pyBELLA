@@ -53,33 +53,55 @@ void set_periodic_data(double *p,
     const int icx = node->icx;
     const int icy = node->icy;
     const int icz = node->icz;
-    
-    int i, j, k, l, m, n_left, n_right;
-    
+        
     if (x_periodic) {
-        for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
-            for(j = igy; j < icy - igy; j++) {m = l + j * icx;
-                n_left  = m + igx;
-                n_right = m + icx - igx - 1;
-                p[n_right] = p[n_left];
+        for(int k = igz; k < icz - igz; k++) {
+            int l = k * icx * icy;
+            for(int j = igy; j < icy - igy; j++) {
+                int m = l + j * icx;
+                for (int ii=0; ii<=igx; ii++) {
+                    int n_left  = m + igx + ii;
+                    int n_right = m + icx - igx - 1 + ii;
+                    p[n_right] = p[n_left];
+
+                    n_left  = m + igx - ii;
+                    n_right = m + icx - igx - 1 - ii;
+                    p[n_left] = p[n_right];
+                }
             }
         }
     }
     if (node->ndim > 1 && y_periodic) {
-        for(k = igz; k < icz - igz; k++) {l = k * icx * icy;
-            for(i = igx; i < icx - igx; i++) {m = l + i;
-                n_left  = m + igy * icx;
-                n_right = m + (icy - igy - 1) * icx;
-                p[n_right] = p[n_left];
+        for(int k = igz; k < icz - igz; k++) {
+            int l = k * icx * icy;
+            for(int i = igx; i < icx - igx; i++) {
+                int m = l + i;
+                for (int jj=0; jj<=igy; jj++) {
+                    int n_left  = m + (igy + jj) * icx;
+                    int n_right = m + (icy - igy - 1 + jj) * icx;
+                    p[n_right] = p[n_left];
+
+                    n_left  = m + (igy - jj) * icx;
+                    n_right = m + (icy - igy - 1 - jj) * icx;
+                    p[n_left] = p[n_right];
+                }
             }
         }
     }
     if (node->ndim > 2 && z_periodic) {
-        for(i = igx; i < icx - igx; i++) {l = i;
-            for(j = igy; j < icy - igy; j++) {m = l + j * icx;
-                n_left  = m + igz * icx * icy;
-                n_right = m + (icz - igz - 1) * icx * icy;
-                p[n_right] = p[n_left];
+        for(int i = igx; i < icx - igx; i++) {
+            int l = i;
+            for(int j = igy; j < icy - igy; j++) {
+                int m = l + j * icx;
+                for (int kk=0; kk<=igz; kk++) {
+                    int n_left  = m + (igz + kk) * icx * icy;
+                    int n_right = m + (icz - igz - 1 + kk) * icx * icy;
+                    p[n_right] = p[n_left];
+
+                    n_left  = m + (igz - kk) * icx * icy;
+                    n_right = m + (icz - igz - 1 - kk) * icx * icy;
+                    p[n_left] = p[n_right];
+                }
             }
         }
     }
@@ -87,8 +109,8 @@ void set_periodic_data(double *p,
 
 /* ========================================================================== */
 
-#define OUTPUT_LAP 0
-#if OUTPUT_LAP
+#define OUTPUT_LAP_NODES 0
+#if OUTPUT_LAP_NODES
 static int lap_output_count = 0;
 #endif
 
@@ -155,7 +177,7 @@ static double BiCGSTAB_MG_nodes(
 
     EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, solution_io, hplus, hcenter, x_periodic, y_periodic, z_periodic, v_j);
 
-#if OUTPUT_LAP
+#if OUTPUT_LAP_NODES
     FILE *plapfile = NULL;
     char fn[120], fieldname[90];
     if (lap_output_count < 10) {
@@ -174,7 +196,9 @@ static double BiCGSTAB_MG_nodes(
 
 #if OUTPUT_RHS
     FILE *prhsfile = NULL;
+#ifndef OUTPUT_LAP_NODES
     char fn[120], fieldname[90];
+#endif
     if (rhs_output_count < 10) {
         sprintf(fn, "%s/rhs_nodes/rhs_nodes_prec_00%d.hdf", ud.file_name, rhs_output_count);
     } else if(rhs_output_count < 100) {
@@ -252,7 +276,7 @@ static double BiCGSTAB_MG_nodes(
 
         EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, p_j, hplus, hcenter, x_periodic, y_periodic, z_periodic, v_j);
 
-#if OUTPUT_LAP
+#if OUTPUT_LAP_NODES
         if (lap_output_count < 10) {
             sprintf(fn, "%s/lap_nodes/lap_nodes_00%d.hdf", ud.file_name, lap_output_count);
         } else if(lap_output_count < 100) {
@@ -292,7 +316,7 @@ static double BiCGSTAB_MG_nodes(
 
         EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, s_j, hplus, hcenter, x_periodic, y_periodic, z_periodic, t_j);
 
-#if OUTPUT_LAP
+#if OUTPUT_LAP_NODES
         if (lap_output_count < 10) {
             sprintf(fn, "%s/lap_nodes/lap_nodes_00%d.hdf", ud.file_name, lap_output_count);
         } else if(lap_output_count < 100) {

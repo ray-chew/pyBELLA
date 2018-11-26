@@ -150,7 +150,7 @@ int main( void )
              offset for the nodal pressure evolution in a different way now.
              cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
              */
-         
+            
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nfull time step with predicted advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
@@ -207,6 +207,12 @@ int main( void )
                 printf("\nstep %d done,  t=%f,  dt=%f,  cfl=%f, cfl_ac=%f, cfl_adv=%f", step, t, dt, dt_info.cfl, dt_info.cfl_ac, dt_info.cfl_adv);
                 printf("\n############################################################################################\n");
             }
+            
+            /* debugging: 
+            if (step > 4780) {
+                ud.write_file_period = 1;
+            }
+             */
 		}  
         
         if(ud.write_file == ON) {

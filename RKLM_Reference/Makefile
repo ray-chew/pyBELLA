@@ -29,7 +29,7 @@ CC = gccHDFLIBDIR	  = /opt/local/libHDFINC	      = /opt/local/includeCFLAGS
         ../Physics/LowMach/Second-projection/second_projection.h \
         ../Physics/LowMach/Second-projection/laplacian_nodes.h \
         ../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.h \
-        INSTALL	      = installLD	      = ccLDFLAGS	      = LIBS	      = $(HDFLIBDIR)/libmfhdf.dylib \		$(HDFLIBDIR)/libdf.dylib  $(HDFLIBDIR)/libjpeg.a $(HDFLIBDIR)/libz.dylib -lmMAKEFILE      = MakefileOBJS	      = userdata_TravellingVortex_2D.o \
+        INSTALL	      = installLD	      = ccLDFLAGS	      = LIBS	      = $(HDFLIBDIR)/libmfhdf.dylib \		$(HDFLIBDIR)/libdf.dylib  $(HDFLIBDIR)/libjpeg.a $(HDFLIBDIR)/libz.dylib -lmMAKEFILE      = MakefileOBJS	      = userdata_InternalWave_Baldauf.o \
         boundary.o \
         data.o \
         io.o \
@@ -55,7 +55,7 @@ CC = gccHDFLIBDIR	  = /opt/local/libHDFINC	      = /opt/local/includeCFLAGS
         variable_coefficient_poisson_cells.o \
         second_projection.o \
         laplacian_nodes.o \
-        variable_coefficient_poisson_nodes.o \PRINT	      = prPROGRAM       = rklmSHELL	      = /bin/shSRCS	      = ../Input/userdata_TravellingVortex_2D.c \
+        variable_coefficient_poisson_nodes.o \PRINT	      = prPROGRAM       = rklmSHELL	      = /bin/shSRCS	      = ../Input/userdata_InternalWave_Baldauf.c \
         ../Management/io.c \
         ../Management/Main.c \
         ../Management/memory.c \
@@ -79,10 +79,10 @@ CC = gccHDFLIBDIR	  = /opt/local/libHDFINC	      = /opt/local/includeCFLAGS
         ../Physics/LowMach/Second-projection/second_projection.c \
         ../Physics/LowMach/Second-projection/laplacian_nodes.c \
         ../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.c \
-all:		$(PROGRAM)$(PROGRAM):     $(OBJS) 		@echo "Linking $(PROGRAM) ..."		@$(LD) $(LDFLAGS) $(OBJS) -o $(PROGRAM) $(LIBS) 		@echo "done"clean:;		@rm -f $(OBJS) coreclobber:;	@rm -f $(OBJS) $(PROGRAM) core tagsdepend:;	@mkmf -f $(MAKEFILE) ROOT=$(ROOT)echo:;		@echo $(HDRS) $(SRCS)index:;		@ctags -wx $(HDRS) $(SRCS)install:	$(PROGRAM)		@echo Installing $(PROGRAM) in $(DEST)		@-strip $(PROGRAM)		@if [ $(DEST) != . ]; then \		(rm -f $(DEST)/$(PROGRAM); $(INSTALL) -f $(DEST) $(PROGRAM)); fiprint:;		@$(PRINT) $(HDRS) $(SRCS)tags:           $(HDRS) $(SRCS); @ctags $(HDRS) $(SRCS)update:		$(DEST)/$(PROGRAM)$(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install###userdata_TravellingVortex_2D.c Common.h userdata.h \
+all:		$(PROGRAM)$(PROGRAM):     $(OBJS) 		@echo "Linking $(PROGRAM) ..."		@$(LD) $(LDFLAGS) $(OBJS) -o $(PROGRAM) $(LIBS) 		@echo "done"clean:;		@rm -f $(OBJS) coreclobber:;	@rm -f $(OBJS) $(PROGRAM) core tagsdepend:;	@mkmf -f $(MAKEFILE) ROOT=$(ROOT)echo:;		@echo $(HDRS) $(SRCS)index:;		@ctags -wx $(HDRS) $(SRCS)install:	$(PROGRAM)		@echo Installing $(PROGRAM) in $(DEST)		@-strip $(PROGRAM)		@if [ $(DEST) != . ]; then \		(rm -f $(DEST)/$(PROGRAM); $(INSTALL) -f $(DEST) $(PROGRAM)); fiprint:;		@$(PRINT) $(HDRS) $(SRCS)tags:           $(HDRS) $(SRCS); @ctags $(HDRS) $(SRCS)update:		$(DEST)/$(PROGRAM)$(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install###userdata_InternalWave_Baldauf.c Common.h userdata.h \
     enumerator.h time_discretization.h error.h variable.h enum_bdry.h math_own.h \
     space_discretization.h thermodynamic.h Eos.h boundary.h memory.h Hydrostatics.h
-    $(CC) -c userdata_TravellingVortex_2D.c
+    $(CC) -c userdata_InternalWave_Baldauf.c
 
 boundary.o : boundary.c Common.h error.h boundary.h userdata.h variable.h Eos.h \
     thermodynamic.h math_own.h memory.h io.h

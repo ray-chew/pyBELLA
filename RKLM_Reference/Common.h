@@ -8,7 +8,7 @@
 #define HDFFORMAT  
 
 /* Output options in main.c for debugging;  1 -> output */
-#define OUTPUT_SUBSTEPS 0
+#define OUTPUT_SUBSTEPS 0 /* time step after which detailed output is generated */
 #define OUTPUT_SPLITSTEPS 0
 
 /*
@@ -30,9 +30,9 @@
  #define FOURTH_ORDER_ADV_FLUXES
  #define UPWIND_RHOY
  */ 
-#define ADVECTION
-#define NODAL_PRESSURE_GRADIENT
 #define HY_STATES_N_FROM_CELL_CENTERED_THETA
+#define EVOLVE_NODAL_PRESSURE
+#define ADVECTION
 
 /* ============================================= 
  Semi-implicit solver options  
@@ -42,8 +42,9 @@
  #define NONLINEAR_EOS_IN_1st_PROJECTION
  */
 /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
- this option was on on October 24 */
-#define NONLINEAR_EOS_IN_1st_PROJECTION
+ this option was on on October 24 
+ #define NONLINEAR_EOS_IN_1st_PROJECTION
+ */
 
 /* ============================================= 
  Elliptic Solver Options
@@ -93,6 +94,7 @@
 #define PROJECTION2 1              /* switch for second projection should be on "1" normally      */
 #define P2_FULL_STENCIL 1.0        /* values: 0.0, 1.0;  0.0 = 5/7pt stencil,  1.0=9/27pt stencil */
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
+#define HELMHOLTZ_COEFF_NODE_BASED        
 
 /*
  Note, Nov. 15, 2018:
@@ -101,11 +103,12 @@
  fully remove the remaining weak instability that shows near 
  the top of the domain at late times. Not tested on other 
  test cases thus far.
+
+ #define EXNER_NONLINEAR
 */
-#define EXNER_NONLINEAR
 
 /* 
-#define P2_FULL_CELLS_ON_BDRY
+ #define P2_FULL_CELLS_ON_BDRY
 */
 
 /* TODO: Code cleaning / maintainance

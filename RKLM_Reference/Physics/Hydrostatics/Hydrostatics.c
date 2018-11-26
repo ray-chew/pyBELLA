@@ -629,6 +629,7 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
     for (int nn=0; nn < node->nc; nn++) {
         mpv->dp2_nodes[nn] = mpv->p2_nodes[nn];
     }
+#if 1
     for (int j=igy; j<icyn-igy; j++) {
         int nnj = j*icxn;
         int sgn;
@@ -658,12 +659,31 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
             sgn *= -1;
         }
     }
+#else
+    /* fourth order interpolation */
+    for (int j=igy; j<icyn-igy; j++) {
+        int nnj = j*icxn;
+        
+        /* set periodic data for the bottom face pressures */
+        for (int i=0; i<igx; i++) {
+            mpv->dp2_nodes[nnj+i]         = mpv->dp2_nodes[nnj+icx-2*igx+i];
+            mpv->dp2_nodes[nnj+icx-igx+i] = mpv->dp2_nodes[nnj+igx+i];
+        }
+        
+        for (int i=igx; i<icxn-igx; i++) {
+            int nnij = nnj + i; 
+            mpv->p2_nodes[nnij] = (-mpv->dp2_nodes[nnij-2] + 7.0*(mpv->dp2_nodes[nnij-1]+mpv->dp2_nodes[nnij]) - mpv->p2_nodes[nnij+1] ) / 12.0;
+        }
+    }
+#endif
     
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);    
+    
     for (int nn=0; nn<node->nc; nn++) {
         mpv->dp2_nodes[nn] = 0.0;
     }
     
+#ifdef ADVECTION
     if (ud.is_compressible) {
         for (int i=igx; i<icx-igx; i++) {
             int nci     = i;
@@ -684,6 +704,7 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
             }
         }
     }
+#endif
     
     free(beta);
     free(bdpdx);

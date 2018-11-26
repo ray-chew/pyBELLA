@@ -704,7 +704,10 @@ void fullD_explicit_updates(ConsVars* Sol,
 
 #if OUTPUT_SUBSTEPS /* 4 */
     extern NodeSpaceDiscr* node;
-    putout(Sol, ud.file_name, "Sol", elem, node, 1);
+    extern int step;
+    if (step >= OUTPUT_SUBSTEPS - 1) {
+        putout(Sol, ud.file_name, "Sol", elem, node, 1);
+    }
 #endif
 
 }

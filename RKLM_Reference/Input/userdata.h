@@ -123,8 +123,9 @@ typedef struct {
 	int flux_correction_max_iterations;
 	int second_projection_max_iterations;
     enum Boolean initial_projection;
-    enum Boolean synchronize_nodal_pressure;
     enum Boolean column_preconditioner;
+    enum Boolean synchronize_nodal_pressure;
+    double synchronize_weight;
     /* auxiliary:  effective machine accuracy */
 	double eps_Machine;
 } User_Data;
