@@ -110,9 +110,9 @@ double precon_diag_prepare(
                     const ElemSpaceDiscr* elem,
                     const double* hplus[3],
                     const double* wcenter,
-                    const int x_periodic,
-                    const int y_periodic,
-                    const int z_periodic) 
+                    const int is_x_periodic,
+                    const int is_y_periodic,
+                    const int is_z_periodic) 
 {
     
     /*
@@ -134,14 +134,13 @@ double precon_diag_prepare(
         diaginv_is_allocated = CORRECT;
     }
     
-    assert(0); /* diagonal preconditioner for nodal pressure solve needs to be revisited carefully */
-
-    
     const int ndim = node->ndim;
     
     switch(ndim) {
         case 1: {
 
+            assert(0); /* 1D version needs testing */
+            
             const int igxn = node->igx;
             const int icxn = node->icx;
             
@@ -160,93 +159,31 @@ double precon_diag_prepare(
             
             double wx = 1.0 / (dx * dx);
             
-            for(i = igxe; i < icxe - igxe; i++) {
+            for(i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
                 ne   = i;
                 nn00 = i;
                 nn01 = i+1;
                 
-                double ddiag = - wx*hplusx[ne] - 0.5 * hcenter[ne];
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+                double ddiag = - wx*hplusx[ne];
+#else /* HELMHOLTZ_COEFF_NODE_BASED */
+                double ddiag = - wx*hplusx[ne] + 0.5 * hcenter[ne];
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */
                 
                 diag[nn00] += ddiag; 
                 diag[nn01] += ddiag;  
             }
-
-            /* periodicity */
-            if (x_periodic) {
-                    int nleft  = igxn;
-                    int nright = icxn - igxn - 1;
-                    diag[nleft]  += diag[nright];
-                    diag[nright]  = 9999.0;
-            }
-                       
-            /* prepare for the inversion of the preconditioner */
-            precon_inv_scale = 0.0;
             
-            for (i = igxn; i < icxn-igxn; i++) {
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+            for(i = igxn; i < icxn - igxn; i++) {
                 int nn = i;
-                diaginv[nn] = 1.0/diag[nn];
-                precon_inv_scale = MAX_own(precon_inv_scale, fabs(diaginv[nn]));
-            }
-            
+                diag[nn] += hcenter[nn]; 
+            }       
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */            
+                        
             break;
         }
         case 2: {
-#if 0
-            const int igxn = node->igx;
-            const int icxn = node->icx;
-            const int igyn = node->igy;
-            const int icyn = node->icy;
-            
-            const int igxe = elem->igx;
-            const int icxe = elem->icx;
-            const int igye = elem->igy;
-            const int icye = elem->icy;
-            
-            const double dx = node->dx;
-            const double dy = node->dy;
-            
-            const double* hplusx   = hplus[0];
-            const double* hplusy   = hplus[1];
-            const double* hcenter  = wcenter;
-                        
-            const double oodx2 = 0.5 / (dx * dx);
-            const double oody2 = 0.5 / (dy * dy);
-            const double nine_pt = (0.25 * (1.0 + P2_DIAGONAL_FIVE_POINT)) * P2_FULL_STENCIL;
-                        
-            int i, j, me, mn, ne, nn, nn1, nnicxn, nn1icxn;
-            
-            double wx = (-1.0+nine_pt) * oodx2;
-            double wy = (-1.0+nine_pt) * oody2;
-            
-
-            for(nn=0; nn<node->nc; nn++) diag[nn] = diaginv[nn] = 0.0;
-
-            for(j = igye; j < icye - igye; j++) {
-                me   = j * icxe;
-                mn   = j * icxn;
-                
-                for(i = igxe; i < icxe - igxe; i++) {
-                    ne       = me + i;
-                    
-                    nn       = mn + i;
-                    nn1      = nn + 1;
-                    nnicxn   = nn + icxn;
-                    nn1icxn  = nn + 1 + icxn;
-                    
-#ifdef HELMHOLTZ_COEFF_NODE_BASED
-                    assert(0); /* to be implemented for diagonal precon */
-                    double ddiag = wx*hplusx[ne] + wy*hplusy[ne] + 0.25 * hcenter[ne];
-#else /* HELMHOLTZ_COEFF_NODE_BASED */
-                    double ddiag = wx*hplusx[ne] + wy*hplusy[ne] + 0.25 * hcenter[ne];
-#endif /* HELMHOLTZ_COEFF_NODE_BASED */
-
-                    diag[nn]      += ddiag;
-                    diag[nn1]     += ddiag;
-                    diag[nnicxn]  += ddiag;
-                    diag[nn1icxn] += ddiag;
-                }
-            }
-#else
             const int igxn = node->igx;
             const int icxn = node->icx;
             const int igyn = node->igy;
@@ -267,17 +204,19 @@ double precon_diag_prepare(
             
             int i, j, me, mn, ne; 
             int nn00, nn01, nn10, nn11;
-            
+                                    
+            const double nine_pt = (0.25 * (1.0 + P2_DIAGONAL_FIVE_POINT)) * P2_FULL_STENCIL;
+
+            double wx = (1.0 - nine_pt) / (dx * dx);
+            double wy = (1.0 - nine_pt) / (dy * dy);
+
             for(int nn=0; nn<node->nc; nn++) diag[nn] = diaginv[nn] = 0.0;
-            
-            double wx = 0.25 / (dx * dx);
-            double wy = 0.25 / (dy * dy);
-            
-            for(j = igye; j < icye - igye; j++) {
+
+            for(j = igye - is_y_periodic; j < icye - igye + is_y_periodic; j++) {
                 me   = j * icxe;
                 mn   = j * icxn;
                 
-                for(i = igxe; i < icxe - igxe; i++) {
+                for(i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
                     ne    = me + i;
                     
                     nn00 = mn + i;
@@ -286,8 +225,7 @@ double precon_diag_prepare(
                     nn11 = mn + i + 1  + icxn;
 
 #ifdef HELMHOLTZ_COEFF_NODE_BASED
-                    assert(0); /* to be implemented for diagonal precon */
-                    double ddiag = - wx*hplusx[ne] - wy*hplusy[ne] + 0.125 * hcenter[ne];
+                    double ddiag = - wx*hplusx[ne] - wy*hplusy[ne];
 #else /* HELMHOLTZ_COEFF_NODE_BASED */
                     double ddiag = - wx*hplusx[ne] - wy*hplusy[ne] + 0.125 * hcenter[ne];
 #endif /* HELMHOLTZ_COEFF_NODE_BASED */
@@ -298,29 +236,17 @@ double precon_diag_prepare(
                     diag[nn11] += ddiag; 
                 }
             }
-#endif
-            /* periodicity */
-            if (x_periodic) {
-                for(j=igyn; j<icyn-igyn; j++) {
-                    int nleft  = j * icxn + igxn;
-                    int nright = j * icxn + icxn - igxn - 1;
-                    
-                    diag[nleft]  += diag[nright];
-                    diag[nright]  = 9999.0;
+            
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+            for(j = igyn; j < icyn - igyn; j++) {
+                int mn   = j * icxn;
+                for(i = igxn; i < icxn - igxn; i++) {                    
+                    int nn = mn + i;
+                    diag[nn] += hcenter[nn]; 
                 }
             }
-            
-            if (y_periodic) {
-                for(i=igxn; i<icxn-igxn; i++) {
-                    int nbottom  = i + igyn * icxn;
-                    int ntop     = i + (icyn - igyn - 1) * icxn;
-                    
-                    diag[nbottom]  += diag[ntop];
-                    diag[ntop]      = 7777.0;
-                }
-            }
-             
-            
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */
+                     
             /* prepare for the inversion of the preconditioner */
             precon_inv_scale = 0.0;
             
@@ -366,15 +292,15 @@ double precon_diag_prepare(
             double wy = 0.0625 / (dy * dy);
             double wz = 0.0625 / (dz * dz);
 
-            for(k = igze; k < icze - igze; k++) {
+            for(k = igze - is_z_periodic; k < icze - igze + is_z_periodic; k++) {
                 le = k * icxe*icye;
                 ln = k * icxn*icyn;
                 
-                for(j = igye; j < icye - igye; j++) {
+                for(j = igye - is_y_periodic; j < icye - igye + is_y_periodic; j++) {
                     me   = le + j * icxe;
                     mn   = ln + j * icxn;
                     
-                    for(i = igxe; i < icxe - igxe; i++) {
+                    for(i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
                         ne    = me + i;
                         
                         nn000 = mn + i;
@@ -388,7 +314,7 @@ double precon_diag_prepare(
                         
 #ifdef HELMHOLTZ_COEFF_NODE_BASED
                         assert(0); /* to be implemented for diagonal precon */
-                        double ddiag = - wx*hplusx[ne] - wy*hplusy[ne] + 0.125 * hcenter[ne];
+                        double ddiag = - wx*hplusx[ne] - wy*hplusy[ne];
 #else /* HELMHOLTZ_COEFF_NODE_BASED */
                         double ddiag = - wx*hplusx[ne] - wy*hplusy[ne] - wz*hplusz[ne] + 0.125 * hcenter[ne];
 #endif /* HELMHOLTZ_COEFF_NODE_BASED */
@@ -404,48 +330,20 @@ double precon_diag_prepare(
                     }
                 }
             }
-            
-            /* periodicity */
-            if (x_periodic) {
-                for(k=igzn; k<iczn-igzn; k++) {
-                    ln = k*icxn*icyn;
-                    for(j=igyn; j<icyn-igyn; j++) {
-                        int nleft  = ln + j*icxn + igxn;
-                        int nright = ln + j*icxn + icxn - igxn - 1;
-                        
-                        diag[nleft]  += diag[nright];
-                        diag[nright]  = 9999.0;
-                    }
-                }
-            }
-            
-            if (y_periodic) {
-                for(i=igxn; i<icxn-igxn; i++) {
-                    ln = i;
-                    for(k=igzn; k<iczn-igzn; k++) {
-                        int nbottom  = ln + k*icxn*icyn + igyn * icxn;
-                        int ntop     = ln + k*icxn*icyn + (icyn - igyn - 1) * icxn;
                     
-                        diag[nbottom]  += diag[ntop];
-                        diag[ntop]      = 8888.0;
+#ifdef HELMHOLTZ_COEFF_NODE_BASED
+            for(k = igzn; k < iczn - igzn; j++) {
+                int ln   = k * icxn*icyn;
+                for(j = igyn; j < icyn - igyn; j++) {
+                    int mn   = ln + j * icxn;
+                    for(i = igxn; i < icxn - igxn; i++) {                    
+                        int nn = mn + i;
+                        diag[nn] += hcenter[nn]; 
                     }
                 }
             }
+#endif /* HELMHOLTZ_COEFF_NODE_BASED */
 
-            if (z_periodic) {
-                for(j=igyn; j<icyn-igyn; j++) {
-                    ln = j*icxn;
-                    for(i=igxn; i<icxn-igxn; i++) {
-                        int nback  = ln + i + igzn * icxn*icyn;
-                        int nfront = ln + i + (iczn - igzn - 1) * icxn*icyn;
-                        
-                        diag[nback]  += diag[nfront];
-                        diag[nfront]  = 7777.0;
-                    }
-                }
-            }
-            
-            
             /* prepare for the inversion of the preconditioner */
             precon_inv_scale = 0.0;
             
@@ -516,11 +414,11 @@ void precon_diag_invert(
     const int igy = node->igy;
     const int igz = node->igz;
     
-    for (int k=igz; k<MAX_own(1,icz-igz-z_periodic); k++) {
+    for (int k=igz; k<icz-igz; k++) {
         int ln = k*icx*icy;
-        for (int j=igy; j<MAX_own(1, icy-igy-y_periodic); j++) {
+        for (int j=igy; j<icy-igy; j++) {
             int mn = ln + j*icx;
-            for (int i=igx; i<MAX_own(1, icx-igx-x_periodic); i++) {
+            for (int i=igx; i<icx-igx; i++) {
                 int nn = mn + i;
                 vec_out[nn] = vec_in[nn]*diaginv[nn];
             }

@@ -51,8 +51,8 @@
  ============================================= */
 /*
  */
-#define PRECON
 #define NEW_LAP
+#define PRECON
 
 /* solver options ==============================
  #define SOLVER_1_CR2      ->  Piotr's Conjugate Residual

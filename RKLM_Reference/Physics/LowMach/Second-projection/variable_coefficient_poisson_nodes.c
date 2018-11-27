@@ -55,9 +55,9 @@ void set_periodic_data(double *p,
     const int icz = node->icz;
         
     if (x_periodic) {
-        for(int k = igz; k < icz - igz; k++) {
+        for(int k = 0; k < icz; k++) {
             int l = k * icx * icy;
-            for(int j = igy; j < icy - igy; j++) {
+            for(int j = 0; j < icy; j++) {
                 int m = l + j * icx;
                 for (int ii=0; ii<=igx; ii++) {
                     int n_left  = m + igx + ii;
@@ -72,9 +72,9 @@ void set_periodic_data(double *p,
         }
     }
     if (node->ndim > 1 && y_periodic) {
-        for(int k = igz; k < icz - igz; k++) {
+        for(int k = 0; k < icz; k++) {
             int l = k * icx * icy;
-            for(int i = igx; i < icx - igx; i++) {
+            for(int i = 0; i < icx; i++) {
                 int m = l + i;
                 for (int jj=0; jj<=igy; jj++) {
                     int n_left  = m + (igy + jj) * icx;
@@ -89,9 +89,9 @@ void set_periodic_data(double *p,
         }
     }
     if (node->ndim > 2 && z_periodic) {
-        for(int i = igx; i < icx - igx; i++) {
+        for(int i = 0; i < icx; i++) {
             int l = i;
-            for(int j = igy; j < icy - igy; j++) {
+            for(int j = 0; j < icy; j++) {
                 int m = l + j * icx;
                 for (int kk=0; kk<=igz; kk++) {
                     int n_left  = m + (igz + kk) * icx * icy;
@@ -172,6 +172,7 @@ static double BiCGSTAB_MG_nodes(
 #ifdef P2_FULL_CELLS_ON_BDRY
     set_ghostnodes_p2(solution_io, node, 2);       
 #else
+    // set_ghostnodes_p2(solution_io, node, 2);       
     set_periodic_data(solution_io, node, x_periodic, y_periodic, z_periodic);
 #endif
 
@@ -271,6 +272,7 @@ static double BiCGSTAB_MG_nodes(
 #ifdef P2_FULL_CELLS_ON_BDRY
         set_ghostnodes_p2(p_j, node, 2);       
 #else
+        // set_ghostnodes_p2(p_j, node, 2);       
         set_periodic_data(p_j, node, x_periodic, y_periodic, z_periodic);
 #endif
 
@@ -311,6 +313,7 @@ static double BiCGSTAB_MG_nodes(
 #ifdef P2_FULL_CELLS_ON_BDRY
         set_ghostnodes_p2(s_j, node, 2);       
 #else
+        // set_ghostnodes_p2(s_j, node, 2);       
         set_periodic_data(s_j, node, x_periodic, y_periodic, z_periodic);
 #endif
 
@@ -371,6 +374,7 @@ static double BiCGSTAB_MG_nodes(
 #ifdef P2_FULL_CELLS_ON_BDRY
         set_ghostnodes_p2(solution_io, node, 2);       
 #else
+        // set_ghostnodes_p2(solution_io, node, 2);       
         set_periodic_data(solution_io, node, x_periodic, y_periodic, z_periodic);
 #endif
 	}
