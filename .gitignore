@@ -1,0 +1,16 @@
+#Ignore various files
+*.log
+*.o
+*.orig
+RKLM_Reference/MakeBuilds/rklm
+low_Mach_gravity_comp/*
+MatLab/results/*
+*.backup
+*.aux
+*.bbl
+*.blg
+*.dvi
+*.log
+*.pdf
+*.tex.backup
+*.ps
