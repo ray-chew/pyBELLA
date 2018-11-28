@@ -129,8 +129,8 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = SI_MIDPT; /* this code version has only one option */
     ud->CFL                    = 0.9; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 1.0 / ud->t_ref;
-    ud->dtfixed                = 1.0 / ud->t_ref;
+    ud->dtfixed0               = 10.0 / ud->t_ref;
+    ud->dtfixed                = 10.0 / ud->t_ref;
     
     set_time_integrator_parameters(ud);
     
@@ -184,7 +184,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 900;
+    ud->write_file_period = 90;
     ud->file_format = HDF;
     
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
