@@ -48,8 +48,8 @@ contour_values = [-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dthe
 title_true = 1;
 
 kmin = 0;
-kmax = 601;
-dk   = 1;
+kmax = 601; % max number of plots for safety
+dk   = 1; % second step
 
 if strcmp(test_case, 'Baldaufs-Internal-Wave-Tests')
     scalefactor = 20.0;

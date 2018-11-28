@@ -588,8 +588,8 @@ void precon_c_invert(
 
 
 /* ========================================================================== */
-#define OUTPUT_LAP_NODES_CELLS 0
-#if OUTPUT_LAP_NODES_CELLS
+#define OUTPUT_LAP_CELLS 0
+#if OUTPUT_LAP_CELLS
 #include "io.h"
 static int lap_output_count = 0;
 #endif
@@ -828,7 +828,7 @@ void EnthalpyWeightedLap_bilinear_p(
         default: ERROR("ndim not in {1, 2, 3}");
     }
     
-#if OUTPUT_LAP_NODES_CELLS
+#if OUTPUT_LAP_CELLS
     extern User_Data ud;
     FILE *plapfile = NULL;
     char fn[120], fieldname[90];
