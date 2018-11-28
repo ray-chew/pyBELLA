@@ -14,9 +14,9 @@ modelstr = 'comp';
 %modelstr = 'psinc_w_adv_Ndt=05';
 
 
-%test_case = 'Baldaufs-Internal-Wave-Tests';
+test_case = 'Baldaufs-Internal-Wave-Tests';
 %test_case = 'Deep-Internal-Wave-Tests';
-test_case = 'Internal-Wave-Tests';
+%test_case = 'Internal-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
