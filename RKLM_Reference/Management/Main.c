@@ -62,9 +62,15 @@ int main( void )
 	const double* tout = ud.tout;
 	int output_switch = 0;
         
+    double dt_factor;
+    
 	/* data allocation and initialization */
 	Data_init();
         
+    /* An initial implicit Euler step in the second projection removes noise 
+     in some cases. It effectively acts like a filter on the initial data. */
+    dt_factor = (ud.initial_impl_Euler == CORRECT ? 0.5 : 1.0);
+
     if (ud.n_time_series > 0) {
         initialize_time_series();
     }
@@ -99,7 +105,6 @@ int main( void )
 		
 		/* start major time stepping loop */
 		while( t < *tout && step < ud.stepmax ) { 
-            double dt_factor;
             
             /* Timestep computation */
             dynamic_timestep(&dt_info, mpv, Sol, t, *tout, elem, step);
@@ -156,8 +161,6 @@ int main( void )
             printf("\nfull time step with predicted advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
 
-            dt_factor = (step == 0 ? 0.5 : 1.0);
-
 #ifdef CORIOLIS_EXPLICIT
             /* Strang splitting for Coriolis, first step */
              Explicit_Coriolis(Sol, elem, 0.5*dt);  
@@ -200,6 +203,7 @@ int main( void )
             
             t += dt;
             step++;
+            dt_factor = 1.0;
 #if 1
             if((ud.write_file == ON && (step % ud.write_file_period  == 0)) || output_switch) 
                 putout(Sol, ud.file_name, "Sol", elem, node, 1);
@@ -210,11 +214,11 @@ int main( void )
                 printf("\n############################################################################################\n");
             }
             
-            /* debugging: 
-            if (step > 4780) {
+            /* debugging: */
+            if (t >= ud.tout[0] - 50*dt) {
                 ud.write_file_period = 1;
             }
-             */
+             
 		}  
         
         if(ud.write_file == ON) {

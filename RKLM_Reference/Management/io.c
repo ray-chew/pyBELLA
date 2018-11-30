@@ -190,6 +190,20 @@ void putout(ConsVars* Sol,
 			sprintf(fieldname, "dpdim_%s_%s", field_name, step_string);
 			WriteHDF(dpdimfile, icx, icy, icz, ndim, var, fn, fieldname);
             
+            /* temperature */
+            temperature(var, Sol, 0, 0, nc);
+            sprintf(fn, "%s/T/T_%s.hdf", dir_name, step_string);
+            if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
+            sprintf(fieldname, "T_%s_%s", field_name, step_string);
+            WriteHDF(ppfile, icx, icy, icz, ndim, var, fn, fieldname);
+            
+            /* temperature difference */
+            dtemperature(var, Sol, mpv, elem);
+            sprintf(fn, "%s/dT/dT_%s.hdf", dir_name, step_string);
+            if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
+            sprintf(fieldname, "dT_%s_%s", field_name, step_string);
+            WriteHDF(dpdimfile, icx, icy, icz, ndim, var, fn, fieldname);
+            
 			/* inverse of potential temperature */
 			/* pot_temp_inv_change(var, Sol, 0, 0, nc); */
 			pot_temp_inv(var, Sol, 0, 0, nc);

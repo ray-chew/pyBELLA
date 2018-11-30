@@ -164,9 +164,13 @@ void User_Data_init(User_Data* ud) {
     ud->second_projection_local_precision = tol;  /* 1.e-05 should be enough */
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
-    ud->initial_projection                = CORRECT;
-     
-    ud->synchronize_nodal_pressure        = WRONG;
+    ud->initial_projection                = WRONG;   /* WRONG;  CORRECT; */
+    ud->initial_impl_Euler                = WRONG;   /* WRONG;  CORRECT; */
+    
+    ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
+    ud->synchronize_nodal_pressure        = WRONG;   /* WRONG; CORRECT; */
+    ud->synchronize_weight                = 0.0;    /* relevant only when prev. option is "CORRECT"
+                                                     Should ultimately be a function of dt . */  
     
     /* numerics parameters */
     ud->eps_Machine = sqrt(DBL_EPSILON);
