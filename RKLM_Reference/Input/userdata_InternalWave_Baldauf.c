@@ -129,14 +129,14 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = SI_MIDPT; /* this code version has only one option */
     ud->CFL                    = 0.9; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 10.0 / ud->t_ref;
-    ud->dtfixed                = 10.0 / ud->t_ref;
+    ud->dtfixed0               = 0.5 / ud->t_ref;
+    ud->dtfixed                = 0.5 / ud->t_ref;
     
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx =  301+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =   20+1; /* 321; 161;  81;  65; 41;  */
+    ud->inx =  1201+1; /* 641; 321; 161; 129; 81; */
+    ud->iny =   80+1; /* 321; 161;  81;  65; 41;  */
     ud->inz =      1;
     
     /* explicit predictor step */
@@ -157,7 +157,7 @@ void User_Data_init(User_Data* ud) {
     ud->ncache = 154; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
     
     /* linear solver-stuff */
-    double tol                            = 1.e-11 * (ud->is_compressible == 1 ? 0.01 : 1.0);
+    double tol                            = 1.e-16 * (ud->is_compressible == 1 ? 0.01 : 1.0);
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -165,9 +165,13 @@ void User_Data_init(User_Data* ud) {
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
     ud->initial_projection                = WRONG;   /* WRONG;  CORRECT; */
-    
+    ud->initial_impl_Euler                = WRONG;   /* WRONG;  CORRECT; */
+
+
     ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
-    ud->synchronize_nodal_pressure        = CORRECT;   /* WRONG; CORRECT; */
+    ud->synchronize_nodal_pressure        = WRONG;   /* WRONG; CORRECT; */
+    ud->synchronize_weight                = 0.0;    /* relevant only when prev. option is "CORRECT"
+                                                     Should ultimately be a function of dt . */  
 
     /* numerics parameters */
     ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -184,10 +188,10 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 90;
+    ud->write_file_period = 3600;
     ud->file_format = HDF;
     
-    ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
+    ud->n_time_series = 900; /* n_t_s > 0 => store_time_series_entry() called each timestep */
 
     {
         char *OutputBaseFolder      = "/home/benacchio/workspace/RKLM_Reference/";
