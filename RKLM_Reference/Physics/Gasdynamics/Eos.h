@@ -53,6 +53,26 @@ void conservatives_from_uvwYZ(
 							  const int nstart, 
 							  const int nende);
 
+
+/*------------------------------------------------------------------------------
+ temperature from conservative variables
+ ------------------------------------------------------------------------------*/
+void temperature(
+                 double *T, 
+                 const ConsVars* U, 
+                 const int nstart_p, 
+                 const int nstart, 
+                 const int nende);
+
+/*------------------------------------------------------------------------------
+ temperature perturbation from conservative variables
+ ------------------------------------------------------------------------------*/
+void dtemperature(
+                  double *dTdim, 
+                  const ConsVars* U, 
+                  const MPV *mpv,
+                  const ElemSpaceDiscr *elem);
+
 /*------------------------------------------------------------------------------
  pressure from conservative variables
  ------------------------------------------------------------------------------*/

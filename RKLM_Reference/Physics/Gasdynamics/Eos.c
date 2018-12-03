@@ -176,6 +176,63 @@ void conservatives_from_uvwYZ(
 }
 
 /*------------------------------------------------------------------------------
+ temperature
+ ------------------------------------------------------------------------------*/
+void temperature(
+                 double *T, 
+                 const ConsVars* U, 
+                 const int nstart_p, 
+                 const int nstart, 
+                 const int nende) {
+    
+    extern User_Data ud;
+    extern Thermodynamic th;
+    
+    int i, ip;
+    
+    for( ip = nstart_p, i = nstart;  i < nende ; ip++, i++)
+    {
+        T[ip] = pow(U->rhoY[i],th.gamm)/U->rho[i];
+    }    
+}
+
+/*------------------------------------------------------------------------------
+ deviation of thermodynamic pressure from background state (dimensional)
+ ------------------------------------------------------------------------------*/
+void dtemperature(
+                  double *dTdim, 
+                  const ConsVars* U, 
+                  const MPV *mpv,
+                  const ElemSpaceDiscr *elem)
+{
+    extern User_Data ud;
+    extern Thermodynamic th;
+    
+    double p, rho; 
+    
+    int i, j, k, l, m, n;
+    int icx = elem->icx;
+    int icy = elem->icy;
+    int icz = elem->icz;
+    
+    for (k=0; k<icz; k++) {
+        l = k*icx*icy;
+        for (j=0; j<icy; j++) {
+            m = l + j*icx;
+            for (i=0; i<icx; i++) {
+                n = m + i;
+                p = pow(U->rhoY[n],th.gamm);
+                rho = U->rho[n];
+                dTdim[n] = (p/rho - mpv->HydroState->p0[j]/mpv->HydroState->rho0[j]);
+            }
+        }
+    }
+}
+
+
+
+
+/*------------------------------------------------------------------------------
  thermodynamic pressure
  ------------------------------------------------------------------------------*/
 void pressure(

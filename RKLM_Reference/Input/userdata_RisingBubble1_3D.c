@@ -211,26 +211,21 @@ void User_Data_init(User_Data* ud) {
 	
 	ud->ncache =  300; /* (ud->inx+3); */
 	
-	/* linear solver-stuff */
-    ud->which_projection_first = 1;
-	ud->Solver = BICGSTAB_PRECON;        /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
-	ud->Solver_Node = BICGSTAB_PRECON;   /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
-    double tol = 1.e-6;
-	ud->flux_correction_precision = tol;
-	ud->flux_correction_local_precision = tol;   /* 1.e-05 should be enough */
-	ud->second_projection_precision = tol;  
-	ud->second_projection_local_precision = tol;   /* 1.e-05 should be enough */
-	ud->implicitness = 1.0;   
-	ud->flux_correction_max_MG_cycles = 100;
-	ud->flux_correction_output_period = 50;
-	ud->max_projection_iterations = 1;
-	ud->flux_correction_max_iterations = 6000;
-	ud->second_projection_max_iterations = 6000;
-	
-    max_no_of_levels = 1;
-
-	ud->max_no_of_multigrid_levels = max_no_of_levels; 
-	ud->no_of_multigrid_levels     = max_no_of_levels-1;    /* optimal for BICGSTAB with MG:  5 (128x128-Grid) */
+    /* linear solver-stuff */
+    double tol                            = 1.e-16 * (ud->is_compressible == 1 ? 0.01 : 1.0);
+    ud->flux_correction_precision         = tol;
+    ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
+    ud->second_projection_precision       = tol;
+    ud->second_projection_local_precision = tol;  /* 1.e-05 should be enough */
+    ud->flux_correction_max_iterations    = 6000;
+    ud->second_projection_max_iterations  = 6000;
+    ud->initial_projection                = WRONG;   /* WRONG;  CORRECT; */
+    ud->initial_impl_Euler                = CORRECT;   /* WRONG;  CORRECT; */
+    
+    ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
+    ud->synchronize_nodal_pressure        = WRONG;   /* WRONG; CORRECT; */
+    ud->synchronize_weight                = 0.0;    /* relevant only when prev. option is "CORRECT"
+                                                     Should ultimately be a function of dt . */  
 
 	/* numerics parameters */
 	ud->eps_Machine = sqrt(DBL_EPSILON);

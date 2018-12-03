@@ -123,7 +123,7 @@ typedef struct {
 	int flux_correction_max_iterations;
 	int second_projection_max_iterations;
     enum Boolean initial_projection;
-	enum Boolean initial_impl_Euler;
+    enum Boolean initial_impl_Euler;
     enum Boolean column_preconditioner;
     enum Boolean synchronize_nodal_pressure;
     double synchronize_weight;

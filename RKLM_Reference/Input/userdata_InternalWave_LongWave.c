@@ -108,7 +108,7 @@ void User_Data_init(User_Data* ud) {
     ud->zmax =   1.0;
     
     /* boundary/initial conditions */
-    ud->wind_speed  =  1.0 * 20.0/u_ref;
+    ud->wind_speed  =  0.0 * 20.0/u_ref;
     ud->wind_shear  = -0.0;              /* velocity in [u_ref/h_ref] */
     ud->hill_height = 0.0 * 0.096447; 
     ud->hill_length_scale = 0.1535;   /* hill_length * l_ref = 1.0 km */
@@ -174,7 +174,9 @@ void User_Data_init(User_Data* ud) {
     ud->initial_projection                = WRONG; /* WRONG;  CORRECT; */
     
     ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
-    ud->synchronize_nodal_pressure        = WRONG;   /* WRONG; CORRECT; */
+    ud->synchronize_nodal_pressure        = WRONG; /* WRONG; CORRECT; */
+    ud->synchronize_weight                = 1.0;    /* relevant only when prev. option is "CORRECT"
+                                                      Should ultimately be a function of dt . */  
 
     /* numerics parameters */
     ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -259,21 +261,28 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
      
     /* computations for the vertical slice at  k=0 */
     for(i = 0; i < icx; i++) {
+        double xi;
         
         /* set potential temperature stratification in the column */
         for(j = 0; j < elem->icy; j++) {
             x     = elem->x[i];
             y     = elem->y[j];
-            Y[j]  = stratification(y)  + delth * molly(x) * sin(PI*y)  / (1.0 + (x-xc)*(x-xc) / (a*a));
+#if 1
+             Y[j]  = stratification(y)  + delth * molly(x) * sin(PI*y)  / (1.0 + (x-xc)*(x-xc) / (a*a));
+#else
+            xi = MIN_own(1.0,fabs((x-xc)/(10.0*a)));
+            Y[j]  = stratification(y)  + delth * sin(PI*y) * 0.5 * (1.0+cos(PI*xi));
+#endif
         }  
         
         for(j = 0; j < node->icy; j++) {
             xn    = node->x[i];
             yn    = node->y[j];
-#if 0
-            Yn[j] = stratification(yn)  + delth * sin(PI*yn);
+#if 1
+             Yn[j] = stratification(yn)  + delth * molly(xn) * sin(PI*yn)  / (1.0 + (xn-xc)*(xn-xc) / (a*a));
 #else
-            Yn[j] = stratification(yn)  + delth * molly(xn) * sin(PI*yn)  / (1.0 + (xn-xc)*(xn-xc) / (a*a));
+            xi = MIN_own(1.0,fabs((xn-xc)/(10.0*a)));
+            Yn[j]  = stratification(yn)  + delth * sin(PI*yn) * 0.5 * (1.0+cos(PI*xi));
 #endif
         }        
         /* determine hydrostatic pressure distributions column-wise (lateral relation still neglected) */

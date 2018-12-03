@@ -42,7 +42,7 @@ diff_rel_to_bottom = 0;
 % dth = 5e-4/300;
 % contour_values = [th0 th0+dth th0+2*dth th0+3*dth th0+4*dth th0+5*dth th0+6*dth th0+7*dth th0+8*dth th0+9*dth th0+10*dth];
 dtheta = 0.5e-3/300;
-contour_values = [-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dtheta, 2*dtheta, 3*dtheta, 4*dtheta, 5*dtheta];
+contour_values = 10.0*[-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dtheta, 2*dtheta, 3*dtheta, 4*dtheta, 5*dtheta];
 %contour_values = [1.0001 1.0011 1.0022 1.0022 1.0033 1.0044 1.0055 1.0065];
 %contour_values = linspace(-0.01,0.01,41) / 288.15;
 title_true = 1;
@@ -71,8 +71,8 @@ elseif strcmp(test_case, 'Deep-Internal-Wave-Tests')
 elseif strcmp(test_case, 'Internal-Wave-Tests')
     % scalefactor = 1.0  % Skamarock-Klemp-1994 Fig.1
     % scalefactor = 20.0   % Skamarock-Klemp-1994 Fig.3
-    scalefactor = 160.0   % new, very long wave test
-    ncx = 301; 
+    scalefactor = 160.0;   % new, very long wave test
+    ncx =301; 
     ncy = 10;  
     %ncx = 600; 
     %ncy = 80;  
@@ -156,6 +156,8 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'S'; folderstr = 'S'; titlestr = 'S'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy]; rhoY_diff = 1;
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
+%varstr = 'T';  folderstr = 'T'; titlestr = 'T'; ndummy = 2; arraysize = [ncx ncy];
+%varstr = 'dT';  folderstr = 'dT'; titlestr = 'dT'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
