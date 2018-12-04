@@ -712,53 +712,6 @@ void fullD_explicit_updates(ConsVars* Sol,
 
 }
 
-
-#ifdef CORIOLIS_EXPLICIT
-
-/*------------------------------------------------------------------------------
- explicit step for the Coriolis effect
- ------------------------------------------------------------------------------*/
-
-void Explicit_Coriolis(ConsVars *Sol, const ElemSpaceDiscr* elem, const double dt) 
-{
-    extern User_Data ud;
-    
-    const double coriolis = ud.coriolis_strength[0];
-    const double u0       = ud.wind_speed;
-    
-    const int icx = elem->icx;
-    const int icy = elem->icy;
-    const int icz = elem->icz;
-
-    const int igx = elem->igx;
-    const int igy = elem->igy;
-    const int igz = elem->igz;
-    
-    double fsqsc     = 0.25*dt*dt*coriolis*coriolis;
-    double ooopfsqsc = 1.0 / (1.0 + fsqsc);
-    double omfsqsc   = 1.0 - fsqsc;
-    
-    assert(elem->ndim < 3);
-    
-    printf("\n\n====================================================");
-    printf("\nCoriolis");
-    printf("\n====================================================\n");
-
-    /* implicit trapezoidal rule for large time steps and energy conservation*/
-    for (int k=igz; k<icz-igz; k++) {int nk = k*icy*icx;
-        for (int j=igy; j<icy-igy; j++) {int njk = nk + j*icx;
-            for (int i=igx; i<icx-igx; i++) {int nijk = njk + i;
-                double drhou    = Sol->rhou[nijk] - u0*Sol->rho[nijk];
-                Sol->rhou[nijk] = u0*Sol->rho[nijk] + ooopfsqsc * (omfsqsc * drhou + dt * coriolis * Sol->rhow[nijk]);
-                Sol->rhow[nijk] = ooopfsqsc * (omfsqsc * Sol->rhow[nijk] - dt * coriolis * drhou);
-            }
-        }
-    }
-
-    Set_Explicit_Boundary_Data(Sol, elem);
-}
-#endif 
-
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log: explicit.c,v $
  Revision 1.1  1998/03/07 09:56:45  nicola

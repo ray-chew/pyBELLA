@@ -57,7 +57,9 @@ int main( void )
 	extern ConsVars* Sol0; 
     extern double* force[3];
     extern ConsVars* flux[3];
-        
+    extern double* W0;
+    extern enum Boolean W0_in_use;
+
     TimeStepInfo dt_info;
 	const double* tout = ud.tout;
 	int output_switch = 0;
@@ -85,9 +87,16 @@ int main( void )
        that come simply from the divergence approximation on the nodal grid.
      */
     if (ud.initial_projection == CORRECT) {
-        assert(0);  /* MAKE SURE THE TIME STEP SIZE PARAMETERS ARE OK IN THE FOLLOWING CALLS!! */
-        euler_backward_non_advective_expl_part(Sol, mpv, elem, 5.0);
-        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, 10.0);
+        double *p2aux = (double*)malloc(node->nc*sizeof(double));
+        for (int nn=0; nn<node->nc; nn++) {
+            p2aux[nn] = mpv->p2_nodes[nn];
+        }
+        //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
+        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed);
+        for (int nn=0; nn<node->nc; nn++) {
+            mpv->p2_nodes[nn] = p2aux[nn];
+        }
+        free(p2aux);
     }
 
 	if(ud.write_file == ON) 
@@ -131,12 +140,7 @@ int main( void )
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nhalf-time prediction of advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
-                                          
-#ifdef CORIOLIS_EXPLICIT
-            /* First order splitting for Corilis - just for the advection flux prediction */ 
-             Explicit_Coriolis(Sol, elem, 0.5*dt);
-#endif
-            
+                                                      
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, 0.5*dt);
 #ifdef ADVECTION
             /* advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, 1 ); */
@@ -161,11 +165,6 @@ int main( void )
             printf("\nfull time step with predicted advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
 
-#ifdef CORIOLIS_EXPLICIT
-            /* Strang splitting for Coriolis, first step */
-             Explicit_Coriolis(Sol, elem, 0.5*dt);  
-#endif
-            
             /* explicit EULER half time step for gravity and pressure gradient */ 
             euler_forward_non_advective(Sol, mpv, (const ConsVars*)Sol0, elem, node, (dt_factor-0.5)*dt, WITH_PRESSURE);
 
@@ -179,12 +178,7 @@ int main( void )
             /* implicit EULER half time step for gravity and pressure gradient */ 
             euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt);
             euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt);
-                        
-#ifdef CORIOLIS_EXPLICIT
-            /* Strang splitting for Coriolis, second step */
-             Explicit_Coriolis(Sol, elem, 0.5*dt);  
-#endif
-            
+                                    
 #if 0
             if((ud.write_file == ON && ((step+1) % ud.write_file_period  == 0)) || output_switch) 
                 putout(Sol, ud.file_name, "Sol", elem, node, 1);
@@ -214,11 +208,11 @@ int main( void )
                 printf("\n############################################################################################\n");
             }
             
-            /* debugging: */
+            /* debugging: 
             if (t >= ud.tout[0] - 50*dt) {
                 ud.write_file_period = 1;
             }
-             
+             */
 		}  
         
         if(ud.write_file == ON) {

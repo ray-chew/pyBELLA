@@ -189,7 +189,20 @@ Key points of the paper:
 
 \begin{itemize}
 \item Semi-implicit scheme, only advection explicit
-\item Full variables advanced in time
+\item Full variables advanced in time \\
+      \klein{We obtain the best results by running a redundant nodal pressure evolution
+      as is done in EULAG and FVM. With the most recent results we seem to get away with
+      the implicit trapezoidal rule for the time integration in the implicit part without
+      offset, which Piotr tells me they cannot do for all THEIR tests. Of course, they are
+      running different tests than us, so it remains to be seen how far we get with what
+      we have. Whenever I switch on synchronizations, I see spurious perturbations and
+      instabilities creep up. \\ 
+      Another point is that currently I am extracting a mean pressure profile both from 
+      the nodal and the cell-centered pressures that enter the momentum balances (for
+      cells and interface momenta, respectively). We will need to test whether we can
+      work with full variables there or whether the scheme runs robustly if we DYNAMICALLY
+      calculate the background state.}
+
 \item Unconditional time step stability w.r.t.\ acoustics, internal waves, Rossby waves
 \item Background states \& perturbation variables are only auxiliary
 \item Mix of implicit midpoint and implicit trapezoidal rules

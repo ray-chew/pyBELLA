@@ -1031,11 +1031,7 @@ static void operator_coefficients_nodes(
     double time_offset = 3.0 - ud.acoustic_order; 
     // double time_offset = 1.0; 
     
-#ifdef CORIOLIS_EXPLICIT
-    const double coriolis  = 0.0;
-#else
     const double coriolis  = ud.coriolis_strength[0];
-#endif
 
                     
 	switch(ndim) {
@@ -1257,11 +1253,7 @@ void correction_nodes(
 
 	const int ndim = elem->ndim;
     	    
-#ifdef CORIOLIS_EXPLICIT
-    const double coriolis  = 0.0;
-#else
     const double coriolis  = ud.coriolis_strength[0];
-#endif
     
     /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
     double time_offset = 3.0 - ud.acoustic_order; 
@@ -1424,11 +1416,7 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
     const double time_offset = 3.0 - ud.acoustic_order;
     // const double time_offset = 1.0;
     
-#ifdef CORIOLIS_EXPLICIT
-    const double coriolis  = 0.0;
-#else
     const double coriolis  = ud.coriolis_strength[0];
-#endif
     const double u0        = ud.wind_speed;
     const double fsqsc     = dt*dt*coriolis*coriolis;
     const double ooopfsqsc = 1.0 / (1.0 + fsqsc);
@@ -1505,13 +1493,8 @@ void euler_forward_non_advective(ConsVars* Sol,
 #endif
     const double g        = ud.gravity_strength[1];
     const double Msq      = ud.Msq;
-    const double Ginv     = th.Gammainv; 
-    
-#ifdef CORIOLIS_EXPLICIT
-    const double coriolis  = 0.0;
-#else
-    const double coriolis  = ud.coriolis_strength[0];
-#endif
+    const double Ginv     = th.Gammainv;     
+    const double coriolis = ud.coriolis_strength[0];
     const double u0       = ud.wind_speed;
 
     double *div = mpv->rhs;
@@ -1657,11 +1640,6 @@ void euler_forward_non_advective(ConsVars* Sol,
             break;
         case 3: 
         {
-            
-#ifndef CORIOLIS_EXPLICIT
-            assert(0); /* Implicit Coriolis not yet implemented for 3D */
-#endif
-
             const int icx = elem->icx;
             const int icy = elem->icy;
             const int icz = elem->icz;

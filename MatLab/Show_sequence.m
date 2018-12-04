@@ -7,20 +7,20 @@
 extrafigno = 52;
 
 %modelstr = '';
-modelstr = 'comp';
-%modelstr = 'psinc' ;  
+%modelstr = 'comp';
+modelstr = 'psinc' ;  
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
 
 
-test_case = 'Baldaufs-Internal-Wave-Tests';
+%test_case = 'Baldaufs-Internal-Wave-Tests';
 %test_case = 'Deep-Internal-Wave-Tests';
 %test_case = 'Internal-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
-%test_case = 'Travelling-Vortex';
+test_case = 'Travelling-Vortex';
 %test_case = 'Acoustic-Wave';
 
 showmode = 1;
@@ -35,7 +35,7 @@ show_increments = 0;
 symmetry = 0;        % in {0,1}
 symmetrytest = 0;
 showdummycells = 0;
-showslice = 7;
+showslice = 33;
 diff_rel_to_bottom = 0;
 
 % th0 = -0.0015/300;
@@ -49,7 +49,7 @@ title_true = 1;
 
 kmin = 0;
 kmax = 601;
-dk   = 10;
+dk   = 1;
 
 if strcmp(test_case, 'Baldaufs-Internal-Wave-Tests')
     scalefactor = 20.0;
@@ -107,7 +107,7 @@ elseif strcmp(test_case, 'Travelling-Vortex')
     aspect = [2 2 2];
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Straka')
-    ncx = 512;  
+    ncx = 513;  
     ncy = 64;  
     L  = 52.2;  % 
     x0 = 0.0*L;
