@@ -35,7 +35,7 @@ show_increments = 0;
 symmetry = 0;        % in {0,1}
 symmetrytest = 0;
 showdummycells = 0;
-showslice = 9;
+showslice = 42;
 diff_rel_to_bottom = 0;
 
 % th0 = -0.0015/300;
@@ -53,8 +53,8 @@ dk   = 1; % second step
 
 if strcmp(test_case, 'Baldaufs-Internal-Wave-Tests')
     scalefactor = 20.0;
-    ncx = 301; 
-    ncy = 20;  
+    ncx = 1201; 
+    ncy = 80;  
     L   = scalefactor*300.0;  % [km] 
     x0  = 0.0;
     H   = 10.0;               % [km]     
@@ -300,8 +300,8 @@ for k = kmin:dk:kmax
             end
             colormap Jet
             colorbar('FontSize',14,'FontName','Helvetica')
-            filename = sprintf('./results/v_evol/v_snapshot%d.eps', k);
-            print(filename, '-depsc')
+            filename = sprintf('./results/v_evol/v_snapshot%d.png', k);
+            print(filename, '-dpng')
         else
             figure(figure1)
             if fixed_contours
@@ -378,9 +378,11 @@ for k = kmin:dk:kmax
     
     if showslice
         figure(figure3)
-        hold
+        %hold
         plot(th(showslice,:))
-        hold
+        filename = sprintf('./results/v_evol/v_snapshot%d_cut.png', k);
+        print(filename, '-dpng')
+        %hold
     end
     
     pause

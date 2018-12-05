@@ -129,8 +129,8 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator        = SI_MIDPT; /* this code version has only one option */
     ud->CFL                    = 0.9; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 0.5 / ud->t_ref;
-    ud->dtfixed                = 0.5 / ud->t_ref;
+    ud->dtfixed0               = 5.0 / ud->t_ref;
+    ud->dtfixed                = 5.0 / ud->t_ref;
     
     set_time_integrator_parameters(ud);
     
@@ -157,7 +157,7 @@ void User_Data_init(User_Data* ud) {
     ud->ncache = 154; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
     
     /* linear solver-stuff */
-    double tol                            = 1.e-16 * (ud->is_compressible == 1 ? 0.01 : 1.0);
+    double tol                            = 1.e-10 * (ud->is_compressible == 1 ? 0.01 : 1.0);
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -188,10 +188,10 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 3600;
+    ud->write_file_period = 360;
     ud->file_format = HDF;
     
-    ud->n_time_series = 900; /* n_t_s > 0 => store_time_series_entry() called each timestep */
+    ud->n_time_series = 90; /* n_t_s > 0 => store_time_series_entry() called each timestep */
 
     {
         char *OutputBaseFolder      = "/home/benacchio/workspace/RKLM_Reference/";

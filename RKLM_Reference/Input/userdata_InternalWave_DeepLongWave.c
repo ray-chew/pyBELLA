@@ -192,7 +192,7 @@ void User_Data_init(User_Data* ud) {
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
 
     {
-        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/benacchio/workspace/RKLM_Reference/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
