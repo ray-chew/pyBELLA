@@ -6,6 +6,10 @@
 
 extrafigno = 52;
 
+% Adding path for saving plots in publication quality
+
+addpath('./export_fig-master/')
+
 %modelstr = '';
 modelstr = 'comp';
 %modelstr = 'psinc' ;  
@@ -159,7 +163,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'T';  folderstr = 'T'; titlestr = 'T'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dT';  folderstr = 'dT'; titlestr = 'dT'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
+varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
@@ -168,7 +172,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'rhov';  folderstr = 'rhov'; titlestr = 'rhov'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhow';  folderstr = 'rhow'; titlestr = 'rhow'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
-varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
+%varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qc';  folderstr = 'qc'; titlestr = 'qc'; ndummy = 2; arraysize = [ncx ncy];
@@ -300,40 +304,50 @@ for k = kmin:dk:kmax
             end
             colormap Jet
             colorbar('FontSize',14,'FontName','Helvetica')
-            filename = sprintf('./results/v_evol/v_snapshot%d.png', k);
-            print(filename, '-dpng')
+            export_fig filename -p0.1 -depsc
+            if(k==1) % widen picture size
+                pos=get(gca,'position');  % retrieve the current plot size value
+                pos(3)=.95*pos(3);        % try increasing width and height 10% 
+                pos(4)=.95*pos(4);        % try increasing width and height 10% 
+                set(gca,'position',pos);  % write the new values
+            end
+            filename = sprintf('./results/%s_evol/%s_snapshot%d.eps', varstr, varstr, k);
+            print(filename, '-depsc')            
         else
             figure(figure1)
             if fixed_contours
                 if separate_signs == 1
                     contour(x,z,max(0.0,th),contour_values,'LineColor','k','LineWidth',1.0);
                     % contour(x,z,max(0.0,th),contour_values,'LineColor','k');
-                    hold                    
+                    %hold                    
                     contour(x,z,min(0.0,th),contour_values,'LineColor','k');
                     % contour(x,z,min(0.0,th),contour_values,'LineColor',linecolor,'LineStyle','--');
-                    hold
+                    %hold
                 else
                     contour(x,z,th,contour_values,'LineColor',linecolor);
                 end
             elseif fixed_contour_step
                 if separate_signs == 1
                     contour(x,z,max(0.0,th), 'LevelStep', dtheta, 'LineColor','k');
-                    hold
+                    %hold
                     contour(x,z,min(0.0,th), 'LevelStep', dtheta, 'LineColor','k','LineStyle','--');
-                    hold
+                    %hold
                 else
                     contour(x,z,th, 'LevelStep', dtheta, 'LineColor','k');
                 end
             else
                 if separate_signs == 1
                     contour(x,z,max(0.0,th),no_of_contours,'LineColor','k');
-                    hold 
+                    %hold 
                     contour(x,z,min(0.0,th),no_of_contours,'LineColor','k','LineStyle','--');
-                    hold
+                    %hold
                 else
                     contour(x,z,th,no_of_contours,'LineColor','k');
                 end
             end
+            
+            filename = sprintf('./results/%s_evol/%s_snapshot%d.eps', varstr, varstr, k);
+            print(filename, '-depsc')
         end
                 
         set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
@@ -379,9 +393,9 @@ for k = kmin:dk:kmax
     if showslice
         figure(figure3)
         %hold
-        plot(th(showslice,:))
-        filename = sprintf('./results/v_evol/v_snapshot%d_cut.png', k);
-        print(filename, '-dpng')
+        plot(x, th(showslice,:))
+        filename = sprintf('./results/%s_evol/%s_snapshot%d_cut.eps', varstr, varstr, k);
+        print(filename, '-depsc')
         %hold
     end
     

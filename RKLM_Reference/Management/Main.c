@@ -215,9 +215,9 @@ int main( void )
             }
             
             /* debugging: */
-            if (t >= ud.tout[0] - 50*dt) {
-                ud.write_file_period = 1;
-            }
+            //if (t >= ud.tout[0] - 50*dt) {
+            //    ud.write_file_period = 1;
+            //}
              
 		}  
         
