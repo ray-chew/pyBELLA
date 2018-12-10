@@ -733,12 +733,7 @@ void EnthalpyWeightedLap_bilinear_p(
             const double dy = elem->dy;
             const double dz = elem->dz;
             
-#ifdef CORIOLIS_EXPLICIT
-            /* const double coriolis  = 0.0; */
-#else
             assert(0); /* Modification of Laplacian for implicit Coriolis not implemented yet */
-            /* const double coriolis  = ud.coriolis_strength[0]; */
-#endif
 
             /* for MG-scaling with elem->scale_factor; see old version of routine */
             

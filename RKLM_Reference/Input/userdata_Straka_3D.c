@@ -127,7 +127,7 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 512+1; /* 641; 321; 161; 129; 81; */
+	ud->inx = 513+1; /* 641; 321; 161; 129; 81; */
 	ud->iny =  64+1; /* 321; 161;  81;  65; 41;  */
 	ud->inz =  1;
 	

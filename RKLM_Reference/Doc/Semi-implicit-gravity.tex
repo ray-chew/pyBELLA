@@ -189,12 +189,42 @@ Key points of the paper:
 
 \begin{itemize}
 \item Semi-implicit scheme, only advection explicit
-\item Full variables advanced in time
-\item Unconditional time step stability w.r.t.\ acoustics, internal waves, Rossby waves
-\item Background states \& perturbation variables are only auxiliary
-\item Mix of implicit midpoint and implicit trapezoidal rules
-\item Borrowing ideas from EULAG/FVM
-\benacchio{\item (Mass-, horizontal momentum-,...?) Conservative  \item Second-order \item No off-centering}
+\item Full variables advanced in time \\
+      \klein{We obtain the best results by running a redundant nodal pressure evolution
+      as is done in EULAG and FVM. With the most recent results we seem to get away with
+      the implicit trapezoidal rule for the time integration in the implicit part without
+      offset, which Piotr tells me they cannot do for all THEIR tests. Of course, they are
+      running different tests than us, so it remains to be seen how far we get with what
+      we have. Whenever I switch on synchronizations, I see spurious perturbations and
+      instabilities creep up. \\ 
+      Another point is that currently I am extracting a mean pressure profile both from 
+      the nodal and the cell-centered pressures that enter the momentum balances (for
+      cells and interface momenta, respectively). We will need to test whether we can
+      work with full variables there and/or whether the scheme runs robustly if we DYNAMICALLY
+      calculate the background state.}
+
+\item Unconditional time step stability w.r.t.\ acoustics, internal waves, Rossby waves\\
+      \klein{We surely should aim to demonstrate this through examples. Can we construct
+      rigorous arguments?}
+\item Background states \& perturbation variables are only auxiliary \\
+      \klein{Again, this we should be able to demonstrate. See two items up.}
+\item Mix of implicit midpoint and implicit trapezoidal rules \\
+      \klein{I am not so sure the approach is new as it is very close to the 
+      usual MAC-Projection + second project approach used by many others in the
+      ``approximate projection'' world, but I do think that viewing what we do from 
+      this angle might allow for improved understanding of the scheme's properties.}
+\item Borrowing ideas from EULAG/FVM \\
+      \klein{Right, that should be stated in the abstract.}
+\item \benacchio{(Mass-, horizontal momentum-,...?) Conservative} \\
+      \klein{Interesting point. We conserve $\rho$ and $\rho\theta$ for sure, but already
+      for momentum I am compromising, as I seem to need the Exner variable to get 
+      reliable implicit gravity. Here we may want to go back to your/Warren's theses,
+      and later discussions of mine where we show that one can have discretely equivalent
+      Exner and full pressure formulations under the psinc model. If we can pull this off
+      for the compressible case, too, and I am optimistic, then we would have a very nice
+      point.}
+\item \benacchio{Second-order\klein{, symplectic in the implicit part, no off-centering} }
+%\item \benacchio{No off-centering}
 \item Further aim: Step towards extending compr/psinc blended model formulation 
       from \citep{BenacchioEtAl2014} to cover hydrostasy, geostrophy, as well
       \citep[see][]{KleinBenacchio2016}.
@@ -748,11 +778,15 @@ section~\ref{ssec:SemiImplicitForcing} for details.
 
 After completion of the steps in \eq{eq:TimeIntegrator}, the
 auxiliary variables $(\chiprime, \pi')$ are re-computed from the primary
-unknowns $(\rho, \rho\vu, \rho w, P)$ at the new time level. \benacchio{two paragraphs above was an unknown, now it is an auxiliary variable? Perhaps this ambiguity is what your comment below aims at.} \klein{[That
+unknowns $(\rho, \rho\vu, \rho w, P)$ at the new time level. \benacchio{two paragraphs above was an unknown, now it is an auxiliary variable? Perhaps this ambiguity is what your comment below aims at.} \klein{\bfseries Right! We need to clean this up. In the meantime, 
+the code seems to do all the tests somewhere between excellently and 
+very well without synchronization of the nodal pressure. We need to also keep
+in mind that this is what -- a bit inadvertently -- Piotr does in his compressible
+versions of EULAG/FVM. So, it turns out he has got another point there.} \klein{[That
 actually turns out to fail in some tests. We'll have to discuss this. I get
 the best results if I drop the synchronization of cell-centered and nodal
 pressures entirely and just update these fields redundantly. Miraculously, 
-the stay very close in all tests that I ran. If we could explain this, that
+they stay very close in all tests that I ran. If we could explain this, that
 would be great!} 
 This ensures
 consistency of all variables with respect to the equation of state and
@@ -930,7 +964,14 @@ after completion of a time step we let
 where we have assumed gravity to be aligned with the $z$-coordinate
 direction so that the discrete version of $\chibar(z)$ depends on the 
 associated index $k$ only. Also, in 
-all subsequent simulations we set $\chibar_k^{n} \equiv \chibar_k^{0}$. \benacchio{Is this not like using a constant reference state as everybody does? Where is the difference then?} 
+all subsequent simulations we set $\chibar_k^{n} \equiv \chibar_k^{0}$. 
+\benacchio{Is this not like using a constant reference state as everybody does? Where is the difference then?} \klein{\bfseries Not really, if I am informed correctly: We 
+use the full conservation form to update $\chi$ in the advection step. In contrast, 
+$\chi'$ is used only to prepare for the implicit gravity time integration and is
+overwritten after a time step. In your scan of the literature, please have a look
+at how others do this. I believe that only Hilary is doing it similarly to us in 
+her paper with Shahrokhi, and maybe in her later cell-centered code(s). But this, too,
+we need to double-check. }
 An alternative option better suited for large scale, long time simulations 
 is to invoke a horizontal, possibly local, averaging procedure to extract 
 $\chibar$ from $\chi$ at least every few time steps. \benacchio{Unified Model
@@ -940,7 +981,13 @@ a breaking internal wave that shows local overturning of the potential
 temperature surfaces. This will routinely happen in a high-resolution simulation 
 at somewhat higher altitudes. If such a state were used as a reference for 
 linearization, $N^2$ would be zero locally, and I think that ellipticity of
-the linearized equation for $\pi'$ would be lost.} \benacchio{Right, I think something else might be going on in the UM as well, like a monotonization of the previous time step potential temperature background distribution. I should be able to find out the details.} We leave testing 
+the linearized equation for $\pi'$ would be lost.} \benacchio{Right, I think something else might be going on in the UM as well, like a monotonization of the previous time step potential temperature background distribution. I should be able to find out the details.} 
+\klein{\bfseries Something else is wrong with a local, vertical monotonization: The 
+physical meaning of $\chi'$ or $\Theta'$ in other codes is that of a buoyancy variable.
+But buoyancy makes sense only as a deviation from a horizontal average. This is a pure
+physics interpretation, but I believe it is essential for good code performance.}
+
+We leave testing 
 this option to future work.	 
 
 % ===========================================================================
@@ -1110,7 +1157,20 @@ where we have abbreviated
 %
 and where the coefficients $(P\Theta)^*$ and $(\partial P/\partial \pi)^*$ 
 are prescribed or can be adjusted nonlinearly in an outer iteration loop 
-as described in a similar context by \citet{SmolarkiewiczEtAl2014} \benacchio{Are these starred variables the same as in \eqref{eq:ExplicitEulerStep} or a general base state?}. The 
+as described in a similar context by \citet{SmolarkiewiczEtAl2014} \benacchio{Are these starred variables the same as in \eqref{eq:ExplicitEulerStep} or a general base state?}.
+\klein{\bfseries This is a good question, and there is some ambiguity: In the first
+projection (see file flux\_correction.c, and in there routine operator\_coefficients(), 
+I am using $P$ from the old time level, and $Y$ -- that is $\chi$ -- from the current
+field. In the second projection, I am using values from the current field throughout. 
+For the second projection, this is what we should do, because $P$ and $\rho$ have their
+final $t^{n+1}$ values after the advection sweep, and we are only updating the cell-centered
+momenta and the nodal pressure. In the first projection, one can play with how to choose 
+the starred coefficients. In practice, I have seen hardly a difference so far. But this 
+may have changed in the meantime. I have not tested this in quite some time and the scheme
+has developed substantially in other parts of the code. Actually, in operator\_coefficients()
+you will find compiler directives by which you can already switch to a different option for
+evaluating these coefficients.}
+ The 
 implicit Euler semi-discretization of \eq{eq:LinearizedNonAdvectiveSystem} 
 in time reads
 %
@@ -1421,7 +1481,8 @@ In the following we summarize the operations in one time step of the algorithm d
 %
 \vspace{-2mm}
 
-\item[\emph{Initialization}]\ \\ Grid setting and input preprocessing. Then, for each time loop, \textbf{do}:
+\item[\emph{Initialization}]\ \\ Grid setting and input preprocessing\klein{, \bfseries 
+(optional first elliptic solve to generate a divergence-improved velocity field)}. Then, for each time loop, \textbf{do}:
 %
 \item[\emph{First stage}]
 %
@@ -1430,7 +1491,14 @@ In the following we summarize the operations in one time step of the algorithm d
 
     \item[(ii)] Use the relation between $P$ and $\pi$ in \eq{eq:HalfTimePredictorPLinearization} to construct a first Helmholtz problem for the half-time level pressure $\pi^{n+1/2}$.
 
-    \item[(iii)] Use the advective fluxes to obtain $P^{n+1}$ through \eq{eq:PUpdate}. (\benacchio{so if this is already at the new time level, I don't think \eq{eq:AdvectionStep} is used for $P$, also because that variable is not part of $\Psi$...})
+    \item[(iii)] Use the advective fluxes to obtain $P^{n+1}$ through \eq{eq:PUpdate}. (\benacchio{so if this is already at the new time level, I don't think \eq{eq:AdvectionStep} is used for $P$, also because that variable is not part of $\Psi$...}. \klein{\bfseries In principle, you 
+    are right, except that in the code advection of the $\Psi$-variables and the update of $P$
+    are actually done all jointly in the advection sweep. There is no separate evaluation of 
+    (20). It does make sense, however, to keep the description as you have it here as is 
+    highlights more accurately that the $P$ update is essentially completed when the first
+    elliptic solve is done, whereas additional machinery (reconstruction, upwinding, etc.)
+    needs to be invoked subsequently to actually advect all advected variables. We can add
+    a footnote that says that these updates are actually done in one non-separated routine.})
 
   \end{enumerate}
 
@@ -1446,7 +1514,12 @@ In the following we summarize the operations in one time step of the algorithm d
 \item[\emph{Auxiliary variables update}]
 
   \begin{enumerate}\item[]
-    \item[(i)] The auxiliary variables $(\chi', \piprime)$ are computed from the primary unknowns at the new time level. \benacchio{But was $\chi'$ not part of $\Psi$? Then this step is already included in part (i) of the previous stage...}
+    \item[(i)] The auxiliary variables $(\chi', \piprime)$ are computed from the primary unknowns at the new time level. \benacchio{But was $\chi'$ not part of $\Psi$? Then this step is already included in part (i) of the previous stage... \klein{\bfseries I don't understand your question. 
+    The first part of (i) in the previous stage just advects $\Psi$, and for this we need 
+    the data of $\chi'$ at the previous time level. Those are NOT those coming out of the 
+    last time step advection and the update available from the second elliptic problem, but
+    rather they are the perturbations re-computed from full $\chi$ after completion of a time 
+    step.}}
   \end{enumerate}
 
    %
@@ -1718,7 +1791,9 @@ Left for future papers, to be thought about:
   \begin{itemize}
   \item Primary updates on full, not perturbation, variables
   \item Re-synchronization of perturbation variables after each time step
-  \item \red{Clear concept for achieving second order accuracy(?)} \benacchio{Agreed, this should be done, perhaps even as a formal proof depending on the journal chosen.}
+  \item \red{Clear concept for achieving second order accuracy(?)} \benacchio{Agreed, this should be done, perhaps even as a formal proof depending on the journal chosen. \klein{\bfseries Also, there 
+  is such an analysis in quite some detail for EULAG's time integrator. So, this would not be
+  new. }}
   \item Advection based on $P$-fluxes
   \item \blue{Identification of handles for model blending(?)}
   \end{itemize}
@@ -1778,7 +1853,13 @@ TBD find basic test of the code with rotation.
 
 \item what else? \benacchio{Crucially in my view, on what are we competitive/novel? 
 Two-time level, full variables, no off-centering, conservative (and of what), second-order, advection-explicit.
-Possible aspects of novelty/discussion are a) Novel combination of functionality b) results quality c) implementation d) speed/scalability (presumably comparable to a DG code but without the high-order capabilities) e) flexibility towards encapsulating different equation sets/ outlook for blending, data assimilation.}
+Possible aspects of novelty/discussion are a) Novel combination of functionality b) results quality c) implementation d) speed/scalability (presumably comparable to a DG code but without the high-order capabilities) e) flexibility towards encapsulating different equation sets/ outlook for blending, data assimilation. \klein{\bfseries Very good list. I had not thought of a few of these
+items! Also, one thing that we may want to work out is the following: For psinc we know that
+there are formulations of the combined pressure+gravity terms one of which uses ordinary pressure, 
+$p$ (thermodynamically consistent version), while the other uses Exner pressure, and these two
+are analytically equivalent. Can we pull this off also for the compressible case? If so, that
+would be great, because we could then claim the momentum balance to be in conservation form, too, 
+with respect to momentum advection and the pressure flux.}}
 
 \end{itemize}
 

@@ -446,11 +446,7 @@ void operator_coefficients(
     const double Gammainv = th.Gammainv;
     const int ndim = elem->ndim;
     
-#ifdef CORIOLIS_EXPLICIT
-    const double coriolis  = 0.0;
-#else
     const double coriolis  = ud.coriolis_strength[0];
-#endif
 
     double nonhydro = ud.nonhydrostasy;
     

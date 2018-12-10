@@ -6,10 +6,6 @@
 
 extrafigno = 52;
 
-% Adding path for saving plots in publication quality
-
-addpath('./export_fig-master/')
-
 %modelstr = '';
 modelstr = 'comp';
 %modelstr = 'psinc' ;  
@@ -304,7 +300,6 @@ for k = kmin:dk:kmax
             end
             colormap Jet
             colorbar('FontSize',14,'FontName','Helvetica')
-            export_fig filename -p0.1 -depsc
             if(k==1) % widen picture size
                 pos=get(gca,'position');  % retrieve the current plot size value
                 pos(3)=.95*pos(3);        % try increasing width and height 10% 
