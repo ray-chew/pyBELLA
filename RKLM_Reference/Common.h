@@ -32,6 +32,7 @@
 #define HY_STATES_N_FROM_CELL_CENTERED_THETA
 #define EVOLVE_NODAL_PRESSURE
 #define ADVECTION
+#define SYMMETRIC_ADVECTION
 #define LIMIT_PLAIN_PRIMITIVES
 
 /* ============================================= 

@@ -100,7 +100,7 @@ void User_Data_init(User_Data* ud) {
 	ud->zmax =   5000/ud->h_ref/8.0;
 
 	/* boundary/initial conditions */
-	ud->wind_speed        = 1.0*10.0/ud->u_ref;              /* velocity in [u_ref] */
+	ud->wind_speed        = 0.0*10.0/ud->u_ref;              /* velocity in [u_ref] */
 	ud->wind_shear        = -0.0;              /* velocity in [u_ref/h_ref] */             
 	ud->hill_height       =  0.0;              /* height   in [h_ref]   */ 
 	ud->hill_length_scale =  99999.9;          /* width    in [h_ref]   */   
@@ -121,7 +121,7 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
-	ud->CFL                   = 0.48;       
+	ud->CFL                   = 0.96;       
     ud->dtfixed0              = 10000.999;
     ud->dtfixed               = 10000.999;   
     
@@ -150,7 +150,7 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  201; /* (ud->inx+3); */
 	
 	/* linear solver-stuff */
-    double tol = 1.e-10;
+    double tol = 1.e-6;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -172,22 +172,22 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
     /* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
-    /*
     ud->tout[0] =  0.25 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
     ud->tout[1] =  0.50 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
     ud->tout[2] =  0.75 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
     ud->tout[3] =  1.00 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
     ud->tout[4] = -1.0;
-     */
+    /*
     ud->tout[0] =  3.00 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
     ud->tout[1] = -1.0;
+     */
 
     ud->stepmax = 10000;
 
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 20;
+	ud->write_file_period = 20000;
 	ud->file_format = HDF;
 
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
