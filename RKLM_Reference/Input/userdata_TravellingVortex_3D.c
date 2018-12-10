@@ -119,10 +119,11 @@ void User_Data_init(User_Data* ud) {
 	/* ======================================================================== */
 	
     /* time discretization */
-    ud->time_integrator      = SI_MIDPT;  
-	ud->CFL                  = 0.96;       
-    ud->dtfixed0             = 10000.999;
-    ud->dtfixed              = 10000.999;   
+    ud->time_integrator       = SI_MIDPT;
+    ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
+	ud->CFL                   = 0.96;       
+    ud->dtfixed0              = 10000.999;
+    ud->dtfixed               = 10000.999;   
     
     set_time_integrator_parameters(ud);
     
@@ -139,11 +140,11 @@ void User_Data_init(User_Data* ud) {
     /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
         
     /* parameters for SWEBY_MUNZ limiter family */
-    ud->kp = 1.4;
-	ud->kz = 1.4; /* Entro abused for velocity in split-step-aligned velocity ! */
-	ud->km = 1.4;
-	ud->kY = 1.4;
-	ud->kZ = 1.4; /* 2.0 */
+    ud->kp = 0.0; /* 1.4; */
+	ud->kz = 0.0; /* 1.4; */
+	ud->km = 0.0; /* 1.4; */
+	ud->kY = 0.0; /* 1.4; */
+	ud->kZ = 0.0; /* 1.4; */
 	
     /* al explicit predictor operations are done on ncache-size data worms to save memory */ 
 	ud->ncache =  201; /* (ud->inx+3); */
@@ -172,15 +173,18 @@ void User_Data_init(User_Data* ud) {
     /* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
     
-    ud->tout[0] =  1.0 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
-    ud->tout[1] = -1.0;
+    ud->tout[0] =  0.25 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
+    ud->tout[1] =  0.50 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
+    ud->tout[2] =  0.75 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
+    ud->tout[3] =  1.00 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
+    ud->tout[4] = -1.0;
 
     ud->stepmax = 10000;
 
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 40;
+	ud->write_file_period = 100000;
 	ud->file_format = HDF;
 
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
@@ -208,10 +212,10 @@ void Sol_initial(ConsVars* Sol,
     extern MPV* mpv;
     
 	const double u0    = 1.0*ud.wind_speed;
-	const double v0    = 1.0*ud.wind_speed;
+	const double v0    = 0.0*ud.wind_speed;
 	const double w0    = 0.0;
     
-    const double rotdir = -1.0;  /* the origin of the March 24 - trouble ... ;^) */
+    const double rotdir = -0.0;  /* the origin of the March 24 - trouble ... ;^) */
     
     const double p0      = 1.0;
     const double rho0    = 0.5;  /* 0.5 standard;  1.0 stable configuration; */
@@ -221,12 +225,21 @@ void Sol_initial(ConsVars* Sol,
     const double xc      = 0.0;
     const double yc      = 0.0;
     
+    const int nhires   = 1;
+    const int nhiressq = nhires*nhires;
+    
     /*periodic setting: */
     const double xcm     = xc-(ud.xmax-ud.xmin);
     const double xcp     = xc+(ud.xmax-ud.xmin);
     const double ycm     = yc-(ud.ymax-ud.ymin);
     const double ycp     = yc+(ud.ymax-ud.ymin);
+    
+    const double dx = elem->dx;
+    const double dy = elem->dy;
 			
+    const double dxx = dx/nhires;
+    const double dyy = dy/nhires;
+    
 	const int icx  = elem->icx;
 	const int icy  = elem->icy;
 	const int icz  = elem->icz;
@@ -247,12 +260,36 @@ void Sol_initial(ConsVars* Sol,
     double r, uth;
     double xcc, ycc;
 	
-    double g;
-	                
-    g = ud.gravity_strength[1];
-
     Hydrostatics_State(mpv, elem, node);
     
+    /* data needed for the pressure distribution in the Kadioglu et al. paper */ 
+    double coe[25];
+    coe[0]  =     1.0 / 12.0;
+    coe[1]  = -  12.0 / 13.0;
+    coe[2]  =     9.0 /  2.0;
+    coe[3]  = - 184.0 / 15.0;
+    coe[4]  =   609.0 / 32.0;
+    coe[5]  = - 222.0 / 17.0;
+    coe[6]  = -  38.0 /  9.0; 
+    coe[7]  =    54.0 / 19.0;
+    coe[8]  =   783.0 / 20.0;
+    coe[9]  = - 558.0 /  7.0;
+    coe[10] =  1053.0 / 22.0;
+    coe[11] =  1014.0 / 23.0;
+    coe[12] = -1473.0 / 16.0;
+    coe[13] =   204.0 /  5.0;
+    coe[14] =   510.0 / 13.0;
+    coe[15] = -1564.0 / 27.0;
+    coe[16] =   153.0 /  8.0;
+    coe[17] =   450.0 / 29.0;
+    coe[18] = - 269.0 / 15.0; /* Kadioglu et al.: 259; Papke: 269 */
+    coe[19] =   174.0 / 31.0;
+    coe[20] =    57.0 / 32.0;
+    coe[21] = -  74.0 / 33.0;
+    coe[22] =    15.0 / 17.0;
+    coe[23] = -   6.0 / 35.0;
+    coe[24] =     1.0 / 72.0;
+
     /* Initial data and hydro-states in the flow domain */
 	for(k = igz; k < icz - igz; k++) {
         l = k * icx * icy; 
@@ -261,84 +298,79 @@ void Sol_initial(ConsVars* Sol,
         for(j = igy; j < icy - igy; j++) {
             m = l + j * icx;
             y = elem->y[j];
-			
-            ycc = (fabs(y-yc) < fabs(y-ycm) ? (fabs(y-yc) < fabs(y-ycm) ? yc : ycp) : ycm);
-            
+			            
             for(i = 0; i < icx; i++) {
-                n = m + i;                
-                x       = elem->x[i];
-                xcc = (fabs(x-xc) < fabs(x-xcm) ? (fabs(x-xc) < fabs(x-xcm) ? xc : xcp) : xcm);
-
-                r       = sqrt((x-xcc)*(x-xcc) + (y-ycc)*(y-ycc));
-                uth     = rotdir * (r < R0 ? fac * pow( 1.0-r/R0, 6) * pow( r/R0, 6) : 0.0);
                 
-                u       = u0 + uth * (-(y-ycc)/r);
-                v       = v0 + uth * (+(x-xcc)/r);
-                w       = w0;
-                p_hydro = mpv->HydroState->p0[j];
-                rhoY    = mpv->HydroState->rhoY0[j];
-                theta   = stratification(y);
-                rho     =  (r < R0 ? (rho0 + del_rho*pow( 1-(r/R0)*(r/R0) , 6)) : rho0);
-                T       = T_from_p_rho(p_hydro,rho);
-                                                 
-                if ( r/R0 < 1.0 ) {
+                double p2c = 0.0;
+
+                n = m + i;                
+                x = elem->x[i];
+
+                Sol->rho[n]  = 0.0;
+                Sol->rhou[n] = 0.0;
+                Sol->rhov[n] = 0.0;
+                Sol->rhow[n] = 0.0;
+                Sol->rhoY[n] = 0.0;
+
+                /* more accurate initialization by discrete integral averaging */
+                for (int jj=0; jj<nhires; jj++) {
                     
-                    int ii;
-                    double coe[25];
-                                        
-                    coe[0]  =     1.0 / 12.0;
-                    coe[1]  = -  12.0 / 13.0;
-                    coe[2]  =     9.0 /  2.0;
-                    coe[3]  = - 184.0 / 15.0;
-                    coe[4]  =   609.0 / 32.0;
-                    coe[5]  = - 222.0 / 17.0;
-                    coe[6]  = -  38.0 /  9.0; 
-                    coe[7]  =    54.0 / 19.0;
-                    coe[8]  =   783.0 / 20.0;
-                    coe[9]  = - 558.0 /  7.0;
-                    coe[10] =  1053.0 / 22.0;
-                    coe[11] =  1014.0 / 23.0;
-                    coe[12] = -1473.0 / 16.0;
-                    coe[13] =   204.0 /  5.0;
-                    coe[14] =   510.0 / 13.0;
-                    coe[15] = -1564.0 / 27.0;
-                    coe[16] =   153.0 /  8.0;
-                    coe[17] =   450.0 / 29.0;
-                    coe[18] = - 269.0 / 15.0; /* Kadioglu et al.: 259; Papke: 269 */
-                    coe[19] =   174.0 / 31.0;
-                    coe[20] =    57.0 / 32.0;
-                    coe[21] = -  74.0 / 33.0;
-                    coe[22] =    15.0 / 17.0;
-                    coe[23] = -   6.0 / 35.0;
-                    coe[24] =     1.0 / 72.0;
-                    
-                    mpv->p2_cells[n] = 0.0;
-                    
-                    for (ii = 0; ii < 25; ii++)
-                    {
-                        mpv->p2_cells[n] += coe[ii] * (pow(r/R0 ,12+ii) - 1.0) * rotdir * rotdir;
+                    double yy = (y-0.5*dy+0.5*dyy) + jj*dyy;
+
+                    ycc = (fabs(yy-yc) < fabs(yy-ycm) ? (fabs(yy-yc) < fabs(yy-ycm) ? yc : ycp) : ycm);
+
+                    for (int ii=0; ii<nhires; ii++) {
+                                                
+                        double xx = (x-0.5*dx+0.5*dxx) + ii*dxx;
+                        
+                        xcc = (fabs(xx-xc) < fabs(xx-xcm) ? (fabs(xx-xc) < fabs(xx-xcm) ? xc : xcp) : xcm);
+                        
+                        r       = sqrt((xx-xcc)*(xx-xcc) + (yy-ycc)*(yy-ycc));
+                        uth     = rotdir * (r < R0 ? fac * pow( 1.0-r/R0, 6) * pow( r/R0, 6) : 0.0);
+                        
+                        u       = u0 + uth * (-(yy-ycc)/r);
+                        v       = v0 + uth * (+(xx-xcc)/r);
+                        w       = w0;
+                        p_hydro = mpv->HydroState->p0[j];
+                        rhoY    = mpv->HydroState->rhoY0[j];
+                        theta   = stratification(yy);
+                        rho     =  (r < R0 ? (rho0 + del_rho*pow( 1-(r/R0)*(r/R0) , 6)) : rho0);
+                        T       = T_from_p_rho(p_hydro,rho);
+                        
+                        if ( r/R0 < 1.0 ) {
+                            for (int ip = 0; ip < 25; ip++)
+                            {
+                                p2c += coe[ip] * (pow(r/R0 ,12+ip) - 1.0) * rotdir * rotdir;
+                            }
+                        }
+                        else {
+                            p2c += 0.0;
+                        }
+                                                
+                        Sol->rho[n]  += rho;
+                        Sol->rhou[n] += rho * u;
+                        Sol->rhov[n] += rho * v;
+                        Sol->rhow[n] += rho * w;
+                        
+                        if (ud.is_compressible) {
+                            double p     = p0 + ud.Msq*mpv->p2_cells[n];
+                            Sol->rhoY[n] += pow(p,th.gamminv);
+                            Sol->rhoe[n] += rhoe(rho, u, v, w, p);
+                        } else {                    
+                            Sol->rhoe[n] += rhoe(rho, u, v, w, p_hydro);
+                            Sol->rhoY[n] += rhoY;
+                        }
                     }
                 }
-                else {
-                    mpv->p2_cells[n] = 0.0;
-                }
-
-                /* Exner pressure */
-                mpv->p2_cells[n]  = th.Gamma*fac*fac*mpv->p2_cells[n]/mpv->HydroState->rhoY0[j];
-
-                Sol->rho[n]  = rho;
-                Sol->rhou[n] = rho * u;
-                Sol->rhov[n] = rho * v;
-                Sol->rhow[n] = rho * w;
                 
-                if (ud.is_compressible) {
-                    double p     = p0 + ud.Msq*mpv->p2_cells[n];
-                    Sol->rhoY[n] = pow(p,th.gamminv);
-                    Sol->rhoe[n] = rhoe(rho, u, v, w, p);
-                } else {                    
-                    Sol->rhoe[n] = rhoe(rho, u, v, w, p_hydro);
-                    Sol->rhoY[n] = rhoY;
-                }
+                Sol->rho[n]  /= nhiressq;
+                Sol->rhou[n] /= nhiressq;
+                Sol->rhov[n] /= nhiressq;
+                Sol->rhow[n] /= nhiressq;
+                Sol->rhoY[n] /= nhiressq;
+                
+                mpv->p2_cells[n] = th.Gamma*fac*fac*(p2c/nhiressq)/mpv->HydroState->rhoY0[j];
+
             }            
 		}                
 	}  
@@ -363,41 +395,10 @@ void Sol_initial(ConsVars* Sol,
                 r       = sqrt((x-xcc)*(x-xcc) + (y-ycc)*(y-ycc));
                 
                 if ( r/R0 < 1.0 ) {
-                    
-                    int ii;
-                    double coe[25];
-                    
-                    coe[0]  =     1.0 / 12.0;
-                    coe[1]  = -  12.0 / 13.0;
-                    coe[2]  =     9.0 /  2.0;
-                    coe[3]  = - 184.0 / 15.0;
-                    coe[4]  =   609.0 / 32.0;
-                    coe[5]  = - 222.0 / 17.0;
-                    coe[6]  = -  38.0 /  9.0; 
-                    coe[7]  =    54.0 / 19.0;
-                    coe[8]  =   783.0 / 20.0;
-                    coe[9]  = - 558.0 /  7.0;
-                    coe[10] =  1053.0 / 22.0;
-                    coe[11] =  1014.0 / 23.0;
-                    coe[12] = -1473.0 / 16.0;
-                    coe[13] =   204.0 /  5.0;
-                    coe[14] =   510.0 / 13.0;
-                    coe[15] = -1564.0 / 27.0;
-                    coe[16] =   153.0 /  8.0;
-                    coe[17] =   450.0 / 29.0;
-                    coe[18] = - 269.0 / 15.0; /* Kadioglu et al.: 259; Papke: 269 */
-                    coe[19] =   174.0 / 31.0;
-                    coe[20] =    57.0 / 32.0;
-                    coe[21] = -  74.0 / 33.0;
-                    coe[22] =    15.0 / 17.0;
-                    coe[23] = -   6.0 / 35.0;
-                    coe[24] =     1.0 / 72.0;
-                    
                     mpv->p2_nodes[n] = 0.0;
-                    
-                    for (ii = 0; ii < 25; ii++)
+                    for (int ip = 0; ip < 25; ip++)
                     {
-                        mpv->p2_nodes[n] += coe[ii] * (pow(r/R0 ,12+ii) - 1.0) * rotdir * rotdir;
+                        mpv->p2_nodes[n] += coe[ip] * (pow(r/R0 ,12+ip) - 1.0) * rotdir * rotdir;
                     }
                 }
                 else {

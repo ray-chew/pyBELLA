@@ -50,6 +50,7 @@ typedef struct {
     double dtfixed0;
 	double dtfixed;
     enum TimeIntegrator time_integrator;
+    enum TimeIntegrator advec_time_integrator;
     TimeIntegratorParams tips;
 
     /* Space discretization */

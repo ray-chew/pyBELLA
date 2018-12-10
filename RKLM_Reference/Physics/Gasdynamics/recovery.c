@@ -67,7 +67,8 @@ void recovery(States* Lefts,
     const double gamm   = th.gamm;
     const double lambda = (muscl_on_off == 1 ? lambda_input : 0.0);
     
-    int OrderTwo  = ((ud.recovery_order == SECOND && muscl_on_off) ? 1 : 0);
+    /* int OrderTwo  = ((ud.recovery_order == SECOND && muscl_on_off) ? 1 : 0); */
+    int OrderTwo  = 1;
     
     const double internal_flux = (adv_fluxes_from == FLUX_INTERNAL ? 1.0 : 0.0);
     

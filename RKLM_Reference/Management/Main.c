@@ -144,7 +144,7 @@ int main( void )
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, 0.5*dt);
 #ifdef ADVECTION
             /* advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, 1 ); */
-            advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, step%2);
+            advect(Sol, flux, Sol0, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, ud.advec_time_integrator, step%2);
             // reset_rhoY(Sol, Sol0, elem);
 #endif
             /* divergence-controlled advective fluxes at the half time level */
@@ -172,7 +172,7 @@ int main( void )
 #ifdef ADVECTION
             /* explicit full time step advection using div-controlled advective fluxes */
             /* advect(Sol, flux, force, dt_factor*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, 1 ); */
-            advect(Sol, flux, force, dt_factor*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, step%2);
+            advect(Sol, flux, Sol0, dt_factor*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, ud.advec_time_integrator, step%2);
 #endif
             
             /* implicit EULER half time step for gravity and pressure gradient */ 

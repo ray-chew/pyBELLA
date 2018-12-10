@@ -46,7 +46,8 @@ enum TimeIntegrator {
     EXPL_MIDPT,
     RK3_SKAMA,
     RK3_TEST,
-    SI_MIDPT};
+    SI_MIDPT,
+    STRANG};
 
 enum FluxesFrom {
     FLUX_EXTERNAL,
