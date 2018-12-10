@@ -121,7 +121,7 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
-	ud->CFL                   = 0.96;       
+	ud->CFL                   = 0.48;       
     ud->dtfixed0              = 10000.999;
     ud->dtfixed               = 10000.999;   
     
@@ -172,19 +172,22 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
     /* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
-    
+    /*
     ud->tout[0] =  0.25 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
     ud->tout[1] =  0.50 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
     ud->tout[2] =  0.75 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
     ud->tout[3] =  1.00 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
     ud->tout[4] = -1.0;
+     */
+    ud->tout[0] =  3.00 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
+    ud->tout[1] = -1.0;
 
     ud->stepmax = 10000;
 
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 100000;
+	ud->write_file_period = 20;
 	ud->file_format = HDF;
 
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
@@ -212,10 +215,10 @@ void Sol_initial(ConsVars* Sol,
     extern MPV* mpv;
     
 	const double u0    = 1.0*ud.wind_speed;
-	const double v0    = 0.0*ud.wind_speed;
+	const double v0    = 1.0*ud.wind_speed;
 	const double w0    = 0.0;
     
-    const double rotdir = -0.0;  /* the origin of the March 24 - trouble ... ;^) */
+    const double rotdir = -1.0;  /* the origin of the March 24 - trouble ... ;^) */
     
     const double p0      = 1.0;
     const double rho0    = 0.5;  /* 0.5 standard;  1.0 stable configuration; */
