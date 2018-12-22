@@ -14,3 +14,7 @@ MatLab/results/*
 *.pdf
 *.tex.backup
 *.ps
+*.zip
+*.fff
+*.lof
+*.kate-swp
