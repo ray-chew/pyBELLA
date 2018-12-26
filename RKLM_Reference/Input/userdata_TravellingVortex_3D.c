@@ -93,23 +93,23 @@ void User_Data_init(User_Data* ud) {
     
 	/* flow domain */
 	ud->xmin = - 5000/ud->h_ref;  
-	ud->xmax =   5000/ud->h_ref;  
+	ud->xmax =   35000/ud->h_ref;  
 	ud->ymin = - 5000/ud->h_ref;
 	ud->ymax =   5000/ud->h_ref; 
 	ud->zmin = - 5000/ud->h_ref/8.0;
 	ud->zmax =   5000/ud->h_ref/8.0;
 
 	/* boundary/initial conditions */
-	ud->wind_speed        = 0.0*10.0/ud->u_ref;              /* velocity in [u_ref] */
+	ud->wind_speed        = 1.0*10.0/ud->u_ref;              /* velocity in [u_ref] */
 	ud->wind_shear        = -0.0;              /* velocity in [u_ref/h_ref] */             
 	ud->hill_height       =  0.0;              /* height   in [h_ref]   */ 
 	ud->hill_length_scale =  99999.9;          /* width    in [h_ref]   */   
 	
 	ud->bdrytype_min[0] = PERIODIC; /* DIRICHLET; */
-	ud->bdrytype_min[1] = PERIODIC; /* SLANTED_WALL; */
+	ud->bdrytype_min[1] = WALL; /* SLANTED_WALL; */
 	ud->bdrytype_min[2] = WALL;
 	ud->bdrytype_max[0] = PERIODIC; /* DIRICHLET; */  
-	ud->bdrytype_max[1] = PERIODIC;  
+	ud->bdrytype_max[1] = WALL;  
 	ud->bdrytype_max[2] = WALL;
 	
 	ud->absorber = WRONG; /* CORRECT; */ 
@@ -128,8 +128,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx =  64+1; /*  */
-	ud->iny =  64+1; /*  */
+	ud->inx = 128+1; /*  */
+	ud->iny = 32+1; /*  */
 	ud->inz =   1;
 
     /* explicit predictor step */
@@ -172,11 +172,13 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
     /* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
-    ud->tout[0] =  0.25 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
-    ud->tout[1] =  0.50 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
-    ud->tout[2] =  0.75 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
-    ud->tout[3] =  1.00 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
-    ud->tout[4] = -1.0;
+    ud->tout[0] =  0.5 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
+    ud->tout[1] =  1.0 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
+    ud->tout[2] =  1.5 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
+    ud->tout[3] =  2.0 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
+    ud->tout[4] =  2.5 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
+    ud->tout[5] =  3.0 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
+    ud->tout[6] = -1.0;
     /*
     ud->tout[0] =  3.00 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
     ud->tout[1] = -1.0;
@@ -215,7 +217,7 @@ void Sol_initial(ConsVars* Sol,
     extern MPV* mpv;
     
 	const double u0    = 1.0*ud.wind_speed;
-	const double v0    = 1.0*ud.wind_speed;
+	const double v0    = 0.0*ud.wind_speed;
 	const double w0    = 0.0;
     
     const double rotdir = -1.0;  /* the origin of the March 24 - trouble ... ;^) */
@@ -413,7 +415,6 @@ void Sol_initial(ConsVars* Sol,
             }            
         }                
     }
-    
 }
 
 /* ================================================================================== */

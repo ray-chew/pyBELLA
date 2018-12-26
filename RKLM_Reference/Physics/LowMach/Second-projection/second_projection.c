@@ -1746,13 +1746,11 @@ void euler_forward_non_advective(ConsVars* Sol,
     
     // cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
 
-    if (ud.is_compressible) {
+    /* if (ud.is_compressible) { */
+    if (ud.is_compressible){
         
         double weight = (ud.acoustic_order - 1.0);
 
-
-        /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
-         Option EXNER_NONLINEAR did not exist on Oct. 24 */
 #ifdef EXNER_NONLINEAR
         const int icxn = node->icx;
         const int icyn = node->icy;

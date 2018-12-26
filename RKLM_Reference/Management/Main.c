@@ -95,6 +95,7 @@ int main( void )
         euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed);
         for (int nn=0; nn<node->nc; nn++) {
             mpv->p2_nodes[nn] = p2aux[nn];
+            mpv->dp2_nodes[nn] = 0.0;
         }
         free(p2aux);
     }
