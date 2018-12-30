@@ -226,7 +226,7 @@ Dipartimento di Matematica, Politecnico di Milano, via Bonardi 9, 20133 Milano, 
 % Enter your Abstract here
 
 \abstract{
-} 
+We introduce a conservative and second-order accurate numerical scheme for atmospheric motions at small to planetary scales. The finite volume model uses time steps constrained by the advection speed only and discretises the rotating compressible equations by evolving full variables without writing  the system in terms of perturbations around a reference state. The algorithm reframes previous work by the authors into a sequence of implicit midpoint, advection, and implicit trapezoidal steps that allows for a time integration unconstrained by the internal gravity wave speed, thereby providing  a gateway towards large-scale simulations. Compared with exisiting approaches, results on a range of benchmarks of nonhydrostatic and hydrostatic-scale dynamics are competitive. We also introduce a planetary-scale inertia-gravity wave test in order to highlight the properties of the scheme. The development is a crucial step towards an all-scale blended multimodel solver for atmospheric dynamics with seamless access to reduced soundproof and hydrostatic dynamics.} 
 
 \begin{document}
 
@@ -241,84 +241,98 @@ Dipartimento di Matematica, Politecnico di Milano, via Bonardi 9, 20133 Milano, 
 \section{Introduction}
 \label{sec:Intro}
 
-\cite{SmolarkiewiczEtAl2016}
-
-Literature review re two-time level, full variables, no off-centering, conservative (and of what), second-order, advection-explicit.
-
-Second-order accurate schemes rare. This is an extension of \cite{BenacchioEtAl2014} to address a gap in their formulation, but how novel is it? 
-
-
-
+%TBD 
+% \cite{SmolarkiewiczEtAl2016}
+% 
+% Literature review re two-time level, full variables, no off-centering, conservative (and of what), second-order, advection-explicit.
+% 
+% Second-order accurate schemes rare. This is an extension of \cite{BenacchioEtAl2014} to address a gap in their formulation, but how novel is it? 
 
 
-Key points of the paper: 
+
+
+
+% Key points of the paper: 
+% \begin{itemize}
+% \item Semi-implicit scheme, only advection explicit
+% \item Full variables advanced in time \\
+%       \klein{We obtain the best results by running a redundant nodal pressure evolution
+%       as is done in EULAG and FVM. With the most recent results we seem to get away with
+%       the implicit trapezoidal rule for the time integration in the implicit part without
+%       offset, which Piotr tells me they cannot do for all THEIR tests. Of course, they are
+%       running different tests than us, so it remains to be seen how far we get with what
+%       we have. Whenever I switch on synchronizations, I see spurious perturbations and
+%       instabilities creep up. \\ 
+%       Another point is that currently I am extracting a mean pressure profile both from 
+%       the nodal and the cell-centered pressures that enter the momentum balances (for
+%       cells and interface momenta, respectively). We will need to test whether we can
+%       work with full variables there and/or whether the scheme runs robustly if we DYNAMICALLY
+%       calculate the background state.}
+% \item Unconditional time step stability w.r.t.\ acoustics, internal waves, Rossby waves\\
+%       \klein{We surely should aim to demonstrate this through examples. Can we construct
+%       rigorous arguments?}
+% \item Background states \& perturbation variables are only auxiliary \\
+%       \klein{Again, this we should be able to demonstrate. See two items up.}
+% \item Mix of implicit midpoint and implicit trapezoidal rules \\
+%       \klein{I am not so sure the approach is new as it is very close to the 
+%       usual MAC-Projection + second project approach used by many others in the
+%       ``approximate projection'' world, but I do think that viewing what we do from 
+%       this angle might allow for improved understanding of the scheme's properties.}
+% \item Borrowing ideas from EULAG/FVM
+% \item \benacchio{(Mass-, horizontal momentum-,...?) Conservative} \\
+%       \klein{Interesting point. We conserve $\rho$ and $\rho\theta$ for sure, but already
+%       for momentum I am compromising, as I seem to need the Exner variable to get 
+%       reliable implicit gravity. Here we may want to go back to your/Warren's theses,
+%       and later discussions of mine where we show that one can have discretely equivalent
+%       Exner and full pressure formulations under the psinc model. If we can pull this off
+%       for the compressible case, too, and I am optimistic, then we would have a very nice
+%       point.}
+% \item Second-order, symplectic in the implicit part, no off-centering, no diffusion
+% %\item \benacchio{No off-centering}
+% \item Further aim: Step towards extending compr/psinc blended model formulation 
+%       from \citep{BenacchioEtAl2014, KleinEtAl2014} to cover hydrostasy, geostrophy, as well
+%       \citep[see][]{KleinBenacchio2016}.
+% 
+% \item Test with rotation and multiscale, Baldauf and Brdar 2016.
+% 
+% \item Very large test simulating planetary scales in a Cartesian framework, showing competitive behaviour of our scheme
+% 
+% \end{itemize}
+% 
+% \benacchio{We should perhaps better clarify how this makes the scheme
+% different from all the other models that work with perturbations only,
+% e.g. ENDGame works with the old time-step profiles as reference. In our case
+% the decompositions \eq{eq:PerturbationVariables} and \eq{eq:BackgroundHydrostatics} are only
+% instrumental to constructing the elliptic problems in the correction steps.
+% I shall go into the bells and whistles of other schemes to understand how
+% they carry forward perturbations more than we do.} 
+% 
+%  \klein{\bfseries We use the full conservation form to update $\chi$ in the advection step. In contrast, 
+% $\chi'$ is used only to prepare for the implicit gravity time integration and is
+% overwritten after a time step. In your scan of the literature, please have a look
+% at how others do this. I believe that only Hilary is doing it similarly to us in 
+% her paper with Shahrokhi, and maybe in her later cell-centered code(s). But this, too,
+% we need to double-check. }
+% 
+% 
+% Novelty/competitiveness: Two-time level, full variables, no off-centering, conservative (and of what), second-order, advection-explicit.
+% Possible aspects of novelty/discussion are a) Novel combination of functionality b) results quality c) implementation d) speed/scalability (presumably comparable to a DG code but without the high-order capabilities) e) flexibility towards encapsulating different equation sets/ outlook for blending, data assimilation.
+
+Drawing on the finite volume framework for soundproof model equations in \cite{KleinTCFD2009}, the authors of \cite{BenacchioEtAl2014} devised a numerical scheme for the compressible Euler equations using a time step unconstrained by the speed of acoustic waves. Good performance was demonstrated against established benchmarks of small to mesoscale atmospheric dynamics. In addition, the scheme was written as a multimodel formulation able to switch between soundproof and compressible dynamics by tuning a single parameter. The technology proved beneficial in damping sound waves spreading from unbalanced initial potential temperature data in runs with rising thermals. The framework was theoretically extended in  \cite{KleinBenacchio2016} to encompass the hydrostatic primitive equations and the anelastic, quasi-hydrostatic system of \cite{ArakawaKonor2009} with the introduction of a second blending parameter.
+
+A major hurdle towards joining the numerical scheme of \cite{BenacchioEtAl2014} with the theoretical setup of \cite{KleinBenacchio2016} is the former's time step dependency on the speed of internal gravity waves. This places and unacceptable constraint to the applicability of the numerical method to large-scale tests. By reframing the schemes of \cite{KleinTCFD2009} and \cite{BenacchioEtAl2014} as an explicit-then-implicit system, this paper proposes a discretisation that:
+%
 \begin{itemize}
-\item Semi-implicit scheme, only advection explicit
-\item Full variables advanced in time \\
-      \klein{We obtain the best results by running a redundant nodal pressure evolution
-      as is done in EULAG and FVM. With the most recent results we seem to get away with
-      the implicit trapezoidal rule for the time integration in the implicit part without
-      offset, which Piotr tells me they cannot do for all THEIR tests. Of course, they are
-      running different tests than us, so it remains to be seen how far we get with what
-      we have. Whenever I switch on synchronizations, I see spurious perturbations and
-      instabilities creep up. \\ 
-      Another point is that currently I am extracting a mean pressure profile both from 
-      the nodal and the cell-centered pressures that enter the momentum balances (for
-      cells and interface momenta, respectively). We will need to test whether we can
-      work with full variables there and/or whether the scheme runs robustly if we DYNAMICALLY
-      calculate the background state.}
-\item Unconditional time step stability w.r.t.\ acoustics, internal waves, Rossby waves\\
-      \klein{We surely should aim to demonstrate this through examples. Can we construct
-      rigorous arguments?}
-\item Background states \& perturbation variables are only auxiliary \\
-      \klein{Again, this we should be able to demonstrate. See two items up.}
-\item Mix of implicit midpoint and implicit trapezoidal rules \\
-      \klein{I am not so sure the approach is new as it is very close to the 
-      usual MAC-Projection + second project approach used by many others in the
-      ``approximate projection'' world, but I do think that viewing what we do from 
-      this angle might allow for improved understanding of the scheme's properties.}
-\item Borrowing ideas from EULAG/FVM
-\item \benacchio{(Mass-, horizontal momentum-,...?) Conservative} \\
-      \klein{Interesting point. We conserve $\rho$ and $\rho\theta$ for sure, but already
-      for momentum I am compromising, as I seem to need the Exner variable to get 
-      reliable implicit gravity. Here we may want to go back to your/Warren's theses,
-      and later discussions of mine where we show that one can have discretely equivalent
-      Exner and full pressure formulations under the psinc model. If we can pull this off
-      for the compressible case, too, and I am optimistic, then we would have a very nice
-      point.}
-\item Second-order, symplectic in the implicit part, no off-centering, no diffusion
-%\item \benacchio{No off-centering}
-\item Further aim: Step towards extending compr/psinc blended model formulation 
-      from \citep{BenacchioEtAl2014, KleinEtAl2014} to cover hydrostasy, geostrophy, as well
-      \citep[see][]{KleinBenacchio2016}.
-
-\item Test with rotation and multiscale, Baldauf and Brdar 2016.
-
-\item Very large test simulating planetary scales in a Cartesian framework, showing competitive behaviour of our scheme
-
+ \item Evolves the full compressible equations with rotation in terms of full variables rather than perturbations around an externally prescribed or evolving background state -- perurbations for the inverse potential temperature are only used to build the gravity-implicit elliptic problem;
+\item Has built-in conservation and is second-order accurate throughout, without artificial damping mechanisms;
+\item Uses a time step constrained only by the underlying advection speed;
+\item Can be run in soundproof mode without modifying the numerics;
+\item Provides a milestone towards a complete multiscale formulation incorporating hydrostasy and geostrophy.  
 \end{itemize}
 
-\benacchio{We should perhaps better clarify how this makes the scheme
-different from all the other models that work with perturbations only,
-e.g. ENDGame works with the old time-step profiles as reference. In our case
-the decompositions \eq{eq:PerturbationVariables} and \eq{eq:BackgroundHydrostatics} are only
-instrumental to constructing the elliptic problems in the correction steps.
-I shall go into the bells and whistles of other schemes to understand how
-they carry forward perturbations more than we do.} 
+The model uses a MUSCLE scheme for an advection step that yields second-order values for the variables at the new time step. Pressure and momenta are corrected by solving two elliptic problems in a similar way to previous work by the authors. The scheme is validated on a nonrotating vortex test and Cartesian benchmarks of nonhydrostatic and hydrostatic dynamics. Simulations of  inertia-gravity wave tests at large-scale and with rotation show competitive performance with existing approaches. In particular, a new planetary-scale extension of the classical test of \cite{SkamarockKlemp1994} poignantly shows the large time step capabilities of the present scheme.
 
- \klein{\bfseries We use the full conservation form to update $\chi$ in the advection step. In contrast, 
-$\chi'$ is used only to prepare for the implicit gravity time integration and is
-overwritten after a time step. In your scan of the literature, please have a look
-at how others do this. I believe that only Hilary is doing it similarly to us in 
-her paper with Shahrokhi, and maybe in her later cell-centered code(s). But this, too,
-we need to double-check. }
-
-
-Novelty/competitiveness: Two-time level, full variables, no off-centering, conservative (and of what), second-order, advection-explicit.
-Possible aspects of novelty/discussion are a) Novel combination of functionality b) results quality c) implementation d) speed/scalability (presumably comparable to a DG code but without the high-order capabilities) e) flexibility towards encapsulating different equation sets/ outlook for blending, data assimilation.
-
-
-The Appendix contains a detailed description of the scheme, as well as a tabular summary for convenience.
+The paper is organized as follows. Section \ref{sec:GoverningEquations} contains the governing equations that are discretized with the methodology summarised in Section \ref{sec:TimeDiscretizationSummary}. Section \ref{sec:Results} documents the performance of the code on the abovementioned tests. Results are discussed and conclusions drawn in section \ref{sec:Conclusions}. An Appendix contains further algorithmic details for the interested reader.
 
 % ===========================================================================
 % ===========================================================================
@@ -394,7 +408,7 @@ Hilary's MWR paper). See ``key points'' in the abstract section.}
 \section{Compact description of the time integration scheme}
 \label{sec:TimeDiscretizationSummary}
 
-In the following, we describe the main features of the discretization, that evolves and joins aspects of the models in \cite{Klein2009}
+In the following, we describe the main features of the discretization, that evolves and joins aspects of the models in \cite{KleinTCFD2009}
 \cite{BenacchioEtAl2014}. The appendix contains details of the numerical scheme that are not essential at first reading and to evaluate the results.
 
 % ===========================================================================
@@ -718,6 +732,7 @@ We note that both our treatment of the $P$ in \eq{eq:HalfTimePredictorAdvection}
 
 
 \section{Numerical Results}
+\label{sec:Results}
 
 \subsection{Vortex}
 
@@ -1397,7 +1412,7 @@ two and three dimensions, respectively, and corresponds to finite
 volume approximations of the gradient based on bi- and trilinear 
 approximations of the pressure field between cell centers. 
 See \citep{Sueli1991} for related numerical analysis and
-\citep{VaterKlein2009,KleinTCFD2009,BenacchioEtAl2014} for our
+\citep{VaterKleinTCFD2009,KleinTCFD2009,BenacchioEtAl2014} for our
 earlier experiences with this approach. Results presented in this paper
 are based on \eq{eq:NinePointStencilI}, \eq{eq:NinePointStencilII}.
 
