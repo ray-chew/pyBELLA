@@ -27,12 +27,18 @@
  #define SYMMETRIC_ADVECTION
  #define FOURTH_ORDER_ADV_FLUXES
  #define UPWIND_RHOY
+ #define NODAL_PROJECTION_ONLY
  */ 
 #define HY_STATES_N_FROM_CELL_CENTERED_THETA
 #define EVOLVE_NODAL_PRESSURE
 #define ADVECTION
 #define SYMMETRIC_ADVECTION
 #define LIMIT_PLAIN_PRIMITIVES
+
+/**/
+#define NODAL_PROJECTION_ONLY
+#define PRESSURE_RESET
+ 
 
 /* ============================================= 
  Semi-implicit solver options  

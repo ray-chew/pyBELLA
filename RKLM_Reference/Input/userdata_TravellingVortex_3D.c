@@ -93,7 +93,7 @@ void User_Data_init(User_Data* ud) {
     
 	/* flow domain */
 	ud->xmin = - 5000/ud->h_ref;  
-	ud->xmax =   35000/ud->h_ref;  
+	ud->xmax =   5000/ud->h_ref;  
 	ud->ymin = - 5000/ud->h_ref;
 	ud->ymax =   5000/ud->h_ref; 
 	ud->zmin = - 5000/ud->h_ref/8.0;
@@ -128,8 +128,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 128+1; /*  */
-	ud->iny = 32+1; /*  */
+	ud->inx = 20+1; /*  */
+	ud->iny = 20+1; /*  */
 	ud->inz =   1;
 
     /* explicit predictor step */
@@ -150,7 +150,7 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  201; /* (ud->inx+3); */
 	
 	/* linear solver-stuff */
-    double tol = 1.e-6;
+    double tol = 1.e-10;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -189,7 +189,7 @@ void User_Data_init(User_Data* ud) {
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 20000;
+	ud->write_file_period = 10;
 	ud->file_format = HDF;
 
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */

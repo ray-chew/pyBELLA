@@ -144,8 +144,8 @@ void euler_backward_non_advective_impl_part(
     
     /* KEEP_OLD_POISSON_SOLUTIONS */
     for(ii=0; ii<nc; ii++){
-        p2[ii] = mpv->p2_nodes[ii]; 
-        /* p2[ii]  = 0.0;  */
+        /* p2[ii] = mpv->p2_nodes[ii];  */
+        p2[ii]  = 0.0; 
         rhs[ii] = 0.0;
     }
 
@@ -1386,18 +1386,6 @@ void correction_nodes(
 }
 
 
-/* ========================================================================== */
-
-void momentum_increments(MPV* mpv, 
-                         const ConsVars *Sol, 
-                         const ElemSpaceDiscr *elem)
-{
-    for (int i=0; i<elem->nc; i++) {
-        mpv->drhou_cells[i] = Sol->rhou[i] - mpv->drhou_cells[i];
-        mpv->drhov_cells[i] = Sol->rhov[i] - mpv->drhov_cells[i];
-        mpv->drhow_cells[i] = Sol->rhow[i] - mpv->drhow_cells[i];
-    }
-}
 
 /* ========================================================================== */
 

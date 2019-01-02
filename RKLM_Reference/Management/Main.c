@@ -104,11 +104,14 @@ int main( void )
         putout(Sol, ud.file_name, "Sol", elem, node, 1);
         
     ConsVars_set(Sol0, Sol, elem->nc);
+#ifdef NODAL_PROJECTION_ONLY
+#ifdef PRESSURE_RESET
+    for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes0[nn] = mpv->p2_nodes[nn];
+#endif
+#endif
     	    
     /* generate divergence-controlled initial data  */
     dt_info.time_step_switch = 0;
-
-    ConsVars_set(Sol0, Sol, elem->nc);
 
 	/* Main loop over the sequence of time values of tout */
 	while(t < *tout && step < ud.stepmax) {
@@ -137,7 +140,12 @@ int main( void )
             /* ======================================================================= */
             
             ConsVars_set(Sol0, Sol, elem->nc);            
-                        
+#ifdef NODAL_PROJECTION_ONLY
+#ifdef PRESSURE_RESET
+            for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes0[nn] = mpv->p2_nodes[nn];
+#endif
+#endif
+
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nhalf-time prediction of advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
@@ -149,11 +157,22 @@ int main( void )
             // reset_rhoY(Sol, Sol0, elem);
 #endif
             /* divergence-controlled advective fluxes at the half time level */
-            euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt);            
+#ifdef NODAL_PROJECTION_ONLY
+            euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt); 
+            euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt);
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, 0.5*dt);
+#else /* NODAL_PROJECTION_ONLY */
+            euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt); 
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, 0.5*dt);
             flux_correction(flux, Sol, Sol0, elem, node, t, 0.5*dt, step);        
-
+#endif /* NODAL_PROJECTION_ONLY */
+            
             ConsVars_set(Sol, Sol0, elem->nc);
+#ifdef NODAL_PROJECTION_ONLY
+#ifdef PRESSURE_RESET
+            for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes[nn] = mpv->p2_nodes0[nn];
+#endif
+#endif
             /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
              Note of Nov. 15, 2018: This call is void for ud.acoustic_order = 2.0, which is 
              what I am aiming for now. The call would have an effect, though when the

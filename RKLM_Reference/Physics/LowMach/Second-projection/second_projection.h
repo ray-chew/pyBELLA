@@ -23,10 +23,6 @@ void euler_backward_non_advective_impl_part(
                        const double t,
                        const double dt);
 
-void momentum_increments(MPV* mpv, 
-                         const ConsVars *Sol, 
-                         const ElemSpaceDiscr *elem);
-
 void euler_backward_non_advective_expl_part(ConsVars* Sol,
                             const MPV* mpv,
                             const ElemSpaceDiscr* elem,

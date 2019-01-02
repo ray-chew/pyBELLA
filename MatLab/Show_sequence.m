@@ -35,7 +35,7 @@ show_increments = 0;
 symmetry = 0;        % in {0,1}
 symmetrytest = 0;
 showdummycells = 0;
-showslice = 21;
+showslice = 10;
 diff_rel_to_bottom = 0;
 
 % th0 = -0.0015/300;
@@ -99,9 +99,9 @@ elseif strcmp(test_case, 'Rising-Bubble')
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Travelling-Vortex')
-    ncx = 128;  
-    ncy = 32; 
-    L   = 4.0;  
+    ncx = 20;  
+    ncy = 20; 
+    L   = 1.0;  
     x0  = 0.5;
     H   = 1.0; 
     aspect = [2 2 2];
@@ -191,8 +191,8 @@ varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy
 %varstr = 'rhs_nodes_prec';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n_prec';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'lap_nodes';  folderstr = 'lap_nodes'; titlestr = 'lap_n';    ndummy = 2; arraysize = [nnx nny];
 
-%varstr = 'advflux_x';  folderstr = 'advflux'; titlestr = 'advflux_x'; ndummy = 2; arraysize = [ncx+1 ncy]; symmetry = -1*symmetry;
-%varstr = 'advflux_y';  folderstr = 'advflux'; titlestr = 'advflux_y'; ndummy = 2; arraysize = [ncy+1 ncx]; symmetry = -1*symmetry; transp = 1;
+%varstr = 'flux_x';  folderstr = 'flux_x'; titlestr = 'flux_x'; ndummy = 2; arraysize = [ncx+1 ncy]; symmetry = -1*symmetry;
+%varstr = 'flux_y';  folderstr = 'flux_y'; titlestr = 'flux_y'; ndummy = 2; arraysize = [ncy+1 ncx]; symmetry = -1*symmetry; transp = 1;
 
 
 scrsz = get(0,'ScreenSize');
