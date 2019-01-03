@@ -323,10 +323,10 @@ Drawing on the finite volume framework for soundproof model equations in \cite{K
 A major hurdle towards joining the numerical scheme of \cite{BenacchioEtAl2014} with the theoretical setup of \cite{KleinBenacchio2016} is the former's time step dependency on the speed of internal gravity waves. This places and unacceptable constraint to the applicability of the numerical method to large-scale tests. By reframing the schemes of \cite{KleinTCFD2009} and \cite{BenacchioEtAl2014} as an explicit-then-implicit system, this paper proposes a discretisation that:
 %
 \begin{itemize}
- \item Evolves the full compressible equations with rotation in terms of full variables rather than perturbations around an externally prescribed or evolving background state -- perurbations for the inverse potential temperature are only used to build the gravity-implicit elliptic problem;
+ \item Evolves the full compressible equations with rotation in terms of full variables rather than perturbations around an externally prescribed or evolving background state -- perturbations for the inverse potential temperature are only used to build the gravity-implicit elliptic problem;
 \item Has built-in conservation and is second-order accurate throughout, without artificial damping mechanisms;
 \item Uses a time step constrained only by the underlying advection speed;
-\item Can be run in soundproof mode without modifying the numerics;
+\item Can be run in soundproof mode and hydrostatic mode without modifying the numerics;
 \item Provides a milestone towards a complete multiscale formulation incorporating hydrostasy and geostrophy.  
 \end{itemize}
 
@@ -761,7 +761,16 @@ accuracy in the predictor step in section~\ref{sec:Results} below.
 
 \section{Discussion and conclusion}
 \label{sec:Conclusions}
+
+This paper extended a semi-implicit numerical model for the simulation of atmospheric flows to a scheme with time step unconstrained by the internal wave speed and without the use of a background state. The conservative, second-order accurate finite volume discretisation of the rotating compressible equations evolves cell-centered variables through a three-stage procedure, made of an implicit midpoint rule step, an advection step, and an implicit trapezoidal step. By design the model agrees with the pseudo-incompressible system in the small-scale limit and the hydrostatic system at the large scale limit.
+
+The scheme was validated on a vortex test and then applied to a suite of benchmarks of atmospheric dynamics at different scales. In particular, runs of the inertia-gravity wave tests of \cite{BaldaufBrdar2013} and \cite{SkamarockKlemp1994} at planetary scale exposed the large time step capability of the devised numerics. The authors are unaware of published attempts to run the latter test at this scale. The solution quality in terms of accuracy and convergence is competitive with existing approaches.
+
+The results presented suggest several avenues of development in a number of areas. First, the scheme can be bolted onto the multimodel theoretical framework of \cite{KleinBenacchio2016} to achieve balanced initialization and data assimilation at all scales. As proposed by \cite{BenacchioEtAl2014}, such a multimodel discretization could be run with reduced dynamics during the first time steps after setup or assimilation, then resorting to the fully compressible model for the transient sections. The development in the present work yields hydrostasy and geostrophy at large scale as well as incompressibility at small scale as the accessible asymptotic dynamics in the blended scheme. The discretization could then be applied to run tests on the sphere, with the ultimate aim of comparing with existing schemes used in numerical weather prediction, starting with the FVM dynamical core \citep{KuehnleinEtAl2018}, which shares some numerical aspects with the model presented here. With a view to exascale architecture and beyond, the computational power should be at disposal to use such a model for a flexible balanced runs in an operational context.
+
+
 \begin{itemize}
+
 
 \item Many similarities with EULAG/FVM. This is not a coincidence as the latter served as a reference for the present developments owing to its impressive stability features and accuracy for realistic applications, competitive with even a pseudo-spectral scheme as demonstrated recently by \citet{KuehnleinEtAl2018}. There are differences, however, and we discuss these in the conclusions section~\ref{sec:Conclusions} below.
 
