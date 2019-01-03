@@ -46,6 +46,7 @@ static FILE *pdrhoYfile    = NULL;
 static FILE *pufile        = NULL;     
 static FILE *pvfile        = NULL;     
 static FILE *pwfile        = NULL;
+static FILE *pvortfile     = NULL;
 static FILE *ppfile        = NULL;     
 static FILE *pSfile        = NULL;     
 static FILE *pYfile        = NULL;     
@@ -83,7 +84,12 @@ void putout(ConsVars* Sol,
 	const int icy = elem->icy;
 	const int icz = elem->icz;
 	const int nc = elem->nc; 
-		
+
+    const int icxn = node->icx;
+    const int icyn = node->icy;
+    const int iczn = node->icz;
+    const int nn = node->nc; 
+
 	double *var;
 	char fn[200], fieldname[90], step_string[30];
 	int nsp;
@@ -175,7 +181,14 @@ void putout(ConsVars* Sol,
 			 if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
 			 sprintf(fieldname, "w_%s_%s", field_name, step_string);
 			 WriteHDF(pwfile, icx, icy, icz, ndim, var, fn, fieldname);
-			
+
+            /* u-v vorticity */
+            vortz(var, Sol, elem, node, 0, nc);
+            sprintf(fn, "%s/vortz/vortz_%s.hdf", dir_name, step_string);
+            if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
+            sprintf(fieldname, "vortz_%s_%s", field_name, step_string);
+            WriteHDF(pvortfile, icxn, icyn, iczn, ndim, var, fn, fieldname);
+
 			/* pressure */
 			pressure(var, Sol, 0, 0, nc);
 			sprintf(fn, "%s/p/p_%s.hdf", dir_name, step_string);
@@ -270,54 +283,26 @@ void putout(ConsVars* Sol,
 			sprintf(fn, "%s/dp2_nodes/dp2_n_%s.hdf", dir_name, step_string);
 			if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
 			sprintf(fieldname, "dp2_nodes_%s_%s", field_name, step_string);
-			WriteHDF(pp2file, 
-					 node->icx, 
-					 node->icy, 
-					 node->icz, 
-					 node->ndim, 
-					 mpv->dp2_nodes,   
-					 fn, 
-					 fieldname);
+			WriteHDF(pp2file, icxn, icyn, iczn, ndim, mpv->dp2_nodes, fn, fieldname);
 
             sprintf(fn, "%s/p2_nodes/p2_n_%s.hdf", dir_name, step_string);
             if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
             sprintf(fieldname, "p2_nodes_%s_%s", field_name, step_string);
-            WriteHDF(pp2file,
-                     node->icx,
-                     node->icy,
-                     node->icz,
-                     node->ndim,
-                     mpv->p2_nodes,   
-                     fn, 
-                     fieldname);
+            WriteHDF(pp2file,icxn, icyn, iczn, ndim, mpv->p2_nodes, fn, fieldname);
 
             /* fluctuation(var, mpv->p2_cells, elem); */
             memcpy(var, mpv->p2_cells, elem->nc*sizeof(double));
             sprintf(fn, "%s/p2_c/p2_c_%s.hdf", dir_name, step_string);
 			if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
 			sprintf(fieldname, "p2_c_%s", step_string);
-			WriteHDF(pp2file, 
-					 elem->icx, 
-					 elem->icy, 
-					 elem->icz, 
-					 elem->ndim, 
-					 var,
-					 fn, 
-					 fieldname);
+			WriteHDF(pp2file, icxn, icyn, iczn, ndim, var, fn, fieldname);
 
             /* dp_exner(var, Sol, mpv, elem); */
             dp2_first_projection(var, Sol, mpv, elem);
 			sprintf(fn, "%s/dp2_c/dp2_c_%s.hdf", dir_name, step_string);
 			if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
             sprintf(fieldname, "dp2_c_%s", step_string);
-			WriteHDF(pp2file, 
-					 elem->icx, 
-					 elem->icy, 
-					 elem->icz, 
-					 elem->ndim, 
-					 var, 
-					 fn, 
-					 fieldname);
+			WriteHDF(pp2file, icx, icy, icz, ndim, var, fn, fieldname);
             
 			break;
 		}

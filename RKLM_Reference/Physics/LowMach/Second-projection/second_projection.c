@@ -89,8 +89,8 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
 
 /* ========================================================================== */
 
-#define OUTPUT_RHS 0
-#if OUTPUT_RHS
+#define OUTPUT_RHS_NODES 0
+#if OUTPUT_RHS_NODES
 static int rhs_output_count = 0;
 static int first_output_step = 0;
 extern int step;  
@@ -161,7 +161,7 @@ void euler_backward_non_advective_impl_part(
     printf("\nrhsmax = %e\n", rhs_max);
 
     
-#if OUTPUT_RHS
+#if OUTPUT_RHS_NODES
     FILE *prhsfile = NULL;
     char fn[120], fieldname[90];
     if (step >= first_output_step) {
@@ -218,7 +218,7 @@ void euler_backward_non_advective_impl_part(
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
     Set_Explicit_Boundary_Data(Sol, elem);
     
-#if OUTPUT_RHS
+#if OUTPUT_RHS_NODES
     memset(rhs, 0.0, node->nc*sizeof(double));
     rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
     /* catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);

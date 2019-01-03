@@ -148,6 +148,11 @@ void veloy(double *v, const ConsVars* U, const int nstart, const int nende );
  ------------------------------------------------------------------------------*/
 void veloz(double *w, const ConsVars* U, const int nstart, const int nende );
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
+void vortz(double *w, const ConsVars* U, const ElemSpaceDiscr *elem, const NodeSpaceDiscr *node, const int nstart, const int nende );
+
 
 /*------------------------------------------------------------------------------
  
