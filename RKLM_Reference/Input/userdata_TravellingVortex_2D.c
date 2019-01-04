@@ -169,11 +169,12 @@ void User_Data_init(User_Data* ud) {
 	/* ======================================================================== */
 	
     /* time discretization */
-    ud->time_integrator      = OP_SPLIT;  /* OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT; RK3_SKAMA; RK3_TEST */
-	ud->CFL                  = 0.96;       /* 0.9; 0.8; 1.1*sqrt(0.5) */
-    ud->dtfixed0             = 10000.999;
-    ud->dtfixed              = 10000.999;     /* ud->dtfixed = 0.5/ud->t_ref;  */
-    ud->no_of_steps_to_CFL   = 1;
+    ud->time_integrator        = SI_MIDPT;  /* this code version has only one option */
+    ud->advec_time_integrator  = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
+	ud->CFL                    = 0.96;       /* 0.9; 0.8; 1.1*sqrt(0.5) */
+    ud->dtfixed0               = 10000.999;
+    ud->dtfixed                = 10000.999;     /* ud->dtfixed = 0.5/ud->t_ref;  */
+    ud->no_of_steps_to_CFL     = 1;
     ud->no_of_steps_to_dtfixed = 1;
 
     set_time_integrator_parameters(ud);

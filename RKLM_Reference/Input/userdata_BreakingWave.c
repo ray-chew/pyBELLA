@@ -131,7 +131,8 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
 	
     /* Time discretization */
-    ud->time_integrator        = OP_SPLIT; /* OP_SPLIT, OP_SPLIT_MD_UPDATE, HEUN, EXPL_MIDPT */
+    ud->time_integrator        = SI_MIDPT;  /* this code version has only one option */
+    ud->advec_time_integrator  = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
     ud->CFL                    = 0.96; /* 0.9; 0.8; */
     ud->dtfixed0               = 0.31;
     ud->dtfixed                = 0.31;  

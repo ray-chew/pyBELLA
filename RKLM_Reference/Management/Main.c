@@ -187,7 +187,6 @@ int main( void )
 
             /* explicit EULER half time step for gravity and pressure gradient */ 
             euler_forward_non_advective(Sol, mpv, (const ConsVars*)Sol0, elem, node, (dt_factor-0.5)*dt, WITH_PRESSURE);
-
                         
 #ifdef ADVECTION
             /* explicit full time step advection using div-controlled advective fluxes */

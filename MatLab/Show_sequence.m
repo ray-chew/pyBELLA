@@ -7,8 +7,8 @@
 extrafigno = 52;
 
 %modelstr = '';
-%modelstr = 'comp';
-modelstr = 'psinc' ;  
+modelstr = 'comp';
+%modelstr = 'psinc' ;  
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
@@ -19,8 +19,8 @@ modelstr = 'psinc' ;
 %test_case = 'Internal-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
-%test_case = 'Straka';
-test_case = 'Travelling-Vortex';
+test_case = 'Straka';
+%test_case = 'Travelling-Vortex';
 %test_case = 'Acoustic-Wave';
 
 showmode = 1;
@@ -35,7 +35,7 @@ show_increments = 0;
 symmetry = 0;        % in {0,1}
 symmetrytest = 0;
 showdummycells = 0;
-showslice = 11;
+showslice = 1;
 diff_rel_to_bottom = 0;
 
 % th0 = -0.0015/300;
@@ -99,13 +99,14 @@ elseif strcmp(test_case, 'Rising-Bubble')
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Travelling-Vortex')
-    ncx = 80;  
-    ncy = 20; 
+    ncx = 128;  
+    ncy = 32; 
     L   = 4.0;  
     x0  = 0.5;
     H   = 1.0; 
     aspect = [2 2 2];
     velosc = 100;  % velocity unit of RKLM code
+    showslice = ncy/2;
 elseif strcmp(test_case, 'Straka')
     ncx = 513;  
     ncy = 64;  
@@ -116,6 +117,7 @@ elseif strcmp(test_case, 'Straka')
     velosc = 100;  % velocity unit of RKLM code
     dtheta = 1.0/300.0;
     contour_values = linspace(-16.5*dtheta,-0.5*dtheta,16);
+    showslice = ncy/2;
 elseif strcmp(test_case, 'Smolarkiewicz-Margolin-Breaking-Wave')
     ncx = 240;  
     ncy = 120;  
@@ -159,7 +161,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'T';  folderstr = 'T'; titlestr = 'T'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dT';  folderstr = 'dT'; titlestr = 'dT'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
+varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
@@ -170,7 +172,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
 %varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy];
-varstr = 'vortz';  folderstr = 'vortz'; titlestr = 'vortz'; ndummy = 2; arraysize = [nnx nny]; filledcontours = 0; fixed_contours = 0;
+%varstr = 'vortz';  folderstr = 'vortz'; titlestr = 'vortz'; ndummy = 2; arraysize = [nnx nny]; filledcontours = 0; fixed_contours = 0;
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qc';  folderstr = 'qc'; titlestr = 'qc'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qr';  folderstr = 'qr'; titlestr = 'qr'; ndummy = 2; arraysize = [ncx ncy];
