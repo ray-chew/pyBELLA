@@ -107,7 +107,7 @@ void hllestar(
 /*------------------------------------------------------------------------------
  store advective flux
  ------------------------------------------------------------------------------*/
-#define OUTPUT_ADVECTIVE_FLUXES 1
+#define OUTPUT_ADVECTIVE_FLUXES 0
 #if OUTPUT_ADVECTIVE_FLUXES
 #include "io.h"
 #include "memory.h"

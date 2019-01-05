@@ -295,7 +295,7 @@ void putout(ConsVars* Sol,
             sprintf(fn, "%s/p2_c/p2_c_%s.hdf", dir_name, step_string);
 			if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
 			sprintf(fieldname, "p2_c_%s", step_string);
-			WriteHDF(pp2file, icxn, icyn, iczn, ndim, var, fn, fieldname);
+			WriteHDF(pp2file, icx, icy, icz, ndim, var, fn, fieldname);
 
             /* dp_exner(var, Sol, mpv, elem); */
             dp2_first_projection(var, Sol, mpv, elem);

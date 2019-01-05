@@ -134,7 +134,7 @@ void User_Data_init(User_Data* ud) {
     /* Grid and space discretization */
     ud->inx =  31+1; /* 641; 321; 161; 129; 81; */
     ud->iny =  31+1; /* 321; 161;  81;  65; 41;  */
-    ud->inz =  31+1;
+    ud->inz =  1;
     
     /* explicit predictor step */
     /* Recovery */

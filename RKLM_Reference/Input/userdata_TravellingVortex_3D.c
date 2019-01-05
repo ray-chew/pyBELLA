@@ -92,24 +92,24 @@ void User_Data_init(User_Data* ud) {
 	}
     
 	/* flow domain */
-	ud->xmin = - 5000/ud->h_ref;  
-	ud->xmax =   5000/ud->h_ref;  
-	ud->ymin = - 5000/ud->h_ref;
-	ud->ymax =   5000/ud->h_ref; 
-	ud->zmin = - 5000/ud->h_ref/8.0;
-	ud->zmax =   5000/ud->h_ref/8.0;
+	ud->xmin = - 0.5;  
+	ud->xmax =   0.5;  
+	ud->ymin = - 0.5;
+	ud->ymax =   0.5; 
+	ud->zmin = - 0.5;
+	ud->zmax =   0.5;
 
 	/* boundary/initial conditions */
-	ud->wind_speed        = 1.0*10.0/ud->u_ref;              /* velocity in [u_ref] */
+	ud->wind_speed        =  1.0;              /* velocity in [u_ref] */
 	ud->wind_shear        = -0.0;              /* velocity in [u_ref/h_ref] */             
 	ud->hill_height       =  0.0;              /* height   in [h_ref]   */ 
 	ud->hill_length_scale =  99999.9;          /* width    in [h_ref]   */   
 	
 	ud->bdrytype_min[0] = PERIODIC; /* DIRICHLET; */
-	ud->bdrytype_min[1] = WALL; /* SLANTED_WALL; */
+	ud->bdrytype_min[1] = PERIODIC; /* SLANTED_WALL; */
 	ud->bdrytype_min[2] = WALL;
 	ud->bdrytype_max[0] = PERIODIC; /* DIRICHLET; */  
-	ud->bdrytype_max[1] = WALL;  
+	ud->bdrytype_max[1] = PERIODIC;  
 	ud->bdrytype_max[2] = WALL;
 	
 	ud->absorber = WRONG; /* CORRECT; */ 
@@ -128,9 +128,9 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 20+1; /*  */
-	ud->iny = 20+1; /*  */
-	ud->inz =   1;
+	ud->inx = 192+1; /*  */
+	ud->iny = 192+1; /*  */
+	ud->inz =     1;
 
     /* explicit predictor step */
 	/* Recovery */
@@ -172,24 +172,20 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
     /* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
-    ud->tout[0] =  0.5 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
-    ud->tout[1] =  1.0 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
-    ud->tout[2] =  1.5 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
-    ud->tout[3] =  2.0 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
-    ud->tout[4] =  2.5 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
-    ud->tout[5] =  3.0 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
+    ud->tout[0] =  0.5;      
+    ud->tout[1] =  1.0;      
+    ud->tout[2] =  1.5;      
+    ud->tout[3] =  2.0;      
+    ud->tout[4] =  2.5;      
+    ud->tout[5] =  3.0;      
     ud->tout[6] = -1.0;
-    /*
-    ud->tout[0] =  3.00 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
-    ud->tout[1] = -1.0;
-     */
-
+    
     ud->stepmax = 10000;
 
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 10;
+	ud->write_file_period = 1000000;
 	ud->file_format = HDF;
 
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */

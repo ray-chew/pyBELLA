@@ -150,6 +150,28 @@ int main( void )
             printf("\nhalf-time prediction of advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
                                                       
+#ifdef FLUX_PREDICTOR_WITH_IMPL_TRAPEZOIDAL
+
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, 0.5*dt);
+            euler_forward_non_advective(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.25*dt, WITH_PRESSURE);
+#ifdef ADVECTION
+            /* advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, 1 ); */
+            advect(Sol, flux, Sol0, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, ud.advec_time_integrator, step%2);
+            // reset_rhoY(Sol, Sol0, elem);
+#endif
+            /* divergence-controlled advective fluxes at the half time level */
+#ifdef NODAL_PROJECTION_ONLY
+            euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.25*dt); 
+            euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.25*dt);
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, 0.5*dt);
+#else /* NODAL_PROJECTION_ONLY */
+            euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.25*dt); 
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, 0.25*dt);
+            flux_correction(flux, Sol, Sol0, elem, node, t, 0.25*dt, step);        
+#endif /* NODAL_PROJECTION_ONLY */
+
+#else /* FLUX_PREDICTOR_WITH_IMPL_TRAPEZOIDAL */
+
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, 0.5*dt);
 #ifdef ADVECTION
             /* advect(Sol, flux, force, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, 1 ); */
@@ -166,6 +188,8 @@ int main( void )
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, 0.5*dt);
             flux_correction(flux, Sol, Sol0, elem, node, t, 0.5*dt, step);        
 #endif /* NODAL_PROJECTION_ONLY */
+
+#endif /* FLUX_PREDICTOR_WITH_IMPL_TRAPEZOIDAL */
             
             ConsVars_set(Sol, Sol0, elem->nc);
 #ifdef NODAL_PROJECTION_ONLY

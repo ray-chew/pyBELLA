@@ -128,8 +128,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 513+1; /* 641; 321; 161; 129; 81; */
-	ud->iny =  64+1; /* 321; 161;  81;  65; 41;  */
+	ud->inx = 257+1; /* 641; 321; 161; 129; 81; */
+	ud->iny = 32+1; /* 321; 161;  81;  65; 41;  */
 	ud->inz =  1;
 	
 	/* explicit predictor step */
@@ -177,12 +177,12 @@ void User_Data_init(User_Data* ud) {
     ud->tout[2] =  9.0;
     ud->tout[3] = -1.0;
         
-    ud->stepmax = 440;
+    ud->stepmax = 5000000;
     
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 10000000;
+	ud->write_file_period = 100000;
 	ud->file_format = HDF;
     
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */

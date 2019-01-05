@@ -388,7 +388,7 @@ void advect(
 {
     extern User_Data ud;    
     
-    if (advec_time_integrator == EXPL_MIDPT || advec_time_integrator == HEUN) {
+    if (advec_time_integrator == EXPL_MIDPT || advec_time_integrator == HEUN) {
         
         printf("\n\n====================================================");
         printf("\nAdvection by explicit midpoint rule, dt = %e", dt);
