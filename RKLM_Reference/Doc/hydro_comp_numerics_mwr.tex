@@ -17,7 +17,7 @@
 \documentclass{ametsoc}
 
 % TWO-COLUMN JOURNAL PAGE LAYOUT---FOR AUTHOR USE ONLY
-% \documentclass[twocol]{ametsoc}
+%\documentclass[twocol]{ametsoc}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% To be entered only if twocol option is used
@@ -225,8 +225,7 @@ Dipartimento di Matematica, Politecnico di Milano, via Bonardi 9, 20133 Milano, 
 %
 % Enter your Abstract here
 
-\abstract{
-We introduce a conservative and second-order accurate numerical scheme for atmospheric motions at small to planetary scales. The finite volume model uses time steps constrained by the advection speed only and discretises the rotating compressible equations by evolving full variables without writing  the system in terms of perturbations around a reference state. The algorithm reframes previous work by the authors into a sequence of implicit midpoint, advection, and implicit trapezoidal steps that allows for a time integration unconstrained by the internal gravity wave speed, thereby providing  a gateway towards large-scale simulations. Compared with exisiting approaches, results on a range of benchmarks of nonhydrostatic and hydrostatic-scale dynamics are competitive. We also introduce a planetary-scale inertia-gravity wave test in order to highlight the properties of the scheme. The development is a crucial step towards an all-scale blended multimodel solver for atmospheric dynamics with seamless access to reduced soundproof and hydrostatic dynamics.} 
+\abstract{We introduce a conservative and second-order accurate numerical scheme for atmospheric motions at small to planetary scales. The finite volume model uses time steps constrained by the advection speed only and discretises the rotating compressible equations by evolving full variables without writing the system in terms of perturbations around a reference state. The algorithm reframes previous work by the authors into a sequence of implicit midpoint, advection, and implicit trapezoidal steps that allows for a time integration unconstrained by the internal gravity wave speed. Compared with exisiting approaches, results on a range of benchmarks of nonhydrostatic and hydrostatic-scale dynamics are competitive. The suite includes a new planetary-scale inertia-gravity wave test that highlights the properties of the scheme and its large time step capabilities. The development is a necessary step towards an all-scale blended multimodel solver for atmospheric dynamics with seamless access to reduced soundproof and hydrostatic dynamics.} 
 
 \begin{document}
 
@@ -318,19 +317,25 @@ We introduce a conservative and second-order accurate numerical scheme for atmos
 % Novelty/competitiveness: Two-time level, full variables, no off-centering, conservative (and of what), second-order, advection-explicit.
 % Possible aspects of novelty/discussion are a) Novel combination of functionality b) results quality c) implementation d) speed/scalability (presumably comparable to a DG code but without the high-order capabilities) e) flexibility towards encapsulating different equation sets/ outlook for blending, data assimilation.
 
-Drawing on the finite volume framework for soundproof model equations in \cite{KleinTCFD2009}, the authors of \cite{BenacchioEtAl2014} devised a numerical scheme for the compressible Euler equations using a time step unconstrained by the speed of acoustic waves. Good performance was demonstrated against established benchmarks of small to mesoscale atmospheric dynamics. In addition, the scheme was written as a multimodel formulation able to switch between soundproof and compressible dynamics by tuning a single parameter. The technology proved beneficial in damping sound waves spreading from unbalanced initial potential temperature data in runs with rising thermals. The framework was theoretically extended in  \cite{KleinBenacchio2016} to encompass the hydrostatic primitive equations and the anelastic, quasi-hydrostatic system of \cite{ArakawaKonor2009} with the introduction of a second blending parameter.
+A significant challenge in the dynamical description and forecast of weather and climate lies in the inherent multiscale nature of atmospheric flows. Driven by stratification and rotation, physical processes arise around a large-scale state of horizontal geostrophic, vertical hydrostatic balance. The compressible Euler equations are deemed the most comprehensive model to describe the system, and allow for wavelike solutions in the form of buoyancy-driven (internal gravity waves) and pressure-driven (sound waves) adjustments.  On the other hand, meteorologically relevant features such as cyclones and anticyclones in the midlatitudes move at speeds much lower than that of sound, thus forcing numerical stiffness into discretizations of the compressible model in the low Mach number regime. As a result, most if not all numerical schemes used in operational weather forecasting employ varying degrees of implicitness that enable stable runs with long time step sizes unconstrained by sound speed (see \cite{BenacchioEtAl2014} and references therein for a list). Semi-implicit approaches integrate transport explicitly then build an elliptic problem for the pressure variable by combining of the equations of the discrete system. The solution of the problem yields updates that are then replaced into the other variables. 
 
-A major hurdle towards joining the numerical scheme of \cite{BenacchioEtAl2014} with the theoretical setup of \cite{KleinBenacchio2016} is the former's time step dependency on the speed of internal gravity waves. This places and unacceptable constraint to the applicability of the numerical method to large-scale tests. By reframing the schemes of \cite{KleinTCFD2009} and \cite{BenacchioEtAl2014} as an explicit-then-implicit system, this paper proposes a discretisation that:
+Examples of operational dynamical cores using semi-implicit time-integrations strategies are the ECMWF\footnote{European Centre for Medium-Range Weather Forecasts}'s IFS (\cite{Hortal2002}, that discretizes the hydrostatic primitive equations, and the UK Met Office's ENDGame \citep{WoodEtAl2013, BenacchioWood2016}. In particular, ENDGame  uses a double-loop structure in the implicit solver entailing four solves per time step in its operational incarnation, a strategy carried over in recent developments \citep{MelvinEtAl2018}, and allowing non-operational configurations to run stably and second-order accurately without additional numerical damping (for operational forecasts, a small amount of off-centering is usually employed for safety reasons). By contrast, most semi-implicit or time-split explicit discretizations resort to off-centering, divergence damping \citep{BryanFritsch2002}, or otherwise artificial diffusion in order to quell numerical instabilities. In non-operational research, the models of \cite{WellerShahrokhi2014} and \cite{DumbserEtAl2018}, among others, feature buoyancy- and acoustic-implicit second-order finite volume discretisations on staggered grids. The former also uses perturbations around a reference state, that are a recurrent feature of operational and research models in the field \citep[e.g.][]{RestelliGiraldo2009,WoodEtAl2013,SmolarkiewiczEtAl2014,SmolarkiewiczEtAl2019}.
+
+In order to address the efficiency issues caused by spectral transform in IFS at increasing global resolutions, a finite volume discretization is also used in FVM, the next generation ECMWF dynamical core \citep{KuehnleinEtAl2018}. The time integration algorithm in FVM is built upon the EULAG model framework and the MPDATA advection scheme. Through appropriate correction of a first-order upwind discretization, a system is constructed that encompasses transport and implicit dynamics in an elegant theoretical framework \citep[and references therein]{SmolarkiewiczEtAl2014, SmolarkiewiczEtAl2016}. The approach, that relies on extrapolation and subtraction of reference states, also contains soundproof analytical systems as subcases and has shown excellent performance in integrating atmospheric flows at all scales without instabilities.
+
+Drawing on the finite volume framework for soundproof model equations in \cite{KleinTCFD2009}, the authors of \cite{Benacchio2014, BenacchioEtAl2014} devised a numerical scheme for the compressible Euler equations using a time step unconstrained by the speed of acoustic waves. Good performance was demonstrated against established benchmarks of small to mesoscale atmospheric dynamics. In addition, the scheme was written as a multimodel formulation able to switch between soundproof and compressible dynamics by tuning a single parameter. The technology proved beneficial in damping sound waves spreading from unbalanced initial potential temperature data in runs with rising thermals. The framework was theoretically extended in  \cite{KleinBenacchio2016} to incorporate the hydrostatic primitive equations and the anelastic, quasi-hydrostatic system of \cite{ArakawaKonor2009} with the introduction of a second blending parameter.
+
+A major hurdle towards joining the numerical scheme of \cite{BenacchioEtAl2014} with the theoretical setup of \cite{KleinBenacchio2016} is the former's time step dependency on the speed of internal gravity waves. This places a severe constraint on the applicability of the numerical method to large-scale tests. By reframing the schemes of \cite{KleinTCFD2009} and \cite{BenacchioEtAl2014} as a two-stage-implicit plus transport system, this paper proposes a discretisation that:
 %
 \begin{itemize}
- \item Evolves the full compressible equations with rotation in terms of full variables rather than perturbations around an externally prescribed or evolving background state -- perturbations for the inverse potential temperature are only used to build the gravity-implicit elliptic problem;
+\item Evolves the compressible equations with rotation in terms of full variables -- perturbations for the inverse potential temperature are only used to build the gravity-implicit elliptic problem;
 \item Has built-in conservation and is second-order accurate throughout, without artificial damping mechanisms;
 \item Uses a time step constrained only by the underlying advection speed;
 \item Can be run in soundproof mode and hydrostatic mode without modifying the numerics;
 \item Provides a milestone towards a complete multiscale formulation incorporating hydrostasy and geostrophy.  
 \end{itemize}
 
-The model uses a MUSCLE scheme for an advection step that yields second-order values for the variables at the new time step. Pressure and momenta are corrected by solving two elliptic problems in a similar way to previous work by the authors. The scheme is validated on a nonrotating vortex test and Cartesian benchmarks of nonhydrostatic and hydrostatic dynamics. Simulations of  inertia-gravity wave tests at large-scale and with rotation show competitive performance with existing approaches. In particular, a new planetary-scale extension of the classical test of \cite{SkamarockKlemp1994} poignantly shows the large time step capabilities of the present scheme.
+The model uses a MUSCLE scheme for an advection step that yields second-order values for the variables at the new time step. Pressure and momenta are corrected by solving two elliptic problems embedded in the implicit midpoint and implicit trapezoidal stages. The scheme is validated on a nonrotating vortex test and Cartesian benchmarks of nonhydrostatic and hydrostatic dynamics. Simulations of  inertia-gravity wave tests at large-scale and with rotation show competitive performance with existing approaches. In particular, a new planetary-scale extension of the hydrostatic-scale test of \cite{SkamarockKlemp1994} showcases the large time step capabilities of the present scheme.
 
 The paper is organized as follows. Section \ref{sec:GoverningEquations} contains the governing equations that are discretized with the methodology summarised in Section \ref{sec:TimeDiscretizationSummary}. Section \ref{sec:Results} documents the performance of the code on the abovementioned tests. Results are discussed and conclusions drawn in section \ref{sec:Conclusions}. An Appendix contains further algorithmic details for the interested reader.
 
@@ -352,7 +357,7 @@ may be written as
       \IEEEyesnumber\IEEEyessubnumber*\label{eq:EulerMass}\\[5pt]
 \dss (\rho\vu)_t + \nabla_\parallel\cdot(\rho \vu\circ\vu) + (\rho w \vu)_z 
   & = 
-    & \dss - \left( c_p  P \nabla_\parallel \pi + f(y) \vk \times \rho\vu \right)
+    & \dss - \left[ c_p  P \nabla_\parallel \pi + f(y) \vk \times \rho\vu \right]
       \label{eq:EulerHorMom}\\[5pt]
 \dss (\rho w)_t + \nabla_\parallel\cdot(\rho \vu w) + (\rho w^2)_z 
   & = 
@@ -460,7 +465,7 @@ Using this interpretation consistently throughout the equation system we obtain,
   & + 
     & \dss \nabla_\parallel\cdot(P\vu\circ\chi\vu) + (Pw\, \chi\vu)_z  \hfil
       & = 
-        & \dss - \left( c_p P\nabla_\parallel \pi + f(y) \vk\times\rho\vu\right)
+        & \dss - \left[ c_p P\nabla_\parallel \pi + f(y) \vk\times\rho\vu\right]
           \label{eq:EulerPHorMom}\\[5pt]
 \dss (\rho w)_t 
   & + 
@@ -505,13 +510,13 @@ with hydrostatically balanced background variables
 %
 
 Since $P$ can be expressed as a function of $\pi$ alone according to
-\eq{eq:EOSpiP} and as $\pibar$ is time independent across a time step, 
+\eq{eq:EOSpiP}, and since $\pibar$ is time independent across a time step, 
 the perturbation Exner pressure satisfies
 %
 \begin{equation}\label{eq:EulerPiPrime}
 \left(\frac{\partial P}{\partial \pi}\right) \piprime_t
 = 
-- \nabla\cdot (P(\pi)\vv)\,,
+- \nabla\cdot \left[P(\pi)\vv\right]\,,
 \end{equation}
 %
 which is a direct consequence of \eq{eq:EulerPP}.
@@ -742,6 +747,8 @@ We note that both our treatment of the $P$ in \eq{eq:HalfTimePredictorAdvection}
 
 \subsection{Density current}
 
+\cite{StrakaEtAl1993}
+
 \subsection{Inertia-gravity wave} 
 
 Inertia-gravity wave of \cite{SkamarockKlemp1994}, non-hydrostatic, hydrostatic, and (NEW) planetary scale
@@ -756,106 +763,104 @@ Inertia-gravity wave of \cite{SkamarockKlemp1994}, non-hydrostatic, hydrostatic,
 
 \cite{BaldaufBrdar2013}
 
-Discussing the effects of such a reduction to first order 
-accuracy in the predictor step in section~\ref{sec:Results} below.
+%Discussing the effects of such a reduction to first order 
+%accuracy in the predictor step in section~\ref{sec:Results} below.
 
 \section{Discussion and conclusion}
-\label{sec:Conclusions}
+\label{sec:Conclusions}	
 
 This paper extended a semi-implicit numerical model for the simulation of atmospheric flows to a scheme with time step unconstrained by the internal wave speed and without the use of a background state. The conservative, second-order accurate finite volume discretisation of the rotating compressible equations evolves cell-centered variables through a three-stage procedure, made of an implicit midpoint rule step, an advection step, and an implicit trapezoidal step. By design the model agrees with the pseudo-incompressible system in the small-scale limit and the hydrostatic system at the large scale limit.
 
 The scheme was validated on a vortex test and then applied to a suite of benchmarks of atmospheric dynamics at different scales. In particular, runs of the inertia-gravity wave tests of \cite{BaldaufBrdar2013} and \cite{SkamarockKlemp1994} at planetary scale exposed the large time step capability of the devised numerics. The authors are unaware of published attempts to run the latter test at this scale. The solution quality in terms of accuracy and convergence is competitive with existing approaches.
 
-The results presented suggest several avenues of development in a number of areas. First, the scheme can be bolted onto the multimodel theoretical framework of \cite{KleinBenacchio2016} to achieve balanced initialization and data assimilation at all scales. As proposed by \cite{BenacchioEtAl2014}, such a multimodel discretization could be run with reduced dynamics during the first time steps after setup or assimilation, then resorting to the fully compressible model for the transient sections. The development in the present work yields hydrostasy and geostrophy at large scale as well as incompressibility at small scale as the accessible asymptotic dynamics in the blended scheme. The discretization could then be applied to run tests on the sphere, with the ultimate aim of comparing with existing schemes used in numerical weather prediction, starting with the FVM dynamical core \citep{KuehnleinEtAl2018}, which shares some numerical aspects with the model presented here. With a view to exascale architecture and beyond, the computational power should be at disposal to use such a model for a flexible balanced runs in an operational context.
+The results presented suggest several avenues of development in a number of areas. First, the scheme can be bolted on to the multimodel theoretical framework of \cite{KleinBenacchio2016} to achieve balanced initialization and data assimilation at all scales. As proposed by \cite{BenacchioEtAl2014}, such a multimodel discretization could be run with reduced dynamics during the first time steps after setup or assimilation, then resorting to the fully compressible model for the transient sections. The development in the present work yields hydrostasy and geostrophy at large scale as well as incompressibility at small scale as the accessible asymptotic dynamics in the blended scheme. The discretization could then be applied to run tests in spherical geometry, with the ultimate aim of comparing with existing schemes used in numerical weather prediction, starting with the FVM dynamical core \citep{KuehnleinEtAl2018}, which shares some numerical aspects with the model presented here. With a view to exascale architecture and beyond, the computational power should be at disposal to use such a model for a flexible balanced runs in an operational context.
 
+% \begin{itemize}
+% 
+% \item Many similarities with EULAG/FVM. This is not a coincidence as the latter served as a reference for the present developments owing to its impressive stability features and accuracy for realistic applications, competitive with even a pseudo-spectral scheme as demonstrated recently by \citet{KuehnleinEtAl2018}. There are differences, however, and we discuss these in the conclusions section~\ref{sec:Conclusions} below.
+% 
+%   \begin{itemize}
+%   \item Primary updates on full, not perturbation, variables
+%   \item Re-synchronization of perturbation variables after each time step
+%   \item \red{Clear concept for achieving second-order accuracy(?)} \benacchio{Agreed, this should be done, perhaps even as a formal proof depending on the journal chosen. \klein{\bfseries Also, there 
+%   is such an analysis in quite some detail for EULAG's time integrator. So, this would not be
+%   new. }}
+%   \item Advection based on $P$-fluxes
+%   \item \blue{Identification of handles for model blending(?)}
+%   \end{itemize}
+% 
+% 
+% 
+% \item differences to Hilary's scheme \cite{WellerShahrokhi2014}, who use
+% \begin{itemize}
+% \item covariant (``tangent on faces'') components of velocity
+% \item curl-free pressure gradients, no spurious source of vorticity. 
+% \item Lorenz C grid (staggered), non off-centred. 
+% \item Two loop of the solver. 
+% \end{itemize}
+% 
+% \item differences to ENDGAME, GUNGHO \cite{WoodEtAl2013}, \cite{BenacchioWood2016}, \cite{MelvinEtAl2018}, who use
+% 
+% \begin{itemize}
+% \item advective/vector-invariant form
+% \item non off-centred, incremental form
+% \item GungHo: mixed FEM, mass matrices in implicit system
+% \item Double outer-inner loop for solver, 4 solves
+% \item Reference state is state at previous time level.
+% \item Endgame: semi-Lagrangian advection
+% \item Gungho: finite-volume advection (method of lines, then flux-form semi-Lagrangian, COSMIC)
+% \end{itemize}
+% 
+% \item differences to George Bryan's model \cite {BryanFritsch2002}
+% \begin{itemize}
+% \item split-explicit
+% \item divergence damping
+% \end{itemize}
+% 
+% \item differences to COSMO, ICON \cite{BaldaufEtAl2011},\cite{ZaenglEtAl2015}. ICON has:
+% \begin{itemize}
+% \item Triangular C-grid
+% \item Time-explicit except vertical sound waves
+% \item Divergence operator first-order accurate
+% \item Flux form, vector invariant momentum equation. 
+% \item Thermodynamic equation in terms of Exner
+% \end{itemize}
+% 
+% \item differences to ASAM, \cite{JaehnEtAl2015}, who have:
+% \begin{itemize}
+% \item linearly implicit, Rosenbrock-W method;
+% \item implicit both for advection and wave part;
+% \item Two-way splitting of Jacobian.
+% \end{itemize}
+% 
+% 
+% \item differences to Michael Dumbser's approach, \cite{DumbserEtAl2018}, who have:
+% \begin{itemize}
+% \item Convective (explicit) subsystem;
+% \item Semi-implicit pressure subsystem on staggered grid;
+% \item Locally and globally conservative for mass momentum and total energy.
+% \end{itemize}
+% 
+% \item ECMWF's tests \cite{YessadWedi2011}: could check that in our case as well the errors btw. HPE and NH are lower than errors coming from different discretizations.
+% 
+% \item what else? \klein{\bfseries For psinc we know that
+% there are formulations of the combined pressure+gravity terms one of which uses ordinary pressure, 
+% $p$ (thermodynamically consistent version), while the other uses Exner pressure, and these two
+% are analytically equivalent. Can we pull this off also for the compressible case? If so, that
+% would be great, because we could then claim the momentum balance to be in conservation form, too, 
+% with respect to momentum advection and the pressure flux.}
+% 
+% \end{itemize}
 
-\begin{itemize}
-
-
-\item Many similarities with EULAG/FVM. This is not a coincidence as the latter served as a reference for the present developments owing to its impressive stability features and accuracy for realistic applications, competitive with even a pseudo-spectral scheme as demonstrated recently by \citet{KuehnleinEtAl2018}. There are differences, however, and we discuss these in the conclusions section~\ref{sec:Conclusions} below.
-
-  \begin{itemize}
-  \item Primary updates on full, not perturbation, variables
-  \item Re-synchronization of perturbation variables after each time step
-  \item \red{Clear concept for achieving second-order accuracy(?)} \benacchio{Agreed, this should be done, perhaps even as a formal proof depending on the journal chosen. \klein{\bfseries Also, there 
-  is such an analysis in quite some detail for EULAG's time integrator. So, this would not be
-  new. }}
-  \item Advection based on $P$-fluxes
-  \item \blue{Identification of handles for model blending(?)}
-  \end{itemize}
-
-
-
-\item differences to Hilary's scheme \cite{WellerShahrokhi2014}, who use
-\begin{itemize}
-\item covariant (``tangent on faces'') components of velocity
-\item curl-free pressure gradients, no spurious source of vorticity. 
-\item Lorenz C grid (staggered), non off-centred. 
-\item Two loop of the solver. 
-\end{itemize}
-
-\item differences to ENDGAME, GUNGHO \cite{WoodEtAl2013}, \cite{BenacchioWood2016}, \cite{MelvinEtAl2018}, who use
-
-\begin{itemize}
-\item advective/vector-invariant form
-\item non off-centred, incremental form
-\item GungHo: mixed FEM, mass matrices in implicit system
-\item Double outer-inner loop for solver, 4 solves
-\item Reference state is state at previous time level.
-\item Endgame: semi-Lagrangian advection
-\item Gungho: finite-volume advection (method of lines, then flux-form semi-Lagrangian, COSMIC)
-\end{itemize}
-
-\item differences to George Bryan's model \cite {BryanFritsch2002}
-\begin{itemize}
-\item split-explicit
-\item divergence damping
-\end{itemize}
-
-\item differences to COSMO, ICON \cite{BaldaufEtAl2011},\cite{ZaenglEtAl2015}. ICON has:
-\begin{itemize}
-\item Triangular C-grid
-\item Time-explicit except vertical sound waves
-\item Divergence operator first-order accurate
-\item Flux form, vector invariant momentum equation.
-\item Thermodynamic equation in terms of Exner
-\end{itemize}
-
-\item differences to ASAM, \cite{JaehnEtAl2015}, who have:
-\begin{itemize}
-\item linearly implicit, Rosenbrock-W method;
-\item implicit both for advection and wave part;
-\item Two-way splitting of Jacobian.
-\end{itemize}
-
-
-\item differences to Michael Dumbser's approach, \cite{DumbserEtAl2018}, who have:
-\begin{itemize}
-\item Convective (explicit) subsystem;
-\item Semi-implicit pressure subsystem on staggered grid;
-\item Locally and globally conservative for mass momentum and total energy.
-\end{itemize}
-
-\item ECMWF's tests \cite{YessadWedi2011}: could check that in our case as well the errors btw. HPE and NH are lower than errors coming from different discretizations.
-
-\item what else? \klein{\bfseries For psinc we know that
-there are formulations of the combined pressure+gravity terms one of which uses ordinary pressure, 
-$p$ (thermodynamically consistent version), while the other uses Exner pressure, and these two
-are analytically equivalent. Can we pull this off also for the compressible case? If so, that
-would be great, because we could then claim the momentum balance to be in conservation form, too, 
-with respect to momentum advection and the pressure flux.}
-
-\end{itemize}
-
-Left for future papers, to be thought about:
-
-\begin{itemize}
- \item Blending as in \cite{KleinBenacchio2016}
- \item Orography implementation
- \item Limiters
- \item Three-dimensional extension
- \item Spherical grids
-\end{itemize}
+% Left for future papers, to be thought about:
+% 
+% \begin{itemize}
+%  \item Blending as in \cite{KleinBenacchio2016}
+%  \item Orography implementation
+%  \item Limiters
+%  \item Three-dimensional extension
+%  \item Spherical grids
+% \end{itemize}
 
 \acknowledgments
 
@@ -1421,7 +1426,7 @@ two and three dimensions, respectively, and corresponds to finite
 volume approximations of the gradient based on bi- and trilinear 
 approximations of the pressure field between cell centers. 
 See \citep{Sueli1991} for related numerical analysis and
-\citep{VaterKleinTCFD2009,KleinTCFD2009,BenacchioEtAl2014} for our
+\citep{VaterKlein2009,KleinTCFD2009,BenacchioEtAl2014} for our
 earlier experiences with this approach. Results presented in this paper
 are based on \eq{eq:NinePointStencilI}, \eq{eq:NinePointStencilII}.
 
@@ -1436,8 +1441,7 @@ directly at the cell centers.
 
 % ===========================================================================
 
-\subsubsection{Pressure gradient and divergence computation in the generalized sources in 
-\eq{eq:EULAGExplicitEulerStep}, \eq{eq:EULAGImplicitEulerStep}}
+\subsubsection{Pressure gradient and divergence computation in the generalized sources}
 \label{sssec:TrapezoidalRule}
 
 The linearized equations for inclusion of the source terms in
