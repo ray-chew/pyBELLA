@@ -8,7 +8,7 @@
 #define HDFFORMAT  
 
 /* Output options in main.c for debugging;  1 -> output */
-#define OUTPUT_SUBSTEPS 0 /* time step after which detailed output is generated */
+#define OUTPUT_SUBSTEPS 1 /* time step after which detailed output is generated */
 #define OUTPUT_SPLITSTEPS 0
 
 /*
@@ -42,6 +42,9 @@
  #define PRESSURE_RESET
  #define FLUX_PREDICTOR_WITH_IMPL_TRAPEZOIDAL
  */
+#define NODAL_PROJECTION_ONLY
+#define PRESSURE_RESET
+
 
 /* ============================================= 
  Semi-implicit solver options  

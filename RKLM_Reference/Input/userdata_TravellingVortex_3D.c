@@ -65,7 +65,7 @@ void User_Data_init(User_Data* ud) {
 
 	/* Low Mach */
     ud->is_nonhydrostatic = 1;
-    ud->is_compressible   = 0;
+    ud->is_compressible   = 1;
     ud->acoustic_timestep =  0; /* 0;  1; */
 	ud->Msq =  u_ref*u_ref / (R_gas*T_ref); 
 	
@@ -106,10 +106,10 @@ void User_Data_init(User_Data* ud) {
 	ud->hill_length_scale =  99999.9;          /* width    in [h_ref]   */   
 	
 	ud->bdrytype_min[0] = PERIODIC; /* DIRICHLET; */
-	ud->bdrytype_min[1] = PERIODIC; /* SLANTED_WALL; */
+	ud->bdrytype_min[1] = WALL; /* SLANTED_WALL; */
 	ud->bdrytype_min[2] = WALL;
 	ud->bdrytype_max[0] = PERIODIC; /* DIRICHLET; */  
-	ud->bdrytype_max[1] = PERIODIC;  
+	ud->bdrytype_max[1] = WALL;  
 	ud->bdrytype_max[2] = WALL;
 	
 	ud->absorber = WRONG; /* CORRECT; */ 
@@ -122,14 +122,14 @@ void User_Data_init(User_Data* ud) {
     ud->time_integrator       = SI_MIDPT;
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
 	ud->CFL                   = 0.96;       
-    ud->dtfixed0              = 10000.999;
-    ud->dtfixed               = 10000.999;   
+    ud->dtfixed0              = 1.200930e-02;
+    ud->dtfixed               = 1.200930e-02;   
     
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 192+1; /*  */
-	ud->iny = 192+1; /*  */
+	ud->inx = 64+1; /*  */
+	ud->iny = 64+1; /*  */
 	ud->inz =     1;
 
     /* explicit predictor step */
@@ -150,7 +150,7 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  201; /* (ud->inx+3); */
 	
 	/* linear solver-stuff */
-    double tol = 1.e-10;
+    double tol = 1.e-12;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -185,7 +185,7 @@ void User_Data_init(User_Data* ud) {
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 1000000;
+	ud->write_file_period = 1;
 	ud->file_format = HDF;
 
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
@@ -216,7 +216,7 @@ void Sol_initial(ConsVars* Sol,
 	const double v0    = 0.0*ud.wind_speed;
 	const double w0    = 0.0;
     
-    const double rotdir = -1.0;  /* the origin of the March 24 - trouble ... ;^) */
+    const double rotdir = 1.0;  /* the origin of the March 24 - trouble ... ;^) */
     
     const double p0      = 1.0;
     const double rho0    = 0.5;  /* 0.5 standard;  1.0 stable configuration; */
@@ -303,6 +303,7 @@ void Sol_initial(ConsVars* Sol,
             for(i = 0; i < icx; i++) {
                 
                 double p2c = 0.0;
+                double dp2c = 0.0;
 
                 n = m + i;                
                 x = elem->x[i];
@@ -338,23 +339,22 @@ void Sol_initial(ConsVars* Sol,
                         rho     =  (r < R0 ? (rho0 + del_rho*pow( 1-(r/R0)*(r/R0) , 6)) : rho0);
                         T       = T_from_p_rho(p_hydro,rho);
                         
+                        dp2c = 0.0;
                         if ( r/R0 < 1.0 ) {
                             for (int ip = 0; ip < 25; ip++)
                             {
-                                p2c += coe[ip] * (pow(r/R0 ,12+ip) - 1.0) * rotdir * rotdir;
+                                dp2c += coe[ip] * (pow(r/R0 ,12+ip) - 1.0) * rotdir * rotdir;
                             }
                         }
-                        else {
-                            p2c += 0.0;
-                        }
-                                                
+                             
+                        p2c += dp2c;
                         Sol->rho[n]  += rho;
                         Sol->rhou[n] += rho * u;
                         Sol->rhov[n] += rho * v;
                         Sol->rhow[n] += rho * w;
                         
                         if (ud.is_compressible) {
-                            double p     = p0 + ud.Msq*mpv->p2_cells[n];
+                            double p     = p0 + ud.Msq*fac*fac*dp2c;
                             Sol->rhoY[n] += pow(p,th.gamminv);
                             Sol->rhoe[n] += rhoe(rho, u, v, w, p);
                         } else {                    
