@@ -107,6 +107,15 @@ void hllestar(
 /*------------------------------------------------------------------------------
  store advective flux
  ------------------------------------------------------------------------------*/
+#define OUTPUT_ADVECTIVE_FLUXES 0
+#if OUTPUT_ADVECTIVE_FLUXES
+#include "io.h"
+#include "memory.h"
+static int flux_output_count = 0;
+#endif
+
+
+
 void recompute_advective_fluxes(ConsVars* flux[3], 
                                 const ConsVars* Sol, 
                                 const ElemSpaceDiscr* elem,
@@ -141,6 +150,113 @@ void recompute_advective_fluxes(ConsVars* flux[3],
 #endif
     
 #ifndef FOURTH_ORDER_ADV_FLUXES
+    
+#ifdef NODAL_PROJECTION_ONLY
+    /* recompute advective flux at fixed time level from cell averages */
+    switch (elem->ndim) {
+        case 1: {
+            for(int i=1; i<elem->icx; i++) {
+                double u_c    = Sol->rhou[i]/Sol->rho[i];
+                double u_m    = Sol->rhou[i-1]/Sol->rho[i-1];
+                double rhoY_c = Sol->rhoY[i];
+                double rhoY_m = Sol->rhoY[i-1];
+                flux[0]->rhoY[i] = 0.5*(u_c*rhoY_c+u_m*rhoY_m);
+            }
+            break;
+        } 
+            
+        case 2: {
+            int icx = elem->icx;
+            int icy = elem->icy;
+            int ifx = elem->ifx;
+            int ify = elem->ify;
+            for (int j=1; j<icy; j++) {
+                int ncj  = j*icx;
+                int nfxj = j*ifx;
+                int nfyj = j;
+                for(int i=1; i<icx; i++) {
+                    int ncij  = ncj  + i;
+                    int nfxij = nfxj + i;
+                    int nfyij = nfyj + i*ify;
+                    
+                    double rhoYu_cm     = Sol->rhoY[ncij-icx]   * Sol->rhou[ncij-icx]/Sol->rho[ncij-icx];
+                    double rhoYu_mm     = Sol->rhoY[ncij-1-icx] * Sol->rhou[ncij-1-icx]/Sol->rho[ncij-1-icx];
+                    double rhoYu_cc     = Sol->rhoY[ncij]       * Sol->rhou[ncij]/Sol->rho[ncij];
+                    double rhoYu_mc     = Sol->rhoY[ncij-1]     * Sol->rhou[ncij-1]/Sol->rho[ncij-1];
+                    double rhoYu_cp     = Sol->rhoY[ncij+icx]   * Sol->rhou[ncij+icx]/Sol->rho[ncij+icx];
+                    double rhoYu_mp     = Sol->rhoY[ncij-1+icx] * Sol->rhou[ncij-1+icx]/Sol->rho[ncij-1+icx];
+
+                    double rhoYu_m = 0.5*(rhoYu_cm+rhoYu_mm);
+                    double rhoYu_c = 0.5*(rhoYu_cc+rhoYu_mc);
+                    double rhoYu_p = 0.5*(rhoYu_cp+rhoYu_mp);
+                    
+                    flux[0]->rhoY[nfxij] = 0.25*(rhoYu_m + 2.0*rhoYu_c + rhoYu_p);
+
+                    double rhoYv_cm     = Sol->rhoY[ncij-1]     * Sol->rhov[ncij-1]/Sol->rho[ncij-1];
+                    double rhoYv_mm     = Sol->rhoY[ncij-icx-1] * Sol->rhov[ncij-icx-1]/Sol->rho[ncij-icx-1];
+                    double rhoYv_cc     = Sol->rhoY[ncij]       * Sol->rhov[ncij]/Sol->rho[ncij];
+                    double rhoYv_mc     = Sol->rhoY[ncij-icx]   * Sol->rhov[ncij-icx]/Sol->rho[ncij-icx];
+                    double rhoYv_cp     = Sol->rhoY[ncij+1]     * Sol->rhov[ncij+1]/Sol->rho[ncij+1];
+                    double rhoYv_mp     = Sol->rhoY[ncij-icx+1] * Sol->rhov[ncij-icx+1]/Sol->rho[ncij-icx+1];
+                    
+                    double rhoYv_m = 0.5*(rhoYv_cm+rhoYv_mm);
+                    double rhoYv_c = 0.5*(rhoYv_cc+rhoYv_mc);
+                    double rhoYv_p = 0.5*(rhoYv_cp+rhoYv_mp);
+                    
+                    flux[1]->rhoY[nfyij] = 0.25*(rhoYv_m + 2.0*rhoYv_c + rhoYv_p);
+                }
+            }
+            
+            break;
+        }
+            
+        case 3: {
+            assert(0);  /* 3D variant of NODAL_PROJECTION_ONLY not yet implemented */
+            int icx = elem->icx;
+            int icy = elem->icy;
+            int icz = elem->icz;
+            int ifx = elem->ifx;
+            int ify = elem->ify;
+            int ifz = elem->ifz;
+            for (int k=1; k<icz; k++) {
+                int nck  = k*icx*icy;
+                int nfxk = k*ifx*icy;
+                int nfyk = k*ify;
+                int nfzk = k;
+                for (int j=1; j<icy; j++) {
+                    int ncjk  = nck  + j*icx;
+                    int nfxjk = nfxk + j*ifx;
+                    int nfyjk = nfyk + j;
+                    int nfzjk = nfzk + j*ifz*icx;
+                    for(int i=1; i<icx; i++) {
+                        int ncijk  = ncjk  + i;
+                        int nfxijk = nfxjk + i;
+                        int nfyijk = nfyjk + i*ify*icz;
+                        int nfzijk = nfzjk + i*ifz;
+                        
+                        double u_c     = Sol->rhou[ncijk]/Sol->rho[ncijk];
+                        double u_m     = Sol->rhou[ncijk-1]/Sol->rho[ncijk-1];
+                        double rhoY_c  = Sol->rhoY[ncijk];
+                        double rhoY_mx = Sol->rhoY[ncijk-1];
+                        
+                        double v_c     = Sol->rhov[ncijk]/Sol->rho[ncijk];
+                        double v_m     = Sol->rhov[ncijk-icx]/Sol->rho[ncijk-icx];
+                        double rhoY_my = Sol->rhoY[ncijk-icx];
+                        
+                        double w_c     = Sol->rhow[ncijk]/Sol->rho[ncijk];
+                        double w_m     = Sol->rhow[ncijk-icx*icy]/Sol->rho[ncijk-icx*icy];
+                        double rhoY_mz = Sol->rhoY[ncijk-icx*icy];
+                        
+                        flux[0]->rhoY[nfxijk] = 0.25*(u_c+u_m)*(rhoY_c+rhoY_mx);
+                        flux[1]->rhoY[nfyijk] = 0.25*(v_c+v_m)*(rhoY_c+rhoY_my);
+                        flux[2]->rhoY[nfzijk] = 0.25*(w_c+w_m)*(rhoY_c+rhoY_mz);
+                    }
+                }
+            }
+            break;
+        }
+    }
+#else /* NODAL_PROJECTION_ONLY */
     /* recompute advective flux at fixed time level from cell averages */
     switch (elem->ndim) {
         case 1: {
@@ -271,6 +387,7 @@ void recompute_advective_fluxes(ConsVars* flux[3],
             break;
         }
     }
+#endif /* NODAL_PROJECTION_ONLY */
 #else /* FOURTH_ORDER_ADV_FLUXES */ 
     
     /* TODO: 
@@ -395,7 +512,29 @@ void recompute_advective_fluxes(ConsVars* flux[3],
             }
         }
     }
-    
 #endif /* FOURTH_ORDER_ADV_FLUXES */ 
+    
+#if OUTPUT_ADVECTIVE_FLUXES
+    extern User_Data ud;
+    FILE *pfluxfile = NULL;
+    char fnx[120], fny[120], fieldname[90];
+    if (flux_output_count < 10) {
+        sprintf(fnx, "%s/flux_x/flux_x_00%d.hdf", ud.file_name, flux_output_count);
+        sprintf(fny, "%s/flux_y/flux_y_00%d.hdf", ud.file_name, flux_output_count);
+    } else if(flux_output_count < 100) {
+        sprintf(fnx, "%s/flux_x/flux_x_0%d.hdf", ud.file_name, flux_output_count);
+        sprintf(fny, "%s/flux_y/flux_y_0%d.hdf", ud.file_name, flux_output_count);
+    } else {
+        sprintf(fnx, "%s/flux_x/flux_x_%d.hdf", ud.file_name, flux_output_count);
+        sprintf(fny, "%s/flux_y/flux_y_%d.hdf", ud.file_name, flux_output_count);
+    }
+    sprintf(fieldname, "flux_x");    
+    WriteHDF(pfluxfile, elem->ifx, elem->icy, elem->icz, elem->ndim, flux[0]->rhoY, fnx, fieldname);
+    sprintf(fieldname, "flux_y");   
+    WriteHDF(pfluxfile, elem->ify, elem->icx, elem->icz, elem->ndim, flux[1]->rhoY, fny, fieldname);
+    
+    flux_output_count++;
+#endif
+
 }
 

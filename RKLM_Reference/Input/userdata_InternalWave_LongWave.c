@@ -127,11 +127,12 @@ void User_Data_init(User_Data* ud) {
     /* ================================================================================== */
     
     /* time discretization */
-    ud->time_integrator        = SI_MIDPT; /* this code version has only one option */
-    ud->CFL                    = 0.9; /* 0.45; 0.9; 0.8; */
+    ud->time_integrator       = SI_MIDPT;  /* this code version has only one option */
+    ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
+    ud->CFL                   = 0.9; /* 0.45; 0.9; 0.8; */
     /* large time step test variant  (N*dt = 20.0, or  dt = 2000 s in the planetary IGW test) */
-    ud->dtfixed0               = 0.05*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
-    ud->dtfixed                = 0.05*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed0              = 0.05*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed               = 0.05*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
      
      
     /* short time step test variant  (N*dt = 1.0, or  dt = 100 s in the planetary IGW test) 

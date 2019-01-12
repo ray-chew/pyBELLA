@@ -67,7 +67,8 @@ void recovery(States* Lefts,
     const double gamm   = th.gamm;
     const double lambda = (muscl_on_off == 1 ? lambda_input : 0.0);
     
-    int OrderTwo  = ((ud.recovery_order == SECOND && muscl_on_off) ? 1 : 0);
+    /* int OrderTwo  = ((ud.recovery_order == SECOND && muscl_on_off) ? 1 : 0); */
+    int OrderTwo  = 1;
     
     const double internal_flux = (adv_fluxes_from == FLUX_INTERNAL ? 1.0 : 0.0);
     
@@ -88,17 +89,21 @@ void recovery(States* Lefts,
     }
     
 	/* differences of primitive quantities */
-	for( i = 0; i < nmax - 1;  i++) {      
+	for( i = 0; i < nmax - 1;  i++) {     
+#ifdef LIMIT_PLAIN_PRIMITIVES
+        double Yrinv = 1.0;
+        double Ylinv = 1.0;
+#else
 		double Yrinv = 1.0/Sol->Y[i+1];
 		double Ylinv = 1.0/Sol->Y[i];
-		
+#endif	
 		Diffs->u[i] =  Sol->u[i+1]*Yrinv - Sol->u[i]*Ylinv;
 		Diffs->v[i] =  Sol->v[i+1]*Yrinv - Sol->v[i]*Ylinv;
 		Diffs->w[i] =  Sol->w[i+1]*Yrinv - Sol->w[i]*Ylinv;
         for (nsp = 0; nsp < ud.nspec; nsp++) {
             Diffs->X[nsp][i] =  Sol->X[nsp][i+1]*Yrinv - Sol->X[nsp][i]*Ylinv;
         }
-		Diffs->Y[i] =  Yrinv - Ylinv;
+		Diffs->Y[i] =  1.0/Sol->Y[i+1] - 1.0/Sol->Y[i];
     }
     
 	/* Projection on right eigenvectors */
@@ -123,16 +128,20 @@ void recovery(States* Lefts,
 	}
 	
 	for( i = 1; i < nmax-1; i++ ) {
+#ifdef LIMIT_PLAIN_PRIMITIVES
+        double S     = 1.0;
+        double Yleft = 1.0;
+#else
 		double S  = 1.0/Sol->Y[i];
 		double Yleft = 1.0 / (S + OrderTwo * Ampls->Y[i]);
-		
+#endif	
 		Lefts->u[i]   = (Sol->u[i]*S   + OrderTwo * Ampls->entro[i]) * Yleft;
 		Lefts->v[i]   = (Sol->v[i]*S   + OrderTwo * Ampls->v[i]) * Yleft;
 		Lefts->w[i]   = (Sol->w[i]*S   + OrderTwo * Ampls->w[i]) * Yleft;
         for (nsp = 0; nsp < ud.nspec; nsp++) {
             Lefts->X[nsp][i]   = (Sol->X[nsp][i]*S   + OrderTwo * Ampls->X[nsp][i]) * Yleft;
         }                                
-		Lefts->Y[i]   = Yleft;
+		Lefts->Y[i]   = 1.0 / (1.0/Sol->Y[i] + OrderTwo * Ampls->Y[i]);
 	}
     
 	/* left edge states inside cells = right states at cell interfaces */
@@ -154,16 +163,20 @@ void recovery(States* Lefts,
 	}
 	
 	for( i = 1; i < nmax-1; i++ ) {
-		double S   = 1.0/Sol->Y[i];
+#ifdef LIMIT_PLAIN_PRIMITIVES
+        double S      = 1.0;
+        double Yright = 1.0;
+#else
+        double S   = 1.0/Sol->Y[i];
 		double Yright = 1.0 / (S + OrderTwo * Ampls->Y[i]);
-		
+#endif	
 		Rights->u[i]   = (Sol->u[i]*S   + OrderTwo * Ampls->entro[i]) * Yright;
 		Rights->v[i]   = (Sol->v[i]*S   + OrderTwo * Ampls->v[i]) * Yright;
 		Rights->w[i]   = (Sol->w[i]*S   + OrderTwo * Ampls->w[i]) * Yright;
         for (nsp = 0; nsp < ud.nspec; nsp++) {
             Rights->X[nsp][i]   = (Sol->X[nsp][i]*S   + OrderTwo * Ampls->X[nsp][i]) * Yright;
         }                                
-		Rights->Y[i]   = Yright;
+		Rights->Y[i]   = 1.0 / (1.0/Sol->Y[i] + OrderTwo * Ampls->Y[i]);
 	}
 	    
     for( i = 0; i < nmax-1;  i++) {        

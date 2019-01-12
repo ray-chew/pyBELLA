@@ -35,7 +35,7 @@ show_increments = 0;
 symmetry = 0;        % in {0,1}
 symmetrytest = 0;
 showdummycells = 0;
-showslice = 42;
+showslice = 33;
 diff_rel_to_bottom = 0;
 
 % th0 = -0.0015/300;
@@ -48,13 +48,13 @@ contour_values = 10.0*[-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0,
 title_true = 1;
 
 kmin = 0;
-kmax = 601; % max number of plots for safety
-dk   = 1; % second step
+kmax = 601;
+dk   = 1;
 
 if strcmp(test_case, 'Baldaufs-Internal-Wave-Tests')
     scalefactor = 20.0;
-    ncx = 1201; 
-    ncy = 80;  
+    ncx = 1201; % 301; 
+    ncy =  80;  %  20;  
     L   = scalefactor*300.0;  % [km] 
     x0  = 0.0;
     H   = 10.0;               % [km]     
@@ -99,23 +99,34 @@ elseif strcmp(test_case, 'Rising-Bubble')
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Travelling-Vortex')
-    ncx = 64;  
-    ncy = 64; 
+    ncx = 192;  
+    ncy = 192; 
+    L   = 1.0;  
+    x0  = 0.5;
+    H   = 1.0; 
+    aspect = [2 2 2];
+    velosc = 1; 
+    showslice = floor(ncy/3);
+elseif strcmp(test_case, 'Travelling-Hump')
+    ncx = 20;  
+    ncy = 20; 
     L   = 1.0;  
     x0  = 0.5;
     H   = 1.0; 
     aspect = [2 2 2];
     velosc = 100;  % velocity unit of RKLM code
+    showslice = ncy/2;
 elseif strcmp(test_case, 'Straka')
-    ncx = 512;  
-    ncy = 64;  
-    L  = 52.2;  % 
+    ncx = 257;  
+    ncy = 32;  
+    L  = 51.2;  % 
     x0 = 0.0*L;
     H  = 6.4;  %
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
     dtheta = 1.0/300.0;
     contour_values = linspace(-16.5*dtheta,-0.5*dtheta,16);
+    showslice = floor(ncy/3);
 elseif strcmp(test_case, 'Smolarkiewicz-Margolin-Breaking-Wave')
     ncx = 240;  
     ncy = 120;  
@@ -170,6 +181,7 @@ varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = 
 %varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
 %varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy];
+%varstr = 'vortz';  folderstr = 'vortz'; titlestr = 'vortz'; ndummy = 2; arraysize = [nnx nny]; filledcontours = 1; fixed_contours = 0;
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qc';  folderstr = 'qc'; titlestr = 'qc'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qr';  folderstr = 'qr'; titlestr = 'qr'; ndummy = 2; arraysize = [ncx ncy];
@@ -190,8 +202,8 @@ varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = 
 %varstr = 'rhs_nodes_prec';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n_prec';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'lap_nodes';  folderstr = 'lap_nodes'; titlestr = 'lap_n';    ndummy = 2; arraysize = [nnx nny];
 
-%varstr = 'advflux_x';  folderstr = 'advflux'; titlestr = 'advflux_x'; ndummy = 2; arraysize = [ncx+1 ncy]; symmetry = -1*symmetry;
-%varstr = 'advflux_y';  folderstr = 'advflux'; titlestr = 'advflux_y'; ndummy = 2; arraysize = [ncy+1 ncx]; symmetry = -1*symmetry; transp = 1;
+%varstr = 'flux_x';  folderstr = 'flux_x'; titlestr = 'flux_x'; ndummy = 2; arraysize = [ncx+1 ncy]; symmetry = -1*symmetry;
+%varstr = 'flux_y';  folderstr = 'flux_y'; titlestr = 'flux_y'; ndummy = 2; arraysize = [ncy+1 ncx]; symmetry = -1*symmetry; transp = 1;
 
 
 scrsz = get(0,'ScreenSize');

@@ -39,12 +39,13 @@ void Explicit_free( void );
 void advect(
             ConsVars *Sol, 
             ConsVars* flux[3],
-            double* force[3],
+            const ConsVars *Sol0, 
             const double dt, 
             const ElemSpaceDiscr* elem,
             const enum FluxesFrom adv_fluxes_from, 
             const enum MUSCL_ON_OFF muscl_on_off, 
             const enum No_of_Strang_Sweeps no_of_sweeps,
+            const enum TimeIntegrator advec_time_integrator,
             const int odd);
 
 /*------------------------------------------------------------------------------
@@ -53,7 +54,6 @@ void advect(
 void Explicit_step_and_flux(
                             ConsVars* Sol,
                             ConsVars* flux,
-                            double* force,
                             const double lambda, 
                             const int n, 
                             const int SplitStep,
@@ -94,11 +94,10 @@ void Explicit_step_update(
  Computes updates from full-dimensional flux balances
  ------------------------------------------------------------------------------*/
 void fullD_explicit_updates(ConsVars* Sol, 
-                            ConsVars* Sol0,
-                            ConsVars* flux[3], 
+                            const ConsVars* Sol0,
+                            const ConsVars* flux[3], 
                             const ElemSpaceDiscr* elem, 
-                            const double dt,
-                            const int RK_stage) ;
+                            const double dt) ;
 
 #endif /* EXPLICIT_H */
 

@@ -22,11 +22,8 @@ typedef struct {
     double *p2_cells;    
     double *dp2_cells;    
     double *p2_nodes;
+    double *p2_nodes0;
     double *dp2_nodes;
-
-    double *drhou_cells;
-    double *drhov_cells;
-    double *drhow_cells;
 
     double *rhs;
     double *diaginv;

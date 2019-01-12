@@ -420,6 +420,62 @@ void veloz(double *w, const ConsVars* U, const int nstart, const int nende)
     }
 }
 
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
+void vortz(double *vortz, 
+           const ConsVars* U,
+           const ElemSpaceDiscr *elem,
+           const NodeSpaceDiscr *node,
+           const int nstart, 
+           const int nende)
+{   
+    /* z-component of vorticity at the nodes in the z=const slices which
+     themselves are cell-centered in the z-direction; 
+     This will have to be reconsidered in 3D and is meaningless in 1D anyway,
+     of course.
+     */
+    
+    for (int nn=0; nn<node->nc; nn++) vortz[nn] = 0.0;
+    
+    if (elem->ndim != 2) {
+        return;
+    };
+    
+    const int icx = elem->icx;
+    const int icy = elem->icy;
+    const int icz = elem->icz;
+
+    const int igx = elem->igx;
+    const int igy = elem->igy;
+    const int igz = elem->igz;
+
+    const int icxn = node->icx;
+    const int icyn = node->icy;
+    
+    const double dx = elem->dx;
+    const double dy = elem->dy;
+    
+    for(int k = igz; k < icz-igz; k++) {
+        const int le = k*icx*icy;
+        const int ln = k*icxn*icyn;
+        for(int j = igy; j < icy-igy; j++) {
+            const int me = le + j*icx;
+            const int mn = ln + j*icxn;
+            for(int i = igx; i < icx-igx; i++) {
+                const int ne = me + i;
+                const int nn = mn + i;
+                double dvdx = 0.5* (  (U->rhov[ne]/U->rho[ne] - U->rhov[ne-1]/U->rho[ne-1]) 
+                                    + (U->rhov[ne-icx]/U->rho[ne-icx] - U->rhov[ne-icx-1]/U->rho[ne-icx-1]) 
+                                    )/ dx;
+                double dudy = 0.5* (  (U->rhou[ne]/U->rho[ne] - U->rhou[ne-icx]/U->rho[ne-icx]) 
+                                    + (U->rhou[ne-1]/U->rho[ne-1] - U->rhou[ne-1-icx]/U->rho[ne-1-icx]) 
+                                    )/ dy;
+                vortz[nn] = dvdx - dudy;
+            }
+        }
+    }
+}
 
 /*------------------------------------------------------------------------------
  

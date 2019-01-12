@@ -5,9 +5,9 @@
 #include <float.h>
 #include <stdlib.h>
 
-#include "enumerator.h"
 #include "Common.h"
 #include "userdata.h"
+#include "enumerator.h"
 #include "time_discretization.h"
 #include "error.h"
 #include "variable.h"
@@ -19,10 +19,6 @@
 #include "boundary.h"
 #include "memory.h"
 #include "Hydrostatics.h"
-
-double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma);
-
-double rho_function(double psi);
 
 void User_Data_init(User_Data* ud) {
 	
@@ -43,14 +39,13 @@ void User_Data_init(User_Data* ud) {
     double gamma    = 1.4;              /* dimensionless          */
     
     /* references for non-dimensionalization */
-    double h_ref    = 10000;                 /* [m]               */
-    double t_ref    = 100;                   /* [s]               */
+    double h_ref    = 1;                 /* [m]               */
+    double t_ref    = 1;                   /* [s]               */
     double T_ref    = 300.00;                /* [K]               */
     double p_ref    = 10e+5;                 /* [Pa]              */
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
 
-    /* reference stratification as (buoyancy frequency)^2 */
     double Nsq_ref  = 0.0;                   /* [1/s^2]           */
 
     ud->h_ref       = h_ref;
@@ -69,7 +64,8 @@ void User_Data_init(User_Data* ud) {
     ud->nspec       = NSPEC;  
 
 	/* Low Mach */
-    ud->is_compressible = 0;
+    ud->is_nonhydrostatic = 1;
+    ud->is_compressible   = 0;
     ud->acoustic_timestep =  0; /* 0;  1; */
 	ud->Msq =  u_ref*u_ref / (R_gas*T_ref); 
 	
@@ -96,25 +92,25 @@ void User_Data_init(User_Data* ud) {
 	}
     
 	/* flow domain */
-	ud->xmin = - 5000/ud->h_ref;  
-	ud->xmax =   5000/ud->h_ref;  
-	ud->ymin = - 5000/ud->h_ref/8.0;
-	ud->ymax =   5000/ud->h_ref/8.0; 
-	ud->zmin = - 5000/ud->h_ref;
-	ud->zmax =   5000/ud->h_ref;
+	ud->xmin = - 0.5/ud->h_ref;  
+	ud->xmax =   3.5/ud->h_ref;  
+	ud->ymin = - 0.5/ud->h_ref;
+	ud->ymax =   0.5/ud->h_ref; 
+	ud->zmin = - 0.5/ud->h_ref/8.0;
+	ud->zmax =   0.5/ud->h_ref/8.0;
 
 	/* boundary/initial conditions */
-	ud->wind_speed        = 1.0*10.0/ud->u_ref;              /* velocity in [u_ref] */
+	ud->wind_speed        = 1.0*1.0/ud->u_ref;              /* velocity in [u_ref] */
 	ud->wind_shear        = -0.0;              /* velocity in [u_ref/h_ref] */             
 	ud->hill_height       =  0.0;              /* height   in [h_ref]   */ 
 	ud->hill_length_scale =  99999.9;          /* width    in [h_ref]   */   
 	
 	ud->bdrytype_min[0] = PERIODIC; /* DIRICHLET; */
 	ud->bdrytype_min[1] = WALL; /* SLANTED_WALL; */
-	ud->bdrytype_min[2] = PERIODIC;
+	ud->bdrytype_min[2] = WALL;
 	ud->bdrytype_max[0] = PERIODIC; /* DIRICHLET; */  
 	ud->bdrytype_max[1] = WALL;  
-	ud->bdrytype_max[2] = PERIODIC;
+	ud->bdrytype_max[2] = WALL;
 	
 	ud->absorber = WRONG; /* CORRECT; */ 
 	
@@ -123,18 +119,18 @@ void User_Data_init(User_Data* ud) {
 	/* ======================================================================== */
 	
     /* time discretization */
-    ud->time_integrator       = SI_MIDPT;  /* this code version has only one option */
-    ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
-	ud->CFL                   = 1.92;       
+    ud->time_integrator       = SI_MIDPT;
+    ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
+	ud->CFL                   = 0.96;       
     ud->dtfixed0              = 10000.999;
     ud->dtfixed               = 10000.999;   
     
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx =  64+1; /*  */
-	ud->iny =   2+1; /*  */
-	ud->inz =  64+1;
+	ud->inx = 128+1; /*  */
+	ud->iny = 32+1; /*  */
+	ud->inz =   1;
 
     /* explicit predictor step */
 	/* Recovery */
@@ -144,11 +140,11 @@ void User_Data_init(User_Data* ud) {
     /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
         
     /* parameters for SWEBY_MUNZ limiter family */
-    ud->kp = 1.4;
-	ud->kz = 1.4; /* Entro abused for velocity in split-step-aligned velocity ! */
-	ud->km = 1.4;
-	ud->kY = 1.4;
-	ud->kZ = 1.4; /* 2.0 */
+    ud->kp = 0.0; /* 1.4; */
+	ud->kz = 0.0; /* 1.4; */
+	ud->km = 0.0; /* 1.4; */
+	ud->kY = 0.0; /* 1.4; */
+	ud->kZ = 0.0; /* 1.4; */
 	
     /* al explicit predictor operations are done on ncache-size data worms to save memory */ 
 	ud->ncache =  201; /* (ud->inx+3); */
@@ -161,6 +157,14 @@ void User_Data_init(User_Data* ud) {
     ud->second_projection_local_precision = tol;  /* 1.e-05 should be enough */
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
+    
+    ud->initial_projection                = WRONG;   /* to be tested: WRONG;  CORRECT; */
+    ud->initial_impl_Euler                = WRONG;   /* to be tested: WRONG;  CORRECT; */
+    
+    ud->column_preconditioner             = WRONG; /* WRONG; CORRECT; */
+    ud->synchronize_nodal_pressure        = WRONG;   /* WRONG; CORRECT; */
+    ud->synchronize_weight                = 0.0;    /* relevant only when prev. option is "CORRECT"
+                                                     Should ultimately be a function of dt . */  
             
 	/* numerics parameters */
 	ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -168,20 +172,30 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
     /* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
-    
-    ud->tout[0] = 1.0 * (ud->xmax-ud->xmin)/ud->wind_speed;      
+    ud->tout[0] =  0.5;      
+    ud->tout[1] =  1.0;      
+    ud->tout[2] =  1.5;      
+    ud->tout[3] =  2.0;      
+    ud->tout[4] =  2.5;      
+    ud->tout[5] =  3.0;      
+    ud->tout[6] = -1.0;
+    /*
+    ud->tout[0] =  3.00 * (ud->xmax-ud->xmin)/(10.0/ud->u_ref);      
     ud->tout[1] = -1.0;
+     */
 
     ud->stepmax = 10000;
 
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 1;
+	ud->write_file_period = 100000;
 	ud->file_format = HDF;
 
+    ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
+
     {
-        char *OutputBaseFolder      = "/home/benacchio/workspace/RKLM_Reference/";
+        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
@@ -203,24 +217,33 @@ void Sol_initial(ConsVars* Sol,
     extern MPV* mpv;
     
 	const double u0    = 1.0*ud.wind_speed;
-	const double v0    = 0.0;
-	const double w0    = 1.0*ud.wind_speed;
+	const double v0    = 0.0*ud.wind_speed;
+	const double w0    = 0.0;
     
-    const double rotdir = 1.0;
+    const double urot = -1.0;  /* the origin of the March 24 - trouble ... ;^) */
     
-    const double rho0    = 0.5;  /* 0.5 standard;  1.0 stable configuration; */
-    const double del_rho = 0.5;  /* 0.5 standard; -0.5 stable configuration; 0.0; for homentropic */
-    const double R0      = 0.4;
-    const double fac     = 1*1024.0; /* 4*1024.0 */
+    const double p0      = 1.0;
+    const double rho0    = 1.0;  /* 0.5 standard;  1.0 stable configuration; */
+    const double del_rho = 0.0;  /* 0.5 standard; -0.5 stable configuration; 0.0; for homentropic */
+    const double R0      = 0.2;
     const double xc      = 0.0;
-    const double zc      = 0.0;
+    const double yc      = 0.0;
+    
+    const int nhires   = 1;
+    const int nhiressq = nhires*nhires;
     
     /*periodic setting: */
     const double xcm     = xc-(ud.xmax-ud.xmin);
     const double xcp     = xc+(ud.xmax-ud.xmin);
-    const double zcm     = zc-(ud.zmax-ud.zmin);
-    const double zcp     = zc+(ud.zmax-ud.zmin);
+    const double ycm     = yc-(ud.ymax-ud.ymin);
+    const double ycp     = yc+(ud.ymax-ud.ymin);
+    
+    const double dx = elem->dx;
+    const double dy = elem->dy;
 			
+    const double dxx = dx/nhires;
+    const double dyy = dy/nhires;
+    
 	const int icx  = elem->icx;
 	const int icy  = elem->icy;
 	const int icz  = elem->icz;
@@ -228,140 +251,143 @@ void Sol_initial(ConsVars* Sol,
 	const int igy  = elem->igy;
 	const int igz  = elem->igz;
 
+    const int icxn  = node->icx;
+    const int icyn  = node->icy;
+    const int iczn  = node->icz;
+    const int igxn  = node->igx;
+    const int igyn  = node->igy;
+    const int igzn  = node->igz;
+
 	int i, j, k, l, m, n;
 	double x, y, z;
 	double rho, u, v, w, rhoY, theta, T, p_hydro;
     double r, uth;
-    double xcc, zcc;
+    double xcc, ycc;
 	
-    double g;
-	                
-    g = ud.gravity_strength[1];
-
     Hydrostatics_State(mpv, elem, node);
     
-    /* Initial data and hydro-states in the flow domain */
+   /* Initial data and hydro-states in the flow domain */
 	for(k = igz; k < icz - igz; k++) {
         l = k * icx * icy; 
 		z = elem->z[k];
         
-        zcc = (fabs(z-zc) < fabs(z-zcm) ? (fabs(z-zc) < fabs(z-zcm) ? zc : zcp) : zcm);
-
         for(j = igy; j < icy - igy; j++) {
             m = l + j * icx;
             y = elem->y[j];
 			            
             for(i = 0; i < icx; i++) {
-                n = m + i;                
-                x       = elem->x[i];
-                xcc = (fabs(x-xc) < fabs(x-xcm) ? (fabs(x-xc) < fabs(x-xcm) ? xc : xcp) : xcm);
+                
+                double p2c = 0.0;
 
-                r       = sqrt((x-xcc)*(x-xcc) + (z-zcc)*(z-zcc));
-                uth     = rotdir * (r < R0 ? fac * pow( 1.0-r/R0, 6) * pow( r/R0, 6) : 0.0);
-                
-                u       = u0 + uth * (-(z-zcc)/r);
-                v       = v0;
-                w       = w0 + uth * (+(x-xcc)/r);
-                p_hydro = mpv->HydroState->p0[j];
-                rhoY    = mpv->HydroState->rhoY0[j];
-                theta   = stratification(y);
-                rho     =  (r < R0 ? (rho0 + del_rho*pow( 1-(r/R0)*(r/R0) , 6)) : rho0);
-                T       = T_from_p_rho(p_hydro,rho);
-                
-                Sol->rho[n]  = rho;
-                Sol->rhou[n] = rho * u;
-                Sol->rhov[n] = rho * v;
-                Sol->rhow[n] = rho * w;
-                Sol->rhoe[n] = rhoe(rho, u, v, w, p_hydro);
-                Sol->rhoY[n] = rhoY;
-                                 
-                if ( r/R0 < 1.0 ) {
+                n = m + i;                
+                x = elem->x[i];
+
+                Sol->rho[n]  = 0.0;
+                Sol->rhou[n] = 0.0;
+                Sol->rhov[n] = 0.0;
+                Sol->rhow[n] = 0.0;
+                Sol->rhoY[n] = 0.0;
+
+                /* more accurate initialization by discrete integral averaging */
+                for (int jj=0; jj<nhires; jj++) {
                     
-                    int ii;
-                    double coe[25];
-                                        
-                    coe[0]  =     1.0 / 12.0;
-                    coe[1]  = -  12.0 / 13.0;
-                    coe[2]  =     9.0 /  2.0;
-                    coe[3]  = - 184.0 / 15.0;
-                    coe[4]  =   609.0 / 32.0;
-                    coe[5]  = - 222.0 / 17.0;
-                    coe[6]  = -  38.0 /  9.0; 
-                    coe[7]  =    54.0 / 19.0;
-                    coe[8]  =   783.0 / 20.0;
-                    coe[9]  = - 558.0 /  7.0;
-                    coe[10] =  1053.0 / 22.0;
-                    coe[11] =  1014.0 / 23.0;
-                    coe[12] = -1473.0 / 16.0;
-                    coe[13] =   204.0 /  5.0;
-                    coe[14] =   510.0 / 13.0;
-                    coe[15] = -1564.0 / 27.0;
-                    coe[16] =   153.0 /  8.0;
-                    coe[17] =   450.0 / 29.0;
-                    coe[18] = - 269.0 / 15.0; /* Kadioglu et al.: 259; Papke: 269 */
-                    coe[19] =   174.0 / 31.0;
-                    coe[20] =    57.0 / 32.0;
-                    coe[21] = -  74.0 / 33.0;
-                    coe[22] =    15.0 / 17.0;
-                    coe[23] = -   6.0 / 35.0;
-                    coe[24] =     1.0 / 72.0;
-                    
-                    mpv->p2_cells[n] = 0.0;
-                    
-                    for (ii = 0; ii < 25; ii++)
-                    {
-                        mpv->p2_cells[n] += coe[ii] * (pow(r/R0 ,12+ii) - 1.0) * rotdir * rotdir;
+                    double yy = (y-0.5*dy+0.5*dyy) + jj*dyy;
+
+                    ycc = (fabs(yy-yc) < fabs(yy-ycm) ? (fabs(yy-yc) < fabs(yy-ycm) ? yc : ycp) : ycm);
+
+                    for (int ii=0; ii<nhires; ii++) {
+                                                
+                        double xx = (x-0.5*dx+0.5*dxx) + ii*dxx;
+                        
+                        xcc = (fabs(xx-xc) < fabs(xx-xcm) ? (fabs(xx-xc) < fabs(xx-xcm) ? xc : xcp) : xcm);
+                        
+                        r       = sqrt((xx-xcc)*(xx-xcc) + (yy-ycc)*(yy-ycc));
+                        uth     = urot * (r < R0 ? r/R0 : (r < 2.0*R0 ? 2.0 - r/R0 : 0.0));
+                        
+                        u       = u0 + uth * (-(yy-ycc)/r);
+                        v       = v0 + uth * (+(xx-xcc)/r);
+                        w       = w0;
+                        p_hydro = mpv->HydroState->p0[j];
+                        rhoY    = mpv->HydroState->rhoY0[j];
+                        theta   = stratification(yy);
+                        rho     =  (r < R0 ? (rho0 + del_rho*pow( 1-(r/R0)*(r/R0) , 6)) : rho0);
+                        T       = T_from_p_rho(p_hydro,rho);
+                        
+                        if ( r/R0 < 1.0 ) {
+                            p2c += rho*urot*urot * 0.5*(r/R0)*(r/R0);
+                        }
+                        else if ( r/R0 < 2.0 ) {
+                            p2c += rho*urot*urot * (0.5 + (4.0*log(r/R0) - 4.0*(r/R0-1) + 0.5*((r/R0)*(r/R0) - 1.0)));
+                        }
+                        else {
+                            p2c += rho*urot*urot * (0.5 + (4.0*log(2.0) - 4.0 + 1.5));;
+                        }
+                                                
+                        Sol->rho[n]  += rho;
+                        Sol->rhou[n] += rho * u;
+                        Sol->rhov[n] += rho * v;
+                        Sol->rhow[n] += rho * w;
+                        
+                        if (ud.is_compressible) {
+                            double p     = p0 + ud.Msq*mpv->p2_cells[n];
+                            Sol->rhoY[n] += pow(p,th.gamminv);
+                            Sol->rhoe[n] += rhoe(rho, u, v, w, p);
+                        } else {                    
+                            Sol->rhoe[n] += rhoe(rho, u, v, w, p_hydro);
+                            Sol->rhoY[n] += rhoY;
+                        }
                     }
                 }
-                else {
-                    mpv->p2_cells[n] = 0.0;
-                }
+                
+                Sol->rho[n]  /= nhiressq;
+                Sol->rhou[n] /= nhiressq;
+                Sol->rhov[n] /= nhiressq;
+                Sol->rhow[n] /= nhiressq;
+                Sol->rhoY[n] /= nhiressq;
+                
+                mpv->p2_cells[n] = th.Gamma*(p2c/nhiressq)/mpv->HydroState->rhoY0[j];
 
-                /* Exner pressure */
-                mpv->p2_cells[n]  = th.Gamma*fac*fac*mpv->p2_cells[n]/mpv->HydroState->rhoY0[j];
             }            
 		}                
 	}  
     set_ghostcells_p2(mpv->p2_cells, elem, igx);
 
-    for (int nn=0; nn<node->nc; nn++) {
-        mpv->p2_nodes[nn] = 0.0;
+    /* nodal pressure */
+    for(k = igzn; k < iczn - igzn; k++) {
+        l = k * icxn * icyn; 
+        z = node->z[k];
+        
+        for(j = igyn; j < icyn - igyn; j++) {
+            m = l + j * icxn;
+            y = node->y[j];
+            
+            ycc = (fabs(y-yc) < fabs(y-ycm) ? (fabs(y-yc) < fabs(y-ycm) ? yc : ycp) : ycm);
+            
+            for(i = igxn; i < icxn - igxn; i++) {
+                n = m + i;                
+                x       = node->x[i];
+                xcc = (fabs(x-xc) < fabs(x-xcm) ? (fabs(x-xc) < fabs(x-xcm) ? xc : xcp) : xcm);
+                
+                r = sqrt((x-xcc)*(x-xcc) + (y-ycc)*(y-ycc));
+                
+                if ( r/R0 < 1.0 ) {
+                    mpv->p2_nodes[n] = rho0*u0*u0 * 0.5*(r/R0)*(r/R0);
+                }
+                else if ( r/R0 < 2.0 ) {
+                    mpv->p2_nodes[n] =  rho0*urot*urot * (0.5 + (4.0*log(r/R0) - 4.0*(r/R0-1) + 0.5*((r/R0)*(r/R0) - 1.0)));
+                }
+                else {
+                    mpv->p2_nodes[n] = rho0*urot*urot * (0.5 + (4.0*log(2.0) - 4.0 + 1.5));
+                }
+                
+                /* Exner pressure */
+                mpv->p2_nodes[n]  = th.Gamma*mpv->p2_nodes[n]/mpv->HydroState->rhoY0[j];
+            }            
+        }                
     }
 }
 
 /* ================================================================================== */
-
-double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma){
-	return pow((pow(p0,Gamma) + Gamma*S0*Msq*u_theta*u_theta*(1.0 - pow((1.0-r),5.0)*(5.0*r+1.0))/30.0), (1.0/Gamma));
-}
-
-/* ================================================================================== */
-
-double rho_function(double psi){
-	
-	double rhomax = 1.0;
-	double percent = 0.0;
-	double delta   = 0.1;
-	
-	double smooth, cosine, sgncos;
-	
-	cosine = cos(PI*(fabs(psi) - (0.5 - 0.5*delta)) / delta);
-	sgncos = SIGNnull(cosine);
-	
-	smooth = 0.5*(1.0 - sgncos*sqrt(sqrt(sqrt(sgncos*cosine))) );
-	
-	/* return(1.0 - 0.2 * (psi*psi)); */
-	/* return(rhomax * (1.0 - percent * (fabs(psi) < 0.5 ? 0.0 : 1.0 )) ); */
-	return(rhomax * (1.0 - percent * (fabs(psi) < 0.5 - 0.5*delta ?  
-									  0.0 : 
-									  (fabs(psi) > 0.5 + 0.5*delta ? 
-                                       1.0 : 
-                                       smooth
-									   ) 
-									  )
-					 ) 
-		   ); 
-}
 
 double stratification(
 					  double y) {

@@ -126,10 +126,11 @@ void User_Data_init(User_Data* ud) {
     /* ================================================================================== */
     
     /* time discretization */
-    ud->time_integrator        = SI_MIDPT; /* this code version has only one option */
-    ud->CFL                    = 0.9; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 2000 / ud->t_ref;
-    ud->dtfixed                = 2000 / ud->t_ref;
+    ud->time_integrator       = SI_MIDPT;  /* this code version has only one option */
+    ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
+    ud->CFL                   = 0.9; /* 0.45; 0.9; 0.8; */
+    ud->dtfixed0              = 2000 / ud->t_ref;
+    ud->dtfixed               = 2000 / ud->t_ref;
     
     set_time_integrator_parameters(ud);
     

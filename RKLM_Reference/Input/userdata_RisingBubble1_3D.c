@@ -92,15 +92,22 @@ void User_Data_init(User_Data* ud) {
 	double R_vap = 461.00;           /* [J/kg/K]                        */
     double Q_vap = 2.53e+06;         /* [J]                             */
 	double gamma = 1.4;              /* dimensionless                   */
-	ud->gamm = gamma;  
-    double Nsq   = grav*1.3e-05;     /* [] */
+
+    /* references for non-dimensionalization */
+    double h_ref   = 10000;            /* [m]                             */
+    double t_ref   = 100;              /* [s]                             */
+    double T_ref   = 300;              /* [K]                             */
+    double p_ref   = 101325;           /* [Pa]                            */
+    double u_ref   = h_ref/t_ref;      /* Strouhal No == 1 always assumed */
+    double rho_ref = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
+    double Nsq_ref = grav*1.3e-05;     /* [] */
 
     ud->h_ref       = h_ref;
     ud->t_ref       = t_ref;
     ud->T_ref       = T_ref;
     ud->p_ref       = p_ref;
     ud->u_ref       = u_ref;
-    ud->Nsq_ref     = Nsq;
+    ud->Nsq_ref     = Nsq_ref;
     ud->g_ref       = grav;
     ud->gamm        = gamma;  
     ud->Rg_over_Rv  = R_gas/R_vap;  
@@ -110,9 +117,10 @@ void User_Data_init(User_Data* ud) {
     ud->nspec       = NSPEC;  
 
 	/* Low Mach */
-    ud->is_compressible = 0;
-    ud->acoustic_timestep =  0; /* 0;  1; */
-	ud->Msq =  u_ref*u_ref / (R_gas*T_ref); 
+    ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
+    ud->is_compressible   =  1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->acoustic_timestep =  0;    /* advective time step -> 0;  acoustic time step -> 1; */
+    ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
 	
 	/* geo-stuff */
 	for(i=0; i<3; i++) {
@@ -171,7 +179,7 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
 	
     /* time discretization */
-    ud->time_integrator      = OP_SPLIT;  /* OP_SPLIT, HEUN, EXPL_MIDPT */
+    ud->time_integrator      = SI_MIDPT;  
 	ud->CFL                  = 0.96; /* 0.45; 0.9; 0.8; */
     ud->dtfixed0             = 0.1;
     ud->dtfixed              = 0.1; /* 0.0052; */ /*  0.004; */ 
@@ -302,7 +310,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
 	    
 	g = ud.gravity_strength[1];
     
-    Hydrostatics_State(mpv, Yinvbg, elem);
+    Hydrostatics_State(mpv, elem, node);
 		    
     /* data in the bulk of the domain */
 	for(k = igz; k < icz - igz; k++) {l = k * icx * icy; 
@@ -312,7 +320,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             y = elem->y[j];
 			
 			for(i = 0; i < icx; i++) {n = m + i;
-                double ystar, r;
+                double r;
                 
 				x = elem->x[i];
 				
@@ -323,62 +331,37 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
 				r = sqrt(x*x + (y-y0)*(y-y0) + (elem->ndim==3)*z*z) / r0;
                 p     = mpv->HydroState->p0[j];
                 rhoY  = mpv->HydroState->rhoY0[j];
-				rho  = rhoY / (stratification(ystar) + (r >= 1.0 ? 0.0 : (delth/300.0)*cos(0.5*PI*r)*cos(0.5*PI*r)));
+				rho  = rhoY / (stratification(y) + (r >= 1.0 ? 0.0 : (delth/300.0)*cos(0.5*PI*r)*cos(0.5*PI*r)));
 				
 				Sol->rho[n]  = rho;
 				Sol->rhou[n] = rho * u;
 				Sol->rhov[n] = rho * v;
 				Sol->rhow[n] = rho * w;
-				Sol->rhoe[n] = rhoe(rho, u, v, w, p, g*y);
+				Sol->rhoe[n] = rhoe(rho, u, v, w, p);
 				Sol->rhoY[n] = rhoY;
 				Sol->geopot[n] = g * y;
 
 #ifdef THERMCON
                 mpv->p2_cells[n] = (p/rhoY) / ud.Msq;
 #else
-                mpv->p2_cells[n] = p / ud.Msq;
+                mpv->p2_cells[n] = (p - mpv->HydroState->p0[j]) / ud.Msq;
 #endif
-				Sol->rhoZ[n]     = rho * mpv->p2_cells[n];				
 			}
-		}
-        
-        /* set all dummy cells */
-		/* geopotential in bottom and top dummy cells */
-		for(j = 0; j < igy; j++) {m = l + j * icx;  
-			y = elem->y[j];
-			for(i = 0; i < icx; i++) {n = m + i;
-				Sol->geopot[n] = g * y;
-			}
-		}
-		
-		for(j = icy-igy; j < icy; j++) {m = l + j * icx;  
-			y = elem->y[j];
-			for(i = 0; i < icx; i++) {n = m + i;
-				Sol->geopot[n] = g * y;
-			}
-		}
+		}        
 	}  
 	
     /*set nodal pressures to hydrostatic values */
     for(k = 0; k < iczn; k++) {l = k * icxn * icyn;   
         
         for(j = 0; j < icyn; j++) {m = l + j * icxn;                
-#ifdef THERMCON
-            double p    = mpv->HydroState->p0[j];
-            double rhoY = mpv->HydroState->rhoY0[j];
+            double p    = mpv->HydroState_n->p0[j];
+            double rhoY = mpv->HydroState_n->rhoY0[j];
             
             for(i = 0; i < icxn; i++) {n = m + i;
-                mpv->p2_nodes[n] = (p/rhoY) / ud.Msq;
+                mpv->p2_nodes[n] = ((p-mpv->HydroState_n->p0[j])/rhoY) / ud.Msq;
             }
-#else
-            double p    = mpv->HydroState->p0[j];
-            for(i = 0; i < icxn; i++) {n = m + i;
-                mpv->p2_nodes[n] = p / ud.Msq;
-            }
-#endif
         }
     }                  
-
 }
 
 /* ================================================================================== */

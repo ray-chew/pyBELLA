@@ -89,8 +89,8 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
 
 /* ========================================================================== */
 
-#define OUTPUT_RHS 0
-#if OUTPUT_RHS
+#define OUTPUT_RHS_NODES 0
+#if OUTPUT_RHS_NODES
 static int rhs_output_count = 0;
 static int first_output_step = 0;
 extern int step;  
@@ -144,8 +144,8 @@ void euler_backward_non_advective_impl_part(
     
     /* KEEP_OLD_POISSON_SOLUTIONS */
     for(ii=0; ii<nc; ii++){
-        p2[ii] = mpv->p2_nodes[ii]; 
-        /* p2[ii]  = 0.0;  */
+        /* p2[ii] = mpv->p2_nodes[ii];  */
+        p2[ii]  = 0.0; 
         rhs[ii] = 0.0;
     }
 
@@ -161,7 +161,7 @@ void euler_backward_non_advective_impl_part(
     printf("\nrhsmax = %e\n", rhs_max);
 
     
-#if OUTPUT_RHS
+#if OUTPUT_RHS_NODES
     FILE *prhsfile = NULL;
     char fn[120], fieldname[90];
     if (step >= first_output_step) {
@@ -189,7 +189,7 @@ void euler_backward_non_advective_impl_part(
         assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);         
     }
     
-#if OUTPUT_RHS
+#if 0
     // FILE *prhsfile = NULL;
     // char fn[120], fieldname[90];
     if (step >= first_output_step) {
@@ -218,17 +218,24 @@ void euler_backward_non_advective_impl_part(
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
     Set_Explicit_Boundary_Data(Sol, elem);
     
-#if 0
+#if OUTPUT_RHS_NODES
     memset(rhs, 0.0, node->nc*sizeof(double));
     rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
     /* catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
      */
 
-    rhs_max = 0.0;
-    for (int nn=0; nn<node->nc; nn++) {
-        rhs_max = MAX_own(rhs_max, rhs[nn]);
+    if (step >= first_output_step) {
+        if (rhs_output_count < 10) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
+        } else if(rhs_output_count < 100) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
+        } else {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
+        }
+        sprintf(fieldname, "rhs_nodes");    
+        WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+        rhs_output_count++;
     }
-    printf("\n div_max = %e -- euler_backward_non_advective_impl_part()", rhs_max);
 #endif
 
 }
@@ -1379,18 +1386,6 @@ void correction_nodes(
 }
 
 
-/* ========================================================================== */
-
-void momentum_increments(MPV* mpv, 
-                         const ConsVars *Sol, 
-                         const ElemSpaceDiscr *elem)
-{
-    for (int i=0; i<elem->nc; i++) {
-        mpv->drhou_cells[i] = Sol->rhou[i] - mpv->drhou_cells[i];
-        mpv->drhov_cells[i] = Sol->rhov[i] - mpv->drhov_cells[i];
-        mpv->drhow_cells[i] = Sol->rhow[i] - mpv->drhow_cells[i];
-    }
-}
 
 /* ========================================================================== */
 
@@ -1435,11 +1430,10 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
                 int n        = m + i;
                 
                 /* implicit gravity */
-#ifdef EVOLVE_NODAL_PRESSURE
                 double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;
+#ifdef EVOLVE_NODAL_PRESSURE
                 double dbuoy = -Sol->rhoY[n]*Sol->rhoX[BUOY][n]/Sol->rho[n];    
 #else
-                double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;
                 double dchi    = 0.25*(Sol->rhoX[BUOY][n+icx]/Sol->rho[n+icx] + 2.0*Sol->rhoX[BUOY][n]/Sol->rho[n] + Sol->rhoX[BUOY][n-icx]/Sol->rho[n-icx]);
                 double dbuoy   = -Sol->rhoY[n]*dchi;  
 #endif
@@ -1740,13 +1734,11 @@ void euler_forward_non_advective(ConsVars* Sol,
     
     // cell_pressure_to_nodal_pressure(mpv, elem, node, 2.0-ud.acoustic_order);
 
-    if (ud.is_compressible) {
+    /* if (ud.is_compressible) { */
+    if (ud.is_compressible){
         
         double weight = (ud.acoustic_order - 1.0);
 
-
-        /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
-         Option EXNER_NONLINEAR did not exist on Oct. 24 */
 #ifdef EXNER_NONLINEAR
         const int icxn = node->icx;
         const int icyn = node->icy;

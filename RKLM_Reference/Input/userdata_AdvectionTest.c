@@ -123,17 +123,18 @@ void User_Data_init(User_Data* ud) {
     /* ================================================================================== */
     
     /* time discretization */
-    ud->time_integrator        = SI_MIDPT; /* this code version has only one option */
-    ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0               = 9999.9;
-    ud->dtfixed                = 9999.9;
+    ud->time_integrator       = SI_MIDPT; /* this code version has only one option */
+    ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
+    ud->CFL                   = 0.96; /* 0.45; 0.9; 0.8; */
+    ud->dtfixed0              = 9999.9;
+    ud->dtfixed               = 9999.9;
     
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
     ud->inx =  31+1; /* 641; 321; 161; 129; 81; */
     ud->iny =  31+1; /* 321; 161;  81;  65; 41;  */
-    ud->inz =  31+1;
+    ud->inz =  1;
     
     /* explicit predictor step */
     /* Recovery */

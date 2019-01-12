@@ -107,22 +107,17 @@ MPV* MPV_new(
     mpv->p2_cells  = (double*)malloc(nc*sizeof(double));
     mpv->dp2_cells = (double*)malloc(nc*sizeof(double));
     mpv->p2_nodes  = (double*)malloc(nn*sizeof(double));
+    mpv->p2_nodes0 = (double*)malloc(nn*sizeof(double));
     mpv->dp2_nodes = (double*)malloc(nn*sizeof(double));
-
-    mpv->drhou_cells = (double*)malloc(nc*sizeof(double));
-    mpv->drhov_cells = (double*)malloc(nc*sizeof(double));
-    mpv->drhow_cells = (double*)malloc(nc*sizeof(double));
 
     for(i=0; i<nc; i++){
 		mpv->p2_cells[i]    = 0.0;
 		mpv->dp2_cells[i]   = 0.0;
-        mpv->drhou_cells[i] = 0.0;
-        mpv->drhov_cells[i] = 0.0;
-        mpv->drhow_cells[i] = 0.0;
     }
 
     for(i=0; i<nn; i++){
 		mpv->p2_nodes[i]  = 0.0;
+        mpv->p2_nodes0[i] = 0.0;
 		mpv->dp2_nodes[i] = 0.0;
 	}
 
@@ -152,10 +147,7 @@ void MPV_free(
     free(mpv->dp2_cells);
     free(mpv->p2_nodes );
     free(mpv->dp2_nodes);
-
-    free(mpv->drhou_cells);
-    free(mpv->drhov_cells);
-    free(mpv->drhow_cells);
+    free(mpv->p2_nodes0);
 
     free(mpv->rhs    );
     free(mpv->diaginv);
@@ -179,7 +171,7 @@ double acoustic_order(const double t,
     
     switch (ud.is_compressible) {
         case 0:
-            return(2.0);
+            return(1.8); /* 2.0 */
             break;
         case 1: {
             /*

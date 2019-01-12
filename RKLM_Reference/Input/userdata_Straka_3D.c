@@ -119,16 +119,17 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
 	
     /* time discretization */
-    ud->time_integrator      = SI_MIDPT;  /* this code version has only one option */
-	ud->CFL                  = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0             = 0.0225;
-	ud->dtfixed              = 0.0225; /* 0.0052; */ /*  0.004; */
+    ud->time_integrator       = SI_MIDPT;  /* this code version has only one option */
+    ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
+	ud->CFL                   = 0.96; /* 0.45; 0.9; 0.8; */
+    ud->dtfixed0              = 0.0225;
+	ud->dtfixed               = 0.0225; /* 0.0052; */ /*  0.004; */
     
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 513+1; /* 641; 321; 161; 129; 81; */
-	ud->iny =  64+1; /* 321; 161;  81;  65; 41;  */
+	ud->inx = 257+1; /* 641; 321; 161; 129; 81; */
+	ud->iny = 32+1; /* 321; 161;  81;  65; 41;  */
 	ud->inz =  1;
 	
 	/* explicit predictor step */
@@ -176,12 +177,12 @@ void User_Data_init(User_Data* ud) {
     ud->tout[2] =  9.0;
     ud->tout[3] = -1.0;
         
-    ud->stepmax = 440;
+    ud->stepmax = 5000000;
     
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 10000000;
+	ud->write_file_period = 100000;
 	ud->file_format = HDF;
     
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
