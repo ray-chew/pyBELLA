@@ -65,7 +65,7 @@ void User_Data_init(User_Data* ud) {
 
 	/* Low Mach */
     ud->is_nonhydrostatic = 1;
-    ud->is_compressible   = 0;
+    ud->is_compressible   = 1;
     ud->acoustic_timestep =  0; /* 0;  1; */
 	ud->Msq =  u_ref*u_ref / (R_gas*T_ref); 
 	
@@ -128,8 +128,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 128+1; /*  */
-	ud->iny = 32+1; /*  */
+	ud->inx = 80+1; /*  */
+	ud->iny = 20+1; /*  */
 	ud->inz =   1;
 
     /* explicit predictor step */
@@ -158,7 +158,7 @@ void User_Data_init(User_Data* ud) {
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
     
-    ud->initial_projection                = WRONG;   /* to be tested: WRONG;  CORRECT; */
+    ud->initial_projection                = CORRECT;   /* to be tested: WRONG;  CORRECT; */
     ud->initial_impl_Euler                = WRONG;   /* to be tested: WRONG;  CORRECT; */
     
     ud->column_preconditioner             = WRONG; /* WRONG; CORRECT; */
@@ -278,6 +278,7 @@ void Sol_initial(ConsVars* Sol,
             for(i = 0; i < icx; i++) {
                 
                 double p2c = 0.0;
+                double dp2c = 0.0;
 
                 n = m + i;                
                 x = elem->x[i];
@@ -313,23 +314,25 @@ void Sol_initial(ConsVars* Sol,
                         rho     =  (r < R0 ? (rho0 + del_rho*pow( 1-(r/R0)*(r/R0) , 6)) : rho0);
                         T       = T_from_p_rho(p_hydro,rho);
                         
+                        dp2c = 0.0;
                         if ( r/R0 < 1.0 ) {
-                            p2c += rho*urot*urot * 0.5*(r/R0)*(r/R0);
+                            dp2c += rho*urot*urot * 0.5*(r/R0)*(r/R0);
                         }
                         else if ( r/R0 < 2.0 ) {
-                            p2c += rho*urot*urot * (0.5 + (4.0*log(r/R0) - 4.0*(r/R0-1) + 0.5*((r/R0)*(r/R0) - 1.0)));
+                            dp2c += rho*urot*urot * (0.5 + (4.0*log(r/R0) - 4.0*(r/R0-1) + 0.5*((r/R0)*(r/R0) - 1.0)));
                         }
                         else {
-                            p2c += rho*urot*urot * (0.5 + (4.0*log(2.0) - 4.0 + 1.5));;
+                            dp2c += rho*urot*urot * (0.5 + (4.0*log(2.0) - 4.0 + 1.5));;
                         }
                                                 
+                        p2c += dp2c;
                         Sol->rho[n]  += rho;
                         Sol->rhou[n] += rho * u;
                         Sol->rhov[n] += rho * v;
                         Sol->rhow[n] += rho * w;
                         
                         if (ud.is_compressible) {
-                            double p     = p0 + ud.Msq*mpv->p2_cells[n];
+                            double p     = p0 + ud.Msq*dp2c;
                             Sol->rhoY[n] += pow(p,th.gamminv);
                             Sol->rhoe[n] += rhoe(rho, u, v, w, p);
                         } else {                    

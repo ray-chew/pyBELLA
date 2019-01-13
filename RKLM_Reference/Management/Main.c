@@ -100,6 +100,7 @@ int main( void )
         }
         for (int nc=0; nc<elem->nc; nc++) {
             Sol->rhou[nc] -= ud.wind_speed*Sol->rho[nc];
+            Sol->rhov[nc] -= ud.wind_speed*Sol->rho[nc];
         }
         
         //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
@@ -112,6 +113,7 @@ int main( void )
         
         for (int nc=0; nc<elem->nc; nc++) {
             Sol->rhou[nc] += ud.wind_speed*Sol->rho[nc];
+            Sol->rhov[nc] += ud.wind_speed*Sol->rho[nc];
         }
 
         ud.is_compressible = is_compressible;

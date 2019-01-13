@@ -106,10 +106,10 @@ void User_Data_init(User_Data* ud) {
 	ud->hill_length_scale =  99999.9;          /* width    in [h_ref]   */   
 	
 	ud->bdrytype_min[0] = PERIODIC; /* DIRICHLET; */
-	ud->bdrytype_min[1] = WALL; /* SLANTED_WALL; */
+	ud->bdrytype_min[1] = PERIODIC; /* SLANTED_WALL; */
 	ud->bdrytype_min[2] = WALL;
 	ud->bdrytype_max[0] = PERIODIC; /* DIRICHLET; */  
-	ud->bdrytype_max[1] = WALL;  
+	ud->bdrytype_max[1] = PERIODIC;  
 	ud->bdrytype_max[2] = WALL;
 	
 	ud->absorber = WRONG; /* CORRECT; */ 
@@ -121,15 +121,15 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
-	ud->CFL                   = 0.96;       
-    ud->dtfixed0              = 1.200930e-02;
-    ud->dtfixed               = 1.200930e-02;   
+    ud->CFL                   = 0.9/2.0;       
+    ud->dtfixed0              = 2.1*1.200930e-02;
+    ud->dtfixed               = 2.1*1.200930e-02;   
     
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 64+1; /*  */
-	ud->iny = 64+1; /*  */
+	ud->inx = 32+1; /*  */
+	ud->iny = 32+1; /*  */
 	ud->inz =     1;
 
     /* explicit predictor step */
@@ -150,7 +150,7 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  201; /* (ud->inx+3); */
 	
 	/* linear solver-stuff */
-    double tol = 1.e-12;
+    double tol = 1.e-10;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -172,6 +172,12 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
     /* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
+    ud->tout[0] =  1.0;      
+    ud->tout[1] =  2.0;      
+    ud->tout[2] =  3.0;      
+    ud->tout[3] = -1.0;
+
+    /*
     ud->tout[0] =  0.5;      
     ud->tout[1] =  1.0;      
     ud->tout[2] =  1.5;      
@@ -179,13 +185,14 @@ void User_Data_init(User_Data* ud) {
     ud->tout[4] =  2.5;      
     ud->tout[5] =  3.0;      
     ud->tout[6] = -1.0;
+     */
     
     ud->stepmax = 10000;
 
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 1;
+	ud->write_file_period = 100000;
 	ud->file_format = HDF;
 
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
@@ -213,7 +220,7 @@ void Sol_initial(ConsVars* Sol,
     extern MPV* mpv;
     
 	const double u0    = 1.0*ud.wind_speed;
-	const double v0    = 0.0*ud.wind_speed;
+	const double v0    = 1.0*ud.wind_speed;
 	const double w0    = 0.0;
     
     const double rotdir = 1.0;  /* the origin of the March 24 - trouble ... ;^) */
