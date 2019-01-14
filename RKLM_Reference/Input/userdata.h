@@ -12,6 +12,7 @@
 #include "explicit.h"
 #include "limiter.h"
 #include "mpv.h"
+#include "boundary.h"
 #include <stdio.h>
 
 
@@ -143,7 +144,10 @@ void User_Data_init(User_Data* userdata);
  
  ------------------------------------------------------------------------------*/
 void Sol_initial(
-				 ConsVars* Sol, 
+                 ConsVars* Sol, 
+				 ConsVars* Sol0, 
+                 MPV* mpv,
+                 BDRY* bdry,
 				 const ElemSpaceDiscr* elem,
                  const NodeSpaceDiscr* node);
 
