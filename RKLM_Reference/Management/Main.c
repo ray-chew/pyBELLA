@@ -77,33 +77,9 @@ int main( void )
         initialize_time_series();
     }
 
-    ud.nonhydrostasy   = nonhydrostasy(0);
-    ud.compressibility = compressibility(0);
-    
-    set_wall_massflux(bdry, Sol, elem);
-    Set_Explicit_Boundary_Data(Sol, elem);
-    /* This pre-projection is beneficial for getting a nodal pressure that
-       is free of the multipole perturbations due to basic divergence errors
-       that come simply from the divergence approximation on the nodal grid.
-     */
-    if (ud.initial_projection == CORRECT) {
-        double *p2aux = (double*)malloc(node->nc*sizeof(double));
-        for (int nn=0; nn<node->nc; nn++) {
-            p2aux[nn] = mpv->p2_nodes[nn];
-        }
-        //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
-        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed);
-        for (int nn=0; nn<node->nc; nn++) {
-            mpv->p2_nodes[nn] = p2aux[nn];
-            mpv->dp2_nodes[nn] = 0.0;
-        }
-        free(p2aux);
-    }
-
 	if(ud.write_file == ON) 
         putout(Sol, ud.file_name, "Sol", elem, node, 1);
         
-    ConsVars_set(Sol0, Sol, elem->nc);
 #ifdef NODAL_PROJECTION_ONLY
 #ifdef PRESSURE_RESET
     for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes0[nn] = mpv->p2_nodes[nn];
@@ -193,12 +169,13 @@ int main( void )
 
 #endif /* FLUX_PREDICTOR_WITH_IMPL_TRAPEZOIDAL */
             
-            ConsVars_set(Sol, Sol0, elem->nc);
 #ifdef NODAL_PROJECTION_ONLY
 #ifdef PRESSURE_RESET
             for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes[nn] = mpv->p2_nodes0[nn];
 #endif
 #endif
+            ConsVars_set(Sol, Sol0, elem->nc);
+
             /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
              Note of Nov. 15, 2018: This call is void for ud.acoustic_order = 2.0, which is 
              what I am aiming for now. The call would have an effect, though when the

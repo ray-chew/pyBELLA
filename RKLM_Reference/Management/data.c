@@ -65,6 +65,8 @@ enum Boolean W0_in_use = WRONG;
 
 void Data_init() {
 	
+    extern BDRY* bdry;
+
 	int inx, iny, inz, n_aux;
 	double x0, x1, y0, y1, z0, z1;
 	enum BdryType left, right, bottom, top, back, front;
@@ -145,8 +147,7 @@ void Data_init() {
 #endif
 
     /* set initial data */
-    Sol_initial(Sol, elem, node);
-    ConsVars_set(Sol0, Sol, elem->nc);
+    Sol_initial(Sol, Sol0, mpv, bdry, elem, node);
     ConsVars_setzero(dSol, elem->nc);
 
 }

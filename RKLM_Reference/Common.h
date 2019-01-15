@@ -42,6 +42,9 @@
  #define PRESSURE_RESET
  #define FLUX_PREDICTOR_WITH_IMPL_TRAPEZOIDAL
  */
+#define NODAL_PROJECTION_ONLY
+#define PRESSURE_RESET
+
 
 /* ============================================= 
  Semi-implicit solver options  

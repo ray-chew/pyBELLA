@@ -19,6 +19,7 @@
 #include "boundary.h"
 #include "memory.h"
 #include "Hydrostatics.h"
+#include "second_projection.h"
 
 void User_Data_init(User_Data* ud) {
 	
@@ -65,7 +66,7 @@ void User_Data_init(User_Data* ud) {
 
 	/* Low Mach */
     ud->is_nonhydrostatic = 1;
-    ud->is_compressible   = 0;
+    ud->is_compressible   = 1;
     ud->acoustic_timestep =  0; /* 0;  1; */
 	ud->Msq =  u_ref*u_ref / (R_gas*T_ref); 
 	
@@ -121,15 +122,15 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
-	ud->CFL                   = 0.96;       
-    ud->dtfixed0              = 10000.999;
-    ud->dtfixed               = 10000.999;   
+    ud->CFL                   = 0.9/2.0;       
+    ud->dtfixed0              = 2.1*1.200930e-02;
+    ud->dtfixed               = 2.1*1.200930e-02;   
     
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 192+1; /*  */
-	ud->iny = 192+1; /*  */
+	ud->inx = 64+1; /*  */
+	ud->iny = 64+1; /*  */
 	ud->inz =     1;
 
     /* explicit predictor step */
@@ -172,6 +173,12 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
     /* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
+    ud->tout[0] =  1.0;      
+    ud->tout[1] =  2.0;      
+    ud->tout[2] =  3.0;      
+    ud->tout[3] = -1.0;
+
+    /*
     ud->tout[0] =  0.5;      
     ud->tout[1] =  1.0;      
     ud->tout[2] =  1.5;      
@@ -179,13 +186,14 @@ void User_Data_init(User_Data* ud) {
     ud->tout[4] =  2.5;      
     ud->tout[5] =  3.0;      
     ud->tout[6] = -1.0;
+     */
     
     ud->stepmax = 10000;
 
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 1000000;
+	ud->write_file_period = 100000;
 	ud->file_format = HDF;
 
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
@@ -205,18 +213,20 @@ void User_Data_init(User_Data* ud) {
 /* ================================================================================== */
 
 void Sol_initial(ConsVars* Sol,
+                 ConsVars* Sol0,
+                 MPV* mpv,
+                 BDRY* bdry,
                  const ElemSpaceDiscr* elem,
                  const NodeSpaceDiscr* node) {
 	
 	extern Thermodynamic th;
 	extern User_Data ud;
-    extern MPV* mpv;
-    
+
 	const double u0    = 1.0*ud.wind_speed;
 	const double v0    = 0.0*ud.wind_speed;
 	const double w0    = 0.0;
     
-    const double rotdir = -1.0;  /* the origin of the March 24 - trouble ... ;^) */
+    const double rotdir = 1.0;  /* the origin of the March 24 - trouble ... ;^) */
     
     const double p0      = 1.0;
     const double rho0    = 0.5;  /* 0.5 standard;  1.0 stable configuration; */
@@ -303,6 +313,7 @@ void Sol_initial(ConsVars* Sol,
             for(i = 0; i < icx; i++) {
                 
                 double p2c = 0.0;
+                double dp2c = 0.0;
 
                 n = m + i;                
                 x = elem->x[i];
@@ -338,23 +349,22 @@ void Sol_initial(ConsVars* Sol,
                         rho     =  (r < R0 ? (rho0 + del_rho*pow( 1-(r/R0)*(r/R0) , 6)) : rho0);
                         T       = T_from_p_rho(p_hydro,rho);
                         
+                        dp2c = 0.0;
                         if ( r/R0 < 1.0 ) {
                             for (int ip = 0; ip < 25; ip++)
                             {
-                                p2c += coe[ip] * (pow(r/R0 ,12+ip) - 1.0) * rotdir * rotdir;
+                                dp2c += coe[ip] * (pow(r/R0 ,12+ip) - 1.0) * rotdir * rotdir;
                             }
                         }
-                        else {
-                            p2c += 0.0;
-                        }
-                                                
+                             
+                        p2c += dp2c;
                         Sol->rho[n]  += rho;
                         Sol->rhou[n] += rho * u;
                         Sol->rhov[n] += rho * v;
                         Sol->rhow[n] += rho * w;
                         
                         if (ud.is_compressible) {
-                            double p     = p0 + ud.Msq*mpv->p2_cells[n];
+                            double p     = p0 + ud.Msq*fac*fac*dp2c;
                             Sol->rhoY[n] += pow(p,th.gamminv);
                             Sol->rhoe[n] += rhoe(rho, u, v, w, p);
                         } else {                    
@@ -411,6 +421,51 @@ void Sol_initial(ConsVars* Sol,
             }            
         }                
     }
+
+    ud.nonhydrostasy   = nonhydrostasy(0);
+    ud.compressibility = compressibility(0);
+    
+    set_wall_massflux(bdry, Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem);
+
+    ConsVars_set(Sol0, Sol, elem->nc);
+
+    /* the initial projection should ensure the velocity field is discretely
+     divergence-controlled when sound-free initial data are required.
+     This can mean vanishing divergence in a zero-Mach flow or the 
+     pseudo-incompressible divergence constraint in an atmospheric flow setting
+     */ 
+    if (ud.initial_projection == CORRECT) {
+        int is_compressible    = ud.is_compressible;
+        double compressibility = ud.compressibility;
+        ud.is_compressible = 0;
+        ud.compressibility = 0.0;
+        double *p2aux = (double*)malloc(node->nc*sizeof(double));
+        for (int nn=0; nn<node->nc; nn++) {
+            p2aux[nn] = mpv->p2_nodes[nn];
+        }
+        for (int nc=0; nc<elem->nc; nc++) {
+            Sol->rhou[nc] -= u0*Sol->rho[nc];
+            Sol->rhov[nc] -= v0*Sol->rho[nc];
+        }
+        
+        //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
+        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed);
+        for (int nn=0; nn<node->nc; nn++) {
+            mpv->p2_nodes[nn] = p2aux[nn];
+            mpv->dp2_nodes[nn] = 0.0;
+        }
+        free(p2aux);
+        
+        for (int nc=0; nc<elem->nc; nc++) {
+            Sol->rhou[nc] += u0*Sol->rho[nc];
+            Sol->rhov[nc] += v0*Sol->rho[nc];
+        }
+        
+        ud.is_compressible = is_compressible;
+        ud.compressibility = compressibility;
+    }
+
 }
 
 /* ================================================================================== */

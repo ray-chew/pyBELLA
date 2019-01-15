@@ -7,20 +7,21 @@
 extrafigno = 52;
 
 %modelstr = '';
-modelstr = 'comp';
-%modelstr = 'psinc' ;  
+%modelstr = 'comp';
+modelstr = 'psinc' ;  
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
 
 
-test_case = 'Baldaufs-Internal-Wave-Tests';
+%test_case = 'Baldaufs-Internal-Wave-Tests';
 %test_case = 'Deep-Internal-Wave-Tests';
 %test_case = 'Internal-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
-%test_case = 'Travelling-Vortex';
+test_case = 'Travelling-Vortex';
+%test_case = 'Travelling-Hump';
 %test_case = 'Acoustic-Wave';
 
 showmode = 1;
@@ -35,7 +36,7 @@ show_increments = 0;
 symmetry = 0;        % in {0,1}
 symmetrytest = 0;
 showdummycells = 0;
-showslice = 33;
+showslice = 1;
 diff_rel_to_bottom = 0;
 
 % th0 = -0.0015/300;
@@ -49,7 +50,7 @@ title_true = 1;
 
 kmin = 0;
 kmax = 601;
-dk   = 1;
+dk   = 2;
 
 if strcmp(test_case, 'Baldaufs-Internal-Wave-Tests')
     scalefactor = 20.0;
@@ -81,6 +82,7 @@ elseif strcmp(test_case, 'Internal-Wave-Tests')
     H   = 10.0;  %
     aspect = [L/H/3 1 1];
     velosc = 100;  % velocity unit of RKLM code
+    showslice = floor(ncy/2);
 elseif strcmp(test_case, 'Acoustic-Wave')
     scalefactor = 1.0;
     ncx = 300; 
@@ -98,6 +100,7 @@ elseif strcmp(test_case, 'Rising-Bubble')
     H   = 1.0; 
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
+    showslice = floor(ncy/2);
 elseif strcmp(test_case, 'Travelling-Vortex')
     ncx = 192;  
     ncy = 192; 
@@ -170,7 +173,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'T';  folderstr = 'T'; titlestr = 'T'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dT';  folderstr = 'dT'; titlestr = 'dT'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
+%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
@@ -179,7 +182,7 @@ varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = 
 %varstr = 'rhov';  folderstr = 'rhov'; titlestr = 'rhov'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhow';  folderstr = 'rhow'; titlestr = 'rhow'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
-%varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
+varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'vortz';  folderstr = 'vortz'; titlestr = 'vortz'; ndummy = 2; arraysize = [nnx nny]; filledcontours = 1; fixed_contours = 0;
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy];
@@ -326,28 +329,28 @@ for k = kmin:dk:kmax
                 if separate_signs == 1
                     contour(x,z,max(0.0,th),contour_values,'LineColor','k','LineWidth',1.0);
                     % contour(x,z,max(0.0,th),contour_values,'LineColor','k');
-                    %hold                    
+                    hold                    
                     contour(x,z,min(0.0,th),contour_values,'LineColor','k');
                     % contour(x,z,min(0.0,th),contour_values,'LineColor',linecolor,'LineStyle','--');
-                    %hold
+                    hold
                 else
                     contour(x,z,th,contour_values,'LineColor',linecolor);
                 end
             elseif fixed_contour_step
                 if separate_signs == 1
                     contour(x,z,max(0.0,th), 'LevelStep', dtheta, 'LineColor','k');
-                    %hold
+                    hold
                     contour(x,z,min(0.0,th), 'LevelStep', dtheta, 'LineColor','k','LineStyle','--');
-                    %hold
+                    hold
                 else
                     contour(x,z,th, 'LevelStep', dtheta, 'LineColor','k');
                 end
             else
                 if separate_signs == 1
                     contour(x,z,max(0.0,th),no_of_contours,'LineColor','k');
-                    %hold 
+                    hold 
                     contour(x,z,min(0.0,th),no_of_contours,'LineColor','k','LineStyle','--');
-                    %hold
+                    hold
                 else
                     contour(x,z,th,no_of_contours,'LineColor','k');
                 end

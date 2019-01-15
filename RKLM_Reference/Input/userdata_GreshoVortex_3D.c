@@ -19,6 +19,7 @@
 #include "boundary.h"
 #include "memory.h"
 #include "Hydrostatics.h"
+#include "second_projection.h"
 
 void User_Data_init(User_Data* ud) {
 	
@@ -65,7 +66,7 @@ void User_Data_init(User_Data* ud) {
 
 	/* Low Mach */
     ud->is_nonhydrostatic = 1;
-    ud->is_compressible   = 0;
+    ud->is_compressible   = 1;
     ud->acoustic_timestep =  0; /* 0;  1; */
 	ud->Msq =  u_ref*u_ref / (R_gas*T_ref); 
 	
@@ -128,8 +129,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 128+1; /*  */
-	ud->iny = 32+1; /*  */
+	ud->inx = 80+1; /*  */
+	ud->iny = 20+1; /*  */
 	ud->inz =   1;
 
     /* explicit predictor step */
@@ -158,7 +159,7 @@ void User_Data_init(User_Data* ud) {
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
     
-    ud->initial_projection                = WRONG;   /* to be tested: WRONG;  CORRECT; */
+    ud->initial_projection                = CORRECT;   /* to be tested: WRONG;  CORRECT; */
     ud->initial_impl_Euler                = WRONG;   /* to be tested: WRONG;  CORRECT; */
     
     ud->column_preconditioner             = WRONG; /* WRONG; CORRECT; */
@@ -209,12 +210,14 @@ void User_Data_init(User_Data* ud) {
 /* ================================================================================== */
 
 void Sol_initial(ConsVars* Sol,
+                 ConsVars* Sol0,
+                 MPV* mpv,
+                 BDRY* bdry,
                  const ElemSpaceDiscr* elem,
                  const NodeSpaceDiscr* node) {
 	
 	extern Thermodynamic th;
 	extern User_Data ud;
-    extern MPV* mpv;
     
 	const double u0    = 1.0*ud.wind_speed;
 	const double v0    = 0.0*ud.wind_speed;
@@ -278,6 +281,7 @@ void Sol_initial(ConsVars* Sol,
             for(i = 0; i < icx; i++) {
                 
                 double p2c = 0.0;
+                double dp2c = 0.0;
 
                 n = m + i;                
                 x = elem->x[i];
@@ -313,23 +317,25 @@ void Sol_initial(ConsVars* Sol,
                         rho     =  (r < R0 ? (rho0 + del_rho*pow( 1-(r/R0)*(r/R0) , 6)) : rho0);
                         T       = T_from_p_rho(p_hydro,rho);
                         
+                        dp2c = 0.0;
                         if ( r/R0 < 1.0 ) {
-                            p2c += rho*urot*urot * 0.5*(r/R0)*(r/R0);
+                            dp2c += rho*urot*urot * 0.5*(r/R0)*(r/R0);
                         }
                         else if ( r/R0 < 2.0 ) {
-                            p2c += rho*urot*urot * (0.5 + (4.0*log(r/R0) - 4.0*(r/R0-1) + 0.5*((r/R0)*(r/R0) - 1.0)));
+                            dp2c += rho*urot*urot * (0.5 + (4.0*log(r/R0) - 4.0*(r/R0-1) + 0.5*((r/R0)*(r/R0) - 1.0)));
                         }
                         else {
-                            p2c += rho*urot*urot * (0.5 + (4.0*log(2.0) - 4.0 + 1.5));;
+                            dp2c += rho*urot*urot * (0.5 + (4.0*log(2.0) - 4.0 + 1.5));;
                         }
                                                 
+                        p2c += dp2c;
                         Sol->rho[n]  += rho;
                         Sol->rhou[n] += rho * u;
                         Sol->rhov[n] += rho * v;
                         Sol->rhow[n] += rho * w;
                         
                         if (ud.is_compressible) {
-                            double p     = p0 + ud.Msq*mpv->p2_cells[n];
+                            double p     = p0 + ud.Msq*dp2c;
                             Sol->rhoY[n] += pow(p,th.gamminv);
                             Sol->rhoe[n] += rhoe(rho, u, v, w, p);
                         } else {                    
@@ -385,6 +391,51 @@ void Sol_initial(ConsVars* Sol,
             }            
         }                
     }
+    
+    ud.nonhydrostasy   = nonhydrostasy(0);
+    ud.compressibility = compressibility(0);
+    
+    set_wall_massflux(bdry, Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem);
+    
+    ConsVars_set(Sol0, Sol, elem->nc);
+    
+    /* the initial projection should ensure the velocity field is discretely
+     divergence-controlled when sound-free initial data are required.
+     This can mean vanishing divergence in a zero-Mach flow or the 
+     pseudo-incompressible divergence constraint in an atmospheric flow setting
+     */ 
+    if (ud.initial_projection == CORRECT) {
+        int is_compressible    = ud.is_compressible;
+        double compressibility = ud.compressibility;
+        ud.is_compressible = 0;
+        ud.compressibility = 0.0;
+        double *p2aux = (double*)malloc(node->nc*sizeof(double));
+        for (int nn=0; nn<node->nc; nn++) {
+            p2aux[nn] = mpv->p2_nodes[nn];
+        }
+        for (int nc=0; nc<elem->nc; nc++) {
+            Sol->rhou[nc] -= u0*Sol->rho[nc];
+            Sol->rhov[nc] -= v0*Sol->rho[nc];
+        }
+        
+        //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
+        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed);
+        for (int nn=0; nn<node->nc; nn++) {
+            mpv->p2_nodes[nn] = p2aux[nn];
+            mpv->dp2_nodes[nn] = 0.0;
+        }
+        free(p2aux);
+        
+        for (int nc=0; nc<elem->nc; nc++) {
+            Sol->rhou[nc] += u0*Sol->rho[nc];
+            Sol->rhov[nc] += v0*Sol->rho[nc];
+        }
+        
+        ud.is_compressible = is_compressible;
+        ud.compressibility = compressibility;
+    }
+
 }
 
 /* ================================================================================== */
