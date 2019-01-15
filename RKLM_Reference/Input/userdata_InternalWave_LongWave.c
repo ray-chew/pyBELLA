@@ -24,7 +24,7 @@
 double molly(double x);
 
 /* horizontal stretch for S&K94 IGWs: planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0; */
-static double scalefactor = 160.0;      
+static double scalefactor = 20.0;      
 
 void User_Data_init(User_Data* ud) {
     
@@ -36,7 +36,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Earth */
     double grav     = 9.81;             /* gravitational acceleration [m/s^2]    */
-    double omega    = 0.0*0.0001;       /* Coriolis parameter [1/s]              */
+    double omega    = 1.0*0.0001;       /* Coriolis parameter [1/s]              */
                                         /* sin(0.5*PI) * 2.0 * 0.00007272205217; */
     
     /* thermodynamics and chemistry */
@@ -60,8 +60,8 @@ void User_Data_init(User_Data* ud) {
     ud->t_ref       = t_ref;
     ud->T_ref       = T_ref;
     ud->p_ref       = p_ref;
-    ud->u_ref       = u_ref;
     ud->rho_ref     = rho_ref;
+    ud->u_ref       = u_ref;
     ud->Nsq_ref     = Nsq_ref;
     ud->g_ref       = grav;
     ud->gamm        = gamma;
@@ -108,7 +108,7 @@ void User_Data_init(User_Data* ud) {
     ud->zmax =   1.0;
     
     /* boundary/initial conditions */
-    ud->wind_speed  =  0.0 * 20.0/u_ref;
+    ud->wind_speed  =  1.0 * 20.0/u_ref;
     ud->wind_shear  = -0.0;              /* velocity in [u_ref/h_ref] */
     ud->hill_height = 0.0 * 0.096447; 
     ud->hill_length_scale = 0.1535;   /* hill_length * l_ref = 1.0 km */
@@ -131,8 +131,8 @@ void User_Data_init(User_Data* ud) {
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
     ud->CFL                   = 0.9; /* 0.45; 0.9; 0.8; */
     /* large time step test variant  (N*dt = 20.0, or  dt = 2000 s in the planetary IGW test) */
-    ud->dtfixed0              = 0.05*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
-    ud->dtfixed               = 0.05*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed0              = 1.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed               = 1.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
      
      
     /* short time step test variant  (N*dt = 1.0, or  dt = 100 s in the planetary IGW test) 
@@ -195,7 +195,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 600;
+    ud->write_file_period = 30;
     ud->file_format = HDF;
     
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
@@ -214,11 +214,15 @@ void User_Data_init(User_Data* ud) {
 
 /* ================================================================================== */
 
-void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr* node) {
+void Sol_initial(ConsVars* Sol, 
+                 ConsVars* Sol0, 
+                 MPV* mpv,
+                 BDRY* bdry,
+                 const ElemSpaceDiscr* elem,
+                 const NodeSpaceDiscr* node) {
     
     extern Thermodynamic th;
     extern User_Data ud;
-    extern MPV* mpv;
     
     const int compressible = (ud.is_compressible == 0 ? 0 : 1);
     
@@ -228,7 +232,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     const double v0    = 0.0;
     const double w0    = 0.0;
     const double delth = 0.1 / ud.T_ref;                    /* pot. temp. perturbation amplitude; standard:  0.01 / ud.T_ref */
-    const double xc    = -0.0*scalefactor*50.0e+03/ud.h_ref; /* initial position of center of pot temp perturbation */
+    const double xc    = -1.0*scalefactor*50.0e+03/ud.h_ref; /* initial position of center of pot temp perturbation */
     const double a     = scalefactor*5.0e+03/ud.h_ref;       /* characteristic width of the witch of Agnesi type mollifier */
     
     const int icx = elem->icx;
@@ -357,6 +361,25 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             }
         }
     }
+
+    ud.nonhydrostasy   = nonhydrostasy(0);
+    ud.compressibility = compressibility(0);
+    
+    set_wall_massflux(bdry, Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem);
+    
+    ConsVars_set(Sol0, Sol, elem->nc);
+    
+    /* the initial projection should ensure the velocity field is discretely
+     divergence-controlled when sound-free initial data are required.
+     This can mean vanishing divergence in a zero-Mach flow or the 
+     pseudo-incompressible divergence constraint in an atmospheric flow setting
+     */ 
+    if (ud.initial_projection == CORRECT) {
+        /* initial velocity div-control not implemented for the test case yet. */
+        assert(0);
+    }
+    
 }
 
 /* ================================================================================== */

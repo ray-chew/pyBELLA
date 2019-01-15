@@ -28,7 +28,7 @@ double rho_function(double psi);
 
 void User_Data_init(User_Data* ud) {
 	
-	int i, max_no_of_levels;
+	int i;
 	
 	/* ================================================================================== */
 	/* =====  PROBLEM SET UP  =========================================================== */
@@ -57,6 +57,7 @@ void User_Data_init(User_Data* ud) {
     ud->t_ref       = t_ref;
     ud->T_ref       = T_ref;
     ud->p_ref       = p_ref;
+    ud->rho_ref     = rho_ref;
     ud->u_ref       = u_ref;
     ud->Nsq_ref     = Nsq_ref;
     ud->g_ref       = grav;
@@ -69,7 +70,7 @@ void User_Data_init(User_Data* ud) {
 
 	/* Low Mach */
     ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
-    ud->is_compressible   =  1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_compressible   =  0;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep =  0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
 	
@@ -208,11 +209,15 @@ void User_Data_init(User_Data* ud) {
 
 /* ================================================================================== */
 
-void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr* node) {
+void Sol_initial(ConsVars* Sol, 
+                 ConsVars* Sol0, 
+                 MPV* mpv,
+                 BDRY* bdry,
+                 const ElemSpaceDiscr* elem,
+                 const NodeSpaceDiscr* node) {
 	
 	extern Thermodynamic th;
 	extern User_Data ud;
-    extern MPV* mpv;
     extern double *Yinvbg;
     
 	const double u0 = ud.wind_speed;
@@ -291,7 +296,26 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
                 mpv->p2_nodes[n] = ((p-mpv->HydroState_n->p0[j])/rhoY) / ud.Msq;
             }
         }
-    }                  
+    }   
+    
+    ud.nonhydrostasy   = nonhydrostasy(0);
+    ud.compressibility = compressibility(0);
+    
+    set_wall_massflux(bdry, Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem);
+    
+    ConsVars_set(Sol0, Sol, elem->nc);
+    
+    /* the initial projection should ensure the velocity field is discretely
+     divergence-controlled when sound-free initial data are required.
+     This can mean vanishing divergence in a zero-Mach flow or the 
+     pseudo-incompressible divergence constraint in an atmospheric flow setting
+     */ 
+    if (ud.initial_projection == CORRECT) {
+        /* initial velocity div-control not implemented for the test case yet. */
+        assert(0);
+    }
+
 }
 
 /* ================================================================================== */

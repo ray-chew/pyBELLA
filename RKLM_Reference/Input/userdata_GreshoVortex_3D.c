@@ -19,6 +19,7 @@
 #include "boundary.h"
 #include "memory.h"
 #include "Hydrostatics.h"
+#include "second_projection.h"
 
 void User_Data_init(User_Data* ud) {
 	
@@ -209,12 +210,14 @@ void User_Data_init(User_Data* ud) {
 /* ================================================================================== */
 
 void Sol_initial(ConsVars* Sol,
+                 ConsVars* Sol0,
+                 MPV* mpv,
+                 BDRY* bdry,
                  const ElemSpaceDiscr* elem,
                  const NodeSpaceDiscr* node) {
 	
 	extern Thermodynamic th;
 	extern User_Data ud;
-    extern MPV* mpv;
     
 	const double u0    = 1.0*ud.wind_speed;
 	const double v0    = 0.0*ud.wind_speed;
@@ -388,6 +391,51 @@ void Sol_initial(ConsVars* Sol,
             }            
         }                
     }
+    
+    ud.nonhydrostasy   = nonhydrostasy(0);
+    ud.compressibility = compressibility(0);
+    
+    set_wall_massflux(bdry, Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem);
+    
+    ConsVars_set(Sol0, Sol, elem->nc);
+    
+    /* the initial projection should ensure the velocity field is discretely
+     divergence-controlled when sound-free initial data are required.
+     This can mean vanishing divergence in a zero-Mach flow or the 
+     pseudo-incompressible divergence constraint in an atmospheric flow setting
+     */ 
+    if (ud.initial_projection == CORRECT) {
+        int is_compressible    = ud.is_compressible;
+        double compressibility = ud.compressibility;
+        ud.is_compressible = 0;
+        ud.compressibility = 0.0;
+        double *p2aux = (double*)malloc(node->nc*sizeof(double));
+        for (int nn=0; nn<node->nc; nn++) {
+            p2aux[nn] = mpv->p2_nodes[nn];
+        }
+        for (int nc=0; nc<elem->nc; nc++) {
+            Sol->rhou[nc] -= u0*Sol->rho[nc];
+            Sol->rhov[nc] -= v0*Sol->rho[nc];
+        }
+        
+        //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
+        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed);
+        for (int nn=0; nn<node->nc; nn++) {
+            mpv->p2_nodes[nn] = p2aux[nn];
+            mpv->dp2_nodes[nn] = 0.0;
+        }
+        free(p2aux);
+        
+        for (int nc=0; nc<elem->nc; nc++) {
+            Sol->rhou[nc] += u0*Sol->rho[nc];
+            Sol->rhov[nc] += v0*Sol->rho[nc];
+        }
+        
+        ud.is_compressible = is_compressible;
+        ud.compressibility = compressibility;
+    }
+
 }
 
 /* ================================================================================== */

@@ -52,8 +52,8 @@ void User_Data_init(User_Data* ud) {
     ud->t_ref       = t_ref;
     ud->T_ref       = T_ref;
     ud->p_ref       = p_ref;
-    ud->u_ref       = u_ref;
     ud->rho_ref     = rho_ref;
+    ud->u_ref       = u_ref;
     ud->Nsq_ref     = Nsq_ref;
     ud->g_ref       = grav;
     ud->gamm        = gamma;
@@ -159,6 +159,9 @@ void User_Data_init(User_Data* ud) {
     ud->initial_projection                = WRONG;   /* WRONG;  CORRECT; */
     ud->initial_impl_Euler                = CORRECT; /* WRONG;  CORRECT; */
     
+    ud->initial_projection                = WRONG;   /* If this is changed, implement div-control in Sol_initial() */
+    ud->initial_impl_Euler                = WRONG;   /* to be tested: WRONG;  CORRECT; */
+
     ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
     ud->synchronize_nodal_pressure        = WRONG;   /* WRONG; CORRECT; */
     ud->synchronize_weight                = 0.0;    /* relevant only when prev. option is "CORRECT"
@@ -201,13 +204,15 @@ void User_Data_init(User_Data* ud) {
 
 /* ================================================================================== */
 
-void Sol_initial(ConsVars* Sol,
+void Sol_initial(ConsVars* Sol, 
+                 ConsVars* Sol0, 
+                 MPV* mpv,
+                 BDRY* bdry,
                  const ElemSpaceDiscr* elem,
                  const NodeSpaceDiscr* node) {
 	
 	extern Thermodynamic th;
 	extern User_Data ud;
-    extern MPV* mpv;
     
     const int compressible = (ud.is_compressible == 0 ? 0 : 1);
 
@@ -338,6 +343,25 @@ void Sol_initial(ConsVars* Sol,
             }
         }
     }
+    
+    ud.nonhydrostasy   = nonhydrostasy(0);
+    ud.compressibility = compressibility(0);
+    
+    set_wall_massflux(bdry, Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem);
+    
+    ConsVars_set(Sol0, Sol, elem->nc);
+    
+    /* the initial projection should ensure the velocity field is discretely
+     divergence-controlled when sound-free initial data are required.
+     This can mean vanishing divergence in a zero-Mach flow or the 
+     pseudo-incompressible divergence constraint in an atmospheric flow setting
+     */ 
+    if (ud.initial_projection == CORRECT) {
+        /* initial velocity div-control not implemented for the test case yet. */
+        assert(0);
+    }
+
 }
 
 /* ================================================================================== */

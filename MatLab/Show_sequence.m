@@ -16,11 +16,11 @@ modelstr = 'comp';
 
 %test_case = 'Baldaufs-Internal-Wave-Tests';
 %test_case = 'Deep-Internal-Wave-Tests';
-%test_case = 'Internal-Wave-Tests';
+test_case = 'Internal-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
-test_case = 'Travelling-Vortex';
+%test_case = 'Travelling-Vortex';
 %test_case = 'Travelling-Hump';
 %test_case = 'Acoustic-Wave';
 
@@ -71,8 +71,8 @@ elseif strcmp(test_case, 'Deep-Internal-Wave-Tests')
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Internal-Wave-Tests')
     % scalefactor = 1.0  % Skamarock-Klemp-1994 Fig.1
-    % scalefactor = 20.0   % Skamarock-Klemp-1994 Fig.3
-    scalefactor = 160.0;   % new, very long wave test
+    scalefactor = 20.0   % Skamarock-Klemp-1994 Fig.3
+    % scalefactor = 160.0;   % new, very long wave test
     ncx =301; 
     ncy = 10;  
     %ncx = 600; 
@@ -82,6 +82,7 @@ elseif strcmp(test_case, 'Internal-Wave-Tests')
     H   = 10.0;  %
     aspect = [L/H/3 1 1];
     velosc = 100;  % velocity unit of RKLM code
+    showslice = floor(ncy/2);
 elseif strcmp(test_case, 'Acoustic-Wave')
     scalefactor = 1.0;
     ncx = 300; 
@@ -99,10 +100,11 @@ elseif strcmp(test_case, 'Rising-Bubble')
     H   = 1.0; 
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
+    showslice = floor(ncy/2);
 elseif strcmp(test_case, 'Travelling-Vortex')
-    ncx = 64;  
-    ncy = 64; 
-    L   = 1.0;  
+    ncx = 80;  
+    ncy = 20; 
+    L   = 4.0;  
     x0  = 0.5;
     H   = 1.0; 
     aspect = [2 2 2];
@@ -171,7 +173,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'T';  folderstr = 'T'; titlestr = 'T'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dT';  folderstr = 'dT'; titlestr = 'dT'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
+%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
@@ -180,7 +182,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'rhov';  folderstr = 'rhov'; titlestr = 'rhov'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhow';  folderstr = 'rhow'; titlestr = 'rhow'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
-%varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
+varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'vortz';  folderstr = 'vortz'; titlestr = 'vortz'; ndummy = 2; arraysize = [nnx nny]; filledcontours = 1; fixed_contours = 0;
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy];
@@ -197,7 +199,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'lap_cells';  folderstr = 'lap_cells'; titlestr = 'lap_c';    ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dP_cells';  folderstr = 'rhs_cells'; titlestr = 'dP_c'; ndummy = 2; arraysize = [ncx ncy];
 
-varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
+%varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'rhs_nodes';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'rhs_nodes_prec';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n_prec';    ndummy = 2; arraysize = [nnx nny];

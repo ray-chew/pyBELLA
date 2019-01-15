@@ -422,7 +422,6 @@ void Sol_initial(ConsVars* Sol,
         }                
     }
 
-    
     ud.nonhydrostasy   = nonhydrostasy(0);
     ud.compressibility = compressibility(0);
     
