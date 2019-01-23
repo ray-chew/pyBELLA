@@ -122,9 +122,9 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
-    ud->CFL                   = 0.9/2.0;       
-    ud->dtfixed0              = 2.1*1.200930e-02;
-    ud->dtfixed               = 2.1*1.200930e-02;   
+    ud->CFL                   = 0.5/2.0;       
+    ud->dtfixed0              = 100000.0; /* 2.1*1.200930e-02 */;
+    ud->dtfixed               = 100000.0; /* 2.1*1.200930e-02 */;   
     
     set_time_integrator_parameters(ud);
     
@@ -141,11 +141,11 @@ void User_Data_init(User_Data* ud) {
     /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
         
     /* parameters for SWEBY_MUNZ limiter family */
-    ud->kp = 0.0; /* 1.4; */
-	ud->kz = 0.0; /* 1.4; */
-	ud->km = 0.0; /* 1.4; */
-	ud->kY = 0.0; /* 1.4; */
-	ud->kZ = 0.0; /* 1.4; */
+    ud->kp = 1.4; /* 1.4; */
+	ud->kz = 1.4; /* 1.4; */
+	ud->km = 1.4; /* 1.4; */
+	ud->kY = 1.4; /* 1.4; */
+	ud->kZ = 1.4; /* 1.4; */
 	
     /* al explicit predictor operations are done on ncache-size data worms to save memory */ 
 	ud->ncache =  201; /* (ud->inx+3); */
@@ -193,7 +193,7 @@ void User_Data_init(User_Data* ud) {
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 100000;
+	ud->write_file_period = 10000;
 	ud->file_format = HDF;
 
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
@@ -223,10 +223,10 @@ void Sol_initial(ConsVars* Sol,
 	extern User_Data ud;
 
 	const double u0    = 1.0*ud.wind_speed;
-	const double v0    = 0.0*ud.wind_speed;
+	const double v0    = 1.0*ud.wind_speed;
 	const double w0    = 0.0;
     
-    const double rotdir = 1.0;  /* the origin of the March 24 - trouble ... ;^) */
+    const double rotdir = 1.0;  
     
     const double p0      = 1.0;
     const double rho0    = 0.5;  /* 0.5 standard;  1.0 stable configuration; */

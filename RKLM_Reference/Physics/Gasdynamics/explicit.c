@@ -395,7 +395,8 @@ void advect(
         printf("\n====================================================\n");
         
         int stage = 0;
-        double timestep = (no_of_sweeps == DOUBLE_STRANG_SWEEP ? ud.tips.update_frac[0] : 1.0)*dt;
+        double timestep = ud.tips.update_frac[0] * dt;
+        
         for(int Split = 0; Split < elem->ndim; Split++) {
             const double lambda = timestep/elem->dx;
             Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, WITHOUT_MUSCL);                
@@ -404,22 +405,20 @@ void advect(
         for(int i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
             (*rotate[elem->ndim - 1])(Sol, BACKWARD);
         }
-        fullD_explicit_updates(Sol, Sol0, (const ConsVars**)flux, elem, timestep);
+        fullD_explicit_updates(Sol, Sol, (const ConsVars**)flux, elem, timestep);
         Set_Explicit_Boundary_Data(Sol, elem);      
         
-        if (no_of_sweeps == DOUBLE_STRANG_SWEEP) {
-            stage = 1;
-            for(int Split = 0; Split < elem->ndim; Split++) {
-                const double lambda = timestep/elem->dx;
-                Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, WITHOUT_MUSCL);                
-                (*rotate[elem->ndim - 1])(Sol, FORWARD);
-            }
-            for(int i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
-                (*rotate[elem->ndim - 1])(Sol, BACKWARD);
-            }
-            fullD_explicit_updates(Sol, Sol0, (const ConsVars**)flux, elem, ud.tips.update_frac[1]*dt);
-            Set_Explicit_Boundary_Data(Sol, elem);      
+        stage = 1;
+        for(int Split = 0; Split < elem->ndim; Split++) {
+            const double lambda = timestep/elem->dx;
+            Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, WITHOUT_MUSCL);                
+            (*rotate[elem->ndim - 1])(Sol, FORWARD);
         }
+        for(int i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
+            (*rotate[elem->ndim - 1])(Sol, BACKWARD);
+        }
+        fullD_explicit_updates(Sol, Sol, (const ConsVars**)flux, elem, ud.tips.update_frac[1]*dt);
+        Set_Explicit_Boundary_Data(Sol, elem);      
     }
     else {  /* Strang splitting == STRANG is the default */ 
 #ifndef SYMMETRIC_ADVECTION

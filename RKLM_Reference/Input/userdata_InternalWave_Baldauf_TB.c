@@ -188,13 +188,12 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 2000;
+    ud->write_file_period = 200;
     ud->file_format = HDF;
     
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
 
     {
-        /* char *OutputBaseFolder      = "/home/benacchio/workspace/RKLM_Reference/"; */
         char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
@@ -208,11 +207,15 @@ void User_Data_init(User_Data* ud) {
 
 /* ================================================================================== */
 
-void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr* node) {
+void Sol_initial(ConsVars* Sol, 
+                 ConsVars* Sol0, 
+                 MPV* mpv,
+                 BDRY* bdry,
+                 const ElemSpaceDiscr* elem,
+                 const NodeSpaceDiscr* node) {
     
     extern Thermodynamic th;
     extern User_Data ud;
-    extern MPV* mpv;
         
     /* Skamarock-Klemp 1994 - type test */
     const double u0    = ud.wind_speed;
@@ -306,6 +309,26 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             }
         }
     }
+    
+    
+    ud.nonhydrostasy   = nonhydrostasy(0);
+    ud.compressibility = compressibility(0);
+    
+    set_wall_massflux(bdry, Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem);
+    
+    ConsVars_set(Sol0, Sol, elem->nc);
+    
+    /* the initial projection should ensure the velocity field is discretely
+     divergence-controlled when sound-free initial data are required.
+     This can mean vanishing divergence in a zero-Mach flow or the 
+     pseudo-incompressible divergence constraint in an atmospheric flow setting
+     */ 
+    if (ud.initial_projection == CORRECT) {
+        /* initial velocity div-control not implemented for the test case yet. */
+        assert(0);
+    }
+    
 }
 
 /* ================================================================================== */
