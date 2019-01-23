@@ -7,8 +7,8 @@
 extrafigno = 52;
 
 %modelstr = '';
-modelstr = 'comp';
-%modelstr = 'psinc' ;  
+%modelstr = 'comp';
+modelstr = 'psinc' ;  
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
@@ -177,7 +177,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 % [rho_ts,rhou_ts,rhov_ts,rhow_ts,rhoe_ts,rhoY_ts] = import_timeseries(ts_name, 2, nts);
 
 % cell-centered fields
-varstr = 'rho'; folderstr = 'rho'; titlestr = 'rho'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 0;
+%varstr = 'rho'; folderstr = 'rho'; titlestr = 'rho'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 0;
 %varstr = 'p'; folderstr = 'p'; titlestr = 'p'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'S'; folderstr = 'S'; titlestr = 'S'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy]; rhoY_diff = 1;
@@ -211,7 +211,7 @@ varstr = 'rho'; folderstr = 'rho'; titlestr = 'rho'; ndummy = 2; arraysize = [nc
 %varstr = 'lap_cells';  folderstr = 'lap_cells'; titlestr = 'lap_c';    ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dP_cells';  folderstr = 'rhs_cells'; titlestr = 'dP_c'; ndummy = 2; arraysize = [ncx ncy];
 
-%varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
+varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'rhs_nodes';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'rhs_nodes_prec';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n_prec';    ndummy = 2; arraysize = [nnx nny];

@@ -66,7 +66,7 @@ void User_Data_init(User_Data* ud) {
 
 	/* Low Mach */
     ud->is_nonhydrostatic = 1;
-    ud->is_compressible   = 1;
+    ud->is_compressible   = 0;
     ud->acoustic_timestep =  0; /* 0;  1; */
 	ud->Msq =  u_ref*u_ref / (R_gas*T_ref); 
 	
