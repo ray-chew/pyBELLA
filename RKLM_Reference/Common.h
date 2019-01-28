@@ -8,7 +8,7 @@
 #define HDFFORMAT  
 
 /* Output options in main.c for debugging;  1 -> output */
-#define OUTPUT_SUBSTEPS 0 /* time step after which detailed output is generated */
+#define OUTPUT_SUBSTEPS   0 /* time step after which detailed output is generated */
 #define OUTPUT_SPLITSTEPS 0
 
 /*
@@ -27,15 +27,12 @@
  #define SYMMETRIC_ADVECTION
  #define FOURTH_ORDER_ADV_FLUXES
  #define UPWIND_RHOY
- #define NODAL_PROJECTION_ONLY
- 
- #define LIMIT_PLAIN_PRIMITIVES
-
  */ 
 #define HY_STATES_N_FROM_CELL_CENTERED_THETA
 #define EVOLVE_NODAL_PRESSURE
 #define ADVECTION
 #define SYMMETRIC_ADVECTION
+#define LIMIT_PLAIN_PRIMITIVES  /* benefit of option for travelling vortex unclear */
 
 /* 
  #define NODAL_PROJECTION_ONLY
