@@ -421,12 +421,11 @@ void advect(
         Set_Explicit_Boundary_Data(Sol, elem);      
     }
     else {  /* Strang splitting == STRANG is the default */ 
-#ifndef SYMMETRIC_ADVECTION
         /*
          Simple or Strang splitting for the advection step.
          odd = 0:  even time steps
          odd = 1:  odd  time steps
-         used to steer alternatinging Strang sequences.
+         used to steer alternatinging Strang sequences to improve symmetries.
          */
         double time_step = (no_of_sweeps == DOUBLE_STRANG_SWEEP ? 0.5*dt : dt);
         
@@ -469,71 +468,7 @@ void advect(
             
         }
         Set_Explicit_Boundary_Data(Sol, elem);
-        
-#else
-        extern ConsVars* Sol1;
-        ConsVars* Sols[2] = {Sol, Sol1};
-        
-        for (int i=1; i<elem->ndim; i++) {
-            ConsVars_set(Sols[i], Sol, elem->nc);
-        }
-        
-        double time_step = (no_of_sweeps == DOUBLE_STRANG_SWEEP ? 0.5*dt : dt);
-        
-        printf("\n\n====================================================");
-        printf("\nAdvection, dt = %e", dt);
-        printf("\n====================================================\n");
-        
-        assert(elem->ndim == 2);
-        
-        for (int cycle=0; cycle<elem->ndim; cycle++) {
-            
-            int stage = 0;
-            if (cycle) {
-                for(int Split = 0; Split < elem->ndim; Split++) {
-                    const double lambda = time_step/elem->dx;
-                    Explicit_step_and_flux(Sols[cycle], flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);                
-                    (*rotate[elem->ndim - 1])(Sols[cycle], FORWARD);
-                }
-            } else {
-                for(int i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
-                    int Split = (elem->ndim - 1) - i_OpSplit;
-                    (*rotate[elem->ndim - 1])(Sols[cycle], BACKWARD);
-                    const double lambda = time_step/elem->dx;
-                    Explicit_step_and_flux(Sols[cycle], flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);
-                }        
-            }
-            
-            if (no_of_sweeps == DOUBLE_STRANG_SWEEP) {
-                stage = 1;
-                if (1-cycle) {
-                    for(int i_OpSplit = 0; i_OpSplit < elem->ndim; i_OpSplit++) {
-                        int Split = (elem->ndim - 1) - i_OpSplit;
-                        (*rotate[elem->ndim - 1])(Sols[cycle], BACKWARD);
-                        const double lambda = time_step/elem->dx;
-                        Explicit_step_and_flux(Sols[cycle], flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);
-                    }
-                } else {
-                    for(int Split = 0; Split < elem->ndim; Split++) {
-                        const double lambda = time_step/elem->dx;
-                        Explicit_step_and_flux(Sols[cycle], flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);                
-                        (*rotate[elem->ndim - 1])(Sols[cycle], FORWARD);
-                    }            
-                }
-            }
-            Set_Explicit_Boundary_Data(Sols[cycle], elem);
-            
-            if (cycle > 0) {
-                ConsVars_add(Sol,Sols[cycle],elem->nc);
-            }
-        }
-        
-        ConsVars_multiply_by_scalar(Sol, 1.0/elem->ndim, elem->nc);
-        Set_Explicit_Boundary_Data(Sol, elem);
-#endif
     }
-
-    
 }
 
 /* ================================================================================ */

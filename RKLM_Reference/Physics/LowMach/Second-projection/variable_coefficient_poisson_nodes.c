@@ -109,7 +109,6 @@ void set_periodic_data(double *p,
 
 /* ========================================================================== */
 
-#define OUTPUT_LAP_NODES 0
 #if OUTPUT_LAP_NODES
 static int lap_output_count = 0;
 #endif

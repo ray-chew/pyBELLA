@@ -89,7 +89,6 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
 
 /* ========================================================================== */
 
-#define OUTPUT_RHS_NODES 0
 #if OUTPUT_RHS_NODES
 static int rhs_output_count = 0;
 static int first_output_step = 0;
@@ -269,7 +268,6 @@ static double divergence_nodes(
     
     int i, j, k, mn;
     
-#ifndef FOURTH_ORDER_ADV_FLUXES
     switch(ndim) {
         case 1: {
             ERROR("divergence_nodes() not implemented for 1D\n");
@@ -456,199 +454,7 @@ static double divergence_nodes(
         }
         default: ERROR("ndim not in {1, 2, 3}");
     }
-#else
-    extern ConsVars* flux[3];
-    extern double dt;  
-    
-    assert(0); 
-    /* if this code branch gets revived, make  dt  an arg of the function;
-     make sure periodicity is properly accounted for 
-     */
-    
-    double* W1 = (double*)malloc(node->nc*sizeof(double));
-    
-    switch(ndim) {
-        case 1: {
-            ERROR("divergence_nodes() not implemented for 1D\n");
-            break;
-        }
-        case 2: {
-            
-            const int icxn = node->icx;
-            
-            const int igxe = elem->igx;
-            const int icxe = elem->icx;
-            const int igye = elem->igy;
-            const int icye = elem->icy;
-            
-            const double dx      = node->dx;
-            const double dy      = node->dy;
-            const double oodx    = 1.0 / dx;
-            const double oody    = 1.0 / dy;
-            
-            double Y, rhsmax;
-            double *rhs_cell = W1;
-            
-            /* build nodal divergence from cell-centered divergence averaged to nodes */
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, dt);
-            
-            rhsmax = controlled_variable_flux_divergence(rhs_cell, (const ConsVars**)flux, elem);
-            
-            /* predicted time level divergence via scattering */
-            for(j = igye; j < icye - igye; j++) {
-                const int me = j * icxe;
-                const int mn = j * icxn; 
-                for(i = igxe; i < icxe - igxe; i++) {
-                    const int ne    = me + i; 
-                    const int n     = mn + i;
-                    const int nicx  = n  + icxn;
-                    const int n1    = n  + 1;
-                    const int n1icx = n1 + icxn;
-                    
-                    rhs[n]     += 0.25*rhs_cell[ne];
-                    rhs[n1]    += 0.25*rhs_cell[ne];
-                    rhs[n1icx] += 0.25*rhs_cell[ne];
-                    rhs[nicx]  += 0.25*rhs_cell[ne];
-                }
-            } 
-            
-            
-            /* account for influx bottom boundary */
-            j = igye;
-            mn = j * icxn; 
-            Y  = mpv->HydroState->Y0[j];
-            for(i = igxe; i < icxe - igxe; i++) {
-                const int n     = mn + i;
-                const int n1    = n  + 1;
-                
-                double rhov_wall = bdry->wall_massflux[i]; 
-                double tmpy      = 0.25 * oody * Y * rhov_wall;  
-                
-                rhs[n]  += - tmpy;
-                rhs[n1] += - tmpy;
-            }
-            
-            for(j = igye+1; j < icye - igye; j++) {
-                const int mn = j * icxn; 
-                for(i = igxe+1; i < icxe - igxe; i++) {
-                    int nn    = mn + i;
-                    div_max = MAX_own(div_max, fabs(rhs[nn]));
-                }
-            }
-            break;
-        }
-            
-        case 3: {
-            
-            const int icxn = node->icx;
-            const int icyn = node->icy;
-            
-            const int igxe = elem->igx;
-            const int icxe = elem->icx;
-            const int igye = elem->igy;
-            const int icye = elem->icy;
-            const int igze = elem->igz;
-            const int icze = elem->icz;
-            
-            const double dx = node->dx;
-            const double dy = node->dy;
-            const double dz = node->dz;
-            
-            const double oodx = 1.0 / dx;
-            const double oody = 1.0 / dy;
-            const double oodz = 1.0 / dz;
-
-            const int dixn = 1;
-            const int diyn = icxn;
-            const int dizn = icxn*icyn;
-            
-            double Y, rhsmax;
-            double *rhs_cell = W1;
-            
-            /* build nodal divergence from cell-centered divergence averaged to nodes */
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, dt);
-
-            rhsmax = controlled_variable_flux_divergence(rhs_cell, (const ConsVars**)flux, elem);
-            
-            /* predicted time level divergence via scattering */
-            for(k = igze; k < icze - igze; k++) {
-                const int le = k * icxe*icye;
-                const int ln = k * icxn*icyn; 
-                for(j = igye; j < icye - igye; j++) {
-                    const int me = le + j * icxe;
-                    const int mn = ln + j * icxn; 
-                    for(i = igxe; i < icxe - igxe; i++) {
-                        const int ne     = me + i; 
-                        const int nn000  = mn + i;  /* TODO: foresee consistent interpretation of "abc" in nnabc between parts of code */
-                        const int nn010  = nn000 + diyn;
-                        const int nn011  = nn000 + diyn + dizn;
-                        const int nn001  = nn000        + dizn;
-                        const int nn100  = nn000 + dixn;
-                        const int nn110  = nn000 + dixn + diyn;
-                        const int nn111  = nn000 + dixn + diyn + dizn;
-                        const int nn101  = nn000 + dixn        + dizn;
-                        
-                        rhs[nn000] += 0.125*rhs_cell[ne];
-                        rhs[nn010] += 0.125*rhs_cell[ne];
-                        rhs[nn011] += 0.125*rhs_cell[ne];
-                        rhs[nn001] += 0.125*rhs_cell[ne];
-                        rhs[nn100] += 0.125*rhs_cell[ne];
-                        rhs[nn110] += 0.125*rhs_cell[ne];
-                        rhs[nn111] += 0.125*rhs_cell[ne];
-                        rhs[nn101] += 0.125*rhs_cell[ne];
-                    }
-                }
-            }
-            
-            /* account for influx bottom boundary */
-            j = igye;
-            Y  = mpv->HydroState->Y0[j];
-            for(k = igze; k < icze - igze; k++) {
-                int ln = k * icyn*icxn;
-                int mn = ln + j*icxn;
-                for(i = igxe; i < icxe - igxe; i++) {
-                    int nn   = mn + i;
-                    int nn00 = nn;
-                    int nn10 = nn + dixn;
-                    int nn11 = nn + dixn + dizn;
-                    int nn01 = nn +      + dizn;
-                    
-                    double rhov_wall = bdry->wall_massflux[i]; 
-                    double tmpy = 0.25 * oody * Y * rhov_wall; 
-                    
-                    rhs[nn00] += - tmpy;
-                    rhs[nn10] += - tmpy;
-                    rhs[nn01] += - tmpy;
-                    rhs[nn11] += - tmpy;
-                }
-            }        
-            
-            for(k = igze+1; k < icze - igze; k++) {
-                int ln = k*icxn*icyn; 
-                for(j = igye+1; j < icye - igye; j++) {
-                    int mn = ln + j * icxn; 
-                    for(i = igxe+1; i < icxe - igxe; i++) {
-                        int nn  = mn + i;
-                        div_max = MAX_own(div_max, fabs(rhs[nn]));
-                    }
-                }
-            }
-            break;
-        }
-        default: ERROR("ndim not in {1, 2, 3}");
-    }  
-  
-    free(W1);
-#endif
-    
-#if 0
-    FILE *prhsfile = NULL;
-    char fn[100], fieldname[90];
-    sprintf(fn, "rhs_nodes.hdf");
-    sprintf(fieldname, "rhs-nodes");    
-    WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
-#endif
-    
+        
     return div_max;
     
 }
@@ -1431,12 +1237,7 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
                 
                 /* implicit gravity */
                 double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;
-#ifdef EVOLVE_NODAL_PRESSURE
                 double dbuoy = -Sol->rhoY[n]*Sol->rhoX[BUOY][n]/Sol->rho[n];    
-#else
-                double dchi    = 0.25*(Sol->rhoX[BUOY][n+icx]/Sol->rho[n+icx] + 2.0*Sol->rhoX[BUOY][n]/Sol->rho[n] + Sol->rhoX[BUOY][n-icx]/Sol->rho[n-icx]);
-                double dbuoy   = -Sol->rhoY[n]*dchi;  
-#endif
                 double rhov  = (nonhydro * Sol->rhov[n] + dt * (g/Msq) * dbuoy) / (nonhydro + Nsqsc);
                 
                 /* implicit Coriolis */
@@ -1482,9 +1283,6 @@ void euler_forward_non_advective(ConsVars* Sol,
     double* dp2n = W0;
 
     double* p2n  = mpv->p2_nodes;
-#ifndef EVOLVE_NODAL_PRESSURE
-    double* p2c  = mpv->p2_cells;
-#endif
     const double g        = ud.gravity_strength[1];
     const double Msq      = ud.Msq;
     const double Ginv     = th.Gammainv;     
@@ -1576,7 +1374,6 @@ void euler_forward_non_advective(ConsVars* Sol,
                     int nn01 = nn00 + 1;
                     int nn11 = nn00 + 1 + icxn;
    
-#ifdef EVOLVE_NODAL_PRESSURE
                     double dpdx    = wp*0.5*(p2n[nn01]-p2n[nn00]+p2n[nn11]-p2n[nn10])/dx;
                     double dpdy    = wp*0.5*(p2n[nn10]-p2n[nn00]+p2n[nn11]-p2n[nn01])/dy;
                     double dSdy    = (S0p-S0m) / dy;
@@ -1585,21 +1382,7 @@ void euler_forward_non_advective(ConsVars* Sol,
                     double dchi    = Sol->rhoX[BUOY][nc]/Sol->rho[nc];
                     double dbuoy   = -Sol->rhoY[nc]*dchi;  
                     double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
-#else
-                    double dpdx    = wp*0.5*(p2c[nc+1]-p2n[nc-1])/dx;
-                    double dpdy    = wp*0.5*(p2c[nc+icxe]-p2c[nc-icxe])/dy;
-                    double dSdy    = (S0p-S0m) / dy;
-                    double rhoYovG = Ginv*Sol->rhoY[nc];
-                    double v       = Sol->rhov[nc]/Sol->rho[nc];
-                    double dchi    = 0.25*(   Sol->rhoX[BUOY][nc+icxe]/Sol->rho[nc+icxe] 
-                                        + 2.0*Sol->rhoX[BUOY][nc]/Sol->rho[nc] 
-                                        +     Sol->rhoX[BUOY][nc-icxe]/Sol->rho[nc-icxe]);
-                    double dbuoy   = -Sol->rhoY[nc]*dchi; 
-                    double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
-#endif
 
-                    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
-                     Option EXNER_NONLINEAR did not exist on Oct. 24 */
 #ifdef EXNER_NONLINEAR
                     double dpidP   = 1.0;
 #else
@@ -1608,24 +1391,12 @@ void euler_forward_non_advective(ConsVars* Sol,
                                                 pow(Sol->rhoY[nc-icxe], th.gamm - 2.0) + pow(Sol->rhoY[nc-icxe-1], th.gamm - 2.0));
 #endif
 
-                    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
-#if 1  /* November 11 version: 1;   October 24 version: 0 */
-                    Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
-                    Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
-                    Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
-#ifdef ADVECTION
                     double time_offset_expl = ud.acoustic_order - 1.0;
-                    Sol->rhoX[BUOY][nc] = (Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c)) +  time_offset_expl * dt * ( - v * dSdy) * Sol->rho[nc];
-#else /* ADVECTION */
-                    Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
-#endif /* ADVECTION */
-
-#else /* November 11 version: 1;   October 24 version: 0 */
                     Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                     Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
                     Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
-                    Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
-#endif /* November 11 version: 1;   October 24 version: 0 */
+                    Sol->rhoX[BUOY][nc] = (Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c)) +  time_offset_expl * dt * ( - v * dSdy) * Sol->rho[nc];
+
                     
                     dp2n[nn00] -= dt * dpidP * div[nn00];
                 }
@@ -1673,7 +1444,6 @@ void euler_forward_non_advective(ConsVars* Sol,
                         int nn101 = nn100 + 1;
                         int nn111 = nn100 + 1 + inx;
                         
-#ifdef EVOLVE_NODAL_PRESSURE
                         double dpdx   = wp*0.25*(p2n[nn001]-p2n[nn000]+p2n[nn011]-p2n[nn010]+p2n[nn101]-p2n[nn100]+p2n[nn111]-p2n[nn110])/dx;
                         double dpdy   = wp*0.25*(p2n[nn010]-p2n[nn000]+p2n[nn011]-p2n[nn001]+p2n[nn110]-p2n[nn100]+p2n[nn111]-p2n[nn101])/dy;
                         double dpdz   = wp*0.25*(p2n[nn100]-p2n[nn000]+p2n[nn110]-p2n[nn010]+p2n[nn101]-p2n[nn001]+p2n[nn111]-p2n[nn011])/dz;
@@ -1689,7 +1459,7 @@ void euler_forward_non_advective(ConsVars* Sol,
                          Option EXNER_NONLINEAR did not exist on Oct. 24 */
 #ifdef EXNER_NONLINEAR
                         double dpidP   = 1.0;
-#else
+#else /* EXNER_NONLINEAR */
                         double dpidP   = (th.gm1 / ud.Msq) * \
                         0.125 * (pow(Sol->rhoY[nc], th.gamm - 2.0)          + pow(Sol->rhoY[nc-1], th.gamm - 2.0) + \
                                  pow(Sol->rhoY[nc-icx], th.gamm - 2.0)      + pow(Sol->rhoY[nc-icx-1], th.gamm - 2.0) + \
@@ -1698,7 +1468,7 @@ void euler_forward_non_advective(ConsVars* Sol,
                         /* alternative without need to call pow():  
                          double dpidP   = th.gm1 * mpv->p2_cells[nc] / Sol->rhoY[nc]; 
                          */
-#endif
+#endif /* EXNER_NONLINEAR */
                         
                         /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
 #if 1 /* November 11 version: 1;   October 24 version: 0 */
@@ -1708,18 +1478,14 @@ void euler_forward_non_advective(ConsVars* Sol,
                         Sol->rhow[nc]  = Sol->rhow[nc] + dt * ( - rhoYovG * dpdz - coriolis * drhou);
                         Sol->rhoY[nc]  = Sol->rhoY[nc] - dt * div[nc];
                         Sol->rhoX[BUOY][nc] = (Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c)) + time_offset_expl * dt * ( - v * dSdy) * Sol->rho[nc];
-#else
+#else /* 1 */
                         Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
                         Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
                         Sol->rhow[nc]  = Sol->rhow[nc] + dt * ( - rhoYovG * dpdz - coriolis * drhou);
                         Sol->rhoY[nc]  = Sol->rhoY[nc] - dt * div[nc];
                         Sol->rhoX[BUOY][nc] += dt * ( - v * dSdy) * Sol->rho[nc];
-#endif
+#endif /* 1 */
                         dp2n[nn000] -= dt * dpidP * div[nn000];
-#else /* EVOLVE_NODAL_PRESSURE */ 
-                        /* This option yet needs to be transferred from the 2D case */
-                        assert(0);
-#endif /* EVOLVE_NODAL_PRESSURE */
                     }
                 }
             }
