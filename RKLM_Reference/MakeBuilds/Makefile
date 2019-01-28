@@ -1,4 +1,4 @@
-CC = gcc
+lCC = gcc
 
 HDFLIBDIR	  = /usr/lib
 HDFINC		  = /usr/local/HDF_Group/HDF/4.2.14/include
@@ -65,11 +65,11 @@ LD		= $(CC)
 LDFLAGS		= 
 
 LIBS		= $(HDFLIBDIR)/libmfhdf.a \
-		$(HDFLIBDIR)/libdf.a  /home/benacchio/hdf4/CMake-hdf-4.2.14/build/bin/libjpeg.a $(HDFLIBDIR)/x86_64-linux-gnu/libz.a -lm -fPIC
+		$(HDFLIBDIR)/libdf.a  /home/tommaso/hdf4/CMake-hdf-4.2.14/build/bin/libjpeg.a $(HDFLIBDIR)/x86_64-linux-gnu/libz.a -lm -fPIC
 
 MAKEFILE	= Makefile
 
-OBJS		= userdata_InternalWave_Baldauf.o \
+OBJS		= userdata_AcousticWave_B14.o \
 		boundary.o \
 		data.o \
 		io.o \
@@ -103,7 +103,7 @@ PROGRAM	   = rklm
 
 SHELL		  = /bin/sh
 
-SRCS		  = ../Input/userdata_InternalWave_Baldauf.c \
+SRCS		  = ../Input/userdata_AcousticWave_B14.c \
 		../Input/boundary.c \
 		../Management/data.c \
 		../Management/io.c \
@@ -164,8 +164,8 @@ $(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)
 		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install
 
 ###
-userdata_InternalWave_Baldauf.o : 
-	$(CC) -c $(HDRFLAGS) ../Input/userdata_InternalWave_Baldauf.c
+userdata_AcousticWave_B14.o : 
+	$(CC) -c $(HDRFLAGS) ../Input/userdata_AcousticWave_B14.c
 
 boundary.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/boundary.c

@@ -181,7 +181,7 @@ void User_Data_init(User_Data* ud) {
 	ud->file_format = HDF;
 
     {
-        char *OutputBaseFolder      = "/home/benacchio/workspace/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {

@@ -7,8 +7,8 @@
 extrafigno = 52;
 
 %modelstr = '';
-%modelstr = 'comp';
-modelstr = 'psinc' ;  
+modelstr = 'comp';
+%modelstr = 'psinc' ;  
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
@@ -20,9 +20,10 @@ modelstr = 'psinc' ;
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
-test_case = 'Travelling-Vortex';
+%test_case = 'Travelling-Vortex';
 %test_case = 'Travelling-Hump';
 %test_case = 'Acoustic-Wave';
+test_case = 'Acoustic-Wave_B14';
 
 showmode = 1;
 separate_signs = 1;
@@ -38,6 +39,7 @@ symmetrytest = 0;
 showdummycells = 0;
 showslice = 1;
 diff_rel_to_bottom = 0;
+print_eps = 0;
 
 % th0 = -0.0015/300;
 % dth = 5e-4/300;
@@ -97,6 +99,17 @@ elseif strcmp(test_case, 'Acoustic-Wave')
     H   = 10.0;  %
     aspect = [16 1 1];
     velosc = 100;  % velocity unit of RKLM code
+    showslice_hor = floor(ncy/2);
+    showslice_ver = floor(ncx/2);
+elseif strcmp(test_case, 'Acoustic-Wave_B14')
+    scalefactor = 1.0;
+    ncx = 256; 
+    ncy = 10;  
+    L   = 1.0 * scalefactor;  % 
+    x0  = 0.5*L;
+    H   = 10.0;  %
+    aspect = [.1 1 1];
+    velosc = 1;  % velocity unit of RKLM code
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Rising-Bubble')
@@ -171,14 +184,14 @@ rhoY_diff = 0;
 rhoZ_diff = 0;
 transp    = 0;
 
-folderstring = strcat('/home/benacchio/workspace/RKLM_Reference/low_Mach_gravity_',modelstr);
+folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/low_Mach_gravity_',modelstr);
 
 % for time series display
 ts_name = strcat(folderstring, '/time_series.txt');
 % [rho_ts,rhou_ts,rhov_ts,rhow_ts,rhoe_ts,rhoY_ts] = import_timeseries(ts_name, 2, nts);
 
 % cell-centered fields
-%varstr = 'rho'; folderstr = 'rho'; titlestr = 'rho'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 0;
+varstr = 'rho'; folderstr = 'rho'; titlestr = 'rho'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 0;
 %varstr = 'p'; folderstr = 'p'; titlestr = 'p'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'S'; folderstr = 'S'; titlestr = 'S'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoY';  folderstr = 'rhoY'; titlestr = 'rhoY'; ndummy = 2; arraysize = [ncx ncy]; rhoY_diff = 1;
@@ -212,7 +225,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'lap_cells';  folderstr = 'lap_cells'; titlestr = 'lap_c';    ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dP_cells';  folderstr = 'rhs_cells'; titlestr = 'dP_c'; ndummy = 2; arraysize = [ncx ncy];
 
-varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
+%varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'rhs_nodes';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'rhs_nodes_prec';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n_prec';    ndummy = 2; arraysize = [nnx nny];
@@ -339,8 +352,10 @@ for k = kmin:dk:kmax
                 pos(4)=.95*pos(4);        % try increasing width and height 10% 
                 set(gca,'position',pos);  % write the new values
             end
-            filename = sprintf('./results/%s_evol/%s_snapshot%d.eps', varstr, varstr, k);
-            print(filename, '-depsc')            
+            if print_eps
+                filename = sprintf('./results/%s_evol/%s_snapshot%d.eps', varstr, varstr, k);
+                print(filename, '-depsc')            
+            end
         else
             figure(figure1)
             if fixed_contours
@@ -373,9 +388,10 @@ for k = kmin:dk:kmax
                     contour(x,z,th,no_of_contours,'LineColor','k');
                 end
             end
-            
-            filename = sprintf('./results/%s_evol/%s_snapshot%d.eps', varstr, varstr, k);
-            print(filename, '-depsc')
+            if print_eps
+                filename = sprintf('./results/%s_evol/%s_snapshot%d.eps', varstr, varstr, k);
+                print(filename, '-depsc')
+            end
         end
                 
         set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
@@ -420,18 +436,23 @@ for k = kmin:dk:kmax
     
     if showslice_hor
         figure(figure3)
-        %hold
-        plot(th(showslice_hor,:))
-        filename = sprintf('./results/%s_evol/%s_snapshot%d_cut_hor.eps', varstr, varstr, k);
-        print(filename, '-depsc')
-        %hold
+        if print_eps
+            plot(th(showslice_hor,:))
+            filename = sprintf('./results/%s_evol/%s_snapshot%d_cut_hor.eps', varstr, varstr, k);
+            print(filename, '-depsc')
+        else
+            hold
+        end
     end
     if showslice_ver
         figure(figure4)
-        plot(th(showslice_ver,:))
-        filename = sprintf('./results/%s_evol/%s_snapshot%d_cut_ver.eps', varstr, varstr, k);
-        print(filename, '-depsc')
-        %hold
+        if print_eps
+            plot(th(showslice_hor,:))
+            filename = sprintf('./results/%s_evol/%s_snapshot%d_cut_ver.eps', varstr, varstr, k);
+            print(filename, '-depsc')
+        else
+            hold
+        end
     end
     
     pause

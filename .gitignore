@@ -4,6 +4,7 @@
 *.orig
 RKLM_Reference/MakeBuilds/rklm
 low_Mach_gravity_comp/*
+low_Mach_gravity_psinc/*
 MatLab/results/*
 *.backup
 *.aux
