@@ -303,15 +303,9 @@ void Sol_initial(ConsVars* Sol,
             v   = v0;
             w   = w0;
             
-#ifdef ADVECTION
             p    = (compressible ? HySt->p0[j] : mpv->HydroState->p0[j]);            
             rhoY = (compressible ? HySt->rhoY0[j] : mpv->HydroState->rhoY0[j]);
             rho  = rhoY/Y[j];
-#else
-            p    = mpv->HydroState->p0[j];            
-            rhoY = mpv->HydroState->rhoY0[j];
-            rho  = mpv->HydroState->rho0[j];
-#endif
             
             Sol->rho[n]    = rho;
             Sol->rhou[n]   = rho * u;

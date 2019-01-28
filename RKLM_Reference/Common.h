@@ -9,89 +9,34 @@
 #define HDFFORMAT  
 
 /* Debugging output options in various places */
-#define OUTPUT_SUBSTEPS   0       /* time step after which detailed output is generated - off */
-#define OUTPUT_SPLITSTEPS 0       /* on-off */
-#define OUTPUT_HYDROSTATES 0      /* on-off */
-#define OUTPUT_FLUXES 0           /* on-off */
-#define OUTPUT_LAP_CELLS 0        /* on-off */
-#define OUTPUT_RHS_CELLS 0        /* on-off */
-#define OUTPUT_LAP_NODES 0        /* on-off */
-#define OUTPUT_RHS_NODES 0        /* on-off */
-#define OUTPUT_ADVECTIVE_FLUXES 0 /* on-off */
+#define OUTPUT_SUBSTEPS    0       /* time step after which detailed output is generated - off */
+#define OUTPUT_SPLITSTEPS  0       /* on-off */
+#define OUTPUT_HYDROSTATES 0       /* on-off */
+#define OUTPUT_FLUXES      0       /* on-off */
+#define OUTPUT_LAP_CELLS   0       /* on-off */
+#define OUTPUT_RHS_CELLS   0       /* on-off */
+#define OUTPUT_LAP_NODES   0       /* on-off */
+#define OUTPUT_RHS_NODES   0       /* on-off */
+#define OUTPUT_ADV_FLUXES  0       /* on-off */
 
 /* ============================================= 
  Explicit predictor options
  ============================================= */
-/* NODAL_PROJECTION_ONLY:
- 0: MAC projection
- 1: NODAL projection and post-projection flux averaging (no 3D version yet) 
- */
-#define NODAL_PROJECTION_ONLY 1
 
 /* ============================================= 
  Semi-implicit solver options  
- ============================================= */
-/* NONLINEAR_EOS_IN_1st_PROJECTION: 
- 0: linearization of the equation of state  P(pi)
- 1: Newton for  P(pi)
- */
- #define NONLINEAR_EOS_IN_1st_PROJECTION 0
-
-/* ============================================= 
- Elliptic Solver Options
  ============================================= */
 /* PRECON:
  0: no preconditioner
  1: diagonal (no gravity) or column-wise (with gravity) preconditioner
  */
 #define PRECON 1
-
-/* solver options ==============================
- #define SOLVER_1_CR2      ->  Piotr's Conjugate Residual
- #define SOLVER_1_BICGSTAB
- 
- #define SOLVER_2_BICGSTAB 
- */
-#define SOLVER_1_CR2
-#define SOLVER_2_BICGSTAB
-
-/* ============================================= 
- First projection options
- ============================================= */
-#define PROJECTION1 1   /* first projection can be skipped for debugging; leave at "1" normally!! */
-/* 
- #define P1_ALTERNATIVE_STENCIL_WEIGHT 0.125   value for bilinear p-ansatz fcts
- #define P1_ALTERNATIVE_STENCIL_WEIGHT 0.0     value for standard five-point Laplacian
-*/
-#define P1_ALTERNATIVE_STENCIL_WEIGHT 0.125
-
-/* ============================================= 
- Second projection options 
- ============================================= */
-
-/* if def'd, div is controlled in L_\infty, otherwise in L2    
- #define DIV_CONTROL_LOCAL
- */
+#define DIV_CONTROL_LOCAL 0  /* determines norm for convergence test 0: L1, 1: Linfty */
 
 #define PROJECTION2 1              /* switch for second projection should be on "1" normally      */
 #define P2_FULL_STENCIL 1.0        /* values: 0.0, 1.0;  0.0 = 5/7pt stencil,  1.0=9/27pt stencil */
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
-#define HELMHOLTZ_COEFF_NODE_BASED        
 
-/*
- Note, Nov. 15, 2018:
- The option EXNER_NONLINEAR  slightly improves the stability
- behavior for the planetary scale IGW test, but it does not
- fully remove the remaining weak instability that shows near 
- the top of the domain at late times. Not tested on other 
- test cases thus far.
-
- #define EXNER_NONLINEAR
-*/
-
-/* 
- #define P2_FULL_CELLS_ON_BDRY
-*/
 
 /* TODO: Code cleaning / maintainance
  

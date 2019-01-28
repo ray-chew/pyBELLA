@@ -9,8 +9,7 @@
 /* Begin PBXBuildFile section */
 		9A21BF821DA58470006A6F34 /* libmfhdf.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A21BF811DA58470006A6F34 /* libmfhdf.dylib */; };
 		9A21BF841DA5847F006A6F34 /* libdf.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A21BF831DA5847F006A6F34 /* libdf.dylib */; };
-		9A7A5EF321EE5000000EB7C7 /* userdata_TravellingVortex_3D.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A7A5EF221EE5000000EB7C7 /* userdata_TravellingVortex_3D.c */; };
-		9A8840B3214A9D1A00FC83CB /* flux_correction.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A8840B2214A9D1A00FC83CB /* flux_correction.c */; };
+		9A2ABD1321FFA4E300E75406 /* userdata_InternalWave_LongWave.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A2ABD1221FFA4E300E75406 /* userdata_InternalWave_LongWave.c */; };
 		9A8840B6214A9D5000FC83CB /* second_projection.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A8840B4214A9D4F00FC83CB /* second_projection.c */; };
 		9AA6E68B214C14D9008A9B8D /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 9AA6E68A214C14D9008A9B8D /* Makefile */; };
 		9AC4F9841DA3F06F00AED455 /* boundary.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9231DA3F06F00AED455 /* boundary.c */; };
@@ -21,7 +20,6 @@
 		9AC4F9951DA3F06F00AED455 /* variable.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9431DA3F06F00AED455 /* variable.c */; };
 		9AC4F9961DA3F06F00AED455 /* kgrid.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9481DA3F06F00AED455 /* kgrid.c */; };
 		9AC4F9971DA3F06F00AED455 /* time_discretization.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F94A1DA3F06F00AED455 /* time_discretization.c */; };
-		9AC4F9981DA3F06F00AED455 /* BiCGSTAB.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F94D1DA3F06F00AED455 /* BiCGSTAB.c */; };
 		9AC4F9991DA3F06F00AED455 /* SimpleUtilities.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9511DA3F06F00AED455 /* SimpleUtilities.c */; };
 		9AC4F99B1DA3F06F00AED455 /* Eos.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9571DA3F06F00AED455 /* Eos.c */; };
 		9AC4F99D1DA3F06F00AED455 /* explicit.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F95A1DA3F06F00AED455 /* explicit.c */; };
@@ -30,8 +28,6 @@
 		9AC4F9A01DA3F06F00AED455 /* numerical_flux.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9601DA3F06F00AED455 /* numerical_flux.c */; };
 		9AC4F9A21DA3F06F00AED455 /* recovery.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9631DA3F06F00AED455 /* recovery.c */; };
 		9AC4F9A31DA3F06F00AED455 /* thermodynamic.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9651DA3F06F00AED455 /* thermodynamic.c */; };
-		9AC4F9A81DA3F06F00AED455 /* laplacian_cells.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9701DA3F06F00AED455 /* laplacian_cells.c */; };
-		9AC4F9AA1DA3F06F00AED455 /* variable_coefficient_poisson_cells.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9731DA3F06F00AED455 /* variable_coefficient_poisson_cells.c */; };
 		9AC4F9AB1DA3F06F00AED455 /* mpv.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9751DA3F06F00AED455 /* mpv.c */; };
 		9AC4F9AC1DA3F06F00AED455 /* laplacian_nodes.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9781DA3F06F00AED455 /* laplacian_nodes.c */; };
 		9AC4F9AF1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F97D1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c */; };
@@ -55,10 +51,9 @@
 		9A1ED37C206D0C9200D622A9 /* PrimaryAndDualGrid.eps */ = {isa = PBXFileReference; lastKnownFileType = file; path = PrimaryAndDualGrid.eps; sourceTree = "<group>"; };
 		9A21BF811DA58470006A6F34 /* libmfhdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmfhdf.dylib; path = ../../../../../opt/local/lib/libmfhdf.dylib; sourceTree = "<group>"; };
 		9A21BF831DA5847F006A6F34 /* libdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libdf.dylib; path = ../../../../../opt/local/lib/libdf.dylib; sourceTree = "<group>"; };
+		9A2ABD1221FFA4E300E75406 /* userdata_InternalWave_LongWave.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_InternalWave_LongWave.c; sourceTree = "<group>"; };
 		9A7A55E521873A4400446950 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
-		9A7A5EF221EE5000000EB7C7 /* userdata_TravellingVortex_3D.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_TravellingVortex_3D.c; sourceTree = "<group>"; };
 		9A8840AE2148EB2700FC83CB /* RandomNotes.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = RandomNotes.txt; sourceTree = "<group>"; };
-		9A8840B2214A9D1A00FC83CB /* flux_correction.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = flux_correction.c; sourceTree = "<group>"; };
 		9A8840B4214A9D4F00FC83CB /* second_projection.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = second_projection.c; sourceTree = "<group>"; };
 		9A8840B5214A9D5000FC83CB /* second_projection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = second_projection.h; sourceTree = "<group>"; };
 		9A8A8DCE2154F67D00FD5838 /* Grid.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = Grid.pdf; sourceTree = "<group>"; };
@@ -91,8 +86,6 @@
 		9AC4F9491DA3F06F00AED455 /* kgrid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = kgrid.h; sourceTree = "<group>"; };
 		9AC4F94A1DA3F06F00AED455 /* time_discretization.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = time_discretization.c; sourceTree = "<group>"; };
 		9AC4F94B1DA3F06F00AED455 /* time_discretization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = time_discretization.h; sourceTree = "<group>"; };
-		9AC4F94D1DA3F06F00AED455 /* BiCGSTAB.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = BiCGSTAB.c; sourceTree = "<group>"; };
-		9AC4F94E1DA3F06F00AED455 /* BiCGSTAB.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BiCGSTAB.h; sourceTree = "<group>"; };
 		9AC4F94F1DA3F06F00AED455 /* math_own.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = math_own.h; sourceTree = "<group>"; };
 		9AC4F9511DA3F06F00AED455 /* SimpleUtilities.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = SimpleUtilities.c; sourceTree = "<group>"; };
 		9AC4F9521DA3F06F00AED455 /* SimpleUtilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimpleUtilities.h; sourceTree = "<group>"; };
@@ -111,11 +104,6 @@
 		9AC4F9641DA3F06F00AED455 /* recovery.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = recovery.h; sourceTree = "<group>"; };
 		9AC4F9651DA3F06F00AED455 /* thermodynamic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = thermodynamic.c; sourceTree = "<group>"; };
 		9AC4F9661DA3F06F00AED455 /* thermodynamic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = thermodynamic.h; sourceTree = "<group>"; };
-		9AC4F96D1DA3F06F00AED455 /* flux_correction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = flux_correction.h; sourceTree = "<group>"; };
-		9AC4F9701DA3F06F00AED455 /* laplacian_cells.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = laplacian_cells.c; sourceTree = "<group>"; };
-		9AC4F9711DA3F06F00AED455 /* laplacian_cells.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = laplacian_cells.h; sourceTree = "<group>"; };
-		9AC4F9731DA3F06F00AED455 /* variable_coefficient_poisson_cells.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = variable_coefficient_poisson_cells.c; sourceTree = "<group>"; };
-		9AC4F9741DA3F06F00AED455 /* variable_coefficient_poisson_cells.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = variable_coefficient_poisson_cells.h; sourceTree = "<group>"; };
 		9AC4F9751DA3F06F00AED455 /* mpv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mpv.c; sourceTree = "<group>"; };
 		9AC4F9761DA3F06F00AED455 /* mpv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mpv.h; sourceTree = "<group>"; };
 		9AC4F9781DA3F06F00AED455 /* laplacian_nodes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = laplacian_nodes.c; sourceTree = "<group>"; };
@@ -234,7 +222,7 @@
 		9AC4F9221DA3F06F00AED455 /* Input */ = {
 			isa = PBXGroup;
 			children = (
-				9A7A5EF221EE5000000EB7C7 /* userdata_TravellingVortex_3D.c */,
+				9A2ABD1221FFA4E300E75406 /* userdata_InternalWave_LongWave.c */,
 				9AC4F9311DA3F06F00AED455 /* userdata.h */,
 				9AC4F9231DA3F06F00AED455 /* boundary.c */,
 				9AC4F9241DA3F06F00AED455 /* boundary.h */,
@@ -267,7 +255,6 @@
 			isa = PBXGroup;
 			children = (
 				9AC4F9471DA3F06F00AED455 /* Discretization */,
-				9AC4F94C1DA3F06F00AED455 /* lapc */,
 				9AC4F94F1DA3F06F00AED455 /* math_own.h */,
 				9AC4F9501DA3F06F00AED455 /* ofGeneralInterest */,
 			);
@@ -283,15 +270,6 @@
 				9AC4F94B1DA3F06F00AED455 /* time_discretization.h */,
 			);
 			path = Discretization;
-			sourceTree = "<group>";
-		};
-		9AC4F94C1DA3F06F00AED455 /* lapc */ = {
-			isa = PBXGroup;
-			children = (
-				9AC4F94D1DA3F06F00AED455 /* BiCGSTAB.c */,
-				9AC4F94E1DA3F06F00AED455 /* BiCGSTAB.h */,
-			);
-			path = lapc;
 			sourceTree = "<group>";
 		};
 		9AC4F9501DA3F06F00AED455 /* ofGeneralInterest */ = {
@@ -341,23 +319,9 @@
 			children = (
 				9AC4F9751DA3F06F00AED455 /* mpv.c */,
 				9AC4F9761DA3F06F00AED455 /* mpv.h */,
-				9AC4F96C1DA3F06F00AED455 /* MAC-projection */,
 				9AC4F9771DA3F06F00AED455 /* Second-projection */,
 			);
 			path = LowMach;
-			sourceTree = "<group>";
-		};
-		9AC4F96C1DA3F06F00AED455 /* MAC-projection */ = {
-			isa = PBXGroup;
-			children = (
-				9A8840B2214A9D1A00FC83CB /* flux_correction.c */,
-				9AC4F96D1DA3F06F00AED455 /* flux_correction.h */,
-				9AC4F9701DA3F06F00AED455 /* laplacian_cells.c */,
-				9AC4F9711DA3F06F00AED455 /* laplacian_cells.h */,
-				9AC4F9731DA3F06F00AED455 /* variable_coefficient_poisson_cells.c */,
-				9AC4F9741DA3F06F00AED455 /* variable_coefficient_poisson_cells.h */,
-			);
-			path = "MAC-projection";
 			sourceTree = "<group>";
 		};
 		9AC4F9771DA3F06F00AED455 /* Second-projection */ = {
@@ -448,16 +412,13 @@
 				9AC4F9AB1DA3F06F00AED455 /* mpv.c in Sources */,
 				9AC4F9971DA3F06F00AED455 /* time_discretization.c in Sources */,
 				9AC4F9841DA3F06F00AED455 /* boundary.c in Sources */,
+				9A2ABD1321FFA4E300E75406 /* userdata_InternalWave_LongWave.c in Sources */,
 				9AC4F9951DA3F06F00AED455 /* variable.c in Sources */,
-				9AC4F9AA1DA3F06F00AED455 /* variable_coefficient_poisson_cells.c in Sources */,
 				9AC4F9921DA3F06F00AED455 /* io.c in Sources */,
 				9AC4F99D1DA3F06F00AED455 /* explicit.c in Sources */,
 				9AC4F9941DA3F06F00AED455 /* memory.c in Sources */,
-				9AC4F9981DA3F06F00AED455 /* BiCGSTAB.c in Sources */,
 				9AC4F9AF1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c in Sources */,
-				9A7A5EF321EE5000000EB7C7 /* userdata_TravellingVortex_3D.c in Sources */,
 				9ADB58891E07C77E0032A9F2 /* Thomas_Algorithmus_2.c in Sources */,
-				9A8840B3214A9D1A00FC83CB /* flux_correction.c in Sources */,
 				9A8840B6214A9D5000FC83CB /* second_projection.c in Sources */,
 				9AC4F9931DA3F06F00AED455 /* Main.c in Sources */,
 				9AC4F9A31DA3F06F00AED455 /* thermodynamic.c in Sources */,
@@ -466,7 +427,6 @@
 				9AC4F99E1DA3F06F00AED455 /* Gasdynamics.c in Sources */,
 				9AC4F99F1DA3F06F00AED455 /* limiter.c in Sources */,
 				9AC4F99B1DA3F06F00AED455 /* Eos.c in Sources */,
-				9AC4F9A81DA3F06F00AED455 /* laplacian_cells.c in Sources */,
 				9AC4F9AC1DA3F06F00AED455 /* laplacian_nodes.c in Sources */,
 				9AA6E68B214C14D9008A9B8D /* Makefile in Sources */,
 				9AC4F9961DA3F06F00AED455 /* kgrid.c in Sources */,

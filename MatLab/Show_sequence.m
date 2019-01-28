@@ -16,11 +16,11 @@ modelstr = 'comp';
 
 %test_case = 'Baldaufs-Internal-Wave-Tests';
 %test_case = 'Deep-Internal-Wave-Tests';
-%test_case = 'Internal-Wave-Tests';
+test_case = 'Internal-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
-test_case = 'Travelling-Vortex';
+%test_case = 'Travelling-Vortex';
 %test_case = 'Travelling-Hump';
 %test_case = 'Acoustic-Wave';
 
@@ -109,15 +109,15 @@ elseif strcmp(test_case, 'Rising-Bubble')
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Travelling-Vortex')
-    ncx = 32;  
-    ncy = 32; 
-    L   = 1.0;  
+    ncx = 80;  
+    ncy = 20; 
+    L   = 4.0;  
     x0  = 0.5;
     H   = 1.0; 
     aspect = [2 2 2];
     velosc = 1; 
     showslice_hor = floor(ncy/2);
-    showslice_ver = floor(2*ncx/2);
+    showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Travelling-Hump')
     ncx = 20;  
     ncy = 20; 
@@ -185,7 +185,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'T';  folderstr = 'T'; titlestr = 'T'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dT';  folderstr = 'dT'; titlestr = 'dT'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
+%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];

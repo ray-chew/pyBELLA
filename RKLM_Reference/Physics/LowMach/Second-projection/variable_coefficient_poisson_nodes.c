@@ -21,14 +21,9 @@
 #include "mpv.h"
 #include "thermodynamic.h"
 #include "variable_coefficient_poisson_nodes.h"
-#include "BiCGSTAB.h"
 #include "laplacian_nodes.h"
 #include "userdata.h"
 #include "math_own.h"
-
-#ifdef P2_FULL_CELLS_ON_BDRY
-#include "boundary.h"
-#endif
 
 #define DEBUG_OUTPUT 
 #ifdef DEBUG_OUTPUT
@@ -108,6 +103,44 @@ void set_periodic_data(double *p,
 }
 
 /* ========================================================================== */
+BiCGSTABData* BiCGSTABData_new(
+                               const int size,
+                               const double precision,
+                               const double local_precision,
+                               const int max_iterations,
+                               const int output_period) {
+    
+    BiCGSTABData* var = (BiCGSTABData*)malloc(sizeof(BiCGSTABData));
+    
+    var->size = size;
+    
+    var->r_0       = (double*)malloc(size * sizeof(double));
+    var->r_j       = (double*)malloc(size * sizeof(double));
+    var->p_j       = (double*)malloc(size * sizeof(double));
+    var->v_j       = (double*)malloc(size * sizeof(double));
+    var->s_j       = (double*)malloc(size * sizeof(double));
+    var->t_j       = (double*)malloc(size * sizeof(double));
+    var->help_vec  = (double*)malloc(size * sizeof(double));
+    var->precision = precision;
+    var->local_precision = local_precision;
+    var->max_iterations = max_iterations;
+    var->output_period = output_period;
+    return var;
+}
+
+/* ========================================================================== */
+void BiCGSTABData_free(BiCGSTABData* var) {
+    free(var->r_0);
+    free(var->r_j);
+    free(var->p_j);
+    free(var->v_j);
+    free(var->s_j);
+    free(var->t_j);
+    free(var->help_vec);
+    free(var);
+}
+
+/* ========================================================================== */
 
 #if OUTPUT_LAP_NODES
 static int lap_output_count = 0;
@@ -132,10 +165,7 @@ static double BiCGSTAB_MG_nodes(
 								const int y_periodic,
 								const int z_periodic,
 								const double dt) {
-	
-	/*
-	 */
-	
+		
 	double* r_0        = data->r_0;
 	double* r_j        = data->r_j;
 	double* p_j        = data->p_j;
@@ -168,12 +198,7 @@ static double BiCGSTAB_MG_nodes(
     
     double precon_inv_scale = precon_prepare(node, elem, hplus, hcenter, x_periodic, y_periodic, z_periodic);
     
-#ifdef P2_FULL_CELLS_ON_BDRY
-    set_ghostnodes_p2(solution_io, node, 2);       
-#else
-    // set_ghostnodes_p2(solution_io, node, 2);       
     set_periodic_data(solution_io, node, x_periodic, y_periodic, z_periodic);
-#endif
 
     EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, solution_io, hplus, hcenter, x_periodic, y_periodic, z_periodic, v_j);
 
@@ -243,7 +268,7 @@ static double BiCGSTAB_MG_nodes(
     printf(" iter = 0,  residual = %e,  local residual = %e,  gridsize = %d\n", tmp, tmp_local, nc);
 
 	cnt = 0;
-#ifdef DIV_CONTROL_LOCAL
+#if DIV_CONTROL_LOCAL
 	while((tmp > 1.0 || tmp_local > 1.0) && cnt < max_iterations )
 #else
     while(tmp > 1.0 && cnt < max_iterations)
@@ -268,12 +293,7 @@ static double BiCGSTAB_MG_nodes(
 			}
 		}
 		
-#ifdef P2_FULL_CELLS_ON_BDRY
-        set_ghostnodes_p2(p_j, node, 2);       
-#else
-        // set_ghostnodes_p2(p_j, node, 2);       
         set_periodic_data(p_j, node, x_periodic, y_periodic, z_periodic);
-#endif
 
         EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, p_j, hplus, hcenter, x_periodic, y_periodic, z_periodic, v_j);
 
@@ -309,13 +329,7 @@ static double BiCGSTAB_MG_nodes(
 			}
 		}
 		
-#ifdef P2_FULL_CELLS_ON_BDRY
-        set_ghostnodes_p2(s_j, node, 2);       
-#else
-        // set_ghostnodes_p2(s_j, node, 2);       
         set_periodic_data(s_j, node, x_periodic, y_periodic, z_periodic);
-#endif
-
         EnthalpyWeightedLap_Node_bilinear_p_scatter(node, elem, s_j, hplus, hcenter, x_periodic, y_periodic, z_periodic, t_j);
 
 #if OUTPUT_LAP_NODES
@@ -370,12 +384,7 @@ static double BiCGSTAB_MG_nodes(
 		cnt++;
 		
 		if(cnt % 100 == 0) printf(" iter = %d, residual = %e\n", cnt, tmp);  
-#ifdef P2_FULL_CELLS_ON_BDRY
-        set_ghostnodes_p2(solution_io, node, 2);       
-#else
-        // set_ghostnodes_p2(solution_io, node, 2);       
         set_periodic_data(solution_io, node, x_periodic, y_periodic, z_periodic);
-#endif
 	}
         
     // assert(cnt == 23);
