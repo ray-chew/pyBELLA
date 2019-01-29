@@ -33,7 +33,6 @@ HDRS		  = ../Common.h \
 		../NumericsFundamentals/math_own.h \
 		../NumericsFundamentals/Discretization/kgrid.h \
 		../NumericsFundamentals/Discretization/time_discretization.h \
-		../NumericsFundamentals/lapc/BiCGSTAB.h \
 		../NumericsFundamentals/ofGeneralInterest/SimpleUtilities.h \
 		../NumericsFundamentals/ofGeneralInterest/ThomasAlgorithmus.h \
 		../Physics/Gasdynamics/Eos.h \
@@ -45,17 +44,14 @@ HDRS		  = ../Common.h \
 		../Physics/Gasdynamics/thermodynamic.h \
 		../Physics/Hydrostatics/Hydrostatics.h \
 		../Physics/LowMach/mpv.h \
-		../Physics/LowMach/MAC-projection/flux_correction.h \
-		../Physics/LowMach/MAC-projection/laplacian_cells.h \
-		../Physics/LowMach/MAC-projection/variable_coefficient_poisson_cells.h \
 		../Physics/LowMach/Second-projection/second_projection.h \
 		../Physics/LowMach/Second-projection/laplacian_nodes.h \
 		../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.h \
 
 HDRFLAGS	= -I../ -I../Input -I../Management -I../NumericsFundamentals \
-		  -I../NumericsFundamentals/Discretization -I../NumericsFundamentals/lapc \
+		  -I../NumericsFundamentals/Discretization \
 		  -I../NumericsFundamentals/ofGeneralInterest -I../Physics/Gasdynamics \
-		  -I../Physics/Hydrostatics -I../Physics/LowMach -I../Physics/LowMach/MAC-projection \
+		  -I../Physics/Hydrostatics -I../Physics/LowMach \
 		  -I../Physics/LowMach/Second-projection
 
 INSTALL		= install
@@ -69,7 +65,7 @@ LIBS		= $(HDFLIBDIR)/libmfhdf.a \
 
 MAKEFILE	= Makefile
 
-OBJS		= userdata_AcousticWave_B14.o \
+OBJS		= userdata_InternalWave_LongWave.o \
 		boundary.o \
 		data.o \
 		io.o \
@@ -78,7 +74,6 @@ OBJS		= userdata_AcousticWave_B14.o \
 		variable.o \
 		kgrid.o \
 		time_discretization.o \
-		BiCGSTAB.o \
 		SimpleUtilities.o \
 		Thomas_Algorithmus_2.o \
 		Eos.o \
@@ -90,9 +85,6 @@ OBJS		= userdata_AcousticWave_B14.o \
 		thermodynamic.o \
 		Hydrostatics.o \
 		mpv.o \
-		flux_correction.o \
-		laplacian_cells.o \
-		variable_coefficient_poisson_cells.o \
 		second_projection.o \
 		laplacian_nodes.o \
 		variable_coefficient_poisson_nodes.o \
@@ -103,7 +95,7 @@ PROGRAM	   = rklm
 
 SHELL		  = /bin/sh
 
-SRCS		  = ../Input/userdata_AcousticWave_B14.c \
+SRCS		  = ../Input/userdata_InternalWave_LongWave.c \
 		../Input/boundary.c \
 		../Management/data.c \
 		../Management/io.c \
@@ -112,7 +104,6 @@ SRCS		  = ../Input/userdata_AcousticWave_B14.c \
 		../Management/variable.c \
 		../NumericsFundamentals/Discretization/kgrid.c \
 		../NumericsFundamentals/Discretization/time_discretization.c \
-		../NumericsFundamentals/lapc/BiCGSTAB.c \
 		../NumericsFundamentals/ofGeneralInterest/SimpleUtilities.c \
 		../NumericsFundamentals/ofGeneralInterest/Thomas_Algorithmus_2.c \
 		../Physics/Gasdynamics/Eos.c \
@@ -124,9 +115,6 @@ SRCS		  = ../Input/userdata_AcousticWave_B14.c \
 		../Physics/Gasdynamics/thermodynamic.c \
 		../Physics/Hydrostatics/Hydrostatics.c \
 		../Physics/LowMach/mpv.c \
-		../Physics/LowMach/MAC-projection/flux_correction.c \
-		../Physics/LowMach/MAC-projection/laplacian_cells.c \
-		../Physics/LowMach/MAC-projection/variable_coefficient_poisson_cells.c \
 		../Physics/LowMach/Second-projection/second_projection.c \
 		../Physics/LowMach/Second-projection/laplacian_nodes.c \
 		../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.c \
@@ -164,8 +152,8 @@ $(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)
 		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install
 
 ###
-userdata_AcousticWave_B14.o : 
-	$(CC) -c $(HDRFLAGS) ../Input/userdata_AcousticWave_B14.c
+userdata_InternalWave_LongWave.o : 
+	$(CC) -c $(HDRFLAGS) ../Input/userdata_InternalWave_LongWave.c
 
 boundary.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/boundary.c
@@ -190,9 +178,6 @@ kgrid.o :
 
 time_discretization.o : 
 	$(CC) -c $(HDRFLAGS) ../NumericsFundamentals/Discretization/time_discretization.c
-
-BiCGSTAB.o : 
-	$(CC) -c $(HDRFLAGS) ../NumericsFundamentals/lapc/BiCGSTAB.c
 
 SimpleUtilities.o : 
 	$(CC) -c $(HDRFLAGS) ../NumericsFundamentals/ofGeneralInterest/SimpleUtilities.c
@@ -226,15 +211,6 @@ Hydrostatics.o :
 
 mpv.o : 
 	$(CC) -c $(HDRFLAGS) ../Physics/LowMach/mpv.c
-
-flux_correction.o : 
-	$(CC) -c $(HDRFLAGS) ../Physics/LowMach/MAC-projection/flux_correction.c
-	
-laplacian_cells.o : 
-	$(CC) -c $(HDRFLAGS) ../Physics/LowMach/MAC-projection/laplacian_cells.c
-
-variable_coefficient_poisson_cells.o : 
-	$(CC) -c $(HDRFLAGS) ../Physics/LowMach/MAC-projection/variable_coefficient_poisson_cells.c
 
 second_projection.o : 
 	$(CC) -c $(HDRFLAGS) ../Physics/LowMach/Second-projection/second_projection.c

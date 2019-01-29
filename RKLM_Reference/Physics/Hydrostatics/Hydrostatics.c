@@ -68,15 +68,9 @@ void Hydrostatics_Column(States* HydroState,
     S_p          = 1.0/Y[igy-1];
     S_integral_p = - 0.5 * elem->dy * 0.5*(S_p + S_m);
 
-#ifdef HY_STATES_N_FROM_CELL_CENTERED_THETA
     /* midpoint rule hydrostatic integration for the nodal pressure */
     Sn_p                     = 1.0/Y[igy];
     Sn_integral_p            = 0.0;
-#else
-    /* trapezoidal rule hydrostatic integration for the nodal pressure */
-    Sn_p                     = 1.0/Y_n[igy];
-    Sn_integral_p            = 0.0;
-#endif
     
     for(j = igy-1; j >= 0; j--) {
         
@@ -98,7 +92,6 @@ void Hydrostatics_Column(States* HydroState,
         S_p           = 1.0/Y[MAX_own(j-1, 0)];
         S_integral_p -= 0.5*elem->dy*(S_m + S_p);
 
-#ifdef HY_STATES_N_FROM_CELL_CENTERED_THETA
         /* midpoint rule hydrostatic integration for the nodal pressure */
         Sn_m           = Sn_p;
         Sn_p           = 1.0/Y[j];
@@ -110,19 +103,6 @@ void Hydrostatics_Column(States* HydroState,
         HydroState_n->S0[j]    = 1.0/Y_n[j];
         HydroState_n->p0[j]    = pow(rhoY_hydro_n,th.gamm);
         HydroState_n->p20[j]   = pi_hydro_n/ud.Msq;
-#else
-        /* trapezoidal rule hydrostatic integration for the nodal pressure */
-        Sn_m           = Sn_p;
-        Sn_p           = 1.0/Y_n[j];
-        Sn_integral_p -= 0.5*elem->dy*(Sn_m + Sn_p);        
-        pi_hydro_n     = pi0 - Gamma*g*Sn_integral_p;
-        rhoY_hydro_n   = pow(pi_hydro_n,gm1_inv);
-        HydroState_n->rhoY0[j] = rhoY_hydro_n;
-        HydroState_n->Y0[j]    = Y_n[j];
-        HydroState_n->S0[j]    = 1.0/Y_n[j];
-        HydroState_n->p0[j]    = pow(rhoY_hydro_n,th.gamm);
-        HydroState_n->p20[j]   = pi_hydro_n/ud.Msq;
-#endif
     }
     
     /* Hydrostates in bulk of domain */
@@ -131,15 +111,9 @@ void Hydrostatics_Column(States* HydroState,
     S_m          = 1.0/Y_n[igy];
     S_integral_p = 0.5 * elem->dy * 0.5*(S_p + S_m);
     
-#ifdef HY_STATES_N_FROM_CELL_CENTERED_THETA
     /* midpoint rule hydrostatic integration for the nodal pressure */
     Sn_p           = 1.0/Y[igy];
     Sn_integral_p  = 0.0;
-#else
-    /* trapezoidal rule hydrostatic integration for the nodal pressure */
-    Sn_p           = 1.0/Y_n[igy];
-    Sn_integral_p  = 0.0;
-#endif
     
     for(j = igy; j < icy; j++) {
         
@@ -161,7 +135,6 @@ void Hydrostatics_Column(States* HydroState,
         S_p           = 1.0/Y[j+1];
         S_integral_p += 0.5*elem->dy*(S_m + S_p);
 
-#ifdef HY_STATES_N_FROM_CELL_CENTERED_THETA
         /* midpoint rule hydrostatic integration for the nodal pressure */
         Sn_m           = Sn_p;
         Sn_p           = 1.0/Y[j];
@@ -174,20 +147,6 @@ void Hydrostatics_Column(States* HydroState,
         HydroState_n->S0[j+1]    = 1.0/Y_n[j+1];
         HydroState_n->p0[j+1]    = pow(rhoY_hydro_n,th.gamm);
         HydroState_n->p20[j+1]   = pi_hydro_n/ud.Msq;
-#else
-        /* trapezoidal rule hydrostatic integration for the nodal pressure */
-        Sn_m           = Sn_p;
-        Sn_p           = 1.0/Y_n[j+1];
-        Sn_integral_p += 0.5*elem->dy*(Sn_m + Sn_p);
-        
-        pi_hydro_n     = pi0 - Gamma*g*Sn_integral_p;
-        rhoY_hydro_n   = pow(pi_hydro_n,gm1_inv);
-        HydroState_n->rhoY0[j+1] = rhoY_hydro_n;
-        HydroState_n->Y0[j+1]    = Y_n[j+1];
-        HydroState_n->S0[j+1]    = 1.0/Y_n[j+1];
-        HydroState_n->p0[j+1]    = pow(rhoY_hydro_n,th.gamm);
-        HydroState_n->p20[j+1]   = pi_hydro_n/ud.Msq;
-#endif
     }    
 }
 
@@ -238,17 +197,10 @@ void Hydrostatics_State(MPV* mpv,
     S_p          = 1.0/stratification(y_p);
     S_integral_p = -0.5 * elem->dy * 0.5*(S_p + 1.0/stratification(0.0));
 
-#ifdef HY_STATES_N_FROM_CELL_CENTERED_THETA
     /* midpoint rule hydrostatic integration for the nodal pressure */
     yn_p          = node->y[igy-1];
     Sn_p          = 1.0/stratification(elem->y[igy-1]);
     Sn_integral_p = -node->dy * Sn_p;
-#else
-    /* trapezoidal rule hydrostatic integration for the nodal pressure */
-    yn_p          = node->y[igy-1];
-    Sn_p          = 1.0/stratification(yn_p);
-    Sn_integral_p = -node->dy * 0.5*(Sn_p + 1.0/stratification(0.0));
-#endif
     
     for(j = igy-1; j >= 0; j--) {
         
@@ -270,7 +222,6 @@ void Hydrostatics_State(MPV* mpv,
         S_p           = 1.0/stratification(y_p);
         S_integral_p -= elem->dy*0.5*(S_m + S_p);
                 
-#ifdef HY_STATES_N_FROM_CELL_CENTERED_THETA
         /* midpoint rule hydrostatic integration for the nodal pressure */
         pi_hydro_n    = pi0 - Gamma*g*Sn_integral_p;
         rhoY_hydro_n  = pow(pi_hydro_n, gm1_inv);
@@ -285,22 +236,6 @@ void Hydrostatics_State(MPV* mpv,
         Sn_m           = Sn_p;
         Sn_p           = 1.0/stratification(0.5*(yn_p+yn_m));
         Sn_integral_p -= elem->dy * Sn_p;
-#else
-        /* trapezoidal rule hydrostatic integration for the nodal pressure */
-        pi_hydro_n    = pi0 - Gamma*g*Sn_integral_p;
-        rhoY_hydro_n  = pow(pi_hydro_n, gm1_inv);
-        mpv->HydroState_n->rhoY0[j] = rhoY_hydro_n;
-        mpv->HydroState_n->Y0[j]    = stratification(0.5*(y_p+y_m));
-        mpv->HydroState_n->rho0[j]  = rhoY_hydro_n / mpv->HydroState_n->Y0[j];
-        mpv->HydroState_n->S0[j]    = 1.0/mpv->HydroState_n->Y0[j];
-        mpv->HydroState_n->p0[j]    = pow(rhoY_hydro_n,th.gamm);
-        mpv->HydroState_n->p20[j]   = pi_hydro_n/ud.Msq;
-        yn_m           = yn_p;
-        yn_p           = yn_m - node->dy;
-        Sn_m           = Sn_p;
-        Sn_p           = 1.0/stratification(yn_p);
-        Sn_integral_p -= elem->dy * 0.5*(Sn_m + Sn_p);
-#endif
     }
     
     /* Hydrostates in bulk of domain */
@@ -308,17 +243,10 @@ void Hydrostatics_State(MPV* mpv,
     S_p          = 1.0/stratification(y_p);
     S_integral_p = 0.5 * elem->dy * 0.5*(S_p + 1.0/stratification(0.0));
     
-#ifdef HY_STATES_N_FROM_CELL_CENTERED_THETA
     /* midpoint rule hydrostatic integration for the nodal pressure */
     yn_p          = node->y[igy+1];
     Sn_p          = 1.0/stratification(y_p);
     Sn_integral_p = node->dy * Sn_p;
-#else
-    /* trapezoidal rule hydrostatic integration for the nodal pressure */
-    yn_p          = node->y[igy+1];
-    Sn_p          = 1.0/stratification(yn_p);
-    Sn_integral_p = node->dy * 0.5*(Sn_p + 1.0/stratification(0.0));
-#endif
     
     for(j = igy; j < icy; j++) {
         
@@ -340,7 +268,6 @@ void Hydrostatics_State(MPV* mpv,
         S_p           = 1.0/stratification(y_p);
         S_integral_p += 0.5*elem->dy*(S_m + S_p);
         
-#ifdef HY_STATES_N_FROM_CELL_CENTERED_THETA
         /* midpoint rule hydrostatic integration for the nodal pressure */
         pi_hydro_n    = pi0 - Gamma*g*Sn_integral_p;
         rhoY_hydro_n  = pow(pi_hydro_n, gm1_inv);
@@ -355,27 +282,11 @@ void Hydrostatics_State(MPV* mpv,
         Sn_m           = Sn_p;
         Sn_p           = 1.0/stratification(0.5*(yn_p+yn_m));
         Sn_integral_p += elem->dy * Sn_p;
-#else
-        /* trapezoidal rule hydrostatic integration for the nodal pressure */
-        pi_hydro_n    = pi0 - Gamma*g*Sn_integral_p;
-        rhoY_hydro_n  = pow(pi_hydro_n, gm1_inv);
-        mpv->HydroState_n->rhoY0[j+1] = rhoY_hydro_n;
-        mpv->HydroState_n->Y0[j+1]    = stratification(0.5*(y_p+y_m));
-        mpv->HydroState_n->rho0[j+1]  = rhoY_hydro_n / mpv->HydroState_n->Y0[j+1];
-        mpv->HydroState_n->S0[j+1]    = 1.0/mpv->HydroState_n->Y0[j+1];
-        mpv->HydroState_n->p0[j+1]    = pow(rhoY_hydro_n,th.gamm);
-        mpv->HydroState_n->p20[j+1]   = pi_hydro_n/ud.Msq;
-        yn_m           = yn_p;
-        yn_p           = yn_m + elem->dy;
-        Sn_m           = Sn_p;
-        Sn_p           = 1.0/stratification(yn_p);
-        Sn_integral_p += 0.5*elem->dy * (Sn_m + Sn_p);
-#endif
     }
     
     printf("Here\n");
     
-#if 0
+#if OUTPUT_HYDROSTATES
     {
         extern User_Data ud;
         FILE* phydrofile = NULL;
@@ -471,7 +382,6 @@ void Hydrostatic_Exner_pressure(
 
 /* ================================================================================== */
 
-#ifdef HY_STATES_N_FROM_CELL_CENTERED_THETA
 /* midpoint rule used to obtain hydrostatic nodal pressure */
 void Hydrostatic_Initial_Pressure(ConsVars* Sol, 
                                   MPV* mpv,
@@ -629,7 +539,7 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
     for (int nn=0; nn < node->nc; nn++) {
         mpv->dp2_nodes[nn] = mpv->p2_nodes[nn];
     }
-#if 1
+
     for (int j=igy; j<icyn-igy; j++) {
         int nnj = j*icxn;
         int sgn;
@@ -659,23 +569,6 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
             sgn *= -1;
         }
     }
-#else
-    /* fourth order interpolation */
-    for (int j=igy; j<icyn-igy; j++) {
-        int nnj = j*icxn;
-        
-        /* set periodic data for the bottom face pressures */
-        for (int i=0; i<igx; i++) {
-            mpv->dp2_nodes[nnj+i]         = mpv->dp2_nodes[nnj+icx-2*igx+i];
-            mpv->dp2_nodes[nnj+icx-igx+i] = mpv->dp2_nodes[nnj+igx+i];
-        }
-        
-        for (int i=igx; i<icxn-igx; i++) {
-            int nnij = nnj + i; 
-            mpv->p2_nodes[nnij] = (-mpv->dp2_nodes[nnij-2] + 7.0*(mpv->dp2_nodes[nnij-1]+mpv->dp2_nodes[nnij]) - mpv->p2_nodes[nnij+1] ) / 12.0;
-        }
-    }
-#endif
     
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);    
     
@@ -683,135 +576,6 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
         mpv->dp2_nodes[nn] = 0.0;
     }
     
-#ifdef ADVECTION
-    if (ud.is_compressible) {
-        for (int i=igx; i<icx-igx; i++) {
-            int nci     = i;
-            for (int j=igy; j<icy-igy; j++) {
-                int ncij      = nci + j*icx;
-                double pi     = ud.Msq * (mpv->p2_cells[ncij] + NoBG * mpv->HydroState->p20[j]);
-                double Y      = Sol->rhoY[ncij]/Sol->rho[ncij];
-                double rhoold = Sol->rho[ncij];
-                Sol->rhoY[ncij] = pow(pi, th.gm1inv);
-                Sol->rho[ncij]  = Sol->rhoY[ncij] / Y;
-                Sol->rhou[ncij]*= Sol->rho[ncij] / rhoold;
-                Sol->rhov[ncij]*= Sol->rho[ncij] / rhoold;
-                Sol->rhow[ncij]*= Sol->rho[ncij] / rhoold;
-                Sol->rhoe[ncij]*= Sol->rho[ncij] / rhoold;
-                for (int nsp=0; nsp<ud.nspec; nsp++) {
-                    Sol->rhoX[nsp][ncij]*= Sol->rho[ncij] / rhoold;
-                }
-            }
-        }
-    }
-#endif
-    
-    free(beta);
-    free(bdpdx);
-    free(pibot);
-    free(coeff);
-}
-#else
-/* trapezoidal rule used to obtain hydrostatic nodal pressure */
-void Hydrostatic_Initial_Pressure(ConsVars* Sol, 
-                                  MPV* mpv,
-                                  const ElemSpaceDiscr *elem,
-                                  const NodeSpaceDiscr *node)
-{
-
-    /* 
-     TODO: Currently implemented only for 2D vertical slices;
-     Computes the pressure field corresponding to the linear hydrostatic
-     and pseudo-incompressible approximation for a vertical slice model 
-     and x-periodic conditions. 
-       The routine assumes that pi = mpv->p2_cells already contains a 
-     column-wise hydrostatically balanced Exner pressure field that is 
-     horizontally homogeneous at zero height, i.e.,
-     
-                     pi = int_0^z  Gamma g / theta dz'
-     
-     The problem can be reduced to an explicit x-integration and the
-     choice of one proper integration constant to establish periodicity
-     of the surface pressure. 
-     */
-    extern User_Data ud;
-    extern Thermodynamic th;
-     
-    double *beta, *bdpdx, *pibot, *coeff;
-    double dotPU;
-    double NoBG = (ud.time_integrator == SI_MIDPT ? 1.0 : 0.0);
-        
-    beta  = (double*)malloc(elem->icx*sizeof(double));
-    bdpdx = (double*)malloc(elem->icx*sizeof(double));
-    pibot = (double*)malloc(elem->icx*sizeof(double));
-    coeff = (double*)malloc(elem->icx*sizeof(double));
-    
-    int icx = elem->icx;
-    int igx = elem->igx;
-    int icy = elem->icy;
-    int igy = elem->igy;
-
-    int inx = node->icx;
-
-    double dx  = elem->dx;
-    double dy  = elem->dy;
-    
-    double Gammainv = th.Gammainv;
-    
-    /* vertical averages (see docs; Semi-Implicit-Gravity.tex, section   \ref{sec:HydroInit}) */
-    memset(beta,0.0,elem->icx*sizeof(double));
-    memset(bdpdx,0.0,elem->icx*sizeof(double));
-    for (int i=1; i<icx-1; i++) {
-        int ni        = i;
-        double height = 0.0;        
-        for (int j=igy; j<icy-igy; j++) {
-            int nij    = ni + j*icx;
-            double Pc  = Sol->rhoY[nij];
-            double Pm  = Sol->rhoY[nij-1];
-            double thc = Sol->rhoY[nij]/Sol->rho[nij];
-            double thm = Sol->rhoY[nij-1]/Sol->rho[nij-1];
-            beta[i]   += 0.5*(Pm*thm+Pc*thc)*dy;
-            bdpdx[i]  += 0.5*(Pm*thm+Pc*thc)*(mpv->p2_cells[nij]-mpv->p2_cells[nij-1])*dy;
-            height    += dy;
-        }
-        beta[i]  *= Gammainv/height;
-        bdpdx[i] *= Gammainv/height/dx;
-    }
-
-    /* integrate in x */
-    memset(pibot,0.0,elem->icx*sizeof(double));
-    memset(coeff,0.0,elem->icx*sizeof(double));
-    for (int i=igx+1; i<icx-igx+1; i++) {
-        coeff[i] = coeff[i-1] + dx/beta[i];
-        pibot[i] = pibot[i-1] - dx*bdpdx[i]/beta[i];
-    }
-    
-    /* determine integration constant for periodicity of the surface pressure */
-    dotPU = pibot[icx-igx] / coeff[icx-igx];
-    
-    /*finalize bottom pressure distribution */
-    for (int i=igx; i<icx-igx; i++) {
-        pibot[i] -= dotPU*coeff[i];
-    }
-    
-    /*reset mpv->p2_cells, mpv->p2_nodes */
-    for (int i=igx; i<icx-igx+1; i++) {
-        int nci     = i;
-        int nni     = i;
-        double pic0 = pibot[i];
-        double pin0 = 0.5*(pibot[i]+pibot[i-1]);
-        for (int j=igy; j<icy-igy+1; j++) {
-            int ncij    = nci + j*icx;
-            int nnij    = nni + j*inx;
-            mpv->p2_cells[ncij] += pic0 - NoBG * mpv->HydroState->p20[j];
-            mpv->p2_nodes[nnij] += pin0 - NoBG * mpv->HydroState_n->p20[j];
-        }
-    }
-    
-    set_ghostcells_p2(mpv->p2_cells, elem, 2);    
-    set_ghostnodes_p2(mpv->p2_nodes, node, 2);    
-
-    
     if (ud.is_compressible) {
         for (int i=igx; i<icx-igx; i++) {
             int nci     = i;
@@ -838,4 +602,4 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
     free(pibot);
     free(coeff);
 }
-#endif
+

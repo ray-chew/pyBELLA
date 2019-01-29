@@ -47,10 +47,6 @@ ConsVars* dSol;           /* full size */ /* TODO: Can I work without full-size 
 double* force[3];
 ConsVars* flux[3];        /* full size (M < 1.0) */
 
-#ifdef SYMMETRIC_ADVECTION
-ConsVars* Sol1;           /* full size (M < 1.0; needed to test x-y-symmetric advection for the travelling vortex) */
-#endif
-
 /* Infrastructure for semi-implicit scheme */
 MPV* mpv;
 
@@ -141,11 +137,6 @@ void Data_init() {
     Explicit_malloc(3 * ud.ncache / 2);
 	recovery_malloc(3 * ud.ncache / 2);  
 
-#ifdef SYMMETRIC_ADVECTION
-    Sol1    = ConsVars_new(elem->nc);
-    ConsVars_setzero(Sol1, elem->nc);
-#endif
-
     /* set initial data */
     Sol_initial(Sol, Sol0, mpv, bdry, elem, node);
     ConsVars_setzero(dSol, elem->nc);
@@ -176,9 +167,6 @@ void Data_free() {
     States_small_free(Solk);
     ConsVars_free(dSol);
     ConsVars_free(Sol);
-#ifdef SYMMETRIC_ADVECTION
-    ConsVars_free(Sol1);
-#endif
     
     ElemSpaceDiscr_free(elem);
     NodeSpaceDiscr_free(node);

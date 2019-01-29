@@ -72,7 +72,7 @@ void operator_coefficients(double* hplus[3],
                            const MPV* mpv,
                            const double dt); 
 
-#ifdef NONLINEAR_EOS_IN_1st_PROJECTION
+#if NONLINEAR_EOS_IN_1st_PROJECTION
 double Newton_rhs(double* rhs,
                   const double* dpi,
                   const double* pi,
@@ -94,7 +94,6 @@ void hydrostatic_vertical_flux(ConsVars* flux[3],
 
 /* ========================================================================== */
 
-#define OUTPUT_RHS_CELLS 0
 #if OUTPUT_RHS_CELLS
 static int rhs_output_count = 0;
 static int first_output_step = 230;
@@ -172,7 +171,7 @@ void flux_correction(ConsVars* flux[3],
     variable_coefficient_poisson_cells(p2, rhs, (const double **)hplus, hcenter, elem, node);
     set_ghostcells_p2(p2, elem, elem->igx);
     
-#ifdef NONLINEAR_EOS_IN_1st_PROJECTION
+#if NONLINEAR_EOS_IN_1st_PROJECTION
     /* Newton iteration for the nonlinear equation of state rhoY = P(\pi) = \pi^{gamma-1} 
      The first sweep computes the half time level Exner pressure based on the linearization
      of P(.). The further iterates yield updates to this quantity until convergence 
@@ -1100,7 +1099,7 @@ void update_SI_MIDPT_buoyancy(ConsVars* Sol,
 
 /* ========================================================================== */
 
-#ifdef NONLINEAR_EOS_IN_1st_PROJECTION
+#if NONLINEAR_EOS_IN_1st_PROJECTION
 double Newton_rhs(double* rhs,
                   const double* dpi,
                   const double* pi,

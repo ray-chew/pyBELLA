@@ -90,18 +90,11 @@ void recovery(States* Lefts,
     
 	/* differences of primitive quantities */
 	for( i = 0; i < nmax - 1;  i++) {     
-#ifdef LIMIT_PLAIN_PRIMITIVES
-        double Yrinv = 1.0;
-        double Ylinv = 1.0;
-#else
-		double Yrinv = 1.0/Sol->Y[i+1];
-		double Ylinv = 1.0/Sol->Y[i];
-#endif	
-		Diffs->u[i] =  Sol->u[i+1]*Yrinv - Sol->u[i]*Ylinv;
-		Diffs->v[i] =  Sol->v[i+1]*Yrinv - Sol->v[i]*Ylinv;
-		Diffs->w[i] =  Sol->w[i+1]*Yrinv - Sol->w[i]*Ylinv;
+		Diffs->u[i] =  Sol->u[i+1]- Sol->u[i];
+		Diffs->v[i] =  Sol->v[i+1]- Sol->v[i];
+		Diffs->w[i] =  Sol->w[i+1]- Sol->w[i];
         for (nsp = 0; nsp < ud.nspec; nsp++) {
-            Diffs->X[nsp][i] =  Sol->X[nsp][i+1]*Yrinv - Sol->X[nsp][i]*Ylinv;
+            Diffs->X[nsp][i] =  Sol->X[nsp][i+1] - Sol->X[nsp][i];
         }
 		Diffs->Y[i] =  1.0/Sol->Y[i+1] - 1.0/Sol->Y[i];
     }
@@ -113,11 +106,7 @@ void recovery(States* Lefts,
 	
 	/* half-timestep */
 	for( i = 1; i < nmax-1; i++ ) { 
-#ifdef EGDE_VELOCITIES_IN_MUSCL_STEP
-        double uu = ur[i];
-#else
         double uu = u[i];
-#endif
 		Ampls->entro[i]   = 0.5 * Slopes->entro[i] * ( 1 - lambda * uu ); /* entro-entry abused for u */
 		Ampls->v[i]       = 0.5 * Slopes->v[i]     * ( 1 - lambda * uu );
 		Ampls->w[i]       = 0.5 * Slopes->w[i]     * ( 1 - lambda * uu );
@@ -128,18 +117,11 @@ void recovery(States* Lefts,
 	}
 	
 	for( i = 1; i < nmax-1; i++ ) {
-#ifdef LIMIT_PLAIN_PRIMITIVES
-        double S     = 1.0;
-        double Yleft = 1.0;
-#else
-		double S  = 1.0/Sol->Y[i];
-		double Yleft = 1.0 / (S + OrderTwo * Ampls->Y[i]);
-#endif	
-		Lefts->u[i]   = (Sol->u[i]*S   + OrderTwo * Ampls->entro[i]) * Yleft;
-		Lefts->v[i]   = (Sol->v[i]*S   + OrderTwo * Ampls->v[i]) * Yleft;
-		Lefts->w[i]   = (Sol->w[i]*S   + OrderTwo * Ampls->w[i]) * Yleft;
+		Lefts->u[i]   = (Sol->u[i] + OrderTwo * Ampls->entro[i]);
+		Lefts->v[i]   = (Sol->v[i] + OrderTwo * Ampls->v[i]);
+		Lefts->w[i]   = (Sol->w[i] + OrderTwo * Ampls->w[i]);
         for (nsp = 0; nsp < ud.nspec; nsp++) {
-            Lefts->X[nsp][i]   = (Sol->X[nsp][i]*S   + OrderTwo * Ampls->X[nsp][i]) * Yleft;
+            Lefts->X[nsp][i]   = (Sol->X[nsp][i] + OrderTwo * Ampls->X[nsp][i]);
         }                                
 		Lefts->Y[i]   = 1.0 / (1.0/Sol->Y[i] + OrderTwo * Ampls->Y[i]);
 	}
@@ -148,11 +130,7 @@ void recovery(States* Lefts,
 	
 	/* half-timestep */  
 	for( i = 1; i < nmax-1; i++ ) {
-#ifdef EGDE_VELOCITIES_IN_MUSCL_STEP
-        double uu = ul[i];
-#else
         double uu = u[i];
-#endif
 		Ampls->entro[i] = -0.5 * Slopes->entro[i] * ( 1 + lambda * uu );
 		Ampls->v[i]     = -0.5 * Slopes->v[i]     * ( 1 + lambda * uu );
 		Ampls->w[i]     = -0.5 * Slopes->w[i]     * ( 1 + lambda * uu );
@@ -163,18 +141,11 @@ void recovery(States* Lefts,
 	}
 	
 	for( i = 1; i < nmax-1; i++ ) {
-#ifdef LIMIT_PLAIN_PRIMITIVES
-        double S      = 1.0;
-        double Yright = 1.0;
-#else
-        double S   = 1.0/Sol->Y[i];
-		double Yright = 1.0 / (S + OrderTwo * Ampls->Y[i]);
-#endif	
-		Rights->u[i]   = (Sol->u[i]*S   + OrderTwo * Ampls->entro[i]) * Yright;
-		Rights->v[i]   = (Sol->v[i]*S   + OrderTwo * Ampls->v[i]) * Yright;
-		Rights->w[i]   = (Sol->w[i]*S   + OrderTwo * Ampls->w[i]) * Yright;
+		Rights->u[i]   = (Sol->u[i] + OrderTwo * Ampls->entro[i]);
+		Rights->v[i]   = (Sol->v[i] + OrderTwo * Ampls->v[i]);
+		Rights->w[i]   = (Sol->w[i] + OrderTwo * Ampls->w[i]);
         for (nsp = 0; nsp < ud.nspec; nsp++) {
-            Rights->X[nsp][i]   = (Sol->X[nsp][i]*S   + OrderTwo * Ampls->X[nsp][i]) * Yright;
+            Rights->X[nsp][i]   = (Sol->X[nsp][i] + OrderTwo * Ampls->X[nsp][i]);
         }                                
 		Rights->Y[i]   = 1.0 / (1.0/Sol->Y[i] + OrderTwo * Ampls->Y[i]);
 	}

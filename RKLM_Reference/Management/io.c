@@ -112,7 +112,7 @@ void putout(ConsVars* Sol,
             }
             output_counter++;
             
-#ifdef OUTPUT_FLUXES
+#if OUTPUT_FLUXES
             extern ConsVars* flux[3];
             extern User_Data ud;
             FILE *prhs2file = NULL;

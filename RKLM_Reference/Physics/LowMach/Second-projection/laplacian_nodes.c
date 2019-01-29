@@ -163,23 +163,15 @@ double precon_diag_prepare(
                 ne   = i;
                 nn00 = i;
                 nn01 = i+1;
-                
-#ifdef HELMHOLTZ_COEFF_NODE_BASED
                 double ddiag = - wx*hplusx[ne];
-#else /* HELMHOLTZ_COEFF_NODE_BASED */
-                double ddiag = - wx*hplusx[ne] + 0.5 * hcenter[ne];
-#endif /* HELMHOLTZ_COEFF_NODE_BASED */
-                
                 diag[nn00] += ddiag; 
                 diag[nn01] += ddiag;  
             }
             
-#ifdef HELMHOLTZ_COEFF_NODE_BASED
             for(i = igxn; i < icxn - igxn; i++) {
                 int nn = i;
                 diag[nn] += hcenter[nn]; 
             }       
-#endif /* HELMHOLTZ_COEFF_NODE_BASED */            
                         
             break;
         }
@@ -224,11 +216,7 @@ double precon_diag_prepare(
                     nn10 = mn + i      + icxn;
                     nn11 = mn + i + 1  + icxn;
 
-#ifdef HELMHOLTZ_COEFF_NODE_BASED
                     double ddiag = - wx*hplusx[ne] - wy*hplusy[ne];
-#else /* HELMHOLTZ_COEFF_NODE_BASED */
-                    double ddiag = - wx*hplusx[ne] - wy*hplusy[ne] + 0.125 * hcenter[ne];
-#endif /* HELMHOLTZ_COEFF_NODE_BASED */
                     
                     diag[nn00] += ddiag; 
                     diag[nn01] += ddiag;  
@@ -237,7 +225,6 @@ double precon_diag_prepare(
                 }
             }
             
-#ifdef HELMHOLTZ_COEFF_NODE_BASED
             for(j = igyn; j < icyn - igyn; j++) {
                 int mn   = j * icxn;
                 for(i = igxn; i < icxn - igxn; i++) {                    
@@ -245,7 +232,6 @@ double precon_diag_prepare(
                     diag[nn] += hcenter[nn]; 
                 }
             }
-#endif /* HELMHOLTZ_COEFF_NODE_BASED */
                      
             /* prepare for the inversion of the preconditioner */
             precon_inv_scale = 0.0;
@@ -290,7 +276,6 @@ double precon_diag_prepare(
             
             double wx = 0.0625 / (dx * dx);
             double wy = 0.0625 / (dy * dy);
-            double wz = 0.0625 / (dz * dz);
 
             for(k = igze - is_z_periodic; k < icze - igze + is_z_periodic; k++) {
                 le = k * icxe*icye;
@@ -312,12 +297,8 @@ double precon_diag_prepare(
                         nn110 = mn + i     + icxn   + icxn*icyn;
                         nn111 = mn + i + 1 + icxn   + icxn*icyn;
                         
-#ifdef HELMHOLTZ_COEFF_NODE_BASED
                         assert(0); /* to be implemented for diagonal precon */
                         double ddiag = - wx*hplusx[ne] - wy*hplusy[ne];
-#else /* HELMHOLTZ_COEFF_NODE_BASED */
-                        double ddiag = - wx*hplusx[ne] - wy*hplusy[ne] - wz*hplusz[ne] + 0.125 * hcenter[ne];
-#endif /* HELMHOLTZ_COEFF_NODE_BASED */
 
                         diag[nn000] += ddiag; 
                         diag[nn001] += ddiag;  
@@ -331,7 +312,6 @@ double precon_diag_prepare(
                 }
             }
                     
-#ifdef HELMHOLTZ_COEFF_NODE_BASED
             for(k = igzn; k < iczn - igzn; j++) {
                 int ln   = k * icxn*icyn;
                 for(j = igyn; j < icyn - igyn; j++) {
@@ -342,7 +322,6 @@ double precon_diag_prepare(
                     }
                 }
             }
-#endif /* HELMHOLTZ_COEFF_NODE_BASED */
 
             /* prepare for the inversion of the preconditioner */
             precon_inv_scale = 0.0;
@@ -445,11 +424,7 @@ double precon_column_prepare(
      diagonal value from a full stencil.
      */
     
-#ifdef P2_FULL_CELLS_ON_BDRY
-    int nodc = 1;
-#else
     int nodc = 0;
-#endif
 
     
     double *tridiaux[3];
@@ -529,7 +504,6 @@ double precon_column_prepare(
                     flux_x_upper  = hplusx[ne] * oodx2;
                     
                     /* eventually I may have to transpose the tridiago[][] field for better memory efficiency */
-#ifdef HELMHOLTZ_COEFF_NODE_BASED
                     tridiago[1][nn]      += - flux_x_lower - flux_y_left;
                     tridiago[2][nn]      +=   flux_y_left;
                     
@@ -540,27 +514,10 @@ double precon_column_prepare(
                     tridiago[1][nnicxn]  += - flux_x_upper - flux_y_left;
                     
                     tridiago[0][nn1icxn] +=   flux_y_right;
-                    tridiago[1][nn1icxn] += - flux_x_upper - flux_y_right;                    
-#else /* HELMHOLTZ_COEFF_NODE_BASED */
-                    hc = 0.25 * hcenter[ne];
-                    
-                    tridiago[1][nn]      += - flux_x_lower - flux_y_left + hc;
-                    tridiago[2][nn]      +=   flux_y_left;
-                    
-                    tridiago[1][nn1]     += - flux_x_lower - flux_y_right + hc;
-                    tridiago[2][nn1]     +=   flux_y_right;
-                    
-                    tridiago[0][nnicxn]  +=   flux_y_left;
-                    tridiago[1][nnicxn]  += - flux_x_upper - flux_y_left + hc;
-                    
-                    tridiago[0][nn1icxn] +=   flux_y_right;
-                    tridiago[1][nn1icxn] += - flux_x_upper - flux_y_right + hc;                    
-#endif /* HELMHOLTZ_COEFF_NODE_BASED */                             
-                                        
+                    tridiago[1][nn1icxn] += - flux_x_upper - flux_y_right;                                                            
                 }
             }
 
-#ifdef HELMHOLTZ_COEFF_NODE_BASED
             for(j = igyn; j < icyn - igyn; j++) {
                 mn   = j * icxn;                
                 for(i = igxn; i < icxn - igxn; i++) {                    
@@ -568,7 +525,6 @@ double precon_column_prepare(
                     tridiago[1][nn] += hcenter[nn];
                 }
             }
-#endif /* HELMHOLTZ_COEFF_NODE_BASED */
             
             /* normalization */
             precon_inv_scale = 0.0;
@@ -585,11 +541,6 @@ double precon_column_prepare(
         }
             break;
         case 3: {
-            
-#ifdef P2_FULL_CELLS_ON_BDRY
-            assert(0); /* option not implemented in 3D yet */ 
-#endif
-
             
             const int igxe = elem->igx;
             const int icxe = elem->icx;
@@ -655,7 +606,6 @@ double precon_column_prepare(
                         flux_z  = hplusz[ne] * oodz2;
                                     
                         /* eventually I should transpose the tridiago[][] field for better memory efficiency */
-#ifdef HELMHOLTZ_COEFF_NODE_BASED
                         tridiago[1][nn000] += - flux_x - flux_y - flux_z;
                         tridiago[2][nn000] +=   flux_y;
                         
@@ -679,39 +629,10 @@ double precon_column_prepare(
                         
                         tridiago[0][nn111] +=   flux_y;
                         tridiago[1][nn111] += - flux_x - flux_y - flux_z;   
-#else /* HELMHOLTZ_COEFF_NODE_BASED */
-                        hc            = 0.25 * hcenter[ne];
-                        
-                        
-                        tridiago[1][nn000] += - flux_x - flux_y - flux_z + hc;
-                        tridiago[2][nn000] +=   flux_y;
-                        
-                        tridiago[1][nn001] += - flux_x - flux_y - flux_z + hc;
-                        tridiago[2][nn001] +=   flux_y;
-                        
-                        tridiago[0][nn010] +=   flux_y;
-                        tridiago[1][nn010] += - flux_x - flux_y - flux_z + hc;
-                        
-                        tridiago[0][nn011] +=   flux_y;
-                        tridiago[1][nn011] += - flux_x - flux_y - flux_z + hc;                    
-
-                        tridiago[1][nn100] += - flux_x - flux_y - flux_z + hc;
-                        tridiago[2][nn100] +=   flux_y;
-                        
-                        tridiago[1][nn101] += - flux_x - flux_y - flux_z + hc;
-                        tridiago[2][nn101] +=   flux_y;
-                        
-                        tridiago[0][nn110] +=   flux_y;
-                        tridiago[1][nn110] += - flux_x - flux_y - flux_z + hc;
-                        
-                        tridiago[0][nn111] +=   flux_y;
-                        tridiago[1][nn111] += - flux_x - flux_y - flux_z + hc;   
-#endif /* HELMHOLTZ_COEFF_NODE_BASED */
                     }
                 }
             }
             
-#ifdef HELMHOLTZ_COEFF_NODE_BASED
             for (k = igzn; k < iczn - igzn; k++) {
                 ln = k * icxn*icyn;
                 for(j = igyn; j < icyn - igyn; j++) {
@@ -722,7 +643,6 @@ double precon_column_prepare(
                     }
                 }
             }
-#endif /* HELMHOLTZ_COEFF_NODE_BASED */
             
             /* normalization */
             precon_inv_scale = 0.0;
@@ -928,30 +848,13 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                                 
                 flux_x = hplusx[ne] * oodx2 * (p[nn1] - p[nn]);
                 
-#ifdef HELMHOLTZ_COEFF_NODE_BASED
                 lap[nn]  +=   flux_x;
                 lap[nn1] += - flux_x;
-#else /* HELMHOLTZ_COEFF_NODE_BASED */
-                hc        = 0.5 * hcenter[ne];
-                lap[nn]  +=   flux_x + hc*p[nn] ;
-                lap[nn1] += - flux_x + hc*p[nn1];
-#endif /* HELMHOLTZ_COEFF_NODE_BASED */
             }
 
-#ifdef HELMHOLTZ_COEFF_NODE_BASED
             for(nn = igxn; nn < icxn - igxn; nn++) {
                 lap[nn]  += hcenter[nn] * p[nn];
             }
-#endif /* HELMHOLTZ_COEFF_NODE_BASED */
-
-            /*
-            if (is_x_periodic) {
-                    int nleft    = igxn;
-                    int nright   = icxn - igxn - 1;
-                    lap[nleft]  += lap[nright];
-                    lap[nright]  = 0.0;
-            }
-             */
             
             precon_invert(lap, lap, node, is_x_periodic, is_y_periodic, is_z_periodic);
             
@@ -972,14 +875,8 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             const double dx = node->dx;
             const double dy = node->dy;
             
-#ifdef P2_FULL_CELLS_ON_BDRY
-            int nodc = 1;
-#else
             int nodc = 0;
-#endif
 
-            
-#if 1
             const double* hplusx   = hplus[0];
             const double* hplusy   = hplus[1];
             const double* hcenter  = wcenter;
@@ -988,7 +885,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             const double oody2 = 0.5 / (dy * dy);
             const double nine_pt = (0.25 * (1.0 + P2_DIAGONAL_FIVE_POINT)) * P2_FULL_STENCIL;
             
-            double flux_x_lower, flux_x_upper, flux_y_left, flux_y_right, hc;
+            double flux_x_lower, flux_x_upper, flux_y_left, flux_y_right;
             double dsq_p_dxdy;
             
             int i, j, me, mn, ne, nn, nn1, nnicxn, nn1icxn;
@@ -1015,23 +912,13 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                     flux_y_left   = hplusy[ne] * oody2 * ( (p[nnicxn]  - p[nn]    ) + nine_pt * dsq_p_dxdy);
                     flux_y_right  = hplusy[ne] * oody2 * ( (p[nn1icxn] - p[nn1]   ) - nine_pt * dsq_p_dxdy);
                     
-#ifdef HELMHOLTZ_COEFF_NODE_BASED
                     lap[nn]      += (  flux_x_lower + flux_y_left );
                     lap[nn1]     += (- flux_x_lower + flux_y_right);
                     lap[nnicxn]  += (  flux_x_upper - flux_y_left );
                     lap[nn1icxn] += (- flux_x_upper - flux_y_right);
-#else /* HELMHOLTZ_COEFF_NODE_BASED */
-                    hc            = 0.25 * hcenter[ne];
-                    
-                    lap[nn]      += (  flux_x_lower + flux_y_left ) + hc*p[nn]     ;
-                    lap[nn1]     += (- flux_x_lower + flux_y_right) + hc*p[nn1]    ;
-                    lap[nnicxn]  += (  flux_x_upper - flux_y_left ) + hc*p[nnicxn] ;
-                    lap[nn1icxn] += (- flux_x_upper - flux_y_right) + hc*p[nn1icxn];
-#endif /* HELMHOLTZ_COEFF_NODE_BASED */
                 }
             }
             
-#ifdef HELMHOLTZ_COEFF_NODE_BASED
             for(j = igyn; j < icyn - igyn; j++) {
                 mn   = j * icxn;
                 for(i = igxn; i < icxn - igxn; i++) {                    
@@ -1039,91 +926,6 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                     lap[nn] += hcenter[nn] * p[nn];
                 }
             }
-#endif /* HELMHOLTZ_COEFF_NODE_BASED */
-            
-#else
-            assert(0); /* this branch seems obsolete;  check carefully before trying it. */
-            const double* hcenter  = wcenter;
-            
-            const double oodx2[2] = {1.0/(dx*dx), 1.0/(dy*dy)};
-            const int dis[2][2]   = {{1, icxn}, {icxn, 1}};
-            
-            const double a0 = 1.0/4.0;
-            const double a1 = 1.0/4.0;
-            
-            for(int nn=0; nn<node->nc; nn++) lap[nn] = 0.0;
-            
-            for(int j = igye - is_y_periodic - nodc; j < icye - igye + is_y_periodic + nodc; j++) {
-                int me   = j * icxe;
-                int mn   = j * icxn;
-                
-                for(int i = igxe - is_x_periodic - nodc; i < icxe - igxe + is_x_periodic + nodc; i++) {
-                    int ne = me + i;
-                    int nn = mn + i;
-                    
-                    int nmw, nme, npw, npe;
-                    
-                    for (int idim = 0; idim<elem->ndim; idim++) {
-                        nmw = nn;
-                        nme = nn                + dis[idim][1];
-                        npw = nn + dis[idim][0];
-                        npe = nn + dis[idim][0] + dis[idim][1];
-                        
-                        double dp_w = (p[npw] - p[nmw]);
-                        double dp_e = (p[npe] - p[nme]);
-                        
-                        double flux_w = hplus[idim][ne] * oodx2[idim] * ( a0 * dp_w + a1 * dp_e);
-                        double flux_e = hplus[idim][ne] * oodx2[idim] * ( a1 * dp_w + a0 * dp_e);
-                        
-                        lap[nmw] += flux_w;
-                        lap[nme] += flux_e;
-                        lap[npw] -= flux_w;
-                        lap[npe] -= flux_e;
-                    }
-                    
-                    double hc = 0.125 *hcenter[ne];
-                    
-                    nmw = nn;
-                    nme = nn             + dis[0][1];
-                    npw = nn + dis[0][0];
-                    npe = nn + dis[0][0] + dis[0][1];
-                    
-                    lap[nmw] += hc*p[nmw];
-                    lap[nme] += hc*p[nme];
-                    lap[npw] += hc*p[npw];
-                    lap[npe] += hc*p[npe];
-                }
-            }
-#endif
-            
-#ifdef P2_FULL_CELLS_ON_BDRY
-            // rescale_bdry_node_values(lap, node, elem, 0.5);
-#endif
-
-
-            /* 1: new, 0: old   periodicity scheme 2nd projection 
-            if (nodc == 0) {
-                if (is_x_periodic) {
-                    for(int j=igyn; j<icyn-igyn; j++) {
-                        int nleft  = j * icxn + igxn;
-                        int nright = j * icxn + icxn - igxn - 1;
-                        
-                        lap[nleft]  += lap[nright];
-                        lap[nright]  = 0.0;
-                    }
-                }
-                
-                if (is_y_periodic) {
-                    for(int i=igxn; i<icxn-igxn; i++) {
-                        int nbottom  = i + igyn * icxn;
-                        int ntop     = i + (icyn - igyn - 1) * icxn;
-                        
-                        lap[nbottom]  += lap[ntop];
-                        lap[ntop]      = 0.0;
-                    }
-                }
-            }
-             */
             
             precon_invert(lap, lap, node, is_x_periodic, is_y_periodic, is_z_periodic);
 
@@ -1155,14 +957,6 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             
                         
             int i, j, k;
-            
-#ifdef P2_FULL_CELLS_ON_BDRY
-            /* int nodc = 1; */
-            assert(0); /* option not implemented in 3D yet */
-#else
-            int nodc = 0;
-#endif
-
             
             assert(0); /* Modification of Laplacian for implicit Coriolis not implemented yet */
             /* const double coriolis  = ud.coriolis_strength[0]; */
@@ -1222,34 +1016,11 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                             lap[npse] -= flux_se;
                             lap[npne] -= flux_ne;
                             lap[npnw] -= flux_nw;
-                        }
-                        
-#ifndef HELMHOLTZ_COEFF_NODE_BASED  /* if NOT defined !! */
-                        double hc = 0.125 *hcenter[ne];
-                        
-                        nmsw = nn;
-                        nmse = nn             + dis[0][1];
-                        nmne = nn             + dis[0][1] + dis[0][2];
-                        nmnw = nn                         + dis[0][2];
-                        npsw = nn + dis[0][0];
-                        npse = nn + dis[0][0] + dis[0][1];
-                        npne = nn + dis[0][0] + dis[0][1] + dis[0][2];
-                        npnw = nn + dis[0][0]             + dis[0][2];
-                        
-                        lap[nmsw] += hc*p[nmsw];
-                        lap[nmse] += hc*p[nmse];
-                        lap[nmne] += hc*p[nmne];
-                        lap[nmnw] += hc*p[nmnw];
-                        lap[npsw] += hc*p[npsw];
-                        lap[npse] += hc*p[npse];
-                        lap[npne] += hc*p[npne];
-                        lap[npnw] += hc*p[npnw];
-#endif /* not HELMHOLTZ_COEFF_NODE_BASED */
+                        }                        
                     }
                 }
             }
       
-#ifdef HELMHOLTZ_COEFF_NODE_BASED
             for(k = igzn; k < iczn - igzn; k++) {
                 int ln   = k * icxn*icyn;
                 for(j = igyn; j < icyn - igyn; j++) {
@@ -1260,50 +1031,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                     }
                 }
             }
-#endif /* HELMHOLTZ_COEFF_NODE_BASED */
             
-            
-            /*
-            if (is_x_periodic) {
-                for(k=igzn; k<iczn-igzn; k++) {
-                    int ln = k*icxn*icyn;
-                    for(j=igyn; j<icyn-igyn; j++) {
-                        int nm = ln + j * icxn + igxn;
-                        int np = ln + j * icxn + icxn - igxn - 1;
-                        
-                        lap[nm]  += lap[np];
-                        lap[np]  = 0.0;
-                    }
-                }
-            }
-            
-            if (is_y_periodic) {
-                for(i=igxn; i<icxn-igxn; i++) {
-                    for(k=igzn; k<iczn-igzn; k++) {
-                        int ln   = k*icxn*icyn;
-                        int nm = ln + i + igyn * icxn;
-                        int np = ln + i + (icyn - igyn - 1) * icxn;
-                        
-                        lap[nm]  += lap[np];
-                        lap[np]  = 0.0;
-                    }
-                }
-            }
-            
-            if (is_z_periodic) {
-                for(j=igyn; j<icyn-igyn; j++) {
-                    int mn = j * icxn;
-                    for(i=igxn; i<icxn-igxn; i++) {
-                        int nm = mn + i + igzn * icxn*icyn;
-                        int np = mn + i + (iczn - igzn - 1) * icxn*icyn;
-                        
-                        lap[nm]  += lap[np];
-                        lap[np]  = 0.0;
-                    }
-                }
-            }
-             */
-
             precon_invert(lap, lap, node, is_x_periodic, is_y_periodic, is_z_periodic);
 
             break;

@@ -1,3 +1,4 @@
+/* auxiliary labels for addressing various solution components */
 #define NSPEC 1   /* no of advected scalars */
 #define BUOY  0   /* auxiliary pot. temp. perturbation variable */
 #define QV    1   /* foreseen for: water vapor */
@@ -7,118 +8,35 @@
 /* Output parameters */
 #define HDFFORMAT  
 
-/* Output options in main.c for debugging;  1 -> output */
-#define OUTPUT_SUBSTEPS   0 /* time step after which detailed output is generated */
-#define OUTPUT_SPLITSTEPS 0
-
-/*
-#define OUTPUT_FLUXES
- */
-
-/* ============================================= 
- Initial Data Options
- ============================================= */
-
+/* Debugging output options in various places */
+#define OUTPUT_SUBSTEPS    0       /* time step after which detailed output is generated - off */
+#define OUTPUT_SPLITSTEPS  0       /* on-off */
+#define OUTPUT_HYDROSTATES 0       /* on-off */
+#define OUTPUT_FLUXES      0       /* on-off */
+#define OUTPUT_LAP_CELLS   0       /* on-off */
+#define OUTPUT_RHS_CELLS   0       /* on-off */
+#define OUTPUT_LAP_NODES   0       /* on-off */
+#define OUTPUT_RHS_NODES   0       /* on-off */
+#define OUTPUT_ADV_FLUXES  0       /* on-off */
+	
 /* ============================================= 
  Explicit predictor options
  ============================================= */
-/*
- #define EGDE_VELOCITIES_IN_MUSCL_STEP
- #define SYMMETRIC_ADVECTION
- #define FOURTH_ORDER_ADV_FLUXES
- #define UPWIND_RHOY
- */ 
-#define HY_STATES_N_FROM_CELL_CENTERED_THETA
-#define EVOLVE_NODAL_PRESSURE
-#define ADVECTION
-#define SYMMETRIC_ADVECTION
-#define LIMIT_PLAIN_PRIMITIVES  /* benefit of option for travelling vortex unclear */
-
-/* 
- #define NODAL_PROJECTION_ONLY
- #define PRESSURE_RESET
- #define FLUX_PREDICTOR_WITH_IMPL_TRAPEZOIDAL
- */
-#define NODAL_PROJECTION_ONLY
-#define PRESSURE_RESET
-
 
 /* ============================================= 
  Semi-implicit solver options  
  ============================================= */
-/* 
- #define NONLINEAR_EOS_IN_1st_PROJECTION -- Newton for  P(pi)
- #define NONLINEAR_EOS_IN_1st_PROJECTION
+/* PRECON:
+ 0: no preconditioner
+ 1: diagonal (no gravity) or column-wise (with gravity) preconditioner
  */
-/* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
- this option was on on October 24 
- #define NONLINEAR_EOS_IN_1st_PROJECTION
- */
-
-/* ============================================= 
- Elliptic Solver Options
- ============================================= */
-/*
- */
-#define NEW_LAP
-#define PRECON
-
-/* solver options ==============================
- #define SOLVER_1_CR2      ->  Piotr's Conjugate Residual
- #define SOLVER_1_BICGSTAB
- 
- #define SOLVER_2_BICGSTAB
-
- Currently, a simple diagonal (no gravity) and a column-wise 
- preconditioner (in the gravity direction) are implemented 
- for both projections/linear implicit steps. They are always
- on and selected on the fly depending on whether or not 
- gravity is on or off.
- 
- */
-
-#define SOLVER_1_CR2
-#define SOLVER_2_BICGSTAB
-
-/* Hydrostatic solver options 
- #define SURFACE_PRESSURE_CORRECTION
- #define FULL_D_HYDRO_CORRECTION
- */
-#define SURFACE_PRESSURE_CORRECTION
-
-/* First projection options */
-/* 
- #define P1_ALTERNATIVE_STENCIL_WEIGHT 0.125   value for bilinear p-ansatz fcts
- #define P1_ALTERNATIVE_STENCIL_WEIGHT 0.0     value for standard five-point Laplacian
-*/
-#define PROJECTION1 1              /* switch for first projection should be on "1" normally       */
-#define P1_ALTERNATIVE_STENCIL_WEIGHT 0.125
-
-/* Second projection options */
-
-/* if def'd, div is controlled in L_\infty, otherwise in L2    
- #define DIV_CONTROL_LOCAL
- */
+#define PRECON 1
+#define DIV_CONTROL_LOCAL 0  /* determines norm for convergence test 0: L1, 1: Linfty */
 
 #define PROJECTION2 1              /* switch for second projection should be on "1" normally      */
 #define P2_FULL_STENCIL 1.0        /* values: 0.0, 1.0;  0.0 = 5/7pt stencil,  1.0=9/27pt stencil */
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
-#define HELMHOLTZ_COEFF_NODE_BASED        
 
-/*
- Note, Nov. 15, 2018:
- The option EXNER_NONLINEAR  slightly improves the stability
- behavior for the planetary scale IGW test, but it does not
- fully remove the remaining weak instability that shows near 
- the top of the domain at late times. Not tested on other 
- test cases thus far.
-
- #define EXNER_NONLINEAR
-*/
-
-/* 
- #define P2_FULL_CELLS_ON_BDRY
-*/
 
 /* TODO: Code cleaning / maintainance
  
@@ -128,23 +46,17 @@
  
  2) Whereever the auxiliary double array W0 is used, introduce an external "W0_in_use" flag, so 
     that other routines can query whether or not this aux array is currently occupied.
+ DONE
  
  3) Get rid of the full-size dSol arrays
  
- 4) Can I get away without ever computing the advective theta-perturbation evolution,
-    just modifying the momentum balance to include the semi-implicit effects?
+ 4) Implement   Hydrostatic_Initial_Pressure()  for 3D.
  
- 5) Implement   Hydrostatic_Initial_Pressure()  for 3D.
- 
- 6) Get rid of "Level[]"s in the  MPV struct.
- 
- 7) Make sure, the fourth order computation of the advective fluxes is implemented
-    compatibly with rigid wall boundary conditions. 
- 
- 8) Rewrite  slanted_wall_min() and related routines for cross-wall advective flux  
+ 5) Rewrite  slanted_wall_min() and related routines for cross-wall advective flux  
     rhoYu  instead of for rhou to improve compatibility with the pseudo-incompressible
     model
  
+ 6) Implement Piotr's conjugate residual scheme also for the nodal projection
  
  */
 

@@ -66,7 +66,7 @@ void User_Data_init(User_Data* ud) {
 
 	/* Low Mach */
     ud->is_nonhydrostatic = 1;
-    ud->is_compressible   = 0;
+    ud->is_compressible   = 1;
     ud->acoustic_timestep =  0; /* 0;  1; */
 	ud->Msq =  u_ref*u_ref / (R_gas*T_ref); 
 	
@@ -129,8 +129,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 192+1; /*  */
-	ud->iny = 192+1; /*  */
+	ud->inx = 32+1; /*  */
+	ud->iny = 32+1; /*  */
 	ud->inz =     1;
 
     /* explicit predictor step */

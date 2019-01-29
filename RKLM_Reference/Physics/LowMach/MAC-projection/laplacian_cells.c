@@ -546,7 +546,7 @@ void precon_c_apply(
                     const double* vec_in,
                     const ElemSpaceDiscr *elem) 
 {
-#ifdef PRECON    
+#if PRECON    
     /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
      make sure the preconditioning calls are issued for  October 24 version */
 
@@ -570,7 +570,7 @@ void precon_c_invert(
                      const double* vec_in,
                      const ElemSpaceDiscr *elem) 
 {
-#ifdef PRECON
+#if PRECON
     /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
      make sure the preconditioning calls are issued for  October 24 version */
 
@@ -588,7 +588,6 @@ void precon_c_invert(
 
 
 /* ========================================================================== */
-#define OUTPUT_LAP_CELLS 0
 #if OUTPUT_LAP_CELLS
 #include "io.h"
 static int lap_output_count = 0;
@@ -633,13 +632,9 @@ void EnthalpyWeightedLap_bilinear_p(
             const double dx = elem->dx;
             const double dy = elem->dy;
                     
-#ifdef NEW_LAP
             const double oodx    = 1.0 / dx;
             const double oody    = 1.0 / dy;
-#else
-            const double oodx2   = 1.0 / (dx * dx);
-            const double oody2   = 1.0 / (dy * dy);
-#endif       
+
             const double* hplusx = hplus[0];
             const double* hplusy = hplus[1];
             const double* hc     = hcenter;
@@ -675,7 +670,6 @@ void EnthalpyWeightedLap_bilinear_p(
                     o_n   = oy + 1;
                     o_s   = oy;
                     
-#ifdef NEW_LAP
                     double dpdx_e  = oodx * (p[n_e ] - p[n_c ]);
                     double dpdx_ne = oodx * (p[n_ne] - p[n_n ]);
                     double dpdx_se = oodx * (p[n_se] - p[n_s ]);
@@ -695,19 +689,6 @@ void EnthalpyWeightedLap_bilinear_p(
                     
                     lap[n] += oody * (a * ( hplusy[o_n] * dpdy_n            - hplusy[o_s] * dpdy_s )
                                     + b * ( hplusy[o_n] * (dpdy_ne+dpdy_nw) - hplusy[o_s] * (dpdy_se+dpdy_sw)));
-#else               
-                    lap[n]  = oodx2 * (  a * ( hplusx[o_e] * (p[n_e ] - p[n_c ]) - hplusx[o_w] * (p[n_c ] - p[n_w ]) ) 
-                                       + b * ( hplusx[o_e] * ( ( p[n_ne] - p[n_n ] ) + ( p[n_se] - p[n_s ] ) ) 
-                                             - hplusx[o_w] * ( ( p[n_n ] - p[n_nw] ) + ( p[n_s ] - p[n_sw] ) )  
-                                             )
-                                       );
-                    
-                    lap[n] += oody2 * (  a * ( hplusy[o_n] * (p[n_n ] - p[n_c ]) - hplusy[o_s] * (p[n_c ] - p[n_s ]) )
-                                       + b * ( hplusy[o_n] * ( ( p[n_ne] - p[n_e ] ) + ( p[n_nw] - p[n_w ] ) ) 
-                                             - hplusy[o_s] * ( ( p[n_e ] - p[n_se] ) + ( p[n_w ] - p[n_sw] ) ) 
-                                             )
-                                       );
-#endif
                     
                     lap[n] += hc[n] * p[n_c];
                     
