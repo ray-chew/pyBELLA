@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		9A21BF821DA58470006A6F34 /* libmfhdf.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A21BF811DA58470006A6F34 /* libmfhdf.dylib */; };
 		9A21BF841DA5847F006A6F34 /* libdf.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A21BF831DA5847F006A6F34 /* libdf.dylib */; };
-		9A2ABD1321FFA4E300E75406 /* userdata_InternalWave_LongWave.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A2ABD1221FFA4E300E75406 /* userdata_InternalWave_LongWave.c */; };
+		9A2ABD1522009D9000E75406 /* userdata_Straka_3D.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A2ABD1422009D9000E75406 /* userdata_Straka_3D.c */; };
 		9A8840B6214A9D5000FC83CB /* second_projection.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A8840B4214A9D4F00FC83CB /* second_projection.c */; };
 		9AA6E68B214C14D9008A9B8D /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 9AA6E68A214C14D9008A9B8D /* Makefile */; };
 		9AC4F9841DA3F06F00AED455 /* boundary.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9231DA3F06F00AED455 /* boundary.c */; };
@@ -51,7 +51,7 @@
 		9A1ED37C206D0C9200D622A9 /* PrimaryAndDualGrid.eps */ = {isa = PBXFileReference; lastKnownFileType = file; path = PrimaryAndDualGrid.eps; sourceTree = "<group>"; };
 		9A21BF811DA58470006A6F34 /* libmfhdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmfhdf.dylib; path = ../../../../../opt/local/lib/libmfhdf.dylib; sourceTree = "<group>"; };
 		9A21BF831DA5847F006A6F34 /* libdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libdf.dylib; path = ../../../../../opt/local/lib/libdf.dylib; sourceTree = "<group>"; };
-		9A2ABD1221FFA4E300E75406 /* userdata_InternalWave_LongWave.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_InternalWave_LongWave.c; sourceTree = "<group>"; };
+		9A2ABD1422009D9000E75406 /* userdata_Straka_3D.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_Straka_3D.c; sourceTree = "<group>"; };
 		9A7A55E521873A4400446950 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		9A8840AE2148EB2700FC83CB /* RandomNotes.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = RandomNotes.txt; sourceTree = "<group>"; };
 		9A8840B4214A9D4F00FC83CB /* second_projection.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = second_projection.c; sourceTree = "<group>"; };
@@ -222,7 +222,7 @@
 		9AC4F9221DA3F06F00AED455 /* Input */ = {
 			isa = PBXGroup;
 			children = (
-				9A2ABD1221FFA4E300E75406 /* userdata_InternalWave_LongWave.c */,
+				9A2ABD1422009D9000E75406 /* userdata_Straka_3D.c */,
 				9AC4F9311DA3F06F00AED455 /* userdata.h */,
 				9AC4F9231DA3F06F00AED455 /* boundary.c */,
 				9AC4F9241DA3F06F00AED455 /* boundary.h */,
@@ -407,12 +407,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				9AE5E7022019C80300399B1A /* Hydrostatics.c in Sources */,
+				9A2ABD1522009D9000E75406 /* userdata_Straka_3D.c in Sources */,
 				9AC4F9911DA3F06F00AED455 /* data.c in Sources */,
 				9AC4F9991DA3F06F00AED455 /* SimpleUtilities.c in Sources */,
 				9AC4F9AB1DA3F06F00AED455 /* mpv.c in Sources */,
 				9AC4F9971DA3F06F00AED455 /* time_discretization.c in Sources */,
 				9AC4F9841DA3F06F00AED455 /* boundary.c in Sources */,
-				9A2ABD1321FFA4E300E75406 /* userdata_InternalWave_LongWave.c in Sources */,
 				9AC4F9951DA3F06F00AED455 /* variable.c in Sources */,
 				9AC4F9921DA3F06F00AED455 /* io.c in Sources */,
 				9AC4F99D1DA3F06F00AED455 /* explicit.c in Sources */,
