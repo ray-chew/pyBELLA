@@ -36,6 +36,8 @@ function make_plots(test_case, modelstr, varstr, titlestr)
 
 addpath('/home/tommaso/work/code/matlab_packages/export_fig')
 
+set(0,'DefaultFigureColor',[1 1 1])
+
 extrafigno = 52;
 
 showmode = 1;
