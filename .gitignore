@@ -1,19 +1,18 @@
 #Ignore various files
-*.log
 *.o
 *.orig
 RKLM_Reference/MakeBuilds/rklm
 low_Mach_gravity_comp/*
 low_Mach_gravity_psinc/*
-MatLab/results/*
 *.backup
 *.aux
 *.bbl
 *.blg
 *.dvi
+*.eps
 *.log
-*.pdf
 *.tex.backup
+*.pdf
 *.ps
 *.zip
 *.fff

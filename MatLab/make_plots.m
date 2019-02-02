@@ -429,7 +429,7 @@ for k = kmin:dk:kmax
                 exit;
         end
         if print_eps
-            filename = sprintf('./results/%s/%s/%s_snapshot%d.eps', test_case, varstr, varstr, k);
+            filename = sprintf('../RKLM_Reference/Doc/paper_2019/figures/%s/%s/%s_snapshot%d.eps', test_case, varstr, varstr, k);
             %print(filename, '-depsc')
             export_fig(filename, '-eps')
         end
@@ -441,7 +441,7 @@ for k = kmin:dk:kmax
         hold
         plot(th(showslice_hor,:))
         if print_eps
-            filename = sprintf('./results/%s/%s/%s_snapshot%d_cut_hor.eps', test_case, varstr, varstr, k);
+            filename = sprintf('../RKLM_Reference/Doc/paper_2019/figures/%s/%s/%s_snapshot%d_cut_hor.eps', test_case, varstr, varstr, k);
             export_fig filename
         else
             hold
@@ -450,7 +450,7 @@ for k = kmin:dk:kmax
         hold
         plot(th(:,showslice_hor))
         if print_eps
-            filename = sprintf('./results/%s/%s/%s_snapshot%d_cut_ver.eps', test_case, varstr, varstr, k);
+            filename = sprintf('../RKLM_Reference/Doc/paper_2019/figures/%s/%s/%s_snapshot%d_cut_ver.eps', test_case, varstr, varstr, k);
             export_fig filename
         else
             hold
