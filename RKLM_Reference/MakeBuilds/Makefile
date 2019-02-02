@@ -65,7 +65,7 @@ LIBS		= $(HDFLIBDIR)/libmfhdf.a \
 
 MAKEFILE	= Makefile
 
-OBJS		= userdata_InternalWave_LongWave.o \
+OBJS		= userdata_InternalWave_P.o \
 		boundary.o \
 		data.o \
 		io.o \
@@ -95,7 +95,7 @@ PROGRAM	   = rklm
 
 SHELL		  = /bin/sh
 
-SRCS		  = ../Input/userdata_InternalWave_LongWave.c \
+SRCS		  = ../Input/userdata_InternalWave_P.c \
 		../Input/boundary.c \
 		../Management/data.c \
 		../Management/io.c \
@@ -152,8 +152,8 @@ $(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)
 		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install
 
 ###
-userdata_InternalWave_LongWave.o : 
-	$(CC) -c $(HDRFLAGS) ../Input/userdata_InternalWave_LongWave.c
+userdata_InternalWave_P.o : 
+	$(CC) -c $(HDRFLAGS) ../Input/userdata_InternalWave_P.c
 
 boundary.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/boundary.c
