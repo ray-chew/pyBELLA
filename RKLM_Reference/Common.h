@@ -1,3 +1,8 @@
+/*
+#define TOMMASO
+ */
+#define RUPERT
+
 /* auxiliary labels for addressing various solution components */
 #define NSPEC 1   /* no of advected scalars */
 #define BUOY  0   /* auxiliary pot. temp. perturbation variable */
@@ -17,7 +22,7 @@
 #define OUTPUT_RHS_CELLS   0       /* on-off */
 #define OUTPUT_LAP_NODES   0       /* on-off */
 #define OUTPUT_RHS_NODES   0       /* on-off */
-#define OUTPUT_ADV_FLUXES  0       /* on-off */
+#define OUTPUT_ADV_FLUXES  1       /* on-off */
 	
 /* ============================================= 
  Explicit predictor options

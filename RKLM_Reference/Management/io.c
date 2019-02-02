@@ -27,7 +27,11 @@
 #define MAC
 #undef __WINDOWS__
 #endif
+#ifdef RUPERT
+#include  "/opt/local/include/dfsd.h" 
+#else 
 #include  "/usr/local/HDF_Group/HDF/4.2.14/include/dfsd.h" 
+#endif
 #endif
 
 #ifdef SILOFORMAT

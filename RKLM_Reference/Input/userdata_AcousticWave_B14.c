@@ -46,10 +46,10 @@ void User_Data_init(User_Data* ud) {
     double gamma    = 2.0;              /* dimensionless; 5.0/3.0       */
 
     /* references for non-dimensionalization */
-    double h_ref    = 1.0;                 /* [m]               */
+    double h_ref    = 1.0;                   /* [m]               */
     double t_ref    = 1.0;                   /* [s]               */
     double T_ref    = 353.048780488;                /* [K]               */
-    double p_ref    = 101325;                 /* [Pa]              */
+    double p_ref    = 101325;                /* [Pa]              */
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
     
@@ -155,7 +155,7 @@ void User_Data_init(User_Data* ud) {
     ud->kZ = 1.4; /* 2.0 */
         
     /* al explicit predictor operations are done on ncache-size data worms to save memory */ 
-    ud->ncache = 75; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
+    ud->ncache = 175; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
     
     /* linear solver-stuff */
     double tol                            = 1.e-8;
@@ -193,11 +193,15 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 2;
+    ud->write_file_period = 100000;
     ud->file_format = HDF;
     
     {
+#ifdef RUPERT
+        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+#else
         char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
+#endif
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
@@ -318,6 +322,24 @@ void Sol_initial(ConsVars* Sol,
 
     set_ghostcells_p2(mpv->p2_cells, elem, elem->igx);
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
+
+    set_wall_massflux(bdry, Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem);
+    
+    ConsVars_set(Sol0, Sol, elem->nc);
+    
+    ud.nonhydrostasy   = nonhydrostasy(0);
+    ud.compressibility = compressibility(0);
+    
+    /* the initial projection should ensure the velocity field is discretely
+     divergence-controlled when sound-free initial data are required.
+     This can mean vanishing divergence in a zero-Mach flow or the 
+     pseudo-incompressible divergence constraint in an atmospheric flow setting
+     */ 
+    if (ud.initial_projection == CORRECT) {
+        /* initial velocity div-control not implemented for the test case yet. */
+        assert(0);
+    }
 }
 
 /* ================================================================================== */
