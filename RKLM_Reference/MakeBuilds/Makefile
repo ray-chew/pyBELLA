@@ -1,6 +1,7 @@
 CC = gcc
 
-HDFLIBDIR	  = /opt/local/lib
+LIBDIR 		  = /usr/lib/x86_64-linux-gnu
+HDFLIBDIR	  = /usr/lib
 HDFINC		  = /opt/local/include
 
 CFLAGS		  = -Aa -I$(HDFINC) 
@@ -64,8 +65,8 @@ LD		= $(CC)
 
 LDFLAGS		= 
 
-LIBS		= $(HDFLIBDIR)/libmfhdf.dylib \
-		$(HDFLIBDIR)/libdf.dylib  $(HDFLIBDIR)/libjpeg.a $(HDFLIBDIR)/libz.dylib -lm
+LIBS		= $(HDFLIBDIR)/libmfhdfalt.so.0 \
+		$(HDFLIBDIR)/libdfalt.so.0  $(LIBDIR)/libjpeg.a $(LIBDIR)/libz.so -lm
 
 MAKEFILE	= Makefile
 
