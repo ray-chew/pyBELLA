@@ -170,7 +170,7 @@ rhoY_diff = 0;
 rhoZ_diff = 0;
 transp    = 0;
 
-folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Mach_gravity_',modelstr);
+folderstring = strcat('/srv/public/ray/RKLM_Reference/Output/low_Mach_gravity_',modelstr);
 
 % for time series display
 ts_name = strcat(folderstring, '/time_series.txt');
@@ -185,7 +185,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'T';  folderstr = 'T'; titlestr = 'T'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dT';  folderstr = 'dT'; titlestr = 'dT'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
+varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
@@ -211,7 +211,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'lap_cells';  folderstr = 'lap_cells'; titlestr = 'lap_c';    ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dP_cells';  folderstr = 'rhs_cells'; titlestr = 'dP_c'; ndummy = 2; arraysize = [ncx ncy];
 
-varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
+%varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'rhs_nodes';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'rhs_nodes_prec';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n_prec';    ndummy = 2; arraysize = [nnx nny];
