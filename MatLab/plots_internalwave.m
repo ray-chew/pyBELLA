@@ -1,18 +1,19 @@
-function plots_acouwave(varstr, ampl)
+function plots_internalwave(varstr, ext)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% plots_acouwave(varstr, ampl)
+% plots_internalwave(varstr, ext)
 % Produces plots from RKLM low Mach fluid dynamics code hdf output
 % for the paper "A semi-implicit numerical model for small-to-planetary scale atmospheric
-% dynamics", acoustic wave test case with high (c=0.05*c_ref) or low (c=0.01*c_ref) 
-% initial amplitude ampl
+% dynamics", wave test case with nonhydrostatic (NH), hydrostatic(H), or
+% planetary(P) extension ext
 %
 %
 % varstr    variable to plot
 %           'p2_nodes', 'dp2_c', 'theta', 'dp2_nodes', 'dpdim', 'u',
 %           'v', 'w', 'dY', 'rho', 'p', 'geopot', 'p2_c', 'rhoY'
 %
-% ampl      'high', 'low'
+% ext      Extension of the domain
+%           'NH', 'H', 'P'
 %
 % Developed by R. Klein, FU Berlin, -2019
 % Modified by T. Benacchio, Politecnico di Milano, 2019
@@ -42,22 +43,37 @@ showslice = 1;
 diff_rel_to_bottom = 0;
 print_eps = 1;
 
+% th0 = -0.0015/300;
+% dth = 5e-4/300;
+% contour_values = [th0 th0+dth th0+2*dth th0+3*dth th0+4*dth th0+5*dth th0+6*dth th0+7*dth th0+8*dth th0+9*dth th0+10*dth];
+dtheta = 0.5e-3/300;
+contour_values = 10.0*[-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dtheta, 2*dtheta, 3*dtheta, 4*dtheta, 5*dtheta];
+%contour_values = [1.0001 1.0011 1.0022 1.0022 1.0033 1.0044 1.0055 1.0065];
+%contour_values = linspace(-0.01,0.01,41) / 288.15;
 title_true = 0;
 
 kmin = 0;
 kmax = 2;
 dk   = 1;
 
-scalefactor = 1.0;
-ncx = 256;
+if strcmp(ext, 'NH')
+    scalefactor = 1.0;  % Skamarock-Klemp-1994 Fig.1
+elseif strcmp(ext, 'H')
+    scalefactor = 20.0;  % Skamarock-Klemp-1994 Fig.3
+elseif strcmp(ext, 'P')
+    scalefactor = 160.0;   % new, very long wave test
+end
+
+ncx =301;
 ncy = 10;
-L   = 1.0 * scalefactor;  %
-x0  = 0.5*L;
+L   = 300.0 * scalefactor;  %
+x0  = 0.0;
 H   = 10.0;  %
-aspect = [.1 1 1];
-velosc = 1;  % velocity unit of RKLM code
+aspect = [L/H/3 1 1];
+velosc = 100;  % velocity unit of RKLM code
 showslice_hor = floor(ncy/2);
 showslice_ver = floor(ncx/2);
+
 
 % auxiliary adjustments of grid parameters
 nnx = ncx+1;
@@ -75,7 +91,7 @@ rhoY_diff = 0;
 rhoZ_diff = 0;
 transp    = 0;
 
-folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/AcousticWave_', ampl);
+folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/InternalWave_', ext);
 
 % for time series display
 ts_name = strcat(folderstring, '/time_series.txt');
@@ -92,18 +108,15 @@ arraysize = [ncx ncy];
 
 %varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
 
-if strcmp(varstr,'p2_n')
-    folderstr = 'p2_nodes';
-    arraysize = [nnx nny];
+if strcmp(varstr,'dY')
+    filledcontours = 0;
+    fixed_contours = 1;
 end
 
 set(0,'defaulttextinterpreter','latex')
 scrsz = get(0,'ScreenSize');
 
 figure1 = figure('Position',[1 2*scrsz(4)/3 scrsz(4)/2 1*scrsz(4)/3]);
-
-figure2 = figure('Position',[scrsz(4)/2 2*scrsz(4)/3 scrsz(4)/2 1*scrsz(4)/3]);
-title(strcat('horizontal slice at j = ',num2str(showslice_hor)))
 
 for k = kmin:dk:kmax
     kstr = num2str(k);
@@ -180,74 +193,77 @@ for k = kmin:dk:kmax
             th = Yt(3:1:nz+2, 3:1:nx+2);
         end
         
-        % Create filled contour
+        % Create unfilled contour
         figure(figure1)
-        if strcmp(varstr, 'flux_rhou')
-            contourf(x,z,th./th(:,1),no_of_lines,'LineColor',linecolor);
-        elseif (strcmp(varstr, 'u') || strcmp(varstr, 'v') || strcmp(varstr, 'w'))
-            contourf(x,z,th*velosc,no_of_lines,'LineColor',linecolor);
-        else
-            if diff_rel_to_bottom
-                th = th-th(3,:);
+        if fixed_contours
+            if separate_signs == 1
+                contour(x,z,max(0.0,th),contour_values,'LineColor','k','LineWidth',1.0);
+                % contour(x,z,max(0.0,th),contour_values,'LineColor','k');
+                hold
+                contour(x,z,min(0.0,th),contour_values,'LineColor','k');
+                % contour(x,z,min(0.0,th),contour_values,'LineColor',linecolor,'LineStyle','--');
+                hold
+            else
+                contour(x,z,th,contour_values,'LineColor',linecolor);
             end
-            contourf(x,z,th,no_of_lines,'LineColor',linecolor);
+        elseif fixed_contour_step
+            if separate_signs == 1
+                contour(x,z,max(0.0,th), 'LevelStep', dtheta, 'LineColor','k');
+                hold
+                contour(x,z,min(0.0,th), 'LevelStep', dtheta, 'LineColor','k','LineStyle','--');
+                hold
+            else
+                contour(x,z,th, 'LevelStep', dtheta, 'LineColor','k');
+            end
+        else
+            if separate_signs == 1
+                contour(x,z,max(0.0,th),no_of_contours,'LineColor','k');
+                hold
+                contour(x,z,min(0.0,th),no_of_contours,'LineColor','k','LineStyle','--');
+                hold
+            else
+                contour(x,z,th,no_of_contours,'LineColor','k');
+            end
         end
-        colormap viridis
-        colorbar('FontSize',14,'FontName','Helvetica')
-        if(k==1) % widen picture size
-            pos=get(gca,'position');  % retrieve the current plot size value
-            pos(3)=.95*pos(3);        % try increasing width and height 10%
-            pos(4)=.95*pos(4);        % try increasing width and height 10%
-            set(gca,'position',pos);  % write the new values
-        end
-        
-        set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
-        axis tight;
-        if title_true
-            title(strcat(titlestr,kstr));
-        end
-        set(0,'defaulttextinterpreter','latex')
         
     end
-   
-    figure(figure2)
-    plot(th(showslice_hor,:), 'k', 'LineWidth', 2)
     
-    xlabel('x [m]','FontSize',18,'Interpreter','latex');
-    xlim([1 257])
-    xticks([1 52 103 154 205 257])
-    xticklabels({'0', '0.2', '0.4', '0.6', '0.8', '1'})
-    if strcmp(varstr,'rho')
-        ylabel('$\rho$ [$kg m^{-3}$]','FontSize',18,'Interpreter','latex');
-        if strcmp(ampl,'high')
-            ylim([0.8 1.2])
-            yticks([0.9 1.0 1.1])
-            yticklabels({'0.9', '1.0', '1.1'})
-        elseif strcmp(ampl,'low')
-            ylim([0.97 1.03])
-            yticks([0.98 1.0 1.02])
-            yticklabels({'0.98', '1.0', '1.02'})
-        end    
-    elseif strcmp(varstr,'u')
-        ylabel('$\rho u$ [$kg m^{-3}s^{-1}$]','FontSize',18,'Interpreter','latex');
-        if strcmp(ampl,'high')
-            ylim([-75 75])
-            yticks([-50 0 50])
-            yticklabels({'-50', '0', '50'})
-        elseif strcmp(ampl,'low')
-            ylim([-13 13])
-            yticks([-10 0 10])
-            yticklabels({'-10', '0', '10'})
-        end
+    set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
+    axis tight;
+    
+    set(0,'defaulttextinterpreter','latex')
+    set(0,'DefaultFigureColor',[1 1 1])
+    xlabel('x [km]','FontSize',18,'Interpreter','latex');
+    ylabel('z [km]','FontSize',18,'Interpreter','latex');
+    ylim([0 10])
+    yticks([0 2 4 6 8 10])
+    
+    switch ext
+        case 'NH'
+            xlim([-150 150])
+            xticks([-150 -100 -50 0 50 100 150])
+            xticklabels({'0', '50', '100', '150', '200', '250', '300'})
+        case 'H'
+            xlim([-3000 3000])
+            xticks([-3000 -2000 -1000 0 1000 2000 3000])
+            xticklabels({'0', '1000', '2000', '3000', '4000', '5000', '6000'})
+        case 'P'
+            xlabel('x [$10^3$ km]','FontSize',18,'Interpreter','latex');
+            xlim([-24000 24000])
+            xticks([-24000 -16000 -8000 0 8000 16000 24000])
+            xticklabels({'0', '8', '16', '24', '32', '40', '48'})
+        case default
+            disp('Error: incorrect test_case input, see help make_plots. Exiting.')
+            exit;
     end
-    grid on
+    
     fig=gcf;
     fig.Color = 'white';
     fig.InvertHardcopy = 'off';
-    filename = sprintf('../RKLM_Reference/Doc/paper_2019/figures/AcousticWave_%s/%s/%s_snapshot%d.eps', ampl, varstr, varstr, k);
+    filename = sprintf('../RKLM_Reference/Doc/paper_2019/figures/InternalWave_%s/%s/%s_snapshot%d.eps', ext, varstr, varstr, k);
     print(filename, '-depsc')
     export_fig(filename, '-eps')
-
+    
     %        set(gca,'yticklabel',[], 'xticklabel', []) %Remove tick labels
     
     %         %%Get tick mark positions
@@ -269,6 +285,6 @@ for k = kmin:dk:kmax
     %             text(xTicks(xx), minY - verticalOffset, ['$' num2str( xTicks(xx)) '$'],...
     %                 'HorizontalAlignment','Right','interpreter', 'latex');
     %         end
-
+    
     
 end

@@ -74,7 +74,7 @@ void User_Data_init(User_Data* ud) {
     /* Low Mach */
     ud->is_nonhydrostatic = 1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
     ud->is_compressible   = 1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
-    ud->acoustic_timestep = 0;    /* advective time step -> 0;  acoustic time step -> 1; */
+    ud->acoustic_timestep = 1;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
     
     /* geo-stuff */
@@ -129,9 +129,9 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator       = SI_MIDPT; /* this code version has only one option */
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
-    ud->CFL                   = 0.77; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0              = 0.0000668205;
-    ud->dtfixed               = 0.0000668205;
+    ud->CFL                   = 10.0; /* 0.45; 0.9; 0.8; */
+    ud->dtfixed0              = 0.0000668205;//0000668205;
+    ud->dtfixed               = 0.0000668205;//0000668205;
     
     set_time_integrator_parameters(ud);
     
@@ -181,19 +181,19 @@ void User_Data_init(User_Data* ud) {
     /* ================================================================================== */
     
     // double t_period = sqrt(ud->Msq)*(ud->xmax-ud->xmin)/sqrt(ud->gamm);
-    ud->tout[0] = 0.00668205;
+    ud->tout[0] = 0.00267282;
     ud->tout[1] = -1.0;
     // ud->tout[2] = 3.0*t_period;
     // ud->tout[3] = 4.0*t_period;
     // ud->tout[4] = 5.0*t_period;
     // ud->tout[6] = -1.0;
 
-    ud->stepmax = 100;
+    ud->stepmax = 40;
     
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 100000;
+    ud->write_file_period = 40;
     ud->file_format = HDF;
     
     {
