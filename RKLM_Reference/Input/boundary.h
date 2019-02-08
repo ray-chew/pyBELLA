@@ -12,7 +12,7 @@
 
 typedef struct {
 	
-	double* wall_massflux;
+	double* wall_rhoYflux;
 	double* wall_slope;
 	double* wall_relative_slope;
 } BDRY;
@@ -33,9 +33,10 @@ void Bound(
 		   const int n, 
            const int SplitStep);
 
-void set_wall_massflux(
+void set_wall_rhoYflux(
 					   BDRY* bdry, 
 					   const ConsVars* Sol0, 
+                       const MPV* mpv,
 					   const ElemSpaceDiscr* elem);
 
 double slanted_wall_slope(
@@ -44,11 +45,11 @@ double slanted_wall_slope(
 double velo_background(
 					   double t);
 
-double wall_massflux(
-					 double x,
-					 double y,
-					 double wind_speed_x,
-					 double wind_speed_y);
+double wall_rhoYflux(const double x, 
+                     const double z, 
+                     const double wind_speed_x, 
+                     const double wind_speed_z, 
+                     const double rhoY0);
 
 void check_flux_bcs(
 					States* Lefts, 

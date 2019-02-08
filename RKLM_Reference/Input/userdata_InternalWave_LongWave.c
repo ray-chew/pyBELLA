@@ -161,7 +161,7 @@ void User_Data_init(User_Data* ud) {
     ud->kY = 1.4;
     ud->kZ = 1.4; /* 2.0 */
         
-    /* al explicit predictor operations are done on ncache-size data worms to save memory */ 
+    /* all explicit predictor operations are done on ncache-size data worms to save memory */ 
     ud->ncache = 154; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
     
     /* linear solver-stuff */

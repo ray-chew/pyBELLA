@@ -102,7 +102,7 @@ int main( void )
             if(elem->ndim > 1) ConsVars_setzero(flux[1], elem->nfy);
             if(elem->ndim > 2) ConsVars_setzero(flux[2], elem->nfz);            
 			            
-			set_wall_massflux(bdry, Sol0, elem);
+			set_wall_rhoYflux(bdry, Sol0, mpv, elem);
             ConsVars_set(Sol0, Sol, elem->nc);            
            
             /* ======================================================================= */

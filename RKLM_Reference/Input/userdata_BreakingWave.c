@@ -7,9 +7,9 @@
 #include <float.h>
 #include <stdlib.h>
 
-#include "enumerator.h"
 #include "Common.h"
 #include "userdata.h"
+#include "enumerator.h"
 #include "time_discretization.h"
 #include "error.h"
 #include "variable.h"
@@ -18,11 +18,10 @@
 #include "space_discretization.h"
 #include "thermodynamic.h"
 #include "Eos.h"
-#include "set_ghostcells_p.h"
-#include "set_ghostnodes_p.h"
 #include "boundary.h"
 #include "memory.h"
 #include "Hydrostatics.h"
+#include "second_projection.h"
 
 double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma);
 
@@ -31,7 +30,7 @@ double rho_function(double psi);
 
 void User_Data_init(User_Data* ud) {
 	
-	int i, max_no_of_levels;
+	int i;
 	
 	/* ================================================================================== */
 	/* =====  PROBLEM SET UP  =========================================================== */
@@ -41,26 +40,29 @@ void User_Data_init(User_Data* ud) {
 	double grav  = 10.0;             /* [m/s^2]                         */
     double omega = 0.0; /* 2*PI*sin(0.25*PI)/(24.0*3600.0); [s^-1] */
 
-	/* references for non-dimensionalization */
+    /* thermodynamics and chemistry */
+    double R_gas = 287;              /* [J/kg/K]                        */
+    double R_vap = 461.00;           /* [J/kg/K]                        */
+    double Q_vap = 2.53e+06;         /* [J]                             */
+
+    /* references for non-dimensionalization */
 	double h_ref = 6515;             /* [m]                             */
 	double t_ref = 100;              /* [s]                             */
 	double T_ref = 227;              /* [K]                             */
 	double p_ref = 101325;           /* [Pa]                            */
 	double u_ref = h_ref/t_ref;      /* Strouhal No == 1 always assumed */
-		
-	/* thermodynamics and chemistry */
-	double R_gas = 287;              /* [J/kg/K]                        */
-    double R_vap = 461.00;           /* [J/kg/K]                        */
-    double Q_vap = 2.53e+06;         /* [J]                             */
-	double Nsq_ref   = 1e-5 * grav;      /* [s^-2]                          */
-	double c     = grav*grav / (R_gas*T_ref*Nsq_ref);
-	double gamma = c / (c-1);        /* breaking wave test choice yields exp. pressure fct. */
-	ud->gamm     = gamma;  
+    double rho_ref = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
+
+    /* reference stratification as (buoyancy frequency)^2 */
+    double Nsq_ref = 1e-5 * grav;      /* [s^-2]                          */
+    double c     = grav*grav / (R_gas*T_ref*Nsq_ref);
+    double gamma = c / (c-1);        /* breaking wave test choice yields exp. pressure fct. */
 	
     ud->h_ref       = h_ref;
     ud->t_ref       = t_ref;
     ud->T_ref       = T_ref;
     ud->p_ref       = p_ref;
+    ud->rho_ref     = rho_ref;
     ud->u_ref       = u_ref;
     ud->Nsq_ref     = Nsq_ref;
     ud->g_ref       = grav;
@@ -70,10 +72,10 @@ void User_Data_init(User_Data* ud) {
 
     /* number of advected species */
     ud->nspec       = NSPEC;
-    ud->naux        = NAUX;
 
 	/* Low Mach */
-    ud->is_compressible   = 0;   /* 0:psinc; 1:comp;  -1:psinc-comp-trans -> compressibility() */
+    ud->is_nonhydrostatic = 1; /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
+    ud->is_compressible   = 0; /* 0:psinc; 1:comp;  -1:psinc-comp-trans -> compressibility() */
     ud->acoustic_timestep = 0; /* 0;  1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
     
@@ -98,11 +100,7 @@ void User_Data_init(User_Data* ud) {
             ud->i_coriolis[i] = 1;
         }
     }
-	
-    /* low Froude */
-    ud->implicit_gravity_theta  = 0;
-    ud->implicit_gravity_theta2 = 0;
-    	 
+	    	 
 	/* flow domain */
 	ud->xmin = - 60000/h_ref;  
 	ud->xmax =   60000/h_ref;  
@@ -136,9 +134,6 @@ void User_Data_init(User_Data* ud) {
     ud->CFL                    = 0.96; /* 0.9; 0.8; */
     ud->dtfixed0               = 0.31;
     ud->dtfixed                = 0.31;  
-    ud->stepmax                = 10000;
-    ud->no_of_steps_to_CFL     = 1;
-    ud->no_of_steps_to_dtfixed = 1;
     
     set_time_integrator_parameters(ud);
     
@@ -146,65 +141,44 @@ void User_Data_init(User_Data* ud) {
 	ud->inx = 240+1; /* 641; 321; 161; 129; 81; */    
 	ud->iny = 120+1; /* 321; 161;  81;  65; 41;  */
 	ud->inz = 1;
-	ud->h    = MIN_own((ud->xmax-ud->xmin)/(ud->inx),MIN_own((ud->ymax-ud->ymin)/(ud->iny),(ud->zmax-ud->zmin)/(ud->inz)));
 
 	/* explicit predictor step */
 	/* Recovery */
 	ud->recovery_order = SECOND;
-    ud->limiter_type_scalars  = RUPE; 
-    ud->limiter_type_velocity = RUPE; 
+    ud->limiter_type_scalars  = NONE; 
+    ud->limiter_type_velocity = NONE; 
     /* Limiter options:  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
 	
     ud->kp = 1.4;
 	ud->kz = 1.4; /* Entro abused for velocity in split-step-aligned velocity ! */
 	ud->km = 1.4;
 	ud->kY = 1.4;
-	ud->kZ = 1.4; /* 2.0 */
-	
-    /* first correction */
-    ud->p_flux_correction = WRONG; /* CORRECT, WRONG; */
-    if (ud->time_integrator == OP_SPLIT || ud->time_integrator == OP_SPLIT_MD_UPDATE) {
-        ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.0; /* REFERENCE */
-        /* ud->latw[0] = ud->latw[2] = 0.0; ud->latw[1] = 1.0; ud->p_extrapol = 1.0; */   
-        /* ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.0; */  
-        /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25; */
-        /* ud->latw[0] = ud->latw[2] = 0.2; ud->latw[1] = 0.6; ud->p_extrapol = 1.5;  */
-    } else {
-        /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25;*/
-        ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.5;
-    }
+	ud->kZ = 1.4; /* 2.0 */	
 
+    /* all explicit predictor operations are done on ncache-size data worms to save memory */ 
     ud->ncache =  300; /* (ud->inx+3); */
-	/* ud->ncache = (ud->inx+3)*(ud->iny == 1 ? 1 : ud->iny+3)*(ud->inz == 1 ? 1 : ud->inz+3); */
-	/* 5000+4 for 64x64; 10000 + 4; for 60x120 -- 31000+4 for 120x240*//*  BREAKING WAVE CHANGE */
 	
     /* linear solver-stuff */
-    ud->which_projection_first = 1;
-    ud->Solver = BICGSTAB_PRECON;        /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
-    ud->Solver_Node = BICGSTAB_PRECON;   /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
-    ud->precondition = CORRECT;            /* options:   CORRECT, WRONG */
-    double tol = 1.e-6;
-    ud->flux_correction_precision = tol;
-    ud->flux_correction_local_precision = tol;   /* 1.e-05 should be enough */
-    ud->second_projection_precision = tol;
-    ud->second_projection_local_precision = tol;   /* 1.e-05 should be enough */
-    ud->implicitness = 1.0;
-    ud->flux_correction_max_MG_cycles = 100;
-    ud->flux_correction_output_period = 50;
-    ud->max_projection_iterations = 1;
-    ud->flux_correction_max_iterations = 6000;
-    ud->second_projection_max_iterations = 6000;
+    double tol = 1.e-10 * (ud->is_compressible == 1 ? 0.01 : 1.0);
+    ud->flux_correction_precision         = tol;
+    ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
+    ud->second_projection_precision       = tol;
+    ud->second_projection_local_precision = tol;  /* 1.e-05 should be enough */
+    ud->flux_correction_max_iterations    = 6000;
+    ud->second_projection_max_iterations  = 6000;
+    ud->initial_projection                = CORRECT;   /* WRONG;  CORRECT; */
+    ud->initial_impl_Euler                = CORRECT;   /* WRONG;  CORRECT; */
     
-    max_no_of_levels = 1;
-    
-    ud->max_no_of_multigrid_levels = max_no_of_levels;
-    ud->no_of_multigrid_levels     = max_no_of_levels-1;    /* optimal for BICGSTAB with MG:  5 (128x128-Grid) */
+    ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
+    ud->synchronize_nodal_pressure        = WRONG; /* WRONG; CORRECT; */
+    ud->synchronize_weight                = 1.0;    /* relevant only when prev. option is "CORRECT"
+                                                     Should ultimately be a function of dt . */  
 
 	/* numerics parameters */
 	ud->eps_Machine = sqrt(DBL_EPSILON);
 		
 	/* ================================================================================== */
-	/* =====  FLOW CONTROL  ============================================================= */
+	/* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
 
     /* output times  */
@@ -220,7 +194,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 20;
+    ud->write_file_period = 10;
     ud->file_format = HDF;
     
     {
@@ -237,14 +211,17 @@ void User_Data_init(User_Data* ud) {
 
 /* ================================================================================== */
 
-void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr* node) 
+void Sol_initial(ConsVars* Sol, 
+                 ConsVars* Sol0, 
+                 MPV* mpv,
+                 BDRY* bdry,
+                 const ElemSpaceDiscr* elem,
+                 const NodeSpaceDiscr* node) 
 {
     
     extern Thermodynamic th;
     extern User_Data ud;
-    extern MPV* mpv;
-    extern double *Yinvbg;
-    
+
     const double u0 = ud.wind_speed;
     const double v0 = 0.0;
     const double w0 = 0.0;
@@ -263,10 +240,8 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     int i, j, k, l, m, n;
     double x, y, z;
     double rho, u, v, w, p, rhoY;	
-    
-    double g = ud.gravity_strength[1];
-    
-    Hydrostatics_State(mpv, Yinvbg, elem);
+        
+    Hydrostatics_State(mpv, elem, node);
     
     for(k = igze; k < icze - igze; k++) {l = k * icxe * icye; 
         z = elem->z[k];
@@ -292,32 +267,14 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
                 Sol->rhou[n] = rho * u;
                 Sol->rhov[n] = rho * v;
                 Sol->rhow[n] = rho * w;
-                Sol->rhoe[n] = rhoe(rho, u, v, w, p, g*y);
+                Sol->rhoe[n] = rhoe(rho, u, v, w, p);
                 Sol->rhoY[n] = rhoY;
-                Sol->geopot[n] = g*y;
                 
                 mpv->p2_cells[n]   = (p/rhoY) / ud.Msq;
-                Sol->rhoZ[PRES][n] = mpv->p2_cells[n];		            
                 Sol->rhoX[BUOY][n] = Sol->rho[n] * ( Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
 		
             }			
-        }
-                
-        /* set all dummy cells */
-        /* geopotential in bottom and top dummy cells */            
-        for(j = 0; j < igye; j++) {m = l + j * icxe;  
-            y = elem->y[j];
-            for(i = 0; i < icxe; i++) {n = m + i;
-                Sol->geopot[n] = g * y;
-            }
-        }
-        
-        for(j = icye-igye; j < icye; j++) {m = l + j * icxe;  
-            y = elem->y[j];
-            for(i = 0; i < icxe; i++) {n = m + i;
-                Sol->geopot[n] = g * y;
-            }
-        }
+        }                
     }  
 
     /*set nodal pressures */
@@ -331,7 +288,51 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
                 mpv->p2_nodes[n] = (p/rhoY) / ud.Msq;
             }
         }
-    }                  
+    }  
+    
+    ud.nonhydrostasy   = nonhydrostasy(0);
+    ud.compressibility = compressibility(0);
+    
+    set_wall_rhoYflux(bdry, Sol, mpv, elem);
+    Set_Explicit_Boundary_Data(Sol, elem);
+    
+    ConsVars_set(Sol0, Sol, elem->nc);
+    
+    /* the initial projection should ensure the velocity field is discretely
+     divergence-controlled when sound-free initial data are required.
+     This can mean vanishing divergence in a zero-Mach flow or the 
+     pseudo-incompressible divergence constraint in an atmospheric flow setting
+     */ 
+    if (ud.initial_projection == CORRECT) {
+        int is_compressible    = ud.is_compressible;
+        double compressibility = ud.compressibility;
+        ud.is_compressible = 0;
+        ud.compressibility = 0.0;
+        double *p2aux = (double*)malloc(node->nc*sizeof(double));
+        for (int nn=0; nn<node->nc; nn++) {
+            p2aux[nn] = mpv->p2_nodes[nn];
+        }
+        for (int nc=0; nc<elem->nc; nc++) {
+            Sol->rhou[nc] -= u0*Sol->rho[nc];
+            Sol->rhov[nc] -= v0*Sol->rho[nc];
+        }
+        
+        //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
+        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed);
+        for (int nn=0; nn<node->nc; nn++) {
+            mpv->p2_nodes[nn] = p2aux[nn];
+            mpv->dp2_nodes[nn] = 0.0;
+        }
+        free(p2aux);
+        
+        for (int nc=0; nc<elem->nc; nc++) {
+            Sol->rhou[nc] += u0*Sol->rho[nc];
+            Sol->rhov[nc] += v0*Sol->rho[nc];
+        }
+        
+        ud.is_compressible = is_compressible;
+        ud.compressibility = compressibility;
+    }
 }
 
 /* ====================================================================== */ 

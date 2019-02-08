@@ -247,15 +247,8 @@ static double divergence_nodes(
 							   const MPV* mpv,
 							   const BDRY* bdry) {
 	
-    /* with weight = 1.0, this routine computes 
-          rhs_out = rhs_in + div(rhoY\vec{v}) 
-       from the current Sol. 
-     */
-
 	extern User_Data ud;
-	
-    int nodc = 0;
-    
+	    
 	const int ndim = node->ndim;
 
     double div_max = 0.0;
@@ -290,10 +283,10 @@ static double divergence_nodes(
             double Y;
             
             /* predicted time level divergence via scattering */
-            for(j = igye - is_y_periodic - nodc; j < icye - igye + is_y_periodic + nodc; j++) {
+            for(j = igye - is_y_periodic; j < icye - igye + is_y_periodic; j++) {
                 const int me = j * icxe;
                 const int mn = j * icxn; 
-                for(i = igxe - is_x_periodic - nodc; i < icxe - igxe + is_x_periodic + nodc; i++) {
+                for(i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
                     const int n     = mn + i;
                     const int nicx  = n  + icxn;
                     const int n1    = n  + 1;
@@ -318,11 +311,11 @@ static double divergence_nodes(
             j = igye;
             mn = j * icxn; 
             Y  = mpv->HydroState->Y0[j];
-            for(i = igxe; i < icxe - igxe; i++) {
+            for(i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
                 const int n     = mn + i;
                 const int n1    = n  + 1;
                 
-                double rhov_wall = bdry->wall_massflux[i]; 
+                double rhov_wall = bdry->wall_rhoYflux[i]; 
                 double tmpy = 0.5 * oody * Y * rhov_wall; 
                 
                 rhs[n]  += - tmpy;
@@ -375,13 +368,13 @@ static double divergence_nodes(
             double Y;
             
             /* predicted time level divergence via scattering */
-            for(k = igze - is_z_periodic - nodc; k < icze - igze + is_z_periodic + nodc; k++) {
+            for(k = igze - is_z_periodic; k < icze - igze + is_z_periodic; k++) {
                 const int le = k * icye * icxe;
                 const int ln = k * icyn * icxn; 
-                for(j = igye - is_y_periodic - nodc; j < icye - igye + is_y_periodic + nodc; j++) {
+                for(j = igye - is_y_periodic; j < icye - igye + is_y_periodic; j++) {
                     const int me = le + j * icxe;
                     const int mn = ln + j * icxn; 
-                    for(i = igxe - is_x_periodic - nodc; i < icxe - igxe + is_x_periodic + nodc; i++) {
+                    for(i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
                         const int ne = me + i; 
                         const int nn000  = mn + i;  /* foresee consistent interpretation of "abc" in nnabc between parts of code */
                         const int nn010  = nn000 + diyn;
@@ -414,17 +407,17 @@ static double divergence_nodes(
             /* account for influx bottom boundary */
             j = igye;
             Y  = mpv->HydroState->Y0[j];
-            for(k = igze; k < icze - igze; k++) {
+            for(k = igze  - is_z_periodic; k < icze - igze + is_z_periodic; k++) {
                 int ln = k * icyn*icxn;
                 int mn = ln + j*icxn;
-                for(i = igxe; i < icxe - igxe; i++) {
+                for(i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
                     int nn   = mn + i;
                     int nn00 = nn;
                     int nn10 = nn + dixn;
                     int nn11 = nn + dixn + dizn;
                     int nn01 = nn +      + dizn;
                     
-                    double rhov_wall = bdry->wall_massflux[i]; 
+                    double rhov_wall = bdry->wall_rhoYflux[i]; 
                     double tmpy = 0.25 * oody * Y * rhov_wall;
                     
                     rhs[nn00] += - tmpy;

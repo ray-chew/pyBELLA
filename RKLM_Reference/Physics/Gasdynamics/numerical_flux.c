@@ -122,6 +122,7 @@ void recompute_advective_fluxes(ConsVars* flux[3],
     extern User_Data ud;
             
     /* recompute advective flux at fixed time level from cell averages */
+    
     switch (elem->ndim) {
         case 1: {
             for (int i=0; i<elem->nfx; i++) {

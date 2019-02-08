@@ -7,8 +7,8 @@
 extrafigno = 52;
 
 %modelstr = '';
-modelstr = 'comp';
-%modelstr = 'psinc' ;  
+%modelstr = 'comp';
+modelstr = 'psinc' ;  
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
@@ -17,12 +17,13 @@ modelstr = 'comp';
 %test_case = 'Baldaufs-Internal-Wave-Tests';
 %test_case = 'Deep-Internal-Wave-Tests';
 %test_case = 'Internal-Wave-Tests';
+test_case = 'Breaking-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
 %test_case = 'Travelling-Vortex';
 %test_case = 'Travelling-Hump';
-test_case = 'Acoustic-Wave';
+%test_case = 'Acoustic-Wave';
 
 showmode = 1;
 separate_signs = 1;
@@ -85,6 +86,16 @@ elseif strcmp(test_case, 'Internal-Wave-Tests')
     H   = 10.0;  %
     aspect = [L/H/3 1 1];
     velosc = 100;  % velocity unit of RKLM code
+    showslice_hor = floor(ncy/2);
+    showslice_ver = floor(ncx/2);
+elseif strcmp(test_case, 'Breaking-Wave-Tests')
+    ncx = 240; 
+    ncy = 120;  
+    L   = 120;  % 
+    x0  = 0.0;
+    H   = 60.0;  %
+    aspect = [L/H/3 1 1];
+    velosc = 65.15;  % velocity unit of RKLM code
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Acoustic-Wave')
@@ -184,7 +195,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'T';  folderstr = 'T'; titlestr = 'T'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dT';  folderstr = 'dT'; titlestr = 'dT'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
-%varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
+%varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; no_of_contours = 50;
 %varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
@@ -193,8 +204,8 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'rhou';  folderstr = 'rhou'; titlestr = 'rhou'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhov';  folderstr = 'rhov'; titlestr = 'rhov'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhow';  folderstr = 'rhow'; titlestr = 'rhow'; ndummy = 2; arraysize = [ncx ncy];
-varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
-%varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry; filledcontours = 1;
+%varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
+varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry; filledcontours = 1;
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'vortz';  folderstr = 'vortz'; titlestr = 'vortz'; ndummy = 2; arraysize = [nnx nny]; filledcontours = 1; fixed_contours = 0;
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy];
@@ -239,7 +250,7 @@ if showslice_hor
 end
 if showslice_ver
     figure4 = figure('Position',[2*scrsz(4)/2 2*scrsz(4)/3 scrsz(4)/2 1*scrsz(4)/3]);
-    title(strcat('horizontal slice at i = ',num2str(showslice_ver)))
+    title(strcat('vertical slice at i = ',num2str(showslice_ver)))
 end
 
 for k = kmin:dk:kmax
