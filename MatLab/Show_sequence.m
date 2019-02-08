@@ -4,6 +4,9 @@
 % Hint: 
 % saving figures as .eps:     print(gcf, 'TestPlot', '-depsc');
 
+%clear all
+%close all
+
 extrafigno = 52;
 
 %modelstr = '';
@@ -16,10 +19,10 @@ modelstr = 'comp';
 
 %test_case = 'Baldaufs-Internal-Wave-Tests';
 %test_case = 'Deep-Internal-Wave-Tests';
-test_case = 'Internal-Wave-Tests';
+%test_case = 'Internal-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
-%test_case = 'Straka';
+test_case = 'Straka';
 %test_case = 'Travelling-Vortex';
 %test_case = 'Travelling-Hump';
 %test_case = 'Acoustic-Wave';

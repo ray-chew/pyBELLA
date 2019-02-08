@@ -1,6 +1,7 @@
 function make_plots(test_case, modelstr, varstr, titlestr)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+% make_plots(test_case, modelstr, varstr, titlestr)
 % Produces plots from RKLM low Mach fluid dynamics code hdf output
 % for the paper "A semi-implicit numerical model for small-to-planetary scale atmospheric
 % dynamics"
@@ -29,6 +30,8 @@ function make_plots(test_case, modelstr, varstr, titlestr)
 %           'p2_nodes', 'dp2_c', 'theta', 'dp2_nodes', 'dpdim', 'u',
 %           'v', 'w', 'dY', 'rho', 'p', 'geopot', 'p2_c', 'rhoY'
 %
+% titlestr  string for the plot title 
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Hint:
@@ -51,7 +54,7 @@ no_of_contours = 10;
 show_increments = 0;
 symmetry = 0;        % in {0,1}
 showdummycells = 0;
-showslice = 0;
+showslice = 1;
 diff_rel_to_bottom = 0;
 print_eps = 1;
 
@@ -80,17 +83,6 @@ switch test_case
         showslice_hor = floor(ncy/2);
         showslice_ver = floor(ncx/2);
     case 'Acoustic-Wave'
-        scalefactor = 1.0;
-        ncx = 300;
-        ncy = 10;
-        L   = 300.0 * scalefactor;  %
-        x0  = 0.5*L;
-        H   = 10.0;  %
-        aspect = [16 1 1];
-        velosc = 100;  % velocity unit of RKLM code
-        showslice_hor = floor(ncy/2);
-        showslice_ver = floor(ncx/2);
-    case 'Acoustic-Wave_B14'
         scalefactor = 1.0;
         ncx = 256;
         ncy = 10;
@@ -398,7 +390,6 @@ for k = kmin:dk:kmax
         switch test_case
             case 'Travelling-Vortex'
             case 'Acoustic-Wave'
-            case 'Acoustic-Wave_B14'
             case 'Straka'
             case 'SK94_NH'
                 xlabel('x [km]','FontSize',18,'Interpreter','latex');
@@ -409,6 +400,7 @@ for k = kmin:dk:kmax
                 ylim([0 10])
                 yticks([0 2 4 6 8 10])
             case 'SK94_H'
+                set(0,'DefaultFigureColor',[1 1 1])
                 xlabel('x [km]','FontSize',18,'Interpreter','latex');
                 ylabel('z [km]','FontSize',18,'Interpreter','latex');
                 xlim([-3000 3000])
@@ -431,6 +423,9 @@ for k = kmin:dk:kmax
                 exit;
         end
         if print_eps
+            fig=gcf;
+            fig.Color = 'white'; 
+            fig.InvertHardcopy = 'off';
             filename = sprintf('../RKLM_Reference/Doc/paper_2019/figures/%s/%s/%s_snapshot%d.eps', test_case, varstr, varstr, k);
             %print(filename, '-depsc')
             export_fig(filename, '-eps')

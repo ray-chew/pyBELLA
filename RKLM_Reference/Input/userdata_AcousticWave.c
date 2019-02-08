@@ -40,16 +40,16 @@ void User_Data_init(User_Data* ud) {
                                         /* sin(0.5*PI) * 2.0 * 0.00007272205217; */
     
     /* thermodynamics and chemistry */
-    double R_gas    = 287.4;            /* [J/kg/K]               */
+    double R_gas    = 287.0;            /* [J/kg/K]               */
     double R_vap    = 461.00;           /* [J/kg/K]               */
     double Q_vap    = 2.53e+06;         /* [J]                    */
-    double gamma    = 1.4;              /* dimensionless; 5.0/3.0       */
+    double gamma    = 2.0;              /* dimensionless; 5.0/3.0       */
 
     /* references for non-dimensionalization */
-    double h_ref    = 10000;                 /* [m]               */
-    double t_ref    = 100;                   /* [s]               */
-    double T_ref    = 300.00;                /* [K]               */
-    double p_ref    = 1e+5;                 /* [Pa]              */
+    double h_ref    = 1.0;                   /* [m]               */
+    double t_ref    = 1.0;                   /* [s]               */
+    double T_ref    = 353.048780488;                /* [K]               */
+    double p_ref    = 101325;                /* [Pa]              */
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
     
@@ -100,15 +100,15 @@ void User_Data_init(User_Data* ud) {
     }
         
     /* flow domain; all lengths in units of  href  */
-    ud->xmin = -15.0 * scalefactor;
-    ud->xmax =  15.0 * scalefactor;
+    ud->xmin =   0.0 * scalefactor;
+    ud->xmax =   1.0 * scalefactor;
     ud->ymin =   0.0 * scalefactor;
     ud->ymax =   1.0 * scalefactor;
     ud->zmin = - 1.0;
     ud->zmax =   1.0;
     
     /* boundary/initial conditions */
-    ud->wind_speed  =  1.0 * 20.0/u_ref;
+    ud->wind_speed  =  1.0/u_ref;
     ud->wind_shear  = -0.0;              /* velocity in [u_ref/h_ref] */
     ud->hill_height = 0.0 * 0.096447; 
     ud->hill_length_scale = 0.1535;   /* hill_length * l_ref = 1.0 km */
@@ -129,14 +129,14 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator       = SI_MIDPT; /* this code version has only one option */
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
-    ud->CFL                   = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0              = 0.286;
-    ud->dtfixed               = 0.286;
+    ud->CFL                   = 0.77; /* 0.45; 0.9; 0.8; */
+    ud->dtfixed0              = 0.0000668205;
+    ud->dtfixed               = 0.0000668205;
     
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx =  300+1; /* 641; 321; 161; 129; 81; */
+    ud->inx =  256+1; /* 641; 321; 161; 129; 81; */
     ud->iny =  10+1; /* 321; 161;  81;  65; 41;  */
     ud->inz =      1;
     
@@ -155,7 +155,7 @@ void User_Data_init(User_Data* ud) {
     ud->kZ = 1.4; /* 2.0 */
         
     /* al explicit predictor operations are done on ncache-size data worms to save memory */ 
-    ud->ncache = 75; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
+    ud->ncache = 175; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
     
     /* linear solver-stuff */
     double tol                            = 1.e-8;
@@ -180,24 +180,28 @@ void User_Data_init(User_Data* ud) {
     /* =====  CODE FLOW CONTROL  ======================================================== */
     /* ================================================================================== */
     
-    double t_period = sqrt(ud->Msq)*(ud->xmax-ud->xmin)/sqrt(ud->gamm);
-    ud->tout[0] = 16.0*t_period;
-    ud->tout[1] = -2.0*t_period;
-    ud->tout[2] = 3.0*t_period;
-    ud->tout[3] = 4.0*t_period;
-    ud->tout[4] = 5.0*t_period;
-    ud->tout[6] = -1.0;
+    // double t_period = sqrt(ud->Msq)*(ud->xmax-ud->xmin)/sqrt(ud->gamm);
+    ud->tout[0] = 0.00668205;
+    ud->tout[1] = -1.0;
+    // ud->tout[2] = 3.0*t_period;
+    // ud->tout[3] = 4.0*t_period;
+    // ud->tout[4] = 5.0*t_period;
+    // ud->tout[6] = -1.0;
 
-    ud->stepmax = 10000;
+    ud->stepmax = 100;
     
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 40;
+    ud->write_file_period = 100000;
     ud->file_format = HDF;
     
     {
+#ifdef RUPERT
+        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+#else
         char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
+#endif
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
@@ -210,20 +214,24 @@ void User_Data_init(User_Data* ud) {
 
 /* ================================================================================== */
 
-void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr* node) {
+void Sol_initial(ConsVars* Sol, 
+                 ConsVars* Sol0, 
+                 MPV* mpv,
+                 BDRY* bdry,
+                 const ElemSpaceDiscr* elem,
+                 const NodeSpaceDiscr* node) {
     
     extern Thermodynamic th;
     extern User_Data ud;
-    extern MPV* mpv;
         
     /* acoustic wave test */
     const double u0  = ud.wind_speed;
     const double v0  = 0.0;
     const double w0  = 0.0;
-    const double del = 0.001;                          /* perturbation amplitude; standard:  0.01 */
+    const double del = 0.01;                          /* perturbation amplitude; standard:  0.01 */
     const double xc  = 0.0;                           /* center of perturbation */
     const double a   = 0.125 * (ud.xmax - ud.xmin);    /* characteristic width of perturbation */
-    const double wn  = 2.0 * 2.0*PI/((ud.xmax - ud.xmin));
+    const double wn  = 2.0*PI/((ud.xmax - ud.xmin));
     
     const int icx = elem->icx;
     const int icy = elem->icy;
@@ -260,7 +268,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             w   = w0;
             
             /* p    = mpv->HydroState->p0[j] * (1.0 + del * molly(x) / (1.0 + (x-xc)*(x-xc) / (a*a))); */         
-            p    = mpv->HydroState->p0[j] * (1.0 + del * sin(wn*x));       
+            p    = mpv->HydroState->p0[j] * pow(1.0 + del * sin(wn*x), 2.0*th.gamm*th.gm1inv);       
             rhoY = pow(p,th.gamminv);
             rho  = rhoY;
             c    = sqrt(th.gamm * p / rho);
@@ -280,7 +288,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             x  = node->x[i];
             nn = j*icxn+i;
             
-            p  = mpv->HydroState_n->p0[j] * (1.0 + del * sin(wn*x));
+            p  = mpv->HydroState_n->p0[j] * pow(1.0 + del * sin(wn*x), 2.0*th.gamm*th.gm1inv);
             mpv->p2_nodes[nn] = (pow(p,th.Gamma) - 1.0) / ud.Msq;
         }
     }
@@ -313,7 +321,26 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
     }
 
     set_ghostcells_p2(mpv->p2_cells, elem, elem->igx);
-    set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
+    set_ghostnodes_p2(mpv->p2_nodes, node, 2);   
+    
+    ud.nonhydrostasy   = nonhydrostasy(0);
+    ud.compressibility = compressibility(0);
+    
+    set_wall_massflux(bdry, Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem);
+    
+    ConsVars_set(Sol0, Sol, elem->nc);
+    
+    /* the initial projection should ensure the velocity field is discretely
+     divergence-controlled when sound-free initial data are required.
+     This can mean vanishing divergence in a zero-Mach flow or the 
+     pseudo-incompressible divergence constraint in an atmospheric flow setting
+     */ 
+    if (ud.initial_projection == CORRECT) {
+        /* initial velocity div-control not implemented for the test case yet. */
+        assert(0);
+    }
+
 }
 
 /* ================================================================================== */

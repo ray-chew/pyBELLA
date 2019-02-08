@@ -65,7 +65,7 @@ LIBS		= $(HDFLIBDIR)/libmfhdf.dylib \
 
 MAKEFILE	= Makefile
 
-OBJS		= userdata_InternalWave_P.o \
+OBJS		= userdata_AcousticWave.o \
 		boundary.o \
 		data.o \
 		io.o \
@@ -96,7 +96,7 @@ PROGRAM	   = rklm
 
 SHELL		  = /bin/sh
 
-SRCS		  = ../Input/userdata_InternalWave_P.c \
+SRCS		  = ../Input/userdata_AcousticWave.c \
 		../Input/boundary.c \
 		../Management/data.c \
 		../Management/io.c \
@@ -153,8 +153,8 @@ $(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)
 		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install
 
 ###
-userdata_InternalWave_P.o : 
-	$(CC) -c $(HDRFLAGS) ../Input/userdata_InternalWave_P.c
+userdata_AcousticWave.o : 
+	$(CC) -c $(HDRFLAGS) ../Input/userdata_AcousticWave.c
 
 boundary.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/boundary.c
