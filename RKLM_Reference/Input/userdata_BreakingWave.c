@@ -183,7 +183,7 @@ void User_Data_init(User_Data* ud) {
 
     /* output times  */
     ud->tout[0] =  9000.0/t_ref;             /* times in [s]    */
-    ud->tout[1] = -9900.0/t_ref;
+    ud->tout[1] =  9900.0/t_ref;
     ud->tout[2] = 10800.0/t_ref;
     ud->tout[3] = 11700.0/t_ref;
     ud->tout[4] = 12600.0/t_ref;
@@ -194,7 +194,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 10;
+    ud->write_file_period = 10000;
     ud->file_format = HDF;
     
     {

@@ -121,7 +121,7 @@ void User_Data_init(User_Data* ud) {
 	
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;
-    ud->advec_time_integrator = HEUN; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
+    ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
     ud->CFL                   = 0.33;  /* something less than 0.5 for STRANG */       
     ud->dtfixed0              = 100000.0; /* 2.1*1.200930e-02 */;
     ud->dtfixed               = 100000.0; /* 2.1*1.200930e-02 */;   
@@ -425,7 +425,7 @@ void Sol_initial(ConsVars* Sol,
     ud.nonhydrostasy   = nonhydrostasy(0);
     ud.compressibility = compressibility(0);
     
-    set_wall_massflux(bdry, Sol, elem);
+    set_wall_rhoYflux(bdry, Sol, mpv, elem);
     Set_Explicit_Boundary_Data(Sol, elem);
 
     ConsVars_set(Sol0, Sol, elem->nc);

@@ -116,6 +116,7 @@ static int flux_output_count = 0;
 
 void recompute_advective_fluxes(ConsVars* flux[3], 
                                 const ConsVars* Sol, 
+                                const BDRY* bdry,
                                 const ElemSpaceDiscr* elem,
                                 const double dt)
 {
@@ -144,6 +145,7 @@ void recompute_advective_fluxes(ConsVars* flux[3],
             int icy = elem->icy;
             int ifx = elem->ifx;
             int ify = elem->ify;
+            int igy = elem->igy;
 
             for (int i=0; i<elem->nfx; i++) {
                 flux[0]->rhoY[i] = 0.0;
@@ -189,6 +191,12 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                 }
             }
             
+            /* set imposed bottom fluxes 
+            for (int i=0; i<icx; i++) {
+                int nf = i*ify + igy;
+                flux[1]->rhoY[nf] = bdry->wall_rhoYflux[i];
+            }
+             */
             break;
         }
             

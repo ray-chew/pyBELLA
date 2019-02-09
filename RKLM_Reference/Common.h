@@ -33,7 +33,6 @@
 #define PRECON 1
 #define DIV_CONTROL_LOCAL 0  /* determines norm for convergence test 0: L1, 1: Linfty */
 
-#define PROJECTION2 1              /* switch for second projection should be on "1" normally      */
 #define P2_FULL_STENCIL 1.0        /* values: 0.0, 1.0;  0.0 = 5/7pt stencil,  1.0=9/27pt stencil */
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
 
@@ -55,8 +54,11 @@
  5) Rewrite  slanted_wall_min() and related routines for cross-wall advective flux  
     rhoYu  instead of for rhou to improve compatibility with the pseudo-incompressible
     model
+ DONE
  
  6) Implement Piotr's conjugate residual scheme also for the nodal projection
+ 
+ 7) Limiter with plateau- instead of extrema-detection
  
  */
 

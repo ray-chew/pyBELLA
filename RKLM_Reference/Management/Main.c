@@ -113,14 +113,14 @@ int main( void )
             printf("\nhalf-time prediction of advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
                                                       
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, 0.5*dt);
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, bdry, elem, 0.5*dt);
             advect(Sol, flux, Sol0, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, ud.advec_time_integrator, step%2);
 
             /* divergence-controlled advective fluxes at the half time level */
             for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes0[nn] = mpv->p2_nodes[nn];
             euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt); 
             euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt);
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, 0.5*dt);
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, bdry, elem, 0.5*dt);
             for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes[nn] = mpv->p2_nodes0[nn];
             
             ConsVars_set(Sol, Sol0, elem->nc);

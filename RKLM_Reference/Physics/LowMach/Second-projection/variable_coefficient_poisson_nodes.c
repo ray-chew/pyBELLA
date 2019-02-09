@@ -265,7 +265,7 @@ static double BiCGSTAB_MG_nodes(
 	tmp_local *= dt/(precon_inv_scale*precision);
     tmp = dt*sqrt(tmp/cell_cnt)/(precon_inv_scale*precision);
 	
-    printf(" iter = 0,  residual = %e,  local residual = %e,  gridsize = %d\n", tmp, tmp_local, nc);
+    printf(" iter = 0, residual = %e, local residual = %e, gridsize = %d\n", tmp, tmp_local, nc);
 
 	cnt = 0;
 #if DIV_CONTROL_LOCAL
@@ -388,7 +388,7 @@ static double BiCGSTAB_MG_nodes(
 	}
         
     // assert(cnt == 23);
-	printf(" iter = %d,  residual = %e,  local residual = %e,  gridsize = %d\n", cnt, tmp, tmp_local, nc);  
+	printf(" iter = %d, residual = %e, local residual = %e, gridsize = %d\n", cnt, tmp, tmp_local, nc);  
 	
 	data->actual_iterations = cnt;
 	
