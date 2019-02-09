@@ -113,7 +113,7 @@ void User_Data_init(User_Data* ud) {
 	ud->bdrytype_max[1] = PERIODIC;  
 	ud->bdrytype_max[2] = WALL;
 	
-	ud->absorber = WRONG; /* CORRECT; */ 
+	ud->absorber = WRONG; /* CORRECT; */   
 	
 	/* ======================================================================== */
 	/* =====  NUMERICS  ======================================================= */
