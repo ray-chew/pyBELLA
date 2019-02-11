@@ -76,6 +76,7 @@ typedef struct {
 	double zmax;
 	
 	/* initial conditions -- highly case-dependent! */
+    enum HillShapes hill_shape;
 	double wind_speed;
     double wind_shear;
 	double hill_height;

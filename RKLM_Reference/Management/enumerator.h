@@ -47,7 +47,13 @@ enum TimeIntegrator {
     RK3_SKAMA,
     RK3_TEST,
     SI_MIDPT,
-    STRANG};
+    STRANG
+};
+
+enum HillShapes {
+    SCHLUTOW,
+    AGNESI
+};
 
 enum FluxesFrom {
     FLUX_EXTERNAL,

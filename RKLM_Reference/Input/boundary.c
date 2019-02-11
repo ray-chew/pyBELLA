@@ -818,7 +818,33 @@ double slanted_wall_slope(double x){
 	double length_scale_inv = 1.0/ud.hill_length_scale; 
 	double x_sc = x*length_scale_inv;
 	
-	return(- hill_height * 2.0*x_sc / ((1.0 + x_sc*x_sc)*(1.0 + x_sc*x_sc)) * length_scale_inv);
+    if (ud.hill_shape == SCHLUTOW) {
+        /* Topography for Mark Schlutow's stationary WKB waves */
+        double kx = 1.0*2.0*2.0*PI/(ud.xmax-ud.xmin);
+        double kz = 5.0*2.0*2.0*PI/(ud.ymax-ud.ymin);
+        double q  = 0.25;
+        /*
+         double a0 = 1.0;
+         double om = 1.0;
+         double u0 = wind_speed_x;
+         double q  = sqrt(2.0*a0*om)/u0/sqrt(kx*kx+kz*kz);
+         */
+        /* scaled height and slope */
+        double xi = kx*x;
+        double y  = 0.0;
+        double yp;
+        
+        for (int i=0; i<10; i++) {
+            y = q*cos(xi+y);
+        }
+        yp = - q*sin(xi+y)/(1+q*sin(xi+y));
+        
+        /* unscaled slope */
+        yp = kx*yp/kz;
+        return(yp);
+    } else {
+        return(- hill_height * 2.0*x_sc / ((1.0 + x_sc*x_sc)*(1.0 + x_sc*x_sc)) * length_scale_inv);        
+    }
 	
 }
 
@@ -846,22 +872,51 @@ double velo_background(double t){
 	 */
 }
 
+/* ========================================================================= */
+
 double wall_rhoYflux(const double x, 
                      const double z, 
                      const double wind_speed_x, 
                      const double wind_speed_z, 
                      const double rhoY0){
 	extern User_Data ud;
-    
-	double hill_height  = ud.hill_height;
-	double length_scale_inv = 1.0/ud.hill_length_scale; 
-	double x_sc = x*length_scale_inv;
-	
-    /*
-	return(- wind_speed * hill_height * 2.0*x_sc / ((1.0 + x_sc*x_sc)*(1.0 + x_sc*x_sc)) * length_scale_inv);
-     */
-    return((- wind_speed_x * hill_height * 2.0*x_sc / ((1.0 + x_sc*x_sc)*(1.0 + x_sc*x_sc)) * length_scale_inv
-           - wind_speed_z * 0.0) * rhoY0);
+    	
+    if (ud.hill_shape == SCHLUTOW) {
+#if 1
+        return (slanted_wall_slope(x) * wind_speed_x);
+#else
+        /* Topography for Mark Schlutow's stationary WKB waves */
+        double kx = 5.0*2.0*2.0*PI/(ud.xmax-ud.xmin);
+        double kz = 5.0*2.0*2.0*PI/(ud.ymax-ud.ymin);
+        double q  = 0.5;
+        /*
+         double a0 = 1.0;
+         double om = 1.0;
+         double u0 = wind_speed_x;
+         double q  = sqrt(2.0*a0*om)/u0/sqrt(kx*kx+kz*kz);
+         */
+        /* scaled height and slope */
+        double xi = kx*x;
+        double y  = 0.0;
+        double yp;
+        
+        for (int i=0; i<10; i++) {
+            y = q*cos(xi+y);
+        }
+        yp = - q*sin(xi+y)/(1+q*sin(xi+y));
+        
+        /* unscaled slope */
+        yp = kx*yp/kz;
+        return(rhoY0*wind_speed_x*yp);
+#endif
+    } else {
+        double hill_height  = ud.hill_height;
+        double length_scale_inv = 1.0/ud.hill_length_scale; 
+        double x_sc = x*length_scale_inv;
+        
+        return((- wind_speed_x * hill_height * 2.0*x_sc / ((1.0 + x_sc*x_sc)*(1.0 + x_sc*x_sc)) * length_scale_inv
+                - wind_speed_z * 0.0) * rhoY0);
+    }
 }
 
 /* ========================================================================= */

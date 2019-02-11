@@ -274,8 +274,12 @@ void Absorber(
 	const double om_y = ud.t_ref/600.0;                   
 	const double dx_l = (10.0/240.0) * (ud.xmax-ud.xmin);  
 	const double dx_r = (10.0/240.0) * (ud.xmax-ud.xmin);
-	const double om_x = ud.t_ref/120.0;                    
 	
+    double om_x = ud.t_ref/120.0;                    
+    if (ud.hill_shape == SCHLUTOW) {
+        om_x = 0.0; 
+    }
+
     int k, j, i, nk, njk, nijk;
 	
     for(k = igz; k < icz - igz; k++) {nk = k*icy*icx;

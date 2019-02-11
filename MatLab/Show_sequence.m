@@ -7,8 +7,8 @@
 extrafigno = 52;
 
 %modelstr = '';
-modelstr = 'comp';
-%modelstr = 'psinc' ;  
+%modelstr = 'comp';
+modelstr = 'psinc' ;  
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
@@ -16,7 +16,7 @@ modelstr = 'comp';
 
 %test_case = 'Baldaufs-Internal-Wave-Tests';
 %test_case = 'Deep-Internal-Wave-Tests';
-test_case = 'Internal-Wave-Tests';
+%test_case = 'Internal-Wave-Tests';
 %test_case = 'Breaking-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
@@ -25,6 +25,8 @@ test_case = 'Internal-Wave-Tests';
 %test_case = 'Gresho-Vortex';
 %test_case = 'Travelling-Hump';
 %test_case = 'Acoustic-Wave';
+test_case = 'Schlutows-Wave';
+
 
 showmode = 1;
 separate_signs = 1;
@@ -172,6 +174,16 @@ elseif strcmp(test_case, 'Smolarkiewicz-Margolin-Breaking-Wave')
     velosc = 100;  % velocity unit of RKLM code
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
+elseif strcmp(test_case, 'Schlutows-Wave')
+    ncx = 240;  
+    ncy = 480;  
+    L   =  30.0;  % 
+    x0  =   0.0;
+    H   =  60.0;  %
+    aspect = [1 1 1];
+    velosc = 100;  % velocity unit of RKLM code
+    showslice_hor = floor(ncy/2);
+    showslice_ver = floor(ncx/2);
 end
     
 % auxiliary adjustments of grid parameters
@@ -207,7 +219,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'T';  folderstr = 'T'; titlestr = 'T'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dT';  folderstr = 'dT'; titlestr = 'dT'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; no_of_contours = 50;
-varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
+%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
@@ -216,7 +228,7 @@ varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = 
 %varstr = 'rhov';  folderstr = 'rhov'; titlestr = 'rhov'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhow';  folderstr = 'rhow'; titlestr = 'rhow'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
-%varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry; filledcontours = 1;
+varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry; filledcontours = 1;
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'vortz';  folderstr = 'vortz'; titlestr = 'vortz'; ndummy = 2; arraysize = [nnx nny]; filledcontours = 1; fixed_contours = 0;
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy];
@@ -258,10 +270,12 @@ end
 if showslice_hor
     figure3 = figure('Position',[scrsz(4)/2 2*scrsz(4)/3 scrsz(4)/2 1*scrsz(4)/3]);
     title(strcat('horizontal slice at j = ',num2str(showslice_hor)))
+    set(gca,'FontSize',18,'FontName','Helvetica');
 end
 if showslice_ver
     figure4 = figure('Position',[2*scrsz(4)/2 2*scrsz(4)/3 scrsz(4)/2 1*scrsz(4)/3]);
     title(strcat('vertical slice at i = ',num2str(showslice_ver)))
+    set(gca,'FontSize',18,'FontName','Helvetica');
 end
 
 for k = kmin:dk:kmax
@@ -426,16 +440,23 @@ for k = kmin:dk:kmax
         figure(figure1)
     end
     
+    if (strcmp(varstr, 'u') || strcmp(varstr, 'v') || strcmp(varstr, 'w'))
+        th = th*velosc;
+    end
     if showslice_hor
         figure(figure3)
         hold
-        plot(th(showslice_hor,:))
+        plot(x,th(showslice_hor,:))
+        xlabel('x [km]','FontSize',18,'FontName','Helvetica');
+        ylabel(varstr,'FontSize',18,'FontName','Helvetica');
         hold
     end
     if showslice_ver
         figure(figure4)
         hold
-        plot(th(:,showslice_hor))
+        plot(th(:,showslice_hor),z)
+        xlabel(varstr,'FontSize',18,'FontName','Helvetica');
+        ylabel('z [km]','FontSize',18,'FontName','Helvetica');
         hold
     end
     
