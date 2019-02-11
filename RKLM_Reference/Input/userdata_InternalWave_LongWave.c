@@ -267,7 +267,6 @@ void Sol_initial(ConsVars* Sol,
      
     /* computations for the vertical slice at  k=0 */
     for(i = 0; i < icx; i++) {
-        double xi;
         
         /* set potential temperature stratification in the column */
         for(j = 0; j < elem->icy; j++) {
