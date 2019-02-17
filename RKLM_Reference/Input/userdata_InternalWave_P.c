@@ -36,7 +36,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Earth */
     double grav     = 9.81;             /* gravitational acceleration [m/s^2]    */
-    double omega    = 1.0*0.0001;       /* Coriolis parameter [1/s]              */
+    double omega    = 0.0;       /* Coriolis parameter [1/s]              */
                                         /* sin(0.5*PI) * 2.0 * 0.00007272205217; */
     
     /* thermodynamics and chemistry */

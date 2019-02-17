@@ -21,8 +21,13 @@ plots_acouwave('u', 'high');
 plots_acouwave('rho', 'low');
 plots_acouwave('u', 'low');
 
+% Straka density current
+
+plots_straka('dY');
 
 % Internal Waves
 plots_internalwave('dY', 'NH');
 plots_internalwave('dY', 'H');
 plots_internalwave('dY', 'P');  
+
+

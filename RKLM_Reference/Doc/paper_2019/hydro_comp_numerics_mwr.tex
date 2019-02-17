@@ -750,7 +750,7 @@ We note that the implicit trapezoidal step \eq{eq:TimeIntegrator} and, to a slig
 
 \subsection{Acoustic Wave}
 
-\cite{Benacchio2014}
+\cite{Benacchio2014}, see Figure \ref{fig:acouwave}.
 
 \begin{figure}
  \includegraphics[width=.45\columnwidth]{./AcousticWave_low/rho/rho_snapshot0.eps}
@@ -766,11 +766,22 @@ We note that the implicit trapezoidal step \eq{eq:TimeIntegrator} and, to a slig
  \includegraphics[width=.45\columnwidth]{./AcousticWave_high/u/u_snapshot0.eps}
  \includegraphics[width=.45\columnwidth]{./AcousticWave_high/u/u_snapshot1.eps}
  \caption{Top: velocity at initial time (left) and final time (right) for the acoustic wave test with $\tilde{c}=0.01c_{ref}$; Bottom: same with $\tilde{c}=0.01c_{ref}$.}
+  \label{fig:acouwave}
 \end{figure}
 
 \subsection{Density current}
 
-\cite{StrakaEtAl1993}
+\cite{StrakaEtAl1993}, see Figure \ref{fig:straka}
+
+\begin{figure}
+ \includegraphics[width=.45\columnwidth]{./Straka/dY/dY_snapshot0.eps}
+ \includegraphics[width=.45\columnwidth]{./Straka/dY/dY_snapshot1.eps}\\
+ \includegraphics[width=.45\columnwidth]{./Straka/dY/dY_snapshot2.eps}
+ \includegraphics[width=.45\columnwidth]{./Straka/dY/dY_snapshot3.eps}
+ \caption{Potential temperature perturbation at time $t=0\, s$ (top left), $t=300\, s$ (top right), $t=600\, s$ (bottom left), $t=900\, s$ (bottom right) for the density current test case.}
+ \label{fig:straka}
+\end{figure}
+
 
 \subsection{Inertia-gravity wave} 
 
@@ -778,26 +789,35 @@ Inertia-gravity wave of \cite{SkamarockKlemp1994}, non-hydrostatic, hydrostatic,
 
 \subsubsection{Nonhydrostatic case}
 
+See Figure \ref{fig:SK94_NH}.
+
 \begin{figure}
  \includegraphics[width=\columnwidth]{./InternalWave_NH/dY/dY_snapshot0.eps}
  \includegraphics[width=\columnwidth]{./InternalWave_NH/dY/dY_snapshot1.eps}
- \caption{Initial (above) and final (below) potential temperature perturbation for the nonhydrostatic inertia-gravity wave test form \cite{SkamarockKlemp1994}.}
+ \caption{Initial (above) and final (below) potential temperature perturbation for the nonhydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994}.}
+ \label{fig:SK94_NH}
 \end{figure}
 
 \subsubsection{Hydrostatic case}
 
+See Figure \ref{fig:SK94_H}.
+
 \begin{figure}
  \includegraphics[width=\columnwidth]{./InternalWave_H/dY/dY_snapshot0.eps}
  \includegraphics[width=\columnwidth]{./InternalWave_H/dY/dY_snapshot1.eps}
- \caption{Initial (above) and final (below) potential temperature perturbation for the hydrostatic inertia-gravity wave test form \cite{SkamarockKlemp1994}.}
-\end{figure}
+ \caption{Initial (above) and final (below) potential temperature perturbation for the hydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994}.}
+ \label{fig:SK94_H}
+ \end{figure}
 
 \subsubsection{Planetary-scale case}
+
+See Figure \ref{fig:SK94_P}.
 
 \begin{figure}
  \includegraphics[width=\columnwidth]{./figures/InternalWave_P/dY/dY_snapshot0.eps}
  \includegraphics[width=\columnwidth]{./figures/InternalWave_P/dY/dY_snapshot1.eps}
- \caption{Initial (above) and final (below) potential temperature perturbation for the new planetary-scale inertia-gravity wave test form \cite{SkamarockKlemp1994}.}
+ \caption{Initial (above) and final (below) potential temperature perturbation for the new planetary-scale inertia-gravity wave test.}
+  \label{fig:SK94_P}
 \end{figure}
 
 

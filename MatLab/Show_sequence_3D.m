@@ -3,8 +3,8 @@
 % saving figures as .eps:     print(gcf, 'TestPlot', '-depsc');
 
 %modelstr = '';
-%modelstr = 'comp';
-modelstr = 'psinc';
+modelstr = 'comp';
+%modelstr = 'psinc';
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
@@ -15,8 +15,8 @@ modelstr = 'psinc';
 %test_case = 'Skamarock-Klemp-Internal-Wave';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
-%test_case = 'Straka';
-test_case = 'Travelling-Vortex';
+test_case = 'Straka';
+%test_case = 'Travelling-Vortex';
 %test_case = 'Advection';
 
 slice = 'xy'; % options:  'xy' 'yz' 'zx' 'full3D'
