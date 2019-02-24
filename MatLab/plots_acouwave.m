@@ -122,7 +122,7 @@ for k = kmin:dk:kmax
             yticklabels({'0.98', '1.0', '1.02'})
         end
     elseif strcmp(varstr,'u')
-        ylabel('$\rho u$ [$kg m^{-3}s^{-1}$]','FontSize',18,'Interpreter','latex');
+        ylabel('$u$ [$m s^{-1}$]','FontSize',18,'Interpreter','latex');
         if strcmp(ampl,'high')
             ylim([-75 75])
             yticks([-50 0 50])

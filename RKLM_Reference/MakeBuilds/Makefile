@@ -65,7 +65,7 @@ LIBS		= $(HDFLIBDIR)/libmfhdf.a \
 
 MAKEFILE	= Makefile
 
-OBJS		= userdata_InternalWave_Baldauf.o \
+OBJS		= userdata_TravellingVortex_3D.o \
 		boundary.o \
 		data.o \
 		io.o \
@@ -95,7 +95,7 @@ PROGRAM	   = rklm
 
 SHELL		  = /bin/sh
 
-SRCS		  = ../Input/userdata_InternalWave_Baldauf.c \
+SRCS		  = ../Input/userdata_TravellingVortex_3D.c \
 		../Input/boundary.c \
 		../Management/data.c \
 		../Management/io.c \
@@ -152,8 +152,8 @@ $(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)
 		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install
 
 ###
-userdata_InternalWave_Baldauf.o : 
-	$(CC) -c $(HDRFLAGS) ../Input/userdata_InternalWave_Baldauf.c
+userdata_TravellingVortex_3D.o : 
+	$(CC) -c $(HDRFLAGS) ../Input/userdata_TravellingVortex_3D.c
 
 boundary.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/boundary.c

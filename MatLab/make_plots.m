@@ -14,6 +14,10 @@
 clear all
 close all
 
+% Vortex
+plots_vortex('rho')
+plots_vortex('p2_n')
+
 % Acoustic Wave
 plots_acouwave('rho', 'high');
 plots_acouwave('u', 'high');
@@ -31,7 +35,7 @@ plots_internalwave('dY', 'H');
 plots_internalwave('dY', 'P');  
 
 % Baldauf-Brdar internal wave
-plots_internalwave('dY');
-plots_internalwave('u');
-plots_internalwave('v');
+plots_baldauf('dY');
+plots_baldauf('u');
+plots_baldauf('v');
 
