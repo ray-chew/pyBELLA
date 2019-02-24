@@ -34,7 +34,7 @@ x0  = 0.0;
 H   = 10.0;  %
 aspect = [L/H/3 1 1];
 
-if strcmp(varstr, 'dY')
+if strcmp(varstr, 'dT')
     contour_values_max = linspace(0.000004, 0.00002, 5);
     contour_values_min = linspace(-0.00002, -0.000004, 5);
 elseif strcmp(varstr, 'v')

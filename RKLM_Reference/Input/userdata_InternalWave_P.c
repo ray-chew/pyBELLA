@@ -36,7 +36,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Earth */
     double grav     = 9.81;             /* gravitational acceleration [m/s^2]    */
-    double omega    = 0.0;       /* Coriolis parameter [1/s]              */
+    double omega    = 0.0*0.0001;;       /* Coriolis parameter [1/s]              */
                                         /* sin(0.5*PI) * 2.0 * 0.00007272205217; */
     
     /* thermodynamics and chemistry */
@@ -230,7 +230,7 @@ void Sol_initial(ConsVars* Sol,
     const double u0    = ud.wind_speed;
     const double v0    = 0.0;
     const double w0    = 0.0;
-    const double delth = 0.1 / ud.T_ref;                    /* pot. temp. perturbation amplitude; standard:  0.01 / ud.T_ref */
+    const double delth = 0.01 / ud.T_ref;                    /* pot. temp. perturbation amplitude; standard:  0.01 / ud.T_ref */
     const double xc    = -1.0*scalefactor*50.0e+03/ud.h_ref; /* initial position of center of pot temp perturbation */
     const double a     = scalefactor*5.0e+03/ud.h_ref;       /* characteristic width of the witch of Agnesi type mollifier */
     
