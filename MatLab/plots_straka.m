@@ -81,7 +81,9 @@ for k = kmin:dk:kmax
     contour(x,z,th,contour_values,'LineColor','k');
     
     colormap viridis
-    colorbar('FontSize',14,'FontName','Helvetica')
+    colorbar('FontSize',14,'FontName','Helvetica',...
+             'Ticks',[-0.05,-0.04,-0.03, -0.02, -0.01,0],...
+             'TickLabels',{'-15', '-12', '-9', '-6', '-3', '0'});
 
     set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
     axis tight;

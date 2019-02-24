@@ -34,7 +34,7 @@ x0  = 0.0;
 H   = 10.0;  %
 aspect = [L/H/3 1 1];
 
-if strcmp(varstr, 'dT')
+if strcmp(varstr, 'dY')
     contour_values_max = linspace(0.000004, 0.00002, 5);
     contour_values_min = linspace(-0.00002, -0.000004, 5);
 elseif strcmp(varstr, 'v')
@@ -44,7 +44,7 @@ elseif strcmp(varstr, 'u')
     contour_values_max = linspace(0.0002, 0.0012, 6);
     contour_values_min = linspace(-0.0012, -0.0002, 6);
 else
-    disp('Error, please enter dT, u, or w as the variable to plot.')
+    disp('Error, please enter dY, u, or w as the variable to plot.')
     return;
 end
 
@@ -102,7 +102,23 @@ for k = kmin:dk:kmax
     ylim([0 10])
     yticks([0 2 4 6 8 10])
     colormap viridis
-    colorbar('FontSize',14,'FontName','Helvetica')
+    if strcmp(varstr, 'dY')
+        colorbar('FontSize',14,'FontName','Helvetica',...
+            'Ticks',[-0.00001,0,0.00001,0.00002],...
+            'TickLabels',{'-0.0025', '0', '0.0025','0.005'});
+    elseif strcmp(varstr, 'v')
+        colorbar('FontSize',14,'FontName','Helvetica',...
+            'Ticks',[-0.0001,0,0.0001],...
+            'TickLabels',{'-0.001', '0', '0.001'});
+    elseif strcmp(varstr, 'u')
+        colorbar('FontSize',14,'FontName','Helvetica',...
+            'Ticks',[-0.001,-0.0005,0,.0005,0.001],...
+            'TickLabels',{'-0.01', '-0.005', '0', '0.005', '0.01'});
+    else
+        disp('Error, please enter dT, u, or w as the variable to plot.')
+        return;
+    end
+    
     
     fig=gcf;
     fig.Color = 'white';
