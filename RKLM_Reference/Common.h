@@ -22,7 +22,7 @@
 #define OUTPUT_RHS_CELLS   0       /* on-off */
 #define OUTPUT_LAP_NODES   0       /* on-off */
 #define OUTPUT_RHS_NODES   0       /* on-off */
-#define OUTPUT_ADV_FLUXES  1       /* on-off */
+#define OUTPUT_ADV_FLUXES  0       /* on-off */
 	
 /* ============================================= 
  Explicit predictor options

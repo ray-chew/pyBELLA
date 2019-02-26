@@ -85,6 +85,14 @@ void User_Data_init(User_Data* ud) {
     ud->viscbt      = viscbt * t_ref/(h_ref*h_ref);
     ud->cond        = cond * t_ref/(h_ref*h_ref*R_gas);
 
+    /*FULL_MOLECULAR_TRANSPORT, STRAKA_DIFFUSION_MODEL, NO_MOLECULAR_TRANSPORT */
+    ud->mol_trans   = NO_MOLECULAR_TRANSPORT; 
+    ud->viscm       = viscm  * t_ref/(h_ref*h_ref);
+    ud->viscbm      = viscbm * t_ref/(h_ref*h_ref);
+    ud->visct       = visct  * t_ref/(h_ref*h_ref);
+    ud->viscbt      = viscbt * t_ref/(h_ref*h_ref);
+    ud->cond        = cond * t_ref/(h_ref*h_ref*R_gas);
+
     /* Low Mach */
     ud->is_nonhydrostatic = 1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
     ud->is_compressible   = 1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */

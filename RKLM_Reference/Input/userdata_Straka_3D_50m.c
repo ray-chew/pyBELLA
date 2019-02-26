@@ -29,8 +29,8 @@ void User_Data_init(User_Data* ud) {
 	/* ========================================================================= */
 	
     /* Earth */
-	double grav  = 10.0;                               /* [m/s^2]                */
-	double omega = 2*PI*sin(0.25*PI)/(24.0*3600.0);    /*  [s^-1]                */
+	double grav  = 9.81;//10.0;                               /* [m/s^2]                */
+	double omega = 0.0;//2*PI*sin(0.25*PI)/(24.0*3600.0);    /*  [s^-1]                */
     
     /* thermodynamics and chemistry */
     double R_gas = 287.4;            /* [J/kg/K]                        */
@@ -79,7 +79,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Low Mach */
     ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
-    ud->is_compressible   =  0;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_compressible   =  1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep =  0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
 	
