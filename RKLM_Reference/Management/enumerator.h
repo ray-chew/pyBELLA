@@ -55,6 +55,11 @@ enum HillShapes {
     AGNESI
 };
 
+enum CorrectionRange {
+    BOTTOM_ONLY,
+    FULL_FIELD
+};
+
 enum FluxesFrom {
     FLUX_EXTERNAL,
     FLUX_INTERNAL
@@ -68,6 +73,12 @@ enum MUSCL_ON_OFF {
 enum FORCES_ON_OFF {
     WITHOUT_FORCES,
     WITH_FORCES
+};
+
+enum MOLECULAR_TRANSPORT {
+    FULL_MOLECULAR_TRANSPORT,
+    STRAKA_DIFFUSION_MODEL,
+    NO_MOLECULAR_TRANSPORT
 };
 
 enum EXPLICIT_PRESSURE {

@@ -41,10 +41,16 @@ void User_Data_init(User_Data* ud) {
     double omega = 0.0; /* 2*PI*sin(0.25*PI)/(24.0*3600.0); [s^-1] */
 
     /* thermodynamics and chemistry */
-    double R_gas = 287;              /* [J/kg/K]                        */
-    double R_vap = 461.00;           /* [J/kg/K]                        */
-    double Q_vap = 2.53e+06;         /* [J]                             */
-
+    double R_gas  = 287;              /* [J/kg/K]                        */
+    double R_vap  = 461.00;           /* [J/kg/K]                        */
+    double Q_vap  = 2.53e+06;         /* [J]                             */
+    
+    double viscm  = 1.0e-6;           /* [m^2/s]                         */
+    double viscbm = 2.0*viscm/3.0;    /* [m^2/s]                         */
+    double visct  = 1.0e-6;           /* [m^2/s]                         */
+    double viscbt = 2.0*visct/3.0;    /* [m^2/s]                         */
+    double cond   = 1.0e-6;           /* [m^2/s]                         */
+    
     /* references for non-dimensionalization */
 	double h_ref = 6515;             /* [m]                             */
 	double t_ref = 100;              /* [s]                             */
@@ -69,15 +75,24 @@ void User_Data_init(User_Data* ud) {
     ud->gamm        = gamma;
     ud->Rg_over_Rv  = R_gas/R_vap;
     ud->Q           = Q_vap/(R_gas*T_ref);
-
+    
     /* number of advected species */
     ud->nspec       = NSPEC;
+
+    /*FULL_MOLECULAR_TRANSPORT, STRAKA_DIFFUSION_MODEL, NO_MOLECULAR_TRANSPORT */
+    ud->mol_trans   = NO_MOLECULAR_TRANSPORT; 
+    ud->viscm       = viscm  * t_ref/(h_ref*h_ref);
+    ud->viscbm      = viscbm * t_ref/(h_ref*h_ref);
+    ud->visct       = visct  * t_ref/(h_ref*h_ref);
+    ud->viscbt      = viscbt * t_ref/(h_ref*h_ref);
+    ud->cond        = cond * t_ref/(h_ref*h_ref*R_gas);
 
 	/* Low Mach */
     ud->is_nonhydrostatic = 1; /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
     ud->is_compressible   = 0; /* 0:psinc; 1:comp;  -1:psinc-comp-trans -> compressibility() */
     ud->acoustic_timestep = 0; /* 0;  1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
+    ud->Nsq =  Nsq_ref * t_ref * t_ref;
     
     /* geo-stuff */
     for(i=0; i<3; i++) {
@@ -110,9 +125,11 @@ void User_Data_init(User_Data* ud) {
 	ud->zmax =   1.0;
 
 	/* boundary/initial conditions */
-	ud->wind_speed        = 10/u_ref;        /* velocity in [m/s] */             
+	ud->wind_speed        = 0.5*10/u_ref;        /* velocity in [m/s] */             
     ud->wind_shear        = -0.0;            /* velocity in [u_ref/h_ref] */
-    ud->hill_shape        = SCHLUTOW;
+    
+    /* bottom orography data; check slanted_wall_slope() for how parameters are used */
+    ud->hill_shape        = SCHLUTOW;        /* default: AGNESI */
 	ud->hill_height       = 628.319/h_ref;   /* height   in [m]   */ 
 	ud->hill_length_scale = 1000.0/h_ref;    /* length   in [m]   */   
 	
@@ -139,8 +156,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 240+1; /* 641; 321; 161; 129; 81; */    
-	ud->iny = 480+1; /* 321; 161;  81;  65; 41;  */
+	ud->inx = 120+1; /* 641; 321; 161; 129; 81; */    
+	ud->iny = 120+1; /* 321; 161;  81;  65; 41;  */
 	ud->inz = 1;
 
 	/* explicit predictor step */
@@ -160,7 +177,7 @@ void User_Data_init(User_Data* ud) {
     ud->ncache =  300; /* (ud->inx+3); */
 	
     /* linear solver-stuff */
-    double tol = 1.e-8 * (ud->is_compressible == 1 ? 0.01 : 1.0);
+    double tol = 1.e-10 * (ud->is_compressible == 1 ? 0.01 : 1.0);
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -183,7 +200,7 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
 
     /* output times  */
-    ud->tout[0] =  0.5*9000.0/t_ref;             /* times in [s]    */
+    ud->tout[0] =  18000.0/t_ref;             /* times in [s]    */
     ud->tout[1] =  -9900.0/t_ref;
     ud->tout[2] = 10800.0/t_ref;
     ud->tout[3] = 11700.0/t_ref;
@@ -195,7 +212,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 100;
+    ud->write_file_period = 60;
     ud->file_format = HDF;
     
     {

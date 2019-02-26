@@ -10,5 +10,13 @@
 #define molecular_transport_h
 
 #include <stdio.h>
+#include "variable.h"
+#include "kgrid.h"
+
+void molecular_transport(ConsVars* Sol, 
+                         double* diss,
+                         const ElemSpaceDiscr* elem, 
+                         const double dt);
+
 
 #endif /* molecular_transport_h */

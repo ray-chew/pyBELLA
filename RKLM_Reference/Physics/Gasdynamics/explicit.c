@@ -270,16 +270,17 @@ void Absorber(
     const int igz = elem->igz;
     
 	const double dy_b = 0.0 * (ud.ymax-ud.ymin);
-	const double dy_t = (9.0/27.0) * (ud.ymax-ud.ymin);  
-	const double om_y = ud.t_ref/600.0;                   
 	const double dx_l = (10.0/240.0) * (ud.xmax-ud.xmin);  
 	const double dx_r = (10.0/240.0) * (ud.xmax-ud.xmin);
 	
+    double dy_t = (9.0/27.0) * (ud.ymax-ud.ymin);  
+    double om_y = ud.t_ref/600.0;                               
     double om_x = ud.t_ref/120.0;                    
     if (ud.hill_shape == SCHLUTOW) {
         om_x = 0.0; 
+        dy_t = (13.5/27.0) * (ud.ymax-ud.ymin);     
+        om_y = ud.t_ref/200.0;             
     }
-
     int k, j, i, nk, njk, nijk;
 	
     for(k = igz; k < icz - igz; k++) {nk = k*icy*icx;

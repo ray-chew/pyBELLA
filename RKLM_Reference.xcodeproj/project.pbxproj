@@ -9,8 +9,10 @@
 /* Begin PBXBuildFile section */
 		9A21BF821DA58470006A6F34 /* libmfhdf.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A21BF811DA58470006A6F34 /* libmfhdf.dylib */; };
 		9A21BF841DA5847F006A6F34 /* libdf.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A21BF831DA5847F006A6F34 /* libdf.dylib */; };
+		9A3F24782225549800D4285C /* userdata_SchlutowWave.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A3F24772225549800D4285C /* userdata_SchlutowWave.c */; };
 		9A8840B6214A9D5000FC83CB /* second_projection.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A8840B4214A9D4F00FC83CB /* second_projection.c */; };
 		9AA6E68B214C14D9008A9B8D /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 9AA6E68A214C14D9008A9B8D /* Makefile */; };
+		9AA8CE5A22187924009477C0 /* molecular_transport.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AA8CE5822187924009477C0 /* molecular_transport.c */; };
 		9AC4F9841DA3F06F00AED455 /* boundary.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9231DA3F06F00AED455 /* boundary.c */; };
 		9AC4F9911DA3F06F00AED455 /* data.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9391DA3F06F00AED455 /* data.c */; };
 		9AC4F9921DA3F06F00AED455 /* io.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F93D1DA3F06F00AED455 /* io.c */; };
@@ -32,7 +34,6 @@
 		9AC4F9AF1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F97D1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c */; };
 		9ADB58891E07C77E0032A9F2 /* Thomas_Algorithmus_2.c in Sources */ = {isa = PBXBuildFile; fileRef = 9ADB58871E07C77E0032A9F2 /* Thomas_Algorithmus_2.c */; };
 		9AE5E7022019C80300399B1A /* Hydrostatics.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AE5E7002019C80300399B1A /* Hydrostatics.c */; };
-		9AFD6C3D2212156300536B54 /* userdata_SchlutowWave.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AFD6C3C2212156300536B54 /* userdata_SchlutowWave.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -51,6 +52,7 @@
 		9A1ED37C206D0C9200D622A9 /* PrimaryAndDualGrid.eps */ = {isa = PBXFileReference; lastKnownFileType = file; path = PrimaryAndDualGrid.eps; sourceTree = "<group>"; };
 		9A21BF811DA58470006A6F34 /* libmfhdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmfhdf.dylib; path = ../../../../../opt/local/lib/libmfhdf.dylib; sourceTree = "<group>"; };
 		9A21BF831DA5847F006A6F34 /* libdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libdf.dylib; path = ../../../../../opt/local/lib/libdf.dylib; sourceTree = "<group>"; };
+		9A3F24772225549800D4285C /* userdata_SchlutowWave.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_SchlutowWave.c; sourceTree = "<group>"; };
 		9A7A55E521873A4400446950 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		9A8840AE2148EB2700FC83CB /* RandomNotes.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = RandomNotes.txt; sourceTree = "<group>"; };
 		9A8840B4214A9D4F00FC83CB /* second_projection.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = second_projection.c; sourceTree = "<group>"; };
@@ -58,6 +60,8 @@
 		9A8A8DCE2154F67D00FD5838 /* Grid.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = Grid.pdf; sourceTree = "<group>"; };
 		9A8A8DCF21552FCE00FD5838 /* Grid.eps */ = {isa = PBXFileReference; lastKnownFileType = file; path = Grid.eps; sourceTree = "<group>"; };
 		9AA6E68A214C14D9008A9B8D /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		9AA8CE5822187924009477C0 /* molecular_transport.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = molecular_transport.c; sourceTree = "<group>"; };
+		9AA8CE5922187924009477C0 /* molecular_transport.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = molecular_transport.h; sourceTree = "<group>"; };
 		9AC4F90B1DA3F02D00AED455 /* RKLM_Reference */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = RKLM_Reference; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AC4F9151DA3F06F00AED455 /* Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
 		9AC4F9171DA3F06F00AED455 /* Bibliography.bib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Bibliography.bib; sourceTree = "<group>"; };
@@ -119,7 +123,6 @@
 		9AE4ABDE1DBF3989007205FD /* TravellingVortexPressure.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TravellingVortexPressure.m; sourceTree = "<group>"; };
 		9AE5E7002019C80300399B1A /* Hydrostatics.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Hydrostatics.c; sourceTree = "<group>"; };
 		9AE5E7012019C80300399B1A /* Hydrostatics.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Hydrostatics.h; sourceTree = "<group>"; };
-		9AFD6C3C2212156300536B54 /* userdata_SchlutowWave.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_SchlutowWave.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -160,6 +163,16 @@
 				9AA6E68A214C14D9008A9B8D /* Makefile */,
 			);
 			path = MakeBuilds;
+			sourceTree = "<group>";
+		};
+		9AA8CE5B2218793D009477C0 /* MolecularTransport */ = {
+			isa = PBXGroup;
+			children = (
+				9AA8CE5822187924009477C0 /* molecular_transport.c */,
+				9AA8CE5922187924009477C0 /* molecular_transport.h */,
+			);
+			name = MolecularTransport;
+			path = "New Group";
 			sourceTree = "<group>";
 		};
 		9AC4F9021DA3F02D00AED455 = {
@@ -222,7 +235,7 @@
 		9AC4F9221DA3F06F00AED455 /* Input */ = {
 			isa = PBXGroup;
 			children = (
-				9AFD6C3C2212156300536B54 /* userdata_SchlutowWave.c */,
+				9A3F24772225549800D4285C /* userdata_SchlutowWave.c */,
 				9AC4F9311DA3F06F00AED455 /* userdata.h */,
 				9AC4F9231DA3F06F00AED455 /* boundary.c */,
 				9AC4F9241DA3F06F00AED455 /* boundary.h */,
@@ -286,6 +299,7 @@
 		9AC4F9551DA3F06F00AED455 /* Physics */ = {
 			isa = PBXGroup;
 			children = (
+				9AA8CE5B2218793D009477C0 /* MolecularTransport */,
 				9AC4F9561DA3F06F00AED455 /* Gasdynamics */,
 				9A3583371DB7385600A73EC1 /* Hydrostatics */,
 				9AC4F9671DA3F06F00AED455 /* LowMach */,
@@ -418,9 +432,9 @@
 				9AC4F9941DA3F06F00AED455 /* memory.c in Sources */,
 				9AC4F9AF1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c in Sources */,
 				9ADB58891E07C77E0032A9F2 /* Thomas_Algorithmus_2.c in Sources */,
-				9AFD6C3D2212156300536B54 /* userdata_SchlutowWave.c in Sources */,
 				9A8840B6214A9D5000FC83CB /* second_projection.c in Sources */,
 				9AC4F9931DA3F06F00AED455 /* Main.c in Sources */,
+				9AA8CE5A22187924009477C0 /* molecular_transport.c in Sources */,
 				9AC4F9A31DA3F06F00AED455 /* thermodynamic.c in Sources */,
 				9AC4F9A01DA3F06F00AED455 /* numerical_flux.c in Sources */,
 				9AC4F9A21DA3F06F00AED455 /* recovery.c in Sources */,
@@ -429,6 +443,7 @@
 				9AC4F99B1DA3F06F00AED455 /* Eos.c in Sources */,
 				9AC4F9AC1DA3F06F00AED455 /* laplacian_nodes.c in Sources */,
 				9AA6E68B214C14D9008A9B8D /* Makefile in Sources */,
+				9A3F24782225549800D4285C /* userdata_SchlutowWave.c in Sources */,
 				9AC4F9961DA3F06F00AED455 /* kgrid.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

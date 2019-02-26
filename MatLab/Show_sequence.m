@@ -7,8 +7,8 @@
 extrafigno = 52;
 
 %modelstr = '';
-%modelstr = 'comp';
-modelstr = 'psinc' ;  
+modelstr = 'comp';
+%modelstr = 'psinc' ;  
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
@@ -21,11 +21,11 @@ modelstr = 'psinc' ;
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
-%test_case = 'Travelling-Vortex';
+test_case = 'Travelling-Vortex';
 %test_case = 'Gresho-Vortex';
 %test_case = 'Travelling-Hump';
 %test_case = 'Acoustic-Wave';
-test_case = 'Schlutows-Wave';
+%test_case = 'Schlutows-Wave';
 
 
 showmode = 1;
@@ -175,14 +175,14 @@ elseif strcmp(test_case, 'Smolarkiewicz-Margolin-Breaking-Wave')
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Schlutows-Wave')
-    ncx = 240;  
-    ncy = 480;  
+    ncx = 120;  
+    ncy = 120;  
     L   =  30.0;  % 
     x0  =   0.0;
     H   =  60.0;  %
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
-    showslice_hor = floor(ncy/2);
+    showslice_hor = 5; % floor(ncy/2);
     showslice_ver = floor(ncx/2);
 end
     
@@ -228,9 +228,9 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'rhov';  folderstr = 'rhov'; titlestr = 'rhov'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhow';  folderstr = 'rhow'; titlestr = 'rhow'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
-varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry; filledcontours = 1;
+%varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry; filledcontours = 1;
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy];
-%varstr = 'vortz';  folderstr = 'vortz'; titlestr = 'vortz'; ndummy = 2; arraysize = [nnx nny]; filledcontours = 1; fixed_contours = 0;
+varstr = 'vortz';  folderstr = 'vortz'; titlestr = 'vortz'; ndummy = 2; arraysize = [nnx nny]; filledcontours = 1; fixed_contours = 0;
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qc';  folderstr = 'qc'; titlestr = 'qc'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qr';  folderstr = 'qr'; titlestr = 'qr'; ndummy = 2; arraysize = [ncx ncy];

@@ -96,7 +96,15 @@ typedef struct {
 	double B; 
 	double Tswitch;
 	double Tstar;  
-	
+    
+    /* molecular transport */
+    enum MOLECULAR_TRANSPORT mol_trans;
+    double viscm;
+    double viscbm;
+    double visct;
+    double viscbt;
+    double cond;
+
 	/* Low Mach */
 	int acoustic_timestep;
     
@@ -108,6 +116,7 @@ typedef struct {
     double acoustic_order;
 	
     double Msq;
+    double Nsq;
 	
 	/* Geo-stuff */
 	double gravity_strength[3];
