@@ -47,12 +47,13 @@ HDRS		  = ../Common.h \
 		../Physics/LowMach/Second-projection/second_projection.h \
 		../Physics/LowMach/Second-projection/laplacian_nodes.h \
 		../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.h \
+		../Physics/NewGroup/molecular_transport.h \
 
 HDRFLAGS	= -I../ -I../Input -I../Management -I../NumericsFundamentals \
 		  -I../NumericsFundamentals/Discretization \
 		  -I../NumericsFundamentals/ofGeneralInterest -I../Physics/Gasdynamics \
 		  -I../Physics/Hydrostatics -I../Physics/LowMach \
-		  -I../Physics/LowMach/Second-projection
+		  -I../Physics/LowMach/Second-projection -I../Physics/NewGroup
 
 INSTALL		= install
 
@@ -65,7 +66,7 @@ LIBS		= $(HDFLIBDIR)/libmfhdf.a \
 
 MAKEFILE	= Makefile
 
-OBJS		= userdata_InternalWave_P.o \
+OBJS		= userdata_Straka_3D_400m.o \
 		boundary.o \
 		data.o \
 		io.o \
@@ -88,6 +89,7 @@ OBJS		= userdata_InternalWave_P.o \
 		second_projection.o \
 		laplacian_nodes.o \
 		variable_coefficient_poisson_nodes.o \
+		molecular_transport.o \
 
 PRINT		  = pr
 
@@ -95,7 +97,7 @@ PROGRAM	   = rklm
 
 SHELL		  = /bin/sh
 
-SRCS		  = ../Input/userdata_InternalWave_P.c \
+SRCS		  = ../Input/userdata_Straka_3D_400m.c \
 		../Input/boundary.c \
 		../Management/data.c \
 		../Management/io.c \
@@ -118,6 +120,7 @@ SRCS		  = ../Input/userdata_InternalWave_P.c \
 		../Physics/LowMach/Second-projection/second_projection.c \
 		../Physics/LowMach/Second-projection/laplacian_nodes.c \
 		../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.c \
+		../Physics/NewGroup/molecular_transport.c
 
 all:		$(PROGRAM)
 
@@ -152,8 +155,8 @@ $(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)
 		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install
 
 ###
-userdata_InternalWave_P.o : 
-	$(CC) -c $(HDRFLAGS) ../Input/userdata_InternalWave_P.c
+userdata_Straka_3D_400m.o : 
+	$(CC) -c $(HDRFLAGS) ../Input/userdata_Straka_3D_400m.c
 
 boundary.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/boundary.c
@@ -221,3 +224,6 @@ laplacian_nodes.o :
 variable_coefficient_poisson_nodes.o : 
 	$(CC) -c $(HDRFLAGS) ../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.c
 
+molecular_transport.o :
+	$(CC) -c $(HDRFLAGS) ../Physics/NewGroup/molecular_transport.c
+	
