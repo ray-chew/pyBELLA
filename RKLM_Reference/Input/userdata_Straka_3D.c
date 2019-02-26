@@ -38,6 +38,12 @@ void User_Data_init(User_Data* ud) {
     double Q_vap = 2.53e+06;         /* [J]                             */
     double gamma = 1.4;              /* dimensionless                   */
 
+    double viscm  = 75.0;            /* [m^2/s]                         */
+    double viscbm = 0.0;             /* [m^2/s]                         */
+    double visct  = 0.0;             /* [m^2/s]                         */
+    double viscbt = 0.0;             /* [m^2/s]                         */
+    double cond   = 75.0;            /* [m^2/s]                         */
+
     /* references for non-dimensionalization */
 	double h_ref = 10000;            /* [m]                             */
 	double t_ref = 100;              /* [s]                             */
@@ -63,9 +69,17 @@ void User_Data_init(User_Data* ud) {
     /* number of advected species */
     ud->nspec       = NSPEC;
     
+    /*FULL_MOLECULAR_TRANSPORT, STRAKA_DIFFUSION_MODEL, NO_MOLECULAR_TRANSPORT */
+    ud->mol_trans   = STRAKA_DIFFUSION_MODEL; 
+    ud->viscm       = viscm  * t_ref/(h_ref*h_ref);
+    ud->viscbm      = viscbm * t_ref/(h_ref*h_ref);
+    ud->visct       = visct  * t_ref/(h_ref*h_ref);
+    ud->viscbt      = viscbt * t_ref/(h_ref*h_ref);
+    ud->cond        = cond * t_ref/(h_ref*h_ref*R_gas);
+    
     /* Low Mach */
     ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
-    ud->is_compressible   =  1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_compressible   =  0;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep =  0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
 	
@@ -102,7 +116,8 @@ void User_Data_init(User_Data* ud) {
 	/* boundary/initial conditions */
 	ud->wind_speed  =  0.0;            /* 0.1535; wind_speed * u_ref  = 10 m/s */ /*  BREAKING WAVE CHANGE */
 	ud->wind_shear  = -0.0;              /* velocity in [u_ref/h_ref] */
-	ud->hill_height = 0.0 * 0.096447; /* 0.096447; */ /* hill_height * l_ref = 0.628319 km *//*  BREAKING WAVE CHANGE */
+    ud->hill_shape  = AGNESI;            /* AGNESI, SCHLUTOW */
+    ud->hill_height = 0.0 * 0.096447; /* 0.096447; */ /* hill_height * l_ref = 0.628319 km *//*  BREAKING WAVE CHANGE */
 	ud->hill_length_scale = 0.1535;   /* hill_length * l_ref = 1.0 km */
 	
 	ud->bdrytype_min[0] = PERIODIC; /* DIRICHLET; PERIODIC; WALL; */
@@ -347,7 +362,7 @@ void Sol_initial(ConsVars* Sol,
     ud.nonhydrostasy   = nonhydrostasy(0);
     ud.compressibility = compressibility(0);
     
-    set_wall_massflux(bdry, Sol, elem);
+    set_wall_rhoYflux(bdry, Sol, mpv, elem);
     Set_Explicit_Boundary_Data(Sol, elem);
     
     ConsVars_set(Sol0, Sol, elem->nc);

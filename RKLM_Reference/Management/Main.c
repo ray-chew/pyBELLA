@@ -102,8 +102,8 @@ int main( void )
             if(elem->ndim > 1) ConsVars_setzero(flux[1], elem->nfy);
             if(elem->ndim > 2) ConsVars_setzero(flux[2], elem->nfz);            
 			            
-			set_wall_massflux(bdry, Sol0, elem);
             ConsVars_set(Sol0, Sol, elem->nc);            
+            set_wall_rhoYflux(bdry, Sol0, mpv, elem);
            
             /* ======================================================================= */
             /* Semi-implicit discretization of non-advective terms a la EULAG          */
@@ -113,14 +113,14 @@ int main( void )
             printf("\nhalf-time prediction of advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
                                                       
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, 0.5*dt);
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, bdry, elem, 0.5*dt);
             advect(Sol, flux, Sol0, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, ud.advec_time_integrator, step%2);
 
             /* divergence-controlled advective fluxes at the half time level */
             for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes0[nn] = mpv->p2_nodes[nn];
             euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt); 
             euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt);
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, elem, 0.5*dt);
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, bdry, elem, 0.5*dt);
             for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes[nn] = mpv->p2_nodes0[nn];
             
             ConsVars_set(Sol, Sol0, elem->nc);

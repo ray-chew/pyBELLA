@@ -42,6 +42,12 @@ void User_Data_init(User_Data* ud) {
     double Q_vap    = 2.53e+06;         /* [J]                    */
     double gamma    = 1.4;              /* dimensionless          */
 
+    double viscm  = 0.0;            /* [m^2/s]                         */
+    double viscbm = 0.0;             /* [m^2/s]                         */
+    double visct  = 0.0;             /* [m^2/s]                         */
+    double viscbt = 0.0;             /* [m^2/s]                         */
+    double cond   = 0.0;            /* [m^2/s]                         */
+
     /* references for non-dimensionalization */
     double h_ref    = 10000;                 /* [m]               */
     double t_ref    = 100;                   /* [s]               */
@@ -67,6 +73,14 @@ void User_Data_init(User_Data* ud) {
     
     /* number of advected species */
     ud->nspec       = NSPEC;
+
+    /*FULL_MOLECULAR_TRANSPORT, STRAKA_DIFFUSION_MODEL, NO_MOLECULAR_TRANSPORT */
+    ud->mol_trans   = NO_MOLECULAR_TRANSPORT; 
+    ud->viscm       = viscm  * t_ref/(h_ref*h_ref);
+    ud->viscbm      = viscbm * t_ref/(h_ref*h_ref);
+    ud->visct       = visct  * t_ref/(h_ref*h_ref);
+    ud->viscbt      = viscbt * t_ref/(h_ref*h_ref);
+    ud->cond        = cond * t_ref/(h_ref*h_ref*R_gas);
 
     /* Low Mach */
     ud->is_compressible   = 1;    /* 0: psinc;  1: comp;  -1: transition (see compressibility()) */
@@ -106,6 +120,7 @@ void User_Data_init(User_Data* ud) {
     /* boundary/initial conditions */
     ud->wind_speed  =  1.0 * 20.0/u_ref;
     ud->wind_shear  = -0.0;              /* velocity in [u_ref/h_ref] */
+    ud->hill_shape  = AGNESI;            /* AGNESI, SCHLUTOW */
     ud->hill_height = 0.0 * 0.096447; 
     ud->hill_length_scale = 0.1535;   /* hill_length * l_ref = 1.0 km */
     
@@ -195,12 +210,14 @@ void User_Data_init(User_Data* ud) {
 /* ================================================================================== */
 
 void Sol_initial(ConsVars* Sol, 
+                 ConsVars* Sol0, 
+                 MPV* mpv,
+                 BDRY* bdry,
                  const ElemSpaceDiscr* elem, 
                  const NodeSpaceDiscr* node) {
     
     extern Thermodynamic th;
     extern User_Data ud;
-    extern MPV* mpv;
     
     const int compressible = (ud.is_compressible == 0 ? 0 : 1);
     

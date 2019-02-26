@@ -116,6 +116,7 @@ static int flux_output_count = 0;
 
 void recompute_advective_fluxes(ConsVars* flux[3], 
                                 const ConsVars* Sol, 
+                                const BDRY* bdry,
                                 const ElemSpaceDiscr* elem,
                                 const double dt)
 {
@@ -124,8 +125,13 @@ void recompute_advective_fluxes(ConsVars* flux[3],
     
     
     /* recompute advective flux at fixed time level from cell averages */
+    
     switch (elem->ndim) {
         case 1: {
+            for (int i=0; i<elem->nfx; i++) {
+                flux[0]->rhoY[i] = 0.0;
+            }
+
             for(int i=1; i<elem->icx; i++) {
                 double u_c    = Sol->rhou[i]/Sol->rho[i];
                 double u_m    = Sol->rhou[i-1]/Sol->rho[i-1];
@@ -141,14 +147,15 @@ void recompute_advective_fluxes(ConsVars* flux[3],
             int icy = elem->icy;
             int ifx = elem->ifx;
             int ify = elem->ify;
-            
+            int igy = elem->igy;
+
             for (int i=0; i<elem->nfx; i++) {
                 flux[0]->rhoY[i] = 0.0;
             }
             for (int i=0; i<elem->nfy; i++) {
                 flux[1]->rhoY[i] = 0.0;
             }
-            
+
             for (int j=1; j<icy-1; j++) {
                 int ncj  = j*icx;
                 int nfxj = j*ifx;
@@ -157,7 +164,7 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                     int ncij  = ncj  + i;
                     int nfxij = nfxj + i;
                     int nfyij = nfyj + i*ify;
-                    
+                                        
                     double rhoYu_cm     = Sol->rhoY[ncij-icx]   * Sol->rhou[ncij-icx]/Sol->rho[ncij-icx];
                     double rhoYu_mm     = Sol->rhoY[ncij-1-icx] * Sol->rhou[ncij-1-icx]/Sol->rho[ncij-1-icx];
                     double rhoYu_cc     = Sol->rhoY[ncij]       * Sol->rhou[ncij]/Sol->rho[ncij];
@@ -186,6 +193,12 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                 }
             }
             
+            /* set imposed bottom fluxes 
+            for (int i=0; i<icx; i++) {
+                int nf = i*ify + igy;
+                flux[1]->rhoY[nf] = bdry->wall_rhoYflux[i];
+            }
+             */
             break;
         }
             
@@ -197,7 +210,18 @@ void recompute_advective_fluxes(ConsVars* flux[3],
             int ifx = elem->ifx;
             int ify = elem->ify;
             int ifz = elem->ifz;
-            for (int k=1; k<icz; k++) {
+
+            for (int i=0; i<elem->nfx; i++) {
+                flux[0]->rhoY[i] = 0.0;
+            }
+            for (int i=0; i<elem->nfy; i++) {
+                flux[1]->rhoY[i] = 0.0;
+            }
+            for (int i=0; i<elem->nfz; i++) {
+                flux[2]->rhoY[i] = 0.0;
+            }
+            
+for (int k=1; k<icz; k++) {
                 int nck  = k*icx*icy;
                 int nfxk = k*ifx*icy;
                 int nfyk = k*ify;

@@ -19,14 +19,17 @@ modelstr = 'comp';
 
 %test_case = 'Baldaufs-Internal-Wave-Tests';
 %test_case = 'Deep-Internal-Wave-Tests';
-test_case = 'Internal-Wave-Tests';
+%test_case = 'Internal-Wave-Tests';
+%test_case = 'Breaking-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka';
-%test_case = 'Travelling-Vortex';
+test_case = 'Travelling-Vortex';
+%test_case = 'Gresho-Vortex';
 %test_case = 'Travelling-Hump';
 %test_case = 'Acoustic-Wave';
-%test_case = 'Acoustic-Wave_B14';
+%test_case = 'Schlutows-Wave';
+
 
 showmode = 1;
 separate_signs = 1;
@@ -93,6 +96,16 @@ elseif strcmp(test_case, 'Internal-Wave-Tests')
     velosc = 100;  % velocity unit of RKLM code
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
+elseif strcmp(test_case, 'Breaking-Wave-Tests')
+    ncx = 240; 
+    ncy = 120;  
+    L   = 120;  % 
+    x0  = 0.0;
+    H   = 60.0;  %
+    aspect = [L/H/3 1 1];
+    velosc = 65.15;  % velocity unit of RKLM code
+    showslice_hor = floor(ncy/2);
+    showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Acoustic-Wave')
     scalefactor = 1.0;
     ncx = 300; 
@@ -102,17 +115,6 @@ elseif strcmp(test_case, 'Acoustic-Wave')
     H   = 10.0;  %
     aspect = [16 1 1];
     velosc = 100;  % velocity unit of RKLM code
-    showslice_hor = floor(ncy/2);
-    showslice_ver = floor(ncx/2);
-elseif strcmp(test_case, 'Acoustic-Wave_B14')
-    scalefactor = 1.0;
-    ncx = 256; 
-    ncy = 10;  
-    L   = 1.0 * scalefactor;  % 
-    x0  = 0.5*L;
-    H   = 10.0;  %
-    aspect = [.1 1 1];
-    velosc = 1;  % velocity unit of RKLM code
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Rising-Bubble')
@@ -128,6 +130,16 @@ elseif strcmp(test_case, 'Rising-Bubble')
 elseif strcmp(test_case, 'Travelling-Vortex')
     ncx = 192;  
     ncy = 192; 
+    L   = 1.0;  
+    x0  = 0.5;
+    H   = 1.0; 
+    aspect = [2 2 2];
+    velosc = 1; 
+    showslice_hor = floor(ncy/2);
+    showslice_ver = floor(ncx/2);
+elseif strcmp(test_case, 'Gresho-Vortex')
+    ncx = 80;  
+    ncy = 20; 
     L   = 4.0;  
     x0  = 0.5;
     H   = 1.0; 
@@ -166,6 +178,16 @@ elseif strcmp(test_case, 'Smolarkiewicz-Margolin-Breaking-Wave')
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
     showslice_hor = floor(ncy/2);
+    showslice_ver = floor(ncx/2);
+elseif strcmp(test_case, 'Schlutows-Wave')
+    ncx = 120;  
+    ncy = 120;  
+    L   =  30.0;  % 
+    x0  =   0.0;
+    H   =  60.0;  %
+    aspect = [1 1 1];
+    velosc = 100;  % velocity unit of RKLM code
+    showslice_hor = 5; % floor(ncy/2);
     showslice_ver = floor(ncx/2);
 end
     
@@ -255,10 +277,12 @@ end
 if showslice_hor
     figure3 = figure('Position',[scrsz(4)/2 2*scrsz(4)/3 scrsz(4)/2 1*scrsz(4)/3]);
     title(strcat('horizontal slice at j = ',num2str(showslice_hor)))
+    set(gca,'FontSize',18,'FontName','Helvetica');
 end
 if showslice_ver
     figure4 = figure('Position',[2*scrsz(4)/2 2*scrsz(4)/3 scrsz(4)/2 1*scrsz(4)/3]);
-    title(strcat('horizontal slice at i = ',num2str(showslice_ver)))
+    title(strcat('vertical slice at i = ',num2str(showslice_ver)))
+    set(gca,'FontSize',18,'FontName','Helvetica');
 end
 
 for k = kmin:dk:kmax
@@ -439,6 +463,9 @@ for k = kmin:dk:kmax
         figure(figure1)
     end
     
+    if (strcmp(varstr, 'u') || strcmp(varstr, 'v') || strcmp(varstr, 'w'))
+        th = th*velosc;
+    end
     if showslice_hor
         figure(figure3)
         hold
