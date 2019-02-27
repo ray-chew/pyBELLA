@@ -38,11 +38,11 @@ void User_Data_init(User_Data* ud) {
     double Q_vap = 2.53e+06;         /* [J]                             */
     double gamma = 1.4;              /* dimensionless                   */
 
-    double viscm  = 75.0;            /* [m^2/s]                         */
+    double viscm  = 0.0;            /* [m^2/s]                         */
     double viscbm = 0.0;             /* [m^2/s]                         */
     double visct  = 0.0;             /* [m^2/s]                         */
     double viscbt = 0.0;             /* [m^2/s]                         */
-    double cond   = 75.0;            /* [m^2/s]                         */
+    double cond   = 0.0;            /* [m^2/s]                         */
 
     /* references for non-dimensionalization */
 	double h_ref = 10000;            /* [m]                             */
@@ -52,7 +52,7 @@ void User_Data_init(User_Data* ud) {
 	double u_ref = h_ref/t_ref;      /* Strouhal No == 1 always assumed */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
 
-    double Nsq_ref  = grav*1.3e-05;     /* [] */
+    double Nsq_ref  = grav*1.3e-05;     /* [] */ //Is this acting?
     
     ud->h_ref       = h_ref;
     ud->t_ref       = t_ref;
@@ -136,9 +136,9 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;  /* this code version has only one option */
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
-	ud->CFL                   = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0              = 0.0225;
-	ud->dtfixed               = 0.0225; /* 0.0052; */ /*  0.004; */
+	ud->CFL                   = 0.48; /* 0.45; 0.9; 0.8; */
+    ud->dtfixed0              = 0.040;
+	ud->dtfixed               = 0.040; /* 0.0052; */ /*  0.004; */
     
     set_time_integrator_parameters(ud);
     
@@ -164,7 +164,7 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  333; /* (ud->inx+3); */
 	
     /* linear solver-stuff */
-    double tol                            = 1.e-6;
+    double tol                            = 1.e-8;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;

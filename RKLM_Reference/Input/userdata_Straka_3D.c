@@ -38,11 +38,11 @@ void User_Data_init(User_Data* ud) {
     double Q_vap = 2.53e+06;         /* [J]                             */
     double gamma = 1.4;              /* dimensionless                   */
 
-    double viscm  = 150.0;            /* [m^2/s]                         */
+    double viscm  = 75.0;            /* [m^2/s]                         */
     double viscbm = 0.0;             /* [m^2/s]                         */
     double visct  = 0.0;             /* [m^2/s]                         */
     double viscbt = 0.0;             /* [m^2/s]                         */
-    double cond   = 150.0;            /* [m^2/s]                         */
+    double cond   = 75.0;            /* [m^2/s]                         */
 
     /* references for non-dimensionalization */
 	double h_ref = 10000;            /* [m]                             */
@@ -143,8 +143,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 513+1; /* 641; 321; 161; 129; 81; */
-	ud->iny = 64+1; /* 321; 161;  81;  65; 41;  */
+	ud->inx = 257+1; /* 641; 321; 161; 129; 81; */
+	ud->iny = 32+1; /* 321; 161;  81;  65; 41;  */
 	ud->inz =  1;
 	
 	/* explicit predictor step */
@@ -164,7 +164,7 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  333; /* (ud->inx+3); */
 	
     /* linear solver-stuff */
-    double tol                            = 1.e-10;
+    double tol                            = 1.e-8;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;

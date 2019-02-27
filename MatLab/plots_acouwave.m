@@ -30,7 +30,7 @@ no_of_lines    = 25;
 diff_rel_to_bottom = 0;
 
 kmin = 0;
-kmax = 2;
+kmax = 50;
 dk   = 1;
 
 scalefactor = 1.0;

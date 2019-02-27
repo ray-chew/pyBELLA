@@ -30,8 +30,8 @@ kmax = 3;
 dk   = 1;
 
 
-ncx = 1025;
-ncy = 128;
+ncx = 513;
+ncy = 64;
 L  = 51.2;  
 x0 = 0.0*L;
 H  = 6.4;  
@@ -43,7 +43,7 @@ contour_values = linspace(-16.5*dtheta,-0.5*dtheta,16);
 dumsx = 2;
 dumsy = 2;
 
-folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/Straka_3D');
+folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/Straka_3D_100m');
 
 % cell-centered fields
 folderstr = varstr;

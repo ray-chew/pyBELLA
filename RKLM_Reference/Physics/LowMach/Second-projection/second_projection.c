@@ -169,7 +169,7 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
         assert(W0_in_use == WRONG);
         W0_in_use = CORRECT;
         molecular_transport(Sol, W0, elem, alpha_diff*dt);
-        diss_to_rhs(rhs,W0,elem,node, alpha_diff*dt);
+        diss_to_rhs(rhs,W0,elem,node, dt);
         W0_in_use = WRONG;
     }
 
@@ -1536,10 +1536,10 @@ void diss_to_rhs(double* rhs,
                         
                         double drhs = 0.25*diss[ncij]/dt;
                         
-                        rhs[nnijmm] += drhs;
-                        rhs[nnijpm] += drhs;
-                        rhs[nnijpp] += drhs;
-                        rhs[nnijmp] += drhs;
+                        rhs[nnijmm] -= drhs;
+                        rhs[nnijpm] -= drhs;
+                        rhs[nnijpp] -= drhs;
+                        rhs[nnijmp] -= drhs;
                     }
                 }
                 if (ud.bdrytype_max[0] == PERIODIC) {

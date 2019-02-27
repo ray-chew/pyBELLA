@@ -66,7 +66,7 @@ LIBS		= $(HDFLIBDIR)/libmfhdf.a \
 
 MAKEFILE	= Makefile
 
-OBJS		= userdata_Straka_3D.o \
+OBJS		= userdata_AcousticWave_high.o \
 		boundary.o \
 		data.o \
 		io.o \
@@ -97,7 +97,7 @@ PROGRAM	   = rklm
 
 SHELL		  = /bin/sh
 
-SRCS		  = ../Input/userdata_Straka_3D.c \
+SRCS		  = ../Input/userdata_AcousticWave_high.c \
 		../Input/boundary.c \
 		../Management/data.c \
 		../Management/io.c \
@@ -155,8 +155,8 @@ $(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)
 		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install
 
 ###
-userdata_Straka_3D.o : 
-	$(CC) -c $(HDRFLAGS) ../Input/userdata_Straka_3D.c
+userdata_AcousticWave_high.o : 
+	$(CC) -c $(HDRFLAGS) ../Input/userdata_AcousticWave_high.c
 
 boundary.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/boundary.c
