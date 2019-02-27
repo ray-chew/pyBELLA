@@ -68,10 +68,10 @@ void molecular_transport(ConsVars* Sol,
                         int nfyij = nfyj + i*ify;
                         
                         double pold = pow(Sol->rhoY[ncij], th.gamm);
-                        double dp   = -dt*th.gm1*( (flux[0]->rhoe[nfxij+1] - flux[0]->rhoe[nfxij])/dx + (flux[1]->rhoe[nfyij+icx] - flux[1]->rhoe[nfyij])/dy + diss[ncij]);
+                        double dp   = -dt*th.gm1*( (flux[0]->rhoe[nfxij+1] - flux[0]->rhoe[nfxij])/dx + (flux[1]->rhoe[nfyij+1] - flux[1]->rhoe[nfyij])/dy + diss[ncij]);
                         Sol->rhoY[ncij]  = pow(pold+dp, th.gamminv);
-                        Sol->rhou[ncij] -= dt*( (flux[0]->rhou[nfxij+1] - flux[0]->rhou[nfxij])/dx + (flux[1]->rhou[nfyij+icx] - flux[1]->rhou[nfyij])/dy);
-                        Sol->rhov[ncij] -= dt*( (flux[0]->rhov[nfxij+1] - flux[0]->rhov[nfxij])/dx + (flux[1]->rhov[nfyij+icx] - flux[1]->rhov[nfyij])/dy);                    
+                        Sol->rhou[ncij] -= dt*( (flux[0]->rhou[nfxij+1] - flux[0]->rhou[nfxij])/dx + (flux[1]->rhou[nfyij+1] - flux[1]->rhou[nfyij])/dy);
+                        Sol->rhov[ncij] -= dt*( (flux[0]->rhov[nfxij+1] - flux[0]->rhov[nfxij])/dx + (flux[1]->rhov[nfyij+1] - flux[1]->rhov[nfyij])/dy);                    
                     }
                 }
             }
@@ -116,9 +116,10 @@ void molecular_transport(ConsVars* Sol,
                         int nfxij = nfxj + i;
                         int nfyij = nfyj + i*ify;
                         
-                        diss[ncij]      -= dt*Sol->rho[ncij]*( (flux[0]->rhoY[nfxij+1] - flux[0]->rhoY[nfxij])/dx + (flux[1]->rhoY[nfyij+icx] - flux[1]->rhoY[nfyij])/dy);
-                        Sol->rhou[ncij] -= dt*Sol->rho[ncij]*( (flux[0]->rhou[nfxij+1] - flux[0]->rhou[nfxij])/dx + (flux[1]->rhou[nfyij+icx] - flux[1]->rhou[nfyij])/dy);
-                        Sol->rhov[ncij] -= dt*Sol->rho[ncij]*( (flux[0]->rhov[nfxij+1] - flux[0]->rhov[nfxij])/dx + (flux[1]->rhov[nfyij+icx] - flux[1]->rhov[nfyij])/dy);                    
+                        diss[ncij]      -= dt*Sol->rho[ncij]*( (flux[0]->rhoY[nfxij+1] - flux[0]->rhoY[nfxij])/dx + (flux[1]->rhoY[nfyij+1] - flux[1]->rhoY[nfyij])/dy);
+                        // diss[ncij]      -= 0.0;
+                        Sol->rhou[ncij] -= dt*Sol->rho[ncij]*( (flux[0]->rhou[nfxij+1] - flux[0]->rhou[nfxij])/dx + (flux[1]->rhou[nfyij+1] - flux[1]->rhou[nfyij])/dy);
+                        Sol->rhov[ncij] -= dt*Sol->rho[ncij]*( (flux[0]->rhov[nfxij+1] - flux[0]->rhov[nfxij])/dx + (flux[1]->rhov[nfyij+1] - flux[1]->rhov[nfyij])/dy);                    
                     }
                 }
             }
@@ -303,7 +304,7 @@ void molecular_fluxes(ConsVars* flux[3],
          components and the potential temperature.
          */
         
-        double mu = ud.visct;
+        double mu = ud.viscm;
         
         for (int i=0; i<elem->nc; i++) {
             diss[i] = 0.0;
@@ -351,10 +352,10 @@ void molecular_fluxes(ConsVars* flux[3],
                 }
                 
                 /* fluxes in the y-direction */
-                for (int j=igy; j<icy-igy; j++) {
+                for (int j=igy; j<ify-igy; j++) {
                     int ncj = j*icx;
                     int nfj = j;
-                    for (int i=igx; i<ifx-igx; i++) {
+                    for (int i=igx; i<icx-igx; i++) {
                         int ncij = ncj + i;
                         int nfij = nfj + i*ify;
                         

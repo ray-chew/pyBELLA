@@ -119,7 +119,7 @@ int main( void )
             /* divergence-controlled advective fluxes at the half time level */
             for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes0[nn] = mpv->p2_nodes[nn];
             euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt); 
-            euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt);
+            euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt, 1.0);
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, bdry, elem, 0.5*dt);
             for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes[nn] = mpv->p2_nodes0[nn];
             
@@ -137,7 +137,7 @@ int main( void )
             
             /* implicit EULER half time step for gravity and pressure gradient */ 
             euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt);
-            euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt);
+            euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt, 2.0);
                                                 
             synchronize_variables(mpv, Sol, elem, node, ud.synchronize_nodal_pressure);
 
