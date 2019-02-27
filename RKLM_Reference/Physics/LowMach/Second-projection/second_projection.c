@@ -105,14 +105,14 @@ static int first_output_step = 0;
 extern int step;  
 #endif
 
-void euler_backward_non_advective_impl_part(
-                       ConsVars* Sol,
-                       MPV* mpv,
-                       const ConsVars* Sol0,
-                       const ElemSpaceDiscr* elem,
-                       const NodeSpaceDiscr* node,
-                       const double t,
-                                            const double dt) {
+void euler_backward_non_advective_impl_part(ConsVars* Sol,
+                                            MPV* mpv,
+                                            const ConsVars* Sol0,
+                                            const ElemSpaceDiscr* elem,
+                                            const NodeSpaceDiscr* node,
+                                            const double t,
+                                            const double dt,
+                                            const double alpha_diff) {
     
     /* as of August 31, 2018, this routine is to be interpreted
      as carrying out an implicit Euler step for the linearized 
@@ -163,9 +163,19 @@ void euler_backward_non_advective_impl_part(
     
     operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
     
+    if (ud.mol_trans != NO_MOLECULAR_TRANSPORT) {
+        extern double *W0;
+        extern enum Boolean W0_in_use;
+        assert(W0_in_use == WRONG);
+        W0_in_use = CORRECT;
+        molecular_transport(Sol, W0, elem, alpha_diff*dt);
+        diss_to_rhs(rhs,W0,elem,node, alpha_diff*dt);
+        W0_in_use = WRONG;
+    }
+
     /* loop for iterating on bottom topography boundary conditions */
     rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
-    assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);         
+    // assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);         
 
     /* rescaling of flux divergence for r.h.s. of the elliptic pressure equation */ 
     for (int i=0; i<node->nc; i++) {
@@ -194,18 +204,7 @@ void euler_backward_non_advective_impl_part(
     if (ud.is_compressible) {
         rhs_from_p_old(rhs, elem, node, mpv, hcenter);
     }
-    
-    if (ud.mol_trans != NO_MOLECULAR_TRANSPORT) {
-        extern double *W0;
-        extern enum Boolean W0_in_use;
-        assert(W0_in_use == WRONG);
-        W0_in_use = CORRECT;
-        molecular_transport(Sol, W0, elem, dt);
-        diss_to_rhs(rhs,W0,elem,node,dt);
-        W0_in_use = WRONG;
-
-    }
-    
+        
     variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
     
     correction_nodes(Sol, elem, node, (const double**)hplus, p2, dt, FULL_FIELD);
@@ -1555,8 +1554,8 @@ void diss_to_rhs(double* rhs,
                         int nnijmr = nnj + (icxn-igxn-1);
                         int nnijpr = nnj + (icxn-igxn-1) + icxn;
                         
-                        double drhsl = 0.25*diss[ncijl]/dt;
-                        double drhsr = 0.25*diss[ncijr]/dt;
+                        double drhsl = 0.25*diss[ncijl];
+                        double drhsr = 0.25*diss[ncijr];
                         
                         rhs[nnijml] += drhsl;
                         rhs[nnijpl] += drhsl;

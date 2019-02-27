@@ -29,8 +29,8 @@ void User_Data_init(User_Data* ud) {
 	/* ========================================================================= */
 	
     /* Earth */
-	double grav  = 10.0;                               /* [m/s^2]                */
-	double omega = 2*PI*sin(0.25*PI)/(24.0*3600.0);    /*  [s^-1]                */
+	double grav  = 9.81;                               /* [m/s^2]                */
+	double omega = 0.0*2*PI*sin(0.25*PI)/(24.0*3600.0);    /*  [s^-1]                */
     
     /* thermodynamics and chemistry */
     double R_gas = 287.4;            /* [J/kg/K]                        */
@@ -38,11 +38,11 @@ void User_Data_init(User_Data* ud) {
     double Q_vap = 2.53e+06;         /* [J]                             */
     double gamma = 1.4;              /* dimensionless                   */
 
-    double viscm  = 75.0;            /* [m^2/s]                         */
+    double viscm  = 150.0;            /* [m^2/s]                         */
     double viscbm = 0.0;             /* [m^2/s]                         */
     double visct  = 0.0;             /* [m^2/s]                         */
     double viscbt = 0.0;             /* [m^2/s]                         */
-    double cond   = 75.0;            /* [m^2/s]                         */
+    double cond   = 150.0;            /* [m^2/s]                         */
 
     /* references for non-dimensionalization */
 	double h_ref = 10000;            /* [m]                             */
@@ -79,7 +79,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Low Mach */
     ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
-    ud->is_compressible   =  0;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_compressible   =  1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep =  0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
 	
@@ -136,15 +136,15 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;  /* this code version has only one option */
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
-	ud->CFL                   = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0              = 0.0225;
-	ud->dtfixed               = 0.0225; /* 0.0052; */ /*  0.004; */
+	ud->CFL                   = 0.48; /* 0.45; 0.9; 0.8; */
+    ud->dtfixed0              = 0.040;
+	ud->dtfixed               = 0.040; /* 0.0052; */ /*  0.004; */
     
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 257+1; /* 641; 321; 161; 129; 81; */
-	ud->iny = 32+1; /* 321; 161;  81;  65; 41;  */
+	ud->inx = 1025+1; /* 641; 321; 161; 129; 81; */
+	ud->iny =  128+1; /* 321; 161;  81;  65; 41;  */
 	ud->inz =  1;
 	
 	/* explicit predictor step */
@@ -164,7 +164,7 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  333; /* (ud->inx+3); */
 	
     /* linear solver-stuff */
-    double tol                            = 1.e-6;
+    double tol                            = 1.e-10;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -200,7 +200,7 @@ void User_Data_init(User_Data* ud) {
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 100000;
+	ud->write_file_period = 80;
 	ud->file_format = HDF;
     
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */

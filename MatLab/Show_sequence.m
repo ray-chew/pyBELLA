@@ -20,8 +20,8 @@ modelstr = 'comp';
 %test_case = 'Breaking-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
-%test_case = 'Straka';
-test_case = 'Travelling-Vortex';
+test_case = 'Straka';
+%test_case = 'Travelling-Vortex';
 %test_case = 'Gresho-Vortex';
 %test_case = 'Travelling-Hump';
 %test_case = 'Acoustic-Wave';
@@ -153,15 +153,15 @@ elseif strcmp(test_case, 'Travelling-Hump')
     showslice_hor = ncy/2;
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Straka')
-    ncx = 257;  
-    ncy = 32;  
+    ncx = 1025;  % 257;  
+    ncy =  128;  % 32;  
     L  = 51.2;  % 
     x0 = 0.0*L;
     H  = 6.4;  %
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
     dtheta = 1.0/300.0;
-    contour_values = linspace(-16.5*dtheta,-0.5*dtheta,16);
+    contour_values = linspace(-16.5*dtheta,2.0*dtheta,16);
     showslice_hor = floor(ncy/3);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Smolarkiewicz-Margolin-Breaking-Wave')
@@ -219,7 +219,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'T';  folderstr = 'T'; titlestr = 'T'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dT';  folderstr = 'dT'; titlestr = 'dT'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
 %varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; no_of_contours = 50;
-%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
+varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
@@ -230,7 +230,7 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
 %varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry; filledcontours = 1;
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy];
-varstr = 'vortz';  folderstr = 'vortz'; titlestr = 'vortz'; ndummy = 2; arraysize = [nnx nny]; filledcontours = 1; fixed_contours = 0;
+%varstr = 'vortz';  folderstr = 'vortz'; titlestr = 'vortz'; ndummy = 2; arraysize = [nnx nny]; filledcontours = 1; fixed_contours = 0;
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qc';  folderstr = 'qc'; titlestr = 'qc'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'qr';  folderstr = 'qr'; titlestr = 'qr'; ndummy = 2; arraysize = [ncx ncy];
