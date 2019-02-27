@@ -158,8 +158,8 @@ elseif strcmp(test_case, 'Travelling-Hump')
     showslice_hor = ncy/2;
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Straka')
-    ncx = 129;  
-    ncy = 16;  
+    ncx = 513;  
+    ncy = 64;  
     L  = 51.2;  % 
     x0 = 0.0*L;
     H  = 6.4;  %
@@ -372,6 +372,7 @@ for k = kmin:dk:kmax
                     th = th-th(3,:);
                 end
                 contourf(x,z,th,no_of_lines,'LineColor',linecolor);
+                disp(min(min(th))*300)
             end
             colormap Jet
             colorbar('FontSize',14,'FontName','Helvetica')

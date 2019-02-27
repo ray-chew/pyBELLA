@@ -52,7 +52,7 @@ void User_Data_init(User_Data* ud) {
 	double u_ref = h_ref/t_ref;      /* Strouhal No == 1 always assumed */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
 
-    double Nsq_ref  = grav*1.3e-05;     /* [] */
+    double Nsq_ref  = grav*1.3e-05;     /* [] */ //Is this acting?
     
     ud->h_ref       = h_ref;
     ud->t_ref       = t_ref;
@@ -143,8 +143,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 1025+1; /* 641; 321; 161; 129; 81; */
-	ud->iny = 128+1; /* 321; 161;  81;  65; 41;  */
+	ud->inx = 513+1; /* 641; 321; 161; 129; 81; */
+	ud->iny = 64+1; /* 321; 161;  81;  65; 41;  */
 	ud->inz =  1;
 	
 	/* explicit predictor step */
@@ -164,7 +164,7 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  333; /* (ud->inx+3); */
 	
     /* linear solver-stuff */
-    double tol                            = 1.e-6;
+    double tol                            = 1.e-10;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
