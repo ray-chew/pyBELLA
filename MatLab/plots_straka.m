@@ -76,6 +76,8 @@ for k = kmin:dk:kmax
     Yt = transpose(velo);
     th = Yt(3:1:nz+2, 3:1:nx+2);
     
+    if k==kmax, fprintf('min(theta'')=%2.4f K\nmax(theta'')=%2.4f K\n', min(min(th))*300, max(max(th))*300), end
+    
     % Create filled contour
     figure(figure1)
     contourf(x,z,300*th,contour_values,'LineColor',linecolor);

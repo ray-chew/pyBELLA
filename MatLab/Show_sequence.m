@@ -23,8 +23,8 @@ modelstr = 'comp';
 %test_case = 'Breaking-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
-%test_case = 'Straka_100m';
-test_case = 'Travelling-Vortex';
+test_case = 'Straka_50m';
+%test_case = 'Travelling-Vortex';
 %test_case = 'Gresho-Vortex';
 %test_case = 'Travelling-Hump';
 %test_case = 'Acoustic-Wave';
@@ -157,9 +157,9 @@ elseif strcmp(test_case, 'Travelling-Hump')
     velosc = 100;  % velocity unit of RKLM code
     showslice_hor = ncy/2;
     showslice_ver = floor(ncx/2);
-elseif strcmp(test_case, 'Straka_100m')
-    ncx = 513;  
-    ncy = 64;  
+elseif strcmp(test_case, 'Straka_50m')
+    ncx = 1025;  
+    ncy = 128;  
     L  = 51.2;  % 
     x0 = 0.0*L;
     H  = 6.4;  %
