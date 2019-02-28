@@ -141,6 +141,7 @@ void User_Data_init(User_Data* ud) {
 	ud->bdrytype_max[2] = WALL;
 	
     ud->absorber = CORRECT; /* CORRECT; */ 
+    ud->bottom_theta_bc = BOTTOM_BC_DEFAULT;
 	
 	/* ================================================================================== */
 	/* =====  NUMERICS  ================================================================= */

@@ -29,7 +29,7 @@ plots_internalwave('dY', 'H');
 plots_internalwave('dY', 'P');  
 
 % Baldauf-Brdar internal wave
-plots_baldauf('dY');
+plots_baldauf('dT');
 plots_baldauf('u');
 plots_baldauf('v');
 
