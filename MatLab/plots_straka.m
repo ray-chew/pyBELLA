@@ -1,4 +1,4 @@
-function plots_straka(varstr)
+function plots_straka(varstr, resol)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % plots_straka(varstr, ext)
@@ -11,6 +11,8 @@ function plots_straka(varstr)
 %           'p2_nodes', 'dp2_c', 'theta', 'dp2_nodes', 'dpdim', 'u',
 %           'v', 'w', 'dY', 'rho', 'p', 'geopot', 'p2_c', 'rhoY'
 %
+% resol     number of points in the horizontal direction, eg 1025 for 50m
+%           resolution
 %
 % Developed by R. Klein, FU Berlin, -2019
 % Modified by T. Benacchio, Politecnico di Milano, 2019
@@ -30,8 +32,8 @@ kmax = 3;
 dk   = 1;
 
 
-ncx = 1025;
-ncy = 128;
+ncx = 51200/resol + 1;
+ncy = 6400/resol;
 L  = 51.2;  
 x0 = 0.0*L;
 H  = 6.4;  
@@ -43,7 +45,7 @@ contour_values = linspace(-16.5*dtheta,-0.5*dtheta,16);
 dumsx = 2;
 dumsy = 2;
 
-folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/Straka_3D_50m');
+folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/Straka_3D_', num2str(resol), 'm');
 
 % cell-centered fields
 folderstr = varstr;
@@ -98,7 +100,7 @@ for k = kmin:dk:kmax
     fig=gcf;
     fig.Color = 'white';
     fig.InvertHardcopy = 'off';
-    filename = sprintf('../RKLM_Reference/Doc/paper_2019/figures/Straka/%s/%s_snapshot%d.eps', varstr, varstr, k);
+    filename = sprintf('../RKLM_Reference/Doc/paper_2019/figures/Straka_%sm/%s/%s_snapshot%d.eps', num2str(resol), varstr, varstr, k);
     print(filename, '-depsc')
     export_fig(filename, '-eps')
     

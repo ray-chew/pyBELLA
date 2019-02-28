@@ -1,4 +1,4 @@
-function plots_vortex(varstr)
+function plots_vortex(varstr, resol)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % plots_vortex(varstr, ext)
@@ -11,6 +11,7 @@ function plots_vortex(varstr)
 %           'p2_nodes', 'dp2_c', 'theta', 'dp2_nodes', 'dpdim', 'u',
 %           'v', 'w', 'dY', 'rho', 'p', 'geopot', 'p2_c', 'rhoY'
 %
+% resol     resolution in number of points, eg 96, 192
 %
 % Developed by R. Klein, FU Berlin, -2019
 % Modified by T. Benacchio, Politecnico di Milano, 2019
@@ -26,12 +27,12 @@ set(0,'DefaultFigureColor',[1 1 1])
 linecolor      = 'default';  % 'k', 'default' ...
 
 kmin = 0;
-kmax = 4;
+kmax = 3;
 dk   = 1;
 
 
-ncx = 32;
-ncy = 32;
+ncx = resol;
+ncy = resol;
 L   = 4.0;
 x0  = 0.5;
 H   = 1.0;
@@ -51,7 +52,7 @@ end
 dumsx = 1;
 dumsy = 2;
 
-folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/TravellingVortex_3D');
+folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/TravellingVortex_3D_', num2str(resol));
 
 % cell-centered fields
 folderstr = varstr;
@@ -115,7 +116,7 @@ for k = kmin:dk:kmax
     fig=gcf;
     fig.Color = 'white';
     fig.InvertHardcopy = 'off';
-    filename = sprintf('../RKLM_Reference/Doc/paper_2019/figures/TravellingVortex/%s/%s_snapshot%d.eps', varstr, varstr, k);
+    filename = sprintf('../RKLM_Reference/Doc/paper_2019/figures/TravellingVortex_%s/%s/%s_snapshot%d.eps', num2str(resol), varstr, varstr, k);
     print(filename, '-depsc')
     export_fig(filename, '-eps')
     

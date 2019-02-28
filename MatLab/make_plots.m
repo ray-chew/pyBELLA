@@ -15,12 +15,12 @@ clear all
 close all
 
 % Vortex
-plots_vortex('rho')
-plots_vortex('p2_n')
+plots_vortex('rho', 192)
+plots_vortex('p2_n', 192)
 
 % Straka density current
 
-plots_straka('dY');
+plots_straka('dY', 50);
 plots_straka_1dcuts('dY')
 
 % Internal Waves

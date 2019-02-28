@@ -35,16 +35,16 @@ H   = 10.0;  %
 aspect = [L/H/3 1 1];
 
 if strcmp(varstr, 'dY')
-    contour_values_max = linspace(0.000004, 0.00002, 5);
-    contour_values_min = linspace(-0.00002, -0.000004, 5);
+    contour_values_max = linspace(0.0012, 0.006, 5);
+    contour_values_min = linspace(-0.006, -0.0012, 5);
 elseif strcmp(varstr, 'v')
-    contour_values_max = linspace(0.00002, 0.00012, 6);
-    contour_values_min = linspace(-0.00002, -0.00012, 6);
-elseif strcmp(varstr, 'u')
     contour_values_max = linspace(0.0002, 0.0012, 6);
-    contour_values_min = linspace(-0.0012, -0.0002, 6);
+    contour_values_min = linspace(-0.0002, -0.0012, 6);
+elseif strcmp(varstr, 'u')
+    contour_values_max = linspace(0.002, 0.012, 6);
+    contour_values_min = linspace(-0.012, -0.002, 6);
 else
-    disp('Error, please enter dY, u, or w as the variable to plot.')
+    disp('Error, please enter dY, u, or v as the variable to plot.')
     return;
 end
 

@@ -128,8 +128,8 @@ elseif strcmp(test_case, 'Rising-Bubble')
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Travelling-Vortex')
-    ncx = 64;  
-    ncy = 64; 
+    ncx = 48;  
+    ncy = 48; 
     L   = 1.0;  
     x0  = 0.5;
     H   = 1.0; 
@@ -137,7 +137,7 @@ elseif strcmp(test_case, 'Travelling-Vortex')
     velosc = 1; 
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
-elseif strcmp(test_case, 'Gresho-Vortex')
+elseif strcmp(test_case, 'Gresho-Vortex')a
     ncx = 80;  
     ncy = 20; 
     L   = 4.0;  
