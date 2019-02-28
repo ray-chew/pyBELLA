@@ -110,7 +110,6 @@ for k = kmin:dk:kmax
     xticklabels({'0', '1000', '2000', '3000', '4000', '5000', '6000'})
     xlabel('x [km]','FontSize',18,'Interpreter','latex');
     ylabel('z [km]','FontSize',18,'Interpreter','latex');
-    ylim([0 10])
     yticks([0 2 4 6 8 10])
     colormap viridis
     colorbar('FontSize',14,'FontName','Helvetica');

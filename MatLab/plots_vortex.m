@@ -109,7 +109,6 @@ for k = kmin:dk:kmax
     xticklabels([{'0', '0.5', '1'}'])
     xlabel('x [m]','FontSize',18,'Interpreter','latex');
     ylabel('z [m]','FontSize',18,'Interpreter','latex');
-    ylim([0 1])
     yticks([0 0.5 1])
     axis square
     

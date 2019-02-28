@@ -19,11 +19,11 @@ modelstr = 'comp';
 
 %test_case = 'Baldaufs-Internal-Wave-Tests';
 %test_case = 'Deep-Internal-Wave-Tests';
-%test_case = 'Internal-Wave-Tests';
+test_case = 'Internal-Wave-Tests';
 %test_case = 'Breaking-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
-test_case = 'Straka_50m';
+%test_case = 'Straka_50m';
 %test_case = 'Travelling-Vortex';
 %test_case = 'Gresho-Vortex';
 %test_case = 'Travelling-Hump';
@@ -82,9 +82,9 @@ elseif strcmp(test_case, 'Deep-Internal-Wave-Tests')
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Internal-Wave-Tests')
-    %scalefactor = 1.0;  % Skamarock-Klemp-1994 Fig.1
+    scalefactor = 1.0;  % Skamarock-Klemp-1994 Fig.1
     % scalefactor = 20.0;   % Skamarock-Klemp-1994 Fig.3
-    scalefactor = 160.0;   % new, very long wave test
+    %scalefactor = 160.0;   % new, very long wave test
     ncx = 301; 
     ncy = 10;  
     %ncx = 600; 
@@ -166,7 +166,7 @@ elseif strcmp(test_case, 'Straka_50m')
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
     dtheta = 1.0/300.0;
-    contour_values = linspace(-16.5*dtheta,-0.5*dtheta,16);
+    contour_values = linspace(-16.5*dtheta,-0.5*dtheta,17);
     showslice_hor = floor(ncy/3);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Smolarkiewicz-Margolin-Breaking-Wave')

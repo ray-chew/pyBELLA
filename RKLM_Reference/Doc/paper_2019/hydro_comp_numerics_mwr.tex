@@ -744,7 +744,7 @@ We note that the implicit trapezoidal step \eq{eq:TimeIntegrator} and, to a slig
 \section{Numerical Results}
 \label{sec:Results}
 
-The algorithm described in the previous Sections was tested on a suite of benchmarks of dry compressible dynamics at various scales. The suite draws on the set of \cite{Benacchio2014,BenacchioEtAl2014} including a travelling vortex, a cold air bubble, and nonhydrostatic inertia-gravity waves, and adds to it three larger scale configurations for the inertia-gravity waves, with the aim to validate the robustness and accuracy of the new buoyancy-implicit strategy. The present paper is not focused on efficiency. While the coding framework is 3D-ready, we leave parallelization and performance on three-dimensional tests for future work. The scheme was implemented in a C$++$ environment and uses the \benacchio{insert linear solver here} linear solver for the solution of the elliptic problems. The solver tolerance was set at \benacchio{insert tolerance here and rerun tests if needed} throughout. \benacchio{Definitions of advective and acoustic CFL to be inserted}.
+The algorithm described in the previous Sections was tested on a suite of benchmarks of dry compressible dynamics at various scales. The suite draws on the set of \cite{Benacchio2014,BenacchioEtAl2014} including a travelling vortex, a cold air bubble, and nonhydrostatic inertia-gravity waves, and adds to it three larger scale configurations for the inertia-gravity waves, with the aim to validate the robustness and accuracy of the new buoyancy-implicit strategy. The present paper is not focused on efficiency. While the coding framework is 3D-ready, we leave parallelization and performance on three-dimensional tests for future work. The scheme was implemented in a C$++$ environment and uses the \benacchio{insert linear solver here} linear solver for the solution of the elliptic problems. The solver tolerance was set at \benacchio{insert tolerance here and rerun tests if needed} throughout. \benacchio{Definitions of advective and acoustic CFL to be inserted}. Variables are arranged for plotting based on the cell centered data.
 
 
 \subsection{Travelling Vortex}
@@ -777,8 +777,6 @@ where $r=\left\{[(x-x_c)/x_r]^2+[(z-z_c)/z_r]^2\right\}^{0.5}$, $x_c=0~\textrm{k
 %
 Boundary conditions are solid walls on top and bottom boundaries and periodic elsewhere. The buoyancy-implicit model is run at a resolution $\Delta x=\Delta z=50\,\textrm{m}$ with time step chosen according to an advective CFL value of $0.96$. Driven by its negative buoyancy, the initial perturbation moves downwards, impacts the bottom boundary and travels sideways developing vortices (Figure \ref{fig:straka}). \benacchio{Insert considerations after viscosity coding; plot 1d profiles at different resolutions as in \cite{BenacchioEtAl2014}.}
 
-\benacchio{General comment, results are nondimensionalized so in order to make them comparable with the literature I hacked the colorbar and postmultiplied the values in it by $300\,K$, is it correct to do the same in all the plots in the SK case as well although the stratification looks different? What about the velocity plots in the Baldauf-Brdar case? There I hacked the colorbars by multiplying the values of both u and w by 10 (reference u); this way they look in the range of the colorbars in \cite{BaldaufBrdar2013} but as it is reverse engineering it would be good to double check.}
-
 \begin{figure}
 \centering
  \includegraphics[width=.48\columnwidth]{./Straka_50m/dY/dY_snapshot0.eps}
@@ -788,6 +786,26 @@ Boundary conditions are solid walls on top and bottom boundaries and periodic el
  \caption{Potential temperature perturbation at times $t=0\, s$ (top left), $t=300\, s$ (top right), $t=600\, s$ (bottom left), $t=900\, s$ (bottom right) for the density current test case. Contours in the range $[-16.5,\,-0.5]\,\textrm{K}$ with a $1\,\textrm{K}$ contour interval.}
  \label{fig:straka}
 \end{figure}
+
+\begin{table}
+\small
+\begin{centering}
+\begin{tabular}{lccc}
+\toprule 
+\shortstack{Grid size \\ (m)}& \shortstack{$\Delta\theta_\textrm{min}$ \\ $(K)$} & \shortstack{$\Delta\theta_\textrm{max}$ \\ $(K)$} & \shortstack{Front\\ location (m)} \tabularnewline
+\midrule 
+400 &  $-8.0226$ & $ 0.2750$ & 14090\tabularnewline
+200 &  $-8.8655$ & $0.2148$ & 14856\tabularnewline
+100 &  $-9.1831$ & $0.2173$ & 15182\tabularnewline
+50 &  $-9.4904$ & $0.1176$ & 15326\tabularnewline
+25 &  &  & \tabularnewline
+\bottomrule 
+\end{tabular}
+\par\end{centering}
+\caption{Minimum and maximum $\theta$ perturbation and front location
+(rightmost intersection of $-1\,K$ contour with $z=0$) for the density current test at several resolution values.}%
+\label{tab:straka_minmax}
+\end{table}
 
 
 \subsection{Inertia-gravity waves} 

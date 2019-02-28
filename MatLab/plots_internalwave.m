@@ -26,8 +26,6 @@ addpath('/home/tommaso/work/code/matlab_packages/Colormaps')
 
 set(0,'DefaultFigureColor',[1 1 1])
 
-separate_signs = 1;
-
 dtheta = 0.5e-3;
 contour_values = [-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dtheta, 2*dtheta, 3*dtheta, 4*dtheta, 5*dtheta];
 
@@ -61,9 +59,6 @@ folderstr = varstr;
 ndummy = 2;
 arraysize = [ncx ncy];
 
-%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
-
-fixed_contours = 1;
 
 set(0,'defaulttextinterpreter','latex')
 scrsz = get(0,'ScreenSize');
@@ -114,7 +109,6 @@ for k = kmin:dk:kmax
     set(0,'DefaultFigureColor',[1 1 1])
     xlabel('x [km]','FontSize',18,'Interpreter','latex');
     ylabel('z [km]','FontSize',18,'Interpreter','latex');
-    ylim([0 10])
     yticks([0 2 4 6 8 10])
     colormap viridis
     

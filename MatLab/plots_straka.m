@@ -39,7 +39,7 @@ x0 = 0.0*L;
 H  = 6.4;  
 aspect = [1 1 1];
 dtheta = 1.0;
-contour_values = linspace(-16.5*dtheta,-0.5*dtheta,16);
+contour_values = linspace(-16.5*dtheta,-0.5*dtheta,17);
 
 % auxiliary adjustments of grid parameters
 dumsx = 2;
@@ -82,8 +82,7 @@ for k = kmin:dk:kmax
     figure(figure1)
     contourf(x,z,300*th,contour_values,'LineColor',linecolor);
     hold on
-    contour(x,z,300*th,contour_values,'LineColor','k');
-    
+    contour(x,z,300*th,contour_values,'LineColor','k','LineWidth',1.0);
     colormap viridis
     colorbar('FontSize',14,'FontName','Helvetica');
 
@@ -96,7 +95,7 @@ for k = kmin:dk:kmax
     xticks([0 2 4 6 8 10 12 14 16 18])
     xlabel('x [km]','FontSize',18,'Interpreter','latex');
     ylabel('z [km]','FontSize',18,'Interpreter','latex');
-    ylim([0 5])
+    ylim([min(z) 5])
     yticks([0 1 2 3 4])
     
     fig=gcf;
@@ -105,5 +104,13 @@ for k = kmin:dk:kmax
     filename = sprintf('../RKLM_Reference/Doc/paper_2019/figures/Straka_%sm/%s/%s_snapshot%d.eps', num2str(resol), varstr, varstr, k);
     print(filename, '-depsc')
     export_fig(filename, '-eps')
+
+    if k==kmax
+       hold off 
+       figure(k)
+       [cc,handle]=contour(x,z,300*th,[-1 -1],'LineColor','k');
+       fprintf('Front position:%5d m\n', floor(1000*max(cc(1,:))));
+    end
+
     
 end
