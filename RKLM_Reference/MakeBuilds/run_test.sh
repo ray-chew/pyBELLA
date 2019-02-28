@@ -43,3 +43,4 @@ make
 ./rklm 
 
 cp -r ../../low_Mach_gravity_comp/* ../../hdf_output/$TESTNAME/
+cp -r ../../low_Mach_gravity_psinc/* ../../hdf_output/$TESTNAME/
