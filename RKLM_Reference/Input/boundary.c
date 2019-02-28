@@ -289,7 +289,11 @@ void Bound(
 					{
 						int iimage  = i;
 						/* double S = (2.0*Sol->rho[nimage+1]/Sol->rhoY[nimage+1] - Sol->rho[nimage+2]/Sol->rhoY[nimage+2]); */
+#ifdef NEUMANN_Y_BOTTOM_BC
+                        double S    = 1.0/Y_last; 
+#else
                         double S    = 1./stratification(elem->x[iimage]); 
+#endif
                         double dpi  = (th.Gamma*g) * 0.5*dh*(1.0/Y_last + S);
                         double rhoY = (compressible == 1 ? pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv) : mpv->HydroState->rhoY0[i]);
                         double rho  = rhoY * S;
