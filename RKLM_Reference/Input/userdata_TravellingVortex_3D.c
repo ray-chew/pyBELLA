@@ -137,7 +137,7 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
-    ud->CFL                   = 0.33;  /* something less than 0.5 for STRANG */       
+    ud->CFL                   = 0.45;  /* something less than 0.5 for STRANG */       
     ud->dtfixed0              = 100000.0; /* 2.1*1.200930e-02 */;
     ud->dtfixed               = 100000.0; /* 2.1*1.200930e-02 */;   
     
@@ -166,7 +166,7 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  201; /* (ud->inx+3); */
 	
 	/* linear solver-stuff */
-    double tol = 1.e-10;
+    double tol = 1.e-8;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -465,7 +465,7 @@ void Sol_initial(ConsVars* Sol,
         }
         
         //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
-        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed);
+        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed, 0.0);
         for (int nn=0; nn<node->nc; nn++) {
             mpv->p2_nodes[nn] = p2aux[nn];
             mpv->dp2_nodes[nn] = 0.0;

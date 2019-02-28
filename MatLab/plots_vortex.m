@@ -26,12 +26,12 @@ set(0,'DefaultFigureColor',[1 1 1])
 linecolor      = 'default';  % 'k', 'default' ...
 
 kmin = 0;
-kmax = 1;
+kmax = 4;
 dk   = 1;
 
 
-ncx = 192;
-ncy = 192;
+ncx = 32;
+ncy = 32;
 L   = 4.0;
 x0  = 0.5;
 H   = 1.0;

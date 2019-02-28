@@ -81,12 +81,23 @@ for k = kmin:dk:kmax
     z = linspace(0.5*dz,-0.5*dz+nz*dz,nz);
     Yt = transpose(velo);
     th = Yt(3:1:nz+2, 3:1:nx+2);
-        
+    
+    if strcmp(varstr, 'dY')
+        dim_scale = 300.0;
+    elseif strcmp(varstr, 'v')
+        dim_scale = 10.0;
+    elseif strcmp(varstr, 'u')
+        dim_scale = 10.0;
+    else
+        disp('Error, please enter dT, u, or w as the variable to plot.')
+        return;
+    end
+            
     % Create filled contour
     figure(figure1)
-    contourf(x,z,th,[min(min(th)) contour_values_min contour_values_max max(max(th))],'LineColor','k','LineWidth',1.0);
+    contourf(x,z,dim_scale*th,[min(min(dim_scale*th)) contour_values_min contour_values_max max(max(dim_scale*th))],'LineColor','k','LineWidth',1.0);
     hold
-    contour(x,z,th,[min(min(th)) contour_values_min contour_values_max max(max(th))],'LineColor','k','LineWidth',1.0);
+    contour(x,z,dim_scale*th,[min(min(dim_scale*th)) contour_values_min contour_values_max max(max(dim_scale*th))],'LineColor','k','LineWidth',1.0);
     hold
     
     set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
@@ -102,24 +113,8 @@ for k = kmin:dk:kmax
     ylim([0 10])
     yticks([0 2 4 6 8 10])
     colormap viridis
-    if strcmp(varstr, 'dY')
-        colorbar('FontSize',14,'FontName','Helvetica',...
-            'Ticks',[-0.00001,0,0.00001,0.00002],...
-            'TickLabels',{'-0.0025', '0', '0.0025','0.005'});
-    elseif strcmp(varstr, 'v')
-        colorbar('FontSize',14,'FontName','Helvetica',...
-            'Ticks',[-0.0001,0,0.0001],...
-            'TickLabels',{'-0.001', '0', '0.001'});
-    elseif strcmp(varstr, 'u')
-        colorbar('FontSize',14,'FontName','Helvetica',...
-            'Ticks',[-0.001,-0.0005,0,.0005,0.001],...
-            'TickLabels',{'-0.01', '-0.005', '0', '0.005', '0.01'});
-    else
-        disp('Error, please enter dT, u, or w as the variable to plot.')
-        return;
-    end
-    
-    
+    colorbar('FontSize',14,'FontName','Helvetica');
+        
     fig=gcf;
     fig.Color = 'white';
     fig.InvertHardcopy = 'off';

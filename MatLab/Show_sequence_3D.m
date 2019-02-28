@@ -15,8 +15,8 @@ modelstr = 'comp';
 %test_case = 'Skamarock-Klemp-Internal-Wave';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
-test_case = 'Straka';
-%test_case = 'Travelling-Vortex';
+%test_case = 'Straka';
+test_case = 'Travelling-Vortex';
 %test_case = 'Advection';
 
 slice = 'xy'; % options:  'xy' 'yz' 'zx' 'full3D'
@@ -96,8 +96,8 @@ elseif strcmp(test_case, 'Rising-Bubble')
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Travelling-Vortex')
-    ncx = 64;  % 512; 256;
-    ncy = 64;  % 512; 256;
+    ncx = 31;  % 512; 256;
+    ncy = 31;  % 512; 256;
     ncz = 2;  % 512; 256;
     %ncx = 64;  % 512; 256;
     %ncy = 64;  % 512; 256;

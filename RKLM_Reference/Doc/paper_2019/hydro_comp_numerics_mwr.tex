@@ -744,7 +744,7 @@ We note that the implicit trapezoidal step \eq{eq:TimeIntegrator} and, to a slig
 \section{Numerical Results}
 \label{sec:Results}
 
-The algorithm described in the previous Sections was tested on a suite of benchmarks of dry compressible dynamics at various scales. The suite draws on the set of \cite{Benacchio2014,BenacchioEtAl2014} including a travelling vortex, an acoustic wave, a cold air bubble, and nonhydrostatic inertia-gravity waves, and adds to it three larger scale configurations for the inertia-gravity waves, with the aim to validate the robustness and accuracy of the new buoyancy-implicit strategy. The present paper is not focused on efficiency. While the coding framework is 3D-ready, we leave parallelization and performance on three-dimensional tests for future work. The scheme was implemented in a C$++$ environment and uses the \benacchio{insert linear solver here} linear solver for the solution of the elliptic problems. The solver tolerance was set at \benacchio{insert tolerance here and rerun tests if needed} throughout. \benacchio{Definitions of advective and acoustic CFL to be inserted}.
+The algorithm described in the previous Sections was tested on a suite of benchmarks of dry compressible dynamics at various scales. The suite draws on the set of \cite{Benacchio2014,BenacchioEtAl2014} including a travelling vortex, a cold air bubble, and nonhydrostatic inertia-gravity waves, and adds to it three larger scale configurations for the inertia-gravity waves, with the aim to validate the robustness and accuracy of the new buoyancy-implicit strategy. The present paper is not focused on efficiency. While the coding framework is 3D-ready, we leave parallelization and performance on three-dimensional tests for future work. The scheme was implemented in a C$++$ environment and uses the \benacchio{insert linear solver here} linear solver for the solution of the elliptic problems. The solver tolerance was set at \benacchio{insert tolerance here and rerun tests if needed} throughout. \benacchio{Definitions of advective and acoustic CFL to be inserted}.
 
 
 \subsection{Travelling Vortex}
@@ -761,33 +761,6 @@ The first test is a diagonally moving density bump in a doubly-periodic $[0,1]\t
 \end{figure}
 
 \benacchio{Comments: after 2 seconds solution quality worsens, at 3 seconds not good. With a larger CFL (I tried 0.45 as we used in \cite{BenacchioEtAl2014}) solution quality is not good, perhaps too close to the Strang splitting linked threshold 0.5?}
-
-\subsection{Weakly nonlinear acoustic wave}
-
-The second test is the evolution of a rightward acoustic perturbation in a unitary periodic one-dimensional domain. The initial data for velocity, density and pressure are:
-%
-\begin{equation}
- u=\dfrac{2}{\gamma-1}\tilde{c}\sin{\left(\dfrac{2\pi}{L}x\right)},\quad\rho=\rho_{ref}\left[1+\dfrac{\tilde{c}}{c_{ref}}\sin{\left(\dfrac{2\pi}{L}x\right)}\right]^{\frac{2}{\gamma-1}}, \quad p=p_{ref}\left[1+\dfrac{\tilde{c}}{c_{ref}}\sin{\left(\dfrac{2\pi}{L}x\right)}\right]^{\frac{2\gamma}{\gamma-1}}
- \label{eq:init_data_acouwave}
-\end{equation}
-%
-The initial amplitude is tuned by varying the $\tilde{c}$ parameter. We consider a low-amplitude case with $\tilde{c}=0.01c_{ref}$ and a higher-amplitude case with $\tilde{c}=0.05c_{ref}$. We refer to \cite{Benacchio2014} for the complete setup. A grid of 256 cells is used, the time step is $\Delta t=6.68\textrm{E-}05\,\textrm{s}$ and the final time is $2.67\textrm{E-}03\,\textrm{s}$ (40 time steps). Unlike in the other tests, a time step size within the acoustic CFL constraint is chosen in order to model the acoustic wave. Values of density and velocity at final time (Figure \ref{fig:acouwave}) closely mirror the ones obtained in previous work by the authors and in \cite{Vater2013}. The results display the ability of the code to model compressibility and validate the new compressible strategy both in the low-amplitude and in the higher-amplitude case, where nonlinearity effects are more pronounced.
-
-\benacchio{Comments: need to dig out analytical solution as in \cite{Benacchio2014}, at later time (100 time steps) does not look as good as in \cite{Benacchio2014}.}
-
-\begin{figure}
-\centering
-\includegraphics[height=.23\textheight]{./AcousticWave_low/rho/rho_snapshot0.eps}
- \includegraphics[height=.23\textheight]{./AcousticWave_low/rho/rho_snapshot1.eps}\\
-\includegraphics[height=.23\textheight]{./AcousticWave_low/u/u_snapshot0.eps}
- \includegraphics[height=.23\textheight]{./AcousticWave_low/u/u_snapshot1.eps}\\
-\includegraphics[height=.23\textheight]{./AcousticWave_high/rho/rho_snapshot0.eps}
- \includegraphics[height=.23\textheight]{./AcousticWave_high/rho/rho_snapshot1.eps}\\
- \includegraphics[height=.23\textheight]{./AcousticWave_high/u/u_snapshot0.eps}
- \includegraphics[height=.23\textheight]{./AcousticWave_high/u/u_snapshot1.eps}
- \caption{Initial time (left) and final time (right) results for the acoustic wave test, rows 1 and 3: density, rows 2 and 4: velocity. Top two rows: $\tilde{c}=0.01c_{ref}$; Bottom two rows: $\tilde{c}=0.05c_{ref}$.}
-  \label{fig:acouwave}
-\end{figure}
 
 \subsection{Density current}
 
@@ -874,7 +847,7 @@ As further corroboration of the properties of the model, the hydrostatic configu
 
 This paper extended a semi-implicit numerical model for the simulation of atmospheric flows to a scheme with time step unconstrained by the internal wave speed and without the use of a background state. The conservative, second-order accurate finite volume discretisation of the rotating compressible equations evolves cell-centered variables through a three-stage procedure, made of an implicit midpoint rule step, an advection step, and an implicit trapezoidal step. By design the model agrees with the pseudo-incompressible system in the small-scale limit and the hydrostatic system at the large scale limit.
 
-The compressible scheme was validated on the simulation of a travelling vortex and a weakly nonlinear acoustic wave, and then applied to a suite of benchmarks of atmospheric dynamics at different scales. Compared with the previous incarnation of the model in \cite{Benacchio2014, BenacchioEtAl2014}, which used a buoyancy-explicit discretization, the present scheme achieves comparable accuracy and competitive solution quality and absence of oscillations, with a much larger time step for the cases under gravity. New simulations of the hydrostatic-scale inertia-gravity wave tests of \cite{BaldaufBrdar2013} and \cite{SkamarockKlemp1994} further exposed the large time step capability of the buoyancy-implicit numerical scheme, also tested in a more challenging planetary-scale version introduced in this paper. The authors are unaware of published attempts to run the test at this scale.
+The compressible scheme was validated on the simulation of a travelling vortex and then applied to a suite of benchmarks of atmospheric dynamics at different scales. Compared with the previous incarnation of the model in \cite{Benacchio2014, BenacchioEtAl2014}, which used a buoyancy-explicit discretization, the present scheme achieves comparable accuracy and competitive solution quality and absence of oscillations, with a much larger time step for the cases under gravity. New simulations of the hydrostatic-scale inertia-gravity wave tests of \cite{BaldaufBrdar2013} and \cite{SkamarockKlemp1994} further exposed the large time step capability of the buoyancy-implicit numerical scheme, also tested in a more challenging planetary-scale version introduced in this paper. The authors are unaware of published attempts to run the test at this scale.
 
 The results presented here suggest several avenues of development in a number of areas. First, the scheme can be bolted on to \klein{[too colloquial a formulation?]} \benacchio{Maybe, but I feel it conveys well the idea of something that can be easily mounted on something else which is appropriate in this case.} the multimodel theoretical framework of \cite{KleinBenacchio2016} to achieve balanced initialization and data assimilation at all scales. As proposed by \cite{BenacchioEtAl2014}, such a multimodel discretization could be run with reduced dynamics during the first time steps after setup or assimilation, then resorting to the fully compressible model for the transient sections. \klein{[We need to discuss dissipativity, and refer to Reinhardt, Hastermann, Klein, Reich (2018).]} The development in the present work yields hydrostasy and geostrophy at large scale as well as incompressibility at small scale as the accessible asymptotic dynamics in the blended scheme. The discretization could then be applied to run tests in spherical geometry, with the ultimate aim of comparing with existing schemes used in numerical weather prediction, starting with the FVM dynamical core \citep{KuehnleinEtAl2018}, which shares some numerical aspects with the model presented here. With a view to exascale architecture and beyond, the computational power should be at disposal to use such a model for a flexible balanced runs in an operational context.
 

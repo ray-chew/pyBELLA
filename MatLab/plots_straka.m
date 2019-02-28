@@ -30,20 +30,20 @@ kmax = 3;
 dk   = 1;
 
 
-ncx = 513;
-ncy = 64;
+ncx = 1025;
+ncy = 128;
 L  = 51.2;  
 x0 = 0.0*L;
 H  = 6.4;  
 aspect = [1 1 1];
-dtheta = 1.0/300.0;
+dtheta = 1.0;
 contour_values = linspace(-16.5*dtheta,-0.5*dtheta,16);
 
 % auxiliary adjustments of grid parameters
 dumsx = 2;
 dumsy = 2;
 
-folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/Straka_3D_100m');
+folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/Straka_3D_50m');
 
 % cell-centered fields
 folderstr = varstr;
@@ -76,14 +76,12 @@ for k = kmin:dk:kmax
     
     % Create filled contour
     figure(figure1)
-    contourf(x,z,th,contour_values,'LineColor',linecolor);
+    contourf(x,z,300*th,contour_values,'LineColor',linecolor);
     hold on
-    contour(x,z,th,contour_values,'LineColor','k');
+    contour(x,z,300*th,contour_values,'LineColor','k');
     
     colormap viridis
-    colorbar('FontSize',14,'FontName','Helvetica',...
-             'Ticks',[-0.05,-0.04,-0.03, -0.02, -0.01,0],...
-             'TickLabels',{'-15', '-12', '-9', '-6', '-3', '0'});
+    colorbar('FontSize',14,'FontName','Helvetica');
 
     set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
     axis tight;

@@ -23,8 +23,8 @@ modelstr = 'comp';
 %test_case = 'Breaking-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
-test_case = 'Straka_100m';
-%test_case = 'Travelling-Vortex';
+%test_case = 'Straka_100m';
+test_case = 'Travelling-Vortex';
 %test_case = 'Gresho-Vortex';
 %test_case = 'Travelling-Hump';
 %test_case = 'Acoustic-Wave';
@@ -128,8 +128,8 @@ elseif strcmp(test_case, 'Rising-Bubble')
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Travelling-Vortex')
-    ncx = 192;  
-    ncy = 192; 
+    ncx = 64;  
+    ncy = 64; 
     L   = 1.0;  
     x0  = 0.5;
     H   = 1.0; 

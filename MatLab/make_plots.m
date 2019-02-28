@@ -18,16 +18,10 @@ close all
 plots_vortex('rho')
 plots_vortex('p2_n')
 
-% Acoustic Wave
-plots_acouwave('rho', 'high');
-plots_acouwave('u', 'high');
-
-plots_acouwave('rho', 'low');
-plots_acouwave('u', 'low');
-
 % Straka density current
 
 plots_straka('dY');
+plots_straka_1dcuts('dY')
 
 % Internal Waves
 plots_internalwave('dY', 'NH');

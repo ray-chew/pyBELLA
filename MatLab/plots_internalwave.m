@@ -28,7 +28,7 @@ set(0,'DefaultFigureColor',[1 1 1])
 
 separate_signs = 1;
 
-dtheta = 0.5e-3/300;
+dtheta = 0.5e-3;
 contour_values = [-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dtheta, 2*dtheta, 3*dtheta, 4*dtheta, 5*dtheta];
 
 kmin = 0;
@@ -87,12 +87,12 @@ for k = kmin:dk:kmax
     x = linspace(x0 + 0.5*dx-(nx/2)*dx,x0 - 0.5*dx+(nx/2)*dx,nx);
     z = linspace(0.5*dz,-0.5*dz+nz*dz,nz);
     Yt = transpose(velo);
-    th = Yt(3:1:nz+2, 3:1:nx+2);
+    th = 300*Yt(3:1:nz+2, 3:1:nx+2);
     
     % Create unfilled contour
     figure(figure1)
     if k==0
-        contour_values = 1/300*linspace(0, 0.01, 11);
+        contour_values = linspace(0, 0.01, 11);
     else
         if strcmp(ext, 'NH') || strcmp(ext, 'H')
            contour_values = [-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dtheta, 2*dtheta, 3*dtheta, 4*dtheta, 5*dtheta];
@@ -119,10 +119,7 @@ for k = kmin:dk:kmax
     colormap viridis
     
     if k==0
-        colorbar('FontSize',14,'FontName','Helvetica',...
-                     'Ticks',1/300*linspace(0,0.01,6),...
-                     'TickLabels',{'0', '0.002','0.004',...
-                                   '0.006','0.008','0.01'})
+        colorbar('FontSize',14,'FontName','Helvetica')
     end
     
     switch ext
@@ -130,24 +127,18 @@ for k = kmin:dk:kmax
             xlim([-150 150])
             xticks([-150 -100 -50 0 50 100 150])
             xticklabels({'0', '50', '100', '150', '200', '250', '300'})
-            if k~=0; colorbar('FontSize',14,'FontName','Helvetica',...
-                     'Ticks',1/300*[-0.003,-0.002,-0.001,0,0.001,0.002,0.003],...
-                     'TickLabels',{'-0.003','-0.002','-0.001','0','0.001','0.002','0.003'}); end
+            if k~=0; colorbar('FontSize',14,'FontName','Helvetica'); end
         case 'H'
             xlim([-3000 3000])
             xticks([-3000 -2000 -1000 0 1000 2000 3000])
             xticklabels({'0', '1000', '2000', '3000', '4000', '5000', '6000'})
-            if k~=0; colorbar('FontSize',14,'FontName','Helvetica',...
-                     'Ticks',[-0.000005,0,0.000005,0.00001],...
-                     'TickLabels',{'-0.0015', '0', '0.0015','0.003'}); end
+            if k~=0; colorbar('FontSize',14,'FontName','Helvetica'); end
         case 'P'
             xlabel('x [$10^3$ km]','FontSize',18,'Interpreter','latex');
             xlim([-24000 24000])
             xticks([-24000 -16000 -8000 0 8000 16000 24000])
             xticklabels({'0', '8', '16', '24', '32', '40', '48'})
-            if k~=0; colorbar('FontSize',14,'FontName','Helvetica',...
-                     'Ticks',[0,0.000005,0.00001, 0.000015],...
-                     'TickLabels',{'0', '0.0015', '0.003','0.0045'}); end
+            if k~=0; colorbar('FontSize',14,'FontName','Helvetica'); end
         case default
             disp('Error: incorrect test_case input, see help make_plots. Exiting.')
             exit;

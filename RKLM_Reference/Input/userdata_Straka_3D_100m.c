@@ -38,11 +38,11 @@ void User_Data_init(User_Data* ud) {
     double Q_vap = 2.53e+06;         /* [J]                             */
     double gamma = 1.4;              /* dimensionless                   */
 
-    double viscm  = 0.0;            /* [m^2/s]                         */
+    double viscm  = 75.0;            /* [m^2/s]                         */
     double viscbm = 0.0;             /* [m^2/s]                         */
     double visct  = 0.0;             /* [m^2/s]                         */
     double viscbt = 0.0;             /* [m^2/s]                         */
-    double cond   = 0.0;            /* [m^2/s]                         */
+    double cond   = 75.0;            /* [m^2/s]                         */
 
     /* references for non-dimensionalization */
 	double h_ref = 10000;            /* [m]                             */
@@ -137,8 +137,8 @@ void User_Data_init(User_Data* ud) {
     ud->time_integrator       = SI_MIDPT;  /* this code version has only one option */
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
 	ud->CFL                   = 0.48; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0              = 0.040;
-	ud->dtfixed               = 0.040; /* 0.0052; */ /*  0.004; */
+    ud->dtfixed0              = 0.080;
+	ud->dtfixed               = 0.080; /* 0.0052; */ /*  0.004; */
     
     set_time_integrator_parameters(ud);
     
