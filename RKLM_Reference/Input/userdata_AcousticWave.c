@@ -241,7 +241,6 @@ void Sol_initial(ConsVars* Sol,
     const double w0  = 0.0;
     const double del = 0.001;                          /* perturbation amplitude; standard:  0.01 */
     const double xc  = 0.0;                           /* center of perturbation */
-    const double a   = 0.125 * (ud.xmax - ud.xmin);    /* characteristic width of perturbation */
     const double wn  = 2.0 * 2.0*PI/((ud.xmax - ud.xmin));
     
     const int icx = elem->icx;

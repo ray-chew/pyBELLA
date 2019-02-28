@@ -262,11 +262,10 @@ double precon_diag_prepare(
             
             const double dx = node->dx;
             const double dy = node->dy;
-            const double dz = node->dz;
             
             const double* hplusx   = hplus[0];
             const double* hplusy   = hplus[1];
-            const double* hplusz   = hplus[2];
+            // const double* hplusz   = hplus[2];
             const double* hcenter  = wcenter;
                                                 
             int i, j, k, le, ln, me, mn, ne; 
@@ -477,7 +476,7 @@ double precon_column_prepare(
             const double oodx2 = 0.5 / (dx * dx);
             const double oody2 = 0.5 / (dy * dy);
             
-            double flux_x_lower, flux_x_upper, flux_y_left, flux_y_right, hc;
+            double flux_x_lower, flux_x_upper, flux_y_left, flux_y_right;
             
             int i, j, me, mn, ne, nn, nn1, nnicxn, nn1icxn;
                         
@@ -570,8 +569,7 @@ double precon_column_prepare(
             const double oodz2 = 0.5 / (dz * dz);
             
             double flux_x, flux_y, flux_z;
-            double hc;
-            
+                        
             int i, j, k, le, ln, me, mn, ne, nn; 
             int nn000, nn001, nn010, nn011;
             int nn100, nn101, nn110, nn111;
@@ -835,7 +833,7 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
             
             const double oodx2 = 1.0 / (dx * dx);
             
-            double flux_x, hc;
+            double flux_x;
             
             int i, ne, nn, nn1;
             

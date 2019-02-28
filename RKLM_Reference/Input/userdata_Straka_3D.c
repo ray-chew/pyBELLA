@@ -128,7 +128,8 @@ void User_Data_init(User_Data* ud) {
 	ud->bdrytype_max[2] = WALL;
 	
 	ud->absorber = WRONG; /* CORRECT;  WRONG; */ /*  BREAKING WAVE CHANGE */
-	
+    ud->bottom_theta_bc = ZERO_ORDER_EXTRAPOL;
+
 	/* ================================================================================== */
 	/* =====  NUMERICS  ================================================================= */
 	/* ================================================================================== */
@@ -143,8 +144,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 1025+1; /* 641; 321; 161; 129; 81; */
-	ud->iny =  128+1; /* 321; 161;  81;  65; 41;  */
+	ud->inx = 513+1; /* 641; 321; 161; 129; 81; */
+	ud->iny =  64+1; /* 321; 161;  81;  65; 41;  */
 	ud->inz =  1;
 	
 	/* explicit predictor step */

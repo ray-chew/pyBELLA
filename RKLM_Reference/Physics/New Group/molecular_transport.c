@@ -421,7 +421,7 @@ void diss_to_rhoY(ConsVars* Sol,
                 int igxe = elem->igx;
                 int igye = elem->igy;
                 
-                const alpha = 1.0;
+                const double alpha = 1.0;
                 const double w[3][3] = {{alpha*0.0625,alpha*0.125,alpha*0.0625},{alpha*0.125,alpha*0.25,alpha*0.125},{alpha*0.0625,alpha*0.125,alpha*0.0625}};
                 
                 /* scatter the elem-based  diss/dt  to  the node-based  rhs */ 
