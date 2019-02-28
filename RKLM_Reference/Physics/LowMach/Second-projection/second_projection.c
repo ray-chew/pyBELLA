@@ -164,13 +164,9 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
     
     if (ud.mol_trans != NO_MOLECULAR_TRANSPORT) {
-        extern double *W0;
-        extern enum Boolean W0_in_use;
-        assert(W0_in_use == WRONG);
-        W0_in_use = CORRECT;
-        molecular_transport(Sol, W0, elem, alpha_diff*dt);
-        diss_to_rhs(rhs,W0,elem,node, dt);
-        W0_in_use = WRONG;
+        extern double* diss;        
+        molecular_transport(Sol, diss, elem, alpha_diff*dt);
+        diss_to_rhs(rhs,diss,elem,node, dt); /* diss_to_rhs(rhs,W0,elem,node, alpha_diff*dt);  */        
     }
 
     /* loop for iterating on bottom topography boundary conditions */
@@ -1578,7 +1574,6 @@ void diss_to_rhs(double* rhs,
         }  
     } 
 }
-
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log:$

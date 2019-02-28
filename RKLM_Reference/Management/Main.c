@@ -30,6 +30,7 @@
 #include "boundary.h"
 #include "numerical_flux.h"
 #include "enumerator.h"
+#include "molecular_transport.h"
 
 /* ============================================================================= */
 
@@ -54,10 +55,8 @@ int main( void )
 	/* Arrays */
 	extern ConsVars* Sol; 
 	extern ConsVars* Sol0; 
-    extern double* force[3];
     extern ConsVars* flux[3];
-    extern double* W0;
-    extern enum Boolean W0_in_use;
+    extern double* diss;
 
     TimeStepInfo dt_info;
 	const double* tout = ud.tout;
@@ -129,16 +128,22 @@ int main( void )
             printf("\nfull time step with predicted advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
 
+            /* add effect of heat conduction and diffusion as computed in euler_backward_...() to rhoY */
+            diss_to_rhoY(Sol, diss, elem, node);        
+
             /* explicit EULER half time step for gravity and pressure gradient */ 
             euler_forward_non_advective(Sol, mpv, (const ConsVars*)Sol0, elem, node, (dt_factor-0.5)*dt, WITH_PRESSURE);
                         
             /* explicit full time step advection using div-controlled advective fluxes */
             advect(Sol, flux, Sol0, dt_factor*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, ud.advec_time_integrator, step%2); 
-            
+
+            /* add effect of heat conduction and diffusion as computed in euler_backward_...() to rhoY */
+            diss_to_rhoY(Sol, diss, elem, node);        
+
             /* implicit EULER half time step for gravity and pressure gradient */ 
             euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt);
             euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt, 2.0);
-                                                
+     
             synchronize_variables(mpv, Sol, elem, node, ud.synchronize_nodal_pressure);
 
             if (ud.absorber) {

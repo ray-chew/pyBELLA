@@ -36,13 +36,6 @@ void euler_forward_non_advective(ConsVars* Sol,
                                  const double dt,
                                  const enum EXPLICIT_PRESSURE with_pressure);
 
-void pressure_gradient_forces(
-                              double* force[3], 
-                              const ConsVars *Sol, 
-                              const MPV *mpv, 
-                              const ElemSpaceDiscr *elem, 
-                              const NodeSpaceDiscr *node);
-
 void scale_wall_node_values(
                        double* rhs,  
                        const NodeSpaceDiscr* node, 

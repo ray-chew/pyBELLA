@@ -105,19 +105,18 @@ void molecular_transport(ConsVars* Sol,
                 
                 const double dx = elem->dx;
                 const double dy = elem->dy;
-                
-                for (int j=igy; j<icy-igy; j++) {
+                                
+                for (int j=igy-1; j<icy-igy+1; j++) {
                     int ncj  = j*icx;
                     int nfxj = j*ifx;
                     int nfyj = j;
                     
-                    for (int i=igx; i<icx-igx; i++) {
+                    for (int i=igx-1; i<icx-igx+1; i++) {
                         int ncij  = ncj + i;
                         int nfxij = nfxj + i;
                         int nfyij = nfyj + i*ify;
                         
                         diss[ncij]      -= dt*Sol->rho[ncij]*( (flux[0]->rhoY[nfxij+1] - flux[0]->rhoY[nfxij])/dx + (flux[1]->rhoY[nfyij+1] - flux[1]->rhoY[nfyij])/dy);
-                        // diss[ncij]      -= 0.0;
                         Sol->rhou[ncij] -= dt*Sol->rho[ncij]*( (flux[0]->rhou[nfxij+1] - flux[0]->rhou[nfxij])/dx + (flux[1]->rhou[nfyij+1] - flux[1]->rhou[nfyij])/dy);
                         Sol->rhov[ncij] -= dt*Sol->rho[ncij]*( (flux[0]->rhov[nfxij+1] - flux[0]->rhov[nfxij])/dx + (flux[1]->rhov[nfyij+1] - flux[1]->rhov[nfyij])/dy);                    
                     }
@@ -181,10 +180,10 @@ void molecular_fluxes(ConsVars* flux[3],
                 const double dy = elem->dy;
                 
                 /* fluxes in the x-direction */
-                for (int j=igy; j<icy-igy; j++) {
+                for (int j=igy-1; j<icy-igy+1; j++) {
                     int ncj = j*icx;
                     int nfj = j*ifx;
-                    for (int i=igx; i<ifx-igx; i++) {
+                    for (int i=igx-1; i<ifx-igx+1; i++) {
                         int ncij = ncj + i;
                         int nfij = nfj + i;
                         
@@ -235,10 +234,10 @@ void molecular_fluxes(ConsVars* flux[3],
                 }
                 
                 /* fluxes in the y-direction */
-                for (int j=igy; j<icy-igy; j++) {
+                for (int j=igy-1; j<icy-igy+1; j++) {
                     int ncj = j*icx;
                     int nfj = j;
-                    for (int i=igx; i<ifx-igx; i++) {
+                    for (int i=igx-1; i<ifx-igx+1; i++) {
                         int ncij = ncj + i;
                         int nfij = nfj + i*ify;
                         
@@ -327,10 +326,10 @@ void molecular_fluxes(ConsVars* flux[3],
                 const double dy = elem->dy;
                 
                 /* fluxes in the x-direction */
-                for (int j=igy; j<icy-igy; j++) {
+                for (int j=igy-1; j<icy-igy+1; j++) {
                     int ncj = j*icx;
                     int nfj = j*ifx;
-                    for (int i=igx; i<ifx-igx; i++) {
+                    for (int i=igx-1; i<ifx-igx+1; i++) {
                         int ncij = ncj + i;
                         int nfij = nfj + i;
                         
@@ -352,10 +351,10 @@ void molecular_fluxes(ConsVars* flux[3],
                 }
                 
                 /* fluxes in the y-direction */
-                for (int j=igy; j<ify-igy; j++) {
+                for (int j=igy-1; j<ify-igy+1; j++) {
                     int ncj = j*icx;
                     int nfj = j;
-                    for (int i=igx; i<icx-igx; i++) {
+                    for (int i=igx-1; i<icx-igx+1; i++) {
                         int ncij = ncj + i;
                         int nfij = nfj + i*ify;
                         
@@ -388,3 +387,91 @@ void molecular_fluxes(ConsVars* flux[3],
         } 
     }
 }
+
+/* ========================================================================== */
+
+void diss_to_rhoY(ConsVars* Sol,
+                  const double* diss,
+                  const ElemSpaceDiscr* elem,
+                  const NodeSpaceDiscr* node)
+{
+    /* Here we add a smoothed version of the dissipation expression
+     to the energy variable, reflecting the fact that diss is first
+     averaged from cells to nodes, where it allows us to control 
+     the div of the rhoY-flux, and the rhoY-fluxes are averaged again
+     from cell centers to the cell faces to produces the final flux
+     that enters the rhoY-update.
+     */
+    extern User_Data ud;
+    
+    if (ud.mol_trans == FULL_MOLECULAR_TRANSPORT) {
+        
+        assert(0); /* not implemented yet */
+        
+    } else if (ud.mol_trans == STRAKA_DIFFUSION_MODEL) {
+        
+        switch (elem->ndim) {
+            case 1:
+                assert(0);  /* not implemented yet */ 
+                break;
+                
+            case 2: {
+                int icxe = elem->icx;
+                int icye = elem->icy;
+                int igxe = elem->igx;
+                int igye = elem->igy;
+                
+                const alpha = 1.0;
+                const double w[3][3] = {{alpha*0.0625,alpha*0.125,alpha*0.0625},{alpha*0.125,alpha*0.25,alpha*0.125},{alpha*0.0625,alpha*0.125,alpha*0.0625}};
+                
+                /* scatter the elem-based  diss/dt  to  the node-based  rhs */ 
+                for (int j=igye; j<icye-igye; j++) {
+                    int ncj = j*icxe;
+                    for (int i=igxe; i<icxe-igxe; i++) {
+                        int ncij = ncj + i;
+                        for (int jj=-1; jj<2; jj++) {
+                            for (int ii=-1; ii<2; ii++) {
+                                Sol->rhoY[ncij] += w[jj+1][ii+1] * diss[ncij+jj*icxe+ii];
+                            }
+                        }
+                    }
+                }
+#if 0
+                if (ud.bdrytype_max[0] == PERIODIC) {
+                    for (int j=igye; j<icye-igye; j++) {
+                        int ncj    = j*icxe;
+                        int ncijl  = ncj + igxe;
+                        int ncijr  = ncj + icxe-igxe-1;
+                        
+                        int nnj    = j*icxn;
+                        int nnijml = nnj + igxn;
+                        int nnijpl = nnj + igxn + icxn;
+                        int nnijmr = nnj + (icxn-igxn-1);
+                        int nnijpr = nnj + (icxn-igxn-1) + icxn;
+                        
+                        double drhsl = 0.25*diss[ncijl];
+                        double drhsr = 0.25*diss[ncijr];
+                        
+                        rhs[nnijml] += drhsl;
+                        rhs[nnijpl] += drhsl;
+                        rhs[nnijmr] += drhsr;
+                        rhs[nnijpr] += drhsr;
+                    }
+                }
+                if (ud.bdrytype_max[1] == PERIODIC) {
+                    assert(0);
+                }
+#endif
+            }
+                break;
+                
+            case 3:
+                assert(0);  /* not implemented yet */
+                break;
+                
+            default:
+                break;
+        }  
+    } 
+}
+
