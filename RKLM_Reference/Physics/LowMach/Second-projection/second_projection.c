@@ -458,8 +458,6 @@ static void rhs_from_p_old(
     extern User_Data ud;
     extern double *W0;
     extern enum Boolean W0_in_use;
-
-    int nodc = 0;
     
     assert(W0_in_use == WRONG);
     W0_in_use = CORRECT;

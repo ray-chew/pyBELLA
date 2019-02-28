@@ -92,7 +92,6 @@ void putout(ConsVars* Sol,
     const int icxn = node->icx;
     const int icyn = node->icy;
     const int iczn = node->icz;
-    const int nn = node->nc; 
 
 	double *var;
 	char fn[200], fieldname[90], step_string[30];

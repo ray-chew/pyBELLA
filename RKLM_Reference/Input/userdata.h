@@ -86,6 +86,7 @@ typedef struct {
 	enum BdryType bdrytype_min[3];
 	enum BdryType bdrytype_max[3];
 	enum Boolean absorber;
+    enum BOTTOM_BC bottom_theta_bc;
 	
 	/* Thermodynamics and chemistry */
     int nspec;
