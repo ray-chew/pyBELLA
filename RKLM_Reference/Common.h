@@ -37,6 +37,10 @@
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
 
 
+/* quick and dirty switches */
+#define NEUMANN_Y_BOTTOM_BC
+
+
 /* TODO: Code cleaning / maintainance
  
  1) Make all appearances of "extern ..." disappear except for those of
