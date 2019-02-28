@@ -161,7 +161,7 @@ elseif strcmp(test_case, 'Straka')
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
     dtheta = 1.0/300.0;
-    contour_values = linspace(-16.5*dtheta,2.0*dtheta,16);
+    contour_values = linspace(-16.5*dtheta,0.5*dtheta,16);
     showslice_hor = floor(ncy/3);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Smolarkiewicz-Margolin-Breaking-Wave')

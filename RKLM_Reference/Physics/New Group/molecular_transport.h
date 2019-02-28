@@ -18,5 +18,9 @@ void molecular_transport(ConsVars* Sol,
                          const ElemSpaceDiscr* elem, 
                          const double dt);
 
+void diss_to_rhoY(ConsVars* Sol,
+                  const double* diss,
+                  const ElemSpaceDiscr* elem,
+                  const NodeSpaceDiscr* node);
 
 #endif /* molecular_transport_h */

@@ -44,8 +44,8 @@ ConsVars* Sol0;           /* full size (M < 1.0) */
 ConsVars* dSol;           /* full size */ /* TODO: Can I work without full-size dSol arrays? 
                                            -> No: currently still needed in Explicit_step_update */
 
-double* force[3];
 ConsVars* flux[3];        /* full size (M < 1.0) */
+double* diss;
 
 /* Infrastructure for semi-implicit scheme */
 MPV* mpv;
@@ -112,13 +112,9 @@ void Data_init() {
     n_aux *= (node->ndim > 1 ? node->ify : 1);
     n_aux *= (node->ndim > 2 ? node->ifz : 1);
     
+    diss  = (double*)malloc((unsigned)(elem->nc * sizeof(double)));
     W0  = (double*)malloc((unsigned)(n_aux * sizeof(double)));
-    
-    for (int idim = 0; idim < elem->ndim; idim++) {
-        force[idim]    = (double*)malloc(node->nc*(sizeof(double)));
-        for (int nc = 0; nc < node->nc; nc++) force[idim][nc] = 0.0;
-    }
-    
+        
     flux[0] = ConsVars_new(elem->nfx);
     ConsVars_setzero(flux[0], elem->nfx);
     if(elem->ndim > 1) {
@@ -159,7 +155,6 @@ void Data_free() {
 
     for (int idim = 0; idim < elem->ndim; idim++) {
         ConsVars_free(flux[idim]);
-        free(force[idim]);
     }
 
     free(W0);
