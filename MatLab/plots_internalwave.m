@@ -1,4 +1,4 @@
-function plots_internalwave(varstr, ext)
+function [x,z,th]=plots_internalwave(varstr, ext)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % plots_internalwave(varstr, ext)
@@ -21,8 +21,7 @@ function plots_internalwave(varstr, ext)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-addpath('/home/tommaso/work/code/matlab_packages/export_fig')
-addpath('/home/tommaso/work/code/matlab_packages/Colormaps')
+addpath('./export_fig')
 
 set(0,'DefaultFigureColor',[1 1 1])
 

@@ -130,7 +130,7 @@ void User_Data_init(User_Data* ud) {
 	
 	ud->absorber = WRONG; /* CORRECT; */   
     ud->bottom_theta_bc = BOTTOM_BC_DEFAULT;
-
+	
 	/* ======================================================================== */
 	/* =====  NUMERICS  ======================================================= */
 	/* ======================================================================== */
@@ -145,8 +145,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 48+1; /*  */
-	ud->iny = 48+1; /*  */
+	ud->inx = 768+1; /*  */
+	ud->iny = 768+1; /*  */
 	ud->inz =     1;
 
     /* explicit predictor step */

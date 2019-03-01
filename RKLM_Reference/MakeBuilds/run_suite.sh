@@ -8,9 +8,9 @@
 # Straka
 #for TESTCASE in 'Straka_3D_400m' 'Straka_3D_200m' 'Straka_3D_100m' 'Straka_3D_50m'
 # SK94
-for TESTCASE in 'InternalWave_NH' 'InternalWave_H' 'InternalWave_P'
+#for TESTCASE in 'InternalWave_NH' 'InternalWave_H' 'InternalWave_P'
 # Tests in paper
-#for TESTCASE in 'TravellingVortex_3D_192' 'InternalWave_NH' 'InternalWave_H' 'InternalWave_P' 'Straka_3D_50m' 'InternalWave_Baldauf'
+for TESTCASE in 'TravellingVortex_3D_768' 'TravellingVortex_3D_384' 'TravellingVortex_3D_192' 'TravellingVortex_3D_96' 'TravellingVortex_3D_48' 'InternalWave_NH' 'InternalWave_H' 'InternalWave_H_psinc' 'InternalWave_H_hyd' 'InternalWave_P' 'Straka_3D_400m' 'Straka_3D_200m' 'Straka_3D_100m' 'Straka_3D_50m' 'Straka_3D_25m'
 do
   ./run_test.sh $TESTCASE 
 done
