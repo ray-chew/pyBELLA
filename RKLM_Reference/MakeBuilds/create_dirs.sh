@@ -7,7 +7,7 @@
 
 mkdir ../../hdf_output
 
-for TEST_C in 'InternalWave_Baldauf' 'InternalWave_NH' 'InternalWave_H' 'InternalWave_H_psinc' 'InternalWave_P' 'Straka_3D' 'Straka_3D_400m' 'Straka_3D_200m' 'Straka_3D_100m' 'Straka_3D_50m' 'Straka_3D_25m' 'TravellingVortex_3D_48' 'TravellingVortex_3D_96' 'TravellingVortex_3D_192' 'TravellingVortex_3D_384'
+for TEST_C in 'InternalWave_Baldauf' 'InternalWave_NH' 'InternalWave_H' 'InternalWave_H_hyd' 'InternalWave_H_psinc' 'InternalWave_P' 'Straka_3D' 'Straka_3D_400m' 'Straka_3D_200m' 'Straka_3D_100m' 'Straka_3D_50m' 'Straka_3D_25m' 'TravellingVortex_3D_48' 'TravellingVortex_3D_96' 'TravellingVortex_3D_192' 'TravellingVortex_3D_384'
 do
   mkdir ../../hdf_output/$TEST_C
   for VAR in 'advflux' 'dpdim' 'geopot' 'interface_data' 'p' 'T' 'dT' 'qc' 'rho' 'rhoZp' 'rhs_nodes' 'second_projection_test' 'u' 'Z' 'buoy' 'drhoY' 'Graphics' 'lap_cells' 'p2_c' 'qr' 'rhoe' 'rhs' 'rhs_second' 'Srhs_cells' 'v' 'dp2_c' 'dY' 'hplus_nodes' 'lap_nodes' 'p2_nodes' 'qv' 'rhoY' 'rhs_cells' 'S' 'theta' 'w' 'dp2_nodes' 'fluxes' 'hydrostate' 'omega' 'p_prolongation' 'res' 'rhoZB' 'rhs_fg' 'S2_cells' 'Y' 'psinc'

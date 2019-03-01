@@ -806,22 +806,10 @@ Boundary conditions are solid walls on top and bottom boundaries and periodic el
 \toprule 
 \shortstack{Grid size \\ (m)}& \shortstack{$\Delta\theta_\textrm{min}$ \\ $(K)$} & \shortstack{$\Delta\theta_\textrm{max}$ \\ $(K)$} & \shortstack{Front\\ location (m)} \tabularnewline
 \midrule 
-400 &  $-8.0226$ & $ 0.2750$ & 14090\tabularnewline
-200 &  $-8.8659$ & $0.2148$ & 14855\tabularnewline
-100 &  $-9.1831$ & $0.2173$ & 15180\tabularnewline
-50 &  $-9.4904$ & $0.1176$ & 15326\tabularnewline
-25 &  $-9.6550$ & $0.0141$ & 15383\tabularnewline
-\bottomrule 
-\end{tabular}
-\qquad
-\begin{tabular}{lccc}
-\toprule 
-\shortstack{Grid size \\ (m)}& \shortstack{$\Delta\theta_\textrm{min}$ \\ $(K)$} & \shortstack{$\Delta\theta_\textrm{max}$ \\ $(K)$} & \shortstack{Front\\ location (m)} \tabularnewline
-\midrule 
 400 &  $-8.1466$ & $ 0.2685$ & 14125\tabularnewline
 200 &  $-8.9358$ & $0.2294$ & 14884\tabularnewline
 100 &  $-9.2154$ & $0.1787$ & 15199\tabularnewline
-50 &  $-9.4904$ & $0.1176$ & 15326\tabularnewline
+50 &  $-9.5061$ & $0.0903$ & 15326\tabularnewline
 25 &  $-9.6550$ & $0.0141$ & 15383\tabularnewline
 \bottomrule 
 \end{tabular}
@@ -857,10 +845,11 @@ The new planetary-scale case is run with no rotation to suppress the geostrophic
 
 \begin{figure}
 \centering
- \includegraphics[width=\columnwidth]{./InternalWave_H/dY/dY_snapshot0.eps}
- \includegraphics[width=\columnwidth]{./InternalWave_H/dY/dY_snapshot1.eps}
- \includegraphics[width=\columnwidth]{./InternalWave_H_psinc/dY/dY_snapshot1.eps}
- \caption{Potential temperature perturbation for the hydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994},  $\Delta x=20\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$=0.9$. Initial data (top) and computed value at final time $T=60000\,\textrm{s}$ in compressible mode (middle) and pseudo-incompressible mode (bottom). Contours as in Figure \ref{fig:SK94_NH}.}
+ \includegraphics[width=.48\columnwidth]{./InternalWave_H/dY/dY_snapshot0.eps}
+ \includegraphics[width=.48\columnwidth]{./InternalWave_H/dY/dY_snapshot1.eps}\\
+ \includegraphics[width=.48\columnwidth]{./InternalWave_H_psinc/dY/dY_snapshot1.eps}
+ \includegraphics[width=.48\columnwidth]{./InternalWave_H_hyd/dY/dY_snapshot1.eps}
+ \caption{Potential temperature perturbation for the hydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994},  $\Delta x=20\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$=0.9$. Initial data (top left) and computed value at final time $T=60000\,\textrm{s}$ in compressible mode (top right), pseudo-incompressible mode (middle left), hydrostatic mode (middle right). The bottom plots show the difference with respect to the compressible run for the pseudo-incompressible run (left) and the hydrostatic run(right). Contours as in Figure \ref{fig:SK94_NH}.}
  \label{fig:SK94_H}
  \end{figure}
 
@@ -905,6 +894,8 @@ The results presented here suggest several avenues of development in a number of
 %   \item \red{Clear concept for achieving second-order accuracy(?)} \benacchio{Agreed, this should be done, perhaps even as a formal proof depending on the journal chosen. \klein{\bfseries Also, there 
 %   is such an analysis in quite some detail for EULAG's time integrator. So, this would not be
 %   new. }}
+
+
 %   \item Advection based on $P$-fluxes
 %   \item \blue{Identification of handles for model blending(?)}
 %   \end{itemize}

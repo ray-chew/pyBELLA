@@ -13,7 +13,7 @@ function plots_internalwave(varstr, ext)
 %           'v', 'w', 'dY', 'rho', 'p', 'geopot', 'p2_c', 'rhoY'
 %
 % ext      Extension of the domain
-%           'NH', 'H', 'H_psinc', 'P'
+%           'NH', 'H', 'H_hyd', 'H_psinc', 'P'
 %
 % Developed by R. Klein, FU Berlin, -2019
 % Modified by T. Benacchio, Politecnico di Milano, 2019
@@ -35,7 +35,7 @@ dk   = 1;
 
 if strcmp(ext, 'NH')
     scalefactor = 1.0;  % Skamarock-Klemp-1994 Fig.1
-elseif strcmp(ext, 'H') || strcmp(ext, 'H_psinc')
+elseif strcmp(ext, 'H') || strcmp(ext, 'H_psinc') || strcmp(ext, 'H_hyd')
     scalefactor = 20.0;  % Skamarock-Klemp-1994 Fig.3
 elseif strcmp(ext, 'P')
     scalefactor = 160.0;   % new, very long wave test
@@ -89,7 +89,7 @@ for k = kmin:dk:kmax
     if k==0
         contour_values = linspace(0, 0.01, 11);
     else
-        if strcmp(ext, 'NH') || strcmp(ext, 'H') || strcmp(ext, 'H_psinc')
+        if strcmp(ext, 'NH') || strcmp(ext, 'H') || strcmp(ext, 'H_psinc') || strcmp(ext, 'H_hyd')
            contour_values = [-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dtheta, 2*dtheta, 3*dtheta, 4*dtheta, 5*dtheta];
         else
            contour_values = 2.0*[-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dtheta, 2*dtheta, 3*dtheta, 4*dtheta, 5*dtheta];
@@ -128,6 +128,11 @@ for k = kmin:dk:kmax
             xticklabels({'0', '1000', '2000', '3000', '4000', '5000', '6000'})
             if k~=0; colorbar('FontSize',14,'FontName','Helvetica'); end
         case 'H_psinc'
+            xlim([-3000 3000])
+            xticks([-3000 -2000 -1000 0 1000 2000 3000])
+            xticklabels({'0', '1000', '2000', '3000', '4000', '5000', '6000'})
+            if k~=0; colorbar('FontSize',14,'FontName','Helvetica'); end
+        case 'H_hyd'
             xlim([-3000 3000])
             xticks([-3000 -2000 -1000 0 1000 2000 3000])
             xticklabels({'0', '1000', '2000', '3000', '4000', '5000', '6000'})
