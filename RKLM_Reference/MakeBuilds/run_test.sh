@@ -22,10 +22,10 @@
 
 TESTNAME=$1
 
-if [-z "$1"]
-then
-  echo "Error: select test."
-  exit 1;
+if [ -z "$1" ]
+  then
+    echo "Error: select test."
+    exit 1;
 fi
 
 # Cleaning running output directories
