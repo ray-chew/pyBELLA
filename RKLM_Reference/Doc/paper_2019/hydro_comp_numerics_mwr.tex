@@ -753,7 +753,7 @@ The algorithm described in the previous Sections was tested on a suite of benchm
 
 \subsection{Travelling Vortex}
 
-The first test is a diagonally moving density bump in a doubly-periodic $[0,1]\times[0,1]\,\textrm{m}^2$ domain (see full initial data at \cite{KadiogluEtAl2008}). The numerical scheme is run on a uniform grid made of $192x192$ cells with advective CFL value $0.45$ and in absence of gravity. Driven by unitary background speed the initial perturbation travels diagonally through the domain. Given the unitary setup parameters, the vortex should move back to the initial position after $T=1\,\textrm{s}$. This is confirmed by the numerical simulation, as seen in Figure \ref{fig:trav_vortex_res}. For this and the following plots, the value of the variable at the cell centres has been considered. \benacchio{TBD convergence test}.
+The first test is a diagonally moving density bump in a doubly-periodic $[0,1]\times[0,1]\,\textrm{m}^2$ domain (see full initial data at \cite{KadiogluEtAl2008, Benacchio2014}). The numerical scheme is run on a uniform grid made of $192x192$ cells with advective CFL value $0.45$ and without gravity. Driven by unitary background speed the initial perturbation travels diagonally through the domain. Given the unitary setup parameters, the vortex should move back to the initial position after $T=1\,\textrm{s}$. This is confirmed by the numerical simulation, as seen in Figure \ref{fig:trav_vortex_res}. For this and the following plots, the value of the variable at the cell centres has been considered. \benacchio{TBD convergence test}.
 
 \begin{figure}
 \centering
@@ -768,7 +768,7 @@ The first test is a diagonally moving density bump in a doubly-periodic $[0,1]\t
 
 \subsection{Density current}
 
-The second test case, proposed by \cite{StrakaEtAl1993}, concerns the simulation of a falling bubble of cold air in a neutrally stratified atmosphere $(x,z)\in[-25.6,25.6]\times[0,6.4]\,\textrm{km}^2$. The reference temperature and pressure  are $T_{ref}=300\,\textrm{K}$ and $p_{ref}=10^5\,\textrm{Pa}$, the thermal perturbation is:
+The second test case, proposed by \cite{StrakaEtAl1993}, concerns the simulation of a falling bubble of cold air in a neutrally stratified atmosphere $(x,z)\in[-25.6,25.6]\times[0,6.4]\,\textrm{km}^2$. The reference potential temperature and pressure  are $\theta_{ref}=300\,\textrm{K}$ and $p_{ref}=10^5\,\textrm{Pa}$, the thermal perturbation is:
 %
 \begin{equation}
  T'=\begin{cases}
@@ -814,7 +814,7 @@ Boundary conditions are solid walls on top and bottom boundaries and periodic el
 
 \subsection{Inertia-gravity waves} 
 
-The next set of tests consists of gravity waves in a stably stratified channel with buoyancy frequency $N=0.01\textrm{s}^{-1}$, $\theta(z=0)=300\,\textrm{K}$, horizontal extension $x\in[0,x_N]$, and vertical extension $z=10\,\textrm{km}$, proposed by \cite{SkamarockKlemp1994}. The thermal perturbation is:
+The next set of tests consists of gravity waves in a stably stratified channel with constant buoyancy frequency $N=0.01\textrm{s}^{-1}$, $\theta(z=0)=300\,\textrm{K}$, horizontal extension $x\in[0,x_N]$, and vertical extension $z=10\,\textrm{km}$, proposed by \cite{SkamarockKlemp1994}. The thermal perturbation is:
 %
 \begin{equation}
  \theta'(x, z, 0)=0.01~\textrm{K}*\dfrac{\sin(\pi z/H)}{1+[(x-x_c)/a]^2}\label{eq: init_theta_pert_igw} 
@@ -851,14 +851,14 @@ The new planetary-scale case is run with no rotation to suppress the geostrophic
   \label{fig:SK94_P}
 \end{figure}
 
-As further corroboration of the properties of the model, the hydrostatic configuration is rerun with a different value of the Coriolis parameter $f=1.03126*10^{-4}\,\textrm{s}^{-1}$, $\theta(z=0)=250\,\textrm{K}$, and no background flow as in \cite{BaldaufBrdar2013}. \benacchio{Information on the resolution to be added once we decide at which resolution to run, currently 20km$\times500m$.} Results with the buoyancy-implicit model display good symmetry and compare well with the reference (Figure \ref{fig:BB13}). The multiscale nature of the case is evident in particular in the plot of the vertical velocity.
+As further corroboration of the properties of the model, the hydrostatic configuration is rerun with a different value of the Coriolis parameter $f=1.03126*10^{-4}\,\textrm{s}^{-1}$, initial temperature $T(z=0)=250\,\textrm{K}$, isothermal background distribution, and no background flow as in \cite{BaldaufBrdar2013}. An advective CFL value of 0.9 is used. \benacchio{Information on the resolution to be added once we decide at which resolution to run, currently $20\textrm{km}\times500\textrm{m}$.} Results with the buoyancy-implicit model display good symmetry and compare well with the reference (Figure \ref{fig:BB13}). The multiscale nature of the case is evident in particular in the plot of the vertical velocity.
 
 \begin{figure}
 \centering
  \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf/dY/dY_snapshot2.eps}
  \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf/v/v_snapshot2.eps}
  \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf/u/u_snapshot2.eps}
- \caption{Potential temperature perturbation (top), vertical velocity (middle) and horizontal velocity (bottom) at final time $T=28800\,\textrm{s}$ for the inertia-gravity wave test with rotation, parameters as in \cite{BaldaufBrdar2013}. Initial $\theta$ perturbation as in Figure \ref{fig:SK94_H}. \benacchio{Plot T rather than theta and insert contours info.}}
+ \caption{Temperature perturbation (top), vertical velocity (middle) and horizontal velocity (bottom) at final time $T=28800\,\textrm{s}$ for the inertia-gravity wave test with rotation, parameters as in \cite{BaldaufBrdar2013}. Initial perturbation as in Figure \ref{fig:SK94_H}. \benacchio{Insert contours info after long run.}}
   \label{fig:BB13}
 \end{figure}
 

@@ -58,6 +58,6 @@ LIBS	      = $(HDFLIBDIR)/libmfhdf.dylib \
 
 MAKEFILE      = Makefile
 
-OBJS	      = userdata_InternalWave_P.o :
+OBJS	      = userdata_TravellingVortex_3D.o :
 
 

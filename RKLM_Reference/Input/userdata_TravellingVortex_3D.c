@@ -34,7 +34,7 @@ void User_Data_init(User_Data* ud) {
 	double omega = 0.0; /* 2*PI*sin(0.25*PI)/(24.0*3600.0); [s^-1] */
 
     /* thermodynamics and chemistry */
-    double R_gas    = 287.4;            /* [J/kg/K]               */
+    double R_gas    = 287.0;            /* [J/kg/K]               */
     double R_vap    = 461.00;           /* [J/kg/K]               */
     double Q_vap    = 2.53e+06;         /* [J]                    */
     double gamma    = 1.4;              /* dimensionless          */
@@ -49,7 +49,8 @@ void User_Data_init(User_Data* ud) {
     double h_ref    = 10000;                 /* [m]               */
     double t_ref    = 100;                   /* [s]               */
     double T_ref    = 300.00;                /* [K]               */
-    double p_ref    = 10e+5;                 /* [Pa]              */
+    double p_ref    = 100000.0;//10e+5;                 /* [Pa]              */
+    
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
 
@@ -204,7 +205,7 @@ void User_Data_init(User_Data* ud) {
     ud->tout[6] = -1.0;
      */
     
-    ud->stepmax = 10000;
+    ud->stepmax = 1;
 
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;

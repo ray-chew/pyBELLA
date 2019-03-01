@@ -34,7 +34,7 @@ void User_Data_init(User_Data* ud) {
 	double omega = 0.0; /* 2*PI*sin(0.25*PI)/(24.0*3600.0); [s^-1] */
 
     /* thermodynamics and chemistry */
-    double R_gas    = 287.4;            /* [J/kg/K]               */
+    double R_gas    = 287.0;            /* [J/kg/K]               */
     double R_vap    = 461.00;           /* [J/kg/K]               */
     double Q_vap    = 2.53e+06;         /* [J]                    */
     double gamma    = 1.4;              /* dimensionless          */

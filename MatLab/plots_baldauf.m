@@ -27,7 +27,7 @@ dk   = 1;
 scalefactor = 20.0;
 
 ncx = 301;
-ncy = 10;
+ncy = 20;
 L   = 300.0 * scalefactor;  %
 x0  = 0.0;
 H   = 10.0;  %
