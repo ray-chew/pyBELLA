@@ -137,7 +137,7 @@ void User_Data_init(User_Data* ud) {
 	
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;
-    ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
+    ud->advec_time_integrator = EXPL_MIDPT; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
     ud->CFL                   = 0.33;  /* something less than 0.5 for STRANG */       
     ud->dtfixed0              = 100000.0; /* 2.1*1.200930e-02 */;
     ud->dtfixed               = 100000.0; /* 2.1*1.200930e-02 */;   
@@ -145,8 +145,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 32+1; /*  */
-	ud->iny = 32+1; /*  */
+	ud->inx = 768+1; /*  */
+	ud->iny = 768+1; /*  */
 	ud->inz =     1;
 
     /* explicit predictor step */
@@ -167,7 +167,7 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  201; /* (ud->inx+3); */
 	
 	/* linear solver-stuff */
-    double tol = 1.e-10;
+    double tol = 1.e-14;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -189,10 +189,13 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
     /* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
-    ud->tout[0] =  1.0;      
-    ud->tout[1] =  2.0;      
-    ud->tout[2] =  3.0;      
-    ud->tout[3] = -1.0;
+    ud->tout[0] =  0.5;      
+    ud->tout[1] =  1.0;      
+    ud->tout[2] =  1.5;      
+    ud->tout[3] =  2.0;      
+    ud->tout[4] =  2.5;      
+    ud->tout[5] =  3.0;      
+    ud->tout[6] = -1.0;
 
     /*
     ud->tout[0] =  0.5;      
@@ -209,7 +212,7 @@ void User_Data_init(User_Data* ud) {
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 10000;
+	ud->write_file_period = 1000000;
 	ud->file_format = HDF;
 
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
@@ -466,7 +469,7 @@ void Sol_initial(ConsVars* Sol,
         }
         
         //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
-        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed);
+        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed, 1.0);
         for (int nn=0; nn<node->nc; nn++) {
             mpv->p2_nodes[nn] = p2aux[nn];
             mpv->dp2_nodes[nn] = 0.0;
