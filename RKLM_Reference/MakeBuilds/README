@@ -38,19 +38,24 @@ This does the following:
 for output and cleans the output folder for the particular
 test via clean_hdf_output.sh;
 
-- changes the test-case dependent instances in the Makefiles
+- Changes the test-case dependent instances in the Makefiles
 using the script changetest.sh;
+
+- Changes the output folder to the one relative to the user;
 
 - Compiles and runs the code; copies the output from the running folders
 low_mach_gravity_{comp, psinc} to the case-dependent ones in the hdf_output
 subfolder;
 
-5) In order to run the full suite of tests for the paper "A semi-implicit 
+5) In order to run the suite of tests for the paper "A semi-implicit 
 numerical model for small-to-planetary scale atmospheric dynamics", run:
 
 chmod +x run_suite.sh
 source run_suite.sh
 
+This also plots the results by calling the related matlab script. 
+WARNING: this currently assumes that the tests in the matlab script
+are the same run in run_suite.sh - it could be automated in the future.
 
 
 

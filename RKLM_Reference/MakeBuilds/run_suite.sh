@@ -2,7 +2,8 @@
 
 # Runs the suite of tests from RKLM low Mach fluid dynamics code
 # for the paper "A semi-implicit numerical model for small-to-planetary scale atmospheric
-# dynamics"
+# dynamics" and plots results
+#
 
 # Straka
 #for TESTCASE in 'Straka_3D_400m' 'Straka_3D_200m' 'Straka_3D_100m' 'Straka_3D_50m'
@@ -13,3 +14,7 @@ for TESTCASE in 'InternalWave_NH' 'InternalWave_H' 'InternalWave_P'
 do
   ./run_test.sh $TESTCASE 
 done
+
+# Plot results, make sure that tests in make plots are the ones executed above.
+cd ../../MatLab/ 
+matlab -nodesktop -r make_plots, quit
