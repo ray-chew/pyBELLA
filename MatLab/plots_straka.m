@@ -59,7 +59,6 @@ figure1 = figure('Position',[1 2*scrsz(4)/3 scrsz(4)/2 1*scrsz(4)/3]);
 for k = kmin:dk:kmax
     kstr = num2str(k);
     filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_00',kstr,'.hdf');
-    filestr
     v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
     
     velo=v;

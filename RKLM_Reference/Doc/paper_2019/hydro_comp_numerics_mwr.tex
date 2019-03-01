@@ -760,7 +760,7 @@ The first test is a diagonally moving density bump in a doubly-periodic $[0,1]\t
  \includegraphics[width=.45\columnwidth]{./TravellingVortex_192/rho/rho_snapshot0.eps}\includegraphics[width=.45\columnwidth]{./TravellingVortex_192/p2_n/p2_n_snapshot0.eps}\\
  \includegraphics[width=.45\columnwidth]{./TravellingVortex_192/rho/rho_snapshot1.eps}
  \includegraphics[width=.45\columnwidth]{./TravellingVortex_192/p2_n/p2_n_snapshot1.eps}
- \caption{Travelling vortex results on a run with $192x192$ cells, advective CFL 0.45. Initial data (top) and values after $1$ second (bottom), for the density (left) and nodal pressure (right). Contours as in \cite{Benacchio2014}, Figure 2.  Contours every $0.025\,\textrm{kg\,m$^{-3}$}$
+ \caption{Travelling vortex on a doubly periodic unit square domain, $192x192$ cells, advective CFL 0.45. Initial data (top) and values after $1\,\textrm{s}$ (bottom), for the density (left) and nodal pressure (right).  Contours every $0.025\,\textrm{kg\,m$^{-3}$}$
  from $0.525\,\textrm{kg\,m$^{-3}$}$ to $0.975\,\textrm{kg\,m$^{-3}$}$ for density and every 0.025 Pa from
 -0.025 to -0.3 Pa for pressure.}
  \label{fig:trav_vortex_res}
@@ -779,7 +779,7 @@ The second test case, proposed by \cite{StrakaEtAl1993}, concerns the simulation
 %
 where $r=\left\{[(x-x_c)/x_r]^2+[(z-z_c)/z_r]^2\right\}^{0.5}$, $x_c=0~\textrm{km}$, $x_r=4~\textrm{km}$, $z_c=3~\textrm{km}$ and $z_r=2~\textrm{km}$. 
 %
-Boundary conditions are solid walls on top and bottom boundaries and periodic elsewhere \benacchio{Do we need a note on the boundary conditions?}. In order to obtain a converged solution, an artificial diffusion term $\rho\mu\nabla^2\mathbf{u}$ is added to the momentum equation, with $\mu=75\,\textrm{m$^2$s$^{-1}$}$ \benacchio{Do we need to expand on how this is coded?}. The buoyancy-implicit model is run at a resolution $\Delta x=\Delta z=50\,\textrm{m}$ with time step chosen according to an advective CFL value of $0.96$. Driven by its negative buoyancy, the initial perturbation moves downwards, impacts the bottom boundary and travels sideways developing vortices (Figure \ref{fig:straka}). The final perturbation amplitude and front position (\ref{tab:straka_minmax}) agree with published results, see e.g. the similar table in \cite{MelvinEtAl2018}. 
+Boundary conditions are solid walls on top and bottom boundaries and periodic elsewhere \benacchio{Do we need a note on the boundary conditions?}. In order to obtain a converged solution, an artificial diffusion term $\rho\mu\nabla^2\mathbf{u}$ is added to the momentum equation, with $\mu=75\,\textrm{m$^2$s$^{-1}$}$ \benacchio{Do we need to expand on how this is coded?}. The buoyancy-implicit model is run at a resolution $\Delta x=\Delta z=50\,\textrm{m}$ with time step chosen according to an advective CFL value of $0.96$. Driven by its negative buoyancy, the initial perturbation moves downwards, impacts the bottom boundary and travels sideways developing vortices (Figure \ref{fig:straka}). The numerical solution converges with increasing resolution (Figure \ref{fig:straka1dcut}), and the final perturbation amplitude and front position agree with published results [Table \ref{tab:straka_minmax}, for comparison see, e.g., \cite{GiraldoRestelli2008} and the similar table in \cite{MelvinEtAl2018}].
 
 \begin{figure}
 \centering
@@ -787,9 +787,17 @@ Boundary conditions are solid walls on top and bottom boundaries and periodic el
  \includegraphics[width=.48\columnwidth]{./Straka_50m/dY/dY_snapshot1.eps}\\
  \includegraphics[width=.48\columnwidth]{./Straka_50m/dY/dY_snapshot2.eps}
  \includegraphics[width=.48\columnwidth]{./Straka_50m/dY/dY_snapshot3.eps}
- \caption{Potential temperature perturbation at times $t=0\, s$ (top left), $t=300\, s$ (top right), $t=600\, s$ (bottom left), $t=900\, s$ (bottom right) for the density current test case. Contours in the range $[-16.5,\,-0.5]\,\textrm{K}$ with a $1\,\textrm{K}$ contour interval.}
+ \caption{Potential temperature perturbation at times $t=0\, s$ (top left), $t=300\, s$ (top right), $t=600\, s$ (bottom left), $t=900\, s$ (bottom right) for the density current test case at spatial resolution $\Delta x=\Delta z=50\,\textrm{m}$, advective CFL$=0.96$. Contours in the range $[-16.5,\,-0.5]\,\textrm{K}$ with a $1\,\textrm{K}$ contour interval.}
  \label{fig:straka}
 \end{figure}
+
+\begin{figure}
+\centering
+  \includegraphics[width=.75\columnwidth]{./Straka/dY/dY_snapshot1dcut.eps}
+ \caption{One-dimensional cut at height $z=1200\,\textrm{m}$ for the potential temperature perturbation at final time $t=900\, s$ in the density current test case run with advective CFL$=0.96$. Spatial resolutions $\Delta x=\Delta z=400\,\textrm{m (thin solid black line)}$, $200\,\textrm{m (dashed red line)}$, $100\,\textrm{m (dashed-dotted blue line)}$, $50\,\textrm{m(thin solid black line)}$, $25\,\textrm{m (thin solid black line)}$.}
+ \label{fig:straka1dcut}
+\end{figure}
+
 
 \begin{table}
 \small
@@ -799,12 +807,25 @@ Boundary conditions are solid walls on top and bottom boundaries and periodic el
 \shortstack{Grid size \\ (m)}& \shortstack{$\Delta\theta_\textrm{min}$ \\ $(K)$} & \shortstack{$\Delta\theta_\textrm{max}$ \\ $(K)$} & \shortstack{Front\\ location (m)} \tabularnewline
 \midrule 
 400 &  $-8.0226$ & $ 0.2750$ & 14090\tabularnewline
-200 &  $-8.8655$ & $0.2148$ & 14856\tabularnewline
-100 &  $-9.1831$ & $0.2173$ & 15182\tabularnewline
+200 &  $-8.8659$ & $0.2148$ & 14855\tabularnewline
+100 &  $-9.1831$ & $0.2173$ & 15180\tabularnewline
 50 &  $-9.4904$ & $0.1176$ & 15326\tabularnewline
 25 &  $-9.6550$ & $0.0141$ & 15383\tabularnewline
 \bottomrule 
 \end{tabular}
+\qquad
+\begin{tabular}{lccc}
+\toprule 
+\shortstack{Grid size \\ (m)}& \shortstack{$\Delta\theta_\textrm{min}$ \\ $(K)$} & \shortstack{$\Delta\theta_\textrm{max}$ \\ $(K)$} & \shortstack{Front\\ location (m)} \tabularnewline
+\midrule 
+400 &  $-8.1466$ & $ 0.2685$ & 14125\tabularnewline
+200 &  $-8.9358$ & $0.2294$ & 14884\tabularnewline
+100 &  $-9.2154$ & $0.1787$ & 15199\tabularnewline
+50 &  $-9.4904$ & $0.1176$ & 15326\tabularnewline
+25 &  $-9.6550$ & $0.0141$ & 15383\tabularnewline
+\bottomrule 
+\end{tabular}
+
 \par\end{centering}
 \caption{Minimum and maximum $\theta$ perturbation and front location
 (rightmost intersection of $-1\,K$ contour with $z=0$) for the density current test at several resolution values.}%
@@ -830,7 +851,7 @@ The new planetary-scale case is run with no rotation to suppress the geostrophic
 \centering
  \includegraphics[width=\columnwidth]{./InternalWave_NH/dY/dY_snapshot0.eps}
  \includegraphics[width=\columnwidth]{./InternalWave_NH/dY/dY_snapshot1.eps}
- \caption{Initial (top) and final (bottom) potential temperature perturbation for the nonhydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994}. Contours in the range $[0, 0.01]\,\textrm{K}$ with a $0.001\,\textrm{K}$ interval (top), $[-0.025, 0.025]\,\textrm{K}$ with a $0.005\,\textrm{K}$ interval (bottom).}
+ \caption{Initial (top) and final (at $T=3000\,\textrm{s}$, bottom) potential temperature perturbation for the nonhydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994}, $\Delta x=\Delta z=1\,\textrm{km}$, CFL$=0.9$. Contours in the range $[0, 0.01]\,\textrm{K}$ with a $0.001\,\textrm{K}$ interval (top), $[-0.025, 0.025]\,\textrm{K}$ with a $0.005\,\textrm{K}$ interval (bottom).}
  \label{fig:SK94_NH}
 \end{figure}
 
@@ -839,7 +860,7 @@ The new planetary-scale case is run with no rotation to suppress the geostrophic
  \includegraphics[width=\columnwidth]{./InternalWave_H/dY/dY_snapshot0.eps}
  \includegraphics[width=\columnwidth]{./InternalWave_H/dY/dY_snapshot1.eps}
  \includegraphics[width=\columnwidth]{./InternalWave_H_psinc/dY/dY_snapshot1.eps}
- \caption{Potential temperature perturbation for the hydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994}. Top: initial data, middle: compressible run, bottom: pseudo-incompressible run. Contours as in Figure \ref{fig:SK94_NH}.}
+ \caption{Potential temperature perturbation for the hydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994},  $\Delta x=20\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$=0.9$. Initial data (top) and computed value at final time $T=60000\,\textrm{s}$ in compressible mode (middle) and pseudo-incompressible mode (bottom). Contours as in Figure \ref{fig:SK94_NH}.}
  \label{fig:SK94_H}
  \end{figure}
 
@@ -847,7 +868,7 @@ The new planetary-scale case is run with no rotation to suppress the geostrophic
 \centering
  \includegraphics[width=\columnwidth]{./figures/InternalWave_P/dY/dY_snapshot0.eps}
  \includegraphics[width=\columnwidth]{./figures/InternalWave_P/dY/dY_snapshot1.eps}
- \caption{Initial (top) and final (bottom) potential temperature perturbation for the planetary-scale inertia-gravity wave test. Contour values as in Figures \ref{fig:SK94_NH}-\ref{fig:SK94_H} (top), in the range $[-0.05, 0.05]\,\textrm{K}$ with a $0.01\,\textrm{K}$ interval (bottom).}
+ \caption{Initial (top) and final (at $T=480000\,\textrm{s}$bottom) potential temperature perturbation for the planetary-scale inertia-gravity wave test, $\Delta x=160\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$=0.9$. Contour values as in Figures \ref{fig:SK94_NH}-\ref{fig:SK94_H} (top), in the range $[-0.05, 0.05]\,\textrm{K}$ with a $0.01\,\textrm{K}$ interval (bottom).}
   \label{fig:SK94_P}
 \end{figure}
 
@@ -858,7 +879,7 @@ As further corroboration of the properties of the model, the hydrostatic configu
  \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf/dY/dY_snapshot2.eps}
  \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf/v/v_snapshot2.eps}
  \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf/u/u_snapshot2.eps}
- \caption{Temperature perturbation (top), vertical velocity (middle) and horizontal velocity (bottom) at final time $T=28800\,\textrm{s}$ for the inertia-gravity wave test with rotation, parameters as in \cite{BaldaufBrdar2013}. Initial perturbation as in Figure \ref{fig:SK94_H}. \benacchio{Insert contours info after long run.}}
+ \caption{Temperature perturbation (top), vertical velocity (middle) and horizontal velocity (bottom) at final time $T=28800\,\textrm{s}$ for the inertia-gravity wave test with rotation of \cite{BaldaufBrdar2013}, CFL$=0.9$. Initial perturbation as in Figure \ref{fig:SK94_H}. \benacchio{Insert resolution and contours info after long run.}}
   \label{fig:BB13}
 \end{figure}
 

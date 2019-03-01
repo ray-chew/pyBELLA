@@ -48,8 +48,8 @@ void User_Data_init(User_Data* ud) {
     /* references for non-dimensionalization */
     double h_ref    = 10000;                 /* [m]               */
     double t_ref    = 100;                   /* [s]               */
-    double T_ref    = 300.00;                /* [K]               */
-    double p_ref    = 100000.0;//10e+5;                 /* [Pa]              */
+    double T_ref    = 300.0;                /* [K]               */
+    double p_ref    = 101625.0;                 /* [Pa]              */
     
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
