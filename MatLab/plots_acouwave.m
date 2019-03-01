@@ -20,8 +20,7 @@ function plots_acouwave(varstr, ampl)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-addpath('/home/tommaso/work/code/matlab_packages/export_fig')
-addpath('/home/tommaso/work/code/matlab_packages/Colormaps')
+addpath('./export_fig')
 
 set(0,'DefaultFigureColor',[1 1 1])
 
@@ -48,7 +47,7 @@ dumsx = 2;
 dumsy = 2;
 transp    = 0;
 
-folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/AcousticWave_', ampl);
+folderstring = strcat('../hdf_output/AcousticWave_', ampl);
 
 folderstr = varstr;
 ndummy = 2;

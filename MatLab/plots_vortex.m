@@ -19,8 +19,7 @@ function plots_vortex(varstr, resol)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-addpath('/home/tommaso/work/code/matlab_packages/export_fig')
-addpath('/home/tommaso/work/code/matlab_packages/Colormaps')
+addpath('./export_fig')
 
 set(0,'DefaultFigureColor',[1 1 1])
 
@@ -52,7 +51,7 @@ end
 dumsx = 1;
 dumsy = 2;
 
-folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/TravellingVortex_3D_', num2str(resol));
+folderstring = strcat('../hdf_output/TravellingVortex_3D_', num2str(resol));
 
 % cell-centered fields
 folderstr = varstr;

@@ -53,7 +53,7 @@ aspect = [L/H/3 1 1];
 dumsx = 2;
 dumsy = 2;
 
-folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/InternalWave_', ext);
+folderstring = strcat('../hdf_output/InternalWave_', ext);
 
 folderstr = varstr;
 ndummy = 2;

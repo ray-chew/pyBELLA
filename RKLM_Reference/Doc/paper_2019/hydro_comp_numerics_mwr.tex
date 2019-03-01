@@ -779,7 +779,7 @@ The second test case, proposed by \cite{StrakaEtAl1993}, concerns the simulation
 %
 where $r=\left\{[(x-x_c)/x_r]^2+[(z-z_c)/z_r]^2\right\}^{0.5}$, $x_c=0~\textrm{km}$, $x_r=4~\textrm{km}$, $z_c=3~\textrm{km}$ and $z_r=2~\textrm{km}$. 
 %
-Boundary conditions are solid walls on top and bottom boundaries and periodic elsewhere \benacchio{Do we need a note on the boundary conditions?}. In order to obtain a converged solution, an artificial diffusion term $\rho\mu\nabla^2\mathbf{u}$ is added to the momentum equation, with $\mu=75\,\textrm{m$^2$s$^{-1}$}$ \benacchio{Do we need to expand on how this is coded?}. The buoyancy-implicit model is run at a resolution $\Delta x=\Delta z=50\,\textrm{m}$ with time step chosen according to an advective CFL value of $0.96$. Driven by its negative buoyancy, the initial perturbation moves downwards, impacts the bottom boundary and travels sideways developing vortices (Figure \ref{fig:straka}). The final perturbation amplitude and front position (\ref{tab:straka_minmax}) agree with published results, see e.g. the similar table in \cite{MelvinEtAl2018} 
+Boundary conditions are solid walls on top and bottom boundaries and periodic elsewhere \benacchio{Do we need a note on the boundary conditions?}. In order to obtain a converged solution, an artificial diffusion term $\rho\mu\nabla^2\mathbf{u}$ is added to the momentum equation, with $\mu=75\,\textrm{m$^2$s$^{-1}$}$ \benacchio{Do we need to expand on how this is coded?}. The buoyancy-implicit model is run at a resolution $\Delta x=\Delta z=50\,\textrm{m}$ with time step chosen according to an advective CFL value of $0.96$. Driven by its negative buoyancy, the initial perturbation moves downwards, impacts the bottom boundary and travels sideways developing vortices (Figure \ref{fig:straka}). The final perturbation amplitude and front position (\ref{tab:straka_minmax}) agree with published results, see e.g. the similar table in \cite{MelvinEtAl2018}. 
 
 \begin{figure}
 \centering
@@ -802,7 +802,7 @@ Boundary conditions are solid walls on top and bottom boundaries and periodic el
 200 &  $-8.8655$ & $0.2148$ & 14856\tabularnewline
 100 &  $-9.1831$ & $0.2173$ & 15182\tabularnewline
 50 &  $-9.4904$ & $0.1176$ & 15326\tabularnewline
-25 &  &  & \tabularnewline
+25 &  $-9.6550$ & $0.0141$ & 15383\tabularnewline
 \bottomrule 
 \end{tabular}
 \par\end{centering}

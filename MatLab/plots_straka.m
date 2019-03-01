@@ -20,8 +20,7 @@ function plots_straka(varstr, resol)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-addpath('/home/tommaso/work/code/matlab_packages/export_fig')
-addpath('/home/tommaso/work/code/matlab_packages/Colormaps')
+addpath('./export_fig')
 
 set(0,'DefaultFigureColor',[1 1 1])
 
@@ -45,7 +44,7 @@ contour_values = linspace(-16.5*dtheta,-0.5*dtheta,17);
 dumsx = 2;
 dumsy = 2;
 
-folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/Straka_3D_', num2str(resol), 'm');
+folderstring = strcat('../hdf_output/Straka_3D_', num2str(resol), 'm');
 
 % cell-centered fields
 folderstr = varstr;
@@ -60,7 +59,7 @@ figure1 = figure('Position',[1 2*scrsz(4)/3 scrsz(4)/2 1*scrsz(4)/3]);
 for k = kmin:dk:kmax
     kstr = num2str(k);
     filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_00',kstr,'.hdf');
-    
+    filestr
     v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
     
     velo=v;

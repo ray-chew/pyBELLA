@@ -16,8 +16,7 @@ function plots_baldauf(varstr)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-addpath('/home/tommaso/work/code/matlab_packages/export_fig')
-addpath('/home/tommaso/work/code/matlab_packages/Colormaps')
+addpath('./export_fig')
 
 set(0,'DefaultFigureColor',[1 1 1])
 
@@ -28,13 +27,13 @@ dk   = 1;
 scalefactor = 20.0;
 
 ncx = 301;
-ncy = 20;
+ncy = 10;
 L   = 300.0 * scalefactor;  %
 x0  = 0.0;
 H   = 10.0;  %
 aspect = [L/H/3 1 1];
 
-if strcmp(varstr, 'dY')
+if strcmp(varstr, 'dT')
     contour_values_max = linspace(0.0012, 0.006, 5);
     contour_values_min = linspace(-0.006, -0.0012, 5);
 elseif strcmp(varstr, 'v')
@@ -44,7 +43,7 @@ elseif strcmp(varstr, 'u')
     contour_values_max = linspace(0.002, 0.012, 6);
     contour_values_min = linspace(-0.012, -0.002, 6);
 else
-    disp('Error, please enter dY, u, or v as the variable to plot.')
+    disp('Error, please enter dT, u, or v as the variable to plot.')
     return;
 end
 
@@ -52,7 +51,7 @@ end
 dumsx = 2;
 dumsy = 2;
 
-folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/InternalWave_Baldauf');
+folderstring = strcat('../hdf_output/InternalWave_Baldauf');
 
 folderstr = varstr;
 ndummy = 2;
@@ -82,7 +81,7 @@ for k = kmin:dk:kmax
     Yt = transpose(velo);
     th = Yt(3:1:nz+2, 3:1:nx+2);
     
-    if strcmp(varstr, 'dY')
+    if strcmp(varstr, 'dT')
         dim_scale = 300.0;
     elseif strcmp(varstr, 'v')
         dim_scale = 10.0;

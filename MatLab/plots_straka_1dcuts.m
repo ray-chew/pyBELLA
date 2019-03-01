@@ -18,8 +18,7 @@ function plots_straka_1dcuts(varstr)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-addpath('/home/tommaso/work/code/matlab_packages/export_fig')
-addpath('/home/tommaso/work/code/matlab_packages/Colormaps')
+addpath('./export_fig')
 
 set(0,'DefaultFigureColor',[1 1 1])
 
@@ -41,10 +40,11 @@ contour_values = linspace(-16.5*dtheta,-0.5*dtheta,16);
 dumsx = 2;
 dumsy = 2;
 
-folderstring1 = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/Straka_3D_400m');
-folderstring2 = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/Straka_3D_200m');
-folderstring3 = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/Straka_3D_100m');
-folderstring4 = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/Straka_3D_50m');
+folderstring1 = strcat('../hdf_output/Straka_3D_400m');
+folderstring2 = strcat('../hdf_output/Straka_3D_200m');
+folderstring3 = strcat('../hdf_output/Straka_3D_100m');
+folderstring4 = strcat('../hdf_output/Straka_3D_50m');
+folderstring5 = strcat('../hdf_output/Straka_3D_25m');
 
 % cell-centered fields
 folderstr = varstr;
@@ -61,6 +61,7 @@ filestr1 = strcat(folderstring1,'/',folderstr,'/',varstr,'_00',kstr,'.hdf');
 filestr2 = strcat(folderstring2,'/',folderstr,'/',varstr,'_00',kstr,'.hdf');
 filestr3 = strcat(folderstring3,'/',folderstr,'/',varstr,'_00',kstr,'.hdf');
 filestr4 = strcat(folderstring4,'/',folderstr,'/',varstr,'_00',kstr,'.hdf');
+filestr5 = strcat(folderstring5,'/',folderstr,'/',varstr,'_00',kstr,'.hdf');
 
 ncx = 129;
 ncy = 16;
@@ -78,6 +79,10 @@ ncx = 1025;
 ncy = 128;
 arraysize = [ncx ncy];
 v4 = hdfread(filestr4, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
+ncx = 2049;
+ncy = 256;
+arraysize = [ncx ncy];
+v5 = hdfread(filestr5, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
 
 [nx1, nz1] = size(v1);
 nx1 = nx1 - 4;
@@ -128,6 +133,19 @@ z4 = linspace(0.5*dz4,-0.5*dz4+nz4*dz4,nz4);
 Yt4 = transpose(v4);
 th4 = Yt4(3:1:nz4+2, 3:1:nx4+2);
 
+[nx5, nz5] = size(v5);
+nx5 = nx5 - 4;
+nz5 = nz5 - 4;
+
+dx5 = L/nx5;
+dz5 = H/nz5;
+
+x5 = linspace(x0 + 0.5*dx5-(nx5/2)*dx5,x0 - 0.5*dx5+(nx5/2)*dx5,nx5);
+z5 = linspace(0.5*dz5,-0.5*dz5+nz5*dz5,nz5);
+Yt5 = transpose(v5);
+th5 = Yt5(3:1:nz5+2, 3:1:nx5+2);
+
+
 horx_slice = 3/16; %z=1200/6400 m
 hor_xlim=40.6/51.2; % xlim[0 15 km]
 
@@ -151,6 +169,11 @@ plot(x4(floor(end/2+1):(floor(hor_xlim*end)+1)), ...
     0.5*(th4(floor(horx_slice*end), floor(end/2+1):(floor(hor_xlim*end)+1))...
     +th4(floor(horx_slice*end)+1, floor(end/2+1):(floor(hor_xlim*end)+1)))*300, ...
     'm-', 'LineWidth',1.5,  'DisplayName', '50 m');
+plot(x5(floor(end/2+1):(floor(hor_xlim*end)+1)), ...
+    0.5*(th5(floor(horx_slice*end), floor(end/2+1):(floor(hor_xlim*end)+1))...
+    +th5(floor(horx_slice*end)+1, floor(end/2+1):(floor(hor_xlim*end)+1)))*300, ...
+    'g-', 'LineWidth',2,  'DisplayName', '25 m');
+
 
 set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
 axis tight;
