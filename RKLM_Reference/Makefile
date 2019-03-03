@@ -58,6 +58,6 @@ LIBS	      = $(HDFLIBDIR)/libmfhdf.dylib \
 
 MAKEFILE      = Makefile
 
-OBJS	      = userdata_TravellingVortex_3D_48.o :
+OBJS	      = userdata_TravellingVortex_3D_1024.o :
 
 

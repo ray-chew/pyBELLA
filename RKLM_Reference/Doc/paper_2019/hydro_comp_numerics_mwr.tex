@@ -810,7 +810,7 @@ Boundary conditions are solid walls on top and bottom boundaries and periodic el
 200 &  $-8.9358$ & $0.2294$ & 14884\tabularnewline
 100 &  $-9.2154$ & $0.1787$ & 15199\tabularnewline
 50 &  $-9.5061$ & $0.0903$ & 15326\tabularnewline
-25 &  $-9.6550$ & $0.0141$ & 15383\tabularnewline
+25 &  $-9.6555$ & $0.0138$ & 15381\tabularnewline
 \bottomrule 
 \end{tabular}
 
@@ -831,9 +831,12 @@ The next set of tests consists of gravity waves in a stably stratified channel w
 %
 with $H=10~\textrm{km}$, $x_c=100~\textrm{km}$, $a=x_N/60$, and there is a background horizontal flow $u=20~\textrm{m s}^{-1}$. We consider three configurations for the horizontal extension $x_N=300\,\textrm{km},\,6000\,\textrm{km},\,48000\,\textrm{km}$, with respective final times $T=3000\,\textrm{s},\,60000\,\textrm{s},\,480000\,\textrm{s}$. The first two configurations correspond to the nonhydrostatic case and the hydrostatic case of \cite{SkamarockKlemp1994}, the third planetary-scale configuration is introduced in this paper. In all configurations, the buoyancy-implicit model is run with $1200\times40$ cells and advective CFL value of 0.9. 
 
-In the first configuration, driven by buoyancy the initial perturbations spreads out onto gravity waves driven by the underlying buoyancy stratification (Figure \ref{fig:SK94_NH}). In the second configuration, which is run with rotation (Coriolis parameter value $f=10^{-4}\,\textrm{s}^{-1}$) , a geostrophic mode is also present in the centre of the domain (Figure \ref{fig:SK94_H}). In both cases, the values obtained by running the compressible model closely resemble published results in the literature including, for the nonhydrostatic case, the buoyancy-explicit compressible result in \cite{BenacchioEtAl2014}. For this configuration, we also report in Figure \ref{fig:SK94_H} the pseudo-incompressible result obtained by switching off compressibility zeroing the diagonal term in the Helmholtz equation as in \cite{BenacchioEtAl2014, KleinBenacchio2016}.
+In the first configuration, driven by buoyancy the initial perturbations spreads out onto gravity waves driven by the underlying buoyancy stratification (Figure \ref{fig:SK94_NH}). In the second configuration, which is run with rotation (Coriolis parameter value $f=10^{-4}\,\textrm{s}^{-1}$) , a geostrophic mode is also present in the centre of the domain (Figure \ref{fig:SK94_H}). In both cases, the values obtained by running the compressible model (COMP) closely resemble published results in the literature including, for the nonhydrostatic case, the buoyancy-explicit compressible result in \cite{BenacchioEtAl2014}. The new planetary-scale case is run with no rotation to suppress the geostrophic mode and highlight the wave dynamics. At final time $T=480000\,\textrm{s}$ ($\approx5.5$ days), the solution quality with the compressible model is good in terms of symmetry, absence of oscillations, and final position of the outermost crests (Figure \ref{fig:SK94_P}).  
 
-The new planetary-scale case is run with no rotation to suppress the geostrophic mode and highlight the wave dynamics. At final time $T=480000\,\textrm{s}$ ($\approx5.5$ days), the solution quality with the compressible model is good in terms of symmetry, absence of oscillations, and final position of the outermost crests (Figure \ref{fig:SK94_P}).  
+For the two largest configurations, we also report in the lowest panels of Figures \ref{fig:SK94_H}-\ref{fig:SK94_P} the pseudo-incompressible (PI) result obtained by switching off compressibility zeroing the diagonal term in the Helmholtz equation, and the hydrostatic (HY) result obtained by zeroing the dynamic tendency of the velocity in the vertical momentum equation, see \cite{BenacchioEtAl2014, KleinBenacchio2016}, together with the differences with the compressible result, COMP$-$PI and COMP$-$HY. The discrepancies with the compressible result are larger with the pseudo-incompressible model than with the hydrostatic model. Moreover, COMP$-$PI grows with increasing length scale, while the opposite is true for COMP$-$HY.  
+
+As final corroboration of the properties of the model, the hydrostatic configuration is rerun with a different value of the Coriolis parameter $f=1.03126*10^{-4}\,\textrm{s}^{-1}$, initial temperature $T(z=0)=250\,\textrm{K}$, isothermal background distribution, and no background flow as in \cite{BaldaufBrdar2013}. An advective CFL value of 0.9 is used. \benacchio{Information on the resolution to be added once we decide at which resolution to run, currently $20\textrm{km}\times500\textrm{m}$.} Results with the buoyancy-implicit model display good symmetry and compare well with the reference (Figure \ref{fig:BB13}). The multiscale nature of the case is evident in particular in the plot of the vertical velocity.
+
 
 \begin{figure}
 \centering
@@ -855,15 +858,27 @@ The new planetary-scale case is run with no rotation to suppress the geostrophic
  \label{fig:SK94_H} 
  \end{figure}
 
-\begin{figure}
+ \begin{figure}
 \centering
- \includegraphics[width=\columnwidth]{./figures/InternalWave_P/dY/dY_snapshot0.eps}
- \includegraphics[width=\columnwidth]{./figures/InternalWave_P/dY/dY_snapshot1.eps}
- \caption{Initial (top) and final (at $T=480000\,\textrm{s}$bottom) potential temperature perturbation for the planetary-scale inertia-gravity wave test, $\Delta x=160\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$=0.9$. Contour values as in Figures \ref{fig:SK94_NH}-\ref{fig:SK94_H} (top), in the range $[-0.05, 0.05]\,\textrm{K}$ with a $0.01\,\textrm{K}$ interval (bottom).}
-  \label{fig:SK94_P}
-\end{figure}
+ \includegraphics[width=.48\columnwidth]{./InternalWave_P/dY/dY_snapshot0.eps}
+ \includegraphics[width=.48\columnwidth]{./InternalWave_P/dY/dY_snapshot1.eps}\\
+ \includegraphics[width=.48\columnwidth]{./InternalWave_P_psinc/dY/dY_snapshot1.eps}
+ \includegraphics[width=.48\columnwidth]{./InternalWave_P_hyd/dY/dY_snapshot1.eps}\\
+  \includegraphics[width=.48\columnwidth]{./InternalWave_P/dY/CMP_vs_PS.eps}
+ \includegraphics[width=.48\columnwidth]{./InternalWave_P/dY/CMP_vs_HY.eps}\\
+ \caption{Potential temperature perturbation for the planetary-scale inertia-gravity wave test,  $\Delta x=160\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$=0.9$. Initial data (top left, contours as in Figures \ref{fig:SK94_NH}-\ref{fig:SK94_H}) and computed value at final time $T=480000\,\textrm{s}$ in compressible mode (top right), pseudo-incompressible mode (middle left), hydrostatic mode (middle right). Contours in the range $[-0.05, 0.05]\,\textrm{K}$ with a $0.01\,\textrm{K}$ interval. The bottom plots show the difference between the compressible run and the pseudo-incompressible run (left) and between the compressible run and the hydrostatic run (right). Contours in the range $[-2, 2]*10^{-4}\,\textrm{K}$ with a $4*10^{-5}\,\textrm{K}$ interval (left), $[-1.5, 1.5]*10^{-5}\,\textrm{K}$ (right)  with a $3*10^{-6}\,\textrm{K}$ interval.}
+ \label{fig:SK94_P} 
+ \end{figure}
 
-As further corroboration of the properties of the model, the hydrostatic configuration is rerun with a different value of the Coriolis parameter $f=1.03126*10^{-4}\,\textrm{s}^{-1}$, initial temperature $T(z=0)=250\,\textrm{K}$, isothermal background distribution, and no background flow as in \cite{BaldaufBrdar2013}. An advective CFL value of 0.9 is used. \benacchio{Information on the resolution to be added once we decide at which resolution to run, currently $20\textrm{km}\times500\textrm{m}$.} Results with the buoyancy-implicit model display good symmetry and compare well with the reference (Figure \ref{fig:BB13}). The multiscale nature of the case is evident in particular in the plot of the vertical velocity.
+ 
+% \begin{figure}
+% \centering
+%  \includegraphics[width=\columnwidth]{./figures/InternalWave_P/dY/dY_snapshot0.eps}
+%  \includegraphics[width=\columnwidth]{./figures/InternalWave_P/dY/dY_snapshot1.eps}
+%  \caption{Initial (top) and final (at $T=480000\,\textrm{s}$bottom) potential temperature perturbation for the planetary-scale inertia-gravity wave test, $\Delta x=160\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$=0.9$. Contour values as in Figures \ref{fig:SK94_NH}-\ref{fig:SK94_H} (top), in the range $[-0.05, 0.05]\,\textrm{K}$ with a $0.01\,\textrm{K}$ interval (bottom).}
+%   \label{fig:SK94_P}
+% \end{figure}
+
 
 \begin{figure}
 \centering

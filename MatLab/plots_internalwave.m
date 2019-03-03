@@ -13,7 +13,7 @@ function [x,z,th]=plots_internalwave(varstr, ext)
 %           'v', 'w', 'dY', 'rho', 'p', 'geopot', 'p2_c', 'rhoY'
 %
 % ext      Extension of the domain
-%           'NH', 'H', 'H_hyd', 'H_psinc', 'P'
+%           'NH', 'H', 'H_hyd', 'H_psinc', 'P', 'P_hyd', 'P_psinc'
 %
 % Developed by R. Klein, FU Berlin, -2019
 % Modified by T. Benacchio, Politecnico di Milano, 2019
@@ -36,7 +36,7 @@ if strcmp(ext, 'NH')
     scalefactor = 1.0;  % Skamarock-Klemp-1994 Fig.1
 elseif strcmp(ext, 'H') || strcmp(ext, 'H_psinc') || strcmp(ext, 'H_hyd')
     scalefactor = 20.0;  % Skamarock-Klemp-1994 Fig.3
-elseif strcmp(ext, 'P')
+elseif strcmp(ext, 'P') || strcmp(ext, 'P_psinc') || strcmp(ext, 'P_hyd')
     scalefactor = 160.0;   % new, very long wave test
 end
 
@@ -137,6 +137,18 @@ for k = kmin:dk:kmax
             xticklabels({'0', '1000', '2000', '3000', '4000', '5000', '6000'})
             if k~=0; colorbar('FontSize',14,'FontName','Helvetica'); end
         case 'P'
+            xlabel('x [$10^3$ km]','FontSize',18,'Interpreter','latex');
+            xlim([-24000 24000])
+            xticks([-24000 -16000 -8000 0 8000 16000 24000])
+            xticklabels({'0', '8', '16', '24', '32', '40', '48'})
+            if k~=0; colorbar('FontSize',14,'FontName','Helvetica'); end
+        case 'P_psinc'
+            xlabel('x [$10^3$ km]','FontSize',18,'Interpreter','latex');
+            xlim([-24000 24000])
+            xticks([-24000 -16000 -8000 0 8000 16000 24000])
+            xticklabels({'0', '8', '16', '24', '32', '40', '48'})
+            if k~=0; colorbar('FontSize',14,'FontName','Helvetica'); end
+        case 'P_hyd'
             xlabel('x [$10^3$ km]','FontSize',18,'Interpreter','latex');
             xlim([-24000 24000])
             xticks([-24000 -16000 -8000 0 8000 16000 24000])

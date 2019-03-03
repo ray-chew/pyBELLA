@@ -18,7 +18,7 @@ function plots_vortex_convergence(varstr)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-addpath('/export_fig')
+addpath('./export_fig')
 
 set(0,'DefaultFigureColor',[1 1 1])
 
@@ -58,7 +58,7 @@ elseif strcmp(varstr, 'p2_n')
     arraysize = [nnx nny];
 end
 
-folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/TravellingVortex_3D_48');
+folderstring = strcat('../hdf_output/TravellingVortex_3D_48');
 filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_001.hdf');
 
 v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
@@ -94,7 +94,7 @@ elseif strcmp(varstr, 'p2_n')
 end
 
 
-folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/TravellingVortex_3D_96');
+folderstring = strcat('../hdf_output/TravellingVortex_3D_96');
 filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_001.hdf');
 
 v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
@@ -129,7 +129,7 @@ if strcmp(varstr, 'rho')
 elseif strcmp(varstr, 'p2_n')
     arraysize = [nnx nny];
 end
-folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/TravellingVortex_3D_192');
+folderstring = strcat('../hdf_output/TravellingVortex_3D_192');
 filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_001.hdf');
 
 v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
@@ -166,7 +166,7 @@ elseif strcmp(varstr, 'p2_n')
     arraysize = [nnx nny];
 end
 
-folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/TravellingVortex_3D_384');
+folderstring = strcat('../hdf_output/TravellingVortex_3D_384');
 filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_001.hdf');
 
 v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
@@ -182,12 +182,15 @@ th4(:, 1)      = Yt(3:1:nz+2, 3);
 th4(:, 2:nx+1) = Yt(3:1:nz+2, 3:1:nx+2);
 th4(:, nx+2)  = Yt(3:1:nz+2, nx+2);
 
+
 % Chop off first row and column for simplicity for nodal variables
 if strcmp(varstr, 'p2_n')
   th4=th4(2:nz, 2:nx+2);    
 end
 
-% 384x384
+size(th4)
+
+% 768x768
 ncx = 2*ncx;
 ncy = 2*ncy;
 nnx = ncy+1;
@@ -199,7 +202,7 @@ elseif strcmp(varstr, 'p2_n')
     arraysize = [nnx nny];
 end
 
-folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/hdf_output/TravellingVortex_3D_384');
+folderstring = strcat('../hdf_output/TravellingVortex_3D_768');
 filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_001.hdf');
 
 v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
@@ -220,12 +223,14 @@ if strcmp(varstr, 'p2_n')
   th5=th5(2:nz, 2:nx+2);    
 end
 
+
+size(th5)
 % ========================================================
 % Creating coarse-grid versions of fine-grid solution
 % ========================================================
 
 
-for j = 1:2:size(th4, 2)-1
+for j = 1:2:size(th5, 2)-1
     for i = 1:2:size(th5, 1)-1
         th5_av4(floor(i/2)+1, floor(j/2)+1) = .25*(th5(i, j)+ th5(i, j+1)+ th5(i+1, j)+th5(i+1, j+1));
     end
