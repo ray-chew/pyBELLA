@@ -101,7 +101,7 @@ for k = kmin:dk:kmax
 %    contour(x,z,min(0.0,th),contour_values,'LineColor','k');
     hold
     
-    set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
+    set(gca,'DataAspectRatio', aspect, 'FontSize',14,'FontName','Helvetica');
     axis tight;
     
     set(0,'defaulttextinterpreter','latex')

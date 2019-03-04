@@ -14,10 +14,10 @@
 
 %% Start with one of the following:
 % DOUBLE-SPACED VERSION FOR SUBMISSION TO THE AMS
-\documentclass{ametsoc}
+%\documentclass{ametsoc}
 
 % TWO-COLUMN JOURNAL PAGE LAYOUT---FOR AUTHOR USE ONLY
-%\documentclass[twocol]{ametsoc}
+\documentclass[twocol]{ametsoc}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% To be entered only if twocol option is used
@@ -783,10 +783,10 @@ Boundary conditions are solid walls on top and bottom boundaries and periodic el
 
 \begin{figure}
 \centering
- \includegraphics[width=.48\columnwidth]{./Straka_50m/dY/dY_snapshot0.eps}
- \includegraphics[width=.48\columnwidth]{./Straka_50m/dY/dY_snapshot1.eps}\\
- \includegraphics[width=.48\columnwidth]{./Straka_50m/dY/dY_snapshot2.eps}
- \includegraphics[width=.48\columnwidth]{./Straka_50m/dY/dY_snapshot3.eps}
+ \includegraphics[width=\columnwidth]{./Straka_50m/dY/dY_snapshot0.eps}
+ \includegraphics[width=\columnwidth]{./Straka_50m/dY/dY_snapshot1.eps}
+ \includegraphics[width=\columnwidth]{./Straka_50m/dY/dY_snapshot2.eps}
+ \includegraphics[width=\columnwidth]{./Straka_50m/dY/dY_snapshot3.eps}
  \caption{Potential temperature perturbation at times $t=0\, s$ (top left), $t=300\, s$ (top right), $t=600\, s$ (bottom left), $t=900\, s$ (bottom right) for the density current test case at spatial resolution $\Delta x=\Delta z=50\,\textrm{m}$, advective CFL$=0.96$. Contours in the range $[-16.5,\,-0.5]\,\textrm{K}$ with a $1\,\textrm{K}$ contour interval.}
  \label{fig:straka}
 \end{figure}
@@ -848,24 +848,24 @@ As final corroboration of the properties of the model, the hydrostatic configura
 
 \begin{figure}
 \centering
- \includegraphics[width=.48\columnwidth]{./InternalWave_H/dY/dY_snapshot0.eps}
- \includegraphics[width=.48\columnwidth]{./InternalWave_H/dY/dY_snapshot1.eps}\\
- \includegraphics[width=.48\columnwidth]{./InternalWave_H_psinc/dY/dY_snapshot1.eps}
- \includegraphics[width=.48\columnwidth]{./InternalWave_H_hyd/dY/dY_snapshot1.eps}\\
-  \includegraphics[width=.48\columnwidth]{./InternalWave_H/dY/CMP_vs_PS.eps}
- \includegraphics[width=.48\columnwidth]{./InternalWave_H/dY/CMP_vs_HY.eps}\\
+ \includegraphics[width=\columnwidth]{./InternalWave_H/dY/dY_snapshot0.eps}
+ \includegraphics[width=\columnwidth]{./InternalWave_H/dY/dY_snapshot1.eps}
+ \includegraphics[width=\columnwidth]{./InternalWave_H_psinc/dY/dY_snapshot1.eps}
+ \includegraphics[width=\columnwidth]{./InternalWave_H_hyd/dY/dY_snapshot1.eps}
+  \includegraphics[width=\columnwidth]{./InternalWave_H/dY/CMP_vs_PS.eps}
+ \includegraphics[width=\columnwidth]{./InternalWave_H/dY/CMP_vs_HY.eps}
  \caption{Potential temperature perturbation for the hydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994},  $\Delta x=20\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$=0.9$. Initial data (top left) and computed value at final time $T=60000\,\textrm{s}$ in compressible mode (top right), pseudo-incompressible mode (middle left), hydrostatic mode (middle right). Contours as in Figure \ref{fig:SK94_NH}. The bottom plots show the difference between the compressible run and the pseudo-incompressible run (left) and between the compressible run and the hydrostatic run (right). Contours in the range $[-5, 15]*10^{-5}\,\textrm{K}$ (left), $[-5, 5]*10^{-5}\,\textrm{K}$ (right)  with a $10^{-5}\,\textrm{K}$ interval.}
  \label{fig:SK94_H} 
  \end{figure}
 
  \begin{figure}
 \centering
- \includegraphics[width=.48\columnwidth]{./InternalWave_P/dY/dY_snapshot0.eps}
- \includegraphics[width=.48\columnwidth]{./InternalWave_P/dY/dY_snapshot1.eps}\\
- \includegraphics[width=.48\columnwidth]{./InternalWave_P_psinc/dY/dY_snapshot1.eps}
- \includegraphics[width=.48\columnwidth]{./InternalWave_P_hyd/dY/dY_snapshot1.eps}\\
-  \includegraphics[width=.48\columnwidth]{./InternalWave_P/dY/CMP_vs_PS.eps}
- \includegraphics[width=.48\columnwidth]{./InternalWave_P/dY/CMP_vs_HY.eps}\\
+ \includegraphics[width=\columnwidth]{./InternalWave_P/dY/dY_snapshot0.eps}
+ \includegraphics[width=\columnwidth]{./InternalWave_P/dY/dY_snapshot1.eps}
+ \includegraphics[width=\columnwidth]{./InternalWave_P_psinc/dY/dY_snapshot1.eps}
+ \includegraphics[width=\columnwidth]{./InternalWave_P_hyd/dY/dY_snapshot1.eps}
+  \includegraphics[width=\columnwidth]{./InternalWave_P/dY/CMP_vs_PS.eps}
+ \includegraphics[width=\columnwidth]{./InternalWave_P/dY/CMP_vs_HY.eps}
  \caption{Potential temperature perturbation for the planetary-scale inertia-gravity wave test,  $\Delta x=160\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$=0.9$. Initial data (top left, contours as in Figures \ref{fig:SK94_NH}-\ref{fig:SK94_H}) and computed value at final time $T=480000\,\textrm{s}$ in compressible mode (top right), pseudo-incompressible mode (middle left), hydrostatic mode (middle right). Contours in the range $[-0.05, 0.05]\,\textrm{K}$ with a $0.01\,\textrm{K}$ interval. The bottom plots show the difference between the compressible run and the pseudo-incompressible run (left) and between the compressible run and the hydrostatic run (right). Contours in the range $[-2, 2]*10^{-4}\,\textrm{K}$ with a $4*10^{-5}\,\textrm{K}$ interval (left), $[-1.5, 1.5]*10^{-5}\,\textrm{K}$ (right)  with a $3*10^{-6}\,\textrm{K}$ interval.}
  \label{fig:SK94_P} 
  \end{figure}
@@ -882,7 +882,7 @@ As final corroboration of the properties of the model, the hydrostatic configura
 
 \begin{figure}
 \centering
- \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf/dY/dY_snapshot2.eps}
+ \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf/dT/dT_snapshot2.eps}
  \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf/v/v_snapshot2.eps}
  \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf/u/u_snapshot2.eps}
  \caption{Temperature perturbation (top), vertical velocity (middle) and horizontal velocity (bottom) at final time $T=28800\,\textrm{s}$ for the inertia-gravity wave test with rotation of \cite{BaldaufBrdar2013}, CFL$=0.9$. Initial perturbation as in Figure \ref{fig:SK94_H}. \benacchio{Insert resolution and contours info after long run.}}

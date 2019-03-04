@@ -27,7 +27,9 @@ linecolor      = 'default';  % 'k', 'default' ...
 kmin = 0;
 kmax = 1;
 
-x = [48 96 192 384];
+%x = [48 96 192 384];
+x = [64 128 256 512];
+
 
 % auxiliary adjustments of grid parameters
 dumsx = 1;
@@ -58,7 +60,7 @@ elseif strcmp(varstr, 'p2_n')
     arraysize = [nnx nny];
 end
 
-folderstring = strcat('../hdf_output/TravellingVortex_3D_48');
+folderstring = strcat('../hdf_output/TravellingVortex_3D_64');
 filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_001.hdf');
 
 v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
@@ -94,7 +96,7 @@ elseif strcmp(varstr, 'p2_n')
 end
 
 
-folderstring = strcat('../hdf_output/TravellingVortex_3D_96');
+folderstring = strcat('../hdf_output/TravellingVortex_3D_128');
 filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_001.hdf');
 
 v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
@@ -129,7 +131,7 @@ if strcmp(varstr, 'rho')
 elseif strcmp(varstr, 'p2_n')
     arraysize = [nnx nny];
 end
-folderstring = strcat('../hdf_output/TravellingVortex_3D_192');
+folderstring = strcat('../hdf_output/TravellingVortex_3D_256');
 filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_001.hdf');
 
 v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
@@ -166,7 +168,7 @@ elseif strcmp(varstr, 'p2_n')
     arraysize = [nnx nny];
 end
 
-folderstring = strcat('../hdf_output/TravellingVortex_3D_384');
+folderstring = strcat('../hdf_output/TravellingVortex_3D_512');
 filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_001.hdf');
 
 v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
@@ -202,7 +204,7 @@ elseif strcmp(varstr, 'p2_n')
     arraysize = [nnx nny];
 end
 
-folderstring = strcat('../hdf_output/TravellingVortex_3D_768');
+folderstring = strcat('../hdf_output/TravellingVortex_3D_1024');
 filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_001.hdf');
 
 v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});

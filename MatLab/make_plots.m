@@ -18,8 +18,8 @@ close all
 plots_vortex('rho', 192)
 plots_vortex('p2_n', 192)
 
-%plots_vortex_convergence('rho')
-%plots_vortex_convergence('p2_n')
+plots_vortex_convergence('rho')
+plots_vortex_convergence('p2_n')
 
 % Straka density current
 
