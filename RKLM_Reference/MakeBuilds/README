@@ -33,7 +33,7 @@ source clean_hdf_output_test.sh TEST
 where TEST is one of the test cases set in 2).
 
 =======
-4) To run a test of the form ../Input/userdata_TEST.c:
+4) To run a test of the form ../Input/userdata_TEST.c, within the RKLM_Reference/MakeBuilds type:
 
 chmod +x run_test.sh
 source run_test.sh TEST
@@ -60,10 +60,11 @@ numerical model for small-to-planetary scale atmospheric dynamics", run:
 chmod +x run_suite.sh
 source run_suite.sh
 
-This also plots the results by calling the related matlab script. 
+This also plots the results by calling the related matlab script make_plots.m. 
 WARNING: this currently assumes that (a) matlab is installed and callable
 from command line; (b) the tests in the matlab script are the same ones 
-that are run in run_suite.sh - it could be automated in the future.
+that are run in run_suite.sh - currently this can be achieved by uncommenting
+the relevant tests in make_plots.m.
 
 =======
 SUMMARY 
@@ -73,8 +74,8 @@ In order to download and run the code and plot results, please execute
 the following:
 
 git clone https://git.imp.fu-berlin.de/rupert/RKLM_Reference.git
+cd RKLM_Reference
 git checkout TB_RKLMCRC1114_A02
-git clone https://git.imp.fu-berlin.de/rupert/RKLM_Reference.git
 cd RKLM_Reference/MakeBuilds
 source create_lm_comp_psinc_dirs.sh 
 source create_dirs.sh 
