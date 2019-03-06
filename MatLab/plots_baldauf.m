@@ -99,7 +99,7 @@ for k = kmin:dk:kmax
     contour(x,z,dim_scale*th,[min(min(dim_scale*th)) contour_values_min contour_values_max max(max(dim_scale*th))],'LineColor','k','LineWidth',1.0);
     hold
     
-    set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
+    set(gca,'DataAspectRatio', aspect, 'FontSize',10,'FontName','Helvetica');
     axis tight;
     
     set(0,'defaulttextinterpreter','latex')
@@ -107,11 +107,11 @@ for k = kmin:dk:kmax
     xlim([-3000 3000])
     xticks([-3000 -2000 -1000 0 1000 2000 3000])
     xticklabels({'0', '1000', '2000', '3000', '4000', '5000', '6000'})
-    xlabel('x [km]','FontSize',18,'Interpreter','latex');
-    ylabel('z [km]','FontSize',18,'Interpreter','latex');
+    xlabel('x [km]','FontSize',14,'Interpreter','latex');
+    ylabel('z [km]','FontSize',14,'Interpreter','latex');
     yticks([0 2 4 6 8 10])
     colormap viridis
-    colorbar('FontSize',14,'FontName','Helvetica');
+    colorbar('FontSize',10,'FontName','Helvetica');
         
     fig=gcf;
     fig.Color = 'white';
