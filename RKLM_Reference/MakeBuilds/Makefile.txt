@@ -98,7 +98,11 @@ PROGRAM	   = rklm
 
 SHELL		  = /bin/sh
 
+<<<<<<< Updated upstream
 SRCS		  = ../Input/userdata_InternalWave_Baldauf_1200.c \
+=======
+SRCS		  = ../Input/userdata_InternalWave_Baldauf_1200.c \
+>>>>>>> Stashed changes
 		../Input/boundary.c \
 		../Management/data.c \
 		../Management/io.c \
@@ -156,8 +160,13 @@ $(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)
 		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install
 
 ###
+<<<<<<< Updated upstream
 userdata_InternalWave_Baldauf_1200.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/userdata_InternalWave_Baldauf_1200.c
+=======
+userdata_InternalWave_Baldauf_1200.o : 
+	$(CC) -c $(HDRFLAGS) ../Input/userdata_InternalWave_Baldauf_1200.c
+>>>>>>> Stashed changes
 
 boundary.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/boundary.c

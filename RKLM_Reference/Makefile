@@ -1,4 +1,5 @@
 CC = gcc
+CC = gcc
 
 HDFLIBDIR	  = /opt/local/lib
 HDFINC	      = /opt/local/include

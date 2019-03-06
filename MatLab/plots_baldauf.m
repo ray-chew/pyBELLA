@@ -26,8 +26,8 @@ dk   = 1;
 
 scalefactor = 20.0;
 
-ncx = 301;
-ncy = 20;
+ncx = 1201;
+ncy = 40;
 L   = 300.0 * scalefactor;  %
 x0  = 0.0;
 H   = 10.0;  %
@@ -51,7 +51,7 @@ end
 dumsx = 2;
 dumsy = 2;
 
-folderstring = strcat('../hdf_output/InternalWave_Baldauf');
+folderstring = strcat('../hdf_output/InternalWave_Baldauf_1200');
 
 folderstr = varstr;
 ndummy = 2;
