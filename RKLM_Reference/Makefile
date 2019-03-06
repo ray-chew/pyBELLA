@@ -59,6 +59,6 @@ LIBS	      = $(HDFLIBDIR)/libmfhdf.dylib \
 
 MAKEFILE      = Makefile
 
-OBJS	      = userdata_InternalWave_Baldauf_1200.o :
+OBJS	      = userdata_Straka_3D_100m.o :
 
 

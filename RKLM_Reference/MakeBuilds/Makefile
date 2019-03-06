@@ -66,7 +66,7 @@ LIBS		= $(HDFLIBDIR)/libmfhdf.a \
 
 MAKEFILE	= Makefile
 
-OBJS		= userdata_InternalWave_Baldauf_1200.o \
+OBJS		= userdata_Straka_3D_100m.o \
 		boundary.o \
 		data.o \
 		io.o \
@@ -97,7 +97,7 @@ PROGRAM	   = rklm
 
 SHELL		  = /bin/sh
 
-SRCS		  = ../Input/userdata_InternalWave_Baldauf_1200.c \
+SRCS		  = ../Input/userdata_Straka_3D_100m.c \
 		../Input/boundary.c \
 		../Management/data.c \
 		../Management/io.c \
@@ -155,8 +155,8 @@ $(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)
 		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install
 
 ###
-userdata_InternalWave_Baldauf_1200.o : 
-	$(CC) -c $(HDRFLAGS) ../Input/userdata_InternalWave_Baldauf_1200.c
+userdata_Straka_3D_100m.o : 
+	$(CC) -c $(HDRFLAGS) ../Input/userdata_Straka_3D_100m.c
 
 boundary.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/boundary.c

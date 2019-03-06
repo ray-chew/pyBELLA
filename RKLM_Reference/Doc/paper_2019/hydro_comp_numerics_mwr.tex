@@ -14,10 +14,10 @@
 
 %% Start with one of the following:
 % DOUBLE-SPACED VERSION FOR SUBMISSION TO THE AMS
-%\documentclass{ametsoc}
+\documentclass{ametsoc}
 
 % TWO-COLUMN JOURNAL PAGE LAYOUT---FOR AUTHOR USE ONLY
-\documentclass[twocol]{ametsoc}
+%\documentclass[twocol]{ametsoc}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% To be entered only if twocol option is used
@@ -210,12 +210,12 @@
 %%% The \thanks{} commands are OPTIONAL.
 
 \authors{Tommaso Benacchio\correspondingauthor{Tommaso  Benacchio, MOX - Modelling and Scientific Computing,
-Dipartimento di Matematica, Politecnico di Milano, via Bonardi 9, 20133 Milano, Italy}}
+Dipartimento di Matematica, Politecnico di Milano, Piazza Leonardo da Vinci 32, 20133 Milano, Italy}}
 
 \email{tommaso.benacchio@polimi.it}
 
 \affiliation{MOX - Modelling and Scientific Computing,
-Dipartimento di Matematica, Politecnico di Milano, via Bonardi 9, 20133 Milano, Italy}
+Dipartimento di Matematica, Politecnico di Milano, Piazza Leonardo da Vinci 32, 20133 Milano, Italy}
 
 \extraauthor{Rupert Klein}
 
@@ -324,7 +324,7 @@ Examples of operational dynamical cores using semi-implicit time-integrations st
 
 In order to simplify the fomulation of the semi-implicit method, the equation set is often cast in terms of perturbations around a hydrostatically balanced reference state, see, e.g., \cite{RestelliGiraldo2009,SmolarkiewiczEtAl2014,SmolarkiewiczEtAl2019}. However, as noted by \cite{WellerShahrokhi2014}, whose model does not use pertubations, large deviations from the background state may question the assumptions underpinning the resulting system. \cite{WoodEtAl2013} and \cite{MelvinEtAl2018} use the model state computed at the previous time step as evolving background profile.
 
-To address the efficiency issues caused by spectral transform in IFS at increasing global resolutions, a finite volume discretization is also used in FVM, the next generation ECMWF dynamical core \citep{KuehnleinEtAl2018}. The time integration algorithm in FVM is built upon the EULAG model framework and the MPDATA advection scheme. Through appropriate correction of a first-order upwind discretization, a system is constructed that encompasses transport and implicit dynamics in an elegant theoretical framework \citep[and references therein]{SmolarkiewiczEtAl2014, SmolarkiewiczEtAl2016}. The approach, that relies on extrapolation and subtraction of reference states, also contains soundproof analytical systems as subcases and has shown excellent performance in integrating atmospheric flows at all scales without instabilities.
+To address the efficiency issues caused by spectral transform in IFS at increasing global resolutions, a finite volume discretization is also used in FVM, the next generation ECMWF dynamical core \citep{KuehnleinEtAl2019}. The time integration algorithm in FVM is built upon the EULAG model framework and the MPDATA advection scheme. Through appropriate correction of a first-order upwind discretization, a system is constructed that encompasses transport and implicit dynamics in an elegant theoretical framework \citep[and references therein]{SmolarkiewiczEtAl2014, SmolarkiewiczEtAl2016}. The approach, that relies on extrapolation and subtraction of reference states, also contains soundproof analytical systems as subcases and has shown excellent performance in integrating atmospheric flows at all scales without instabilities.
 
 Drawing on the finite volume framework for soundproof model equations in \cite{KleinTCFD2009}, the authors of \cite{Benacchio2014, BenacchioEtAl2014} devised a numerical scheme for the compressible Euler equations using a time step unconstrained by the speed of acoustic waves. Good performance was demonstrated against established benchmarks of small to mesoscale atmospheric dynamics. In addition, the scheme was written as a multimodel formulation able to switch between soundproof and compressible dynamics by tuning a single parameter. The technology proved beneficial in damping sound waves spreading from unbalanced initial potential temperature data in runs with rising thermals. The framework was theoretically extended in  \cite{KleinBenacchio2016} to incorporate the hydrostatic primitive equations and the anelastic, quasi-hydrostatic system of \cite{ArakawaKonor2009} with the introduction of a second blending parameter.
 
@@ -733,7 +733,7 @@ steps.
 
 \klein{We do need to discuss more thoroughly the relative roles of the cell-centered $P$ and of the nodal (and cell-centered(?)) $\pi$. In the most successful version of the code, $P$ and nodal $\pi$ are updated completely separately, and no synchronization is taking place. This again is akin to Piotr's approach to making EULAG/FVM compressible.}
 
-We note that the implicit trapezoidal step \eq{eq:TimeIntegrator} and, to a slightly lesser extent, our treatment of the $P$ in \eq{eq:HalfTimePredictorAdvection} and \eq{eq:HalfTimePredictorDivControl}, closely resemble the EULAG/FVM forward-in-time discretization from \citep{PrusaEtAl2008,SmolarkiewiczEtAl2014, SmolarkiewiczEtAl2016, KuehnleinEtAl2018}.
+We note that the implicit trapezoidal step \eq{eq:TimeIntegrator} and, to a slightly lesser extent, our treatment of the $P$ in \eq{eq:HalfTimePredictorAdvection} and \eq{eq:HalfTimePredictorDivControl}, closely resemble the EULAG/FVM forward-in-time discretization from \citep{PrusaEtAl2008,SmolarkiewiczEtAl2014, SmolarkiewiczEtAl2016, KuehnleinEtAl2019}.
 
 % ===========================================================================
 % ===========================================================================
@@ -757,14 +757,81 @@ The first test is a diagonally moving density bump in a doubly-periodic $[0,1]\t
 
 \begin{figure}
 \centering
- \includegraphics[width=.45\columnwidth]{./TravellingVortex_192/rho/rho_snapshot0.eps}\includegraphics[width=.45\columnwidth]{./TravellingVortex_192/p2_n/p2_n_snapshot0.eps}\\
- \includegraphics[width=.45\columnwidth]{./TravellingVortex_192/rho/rho_snapshot1.eps}
- \includegraphics[width=.45\columnwidth]{./TravellingVortex_192/p2_n/p2_n_snapshot1.eps}
- \caption{Travelling vortex on a doubly periodic unit square domain, $192x192$ cells, advective CFL 0.45. Initial data (top) and values after $1\,\textrm{s}$ (bottom), for the density (left) and nodal pressure (right).  Contours every $0.025\,\textrm{kg\,m$^{-3}$}$
+ \includegraphics[width=.45\columnwidth]{./TravellingVortex_256/rho/rho_snapshot0.eps}\includegraphics[width=.45\columnwidth]{./TravellingVortex_256/p2_n/p2_n_snapshot0.eps}\\
+ \includegraphics[width=.45\columnwidth]{./TravellingVortex_256/rho/rho_snapshot1.eps}
+ \includegraphics[width=.45\columnwidth]{./TravellingVortex_256/p2_n/p2_n_snapshot1.eps}
+ \caption{Travelling vortex on a doubly periodic unit square domain, $256\times256$ cells, advective CFL 0.33. Initial data (top) and values after $1\,\textrm{s}$ (bottom), for the density (left) and nodal pressure (right).  Contours every $0.025\,\textrm{kg\,m$^{-3}$}$
  from $0.525\,\textrm{kg\,m$^{-3}$}$ to $0.975\,\textrm{kg\,m$^{-3}$}$ for density and every 0.025 Pa from
 -0.025 to -0.3 Pa for pressure.}
- \label{fig:trav_vortex_res}
+ \label{fig:trav_vortex_res256}
 \end{figure}
+
+\begin{figure}
+\centering
+ \includegraphics[width=.45\columnwidth]{./TravellingVortex_512/rho/rho_snapshot0.eps}\includegraphics[width=.45\columnwidth]{./TravellingVortex_512/p2_n/p2_n_snapshot0.eps}\\
+ \includegraphics[width=.45\columnwidth]{./TravellingVortex_512/rho/rho_snapshot1.eps}
+ \includegraphics[width=.45\columnwidth]{./TravellingVortex_512/p2_n/p2_n_snapshot1.eps}
+ \caption{Travelling vortex on a doubly periodic unit square domain, $512\times512$ cells, advective CFL 0.33. Initial data (top) and values after $1\,\textrm{s}$ (bottom), for the density (left) and nodal pressure (right).  Contours every $0.025\,\textrm{kg\,m$^{-3}$}$
+ from $0.525\,\textrm{kg\,m$^{-3}$}$ to $0.975\,\textrm{kg\,m$^{-3}$}$ for density and every 0.025 Pa from
+-0.025 to -0.3 Pa for pressure.}
+ \label{fig:trav_vortex_res512}
+\end{figure}
+
+
+\begin{figure}
+\centering
+ \includegraphics[width=.45\columnwidth]{./TravellingVortex_1024/rho/rho_snapshot0.eps}\includegraphics[width=.45\columnwidth]{./TravellingVortex_1024/p2_n/p2_n_snapshot0.eps}\\
+ \includegraphics[width=.45\columnwidth]{./TravellingVortex_1024/rho/rho_snapshot1.eps}
+ \includegraphics[width=.45\columnwidth]{./TravellingVortex_1024/p2_n/p2_n_snapshot1.eps}
+ \caption{Travelling vortex on a doubly periodic unit square domain, $1024\times1024$ cells, advective CFL 0.33. Initial data (top) and values after $1\,\textrm{s}$ (bottom), for the density (left) and nodal pressure (right).  Contours every $0.025\,\textrm{kg\,m$^{-3}$}$
+ from $0.525\,\textrm{kg\,m$^{-3}$}$ to $0.975\,\textrm{kg\,m$^{-3}$}$ for density and every 0.025 Pa from
+-0.025 to -0.3 Pa for pressure.}
+ \label{fig:trav_vortex_res1024}
+\end{figure}
+
+
+\begin{figure}
+\centering
+ \includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_L2_64_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_Linfty_64_wrt_t0.eps}\\
+ \includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_L2_64_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_Linfty_64_wrt_t0.eps}\\
+ \includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_L2_64_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_Linfty_64_wrt_t0.eps}\\
+ \includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_L2_64_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_Linfty_64_wrt_t0.eps}\\
+ \caption{Convergence story for the $L^2$ (left column) and $L^\infty$ error of the numerical solution after one round (at time $T=1\,\textrm{s}$) taking the initial data as exact solution. Top to bottom: density, horizontal velocity, mass-weighted potential temperature, nodal pressure.}
+ \label{fig:trav_vortex_res_conv_t0}
+\end{figure}
+
+\begin{figure}
+\centering
+ \includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_L2_64_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_Linfty_64_self.eps}\\
+ \includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_L2_64_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_Linfty_64_self.eps}\\
+ \includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_L2_64_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_Linfty_64_self.eps}\\
+ \includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_L2_64_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_Linfty_64_self.eps}\\
+ \caption{Convergence story for the $L^2$ (left column) and $L^\infty$ error of the numerical solution after one round (at time $T=1\,\textrm{s}$) taking the result on the $1024\times1024$ grid as the exact solution. Top to bottom: density, horizontal velocity, mass-weighted potential temperature, nodal pressure.}
+ \label{fig:trav_vortex_res_conv_self}
+\end{figure}
+
+
+\begin{figure}
+\centering
+ \includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_L2_48_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_Linfty_48_wrt_t0.eps}\\
+ \includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_L2_48_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_Linfty_48_wrt_t0.eps}\\
+ \includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_L2_48_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_Linfty_48_wrt_t0.eps}\\
+ \includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_L2_48_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_Linfty_48_wrt_t0.eps}\\
+ \caption{Convergence story for the $L^2$ (left column) and $L^\infty$ error of the numerical solution after one round (at time $T=1\,\textrm{s}$) taking the initial data as exact solution. Top to bottom: density, horizontal velocity, mass-weighted potential temperature, nodal pressure.}
+ \label{fig:trav_vortex_res_conv_t0_48}
+\end{figure}
+
+\begin{figure}
+\centering
+ \includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_L2_48_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_Linfty_48_self.eps}\\
+ \includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_L2_48_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_Linfty_48_self.eps}\\
+ \includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_L2_48_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_Linfty_48_self.eps}\\
+ \includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_L2_48_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_Linfty_48_self.eps}\\
+ \caption{Convergence story for the $L^2$ (left column) and $L^\infty$ error of the numerical solution after one round (at time $T=1\,\textrm{s}$) taking the result on the $768\times768$ grid as the exact solution. Top to bottom: density, horizontal velocity, mass-weighted potential temperature, nodal pressure.}
+ \label{fig:trav_vortex_res_conv_self_48}
+\end{figure}
+
+
 
 \subsection{Density current}
 
@@ -819,7 +886,6 @@ Boundary conditions are solid walls on top and bottom boundaries and periodic el
 (rightmost intersection of $-1\,K$ contour with $z=0$) for the density current test at several resolution values.}%
 \label{tab:straka_minmax}
 \end{table}
-
 
 \subsection{Inertia-gravity waves} 
 
@@ -899,11 +965,11 @@ This paper extended a semi-implicit numerical model for the simulation of atmosp
 
 The compressible scheme was validated on the simulation of a travelling vortex and then applied to a suite of benchmarks of atmospheric dynamics at different scales. Compared with the previous incarnation of the model in \cite{Benacchio2014, BenacchioEtAl2014}, which used a buoyancy-explicit discretization, the present scheme achieves comparable accuracy and competitive solution quality and absence of oscillations, with a much larger time step for the cases under gravity. New compressible simulations of the hydrostatic-scale inertia-gravity wave tests of \cite{BaldaufBrdar2013} and \cite{SkamarockKlemp1994} further exposed the large time step capability of the buoyancy-implicit numerical scheme. Furthermore, the hydrostatic configuration of \cite{SkamarockKlemp1994} was run in pseudo-incompressible mode, thereby confirming the easy switching capability of the model as previously shown in \cite{BenacchioEtAl2014, KleinBenacchio2016}. Finally, a more challenging planetary-scale version introduced in this paper revealed the robustness of the discretization for very large time steps. The authors are unaware of published attempts to run the test at this scale.
 
-The results presented here suggest several avenues of development in a number of areas. First, the scheme can be bolted on to the multimodel theoretical framework of \cite{KleinBenacchio2016} to achieve balanced initialization and data assimilation at all scales. As proposed by \cite{BenacchioEtAl2014}, such a multimodel discretization could be run with reduced soundproof or hydrostatic dynamics during the first time steps after setup or assimilation, then resorting to the fully compressible model for the transient sections. \klein{[We need to discuss dissipativity, and refer to Reinhardt, Hastermann, Klein, Reich (2018).]} The development in the present work yields hydrostasy and geostrophy at large scale as well as incompressibility at small scale as the accessible asymptotic dynamics in the blended scheme. The discretization could then be applied to run tests in spherical geometry, with the ultimate aim of comparing with existing schemes used in numerical weather prediction, starting with the FVM dynamical core \citep{KuehnleinEtAl2018}, which shares some numerical aspects with the model presented here. With a view to exascale architectures and beyond, the computational power should be at disposal to use such a model for a flexible balanced runs in an operational context.
+The results presented here suggest several avenues of development in a number of areas. First, the scheme can be bolted on to the multimodel theoretical framework of \cite{KleinBenacchio2016} to achieve balanced initialization and data assimilation at all scales. As proposed by \cite{BenacchioEtAl2014}, such a multimodel discretization could be run with reduced soundproof or hydrostatic dynamics during the first time steps after setup or assimilation, then resorting to the fully compressible model for the transient sections. \klein{[We need to discuss dissipativity, and refer to Reinhardt, Hastermann, Klein, Reich (2018).]} The development in the present work yields hydrostasy and geostrophy at large scale as well as incompressibility at small scale as the accessible asymptotic dynamics in the blended scheme. The discretization could then be applied to run tests in spherical geometry, with the ultimate aim of comparing with existing schemes used in numerical weather prediction, starting with the FVM dynamical core \citep{KuehnleinEtAl2019}, which shares some numerical aspects with the model presented here. With a view to exascale architectures and beyond, the computational power should be at disposal to use such a model for a flexible balanced runs in an operational context.
 
 % \begin{itemize}
 % 
-% \item Many similarities with EULAG/FVM. This is not a coincidence as the latter served as a reference for the present developments owing to its impressive stability features and accuracy for realistic applications, competitive with even a pseudo-spectral scheme as demonstrated recently by \citet{KuehnleinEtAl2018}. There are differences, however, and we discuss these in the conclusions section~\ref{sec:Conclusions} below.
+% \item Many similarities with EULAG/FVM. This is not a coincidence as the latter served as a reference for the present developments owing to its impressive stability features and accuracy for realistic applications, competitive with even a pseudo-spectral scheme as demonstrated recently by \citet{KuehnleinEtAl2019}. There are differences, however, and we discuss these in the conclusions section~\ref{sec:Conclusions} below.
 % 
 %   \begin{itemize}
 %   \item Primary updates on full, not perturbation, variables
