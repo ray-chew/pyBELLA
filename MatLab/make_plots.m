@@ -18,8 +18,17 @@ close all
 % plots_vortex('rho', 192)
 % plots_vortex('p2_n', 192)
 
-% plots_vortex_convergence('rho')
-% plots_vortex_convergence('p2_n')
+for np=48:16:64
+    plots_vortex_convergence('rho', np, 'wrt_t0')
+    plots_vortex_convergence('p2_n', np, 'wrt_t0')
+    plots_vortex_convergence('rhoY', np, 'wrt_t0')
+    plots_vortex_convergence('u', np, 'wrt_t0')
+    
+    plots_vortex_convergence('rho', np, 'self')
+    plots_vortex_convergence('p2_n', np, 'self')
+    plots_vortex_convergence('rhoY', np, 'self')
+    plots_vortex_convergence('u', np, 'self')
+end
 
 % Straka density current
 
