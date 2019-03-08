@@ -26,7 +26,7 @@ set(0,'DefaultFigureColor',[1 1 1])
 linecolor      = 'default';  % 'k', 'default' ...
 
 kmin = 0;
-kmax = 3;
+kmax = 1;
 dk   = 1;
 
 

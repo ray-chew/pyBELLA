@@ -21,13 +21,13 @@ addpath('./export_fig')
 set(0,'DefaultFigureColor',[1 1 1])
 
 kmin = 0;
-kmax = 2;
-dk   = 1;
+kmax = 9;
+dk   = 9;
 
 scalefactor = 20.0;
 
 ncx = 1201;
-ncy = 40;
+ncy = 80;
 L   = 300.0 * scalefactor;  %
 x0  = 0.0;
 H   = 10.0;  %
@@ -94,11 +94,27 @@ for k = kmin:dk:kmax
             
     % Create filled contour
     figure(figure1)
-    contourf(x,z,dim_scale*th,[min(min(dim_scale*th)) contour_values_min contour_values_max max(max(dim_scale*th))],'LineColor','k','LineWidth',1.0);
-    hold
-    contour(x,z,dim_scale*th,[min(min(dim_scale*th)) contour_values_min contour_values_max max(max(dim_scale*th))],'LineColor','k','LineWidth',1.0);
-    hold
+    [ccf1,hhf1]=contourf(x,z,dim_scale*th,[min(min(dim_scale*th)) contour_values_min contour_values_max max(max(dim_scale*th))], 'LineColor','k','LineWidth',1.0);
+    set(hhf1,'LineColor','none')
+    hold on
+    contour(x,z,dim_scale*th,[contour_values_max max(max(dim_scale*th))],'LineColor','k','LineWidth',1.0);
+    [cc1,h1]=contour(x,z,dim_scale*th,[min(min(dim_scale*th)) contour_values_min],'LineStyle', '--','LineColor','k','LineWidth',1.0);
     
+    % Take all the info from the contourline output argument:
+    i0 = 1;
+    i2 = 1;
+    while i0 <  length(cc1)
+        i1 = i0+[1:cc1(2,i0)];
+        zLevel(i2) = cc1(1,i0);
+        hold on
+        % And plot it with dashed lines:
+        ph(i2) = plot(cc1(1,i1),cc1(2,i1),'k--','linewidth',1);
+        i0 = i1(end)+1;
+        i2 = i2+1;
+    end
+    % Scrap the contourlines:
+    delete(h1)
+
     set(gca,'DataAspectRatio', aspect, 'FontSize',10,'FontName','Helvetica');
     axis tight;
     
@@ -119,5 +135,5 @@ for k = kmin:dk:kmax
     filename = sprintf('../RKLM_Reference/Doc/paper_2019/figures/InternalWave_Baldauf/%s/%s_snapshot%d.eps', varstr, varstr, k);
     print(filename, '-depsc')
     export_fig(filename, '-eps')
-    
+    hold off
 end

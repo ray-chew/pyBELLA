@@ -152,8 +152,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx =  151+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
+    ud->inx =  1201+1; /* 641; 321; 161; 129; 81; */
+    ud->iny =   80+1; /* 321; 161;  81;  65; 41;  */
     ud->inz =      1;
     
     /* explicit predictor step */
@@ -199,7 +199,7 @@ void User_Data_init(User_Data* ud) {
     ud->tout[0] = (scalefactor == 1.0 ? 0.5 * 3600.0 : 8.0 * 3600.0) / ud->t_ref; 
     ud->tout[1] = -1.0;
 
-    ud->stepmax = 10;
+    ud->stepmax = 100000000;
     
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
