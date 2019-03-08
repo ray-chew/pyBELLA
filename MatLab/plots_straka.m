@@ -1,4 +1,4 @@
-function plots_straka(varstr, resol)
+    function plots_straka(varstr, resol)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % plots_straka(varstr, ext)
@@ -84,7 +84,7 @@ for k = kmin:dk:kmax
     colormap viridis
     colorbar('FontSize',14,'FontName','Helvetica');
 
-    set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
+    set(gca,'DataAspectRatio', aspect, 'FontSize',14,'FontName','Helvetica');
     axis tight;
     
     set(0,'defaulttextinterpreter','latex')

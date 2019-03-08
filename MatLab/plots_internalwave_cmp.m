@@ -41,16 +41,32 @@ figure1 = figure('Position',[1 2*scrsz(4)/3 scrsz(4)/2 1*scrsz(4)/3]);
 
 figure(figure1)
 if strcmp(conf, 'H')
-    contour_values=linspace(-0.00005, 0.00015, 21);
+    contour_values_m = linspace(-0.00005, -0.00001,5);
+    contour_values_p = linspace(0, 0.00015, 16);
 else
-    contour_values=linspace(-0.0002, 0.0002, 11);
+    contour_values_m = linspace(-0.0002, -0.00004, 5)
+    contour_values_p = linspace(0, 0.0002, 6);
 end
-contourf(x,z, th_C-th_PS, [min(min(th_C-th_PS)) contour_values max(max(th_C-th_PS))], 'LineColor','k','LineWidth',1.0)
-%contourf(x,z, th_C-th_PS, 21, 'LineColor','k','LineWidth',1.0)
+[ccf1,hhf1]=contourf(x,z, th_C-th_PS, [min(min(th_C-th_PS)) contour_values_m, contour_values_p max(max(th_C-th_PS))], 'LineColor','k','LineWidth',1.0);
+set(hhf1,'LineColor','none');
 hold
-contour(x,z, th_C-th_PS, [min(min(th_C-th_PS)) contour_values max(max(th_C-th_PS))],'LineColor','k','LineWidth',1.0)
-%[C,h]=contour(x,z, th_C-th_PS, 21,'LineColor','k','LineWidth',1.0)
-%clabel(C,h)
+contour(x,z, th_C-th_PS, [contour_values_p max(max(th_C-th_PS))],'LineColor','k','LineWidth',1.0)
+[cc1,h1]=contour(x,z, th_C-th_PS, [min(min(th_C-th_PS)) contour_values_m], 'LineStyle', '--','LineColor','k','LineWidth',1.0);
+
+% Take all the info from the contourline output argument:
+i0 = 1;
+i2 = 1;
+while i0 <  length(cc1)
+    i1 = i0+[1:cc1(2,i0)];
+    zLevel(i2) = cc1(1,i0);
+    hold on
+    % And plot it with dashed lines:
+    ph(i2) = plot(cc1(1,i1),cc1(2,i1),'k--','linewidth',1);
+    i0 = i1(end)+1;
+    i2 = i2+1;
+end
+% Scrap the contourlines:
+delete(h1)
 
 set(gca,'DataAspectRatio', aspect, 'FontSize',14,'FontName','Helvetica');
 axis tight;
@@ -85,15 +101,33 @@ figure2 = figure('Position',[1 2*scrsz(4)/3 scrsz(4)/2 1*scrsz(4)/3]);
 
 figure(figure2)
 if strcmp(conf, 'H')
-    contour_values=linspace(-0.00005, 0.00005, 11);
+    contour_values_m=linspace(-0.00005, -0.00001, 5);
+    contour_values_p=linspace(0, 0.00005, 6);
 else
-    contour_values=linspace(-0.000015, 0.000015, 11);
+    contour_values_m=linspace(-0.000015, -0.000003, 5);
+    contour_values_p=linspace(0.000003, 0.000015, 6);
 end
-contourf(x,z, th_C-th_HY, [min(min(th_C-th_HY)) contour_values max(max(th_C-th_HY))], 'LineColor','k','LineWidth',1.0)
-%contourf(x,z, th_C-th_HY, 11, 'LineColor','k','LineWidth',1.0)
+[ccf1,hhf1]=contourf(x,z, th_C-th_HY, [min(min(th_C-th_HY)) contour_values_m contour_values_p max(max(th_C-th_HY))], 'LineColor','k','LineWidth',1.0);
+set(hhf1,'LineColor','none');
 hold
-contour(x,z, th_C-th_HY, [min(min(th_C-th_HY)) contour_values max(max(th_C-th_HY))],'LineColor','k','LineWidth',1.0)
-%contour(x,z, th_C-th_HY, 11,'LineColor','k','LineWidth',1.0)
+contour(x,z, th_C-th_HY, [contour_values_p max(max(th_C-th_HY))],'LineColor','k','LineWidth',1.0)
+[cc1,h1]=contour(x,z, th_C-th_HY, [min(min(th_C-th_HY)) contour_values_m],'LineStyle', '--', 'LineColor','k','LineWidth',1.0);
+
+% Take all the info from the contourline output argument:
+i0 = 1;
+i2 = 1;
+while i0 <  length(cc1)
+    i1 = i0+[1:cc1(2,i0)];
+    zLevel(i2) = cc1(1,i0);
+    hold on
+    % And plot it with dashed lines:
+    ph(i2) = plot(cc1(1,i1),cc1(2,i1),'k--','linewidth',1);
+    i0 = i1(end)+1;
+    i2 = i2+1;
+end
+% Scrap the contourlines:
+delete(h1)
+
 
 set(gca,'DataAspectRatio', aspect, 'FontSize',14,'FontName','Helvetica');
 axis tight;

@@ -34,14 +34,14 @@ H   = 10.0;  %
 aspect = [L/H/3 1 1];
 
 if strcmp(varstr, 'dT')
-    contour_values_max = linspace(0.0012, 0.006, 5);
-    contour_values_min = linspace(-0.006, -0.0012, 5);
+    contour_values_p = linspace(0.0012, 0.006, 5);
+    contour_values_m = linspace(-0.006, -0.0012, 5);
 elseif strcmp(varstr, 'v')
-    contour_values_max = linspace(0.0002, 0.0012, 6);
-    contour_values_min = linspace(-0.0002, -0.0012, 6);
+    contour_values_p = linspace(0.0002, 0.0012, 6);
+    contour_values_m = linspace(-0.0012, -0.0002, 6);
 elseif strcmp(varstr, 'u')
-    contour_values_max = linspace(0.002, 0.012, 6);
-    contour_values_min = linspace(-0.012, -0.002, 6);
+    contour_values_p = linspace(0.002, 0.012, 6);
+    contour_values_m = linspace(-0.012, -0.002, 6);
 else
     disp('Error, please enter dT, u, or v as the variable to plot.')
     return;
@@ -94,11 +94,11 @@ for k = kmin:dk:kmax
             
     % Create filled contour
     figure(figure1)
-    [ccf1,hhf1]=contourf(x,z,dim_scale*th,[min(min(dim_scale*th)) contour_values_min contour_values_max max(max(dim_scale*th))], 'LineColor','k','LineWidth',1.0);
+    [ccf1,hhf1]=contourf(x,z,dim_scale*th,[min(min(dim_scale*th)) contour_values_m contour_values_p max(max(dim_scale*th))], 'LineColor','k','LineWidth',1.0);
     set(hhf1,'LineColor','none')
     hold on
-    contour(x,z,dim_scale*th,[contour_values_max max(max(dim_scale*th))],'LineColor','k','LineWidth',1.0);
-    [cc1,h1]=contour(x,z,dim_scale*th,[min(min(dim_scale*th)) contour_values_min],'LineStyle', '--','LineColor','k','LineWidth',1.0);
+    contour(x,z,dim_scale*th,[contour_values_p max(max(dim_scale*th))],'LineColor','k','LineWidth',1.0);
+    [cc1,h1]=contour(x,z,dim_scale*th,[min(min(dim_scale*th)) contour_values_m],'LineStyle', '--','LineColor','k','LineWidth',1.0);
     
     % Take all the info from the contourline output argument:
     i0 = 1;
@@ -132,7 +132,7 @@ for k = kmin:dk:kmax
     fig=gcf;
     fig.Color = 'white';
     fig.InvertHardcopy = 'off';
-    filename = sprintf('../RKLM_Reference/Doc/paper_2019/figures/InternalWave_Baldauf/%s/%s_snapshot%d.eps', varstr, varstr, k);
+    filename = sprintf('../RKLM_Reference/Doc/paper_2019/figures/InternalWave_Baldauf_1200/%s/%s_snapshot%d.eps', varstr, varstr, k);
     print(filename, '-depsc')
     export_fig(filename, '-eps')
     hold off

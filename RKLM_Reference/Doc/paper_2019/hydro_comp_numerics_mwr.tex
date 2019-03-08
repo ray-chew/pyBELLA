@@ -757,79 +757,79 @@ The first test is a diagonally moving density bump in a doubly-periodic $[0,1]\t
 
 \begin{figure}
 \centering
- \includegraphics[width=.45\columnwidth]{./TravellingVortex_256/rho/rho_snapshot0.eps}\includegraphics[width=.45\columnwidth]{./TravellingVortex_256/p2_n/p2_n_snapshot0.eps}\\
- \includegraphics[width=.45\columnwidth]{./TravellingVortex_256/rho/rho_snapshot1.eps}
- \includegraphics[width=.45\columnwidth]{./TravellingVortex_256/p2_n/p2_n_snapshot1.eps}
- \caption{Travelling vortex on a doubly periodic unit square domain, $256\times256$ cells, advective CFL 0.33. Initial data (top) and values after $1\,\textrm{s}$ (bottom), for the density (left) and nodal pressure (right).  Contours every $0.025\,\textrm{kg\,m$^{-3}$}$
+ \includegraphics[width=.45\columnwidth]{./TravellingVortex_192/rho/rho_snapshot0.eps}\includegraphics[width=.45\columnwidth]{./TravellingVortex_192/p2_n/p2_n_snapshot0.eps}\\
+ \includegraphics[width=.45\columnwidth]{./TravellingVortex_192/rho/rho_snapshot1.eps}
+ \includegraphics[width=.45\columnwidth]{./TravellingVortex_192/p2_n/p2_n_snapshot1.eps}
+ \caption{Travelling vortex on a doubly periodic unit square domain, $192\times192$ cells, advective CFL 0.33. Initial data (top) and values after $1\,\textrm{s}$ (bottom), for the density (left) and nodal pressure (right).  Contours every $0.025\,\textrm{kg\,m$^{-3}$}$
  from $0.525\,\textrm{kg\,m$^{-3}$}$ to $0.975\,\textrm{kg\,m$^{-3}$}$ for density and every 0.025 Pa from
 -0.025 to -0.3 Pa for pressure.}
- \label{fig:trav_vortex_res256}
+ \label{fig:trav_vortex_res}
 \end{figure}
-
-\begin{figure}
-\centering
- \includegraphics[width=.45\columnwidth]{./TravellingVortex_512/rho/rho_snapshot0.eps}\includegraphics[width=.45\columnwidth]{./TravellingVortex_512/p2_n/p2_n_snapshot0.eps}\\
- \includegraphics[width=.45\columnwidth]{./TravellingVortex_512/rho/rho_snapshot1.eps}
- \includegraphics[width=.45\columnwidth]{./TravellingVortex_512/p2_n/p2_n_snapshot1.eps}
- \caption{Travelling vortex on a doubly periodic unit square domain, $512\times512$ cells, advective CFL 0.33. Initial data (top) and values after $1\,\textrm{s}$ (bottom), for the density (left) and nodal pressure (right).  Contours every $0.025\,\textrm{kg\,m$^{-3}$}$
- from $0.525\,\textrm{kg\,m$^{-3}$}$ to $0.975\,\textrm{kg\,m$^{-3}$}$ for density and every 0.025 Pa from
--0.025 to -0.3 Pa for pressure.}
- \label{fig:trav_vortex_res512}
-\end{figure}
-
-
-\begin{figure}
-\centering
- \includegraphics[width=.45\columnwidth]{./TravellingVortex_1024/rho/rho_snapshot0.eps}\includegraphics[width=.45\columnwidth]{./TravellingVortex_1024/p2_n/p2_n_snapshot0.eps}\\
- \includegraphics[width=.45\columnwidth]{./TravellingVortex_1024/rho/rho_snapshot1.eps}
- \includegraphics[width=.45\columnwidth]{./TravellingVortex_1024/p2_n/p2_n_snapshot1.eps}
- \caption{Travelling vortex on a doubly periodic unit square domain, $1024\times1024$ cells, advective CFL 0.33. Initial data (top) and values after $1\,\textrm{s}$ (bottom), for the density (left) and nodal pressure (right).  Contours every $0.025\,\textrm{kg\,m$^{-3}$}$
- from $0.525\,\textrm{kg\,m$^{-3}$}$ to $0.975\,\textrm{kg\,m$^{-3}$}$ for density and every 0.025 Pa from
--0.025 to -0.3 Pa for pressure.}
- \label{fig:trav_vortex_res1024}
-\end{figure}
-
-
-\begin{figure}
-\centering
- \includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_L2_64_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_Linfty_64_wrt_t0.eps}\\
- \includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_L2_64_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_Linfty_64_wrt_t0.eps}\\
- \includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_L2_64_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_Linfty_64_wrt_t0.eps}\\
- \includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_L2_64_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_Linfty_64_wrt_t0.eps}\\
- \caption{Convergence story for the $L^2$ (left column) and $L^\infty$ error of the numerical solution after one round (at time $T=1\,\textrm{s}$) taking the initial data as exact solution. Top to bottom: density, horizontal velocity, mass-weighted potential temperature, nodal pressure.}
- \label{fig:trav_vortex_res_conv_t0}
-\end{figure}
-
-\begin{figure}
-\centering
- \includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_L2_64_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_Linfty_64_self.eps}\\
- \includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_L2_64_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_Linfty_64_self.eps}\\
- \includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_L2_64_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_Linfty_64_self.eps}\\
- \includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_L2_64_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_Linfty_64_self.eps}\\
- \caption{Convergence story for the $L^2$ (left column) and $L^\infty$ error of the numerical solution after one round (at time $T=1\,\textrm{s}$) taking the result on the $1024\times1024$ grid as the exact solution. Top to bottom: density, horizontal velocity, mass-weighted potential temperature, nodal pressure.}
- \label{fig:trav_vortex_res_conv_self}
-\end{figure}
-
-
-\begin{figure}
-\centering
- \includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_L2_48_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_Linfty_48_wrt_t0.eps}\\
- \includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_L2_48_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_Linfty_48_wrt_t0.eps}\\
- \includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_L2_48_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_Linfty_48_wrt_t0.eps}\\
- \includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_L2_48_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_Linfty_48_wrt_t0.eps}\\
- \caption{Convergence story for the $L^2$ (left column) and $L^\infty$ error of the numerical solution after one round (at time $T=1\,\textrm{s}$) taking the initial data as exact solution. Top to bottom: density, horizontal velocity, mass-weighted potential temperature, nodal pressure.}
- \label{fig:trav_vortex_res_conv_t0_48}
-\end{figure}
-
-\begin{figure}
-\centering
- \includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_L2_48_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_Linfty_48_self.eps}\\
- \includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_L2_48_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_Linfty_48_self.eps}\\
- \includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_L2_48_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_Linfty_48_self.eps}\\
- \includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_L2_48_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_Linfty_48_self.eps}\\
- \caption{Convergence story for the $L^2$ (left column) and $L^\infty$ error of the numerical solution after one round (at time $T=1\,\textrm{s}$) taking the result on the $768\times768$ grid as the exact solution. Top to bottom: density, horizontal velocity, mass-weighted potential temperature, nodal pressure.}
- \label{fig:trav_vortex_res_conv_self_48}
-\end{figure}
+    % 
+    % \begin{figure}
+    % \centering
+    %  \includegraphics[width=.45\columnwidth]{./TravellingVortex_512/rho/rho_snapshot0.eps}\includegraphics[width=.45\columnwidth]{./TravellingVortex_512/p2_n/p2_n_snapshot0.eps}\\
+    %  \includegraphics[width=.45\columnwidth]{./TravellingVortex_512/rho/rho_snapshot1.eps}
+    %  \includegraphics[width=.45\columnwidth]{./TravellingVortex_512/p2_n/p2_n_snapshot1.eps}
+    %  \caption{Travelling vortex on a doubly periodic unit square domain, $512\times512$ cells, advective CFL 0.33. Initial data (top) and values after $1\,\textrm{s}$ (bottom), for the density (left) and nodal pressure (right).  Contours every $0.025\,\textrm{kg\,m$^{-3}$}$
+    %  from $0.525\,\textrm{kg\,m$^{-3}$}$ to $0.975\,\textrm{kg\,m$^{-3}$}$ for density and every 0.025 Pa from
+    % -0.025 to -0.3 Pa for pressure.}
+    %  \label{fig:trav_vortex_res512}
+    % \end{figure}
+    % 
+    % 
+    % \begin{figure}
+    % \centering
+    %  \includegraphics[width=.45\columnwidth]{./TravellingVortex_1024/rho/rho_snapshot0.eps}\includegraphics[width=.45\columnwidth]{./TravellingVortex_1024/p2_n/p2_n_snapshot0.eps}\\
+    %  \includegraphics[width=.45\columnwidth]{./TravellingVortex_1024/rho/rho_snapshot1.eps}
+    %  \includegraphics[width=.45\columnwidth]{./TravellingVortex_1024/p2_n/p2_n_snapshot1.eps}
+    %  \caption{Travelling vortex on a doubly periodic unit square domain, $1024\times1024$ cells, advective CFL 0.33. Initial data (top) and values after $1\,\textrm{s}$ (bottom), for the density (left) and nodal pressure (right).  Contours every $0.025\,\textrm{kg\,m$^{-3}$}$
+    %  from $0.525\,\textrm{kg\,m$^{-3}$}$ to $0.975\,\textrm{kg\,m$^{-3}$}$ for density and every 0.025 Pa from
+    % -0.025 to -0.3 Pa for pressure.}
+    %  \label{fig:trav_vortex_res1024}
+    % \end{figure}
+    % 
+    % 
+    % \begin{figure}
+    % \centering
+    %  \includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_L2_64_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_Linfty_64_wrt_t0.eps}\\
+    %  \includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_L2_64_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_Linfty_64_wrt_t0.eps}\\
+    %  \includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_L2_64_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_Linfty_64_wrt_t0.eps}\\
+    %  \includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_L2_64_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_Linfty_64_wrt_t0.eps}\\
+    %  \caption{Convergence story for the $L^2$ (left column) and $L^\infty$ error of the numerical solution after one round (at time $T=1\,\textrm{s}$) taking the initial data as exact solution. Top to bottom: density, horizontal velocity, mass-weighted potential temperature, nodal pressure.}
+    %  \label{fig:trav_vortex_res_conv_t0}
+    % \end{figure}
+    % 
+    % \begin{figure}
+    % \centering
+    %  \includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_L2_64_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_Linfty_64_self.eps}\\
+    %  \includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_L2_64_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_Linfty_64_self.eps}\\
+    %  \includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_L2_64_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_Linfty_64_self.eps}\\
+    %  \includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_L2_64_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_Linfty_64_self.eps}\\
+    %  \caption{Convergence story for the $L^2$ (left column) and $L^\infty$ error of the numerical solution after one round (at time $T=1\,\textrm{s}$) taking the result on the $1024\times1024$ grid as the exact solution. Top to bottom: density, horizontal velocity, mass-weighted potential temperature, nodal pressure.}
+    %  \label{fig:trav_vortex_res_conv_self}
+    % \end{figure}
+    % 
+    % 
+    % \begin{figure}
+    % \centering
+    %  \includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_L2_48_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_Linfty_48_wrt_t0.eps}\\
+    %  \includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_L2_48_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_Linfty_48_wrt_t0.eps}\\
+    %  \includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_L2_48_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_Linfty_48_wrt_t0.eps}\\
+    %  \includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_L2_48_wrt_t0.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_Linfty_48_wrt_t0.eps}\\
+    %  \caption{Convergence story for the $L^2$ (left column) and $L^\infty$ error of the numerical solution after one round (at time $T=1\,\textrm{s}$) taking the initial data as exact solution. Top to bottom: density, horizontal velocity, mass-weighted potential temperature, nodal pressure.}
+    %  \label{fig:trav_vortex_res_conv_t0_48}
+    % \end{figure}
+    % 
+    % \begin{figure}
+    % \centering
+    %  \includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_L2_48_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rho/rho_convergence_Linfty_48_self.eps}\\
+    %  \includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_L2_48_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/u/u_convergence_Linfty_48_self.eps}\\
+    %  \includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_L2_48_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/rhoY/rhoY_convergence_Linfty_48_self.eps}\\
+    %  \includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_L2_48_self.eps}\includegraphics[height=.22\textheight]{./TravellingVortex/p2_n/p2_n_convergence_Linfty_48_self.eps}\\
+    %  \caption{Convergence story for the $L^2$ (left column) and $L^\infty$ error of the numerical solution after one round (at time $T=1\,\textrm{s}$) taking the result on the $768\times768$ grid as the exact solution. Top to bottom: density, horizontal velocity, mass-weighted potential temperature, nodal pressure.}
+    %  \label{fig:trav_vortex_res_conv_self_48}
+    % \end{figure}
 
 
 
@@ -908,31 +908,31 @@ As final corroboration of the properties of the model, the hydrostatic configura
 \centering
  \includegraphics[width=\columnwidth]{./InternalWave_NH/dY/dY_snapshot0.eps}
  \includegraphics[width=\columnwidth]{./InternalWave_NH/dY/dY_snapshot1.eps}
- \caption{Initial (top) and final (at $T=3000\,\textrm{s}$, bottom) potential temperature perturbation for the nonhydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994}, $\Delta x=\Delta z=1\,\textrm{km}$, CFL$=0.9$. Contours in the range $[0, 0.01]\,\textrm{K}$ with a $0.001\,\textrm{K}$ interval (top), $[-0.025, 0.025]\,\textrm{K}$ with a $0.005\,\textrm{K}$ interval (bottom).}
+ \caption{Initial (top) and final (at $T=3000\,\textrm{s}$, bottom) potential temperature perturbation for the nonhydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994}, $\Delta x=\Delta z=1\,\textrm{km}$, CFL$=0.9$. Contours in the range $[0, 0.01]\,\textrm{K}$ with a $0.001\,\textrm{K}$ interval (top), $[-0.025, 0.025]\,\textrm{K}$ with a $0.005\,\textrm{K}$ interval (bottom). Negative contours are dashed.}
  \label{fig:SK94_NH}
 \end{figure}
 
 \begin{figure}
 \centering
- \includegraphics[width=\columnwidth]{./InternalWave_H/dY/dY_snapshot0.eps}
- \includegraphics[width=\columnwidth]{./InternalWave_H/dY/dY_snapshot1.eps}
- \includegraphics[width=\columnwidth]{./InternalWave_H_psinc/dY/dY_snapshot1.eps}
- \includegraphics[width=\columnwidth]{./InternalWave_H_hyd/dY/dY_snapshot1.eps}
-  \includegraphics[width=\columnwidth]{./InternalWave_H/dY/CMP_vs_PS.eps}
- \includegraphics[width=\columnwidth]{./InternalWave_H/dY/CMP_vs_HY.eps}
- \caption{Potential temperature perturbation for the hydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994},  $\Delta x=20\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$=0.9$. Initial data (top left) and computed value at final time $T=60000\,\textrm{s}$ in compressible mode (top right), pseudo-incompressible mode (middle left), hydrostatic mode (middle right). Contours as in Figure \ref{fig:SK94_NH}. The bottom plots show the difference between the compressible run and the pseudo-incompressible run (left) and between the compressible run and the hydrostatic run (right). Contours in the range $[-5, 15]*10^{-5}\,\textrm{K}$ (left), $[-5, 5]*10^{-5}\,\textrm{K}$ (right)  with a $10^{-5}\,\textrm{K}$ interval.}
+ \includegraphics[width=.49\columnwidth]{./InternalWave_H/dY/dY_snapshot0.eps}
+ \includegraphics[width=.49\columnwidth]{./InternalWave_H/dY/dY_snapshot1.eps}\\
+ \includegraphics[width=.49\columnwidth]{./InternalWave_H_psinc/dY/dY_snapshot1.eps}
+ \includegraphics[width=.49\columnwidth]{./InternalWave_H_hyd/dY/dY_snapshot1.eps}\\
+  \includegraphics[width=.49\columnwidth]{./InternalWave_H/dY/CMP_vs_PS.eps}
+ \includegraphics[width=.49\columnwidth]{./InternalWave_H/dY/CMP_vs_HY.eps}
+ \caption{Potential temperature perturbation for the hydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994},  $\Delta x=20\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$=0.9$. Initial data (top left) and computed value at final time $T=60000\,\textrm{s}$ in compressible mode (top right), pseudo-incompressible mode (middle left), hydrostatic mode (middle right). Contours as in Figure \ref{fig:SK94_NH}. The bottom plots show the difference between the compressible run and the pseudo-incompressible run (left) and between the compressible run and the hydrostatic run (right). Contours in the range $[-5, 15]*10^{-5}\,\textrm{K}$ (left), $[-5, 5]*10^{-5}\,\textrm{K}$  with a $10^{-5}\,\textrm{K}$ interval (right). Negative contours are dashed.}
  \label{fig:SK94_H} 
  \end{figure}
 
  \begin{figure}
 \centering
- \includegraphics[width=\columnwidth]{./InternalWave_P/dY/dY_snapshot0.eps}
- \includegraphics[width=\columnwidth]{./InternalWave_P/dY/dY_snapshot1.eps}
- \includegraphics[width=\columnwidth]{./InternalWave_P_psinc/dY/dY_snapshot1.eps}
- \includegraphics[width=\columnwidth]{./InternalWave_P_hyd/dY/dY_snapshot1.eps}
-  \includegraphics[width=\columnwidth]{./InternalWave_P/dY/CMP_vs_PS.eps}
- \includegraphics[width=\columnwidth]{./InternalWave_P/dY/CMP_vs_HY.eps}
- \caption{Potential temperature perturbation for the planetary-scale inertia-gravity wave test,  $\Delta x=160\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$=0.9$. Initial data (top left, contours as in Figures \ref{fig:SK94_NH}-\ref{fig:SK94_H}) and computed value at final time $T=480000\,\textrm{s}$ in compressible mode (top right), pseudo-incompressible mode (middle left), hydrostatic mode (middle right). Contours in the range $[-0.05, 0.05]\,\textrm{K}$ with a $0.01\,\textrm{K}$ interval. The bottom plots show the difference between the compressible run and the pseudo-incompressible run (left) and between the compressible run and the hydrostatic run (right). Contours in the range $[-2, 2]*10^{-4}\,\textrm{K}$ with a $4*10^{-5}\,\textrm{K}$ interval (left), $[-1.5, 1.5]*10^{-5}\,\textrm{K}$ (right)  with a $3*10^{-6}\,\textrm{K}$ interval.}
+ \includegraphics[width=.49\columnwidth]{./InternalWave_P/dY/dY_snapshot0.eps}
+ \includegraphics[width=.49\columnwidth]{./InternalWave_P/dY/dY_snapshot1.eps}\\
+ \includegraphics[width=.49\columnwidth]{./InternalWave_P_psinc/dY/dY_snapshot1.eps}
+ \includegraphics[width=.49\columnwidth]{./InternalWave_P_hyd/dY/dY_snapshot1.eps}\\
+  \includegraphics[width=.49\columnwidth]{./InternalWave_P/dY/CMP_vs_PS.eps}
+ \includegraphics[width=.49\columnwidth]{./InternalWave_P/dY/CMP_vs_HY.eps}
+ \caption{Potential temperature perturbation for the planetary-scale inertia-gravity wave test,  $\Delta x=160\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$=0.9$. Initial data (top left, contours as in Figures \ref{fig:SK94_NH}-\ref{fig:SK94_H}) and computed value at final time $T=480000\,\textrm{s}$ in compressible mode (top right), pseudo-incompressible mode (middle left), hydrostatic mode (middle right). Contours in the range $[-0.05, 0.05]\,\textrm{K}$ with a $0.01\,\textrm{K}$ interval. The bottom plots show the difference between the compressible run and the pseudo-incompressible run (left) and between the compressible run and the hydrostatic run (right). Contours in the range $[-2, 2]*10^{-4}\,\textrm{K}$ with a $4*10^{-5}\,\textrm{K}$ interval (left), $[-1.5, 1.5]*10^{-5}\,\textrm{K}$ with a $3*10^{-6}\,\textrm{K}$ interval (right). Negative contours are dashed.}
  \label{fig:SK94_P} 
  \end{figure}
 
@@ -948,10 +948,10 @@ As final corroboration of the properties of the model, the hydrostatic configura
 
 \begin{figure}
 \centering
- \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf/dT/dT_snapshot2.eps}
- \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf/v/v_snapshot2.eps}
- \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf/u/u_snapshot2.eps}
- \caption{Temperature perturbation (top), vertical velocity (middle) and horizontal velocity (bottom) at final time $T=28800\,\textrm{s}$ for the inertia-gravity wave test with rotation of \cite{BaldaufBrdar2013}, CFL$=0.9$. Initial perturbation as in Figure \ref{fig:SK94_H}. \benacchio{Insert resolution and contours info after long run.}}
+ \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf_1200/dT/dT_snapshot9.eps}
+ \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf_1200/v/v_snapshot9.eps}
+ \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf_1200/u/u_snapshot9.eps}
+ \caption{Temperature perturbation (top), vertical velocity (middle) and horizontal velocity (bottom) at final time $T=28800\,\textrm{s}$ for the inertia-gravity wave test with rotation of \cite{BaldaufBrdar2013}, $\Delta x=5\,\textrm{km},\,\Delta z=125\,\textrm{m}$, CFL$=0.9$. Initial perturbation as in Figure \ref{fig:SK94_H}. Contours in the range $[-6, 6]*10^{-3}\,\textrm{K}$ with a $1.2*10^{-3}\,\textrm{K}$ interval (top), $[-1.2, 1.2]*10^{-3}\,\textrm{ms$^{-1}$}$  with a $2*10^{-4}\,\textrm{ms$^{-1}$}$ interval (middle), $[-0.012, 0.012]\,\textrm{ms$^{-1}$}$ with a $2*10^{-3}\,\textrm{ms$^{-1}$}$ interval (bottom). Negative contours are dashed, zero contours not shown.}
   \label{fig:BB13}
 \end{figure}
 

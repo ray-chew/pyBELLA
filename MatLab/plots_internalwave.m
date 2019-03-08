@@ -26,7 +26,6 @@ addpath('./export_fig')
 set(0,'DefaultFigureColor',[1 1 1])
 
 dtheta = 0.5e-3;
-contour_values = [-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dtheta, 2*dtheta, 3*dtheta, 4*dtheta, 5*dtheta];
 
 kmin = 0;
 kmax = 2;
@@ -89,17 +88,38 @@ for k = kmin:dk:kmax
         contour_values = linspace(0, 0.01, 11);
     else
         if strcmp(ext, 'NH') || strcmp(ext, 'H') || strcmp(ext, 'H_psinc') || strcmp(ext, 'H_hyd')
-           contour_values = [-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dtheta, 2*dtheta, 3*dtheta, 4*dtheta, 5*dtheta];
+           contour_values_m = [-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta];
+           contour_values_p = [0.0, dtheta, 2*dtheta, 3*dtheta, 4*dtheta, 5*dtheta];
         else
-           contour_values = 2.0*[-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta, 0.0, dtheta, 2*dtheta, 3*dtheta, 4*dtheta, 5*dtheta];
+           contour_values_m = 2.0*[-5*dtheta, -4*dtheta, -3*dtheta, -2*dtheta, -dtheta];
+           contour_values_p = 2.0*[0.0, dtheta, 2*dtheta, 3*dtheta, 4*dtheta, 5*dtheta];
         end       
     end
-    contourf(x,z,th,[min(min(th)) contour_values max(max(th))],'LineColor','k','LineWidth',1.0);
-    %contour(x,z,max(0.0,th),contour_values,'LineColor','k','LineWidth',1.0);
-    hold
-    contour(x,z,th,[min(min(th)) contour_values max(max(th))],'LineColor','k','LineWidth',1.0);
-%    contour(x,z,min(0.0,th),contour_values,'LineColor','k');
-    hold
+    if k==0
+        contourf(x,z,th,[min(min(th)) contour_values max(max(th))]);
+    else
+        [ccf1,hhf1]=contourf(x,z,th,[min(min(th)) contour_values_m contour_values_p max(max(th))]);
+        set(hhf1,'LineColor','none');
+        hold on
+        contour(x,z,th,[contour_values_p max(max(th))],'LineColor','k','LineWidth',1.0);
+        [cc1,h1]=contour(x,z,th,[min(min(th)) contour_values_m],'LineStyle', '--','LineColor','k','LineWidth',1.0);
+        
+        % Take all the info from the contourline output argument:
+        i0 = 1;
+        i2 = 1;
+        while i0 <  length(cc1)
+            i1 = i0+[1:cc1(2,i0)];
+            zLevel(i2) = cc1(1,i0);
+            hold on
+            % And plot it with dashed lines:
+            ph(i2) = plot(cc1(1,i1),cc1(2,i1),'k--','linewidth',1);
+            i0 = i1(end)+1;
+            i2 = i2+1;
+        end
+        % Scrap the contourlines:
+        delete(h1)
+        
+    end
     
     set(gca,'DataAspectRatio', aspect, 'FontSize',14,'FontName','Helvetica');
     axis tight;
@@ -111,9 +131,9 @@ for k = kmin:dk:kmax
     yticks([0 2 4 6 8 10])
     colormap viridis
     
-    if k==0
+    %if k==0
         colorbar('FontSize',14,'FontName','Helvetica')
-    end
+    %end
     
     switch ext
         case 'NH'
