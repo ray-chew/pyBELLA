@@ -39,7 +39,7 @@ no_of_contours = 10;
 show_increments = 0;
 symmetry = 0;        % in {0,1}
 symmetrytest = 0;
-showdummycells = 0;
+showdummycells = 1;
 diff_rel_to_bottom = 0;
 
 % th0 = -0.0015/300;
@@ -53,7 +53,7 @@ title_true = 1;
 
 kmin = 0;
 kmax = 601;
-dk   = 1;
+dk   = 9;
 
 if strcmp(test_case, 'Baldaufs-Internal-Wave-Tests')
     scalefactor = 20.0;
@@ -123,10 +123,10 @@ elseif strcmp(test_case, 'Rising-Bubble')
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Travelling-Vortex')
-    ncx = 768;  
-    ncy = 768; 
+    ncx = 1024;  
+    ncy = 1024; 
     L   = 1.0;  
-    x0  = 0.5;
+    x0  = 0.0;
     H   = 1.0; 
     aspect = [2 2 2];
     velosc = 1; 

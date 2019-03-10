@@ -156,8 +156,8 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     /* There is the option of starting with the previous solution, 
      but that seems not to come with sizeable advantages */
     for(ii=0; ii<nc; ii++){
-        /* p2[ii] = mpv->p2_nodes[ii];  */
-        p2[ii]  = 0.0; 
+        p2[ii] = mpv->p2_nodes[ii];
+        /* p2[ii]  = 0.0;   */
         rhs[ii] = 0.0;
     }
     
@@ -786,9 +786,16 @@ static void operator_coefficients_nodes(
                 /(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
                 
                 for(i = igx - is_x_periodic - nodc; i < icxe - igx + is_x_periodic + nodc; i++) {
-                    n = m + i;     
+                    n = m + i;    
+                    
+#if 0 /* option has no effect on core asymmetry of pressure in the travelling vortex*/
+                    double Yn    = Sol->rhoY[n]/Sol->rho[n]; 
+                    double Yo    = Sol0->rhoY[n]/Sol0->rho[n]; 
+                    double coeff = Gammainv * 0.25 * (Sol->rhoY[n] + Sol0->rhoY[n]) * (Yn + Yo);
+#else
                     double Y     = Sol->rhoY[n]/Sol->rho[n]; 
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
+#endif
                     double fsqsc = dt*dt * coriolis*coriolis;
                     double fimp  = 1.0 / (1.0 + fsqsc);
                     double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;                    
@@ -803,12 +810,18 @@ static void operator_coefficients_nodes(
                 int mn = j * icxn;
                 int me = j * icxe;
                 for(int i = igx; i < icxn - igx; i++) {
-                    int nn = mn + i;
+                    int nn   = mn + i;
                     int ne00 = me + i;
                     int ne10 = me + i - 1;
                     int ne01 = me + i - icxe;
-                    int ne11 = me + i -icxe - 1;
+                    int ne11 = me + i - icxe - 1;
+#if 0 /* option has no effect on core asymmetry of pressure in the travelling vortex*/
+                    double hcn = ccenter * 0.25*(pow(Sol->rhoY[ne00],cexp) + pow(Sol->rhoY[ne01],cexp) + pow(Sol->rhoY[ne10],cexp) + pow(Sol->rhoY[ne11],cexp));
+                    double hco = ccenter * 0.25*(pow(Sol0->rhoY[ne00],cexp) + pow(Sol0->rhoY[ne01],cexp) + pow(Sol0->rhoY[ne10],cexp) + pow(Sol0->rhoY[ne11],cexp));
+                    hc[nn] = 0.5*(hcn + hco);
+#else
                     hc[nn] = ccenter * 0.25*(pow(Sol->rhoY[ne00],cexp) + pow(Sol->rhoY[ne01],cexp) + pow(Sol->rhoY[ne10],cexp) + pow(Sol->rhoY[ne11],cexp));
+#endif
                 }
             }
             
@@ -818,6 +831,8 @@ static void operator_coefficients_nodes(
 		}
 		case 3: {			
 
+            assert(0);  /* make sure 3D branch is consistent with 2D branch!  */
+            
             int is_x_periodic = 0;
             int is_y_periodic = 0;
             int is_z_periodic = 0;
