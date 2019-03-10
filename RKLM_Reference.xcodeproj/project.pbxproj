@@ -62,6 +62,8 @@
 		9AA6E68A214C14D9008A9B8D /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		9AA8CE5822187924009477C0 /* molecular_transport.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = molecular_transport.c; sourceTree = "<group>"; };
 		9AA8CE5922187924009477C0 /* molecular_transport.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = molecular_transport.h; sourceTree = "<group>"; };
+		9AB5078E223562EB0075502D /* Bibliography.bib */ = {isa = PBXFileReference; lastKnownFileType = text; path = Bibliography.bib; sourceTree = "<group>"; };
+		9AB5078F223562EB0075502D /* hydro_comp_numerics_mwr.tex */ = {isa = PBXFileReference; lastKnownFileType = text; path = hydro_comp_numerics_mwr.tex; sourceTree = "<group>"; };
 		9AC4F90B1DA3F02D00AED455 /* RKLM_Reference */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = RKLM_Reference; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AC4F9151DA3F06F00AED455 /* Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
 		9AC4F9171DA3F06F00AED455 /* Bibliography.bib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Bibliography.bib; sourceTree = "<group>"; };
@@ -175,6 +177,15 @@
 			path = "New Group";
 			sourceTree = "<group>";
 		};
+		9AB5078D223562EB0075502D /* paper_2019 */ = {
+			isa = PBXGroup;
+			children = (
+				9AB5078E223562EB0075502D /* Bibliography.bib */,
+				9AB5078F223562EB0075502D /* hydro_comp_numerics_mwr.tex */,
+			);
+			path = paper_2019;
+			sourceTree = "<group>";
+		};
 		9AC4F9021DA3F02D00AED455 = {
 			isa = PBXGroup;
 			children = (
@@ -210,6 +221,7 @@
 		9AC4F9161DA3F06F00AED455 /* Doc */ = {
 			isa = PBXGroup;
 			children = (
+				9AB5078D223562EB0075502D /* paper_2019 */,
 				9A7A55E521873A4400446950 /* .gitignore */,
 				9A8840AE2148EB2700FC83CB /* RandomNotes.txt */,
 				9AC4F9171DA3F06F00AED455 /* Bibliography.bib */,
