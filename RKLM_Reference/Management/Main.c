@@ -63,10 +63,15 @@ int main( void )
 	int output_switch = 0;
         
     double dt_factor;
-    
+        
 	/* data allocation and initialization */
 	Data_init();
-        
+    
+#ifdef IMP_MIDPT_FOR_NODAL_PI
+    double* p2_nodes_store  = (double*)malloc(node->nc*sizeof(double));
+    double* dp2_nodes_store = (double*)malloc(node->nc*sizeof(double));
+#endif
+
     /* An initial implicit Euler step in the second projection removes noise 
      in some cases. It effectively acts like a filter on the initial data. */
     dt_factor = (ud.initial_impl_Euler == CORRECT ? 0.5 : 1.0);
@@ -116,7 +121,7 @@ int main( void )
             /* use full trapezoidal rule for non-advective terms also in the predictor for the half-time fluxes */
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, bdry, elem);
             euler_forward_non_advective(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.25*dt, WITH_PRESSURE);
-            advect(Sol, flux, Sol0, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, ud.advec_time_integrator, step%2);
+            advect(Sol, flux, Sol0, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, ud.advec_time_integrator, step%2);
 
             /* divergence-controlled advective fluxes at the half time level */
             for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes0[nn] = mpv->p2_nodes[nn];
@@ -126,13 +131,19 @@ int main( void )
             for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes[nn] = mpv->p2_nodes0[nn];
 #else
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, bdry, elem);
-            advect(Sol, flux, Sol0, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, SINGLE_STRANG_SWEEP, ud.advec_time_integrator, step%2);
+            advect(Sol, flux, Sol0, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, ud.advec_time_integrator, step%2);
 
             /* divergence-controlled advective fluxes at the half time level */
             for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes0[nn] = mpv->p2_nodes[nn];
             euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt); 
             euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt, 1.0);
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, bdry, elem);
+#ifdef IMP_MIDPT_FOR_NODAL_PI
+            for (int nn=0; nn<node->nc; nn++) {
+                p2_nodes_store[nn]  = mpv->p2_nodes[nn];
+                dp2_nodes_store[nn] = mpv->dp2_nodes[nn];
+            }
+#endif
             for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes[nn] = mpv->p2_nodes0[nn];
 #endif
             
@@ -158,8 +169,13 @@ int main( void )
             euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt);
             euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt, 2.0);
      
-            synchronize_variables(mpv, Sol, elem, node, ud.synchronize_nodal_pressure);
-
+#ifdef IMP_MIDPT_FOR_NODAL_PI
+            for (int nn=0; nn<node->nc; nn++) {
+                mpv->p2_nodes[nn]  = p2_nodes_store[nn] + dp2_nodes_store[nn];
+                mpv->dp2_nodes[nn] = dp2_nodes_store[nn];
+            }
+#endif
+            
             if (ud.absorber) {
                 Absorber(Sol, (const ElemSpaceDiscr*)elem, (const double)t, (const double)dt); 
             }                                    
@@ -191,6 +207,11 @@ int main( void )
 	
 	/* data release */
 	Data_free();
+    
+#ifdef IMP_MIDPT_FOR_NODAL_PI
+    free(dp2_nodes_store);
+    free(p2_nodes_store);
+#endif
 	    
     if (ud.n_time_series > 0) {
         close_time_series();

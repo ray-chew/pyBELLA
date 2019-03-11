@@ -53,7 +53,7 @@ title_true = 1;
 
 kmin = 0;
 kmax = 601;
-dk   = 9;
+dk   = 1;
 
 if strcmp(test_case, 'Baldaufs-Internal-Wave-Tests')
     scalefactor = 20.0;
@@ -123,8 +123,8 @@ elseif strcmp(test_case, 'Rising-Bubble')
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Travelling-Vortex')
-    ncx = 1024;  
-    ncy = 1024; 
+    ncx = 128;  
+    ncy = 128; 
     L   = 1.0;  
     x0  = 0.0;
     H   = 1.0; 
