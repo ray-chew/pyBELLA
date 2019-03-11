@@ -41,12 +41,10 @@
 #define P2_FULL_STENCIL 1.0        /* values: 0.0, 1.0;  0.0 = 5/7pt stencil,  1.0=9/27pt stencil */
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
 
-
-/* quick and dirty switches
-#define NEUMANN_Y_BOTTOM_BC
+/*
+#define IMP_MIDPT_FOR_NODAL_PI
  */
-
-/* TODO: Code cleaning / maintainance
+/* TODO: 
  
  1) Make all appearances of "extern ..." disappear except for those of
  User_Data ud;
@@ -58,16 +56,32 @@
  
  3) Get rid of the full-size dSol arrays
  
- 4) Implement   Hydrostatic_Initial_Pressure()  for 3D.
+ 4) Implement   Hydrostatic_Initial_Pressure()  [and lots of other stuff] for 3D.
  
  5) Rewrite  slanted_wall_min() and related routines for cross-wall advective flux  
     rhoYu  instead of for rhou to improve compatibility with the pseudo-incompressible
     model
  DONE
  
- 6) Implement Piotr's conjugate residual scheme also for the nodal projection
+ 6) Implement Piotr's conjugate residual scheme also for the nodal projection;
+    re-invoke a multigrid solver, such as HYPRE
  
  7) Limiter with plateau- instead of extrema-detection
+ 
+ 8) Try applying implicit midpoint rule systematically for the nodal pressure, too, 
+    while discarding the pressure (correction) computed in the second projection.
+    This would allow us to automatically synchronize the nodal and cell-centered
+    pi and rhoY = P variables, without having to invoke some additional averaging 
+    procedure.
+ 
+9)  Re-implement outer iteration in the nodal Helmholtz solve so as to guarantee
+    exact compliance of nodal Exner pressure with the equation of state P = P(pi).
+ 
+10) Implement a version of the nodal projection that always compute pi-increments
+    rather than full pi' data. This will allow us to claim working with "full 
+    not perturbation variables" only. 
+ 
+11) Try accessing the Arakawa-Konor model. 
  
  */
 

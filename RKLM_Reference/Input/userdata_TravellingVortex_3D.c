@@ -34,23 +34,22 @@ void User_Data_init(User_Data* ud) {
 	double omega = 0.0; /* 2*PI*sin(0.25*PI)/(24.0*3600.0); [s^-1] */
 
     /* thermodynamics and chemistry */
-    double R_gas    = 287.0;            /* [J/kg/K]               */
+    double R_gas    = 287.4;            /* [J/kg/K]               */
     double R_vap    = 461.00;           /* [J/kg/K]               */
     double Q_vap    = 2.53e+06;         /* [J]                    */
     double gamma    = 1.4;              /* dimensionless          */
     
-    double viscm  = 0.0;            /* [m^2/s]                         */
+    double viscm  = 0.0;             /* [m^2/s]                         */
     double viscbm = 0.0;             /* [m^2/s]                         */
     double visct  = 0.0;             /* [m^2/s]                         */
     double viscbt = 0.0;             /* [m^2/s]                         */
-    double cond   = 0.0;            /* [m^2/s]                         */
+    double cond   = 0.0;             /* [m^2/s]                         */
 
     /* references for non-dimensionalization */
-    double h_ref    = 10000;                 /* [m]               */
-    double t_ref    = 100;                   /* [s]               */
-    double T_ref    = 300.0;                /* [K]               */
-    double p_ref    = 101625.0;                 /* [Pa]              */
-    
+    double h_ref    = 1000;                  /* [m]               */
+    double t_ref    = 1000;                  /* [s]               */
+    double T_ref    = 300.00;                /* [K]               */
+    double p_ref    = 1e+5;                  /* [Pa]              */
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
 
@@ -131,7 +130,7 @@ void User_Data_init(User_Data* ud) {
 	
 	ud->absorber = WRONG; /* CORRECT; */   
     ud->bottom_theta_bc = BOTTOM_BC_DEFAULT;
-	
+
 	/* ======================================================================== */
 	/* =====  NUMERICS  ======================================================= */
 	/* ======================================================================== */
@@ -139,15 +138,15 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
-    ud->CFL                   = 0.45;  /* something less than 0.5 for STRANG */       
+    ud->CFL                   = 0.33;  /* something less than 0.5 for STRANG */       
     ud->dtfixed0              = 100000.0; /* 2.1*1.200930e-02 */;
     ud->dtfixed               = 100000.0; /* 2.1*1.200930e-02 */;   
     
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 192+1; /*  */
-	ud->iny = 192+1; /*  */
+	ud->inx = 128+1; /*  */
+	ud->iny = 128+1; /*  */
 	ud->inz =     1;
 
     /* explicit predictor step */
@@ -168,7 +167,7 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  201; /* (ud->inx+3); */
 	
 	/* linear solver-stuff */
-    double tol = 1.e-8;
+    double tol = 1.e-10;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -193,8 +192,8 @@ void User_Data_init(User_Data* ud) {
     ud->tout[0] =  1.0;      
     ud->tout[1] =  2.0;      
     ud->tout[2] =  3.0;      
-    ud->tout[3] = -1.0;
-
+    ud->tout[3] = -1.0;      
+    
     /*
     ud->tout[0] =  0.5;      
     ud->tout[1] =  1.0;      
@@ -205,12 +204,12 @@ void User_Data_init(User_Data* ud) {
     ud->tout[6] = -1.0;
      */
     
-    ud->stepmax = 1;
+    ud->stepmax = 20000;
 
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 10000;
+	ud->write_file_period = 100000000;
 	ud->file_format = HDF;
 
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
@@ -246,8 +245,9 @@ void Sol_initial(ConsVars* Sol,
     const double rotdir = 1.0;  
     
     const double p0      = 1.0;
-    const double rho0    = 0.5;  /* 0.5 standard;  1.0 stable configuration; */
-    const double del_rho = 0.5;  /* 0.5 standard; -0.5 stable configuration; 0.0; for homentropic */
+    const double a_rho   = 1.0;
+    const double rho0    = a_rho*0.5;  /* 0.5 standard;  1.0 stable configuration; */
+    const double del_rho = a_rho*0.5;  /* 0.5 standard; -0.5 stable configuration; 0.0; for homentropic */
     const double R0      = 0.4;
     const double fac     = 1*1024.0; /* 4*1024.0 */
     const double xc      = 0.0;
@@ -467,7 +467,7 @@ void Sol_initial(ConsVars* Sol,
         }
         
         //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
-        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed, 0.0);
+        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed, 1.0);
         for (int nn=0; nn<node->nc; nn++) {
             mpv->p2_nodes[nn] = p2aux[nn];
             mpv->dp2_nodes[nn] = 0.0;
