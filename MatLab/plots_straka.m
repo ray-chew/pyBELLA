@@ -78,7 +78,7 @@ for k = kmin:dk:kmax
     
     % Create filled contour
     figure(figure1)
-    contourf(x,z,300*th,contour_values,'LineColor',linecolor);
+    contourf(x,z,300*th,[min(min(300*th)) contour_values],'LineColor',linecolor);
     hold on
     contour(x,z,300*th,contour_values,'LineColor','k','LineWidth',1.0);
     colormap viridis
@@ -107,6 +107,7 @@ for k = kmin:dk:kmax
        hold off 
        figure(k)
        [cc,handle]=contour(x,z,300*th,[-1 -1],'LineColor','k');
+       close
        fprintf('Front position:%5d m\n', floor(1000*max(cc(1,:))));
     end
 

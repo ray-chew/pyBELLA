@@ -175,7 +175,7 @@ plot(x5(floor(end/2+1):4:(floor(hor_xlim*end)+1)), ...
     'gx-', 'LineWidth',2, 'MarkerSize', 6.5, 'DisplayName', '25 m');
 
 
-set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
+set(gca,'DataAspectRatio', aspect, 'FontSize',14,'FontName','Helvetica');
 axis tight;
 
 set(0,'defaulttextinterpreter','latex')
