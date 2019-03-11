@@ -370,7 +370,7 @@ void Sol_initial(ConsVars* Sol,
                         if ( r/R0 < 1.0 ) {
                             for (int ip = 0; ip < 25; ip++)
                             {
-                                dp2c += coe[ip] * (pow(r/R0 ,12+ip) - 1.0) * rotdir * rotdir;
+                                dp2c += a_rho * coe[ip] * (pow(r/R0 ,12+ip) - 1.0) * rotdir * rotdir;
                             }
                         }
                              

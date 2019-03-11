@@ -131,13 +131,13 @@ elseif strcmp(test_case, 'Travelling-Vortex')
     ncx = 48;  
     ncy = 48; 
     L   = 1.0;  
-    x0  = 0.5;
+    x0  = 0.0;
     H   = 1.0; 
     aspect = [2 2 2];
     velosc = 1; 
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
-elseif strcmp(test_case, 'Gresho-Vortex')a
+elseif strcmp(test_case, 'Gresho-Vortex')
     ncx = 80;  
     ncy = 20; 
     L   = 4.0;  
@@ -148,8 +148,8 @@ elseif strcmp(test_case, 'Gresho-Vortex')a
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Travelling-Hump')
-    ncx = 31;  
-    ncy = 31; 
+    ncx = 20;  
+    ncy = 20; 
     L   = 1.0;  
     x0  = 0.5;
     H   = 1.0; 
@@ -225,8 +225,8 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'T';  folderstr = 'T'; titlestr = 'T'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dT';  folderstr = 'dT'; titlestr = 'dT'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
-%varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
+varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; no_of_contours = 50;
+%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
