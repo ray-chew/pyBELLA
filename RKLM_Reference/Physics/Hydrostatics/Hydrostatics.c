@@ -284,7 +284,6 @@ void Hydrostatics_State(MPV* mpv,
         Sn_integral_p += elem->dy * Sn_p;
     }
     
-    // printf("Here\n");
     
 #if OUTPUT_HYDROSTATES
     {

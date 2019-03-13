@@ -34,22 +34,22 @@ void User_Data_init(User_Data* ud) {
 	double omega = 0.0; /* 2*PI*sin(0.25*PI)/(24.0*3600.0); [s^-1] */
 
     /* thermodynamics and chemistry */
-    double R_gas    = 287.0;            /* [J/kg/K]               */
+    double R_gas    = 287.4;            /* [J/kg/K]               */
     double R_vap    = 461.00;           /* [J/kg/K]               */
     double Q_vap    = 2.53e+06;         /* [J]                    */
     double gamma    = 1.4;              /* dimensionless          */
     
-    double viscm  = 0.0;            /* [m^2/s]                         */
+    double viscm  = 0.0;             /* [m^2/s]                         */
     double viscbm = 0.0;             /* [m^2/s]                         */
     double visct  = 0.0;             /* [m^2/s]                         */
     double viscbt = 0.0;             /* [m^2/s]                         */
-    double cond   = 0.0;            /* [m^2/s]                         */
+    double cond   = 0.0;             /* [m^2/s]                         */
 
     /* references for non-dimensionalization */
-    double h_ref    = 10000;                 /* [m]               */
-    double t_ref    = 100;                   /* [s]               */
+    double h_ref    = 10000;                  /* [m]               */
+    double t_ref    = 100;                  /* [s]               */
     double T_ref    = 300.00;                /* [K]               */
-    double p_ref    = 10e+5;                 /* [Pa]              */
+    double p_ref    = 101625;                  /* [Pa]              */
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
 
@@ -138,7 +138,7 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
-    ud->CFL                   = 0.25;  /* something less than 0.5 for STRANG */       
+    ud->CFL                   = 0.45;  /* something less than 0.5 for STRANG */       
     ud->dtfixed0              = 100000.0; /* 2.1*1.200930e-02 */;
     ud->dtfixed               = 100000.0; /* 2.1*1.200930e-02 */;   
     
@@ -204,7 +204,7 @@ void User_Data_init(User_Data* ud) {
     ud->tout[6] = -1.0;
      */
     
-    ud->stepmax = 10000;
+    ud->stepmax = 20000;
 
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
@@ -215,7 +215,7 @@ void User_Data_init(User_Data* ud) {
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
 
     {
-        char *OutputBaseFolder      = "/home/tommaso/prova/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {

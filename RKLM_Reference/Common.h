@@ -42,7 +42,8 @@
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
 
 /*
-#define IMP_MIDPT_FOR_NODAL_PI
+#define NEUMANN_Y_BOTTOM_BC
+//#define IMP_MIDPT_FOR_NODAL_PI
  */
 /* TODO: 
  
