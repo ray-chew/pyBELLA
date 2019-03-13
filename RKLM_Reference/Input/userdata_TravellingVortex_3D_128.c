@@ -139,8 +139,8 @@ void User_Data_init(User_Data* ud) {
     ud->time_integrator       = SI_MIDPT;
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
     ud->CFL                   = 0.45;  /* something less than 0.5 for STRANG */       
-    ud->dtfixed0              = 100000.0; /* 2.1*1.200930e-02 */;
-    ud->dtfixed               = 100000.0; /* 2.1*1.200930e-02 */;   
+    ud->dtfixed0              = 1.0; /* 2.1*1.200930e-02 */;
+    ud->dtfixed               = 1.0; /* 2.1*1.200930e-02 */;   
     
     set_time_integrator_parameters(ud);
     
@@ -175,7 +175,7 @@ void User_Data_init(User_Data* ud) {
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
     
-    ud->initial_projection                = CORRECT;   /* to be tested: WRONG;  CORRECT; */
+    ud->initial_projection                = WRONG;   /* to be tested: WRONG;  CORRECT; */
     ud->initial_impl_Euler                = WRONG;   /* to be tested: WRONG;  CORRECT; */
     
     ud->column_preconditioner             = WRONG; /* WRONG; CORRECT; */
