@@ -1,7 +1,7 @@
 function plots_vortex_convergence(varstr, np, conv_type)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% plots_vortex_convergence(varstr)
+% plots_vortex_convergence(varstr, np, conv_type)
 % Produces convergence plots from RKLM low Mach fluid dynamics code hdf output
 % for the paper "A semi-implicit numerical model for small-to-planetary scale atmospheric
 % dynamics", rotating Gresho vortex case. Assumes fine grid as exact

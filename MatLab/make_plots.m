@@ -15,8 +15,8 @@ clear all
 close all
 
 % Vortex
-plots_vortex('rho', 192)
-plots_vortex('p2_n', 192)
+%plots_vortex('rho', 192)
+%plots_vortex('p2_n', 192)
 
 % for np=48:16:64
 %     plots_vortex_convergence('rho', np, 'wrt_t0')
@@ -35,9 +35,9 @@ plots_vortex('p2_n', 192)
 % plots_straka('dY', 400);
 % plots_straka('dY', 200);
 % plots_straka('dY', 100);
-plots_straka('dY', 50);
+%plots_straka('dY', 50);
 % plots_straka('dY', 25);
-plots_straka_1dcuts('dY')
+%plots_straka_1dcuts('dY')
 
 % Internal Waves
  plots_internalwave('dY', 'NH');
@@ -51,7 +51,7 @@ plots_straka_1dcuts('dY')
  plots_internalwave_cmp('P');
 
 % Baldauf-Brdar internal wave
-plots_baldauf('dT');
-plots_baldauf('u');
-plots_baldauf('v');
+%plots_baldauf('dT');
+%plots_baldauf('u');
+%plots_baldauf('v');
 

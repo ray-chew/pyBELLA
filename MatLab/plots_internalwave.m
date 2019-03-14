@@ -28,7 +28,7 @@ set(0,'DefaultFigureColor',[1 1 1])
 dtheta = 0.5e-3;
 
 kmin = 0;
-kmax = 2;
+kmax = 1;
 dk   = 1;
 
 if strcmp(ext, 'NH')
