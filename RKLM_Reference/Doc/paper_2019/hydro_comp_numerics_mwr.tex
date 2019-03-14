@@ -249,83 +249,6 @@ Dipartimento di Matematica, Politecnico di Milano, Piazza Leonardo da Vinci 32, 
 \section{Introduction}
 \label{sec:Intro}
 
-%TBD 
-% \cite{SmolarkiewiczEtAl2016}
-% 
-% Literature review re two-time level, full variables, no off-centering, conservative (and of what), second-order, advection-explicit.
-% 
-% Second-order accurate schemes rare. This is an extension of \cite{BenacchioEtAl2014} to address a gap in their formulation, but how novel is it? 
-
-
-
-
-
-% Key points of the paper: 
-% \begin{itemize}
-% \item Semi-implicit scheme, only advection explicit
-% \item Full variables advanced in time \\
-%       \klein{We obtain the best results by running a redundant nodal pressure evolution
-%       as is done in EULAG and FVM. With the most recent results we seem to get away with
-%       the implicit trapezoidal rule for the time integration in the implicit part without
-%       offset, which Piotr tells me they cannot do for all THEIR tests. Of course, they are
-%       running different tests than us, so it remains to be seen how far we get with what
-%       we have. Whenever I switch on synchronizations, I see spurious perturbations and
-%       instabilities creep up. \\ 
-%       Another point is that currently I am extracting a mean pressure profile both from 
-%       the nodal and the cell-centered pressures that enter the momentum balances (for
-%       cells and interface momenta, respectively). We will need to test whether we can
-%       work with full variables there and/or whether the scheme runs robustly if we DYNAMICALLY
-%       calculate the background state.}
-% \item Unconditional time step stability w.r.t.\ acoustics, internal waves, Rossby waves\\
-%       \klein{We surely should aim to demonstrate this through examples. Can we construct
-%       rigorous arguments?}
-% \item Background states \& perturbation variables are only auxiliary \\
-%       \klein{Again, this we should be able to demonstrate. See two items up.}
-% \item Mix of implicit midpoint and implicit trapezoidal rules \\
-%       \klein{I am not so sure the approach is new as it is very close to the 
-%       usual MAC-Projection + second project approach used by many others in the
-%       ``approximate projection'' world, but I do think that viewing what we do from 
-%       this angle might allow for improved understanding of the scheme's properties.}
-% \item Borrowing ideas from EULAG/FVM
-% \item \benacchio{(Mass-, horizontal momentum-,...?) Conservative} \\
-%       \klein{Interesting point. We conserve $\rho$ and $\rho\theta$ for sure, but already
-%       for momentum I am compromising, as I seem to need the Exner variable to get 
-%       reliable implicit gravity. Here we may want to go back to your/Warren's theses,
-%       and later discussions of mine where we show that one can have discretely equivalent
-%       Exner and full pressure formulations under the psinc model. If we can pull this off
-%       for the compressible case, too, and I am optimistic, then we would have a very nice
-%       point.}
-% \item Second-order, symplectic in the implicit part, no off-centering, no diffusion
-% %\item \benacchio{No off-centering}
-% \item Further aim: Step towards extending compr/psinc blended model formulation 
-%       from \citep{BenacchioEtAl2014, KleinEtAl2014} to cover hydrostasy, geostrophy, as well
-%       \citep[see][]{KleinBenacchio2016}.
-% 
-% \item Test with rotation and multiscale, Baldauf and Brdar 2016.
-% 
-% \item Very large test simulating planetary scales in a Cartesian framework, showing competitive behaviour of our scheme
-% 
-% \end{itemize}
-% 
-% \benacchio{We should perhaps better clarify how this makes the scheme
-% different from all the other models that work with perturbations only,
-% e.g. ENDGame works with the old time-step profiles as reference. In our case
-% the decompositions \eq{eq:PerturbationVariables} and \eq{eq:BackgroundHydrostatics} are only
-% instrumental to constructing the elliptic problems in the correction steps.
-% I shall go into the bells and whistles of other schemes to understand how
-% they carry forward perturbations more than we do.} 
-% 
-%  \klein{\bfseries We use the full conservation form to update $\chi$ in the advection step. In contrast, 
-% $\chi'$ is used only to prepare for the implicit gravity time integration and is
-% overwritten after a time step. In your scan of the literature, please have a look
-% at how others do this. I believe that only Hilary is doing it similarly to us in 
-% her paper with Shahrokhi, and maybe in her later cell-centered code(s). But this, too,
-% we need to double-check. }
-% 
-% 
-% Novelty/competitiveness: Two-time level, full variables, no off-centering, conservative (and of what), second-order, advection-explicit.
-% Possible aspects of novelty/discussion are a) Novel combination of functionality b) results quality c) implementation d) speed/scalability (presumably comparable to a DG code but without the high-order capabilities) e) flexibility towards encapsulating different equation sets/ outlook for blending, data assimilation.
-
 % ===========================================================================
 
 \subsection{Motivation: Blending of full and reduced dynamical flow models}
@@ -369,7 +292,7 @@ By reframing the schemes of \cite{KleinTCFD2009} and \cite{BenacchioEtAl2014} as
 \item Constitutes a basis for a multiscale formulation with access to hydrostasy and geostrophy.
 \end{itemize}
 
-The method uses an explicit second-order MUSCL scheme for advection, while the pressure and momentum equations are stably integrated by solving two elliptic problems embedded in the implicit midpoint and implicit trapezoidal stages. The scheme is validated against two-dimensional Cartesian benchmarks of nonhydrostatic and hydrostatic dynamics. Simulations of inertia-gravity wave tests at large scale and with rotation show competitive performance with existing approaches already at relatively coarse resolutions. In particular, a new planetary-scale extension of the hydrostatic-scale test of \cite{SkamarockKlemp1994} showcases the large time step capabilities of the present scheme. For the large-scale tests, we run the model in pseudo-incompressible mode and hydrostatic mode and analyse the difference with the compressible simulation. As expected, with increasingly large scales the compressible/pseudo-imcompressible discrepancy grows and the compressible/hydrostatic discrepancy shrinks \klein{with time}.
+The method uses an explicit second-order MUSCL scheme for advection, while the pressure and momentum equations are stably integrated by solving two elliptic problems embedded in the implicit midpoint and implicit trapezoidal stages. The scheme is validated against two-dimensional Cartesian benchmarks of nonhydrostatic and hydrostatic dynamics. Simulations of inertia-gravity wave tests at large scale and with rotation show competitive performance with existing approaches already at relatively coarse resolutions. In particular, a new planetary-scale extension of the hydrostatic-scale test of \cite{SkamarockKlemp1994} showcases the large time step capabilities of the present scheme. For the large-scale tests, we run the model in pseudo-incompressible mode and hydrostatic mode and analyse the difference with the compressible simulation. As expected from theoretical normal mode analyses \citep{DaviesEtAl2003, Dukowicz2013} (though see also \cite{KleinEtAl2010} for a discussion on regime of validity of soundproof models), the compressible/hydrostatic discrepancy shrinks with smaller vertical-to horizontal domain size aspect ratios, while the compressible/pseudo-imcompressible discrepancy grows with larger scales.
 
 The paper is organized as follows. Section \ref{sec:GoverningEquations} contains the governing equations that are discretized with the methodology summarised in section \ref{sec:TimeDiscretizationSummary} and detailed in section~\ref{sec:DiscretizationDetails}. Section \ref{sec:Results} documents the performance of the code on the abovementioned tests. Results are discussed and conclusions drawn in section \ref{sec:Conclusions}. 
 
@@ -429,16 +352,6 @@ $\Theta = P/\rho$ satisfies the usual advection equation
 \begin{equation}
 \Theta_t + \vu\cdot\nabla_\parallel \Theta + w \Theta_z = 0\,.
 \end{equation}
-
-%% ===========================================================================
-%
-%\subsection{Perturbation vs.\ full variables and conservation form}
-%\label{ssec:PertFullCons}
-%
-%\klein{Here we should point out difficulties others have had in formulating
-%a scheme that systematically advances full variables, and in formulating
-%a scheme in conservation form that is implicit w.r.t.\ buoyancs (e.g.,
-%Hilary's MWR paper). See ``key points'' in the abstract section.}
 
 % ===========================================================================
 % ===========================================================================
@@ -655,7 +568,6 @@ where $R^{n+\half} = R\left[y(t^n) + (\Delta t/2) \dot y(t^n)\rule{0pt}{10pt}\ri
 \frac{y(t^{n+1})-y(t^n)}{\dt} = R^{n+\half} + \bigoh{\dt^2}\, .
 \end{equation}
 %
-%which indicates that second-order accuracy can be achieved when the right hand side is locally approximated at the half time level only by a first order update from the old time level.  
 
 In order to achieve stability for large time steps, only limited by the advection Courant number,
 we invoke standard splitting into advective and non-advective terms in 
@@ -764,16 +676,6 @@ momentum equation, an auxiliary implicit Euler discretization of the energy
 equation in perturbation form for $\piprime$ from \eq{eq:EulerPiPrime} is 
 used in formulating \eq{eq:ImplicitEulerStep}. See 
 section~\ref{sec:DiscretizationDetails}\ref{ssec:SemiImplicitForcing} for details. 
-
-
-
-%After completion of the steps in \eq{eq:TimeIntegrator}, the auxiliary 
-%variables $(\chiprime, \pi')$ are recomputed from the primary
-%unknowns $(\rho, \rho\vu, \rho w, P)$ at the new time level. This ensures
-%consistency of all variables with respect to the equation of state and
-%ensures that $(\chiprime, \pi')$ are approximated with the same, i.e., 
-%second, order of accuracy as the primary variables across multiple time 
-%steps. 
 
 After completion of the steps in \eq{eq:TimeIntegrator} we have 
 two redundancies in the thermodynamic variables. In addition to the
@@ -967,25 +869,6 @@ of the above in that the advective fluxes are approximated at the old time level
 i.e., the cell-to-face interpolation formulae for the advective fluxes described
 in section~\ref{sssec:DivControlledAdvectiveFluxes} below are evaluated with the
 components of $(P\vv)^n$.
-%%
-%\begin{IEEEeqnarray}{rCl}\label{eq:firstorder_Adv}
-%(Pu)^{n}_{i+\half,j,k} 
-%  & = 
-%    & \frac{1}{2}\left((Pu)^{n}_{i,j,k} + (Pu)^{n}_{i+1,j,k}\right)\,.
-%\end{IEEEeqnarray}
-%%
-%and (ii) we use straightforward sequential instead of Strang splitting, i.e.,  
-%%
-%\begin{equation}
-%\mathcal{A}_{1\text{st}}^{\frac{\dt}{2}}
-%=
-%\mathcal{A}^{\frac{\dt}{2}}_x 
-%\mathcal{A}^{\frac{\dt}{2}}_y 
-%\qquad\text{and}\qquad
-%s_{i,j} \equiv 0\,,
-%\end{equation}
-%%
-%in our standard configuration. 
 % ===========================================================================
 % ===========================================================================
 
@@ -1048,22 +931,6 @@ are either those values available when the routine solving the implicit Euler st
 or they can be adjusted nonlinearly in an outer iteration loop as described in a similar 
 context by \citet{SmolarkiewiczEtAl2014}. For all the results shown in this paper we have
 used the simpler variant without an outer iteration.
-
-%\red{We need to discuss in which sense we use ``full pressure variables'' w.r.t.\ nodal pressure.}
-
-%\benacchio{Are these starred variables the same as in \eqref{eq:ExplicitEulerStep} or a general base state?}.
-%\klein{\bfseries This is a good question, and there is some ambiguity: In the first
-%projection (see file flux\_correction.c, and in there routine operator\_coefficients(), 
-%I am using $P$ from the old time level, and $Y$ -- that is $\chi$ -- from the current
-%field. In the second projection, I am using values from the current field throughout. 
-%For the second projection, this is what we should do, because $P$ and $\rho$ have their
-%final $t^{n+1}$ values after the advection sweep, and we are only updating the cell-centered
-%momenta and the nodal pressure. In the first projection, one can play with how to choose 
-%the starred coefficients. In practice, I have seen hardly a difference so far. But this 
-%may have changed in the meantime. I have not tested this in quite some time and the scheme
-%has developed substantially in other parts of the code. Actually, in operator\_coefficients()
-%you will find compiler directives by which you can already switch to a different option for
-%evaluating these coefficients.}
 
 The implicit Euler semi-discretization of \eq{eq:LinearizedNonAdvectiveSystem} 
 in time then reads
@@ -1334,7 +1201,7 @@ in Fig.~\ref{fig:Interpolations}c).
 By this approach, we remove the necessity of separately controlling the advective 
 fluxes by an elliptic equation for cell-centered pressure values on the one hand 
 and controlling the divergence of the cell-centered velocities by another elliptic 
-equation for nodal pressures on the other hand, as in, e.g., \citep{BellEtAl1989,AlmgrenEtAl2006,SchneiderEtAl1999b,BenacchioEtAl2014}.
+equation for nodal pressures on the other hand, as in, e.g., \citep{BellEtAl1989,AlmgrenEtAl2006,SchneiderEtAl1999,BenacchioEtAl2014}.
 Thus, the present scheme works with the node-based discretization of the Helmholtz 
 equation only. We note in passing that this approach requires an \emph{exact} projection
 for the nodal divergence. 
@@ -1399,60 +1266,6 @@ values and the cell-centered values of $P$ is avoided.
 
 For the tests shown in this paper, we have not used such an outer iteration, yet we did not observe a desynchronization even over tens of thousands of time steps. 
 
-\klein{[Tommaso, we may want to look at the $P$-variable in comparison with the nodal $\pi'$ for some of the tests, especially the Baldauf-one that takes so many time steps.]}
-
-%% ===========================================================================
-%% ===========================================================================
-%
-%\subsection{Tabular summary of the numerical scheme}
-%
-%In the following we summarize the operations in one time step of the algorithm described above%
-%
-%\vspace{2 mm}
-%
-%\newpage
-%
-%\begin{falgorithm}[Compressible scheme]
-%\ \\
-%% Starting from compliant initial and boundary conditions:
-%\begin{description}
-%%
-%\vspace{-2mm}
-%
-%\item[\emph{Initialization}]\ \\ Grid setting and input preprocessing. Optional first elliptic solve to generate a divergence-improved velocity field. Then, for each time loop, \textbf{do}:
-%%
-%\item[\emph{First stage}]
-%%
-%  \begin{enumerate}\item[]
-%    \item[(i)] Determine advective fluxes $(P\vv)^{n+1/2}$ in \eq{eq:HalfTimePredictorFluxCorrection} using scalars computed in \eq{eq:HalfTimePredictorAdvection}.  
-%
-%    \item[(ii)] Use the relation between $P$ and $\pi$ in \eq{eq:HalfTimePredictorPLinearization} to construct a first Helmholtz problem for the half-time level pressure $\pi^{n+1/2}$.
-%
-%    \item[(iii)] Use the advective fluxes to obtain $P^{n+1}$ through \eq{eq:PUpdate}.
-%
-%  \end{enumerate}
-%
-%\item[\emph{Second stage - scalars update}]
-%%
-%  \begin{enumerate}\item[]
-%    \item[(i)] Evolve the scalars $\Psi$ as defined in \eq{eq:PsiDefinition} to the new time-level using the explicit-then-advection-then-implicit procedure of \eq{eq:ExplicitEulerStep}-\eq{eq:AdvectionStep}-\eq{eq:ImplicitEulerStep}
-%
-%    \item[(ii)] In \eq{eq:ImplicitEulerStep} for the momentum-like components of $\Psi$, a second Helmholtz problem \eq{eq:helmholtz} is constructed to find $\pi'^{n+1}$.
-%
-%  \end{enumerate}
-%
-%\item[\emph{Auxiliary variables update}]
-%
-%  \begin{enumerate}\item[]
-%    \item[(i)] The auxiliary variables $(\chi', \piprime)$ are computed from the primary unknowns at the new time level.
-%  \end{enumerate}
-%
-%%
-%%\item[\emph{Conclusion}]\ \\ Post-processing and output management.  
-%%
-%\end{description}
-%\end{falgorithm}
-%
 
 % ===========================================================================
 % ===========================================================================
@@ -1461,21 +1274,19 @@ For the tests shown in this paper, we have not used such an outer iteration, yet
 \section{Numerical Results}
 \label{sec:Results}
 
-The algorithm described in the previous Sections was tested on a suite of benchmarks of dry compressible dynamics at various scales. The suite draws on the set of \cite{Benacchio2014,BenacchioEtAl2014} including a cold air bubble and nonhydrostatic inertia-gravity waves, and adds to it three larger scale configurations for the inertia-gravity waves, with the aim to validate both the robustness and accuracy of the new buoyancy-implicit strategy, and the scheme's capability of accessing compressible, pseudo-incompressible, and hydrostatic dynamics. We remark that the present paper does not focus on efficiency. While the coding framework is 3D-ready, we leave parallelization and performance on three-dimensional tests for future work. The scheme is implemented in plain C language and uses the Bi-CGSTAB linear solver \citep{Vandervorst1992} for the solution of the elliptic problems. The solver tolerance was set at $10^{-8}$ throughout. As in \cite{BenacchioEtAl2014}, we define the advective Courant number (CFL) as:
+The algorithm described in the previous Sections was tested on a suite of benchmarks of dry compressible dynamics at various scales. The suite draws on the set of \cite{Benacchio2014,BenacchioEtAl2014} including a cold air bubble and nonhydrostatic inertia-gravity waves, and adds to it three larger scale configurations for the inertia-gravity waves, with the aim to validate both the robustness and accuracy of the new buoyancy-implicit strategy, and the scheme's capability of accessing compressible, pseudo-incompressible, and hydrostatic dynamics. We remark that the present paper does not focus on efficiency. While the coding framework is 3D-ready, we leave parallelization and performance on three-dimensional tests for future work. The scheme is implemented in plain C language and uses the Bi-CGSTAB linear solver \citep{Vandervorst1992} for the solution of the elliptic problems. The solver tolerance was set at $10^{-8}$ throughout. As in \cite{BenacchioEtAl2014}, we define the advective Courant number as:
 %
 \begin{equation}
- CFL=\dfrac{\Delta t \max(\|\mathbf{u}\|_2)}{\min{\Delta x}}
+CFL_{adv} = \max\limits_{i \in \{1,2,3\}}\left(\frac{\dt u_i}{\dx_i}\right)
 \end{equation}
 %
-\klein{[Oops, Tommaso, I use
-$$
-CFL = \max\limits_{i \in \{1,2,3\}}\left(\frac{\dt u_i}{\dx_i}\right)
-$$
-instead. Actually, in the vortex case, that actually makes a 
-difference and means that CFL 0.33 (RKLM) corresponds to roughly CFL 0.47 (SAMRAI).
-Do you want to rerun the cases, or leave it as is, just stating here that we use a somewhat
-different definition of CFL? For the gravity waves and currents it doesn't make a lot of
-a difference.]}
+where $u_i$ are the components of the velocity, $\dx_i$ the grid spacing in the $i$ direction, and the acoustic Courant number as:
+%
+\begin{equation}
+CFL_{ac} = \max\limits_{i \in \{1,2,3\}}\left(\frac{\dt c}{\dx_i}\right)
+\end{equation}
+%
+where $c=\max{\left(\gamma RT\right)}$ denotes the speed of sound.
 
 \subsection{Density current}
 
@@ -1502,14 +1313,14 @@ In the reference setup for this case, the buoyancy-implicit model is run at a re
  \includegraphics[width=\columnwidth]{./Straka_50m/dY/dY_snapshot1.eps}
  \includegraphics[width=\columnwidth]{./Straka_50m/dY/dY_snapshot2.eps}
  \includegraphics[width=\columnwidth]{./Straka_50m/dY/dY_snapshot3.eps}
- \caption{Potential temperature perturbation at times $t=0\, s$ (top left), $t=300\, s$ (top right), $t=600\, s$ (bottom left), $t=900\, s$ (bottom right) for the density current test case at spatial resolution $\Delta x=\Delta z=50\,\textrm{m}$, advective CFL$=0.96$. Contours in the range $[-16.5,\,-0.5]\,\textrm{K}$ with a $1\,\textrm{K}$ contour interval.}
+ \caption{Potential temperature perturbation at times $t=0\, s$ (top left), $t=300\, s$ (top right), $t=600\, s$ (bottom left), $t=900\, s$ (bottom right) for the density current test case at spatial resolution $\Delta x=\Delta z=50\,\textrm{m}$, advective CFL$_\textrm{adv}=0.96$. Contours in the range $[-16.5,\,-0.5]\,\textrm{K}$ with a $1\,\textrm{K}$ contour interval.}
  \label{fig:straka}
 \end{figure}
 
 \begin{figure}
 \centering
   \includegraphics[width=.75\columnwidth]{./Straka/dY/dY_snapshot1dcut.eps}
- \caption{One-dimensional cut at height $z=1200\,\textrm{m}$ for the potential temperature perturbation at final time $t=900\, s$ in the density current test case run with advective CFL$=0.96$. Spatial resolutions $\Delta x=\Delta z=400\,\textrm{m (thin solid black line)}$, $200\,\textrm{m (dashed red line)}$, $100\,\textrm{m (dashed-dotted blue line)}$, $50\,\textrm{m(thin solid black line)}$, $25\,\textrm{m (thin solid black line)}$.}
+ \caption{One-dimensional cut at height $z=1200\,\textrm{m}$ for the potential temperature perturbation at final time $t=900\, s$ in the density current test case run with advective CFL$_\textrm{adv}=0.96$. Spatial resolutions $\Delta x=\Delta z=400\,\textrm{m (thin solid black line)}$, $200\,\textrm{m (dashed red line)}$, $100\,\textrm{m (dashed-dotted blue line)}$, $50\,\textrm{m(thin solid black line)}$, $25\,\textrm{m (thin solid black line)}$.}
  \label{fig:straka1dcut}
 \end{figure}
 
@@ -1543,30 +1354,25 @@ The next set of tests consists of gravity waves in a stably stratified channel w
  \theta'(x, z, 0)=0.01~\textrm{K}*\dfrac{\sin(\pi z/H)}{1+[(x-x_c)/a]^2}\label{eq: init_theta_pert_igw} 
 \end{equation} 
 %
-with $H=10~\textrm{km}$, $x_c=100~\textrm{km}$, $a=x_N/60$, and there is a background horizontal flow $u=20~\textrm{m s}^{-1}$. We consider three configurations for the horizontal extension $x_N=300\,\textrm{km},\,6\,000\,\textrm{km},\,48\,000\,\textrm{km}$, with respective final times $T=3\,000\,\textrm{s},\,60\,000\,\textrm{s},\,480\,000\,\textrm{s}$. The first two configurations correspond to the nonhydrostatic case and the hydrostatic case of \cite{SkamarockKlemp1994}, the third planetary-scale configuration is introduced in this paper. In all configurations, the buoyancy-implicit model is run with $300\times10$ cells, as in \citep{SkamarockKlemp1994}, and advective CFL value of 0.9. \klein{[Tommaso, please double-check this. The dt\_fixed and dt\_fixed0 parameters in the userdata file have to be large enough to allow the full CFL 0.9 time step. In my file this was not the case for the planetary scale test.]}
+with $H=10~\textrm{km}$, $x_c=100~\textrm{km}$, $a=x_N/60$, and there is a background horizontal flow $u=20~\textrm{m s}^{-1}$. We consider three configurations for the horizontal extension $x_N=300\,\textrm{km},\,6\,000\,\textrm{km},\,48\,000\,\textrm{km}$, with respective final times $T=3\,000\,\textrm{s},\,60\,000\,\textrm{s},\,480\,000\,\textrm{s}$. The first two configurations correspond to the nonhydrostatic case and the hydrostatic case of \cite{SkamarockKlemp1994}, the third planetary-scale configuration is introduced in this paper. In all configurations, the buoyancy-implicit model is run with $300\times10$ cells, as in \citep{SkamarockKlemp1994}, and advective CFL$_{adv}$ value of 0.9.
 
-In the first configuration, the initial perturbation spreads out onto gravity waves driven by the underlying buoyancy stratification (Figure \ref{fig:SK94_NH}). In the second configuration, which is run with rotation (Coriolis parameter value $f=10^{-4}\,\textrm{s}^{-1}$) , a geostrophic mode is also present in the centre of the domain (Figure \ref{fig:SK94_H}). In both cases, the values obtained by running the compressible model (COMP) closely resemble published results in the literature including, for the nonhydrostatic case, the buoyancy-explicit compressible result in \cite{BenacchioEtAl2014}. The third new planetary-scale configuration is run without rotation to suppress the geostrophic mode and highlight the wave dynamics. At final time $T=480\,000\,\textrm{s}$ ($\approx5.5$ days), the solution quality with the compressible model is good in terms of symmetry, absence of oscillations, and final position of the outermost crests (Figure \ref{fig:SK94_P}). \klein{The time step in this run, corresponding to the given advective Courant number of $\mathrm{CFL}_{\mathrm{adv}} = 0.9$, is $\dt = 7\,100\,s$ which is equivalent to $N \dt = 7.1 \cdot 10^6$ and to an acoustic Courant number of $\mathrm{CFL}_{\mathrm{ac}} = 2.4\cdot 10^3$.} 
+In the first configuration, the initial perturbation spreads out onto gravity waves driven by the underlying buoyancy stratification (Figure \ref{fig:SK94_NH}). In the second configuration, which is run with rotation (Coriolis parameter value $f=10^{-4}\,\textrm{s}^{-1}$) , a geostrophic mode is also present in the centre of the domain (Figure \ref{fig:SK94_H}). In both cases, the values obtained by running the compressible model (COMP) closely resemble published results in the literature including, for the nonhydrostatic case, the buoyancy-explicit compressible result in \cite{BenacchioEtAl2014}. At CFL$_{adv}=0.9$, the time step used in the first configuration is $\Delta t\approx44.83\,\textrm{s}$, a 12 times larger value than \cite{BenacchioEtAl2014}'s $3.75\,\textrm{s}$. The time step value used here is also in line with \cite{MelvinEtAl2018}, who ran the configuration with $\dt=12\,\textrm{s}$ at buoyancy-implicit CFL$=0.3$. For the second configuration at CFL$_{adv}=0.9$, the time step used is $\Delta t\approx896.48\,\textrm{s}$, equivalent to and to an acoustic $\mathrm{CFL}_{\mathrm{ac}}\approx309.5$
+
+The third new planetary-scale configuration is run without rotation to suppress the geostrophic mode and highlight the wave dynamics. At final time $T=480\,000\,\textrm{s}$ ($\approx5.5$ days), the solution quality with the compressible model is good in terms of symmetry, absence of oscillations, and final position of the outermost crests (Figure \ref{fig:SK94_P}). The time step in this run at $\mathrm{CFL}_\mathrm{adv} = 0.9$, is $\dt\approx7100\,s$, equivalent to $N \dt\approx71$ and to an acoustic $\mathrm{CFL}_\mathrm{ac}\approx2.4\cdot 10^3$.
 
 For the two largest configurations, we also report in the lowest panels of Figures \ref{fig:SK94_H}-\ref{fig:SK94_P} the pseudo-incompressible (PI) result obtained using $\alpha_P=0$, i.e. by switching off compressibility zeroing the diagonal term in the Helmholtz equation, and the hydrostatic (HY) result obtained using $\alpha_w=0$, i.e. by zeroing the dynamic tendency of the velocity in the vertical momentum equation, together with the differences with the compressible result, COMP$-$PI and COMP$-$HY. The discrepancies with the compressible result are larger with the pseudo-incompressible model than with the hydrostatic model. Moreover, COMP$-$PI grows with increasing length scale, while the opposite is true for COMP$-$HY.  
 
-As final corroboration of the properties of the model, the hydrostatic configuration is rerun with a different value of the Coriolis parameter $f=1.03126*10^{-4}\,\textrm{s}^{-1}$, initial temperature $T(z=0)=250\,\textrm{K}$, isothermal background distribution, and no background flow as in \cite{BaldaufBrdar2013}. An advective CFL value of 0.9 is used for a run with $1200\times80$ cells. Results with the buoyancy-implicit model display good symmetry and compare well with the reference (Figure \ref{fig:BB13}). The multiscale nature of the case is evident in particular in the plot of the vertical velocity.
+\subsection{Superposition of acoustic-gravity and inertia-gravity waves}
 
-\klein{We need to say something about the initial data. For the established tests, we can
-refer to Skamarock-Klemp and our paper, but for the Baldauf test, this is subtle and important:
-The entire test is all about having a vertical acoustic mode slosh up and down in the center 
-gzillions of times. If one were to start this case with a balanced pressure distribution, 
-the solution would lack the oscillations and would look very differently. We should say that
-these oscillations are present, how many cyles there are, and state how well their amplitude
-is maintained over so many cycles. Are you sure the time step is restricted by CFL in this
-case? Or do dt\_fixed/dt\_fixed0 cap this? What is our time step in comparison with Baldauf's, 
-and how many time steps does this run take in total?}
+As final corroboration of the properties of the model, the hydrostatic configuration is rerun with a different value of the Coriolis parameter $f=1.03126*10^{-4}\,\textrm{s}^{-1}$, initial temperature $T(z=0)=250\,\textrm{K}$, isothermal background distribution, and no background flow. A time step of $\dt=0.125\,\textrm{s}$ is used as in \cite{BaldaufBrdar2013} for a run with $1200\times80$ cells. 
 
+The initial data trigger a rapidly oscillating vertical acoustic gravity wave pulse that is followed over more than 230 thousand time steps without decay and with small horizontal spread. Superimposed is a longer wavelength internal wave mode that sends two pulses sideways from the center of the initial perturbation, leaving the oscillating acoustic gravity mode behind. Results with the buoyancy-implicit model display good symmetry (Figure \ref{fig:BB13}) and compare well with the reference [Figure 4 in \cite{BaldaufBrdar2013}]. The multiscale nature of the case is evident in particular in the plot of the vertical velocity.
 
 \begin{figure}
 \centering
  \includegraphics[width=\columnwidth]{./InternalWave_NH/dY/dY_snapshot0.eps}
  \includegraphics[width=\columnwidth]{./InternalWave_NH/dY/dY_snapshot1.eps}
- \caption{Initial (top) and final (at $T=3000\,\textrm{s}$, bottom) potential temperature perturbation for the nonhydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994}, $\Delta x=\Delta z=1\,\textrm{km}$, CFL$=0.9$. Contours in the range $[0, 0.01]\,\textrm{K}$ with a $0.001\,\textrm{K}$ interval (top), $[-0.025, 0.025]\,\textrm{K}$ with a $0.005\,\textrm{K}$ interval (bottom). Negative contours are dashed.}
+ \caption{Initial (top) and final (at $T=3000\,\textrm{s}$, bottom) potential temperature perturbation for the nonhydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994}, $\Delta x=\Delta z=1\,\textrm{km}$, CFL$_\textrm{adv}=0.9$. Contours in the range $[0, 0.01]\,\textrm{K}$ with a $0.001\,\textrm{K}$ interval (top), $[-0.025, 0.025]\,\textrm{K}$ with a $0.005\,\textrm{K}$ interval (bottom). Negative contours are dashed.}
  \label{fig:SK94_NH}
 \end{figure}
 
@@ -1578,7 +1384,7 @@ and how many time steps does this run take in total?}
  \includegraphics[width=.49\columnwidth]{./InternalWave_H_hyd/dY/dY_snapshot1.eps}\\
   \includegraphics[width=.49\columnwidth]{./InternalWave_H/dY/CMP_vs_PS.eps}
  \includegraphics[width=.49\columnwidth]{./InternalWave_H/dY/CMP_vs_HY.eps}
- \caption{Potential temperature perturbation for the hydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994},  $\Delta x=20\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$=0.9$. Initial data (top left) and computed value at final time $T=60000\,\textrm{s}$ in compressible mode (top right), pseudo-incompressible mode (middle left), hydrostatic mode (middle right). Contours as in Figure \ref{fig:SK94_NH}. The bottom plots show the difference between the compressible run and the pseudo-incompressible run (left) and between the compressible run and the hydrostatic run (right). Contours in the range $[-5, 15]*10^{-5}\,\textrm{K}$ (left), $[-5, 5]*10^{-5}\,\textrm{K}$  with a $10^{-5}\,\textrm{K}$ interval (right). Negative contours are dashed.}
+ \caption{Potential temperature perturbation for the hydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994},  $\Delta x=20\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$_\textrm{adv}=0.9$. Initial data (top left) and computed value at final time $T=60000\,\textrm{s}$ in compressible mode (top right), pseudo-incompressible mode (middle left), hydrostatic mode (middle right). Contours as in Figure \ref{fig:SK94_NH}. The bottom plots show the difference between the compressible run and the pseudo-incompressible run (left) and between the compressible run and the hydrostatic run (right). Contours in the range $[-2.5, 2.5]*10^{-4}\,\textrm{K}$ with a $5*10^{-5}\,\textrm{K}$ interval (left), $[-5, 5]*10^{-5}\,\textrm{K}$  with a $10^{-5}\,\textrm{K}$ interval (right). Negative contours are dashed.}
  \label{fig:SK94_H} 
  \end{figure}
 
@@ -1590,129 +1396,32 @@ and how many time steps does this run take in total?}
  \includegraphics[width=.49\columnwidth]{./InternalWave_P_hyd/dY/dY_snapshot1.eps}\\
   \includegraphics[width=.49\columnwidth]{./InternalWave_P/dY/CMP_vs_PS.eps}
  \includegraphics[width=.49\columnwidth]{./InternalWave_P/dY/CMP_vs_HY.eps}
- \caption{Potential temperature perturbation for the planetary-scale inertia-gravity wave test,  $\Delta x=160\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$=0.9$. Initial data (top left, contours as in Figures \ref{fig:SK94_NH}-\ref{fig:SK94_H}) and computed value at final time $T=480000\,\textrm{s}$ in compressible mode (top right), pseudo-incompressible mode (middle left), hydrostatic mode (middle right). Contours in the range $[-0.05, 0.05]\,\textrm{K}$ with a $0.01\,\textrm{K}$ interval. The bottom plots show the difference between the compressible run and the pseudo-incompressible run (left) and between the compressible run and the hydrostatic run (right). Contours in the range $[-2, 2]*10^{-4}\,\textrm{K}$ with a $4*10^{-5}\,\textrm{K}$ interval (left), $[-1.5, 1.5]*10^{-5}\,\textrm{K}$ with a $3*10^{-6}\,\textrm{K}$ interval (right). Negative contours are dashed.}
+ \caption{Potential temperature perturbation for the planetary-scale inertia-gravity wave test,  $\Delta x=160\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$_\textrm{adv}=0.9$. Initial data (top left, contours as in Figures \ref{fig:SK94_NH}-\ref{fig:SK94_H}) and computed value at final time $T=480000\,\textrm{s}$ in compressible mode (top right), pseudo-incompressible mode (middle left), hydrostatic mode (middle right). Contours in the range $[-0.05, 0.05]\,\textrm{K}$ with a $0.01\,\textrm{K}$ interval. The bottom plots show the difference between the compressible run and the pseudo-incompressible run (left) and between the compressible run and the hydrostatic run (right). Contours in the range $[-4, 6]*10^{-4}\,\textrm{K}$ with a $10^{-4}\,\textrm{K}$ interval (left), $[-1.5, 1.5]*10^{-5}\,\textrm{K}$ with a $3*10^{-6}\,\textrm{K}$ interval (right). Negative contours are dashed.}
  \label{fig:SK94_P} 
  \end{figure}
-
- 
-% \begin{figure}
-% \centering
-%  \includegraphics[width=\columnwidth]{./figures/InternalWave_P/dY/dY_snapshot0.eps}
-%  \includegraphics[width=\columnwidth]{./figures/InternalWave_P/dY/dY_snapshot1.eps}
-%  \caption{Initial (top) and final (at $T=480000\,\textrm{s}$bottom) potential temperature perturbation for the planetary-scale inertia-gravity wave test, $\Delta x=160\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$=0.9$. Contour values as in Figures \ref{fig:SK94_NH}-\ref{fig:SK94_H} (top), in the range $[-0.05, 0.05]\,\textrm{K}$ with a $0.01\,\textrm{K}$ interval (bottom).}
-%   \label{fig:SK94_P}
-% \end{figure}
-
 
 \begin{figure}
 \centering
  \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf_1200/dT/dT_snapshot9.eps}
  \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf_1200/v/v_snapshot9.eps}
  \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf_1200/u/u_snapshot9.eps}
- \caption{Temperature perturbation (top), vertical velocity (middle) and horizontal velocity (bottom) at final time $T=28800\,\textrm{s}$ for the inertia-gravity wave test with rotation of \cite{BaldaufBrdar2013}, $\Delta x=5\,\textrm{km},\,\Delta z=125\,\textrm{m}$, CFL$=0.9$. Initial perturbation as in Figure \ref{fig:SK94_H}. Contours in the range $[-6, 6]*10^{-3}\,\textrm{K}$ with a $1.2*10^{-3}\,\textrm{K}$ interval (top), $[-1.2, 1.2]*10^{-3}\,\textrm{ms$^{-1}$}$  with a $2*10^{-4}\,\textrm{ms$^{-1}$}$ interval (middle), $[-0.012, 0.012]\,\textrm{ms$^{-1}$}$ with a $2*10^{-3}\,\textrm{ms$^{-1}$}$ interval (bottom). Negative contours are dashed, zero contours not shown.}
+ \caption{Temperature perturbation (top), vertical velocity (middle) and horizontal velocity (bottom) at final time $T=28800\,\textrm{s}$ for the inertia-gravity wave test with rotation of \cite{BaldaufBrdar2013}, $\Delta x=5\,\textrm{km},\,\Delta z=125\,\textrm{m}$, CFL$_{adv}=0.9$. Initial perturbation as in Figure \ref{fig:SK94_H}. Contours in the range $[-6, 6]*10^{-3}\,\textrm{K}$ with a $1.2*10^{-3}\,\textrm{K}$ interval (top), $[-1.2, 1.2]*10^{-3}\,\textrm{ms$^{-1}$}$  with a $2*10^{-4}\,\textrm{ms$^{-1}$}$ interval (middle), $[-0.012, 0.012]\,\textrm{ms$^{-1}$}$ with a $2*10^{-3}\,\textrm{ms$^{-1}$}$ interval (bottom). Negative contours are dashed, zero contours not shown.}
   \label{fig:BB13}
 \end{figure}
-
-%Discussing the effects of such a reduction to first order 
-%accuracy in the predictor step in section~\ref{sec:Results} below.
 
 \section{Discussion and conclusion}
 \label{sec:Conclusions}	
 
 This paper extended a semi-implicit numerical model for the simulation of atmospheric flows to a scheme with time step unconstrained by the internal wave speed and without the use of a background state. The conservative, second-order accurate finite volume discretisation of the rotating compressible equations evolves cell-centered variables through a three-stage procedure, made of an implicit midpoint rule step, an advection step, and an implicit trapezoidal step. By design the model agrees with the pseudo-incompressible system in the small-scale limit and the hydrostatic system at the large scale limit. Moreover, the discretization is designed so it can be switched straightforwardly to strictly solving either of these two limiting systems.
 
-The compressible scheme was applied to a suite of benchmarks of atmospheric dynamics at different scales. Compared with the previous variant of the model in \citep{Benacchio2014, BenacchioEtAl2014}, which used a buoyancy-explicit discretization, the present scheme achieves comparable accuracy, competitive solution quality, and absence of oscillations with much larger time steps for the cases under gravity. New compressible simulations of the hydrostatic-scale inertia-gravity wave tests of \citet{SkamarockKlemp1994} demonstrated the large time step capability of the buoyancy-implicit numerical scheme. An additional more challenging planetary-scale version of this class of tests has been introduced in this paper and revealed the robustness of the discretization for two-hour time steps. The authors are unaware of published attempts to run the test at this scale. \klein{An additional test by \citet{BaldaufBrdar2013} is geared towards revealing the long time simulation stability and energy perservation of the scheme. It involves a rapidly oscillating vertical acoustic gravity wave pulse that is followed over \red{xxx} cycles and \red{yyy} time steps without decay and with small horizontal spread. Superimposed is a longer wavelength internal wave mode that sends two pulses sideways from the center of the initial perturbation, leaving the oscillating acoustic gravity mode behind. The presented results are comparable to those obtained with a higher-order discontinuous Galerkin scheme by \citet{BaldaufBrdar2013}, albeit with somewhat less of a spreading of the oscillatory mode. They are superior to those generated by the dynamical core of a weather forecast production code also tested in their paper.}
+The compressible scheme was applied to a suite of benchmarks of atmospheric dynamics at different scales. Compared with the previous variant of the model in \citep{Benacchio2014, BenacchioEtAl2014}, which used a buoyancy-explicit discretization, the present scheme achieves comparable accuracy, competitive solution quality, and absence of oscillations with much larger time steps for the cases under gravity. New compressible simulations of the hydrostatic-scale inertia-gravity wave tests of \citet{SkamarockKlemp1994} demonstrated the large time step capability of the buoyancy-implicit numerical scheme. An additional more challenging planetary-scale version of this class of tests has been introduced in this paper and revealed the robustness of the discretization for two-hour time steps. The authors are unaware of published attempts to run the test at this scale. 
+
+An additional test by \citet{BaldaufBrdar2013}, geared towards revealing the long time simulation stability and energy perservation of the scheme, yields results comparable to those obtained with the reference's higher-order discontinuous Galerkin scheme, albeit with somewhat less of a spreading of the oscillatory mode. The results with the present scheme are superior to those generated by the dynamical core of a weather forecast production code also tested in their paper. 
 
 Furthermore, the hydrostatic- and planetary-scale configurations were run in both pseudo-incompressible and hydrostatic mode, extending the switching capability previously shown in \cite{BenacchioEtAl2014} for the pseudo-incompressible--to--compressible configurations. With increasingly large scales, differences with the compressible runs increased for the pseudo-incompressible runs and decreased for the hydrostatic runs as expected.
 
-The results presented here suggest several avenues of development in a number of areas. First, the scheme is to serve as the starting point for implementing the multimodel theoretical framework of \cite{KleinBenacchio2016}, which aims to achieve balanced initialization and data assimilation at all scales by smoothly blending between different operation modes. As proposed by \cite{BenacchioEtAl2014}, such a multimodel discretization could be run with reduced soundproof or hydrostatic dynamics during the first time steps after setup or assimilation, then resorting to the fully compressible model for the transient sections. The development in the present work yields hydrostasy at large scale as well as pseudo-incompressibility at small scales as the accessible asymptotic dynamics in the blended scheme. The discretization could then be applied to run tests in spherical geometry, with the ultimate aim of comparing with existing schemes used in numerical weather prediction, starting with the FVM dynamical core \citep{KuehnleinEtAl2019}, which shares some numerical aspects with the model presented here. With a view to exascale architectures and beyond, the computational power should be at disposal to use such a model for a flexible balanced runs in an operational context. \klein{[The last paragraph comes across as rather ambitious, or not? Do you feel comfortable leaning that far out the window?]}
+The results presented here suggest several avenues of development in a number of areas. First, the scheme is to serve as the starting point for implementing the multimodel theoretical framework of \cite{KleinBenacchio2016}, which aims to achieve balanced initialization and data assimilation at all scales by smoothly blending between different operation modes. As proposed by \cite{BenacchioEtAl2014}, such a multimodel discretization could be run with reduced soundproof or hydrostatic dynamics during the first time steps after setup or assimilation, then resorting to the fully compressible model for the transient sections. The development in the present work yields hydrostasy at large scale as well as pseudo-incompressibility at small scales as the accessible asymptotic dynamics in the blended scheme. The discretization could then be applied to run tests in spherical geometry, with the ultimate aim of comparing with existing schemes used in numerical weather prediction research and operations.
 
-% \begin{itemize}
-% 
-% \item Many similarities with EULAG/FVM. This is not a coincidence as the latter served as a reference for the present developments owing to its impressive stability features and accuracy for realistic applications, competitive with even a pseudo-spectral scheme as demonstrated recently by \citet{KuehnleinEtAl2018}. There are differences, however, and we discuss these in the conclusions section~\ref{sec:Conclusions} below.
-% 
-%   \begin{itemize}
-%   \item Primary updates on full, not perturbation, variables
-%   \item Re-synchronization of perturbation variables after each time step
-%   \item \red{Clear concept for achieving second-order accuracy(?)} \benacchio{Agreed, this should be done, perhaps even as a formal proof depending on the journal chosen. \klein{\bfseries Also, there 
-%   is such an analysis in quite some detail for EULAG's time integrator. So, this would not be
-%   new. }}
-%   \item Advection based on $P$-fluxes
-%   \item \blue{Identification of handles for model blending(?)}
-%   \end{itemize}
-% 
-% 
-% 
-% \item differences to Hilary's scheme \cite{WellerShahrokhi2014}, who use
-% \begin{itemize}
-% \item covariant (``tangent on faces'') components of velocity
-% \item curl-free pressure gradients, no spurious source of vorticity. 
-% \item Lorenz C grid (staggered), non off-centred. 
-% \item Two loop of the solver. 
-% \end{itemize}
-% 
-% \item differences to ENDGAME, GUNGHO \cite{WoodEtAl2013}, \cite{BenacchioWood2016}, \cite{MelvinEtAl2018}, who use
-% 
-% \begin{itemize}
-% \item advective/vector-invariant form
-% \item non off-centred, incremental form
-% \item GungHo: mixed FEM, mass matrices in implicit system
-% \item Double outer-inner loop for solver, 4 solves
-% \item Reference state is state at previous time level.
-% \item Endgame: semi-Lagrangian advection
-% \item Gungho: finite-volume advection (method of lines, then flux-form semi-Lagrangian, COSMIC)
-% \end{itemize}
-% 
-% \item differences to George Bryan's model \cite {BryanFritsch2002}
-% \begin{itemize}
-% \item split-explicit
-% \item divergence damping
-% \end{itemize}
-% 
-% \item differences to COSMO, ICON \cite{BaldaufEtAl2011},\cite{ZaenglEtAl2015}. ICON has:
-% \begin{itemize}
-% \item Triangular C-grid
-% \item Time-explicit except vertical sound waves
-% \item Divergence operator first-order accurate
-% \item Flux form, vector invariant momentum equation. 
-% \item Thermodynamic equation in terms of Exner
-% \end{itemize}
-% 
-% \item differences to ASAM, \cite{JaehnEtAl2015}, who have:
-% \begin{itemize}
-% \item linearly implicit, Rosenbrock-W method;
-% \item implicit both for advection and wave part;
-% \item Two-way splitting of Jacobian.
-% \end{itemize}
-% 
-% 
-% \item differences to Michael Dumbser's approach, \cite{DumbserEtAl2018}, who have:
-% \begin{itemize}
-% \item Convective (explicit) subsystem;
-% \item Semi-implicit pressure subsystem on staggered grid;
-% \item Locally and globally conservative for mass momentum and total energy.
-% \end{itemize}
-% 
-% \item ECMWF's tests \cite{YessadWedi2011}: could check that in our case as well the errors btw. HPE and NH are lower than errors coming from different discretizations.
-% 
-% \item what else? \klein{\bfseries For psinc we know that
-% there are formulations of the combined pressure+gravity terms one of which uses ordinary pressure, 
-% $p$ (thermodynamically consistent version), while the other uses Exner pressure, and these two
-% are analytically equivalent. Can we pull this off also for the compressible case? If so, that
-% would be great, because we could then claim the momentum balance to be in conservation form, too, 
-% with respect to momentum advection and the pressure flux.}
-% 
-% \end{itemize}
-
-% Left for future papers, to be thought about:
-% 
-% \begin{itemize}
-%  \item Blending as in \cite{KleinBenacchio2016}
-%  \item Orography implementation
-%  \item Limiters
-%  \item Three-dimensional extension
-%  \item Spherical grids
-% \end{itemize}
 
 \acknowledgments
 
@@ -1724,76 +1433,6 @@ T.B. acknowledges funding by the ESCAPE-2 project, European Union's Horizon 2020
 
 \bibliographystyle{ametsoc2014}
 \bibliography{Bibliography}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% FIGURES---PLACE AT END OF DOCUMENT
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\begin{figure}[h]
-% \centerline{\includegraphics[width=19pc]{figure01.pdf}}
-%  \caption{Enter the caption for your figure here.  Repeat as
-%  necessary for each of your figures. Figure from \protect\cite{Knutti2008}.}\label{f1}
-%\end{figure}
-%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% TABLES---PLACE AT END OF DOCUMENT
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\begin{table}[h]
-%\caption{This is a sample table caption and table layout.  
-%Table from Lorenz (1963).}\label{t1}
-%\begin{center}
-%\begin{tabular}{ccccrrcrc}
-%\topline
-%$N$ & $X$ & $Y$ & $Z$\\
-%\midline
-% 0000 & 0000 & 0010 & 0000 \\
-% 0005 & 0004 & 0012 & 0000 \\
-% 0010 & 0009 & 0020 & 0000 \\
-% 0015 & 0016 & 0036 & 0002 \\
-% 0020 & 0030 & 0066 & 0007 \\
-% 0025 & 0054 & 0115 & 0024 \\
-%\botline
-%\end{tabular}
-%\end{center}
-%\end{table}
-%%
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% APPENDIXES
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% If only one appendix, use
-%\appendix
-
-%\red{Still needed?}
-
-%% If more than one appendix, use \appendix[<letter>], e.g.,
-% \appendix[A] 
-
-%\appendixtitle{Title of Appendix}
-
-
-%\subsection{Appendix section}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%APPENDIX FIGURE AND TABLE EXAMPLES---PLACE AT END OF DOCUMENT
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%\begin{table}
-%\appendcaption{A1}{Here is the appendix table caption.}
-%\centering
-%\begin{tabular}{ccc}
-%a&b&c\\
-%d&e&f
-%\end{tabular}
-%\end{table}
-%
-%\begin{figure}
-%\centerline{(illustration here)}
-%\appendcaption{A1}{Here is the appendix figure caption.}
-%\end{figure}
 
 \end{document}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

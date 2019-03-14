@@ -41,11 +41,11 @@ figure1 = figure('Position',[1 2*scrsz(4)/3 scrsz(4)/2 1*scrsz(4)/3]);
 
 figure(figure1)
 if strcmp(conf, 'H')
-    contour_values_m = linspace(-0.00005, -0.00001,5);
-    contour_values_p = linspace(0, 0.00015, 16);
+    contour_values_m = linspace(-0.00025, -0.00005,5);
+    contour_values_p = linspace(0, 0.00025, 6);
 else
-    contour_values_m = linspace(-0.0002, -0.00004, 5)
-    contour_values_p = linspace(0, 0.0002, 6);
+    contour_values_m = linspace(-0.0004, -0.0001, 4);
+    contour_values_p = linspace(0, 0.0006, 7);
 end
 [ccf1,hhf1]=contourf(x,z, th_C-th_PS, [min(min(th_C-th_PS)) contour_values_m, contour_values_p max(max(th_C-th_PS))], 'LineColor','k','LineWidth',1.0);
 set(hhf1,'LineColor','none');
@@ -105,7 +105,7 @@ if strcmp(conf, 'H')
     contour_values_p=linspace(0, 0.00005, 6);
 else
     contour_values_m=linspace(-0.000015, -0.000003, 5);
-    contour_values_p=linspace(0.000003, 0.000015, 6);
+    contour_values_p=linspace(0, 0.000015, 6);
 end
 [ccf1,hhf1]=contourf(x,z, th_C-th_HY, [min(min(th_C-th_HY)) contour_values_m contour_values_p max(max(th_C-th_HY))], 'LineColor','k','LineWidth',1.0);
 set(hhf1,'LineColor','none');
