@@ -46,10 +46,10 @@ void User_Data_init(User_Data* ud) {
     double cond   = 0.0;             /* [m^2/s]                         */
 
     /* references for non-dimensionalization */
-    double h_ref    = 1000;                  /* [m]               */
-    double t_ref    = 1000;                  /* [s]               */
+    double h_ref    = 10000;                  /* [m]               */
+    double t_ref    = 100;                  /* [s]               */
     double T_ref    = 300.00;                /* [K]               */
-    double p_ref    = 1e+5;                  /* [Pa]              */
+    double p_ref    = 10e+5;                  /* [Pa]              */
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
 
@@ -107,15 +107,15 @@ void User_Data_init(User_Data* ud) {
 	}
     
 	/* flow domain */
-	ud->xmin = - 0.5;  
-	ud->xmax =   0.5;  
-	ud->ymin = - 0.5;
-	ud->ymax =   0.5; 
-	ud->zmin = - 0.5;
-	ud->zmax =   0.5;
+    ud->xmin = - 5000/ud->h_ref;  
+    ud->xmax =   5000/ud->h_ref;  
+    ud->ymin = - 5000/ud->h_ref;
+    ud->ymax =   5000/ud->h_ref; 
+    ud->zmin = - 5000/ud->h_ref/8.0;
+    ud->zmax =   5000/ud->h_ref/8.0;
 
 	/* boundary/initial conditions */
-	ud->wind_speed        =  1.0;              /* velocity in [u_ref] */
+	ud->wind_speed        =  1.0*10.0/ud->u_ref;              /* velocity in [u_ref] */
 	ud->wind_shear        = -0.0;              /* velocity in [u_ref/h_ref] */             
     ud->hill_shape        = AGNESI;            /* AGNESI, SCHLUTOW */
     ud->hill_height       =  0.0;              /* height   in [h_ref]   */ 
@@ -139,8 +139,8 @@ void User_Data_init(User_Data* ud) {
     ud->time_integrator       = SI_MIDPT;
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
     ud->CFL                   = 0.33;  /* something less than 0.5 for STRANG */       
-    ud->dtfixed0              = 1.0; /* 2.1*1.200930e-02 */;
-    ud->dtfixed               = 1.0; /* 2.1*1.200930e-02 */;   
+    ud->dtfixed0              = 10000.999; /* 2.1*1.200930e-02 */;
+    ud->dtfixed               = 10000.999; /* 2.1*1.200930e-02 */;   
     
     set_time_integrator_parameters(ud);
     
@@ -175,7 +175,7 @@ void User_Data_init(User_Data* ud) {
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
     
-    ud->initial_projection                = CORRECT;   /* to be tested: WRONG;  CORRECT; */
+    ud->initial_projection                = WRONG;   /* to be tested: WRONG;  CORRECT; */
     ud->initial_impl_Euler                = WRONG;   /* to be tested: WRONG;  CORRECT; */
     
     ud->column_preconditioner             = WRONG; /* WRONG; CORRECT; */
@@ -189,9 +189,10 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
     /* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
-    ud->tout[0] =  1.0;      
-    ud->tout[1] =  2.0;      
-    ud->tout[2] =  3.0;      
+    double tperiod = (ud->xmax-ud->xmin)/ud->wind_speed;
+    ud->tout[0] =  1.0*tperiod;      
+    ud->tout[1] =  2.0*tperiod;      
+    ud->tout[2] =  3.0*tperiod;      
     ud->tout[3] = -1.0;      
     
     /*
@@ -209,7 +210,7 @@ void User_Data_init(User_Data* ud) {
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 100000000;
+	ud->write_file_period = 10000000;
 	ud->file_format = HDF;
 
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
@@ -242,7 +243,7 @@ void Sol_initial(ConsVars* Sol,
 	const double v0    = 1.0*ud.wind_speed;
 	const double w0    = 0.0;
     
-    const double rotdir = 1.0;  
+    const double rotdir = 10.0/ud.u_ref;  
     
     const double p0      = 1.0;
     const double a_rho   = 1.0;
