@@ -31,14 +31,17 @@
  1: diagonal (no gravity) or column-wise (with gravity) preconditioner
  */
 #define PRECON 1
-#define DIV_CONTROL_LOCAL 0  /* determines norm for convergence test 0: L1, 1: Linfty */
+#define DIV_CONTROL_LOCAL 1  /* determines norm for convergence test 0: L1, 1: Linfty */
 
 #define P2_FULL_STENCIL 1.0        /* values: 0.0, 1.0;  0.0 = 5/7pt stencil,  1.0=9/27pt stencil */
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
 
 /*
 #define IMP_MIDPT_FOR_NODAL_PI
+ #define NONLINEAR_EOS_ITERATION
  */
+
+
 /* TODO: 
  
  1) Make all appearances of "extern ..." disappear except for those of

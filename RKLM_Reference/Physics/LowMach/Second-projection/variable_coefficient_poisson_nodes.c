@@ -144,12 +144,12 @@ void BiCGSTABData_free(BiCGSTABData* var) {
 
 #if OUTPUT_LAP_NODES
 static int lap_output_count = 0;
-#endif
-
-#define OUTPUT_RHS 0
+#define OUTPUT_RHS 1
 #if OUTPUT_RHS
 static int rhs_output_count = 0;
 #endif
+#endif
+
 
 
 

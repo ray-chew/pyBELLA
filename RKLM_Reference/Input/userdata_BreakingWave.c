@@ -89,7 +89,7 @@ void User_Data_init(User_Data* ud) {
 
 	/* Low Mach */
     ud->is_nonhydrostatic = 1; /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
-    ud->is_compressible   = 0; /* 0:psinc; 1:comp;  -1:psinc-comp-trans -> compressibility() */
+    ud->is_compressible   = 1; /* 0:psinc; 1:comp;  -1:psinc-comp-trans -> compressibility() */
     ud->acoustic_timestep = 0; /* 0;  1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
     
@@ -124,7 +124,7 @@ void User_Data_init(User_Data* ud) {
 	ud->zmax =   1.0;
 
 	/* boundary/initial conditions */
-	ud->wind_speed        = 10/u_ref;        /* velocity in [m/s] */             
+	ud->wind_speed        = 0.0*10/u_ref;        /* velocity in [m/s] */             
     ud->wind_shear        = -0.0;            /* velocity in [u_ref/h_ref] */
     ud->hill_shape        = AGNESI;            /* AGNESI, SCHLUTOW */
 	ud->hill_height       = 628.319/h_ref;   /* height   in [m]   */ 
@@ -175,7 +175,7 @@ void User_Data_init(User_Data* ud) {
     ud->ncache =  300; /* (ud->inx+3); */
 	
     /* linear solver-stuff */
-    double tol = 1.e-10 * (ud->is_compressible == 1 ? 0.01 : 1.0);
+    double tol = 1.e-12 * (ud->is_compressible == 1 ? 0.01 : 1.0);
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -205,12 +205,12 @@ void User_Data_init(User_Data* ud) {
     ud->tout[4] = 12600.0/t_ref;
     ud->tout[5] = -1.0;
 
-    ud->stepmax = 10000;
+    ud->stepmax = 10000;   
 
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 10000;
+    ud->write_file_period = 20;
     ud->file_format = HDF;
     
     {
@@ -320,6 +320,9 @@ void Sol_initial(ConsVars* Sol,
      pseudo-incompressible divergence constraint in an atmospheric flow setting
      */ 
     if (ud.initial_projection == CORRECT) {
+        ud.second_projection_precision       *= 100;
+        ud.second_projection_local_precision *= 100;  
+        
         int is_compressible    = ud.is_compressible;
         double compressibility = ud.compressibility;
         ud.is_compressible = 0;
@@ -348,6 +351,9 @@ void Sol_initial(ConsVars* Sol,
         
         ud.is_compressible = is_compressible;
         ud.compressibility = compressibility;
+        
+        ud.second_projection_precision       /= 1000;
+        ud.second_projection_local_precision /= 1000;  
     }
 }
 

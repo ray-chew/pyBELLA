@@ -139,14 +139,14 @@ void User_Data_init(User_Data* ud) {
     ud->time_integrator       = SI_MIDPT;
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
     ud->CFL                   = 0.33;  /* something less than 0.5 for STRANG */       
-    ud->dtfixed0              = 100000.0; /* 2.1*1.200930e-02 */;
-    ud->dtfixed               = 100000.0; /* 2.1*1.200930e-02 */;   
+    ud->dtfixed0              = 1.0; /* 2.1*1.200930e-02 */;
+    ud->dtfixed               = 1.0; /* 2.1*1.200930e-02 */;   
     
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 128+1; /*  */
-	ud->iny = 128+1; /*  */
+	ud->inx = 48+1; /*  */
+	ud->iny = 48+1; /*  */
 	ud->inz =     1;
 
     /* explicit predictor step */
