@@ -684,8 +684,7 @@ and \eq{eq:ImplicitEulerStep} with one full time step of a second-order
 advection scheme in \eq{eq:AdvectionStep}, one effectively applies the
 implicit trapezoidal (or Crank-Nicolson) discretization 
 \emph{along the Lagrangian trajectories} described by the advection scheme, 
-and this turns out to be second-order accurate, if the trajectories -- in other 
-words the advection step -- are so. 
+and this turns out to be second-order accurate, if the trajectories -- the advection step -- are so. 
 
 % ===========================================================================
 % ===========================================================================
@@ -1250,16 +1249,16 @@ For the tests shown in this paper, we have not used such an outer iteration, yet
 \section{Numerical Results}
 \label{sec:Results}
 
-The algorithm described in the previous sections was tested on a suite of benchmarks of dry compressible dynamics on a vertical $x-z$ slice at various scales. The suite draws on the set of \cite{Benacchio2014,BenacchioEtAl2014} including a cold air bubble and nonhydrostatic inertia-gravity waves, and adds to it three larger scale configurations for the inertia-gravity waves, with the aim to validate both the robustness and accuracy of the new buoyancy-implicit strategy, and the scheme's capability of accessing compressible, pseudo-incompressible, and hydrostatic dynamics. We remark that the present paper does not focus on efficiency. While the coding framework is 3D-ready, we leave parallelization and performance on three-dimensional tests for future work. The scheme is implemented in plain C language and uses the Bi-CGSTAB linear solver \citep{Vandervorst1992} for the solution of the elliptic problems. The solver tolerance was set at $10^{-8}$ throughout. As in \cite{BenacchioEtAl2014}, we define the advective Courant number as:
+The algorithm described in the previous sections was tested on a suite of benchmarks of dry compressible dynamics on a vertical $x-z$ slice at various scales. The suite draws on the set of \cite{Benacchio2014,BenacchioEtAl2014} including a cold air bubble and nonhydrostatic inertia-gravity waves, and adds to it three larger scale configurations for the inertia-gravity waves, with the aim to validate both the robustness and accuracy of the new buoyancy-implicit strategy, and the scheme's capability of accessing compressible, pseudo-incompressible, and hydrostatic dynamics. We remark that the present paper does not focus on efficiency. While the coding framework is 3D-ready, we leave parallelization and performance on three-dimensional tests for future work. The scheme is implemented in plain C language and uses the Bi-CGSTAB linear solver \citep{Vandervorst1992} for the solution of the elliptic problems. The solver tolerance was set at $10^{-8}$ throughout. We also define the advective Courant number as:
 %
 \begin{equation}
-\textrm{CFL}_\textrm{adv} = \max\limits_{i \in \{1,2,3\}}\left(\frac{\dt u_i}{\dx_i}\right)
+\textrm{CFL}_\textrm{adv} = \max\limits_{i \in \{1,2,3\}}\left(\frac{\dt v_i}{\dx_i}\right)
 \end{equation}
 %
-where $u_i$ are the components of the velocity, $\dx_i$ the grid spacing in the $i$ direction, and the acoustic Courant number as:
+where $v_i$ are the components of the velocity, $\dx_i$ the grid spacing in the $i$ direction, and the acoustic Courant number as:
 %
 \begin{equation}
-\textrm{CFL}_\textrm{ac} = \max\limits_{i \in \{1,2,3\}}\left(\frac{\dt c}{\dx_i}\right)
+\textrm{CFL}_\textrm{ac} = \max\limits_{i \in \{1,2,3\}}\left[\frac{\dt (v_i+c)}{\dx_i}\right]
 \end{equation}
 %
 where $c=\sqrt{\gamma RT}$ denotes the speed of sound.
@@ -1388,16 +1387,15 @@ The initial data trigger a rapidly oscillating vertical acoustic gravity wave pu
 \section{Discussion and conclusion}
 \label{sec:Conclusions}	
 
-This paper extended a semi-implicit numerical model for the simulation of atmospheric flows to a scheme with time step unconstrained by the internal wave speed and without the use of a background state. The conservative, second-order accurate finite volume discretisation of the rotating compressible equations evolves cell-centered variables through a three-stage procedure, made of an implicit midpoint rule step, an advection step, and an implicit trapezoidal step. By design the model agrees with the pseudo-incompressible system in the small-scale limit and the hydrostatic system at the large-scale limit. Moreover, the discretization is designed so it can be switched straightforwardly to strictly solving either of these two limiting systems.
+This paper extended a semi-implicit numerical model for the simulation of atmospheric flows to a scheme with time step unconstrained by the internal wave speed and without the use of a background state. The conservative, second-order accurate finite volume discretisation of the rotating compressible equations evolves cell-centered variables through a three-stage procedure, made of an implicit midpoint rule step, an advection step, and an implicit trapezoidal step. By design the model agrees with the pseudo-incompressible system in the small-scale limit and the hydrostatic system at the large-scale limit. Moreover, the discretization is designed so it can be switched straightforwardly to strictly solving either of these two limiting systems. 
 
-The compressible scheme was applied to a suite of benchmarks of atmospheric dynamics at different scales. Compared with the previous variant of the model in \cite{Benacchio2014, BenacchioEtAl2014}, which used a buoyancy-explicit discretization, the present scheme achieves comparable accuracy, competitive solution quality, and absence of oscillations with much larger time steps for the cases under gravity. New compressible simulations of the hydrostatic-scale inertia-gravity wave tests of \citet{SkamarockKlemp1994} demonstrated the large time step capability of the buoyancy-implicit numerical scheme. An additional more challenging planetary-scale version of this class of tests has been introduced in this paper and revealed the robustness of the discretization for two-hour long time steps. The authors are unaware of published attempts to run the test at this scale. 
+The compressible scheme was applied to a suite of benchmarks of atmospheric dynamics at different scales. Compared with the previous variant of the model in \cite{Benacchio2014, BenacchioEtAl2014}, which used a buoyancy-explicit discretization, the present scheme achieves comparable accuracy, competitive solution quality, and absence of oscillations with much larger time steps for the cases under gravity. New compressible simulations of the hydrostatic-scale inertia-gravity wave tests of \citet{SkamarockKlemp1994} demonstrated the large time step capability of the buoyancy-implicit numerical scheme. A more challenging planetary-scale version of this class of tests was introduced in this paper and revealed the robustness of the discretization for two-hour long time steps. The authors are unaware of published attempts to run the test at this scale. 
 
-An additional test by \citet{BaldaufBrdar2013}, geared towards revealing the long-time simulation stability and energy perservation of the scheme, yields results comparable to those obtained with the reference's higher-order discontinuous Galerkin scheme, albeit with somewhat less of a spreading of the oscillatory mode. The results with the present scheme are superior to those generated by the dynamical core of a weather forecast production code also tested in their paper. 
+An additional test by \citet{BaldaufBrdar2013}, geared towards revealing the long-time simulation stability and energy perservation of the scheme, yielded results comparable to those obtained with the reference's higher-order discontinuous Galerkin scheme, albeit with somewhat less of a spreading of the oscillatory mode. The results with the present scheme are superior to those generated by the dynamical core of a weather forecast production code also tested in their paper. 
 
 Furthermore, the hydrostatic- and planetary-scale configurations were run both in pseudo-incompressible mode and in hydrostatic mode, thereby extending the switching capability previously shown in \cite{BenacchioEtAl2014} for the pseudo-incompressible--to--compressible configurations. With increasingly large scales, differences with the compressible runs increased for the pseudo-incompressible runs and decreased for the hydrostatic runs as expected.
 
 The results presented here suggest several avenues of development in a number of areas. First, the scheme serves as the starting point for implementing the multimodel theoretical framework of \cite{KleinBenacchio2016}, which aims to achieve balanced initialization and data assimilation at all scales by smoothly blending between different operation modes. As proposed by \cite{BenacchioEtAl2014}, such a multimodel discretization could be run with reduced soundproof or hydrostatic dynamics during the first time steps after setup or assimilation, then resorting to the fully compressible model for the transient sections. The development in the present work yields hydrostasy at large scale as well as pseudo-incompressibility at small scales as the accessible asymptotic dynamics in the blended scheme. The discretization could then be applied to run tests in spherical geometry, with the ultimate aim of comparing with existing schemes used in numerical weather prediction research and operations.
-
 
 \acknowledgments
 
