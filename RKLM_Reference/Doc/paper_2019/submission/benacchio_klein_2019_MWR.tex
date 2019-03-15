@@ -704,7 +704,7 @@ and this turns out to be second-order accurate, if the trajectories -- the advec
 
 \begin{figure}
 \centering
- \includegraphics{Grid}
+ \includegraphics{Grid.pdf}
 \caption{Cartesian grid arrangement for two space dimensions. 
 $C_{i,j}$: primary finite volumes, 
 $\ \bullet\ $: primary cell centers, $I$: primary cell interfaces,
@@ -1041,7 +1041,7 @@ work.
 
 \begin{figure}
 \centering
- \includegraphics[width=\columnwidth]{./Interpolations}
+ \includegraphics[width=\columnwidth]{Interpolations.pdf}
  \caption{Averaging patterns used in constructing fluxes and cell-centered divergences: 
  a) node-to-cell and analogous cell-to-node averages as in, respectively, \eq{eq:CellToNodeAverage} and 
  \eq{eq:NodeToCellAverage}; 
@@ -1287,17 +1287,17 @@ In the reference setup for this case, the buoyancy-implicit model is run at a re
 
 \begin{figure}
 \centering
- \includegraphics[width=\columnwidth]{./Straka_50m/dY/dY_snapshot0.eps}
- \includegraphics[width=\columnwidth]{./Straka_50m/dY/dY_snapshot1.eps}
- \includegraphics[width=\columnwidth]{./Straka_50m/dY/dY_snapshot2.eps}
- \includegraphics[width=\columnwidth]{./Straka_50m/dY/dY_snapshot3.eps}
+ \includegraphics[width=\columnwidth]{straka_dY_snapshot0.pdf}
+ \includegraphics[width=\columnwidth]{straka_dY_snapshot1.pdf}
+ \includegraphics[width=\columnwidth]{straka_dY_snapshot2.pdf}
+ \includegraphics[width=\columnwidth]{straka_dY_snapshot3.pdf}
  \caption{Potential temperature perturbation at times (top to bottom) $t=0,\,300,\,600,\,900\,\textrm{s}$ for the density current test case at spatial resolution $\Delta x=\Delta z=50\,\textrm{m}$, CFL$_\textrm{adv}=0.96$. Contours in the range $[-16.5,\,-0.5]\,\textrm{K}$ with a $1\,\textrm{K}$ contour interval.}
  \label{fig:straka}
 \end{figure}
 
 \begin{figure}
 \centering
-  \includegraphics[width=.75\columnwidth]{./Straka/dY/dY_snapshot1dcut.eps}
+  \includegraphics[width=.75\columnwidth]{straka_dY_snapshot1dcut.pdf}
  \caption{One-dimensional cut at height $z=1200\,\textrm{m}$ for the potential temperature perturbation at final time $t=900\, s$ in the density current test case run with CFL$_\textrm{adv}=0.96$. Spatial resolutions $\Delta x=\Delta z=400\,\textrm{m (thin solid black line)}$, $200\,\textrm{m (dashed red line)}$, $100\,\textrm{m (dashed-dotted blue line)}$, $50\,\textrm{m (thin solid black line)}$, $25\,\textrm{m (thin solid black line)}$.}
  \label{fig:straka1dcut}
 \end{figure}
@@ -1348,41 +1348,41 @@ The initial data trigger a rapidly oscillating vertical acoustic gravity wave pu
 
 \begin{figure}
 \centering
- \includegraphics[width=\columnwidth]{./InternalWave_NH/dY/dY_snapshot0.eps}
- \includegraphics[width=\columnwidth]{./InternalWave_NH/dY/dY_snapshot1.eps}
+ \includegraphics[width=\columnwidth]{IWNH_dY_snapshot0.pdf}
+ \includegraphics[width=\columnwidth]{IWNH_dY_snapshot1.pdf}
  \caption{Initial (top) and final (at $T=3000\,\textrm{s}$, bottom) potential temperature perturbation for the nonhydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994}, $\Delta x=\Delta z=1\,\textrm{km}$, CFL$_\textrm{adv}=0.9$. Contours in the range $[0, 0.01]\,\textrm{K}$ with a $0.001\,\textrm{K}$ interval (top), $[-0.0025, 0.0025]\,\textrm{K}$ with a $0.0005\,\textrm{K}$ interval (bottom). Negative contours are dashed.}
  \label{fig:SK94_NH}
 \end{figure}
 
 \begin{figure}
 \centering
- \includegraphics[width=.49\columnwidth]{./InternalWave_H/dY/dY_snapshot0.eps}
- \includegraphics[width=.49\columnwidth]{./InternalWave_H/dY/dY_snapshot1.eps}\\
- \includegraphics[width=.49\columnwidth]{./InternalWave_H_psinc/dY/dY_snapshot1.eps}
- \includegraphics[width=.49\columnwidth]{./InternalWave_H_hyd/dY/dY_snapshot1.eps}\\
-  \includegraphics[width=.49\columnwidth]{./InternalWave_H/dY/CMP_vs_PS.eps}
- \includegraphics[width=.49\columnwidth]{./InternalWave_H/dY/CMP_vs_HY.eps}
+ \includegraphics[width=.49\columnwidth]{IWH_dY_snapshot0.pdf}
+ \includegraphics[width=.49\columnwidth]{IWHC_dY_snapshot1.pdf}\\
+ \includegraphics[width=.49\columnwidth]{IWHP_dY_snapshot1.pdf}
+ \includegraphics[width=.49\columnwidth]{IWHH_dY_snapshot1.pdf}\\
+  \includegraphics[width=.49\columnwidth]{H_CMP_vs_PS.pdf}
+ \includegraphics[width=.49\columnwidth]{H_CMP_vs_HY.pdf}
  \caption{Potential temperature perturbation for the hydrostatic inertia-gravity wave test from \cite{SkamarockKlemp1994},  $\Delta x=20\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$_\textrm{adv}=0.9$. Initial data (top left) and computed value at final time $T=60000\,\textrm{s}$ in compressible mode (top right), pseudo-incompressible mode (middle left), hydrostatic mode (middle right). Contours as in Figure \ref{fig:SK94_NH}. The bottom plots show the difference between the compressible run and the pseudo-incompressible run (left) and between the compressible run and the hydrostatic run (right). Contours in the range $[-2.5, 2.5]*10^{-4}\,\textrm{K}$ with a $5*10^{-5}\,\textrm{K}$ interval (left), $[-5, 5]*10^{-5}\,\textrm{K}$  with a $10^{-5}\,\textrm{K}$ interval (right). Negative contours are dashed.}
  \label{fig:SK94_H} 
  \end{figure}
 
  \begin{figure}
 \centering
- \includegraphics[width=.49\columnwidth]{./InternalWave_P/dY/dY_snapshot0.eps}
- \includegraphics[width=.49\columnwidth]{./InternalWave_P/dY/dY_snapshot1.eps}\\
- \includegraphics[width=.49\columnwidth]{./InternalWave_P_psinc/dY/dY_snapshot1.eps}
- \includegraphics[width=.49\columnwidth]{./InternalWave_P_hyd/dY/dY_snapshot1.eps}\\
-  \includegraphics[width=.49\columnwidth]{./InternalWave_P/dY/CMP_vs_PS.eps}
- \includegraphics[width=.49\columnwidth]{./InternalWave_P/dY/CMP_vs_HY.eps}
+ \includegraphics[width=.49\columnwidth]{IWP_dY_snapshot0.pdf}
+ \includegraphics[width=.49\columnwidth]{IWPC_dY_snapshot1.pdf}\\
+ \includegraphics[width=.49\columnwidth]{IWPP_dY_snapshot1.pdf}
+ \includegraphics[width=.49\columnwidth]{IWPH_dY_snapshot1.pdf}\\
+  \includegraphics[width=.49\columnwidth]{P_CMP_vs_PS.pdf}
+ \includegraphics[width=.49\columnwidth]{P_CMP_vs_HY.pdf}
  \caption{Potential temperature perturbation for the planetary-scale inertia-gravity wave test,  $\Delta x=160\,\textrm{km},\,\Delta z=1\,\textrm{km}$, CFL$_\textrm{adv}=0.9$. Initial data (top left, contours as in Figures \ref{fig:SK94_NH}-\ref{fig:SK94_H}) and computed value at final time $T=480000\,\textrm{s}$ in compressible mode (top right), pseudo-incompressible mode (middle left), hydrostatic mode (middle right). Contours in the range $[-0.005, 0.005]\,\textrm{K}$ with a $0.001\,\textrm{K}$ interval. The bottom plots show the difference between the compressible run and the pseudo-incompressible run (left) and between the compressible run and the hydrostatic run (right). Contours in the range $[-4, 6]*10^{-4}\,\textrm{K}$ with a $10^{-4}\,\textrm{K}$ interval (left), $[-1.5, 1.5]*10^{-5}\,\textrm{K}$ with a $3*10^{-6}\,\textrm{K}$ interval (right). Negative contours are dashed.}
  \label{fig:SK94_P} 
  \end{figure}
 
 \begin{figure}
 \centering
- \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf_1200/dT/dT_snapshot9.eps}
- \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf_1200/v/v_snapshot9.eps}
- \includegraphics[width=\columnwidth]{./figures/InternalWave_Baldauf_1200/u/u_snapshot9.eps}
+ \includegraphics[width=\columnwidth]{dT_snapshot9_IWB.pdf}
+ \includegraphics[width=\columnwidth]{v_snapshot9_IWB.pdf}
+ \includegraphics[width=\columnwidth]{u_snapshot9_IWB.pdf}
  \caption{Temperature perturbation (top), vertical velocity (middle) and horizontal velocity (bottom) at final time $T=28800\,\textrm{s}$ for the inertia-gravity wave test with rotation of \cite{BaldaufBrdar2013}, $\Delta x=5\,\textrm{km},\,\Delta z=125\,\textrm{m}$, CFL$_\textrm{adv}=0.9$. Initial perturbation as in Figure \ref{fig:SK94_H},top. Contours in the range $[-6, 6]*10^{-3}\,\textrm{K}$ with a $1.2*10^{-3}\,\textrm{K}$ interval (top), $[-1.2, 1.2]*10^{-3}\,\textrm{ms$^{-1}$}$  with a $2*10^{-4}\,\textrm{ms$^{-1}$}$ interval (middle), $[-0.012, 0.012]\,\textrm{ms$^{-1}$}$ with a $2*10^{-3}\,\textrm{ms$^{-1}$}$ interval (bottom). Negative contours are dashed, zero contours not shown.}
   \label{fig:BB13}
 \end{figure}
