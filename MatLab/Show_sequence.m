@@ -123,8 +123,8 @@ elseif strcmp(test_case, 'Rising-Bubble')
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Travelling-Vortex')
-    ncx = 368;  
-    ncy = 368; 
+    ncx = 48;  
+    ncy = 48; 
     L   = 1.0;  
     x0  = 0.0;
     H   = 1.0; 
