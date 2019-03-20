@@ -46,8 +46,8 @@ void User_Data_init(User_Data* ud) {
     double cond   = 0.0;             /* [m^2/s]                         */
 
     /* references for non-dimensionalization */
-    double h_ref    = 1000;                  /* [m]               */
-    double t_ref    = 1000;                  /* [s]               */
+    double h_ref    = 100;                  /* [m]               */
+    double t_ref    = 100;                  /* [s]               */
     double T_ref    = 300.00;                /* [K]               */
     double p_ref    = 1e+5;                  /* [Pa]              */
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
@@ -138,15 +138,15 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   default: STRANG;  */
-    ud->CFL                   = 0.33;  /* something less than 0.5 for STRANG */       
-    ud->dtfixed0              = 100000.0; /* 2.1*1.200930e-02 */;
-    ud->dtfixed               = 100000.0; /* 2.1*1.200930e-02 */;   
+    ud->CFL                   = 0.9/2.0;       
+    ud->dtfixed0              = 2.1*1.200930e-02;
+    ud->dtfixed               = 2.1*1.200930e-02;   
     
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 128+1; /*  */
-	ud->iny = 128+1; /*  */
+	ud->inx = 48+1; /*  */
+	ud->iny = 48+1; /*  */
 	ud->inz =     1;
 
     /* explicit predictor step */
@@ -157,16 +157,16 @@ void User_Data_init(User_Data* ud) {
     /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
         
     /* parameters for SWEBY_MUNZ limiter family */
-    ud->kp = 1.4; /* 1.4; */
-	ud->kz = 1.4; /* 1.4; */
-	ud->km = 1.4; /* 1.4; */
-	ud->kY = 1.4; /* 1.4; */
-	ud->kZ = 1.4; /* 1.4; */
-	
+    ud->kp = 0.0; /* 1.4; */
+    ud->kz = 0.0; /* 1.4; */
+    ud->km = 0.0; /* 1.4; */
+    ud->kY = 0.0; /* 1.4; */
+    ud->kZ = 0.0; /* 1.4; */
+    
     /* al explicit predictor operations are done on ncache-size data worms to save memory */ 
-	ud->ncache =  201; /* (ud->inx+3); */
-	
-	/* linear solver-stuff */
+    ud->ncache =  201; /* (ud->inx+3); */
+    
+    /* linear solver-stuff */
     double tol = 1.e-10;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
@@ -190,10 +190,10 @@ void User_Data_init(User_Data* ud) {
     /* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
     ud->tout[0] =  1.0;      
-    ud->tout[1] =  2.0;      
-    ud->tout[2] =  3.0;      
-    ud->tout[3] = -1.0;      
-    
+    //ud->tout[1] =  2.0;      
+    //ud->tout[2] =  3.0;      
+    ud->tout[1] = -1.0;
+
     /*
     ud->tout[0] =  0.5;      
     ud->tout[1] =  1.0;      
@@ -209,7 +209,7 @@ void User_Data_init(User_Data* ud) {
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 100000000;
+	ud->write_file_period = 10000;
 	ud->file_format = HDF;
 
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
