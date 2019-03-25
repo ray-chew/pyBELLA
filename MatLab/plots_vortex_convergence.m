@@ -68,7 +68,7 @@ else
     arraysize = [ncx ncy];
 end
 
-folderstring = strcat('../hdf_output/TravellingVortex_3D_64');
+folderstring = strcat('../hdf_output/TravellingVortex_3D_', num2str(ncx));
 filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_001.hdf');
 
 v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
@@ -117,7 +117,7 @@ else
 end
 
 
-folderstring = strcat('../hdf_output/TravellingVortex_3D_128');
+folderstring = strcat('../hdf_output/TravellingVortex_3D_', num2str(ncx));
 filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_001.hdf');
 
 v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
@@ -166,7 +166,7 @@ if strcmp(varstr, 'p2_n')
 else
     arraysize = [ncx ncy];
 end
-folderstring = strcat('../hdf_output/TravellingVortex_3D_256');
+folderstring = strcat('../hdf_output/TravellingVortex_3D_', num2str(ncx));
 filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_001.hdf');
 
 v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
@@ -215,7 +215,7 @@ else
     arraysize = [ncx ncy];
 end
 
-folderstring = strcat('../hdf_output/TravellingVortex_3D_512');
+folderstring = strcat('../hdf_output/TravellingVortex_3D_', num2str(ncx));
 filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_001.hdf');
 
 v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
@@ -264,7 +264,7 @@ else
     arraysize = [ncx ncy];
 end
 
-folderstring = strcat('../hdf_output/TravellingVortex_3D_1024');
+folderstring = strcat('../hdf_output/TravellingVortex_3D_', num2str(ncx));
 filestr = strcat(folderstring,'/',folderstr,'/',varstr,'_001.hdf');
 
 v = hdfread(filestr, '/Data-Set-2', 'Index', {[1  1],[1  1],[arraysize(1)+dumsx*ndummy  arraysize(2)+dumsy*ndummy]});
