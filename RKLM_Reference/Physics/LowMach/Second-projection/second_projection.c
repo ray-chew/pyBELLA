@@ -105,6 +105,268 @@ static int first_output_step = 0;
 extern int step;  
 #endif
 
+
+#ifdef NONLINEAR_EOS_ITERATION
+
+/* ========================================================================== */
+
+double residual(double *rhs,
+                const double* p2,
+                const double* p2o,
+                const double* div,
+                const MPV* mpv,
+                const NodeSpaceDiscr* node,
+                const double dt,
+                const int x_periodic,
+                const int y_periodic,
+                const int z_periodic);
+
+/* ========================================================================== */
+
+void euler_backward_non_advective_impl_part(ConsVars* Sol,
+                                            MPV* mpv,
+                                            const ConsVars* Sol0,
+                                            const ElemSpaceDiscr* elem,
+                                            const NodeSpaceDiscr* node,
+                                            const double t,
+                                            const double dt,
+                                            const double alpha_diff) {
+    
+    /* as of August 31, 2018, this routine is to be interpreted
+     as carrying out an implicit Euler step for the linearized 
+     fast system without advection. This changes in particular
+     the interpretation of "dt" from having been the overall 
+     time step of the total solver previously to now just being
+     whatever time step the implicit Euler step is to be performed
+     over. 
+     */
+    extern User_Data ud;
+    extern BDRY* bdry;
+    
+    const int nc = node->nc;
+    
+    double** hplus   = mpv->wplus;
+    double*  hcenter = mpv->wcenter;
+    
+    double* rhs = mpv->rhs;
+    double* p2  = mpv->dp2_nodes;
+    double* dp2 = (double*)malloc(node->nc*sizeof(double));
+    double* p2o = mpv->p2_nodes;
+    
+    double rhs_max, rhs_Newton;
+    
+    int x_periodic, y_periodic, z_periodic;
+    int ii;
+    
+    /* switch for stopping loops in solver for periodic data before
+     last grid line in each direction */
+    x_periodic = 0;
+    y_periodic = 0;
+    z_periodic = 0;
+    if(ud.bdrytype_min[0] == PERIODIC) x_periodic = 1;
+    if(ud.bdrytype_min[1] == PERIODIC) y_periodic = 1;
+    if(ud.bdrytype_min[2] == PERIODIC) z_periodic = 1;
+    
+    printf("\n\n====================================================");
+    printf("\nImplicit step with nonlinear EOS control");
+    printf("\n====================================================\n");
+    
+    Set_Explicit_Boundary_Data(Sol, elem);
+    
+    /* There is the option of starting with the previous solution, 
+     but that seems not to come with sizeable advantages */
+    for(int nn=0; nn<nc; nn++){
+        p2[nn]  = mpv->p2_nodes[nn];
+        p2o[nn] = mpv->p2_nodes[nn];
+        rhs[nn] = 0.0;
+    }
+    
+    operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
+    
+    if (ud.mol_trans != NO_MOLECULAR_TRANSPORT) {
+        extern double* diss;        
+        molecular_transport(Sol, diss, elem, alpha_diff*dt);
+        diss_to_rhs(rhs,diss,elem,node, dt); /* diss_to_rhs(rhs,W0,elem,node, alpha_diff*dt);  */        
+    }
+    
+    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
+    assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);         
+    
+    /* rescaling of flux divergence for r.h.s. of the elliptic pressure equation */ 
+    for (int i=0; i<node->nc; i++) {
+        rhs[i] /= dt;
+    }
+    printf("\nrhsmax = %e\n", rhs_max);
+    
+    
+#if OUTPUT_RHS_NODES
+    FILE *prhsfile = NULL;
+    char fn[120], fieldname[90];
+    if (step >= first_output_step) {
+        if (rhs_output_count < 10) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
+        } else if(rhs_output_count < 100) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
+        } else {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
+        }
+        sprintf(fieldname, "rhs_nodes");    
+        WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+        rhs_output_count++;
+    }
+#endif
+    
+    if (ud.is_compressible) {
+        rhs_from_p_old(rhs, elem, node, mpv, hcenter);
+    }
+    
+    variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
+    
+    correction_nodes(Sol, elem, node, (const double**)hplus, p2, dt, FULL_FIELD);
+    Set_Explicit_Boundary_Data(Sol, elem);
+    
+    if (ud.is_compressible) {
+        memset(rhs, 0.0, node->nc*sizeof(double));
+        rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
+        assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);  
+        for (int nn=0; nn<node->nc; nn++)  {
+            rhs[nn] /= dt;
+            dp2[nn] = 0.0;
+        }
+        rhs_Newton = residual(rhs, p2, p2o, rhs, mpv, node, dt, x_periodic, y_periodic, z_periodic);
+        
+        
+#if OUTPUT_RHS_NODES
+        if (step >= first_output_step) {
+            if (rhs_output_count < 10) {
+                sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
+            } else if(rhs_output_count < 100) {
+                sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
+            } else {
+                sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
+            }
+            sprintf(fieldname, "rhs_nodes");    
+            WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+            rhs_output_count++;
+        }
+#endif
+
+        /* while (rhs_Newton > ud.second_projection_precision*ud.Msq/dt) { */
+        while (rhs_Newton > ud.second_projection_precision) {
+            double scale = 1000;
+            printf("\nrhs_Newton = %e\n", rhs_Newton);
+            for (int nn=0; nn<node->nc; nn++) {
+                rhs[nn] *= scale;
+            }
+            variable_coefficient_poisson_nodes(dp2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
+            for (int nn=0; nn<node->nc; nn++) {
+                dp2[nn] /= scale;
+            }
+            correction_nodes(Sol, elem, node, (const double**)hplus, dp2, dt, FULL_FIELD);
+            Set_Explicit_Boundary_Data(Sol, elem);        
+            for (int nn=0; nn<node->nc; nn++) {
+                p2[nn]  += dp2[nn];
+            }
+            memset(rhs, 0.0, node->nc*sizeof(double));
+            memset(dp2, 0.0, node->nc*sizeof(double));
+            rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
+            assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);  
+            for (int nn=0; nn<node->nc; nn++) {
+                rhs[nn] /= dt;
+            }
+            rhs_Newton = residual(rhs, p2, p2o, rhs, mpv, node, dt, x_periodic, y_periodic, z_periodic);
+        }
+    }
+
+
+    for(ii=0; ii<nc; ii++) {
+        double p2_new      = p2[ii];
+        mpv->dp2_nodes[ii] = p2_new - mpv->p2_nodes[ii];
+        mpv->p2_nodes[ii]  = p2_new;
+    }
+    
+    set_ghostnodes_p2(mpv->p2_nodes, node, 2);   
+    
+    free(dp2);
+    
+#if OUTPUT_RHS_NODES
+    memset(rhs, 0.0, node->nc*sizeof(double));
+    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
+    /* catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
+     */
+    
+    if (step >= first_output_step) {
+        if (rhs_output_count < 10) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
+        } else if(rhs_output_count < 100) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
+        } else {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
+        }
+        sprintf(fieldname, "rhs_nodes");    
+        WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+        rhs_output_count++;
+    }
+#endif
+}
+
+/* ========================================================================== */
+
+double residual(double *rhs,
+                const double* p2,
+                const double* p2o,
+                const double* div,
+                const MPV* mpv,
+                const NodeSpaceDiscr* node,
+                const double dt,
+                const int x_periodic,
+                const int y_periodic,
+                const int z_periodic)
+{
+    extern User_Data ud;
+    extern Thermodynamic th;
+    
+    double rhsmax = 0.0;
+        
+    const int icxn = node->icx;
+    const int igxn = node->igx;
+    const int icyn = node->icy;
+    const int igyn = node->igy;
+    const int iczn = node->icz;
+    const int igzn = node->igz;
+      
+    /*
+    const int imax = MAX_own(1, icxn - igxn - x_periodic);
+    const int jmax = MAX_own(1, icyn - igyn - y_periodic);
+    const int kmax = MAX_own(1, iczn - igzn - z_periodic);
+     */
+    const int imax = MAX_own(1, icxn - igxn);
+    const int jmax = MAX_own(1, icyn - igyn);
+    const int kmax = MAX_own(1, iczn - igzn);
+
+    
+    for (int k=igzn; k < kmax ; k++) {
+        int ln = k*icxn*icyn;
+        for (int j=igyn; j < jmax ; j++) {
+            int mn = ln+j*icxn;
+            for (int i=igxn; i < imax ; i++) {
+                int nn = mn + i;
+                double pin = ud.Msq*(mpv->HydroState_n->p20[j]+p2[nn]);
+                double pio = ud.Msq*(mpv->HydroState_n->p20[j]+p2o[nn]);
+                double rhoYn = pow(pin,th.gm1inv);
+                double rhoYo = pow(pio,th.gm1inv);
+                rhs[nn] = (div[nn] + (rhoYn - rhoYo) / (dt*dt));
+                rhsmax  = MAX_own(rhsmax, fabs(rhs[nn]));
+            }
+        }
+    }
+    return rhsmax;
+}
+
+#else /* NONLINEAR_EOS_ITERATION */
+
+/* ========================================================================== */
+
 void euler_backward_non_advective_impl_part(ConsVars* Sol,
                                             MPV* mpv,
                                             const ConsVars* Sol0,
@@ -156,8 +418,8 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     /* There is the option of starting with the previous solution, 
      but that seems not to come with sizeable advantages */
     for(ii=0; ii<nc; ii++){
-        // p2[ii] = mpv->p2_nodes[ii];
-        p2[ii]  = 0.0;   
+        p2[ii] = mpv->p2_nodes[ii];
+        /* p2[ii]  = 0.0;   */
         rhs[ii] = 0.0;
     }
     
@@ -171,7 +433,7 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
 
     /* loop for iterating on bottom topography boundary conditions */
     rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
-    // assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);         
+    assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);         
 
     /* rescaling of flux divergence for r.h.s. of the elliptic pressure equation */ 
     for (int i=0; i<node->nc; i++) {
@@ -235,6 +497,8 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
 #endif
     
 }
+#endif /* NONLINEAR_EOS_ITERATION */
+
 
 /* ========================================================================== */
 
@@ -788,8 +1052,14 @@ static void operator_coefficients_nodes(
                 for(i = igx - is_x_periodic - nodc; i < icxe - igx + is_x_periodic + nodc; i++) {
                     n = m + i;    
                     
+#if 0 /* option has no effect on core asymmetry of pressure in the travelling vortex*/
+                    double Yn    = Sol->rhoY[n]/Sol->rho[n]; 
+                    double Yo    = Sol0->rhoY[n]/Sol0->rho[n]; 
+                    double coeff = Gammainv * 0.25 * (Sol->rhoY[n] + Sol0->rhoY[n]) * (Yn + Yo);
+#else
                     double Y     = Sol->rhoY[n]/Sol->rho[n]; 
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
+#endif
                     double fsqsc = dt*dt * coriolis*coriolis;
                     double fimp  = 1.0 / (1.0 + fsqsc);
                     double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;                    
@@ -809,8 +1079,13 @@ static void operator_coefficients_nodes(
                     int ne10 = me + i - 1;
                     int ne01 = me + i - icxe;
                     int ne11 = me + i - icxe - 1;
-
+#if 0 /* option has no effect on core asymmetry of pressure in the travelling vortex*/
+                    double hcn = ccenter * 0.25*(pow(Sol->rhoY[ne00],cexp) + pow(Sol->rhoY[ne01],cexp) + pow(Sol->rhoY[ne10],cexp) + pow(Sol->rhoY[ne11],cexp));
+                    double hco = ccenter * 0.25*(pow(Sol0->rhoY[ne00],cexp) + pow(Sol0->rhoY[ne01],cexp) + pow(Sol0->rhoY[ne10],cexp) + pow(Sol0->rhoY[ne11],cexp));
+                    hc[nn] = 0.5*(hcn + hco);
+#else
                     hc[nn] = ccenter * 0.25*(pow(Sol->rhoY[ne00],cexp) + pow(Sol->rhoY[ne01],cexp) + pow(Sol->rhoY[ne10],cexp) + pow(Sol->rhoY[ne11],cexp));
+#endif
                 }
             }
             
@@ -820,6 +1095,8 @@ static void operator_coefficients_nodes(
 		}
 		case 3: {			
 
+            assert(0);  /* make sure 3D branch is consistent with 2D branch!  */
+            
             int is_x_periodic = 0;
             int is_y_periodic = 0;
             int is_z_periodic = 0;
