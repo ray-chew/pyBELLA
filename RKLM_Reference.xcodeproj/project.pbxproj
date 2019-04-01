@@ -53,17 +53,16 @@
 		9A21BF811DA58470006A6F34 /* libmfhdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmfhdf.dylib; path = ../../../../../opt/local/lib/libmfhdf.dylib; sourceTree = "<group>"; };
 		9A21BF831DA5847F006A6F34 /* libdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libdf.dylib; path = ../../../../../opt/local/lib/libdf.dylib; sourceTree = "<group>"; };
 		9A7A55E521873A4400446950 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
-		9A85FAA62204A8FB003B82B7 /* userdata_AcousticWave_B14.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_AcousticWave_B14.c; sourceTree = "<group>"; };
 		9A8840AE2148EB2700FC83CB /* RandomNotes.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = RandomNotes.txt; sourceTree = "<group>"; };
 		9A8840B4214A9D4F00FC83CB /* second_projection.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = second_projection.c; sourceTree = "<group>"; };
 		9A8840B5214A9D5000FC83CB /* second_projection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = second_projection.h; sourceTree = "<group>"; };
 		9A8A8DCE2154F67D00FD5838 /* Grid.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = Grid.pdf; sourceTree = "<group>"; };
 		9A8A8DCF21552FCE00FD5838 /* Grid.eps */ = {isa = PBXFileReference; lastKnownFileType = file; path = Grid.eps; sourceTree = "<group>"; };
+		9AA4172522527ED1002AF847 /* benacchio_klein_2019_MWR.tex */ = {isa = PBXFileReference; lastKnownFileType = text; path = benacchio_klein_2019_MWR.tex; sourceTree = "<group>"; };
 		9AA6E68A214C14D9008A9B8D /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		9AA8CE5822187924009477C0 /* molecular_transport.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = molecular_transport.c; sourceTree = "<group>"; };
 		9AA8CE5922187924009477C0 /* molecular_transport.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = molecular_transport.h; sourceTree = "<group>"; };
 		9AB5078E223562EB0075502D /* Bibliography.bib */ = {isa = PBXFileReference; lastKnownFileType = text; path = Bibliography.bib; sourceTree = "<group>"; };
-		9AB5078F223562EB0075502D /* hydro_comp_numerics_mwr.tex */ = {isa = PBXFileReference; lastKnownFileType = text; path = hydro_comp_numerics_mwr.tex; sourceTree = "<group>"; };
 		9AB5079022368A010075502D /* userdata_BreakingWave.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_BreakingWave.c; sourceTree = "<group>"; };
 		9AC4F90B1DA3F02D00AED455 /* RKLM_Reference */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = RKLM_Reference; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AC4F9151DA3F06F00AED455 /* Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
@@ -181,8 +180,8 @@
 		9AB5078D223562EB0075502D /* paper_2019 */ = {
 			isa = PBXGroup;
 			children = (
+				9AA4172522527ED1002AF847 /* benacchio_klein_2019_MWR.tex */,
 				9AB5078E223562EB0075502D /* Bibliography.bib */,
-				9AB5078F223562EB0075502D /* hydro_comp_numerics_mwr.tex */,
 			);
 			path = paper_2019;
 			sourceTree = "<group>";
