@@ -43,7 +43,7 @@
 
 /*
 #define NEUMANN_Y_BOTTOM_BC
-//#define IMP_MIDPT_FOR_NODAL_PI
+#define IMP_MIDPT_FOR_NODAL_PI
  */
 /* TODO: 
  
