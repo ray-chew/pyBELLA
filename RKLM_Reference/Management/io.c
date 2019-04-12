@@ -27,7 +27,11 @@
 #define MAC
 #undef __WINDOWS__
 #endif
+#ifdef RUPERT
 #include  "/opt/local/include/dfsd.h" 
+#else 
+#include  "/usr/local/HDF_Group/HDF/4.2.14/include/dfsd.h" 
+#endif
 #endif
 
 #ifdef SILOFORMAT
@@ -136,25 +140,7 @@ void putout(ConsVars* Sol,
 			sprintf(fieldname, "rho_%s_%s", field_name, step_string);
 			WriteHDF(prhofile, icx, icy, icz, ndim, Sol->rho, fn, fieldname);
 			
-            /* momentum x */
-            sprintf(fn, "%s/rhou/rhou_%s.hdf", dir_name, step_string);
-            if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
-            sprintf(fieldname, "rhou_%s_%s", field_name, step_string);
-            WriteHDF(prhoefile, icx, icy, icz, ndim, Sol->rhou, fn, fieldname);
-            
-            /* momentum y */
-            sprintf(fn, "%s/rhov/rhov_%s.hdf", dir_name, step_string);
-            if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
-            sprintf(fieldname, "rhov_%s_%s", field_name, step_string);
-            WriteHDF(prhoefile, icx, icy, icz, ndim, Sol->rhov, fn, fieldname);
-            
-            /* momentum z */
-            sprintf(fn, "%s/rhow/rhow_%s.hdf", dir_name, step_string);
-            if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
-            sprintf(fieldname, "rhow_%s_%s", field_name, step_string);
-            WriteHDF(prhoefile, icx, icy, icz, ndim, Sol->rhow, fn, fieldname);
-
-            /* energy density */
+			/* energy density */
 			sprintf(fn, "%s/rhoe/rhoe_%s.hdf", dir_name, step_string);
 			if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
 			sprintf(fieldname, "rhoe_%s_%s", field_name, step_string);

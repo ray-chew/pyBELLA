@@ -14,7 +14,7 @@ Date:   Fri Mar 13 07:56:56 CET 1998  Feb. 2004
 #include "error.h"
 #include "userdata.h"
 #include "thermodynamic.h"
-#include "EOS.h"
+#include "Eos.h"
 #include "math_own.h"
 #include "ThomasAlgorithmus.h"
 

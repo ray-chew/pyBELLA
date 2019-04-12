@@ -14,7 +14,7 @@
 #include "memory.h"
 #include "flux_correction.h"
 #include "variable_coefficient_poisson_cells.h"
-#include "BICGSTAB.h"
+#include "BiCGSTAB.h"
 #include "variable.h"
 #include "warning.h"
 #include "enumerator.h"
@@ -96,7 +96,7 @@ void hydrostatic_vertical_flux(ConsVars* flux[3],
 
 #if OUTPUT_RHS_CELLS
 static int rhs_output_count = 0;
-static int first_output_step = 0;
+static int first_output_step = 230;
 #endif
 
 void flux_correction(ConsVars* flux[3],

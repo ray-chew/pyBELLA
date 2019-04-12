@@ -181,16 +181,15 @@ void User_Data_init(User_Data* ud) {
     ud->ncache = 154; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
     
     /* linear solver-stuff */
-    double tol                            = 1.e-10 * (ud->is_compressible == 1 ? 0.01 : 1.0);
+    double tol                            = 1.e-11 * (ud->is_compressible == 1 ? 0.01 : 1.0);
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
     ud->second_projection_local_precision = tol;  /* 1.e-05 should be enough */
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
-    ud->initial_projection                = WRONG;   /* WRONG;  CORRECT; */
-    ud->initial_impl_Euler                = CORRECT;   /* WRONG;  CORRECT; */
-
+    ud->initial_projection                = WRONG; /* WRONG;  CORRECT; */
+    
     ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
     ud->synchronize_nodal_pressure        = WRONG; /* WRONG; CORRECT; */
     ud->synchronize_weight                = 1.0;    /* relevant only when prev. option is "CORRECT"
@@ -217,7 +216,7 @@ void User_Data_init(User_Data* ud) {
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
 
     {
-        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {

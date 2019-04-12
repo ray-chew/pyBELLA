@@ -430,7 +430,7 @@ void advect(
          Simple or Strang splitting for the advection step.
          odd = 0:  even time steps
          odd = 1:  odd  time steps
-         used to steer alternatinging Strang sequences to improve symmetries.
+         used to steer alternating Strang sequences to improve symmetries.
          */
         double time_step = (no_of_sweeps == DOUBLE_STRANG_SWEEP ? 0.5*dt : dt);
         

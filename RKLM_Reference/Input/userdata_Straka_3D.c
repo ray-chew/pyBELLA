@@ -30,10 +30,10 @@ void User_Data_init(User_Data* ud) {
 	
     /* Earth */
 	double grav  = 9.81;                               /* [m/s^2]                */
-	double omega = 0.0*2*PI*sin(0.25*PI)/(24.0*3600.0);    /*  [s^-1]                */
+	double omega = 0.0;//2*PI*sin(0.25*PI)/(24.0*3600.0);    /*  [s^-1]                */
     
     /* thermodynamics and chemistry */
-    double R_gas = 287.4;            /* [J/kg/K]                        */
+    double R_gas = 287.0;            /* [J/kg/K]                        */
     double R_vap = 461.00;           /* [J/kg/K]                        */
     double Q_vap = 2.53e+06;         /* [J]                             */
     double gamma = 1.4;              /* dimensionless                   */
@@ -52,7 +52,7 @@ void User_Data_init(User_Data* ud) {
 	double u_ref = h_ref/t_ref;      /* Strouhal No == 1 always assumed */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
 
-    double Nsq_ref  = grav*1.3e-05;     /* [] */
+    double Nsq_ref  = grav*1.3e-05;     /* [] */ //Is this acting?
     
     ud->h_ref       = h_ref;
     ud->t_ref       = t_ref;
@@ -144,8 +144,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 513+1; /* 641; 321; 161; 129; 81; */
-	ud->iny =  64+1; /* 321; 161;  81;  65; 41;  */
+	ud->inx = 257+1; /* 641; 321; 161; 129; 81; */
+	ud->iny = 32+1; /* 321; 161;  81;  65; 41;  */
 	ud->inz =  1;
 	
 	/* explicit predictor step */
@@ -201,13 +201,13 @@ void User_Data_init(User_Data* ud) {
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 80;
+	ud->write_file_period = 100000;
 	ud->file_format = HDF;
     
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
     
     {
-        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {

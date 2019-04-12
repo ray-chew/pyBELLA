@@ -58,6 +58,7 @@
 		9A8840B5214A9D5000FC83CB /* second_projection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = second_projection.h; sourceTree = "<group>"; };
 		9A8A8DCE2154F67D00FD5838 /* Grid.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = Grid.pdf; sourceTree = "<group>"; };
 		9A8A8DCF21552FCE00FD5838 /* Grid.eps */ = {isa = PBXFileReference; lastKnownFileType = file; path = Grid.eps; sourceTree = "<group>"; };
+		9AA4172522527ED1002AF847 /* benacchio_klein_2019_MWR.tex */ = {isa = PBXFileReference; lastKnownFileType = text; path = benacchio_klein_2019_MWR.tex; sourceTree = "<group>"; };
 		9AA6E68A214C14D9008A9B8D /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		9AA8CE5822187924009477C0 /* molecular_transport.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = molecular_transport.c; sourceTree = "<group>"; };
 		9AA8CE5922187924009477C0 /* molecular_transport.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = molecular_transport.h; sourceTree = "<group>"; };
@@ -182,6 +183,7 @@
 		9AB5078D223562EB0075502D /* paper_2019 */ = {
 			isa = PBXGroup;
 			children = (
+				9AA4172522527ED1002AF847 /* benacchio_klein_2019_MWR.tex */,
 				9AB5078E223562EB0075502D /* Bibliography.bib */,
 				9AB5078F223562EB0075502D /* hydro_comp_numerics_mwr.tex */,
 				9AB507982239FCBC0075502D /* figures */,

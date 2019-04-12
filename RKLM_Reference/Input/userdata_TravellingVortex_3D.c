@@ -148,7 +148,7 @@ void User_Data_init(User_Data* ud) {
     ud->inx = 48+1; /*  */
     ud->iny = 48+1; /*  */
     ud->inz =     1;
-    
+
     /* explicit predictor step */
     /* Recovery */
     ud->recovery_order        = SECOND;
@@ -190,10 +190,10 @@ void User_Data_init(User_Data* ud) {
     /* =====  CODE FLOW CONTROL  ======================================================== */
     /* ================================================================================== */
     ud->tout[0] =  1.0;      
-    ud->tout[1] =  -2.0;      
-    ud->tout[2] =  3.0;      
-    ud->tout[3] = -1.0;
-    
+    //ud->tout[1] =  2.0;      
+    //ud->tout[2] =  3.0;      
+    ud->tout[1] = -1.0;
+
     /*
      ud->tout[0] =  0.5;      
      ud->tout[1] =  1.0;      
@@ -204,18 +204,18 @@ void User_Data_init(User_Data* ud) {
      ud->tout[6] = -1.0;
      */
     
-    ud->stepmax = 10000;
-    
+    ud->stepmax = 20000;
+
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 100000;
+    ud->write_file_period = 10000;
     ud->file_format = HDF;
-    
+
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
     
     {
-        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {

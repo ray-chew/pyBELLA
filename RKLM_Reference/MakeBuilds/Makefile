@@ -1,9 +1,9 @@
-CC = gcc
+lCC = gcc
 
-HDFLIBDIR	  = /opt/local/lib
-HDFINC		  = /opt/local/include
+HDFLIBDIR	  = /usr/lib
+HDFINC		  = /usr/local/HDF_Group/HDF/4.2.14/include
 
-CFLAGS		  = -Aa -I$(HDFINC) 
+CFLAGS		  = -Aa -fPIC -I$(HDFINC)
 
 DEST		  = ../MakeBuilds 
 
@@ -16,7 +16,7 @@ EXTHDRS		  = /usr/include/math.h \
 		/usr/include/time.h \
 #		/usr/include/varargs.h \
 		/usr/include/memory.h \
-		/opt/local/include/dfsd.h
+		/usr/include/hdf/dfsd.h
 
 HDRS		  = ../Common.h \
 		../Input/userdata.h \
@@ -33,7 +33,6 @@ HDRS		  = ../Common.h \
 		../NumericsFundamentals/math_own.h \
 		../NumericsFundamentals/Discretization/kgrid.h \
 		../NumericsFundamentals/Discretization/time_discretization.h \
-		../NumericsFundamentals/lapc/BiCGSTAB.h \
 		../NumericsFundamentals/ofGeneralInterest/SimpleUtilities.h \
 		../NumericsFundamentals/ofGeneralInterest/ThomasAlgorithmus.h \
 		../Physics/Gasdynamics/Eos.h \
@@ -45,18 +44,16 @@ HDRS		  = ../Common.h \
 		../Physics/Gasdynamics/thermodynamic.h \
 		../Physics/Hydrostatics/Hydrostatics.h \
 		../Physics/LowMach/mpv.h \
-		../Physics/LowMach/MAC-projection/flux_correction.h \
-		../Physics/LowMach/MAC-projection/laplacian_cells.h \
-		../Physics/LowMach/MAC-projection/variable_coefficient_poisson_cells.h \
 		../Physics/LowMach/Second-projection/second_projection.h \
 		../Physics/LowMach/Second-projection/laplacian_nodes.h \
 		../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.h \
+		../Physics/NewGroup/molecular_transport.h \
 
 HDRFLAGS	= -I../ -I../Input -I../Management -I../NumericsFundamentals \
-		  -I../NumericsFundamentals/Discretization -I../NumericsFundamentals/lapc \
+		  -I../NumericsFundamentals/Discretization \
 		  -I../NumericsFundamentals/ofGeneralInterest -I../Physics/Gasdynamics \
-		  -I../Physics/Hydrostatics -I../Physics/LowMach -I../Physics/LowMach/MAC-projection \
-		  -I../Physics/LowMach/Second-projection
+		  -I../Physics/Hydrostatics -I../Physics/LowMach \
+		  -I../Physics/LowMach/Second-projection -I../Physics/NewGroup
 
 INSTALL		= install
 
@@ -64,12 +61,12 @@ LD		= $(CC)
 
 LDFLAGS		= 
 
-LIBS		= $(HDFLIBDIR)/libmfhdf.dylib \
-		$(HDFLIBDIR)/libdf.dylib  $(HDFLIBDIR)/libjpeg.a $(HDFLIBDIR)/libz.dylib -lm
+LIBS		= $(HDFLIBDIR)/libmfhdf.a \
+		$(HDFLIBDIR)/libdf.a  /home/tommaso/hdf4/CMake-hdf-4.2.14/build/bin/libjpeg.a $(HDFLIBDIR)/x86_64-linux-gnu/libz.a -lm -fPIC
 
 MAKEFILE	= Makefile
 
-OBJS		= userdata_InternalWave_LongWave.o \
+OBJS		= userdata_TravellingVortex_3D_48.o \
 		boundary.o \
 		data.o \
 		io.o \
@@ -78,7 +75,6 @@ OBJS		= userdata_InternalWave_LongWave.o \
 		variable.o \
 		kgrid.o \
 		time_discretization.o \
-		BiCGSTAB.o \
 		SimpleUtilities.o \
 		Thomas_Algorithmus_2.o \
 		Eos.o \
@@ -90,12 +86,10 @@ OBJS		= userdata_InternalWave_LongWave.o \
 		thermodynamic.o \
 		Hydrostatics.o \
 		mpv.o \
-		flux_correction.o \
-		laplacian_cells.o \
-		variable_coefficient_poisson_cells.o \
 		second_projection.o \
 		laplacian_nodes.o \
 		variable_coefficient_poisson_nodes.o \
+		molecular_transport.o \
 
 PRINT		  = pr
 
@@ -103,7 +97,7 @@ PROGRAM	   = rklm
 
 SHELL		  = /bin/sh
 
-SRCS		  = ../Input/userdata_InternalWave_LongWave.c \
+SRCS		  = ../Input/userdata_TravellingVortex_3D_48.c \
 		../Input/boundary.c \
 		../Management/data.c \
 		../Management/io.c \
@@ -112,7 +106,6 @@ SRCS		  = ../Input/userdata_InternalWave_LongWave.c \
 		../Management/variable.c \
 		../NumericsFundamentals/Discretization/kgrid.c \
 		../NumericsFundamentals/Discretization/time_discretization.c \
-		../NumericsFundamentals/lapc/BiCGSTAB.c \
 		../NumericsFundamentals/ofGeneralInterest/SimpleUtilities.c \
 		../NumericsFundamentals/ofGeneralInterest/Thomas_Algorithmus_2.c \
 		../Physics/Gasdynamics/Eos.c \
@@ -124,12 +117,10 @@ SRCS		  = ../Input/userdata_InternalWave_LongWave.c \
 		../Physics/Gasdynamics/thermodynamic.c \
 		../Physics/Hydrostatics/Hydrostatics.c \
 		../Physics/LowMach/mpv.c \
-		../Physics/LowMach/MAC-projection/flux_correction.c \
-		../Physics/LowMach/MAC-projection/laplacian_cells.c \
-		../Physics/LowMach/MAC-projection/variable_coefficient_poisson_cells.c \
 		../Physics/LowMach/Second-projection/second_projection.c \
 		../Physics/LowMach/Second-projection/laplacian_nodes.c \
 		../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.c \
+		../Physics/NewGroup/molecular_transport.c
 
 all:		$(PROGRAM)
 
@@ -164,8 +155,8 @@ $(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)
 		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install
 
 ###
-userdata_InternalWave_LongWave.o : 
-	$(CC) -c $(HDRFLAGS) ../Input/userdata_InternalWave_LongWave.c
+userdata_TravellingVortex_3D_48.o : 
+	$(CC) -c $(HDRFLAGS) ../Input/userdata_TravellingVortex_3D_48.c
 
 boundary.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/boundary.c
@@ -190,9 +181,6 @@ kgrid.o :
 
 time_discretization.o : 
 	$(CC) -c $(HDRFLAGS) ../NumericsFundamentals/Discretization/time_discretization.c
-
-BiCGSTAB.o : 
-	$(CC) -c $(HDRFLAGS) ../NumericsFundamentals/lapc/BiCGSTAB.c
 
 SimpleUtilities.o : 
 	$(CC) -c $(HDRFLAGS) ../NumericsFundamentals/ofGeneralInterest/SimpleUtilities.c
@@ -227,15 +215,6 @@ Hydrostatics.o :
 mpv.o : 
 	$(CC) -c $(HDRFLAGS) ../Physics/LowMach/mpv.c
 
-flux_correction.o : 
-	$(CC) -c $(HDRFLAGS) ../Physics/LowMach/MAC-projection/flux_correction.c
-	
-laplacian_cells.o : 
-	$(CC) -c $(HDRFLAGS) ../Physics/LowMach/MAC-projection/laplacian_cells.c
-
-variable_coefficient_poisson_cells.o : 
-	$(CC) -c $(HDRFLAGS) ../Physics/LowMach/MAC-projection/variable_coefficient_poisson_cells.c
-
 second_projection.o : 
 	$(CC) -c $(HDRFLAGS) ../Physics/LowMach/Second-projection/second_projection.c
 
@@ -245,3 +224,6 @@ laplacian_nodes.o :
 variable_coefficient_poisson_nodes.o : 
 	$(CC) -c $(HDRFLAGS) ../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.c
 
+molecular_transport.o :
+	$(CC) -c $(HDRFLAGS) ../Physics/NewGroup/molecular_transport.c
+	

@@ -3,8 +3,8 @@
 % saving figures as .eps:     print(gcf, 'TestPlot', '-depsc');
 
 %modelstr = '';
-%modelstr = 'comp';
-modelstr = 'psinc';
+modelstr = 'comp';
+%modelstr = 'psinc';
 %modelstr = 'psinc_w_adv_Ndt=3';
 %modelstr = 'psinc_Ndt=3';
 %modelstr = 'psinc_w_adv_Ndt=05';
@@ -96,8 +96,8 @@ elseif strcmp(test_case, 'Rising-Bubble')
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Travelling-Vortex')
-    ncx = 64;  % 512; 256;
-    ncy = 64;  % 512; 256;
+    ncx = 31;  % 512; 256;
+    ncy = 31;  % 512; 256;
     ncz = 2;  % 512; 256;
     %ncx = 64;  % 512; 256;
     %ncy = 64;  % 512; 256;

@@ -1,3 +1,8 @@
+
+#define TOMMASO
+
+//#define RUPERT
+
 /* auxiliary labels for addressing various solution components */
 #define NSPEC 1   /* no of advected scalars */
 #define BUOY  0   /* auxiliary pot. temp. perturbation variable */
@@ -18,7 +23,7 @@
 #define OUTPUT_LAP_NODES   0       /* on-off */
 #define OUTPUT_RHS_NODES   0       /* on-off */
 #define OUTPUT_ADV_FLUXES  0       /* on-off */
-
+	
 /* ============================================= 
  Explicit predictor options
  ============================================= */
@@ -37,6 +42,7 @@
 #define P2_DIAGONAL_FIVE_POINT 1.0 /* 0.0, 1.0; as above but for node-based Poisson op.           */
 
 /*
+#define NEUMANN_Y_BOTTOM_BC
 #define IMP_MIDPT_FOR_NODAL_PI
  #define NONLINEAR_EOS_ITERATION
  */

@@ -4,6 +4,9 @@
 % Hint: 
 % saving figures as .eps:     print(gcf, 'TestPlot', '-depsc');
 
+%clear all
+%close all
+
 extrafigno = 52;
 
 %modelstr = '';
@@ -14,7 +17,7 @@ modelstr = 'comp';
 %modelstr = 'psinc_w_adv_Ndt=05';
 
 
-%test_case = 'Baldaufs-Internal-Wave-Tests';
+test_case = 'Baldaufs-Internal-Wave-Tests';
 %test_case = 'Deep-Internal-Wave-Tests';
 %test_case = 'Internal-Wave-Tests';
 %test_case = 'Breaking-Wave-Tests';
@@ -40,7 +43,9 @@ show_increments = 0;
 symmetry = 0;        % in {0,1}
 symmetrytest = 0;
 showdummycells = 0;
+showslice = 1;
 diff_rel_to_bottom = 0;
+print_eps = 0;
 
 % th0 = -0.0015/300;
 % dth = 5e-4/300;
@@ -57,8 +62,8 @@ dk   = 1;
 
 if strcmp(test_case, 'Baldaufs-Internal-Wave-Tests')
     scalefactor = 20.0;
-    ncx = 601; % 301; 
-    ncy =  40;  %  20;  
+    ncx = 151; % 301; 
+    ncy =  10;  %  20;  
     L   = scalefactor*300.0;  % [km] 
     x0  = 0.0;
     H   = 10.0;               % [km]     
@@ -152,16 +157,16 @@ elseif strcmp(test_case, 'Travelling-Hump')
     velosc = 100;  % velocity unit of RKLM code
     showslice_hor = ncy/2;
     showslice_ver = floor(ncx/2);
-elseif strcmp(test_case, 'Straka')
-    ncx = 1025;  % 257;  
-    ncy =  128;  % 32;  
+elseif strcmp(test_case, 'Straka_50m')
+    ncx = 1025;  
+    ncy = 128;  
     L  = 51.2;  % 
     x0 = 0.0*L;
     H  = 6.4;  %
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
     dtheta = 1.0/300.0;
-    contour_values = linspace(-16.5*dtheta,0.5*dtheta,16);
+    contour_values = linspace(-16.5*dtheta,-0.5*dtheta,17);
     showslice_hor = floor(ncy/3);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Smolarkiewicz-Margolin-Breaking-Wave')
@@ -204,7 +209,9 @@ rhoY_diff = 0;
 rhoZ_diff = 0;
 transp    = 0;
 
-folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Mach_gravity_',modelstr);
+
+%folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Mach_gravity_',modelstr);
+folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/low_Mach_gravity_',modelstr);
 
 % for time series display
 ts_name = strcat(folderstring, '/time_series.txt');
@@ -365,9 +372,20 @@ for k = kmin:dk:kmax
                     th = th-th(3,:);
                 end
                 contourf(x,z,th,no_of_lines,'LineColor',linecolor);
+                disp(min(min(th))*300)
             end
             colormap Jet
             colorbar('FontSize',14,'FontName','Helvetica')
+            if(k==1) % widen picture size
+                pos=get(gca,'position');  % retrieve the current plot size value
+                pos(3)=.95*pos(3);        % try increasing width and height 10% 
+                pos(4)=.95*pos(4);        % try increasing width and height 10% 
+                set(gca,'position',pos);  % write the new values
+            end
+            if print_eps
+                filename = sprintf('./results/%s_evol/%s_snapshot%d.eps', varstr, varstr, k);
+                print(filename, '-depsc')            
+            end
         else
             figure(figure1)
             if fixed_contours
@@ -400,6 +418,10 @@ for k = kmin:dk:kmax
                     contour(x,z,th,no_of_contours,'LineColor','k');
                 end
             end
+            if print_eps
+                filename = sprintf('./results/%s_evol/%s_snapshot%d.eps', varstr, varstr, k);
+                print(filename, '-depsc')
+            end
         end
                 
         set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
@@ -413,6 +435,8 @@ for k = kmin:dk:kmax
         
         % Create ylabel
         ylabel('z [km]','FontSize',18,'FontName','Helvetica');
+
+        
         
         
         if show_increments
@@ -446,18 +470,24 @@ for k = kmin:dk:kmax
     if showslice_hor
         figure(figure3)
         hold
-        plot(x,th(showslice_hor,:))
-        xlabel('x [km]','FontSize',18,'FontName','Helvetica');
-        ylabel(varstr,'FontSize',18,'FontName','Helvetica');
-        hold
+        plot(th(showslice_hor,:))
+        if print_eps
+            filename = sprintf('./results/%s_evol/%s_snapshot%d_cut_hor.eps', varstr, varstr, k);
+            print(filename, '-depsc')
+        else
+            hold
+        end
     end
     if showslice_ver
         figure(figure4)
-        hold
-        plot(th(:,showslice_hor),z)
-        xlabel(varstr,'FontSize',18,'FontName','Helvetica');
-        ylabel('z [km]','FontSize',18,'FontName','Helvetica');
-        hold
+        hold    
+        plot(th(:,showslice_hor))
+        if print_eps
+            filename = sprintf('./results/%s_evol/%s_snapshot%d_cut_ver.eps', varstr, varstr, k);
+            print(filename, '-depsc')
+        else
+            hold
+        end
     end
     
     pause
