@@ -17,19 +17,18 @@ modelstr = 'comp';
 %modelstr = 'psinc_w_adv_Ndt=05';
 
 
-test_case = 'Baldaufs-Internal-Wave-Tests';
+%test_case = 'Baldaufs-Internal-Wave-Tests';
 %test_case = 'Deep-Internal-Wave-Tests';
 %test_case = 'Internal-Wave-Tests';
 %test_case = 'Breaking-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
 %test_case = 'Straka_50m';
-%test_case = 'Travelling-Vortex';
+test_case = 'Travelling-Vortex';
 %test_case = 'Gresho-Vortex';
 %test_case = 'Travelling-Hump';
 %test_case = 'Acoustic-Wave';
 %test_case = 'Schlutows-Wave';
-
 
 showmode = 1;
 separate_signs = 1;
@@ -210,8 +209,8 @@ rhoZ_diff = 0;
 transp    = 0;
 
 
-%folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Mach_gravity_',modelstr);
-folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/low_Mach_gravity_',modelstr);
+folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Mach_gravity_',modelstr);
+%folderstring = strcat('/home/tommaso/work/repos/RKLM_Reference/low_Mach_gravity_',modelstr);
 
 % for time series display
 ts_name = strcat(folderstring, '/time_series.txt');

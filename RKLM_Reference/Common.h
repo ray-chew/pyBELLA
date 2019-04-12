@@ -1,7 +1,7 @@
 
-#define TOMMASO
+// #define TOMMASO
 
-//#define RUPERT
+#define RUPERT
 
 /* auxiliary labels for addressing various solution components */
 #define NSPEC 1   /* no of advected scalars */

@@ -147,7 +147,7 @@ void User_Data_init(User_Data* ud) {
     /* Grid and space discretization */
     ud->inx = 48+1; /*   */
     ud->iny = 48+1; /*   */
-    ud->inz =     1;
+    ud->inz =    1;
 
     /* explicit predictor step */
     /* Recovery */
@@ -215,7 +215,11 @@ void User_Data_init(User_Data* ud) {
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
     
     {
+#ifdef TOMMASO
         char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
+#else
+        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+#endif
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
