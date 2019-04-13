@@ -102,7 +102,6 @@ void hllestar(
     }
 }
 
-
 /*------------------------------------------------------------------------------
  store advective flux
  ------------------------------------------------------------------------------*/
@@ -112,8 +111,6 @@ void hllestar(
 static int flux_output_count = 0;
 #endif
 
-
-
 void recompute_advective_fluxes(ConsVars* flux[3], 
                                 const ConsVars* Sol, 
                                 const BDRY* bdry,
@@ -122,10 +119,7 @@ void recompute_advective_fluxes(ConsVars* flux[3],
 {
     extern User_Data ud;
             
-    
-    
     /* recompute advective flux at fixed time level from cell averages */
-    
     switch (elem->ndim) {
         case 1: {
             for (int i=0; i<elem->nfx; i++) {
@@ -196,14 +190,21 @@ void recompute_advective_fluxes(ConsVars* flux[3],
         }
             
         case 3: {
-            assert(0);  /* 3D variant of NODAL_PROJECTION_ONLY not yet correctly implemented */
+            
             int icx = elem->icx;
             int icy = elem->icy;
             int icz = elem->icz;
+            int igx = elem->igx;
+            int igy = elem->igy;
+            int igz = elem->igz;
             int ifx = elem->ifx;
             int ify = elem->ify;
             int ifz = elem->ifz;
 
+            int dnx = 1;
+            int dny = icx;
+            int dnz = icx*icy;
+                        
             for (int i=0; i<elem->nfx; i++) {
                 flux[0]->rhoY[i] = 0.0;
             }
@@ -214,38 +215,41 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                 flux[2]->rhoY[i] = 0.0;
             }
             
-for (int k=1; k<icz; k++) {
+            for (int k=igz; k<icz-igz+1; k++) {
                 int nck  = k*icx*icy;
                 int nfxk = k*ifx*icy;
                 int nfyk = k*ify;
                 int nfzk = k;
-                for (int j=1; j<icy; j++) {
+                for (int j=igy; j<icy-igy+1; j++) {
                     int ncjk  = nck  + j*icx;
                     int nfxjk = nfxk + j*ifx;
                     int nfyjk = nfyk + j;
                     int nfzjk = nfzk + j*ifz*icx;
-                    for(int i=1; i<icx; i++) {
+                    for(int i=igx; i<icx-igx+1; i++) {
                         int ncijk  = ncjk  + i;
                         int nfxijk = nfxjk + i;
                         int nfyijk = nfyjk + i*ify*icz;
                         int nfzijk = nfzjk + i*ifz;
                         
-                        double u_c     = Sol->rhou[ncijk]/Sol->rho[ncijk];
-                        double u_m     = Sol->rhou[ncijk-1]/Sol->rho[ncijk-1];
-                        double rhoY_c  = Sol->rhoY[ncijk];
-                        double rhoY_mx = Sol->rhoY[ncijk-1];
-                        
-                        double v_c     = Sol->rhov[ncijk]/Sol->rho[ncijk];
-                        double v_m     = Sol->rhov[ncijk-icx]/Sol->rho[ncijk-icx];
-                        double rhoY_my = Sol->rhoY[ncijk-icx];
-                        
-                        double w_c     = Sol->rhow[ncijk]/Sol->rho[ncijk];
-                        double w_m     = Sol->rhow[ncijk-icx*icy]/Sol->rho[ncijk-icx*icy];
-                        double rhoY_mz = Sol->rhoY[ncijk-icx*icy];
-                        
-                        flux[0]->rhoY[nfxijk] = 0.25*(u_c+u_m)*(rhoY_c+rhoY_mx);
-                        flux[1]->rhoY[nfyijk] = 0.25*(v_c+v_m)*(rhoY_c+rhoY_my);
-                        flux[2]->rhoY[nfzijk] = 0.25*(w_c+w_m)*(rhoY_c+rhoY_mz);
+                        for (int ifb=0; ifb<2; ifb++) {
+                            for (int inode=0; inode<2; inode++) {
+                                for (int jnode=0; jnode<2; jnode++) {
+                                    for (int icell=0; icell<2; icell++) {
+                                        for (int jcell=0; jcell<2; jcell++) {
+                                            int ncx = ncijk-ifb*dnx+inode*dny+jnode*dnz-icell*dny-jcell*dnz;
+                                            int ncy = ncijk-ifb*dny+inode*dnz+jnode*dnx-icell*dnz-jcell*dnx;
+                                            int ncz = ncijk-ifb*dnz+inode*dnx+jnode*dny-icell*dnx-jcell*dny;
+                                            flux[0]->rhoY[nfxijk] += Sol->rhoY[ncx] * Sol->rhou[ncx]/Sol->rho[ncx];
+                                            flux[1]->rhoY[nfyijk] += Sol->rhoY[ncy] * Sol->rhov[ncy]/Sol->rho[ncy];
+                                            flux[2]->rhoY[nfzijk] += Sol->rhoY[ncz] * Sol->rhow[ncz]/Sol->rho[ncz];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        flux[0]->rhoY[nfxijk] /= 32.0;
+                        flux[1]->rhoY[nfyijk] /= 32.0;
+                        flux[2]->rhoY[nfzijk] /= 32.0;                        
                     }
                 }
             }

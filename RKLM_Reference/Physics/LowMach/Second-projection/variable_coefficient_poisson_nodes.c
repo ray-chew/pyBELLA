@@ -150,9 +150,6 @@ static int rhs_output_count = 0;
 #endif
 #endif
 
-
-
-
 static double BiCGSTAB_MG_nodes(
 								BiCGSTABData* data,
 								const NodeSpaceDiscr* node,

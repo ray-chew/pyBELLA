@@ -489,7 +489,6 @@ void set_wall_rhoYflux(
             }
             
             /* the remaining lines in this routine have not yet been tested */
-            assert(0);
             for (int k=0; k<icz; k++) {
                 int nk = k*icx;
                 for(int i=0; i<elem->igx; i++) {

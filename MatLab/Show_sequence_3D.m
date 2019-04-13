@@ -27,7 +27,7 @@ fixed_contours = 0;
 fixed_contour_step = 0;
 no_of_contours = 10;
 show_increments = 0;
-symmetrytest = 1;
+symmetrytest = 0;
 showdummycells = 0;
 
 % th0 = -0.0015/300;
@@ -96,9 +96,9 @@ elseif strcmp(test_case, 'Rising-Bubble')
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
 elseif strcmp(test_case, 'Travelling-Vortex')
-    ncx = 31;  % 512; 256;
-    ncy = 31;  % 512; 256;
-    ncz = 2;  % 512; 256;
+    ncx = 48;  % 512; 256;
+    ncy = 48;  % 512; 256;
+    ncz = 12;  % 512; 256;
     %ncx = 64;  % 512; 256;
     %ncy = 64;  % 512; 256;
     %ncz = 2;  % 512; 256;
@@ -175,7 +175,7 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'rhoZ';  folderstr = 'rhoZ'; titlestr = 'rhoZ'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'Z';  folderstr = 'Z'; titlestr = 'Z'; ndummy = 2; arraysize = [ncx ncy ncz]; rhoZ_diff = 0;
-%varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy ncz]; symmetry = -1*symmetry;
+varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy ncz]; symmetry = -1*symmetry;
 %varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'qv';  folderstr = 'qv'; titlestr = 'qv'; ndummy = 2; arraysize = [ncx ncy ncz];
@@ -191,7 +191,7 @@ folderstring = strcat('/Users/rupert/Documents/Computation/RKLM_Reference/low_Ma
 %varstr = 'rhs_cells';  folderstr = 'rhs_cells'; titlestr = 'rhs_c'; ndummy = 2; arraysize = [ncx ncy ncz];
 %varstr = 'lap_cells';  folderstr = 'lap_cells'; titlestr = 'lap_c'; ndummy = 2; arraysize = [ncx ncy ncz];
 
-varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny nnz];
+%varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny nnz];
 %varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny nnz];
 %varstr = 'rhs_nodes';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n';    ndummy = 2; arraysize = [nnx nny nnz];
 %varstr = 'lap_nodes';  folderstr = 'lap_nodes'; titlestr = 'lap_n';    ndummy = 2; arraysize = [nnx nny nnz];
