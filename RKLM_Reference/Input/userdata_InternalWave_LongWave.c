@@ -24,7 +24,7 @@
 double molly(double x);
 
 /* horizontal stretch for S&K94 IGWs: planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0; */
-static double scalefactor = 20.0;      
+static double scalefactor = 160.0;      
 
 void User_Data_init(User_Data* ud) {
     
@@ -36,7 +36,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Earth */
     double grav     = 9.81;             /* gravitational acceleration [m/s^2]    */
-    double omega    = 1.0*0.0001;       /* Coriolis parameter [1/s]              */
+    double omega    = 0.0*0.0001;       /* Coriolis parameter [1/s]              */
                                         /* sin(0.5*PI) * 2.0 * 0.00007272205217; */
     
     /* thermodynamics and chemistry */
@@ -44,6 +44,12 @@ void User_Data_init(User_Data* ud) {
     double R_vap    = 461.00;           /* [J/kg/K]               */
     double Q_vap    = 2.53e+06;         /* [J]                    */
     double gamma    = 1.4;              /* dimensionless; 5.0/3.0       */
+
+    double viscm  = 0.0;            /* [m^2/s]                         */
+    double viscbm = 0.0;             /* [m^2/s]                         */
+    double visct  = 0.0;             /* [m^2/s]                         */
+    double viscbt = 0.0;             /* [m^2/s]                         */
+    double cond   = 0.0;            /* [m^2/s]                         */
 
     /* references for non-dimensionalization */
     double h_ref    = 10000;                 /* [m]               */
@@ -70,6 +76,14 @@ void User_Data_init(User_Data* ud) {
     
     /* number of advected species */
     ud->nspec       = NSPEC;
+
+    /*FULL_MOLECULAR_TRANSPORT, STRAKA_DIFFUSION_MODEL, NO_MOLECULAR_TRANSPORT */
+    ud->mol_trans   = NO_MOLECULAR_TRANSPORT; 
+    ud->viscm       = viscm  * t_ref/(h_ref*h_ref);
+    ud->viscbm      = viscbm * t_ref/(h_ref*h_ref);
+    ud->visct       = visct  * t_ref/(h_ref*h_ref);
+    ud->viscbt      = viscbt * t_ref/(h_ref*h_ref);
+    ud->cond        = cond * t_ref/(h_ref*h_ref*R_gas);
 
     /* Low Mach */
     ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
@@ -110,6 +124,7 @@ void User_Data_init(User_Data* ud) {
     /* boundary/initial conditions */
     ud->wind_speed  =  1.0 * 20.0/u_ref;
     ud->wind_shear  = -0.0;              /* velocity in [u_ref/h_ref] */
+    ud->hill_shape  = AGNESI;            /* AGNESI, SCHLUTOW */
     ud->hill_height = 0.0 * 0.096447; 
     ud->hill_length_scale = 0.1535;   /* hill_length * l_ref = 1.0 km */
     
@@ -121,7 +136,8 @@ void User_Data_init(User_Data* ud) {
     ud->bdrytype_max[2] = WALL;
     
     ud->absorber = WRONG; /* CORRECT;  WRONG; */ /*  BREAKING WAVE CHANGE */
-    
+    ud->bottom_theta_bc = BOTTOM_BC_DEFAULT;
+
     /* ================================================================================== */
     /* =====  NUMERICS  ================================================================= */
     /* ================================================================================== */
@@ -131,8 +147,8 @@ void User_Data_init(User_Data* ud) {
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
     ud->CFL                   = 0.9; /* 0.45; 0.9; 0.8; */
     /* large time step test variant  (N*dt = 20.0, or  dt = 2000 s in the planetary IGW test) */
-    ud->dtfixed0              = 1.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
-    ud->dtfixed               = 1.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed0              = 10.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed               = 10.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
      
      
     /* short time step test variant  (N*dt = 1.0, or  dt = 100 s in the planetary IGW test) 
@@ -161,20 +177,19 @@ void User_Data_init(User_Data* ud) {
     ud->kY = 1.4;
     ud->kZ = 1.4; /* 2.0 */
         
-    /* al explicit predictor operations are done on ncache-size data worms to save memory */ 
+    /* all explicit predictor operations are done on ncache-size data worms to save memory */ 
     ud->ncache = 154; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
     
     /* linear solver-stuff */
-    double tol                            = 1.e-10 * (ud->is_compressible == 1 ? 0.01 : 1.0);
+    double tol                            = 1.e-11 * (ud->is_compressible == 1 ? 0.01 : 1.0);
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
     ud->second_projection_local_precision = tol;  /* 1.e-05 should be enough */
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
-    ud->initial_projection                = WRONG;   /* WRONG;  CORRECT; */
-    ud->initial_impl_Euler                = CORRECT;   /* WRONG;  CORRECT; */
-
+    ud->initial_projection                = WRONG; /* WRONG;  CORRECT; */
+    
     ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
     ud->synchronize_nodal_pressure        = WRONG; /* WRONG; CORRECT; */
     ud->synchronize_weight                = 1.0;    /* relevant only when prev. option is "CORRECT"
@@ -267,7 +282,6 @@ void Sol_initial(ConsVars* Sol,
      
     /* computations for the vertical slice at  k=0 */
     for(i = 0; i < icx; i++) {
-        double xi;
         
         /* set potential temperature stratification in the column */
         for(j = 0; j < elem->icy; j++) {
@@ -359,7 +373,7 @@ void Sol_initial(ConsVars* Sol,
     ud.nonhydrostasy   = nonhydrostasy(0);
     ud.compressibility = compressibility(0);
     
-    set_wall_massflux(bdry, Sol, elem);
+    set_wall_rhoYflux(bdry, Sol, mpv, elem);
     Set_Explicit_Boundary_Data(Sol, elem);
     
     ConsVars_set(Sol0, Sol, elem->nc);

@@ -4,6 +4,9 @@
 % Hint: 
 % saving figures as .eps:     print(gcf, 'TestPlot', '-depsc');
 
+%clear all
+%close all
+
 extrafigno = 52;
 
 %modelstr = '';
@@ -17,12 +20,15 @@ modelstr = 'comp';
 %test_case = 'Baldaufs-Internal-Wave-Tests';
 %test_case = 'Deep-Internal-Wave-Tests';
 %test_case = 'Internal-Wave-Tests';
+%test_case = 'Breaking-Wave-Tests';
 %test_case = 'Rising-Bubble';
 %test_case = 'Smolarkiewicz-Margolin-Breaking-Wave';
-%test_case = 'Straka';
-%test_case = 'Travelling-Vortex';
+%test_case = 'Straka_50m';
+test_case = 'Travelling-Vortex';
+%test_case = 'Gresho-Vortex';
 %test_case = 'Travelling-Hump';
-test_case = 'Acoustic-Wave';
+%test_case = 'Acoustic-Wave';
+%test_case = 'Schlutows-Wave';
 
 showmode = 1;
 separate_signs = 1;
@@ -36,7 +42,9 @@ show_increments = 0;
 symmetry = 0;        % in {0,1}
 symmetrytest = 0;
 showdummycells = 0;
+showslice = 1;
 diff_rel_to_bottom = 0;
+print_eps = 0;
 
 % th0 = -0.0015/300;
 % dth = 5e-4/300;
@@ -53,8 +61,8 @@ dk   = 1;
 
 if strcmp(test_case, 'Baldaufs-Internal-Wave-Tests')
     scalefactor = 20.0;
-    ncx = 601; % 301; 
-    ncy =  40;  %  20;  
+    ncx = 151; % 301; 
+    ncy =  10;  %  20;  
     L   = scalefactor*300.0;  % [km] 
     x0  = 0.0;
     H   = 10.0;               % [km]     
@@ -73,10 +81,10 @@ elseif strcmp(test_case, 'Deep-Internal-Wave-Tests')
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Internal-Wave-Tests')
-    % scalefactor = 1.0  % Skamarock-Klemp-1994 Fig.1
-    scalefactor = 20.0   % Skamarock-Klemp-1994 Fig.3
-    % scalefactor = 160.0;   % new, very long wave test
-    ncx =301; 
+    scalefactor = 1.0;  % Skamarock-Klemp-1994 Fig.1
+    % scalefactor = 20.0;   % Skamarock-Klemp-1994 Fig.3
+    %scalefactor = 160.0;   % new, very long wave test
+    ncx = 301; 
     ncy = 10;  
     %ncx = 600; 
     %ncy = 80;  
@@ -85,6 +93,16 @@ elseif strcmp(test_case, 'Internal-Wave-Tests')
     H   = 10.0;  %
     aspect = [L/H/3 1 1];
     velosc = 100;  % velocity unit of RKLM code
+    showslice_hor = floor(ncy/2);
+    showslice_ver = floor(ncx/2);
+elseif strcmp(test_case, 'Breaking-Wave-Tests')
+    ncx = 240; 
+    ncy = 120;  
+    L   = 120;  % 
+    x0  = 0.0;
+    H   = 60.0;  %
+    aspect = [L/H/3 1 1];
+    velosc = 65.15;  % velocity unit of RKLM code
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Acoustic-Wave')
@@ -109,6 +127,16 @@ elseif strcmp(test_case, 'Rising-Bubble')
     showslice_hor = floor(ncy/2);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Travelling-Vortex')
+    ncx = 48;  
+    ncy = 48; 
+    L   = 1.0;  
+    x0  = 0.0;
+    H   = 1.0; 
+    aspect = [2 2 2];
+    velosc = 1; 
+    showslice_hor = floor(ncy/2);
+    showslice_ver = floor(ncx/2);
+elseif strcmp(test_case, 'Gresho-Vortex')
     ncx = 80;  
     ncy = 20; 
     L   = 4.0;  
@@ -128,16 +156,16 @@ elseif strcmp(test_case, 'Travelling-Hump')
     velosc = 100;  % velocity unit of RKLM code
     showslice_hor = ncy/2;
     showslice_ver = floor(ncx/2);
-elseif strcmp(test_case, 'Straka')
-    ncx = 257;  
-    ncy = 32;  
+elseif strcmp(test_case, 'Straka_50m')
+    ncx = 1025;  
+    ncy = 128;  
     L  = 51.2;  % 
     x0 = 0.0*L;
     H  = 6.4;  %
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
     dtheta = 1.0/300.0;
-    contour_values = linspace(-16.5*dtheta,-0.5*dtheta,16);
+    contour_values = linspace(-16.5*dtheta,-0.5*dtheta,17);
     showslice_hor = floor(ncy/3);
     showslice_ver = floor(ncx/2);
 elseif strcmp(test_case, 'Smolarkiewicz-Margolin-Breaking-Wave')
@@ -149,6 +177,16 @@ elseif strcmp(test_case, 'Smolarkiewicz-Margolin-Breaking-Wave')
     aspect = [1 1 1];
     velosc = 100;  % velocity unit of RKLM code
     showslice_hor = floor(ncy/2);
+    showslice_ver = floor(ncx/2);
+elseif strcmp(test_case, 'Schlutows-Wave')
+    ncx = 120;  
+    ncy = 120;  
+    L   =  30.0;  % 
+    x0  =   0.0;
+    H   =  60.0;  %
+    aspect = [1 1 1];
+    velosc = 100;  % velocity unit of RKLM code
+    showslice_hor = 5; % floor(ncy/2);
     showslice_ver = floor(ncx/2);
 end
     
@@ -184,8 +222,8 @@ ts_name = strcat(folderstring, '/time_series.txt');
 %varstr = 'drhoY';  folderstr = 'drhoY'; titlestr = 'drhoY'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'T';  folderstr = 'T'; titlestr = 'T'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'dT';  folderstr = 'dT'; titlestr = 'dT'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
-%varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy];
-varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; fixed_contours = 1;
+%varstr = 'Y';  folderstr = 'Y'; titlestr = '\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 0; no_of_contours = 50;
+%varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = [ncx ncy]; filledcontours = 1; fixed_contours = 1;
 %varstr = 'buoy';  folderstr = 'buoy'; titlestr = 'buoy'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZp';  folderstr = 'rhoZp'; titlestr = 'rhoZp'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhoZB';  folderstr = 'rhoZB'; titlestr = 'rhoZB'; ndummy = 2; arraysize = [ncx ncy];
@@ -193,7 +231,7 @@ varstr = 'dY';  folderstr = 'dY'; titlestr = 'd\theta'; ndummy = 2; arraysize = 
 %varstr = 'rhou';  folderstr = 'rhou'; titlestr = 'rhou'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhov';  folderstr = 'rhov'; titlestr = 'rhov'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'rhow';  folderstr = 'rhow'; titlestr = 'rhow'; ndummy = 2; arraysize = [ncx ncy];
-varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
+%varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry;
 %varstr = 'v';  folderstr = 'v'; titlestr = 'v'; ndummy = 2; arraysize = [ncx ncy]; symmetry = -1*symmetry; filledcontours = 1;
 %varstr = 'w';  folderstr = 'w'; titlestr = 'w'; ndummy = 2; arraysize = [ncx ncy];
 %varstr = 'vortz';  folderstr = 'vortz'; titlestr = 'vortz'; ndummy = 2; arraysize = [nnx nny]; filledcontours = 1; fixed_contours = 0;
@@ -213,7 +251,7 @@ varstr = 'u';  folderstr = 'u'; titlestr = 'u'; ndummy = 2; arraysize = [ncx ncy
 
 %varstr = 'p2_n';  folderstr = 'p2_nodes'; titlestr = '\pi_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'dp2_n';  folderstr = 'dp2_nodes'; titlestr = 'd\pi_n';    ndummy = 2; arraysize = [nnx nny];
-%varstr = 'rhs_nodes';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n';    ndummy = 2; arraysize = [nnx nny];
+varstr = 'rhs_nodes';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'rhs_nodes_prec';  folderstr = 'rhs_nodes'; titlestr = 'rhs_n_prec';    ndummy = 2; arraysize = [nnx nny];
 %varstr = 'lap_nodes';  folderstr = 'lap_nodes'; titlestr = 'lap_n';    ndummy = 2; arraysize = [nnx nny];
 
@@ -236,10 +274,12 @@ end
 if showslice_hor
     figure3 = figure('Position',[scrsz(4)/2 2*scrsz(4)/3 scrsz(4)/2 1*scrsz(4)/3]);
     title(strcat('horizontal slice at j = ',num2str(showslice_hor)))
+    set(gca,'FontSize',18,'FontName','Helvetica');
 end
 if showslice_ver
     figure4 = figure('Position',[2*scrsz(4)/2 2*scrsz(4)/3 scrsz(4)/2 1*scrsz(4)/3]);
-    title(strcat('horizontal slice at i = ',num2str(showslice_ver)))
+    title(strcat('vertical slice at i = ',num2str(showslice_ver)))
+    set(gca,'FontSize',18,'FontName','Helvetica');
 end
 
 for k = kmin:dk:kmax
@@ -329,9 +369,20 @@ for k = kmin:dk:kmax
                     th = th-th(3,:);
                 end
                 contourf(x,z,th,no_of_lines,'LineColor',linecolor);
+                disp(min(min(th))*300)
             end
             colormap Jet
             colorbar('FontSize',14,'FontName','Helvetica')
+            if(k==1) % widen picture size
+                pos=get(gca,'position');  % retrieve the current plot size value
+                pos(3)=.95*pos(3);        % try increasing width and height 10% 
+                pos(4)=.95*pos(4);        % try increasing width and height 10% 
+                set(gca,'position',pos);  % write the new values
+            end
+            if print_eps
+                filename = sprintf('./results/%s_evol/%s_snapshot%d.eps', varstr, varstr, k);
+                print(filename, '-depsc')            
+            end
         else
             figure(figure1)
             if fixed_contours
@@ -364,6 +415,10 @@ for k = kmin:dk:kmax
                     contour(x,z,th,no_of_contours,'LineColor','k');
                 end
             end
+            if print_eps
+                filename = sprintf('./results/%s_evol/%s_snapshot%d.eps', varstr, varstr, k);
+                print(filename, '-depsc')
+            end
         end
                 
         set(gca,'DataAspectRatio', aspect, 'FontSize',18,'FontName','Helvetica');
@@ -377,6 +432,8 @@ for k = kmin:dk:kmax
         
         % Create ylabel
         ylabel('z [km]','FontSize',18,'FontName','Helvetica');
+
+        
         
         
         if show_increments
@@ -404,17 +461,30 @@ for k = kmin:dk:kmax
         figure(figure1)
     end
     
+    if (strcmp(varstr, 'u') || strcmp(varstr, 'v') || strcmp(varstr, 'w'))
+        th = th*velosc;
+    end
     if showslice_hor
         figure(figure3)
         hold
         plot(th(showslice_hor,:))
-        hold
+        if print_eps
+            filename = sprintf('./results/%s_evol/%s_snapshot%d_cut_hor.eps', varstr, varstr, k);
+            print(filename, '-depsc')
+        else
+            hold
+        end
     end
     if showslice_ver
         figure(figure4)
-        hold
+        hold    
         plot(th(:,showslice_hor))
-        hold
+        if print_eps
+            filename = sprintf('./results/%s_evol/%s_snapshot%d_cut_ver.eps', varstr, varstr, k);
+            print(filename, '-depsc')
+        else
+            hold
+        end
     end
     
     pause

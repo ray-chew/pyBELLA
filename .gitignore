@@ -1,0 +1,21 @@
+#Ignore various files
+*.o
+*.orig
+RKLM_Reference/MakeBuilds/rklm
+low_Mach_gravity_comp/*
+low_Mach_gravity_psinc/*
+*.vscode
+*.backup
+*.aux
+*.bbl
+*.blg
+*.dvi
+*.eps
+*.log
+*.tex.backup
+*.pdf
+*.ps
+*.zip
+*.fff
+*.lof
+*.kate-swp

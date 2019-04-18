@@ -1,10 +1,10 @@
-CC = gcc
+lCC = gcc
 
 LIBDIR 		  = /usr/lib/x86_64-linux-gnu
 HDFLIBDIR	  = /usr/lib
 HDFINC		  = /opt/local/include
 
-CFLAGS		  = -Aa -I$(HDFINC) 
+CFLAGS		  = -Aa -fPIC -I$(HDFINC)
 
 DEST		  = ../MakeBuilds 
 
@@ -17,7 +17,7 @@ EXTHDRS		  = /usr/include/math.h \
 		/usr/include/time.h \
 #		/usr/include/varargs.h \
 		/usr/include/memory.h \
-		/opt/local/include/dfsd.h
+		/usr/include/hdf/dfsd.h
 
 HDRS		  = ../Common.h \
 		../Input/userdata.h \
@@ -48,12 +48,13 @@ HDRS		  = ../Common.h \
 		../Physics/LowMach/Second-projection/second_projection.h \
 		../Physics/LowMach/Second-projection/laplacian_nodes.h \
 		../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.h \
+		../Physics/NewGroup/molecular_transport.h \
 
 HDRFLAGS	= -I../ -I../Input -I../Management -I../NumericsFundamentals \
-		  -I../NumericsFundamentals/Discretization -I../NumericsFundamentals/lapc \
+		  -I../NumericsFundamentals/Discretization \
 		  -I../NumericsFundamentals/ofGeneralInterest -I../Physics/Gasdynamics \
-		  -I../Physics/Hydrostatics -I../Physics/LowMach -I../Physics/LowMach/MAC-projection \
-		  -I../Physics/LowMach/Second-projection -g
+		  -I../Physics/Hydrostatics -I../Physics/LowMach \
+		  -I../Physics/LowMach/Second-projection -I../Physics/NewGroup
 
 INSTALL		= install
 
@@ -62,11 +63,11 @@ LD		= $(CC)
 LDFLAGS		= 
 
 LIBS		= $(HDFLIBDIR)/libmfhdfalt.so.0 \
-		$(HDFLIBDIR)/libdfalt.so.0  $(LIBDIR)/libjpeg.a $(LIBDIR)/libz.so -lm
+		$(HDFLIBDIR)/libdfalt.so.0  $(LIBDIR)/libjpeg.a $(LIBDIR)/libz.so -lm -fPIC
 
 MAKEFILE	= Makefile
 
-OBJS		= userdata_InternalWave_LongWave.o \
+OBJS		= userdata_TravellingVortex_3D_48.o \
 		boundary.o \
 		data.o \
 		io.o \
@@ -89,6 +90,7 @@ OBJS		= userdata_InternalWave_LongWave.o \
 		second_projection.o \
 		laplacian_nodes.o \
 		variable_coefficient_poisson_nodes.o \
+		molecular_transport.o \
 
 PRINT		  = pr
 
@@ -96,7 +98,7 @@ PROGRAM	   = rklm
 
 SHELL		  = /bin/sh
 
-SRCS		  = ../Input/userdata_InternalWave_LongWave.c \
+SRCS		  = ../Input/userdata_TravellingVortex_3D_48.c \
 		../Input/boundary.c \
 		../Management/data.c \
 		../Management/io.c \
@@ -119,6 +121,7 @@ SRCS		  = ../Input/userdata_InternalWave_LongWave.c \
 		../Physics/LowMach/Second-projection/second_projection.c \
 		../Physics/LowMach/Second-projection/laplacian_nodes.c \
 		../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.c \
+		../Physics/NewGroup/molecular_transport.c
 
 all:		$(PROGRAM)
 
@@ -153,8 +156,8 @@ $(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)
 		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install
 
 ###
-userdata_InternalWave_LongWave.o : 
-	$(CC) -c $(HDRFLAGS) ../Input/userdata_InternalWave_LongWave.c
+userdata_TravellingVortex_3D_48.o : 
+	$(CC) -c $(HDRFLAGS) ../Input/userdata_TravellingVortex_3D_48.c
 
 boundary.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/boundary.c
@@ -222,3 +225,6 @@ laplacian_nodes.o :
 variable_coefficient_poisson_nodes.o : 
 	$(CC) -c $(HDRFLAGS) ../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.c
 
+molecular_transport.o :
+	$(CC) -c $(HDRFLAGS) ../Physics/NewGroup/molecular_transport.c
+	

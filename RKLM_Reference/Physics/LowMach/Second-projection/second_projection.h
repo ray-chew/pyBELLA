@@ -14,14 +14,14 @@
  
  ------------------------------------------------------------------------------*/
 
-void euler_backward_non_advective_impl_part(
-                       ConsVars* Sol,
-                       MPV* mpv,
-                       const ConsVars* Sol0,
-                       const ElemSpaceDiscr* elem,
-                       const NodeSpaceDiscr* node,
-                       const double t,
-                       const double dt);
+void euler_backward_non_advective_impl_part(ConsVars* Sol,
+                                            MPV* mpv,
+                                            const ConsVars* Sol0,
+                                            const ElemSpaceDiscr* elem,
+                                            const NodeSpaceDiscr* node,
+                                            const double t,
+                                            const double dt,
+                                            const double alpha_diff);
 
 void euler_backward_non_advective_expl_part(ConsVars* Sol,
                             const MPV* mpv,
@@ -35,13 +35,6 @@ void euler_forward_non_advective(ConsVars* Sol,
                                  const NodeSpaceDiscr* node,
                                  const double dt,
                                  const enum EXPLICIT_PRESSURE with_pressure);
-
-void pressure_gradient_forces(
-                              double* force[3], 
-                              const ConsVars *Sol, 
-                              const MPV *mpv, 
-                              const ElemSpaceDiscr *elem, 
-                              const NodeSpaceDiscr *node);
 
 void scale_wall_node_values(
                        double* rhs,  

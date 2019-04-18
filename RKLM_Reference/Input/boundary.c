@@ -71,8 +71,6 @@ dirichlet_max,
 open_max
 };
 
-double wall_massflux(double x, double y, double wind_speed_x, double wind_speed_y);
-
 double slanted_wall_slope(double x);
 double slanted_wall_slope_3D(double x, double y);
 
@@ -102,7 +100,7 @@ void initialize_bdry(
         }
         
         case 2: {
-            bdry->wall_massflux = (double*)malloc(icx*sizeof(double));
+            bdry->wall_rhoYflux = (double*)malloc(icx*sizeof(double));
             bdry->wall_slope    = (double*)malloc(icx*sizeof(double));
             bdry->wall_relative_slope = (double*)malloc(icx*sizeof(double));
             
@@ -137,7 +135,7 @@ void initialize_bdry(
         
         case 3: {
             /* note that the y-direction is my "vertical" */
-            bdry->wall_massflux = (double*)malloc(icx*icz*sizeof(double));
+            bdry->wall_rhoYflux = (double*)malloc(icx*icz*sizeof(double));
             bdry->wall_slope    = (double*)malloc(icx*icz*sizeof(double));
             bdry->wall_relative_slope = (double*)malloc(icx*icz*sizeof(double));
             
@@ -197,7 +195,7 @@ void initialize_bdry(
 
 void close_bdry( void )
 {
-    free(bdry->wall_massflux);
+    free(bdry->wall_rhoYflux);
     free(bdry->wall_slope);
     free(bdry->wall_relative_slope);
     free(bdry);
@@ -275,7 +273,7 @@ void Bound(
                     int nsource = njk + isource;
 					
 					double Y_last = Sol->rhoY[nlast] / Sol->rho[nlast];
-					double rhou_wall;
+					double rhoYu_wall, rhoYu_image;
 					
                     /* copy wall-tangential velocities and scalars */
                     v = Sol->rhov[nsource] / Sol->rho[nsource]; 
@@ -285,21 +283,26 @@ void Bound(
                     }
                     
                     /* mirror wall-normal velocity relative to prescribed boundary mass flux */
-					rhou_wall = bdry->wall_massflux[j]; 
-                    u = (2.0*rhou_wall - Sol->rhou[nsource]) / Sol->rho[nsource];
+					rhoYu_wall  = bdry->wall_rhoYflux[j]; 
+                    rhoYu_image = 2.0*rhoYu_wall - Sol->rhou[nsource]*Sol->rhoY[nsource]/Sol->rho[nsource];
 					
 					{
-						int iimage  = i;
 						/* double S = (2.0*Sol->rho[nimage+1]/Sol->rhoY[nimage+1] - Sol->rho[nimage+2]/Sol->rhoY[nimage+2]); */
-                        double S    = 1./stratification(elem->x[iimage]); 
+                        double S = 1.0;
+                        
+                        if (ud.bottom_theta_bc == ZERO_ORDER_EXTRAPOL) {
+                            /* for the Straka test */
+                            S    = 1.0/Y_last; 
+                        } else {
+                            /* for all other tests so far */
+                            int iimage  = i;
+                            S    = 1./stratification(elem->x[iimage]); 
+                        }
                         double dpi  = (th.Gamma*g) * 0.5*dh*(1.0/Y_last + S);
                         double rhoY = (compressible == 1 ? pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv) : mpv->HydroState->rhoY0[i]);
                         double rho  = rhoY * S;
                         double p    = pow(rhoY, th.gamm);
-
-                        /* treat as p/Pbar
-                         not implemented - but worth a try
-                         */
+                        double u    = rhoYu_image/rhoY;
 
                         Sol->rho[nimage]  = rho;
 						Sol->rhou[nimage] = rho*u;
@@ -367,15 +370,19 @@ void Bound(
 /*------------------------------------------------------------------------------
  
  ------------------------------------------------------------------------------*/
-void set_wall_massflux(
+void set_wall_rhoYflux(
 					   BDRY* bdry, 
 					   const ConsVars* Sol0, 
+                       const MPV* mpv,
 					   const ElemSpaceDiscr* elem)
 {
+    extern User_Data ud;
+    
 	const int icx = elem->icx;
 	const int icy = elem->icy;
     const int icz = elem->icz;
 	const int igx = elem->igx;
+    const int igy = elem->igy;
     const int igz = elem->igz;
 
     double wall_mf, wall_flux_balance;
@@ -389,31 +396,40 @@ void set_wall_massflux(
         }
             
         case 2: {
+            int is_x_periodic = 0;            
+            if(ud.bdrytype_min[0] == PERIODIC) is_x_periodic = 1;
+
             /* first guess for wall mass fluxes */
             const int nstart = elem->igy*elem->icx;
 
             wall_flux_balance = 0.0;
             for (i = igx; i < icx-igx; i++) {
                 int n = nstart + i;
-                wall_mf = wall_massflux(elem->x[i], elem->y[i], Sol0->rhou[n]/Sol0->rho[n], Sol0->rhov[n]/Sol0->rho[n]);
-                bdry->wall_massflux[i] = wall_mf;
+                wall_mf = wall_rhoYflux(elem->x[i], elem->y[i], Sol0->rhou[n]/Sol0->rho[n], Sol0->rhov[n]/Sol0->rho[n], mpv->HydroState_n->rhoY0[igy]);
+                bdry->wall_rhoYflux[i] = wall_mf;
                 wall_flux_balance += wall_mf;
-            }
-            
-            for(i=0; i<elem->igx; i++) {
-                bdry->wall_massflux[i] = bdry->wall_massflux[icx-1-i] = 0.0; 
             }
             
             /* correction for zero net flux */
             for (i = igx; i < icx-igx; i++) {
-                bdry->wall_massflux[i] -= wall_flux_balance * bdry->wall_relative_slope[i];
+                bdry->wall_rhoYflux[i] -= wall_flux_balance * bdry->wall_relative_slope[i];
+            }
+
+            for(i=0; i<elem->igx; i++) {
+                bdry->wall_rhoYflux[i] = bdry->wall_rhoYflux[icx-1-i] = 0.0; 
+            }
+            if (is_x_periodic) {
+                for(i=0; i<elem->igx; i++) {
+                    bdry->wall_rhoYflux[i] = bdry->wall_rhoYflux[icx-2*igx+i]; 
+                    bdry->wall_rhoYflux[icx-igx+i] = bdry->wall_rhoYflux[igx+i]; 
+                }
             }
             
             /*	*/
             {
                 double flux_sum = 0.0;
                 for (i = elem->igx; i < elem->icx-elem->igx; i++) {
-                    flux_sum += bdry->wall_massflux[i];
+                    flux_sum += bdry->wall_rhoYflux[i];
                 }
                 
                 /* printf("wall flux sum = %e\n", flux_sum); */
@@ -422,6 +438,11 @@ void set_wall_massflux(
         }
             
         case 3: {
+            int is_x_periodic = 0;            
+            int is_z_periodic = 0;            
+            if(ud.bdrytype_min[0] == PERIODIC) is_x_periodic = 1;
+            if(ud.bdrytype_min[2] == PERIODIC) is_z_periodic = 1;
+
             /* y-direction is vertical; wall flux bdry is the bottom  x-z-surface */
             const int nstart = elem->igy*elem->icx;
 
@@ -433,8 +454,8 @@ void set_wall_massflux(
                 for (int i = igx; i < icx-igx; i++) {
                     int nijk = njk + i;
                     int nik  = nk  + i;
-                    wall_mf = wall_massflux(elem->x[i], elem->z[k], Sol0->rhou[nijk]/Sol0->rho[nijk], Sol0->rhov[nijk]/Sol0->rho[nijk]);
-                    bdry->wall_massflux[nik] = wall_mf;
+                    wall_mf = wall_rhoYflux(elem->x[i], elem->z[k], Sol0->rhou[nijk]/Sol0->rho[nijk], Sol0->rhow[nijk]/Sol0->rho[nijk], mpv->HydroState_n->rhoY0[igy]);
+                    bdry->wall_rhoYflux[nik] = wall_mf;
                     wall_flux_balance += wall_mf;
                 }
             }
@@ -445,7 +466,7 @@ void set_wall_massflux(
                 for(int i=0; i<igx; i++) {
                     int nik_left  = nk + i;
                     int nik_right = nk + icx-1-i;
-                    bdry->wall_massflux[nik_left] = bdry->wall_massflux[nik_right] = 0.0; 
+                    bdry->wall_rhoYflux[nik_left] = bdry->wall_rhoYflux[nik_right] = 0.0; 
                 }
             }            
 
@@ -454,7 +475,7 @@ void set_wall_massflux(
                 for(int k=0; k<igz; k++) {
                     int nik_left  = ni + k*icx;
                     int nik_right = ni + (icz-1-k)*icx;
-                    bdry->wall_massflux[nik_left] = bdry->wall_massflux[nik_right] = 0.0; 
+                    bdry->wall_rhoYflux[nik_left] = bdry->wall_rhoYflux[nik_right] = 0.0; 
                 }
             }            
             
@@ -463,10 +484,57 @@ void set_wall_massflux(
                 int nk = k * icx;
                 for (int i = igx; i < icx-igx; i++) {
                     int nik  = nk + i;
-                    bdry->wall_massflux[nik] -= wall_flux_balance * bdry->wall_relative_slope[nik];
+                    bdry->wall_rhoYflux[nik] -= wall_flux_balance * bdry->wall_relative_slope[nik];
                 }
             }
             
+            /* the remaining lines in this routine have not yet been tested */
+            for (int k=0; k<icz; k++) {
+                int nk = k*icx;
+                for(int i=0; i<elem->igx; i++) {
+                    int niklt = nk + i;
+                    int nikrt = nk + icx-igx+i;
+                    bdry->wall_rhoYflux[niklt] = 0.0; 
+                    bdry->wall_rhoYflux[nikrt] = 0.0; 
+                }
+            }
+            if (is_x_periodic) {
+                for (int k=0; k<icz; k++) {
+                    int nk = k*icx;
+                    for(int i=0; i<elem->igx; i++) {
+                        int niklt = nk + i;
+                        int nikrs = nk + icx-2*igx+i;
+                        int nikrt = nk + icx-igx+i;
+                        int nikls = nk + igx+i;
+                        bdry->wall_rhoYflux[niklt] = bdry->wall_rhoYflux[nikrs]; 
+                        bdry->wall_rhoYflux[nikrt] = bdry->wall_rhoYflux[nikls]; 
+                    }
+                }
+            } 
+            
+            for (int i=0; i<icx; i++) {
+                int ni = i;
+                for(int k=0; k<elem->igz; k++) {
+                    int niklt = ni + k*icx;
+                    int nikrt = ni + (icz-igz+k)*icx;
+                    bdry->wall_rhoYflux[niklt] = 0.0; 
+                    bdry->wall_rhoYflux[nikrt] = 0.0; 
+                }
+            }
+            if (is_z_periodic) {
+                for (int i=0; i<icx; i++) {
+                    int ni = i;
+                    for(int k=0; k<elem->igz; k++) {
+                        int niklt = ni + k*icx;
+                        int nikrs = ni + (icz-2*igz+k)*icx;
+                        int nikrt = ni + (icz-igz+k)*icx;
+                        int nikls = ni + (igz+k)*icx;
+                        bdry->wall_rhoYflux[niklt] = bdry->wall_rhoYflux[nikrs]; 
+                        bdry->wall_rhoYflux[nikrt] = bdry->wall_rhoYflux[nikls]; 
+                    }
+                }
+            } 
+
             /*	*/
             {
                 double flux_sum = 0.0;
@@ -474,7 +542,7 @@ void set_wall_massflux(
                     int nk = k * icx;
                     for (int i = igx; i < icx-igx; i++) {
                         int nik  = nk + i;
-                        flux_sum += bdry->wall_massflux[nik];
+                        flux_sum += bdry->wall_rhoYflux[nik];
                     }
                 }
                 
@@ -753,11 +821,35 @@ static void occupancy(
 
 double slanted_wall_slope(double x){
 	extern User_Data ud;
+    extern double t;
+    
 	double hill_height  = ud.hill_height;
 	double length_scale_inv = 1.0/ud.hill_length_scale; 
 	double x_sc = x*length_scale_inv;
 	
-	return(- hill_height * 2.0*x_sc / ((1.0 + x_sc*x_sc)*(1.0 + x_sc*x_sc)) * length_scale_inv);
+    if (ud.hill_shape == SCHLUTOW) {
+        
+        /* Topography for Mark Schlutow's stationary WKB waves */
+        double kx = 2.0*2.0*PI/(ud.xmax-ud.xmin);
+        double kz = sqrt(ud.Nsq/ud.wind_speed/ud.wind_speed + kx*kx);
+        double q  = 0.25;
+
+        /* scaled height and slope */
+        double xi = kx*x;
+        double y  = 0.0;
+        double yp;
+        
+        for (int i=0; i<10; i++) {
+            y = q*cos(xi+y);
+        }
+        yp = - q*sin(xi+y)/(1+q*sin(xi+y));
+        
+        /* unscaled slope */
+        yp = kx*yp/kz;
+        return(yp);
+    } else {
+        return(- hill_height * 2.0*x_sc / ((1.0 + x_sc*x_sc)*(1.0 + x_sc*x_sc)) * length_scale_inv);        
+    }
 	
 }
 
@@ -785,18 +877,29 @@ double velo_background(double t){
 	 */
 }
 
-double wall_massflux(double x, double z, double wind_speed_x, double wind_speed_z){
+/* ========================================================================= */
+
+double wall_rhoYflux(const double x, 
+                     const double z, 
+                     const double wind_speed_x, 
+                     const double wind_speed_z, 
+                     const double rhoY0){
 	extern User_Data ud;
-    
-	double hill_height  = ud.hill_height;
-	double length_scale_inv = 1.0/ud.hill_length_scale; 
-	double x_sc = x*length_scale_inv;
-	
-    /*
-	return(- wind_speed * hill_height * 2.0*x_sc / ((1.0 + x_sc*x_sc)*(1.0 + x_sc*x_sc)) * length_scale_inv);
-     */
-    return(- wind_speed_x * hill_height * 2.0*x_sc / ((1.0 + x_sc*x_sc)*(1.0 + x_sc*x_sc)) * length_scale_inv
-           - wind_speed_z * 0.0 );
+    	
+    if (ud.hill_shape == SCHLUTOW) {
+        return (slanted_wall_slope(x) * wind_speed_x * rhoY0);
+    } else {
+#if 1
+        return (slanted_wall_slope(x) * wind_speed_x * rhoY0);
+#else
+        double hill_height  = ud.hill_height;
+        double length_scale_inv = 1.0/ud.hill_length_scale; 
+        double x_sc = x*length_scale_inv;
+        
+        return((- wind_speed_x * hill_height * 2.0*x_sc / ((1.0 + x_sc*x_sc)*(1.0 + x_sc*x_sc)) * length_scale_inv
+                - wind_speed_z * 0.0) * rhoY0);
+#endif
+    }
 }
 
 /* ========================================================================= */
@@ -822,7 +925,7 @@ void check_flux_bcs(
 					jfull = nfull/elem->icx;
 					ifull = nfull%elem->icx;
 					if(ifull==elem->igx) {
-                        double rhou_wall = bdry->wall_massflux[jfull];
+                        double rhou_wall = bdry->wall_rhoYflux[jfull];
 						Lefts->rhou[i-1] = Rights->rhou[i] = rhou_wall;
 						Lefts->rhoY[i-1] = Rights->rhoY[i] = Rights->rho[i] * stratification(0.0);
 						

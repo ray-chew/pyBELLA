@@ -18,13 +18,55 @@
 #include "space_discretization.h"
 #include "thermodynamic.h"
 #include "Eos.h"
+#include "set_ghostcells_p.h"
+#include "set_ghostnodes_p.h"
 #include "boundary.h"
 #include "memory.h"
 #include "Hydrostatics.h"
 
+/*
+ Monitor configurations:
+ 
+ OpSplit:
+ compressible case 
+ unless otherwise listed, I tested options at fixed: 
+       CFL           0.45, 
+       grid          160x80, 
+       t_end         10.0; 
+       tol           1.0e-07, 
+       limiters      NONE, 
+       ud.p_extrapol 1.0
+       ccenterweight 2.0
+       HYDROSTATES_USING_dp2 off
+ 
+ Option tests:
+ - Diagonal Five Point in second projection (P2_DIAGONAL_FIVE_POINT = 1.0 in ProjectionType.h)
+ - ud->p_flux_correction = CORRECT
+ - ud->p_average = WRONG
+ - Diagonal fivepoint (exact proj) or full ninepoint (approx proj) ; egal
+ - DP_AVERAGE off in ProjectionType.h
+ - DPDT_AVERAGED_IN_HELMHOLTZ off in ProjectionType.h
+ 
+ Results:
+ -- CFL 0.99                         -> very good
+ -- dt_fixed = 0.004                 -> very good    (0.4 sec for cfl_ac = 1.11 / decreased tol to 1.0e-09) 
+ -- CFL 0.99, dt_fixed 0.08, 320x160 -> very good    (kept tol at 1.0e-09)
+ -- HYDROSTATES_USING_dp2 on 160x080 -> very good    (dp2_factor 0.5, CFL 0.99 & 0.45 & dt 0.004)  
+ - diag-fivepoint with these options -> very good
+
+ sound-proof case: 
+ -- last option above, CFL 0.99      -> NO           (first projection doesnt converge in step 2 -- ??????????????)
+ -- HYDROSTATES_USING_dp2 off        -> very good  
+ 
+ PREV:   NONE
+ NEXT:   TRAVELLING VORTEX
+ 
+ */ 
+
 double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma);
 
 double rho_function(double psi);
+
 
 void User_Data_init(User_Data* ud) {
 	
@@ -37,12 +79,25 @@ void User_Data_init(User_Data* ud) {
     /* Earth */	
 	double grav  = 9.81;                               /* [m/s^2]                         */
 	double omega = 2*PI*sin(0.25*PI)/(24.0*3600.0);    /*  [s^-1]                         */
+
+	/* references for non-dimensionalization */
+	double h_ref = 10000;            /* [m]                             */
+	double t_ref = 100;              /* [s]                             */
+	double T_ref = 300;              /* [K]                             */
+	double p_ref = 101325;           /* [Pa]                            */
+	double u_ref = h_ref/t_ref;      /* Strouhal No == 1 always assumed */
 		
 	/* thermodynamics and chemistry */
 	double R_gas = 287.4;            /* [J/kg/K]                        */
 	double R_vap = 461.00;           /* [J/kg/K]                        */
     double Q_vap = 2.53e+06;         /* [J]                             */
 	double gamma = 1.4;              /* dimensionless                   */
+
+    double viscm  = 0.0;            /* [m^2/s]                         */
+    double viscbm = 0.0;             /* [m^2/s]                         */
+    double visct  = 0.0;             /* [m^2/s]                         */
+    double viscbt = 0.0;             /* [m^2/s]                         */
+    double cond   = 0.0;            /* [m^2/s]                         */
 
     /* references for non-dimensionalization */
     double h_ref   = 10000;            /* [m]                             */
@@ -68,7 +123,15 @@ void User_Data_init(User_Data* ud) {
     /* number of advected species */
     ud->nspec       = NSPEC;  
 
-	/* Low Mach */
+    /*FULL_MOLECULAR_TRANSPORT, STRAKA_DIFFUSION_MODEL, NO_MOLECULAR_TRANSPORT */
+    ud->mol_trans   = NO_MOLECULAR_TRANSPORT; 
+    ud->viscm       = viscm  * t_ref/(h_ref*h_ref);
+    ud->viscbm      = viscbm * t_ref/(h_ref*h_ref);
+    ud->visct       = visct  * t_ref/(h_ref*h_ref);
+    ud->viscbt      = viscbt * t_ref/(h_ref*h_ref);
+    ud->cond        = cond * t_ref/(h_ref*h_ref*R_gas);
+
+    /* Low Mach */
     ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
     ud->is_compressible   =  1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep =  0;    /* advective time step -> 0;  acoustic time step -> 1; */
@@ -95,6 +158,12 @@ void User_Data_init(User_Data* ud) {
 			ud->i_coriolis[i] = 1;
 		}
 	}
+
+    /* low Froude */
+    ud->implicit_gravity_theta  = 0;
+    ud->implicit_gravity_press  = 0; /* should be on for compressible option */
+    ud->implicit_gravity_theta2 = 0;
+    ud->implicit_gravity_press2 = 0; /* should this, too, be on for compressible option ?  */
 	    
 	/* flow domain */
 	ud->xmin = - 1.0;  
@@ -107,7 +176,8 @@ void User_Data_init(User_Data* ud) {
 	/* boundary/initial conditions */
 	ud->wind_speed  =  0.0;            /* 0.1535; wind_speed * u_ref  = 10 m/s */ /*  BREAKING WAVE CHANGE */
 	ud->wind_shear  = -0.0;              /* velocity in [u_ref/h_ref] */             
-	ud->hill_height = 0.0 * 0.096447; /* 0.096447; */ /* hill_height * l_ref = 0.628319 km *//*  BREAKING WAVE CHANGE */
+    ud->hill_shape  = AGNESI;            /* AGNESI, SCHLUTOW */
+    ud->hill_height = 0.0 * 0.096447; /* 0.096447; */ /* hill_height * l_ref = 0.628319 km *//*  BREAKING WAVE CHANGE */
 	ud->hill_length_scale = 0.1535;   /* hill_length * l_ref = 1.0 km */
 	
 	ud->bdrytype_min[0] = WALL; /* DIRICHLET; PERIODIC; WALL; */
@@ -118,18 +188,19 @@ void User_Data_init(User_Data* ud) {
 	ud->bdrytype_max[2] = WALL;
 	
 	ud->absorber = WRONG; /* CORRECT;  WRONG; */ /*  BREAKING WAVE CHANGE */
-	
+    ud->bottom_theta_bc = BOTTOM_BC_DEFAULT;
 	
 	/* ================================================================================== */
 	/* =====  NUMERICS  ================================================================= */
 	/* ================================================================================== */
 	
     /* time discretization */
-    ud->time_integrator       = SI_MIDPT;  /* this code version has only one option */
-    ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
-	ud->CFL                   = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0              = 0.1;
-    ud->dtfixed               = 0.1; /* 0.0052; */ /*  0.004; */ 
+    ud->time_integrator      = SI_MIDPT;  
+	ud->CFL                  = 0.96; /* 0.45; 0.9; 0.8; */
+    ud->dtfixed0             = 0.1;
+    ud->dtfixed              = 0.1; /* 0.0052; */ /*  0.004; */ 
+    ud->no_of_steps_to_CFL   = 1;
+    ud->no_of_steps_to_dtfixed = 1;
     
     set_time_integrator_parameters(ud);
     
@@ -137,13 +208,25 @@ void User_Data_init(User_Data* ud) {
 	ud->inx = 160+1; /* 641; 321; 161; 129; 81; */    
 	ud->iny =  80+1; /* 321; 161;  81;  65; 41;  */
 	ud->inz =  1;
+	ud->h    = MIN_own((ud->xmax-ud->xmin)/(ud->inx),MIN_own((ud->ymax-ud->ymin)/(ud->iny),(ud->zmax-ud->zmin)/(ud->inz)));
 	
 	/* explicit predictor step */
 	/* Recovery */
 	ud->recovery_order = SECOND;
 	ud->limiter_type_scalars  = RUPE; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
 	ud->limiter_type_velocity = NONE; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
-	    
+	
+    /* first correction */
+	ud->p_flux_correction = WRONG; /* CORRECT, WRONG; */
+    if (ud->time_integrator == OP_SPLIT || ud->time_integrator == OP_SPLIT_MD_UPDATE) {
+        ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.0; 
+        /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25; */
+        /* ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.0; */
+    } else {
+        /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25;*/
+        ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.5; 
+    }
+    
     /* parameters for SWEBY_MUNZ limiter family */
     ud->kp = 1.4;
 	ud->kz = 1.4; /* Entro abused for velocity in split-step-aligned velocity ! */
@@ -154,7 +237,7 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  300; /* (ud->inx+3); */
 	
     /* linear solver-stuff */
-    double tol                            = 1.e-10 * (ud->is_compressible == 1 ? 0.01 : 1.0);
+    double tol                            = 1.e-16 * (ud->is_compressible == 1 ? 0.01 : 1.0);
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -164,7 +247,7 @@ void User_Data_init(User_Data* ud) {
     ud->initial_projection                = WRONG;   /* WRONG;  CORRECT; */
     ud->initial_impl_Euler                = CORRECT;   /* WRONG;  CORRECT; */
     
-    ud->column_preconditioner             = WRONG; /* WRONG; CORRECT; */
+    ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
     ud->synchronize_nodal_pressure        = WRONG;   /* WRONG; CORRECT; */
     ud->synchronize_weight                = 0.0;    /* relevant only when prev. option is "CORRECT"
                                                      Should ultimately be a function of dt . */  
@@ -190,13 +273,14 @@ void User_Data_init(User_Data* ud) {
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 100000;
+	ud->write_file_period = 10000;
 	ud->file_format = HDF;
     
-    ud->n_time_series = 0; /* n_t_s > 0 => store_time_series_entry() called each timestep */
+    ud->write_history = 0;
+
 
     {
-        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
@@ -275,6 +359,7 @@ void Sol_initial(ConsVars* Sol,
 				Sol->rhow[n] = rho * w;
 				Sol->rhoe[n] = rhoe(rho, u, v, w, p);
 				Sol->rhoY[n] = rhoY;
+				Sol->geopot[n] = g * y;
 
 #ifdef THERMCON
                 mpv->p2_cells[n] = (p/rhoY) / ud.Msq;
@@ -301,7 +386,7 @@ void Sol_initial(ConsVars* Sol,
     ud.nonhydrostasy   = nonhydrostasy(0);
     ud.compressibility = compressibility(0);
     
-    set_wall_massflux(bdry, Sol, elem);
+    set_wall_rhoYflux(bdry, Sol, mpv, elem);
     Set_Explicit_Boundary_Data(Sol, elem);
     
     ConsVars_set(Sol0, Sol, elem->nc);

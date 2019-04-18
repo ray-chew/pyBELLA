@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		9A21BF821DA58470006A6F34 /* libmfhdf.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A21BF811DA58470006A6F34 /* libmfhdf.dylib */; };
 		9A21BF841DA5847F006A6F34 /* libdf.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A21BF831DA5847F006A6F34 /* libdf.dylib */; };
-		9A85FAA92205A503003B82B7 /* userdata_AcousticWave.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A85FAA82205A503003B82B7 /* userdata_AcousticWave.c */; };
+		9A4BC3F12260E836006CA538 /* molecular_transport.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A4BC3EF2260E836006CA538 /* molecular_transport.c */; };
 		9A8840B6214A9D5000FC83CB /* second_projection.c in Sources */ = {isa = PBXBuildFile; fileRef = 9A8840B4214A9D4F00FC83CB /* second_projection.c */; };
 		9AA6E68B214C14D9008A9B8D /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 9AA6E68A214C14D9008A9B8D /* Makefile */; };
 		9AC4F9841DA3F06F00AED455 /* boundary.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9231DA3F06F00AED455 /* boundary.c */; };
@@ -31,6 +31,7 @@
 		9AC4F9AB1DA3F06F00AED455 /* mpv.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9751DA3F06F00AED455 /* mpv.c */; };
 		9AC4F9AC1DA3F06F00AED455 /* laplacian_nodes.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F9781DA3F06F00AED455 /* laplacian_nodes.c */; };
 		9AC4F9AF1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AC4F97D1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c */; };
+		9ACA88B4223F536C00716838 /* userdata_TravellingVortex_3D.c in Sources */ = {isa = PBXBuildFile; fileRef = 9ACA88B3223F536C00716838 /* userdata_TravellingVortex_3D.c */; };
 		9ADB58891E07C77E0032A9F2 /* Thomas_Algorithmus_2.c in Sources */ = {isa = PBXBuildFile; fileRef = 9ADB58871E07C77E0032A9F2 /* Thomas_Algorithmus_2.c */; };
 		9AE5E7022019C80300399B1A /* Hydrostatics.c in Sources */ = {isa = PBXBuildFile; fileRef = 9AE5E7002019C80300399B1A /* Hydrostatics.c */; };
 /* End PBXBuildFile section */
@@ -51,14 +52,20 @@
 		9A1ED37C206D0C9200D622A9 /* PrimaryAndDualGrid.eps */ = {isa = PBXFileReference; lastKnownFileType = file; path = PrimaryAndDualGrid.eps; sourceTree = "<group>"; };
 		9A21BF811DA58470006A6F34 /* libmfhdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmfhdf.dylib; path = ../../../../../opt/local/lib/libmfhdf.dylib; sourceTree = "<group>"; };
 		9A21BF831DA5847F006A6F34 /* libdf.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libdf.dylib; path = ../../../../../opt/local/lib/libdf.dylib; sourceTree = "<group>"; };
+		9A4BC3EF2260E836006CA538 /* molecular_transport.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = molecular_transport.c; sourceTree = "<group>"; };
+		9A4BC3F02260E836006CA538 /* molecular_transport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = molecular_transport.h; sourceTree = "<group>"; };
 		9A7A55E521873A4400446950 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
-		9A85FAA82205A503003B82B7 /* userdata_AcousticWave.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_AcousticWave.c; sourceTree = "<group>"; };
 		9A8840AE2148EB2700FC83CB /* RandomNotes.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = RandomNotes.txt; sourceTree = "<group>"; };
 		9A8840B4214A9D4F00FC83CB /* second_projection.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = second_projection.c; sourceTree = "<group>"; };
 		9A8840B5214A9D5000FC83CB /* second_projection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = second_projection.h; sourceTree = "<group>"; };
 		9A8A8DCE2154F67D00FD5838 /* Grid.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = Grid.pdf; sourceTree = "<group>"; };
 		9A8A8DCF21552FCE00FD5838 /* Grid.eps */ = {isa = PBXFileReference; lastKnownFileType = file; path = Grid.eps; sourceTree = "<group>"; };
+		9AA4172522527ED1002AF847 /* benacchio_klein_2019_MWR.tex */ = {isa = PBXFileReference; lastKnownFileType = text; path = benacchio_klein_2019_MWR.tex; sourceTree = "<group>"; };
 		9AA6E68A214C14D9008A9B8D /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		9AB5078E223562EB0075502D /* Bibliography.bib */ = {isa = PBXFileReference; lastKnownFileType = text; path = Bibliography.bib; sourceTree = "<group>"; };
+		9AB5078F223562EB0075502D /* hydro_comp_numerics_mwr.tex */ = {isa = PBXFileReference; lastKnownFileType = text; path = hydro_comp_numerics_mwr.tex; sourceTree = "<group>"; };
+		9AB5079A2239FCBC0075502D /* Interpolations-eps-converted-to.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Interpolations-eps-converted-to.pdf"; sourceTree = "<group>"; };
+		9AB5079B2239FCDA0075502D /* Interpolations.eps */ = {isa = PBXFileReference; lastKnownFileType = file; path = Interpolations.eps; sourceTree = "<group>"; };
 		9AC4F90B1DA3F02D00AED455 /* RKLM_Reference */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = RKLM_Reference; sourceTree = BUILT_PRODUCTS_DIR; };
 		9AC4F9151DA3F06F00AED455 /* Common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
 		9AC4F9171DA3F06F00AED455 /* Bibliography.bib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Bibliography.bib; sourceTree = "<group>"; };
@@ -110,6 +117,7 @@
 		9AC4F9791DA3F06F00AED455 /* laplacian_nodes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = laplacian_nodes.h; sourceTree = "<group>"; };
 		9AC4F97D1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = variable_coefficient_poisson_nodes.c; sourceTree = "<group>"; };
 		9AC4F97E1DA3F06F00AED455 /* variable_coefficient_poisson_nodes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = variable_coefficient_poisson_nodes.h; sourceTree = "<group>"; };
+		9ACA88B3223F536C00716838 /* userdata_TravellingVortex_3D.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = userdata_TravellingVortex_3D.c; sourceTree = "<group>"; };
 		9ADB58871E07C77E0032A9F2 /* Thomas_Algorithmus_2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = Thomas_Algorithmus_2.c; sourceTree = "<group>"; };
 		9ADC1B4D1F46C0F30053F709 /* Semi-implicit-gravity.tex */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Semi-implicit-gravity.tex"; sourceTree = "<group>"; };
 		9AE4ABD11DBF3988007205FD /* CheckSymmetries.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CheckSymmetries.m; sourceTree = "<group>"; };
@@ -154,12 +162,41 @@
 			path = Hydrostatics;
 			sourceTree = "<group>";
 		};
+		9A4BC3EE2260E836006CA538 /* MolecularTransport */ = {
+			isa = PBXGroup;
+			children = (
+				9A4BC3EF2260E836006CA538 /* molecular_transport.c */,
+				9A4BC3F02260E836006CA538 /* molecular_transport.h */,
+			);
+			path = MolecularTransport;
+			sourceTree = "<group>";
+		};
 		9AA6E688214C13FB008A9B8D /* MakeBuilds */ = {
 			isa = PBXGroup;
 			children = (
 				9AA6E68A214C14D9008A9B8D /* Makefile */,
 			);
 			path = MakeBuilds;
+			sourceTree = "<group>";
+		};
+		9AB5078D223562EB0075502D /* paper_2019 */ = {
+			isa = PBXGroup;
+			children = (
+				9AA4172522527ED1002AF847 /* benacchio_klein_2019_MWR.tex */,
+				9AB5078E223562EB0075502D /* Bibliography.bib */,
+				9AB5078F223562EB0075502D /* hydro_comp_numerics_mwr.tex */,
+				9AB507982239FCBC0075502D /* figures */,
+			);
+			path = paper_2019;
+			sourceTree = "<group>";
+		};
+		9AB507982239FCBC0075502D /* figures */ = {
+			isa = PBXGroup;
+			children = (
+				9AB5079B2239FCDA0075502D /* Interpolations.eps */,
+				9AB5079A2239FCBC0075502D /* Interpolations-eps-converted-to.pdf */,
+			);
+			path = figures;
 			sourceTree = "<group>";
 		};
 		9AC4F9021DA3F02D00AED455 = {
@@ -197,6 +234,7 @@
 		9AC4F9161DA3F06F00AED455 /* Doc */ = {
 			isa = PBXGroup;
 			children = (
+				9AB5078D223562EB0075502D /* paper_2019 */,
 				9A7A55E521873A4400446950 /* .gitignore */,
 				9A8840AE2148EB2700FC83CB /* RandomNotes.txt */,
 				9AC4F9171DA3F06F00AED455 /* Bibliography.bib */,
@@ -222,7 +260,7 @@
 		9AC4F9221DA3F06F00AED455 /* Input */ = {
 			isa = PBXGroup;
 			children = (
-				9A85FAA82205A503003B82B7 /* userdata_AcousticWave.c */,
+				9ACA88B3223F536C00716838 /* userdata_TravellingVortex_3D.c */,
 				9AC4F9311DA3F06F00AED455 /* userdata.h */,
 				9AC4F9231DA3F06F00AED455 /* boundary.c */,
 				9AC4F9241DA3F06F00AED455 /* boundary.h */,
@@ -286,6 +324,7 @@
 		9AC4F9551DA3F06F00AED455 /* Physics */ = {
 			isa = PBXGroup;
 			children = (
+				9A4BC3EE2260E836006CA538 /* MolecularTransport */,
 				9AC4F9561DA3F06F00AED455 /* Gasdynamics */,
 				9A3583371DB7385600A73EC1 /* Hydrostatics */,
 				9AC4F9671DA3F06F00AED455 /* LowMach */,
@@ -412,7 +451,6 @@
 				9AC4F9AB1DA3F06F00AED455 /* mpv.c in Sources */,
 				9AC4F9971DA3F06F00AED455 /* time_discretization.c in Sources */,
 				9AC4F9841DA3F06F00AED455 /* boundary.c in Sources */,
-				9A85FAA92205A503003B82B7 /* userdata_AcousticWave.c in Sources */,
 				9AC4F9951DA3F06F00AED455 /* variable.c in Sources */,
 				9AC4F9921DA3F06F00AED455 /* io.c in Sources */,
 				9AC4F99D1DA3F06F00AED455 /* explicit.c in Sources */,
@@ -422,6 +460,7 @@
 				9A8840B6214A9D5000FC83CB /* second_projection.c in Sources */,
 				9AC4F9931DA3F06F00AED455 /* Main.c in Sources */,
 				9AC4F9A31DA3F06F00AED455 /* thermodynamic.c in Sources */,
+				9A4BC3F12260E836006CA538 /* molecular_transport.c in Sources */,
 				9AC4F9A01DA3F06F00AED455 /* numerical_flux.c in Sources */,
 				9AC4F9A21DA3F06F00AED455 /* recovery.c in Sources */,
 				9AC4F99E1DA3F06F00AED455 /* Gasdynamics.c in Sources */,
@@ -429,6 +468,7 @@
 				9AC4F99B1DA3F06F00AED455 /* Eos.c in Sources */,
 				9AC4F9AC1DA3F06F00AED455 /* laplacian_nodes.c in Sources */,
 				9AA6E68B214C14D9008A9B8D /* Makefile in Sources */,
+				9ACA88B4223F536C00716838 /* userdata_TravellingVortex_3D.c in Sources */,
 				9AC4F9961DA3F06F00AED455 /* kgrid.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

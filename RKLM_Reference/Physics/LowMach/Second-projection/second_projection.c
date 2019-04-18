@@ -30,6 +30,7 @@
 #include "laplacian_nodes.h"
 #include "numerical_flux.h"
 #include "Hydrostatics.h"
+#include "molecular_transport.h"
 
 static double divergence_nodes(
 							 double* rhs,
@@ -77,13 +78,24 @@ void correction_nodes(
 					  const NodeSpaceDiscr* node,
                       const double* hplus[3], 
 					  double* p2, 
-					  const double dt);
+					  const double dt,
+                      const enum CorrectionRange crange);
+
+void bottom_grid_layer_set(double* obj, 
+                           const double* src, 
+                           const double weight,
+                           const ElemSpaceDiscr* elem);
 
 /* Functions needed for the hydrostatic case */
 void hydrostatic_vertical_velo(ConsVars* Sol,
                                const ElemSpaceDiscr* elem,
                                const NodeSpaceDiscr* node);
 
+void diss_to_rhs(double* rhs,
+                 const double* W0,
+                 const ElemSpaceDiscr* elem,
+                 const NodeSpaceDiscr* node,
+                 const double dt);
 
 /* ========================================================================== */
 
@@ -93,14 +105,276 @@ static int first_output_step = 0;
 extern int step;  
 #endif
 
-void euler_backward_non_advective_impl_part(
-                       ConsVars* Sol,
-                       MPV* mpv,
-                       const ConsVars* Sol0,
-                       const ElemSpaceDiscr* elem,
-                       const NodeSpaceDiscr* node,
-                       const double t,
-                       const double dt) {
+
+#ifdef NONLINEAR_EOS_ITERATION
+
+/* ========================================================================== */
+
+double residual(double *rhs,
+                const double* p2,
+                const double* p2o,
+                const double* div,
+                const MPV* mpv,
+                const NodeSpaceDiscr* node,
+                const double dt,
+                const int x_periodic,
+                const int y_periodic,
+                const int z_periodic);
+
+/* ========================================================================== */
+
+void euler_backward_non_advective_impl_part(ConsVars* Sol,
+                                            MPV* mpv,
+                                            const ConsVars* Sol0,
+                                            const ElemSpaceDiscr* elem,
+                                            const NodeSpaceDiscr* node,
+                                            const double t,
+                                            const double dt,
+                                            const double alpha_diff) {
+    
+    /* as of August 31, 2018, this routine is to be interpreted
+     as carrying out an implicit Euler step for the linearized 
+     fast system without advection. This changes in particular
+     the interpretation of "dt" from having been the overall 
+     time step of the total solver previously to now just being
+     whatever time step the implicit Euler step is to be performed
+     over. 
+     */
+    extern User_Data ud;
+    extern BDRY* bdry;
+    
+    const int nc = node->nc;
+    
+    double** hplus   = mpv->wplus;
+    double*  hcenter = mpv->wcenter;
+    
+    double* rhs = mpv->rhs;
+    double* p2  = mpv->dp2_nodes;
+    double* dp2 = (double*)malloc(node->nc*sizeof(double));
+    double* p2o = mpv->p2_nodes;
+    
+    double rhs_max, rhs_Newton;
+    
+    int x_periodic, y_periodic, z_periodic;
+    int ii;
+    
+    /* switch for stopping loops in solver for periodic data before
+     last grid line in each direction */
+    x_periodic = 0;
+    y_periodic = 0;
+    z_periodic = 0;
+    if(ud.bdrytype_min[0] == PERIODIC) x_periodic = 1;
+    if(ud.bdrytype_min[1] == PERIODIC) y_periodic = 1;
+    if(ud.bdrytype_min[2] == PERIODIC) z_periodic = 1;
+    
+    printf("\n\n====================================================");
+    printf("\nImplicit step with nonlinear EOS control");
+    printf("\n====================================================\n");
+    
+    Set_Explicit_Boundary_Data(Sol, elem);
+    
+    /* There is the option of starting with the previous solution, 
+     but that seems not to come with sizeable advantages */
+    for(int nn=0; nn<nc; nn++){
+        p2[nn]  = mpv->p2_nodes[nn];
+        p2o[nn] = mpv->p2_nodes[nn];
+        rhs[nn] = 0.0;
+    }
+    
+    operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
+    
+    if (ud.mol_trans != NO_MOLECULAR_TRANSPORT) {
+        extern double* diss;        
+        molecular_transport(Sol, diss, elem, alpha_diff*dt);
+        diss_to_rhs(rhs,diss,elem,node, dt); /* diss_to_rhs(rhs,W0,elem,node, alpha_diff*dt);  */        
+    }
+    
+    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
+    assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);         
+    
+    /* rescaling of flux divergence for r.h.s. of the elliptic pressure equation */ 
+    for (int i=0; i<node->nc; i++) {
+        rhs[i] /= dt;
+    }
+    printf("\nrhsmax = %e\n", rhs_max);
+    
+    
+#if OUTPUT_RHS_NODES
+    FILE *prhsfile = NULL;
+    char fn[120], fieldname[90];
+    if (step >= first_output_step) {
+        if (rhs_output_count < 10) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
+        } else if(rhs_output_count < 100) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
+        } else {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
+        }
+        sprintf(fieldname, "rhs_nodes");    
+        WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+        rhs_output_count++;
+    }
+#endif
+    
+    if (ud.is_compressible) {
+        rhs_from_p_old(rhs, elem, node, mpv, hcenter);
+    }
+    
+    variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
+    
+    correction_nodes(Sol, elem, node, (const double**)hplus, p2, dt, FULL_FIELD);
+    Set_Explicit_Boundary_Data(Sol, elem);
+    
+    if (ud.is_compressible) {
+        memset(rhs, 0.0, node->nc*sizeof(double));
+        rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
+        assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);  
+        for (int nn=0; nn<node->nc; nn++)  {
+            rhs[nn] /= dt;
+            dp2[nn] = 0.0;
+        }
+        rhs_Newton = residual(rhs, p2, p2o, rhs, mpv, node, dt, x_periodic, y_periodic, z_periodic);
+        
+        
+#if OUTPUT_RHS_NODES
+        if (step >= first_output_step) {
+            if (rhs_output_count < 10) {
+                sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
+            } else if(rhs_output_count < 100) {
+                sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
+            } else {
+                sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
+            }
+            sprintf(fieldname, "rhs_nodes");    
+            WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+            rhs_output_count++;
+        }
+#endif
+
+        /* while (rhs_Newton > ud.second_projection_precision*ud.Msq/dt) { */
+        while (rhs_Newton > ud.second_projection_precision) {
+            double scale = 1000;
+            printf("\nrhs_Newton = %e\n", rhs_Newton);
+            for (int nn=0; nn<node->nc; nn++) {
+                rhs[nn] *= scale;
+            }
+            variable_coefficient_poisson_nodes(dp2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
+            for (int nn=0; nn<node->nc; nn++) {
+                dp2[nn] /= scale;
+            }
+            correction_nodes(Sol, elem, node, (const double**)hplus, dp2, dt, FULL_FIELD);
+            Set_Explicit_Boundary_Data(Sol, elem);        
+            for (int nn=0; nn<node->nc; nn++) {
+                p2[nn]  += dp2[nn];
+            }
+            memset(rhs, 0.0, node->nc*sizeof(double));
+            memset(dp2, 0.0, node->nc*sizeof(double));
+            rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
+            assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);  
+            for (int nn=0; nn<node->nc; nn++) {
+                rhs[nn] /= dt;
+            }
+            rhs_Newton = residual(rhs, p2, p2o, rhs, mpv, node, dt, x_periodic, y_periodic, z_periodic);
+        }
+    }
+
+
+    for(ii=0; ii<nc; ii++) {
+        double p2_new      = p2[ii];
+        mpv->dp2_nodes[ii] = p2_new - mpv->p2_nodes[ii];
+        mpv->p2_nodes[ii]  = p2_new;
+    }
+    
+    set_ghostnodes_p2(mpv->p2_nodes, node, 2);   
+    
+    free(dp2);
+    
+#if OUTPUT_RHS_NODES
+    memset(rhs, 0.0, node->nc*sizeof(double));
+    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
+    /* catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
+     */
+    
+    if (step >= first_output_step) {
+        if (rhs_output_count < 10) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
+        } else if(rhs_output_count < 100) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
+        } else {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
+        }
+        sprintf(fieldname, "rhs_nodes");    
+        WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+        rhs_output_count++;
+    }
+#endif
+}
+
+/* ========================================================================== */
+
+double residual(double *rhs,
+                const double* p2,
+                const double* p2o,
+                const double* div,
+                const MPV* mpv,
+                const NodeSpaceDiscr* node,
+                const double dt,
+                const int x_periodic,
+                const int y_periodic,
+                const int z_periodic)
+{
+    extern User_Data ud;
+    extern Thermodynamic th;
+    
+    double rhsmax = 0.0;
+        
+    const int icxn = node->icx;
+    const int igxn = node->igx;
+    const int icyn = node->icy;
+    const int igyn = node->igy;
+    const int iczn = node->icz;
+    const int igzn = node->igz;
+      
+    /*
+    const int imax = MAX_own(1, icxn - igxn - x_periodic);
+    const int jmax = MAX_own(1, icyn - igyn - y_periodic);
+    const int kmax = MAX_own(1, iczn - igzn - z_periodic);
+     */
+    const int imax = MAX_own(1, icxn - igxn);
+    const int jmax = MAX_own(1, icyn - igyn);
+    const int kmax = MAX_own(1, iczn - igzn);
+
+    
+    for (int k=igzn; k < kmax ; k++) {
+        int ln = k*icxn*icyn;
+        for (int j=igyn; j < jmax ; j++) {
+            int mn = ln+j*icxn;
+            for (int i=igxn; i < imax ; i++) {
+                int nn = mn + i;
+                double pin = ud.Msq*(mpv->HydroState_n->p20[j]+p2[nn]);
+                double pio = ud.Msq*(mpv->HydroState_n->p20[j]+p2o[nn]);
+                double rhoYn = pow(pin,th.gm1inv);
+                double rhoYo = pow(pio,th.gm1inv);
+                rhs[nn] = (div[nn] + (rhoYn - rhoYo) / (dt*dt));
+                rhsmax  = MAX_own(rhsmax, fabs(rhs[nn]));
+            }
+        }
+    }
+    return rhsmax;
+}
+
+#else /* NONLINEAR_EOS_ITERATION */
+
+/* ========================================================================== */
+
+void euler_backward_non_advective_impl_part(ConsVars* Sol,
+                                            MPV* mpv,
+                                            const ConsVars* Sol0,
+                                            const ElemSpaceDiscr* elem,
+                                            const NodeSpaceDiscr* node,
+                                            const double t,
+                                            const double dt,
+                                            const double alpha_diff) {
     
     /* as of August 31, 2018, this routine is to be interpreted
      as carrying out an implicit Euler step for the linearized 
@@ -139,24 +413,34 @@ void euler_backward_non_advective_impl_part(
     printf("\nSecond Projection");
     printf("\n====================================================\n");
     
-    /* KEEP_OLD_POISSON_SOLUTIONS */
+    Set_Explicit_Boundary_Data(Sol, elem);
+
+    /* There is the option of starting with the previous solution, 
+     but that seems not to come with sizeable advantages */
     for(ii=0; ii<nc; ii++){
-        /* p2[ii] = mpv->p2_nodes[ii];  */
-        p2[ii]  = 0.0; 
+        p2[ii] = mpv->p2_nodes[ii];
+        /* p2[ii]  = 0.0;   */
         rhs[ii] = 0.0;
     }
-
+    
     operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
+    
+    if (ud.mol_trans != NO_MOLECULAR_TRANSPORT) {
+        extern double* diss;        
+        molecular_transport(Sol, diss, elem, alpha_diff*dt);
+        diss_to_rhs(rhs,diss,elem,node, dt); /* diss_to_rhs(rhs,W0,elem,node, alpha_diff*dt);  */        
+    }
+
+    /* loop for iterating on bottom topography boundary conditions */
     rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
-    /* catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
-     */
+    assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);         
 
     /* rescaling of flux divergence for r.h.s. of the elliptic pressure equation */ 
     for (int i=0; i<node->nc; i++) {
         rhs[i] /= dt;
     }
     printf("\nrhsmax = %e\n", rhs_max);
-
+    
     
 #if OUTPUT_RHS_NODES
     FILE *prhsfile = NULL;
@@ -174,37 +458,15 @@ void euler_backward_non_advective_impl_part(
         rhs_output_count++;
     }
 #endif
-
+    
     if (ud.is_compressible) {
         rhs_from_p_old(rhs, elem, node, mpv, hcenter);
-        /* catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
-         */
     }
-    else {
-        /* catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
-         */
-        assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);         
-    }
-    
-#if 0
-    // FILE *prhsfile = NULL;
-    // char fn[120], fieldname[90];
-    if (step >= first_output_step) {
-        if (rhs_output_count < 10) {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
-        } else if(rhs_output_count < 100) {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
-        } else {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
-        }
-        sprintf(fieldname, "rhs_nodes");    
-        WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
-        rhs_output_count++;
-    }
-#endif
-    
+        
     variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
-    correction_nodes(Sol, elem, node, (const double**)hplus, p2, dt);
+    
+    correction_nodes(Sol, elem, node, (const double**)hplus, p2, dt, FULL_FIELD);
+    Set_Explicit_Boundary_Data(Sol, elem);
     
     for(ii=0; ii<nc; ii++) {
         double p2_new      = p2[ii];
@@ -213,14 +475,13 @@ void euler_backward_non_advective_impl_part(
     }
     
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
-    Set_Explicit_Boundary_Data(Sol, elem);
     
 #if OUTPUT_RHS_NODES
     memset(rhs, 0.0, node->nc*sizeof(double));
     rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
     /* catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
      */
-
+    
     if (step >= first_output_step) {
         if (rhs_output_count < 10) {
             sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
@@ -234,8 +495,10 @@ void euler_backward_non_advective_impl_part(
         rhs_output_count++;
     }
 #endif
-
+    
 }
+#endif /* NONLINEAR_EOS_ITERATION */
+
 
 /* ========================================================================== */
 
@@ -247,21 +510,12 @@ static double divergence_nodes(
 							   const MPV* mpv,
 							   const BDRY* bdry) {
 	
-    /* with weight = 1.0, this routine computes 
-          rhs_out = rhs_in + div(rhoY\vec{v}) 
-       from the current Sol. 
-     */
-
 	extern User_Data ud;
-	
-    int nodc = 0;
-    
+	    
 	const int ndim = node->ndim;
 
     double div_max = 0.0;
-    
-    int i, j, k, mn;
-    
+        
     switch(ndim) {
         case 1: {
             ERROR("divergence_nodes() not implemented for 1D\n");
@@ -287,13 +541,14 @@ static double divergence_nodes(
             const double oodx    = 1.0 / dx;
             const double oody    = 1.0 / dy;
             
-            double Y;
+            double YY;
+            int jj, mm;
             
             /* predicted time level divergence via scattering */
-            for(j = igye - is_y_periodic - nodc; j < icye - igye + is_y_periodic + nodc; j++) {
+            for(int j = igye - is_y_periodic; j < icye - igye + is_y_periodic; j++) {
                 const int me = j * icxe;
                 const int mn = j * icxn; 
-                for(i = igxe - is_x_periodic - nodc; i < icxe - igxe + is_x_periodic + nodc; i++) {
+                for(int i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
                     const int n     = mn + i;
                     const int nicx  = n  + icxn;
                     const int n1    = n  + 1;
@@ -302,7 +557,7 @@ static double divergence_nodes(
                     const int ne = me + i; 
                     double tmpfx, tmpfy;
                     
-                    Y = Sol->rhoY[ne] / Sol->rho[ne];
+                    double Y = Sol->rhoY[ne] / Sol->rho[ne];
                     tmpfx = 0.5 * oodx * Y * Sol->rhou[ne];
                     tmpfy = 0.5 * oody * Y * Sol->rhov[ne];
                     
@@ -315,23 +570,23 @@ static double divergence_nodes(
             
             
             /* account for influx bottom boundary */
-            j = igye;
-            mn = j * icxn; 
-            Y  = mpv->HydroState->Y0[j];
-            for(i = igxe; i < icxe - igxe; i++) {
-                const int n     = mn + i;
+            jj = igye;
+            mm = jj * icxn; 
+            YY  = mpv->HydroState->Y0[jj];
+            for(int i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
+                const int n     = mm + i;
                 const int n1    = n  + 1;
                 
-                double rhov_wall = bdry->wall_massflux[i]; 
-                double tmpy = 0.5 * oody * Y * rhov_wall; 
+                double rhov_wall = bdry->wall_rhoYflux[i]; 
+                double tmpy = 0.5 * oody * YY * rhov_wall; 
                 
                 rhs[n]  += - tmpy;
                 rhs[n1] += - tmpy;
             }
             
-            for(j = igye+1; j < icye - igye; j++) {
+            for(int j = igye+1; j < icye - igye; j++) {
                 const int mn = j * icxn; 
-                for(i = igxe+1; i < icxe - igxe; i++) {
+                for(int i = igxe+1; i < icxe - igxe; i++) {
                     int nn    = mn + i;
                     div_max = MAX_own(div_max, fabs(rhs[nn]));
                 }
@@ -340,7 +595,6 @@ static double divergence_nodes(
         }
 
         case 3: {
-            
             
             int is_x_periodic = 0;
             int is_y_periodic = 0;
@@ -372,16 +626,17 @@ static double divergence_nodes(
             const int diyn = icxn;
             const int dizn = icxn*icyn;
             
-            double Y;
+            double YY;
+            int jj;
             
             /* predicted time level divergence via scattering */
-            for(k = igze - is_z_periodic - nodc; k < icze - igze + is_z_periodic + nodc; k++) {
+            for(int k = igze - is_z_periodic; k < icze - igze + is_z_periodic; k++) {
                 const int le = k * icye * icxe;
                 const int ln = k * icyn * icxn; 
-                for(j = igye - is_y_periodic - nodc; j < icye - igye + is_y_periodic + nodc; j++) {
+                for(int j = igye - is_y_periodic; j < icye - igye + is_y_periodic; j++) {
                     const int me = le + j * icxe;
                     const int mn = ln + j * icxn; 
-                    for(i = igxe - is_x_periodic - nodc; i < icxe - igxe + is_x_periodic + nodc; i++) {
+                    for(int i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
                         const int ne = me + i; 
                         const int nn000  = mn + i;  /* foresee consistent interpretation of "abc" in nnabc between parts of code */
                         const int nn010  = nn000 + diyn;
@@ -394,7 +649,7 @@ static double divergence_nodes(
                         
                         double tmpfx, tmpfy, tmpfz;
                         
-                        Y = Sol->rhoY[ne] / Sol->rho[ne];
+                        double Y = Sol->rhoY[ne] / Sol->rho[ne];
                         tmpfx = 0.25 * oodx * Y * Sol->rhou[ne]; 
                         tmpfy = 0.25 * oody * Y * Sol->rhov[ne];
                         tmpfz = 0.25 * oodz * Y * Sol->rhow[ne];
@@ -412,20 +667,20 @@ static double divergence_nodes(
             } 
             
             /* account for influx bottom boundary */
-            j = igye;
-            Y  = mpv->HydroState->Y0[j];
-            for(k = igze; k < icze - igze; k++) {
+            jj = igye;
+            YY  = mpv->HydroState->Y0[jj];
+            for(int k = igze  - is_z_periodic; k < icze - igze + is_z_periodic; k++) {
                 int ln = k * icyn*icxn;
-                int mn = ln + j*icxn;
-                for(i = igxe; i < icxe - igxe; i++) {
+                int mn = ln + jj*icxn;
+                for(int i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
                     int nn   = mn + i;
                     int nn00 = nn;
                     int nn10 = nn + dixn;
                     int nn11 = nn + dixn + dizn;
                     int nn01 = nn +      + dizn;
                     
-                    double rhov_wall = bdry->wall_massflux[i]; 
-                    double tmpy = 0.25 * oody * Y * rhov_wall;
+                    double rhov_wall = bdry->wall_rhoYflux[i]; 
+                    double tmpy = 0.25 * oody * YY * rhov_wall;
                     
                     rhs[nn00] += - tmpy;
                     rhs[nn10] += - tmpy;
@@ -434,11 +689,11 @@ static double divergence_nodes(
                 }
             }        
             
-            for(k = igze+1; k < icze - igze; k++) {
+            for(int k = igze+1; k < icze - igze; k++) {
                 int ln = k*icxn*icyn; 
-                for(j = igye+1; j < icye - igye; j++) {
+                for(int j = igye+1; j < icye - igye; j++) {
                     int mn = ln + j * icxn; 
-                    for(i = igxe+1; i < icxe - igxe; i++) {
+                    for(int i = igxe+1; i < icxe - igxe; i++) {
                         int nn  = mn + i;
                         div_max = MAX_own(div_max, fabs(rhs[nn]));
                     }
@@ -466,8 +721,6 @@ static void rhs_from_p_old(
     extern User_Data ud;
     extern double *W0;
     extern enum Boolean W0_in_use;
-
-    int nodc = 0;
     
     assert(W0_in_use == WRONG);
     W0_in_use = CORRECT;
@@ -475,13 +728,7 @@ static void rhs_from_p_old(
     double *rhs_hh = W0;
     
     const int ndim = node->ndim;
-    
-    const int igxn = node->igx;
-    const int icxn = node->icx;
-    const int igyn = node->igy;
-    const int icyn = node->icy;
-    
-    
+        
     switch(ndim) {
         case 1: {
             ERROR("rhs_from_p_old() not implemented for 1D\n");
@@ -489,6 +736,11 @@ static void rhs_from_p_old(
         }
         case 2: {
             
+            const int igxn = node->igx;
+            const int icxn = node->icx;
+            const int igyn = node->igy;
+            const int icyn = node->icy;
+
             int is_x_periodic = 0;
             int is_y_periodic = 0;
             
@@ -514,9 +766,44 @@ static void rhs_from_p_old(
             break;
         }
             
-        case 3: 
-            ERROR("rhs_from_p_old() not implemented for 1D\n");
+        case 3: {
+
+            const int igxn = node->igx;
+            const int icxn = node->icx;
+            const int igyn = node->igy;
+            const int icyn = node->icy;
+            const int igzn = node->igz;
+            const int iczn = node->icz;
+
+            int is_x_periodic = 0;
+            int is_y_periodic = 0;
+            int is_z_periodic = 0;
+            
+            if(ud.bdrytype_min[0] == PERIODIC) is_x_periodic = 1;
+            if(ud.bdrytype_min[1] == PERIODIC) is_y_periodic = 1;
+            if(ud.bdrytype_min[2] == PERIODIC) is_z_periodic = 1;
+            
+            for (int ic=0; ic<node->nc; ic++) {
+                rhs_hh[ic] = 0.0;
+            }
+            
+            for(int k = igzn; k < iczn - igzn; k++) {
+                const int ln = k * icxn*icyn; 
+                for(int j = igyn; j < icyn - igyn; j++) {
+                    const int mn = ln + j * icxn; 
+                    for(int i = igxn; i < icxn - igxn; i++) {
+                        const int nn = mn + i;
+                        rhs_hh[nn] += hcenter[nn]*mpv->p2_nodes[nn];
+                    }
+                } 
+            } 
+            
+            for (int ic=0; ic<node->nc; ic++) {
+                rhs[ic] += rhs_hh[ic];
+            }
             break;
+        
+        }
         default: ERROR("ndim not in {1, 2, 3}");
     }    
     
@@ -781,22 +1068,17 @@ static void operator_coefficients_nodes(
 			const double ccenter = - (ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt)/time_offset;
             const double cexp    = 2.0-th.gamm;
             
-            int i, j, m, n;
+            for(int i=0; i<elem->nc; i++) hc[i] = hplusx[i] = hplusy[i] = 0.0;
             
-
-            int nodc = 0;
-            
-            
-            for(i=0; i<elem->nc; i++) hc[i] = hplusx[i] = hplusy[i] = 0.0;
-            
-            for(j = igy - is_y_periodic - nodc; j < icye - igy + is_y_periodic + nodc; j++) {
-                m = j * icxe;
+            for(int j = igy - is_y_periodic; j < icye - igy + is_y_periodic; j++) {
+                int m = j * icxe;
                 
                 double strat = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j]) \
                 /(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
                 
-                for(i = igx - is_x_periodic - nodc; i < icxe - igx + is_x_periodic + nodc; i++) {
-                    n = m + i;     
+                for(int i = igx - is_x_periodic; i < icxe - igx + is_x_periodic; i++) {
+                    int n = m + i;    
+                    
                     double Y     = Sol->rhoY[n]/Sol->rho[n]; 
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
                     double fsqsc = dt*dt * coriolis*coriolis;
@@ -809,16 +1091,19 @@ static void operator_coefficients_nodes(
                 }
             }
             
-            for(j = igy; j < icyn - igy; j++) {
+            for(int j = igy; j < icyn - igy; j++) {
                 int mn = j * icxn;
                 int me = j * icxe;
                 for(int i = igx; i < icxn - igx; i++) {
-                    int nn = mn + i;
+                    int nn   = mn + i;
                     int ne00 = me + i;
                     int ne10 = me + i - 1;
                     int ne01 = me + i - icxe;
-                    int ne11 = me + i -icxe - 1;
-                    hc[nn] = ccenter * 0.25*(pow(Sol->rhoY[ne00],cexp) + pow(Sol->rhoY[ne01],cexp) + pow(Sol->rhoY[ne10],cexp) + pow(Sol->rhoY[ne11],cexp));
+                    int ne11 = me + i - icxe - 1;
+                    hc[nn] = ccenter * 0.25*(  pow(Sol->rhoY[ne00],cexp) \
+                                             + pow(Sol->rhoY[ne01],cexp) \
+                                             + pow(Sol->rhoY[ne10],cexp) \
+                                             + pow(Sol->rhoY[ne11],cexp));
                 }
             }
             
@@ -827,7 +1112,7 @@ static void operator_coefficients_nodes(
             break;
 		}
 		case 3: {			
-
+            
             int is_x_periodic = 0;
             int is_y_periodic = 0;
             int is_z_periodic = 0;
@@ -836,7 +1121,6 @@ static void operator_coefficients_nodes(
             if(ud.bdrytype_min[1] == PERIODIC) is_y_periodic = 1;
             if(ud.bdrytype_min[2] == PERIODIC) is_z_periodic = 1;
             
-
 			const int igx = elem->igx;
             const int igy = elem->igy;
             const int igz = elem->igz;
@@ -859,8 +1143,7 @@ static void operator_coefficients_nodes(
 			double* hc      = hcenter;
             
 			const double ccenter = - (ud.compressibility*ud.Msq)*th.gamminv/(dt*dt)/time_offset;
-            
-			const double cexp    = 1.0-th.gamm;
+			const double cexp    = 2.0-th.gamm;
             
             for(int i=0; i<elem->nc; i++) hc[i] = hplusx[i] = hplusy[i] = hplusz[i] = 0.0;
             
@@ -934,7 +1217,8 @@ void correction_nodes(
 					  const NodeSpaceDiscr* node,
                       const double* hplus[3], 
 					  double* p, 
-					  const double dt) {
+                      const double dt,
+                      const enum CorrectionRange crange) {
 	
 	extern User_Data ud;
     extern MPV* mpv;
@@ -963,7 +1247,6 @@ void correction_nodes(
 			
 			const int icxe = node->icx - 1;
 			
-
 			const double dx     = node->dx;
 			const double dy     = node->dy;
 			const double oodx   = 1.0 / dx;
@@ -974,7 +1257,15 @@ void correction_nodes(
             
             int i, j, m, me;
 			
-			for(j = igy; j < icy - igy - 1; j++) {
+            int jmax  = icy - igy - 1;
+            int vcorr = 1;
+            
+            if (crange == BOTTOM_ONLY) {
+                jmax  = igy+1;
+                vcorr = 0;
+            }
+            
+			for(j = igy; j < jmax; j++) {
 				m = j * icx; 
 				me = j * icxe;
                 
@@ -992,10 +1283,8 @@ void correction_nodes(
                     const double thinv = Sol->rho[ne] / Sol->rhoY[ne];
 					                    
                     Sol->rhou[ne] += - dt * thinv * hplusx[ne] * Dpx;
-					Sol->rhov[ne] += - dt * thinv * hplusy[ne] * Dpy;
-                    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
-                     the following line was not there on Oct. 24. */
-                    Sol->rhoX[BUOY][ne] += - time_offset * dt * dSdy * Sol->rhov[ne];
+					Sol->rhov[ne] += - dt * thinv * hplusy[ne] * Dpy * vcorr;
+                    Sol->rhoX[BUOY][ne] += - time_offset * dt * dSdy * Sol->rhov[ne] * vcorr;
 				}
 			} 
 			
@@ -1024,10 +1313,16 @@ void correction_nodes(
             const double* hplusy = hplus[1];
             const double* hplusz = hplus[2];
                         
+            int jmax = icy - igy - 1;
+            if (crange == BOTTOM_ONLY) {
+                jmax = igy+1;
+            }
+
             for(int k = igz; k < icz-igz-1; k++) {
                 int l  = k*icx*icy;
                 int le = k*icxe*icye;
-                for(int j = igy; j < icy - igy - 1; j++) {
+                
+                for(int j = igy; j < jmax; j++) {
                     int m  = l  + j*icx; 
                     int me = le + j*icxe;
 
@@ -1053,8 +1348,6 @@ void correction_nodes(
                         Sol->rhou[ne] += - dt * thinv * hplusx[ne] * (Dpx + dt * coriolis * Dpz);
                         Sol->rhov[ne] += - dt * thinv * hplusy[ne] * Dpy;
                         Sol->rhow[ne] += - dt * thinv * hplusz[ne] * (Dpz - dt * coriolis * Dpx);
-                        /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
-                         the following line was not there on October 24 */
                         Sol->rhoX[BUOY][ne] += - time_offset * dt * dSdy * Sol->rhov[ne];
                     }
                 } 
@@ -1221,8 +1514,7 @@ void euler_forward_non_advective(ConsVars* Sol,
             ERROR("boundary fix in  euler_forward_non_advective()  not implemented in 1D yet\n");           
         }
             break;
-        case 2:
-        {
+        case 2: {
             const int igxe = elem->igx;
             const int icxe = elem->icx;
             const int igye = elem->igy;
@@ -1268,82 +1560,86 @@ void euler_forward_non_advective(ConsVars* Sol,
                     Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
                     Sol->rhoX[BUOY][nc] = (Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c)) +  time_offset_expl * dt * ( - v * dSdy) * Sol->rho[nc];
 
-                    
                     dp2n[nn00] -= dt * dpidP * div[nn00];
                 }
             }
         }
             break;
-        case 3: 
-        {
-            const int icx = elem->icx;
-            const int icy = elem->icy;
-            const int icz = elem->icz;
-            const int icxy = icx*icy;
+        case 3: {
             
-            const int igx = elem->igx;
-            const int igy = elem->igy;
-            const int igz = elem->igz;
+            const int icxe = elem->icx;
+            const int icye = elem->icy;
+            const int icze = elem->icz;
             
-            const int inx = node->icx;
-            const int iny = node->icy;
-            
+            const int igxe = elem->igx;
+            const int igye = elem->igy;
+            const int igze = elem->igz;
+
+            const int dnxe = 1;
+            const int dnye = icxe;
+            const int dnze = icxe*icye;
+
+            const int icxn = node->icx;
+            const int icyn = node->icy;
+
+            const int dnxn = 1;
+            const int dnyn = icxn;
+            const int dnzn = icxn*icyn;
+
             const double dx = node->dx;
             const double dy = node->dy;
             const double dz = node->dz;
             
-            for (int k=igz; k<icz-igz+1; k++) {
-                int lc = k*icy*icx;
-                int ln = k*iny*inx;
-                for (int j=igy; j<icy-igy+1; j++) {
-                    int mc = lc + j*icx;
-                    int mn = ln + j*inx;
+            for (int k=igze; k<icze-igze+1; k++) {
+                int le = k*dnze;
+                int ln = k*dnzn;
+                
+                for (int j=igye; j<icye-igye+1; j++) {
+                    int me = le + j*dnye;
+                    int mn = ln + j*dnyn;
                     
                     double S0p = mpv->HydroState_n->S0[j+1];
                     double S0c = mpv->HydroState->S0[j];
                     double S0m = mpv->HydroState_n->S0[j];
                     
-                    for (int i=igx; i<icx-igx+1; i++) {
-                        int nc        = mc + i;
+                    for (int i=igxe; i<icxe-igxe+1; i++) {
+                        int ne    = me + i*dnxe;
                         
-                        int nn000 = mn   + i;
-                        int nn010 = nn000 + inx;
-                        int nn001 = nn000 + 1;
-                        int nn011 = nn000 + 1 + inx;
-                        int nn100 = mn   + i + inx*iny;
-                        int nn110 = nn100 + inx;
-                        int nn101 = nn100 + 1;
-                        int nn111 = nn100 + 1 + inx;
+                        int nn000 = mn    + i*dnxn;
+                        int nn010 = nn000 + dnyn;
+                        int nn001 = nn000 + dnxn;
+                        int nn011 = nn000 + dnxn + dnyn;
+                        int nn100 = mn    + i*dnxn + dnzn;
+                        int nn110 = nn100 + dnyn;
+                        int nn101 = nn100 + dnxn;
+                        int nn111 = nn100 + dnxn + dnyn;
                         
                         double dpdx   = wp*0.25*(p2n[nn001]-p2n[nn000]+p2n[nn011]-p2n[nn010]+p2n[nn101]-p2n[nn100]+p2n[nn111]-p2n[nn110])/dx;
                         double dpdy   = wp*0.25*(p2n[nn010]-p2n[nn000]+p2n[nn011]-p2n[nn001]+p2n[nn110]-p2n[nn100]+p2n[nn111]-p2n[nn101])/dy;
                         double dpdz   = wp*0.25*(p2n[nn100]-p2n[nn000]+p2n[nn110]-p2n[nn010]+p2n[nn101]-p2n[nn001]+p2n[nn111]-p2n[nn011])/dz;
                         double dSdy   = (S0p-S0m) / dy;
-                        
-                        double rhoYovG = Ginv*Sol->rhoY[nc];
-                        double v       = Sol->rhov[nc]/Sol->rho[nc];
-                        double dchi    = Sol->rhoX[BUOY][nc]/Sol->rho[nc];
-                        double chi     = Sol->rho[nc]/Sol->rhoY[nc];
-                        double dbuoy   = -Sol->rho[nc]*dchi/chi;  /* -dchi/chibar; */
-                        double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
+                        double rhoYovG = Ginv*Sol->rhoY[ne];
+                        double v       = Sol->rhov[ne]/Sol->rho[ne];
+                        double dchi    = Sol->rhoX[BUOY][ne]/Sol->rho[ne];
+                        double dbuoy   = -Sol->rhoY[ne]*dchi;  
+                        double drhou   = Sol->rhou[ne] - u0*Sol->rho[ne];
 
                         double dpidP   = (th.gm1 / ud.Msq) * \
-                        0.125 * (pow(Sol->rhoY[nc], th.gamm - 2.0)          + pow(Sol->rhoY[nc-1], th.gamm - 2.0) + \
-                                 pow(Sol->rhoY[nc-icx], th.gamm - 2.0)      + pow(Sol->rhoY[nc-icx-1], th.gamm - 2.0) + \
-                                 pow(Sol->rhoY[nc-icxy], th.gamm - 2.0)     + pow(Sol->rhoY[nc-1-icxy], th.gamm - 2.0) + \
-                                 pow(Sol->rhoY[nc-icx-icxy], th.gamm - 2.0) + pow(Sol->rhoY[nc-icx-1-icxy], th.gamm - 2.0));
+                        0.125 * (pow(Sol->rhoY[ne],           th.gamm - 2.0) + pow(Sol->rhoY[ne-dnxe],           th.gamm - 2.0) + \
+                                 pow(Sol->rhoY[ne-dnye],      th.gamm - 2.0) + pow(Sol->rhoY[ne-dnye-dnxe],      th.gamm - 2.0) + \
+                                 pow(Sol->rhoY[ne-dnze],      th.gamm - 2.0) + pow(Sol->rhoY[ne-dnze-dnxe],      th.gamm - 2.0) + \
+                                 pow(Sol->rhoY[ne-dnye-dnze], th.gamm - 2.0) + pow(Sol->rhoY[ne-dnye-dnze-dnxe], th.gamm - 2.0));
                         
                         double time_offset_expl = ud.acoustic_order - 1.0;
-                        Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
-                        Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
-                        Sol->rhow[nc]  = Sol->rhow[nc] + dt * ( - rhoYovG * dpdz - coriolis * drhou);
-                        Sol->rhoY[nc]  = Sol->rhoY[nc] - dt * div[nc];
-                        Sol->rhoX[BUOY][nc] = (Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c)) + time_offset_expl * dt * ( - v * dSdy) * Sol->rho[nc];
+                        Sol->rhou[ne]  = Sol->rhou[ne] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[ne]);
+                        Sol->rhov[ne]  = Sol->rhov[ne] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
+                        Sol->rhow[ne]  = Sol->rhow[ne] + dt * ( - rhoYovG * dpdz - coriolis * drhou);
+                        Sol->rhoX[BUOY][ne] = (Sol->rho[ne] * ( Sol->rho[ne]/Sol->rhoY[ne] - S0c)) + time_offset_expl * dt * (-v*dSdy) * Sol->rho[ne];
+                        
                         dp2n[nn000] -= dt * dpidP * div[nn000];
                     }
                 }
             }
-            ERROR("boundary fix in  euler_forward_non_advective()  not implemented in 3D yet\n");
         }
             break;
 
@@ -1366,6 +1662,30 @@ void euler_forward_non_advective(ConsVars* Sol,
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
     Set_Explicit_Boundary_Data(Sol, elem);
     
+}
+
+
+/* ========================================================================== */
+
+void bottom_grid_layer_set(double* obj, 
+                           const double* src, 
+                           const double weight,
+                           const ElemSpaceDiscr* elem)
+{
+    /* copy bottom grid layer (i.e., j=elem->igy) data from src to obj */
+    const int icx = elem->icx;
+    const int icy = elem->icy;
+    const int icz = elem->icz;
+    const int igy = elem->igy;
+    
+    for (int k=0; k<icz; k++) {
+        int nk  = k*icx*icy;
+        int njk = nk + igy*icx;
+        for (int i=0; i<icx; i++) {
+            int nijk = njk + i;
+            obj[nijk] = weight*src[nijk] + (1.0-weight)*obj[nijk];
+        }
+    }
 }
 
 /* ========================================================================== */
@@ -1456,7 +1776,94 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
     W0_in_use = WRONG;
 }
 
+/* ========================================================================== */
 
+void diss_to_rhs(double* rhs,
+                 const double* diss,
+                 const ElemSpaceDiscr* elem,
+                 const NodeSpaceDiscr* node,
+                 const double dt)
+{
+    /* here we construct the right hand side of the potential temperature 
+     balance equation from energy dissipation */
+    extern User_Data ud;
+    
+    if (ud.mol_trans == FULL_MOLECULAR_TRANSPORT) {
+        
+        assert(0); /* not implemented yet */
+    
+    } else if (ud.mol_trans == STRAKA_DIFFUSION_MODEL) {
+    
+        switch (elem->ndim) {
+            case 1:
+                assert(0);  /* not implemented yet */ 
+                break;
+
+            case 2: {
+                int icxe = elem->icx;
+                int icye = elem->icy;
+                int igxe = elem->igx;
+                int igye = elem->igy;
+                
+                int icxn = node->icx;
+                int igxn = node->igx;
+                
+                /* scatter the elem-based  diss/dt  to  the node-based  rhs */ 
+                for (int j=igye; j<icye-igye; j++) {
+                    int ncj = j*icxe;
+                    int nnj = j*icxn;
+                    for (int i=igxe; i<icxe-igxe; i++) {
+                        int ncij = ncj + i;
+                        int nnij = nnj + i;
+                        int nnijmm = nnij;
+                        int nnijpm = nnij + 1;
+                        int nnijpp = nnij + 1 + icxn;
+                        int nnijmp = nnij + icxn;
+                        
+                        double drhs = 0.25*diss[ncij]/dt;
+                        
+                        rhs[nnijmm] -= drhs;
+                        rhs[nnijpm] -= drhs;
+                        rhs[nnijpp] -= drhs;
+                        rhs[nnijmp] -= drhs;
+                    }
+                }
+                if (ud.bdrytype_max[0] == PERIODIC) {
+                    for (int j=igye; j<icye-igye; j++) {
+                        int ncj    = j*icxe;
+                        int ncijl  = ncj + igxe;
+                        int ncijr  = ncj + icxe-igxe-1;
+                        
+                        int nnj    = j*icxn;
+                        int nnijml = nnj + igxn;
+                        int nnijpl = nnj + igxn + icxn;
+                        int nnijmr = nnj + (icxn-igxn-1);
+                        int nnijpr = nnj + (icxn-igxn-1) + icxn;
+                        
+                        double drhsl = 0.25*diss[ncijl];
+                        double drhsr = 0.25*diss[ncijr];
+                        
+                        rhs[nnijml] += drhsl;
+                        rhs[nnijpl] += drhsl;
+                        rhs[nnijmr] += drhsr;
+                        rhs[nnijpr] += drhsr;
+                    }
+                }
+                if (ud.bdrytype_max[1] == PERIODIC) {
+                    assert(0);
+                }
+            }
+                break;
+
+            case 3:
+                assert(0);  /* not implemented yet */
+                break;
+
+            default:
+                break;
+        }  
+    } 
+}
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log:$

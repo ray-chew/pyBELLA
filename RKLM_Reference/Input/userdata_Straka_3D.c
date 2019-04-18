@@ -29,14 +29,20 @@ void User_Data_init(User_Data* ud) {
 	/* ========================================================================= */
 	
     /* Earth */
-	double grav  = 10.0;                               /* [m/s^2]                */
-	double omega = 2*PI*sin(0.25*PI)/(24.0*3600.0);    /*  [s^-1]                */
+	double grav  = 9.81;                               /* [m/s^2]                */
+	double omega = 0.0;//2*PI*sin(0.25*PI)/(24.0*3600.0);    /*  [s^-1]                */
     
     /* thermodynamics and chemistry */
-    double R_gas = 287.4;            /* [J/kg/K]                        */
+    double R_gas = 287.0;            /* [J/kg/K]                        */
     double R_vap = 461.00;           /* [J/kg/K]                        */
     double Q_vap = 2.53e+06;         /* [J]                             */
     double gamma = 1.4;              /* dimensionless                   */
+
+    double viscm  = 75.0;            /* [m^2/s]                         */
+    double viscbm = 0.0;             /* [m^2/s]                         */
+    double visct  = 0.0;             /* [m^2/s]                         */
+    double viscbt = 0.0;             /* [m^2/s]                         */
+    double cond   = 75.0;            /* [m^2/s]                         */
 
     /* references for non-dimensionalization */
 	double h_ref = 10000;            /* [m]                             */
@@ -46,7 +52,7 @@ void User_Data_init(User_Data* ud) {
 	double u_ref = h_ref/t_ref;      /* Strouhal No == 1 always assumed */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
 
-    double Nsq_ref  = grav*1.3e-05;     /* [] */
+    double Nsq_ref  = grav*1.3e-05;     /* [] */ //Is this acting?
     
     ud->h_ref       = h_ref;
     ud->t_ref       = t_ref;
@@ -62,6 +68,14 @@ void User_Data_init(User_Data* ud) {
     
     /* number of advected species */
     ud->nspec       = NSPEC;
+    
+    /*FULL_MOLECULAR_TRANSPORT, STRAKA_DIFFUSION_MODEL, NO_MOLECULAR_TRANSPORT */
+    ud->mol_trans   = STRAKA_DIFFUSION_MODEL; 
+    ud->viscm       = viscm  * t_ref/(h_ref*h_ref);
+    ud->viscbm      = viscbm * t_ref/(h_ref*h_ref);
+    ud->visct       = visct  * t_ref/(h_ref*h_ref);
+    ud->viscbt      = viscbt * t_ref/(h_ref*h_ref);
+    ud->cond        = cond * t_ref/(h_ref*h_ref*R_gas);
     
     /* Low Mach */
     ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
@@ -102,7 +116,8 @@ void User_Data_init(User_Data* ud) {
 	/* boundary/initial conditions */
 	ud->wind_speed  =  0.0;            /* 0.1535; wind_speed * u_ref  = 10 m/s */ /*  BREAKING WAVE CHANGE */
 	ud->wind_shear  = -0.0;              /* velocity in [u_ref/h_ref] */
-	ud->hill_height = 0.0 * 0.096447; /* 0.096447; */ /* hill_height * l_ref = 0.628319 km *//*  BREAKING WAVE CHANGE */
+    ud->hill_shape  = AGNESI;            /* AGNESI, SCHLUTOW */
+    ud->hill_height = 0.0 * 0.096447; /* 0.096447; */ /* hill_height * l_ref = 0.628319 km *//*  BREAKING WAVE CHANGE */
 	ud->hill_length_scale = 0.1535;   /* hill_length * l_ref = 1.0 km */
 	
 	ud->bdrytype_min[0] = PERIODIC; /* DIRICHLET; PERIODIC; WALL; */
@@ -113,7 +128,8 @@ void User_Data_init(User_Data* ud) {
 	ud->bdrytype_max[2] = WALL;
 	
 	ud->absorber = WRONG; /* CORRECT;  WRONG; */ /*  BREAKING WAVE CHANGE */
-	
+    ud->bottom_theta_bc = ZERO_ORDER_EXTRAPOL;
+
 	/* ================================================================================== */
 	/* =====  NUMERICS  ================================================================= */
 	/* ================================================================================== */
@@ -121,9 +137,9 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;  /* this code version has only one option */
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
-	ud->CFL                   = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0              = 0.0225;
-	ud->dtfixed               = 0.0225; /* 0.0052; */ /*  0.004; */
+	ud->CFL                   = 0.45; /* 0.45; 0.9; 0.8; */
+    ud->dtfixed0              = 0.0465;
+	ud->dtfixed               = 0.0465; /* 0.0052; */ /*  0.004; */
     
     set_time_integrator_parameters(ud);
     
@@ -149,7 +165,7 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  333; /* (ud->inx+3); */
 	
     /* linear solver-stuff */
-    double tol                            = 1.e-6;
+    double tol                            = 1.e-8;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -191,7 +207,7 @@ void User_Data_init(User_Data* ud) {
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
     
     {
-        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
@@ -347,7 +363,7 @@ void Sol_initial(ConsVars* Sol,
     ud.nonhydrostasy   = nonhydrostasy(0);
     ud.compressibility = compressibility(0);
     
-    set_wall_massflux(bdry, Sol, elem);
+    set_wall_rhoYflux(bdry, Sol, mpv, elem);
     Set_Explicit_Boundary_Data(Sol, elem);
     
     ConsVars_set(Sol0, Sol, elem->nc);
