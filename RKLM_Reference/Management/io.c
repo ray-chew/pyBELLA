@@ -28,7 +28,7 @@
 #undef __WINDOWS__
 #endif
 #ifdef RUPERT
-#include  "/opt/local/include/dfsd.h" 
+#include  "../hdf/dfsd.h"
 #else 
 #include  "../hdf/dfsd.h" 
 #endif
