@@ -7,7 +7,6 @@ class user_data(object):
     def __init__(self):
         self.nspec = 8
 
-
 ud = user_data()
 new_state = variable.Var(5,ud)
 
