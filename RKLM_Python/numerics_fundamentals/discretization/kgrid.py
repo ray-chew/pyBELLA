@@ -20,14 +20,8 @@ class Grid(object):
         self.inz = inz
 
         self.dx = (x1 - x0) / (inx - 1.)
-        if iny > 1:
-            self.dy = (y1 - y0) / (iny - 1.)
-        else:
-            self.dy = 0.0
-        if inz > 1:
-            self.dz = (z1 - z0) / (inz - 1.)
-        else:
-            self.dz = 0.0
+        self.dy = (y1 - y0) / (iny - 1.) if iny > 1 else 0.0
+        self.dz = (z1 - z0) / (inz - 1.) if inz > 1 else 0.0
         
         assert self.dx > 0.0
         assert self.dy >= 0.0
@@ -40,18 +34,20 @@ class Grid(object):
         self.z0 = z0
         self.z1 = z1
 
-        self.x = np.zeros((inx))
-        self.y = np.zeros((iny))
-        self.z = np.zeros((inz))
+        self.x = x0 + self.dx * np.arange(inx)
+        self.y = x0 + self.dx * np.arange(iny)
+        self.z = x0 + self.dx * np.arange(inz)
+        
+        # self.x = np.zeros((inx))
+        # self.y = np.zeros((iny))
+        # self.z = np.zeros((inz))
 
-        for i in range(inx):
-            self.x[i] = x0 + self.dx * i
-
-        for i in range(iny):
-            self.y[i] = y0 + self.dy * i
-
-        for i in range(inz):
-            self.z[i] = z0 + self.dz * i
+        # for i in range(inx):
+        #     self.x[i] = x0 + self.dx * i
+        # for i in range(iny):
+        #     self.y[i] = y0 + self.dy * i
+        # for i in range(inz):
+        #     self.z[i] = z0 + self.dz * i
 
         self.left = left
         self.right = right
@@ -89,14 +85,8 @@ class SpaceDiscr(object):
         self.igz = self.ig[2] = 2 if g.inz > 1 else 0
 
         self.icx = self.ic[0] = g.inx - 1 + 2 * self.igx
-        if g.iny > 1:
-            self.icy = self.ic[1] = g.iny - 1 + 2 * self.igy
-        else:
-            self.icy = 1
-        if g.inz > 1:
-            self.icz = self.ic[2] = g.inz - 1 + 2 * self.igz
-        else:
-            self.icz = 1
+        self.icy = self.ic[1] = g.iny - 1 + 2 * self.igy if g.iny > 1 else 1
+        self.icz = self.ic[2] = g.inz - 1 + 2 * self.igz if g.inz > 1 else 1
 
         self.nc = self.icx * self.icy * self.icz
 
@@ -148,12 +138,16 @@ class ElemSpaceDiscr(SpaceDiscr):
         y0 = g.y0 - self.igy * self.dy + 0.5 * self.dy if self.icy > 1 else g.y0
         z0 = g.z0 - self.igz * self.dz + 0.5 * self.dz if self.icz > 1 else g.z0
 
-        for i in range(self.icx):
-            self.x[i] = x0 + self.dx * i
-        for j in range(self.icy):
-            self.y[i] = y0 + self.dy * j
-        for k in range(self.icz):
-            self.z[i] = z0 + self.dz * k
+        self.x = x0 + self.dx * np.arange(self.icx)
+        self.y = y0 + self.dy * np.arange(self.icy)
+        self.z = z0 + self.dz * np.arange(self.icz)
+
+        # for i in range(self.icx):
+        #     self.x[i] = x0 + self.dx * i
+        # for j in range(self.icy):
+        #     self.y[i] = y0 + self.dy * j
+        # for k in range(self.icz):
+        #     self.z[i] = z0 + self.dz * k
         
 class NodeSpaceDiscr(SpaceDiscr):
     def __init__(self,g):
@@ -161,9 +155,13 @@ class NodeSpaceDiscr(SpaceDiscr):
         y0 = g.y0 - self.igy * self.dy if self.icy > 1 else g.y0
         z0 = g.z0 - self.igz * self.dz if self.icz > 1 else g.z0
 
-        for i in range(self.icx):
-            self.x[i] = x0 + self.dx * i
-        for j in range(self.icy):
-            self.y[i] = y0 + self.dy * j
-        for k in range(self.icz):
-            self.z[i] = z0 + self.dz * k
+        self.x = x0 + self.dx * np.arange(self.icx)
+        self.y = y0 + self.dy * np.arange(self.icy)
+        self.z = z0 + self.dz * np.arange(self.icz)
+
+        # for i in range(self.icx):
+        #     self.x[i] = x0 + self.dx * i
+        # for j in range(self.icy):
+        #     self.y[i] = y0 + self.dy * j
+        # for k in range(self.icz):
+        #     self.z[i] = z0 + self.dz * k

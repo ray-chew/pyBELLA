@@ -1,5 +1,5 @@
 import numpy as np
-from management.variable import Var
+from management.variable import States
 
 class MPV(object):
     def __init__(self,elem,node,ud):
@@ -21,6 +21,6 @@ class MPV(object):
         self.wgrav = np.zeros((self.nn))
         self.wplus = np.zeros((elem.ndim,self.nn))
 
-        self.HydroState = Var(self.nc,ud)
-        self.HydroState_n = Var(self.nn,ud)
+        self.HydroState = States(self.nc,ud)
+        self.HydroState_n = States(self.nn,ud)
 
