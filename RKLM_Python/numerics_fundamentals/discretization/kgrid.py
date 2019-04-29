@@ -1,6 +1,6 @@
 import numpy as np
 from input.enum_bdry import BdryType
-from numerics_fundamentals.math_own import *
+from numerics_fundamentals.math_own import MIN_own
 
 class Grid(object):
     def __init__(self, inx,iny,inz,x0,x1,y0,y1,z0,z1,left,right,bottom,top,back,front):
@@ -66,11 +66,11 @@ class Grid(object):
 
         if inz == 1:
             self.back = BdryType.TUNIX
-            self.frotn = BdryType.TUNIX
+            self.front = BdryType.TUNIX
 
 big = 1.0
 
-class ElemSpaceDiscr(object):
+class SpaceDiscr(object):
     ig = np.zeros((3))
     ic = np.zeros((3))
     stride = np.zeros((3))
@@ -85,14 +85,8 @@ class ElemSpaceDiscr(object):
         self.normal = big
 
         self.igx = self.ig[0] = 2
-        if g.iny > 1:
-            self.igy = self.ig[1] = 2
-        else:
-            self.igy = self.ig[1] = 0
-        if g.inz > 1:
-            self.igz = self.ig[2] = 2
-        else:
-            self.igz = self.ig[2] = 0
+        self.igy = self.ig[1] = 2 if g.iny > 1 else 0
+        self.igz = self.ig[2] = 2 if g.inz > 1 else 0
 
         self.icx = self.ic[0] = g.inx - 1 + 2 * self.igx
         if g.iny > 1:
@@ -139,6 +133,17 @@ class ElemSpaceDiscr(object):
         self.y = np.zeros((self.icy))
         self.z = np.zeros((self.icz))
 
+        self.left = g.left
+        self.right = g.right
+        self.bottom = g.bottom
+        self.top = g.top
+        self.back = g.back
+        self.front = g.front
+
+        self.scale_factor = 1.0
+
+class ElemSpaceDiscr(SpaceDiscr):
+    def __init__(self,g):
         x0 = g.x0 - self.igx * self.dx + 0.5 * self.dx
         y0 = g.y0 - self.igy * self.dy + 0.5 * self.dy if self.icy > 1 else g.y0
         z0 = g.z0 - self.igz * self.dz + 0.5 * self.dz if self.icz > 1 else g.z0
@@ -149,13 +154,16 @@ class ElemSpaceDiscr(object):
             self.y[i] = y0 + self.dy * j
         for k in range(self.icz):
             self.z[i] = z0 + self.dz * k
-
-        self.left = g.left
-        self.right = g.right
-        self.bottom = g.bottom
-        self.top = g.top
-        self.back = g.back
-        self.front = g.front
-
-        self.scale_factor = 1.0
         
+class NodeSpaceDiscr(SpaceDiscr):
+    def __init__(self,g):
+        x0 = g.x0 - self.igx * self.dx
+        y0 = g.y0 - self.igy * self.dy if self.icy > 1 else g.y0
+        z0 = g.z0 - self.igz * self.dz if self.icz > 1 else g.z0
+
+        for i in range(self.icx):
+            self.x[i] = x0 + self.dx * i
+        for j in range(self.icy):
+            self.y[i] = y0 + self.dy * j
+        for k in range(self.icz):
+            self.z[i] = z0 + self.dz * k
