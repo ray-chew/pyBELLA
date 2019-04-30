@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum # ! Version > Python 3.4
 
 class BdryType(Enum):
     TUNIX = 0

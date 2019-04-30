@@ -189,7 +189,7 @@ void User_Data_init(User_Data* ud) {
         } else {
             sprintf(ud->file_name, "%s%s", OutputBaseFolder, OutputFolderNameComp);
         }
-    }	
+    }
 }
 
 /* ================================================================================== */

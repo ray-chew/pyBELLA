@@ -39,7 +39,7 @@ int main( void )
 	/* low Mach */
 	extern MPV* mpv;
 	
-	/* User data */
+	// /* User data */
 	extern User_Data ud;
 	extern BDRY* bdry;
 	
