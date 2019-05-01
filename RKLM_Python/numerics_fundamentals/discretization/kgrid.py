@@ -134,6 +134,7 @@ class SpaceDiscr(object):
 
 class ElemSpaceDiscr(SpaceDiscr):
     def __init__(self,g):
+        super().__init__(g)
         x0 = g.x0 - self.igx * self.dx + 0.5 * self.dx
         y0 = g.y0 - self.igy * self.dy + 0.5 * self.dy if self.icy > 1 else g.y0
         z0 = g.z0 - self.igz * self.dz + 0.5 * self.dz if self.icz > 1 else g.z0
@@ -151,6 +152,7 @@ class ElemSpaceDiscr(SpaceDiscr):
         
 class NodeSpaceDiscr(SpaceDiscr):
     def __init__(self,g):
+        super().__init__(g)
         x0 = g.x0 - self.igx * self.dx
         y0 = g.y0 - self.igy * self.dy if self.icy > 1 else g.y0
         z0 = g.z0 - self.igz * self.dz if self.icz > 1 else g.z0
