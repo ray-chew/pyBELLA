@@ -1,30 +1,43 @@
 import numpy as np
-from management import variable
+from management.data import data_init
+from management.variable import States
 from numerics_fundamentals.discretization import kgrid
 from input.enum_bdry import BdryType
 
-class user_data(object):
-    def __init__(self):
-        self.nspec = 8
+from input.travelling_vortex_3D_48 import UserData
+from input.user_data import UserDataInit
 
-ud = user_data()
-new_state = variable.Var(5,ud)
+step = 0
+t = 0.0
 
-inx = 5
-iny = 1
-inz = 1
-x0 = 0.
-x1 = 10.
-y0 = 0.
-y1 = 10.
-z0 = 0.
-z1 = 10.
-left = BdryType.PERIODIC
-right = BdryType.PERIODIC
-bottom = BdryType.PERIODIC
-top = BdryType.PERIODIC
-back = BdryType.PERIODIC
-front = BdryType.PERIODIC
-grid = kgrid.Grid(inx,iny,inz,x0,x1,y0,y1,z0,z1,left,right,bottom,top,back,front)
+initial_data = vars(UserData())
+ud = UserDataInit(**initial_data)
+elem, node = data_init(ud)
 
-print(new_state.X)
+Sol0 = States(elem.nc, ud)
+Sol = States(elem.nc, ud)
+dSol = States(elem.nc, ud)
+Solk = States(int(3 * ud.ncache / 2), ud)
+
+n_aux = node.ifx
+n_aux *= node.ify if node.ndim > 1 else 1
+n_aux *= node.ifz if node.ndim > 2 else 1
+
+diss = np.zeros((elem.nc))
+W0 = np.zeros((n_aux))
+flux = np.empty((3), dtype=object)
+
+flux[0] = States(elem.nfx,ud)
+if elem.ndim > 1:
+    flux[1] = States(elem.nfy, ud)
+if elem.ndim > 2:
+    flux[2] = States(elem.nfz, ud) 
+
+
+
+
+
+
+
+
+
