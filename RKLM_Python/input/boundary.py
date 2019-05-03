@@ -72,11 +72,11 @@ def slanted_wall_slope(x, ud):
 
 def set_wall_rhoYflux(bdry, Sol0, mpv, elem, ud):
     icx = elem.icx
-    # icy = elem.icy
-    # icz = elem.icz
+    icy = elem.icy
+    icz = elem.icz
     igx = elem.igx
     igy = elem.igy
-    # igz = elem.igz
+    igz = elem.igz
 
     if elem.ndim == 1:
         print("wall flux in 1D makes no sense")
@@ -104,19 +104,19 @@ def set_wall_rhoYflux(bdry, Sol0, mpv, elem, ud):
         # flux_sum = np.sum(bdry.wall_rhoYflux[igx:icx-igx])
     elif elem.ndim == 3:
         if (ud.bdrytype_min[0] == BdryType.PERIODIC):
-            x_periodic = 1
+            is_x_periodic = 1
         else:
-            x_periodic = 0
+            is_x_periodic = 0
 
         if (ud.bdrytype_min[2] == BdryType.PERIODIC):
-            z_periodic = 1
+            is_z_periodic = 1
         else:
-            z_periodic = 0
+            is_z_periodic = 0
 
         nstart = igy*icx
 
-        k_idx = np.arange(igz:icz-igy)
-        i_idx = np.arange(igx:icx-igx)
+        k_idx = np.arange(igz,icz-igy)
+        i_idx = np.arange(igx,icx-igx)
 
         #########################
         # shit-code-alert: rewrite code on a clearer-head day.
@@ -133,9 +133,79 @@ def set_wall_rhoYflux(bdry, Sol0, mpv, elem, ud):
         #
         #########################
 
-        bdry.wall_rhoYflux[nik] = wall_rhoYflux(elem.x[i_idx],elem.z[k_idx], np.divide(Sol0.rhou[nijk],Sol0.rho[nijk]), np.divide(Sol0.rhow[nijk],Sol0.rho[nijk]), mpv.HydroState_n.rhoY0[igy])
+        bdry.wall_rhoYflux[nik] = wall_rhoYflux(elem.x[i_idx],elem.z[k_idx], np.divide(Sol0.rhou[nijk],Sol0.rho[nijk]), np.divide(Sol0.rhow[nijk],Sol0.rho[nijk]), mpv.HydroState_n.rhoY0[igy],ud)
         wall_flux_balance = np.sum(bdry.wall_rhoYflux)
 
+        #########################
+        #
+        nik_left = []
+        nik_right = []
+        for k in range(icz):
+            nk = k * icx
+            for i in range(igx):
+                nik_left.append(nk+i)
+                nik.right = nk + icx-1-i
+        bdry.wall_rhoYflux[nik_left] = 0.0
+        bdry.wall_rhoYflux[nik_right] = 0.0
+        #
+        #########################
+
+        #########################
+        # correction for zero net flux
+        nik = []
+        for k in range(igz,icz-igx):
+            nk = k*icx
+            for i in range(igx,icx-igx):
+                nik.append(nk+i)
+
+        bdry.wall_rhoYflux[nik] -= wall_flux_balance * bdry.wall_relative_slope[nik]
+        #
+        #########################
+
+        #########################
+        #
+        if (is_x_periodic):
+            niklt = []
+            nikrs = []
+            nikrt = []
+            nikls = []
+            for k in range(icz):
+                nk = k*icx
+                for i in range(igx):
+                    niklt.append(nk + i)
+                    nikrs.append(nk + icx - 2*igx + i)
+                    nikrt.append(nk + icx - igx + i)
+                    nikls.append(nk + igx + i)
+            bdry.wall_rhoYflux[niklt] = bdry.wall_rhoYflux[nikrs]
+            bdry.wall_rhoYflux[nikrt] = bdry.wall_rhoYflux[nikls]
+
+        if (is_z_periodic):
+            niklt = []
+            nikrs = []
+            nikrt = []
+            nikls = []
+            for i in range(icx):
+                ni = i
+                for k in range(igz):
+                    niklt.append(ni + k*icz)
+                    nikrs.append(ni + (icz - 2*igz + k)*icx)
+                    nikrt.append(ni + (icz - igz + k) * icx)
+                    nikls.append(ni + (igz + k) * icx)
+            bdry.wall_rhoYflux[niklt] = bdry.wall_rhoYflux[nikrs]
+            bdry.wall_rhoYflux[nikrt] = bdry.wall_rhoYflux[nikls]
+        #
+        #########################
+
+        #########################
+        #
+        nik = []
+        for k in range(igz, icz-igx):
+            nk = k * icx
+            for i in range(igx,icx-igx):
+                nik.append(nk + i)
+        flux_sum = np.sum(bdry.wall_rhoYflux[nik])
+
+        print("wall flux sum = %e" %flux_sum)
 
 
 def wall_rhoYflux(x,z,wind_speed_x,wind_speed_z,rhoY0,ud):
