@@ -309,6 +309,8 @@ def sol_init(Sol, Sol0, mpv, bdry, elem, node, th, ud):
     ud.nonhydrostasy = 0.0
     ud.compressibility = 0.0
 
+    set_wall_rhoYflux(bdry, Sol, mpv, elem, ud)
+    
 
 
 def T_from_p_rho(p, rho):
