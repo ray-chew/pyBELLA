@@ -14,6 +14,7 @@ class Vars(object):
 # equivalent to ConsVars_new
 class StatesSmall(Vars):
     def __init__(self,size,ud):
+        super().__init__(size,ud)
         self.u = np.zeros((size))
         self.v = np.zeros((size))
         self.w = np.zeros((size))
@@ -34,6 +35,7 @@ class StatesSmall(Vars):
 
 class States(StatesSmall):
     def __init__(self,size,ud):
+        super().__init__(size,ud)
         self.pi0 = np.zeros((size))
         self.rhoY0 = np.zeros((size))
 
