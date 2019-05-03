@@ -2,7 +2,10 @@ import numpy as np
 from management.data import data_init
 from management.variable import States
 from numerics_fundamentals.discretization import kgrid
+from physics.gas_dynamics.thermodynamic import ThemodynamicInit
 from input.enum_bdry import BdryType
+from input.boundary import InitializeBdry
+from physics.low_mach.mpv import MPV
 
 from input.travelling_vortex_3D_48 import UserData
 from input.user_data import UserDataInit
@@ -33,11 +36,11 @@ if elem.ndim > 1:
 if elem.ndim > 2:
     flux[2] = States(elem.nfz, ud) 
 
+th = ThemodynamicInit(ud)
 
+bdry = InitializeBdry(elem, ud)
+mpv = MPV(elem, node, ud)
 
-
-
-
-
-
+# Explicit_malloc
+# recovery_malloc
 
