@@ -3,6 +3,8 @@ from input.enum_bdry import BdryType
 from management.enumerator import TimeIntegrator, MolecularTransport,HillShapes, BottomBC, LimiterType, RecoveryOrder
 from numerics_fundamentals.discretization.time_discretization import SetTimeIntegratorParameters
 from physics.gas_dynamics.explicit import TimeIntegratorParams
+from physics.hydrostatics.hydrostatics import HydrostaticStates
+from input.boundary import set_wall_rhoYflux
 
 class UserData(object):
     NSPEC = 1
@@ -179,9 +181,141 @@ class UserData(object):
         self.output_folder_name_psinc = "low_Mach_gravity_psinc/"
         self.output_folder_name_comp = "low_Mach_gravity_comp"
 
+        self.stratification = self.stratification_function
+
+    def stratification_function(self, y):
+        return 1.0
+
+def sol_init(Sol, Sol0, mpv, bdry, elem, node, th, ud):
+    u0 = 1.0 * ud.wind_speed
+    v0 = 1.0 * ud.wind_speed
+    w0 = 0.0
+
+    rotdir = 1.0
+
+    p0 = 1.0
+    a_rho = 1.0
+    rho0 = a_rho * 0.5
+    del_rho = a_rho * 0.5
+    R0 = 0.4
+    fac = 1. * 1024.0
+    xc = 0.0
+    yc = 0.0
+
+    # nhires = 1
+    # nhiressq = nhires * nhires
+
+    xcm = xc - (ud.xmax - ud.xmin)
+    # xcp = xc + (ud.xmax - ud.xmin)
+    ycm = yc - (ud.ymax - ud.ymin)
+    # ycp = yc + (ud.ymax - ud.ymin)
+
+    # dx = elem.dx
+    # dy = elem.dy
+
+    # dxx = dx / nhires
+    # dyy = dy / nhires
+
+    # icx = elem.icx
+    # icy = elem.icy
+    # icz = elem.icz
+
+    # igx = elem.igx
+    # igy = elem.igy
+    # igz = elem.igz
+
+    # icxn = node.icx
+    # icyn = node.icy
+    # iczn = node.icz
+    # igxn = node.igx
+    # igyn = node.igy
+    # igzn = node.igz
+
+    HydrostaticStates(mpv, elem, node, th, ud)
+
+    coe = np.zeros((25))
+    coe[0]  =     1.0 / 12.0
+    coe[1]  = -  12.0 / 13.0
+    coe[2]  =     9.0 /  2.0
+    coe[3]  = - 184.0 / 15.0
+    coe[4]  =   609.0 / 32.0
+    coe[5]  = - 222.0 / 17.0
+    coe[6]  = -  38.0 /  9.0
+    coe[7]  =    54.0 / 19.0
+    coe[8]  =   783.0 / 20.0
+    coe[9]  = - 558.0 /  7.0
+    coe[10] =  1053.0 / 22.0
+    coe[11] =  1014.0 / 23.0
+    coe[12] = -1473.0 / 16.0
+    coe[13] =   204.0 /  5.0
+    coe[14] =   510.0 / 13.0
+    coe[15] = -1564.0 / 27.0
+    coe[16] =   153.0 /  8.0
+    coe[17] =   450.0 / 29.0
+    coe[18] = - 269.0 / 15.0
+    coe[19] =   174.0 / 31.0
+    coe[20] =    57.0 / 32.0
+    coe[21] = -  74.0 / 33.0
+    coe[22] =    15.0 / 17.0
+    coe[23] = -   6.0 / 35.0
+    coe[24] =     1.0 / 72.0
+
+    ys = elem.y
+    xs = elem.x
+    yccs = np.zeros_like(ys)
+    xccs = np.zeros_like(xs)
+
+    yccs[np.where(np.abs(ys - yc) < np.abs(ys - ycm))] = yc
+    yccs[np.where(np.abs(ys - yc) > np.abs(ys - ycm))] = ycm
+
+    xccs[np.where(np.abs(xs - xc) < np.abs(xs - xcm))] = xc
+    xccs[np.where(np.abs(xs - xc) > np.abs(xs - xcm))] = xcm
+
+    r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
+
+    uth = np.zeros_like(r)
+    uth[np.where(r<R0)] = rotdir * fac * (1.0 - r/R0)**6 * (r/R0)**6
+
+    u = u0 + uth * (-(ys-yccs)/r)
+    v = v0 + uth * (+(xs-xccs)/r)
+    w = w0
+    p_hydro = mpv.HydroState.p0
+    rhoY = mpv.HydroState.rhoY0
+    # theta = ud.stratification(ys)
+    rho = rho0 + del_rho * (1. - (r/R0)**2)**6 if r < R0 else rho0
+    # T = T_from_p_rho(p_hydro,rho)
+
+    dp2c = np.zeros_like((r))
+    if r/R0 < 1.0:
+        for ip in range(25):
+            dp2c += a_rho * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
+
+    p2c = np.copy(dp2c) 
+    Sol.rho = rho
+    Sol.rhou = rho * u
+    Sol.rhov = rho * v
+    Sol.rhow = rho * w
+
+    if (ud.is_compressible) :
+        p = p0 + ud.Msq * fac**2 * dp2c
+        Sol.rhoY = p**th.gamminv
+        Sol.rhoe = rhoe(rho,u,v,w,p,ud,th)
+    else:
+        Sol.rhoe = rhoe(rho,u,v,w,p_hydro,ud,th)
+        Sol.rhoY = rhoY
+
+    mpv.p2_cells = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0)
+    
+    ud.nonhydrostasy = 0.0
+    ud.compressibility = 0.0
 
 
-        
 
+def T_from_p_rho(p, rho):
+    return np.divide(p,rho)
 
+def rhoe(rho,u,v,w,p,ud,th):
+    Msq = ud.compressibility * ud.Msq
+    gm1inv = th.gm1inv
 
+    return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
