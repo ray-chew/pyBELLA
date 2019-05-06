@@ -9,9 +9,10 @@ class InitializeBdry(object):
         icz = elem.icz
         igx = elem.igx
         # igz = elem.igz
+        self.wall_rhoYflux = np.zeros((icx))
 
         if elem.ndim == 1:
-            print("this boundary condition setting makes no sense in 1D")
+            assert True, "This boundary condition setting makes no sense in 1D"
 
         elif elem.ndim == 2:
             self.wall_slope = slanted_wall_slope(elem.x[igx:int(icx-igx)], ud)
@@ -27,18 +28,26 @@ class InitializeBdry(object):
 
                 print("relative slope sum = %e" %slope_sum)
 
-        elif elem.ndim == 3:
-            self.wall_slope = slanted_wall_slope_3d(elem.x[igx:int(icx-igx)], icx * icz, ud)
-            slope_sum = np.sum(np.abs(self.wall_slope))
+        ##########################
+        #
+        # In 3D, arrays have to be size(icx * icz).
+        # And slicing has to be inner domain at idx(y) == 0.
+        # I.e. use the (x,0,z)-plane.
+        #
+        ##########################
+        #
+        # elif elem.ndim == 3:
+        #     self.wall_slope = slanted_wall_slope_3d(elem.x[igx:int(icx-igx)], icx * icz, ud)
+        #     slope_sum = np.sum(np.abs(self.wall_slope))
 
-            if slope_sum <= np.sqrt(np.finfo(np.float).eps):
-                self.wall_relative_slope = 0.0
-            else:
-                slope_sum_inv = 1.0 / slope_sum
-                self.wall_relative_slope = slope_sum_inv * np.abs(self.wall_slope)
+        #     if slope_sum <= np.sqrt(np.finfo(np.float).eps):
+        #         self.wall_relative_slope = 0.0
+        #     else:
+        #         slope_sum_inv = 1.0 / slope_sum
+        #         self.wall_relative_slope = slope_sum_inv * np.abs(self.wall_slope)
 
-                slope_sum = np.sum(self.wall_relative_slope)
-                print("relative slope sum = %e" %slope_sum)
+        #         slope_sum = np.sum(self.wall_relative_slope)
+        #         print("relative slope sum = %e" %slope_sum)
 
             
 def slanted_wall_slope_3d(x, size, ud):
@@ -101,116 +110,140 @@ def set_wall_rhoYflux(bdry, Sol0, mpv, elem, ud):
             bdry.wall_rhoYflux[:igx] = bdry.wall_rhoYflux[icx-2*igx:icx-1*igx]
             bdry.wall_rhoYflux[icx-igx:icx] = bdry.wall_rhoYflux[igx:2*igx]
 
-        # flux_sum = np.sum(bdry.wall_rhoYflux[igx:icx-igx])
-    elif elem.ndim == 3:
-        if (ud.bdrytype_min[0] == BdryType.PERIODIC):
-            is_x_periodic = 1
-        else:
-            is_x_periodic = 0
-
-        if (ud.bdrytype_min[2] == BdryType.PERIODIC):
-            is_z_periodic = 1
-        else:
-            is_z_periodic = 0
-
-        nstart = igy*icx
-
-        k_idx = np.arange(igz,icz-igy)
-        i_idx = np.arange(igx,icx-igx)
-
-        #########################
-        # shit-code-alert: rewrite code on a clearer-head day.
-        #
-        nijk = []
-        nik = []
-
-        for k in k_idx:
-            njk = nstart + k * icx * icy
-            nk = k * icx
-            for i in i_idx:
-                nijk.append(njk + i)
-                nik.append(nk + i)
-        #
-        #########################
-
-        bdry.wall_rhoYflux[nik] = wall_rhoYflux(elem.x[i_idx],elem.z[k_idx], np.divide(Sol0.rhou[nijk],Sol0.rho[nijk]), np.divide(Sol0.rhow[nijk],Sol0.rho[nijk]), mpv.HydroState_n.rhoY0[igy],ud)
-        wall_flux_balance = np.sum(bdry.wall_rhoYflux)
-
-        #########################
-        #
-        nik_left = []
-        nik_right = []
-        for k in range(icz):
-            nk = k * icx
-            for i in range(igx):
-                nik_left.append(nk+i)
-                nik.right = nk + icx-1-i
-        bdry.wall_rhoYflux[nik_left] = 0.0
-        bdry.wall_rhoYflux[nik_right] = 0.0
-        #
-        #########################
-
-        #########################
-        # correction for zero net flux
-        nik = []
-        for k in range(igz,icz-igx):
-            nk = k*icx
-            for i in range(igx,icx-igx):
-                nik.append(nk+i)
-
-        bdry.wall_rhoYflux[nik] -= wall_flux_balance * bdry.wall_relative_slope[nik]
-        #
-        #########################
-
-        #########################
-        #
-        if (is_x_periodic):
-            niklt = []
-            nikrs = []
-            nikrt = []
-            nikls = []
-            for k in range(icz):
-                nk = k*icx
-                for i in range(igx):
-                    niklt.append(nk + i)
-                    nikrs.append(nk + icx - 2*igx + i)
-                    nikrt.append(nk + icx - igx + i)
-                    nikls.append(nk + igx + i)
-            bdry.wall_rhoYflux[niklt] = bdry.wall_rhoYflux[nikrs]
-            bdry.wall_rhoYflux[nikrt] = bdry.wall_rhoYflux[nikls]
-
-        if (is_z_periodic):
-            niklt = []
-            nikrs = []
-            nikrt = []
-            nikls = []
-            for i in range(icx):
-                ni = i
-                for k in range(igz):
-                    niklt.append(ni + k*icz)
-                    nikrs.append(ni + (icz - 2*igz + k)*icx)
-                    nikrt.append(ni + (icz - igz + k) * icx)
-                    nikls.append(ni + (igz + k) * icx)
-            bdry.wall_rhoYflux[niklt] = bdry.wall_rhoYflux[nikrs]
-            bdry.wall_rhoYflux[nikrt] = bdry.wall_rhoYflux[nikls]
-        #
-        #########################
-
-        #########################
-        #
-        nik = []
-        for k in range(igz, icz-igx):
-            nk = k * icx
-            for i in range(igx,icx-igx):
-                nik.append(nk + i)
-        flux_sum = np.sum(bdry.wall_rhoYflux[nik])
-
+        flux_sum = np.sum(bdry.wall_rhoYflux[igx:icx-igx])
         print("wall flux sum = %e" %flux_sum)
+
+    #########################
+    # shit-code-alert: rewrite code on a clearer-head day.
+    # 3D case, not yet implemented. 
+    # elif elem.ndim == 3:
+        # if (ud.bdrytype_min[0] == BdryType.PERIODIC):
+        #     is_x_periodic = 1
+        # else:
+        #     is_x_periodic = 0
+
+        # if (ud.bdrytype_min[2] == BdryType.PERIODIC):
+        #     is_z_periodic = 1
+        # else:
+        #     is_z_periodic = 0
+
+        # nstart = igy*icx
+
+        # k_idx = np.arange(igz,icz-igy)
+        # i_idx = np.arange(igx,icx-igx)
+
+        # nijk = []
+        # nik = []
+
+        # for k in k_idx:
+        #     njk = nstart + k * icx * icy
+        #     nk = k * icx
+        #     for i in i_idx:
+        #         nijk.append(njk + i)
+        #         nik.append(nk + i)
+        # #
+        # #########################
+
+        # bdry.wall_rhoYflux[nik] = wall_rhoYflux(elem.x[i_idx],elem.z[k_idx], np.divide(Sol0.rhou[nijk],Sol0.rho[nijk]), np.divide(Sol0.rhow[nijk],Sol0.rho[nijk]), mpv.HydroState_n.rhoY0[igy],ud)
+        # wall_flux_balance = np.sum(bdry.wall_rhoYflux)
+
+        # #########################
+        # #
+        # nik_left = []
+        # nik_right = []
+        # for k in range(icz):
+        #     nk = k * icx
+        #     for i in range(igx):
+        #         nik_left.append(nk+i)
+        #         nik.right = nk + icx-1-i
+        # bdry.wall_rhoYflux[nik_left] = 0.0
+        # bdry.wall_rhoYflux[nik_right] = 0.0
+        # #
+        # #########################
+
+        # #########################
+        # # correction for zero net flux
+        # nik = []
+        # for k in range(igz,icz-igx):
+        #     nk = k*icx
+        #     for i in range(igx,icx-igx):
+        #         nik.append(nk+i)
+
+        # bdry.wall_rhoYflux[nik] -= wall_flux_balance * bdry.wall_relative_slope[nik]
+        # #
+        # #########################
+
+        # #########################
+        # #
+        # if (is_x_periodic):
+        #     niklt = []
+        #     nikrs = []
+        #     nikrt = []
+        #     nikls = []
+        #     for k in range(icz):
+        #         nk = k*icx
+        #         for i in range(igx):
+        #             niklt.append(nk + i)
+        #             nikrs.append(nk + icx - 2*igx + i)
+        #             nikrt.append(nk + icx - igx + i)
+        #             nikls.append(nk + igx + i)
+        #     bdry.wall_rhoYflux[niklt] = bdry.wall_rhoYflux[nikrs]
+        #     bdry.wall_rhoYflux[nikrt] = bdry.wall_rhoYflux[nikls]
+
+        # if (is_z_periodic):
+        #     niklt = []
+        #     nikrs = []
+        #     nikrt = []
+        #     nikls = []
+        #     for i in range(icx):
+        #         ni = i
+        #         for k in range(igz):
+        #             niklt.append(ni + k*icz)
+        #             nikrs.append(ni + (icz - 2*igz + k)*icx)
+        #             nikrt.append(ni + (icz - igz + k) * icx)
+        #             nikls.append(ni + (igz + k) * icx)
+        #     bdry.wall_rhoYflux[niklt] = bdry.wall_rhoYflux[nikrs]
+        #     bdry.wall_rhoYflux[nikrt] = bdry.wall_rhoYflux[nikls]
+        # #
+        # #########################
+
+        # #########################
+        # #
+        # nik = []
+        # for k in range(igz, icz-igx):
+        #     nk = k * icx
+        #     for i in range(igx,icx-igx):
+        #         nik.append(nk + i)
+        # flux_sum = np.sum(bdry.wall_rhoYflux[nik])
+
+        # print("wall flux sum = %e" %flux_sum)
 
 
 def wall_rhoYflux(x,z,wind_speed_x,wind_speed_z,rhoY0,ud):
     return slanted_wall_slope(x,ud) * wind_speed_x * rhoY0
 
-def set_explicit_boundary_data(Sol, elem):
+def set_explicit_boundary_data(Sol, elem, **args):
     for split_step in range(elem.ndim):
+        lambda_var = 1.0
+        bound(Sol, lambda_var, elem.nc, split_step, **kwargs)
+
+def bound(Sol, lambda_var, n, split_step, **kwargs):
+    # test kwargs for objects
+
+    for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    ix = elem.icx
+    iy = elem.icy
+    iz = elem.icz
+
+    if (ud.gravity_strength[split_step] == 0.0):
+        if (ud.bdrytype_min[split_step] == BdryType.PERIODIC):
+            Sol.set_periodic(elem)
+        elif (ud.bdrytype_min[split_step] == BdryType.WALL):
+            Sol.set_wall(elem)
+        else:
+            assert True, "Boundary condition not yet implemented."
+    else:
         None
+
