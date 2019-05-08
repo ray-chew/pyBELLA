@@ -6,20 +6,21 @@ import numpy as np
 class InitializeBdry(object):
     def __init__(self, elem, ud):
         icx = elem.icx
-        icz = elem.icz
         igx = elem.igx
         # igz = elem.igz
-        self.wall_rhoYflux = np.zeros((icx))
+        self.wall_rhoYflux = np.zeros((icx-igx-igx))
+        self.wall_slope = np.zeros((icx-igx-igx))
+        self.wall_relative_slope = np.zeros((icx-igx-igx))
 
         if elem.ndim == 1:
             assert True, "This boundary condition setting makes no sense in 1D"
 
         elif elem.ndim == 2:
-            self.wall_slope = slanted_wall_slope(elem.x[igx:int(icx-igx)], ud)
+            self.wall_slope = slanted_wall_slope(elem.x[igx:-igx], ud)
             slope_sum = np.sum(np.abs(self.wall_slope))
 
             if slope_sum <= np.sqrt(np.finfo(np.float).eps):
-                self.wall_relative_slope = 0.0
+                self.wall_relative_slope[:] = 0.0
             else:
                 slope_sum_inv = 1.0 / slope_sum
                 self.wall_relative_slope = slope_sum_inv * np.abs(self.wall_slope)
@@ -80,37 +81,38 @@ def slanted_wall_slope(x, ud):
         return (-hill_height * 2.0 * x_sc / ((1.0 + x_sc * x_sc)**2 * length_scale_inv)) * np.ones((x.shape))
 
 def set_wall_rhoYflux(bdry, Sol0, mpv, elem, ud):
-    icx = elem.icx
-    icy = elem.icy
-    icz = elem.icz
     igx = elem.igx
     igy = elem.igy
-    igz = elem.igz
 
     if elem.ndim == 1:
         print("wall flux in 1D makes no sense")
     elif elem.ndim == 2:
-        if (ud.bdrytype_min[0] == BdryType.PERIODIC):
-            is_x_periodic = 1
-        else:
-            is_x_periodic = 0
+        is_x_periodic = True if (ud.bdrytype_min[0] == BdryType.PERIODIC) else False
 
-        nstart = elem.igy * elem.icx
-        idx = np.arange(igx,icx-igx)
-        n = nstart + idx
-        bdry.wall_rhoYflux = wall_rhoYflux(elem.x[igx:icx-igy],elem.y[igx:icx-igy],np.divide(Sol0.rhou[n],Sol0.rho[n]),np.divide(Sol0.rhov[n],Sol0.rho[n]),mpv.HydroState_n.rhoY0[igy],ud)
-        wall_flux_balance = np.sum(bdry.wall_rhoYflux[igx:icx-igx])
+        idx_first_inner_j_row = ([igy] + list(elem.idx_inner_domain[0]))
+        print("idx_first_inner_j_row =", idx_first_inner_j_row)
+
+        bdry.wall_rhoYflux = wall_rhoYflux( \
+                                    elem.x[igx:-igx,:,:], \
+                                    elem.y[:,igx:-igx,:], \
+                                    np.divide(Sol0.rhou[idx_first_inner_j_row],Sol0.rho[idx_first_inner_j_row]), \
+                                    np.divide(Sol0.rhov[idx_first_inner_j_row],Sol0.rho[idx_first_inner_j_row]), \
+                                    mpv.HydroState_n.rhoY0[igy,igy], \
+                                    ud \
+                                    )
+
+        wall_flux_balance = np.sum(bdry.wall_rhoYflux)
 
         # correction for zero net flux
-        bdry.wall_rhoYflux[igx:icx-igx] -= wall_flux_balance * bdry.wall_relative_slope
+        bdry.wall_rhoYflux -= wall_flux_balance * bdry.wall_relative_slope
 
-        bdry.wall_rhoYflux[:igx] = bdry.wall_rhoYflux[icx-1-igx:icx-1][::-1] = 0.0
-
+        # add the ghost cells back into wall_rhoYflux array: periodic or just zeroes?
         if (is_x_periodic):
-            bdry.wall_rhoYflux[:igx] = bdry.wall_rhoYflux[icx-2*igx:icx-1*igx]
-            bdry.wall_rhoYflux[icx-igx:icx] = bdry.wall_rhoYflux[igx:2*igx]
+            bdry.wall_rhoYflux = np.pad(bdry.wall_rhoYflux, 2, 'wrap')
+        else:
+            bdry.wall_rhoYflux = np.pad(bdry.wall_rhoYflux, 2, 'constant')
 
-        flux_sum = np.sum(bdry.wall_rhoYflux[igx:icx-igx])
+        flux_sum = np.sum(bdry.wall_rhoYflux[igx:-igx])
         print("wall flux sum = %e" %flux_sum)
 
     #########################
@@ -236,37 +238,25 @@ def bound(Sol, lambda_var, split_step, **kwargs):
     # ix = elem.icx
     # iy = elem.icy
     # iz = elem.icz
-
-    if (ud.gravity_strength[split_step] == 0.0):
-        if (ud.bdrytype_min[split_step] == BdryType.PERIODIC):
-            Sol.set_periodic(elem)
-        elif (ud.bdrytype_min[split_step] == BdryType.WALL):
-            Sol.set_wall(elem)
+    for idx in range(elem.ndim):
+        if (ud.gravity_strength[idx] == 0.0):
+            if (ud.bdrytype_min[idx] == BdryType.PERIODIC):
+                Sol.set_periodic(elem, str(idx))
+            elif (ud.bdrytype_min[idx] == BdryType.WALL):
+                Sol.set_wall(elem, str(idx))
+            else:
+                assert True, "Boundary condition not yet implemented."
         else:
-            assert True, "Boundary condition not yet implemented."
-    else:
-        None
+            None
 
 def set_ghostcells_p2(p,elem,ud):
-    igx = elem.igx
-    igy = elem.igy
-
-    is_x_periodic = True if ud.bdrytype_min[0] == BdryType.PERIODIC else False
-    is_y_periodic = True if ud.bdrytype_min[1] == BdryType.PERIODIC else False
-
-    # x-direction:
-    if is_x_periodic: # periodic:
-        p[:,:igx] = p[:,-igx-igx:-igx]
-        p[:,-igx:] = p[:,igx:igx+igx]
-    else: # non-periodic
-        p[:,:igx] = p[:,igx:igx+igy][:,::-1]
-        p[:,-igx:] = p[:,-igx-igx:-igx][:,::-1]
-
-    # y-direction:
-    if is_y_periodic: # periodic
-        p[:igy,:] = p[-igy-igy:-igy,:]
-        p[-igy:,:] = p[igy:igy+igy,]
-    else: # non-periodic
-        p[:igy,:] = p[igy:igy+igy,:][::-1,:]
-        p[-igy:,:] = p[-igy-igy:-igy,:][::-1,:]
-
+    for idx in range(elem.ndim):
+        igx = elem.igx
+        igy = elem.igy
+        if ud.bdrytype_min[idx] == BdryType.PERIODIC:
+            p[:,:] = p[]
+            # p[elem.idx_min_ghost[idx]] = p[elem.idx_max_inner[idx]]
+            # p[elem.idx_max_ghost[idx]] = p[elem.idx_min_inner[idx]]
+        else:
+            # p[elem.idx_min_ghost[idx]] = p[elem.idx_min_inner[idx]][:,::-1]
+            # p[elem.idx_max_ghost[idx]] = p[elem.idx_max_inner[idx]][:,::-1]

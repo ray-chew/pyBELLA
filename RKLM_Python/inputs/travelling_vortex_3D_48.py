@@ -260,27 +260,33 @@ def sol_init(Sol, Sol0, mpv, bdry, elem, node, th, ud):
     coe[23] = -   6.0 / 35.0
     coe[24] =     1.0 / 72.0
 
-    ys = elem.y[igy:-igy]
-    xs = elem.x[igx:-igx]
-    yccs = np.zeros_like(ys)
-    xccs = np.zeros_like(xs)
+    xs = elem.x[:,:,:]
+    ys = elem.y[:,igy:-igy,:]
 
-    yccs[np.where(np.abs(ys - yc) < np.abs(ys - ycm))] = yc
-    yccs[np.where(np.abs(ys - yc) > np.abs(ys - ycm))] = ycm
+    xccs = np.zeros_like(xs)
+    yccs = np.zeros_like(ys)
 
     xccs[np.where(np.abs(xs - xc) < np.abs(xs - xcm))] = xc
     xccs[np.where(np.abs(xs - xc) > np.abs(xs - xcm))] = xcm
 
+    yccs[np.where(np.abs(ys - yc) < np.abs(ys - ycm))] = yc
+    yccs[np.where(np.abs(ys - yc) > np.abs(ys - ycm))] = ycm
+
     r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
+    # every broadcasting has to be followed by a squeeze.
+    # anyway to abstract this?
+    r = r.squeeze()
 
     uth = np.zeros_like(r)
     uth[np.where(r<R0)] = rotdir * fac * (1.0 - r/R0)**6 * (r/R0)**6
 
+    idx_x_noghost_y_ghost = elem.idx_inner_domain[1]
+
     u = u0 + uth * (-(ys-yccs)/r)
     v = v0 + uth * (+(xs-xccs)/r)
     w = w0
-    p_hydro = mpv.HydroState.p0[igy:-igy]
-    rhoY = mpv.HydroState.rhoY0[igy:-igy]
+    p_hydro = mpv.HydroState.p0[idx_x_noghost_y_ghost][:,0].reshape(-1,1)
+    rhoY = mpv.HydroState.rhoY0[idx_x_noghost_y_ghost][:,0].reshape(-1,-1)
     # theta = ud.stratification(ys)
     rho = np.zeros_like(r)
     rho[np.where(r<R0)] = rho0 + del_rho * (1. - (r/R0)**2)**6
@@ -292,27 +298,31 @@ def sol_init(Sol, Sol0, mpv, bdry, elem, node, th, ud):
         for ip in range(25):
             dp2c += a_rho * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
 
-    p2c = np.copy(dp2c) 
-    Sol.rho = rho
-    Sol.rhou = rho * u
-    Sol.rhov = rho * v
-    Sol.rhow = rho * w
+    p2c = np.copy(dp2c)
+
+    Sol.rho[idx_x_noghost_y_ghost] = rho
+    Sol.rhou[idx_x_noghost_y_ghost] = rho * u
+    Sol.rhov[idx_x_noghost_y_ghost] = rho * v
+    Sol.rhow[idx_x_noghost_y_ghost] = rho * w
 
     if (ud.is_compressible) :
         p = p0 + ud.Msq * fac**2 * dp2c
-        Sol.rhoY = p**th.gamminv
-        Sol.rhoe = rhoe(rho,u,v,w,p,ud,th)
+        Sol.rhoY[idx_x_noghost_y_ghost] = p**th.gamminv
+        Sol.rhoe[idx_x_noghost_y_ghost] = rhoe(rho,u,v,w,p,ud,th)
     else:
-        Sol.rhoe = rhoe(rho,u,v,w,p_hydro,ud,th)
-        Sol.rhoY = rhoY
+        Sol.rhoe[idx_x_noghost_y_ghost] = rhoe(rho,u,v,w,p_hydro,ud,th)
+        Sol.rhoY[idx_x_noghost_y_ghost] = rhoY
 
     mpv.p2_cells = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0)
     
     set_ghostcells_p2(mpv.p2_cells, elem, ud)
 
-    xs = node.x[igxn:-igxn]
-    ys = node.y[igyn:-igyn]
+    xs = node.x[igxn:-igxn,:,:]
+    ys = node.y[:,igyn:-igyn,:]
     # z = node.z
+
+    xccs = np.zeros_like(xs)
+    yccs = np.zeros_like(ys)
 
     yccs[np.where(np.abs(ys - yc) < np.abs(ys - ycm))] = yc
     yccs[np.where(np.abs(ys - yc) > np.abs(ys - ycm))] = ycm
@@ -321,12 +331,13 @@ def sol_init(Sol, Sol0, mpv, bdry, elem, node, th, ud):
     xccs[np.where(np.abs(xs - xc) > np.abs(xs - xcm))] = xcm
 
     r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
+    r = r.squeeze()
 
     if (r/R0 < 1.0):
         for _ in range(25):
-            mpv.p2_nodes[igxn:-igxn] += coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
+            mpv.p2_nodes[igxn:-igxn,igyn:-igyn] += coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
 
-    mpv.p2_nodes[igxn:-igxn] = th.Gamma * fac**2 * mpv.p2_nodes[igxn:-igxn] / mpv.HydroState.rhoY0[igyn:-igyn]
+    mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * mpv.p2_nodes[igxn:-igxn,igyn:-igyn] / mpv.HydroState.rhoY0[igxn:-igxn,igyn:-igyn][:,0].reshape(-1,1)
     ud.nonhydrostasy = 0.0
     ud.compressibility = 0.0
 
