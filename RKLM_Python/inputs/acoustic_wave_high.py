@@ -216,7 +216,7 @@ def sol_init(Sol, mpv, bdry, elem, node, th, ud):
 
     c = np.sqrt(th.gamm * np.divide(p , rho))
     u = u0 + (p - mpv.HydroState.p0[0, y_idx]) / (rho * c) / Ma
-    u = np.cumsum(u,axis=0)
+    
     # u_shape = u.shape
     # u = np.cumsum(u.T.reshape(-1)).reshape(u_shape)
 
@@ -233,8 +233,7 @@ def sol_init(Sol, mpv, bdry, elem, node, th, ud):
 
     x = node.x[x_idx].reshape(-1,1)
     # print(x)
-    p = mpv.HydroState_n.p0[0,y_idx] * (1.0 + del0 * np.sin(wn * x)**(2.0 * th.gamm * th.gm1inv))
-
+    p = mpv.HydroState_n.p0[0,y_idx] * (1.0 + del0 * np.sin(wn * x))**(2.0 * th.gamm * th.gm1inv)
     mpv.p2_nodes[:-1,y_idx] = (p**th.Gamma - 1.0) / ud.Msq
 
     ud.initial_projection = False
