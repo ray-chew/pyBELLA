@@ -115,148 +115,74 @@ def set_wall_rhoYflux(bdry, Sol0, mpv, elem, ud):
         flux_sum = np.sum(bdry.wall_rhoYflux[igx:-igx])
         print("wall flux sum = %e" %flux_sum)
 
-    #########################
-    # shit-code-alert: rewrite code on a clearer-head day.
-    # 3D case, not yet implemented. 
-    # elif elem.ndim == 3:
-        # if (ud.bdrytype_min[0] == BdryType.PERIODIC):
-        #     is_x_periodic = 1
-        # else:
-        #     is_x_periodic = 0
-
-        # if (ud.bdrytype_min[2] == BdryType.PERIODIC):
-        #     is_z_periodic = 1
-        # else:
-        #     is_z_periodic = 0
-
-        # nstart = igy*icx
-
-        # k_idx = np.arange(igz,icz-igy)
-        # i_idx = np.arange(igx,icx-igx)
-
-        # nijk = []
-        # nik = []
-
-        # for k in k_idx:
-        #     njk = nstart + k * icx * icy
-        #     nk = k * icx
-        #     for i in i_idx:
-        #         nijk.append(njk + i)
-        #         nik.append(nk + i)
-        # #
-        # #########################
-
-        # bdry.wall_rhoYflux[nik] = wall_rhoYflux(elem.x[i_idx],elem.z[k_idx], np.divide(Sol0.rhou[nijk],Sol0.rho[nijk]), np.divide(Sol0.rhow[nijk],Sol0.rho[nijk]), mpv.HydroState_n.rhoY0[igy],ud)
-        # wall_flux_balance = np.sum(bdry.wall_rhoYflux)
-
-        # #########################
-        # #
-        # nik_left = []
-        # nik_right = []
-        # for k in range(icz):
-        #     nk = k * icx
-        #     for i in range(igx):
-        #         nik_left.append(nk+i)
-        #         nik.right = nk + icx-1-i
-        # bdry.wall_rhoYflux[nik_left] = 0.0
-        # bdry.wall_rhoYflux[nik_right] = 0.0
-        # #
-        # #########################
-
-        # #########################
-        # # correction for zero net flux
-        # nik = []
-        # for k in range(igz,icz-igx):
-        #     nk = k*icx
-        #     for i in range(igx,icx-igx):
-        #         nik.append(nk+i)
-
-        # bdry.wall_rhoYflux[nik] -= wall_flux_balance * bdry.wall_relative_slope[nik]
-        # #
-        # #########################
-
-        # #########################
-        # #
-        # if (is_x_periodic):
-        #     niklt = []
-        #     nikrs = []
-        #     nikrt = []
-        #     nikls = []
-        #     for k in range(icz):
-        #         nk = k*icx
-        #         for i in range(igx):
-        #             niklt.append(nk + i)
-        #             nikrs.append(nk + icx - 2*igx + i)
-        #             nikrt.append(nk + icx - igx + i)
-        #             nikls.append(nk + igx + i)
-        #     bdry.wall_rhoYflux[niklt] = bdry.wall_rhoYflux[nikrs]
-        #     bdry.wall_rhoYflux[nikrt] = bdry.wall_rhoYflux[nikls]
-
-        # if (is_z_periodic):
-        #     niklt = []
-        #     nikrs = []
-        #     nikrt = []
-        #     nikls = []
-        #     for i in range(icx):
-        #         ni = i
-        #         for k in range(igz):
-        #             niklt.append(ni + k*icz)
-        #             nikrs.append(ni + (icz - 2*igz + k)*icx)
-        #             nikrt.append(ni + (icz - igz + k) * icx)
-        #             nikls.append(ni + (igz + k) * icx)
-        #     bdry.wall_rhoYflux[niklt] = bdry.wall_rhoYflux[nikrs]
-        #     bdry.wall_rhoYflux[nikrt] = bdry.wall_rhoYflux[nikls]
-        # #
-        # #########################
-
-        # #########################
-        # #
-        # nik = []
-        # for k in range(igz, icz-igx):
-        #     nk = k * icx
-        #     for i in range(igx,icx-igx):
-        #         nik.append(nk + i)
-        # flux_sum = np.sum(bdry.wall_rhoYflux[nik])
-
-        # print("wall flux sum = %e" %flux_sum)
-
 
 def wall_rhoYflux(x,z,wind_speed_x,wind_speed_z,rhoY0,ud):
     return slanted_wall_slope(x,ud) * wind_speed_x * rhoY0
 
-def set_explicit_boundary_data(Sol, elem, **args):
+def set_explicit_boundary_data(Sol, elem, ud):
     for split_step in range(elem.ndim):
         lambda_var = 1.0
-        bound(Sol, lambda_var, split_step, **kwargs)
+        bound(Sol, lambda_var, split_step, elem, ud)
 
-def bound(Sol, lambda_var, split_step, **kwargs):
-    # test kwargs for objects
+def get_ghost_padding(ndim,dim,igs):
+    ghost_padding = [(0,0)] * ndim
+    ghost_padding[dim] = (igs[dim],igs[dim])
 
-    for key, value in kwargs.items():
-            setattr(self, key, value)
+    padded_idx = np.empty((ndim), dtype=object)
+    for idim in range(ndim):
+        padded_idx[idim] = slice(igs[idim],-igs[idim])
+    padded_idx[dim] = slice(None)
 
-    # ix = elem.icx
-    # iy = elem.icy
-    # iz = elem.icz
-    for idx in range(elem.ndim):
-        if (ud.gravity_strength[idx] == 0.0):
-            if (ud.bdrytype_min[idx] == BdryType.PERIODIC):
-                Sol.set_periodic(elem, str(idx))
-            elif (ud.bdrytype_min[idx] == BdryType.WALL):
-                Sol.set_wall(elem, str(idx))
-            else:
-                assert True, "Boundary condition not yet implemented."
-        else:
-            None
+    inner_domain = [slice(None)] * ndim
+    inner_domain[dim] = slice(igs[dim],-igs[dim])
+
+    return tuple(ghost_padding),  tuple(inner_domain)#tuple(padded_idx)
+
+def bound(Sol, lambda_var, split_step, elem, ud):
+    None
+
+def fancy(nsource,nlast,iimage,g,dh,th,bdry,Sol):
+    Y_last = Sol.rhoY[nlast] / Sol.rho[nlast]
+    v = Sol.rhov[nsource] / Sol.rho[nsource]
+    w = Sol.rhow[nsource] / Sol.rho[nsource]
+
+    Sol.rhoX = Sol.rhoX / Sol.rho
+
+    rhoYu_wall = bdry.wall_rhoYflux
+    rhoYu_image = 2.0 * rhoYu_wall - Sol.rhou[nsource] * Sol.rhoY[nsource] / Sol.rho[nsource]
+    S = 1. / ud.stratification(elem.x[iimage])
+
+    dpi = sign*(th.Gamma * g) * 0.5 * dh * (np.divide(1.0,Y_last) + S)
+    rhoY = (Sol.rhoY[nlast]**th.gm1 + dpi)**th.gm1inv
+    rho = rhoY * S
+    p = rhoY**th.gamm
+    if bd == 'top':
+        u = rhoYu_image / rhoY
+    else:
+        u = 2.0 * rhoYu_wall - Sol.rhou[nsource] / Sol.rho[nsource]
+
+def periodic_plus_one(vector, pad_width, iaxis, kwargs=None):
+    if all(pad_width) > 0:
+        vector[:pad_width[0]+1], vector[-pad_width[1]-1:] = vector[-pad_width[1]-pad_width[1]-1:-pad_width[1]] , vector[pad_width[0]:pad_width[0]+pad_width[0]+1].copy()
+    return vector
 
 def set_ghostcells_p2(p,elem,ud):
-    for idx in range(elem.ndim):
-        igx = elem.igx
-        igy = elem.igy
-        if ud.bdrytype_min[idx] == BdryType.PERIODIC:
-            p[:,:] = p[]
-            # p[elem.idx_min_ghost[idx]] = p[elem.idx_max_inner[idx]]
-            # p[elem.idx_max_ghost[idx]] = p[elem.idx_min_inner[idx]]
-        else:
-            # p[elem.idx_min_ghost[idx]] = p[elem.idx_min_inner[idx]][:,::-1]
-            # p[elem.idx_max_ghost[idx]] = p[elem.idx_max_inner[idx]][:,::-1]
+    igs = elem.igs
+    # idx = elem.inner_domain
+    for dim in range(elem.ndim):
+        ghost_padding, idx = get_ghost_padding(elem.ndim,dim,igs)
+        if ud.bdry_type[dim] == BdryType.PERIODIC:
+            p[...] = np.pad(p[idx],ghost_padding,'wrap')
+
+        else: # WALL
+            p[...] = np.pad(p[idx],ghost_padding,'symmetric')
+
+def set_ghostnodes_p2(p,node,ud):
+    igs = node.igs
+    for dim in range(node.ndim):
+        ghost_padding, idx = get_ghost_padding(node.ndim,dim,igs)
+
+        if ud.bdry_type[dim] == BdryType.PERIODIC:
+            p[...] = np.pad(p[idx], ghost_padding, periodic_plus_one)
+        elif ud.bdry_type[dim] == BdryType.WALL:
+            p[...] = np.pad(p[idx], ghost_padding, 'symmetric')
