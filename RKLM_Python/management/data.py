@@ -1,5 +1,5 @@
 from numerics_fundamentals.discretization.kgrid import Grid, ElemSpaceDiscr, NodeSpaceDiscr
-from management.variable import States, StatesSmall
+from management.variable import States
 
 import numpy as np
 
