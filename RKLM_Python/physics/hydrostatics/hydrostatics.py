@@ -102,10 +102,10 @@ def HydrostaticStates(mpv, elem, node, th, ud):
     pi_hydro_n = pi0 - Gamma * g * Sn_integral_p
     rhoY_hydro_n = pi_hydro_n**gm1_inv
 
-    mpv.HydroState_n.rhoY0[0,igy+1:icy+1] = rhoY_hydro_n
-    mpv.HydroState_n.Y0[0,igy+1:icy+1] = ud.stratification(0.5 * (y_p + y_m))
-    mpv.HydroState_n.rho0[0,igy+1:icy+1] = rhoY_hydro_n / mpv.HydroState_n.Y0[0,igy+1:icy+1]
-    mpv.HydroState_n.S0[0,igy+1:icy+1] = 1.0 / mpv.HydroState_n.Y0[0,igy+1:icy+1]
-    mpv.HydroState_n.p0[0,igy+1:icy+1] = rhoY_hydro_n**th.gamm
-    mpv.HydroState_n.p20[0,igy+1:icy+1] = pi_hydro_n / ud.Msq
+    mpv.HydroState_n.rhoY0[0,igy+1:] = rhoY_hydro_n
+    mpv.HydroState_n.Y0[0,igy+1:] = ud.stratification(0.5 * (y_p + y_m))
+    mpv.HydroState_n.rho0[0,igy+1:] = rhoY_hydro_n / mpv.HydroState_n.Y0[0,igy+1:]
+    mpv.HydroState_n.S0[0,igy+1:] = 1.0 / mpv.HydroState_n.Y0[0,igy+1:]
+    mpv.HydroState_n.p0[0,igy+1:] = rhoY_hydro_n**th.gamm
+    mpv.HydroState_n.p20[0,igy+1:] = pi_hydro_n / ud.Msq
 
