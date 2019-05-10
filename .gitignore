@@ -19,4 +19,8 @@ low_Mach_gravity_psinc/*
 *.fff
 *.lof
 *.kate-swp
+
 *pycache*
+*/.ipynb_checkpoints/*
+*RKLM_Reference/output/*
+*.gitignore*
