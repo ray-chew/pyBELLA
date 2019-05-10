@@ -54,6 +54,7 @@ class UserData(object):
         self.Q = self.Q_vap / (self.R_gas * self.T_ref)
 
         self.nspec = self.NSPEC
+        self.bouy = self.BOUY
 
         self.mol_trans = MolecularTransport.NO_MOLECULAR_TRANSPORT
         self.viscm = self.viscm * self.t_ref / (self.h_ref * self.h_ref)
@@ -214,7 +215,7 @@ def sol_init(Sol, mpv, bdry, elem, node, th, ud):
     rho = np.copy(rhoY)
 
     c = np.sqrt(th.gamm * np.divide(p , rho))
-    u = u0 + (p - mpv.HydroState.p0[x_idx, y_idx]) / (rho * c) / Ma
+    u = u0 + (p - mpv.HydroState.p0[0, y_idx]) / (rho * c) / Ma
     u = np.cumsum(u,axis=0)
     # u_shape = u.shape
     # u = np.cumsum(u.T.reshape(-1)).reshape(u_shape)
@@ -224,16 +225,23 @@ def sol_init(Sol, mpv, bdry, elem, node, th, ud):
     Sol.rhov[x_idx,y_idx] = rho * v
     Sol.rhow[x_idx,y_idx] = rho * w
     Sol.rhoe[x_idx,y_idx] = rhoe(rho, u ,v, w, p, ud, th)
+    Sol.rhoY[x_idx,y_idx] = rhoY
+
+    mpv.p2_cells[x_idx,y_idx] = (p**th.Gamma - 1.0) / ud.Msq
+
+    Sol.rhoX[x_idx,y_idx] = Sol.rho[x_idx,y_idx] * (Sol.rho[x_idx,y_idx] / Sol.rhoY[x_idx,y_idx] - mpv.HydroState.S0[0,y_idx])
 
     x = node.x[x_idx].reshape(-1,1)
+    # print(x)
     p = mpv.HydroState_n.p0[0,y_idx] * (1.0 + del0 * np.sin(wn * x)**(2.0 * th.gamm * th.gm1inv))
-    mpv.p2_nodes[:-1,y_idx] = np.divide((p**th.Gamma - 1.0),ud.Msq)
+
+    mpv.p2_nodes[:-1,y_idx] = (p**th.Gamma - 1.0) / ud.Msq
 
     ud.initial_projection = False
 
-    set_ghostcells_p2(p,elem,ud)
-    set_ghostnodes_p2(p,node,ud)
-    
+    set_ghostcells_p2(mpv.p2_cells,elem,ud)
+    set_ghostnodes_p2(mpv.p2_nodes,node,ud)
+
     ud.is_nonhydrostasy = 1.0
     ud.compressibility = 1.0
 
