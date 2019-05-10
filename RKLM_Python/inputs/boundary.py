@@ -29,27 +29,6 @@ class InitializeBdry(object):
 
                 print("relative slope sum = %e" %slope_sum)
 
-        ##########################
-        #
-        # In 3D, arrays have to be size(icx * icz).
-        # And slicing has to be inner domain at idx(y) == 0.
-        # I.e. use the (x,0,z)-plane.
-        #
-        ##########################
-        #
-        # elif elem.ndim == 3:
-        #     self.wall_slope = slanted_wall_slope_3d(elem.x[igx:int(icx-igx)], icx * icz, ud)
-        #     slope_sum = np.sum(np.abs(self.wall_slope))
-
-        #     if slope_sum <= np.sqrt(np.finfo(np.float).eps):
-        #         self.wall_relative_slope = 0.0
-        #     else:
-        #         slope_sum_inv = 1.0 / slope_sum
-        #         self.wall_relative_slope = slope_sum_inv * np.abs(self.wall_slope)
-
-        #         slope_sum = np.sum(self.wall_relative_slope)
-        #         print("relative slope sum = %e" %slope_sum)
-
             
 def slanted_wall_slope_3d(x, size, ud):
     hill_height = ud.hill_height
@@ -87,22 +66,22 @@ def set_wall_rhoYflux(bdry, Sol0, mpv, elem, ud):
     if elem.ndim == 1:
         print("wall flux in 1D makes no sense")
     elif elem.ndim == 2:
-        is_x_periodic = True if (ud.bdrytype_min[0] == BdryType.PERIODIC) else False
+        is_x_periodic = True if (ud.bdry_type_min[0] == BdryType.PERIODIC) else False
 
-        idx_first_inner_j_row = ([igy] + list(elem.idx_inner_domain[0]))
-        print("idx_first_inner_j_row =", idx_first_inner_j_row)
-
-        bdry.wall_rhoYflux = wall_rhoYflux( \
-                                    elem.x[igx:-igx,:,:], \
-                                    elem.y[:,igx:-igx,:], \
-                                    np.divide(Sol0.rhou[idx_first_inner_j_row],Sol0.rho[idx_first_inner_j_row]), \
-                                    np.divide(Sol0.rhov[idx_first_inner_j_row],Sol0.rho[idx_first_inner_j_row]), \
-                                    mpv.HydroState_n.rhoY0[igy,igy], \
-                                    ud \
-                                    )
-
+        idx_first_inner_j_row = (slice(igx,-igx),slice(0,igy))
+        # print("idx_first_inner_j_row =", idx_first_inner_j_row)
+        # print(Sol0.rho[idx_first_inner_j_row])
+        bdry.wall_rhoYflux[...] = 0.0
+        # bdry.wall_rhoYflux = wall_rhoYflux( \
+        #                             elem.x[igx:-igx].reshape(-1,1), \
+        #                             elem.y[igx:-igx].reshape(1,-1), \
+        #                             Sol0.rhou[idx_first_inner_j_row]/ Sol0.rho[idx_first_inner_j_row], \
+        #                             np.divide(Sol0.rhov[idx_first_inner_j_row],Sol0.rho[idx_first_inner_j_row]), \
+        #                             mpv.HydroState_n.rhoY0[igy,igy], \
+        #                             ud \
+        #                             )
+        # print(bdry.wall_rhoYflux)
         wall_flux_balance = np.sum(bdry.wall_rhoYflux)
-
         # correction for zero net flux
         bdry.wall_rhoYflux -= wall_flux_balance * bdry.wall_relative_slope
 
@@ -120,9 +99,16 @@ def wall_rhoYflux(x,z,wind_speed_x,wind_speed_z,rhoY0,ud):
     return slanted_wall_slope(x,ud) * wind_speed_x * rhoY0
 
 def set_explicit_boundary_data(Sol, elem, ud):
-    for split_step in range(elem.ndim):
-        lambda_var = 1.0
-        bound(Sol, lambda_var, split_step, elem, ud)
+    igs = elem.igs
+    ndim = elem.ndim
+
+    for dim in range(ndim):
+        ghost_padding, idx = get_ghost_padding(ndim,dim,igs)
+        if ud.bdry_type[dim] == BdryType.PERIODIC:
+            Sol.set_boundary(ghost_padding,'wrap',idx)
+        else:
+            Sol.set_boundary(ghost_padding,'symmetric',idx)
+
 
 def get_ghost_padding(ndim,dim,igs):
     ghost_padding = [(0,0)] * ndim
@@ -184,5 +170,5 @@ def set_ghostnodes_p2(p,node,ud):
 
         if ud.bdry_type[dim] == BdryType.PERIODIC:
             p[...] = np.pad(p[idx], ghost_padding, periodic_plus_one)
-        elif ud.bdry_type[dim] == BdryType.WALL:
+        else: # ud.bdry_type[dim] == BdryType.WALL:
             p[...] = np.pad(p[idx], ghost_padding, 'symmetric')
