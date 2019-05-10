@@ -34,9 +34,9 @@ class Grid(object):
         self.z0 = z0
         self.z1 = z1
 
-        self.x = x0 + self.dx * np.arange(inx).reshape(-1,1,1)
-        self.y = y0 + self.dy * np.arange(iny).reshape(1,-1,1)
-        self.z = z0 + self.dz * np.arange(inz).reshape(1,1,-1)
+        self.x = x0 + self.dx * np.arange(inx)
+        self.y = y0 + self.dy * np.arange(iny)
+        self.z = z0 + self.dz * np.arange(inz)
 
         self.left = left
         self.right = right
@@ -78,8 +78,9 @@ class SpaceDiscr(object):
         self.icz = self.ic[2] = g.inz - 1 + 2 * self.igz if g.inz > 1 else 1
 
         self.nc = self.icx * self.icy * self.icz
-
-        self.sc = (self.icx , self.icy , self.icz)
+        # self.sc = (g.inx, g.iny, g.inz)
+        self.sc = (self.icx, self.icy, self.icz)
+        self.igs = [self.igx,self.igy,self.igz]
 
         self.stride[0] = 1
         self.stride[1] = self.icx if g.iny > 1 else 0
@@ -114,9 +115,9 @@ class SpaceDiscr(object):
         self.dxmin = MIN_own(self.dx, self.dy)
         self.dxmin = MIN_own(self.dxmin, self.dz)
 
-        self.x = np.zeros((self.icx))
-        self.y = np.zeros((self.icy))
-        self.z = np.zeros((self.icz))
+        self.x = np.zeros((self.icx)).reshape(-1,1,1)
+        self.y = np.zeros((self.icy)).reshape(1,-1,1)
+        self.z = np.zeros((self.icz)).reshape(1,1,-1)
 
         self.left = g.left
         self.right = g.right
@@ -127,6 +128,11 @@ class SpaceDiscr(object):
 
         self.scale_factor = 1.0
         
+        self.inner_domain = np.empty((self.ndim),dtype=object)
+        for dim in range(self.ndim):
+            self.inner_domain[dim] = slice(self.igs[dim],-self.igs[dim])
+        self.inner_domain = tuple(self.inner_domain)
+
         # save the indices of the ghost cells
         self.idx_ghost_min = np.empty((3), dtype=object)
         self.idx_ghost_max = np.empty((3), dtype=object)
@@ -197,6 +203,12 @@ class NodeSpaceDiscr(SpaceDiscr):
         self.x = x0 + self.dx * np.arange(self.icx)
         self.y = y0 + self.dy * np.arange(self.icy)
         self.z = z0 + self.dz * np.arange(self.icz)
+
+        self.icx += 1
+        self.icy += 1 if g.iny > 1 else 0
+        self.icz += 1 if g.inz > 1 else 0
+
+        self.sc = (self.icx , self.icy , self.icz)
 
         # for i in range(self.icx):
         #     self.x[i] = x0 + self.dx * i
