@@ -22,5 +22,5 @@ low_Mach_gravity_psinc/*
 
 *pycache*
 */.ipynb_checkpoints/*
-*RKLM_Reference/output/*
+*RKLM_Reference/output*
 *.gitignore*
