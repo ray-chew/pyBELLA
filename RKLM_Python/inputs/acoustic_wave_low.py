@@ -4,7 +4,7 @@ from management.enumerator import TimeIntegrator, MolecularTransport,HillShapes,
 from numerics_fundamentals.discretization.time_discretization import SetTimeIntegratorParameters
 from physics.gas_dynamics.explicit import TimeIntegratorParams
 from physics.hydrostatics.hydrostatics import HydrostaticStates
-from inputs.boundary import set_wall_rhoYflux, set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
+from inputs.boundary import set_wall_rhoYflux, set_explicit_boundary_data, set_ghostcells_p2
 
 class UserData(object):
     NSPEC = 1
@@ -13,7 +13,7 @@ class UserData(object):
     grav = 0.0
     omega = 0.0*0.0001
 
-    R_gas = 287.0
+    R_gas = 287.4
     R_vap = 461.0
     Q_vap = 2.53e+06
     gamma = 2.0
@@ -64,8 +64,7 @@ class UserData(object):
 
         self.is_nonhydrostatic = 1
         self.is_compressible = 1
-        self.compressibility = 0.0
-        self.acoustic_timestep = 0
+        self.acoustic_timestep = 1
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
 
         self.gravity_strength = np.zeros((3))
@@ -78,7 +77,7 @@ class UserData(object):
         for i in range(3):
             if (self.gravity_strength[i] > np.finfo(np.float).eps) or (i == 1):
                 self.i_gravity[i] = 1
-                self.gravity_direction = i
+                self.gravity_direction = 1
 
             if (self.coriolis_strength[i] > np.finfo(np.float).eps):
                 self.i_coriolis[i] = 1
@@ -87,8 +86,8 @@ class UserData(object):
         self.xmax =   1.0 * self.scale_factor
         self.ymin =   0.0 * self.scale_factor
         self.ymax =   1.0 * self.scale_factor
-        self.zmin = - 1.0
-        self.zmax =   1.0
+        self.zmin = - 1.0 * self.scale_factor
+        self.zmax =   1.0 * self.scale_factor
 
         self.wind_speed = 1.0 / self.u_ref
         self.wind_shear = -0.0
@@ -123,7 +122,7 @@ class UserData(object):
         self.bdry_type[1] = BdryType.WALL
         self.bdry_type[2] = BdryType.WALL
 
-        self.absorber = False # 0 == WRONG == FALSE 
+        self.absorber = 0 # 0 == WRONG == FALSE 
         self.bottom_theta_bc = BottomBC.BOTTOM_BC_DEFAULT
 
         ##########################################
@@ -132,7 +131,7 @@ class UserData(object):
 
         self.time_integrator = TimeIntegrator.SI_MIDPT
         self.advec_time_integrator = TimeIntegrator.STRANG
-        self.CFL  = 77.0
+        self.CFL  = 10.0
         self.dtfixed0 = 0.0000668205
         self.dtfixed = 0.0000668205
 
@@ -184,20 +183,24 @@ class UserData(object):
         self.write_file_period = 40
         self.file_format = 'HDF'
 
-        self.output_base_folder = "output_acoustic_wave_high/"
+        self.n_time_series = 500
+
+        self.output_base_folder = "output/"
         self.output_folder_name_psinc = "low_Mach_gravity_psinc/"
-        self.output_folder_name_comp = "low_Mach_gravity_comp/"
+        self.output_folder_name_comp = "low_Mach_gravity_comp"
 
         self.stratification = self.stratification_function
 
     def stratification_function(self, y):
         return 1.0
 
-def sol_init(Sol, mpv, bdry, elem, node, th, ud):
+def sol_init(Sol, Sol0, mpv, bdry, elem, node, th, ud):
     u0 = ud.wind_speed
     v0 = 0.0
     w0 = 0.0
-    del0 = 0.05
+    del0 = 0.01
+    xc = 0.0
+    a = 0.125 * (ud.xmax - ud.xmin)
     wn = 2.0 * np.pi / (ud.xmax - ud.xmin)
 
     Ma = np.sqrt(ud.Msq)
@@ -205,42 +208,29 @@ def sol_init(Sol, mpv, bdry, elem, node, th, ud):
     HydrostaticStates(mpv, elem, node, th, ud)
 
     x_idx = slice(None)
-    x = elem.x[x_idx].reshape(-1,1)
-    y_idx = slice(elem.igy,-elem.igy+1)
+    x = elem.x
+    y_idx = slice(elem.igy,-elem.igy)
+    y = elem.y
 
-    v, w = v0, w0
-    p = mpv.HydroState.p0[0, y_idx] * (1.0 + del0 * np.sin(wn * x))**(2.0 * th.gamm * th.gm1inv)
+    u,v,w = u0,v0,w0
+
+    p = mpv.HydroState.p0 * (1.0 + del0 * np.sin(wn * x))**(2.0 * th.gamm * th.gamm1inv)
     rhoY = p**(th.gamminv)
     rho = np.copy(rhoY)
+    c = np.sqrt(th.gamm * p / rho)
 
-    c = np.sqrt(th.gamm * np.divide(p , rho))
-    u = u0 + (p - mpv.HydroState.p0[x_idx, y_idx]) / (rho * c) / Ma
-    u = np.cumsum(u,axis=0)
-    # u_shape = u.shape
-    # u = np.cumsum(u.T.reshape(-1)).reshape(u_shape)
+    u = (p - mpv.HydroState.p0) / (rho * c) / Ma
+    u_shape = u.shape
+    u = np.cumsum(u.T.reshape(-1)).reshape(u_shape).T
 
-    Sol.rho[x_idx,y_idx] = rho
-    Sol.rhou[x_idx,y_idx] = rho * u
-    Sol.rhov[x_idx,y_idx] = rho * v
-    Sol.rhow[x_idx,y_idx] = rho * w
-    Sol.rhoe[x_idx,y_idx] = rhoe(rho, u ,v, w, p, ud, th)
+    Sol.rho[y_idx,x_idx] = rho
+    Sol.rhou[y_idx,x_idx] = rho * u
+    Sol.rhov[y_idx,x_idx] = rho * v
+    Sol.rhow[y_idx,x_idx] = rho * w
+    Sol.rhoe[y_idx,x_idx] = rhoe(rho, u ,v, w, p, ud, th)
 
-    x = node.x[x_idx].reshape(-1,1)
-    p = mpv.HydroState_n.p0[0,y_idx] * (1.0 + del0 * np.sin(wn * x)**(2.0 * th.gamm * th.gm1inv))
-    mpv.p2_nodes[:-1,y_idx] = np.divide((p**th.Gamma - 1.0),ud.Msq)
+    mpv.p2_cells = (p**th.Gamma - 1.0) / ud.Msq
 
-    ud.initial_projection = False
-
-    set_ghostcells_p2(p,elem,ud)
-    set_ghostnodes_p2(p,node,ud)
-    
-    ud.is_nonhydrostasy = 1.0
-    ud.compressibility = 1.0
-
-    set_wall_rhoYflux(bdry,Sol,mpv,elem,ud)
-    set_explicit_boundary_data(Sol,elem,ud)
-
-    return Sol
 
 def T_from_p_rho(p, rho):
     return np.divide(p,rho)
