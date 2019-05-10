@@ -1,6 +1,6 @@
 import numpy as np
 from management.data import data_init
-from management.variable import States
+from management.variable import States, Vars
 from numerics_fundamentals.discretization import kgrid
 from physics.gas_dynamics.thermodynamic import ThemodynamicInit
 from inputs.enum_bdry import BdryType
@@ -9,6 +9,7 @@ from physics.low_mach.mpv import MPV
 
 from inputs.acoustic_wave_high import UserData, sol_init
 from inputs.user_data import UserDataInit
+from management.io import io
 
 step = 0
 t = 0.0
@@ -18,8 +19,8 @@ ud = UserDataInit(**initial_data)
 elem, node = data_init(ud)
 
 # Sol0 = States(elem.sc, ud)
-Sol = States(elem.sc, ud)
-dSol = States(elem.sc, ud)
+Sol = Vars(elem.sc, ud)
+dSol = Vars(elem.sc, ud)
 # Solk = States(int(3 * ud.ncache / 2), ud)
 
 n_aux = node.ifx
@@ -41,7 +42,10 @@ th = ThemodynamicInit(ud)
 bdry = InitializeBdry(elem, ud)
 mpv = MPV(elem, node, ud)
 
-Sol = sol_init(Sol, mpv,bdry,elem, node, th, ud)
+Sol0 = sol_init(Sol, mpv,bdry,elem, node, th, ud)
+
+writer = io()
+writer.write_all(Sol0,mpv,elem,node,th,'000')
 # Explicit_malloc
 # recovery_malloc
 
