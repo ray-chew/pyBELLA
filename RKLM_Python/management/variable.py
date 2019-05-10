@@ -11,6 +11,7 @@ class Vars(object):
         self.rhoe = np.zeros((size))
         self.rhoY = np.zeros((size))
         self.rhoX = np.zeros(([ud.nspec] + list(size)))
+        self.squeezer()
 
     # will be a better way of doing this
     def squeezer(self):
@@ -80,8 +81,7 @@ def negative_symmetric(vector,pad_width,iaxis,kwargs=None):
     #     self.rhoY[min_ghost], self.rhoY[max_ghost] = self.rhoY[min_inner][:,::-1], self.rhoY[max_inner][:,::-1].copy()
 
 
-# equivalent to ConsVars_new
-class StatesSmall(Vars):
+class States(Vars):
     def __init__(self,size,ud):
         super().__init__(size,ud)
         self.u = np.zeros((size))
@@ -100,16 +100,16 @@ class StatesSmall(Vars):
         self.rho0 = np.zeros((size))
         self.S0 = np.zeros((size))
         self.S10 = np.zeros((size))
+        self.pi0 = np.zeros((size))
+        self.rhoY0 = np.zeros((size))
         self.Y0 = np.zeros((size))
 
         self.squeezer()
 
-class States(StatesSmall):
-    def __init__(self,size,ud):
-        super().__init__(size,ud)
-        self.pi0 = np.zeros((size))
-        self.rhoY0 = np.zeros((size))
+# class StatesSmall(States):
+#     def __init__(self,size,ud):
+#         super().__init__(size,ud)
 
-        self.squeezer()
 
+#         self.squeezer()
         
