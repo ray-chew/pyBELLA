@@ -61,14 +61,14 @@ def slanted_wall_slope(x, ud):
 
 def set_wall_rhoYflux(bdry, Sol0, mpv, elem, ud):
     igx = elem.igx
-    igy = elem.igy
+    # igy = elem.igy
 
     if elem.ndim == 1:
         print("wall flux in 1D makes no sense")
     elif elem.ndim == 2:
         is_x_periodic = True if (ud.bdry_type_min[0] == BdryType.PERIODIC) else False
 
-        idx_first_inner_j_row = (slice(igx,-igx),slice(0,igy))
+        # idx_first_inner_j_row = (slice(igx,-igx),slice(0,igy))
         # print("idx_first_inner_j_row =", idx_first_inner_j_row)
         # print(Sol0.rho[idx_first_inner_j_row])
         bdry.wall_rhoYflux[...] = 0.0
@@ -127,25 +127,25 @@ def get_ghost_padding(ndim,dim,igs):
 def bound(Sol, lambda_var, split_step, elem, ud):
     None
 
-def fancy(nsource,nlast,iimage,g,dh,th,bdry,Sol):
-    Y_last = Sol.rhoY[nlast] / Sol.rho[nlast]
-    v = Sol.rhov[nsource] / Sol.rho[nsource]
-    w = Sol.rhow[nsource] / Sol.rho[nsource]
+# def fancy(nsource,nlast,iimage,g,dh,th,bdry,Sol):
+#     Y_last = Sol.rhoY[nlast] / Sol.rho[nlast]
+#     v = Sol.rhov[nsource] / Sol.rho[nsource]
+#     w = Sol.rhow[nsource] / Sol.rho[nsource]
 
-    Sol.rhoX = Sol.rhoX / Sol.rho
+#     Sol.rhoX = Sol.rhoX / Sol.rho
 
-    rhoYu_wall = bdry.wall_rhoYflux
-    rhoYu_image = 2.0 * rhoYu_wall - Sol.rhou[nsource] * Sol.rhoY[nsource] / Sol.rho[nsource]
-    S = 1. / ud.stratification(elem.x[iimage])
+#     rhoYu_wall = bdry.wall_rhoYflux
+#     rhoYu_image = 2.0 * rhoYu_wall - Sol.rhou[nsource] * Sol.rhoY[nsource] / Sol.rho[nsource]
+#     S = 1. / ud.stratification(elem.x[iimage])
 
-    dpi = sign*(th.Gamma * g) * 0.5 * dh * (np.divide(1.0,Y_last) + S)
-    rhoY = (Sol.rhoY[nlast]**th.gm1 + dpi)**th.gm1inv
-    rho = rhoY * S
-    p = rhoY**th.gamm
-    if bd == 'top':
-        u = rhoYu_image / rhoY
-    else:
-        u = 2.0 * rhoYu_wall - Sol.rhou[nsource] / Sol.rho[nsource]
+#     dpi = sign*(th.Gamma * g) * 0.5 * dh * (np.divide(1.0,Y_last) + S)
+#     rhoY = (Sol.rhoY[nlast]**th.gm1 + dpi)**th.gm1inv
+#     rho = rhoY * S
+#     p = rhoY**th.gamm
+#     if bd == 'top':
+#         u = rhoYu_image / rhoY
+#     else:
+#         u = 2.0 * rhoYu_wall - Sol.rhou[nsource] / Sol.rho[nsource]
 
 def periodic_plus_one(vector, pad_width, iaxis, kwargs=None):
     if all(pad_width) > 0:

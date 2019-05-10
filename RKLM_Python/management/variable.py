@@ -33,7 +33,7 @@ class Vars(object):
 
 def negative_symmetric(vector,pad_width,iaxis,kwargs=None):
     if pad_width[1] > 0:
-        sign = -1
+        sign = 1
         vector[:pad_width[0]] = sign * vector[pad_width[0]:2*pad_width[0]][::-1]
         vector[-pad_width[1]:] = sign * vector[-2*pad_width[1]:-pad_width[1]][::-1]
         return vector

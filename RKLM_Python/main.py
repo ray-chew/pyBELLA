@@ -45,7 +45,7 @@ mpv = MPV(elem, node, ud)
 Sol0 = sol_init(Sol, mpv,bdry,elem, node, th, ud)
 
 writer = io()
-writer.write_all(Sol0,mpv,elem,node,th,'000')
+writer.write_all(Sol0,mpv,elem,node,th,'000',ud)
 # Explicit_malloc
 # recovery_malloc
 

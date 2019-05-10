@@ -34,7 +34,6 @@ def HydrostaticStates(mpv, elem, node, th, ud):
     ###########################
     y_m = np.copy(y_p)
     y_p = y_m - elem.dy
-    S_m = np.copy(S_p)
     S_p = 1.0 / ud.stratification(y_p)
     # S_integral_p -= np.arange(igy)[::-1] * elem.dy * 0.5 * (S_m + S_p)
     S_integral_p -= np.arange(igy) * elem.dy
@@ -79,7 +78,6 @@ def HydrostaticStates(mpv, elem, node, th, ud):
     Sn_integral_p = node.dy * Sn_p
     y_m = np.copy(y_p)
     y_p = y_m + elem.dy
-    S_m = np.copy(S_p)
     S_p = 1.0 / ud.stratification(y_p)
 
     S_integral_p += np.arange(icy-igy)*elem.dy
