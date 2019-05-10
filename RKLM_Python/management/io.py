@@ -48,6 +48,12 @@ class io(object):
         self.populate(name,'rhoe',Sol.rhoe)
         # rhoY
         self.populate(name,'rhoY',Sol.rhoY)
+
+        # rho u ,v w
+        self.populate(name,'rhou',Sol.rhou)
+        self.populate(name,'rhov',Sol.rhov)
+        self.populate(name,'rhow',Sol.rhow)
+
         # dp2_nodes
         self.populate(name,'dp2_nodes',mpv.dp2_nodes)
         # p2_nodes
