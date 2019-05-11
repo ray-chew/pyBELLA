@@ -200,13 +200,13 @@ class NodeSpaceDiscr(SpaceDiscr):
         y0 = g.y0 - self.igy * self.dy if self.icy > 1 else g.y0
         z0 = g.z0 - self.igz * self.dz if self.icz > 1 else g.z0
 
-        self.x = x0 + self.dx * np.arange(self.icx)
-        self.y = y0 + self.dy * np.arange(self.icy)
-        self.z = z0 + self.dz * np.arange(self.icz)
-
         self.icx += 1
         self.icy += 1 if g.iny > 1 else 0
         self.icz += 1 if g.inz > 1 else 0
+
+        self.x = x0 + self.dx * np.arange(self.icx)
+        self.y = y0 + self.dy * np.arange(self.icy)
+        self.z = z0 + self.dz * np.arange(self.icz)
 
         self.sc = (self.icx , self.icy , self.icz)
 
