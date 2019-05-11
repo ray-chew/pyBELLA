@@ -119,7 +119,8 @@ class io(object):
 
 
     def dpress_dim(self,mpv,ud,th):
-        p = (th.Gamma * ud.Msq * mpv.p2_cells)**th.Gammainv
+        p0 = (th.Gamma * ud.Msq * mpv.p2_cells) 
+        p = np.sign(p0) * np.abs(p0) **th.Gammainv
         return (p - mpv.HydroState.p0[0,:]) * self.ud.p_ref
 
 
