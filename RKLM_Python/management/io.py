@@ -3,10 +3,17 @@ import h5py
 import numpy as np
 
 class io(object):
-    def __init__(self):
+    def __init__(self,ud):
+        self.ud = ud
+
         self.FORMAT = ".h5"
         self.OUTPUT_FILENAME = "output"
-        self.SUFFIX = "_low_mach_gravity_comp"
+        self.BASE_NAME = self.ud.output_base_name
+        if self.ud.is_compressible == 1:
+            self.SUFFIX = self.ud.output_name_comp
+        else:
+            self.SUFFIX = self.ud.output_name_psinc
+
 
         self.PATHS = [   'bouy',
                         'dp2_c',
@@ -34,7 +41,7 @@ class io(object):
 
     def io_create_file(self,paths):
         # create a new output file for each rerun - old output will be overwritten.
-        file = h5py.File(self.OUTPUT_FILENAME + self.SUFFIX + self.FORMAT, 'w')
+        file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'w')
         for path in paths:
             # check if groups have been created
             # if not created, create empty groups
@@ -42,7 +49,7 @@ class io(object):
                 file.create_group(path,track_order=True)
         file.close()
 
-    def write_all(self,Sol,mpv,elem,node,th,name,ud):
+    def write_all(self,Sol,mpv,elem,node,th,name):
         # rho
         self.populate(name,'rho',Sol.rho)
         # rhoe
@@ -67,7 +74,7 @@ class io(object):
         # pressure
         self.populate(name,'p',Sol.rhoY**th.gamm)
         # pressure difference
-        self.populate(name,'dpdim', self.dpress_dim(mpv,ud,th))
+        self.populate(name,'dpdim', self.dpress_dim(mpv,self.ud,th))
 
         # velocity (u,v,w)
         self.populate(name,'u',Sol.rhou / Sol.rho)
@@ -85,7 +92,7 @@ class io(object):
         # species mass fraction(?)
         self.populate(name,'Y', Sol.rhoY / Sol.rho)
         # species mass fraction perturbation
-        self.populate(name,'dY', Sol.rhoY / Sol.rho - ud.stratification(elem.y))
+        self.populate(name,'dY', Sol.rhoY / Sol.rho - self.ud.stratification(elem.y))
 
     def vortz(self,Sol,elem,node):
         # 2d-case
@@ -110,16 +117,17 @@ class io(object):
         vortz[igs[0]:-igs[0], igs[1]:-igs[1]] = dvdx - dudy
         return vortz
 
+
     def dpress_dim(self,mpv,ud,th):
         p = (th.Gamma * ud.Msq * mpv.p2_cells)**th.Gammainv
-        return (p - mpv.HydroState.p0[0,:]) * ud.p_ref
+        return (p - mpv.HydroState.p0[0,:]) * self.ud.p_ref
 
 
 
     def populate(self,name,path,data,options=None):
         # name is the simulation time of the output array
         # path is the array type, e.g. U,V,H, and data is it's data.
-        file = h5py.File(self.OUTPUT_FILENAME + self.SUFFIX + self.FORMAT, 'r+')
+        file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'r+')
         file.create_dataset(str(path) + '/' + str(path) + '_' + str(name), data=data, chunks=True, compression='gzip', compression_opts=4)
         # add attributes, i.e. the simulation parameters to each dataset.
         # for key in options:
