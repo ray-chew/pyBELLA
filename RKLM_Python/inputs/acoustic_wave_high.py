@@ -3,7 +3,7 @@ from inputs.enum_bdry import BdryType
 from management.enumerator import TimeIntegrator, MolecularTransport,HillShapes, BottomBC, LimiterType, RecoveryOrder
 from numerics_fundamentals.discretization.time_discretization import SetTimeIntegratorParameters
 from physics.gas_dynamics.explicit import TimeIntegratorParams
-from physics.hydrostatics.hydrostatics import HydrostaticStates
+from physics.hydrostatics.hydrostatics import hydrostatic_state
 from inputs.boundary import set_wall_rhoYflux, set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
 
 class UserData(object):
@@ -185,9 +185,9 @@ class UserData(object):
         self.write_file_period = 40
         self.file_format = 'HDF'
 
-        self.output_base_folder = "output_acoustic_wave_high/"
-        self.output_folder_name_psinc = "low_Mach_gravity_psinc/"
-        self.output_folder_name_comp = "low_Mach_gravity_comp/"
+        self.output_base_name = "_acoustic_wave_high"
+        self.output_name_psinc = "_low_mach_gravity_psinc"
+        self.output_name_comp = "_low_mach_gravity_comp"
 
         self.stratification = self.stratification_function
 
@@ -203,7 +203,7 @@ def sol_init(Sol, mpv, bdry, elem, node, th, ud):
 
     Ma = np.sqrt(ud.Msq)
 
-    HydrostaticStates(mpv, elem, node, th, ud)
+    hydrostatic_state(mpv, elem, node, th, ud)
 
     x_idx = slice(None)
     x = elem.x[x_idx].reshape(-1,1)
@@ -231,8 +231,7 @@ def sol_init(Sol, mpv, bdry, elem, node, th, ud):
 
     Sol.rhoX[x_idx,y_idx] = Sol.rho[x_idx,y_idx] * (Sol.rho[x_idx,y_idx] / Sol.rhoY[x_idx,y_idx] - mpv.HydroState.S0[0,y_idx])
 
-    x = node.x[x_idx].reshape(-1,1)
-    # print(x)
+    x = node.x[x_idx][:-1].reshape(-1,1)
     p = mpv.HydroState_n.p0[0,y_idx] * (1.0 + del0 * np.sin(wn * x))**(2.0 * th.gamm * th.gm1inv)
     mpv.p2_nodes[:-1,y_idx] = (p**th.Gamma - 1.0) / ud.Msq
 
