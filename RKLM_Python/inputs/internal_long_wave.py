@@ -217,7 +217,7 @@ def sol_init(Sol, mpv, bdry, elem, node, th, ud):
     a = ud.scale_factor * 5.0e+3 / ud.h_ref
 
     hydrostatic_state(mpv, elem, node, th, ud)
-
+    # print(mpv.HydroState.p20[0])
     HySt = States(elem.sc,ud)
     HyStn = States(elem.sc,ud)
 
