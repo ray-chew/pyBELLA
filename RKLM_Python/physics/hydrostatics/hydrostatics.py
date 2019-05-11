@@ -1,3 +1,4 @@
+from inputs.boundary import set_ghostcells_p2
 import numpy as np
 
 def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
@@ -151,11 +152,14 @@ def hydrostatic_state(mpv, elem, node, th, ud):
     yn_p = node.y[igy+1]
     Sn_p = 1.0 / ud.stratification(y_p)
     Sn_integral_p = node.dy * Sn_p
-    y_m = np.copy(y_p)
-    y_p = y_m + elem.dy
-    S_p = 1.0 / ud.stratification(y_p)
+    dys = np.ones((icy-elem.igx)) * elem.dy * 0.5
+    dys[0] *= 0.5
+    S_p = 1.0 / ud.stratification(elem.y[igy:])
+    S_m = np.zeros_like(S_p)
+    S_m[0] = 1.0 / ud.stratification(0.0)
+    S_m[1:] = 1.0 / ud.stratification(elem.y[igy:-1])
+    S_integral_p = np.cumsum(dys * (S_p + S_m))
 
-    S_integral_p += np.arange(icy-igy)*elem.dy
     pi_hydro = pi0 - Gamma * g * S_integral_p
     p_hydro = pi_hydro**Gamma_inv
     rhoY_hydro = pi_hydro**gm1_inv
@@ -184,11 +188,11 @@ def hydrostatic_state(mpv, elem, node, th, ud):
     mpv.HydroState_n.p0[0,igy+1:] = rhoY_hydro_n**th.gamm
     mpv.HydroState_n.p20[0,igy+1:] = pi_hydro_n / ud.Msq
 
-np.set_printoptions(precision=18)
-
 def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
     Gammainv = th.Gammainv
     igy = node.igy
+    igx = node.igx
+    icx= elem.icx
     dx = node.dx
     dy = node.dy
 
@@ -211,5 +215,21 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
 
     beta *= Gammainv / height
     bdpdx *= Gammainv / height / dx
-    print(bdpdx)
+
+    coeff = np.zeros((elem.icx))
+    pibot = np.zeros((elem.icx))
+    coeff[igx+1:-igx+1] = np.cumsum(coeff[igx:-igx] + dx / beta[igx+1:-igx])
+    pibot[igx+1:-igx+1] = np.cumsum(pibot[igx:-igx] - dx * bdpdx[igx+1:-igx] / beta[igx+1:-igx])
     
+    dotPU = pibot[icx-igx] / coeff[icx-igx]
+    pibot[igx:-igx] -= dotPU * coeff[igx:-igx]
+    # print(pibot)
+    x_idx = slice(igx,-igx+1)
+    y_idx = slice(igy,-igy+1)
+
+    # print(mpv.HydroState.p20[0,y_idx])
+    # print(mpv.p2_cells[x_idx,y_idx][:3][:5])
+    # print(pibot[x_idx][:5])
+    # print(mpv.HydroState.p20[:3,y_idx][:5])
+    mpv.p2_cells[x_idx,y_idx] += pibot[x_idx].reshape(-1,1) - 1.0 * mpv.HydroState.p20[0,y_idx].reshape(1,-1)
+    set_ghostcells_p2(mpv.p2_cells, elem, ud)
