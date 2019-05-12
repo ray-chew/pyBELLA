@@ -10,6 +10,9 @@ def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
 
     icy = elem.icy
     igy = elem.igy
+    xc_idx = slice(0,-1)
+    yc_idx = slice(0,-1)
+    c_idx = (xc_idx,yc_idx)
 
     rhoY0 = 1.0
 
@@ -17,12 +20,12 @@ def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
 
     p0 = rhoY0**gamm
     pi0 = rhoY0**gm1
-    HydroState_n.rho0[:,igy] = rhoY0 / Y_n[:,igy]
-    HydroState_n.rhoY0[:,igy] = rhoY0
-    HydroState_n.Y0[:,igy] = Y_n[:,igy]
-    HydroState_n.S0[:,igy] = 1.0 / Y_n[:,igy]
-    HydroState_n.p0[:,igy] = p0
-    HydroState_n.p20[:,igy] = pi0 / ud.Msq
+    HydroState_n.rho0[xc_idx,igy] = rhoY0 / Y_n[:,igy]
+    HydroState_n.rhoY0[xc_idx,igy] = rhoY0
+    HydroState_n.Y0[xc_idx,igy] = Y_n[:,igy]
+    HydroState_n.S0[xc_idx,igy] = 1.0 / Y_n[:,igy]
+    HydroState_n.p0[xc_idx,igy] = p0
+    HydroState_n.p20[xc_idx,igy] = pi0 / ud.Msq
 
     dys = np.array([-elem.dy] + [-elem.dy/2] + [elem.dy/2] + list(np.ones((icy-3)) * elem.dy))
     S_p = 1.0 / Y[:,:]
@@ -45,13 +48,13 @@ def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     p_hydro = pi_hydro**Gamma_inv
     rhoY_hydro = pi_hydro**gm1_inv
 
-    HydroState.rho0[...] = rhoY_hydro * S_p
-    HydroState.p0[...] = p_hydro
-    HydroState.p20[...] = pi_hydro / ud.Msq
-    HydroState.S0[...] = S_p
-    HydroState.S10[...] = 0.0
-    HydroState.Y0[...] = 1.0 / S_p
-    HydroState.rhoY0[...] = rhoY_hydro
+    HydroState.rho0[c_idx] = rhoY_hydro * S_p
+    HydroState.p0[c_idx] = p_hydro
+    HydroState.p20[c_idx] = pi_hydro / ud.Msq
+    HydroState.S0[c_idx] = S_p
+    HydroState.S10[c_idx] = 0.0
+    HydroState.Y0[c_idx] = 1.0 / S_p
+    HydroState.rhoY0[c_idx] = rhoY_hydro
 
     # Sn_m = Sn_p
     Sn_p = 1.0 / Y[:,:]
@@ -60,21 +63,23 @@ def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     Sn_integral_p = dys * Sn_p
     Sn_integral_p[:,:2] = np.cumsum(Sn_integral_p[:,:2][:,::-1],axis=1)[:,::-1]
     Sn_integral_p[:,2:] = np.cumsum(Sn_integral_p[:,2:],axis=1)
+    # print("SN:", Sn_integral_p[0])
 
     pi_hydro_n = pi0 - Gamma * g * Sn_integral_p
     rhoY_hydro_n = pi_hydro_n**gm1_inv
     
-    HydroState_n.rhoY0[:,:igy] = rhoY_hydro_n[:,:igy]
-    HydroState_n.Y0[:,:igy] = Y_n[:,:igy]
-    HydroState_n.S0[:,:igy] = 1.0 / Y_n[:,:igy]
-    HydroState_n.p0[:,:igy] = rhoY_hydro_n[:,:igy]**th.gamm
-    HydroState_n.p20[:,:igy] = pi_hydro_n[:,:igy] / ud.Msq
+    HydroState_n.rhoY0[xc_idx,:igy] = rhoY_hydro_n[:,:igy]
+    HydroState_n.Y0[xc_idx,:igy] = Y_n[:,:igy]
+    HydroState_n.S0[xc_idx,:igy] = 1.0 / Y_n[:,:igy]
+    HydroState_n.p0[xc_idx,:igy] = rhoY_hydro_n[:,:igy]**th.gamm
+    HydroState_n.p20[xc_idx,:igy] = pi_hydro_n[:,:igy] / ud.Msq
 
-    HydroState_n.rhoY0[:,igy:] = rhoY_hydro_n[:,igy:]
-    HydroState_n.Y0[:,igy:] = Y_n[:,igy:]
-    HydroState_n.S0[:,igy:] = 1.0 / Y_n[:,igy:]
-    HydroState_n.p0[:,igy:] = rhoY_hydro_n[:,igy:]**th.gamm
-    HydroState_n.p20[:,igy:] = pi_hydro_n[:,igy:] / ud.Msq
+    HydroState_n.rhoY0[xc_idx,igy+1:] = rhoY_hydro_n[:,igy:]
+    HydroState_n.Y0[xc_idx,igy+1:] = Y_n[:,igy:]
+    HydroState_n.S0[xc_idx,igy+1:] = 1.0 / Y_n[:,igy:]
+    HydroState_n.p0[xc_idx,igy+1:] = rhoY_hydro_n[:,igy:]**th.gamm
+    HydroState_n.p20[xc_idx,igy+1:] = pi_hydro_n[:,igy:] / ud.Msq
+    # print(HydroState_n.p20[0])
 
 def hydrostatic_state(mpv, elem, node, th, ud):
     Gamma = th.gm1 / th.gamm
@@ -233,3 +238,41 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
     # print(mpv.HydroState.p20[:3,y_idx][:5])
     mpv.p2_cells[x_idx,y_idx] += pibot[x_idx].reshape(-1,1) - 1.0 * mpv.HydroState.p20[0,y_idx].reshape(1,-1)
     set_ghostcells_p2(mpv.p2_cells, elem, ud)
+
+    icxn = node.icx
+    icyn = node.icy
+    x_idx = slice(1,icxn-1)
+    y_idx = slice(igy,-igy+1)
+    height = node.y[-igy]
+
+    Pc = Sol.rhoY[1:,y_idx]
+    thc = Pc / Sol.rho[1:,y_idx]
+
+    beta = np.zeros((elem.icx,))
+    bdpdx = np.zeros((elem.icx))
+    
+    beta[1:] = np.sum(Pc*thc*dy, axis=1)
+    beta *= Gammainv / height
+
+    bdpdx[1:] = np.sum(Pc * thc * (mpv.p2_nodes[1:-1,igy:-igy] - mpv.p2_nodes[:-2,igy:-igy]) * dy, axis=1)
+    bdpdx *= Gammainv / height / dx
+
+    coeff = np.zeros((node.icx))
+    pibot = np.zeros((node.icx))
+
+    coeff[igx+1:-igx+1] = np.cumsum(coeff[igx:-igx] + dx / beta[igx+1:])
+    pibot[igx+1:-igx+1] = np.cumsum(pibot[igx:-igx] - dx * bdpdx[igx+1:] / beta[igx+1:])    
+
+    dotPU = pibot[icx-igx] / coeff[icx-igx]
+
+    pibot[igx:-igx] -= dotPU * coeff[igx:-igx]
+
+    x_idx = slice(igx,-igx+1)
+    y_idx = slice(igy,-igy+1)
+    mpv.p2_nodes[x_idx,y_idx] += pibot[x_idx].reshape(-1,1) - 1.0 * mpv.HydroState_n.p20[0,y_idx].reshape(1,-1)
+
+    mpv.dp2_nodes[:,:] = mpv.p2_nodes
+
+    print(mpv.dp2_nodes)
+
+    

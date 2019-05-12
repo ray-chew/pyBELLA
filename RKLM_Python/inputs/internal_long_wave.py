@@ -218,8 +218,8 @@ def sol_init(Sol, mpv, bdry, elem, node, th, ud):
 
     hydrostatic_state(mpv, elem, node, th, ud)
     # print(mpv.HydroState.p20[0])
-    HySt = States(elem.sc,ud)
-    HyStn = States(elem.sc,ud)
+    HySt = States(node.sc,ud)
+    HyStn = States(node.sc,ud)
 
     x = elem.x.reshape(-1,1)
     y = elem.y.reshape(1,-1)
@@ -235,11 +235,14 @@ def sol_init(Sol, mpv, bdry, elem, node, th, ud):
 
     x_idx = slice(None)
     y_idx = slice(elem.igy,-elem.igy+1)
+    xc_idx = slice(0,-1)
+    yc_idx = slice(0,-1)
+    c_idx = (xc_idx, yc_idx)
 
     u, v, w = u0, v0, w0
     if ud.is_compressible:
-        p = HySt.p0[:,y_idx]
-        rhoY = HySt.rhoY0[:,y_idx]
+        p = HySt.p0[:,y_idx][c_idx]
+        rhoY = HySt.rhoY0[:,y_idx][c_idx]
     else:
         p = mpv.HydroState.p0[:, y_idx]
         rhoY = mpv.HydroState.rhoY0[:, y_idx]
@@ -253,14 +256,14 @@ def sol_init(Sol, mpv, bdry, elem, node, th, ud):
     Sol.rhoe[x_idx,y_idx] = rhoe(rho, u ,v, w, p, ud, th)
     Sol.rhoY[x_idx,y_idx] = rhoY
 
-    mpv.p2_cells[x_idx,y_idx] = HySt.p20[x_idx,y_idx]
+    mpv.p2_cells[x_idx,y_idx] = HySt.p20[x_idx,y_idx][c_idx]
     # mpv.p2_cells[x_idx,y_idx] -= mpv.HydroState.p20[0,y_idx]
     # print(mpv.p2_cells[x_idx,y_idx] - mpv.HydroState.p20[0,y_idx])
     # print(mpv.p2_cells[0])
 
     Sol.rhoX[x_idx,y_idx] = Sol.rho[x_idx,y_idx] * (1.0 / Y[0, y_idx] - mpv.HydroState.S0[0, y_idx])
 
-    mpv.p2_nodes[:-1,:-1] = HyStn.p20
+    mpv.p2_nodes[:,elem.igy:-elem.igy] = HyStn.p20[:,elem.igy:-elem.igy]
 
     hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th)
 
