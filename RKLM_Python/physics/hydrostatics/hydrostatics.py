@@ -1,5 +1,6 @@
-from inputs.boundary import set_ghostcells_p2
+from inputs.boundary import set_ghostcells_p2, set_ghostnodes_p2
 import numpy as np
+import numba
 
 def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     Gamma = th.gm1 / th.gamm
@@ -109,6 +110,7 @@ def hydrostatic_state(mpv, elem, node, th, ud):
     S_integral_p = -0.5 * elem.dy * 0.5 * (S_p + 1.0 / ud.stratification(0.0))
 
     yn_p = node.y[igy-1]
+
     Sn_p = 1.0 / ud.stratification(elem.y[igy-1])
     Sn_integral_p = -node.dy * Sn_p
 
@@ -136,7 +138,7 @@ def hydrostatic_state(mpv, elem, node, th, ud):
     yn_p = yn_m - elem.dy
     # Sn_m = np.copy(Sn_p)
     Sn_p = 1.0 / ud.stratification(0.5*(yn_p + yn_m))
-    Sn_integral_p -= np.arange(0,igy) * elem.dy
+    Sn_integral_p -= np.arange(igy) * elem.dy * Sn_p
     Sn_integral_p = Sn_integral_p[::-1]
 
     pi_hydro_n = pi0 - Gamma * g * Sn_integral_p
@@ -177,11 +179,12 @@ def hydrostatic_state(mpv, elem, node, th, ud):
     mpv.HydroState.Y0[0,igy:] = 1.0 / S_p
     mpv.HydroState.rhoY0[0,igy:] = rhoY_hydro
 
-    yn_m = np.copy(yn_p)
-    yn_p = yn_m + node.dy
+    yn_p = node.y[igy+1:]
+    yn_m = np.zeros_like(yn_p)
+    yn_m[1:] = yn_p[:-1]
     # Sn_m = Sn_p
     Sn_p = 1.0 / ud.stratification(0.5 * (yn_p + yn_m))
-    Sn_integral_p += np.arange(icy-igy)*elem.dy
+    Sn_integral_p = np.cumsum(elem.dy * Sn_p)
 
     pi_hydro_n = pi0 - Gamma * g * Sn_integral_p
     rhoY_hydro_n = pi_hydro_n**gm1_inv
@@ -192,6 +195,7 @@ def hydrostatic_state(mpv, elem, node, th, ud):
     mpv.HydroState_n.S0[0,igy+1:] = 1.0 / mpv.HydroState_n.Y0[0,igy+1:]
     mpv.HydroState_n.p0[0,igy+1:] = rhoY_hydro_n**th.gamm
     mpv.HydroState_n.p20[0,igy+1:] = pi_hydro_n / ud.Msq
+    # print(mpv.HydroState_n.p20[0])
 
 def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
     Gammainv = th.Gammainv
@@ -228,14 +232,10 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
     
     dotPU = pibot[icx-igx] / coeff[icx-igx]
     pibot[igx:-igx] -= dotPU * coeff[igx:-igx]
-    # print(pibot)
+
     x_idx = slice(igx,-igx+1)
     y_idx = slice(igy,-igy+1)
 
-    # print(mpv.HydroState.p20[0,y_idx])
-    # print(mpv.p2_cells[x_idx,y_idx][:3][:5])
-    # print(pibot[x_idx][:5])
-    # print(mpv.HydroState.p20[:3,y_idx][:5])
     mpv.p2_cells[x_idx,y_idx] += pibot[x_idx].reshape(-1,1) - 1.0 * mpv.HydroState.p20[0,y_idx].reshape(1,-1)
     set_ghostcells_p2(mpv.p2_cells, elem, ud)
 
@@ -273,6 +273,47 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
 
     mpv.dp2_nodes[:,:] = mpv.p2_nodes
 
-    print(mpv.dp2_nodes)
+    # guess initial node value (at left-most node)
+    mpv.p2_nodes[igx,igy:-igy] = mpv.dp2_nodes[igx,igy:-igy]
+
+    mpv.p2_nodes[:,:] = loop_over_array(igx,igy,icxn,icyn,mpv.p2_nodes, mpv.dp2_nodes)
+
+    assert ((node.icx+1)%2) == 1
+    delp2 = 0.5 * (mpv.p2_nodes[-igx-1,igy:-igy] - mpv.p2_nodes[igx,igy:-igy])
+    delp2 = delp2.reshape(1,-1)
+    sgn = np.ones_like(mpv.p2_nodes[:,0][igy:-igy]).reshape(-1,1)
+    
+    sgn[1::2] *= -1
+
+    mpv.p2_nodes[igx:-igx,igy:-igy] += sgn * delp2
+    set_ghostnodes_p2(mpv.p2_nodes, node, ud)
+
+    mpv.dp2_nodes[:,:] = 0.0
+
+    inner_domain = (slice(igx,-igx), slice(igy,-igy))
+    pi = ud.Msq * (mpv.p2_cells[inner_domain] + 1.0 * mpv.HydroState.p20[0,igy,-igy])
+    Y = Sol.rhoY[inner_domain] / Sol.rho[inner_domain]
+    rhoold = np.copy(Sol.rho[inner_domain])
+    Sol.rhoY[inner_domain] = pi**th.gm1inv
+    Sol.rho[inner_domain] = Sol.rhoY / Y
+    Sol.rhou[inner_domain] *= Sol.rho[inner_domain] / rhoold
+    Sol.rhov[inner_domain] *= Sol.rho[inner_domain] / rhoold
+    Sol.rhow[inner_domain] *= Sol.rho[inner_domain] / rhoold
+    Sol.rhoe[inner_domain] *= Sol.rho[inner_domain] / rhoold
+    Sol.rhoX[inner_domain] *= Sol.rho[inner_domain] / rhoold
+
+# need details:
+# populate the rest of the nodes recursively based on the left-most node.
+# recursive: use numba.
+@numba.jit(nopython=True)
+def loop_over_array(igx,igy,icxn,icyn,p,dp):
+    for j in range(igy,icyn-igy):
+        for i in range(igx+1,icxn-igx):
+            # if i < 6 and j < 6:
+                # print("i=%i,j=%i, p[i,j]=%e, dp[i-1,j]=%e, p[i-1,j]=%e" %(i, j, p[i,j], dp[i-1,j] , p[i-1,j]))
+                # print(i, j, p[i,j], dp[i-1,j] , p[i-1,j])
+            p[i,j] = 2.0 * dp[i-1,j] - p[i-1,j]
+    return p
+        
 
     
