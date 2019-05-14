@@ -183,6 +183,9 @@ class ElemSpaceDiscr(SpaceDiscr):
         z0 = g.z0 - self.igz * self.dz + 0.5 * self.dz if self.icz > 1 else g.z0
 
         self.x = x0 + self.dx * np.arange(self.icx)
+        # print(x0)
+        # print(self.dx)
+
         self.y = y0 + self.dy * np.arange(self.icy)
         self.z = z0 + self.dz * np.arange(self.icz)
 
