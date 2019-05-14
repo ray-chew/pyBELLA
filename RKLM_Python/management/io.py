@@ -87,6 +87,8 @@ class io(object):
         # temperature
         self.populate(name,'T', Sol.rhoY**th.gamm / Sol.rho)
         # temperature difference
+        # print(mpv.HydroState.p0[0,:])
+        # print(mpv.HydroState.rho0[0,:])
         self.populate(name,'dT', Sol.rhoY**th.gamm / Sol.rho - mpv.HydroState.p0[0,:] / mpv.HydroState.rho0[0,:])
 
         # species mass fraction(?)
@@ -95,6 +97,8 @@ class io(object):
         self.populate(name,'dY', Sol.rhoY / Sol.rho - self.ud.stratification(elem.y))
 
     def vortz(self,Sol,elem,node):
+        if elem.ndim != 2:
+            return
         # 2d-case
         igs = elem.igs
         dx = elem.dx
@@ -110,7 +114,7 @@ class io(object):
 
         dvdx = 0.5 * ((inner_domain_rhov[bottom_right_idx] / inner_domain_rho[bottom_right_idx] - inner_domain_rhov[bottom_left_idx] / inner_domain_rho[bottom_left_idx]) + (inner_domain_rhov[top_right_idx] / inner_domain_rho[top_right_idx] - inner_domain_rhov[top_left_idx] / inner_domain_rho[top_left_idx])) / dx
 
-        dudy = 0.5 * ((inner_domain_rhou[bottom_right_idx] / inner_domain_rho[bottom_right_idx] - inner_domain_rhou[bottom_left_idx] / inner_domain_rho[bottom_left_idx]) + inner_domain_rhou[top_right_idx] / inner_domain_rho[top_right_idx] - inner_domain_rhou[top_left_idx] / inner_domain_rho[top_left_idx]) / dy
+        dudy = 0.5 * ((inner_domain_rhou[bottom_right_idx] / inner_domain_rho[bottom_right_idx] - inner_domain_rhou[bottom_left_idx] / inner_domain_rho[bottom_left_idx]) + (inner_domain_rhou[top_right_idx] / inner_domain_rho[top_right_idx] - inner_domain_rhou[top_left_idx] / inner_domain_rho[top_left_idx])) / dy
 
         vortz = np.zeros((node.sc)).squeeze()
 
@@ -120,7 +124,8 @@ class io(object):
 
     def dpress_dim(self,mpv,ud,th):
         p0 = (th.Gamma * ud.Msq * mpv.p2_cells) 
-        p = np.sign(p0) * np.abs(p0) **th.Gammainv
+        p = np.power(p0,th.Gammainv, dtype=np.complex)
+        p = p.real
         return (p - mpv.HydroState.p0[0,:]) * self.ud.p_ref
 
 
