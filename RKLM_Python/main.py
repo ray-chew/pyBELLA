@@ -7,9 +7,11 @@ from inputs.enum_bdry import BdryType
 from inputs.boundary import InitializeBdry
 from physics.low_mach.mpv import MPV
 
-from inputs.acoustic_wave_high import UserData, sol_init
+from inputs.travelling_vortex_3D_48 import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
+
+np.set_printoptions(precision=18)
 
 step = 0
 t = 0.0
@@ -39,13 +41,13 @@ if elem.ndim > 2:
 
 th = ThemodynamicInit(ud)
 
-bdry = InitializeBdry(elem, ud)
+# bdry = InitializeBdry(elem, ud)
 mpv = MPV(elem, node, ud)
 
-Sol0 = sol_init(Sol, mpv,bdry,elem, node, th, ud)
+Sol0 = sol_init(Sol, mpv, elem, node, th, ud)
 
-writer = io()
-writer.write_all(Sol0,mpv,elem,node,th,'000',ud)
+writer = io(ud)
+writer.write_all(Sol0,mpv,elem,node,th,'000')
 # Explicit_malloc
 # recovery_malloc
 
