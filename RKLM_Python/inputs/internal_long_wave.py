@@ -100,18 +100,6 @@ class UserData(object):
         self.hill_height = 0.0 * 0.096447
         self.hill_length_scale = 0.1535
 
-        # self.xmin = - 5000. / self.h_ref
-        # self.xmax =   5000. / self.h_ref
-        # self.ymin = - 5000. / self.h_ref / 8.0
-        # self.ymax =   5000. / self.h_ref / 8.0
-        # self.zmin = - 5000. / self.h_ref
-        # self.zmax =   5000. / self.h_ref
-
-        # self.wind_speed = 1.0 * 10.0 / self.u_ref
-        # self.wind_shear = -0.0
-        # self.hill_height = 0.0
-        # self.hill_length_scale = 99999.9
-
         self.bdry_type_min = np.empty((3), dtype=object)
         self.bdry_type_max = np.empty((3), dtype=object)
 
@@ -216,7 +204,7 @@ class UserData(object):
         gm1inv = th.gm1inv
         return (p * gm1inv + 0.5 * Msq * rho * (u*u + v*v + w*w))
 
-def sol_init(Sol, mpv, bdry, elem, node, th, ud):
+def sol_init(Sol, mpv, elem, node, th, ud):
     u0 = ud.wind_speed
     v0 = 0.0
     w0 = 0.0
@@ -276,11 +264,10 @@ def sol_init(Sol, mpv, bdry, elem, node, th, ud):
     mpv.p2_nodes[:,elem.igy:-elem.igy] = HyStn.p20[:,elem.igy:-elem.igy]
 
     hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th)
-
+    # print(mpv.p2_nodes[103,:10])
     ud.is_nonhydrostasy = 0.0
     ud.compressibility = 1.0
 
-    # set_wall_rhoYflux(bdry,Sol,mpv,elem,ud)
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
     return Sol
