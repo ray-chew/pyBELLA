@@ -193,6 +193,7 @@ class UserData(object):
 
         self.stratification = self.stratification_function
         self.molly = self.molly_function
+        self.rhoe = self.rhoe_method
 
     def stratification_function(self, y):
         Nsq = self.Nsq_ref * self.t_ref * self.t_ref
@@ -208,6 +209,13 @@ class UserData(object):
 
         return 0.5 * np.minimum(1.0 - np.cos(np.pi * xi_l), 1.0 - np.cos(np.pi * xi_r))
 
+    @staticmethod
+    def rhoe_method(rho,u,v,w,p,ud,th):
+        Msq = ud.compressibility * ud.Msq
+
+        gm1inv = th.gm1inv
+        return (p * gm1inv + 0.5 * Msq * rho * (u*u + v*v + w*w))
+
 def sol_init(Sol, mpv, bdry, elem, node, th, ud):
     u0 = ud.wind_speed
     v0 = 0.0
@@ -217,7 +225,9 @@ def sol_init(Sol, mpv, bdry, elem, node, th, ud):
     a = ud.scale_factor * 5.0e+3 / ud.h_ref
 
     hydrostatic_state(mpv, elem, node, th, ud)
-    # print(mpv.HydroState.p20[0])
+    
+    # print(mpv.HydroState_n.p20[0][:10])
+
     HySt = States(node.sc,ud)
     HyStn = States(node.sc,ud)
 
@@ -253,7 +263,7 @@ def sol_init(Sol, mpv, bdry, elem, node, th, ud):
     Sol.rhou[x_idx,y_idx] = rho * u
     Sol.rhov[x_idx,y_idx] = rho * v
     Sol.rhow[x_idx,y_idx] = rho * w
-    Sol.rhoe[x_idx,y_idx] = rhoe(rho, u ,v, w, p, ud, th)
+    Sol.rhoe[x_idx,y_idx] = ud.rhoe(rho, u ,v, w, p, ud, th)
     Sol.rhoY[x_idx,y_idx] = rhoY
 
     mpv.p2_cells[x_idx,y_idx] = HySt.p20[x_idx,y_idx][c_idx]
@@ -268,18 +278,12 @@ def sol_init(Sol, mpv, bdry, elem, node, th, ud):
     hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th)
 
     ud.is_nonhydrostasy = 0.0
-    ud.compressibility = 0.0
+    ud.compressibility = 1.0
 
     # set_wall_rhoYflux(bdry,Sol,mpv,elem,ud)
-    set_explicit_boundary_data(Sol,elem,ud)
+    set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
     return Sol
 
 def T_from_p_rho(p, rho):
     return np.divide(p,rho)
-
-def rhoe(rho,u,v,w,p,ud,th):
-    Msq = ud.compressibility * ud.Msq
-    gm1inv = th.gm1inv
-
-    return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
