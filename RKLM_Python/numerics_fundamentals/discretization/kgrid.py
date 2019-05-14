@@ -183,18 +183,8 @@ class ElemSpaceDiscr(SpaceDiscr):
         z0 = g.z0 - self.igz * self.dz + 0.5 * self.dz if self.icz > 1 else g.z0
 
         self.x = x0 + self.dx * np.arange(self.icx)
-        # print(x0)
-        # print(self.dx)
-
         self.y = y0 + self.dy * np.arange(self.icy)
         self.z = z0 + self.dz * np.arange(self.icz)
-
-        # for i in range(self.icx):
-        #     self.x[i] = x0 + self.dx * i
-        # for j in range(self.icy):
-        #     self.y[i] = y0 + self.dy * j
-        # for k in range(self.icz):
-        #     self.z[i] = z0 + self.dz * k
         
 class NodeSpaceDiscr(SpaceDiscr):
     def __init__(self,g):
@@ -212,10 +202,3 @@ class NodeSpaceDiscr(SpaceDiscr):
         self.z = z0 + self.dz * np.arange(self.icz)
 
         self.sc = (self.icx , self.icy , self.icz)
-
-        # for i in range(self.icx):
-        #     self.x[i] = x0 + self.dx * i
-        # for j in range(self.icy):
-        #     self.y[i] = y0 + self.dy * j
-        # for k in range(self.icz):
-        #     self.z[i] = z0 + self.dz * k
