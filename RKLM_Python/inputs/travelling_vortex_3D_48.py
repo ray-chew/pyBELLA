@@ -3,7 +3,7 @@ from inputs.enum_bdry import BdryType
 from management.enumerator import TimeIntegrator, MolecularTransport,HillShapes, BottomBC, LimiterType, RecoveryOrder
 from numerics_fundamentals.discretization.time_discretization import SetTimeIntegratorParameters
 from physics.gas_dynamics.explicit import TimeIntegratorParams
-from physics.hydrostatics.hydrostatics import HydrostaticStates
+from physics.hydrostatics.hydrostatics import hydrostatic_state
 from inputs.boundary import set_wall_rhoYflux, set_explicit_boundary_data, set_ghostcells_p2
 
 class UserData(object):
@@ -61,6 +61,7 @@ class UserData(object):
 
         self.is_nonhydrostatic = 1
         self.is_compressible = 1
+        self.compressibility = 0.0
         self.acoustic_timestep = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
 
@@ -113,6 +114,11 @@ class UserData(object):
         self.bdry_type_max[0] = BdryType.PERIODIC
         self.bdry_type_max[1] = BdryType.PERIODIC
         self.bdry_type_max[2] = BdryType.WALL
+
+        self.bdry_type = np.empty((3), dtype=object)
+        self.bdry_type[0] = BdryType.PERIODIC
+        self.bdry_type[1] = BdryType.PERIODIC
+        self.bdry_type[2] = BdryType.WALL
 
         self.absorber = 0 # 0 == WRONG == FALSE 
         self.bottom_theta_bc = BottomBC.BOTTOM_BC_DEFAULT
@@ -177,16 +183,19 @@ class UserData(object):
 
         self.n_time_series = 500
 
-        self.output_base_folder = "output/"
-        self.output_folder_name_psinc = "low_Mach_gravity_psinc/"
-        self.output_folder_name_comp = "low_Mach_gravity_comp"
+        self.output_base_name = "_travelling_vortex_3d_48"
+        self.output_name_psinc = "_low_mach_gravity_psinc"
+        self.output_name_comp = "_low_mach_gravity_comp"
 
         self.stratification = self.stratification_function
 
     def stratification_function(self, y):
-        return 1.0
+        if type(y) == float:
+            return 1.0
+        else:
+            return np.ones((y.shape))
 
-def sol_init(Sol, Sol0, mpv, bdry, elem, node, th, ud):
+def sol_init(Sol, mpv, elem, node, th, ud):
     u0 = 1.0 * ud.wind_speed
     v0 = 1.0 * ud.wind_speed
     w0 = 0.0
@@ -206,9 +215,9 @@ def sol_init(Sol, Sol0, mpv, bdry, elem, node, th, ud):
     # nhiressq = nhires * nhires
 
     xcm = xc - (ud.xmax - ud.xmin)
-    # xcp = xc + (ud.xmax - ud.xmin)
+    xcp = xc + (ud.xmax - ud.xmin)
     ycm = yc - (ud.ymax - ud.ymin)
-    # ycp = yc + (ud.ymax - ud.ymin)
+    ycp = yc + (ud.ymax - ud.ymin)
 
     # dx = elem.dx
     # dy = elem.dy
@@ -231,7 +240,7 @@ def sol_init(Sol, Sol0, mpv, bdry, elem, node, th, ud):
     igyn = node.igy
     # igzn = node.igz
 
-    HydrostaticStates(mpv, elem, node, th, ud)
+    hydrostatic_state(mpv, elem, node, th, ud)
 
     coe = np.zeros((25))
     coe[0]  =     1.0 / 12.0
@@ -260,67 +269,63 @@ def sol_init(Sol, Sol0, mpv, bdry, elem, node, th, ud):
     coe[23] = -   6.0 / 35.0
     coe[24] =     1.0 / 72.0
 
-    xs = elem.x[:,:,:]
-    ys = elem.y[:,igy:-igy,:]
-
+    xs = elem.x.reshape(-1,1)
+    ys = elem.y[igy:-igy].reshape(1,-1)
     xccs = np.zeros_like(xs)
     yccs = np.zeros_like(ys)
 
-    xccs[np.where(np.abs(xs - xc) < np.abs(xs - xcm))] = xc
-    xccs[np.where(np.abs(xs - xc) > np.abs(xs - xcm))] = xcm
+    xccs[...] = xc * (np.abs(xs - xc) < np.abs(xs - xcm))
+    xccs[...] = xcm * (np.abs(xs - xc) > np.abs(xs - xcm))
 
-    yccs[np.where(np.abs(ys - yc) < np.abs(ys - ycm))] = yc
-    yccs[np.where(np.abs(ys - yc) > np.abs(ys - ycm))] = ycm
+    yccs[...] = yc * (np.abs(ys - yc) < np.abs(ys - ycm))
+    yccs[...] = ycm * (np.abs(ys - yc) > np.abs(ys - ycm))
 
     r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
+    print(ys)
+    print(xs)
     # every broadcasting has to be followed by a squeeze.
     # anyway to abstract this?
-    r = r.squeeze()
-
-    uth = np.zeros_like(r)
-    uth[np.where(r<R0)] = rotdir * fac * (1.0 - r/R0)**6 * (r/R0)**6
-
-    idx_x_noghost_y_ghost = elem.idx_inner_domain[1]
+    # r = r.squeeze()
+    print(r[0])
+    uth = (rotdir * fac * (1.0 - r/R0)**6 * (r/R0)**6) * (r < R0)
 
     u = u0 + uth * (-(ys-yccs)/r)
     v = v0 + uth * (+(xs-xccs)/r)
     w = w0
-    p_hydro = mpv.HydroState.p0[idx_x_noghost_y_ghost][:,0].reshape(-1,1)
-    rhoY = mpv.HydroState.rhoY0[idx_x_noghost_y_ghost][:,0].reshape(-1,-1)
+    p_hydro = mpv.HydroState.p0[0,igy:-igy]
+    rhoY = mpv.HydroState.rhoY0[0,igy:-igy]
     # theta = ud.stratification(ys)
     rho = np.zeros_like(r)
-    rho[np.where(r<R0)] = rho0 + del_rho * (1. - (r/R0)**2)**6
-    rho[np.where(r>R0)] = rho0
+    rho[...] += (rho0 + del_rho * (1. - (r/R0)**2)**6) * (r < R0)
+    rho[...] += rho0 * (r > R0)
     # T = T_from_p_rho(p_hydro,rho)
 
     dp2c = np.zeros_like((r))
-    if r/R0 < 1.0:
-        for ip in range(25):
-            dp2c += a_rho * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
+    for ip in range(25):
+        dp2c += (a_rho * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2) * (r/R0 < 1.0)
 
     p2c = np.copy(dp2c)
 
-    Sol.rho[idx_x_noghost_y_ghost] = rho
-    Sol.rhou[idx_x_noghost_y_ghost] = rho * u
-    Sol.rhov[idx_x_noghost_y_ghost] = rho * v
-    Sol.rhow[idx_x_noghost_y_ghost] = rho * w
+    Sol.rho[:,igy:-igy] = rho
+    Sol.rhou[:,igy:-igy] = rho * u
+    Sol.rhov[:,igy:-igy] = rho * v
+    Sol.rhow[:,igy:-igy] = rho * w
 
     if (ud.is_compressible) :
         p = p0 + ud.Msq * fac**2 * dp2c
-        Sol.rhoY[idx_x_noghost_y_ghost] = p**th.gamminv
-        Sol.rhoe[idx_x_noghost_y_ghost] = rhoe(rho,u,v,w,p,ud,th)
+        Sol.rhoY[:,igy:-igy] = p**th.gamminv
+        Sol.rhoe[:,igy:-igy] = rhoe(rho,u,v,w,p,ud,th)
     else:
-        Sol.rhoe[idx_x_noghost_y_ghost] = rhoe(rho,u,v,w,p_hydro,ud,th)
-        Sol.rhoY[idx_x_noghost_y_ghost] = rhoY
+        Sol.rhoe[:,igy:-igy] = rhoe(rho,u,v,w,p_hydro,ud,th)
+        Sol.rhoY[:,igy:-igy] = rhoY
 
-    mpv.p2_cells = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0)
+    mpv.p2_cells[:,igy:-igy] = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[0,igy:-igy])
     
     set_ghostcells_p2(mpv.p2_cells, elem, ud)
 
-    xs = node.x[igxn:-igxn,:,:]
-    ys = node.y[:,igyn:-igyn,:]
+    xs = node.x[igxn:-igxn].reshape(-1,1)
+    ys = node.y[igyn:-igyn].reshape(1,-1)
     # z = node.z
-
     xccs = np.zeros_like(xs)
     yccs = np.zeros_like(ys)
 
@@ -331,19 +336,20 @@ def sol_init(Sol, Sol0, mpv, bdry, elem, node, th, ud):
     xccs[np.where(np.abs(xs - xc) > np.abs(xs - xcm))] = xcm
 
     r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
-    r = r.squeeze()
+    
+    for ip in range(25):
+        mpv.p2_nodes[igxn:-igxn,igyn:-igyn] += coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
+    mpv.p2_nodes[igxn:-igxn,igyn:-igyn] *= r/R0 < 1.0
 
-    if (r/R0 < 1.0):
-        for _ in range(25):
-            mpv.p2_nodes[igxn:-igxn,igyn:-igyn] += coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
+    mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[0,igyn:-igyn+1])
 
-    mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * mpv.p2_nodes[igxn:-igxn,igyn:-igyn] / mpv.HydroState.rhoY0[igxn:-igxn,igyn:-igyn][:,0].reshape(-1,1)
     ud.nonhydrostasy = 0.0
     ud.compressibility = 0.0
 
-    set_wall_rhoYflux(bdry, Sol, mpv, elem, ud)
-    
+    # set_wall_rhoYflux(bdry, Sol, mpv, elem, ud)
+    set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
+    return Sol
 
 def T_from_p_rho(p, rho):
     return np.divide(p,rho)
