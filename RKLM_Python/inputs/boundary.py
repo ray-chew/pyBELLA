@@ -251,4 +251,4 @@ def set_ghostnodes_p2(p,node,ud):
         if ud.bdry_type[dim] == BdryType.PERIODIC:
             p[...] = np.pad(p[idx], ghost_padding, periodic_plus_one)
         else: # ud.bdry_type[dim] == BdryType.WALL:
-            p[...] = np.pad(p[idx], ghost_padding, 'symmetric')
+            p[...] = np.pad(p[idx], ghost_padding, 'reflect')
