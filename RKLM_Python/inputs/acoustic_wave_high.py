@@ -192,9 +192,12 @@ class UserData(object):
         self.stratification = self.stratification_function
 
     def stratification_function(self, y):
-        return 1.0
+        if type(y) == float:
+            return 1.0
+        else:
+            return np.ones((y.shape))
 
-def sol_init(Sol, mpv, bdry, elem, node, th, ud):
+def sol_init(Sol, mpv, elem, node, th, ud):
     u0 = ud.wind_speed
     v0 = 0.0
     w0 = 0.0
@@ -243,8 +246,8 @@ def sol_init(Sol, mpv, bdry, elem, node, th, ud):
     ud.is_nonhydrostasy = 1.0
     ud.compressibility = 1.0
 
-    set_wall_rhoYflux(bdry,Sol,mpv,elem,ud)
-    set_explicit_boundary_data(Sol,elem,ud)
+    # set_wall_rhoYflux(bdry,Sol,mpv,elem,ud)
+    set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
     return Sol
 
