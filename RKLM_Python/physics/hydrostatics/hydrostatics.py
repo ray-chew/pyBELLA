@@ -64,7 +64,6 @@ def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     Sn_integral_p = dys * Sn_p
     Sn_integral_p[:,:2] = np.cumsum(Sn_integral_p[:,:2][:,::-1],axis=1)[:,::-1]
     Sn_integral_p[:,2:] = np.cumsum(Sn_integral_p[:,2:],axis=1)
-    # print("SN:", Sn_integral_p[0])
 
     pi_hydro_n = pi0 - Gamma * g * Sn_integral_p
     rhoY_hydro_n = pi_hydro_n**gm1_inv
@@ -80,7 +79,6 @@ def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     HydroState_n.S0[xc_idx,igy+1:] = 1.0 / Y_n[:,igy:]
     HydroState_n.p0[xc_idx,igy+1:] = rhoY_hydro_n[:,igy:]**th.gamm
     HydroState_n.p20[xc_idx,igy+1:] = pi_hydro_n[:,igy:] / ud.Msq
-    # print(HydroState_n.p20[0])
 
 def hydrostatic_state(mpv, elem, node, th, ud):
     Gamma = th.gm1 / th.gamm
@@ -111,6 +109,7 @@ def hydrostatic_state(mpv, elem, node, th, ud):
 
     y_p = elem.y[:igy]
 
+    # S_p = np.zeros((igy))
     S_p = 1.0 / ud.stratification(y_p)
     S_m = [S_p[1], 1./ud.stratification(0.0)]
     S_integral_p = -elem.dy * 0.5 * (S_p + S_m)
