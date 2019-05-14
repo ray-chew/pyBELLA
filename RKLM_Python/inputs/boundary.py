@@ -187,7 +187,6 @@ def get_gravity_padding(ndim,cur_idx,direction,offset,elem):
 
     nimage = np.copy(gravity_padding)
     nimage[y_axs] = int(cur_idx)
-    # print(tuple(nlast))
     return tuple(nlast), tuple(nsource), tuple(nimage)
 
 def get_ghost_padding(ndim,dim,igs):
@@ -202,30 +201,7 @@ def get_ghost_padding(ndim,dim,igs):
     inner_domain = [slice(None)] * ndim
     inner_domain[dim] = slice(igs[dim],-igs[dim])
 
-    return tuple(ghost_padding),  tuple(inner_domain)#tuple(padded_idx)
-
-def bound(Sol, lambda_var, split_step, elem, ud):
-    None
-
-# def fancy(nsource,nlast,iimage,g,dh,th,bdry,Sol):
-#     Y_last = Sol.rhoY[nlast] / Sol.rho[nlast]
-#     v = Sol.rhov[nsource] / Sol.rho[nsource]
-#     w = Sol.rhow[nsource] / Sol.rho[nsource]
-
-#     Sol.rhoX = Sol.rhoX / Sol.rho
-
-#     rhoYu_wall = bdry.wall_rhoYflux
-#     rhoYu_image = 2.0 * rhoYu_wall - Sol.rhou[nsource] * Sol.rhoY[nsource] / Sol.rho[nsource]
-#     S = 1. / ud.stratification(elem.x[iimage])
-
-#     dpi = sign*(th.Gamma * g) * 0.5 * dh * (np.divide(1.0,Y_last) + S)
-#     rhoY = (Sol.rhoY[nlast]**th.gm1 + dpi)**th.gm1inv
-#     rho = rhoY * S
-#     p = rhoY**th.gamm
-#     if bd == 'top':
-#         u = rhoYu_image / rhoY
-#     else:
-#         u = 2.0 * rhoYu_wall - Sol.rhou[nsource] / Sol.rho[nsource]
+    return tuple(ghost_padding),  tuple(inner_domain)
 
 def periodic_plus_one(vector, pad_width, iaxis, kwargs=None):
     if all(pad_width) > 0:
