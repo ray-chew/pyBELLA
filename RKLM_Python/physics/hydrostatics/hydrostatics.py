@@ -291,11 +291,11 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
     mpv.dp2_nodes[:,:] = 0.0
 
     inner_domain = (slice(igx,-igx), slice(igy,-igy))
-    pi = ud.Msq * (mpv.p2_cells[inner_domain] + 1.0 * mpv.HydroState.p20[0,igy,-igy])
+    pi = ud.Msq * (mpv.p2_cells[inner_domain] + 1.0 * mpv.HydroState.p20[0,igy:-igy])
     Y = Sol.rhoY[inner_domain] / Sol.rho[inner_domain]
     rhoold = np.copy(Sol.rho[inner_domain])
     Sol.rhoY[inner_domain] = pi**th.gm1inv
-    Sol.rho[inner_domain] = Sol.rhoY / Y
+    Sol.rho[inner_domain] = Sol.rhoY[inner_domain] / Y
     Sol.rhou[inner_domain] *= Sol.rho[inner_domain] / rhoold
     Sol.rhov[inner_domain] *= Sol.rho[inner_domain] / rhoold
     Sol.rhow[inner_domain] *= Sol.rho[inner_domain] / rhoold
