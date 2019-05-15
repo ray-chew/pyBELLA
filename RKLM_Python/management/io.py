@@ -135,7 +135,7 @@ class io(object):
         # name is the simulation time of the output array
         # path is the array type, e.g. U,V,H, and data is it's data.
         file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'r+')
-        file.create_dataset(str(path) + '/' + str(path) + '_' + str(name), data=data, chunks=True, compression='gzip', compression_opts=4)
+        file.create_dataset(str(path) + '/' + str(path) + '_' + str(name), data=data, chunks=True, compression='gzip', compression_opts=4, dtype=np.float32)
         # add attributes, i.e. the simulation parameters to each dataset.
         # for key in options:
         #     file[str(path) + '/' + str(name)].attrs.create(key,options[key])
