@@ -104,13 +104,13 @@ class io(object):
         dx = elem.dx
         dy = elem.dy
 
-        inner_domain_rho = Sol.rho[igs[0]-1:-igs[0], igs[1]-1:-igs[1]].T
-        inner_domain_rhou = Sol.rhou[igs[0]-1:-igs[0], igs[1]-1:-igs[1]].T
-        inner_domain_rhov = Sol.rhov[igs[0]-1:-igs[0], igs[1]-1:-igs[1]].T
+        inner_domain_rho = Sol.rho[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
+        inner_domain_rhou = Sol.rhou[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
+        inner_domain_rhov = Sol.rhov[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
 
         top_left_idx     = (slice(0,-1)    , slice(0,-1))
-        top_right_idx    = (slice(0,-1)    , slice(1, None))
-        bottom_left_idx  = (slice(1, None) , slice(0,-1))
+        top_right_idx    = (slice(1, None) , slice(0,-1))
+        bottom_left_idx  = (slice(0,-1)    , slice(1, None))
         bottom_right_idx = (slice(1, None) , slice(1,None))
 
         # print(inner_domain_rhov[bottom_right_idx])
@@ -121,7 +121,7 @@ class io(object):
         vortz = np.zeros((node.sc)).squeeze()
 
         vortz[igs[0]:-igs[0]-1, igs[1]:-igs[1]-1] = dvdx - dudy
-        return vortz.T
+        return vortz
 
 
     def dpress_dim(self,mpv,ud,th):
@@ -129,7 +129,7 @@ class io(object):
         p = np.power(p0,th.Gammainv, dtype=np.complex)
         p = p.real
         return (p - mpv.HydroState.p0[0,:]) * self.ud.p_ref
-        
+
 
     def populate(self,name,path,data,options=None):
         # name is the simulation time of the output array
