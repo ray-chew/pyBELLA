@@ -103,23 +103,25 @@ class io(object):
         igs = elem.igs
         dx = elem.dx
         dy = elem.dy
-        inner_domain_rho = Sol.rho[igs[0]-1:-igs[0]+1, igs[1]-1:-igs[1]+1]
-        inner_domain_rhou = Sol.rho[igs[0]-1:-igs[0]+1, igs[1]-1:-igs[1]+1]
-        inner_domain_rhov = Sol.rho[igs[0]-1:-igs[0]+1, igs[1]-1:-igs[1]+1]
+
+        inner_domain_rho = Sol.rho[igs[0]-1:-igs[0], igs[1]-1:-igs[1]].T
+        inner_domain_rhou = Sol.rhou[igs[0]-1:-igs[0], igs[1]-1:-igs[1]].T
+        inner_domain_rhov = Sol.rhov[igs[0]-1:-igs[0], igs[1]-1:-igs[1]].T
 
         top_left_idx     = (slice(0,-1)    , slice(0,-1))
         top_right_idx    = (slice(0,-1)    , slice(1, None))
         bottom_left_idx  = (slice(1, None) , slice(0,-1))
         bottom_right_idx = (slice(1, None) , slice(1,None))
 
+        # print(inner_domain_rhov[bottom_right_idx])
         dvdx = 0.5 * ((inner_domain_rhov[bottom_right_idx] / inner_domain_rho[bottom_right_idx] - inner_domain_rhov[bottom_left_idx] / inner_domain_rho[bottom_left_idx]) + (inner_domain_rhov[top_right_idx] / inner_domain_rho[top_right_idx] - inner_domain_rhov[top_left_idx] / inner_domain_rho[top_left_idx])) / dx
 
-        dudy = 0.5 * ((inner_domain_rhou[bottom_right_idx] / inner_domain_rho[bottom_right_idx] - inner_domain_rhou[bottom_left_idx] / inner_domain_rho[bottom_left_idx]) + (inner_domain_rhou[top_right_idx] / inner_domain_rho[top_right_idx] - inner_domain_rhou[top_left_idx] / inner_domain_rho[top_left_idx])) / dy
+        dudy = 0.5 * ((inner_domain_rhou[bottom_right_idx] / inner_domain_rho[bottom_right_idx] - inner_domain_rhou[top_right_idx] / inner_domain_rho[top_right_idx]) + (inner_domain_rhou[bottom_left_idx] / inner_domain_rho[bottom_left_idx] - inner_domain_rhou[top_left_idx] / inner_domain_rho[top_left_idx])) / dy
 
         vortz = np.zeros((node.sc)).squeeze()
 
-        vortz[igs[0]:-igs[0], igs[1]:-igs[1]] = dvdx - dudy
-        return vortz
+        vortz[igs[0]:-igs[0]-1, igs[1]:-igs[1]-1] = dvdx - dudy
+        return vortz.T
 
 
     def dpress_dim(self,mpv,ud,th):
@@ -127,8 +129,7 @@ class io(object):
         p = np.power(p0,th.Gammainv, dtype=np.complex)
         p = p.real
         return (p - mpv.HydroState.p0[0,:]) * self.ud.p_ref
-
-
+        
 
     def populate(self,name,path,data,options=None):
         # name is the simulation time of the output array
