@@ -281,12 +281,7 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     yccs[...] = ycm * (np.abs(ys - yc) > np.abs(ys - ycm))
 
     r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
-    print(ys)
-    print(xs)
-    # every broadcasting has to be followed by a squeeze.
-    # anyway to abstract this?
-    # r = r.squeeze()
-    print(r[0])
+
     uth = (rotdir * fac * (1.0 - r/R0)**6 * (r/R0)**6) * (r < R0)
 
     u = u0 + uth * (-(ys-yccs)/r)
@@ -294,15 +289,19 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     w = w0
     p_hydro = mpv.HydroState.p0[0,igy:-igy]
     rhoY = mpv.HydroState.rhoY0[0,igy:-igy]
-    # theta = ud.stratification(ys)
+
     rho = np.zeros_like(r)
     rho[...] += (rho0 + del_rho * (1. - (r/R0)**2)**6) * (r < R0)
     rho[...] += rho0 * (r > R0)
-    # T = T_from_p_rho(p_hydro,rho)
 
     dp2c = np.zeros_like((r))
     for ip in range(25):
         dp2c += (a_rho * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2) * (r/R0 < 1.0)
+
+        print(" ###################################### ip = " + str(ip) + " ######################################")
+        print(dp2c[np.where(dp2c != 0)])
+        print(r[np.where(dp2c != 0)])
+        print((((r/R0)**(12+ip) - 1.0))[np.where(dp2c !=0)])
 
     p2c = np.copy(dp2c)
 
@@ -346,7 +345,6 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     ud.nonhydrostasy = 0.0
     ud.compressibility = 0.0
 
-    # set_wall_rhoYflux(bdry, Sol, mpv, elem, ud)
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
     return Sol
