@@ -32,18 +32,12 @@ def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     S_p = 1.0 / Y[:,:]
     S_m = np.zeros_like(S_p)
     S_m[:,1:3] = 1.0 / Y_n[:,igy].reshape(-1,1)
-    # S_m[2] = Y_n[0,igy]
     S_m[:,0] = 1.0 / Y[:,1]
     S_m[:,3:] = 1.0 / Y[:,2:-1]
-
-    # print('S_p + S_m = ', S_p + S_m)
 
     S_integral_p = dys * 0.5 * (S_p + S_m)
     S_integral_p[:,:igy] = np.cumsum(S_integral_p[:,:igy][:,::-1],axis=1)[:,::-1]
     S_integral_p[:,igy:] = np.cumsum(S_integral_p[:,igy:],axis=1)
-
-    # print('S_int_p = ', S_integral_p)
-    # print(S_integral_p)
 
     pi_hydro = pi0 - Gamma * g * S_integral_p
     p_hydro = pi_hydro**Gamma_inv
@@ -57,7 +51,6 @@ def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     HydroState.Y0[c_idx] = 1.0 / S_p
     HydroState.rhoY0[c_idx] = rhoY_hydro
 
-    # Sn_m = Sn_p
     Sn_p = 1.0 / Y[:,:]
     dys = np.ones((icy)) * elem.dy
     dys[:2] *= -1
@@ -80,6 +73,7 @@ def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     HydroState_n.p0[xc_idx,igy+1:] = rhoY_hydro_n[:,igy:]**th.gamm
     HydroState_n.p20[xc_idx,igy+1:] = pi_hydro_n[:,igy:] / ud.Msq
 
+
 def hydrostatic_state(mpv, elem, node, th, ud):
     Gamma = th.gm1 / th.gamm
     gamm = th.gamm
@@ -91,11 +85,53 @@ def hydrostatic_state(mpv, elem, node, th, ud):
     igy = elem.igy
 
     rhoY0 = 1.0
-
     g = ud.gravity_strength[1]
-
     p0 = rhoY0**gamm
     pi0 = rhoY0**gm1
+
+    ###########################
+    # Update cell hydrostates
+    #
+    # Define the midpoint quadrature along the vertical (y-axis) 
+    dys = np.hstack((np.ones((igy-1)) * -elem.dy , [-elem.dy/2] , [elem.dy/2] , np.ones((icy-3)) * elem.dy))
+    y_ps = elem.y
+    y_ms = np.hstack((elem.y[1:igy] , node.y[igy] , node.y[igy] , elem.y[igy:-1]))
+
+    # Get the inverse stratifcation at each point
+    S_ps = 1.0 / ud.stratification(y_ps)
+    S_ms = 1.0 / ud.stratification(y_ms)
+    # Integral over the inverse stratification gives expression required to
+    # calculate the Exner pressure
+    S_integral_p = 0.5 * dys * (S_ms + S_ps)
+    # Cumulative sum over the column
+    S_integral_p[:igy] = np.cumsum(S_integral_p[:igy][::-1])[::-1]
+    S_integral_p[igy:] = np.cumsum(S_integral_p[igy:])
+
+    # Calculate pi - Exner pressure, p - pressure, rhoY - aux. pressure field
+    pi_hydro = pi0 - Gamma * g * S_integral_p
+    p_hydro = pi_hydro**Gamma_inv
+    rhoY_hydro = pi_hydro**gm1_inv
+
+    # Update the cell solutions
+    mpv.HydroState.rhoY0[0,:] = rhoY_hydro
+    mpv.HydroState.rho0[0,:] = rhoY_hydro * S_ps
+    mpv.HydroState.p0[0,:] = p_hydro
+    mpv.HydroState.p20[0,:] = pi_hydro / ud.Msq
+    mpv.HydroState.S0[0,:] = S_ps
+    mpv.HydroState.S10[0,:] = 0.0
+    mpv.HydroState.Y0[0,:] = 1.0 / S_ps
+    #
+    # End of update cell hydrostates
+    #
+    ###########################
+
+
+
+    ############################
+    #
+    # Update node hydrostates
+    #
+    # Update the bottom reference node (bottom-most vertical height)
     mpv.HydroState_n.Y0[0,igy] = ud.stratification(0.0)
     mpv.HydroState_n.rhoY0[0,igy] = rhoY0
     mpv.HydroState_n.rho0[0,igy] = rhoY0 / ud.stratification(0.0)
@@ -103,96 +139,45 @@ def hydrostatic_state(mpv, elem, node, th, ud):
     mpv.HydroState_n.p0[0,igy] = p0
     mpv.HydroState_n.p20[0,igy] = pi0 / ud.Msq
 
-    ###########################
-    y_p = elem.y[igy-1]
-    y_m = np.copy(y_p)
+    # Get midpoint quadrature for the ghost cells below the bottom (minus!)
+    Sn_integral_p = np.zeros((igy))
+    yn_p = node.y[:igy-1]
+    yn_m = node.y[1:igy]
+    Sn_integral_p[-1] = -node.dy * 1.0 / ud.stratification(elem.y[igy-1])
+    Sn_integral_p[:-1] = -node.dy * 1.0 / ud.stratification(0.5*(yn_p + yn_m))
+    Sn_integral_p = np.cumsum(Sn_integral_p[:igy][::-1])[::-1]
 
-    y_p = elem.y[:igy]
-
-    # S_p = np.zeros((igy))
-    S_p = 1.0 / ud.stratification(y_p)
-    S_m = [S_p[1], 1./ud.stratification(0.0)]
-    S_integral_p = -elem.dy * 0.5 * (S_p + S_m)
-    S_integral_p[1] *= 0.5
-    S_integral_p[0] += S_integral_p[1]
-
-    pi_hydro = pi0 - Gamma * g * S_integral_p
-    p_hydro = pi_hydro**Gamma_inv
-    rhoY_hydro = pi_hydro**gm1_inv
-
-    mpv.HydroState.rhoY0[0,:igy] = rhoY_hydro
-    mpv.HydroState.rho0[0,:igy] = rhoY_hydro * S_p
-    mpv.HydroState.p0[0,:igy] = p_hydro
-    mpv.HydroState.p20[0,:igy] = pi_hydro / ud.Msq
-    mpv.HydroState.S0[0,:igy] = S_p
-    mpv.HydroState.S10[0,:igy] = 0.0
-    mpv.HydroState.Y0[0,:igy] = 1.0 / S_p
-
-    yn_p = node.y[igy-1]
-    yn_m = np.copy(yn_p)
-    yn_p = yn_m - elem.dy
-    # Sn_m = np.copy(Sn_p)
-    Sn_p = 1.0 / ud.stratification(elem.y[igy-1])
-    Sn_integral_p = -node.dy * Sn_p
-    Sn_p = 1.0 / ud.stratification(0.5*(yn_p + yn_m))
-    Sn_integral_p -= np.arange(igy) * elem.dy * Sn_p
-    Sn_integral_p = Sn_integral_p[::-1]
-
-    pi_hydro_n = pi0 - Gamma * g * Sn_integral_p
-    rhoY_hydro_n = pi_hydro_n**gm1_inv
-    mpv.HydroState_n.rhoY0[0,:igy] = rhoY_hydro_n
-    mpv.HydroState_n.Y0[0,:igy] = ud.stratification(0.5 * (y_p + y_m))
-    mpv.HydroState_n.rho0[0,:igy] = rhoY_hydro_n / mpv.HydroState_n.Y0[0,:igy]
-    mpv.HydroState_n.S0[0,:igy] = 1.0 / mpv.HydroState_n.Y0[0,:igy]
-    mpv.HydroState_n.p0[0,:igy] = rhoY_hydro_n**th.gamm
-    mpv.HydroState_n.p20[0,:igy] = pi_hydro_n / ud.Msq
-
-    ###########################
-
-    y_p = elem.y[igy]
-    S_p = 1.0 / ud.stratification(y_p)
-    S_integral_p = 0.5 * elem.dy * 0.5 * (S_p + 1.0 / ud.stratification(0.0))
-
-    yn_p = node.y[igy+1]
-    Sn_p = 1.0 / ud.stratification(y_p)
-    Sn_integral_p = node.dy * Sn_p
-    dys = np.ones((icy-elem.igx)) * elem.dy * 0.5
-    dys[0] *= 0.5
-    S_p = 1.0 / ud.stratification(elem.y[igy:])
-    S_m = np.zeros_like(S_p)
-    S_m[0] = 1.0 / ud.stratification(0.0)
-    S_m[1:] = 1.0 / ud.stratification(elem.y[igy:-1])
-    S_integral_p = np.cumsum(dys * (S_p + S_m))
-
-    pi_hydro = pi0 - Gamma * g * S_integral_p
-    p_hydro = pi_hydro**Gamma_inv
-    rhoY_hydro = pi_hydro**gm1_inv
-
-    mpv.HydroState.rho0[0,igy:] = rhoY_hydro * S_p
-    mpv.HydroState.p0[0,igy:] = p_hydro
-    mpv.HydroState.p20[0,igy:] = pi_hydro / ud.Msq
-    mpv.HydroState.S0[0,igy:] = S_p
-    mpv.HydroState.S10[0,igy:] = 0.0
-    mpv.HydroState.Y0[0,igy:] = 1.0 / S_p
-    mpv.HydroState.rhoY0[0,igy:] = rhoY_hydro
-
+    # Get midpoint quadrature for the bulk domain
     yn_p = node.y[igy+1:]
     yn_m = np.zeros_like(yn_p)
     yn_m[1:] = yn_p[:-1]
-    # Sn_m = Sn_p
-    Sn_p = 1.0 / ud.stratification(0.5 * (yn_p + yn_m))
-    Sn_integral_p = np.cumsum(elem.dy * Sn_p)
 
+    Sn_p = 1.0 / ud.stratification(0.5 * (yn_p + yn_m))
+    Sn_integral_p = np.hstack((Sn_integral_p, np.cumsum(elem.dy * Sn_p)))
+
+    # Calculate Exner pressure and aux. pressure field
     pi_hydro_n = pi0 - Gamma * g * Sn_integral_p
     rhoY_hydro_n = pi_hydro_n**gm1_inv
 
-    mpv.HydroState_n.rhoY0[0,igy+1:] = rhoY_hydro_n
-    mpv.HydroState_n.Y0[0,igy+1:] = ud.stratification(0.5 * (y_p + y_m))
-    mpv.HydroState_n.rho0[0,igy+1:] = rhoY_hydro_n / mpv.HydroState_n.Y0[0,igy+1:]
+    # Update the node solutions
+    mpv.HydroState_n.rhoY0[0,:igy] = rhoY_hydro_n[:igy]
+    mpv.HydroState_n.Y0[0,:igy] = ud.stratification(0.5 * (y_ps[:igy] + y_ms[:igy]))
+    mpv.HydroState_n.rho0[0,:igy] = rhoY_hydro_n[:igy] / mpv.HydroState_n.Y0[0,:igy]
+    mpv.HydroState_n.S0[0,:igy] = 1.0 / mpv.HydroState_n.Y0[0,:igy]
+    mpv.HydroState_n.p0[0,:igy] = rhoY_hydro_n[:igy]**th.gamm
+    mpv.HydroState_n.p20[0,:igy] = pi_hydro_n[:igy] / ud.Msq
+
+    mpv.HydroState_n.rhoY0[0,igy+1:] = rhoY_hydro_n[igy:]
+    mpv.HydroState_n.Y0[0,igy+1:] = ud.stratification(0.5 * (y_ps[igy:] + y_ms[igy:]))
+    mpv.HydroState_n.rho0[0,igy+1:] = rhoY_hydro_n[igy:] / mpv.HydroState_n.Y0[0,igy+1:]
     mpv.HydroState_n.S0[0,igy+1:] = 1.0 / mpv.HydroState_n.Y0[0,igy+1:]
-    mpv.HydroState_n.p0[0,igy+1:] = rhoY_hydro_n**th.gamm
-    mpv.HydroState_n.p20[0,igy+1:] = pi_hydro_n / ud.Msq
-    # print(mpv.HydroState_n.p20[0])
+    mpv.HydroState_n.p0[0,igy+1:] = rhoY_hydro_n[igy:]**th.gamm
+    mpv.HydroState_n.p20[0,igy+1:] = pi_hydro_n[igy:] / ud.Msq
+    #
+    # End of update node hydrostates
+    #
+    ###########################
+    
 
 def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
     Gammainv = th.Gammainv
