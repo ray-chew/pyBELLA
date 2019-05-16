@@ -211,34 +211,14 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     xc = 0.0
     yc = 0.0
 
-    # nhires = 1
-    # nhiressq = nhires * nhires
-
     xcm = xc - (ud.xmax - ud.xmin)
-    xcp = xc + (ud.xmax - ud.xmin)
     ycm = yc - (ud.ymax - ud.ymin)
-    ycp = yc + (ud.ymax - ud.ymin)
 
-    # dx = elem.dx
-    # dy = elem.dy
+    igs = elem.igs
+    igy = elem.igs[1]
 
-    # dxx = dx / nhires
-    # dyy = dy / nhires
-
-    # icx = elem.icx
-    # icy = elem.icy
-    # icz = elem.icz
-
-    igx = elem.igx
-    igy = elem.igy
-    # igz = elem.igz
-
-    # icxn = node.icx
-    # icyn = node.icy
-    # iczn = node.icz
     igxn = node.igx
     igyn = node.igy
-    # igzn = node.igz
 
     hydrostatic_state(mpv, elem, node, th, ud)
 
@@ -297,11 +277,6 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     dp2c = np.zeros_like((r))
     for ip in range(25):
         dp2c += (a_rho * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2) * (r/R0 < 1.0)
-
-        print(" ###################################### ip = " + str(ip) + " ######################################")
-        print(dp2c[np.where(dp2c != 0)])
-        print(r[np.where(dp2c != 0)])
-        print((((r/R0)**(12+ip) - 1.0))[np.where(dp2c !=0)])
 
     p2c = np.copy(dp2c)
 
