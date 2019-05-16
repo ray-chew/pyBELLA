@@ -1,6 +1,5 @@
 import numpy as np
 from inputs.enum_bdry import BdryType
-from numerics_fundamentals.math_own import MIN_own
 
 class Grid(object):
     def __init__(self, inx,iny,inz,x0,x1,y0,y1,z0,z1,left,right,bottom,top,back,front):
@@ -78,7 +77,6 @@ class SpaceDiscr(object):
         self.icz = self.ic[2] = g.inz - 1 + 2 * self.igz if g.inz > 1 else 1
 
         self.nc = self.icx * self.icy * self.icz
-        # self.sc = (g.inx, g.iny, g.inz)
         self.sc = (self.icx, self.icy, self.icz)
         self.igs = [self.igx,self.igy,self.igz]
 
@@ -112,12 +110,11 @@ class SpaceDiscr(object):
         assert self.dy > 0.0
         assert self.dz > 0.0
 
-        self.dxmin = MIN_own(self.dx, self.dy)
-        self.dxmin = MIN_own(self.dxmin, self.dz)
+        self.dxmin = np.min((self.dx, self.dy, self.dz))
 
-        self.x = np.zeros((self.icx)).reshape(-1,1,1)
-        self.y = np.zeros((self.icy)).reshape(1,-1,1)
-        self.z = np.zeros((self.icz)).reshape(1,1,-1)
+        # self.x = np.zeros((self.icx)).reshape(-1,1,1)
+        # self.y = np.zeros((self.icy)).reshape(1,-1,1)
+        # self.z = np.zeros((self.icz)).reshape(1,1,-1)
 
         self.left = g.left
         self.right = g.right
@@ -132,47 +129,6 @@ class SpaceDiscr(object):
         for dim in range(self.ndim):
             self.inner_domain[dim] = slice(self.igs[dim],-self.igs[dim])
         self.inner_domain = tuple(self.inner_domain)
-
-        # save the indices of the ghost cells
-        self.idx_ghost_min = np.empty((3), dtype=object)
-        self.idx_ghost_max = np.empty((3), dtype=object)
-        self.idx_ghost_min[0] = self.idx('i',0,self.igx)
-        self.idx_ghost_max[0] = self.idx('i',-self.igx,)
-        self.idx_ghost_min[1] = self.idx('j',0,self.igy)
-        self.idx_ghost_max[1] = self.idx('j',-self.igy,)
-        self.idx_ghost_min[2] = self.idx('k',0,self.igz)
-        self.idx_ghost_max[2] = self.idx('k',-self.igz,)
-
-        # save the indices of the inner boundary corresponding
-        # to the number of ghost cells
-        self.idx_inner_min = np.empty((3), dtype=object)
-        self.idx_inner_max = np.empty((3), dtype=object)
-        self.idx_inner_min[0] = self.idx('i',self.igx,self.igx+self.igx)
-        self.idx_inner_max[0] = self.idx('i',-self.igx-self.igx,-self.igx)
-        self.idx_inner_min[1] = self.idx('j',self.igy,self.igy+self.igy)
-        self.idx_inner_max[1] = self.idx('j',-self.igy-self.igy,-self.igy)
-        self.idx_inner_min[2] = self.idx('k',self.igz,self.igz+self.igz)
-        self.idx_inner_max[2] = self.idx('k',-self.igz-self.igz,-self.igz)
-
-        self.idx_inner_domain = np.empty((4), dtype=object)
-        self.idx_inner_domain[0] = self.idx('i',self.igx,-self.igx)
-        self.idx_inner_domain[1] = self.idx('j',self.igy,-self.igy)
-        self.idx_inner_domain[2] = self.idx('k',self.igz,-self.igz)
-        self.idx_inner_domain[3] = (self.idx_inner_domain[0][1], self.idx_inner_domain[1][0], self.idx_inner_domain[2][1])
-
-    def idx(self,axs,start,stop=None):
-        ijk = {
-            'i' : -1,
-            'j' : -2,
-            'k' : -3,
-        }
-        # + ndim to account for python indexing; last axis = first index.
-        axis = ijk[axs] + self.ndim
-
-        indices = np.empty((self.ndim),dtype=object)
-        indices[:] = slice(None)
-        indices[axis] = slice(start,stop)
-        return tuple(indices)
         
 
 class ElemSpaceDiscr(SpaceDiscr):
