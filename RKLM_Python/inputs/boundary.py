@@ -1,7 +1,7 @@
 from management.enumerator import HillShapes
 from inputs.enum_bdry import BdryType
 
-import numpy as np 
+import numpy as np
 
 def set_explicit_boundary_data(Sol, elem, ud, th, mpv):
     igs = elem.igs
@@ -19,12 +19,13 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv):
         else:
             # recursive updating of array - for loop cannot be avoided....?
             # assumption: gravity always acts in the y-axis
+            gravity_axis = 1
             direction = -1.
             offset = 0
 
-            g = ud.gravity_strength[1]
+            g = ud.gravity_strength[gravity_axis]
 
-            for side in ghost_padding[1]:
+            for side in ghost_padding[gravity_axis]:
                 direction *= -1
                 for current_idx in np.arange(side)[::-1]:
 
@@ -66,6 +67,7 @@ def set_boundary(Sol,pads,btype,idx):
         Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
     else:
         Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
+    Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
     Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
     Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
     Sol.rhoe[...] = np.pad(Sol.rhoe[idx],pads,btype)
@@ -85,7 +87,7 @@ def negative_symmetric(vector,pad_width,iaxis,kwargs=None):
 
 def get_gravity_padding(ndim,cur_idx,direction,offset,elem):
     cur_i = np.copy(cur_idx)
-    cur_idx += offset * ((elem.icy - 1) - 2*cur_idx)   
+    cur_idx += offset * ((elem.icy - 1) - 2*cur_idx)
     gravity_padding = [(slice(None))] * ndim
     y_axs = ndim - 1
 

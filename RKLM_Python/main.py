@@ -4,7 +4,6 @@ from management.variable import States, Vars
 from numerics_fundamentals.discretization import kgrid
 from physics.gas_dynamics.thermodynamic import ThemodynamicInit
 from inputs.enum_bdry import BdryType
-from inputs.boundary import InitializeBdry
 from physics.low_mach.mpv import MPV
 
 from inputs.travelling_vortex_3D_48 import UserData, sol_init

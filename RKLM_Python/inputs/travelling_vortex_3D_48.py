@@ -5,6 +5,7 @@ from numerics_fundamentals.discretization.time_discretization import SetTimeInte
 from physics.gas_dynamics.explicit import TimeIntegratorParams
 from physics.hydrostatics.hydrostatics import hydrostatic_state
 from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2
+from physics.low_mach.second_projection import euler_backward_non_advective_impl_part
 
 class UserData(object):
     NSPEC = 1
@@ -321,6 +322,26 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     ud.compressibility = 0.0
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
+
+    if ud.initial_projection == True:
+        ud.is_compressible = 0
+        ud.compressibility = 0.0
+
+        p2aux = np.copy(mpv.p2_nodes)
+
+        Sol.rhou -= u0 * Sol.rho
+        Sol.rhov -= v0 * Sol.rho
+
+        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5)
+
+        mpv.p2_nodes[...] = p2aux
+        mpv.dp2_nodes[...] = 0.0
+
+        Sol.rhou += u0 * Sol.rho
+        Sol.rhov += v0 * Sol.rho
+
+        ud.is_compressible = 1
+        ud.compressibility = 1.0
 
     return Sol
 
