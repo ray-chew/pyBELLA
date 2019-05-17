@@ -4,7 +4,7 @@ from management.enumerator import TimeIntegrator, MolecularTransport,HillShapes,
 from numerics_fundamentals.discretization.time_discretization import SetTimeIntegratorParameters
 from physics.gas_dynamics.explicit import TimeIntegratorParams
 from physics.hydrostatics.hydrostatics import hydrostatic_state
-from inputs.boundary import set_wall_rhoYflux, set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
+from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
 
 class UserData(object):
     NSPEC = 1
