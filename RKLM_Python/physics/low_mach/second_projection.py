@@ -2,10 +2,12 @@ from inputs.enum_bdry import BdryType
 from inputs.boundary import set_explicit_boundary_data
 from scipy import signal
 import numpy as np
+from itertools import product
 
 def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff):
     nc = node.nc
     mpv.dp2_nodes = np.copy(mpv.p2_nodes)
+    rhs = np.zeros_like(mpv.p2_nodes)
 
     x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
     y_periodic = ud.bdry_type[1] == BdryType.PERIODIC
@@ -14,8 +16,15 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt)
-    
-    
+
+    rhs[...], rhs_max = divergence_nodes(rhs,elem,node,Sol,mpv,ud)
+    rhs /= dt
+
+    # integral condition nodes
+
+    if ud.is_compressible:
+        rhs_from_p_old()
+
     
 
 def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
@@ -98,3 +107,47 @@ def scale_wall_node_values(mpv, node, ud, factor=0.5):
             for direction in [-1,1]:
                 wall_idx[dim] = (igs[dim] + 1) * direction
                 mpv.wcenter[wall_idx] *= factor
+
+
+def divergence_nodes(rhs,elem,node,Sol,mpv,ud):
+    ndim = elem.ndim
+    igs = elem.igs
+    dxyz = elem.dxyz
+    inner_idx = np.empty((ndim), dtype=object)
+
+    for dim in range(ndim):
+        is_periodic = ud.bdry_type[dim] == BdryType.PERIODIC
+
+        inner_idx[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic)
+        indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat = ndim)]
+        signs = [sgn for sgn in product([1,-1], repeat = ndim)]
+
+    inner_idx = tuple(inner_idx)
+    Sols = np.dstack((Sol.rhou[inner_idx], Sol.rhov[inner_idx], Sol.rhow[inner_idx]))
+
+    oodxyz = 1./dxyz
+    Y = Sol.rhoY[inner_idx] / Sol.rho[inner_idx]
+    tmp_fxyx = 0.5**(ndim-1) * oodxyz[:ndim] * Sols[...,:ndim] * Y[...,None]
+    
+    count = 0
+    for index in indices:
+        rhs[inner_idx][index] += np.inner(signs[count], tmp_fxyx)
+        count += 1
+
+    rhs_max = np.amax(rhs[inner_idx]) if np.amax(rhs[inner_idx]) > 0 else 0
+    return rhs, rhs_max
+
+
+def rhs_from_p_old(rhs,node,mpv):
+    igs = node.igs
+    ndim = node.ndim
+
+    assert ndim != 1, "Not implemented for 1D"
+    
+    inner_idx = np.empty((ndim), dtype=object)
+    for dim in range(ndim):
+        igs[dim] = slice(igs[dim],-igs[dim])
+
+    rhs_hh = mpv.wcenter[inner_idx] * mpv.p2_nodes[inner_idx]
+    rhs[inner_idx] += rhs_hh
+    return rhs

@@ -64,6 +64,7 @@ class UserData(object):
         self.is_compressible = 1
         self.compressibility = 0.0
         self.acoustic_timestep = 0
+        self.acoustic_order = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
 
         self.gravity_strength = np.zeros((3))
@@ -318,7 +319,7 @@ def sol_init(Sol, mpv, elem, node, th, ud):
 
     mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[0,igyn:-igyn+1])
 
-    ud.nonhydrostasy = 0.0
+    ud.nonhydrostasy = 1.0
     ud.compressibility = 0.0
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
