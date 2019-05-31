@@ -1,20 +1,19 @@
 from inputs.enum_bdry import BdryType
 from inputs.boundary import set_explicit_boundary_data, set_ghostnodes_p2
-from physics.low_mach.laplacian import stencil_9pt_operator, stencil_9pt
+from physics.low_mach.laplacian import stencil_9pt_2nd_try, stencil_9pt
 from scipy import signal
 import numpy as np
 from itertools import product
 
 from scipy.sparse.linalg import LinearOperator, bicgstab
 
+import h5py
+
 def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff):
     nc = node.sc
-    # mpv.dp2_nodes = np.copy(mpv.p2_nodes)
     rhs = np.zeros_like(mpv.p2_nodes)
-
-    # x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
-    # y_periodic = ud.bdry_type[1] == BdryType.PERIODIC
-    # z_periodic = ud.bdry_type[2] == BdryType.PERIODIC
+    p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy])
+    # p2 = np.copy(mpv.p2_nodes)
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
@@ -27,18 +26,36 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         rhs = rhs_from_p_old(rhs,node,mpv)
 
     # stencil_9pt_operator(elem,node,mpv,ud)
-    lap2D = stencil_9pt(elem,node,mpv,ud)
-    lap2D = LinearOperator((53**2,53**2),matvec=lap2D)
+    # hf = h5py.File('/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_travelling_vortex_3d_48_with_initial_projection/low_Mach_gravity_comp/wplusx/wplusx_000.h5', 'r')
+    # mpv.wplus[0][...] = (hf.get('Data-Set-2').value)
+    # mpv.wplus[1][...] = (hf.get('Data-Set-2').value)
+    # hf.close()
+
+    # print(mpv.wcenter)
+
+    lap2D = stencil_9pt_2nd_try(elem,node,mpv,ud)
+    # lap2D = LinearOperator((53**2,53**2),matvec=lap2D)
+    lap2D = LinearOperator((49**2,49**2),matvec=lap2D)
+    # print(mpv.wplus[0])
+    # rhs = rhs.T
+
+    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),maxiter=200)
+
+    # p2,_ = bicgstab(lap2D,rhs.ravel(),x0=p2.ravel(),maxiter=200)
+    # p2_full = p2.reshape(53,53)
+    p2_full = np.zeros(nc).squeeze()
+    p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(49,49)
     
-    p2,_ = bicgstab(lap2D,rhs.reshape(-1,),x0=mpv.dp2_nodes.ravel(),tol=1e-1)
-    p2 = p2.reshape(nc).squeeze()
-    
-    correction_nodes(Sol,elem,node,mpv,p2,dt,1.0,ud)
+    # hf = h5py.File('/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_travelling_vortex_3d_48_with_initial_projection/low_Mach_gravity_comp/pnew/pnew_000.h5', 'r')
+    # p2_full = hf.get('Data-Set-2').value
+    # hf.close()
+    mpv.dp2_nodes[...] = np.copy(p2_full)
+    correction_nodes(Sol,elem,node,mpv,p2_full,dt,1.0,ud)
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
-    mpv.dp2_nodes[...] = p2 - mpv.p2_nodes
-    mpv.p2_nodes[...] = p2
+    # mpv.dp2_nodes[...] = p2 - mpv.p2_nodes
+    mpv.p2_nodes[...] = p2_full
 
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
@@ -50,8 +67,10 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,crange,ud):
     vcorr = 1.
 
     igx,igy,igz = node.igs[0],node.igs[1],node.igs[2]
-    dx, dy = node.dx, node.dy
-    oodx, oody = 1.0/dx, 1.0/dy
+    dx = node.dx
+    dy = node.dy
+    oodx = 1.0/dx
+    oody = 1.0/dy
 
     hplusx = mpv.wplus[0]
     hplusy = mpv.wplus[1]
@@ -60,19 +79,24 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,crange,ud):
     inner_idx = (slice(igx,-igx),slice(igy,-igy))
     inner_eidx = (slice(igx,-igx-1),slice(igy,-igy-1))
     p = p[inner_idx]
+    # print(p)
 
     indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat=ndim)]
+
     signs_x = [-1., -1., +1., +1.]
     signs_y = [-1., +1., -1., +1.]
 
-    Dpx = np.zeros((p.shape[0]-1,p.shape[1]-1))
-    Dpy = np.zeros((p.shape[0]-1,p.shape[1]-1))
+    Dpx = 0
+    Dpy = 0
     cnt = 0
     for index in indices:
         Dpx += signs_x[cnt] * p[index]
         Dpy += signs_y[cnt] * p[index]
+        cnt += 1
+
     Dpx *= 0.5 * oodx
     Dpy *= 0.5 * oody
+
     thinv = Sol.rho[inner_idx] / Sol.rhoY[inner_idx]
 
     Sol.rhou[inner_idx] += -dt * thinv * hplusx[inner_eidx] * Dpx
@@ -100,7 +124,8 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     igs = elem.igs
     igx = igs[0]
     igy = igs[1]
-    # igz = igs[2]
+
+    # # igz = igs[2]
     nindim = np.empty((ndim),dtype='object')
     innerdim = np.copy(nindim)
     eindim = np.empty((ndim),dtype='object')
@@ -109,6 +134,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
         is_periodic = ud.bdry_type[dim] == BdryType.PERIODIC
         nindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic)
         innerdim[dim] = slice(igs[dim],-igs[dim])
+        # eindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic-1)
         eindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic-1)
 
         if dim == 1:
@@ -116,24 +142,54 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
             right_idx = None if -igs[dim]+is_periodic == 0 else -igs[dim]+is_periodic
             y_idx1 = slice(igs[dim]-is_periodic+1, right_idx)
 
-    strat = 2.0 * (mpv.HydroState_n.Y0[0,y_idx1] - mpv.HydroState_n.Y0[0,y_idx]) / (mpv.HydroState_n.Y0[0,y_idx1] + mpv.HydroState_n.Y0[0,y_idx]) / dy
-
-    nindim = tuple(nindim)
-    eindim = tuple(eindim)
+    # nindim = tuple(nindim)
+    # eindim = tuple(eindim)
     innerdim = tuple(innerdim)
+    # nindim = (slice(None,),slice(None,))
 
-    Y = Sol.rhoY[nindim] / Sol.rho[nindim]
-    coeff = Gammainv * Sol.rhoY[nindim] * Y
-    fsqsc = dt**2 * coriolis**2
-    fimp = 1.0 / (1.0 + fsqsc)
-    Nsqsc = time_offset * dt**2 * (g / Msq) * strat
-    gimp = 1.0 / (nonhydro + Nsqsc)
+    # Y = Sol.rhoY[nindim] / Sol.rho[nindim]
+    # coeff = Gammainv * Sol.rhoY[nindim] * Y
+    # fsqsc = dt**2 * coriolis**2
+    # fimp = 1.0 / (1.0 + fsqsc)
+    # Nsqsc = time_offset * dt**2 * (g / Msq) * strat
+    # gimp = 1.0 / (nonhydro + Nsqsc)
 
-    for dim in range(ndim):
-        if dim == 1:
-            mpv.wplus[dim][eindim] = coeff * gimp
-        else:
-            mpv.wplus[dim][eindim] = coeff * fimp
+    # for dim in range(ndim):
+    #     if dim == 1:
+    #         mpv.wplus[dim][eindim] = coeff * gimp
+    #     else:
+    #         mpv.wplus[dim][eindim] = coeff * fimp
+
+    icx = elem.icx
+    icy = elem.icy
+
+    is_x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
+    is_y_periodic = ud.bdry_type[1] == BdryType.PERIODIC
+
+    tmp_hplusx = np.zeros_like(mpv.wplus[0]).reshape(-1,)
+    tmp_hplusy = np.zeros_like(mpv.wplus[1]).reshape(-1,)
+    # coeff = coeff.ravel()
+
+    for j in range(igy - is_y_periodic, icy - igy + is_y_periodic):
+        m = j * icx
+
+        strat = 2.0 * (mpv.HydroState_n.Y0[0,j+1] - mpv.HydroState_n.Y0[0,j]) / (mpv.HydroState_n.Y0[0,j+1] + mpv.HydroState_n.Y0[0,j]) / dy
+
+        for i in range(igx - is_x_periodic, icx - igx + is_x_periodic):
+            n = m + i
+
+            Y = Sol.rhoY.ravel()[n] / Sol.rho.ravel()[n]
+            coeff = Gammainv * Sol.rhoY.ravel()[n] * Y
+            fsqsc = dt**2 * coriolis**2
+            fimp = 1.0 / (1.0 + fsqsc)
+            Nsqsc = time_offset * dt**2 * (g / Msq) * strat
+            gimp = 1.0 / (nonhydro + Nsqsc)
+
+            tmp_hplusx[n] = coeff * fimp
+            tmp_hplusy[n] = coeff * gimp
+
+    mpv.wplus[0][...] = tmp_hplusx.reshape(node.sc).squeeze()
+    mpv.wplus[1][...] = tmp_hplusy.reshape(node.sc).squeeze()
 
     kernel = (ndim - 1) * np.ones((2,2))
 
