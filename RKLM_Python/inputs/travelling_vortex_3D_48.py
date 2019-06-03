@@ -336,7 +336,7 @@ def sol_init(Sol, mpv, elem, node, th, ud):
         euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5)
 
         mpv.p2_nodes[...] = p2aux
-        mpv.dp2_nodes[...] = 0.0
+        # mpv.dp2_nodes[...] = 0.0
 
         Sol.rhou += u0 * Sol.rho
         Sol.rhov += v0 * Sol.rho
