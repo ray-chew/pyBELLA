@@ -142,54 +142,56 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
             right_idx = None if -igs[dim]+is_periodic == 0 else -igs[dim]+is_periodic
             y_idx1 = slice(igs[dim]-is_periodic+1, right_idx)
 
-    # nindim = tuple(nindim)
-    # eindim = tuple(eindim)
+    strat = 2.0 * (mpv.HydroState_n.Y0[0,y_idx1] - mpv.HydroState_n.Y0[0,y_idx]) / (mpv.HydroState_n.Y0[0,y_idx1] + mpv.HydroState_n.Y0[0,y_idx]) / dy
+
+    nindim = tuple(nindim)
+    eindim = tuple(eindim)
     innerdim = tuple(innerdim)
     # nindim = (slice(None,),slice(None,))
 
-    # Y = Sol.rhoY[nindim] / Sol.rho[nindim]
-    # coeff = Gammainv * Sol.rhoY[nindim] * Y
-    # fsqsc = dt**2 * coriolis**2
-    # fimp = 1.0 / (1.0 + fsqsc)
-    # Nsqsc = time_offset * dt**2 * (g / Msq) * strat
-    # gimp = 1.0 / (nonhydro + Nsqsc)
+    Y = Sol.rhoY[nindim] / Sol.rho[nindim]
+    coeff = Gammainv * Sol.rhoY[nindim] * Y
+    fsqsc = dt**2 * coriolis**2
+    fimp = 1.0 / (1.0 + fsqsc)
+    Nsqsc = time_offset * dt**2 * (g / Msq) * strat
+    gimp = 1.0 / (nonhydro + Nsqsc)
 
-    # for dim in range(ndim):
-    #     if dim == 1:
-    #         mpv.wplus[dim][eindim] = coeff * gimp
-    #     else:
-    #         mpv.wplus[dim][eindim] = coeff * fimp
+    for dim in range(ndim):
+        if dim == 1:
+            mpv.wplus[dim][eindim] = coeff * gimp
+        else:
+            mpv.wplus[dim][eindim] = coeff * fimp
 
-    icx = elem.icx
-    icy = elem.icy
+    # icx = elem.icx
+    # icy = elem.icy
 
-    is_x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
-    is_y_periodic = ud.bdry_type[1] == BdryType.PERIODIC
+    # is_x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
+    # is_y_periodic = ud.bdry_type[1] == BdryType.PERIODIC
 
-    tmp_hplusx = np.zeros_like(mpv.wplus[0]).reshape(-1,)
-    tmp_hplusy = np.zeros_like(mpv.wplus[1]).reshape(-1,)
-    # coeff = coeff.ravel()
+    # tmp_hplusx = np.zeros_like(mpv.wplus[0]).reshape(-1,)
+    # tmp_hplusy = np.zeros_like(mpv.wplus[1]).reshape(-1,)
+    # # coeff = coeff.ravel()
 
-    for j in range(igy - is_y_periodic, icy - igy + is_y_periodic):
-        m = j * icx
+    # for j in range(igy - is_y_periodic, icy - igy + is_y_periodic):
+    #     m = j * icx
 
-        strat = 2.0 * (mpv.HydroState_n.Y0[0,j+1] - mpv.HydroState_n.Y0[0,j]) / (mpv.HydroState_n.Y0[0,j+1] + mpv.HydroState_n.Y0[0,j]) / dy
+    #     strat = 2.0 * (mpv.HydroState_n.Y0[0,j+1] - mpv.HydroState_n.Y0[0,j]) / (mpv.HydroState_n.Y0[0,j+1] + mpv.HydroState_n.Y0[0,j]) / dy
 
-        for i in range(igx - is_x_periodic, icx - igx + is_x_periodic):
-            n = m + i
+    #     for i in range(igx - is_x_periodic, icx - igx + is_x_periodic):
+    #         n = m + i
 
-            Y = Sol.rhoY.ravel()[n] / Sol.rho.ravel()[n]
-            coeff = Gammainv * Sol.rhoY.ravel()[n] * Y
-            fsqsc = dt**2 * coriolis**2
-            fimp = 1.0 / (1.0 + fsqsc)
-            Nsqsc = time_offset * dt**2 * (g / Msq) * strat
-            gimp = 1.0 / (nonhydro + Nsqsc)
+    #         Y = Sol.rhoY.ravel()[n] / Sol.rho.ravel()[n]
+    #         coeff = Gammainv * Sol.rhoY.ravel()[n] * Y
+    #         fsqsc = dt**2 * coriolis**2
+    #         fimp = 1.0 / (1.0 + fsqsc)
+    #         Nsqsc = time_offset * dt**2 * (g / Msq) * strat
+    #         gimp = 1.0 / (nonhydro + Nsqsc)
 
-            tmp_hplusx[n] = coeff * fimp
-            tmp_hplusy[n] = coeff * gimp
+    #         tmp_hplusx[n] = coeff * fimp
+    #         tmp_hplusy[n] = coeff * gimp
 
-    mpv.wplus[0][...] = tmp_hplusx.reshape(node.sc).squeeze()
-    mpv.wplus[1][...] = tmp_hplusy.reshape(node.sc).squeeze()
+    # mpv.wplus[0][...] = tmp_hplusx.reshape(node.sc).squeeze()
+    # mpv.wplus[1][...] = tmp_hplusy.reshape(node.sc).squeeze()
 
     kernel = (ndim - 1) * np.ones((2,2))
 
