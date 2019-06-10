@@ -185,11 +185,26 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
             if cnt_x % iicxn == 1:
                 cnt_x = 1
                 cnt_y += 1
+
+            # if (cnt_x < iicxn):
+            #     if (cnt_y < iicyn):
+            #         ne += 1
+
+            # if cnt_x == iicxn:
+            #     ne_tmp = ne + 1
+            # else:
+            #     ne_tmp = ne
             
-            ne_topleft = ne
-            ne_topright = ne + 1
-            ne_botleft = ne + iicxn
-            ne_botright = ne + iicxn + 1
+            # if cnt_y == iicyn:
+            #     ne_tmp = ne_tmp + iicx
+            # else:
+            #     ne_tmp = ne_tmp
+            ne_tmp = ne
+            
+            ne_topleft = ne_tmp - iicxn - 1
+            ne_topright = ne_tmp - iicxn
+            ne_botleft = ne_tmp - 1
+            ne_botright = ne_tmp
 
             # get indices of the 9pt stencil
             topleft = idx - iicxn - 1
@@ -210,8 +225,13 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
                 # midleft = idx + iicxn - 1
                 # botleft = idx + 2 * iicxn - 1
                 
-                shift = 0
-                topleft += (iicxn - shift)
+                # shift = -1
+                # topmid += (iicxn + shift)
+                # midmid += (iicxn + shift)
+                # botmid += (iicxn + shift)
+
+                shift = -2
+                topleft += (iicxn + shift)
                 midleft += (iicxn + shift)
                 botleft += (iicxn + shift)
 
@@ -225,12 +245,12 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
                 # midright = idx - icxn +1
                 # botright = idx + 1
 
-                # shift = 0
+                # shift = 1
                 # topmid -= (iicxn + shift)
                 # midmid -= (iicxn + shift)
                 # botmid -= (iicxn + shift)
                 
-                shift = 0
+                shift = 2
                 topright -= (iicxn + shift)
                 midright -= (iicxn + shift)
                 botright -= (iicxn + shift)
@@ -248,7 +268,12 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
                 # topmid = idx + iicxn * (iicyn - 1)
                 # topright = idx + iicxn * (iicyn - 1) + 1
 
-                shift = 0
+                # shift = 1
+                # midleft += (iicxn * (iicyn - shift))
+                # midmid += (iicxn * (iicyn - shift))
+                # midright += (iicxn * (iicyn - shift))
+
+                shift = 2
                 topleft += (iicxn * (iicyn - shift))
                 topmid += (iicxn * (iicyn - shift))
                 topright += (iicxn * (iicyn - shift))
@@ -264,12 +289,12 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
                 # botmid = idx - iicxn * (iicyn - 1)
                 # botright = idx - iicxn * (iicyn - 1) + 1
 
-                # shift = 0
+                # shift = 1
                 # midleft -= (iicxn * (iicyn - shift))
                 # midmid -= (iicxn * (iicyn - shift))
                 # midright -= (iicxn * (iicyn - shift))
 
-                shift = 0
+                shift = 2
                 botleft -= iicxn * (iicyn - shift)
                 botmid -= iicxn * (iicyn - shift)
                 botright -= iicxn * (iicyn - shift)
@@ -279,17 +304,15 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
                 # print("cnt_y == 1, topmid =", cnt_x, cnt_y, topmid, idx)
                 # print("cnt_y == 1, topright =", cnt_x, cnt_y, topright, idx)
 
-            if cnt_x == (iicxn - 1):
-                shift = 0
-                ne_topright = ne_topright - iicx + shift 
-                ne_botright = ne_botright - iicx + shift
+            if cnt_x == 1:
+                shift = 1
+                ne_topleft += iicxn - shift
+                ne_botleft += iicxn - shift
 
             if cnt_x == iicxn:
-                shift = 0
-                ne_topleft = ne_topleft - iicx - shift 
-                ne_topright = ne_topright - iicx - shift
-                ne_botleft = ne_botleft - iicx + shift 
-                ne_botright = ne_botright - iicx + shift 
+                shift = 1
+                ne_topright -= iicxn + shift
+                ne_botright -= iicxn + shift
 
             # if cnt_x == (iicxn - 1) and (50 < ne < 100):
             #     print(ne, ne_topleft, ne_topright, ne_botleft, ne_botright)
@@ -297,15 +320,15 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
             # if cnt_x == (iicxn) and (ne < 50):
             #     print(ne, ne_topleft, ne_topright, ne_botleft, ne_botright)
 
-            if cnt_y == (iicyn - 1):
-                ne_botleft = ne_botleft - ((iicxn - 1) * (iicyn - 1)) 
-                ne_botright = ne_botright - ((iicxn - 1) * (iicyn - 1))
+            if cnt_y == 1:
+                shift = 1
+                ne_topright += (iicyn - shift) * iicxn
+                ne_topleft += (iicyn - shift) * iicxn
 
-            if cnt_y == (iicyn):
-                ne_topleft = ne_topleft - ((iicxn - 1) * (iicyn - 1))
-                ne_topright = ne_topright - ((iicxn - 1) * (iicyn - 1))
-                ne_botleft = ne_botleft - ((iicxn - 1) * (iicyn - 1)) 
-                ne_botright = ne_botright - ((iicxn - 1) * (iicyn - 1)) 
+            if cnt_y == iicyn:
+                shift = 1
+                ne_botleft -= (iicyn - shift) * iicxn
+                ne_botright -= (iicyn - shift) * iicxn
 
             # if ne_botleft == -1:
             #     ne_botleft += 1
@@ -368,20 +391,8 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
                     +  hplusy[ne_botright] * oody2 * (c4iny - dp2dxdy4) \
                     +  hcenter[idx] * p[idx]
 
-            # if cnt_x % 48 == 0 or cnt_x % 49 == 0:        
-            #     print(lap[idx])
-            
-            if cnt_x <= iicx:
-                ne += 1
-            if cnt_x == icxn:
-                ne += 1
-            # ne += 1
-            # if cnt_x != (iicxn - 1):
-            #     ne += 1
-            # if cnt_x == iicxn:
-            #     ne += 2
-
             cnt_x += 1
+            ne += 1
 
         return lap
     return lap2D_try
