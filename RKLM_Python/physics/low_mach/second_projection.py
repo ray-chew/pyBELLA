@@ -39,7 +39,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # print(mpv.wplus[0])
     # rhs = rhs.T
 
-    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),maxiter=200)
+    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),maxiter=500)
 
     # p2,_ = bicgstab(lap2D,rhs.ravel(),x0=p2.ravel(),maxiter=200)
     # p2_full = p2.reshape(53,53)
