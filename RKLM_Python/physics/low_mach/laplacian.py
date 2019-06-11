@@ -115,10 +115,11 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
 
     sc = node.sc
 
-    iicxn = icxn - (2 * igx)
-    iicx = icx - (2 * igx)
-    iicyn = icyn - (2 * igy)
-    iicy = icy - (2 *igy)
+    amt = 0
+    iicxn = icxn - (2 * igx) - amt
+    iicx = icx - (2 * igx) - amt
+    iicyn = icyn - (2 * igy) - amt
+    iicy = icy - (2 *igy) - amt
     ngnc = (iicxn) * (iicyn)
     dx = node.dy
     dy = node.dy
@@ -126,48 +127,18 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
     inner_domain = (slice(igx,-igx),slice(igy,-igy))
     # hplusx = mpv.wplus[0][inner_domain].reshape(-1,)
     # hplusy = mpv.wplus[1][inner_domain].reshape(-1,)
-    hplusx = mpv.wplus[0][igx:-igy,igy:-igy].reshape(-1,)
-    hplusy = mpv.wplus[1][igx:-igy,igy:-igy].reshape(-1,)
+    hplusx = mpv.wplus[0][igx:-igx,igy:-igy].reshape(-1,)
+    hplusy = mpv.wplus[1][igx:-igx,igy:-igy].reshape(-1,)
     # hplusx = np.vstack((hplusx,hplusx[0],hplusx[1])).reshape(-1,)
 
-    # A = hplusx[0]
-    # B = hplusx[1]
-    # C = hplusx[0].reshape(-1,)
-    # D = hplusx[1].reshape(-1,)
-    # cc = np.vstack((C,D)).T
-    # bb = np.vstack((hplusx,A,B)).T
-
-    # E = [[0,0],[0,0]]
-    # cc = np.vstack((cc,E)).T
-    # hplusx = np.vstack((bb,cc)).reshape(-1,)
-
-    # hplusy = mpv.wplus[1][igx:-igy-1,igy:-igy-1]
-
-    # A = hplusy[0]
-    # B = hplusy[1]
-    # C = hplusy[0].reshape(-1,)
-    # D = hplusy[1].reshape(-1,)
-    # cc = np.vstack((C,D)).T
-    # bb = np.vstack((hplusy,A,B)).T
-
-    # E = [[0,0],[0,0]]
-    # cc = np.vstack((cc,E)).T
-    # hplusy = np.vstack((bb,cc)).reshape(-1,)
-    
-    # hplusy = np.vstack((hplusy,hplusy[0],hplusy[1])).reshape(-1,)
-
     hcenter = mpv.wcenter[inner_domain].reshape(-1,)
-    # print(hcenter.shape)
-    # print(hplusy.shape)
-    # print(hplusx[0], hplusx[-2])
-    # print(hplusy[0], hplusy[-2])
 
     oodx2 = 0.5 / (dx**2)
     oody2 = 0.5 / (dy**2)
     nine_pt = 0.25 * (2.0) * 1.0
 
-    x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
-    y_periodic = ud.bdry_type[1] == BdryType.PERIODIC
+    # x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
+    # y_periodic = ud.bdry_type[1] == BdryType.PERIODIC
 
     lap = np.zeros((ngnc))
     # print(lap.shape)
@@ -178,33 +149,17 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
         cnt_x = 1
         cnt_y = 0
         idx = 0
-        ne = 0
 
         for idx in range(iicxn * iicyn):
             # update counter for current row, column
             if cnt_x % iicxn == 1:
                 cnt_x = 1
                 cnt_y += 1
-
-            # if (cnt_x < iicxn):
-            #     if (cnt_y < iicyn):
-            #         ne += 1
-
-            # if cnt_x == iicxn:
-            #     ne_tmp = ne + 1
-            # else:
-            #     ne_tmp = ne
             
-            # if cnt_y == iicyn:
-            #     ne_tmp = ne_tmp + iicx
-            # else:
-            #     ne_tmp = ne_tmp
-            ne_tmp = ne
-            
-            ne_topleft = ne_tmp - iicxn - 1
-            ne_topright = ne_tmp - iicxn
-            ne_botleft = ne_tmp - 1
-            ne_botright = ne_tmp
+            ne_topleft = idx - iicxn - 1
+            ne_topright = idx - iicxn
+            ne_botleft = idx - 1
+            ne_botright = idx
 
             # get indices of the 9pt stencil
             topleft = idx - iicxn - 1
@@ -245,12 +200,12 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
                 # midright = idx - icxn +1
                 # botright = idx + 1
 
-                # shift = 1
+                # shift = -1
                 # topmid -= (iicxn + shift)
                 # midmid -= (iicxn + shift)
                 # botmid -= (iicxn + shift)
                 
-                shift = 2
+                shift = -2
                 topright -= (iicxn + shift)
                 midright -= (iicxn + shift)
                 botright -= (iicxn + shift)
@@ -295,9 +250,9 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
                 # midright -= (iicxn * (iicyn - shift))
 
                 shift = 2
-                botleft -= iicxn * (iicyn - shift)
-                botmid -= iicxn * (iicyn - shift)
-                botright -= iicxn * (iicyn - shift)
+                botleft -= (iicxn * (iicyn - shift))
+                botmid -= (iicxn * (iicyn - shift))
+                botright -= (iicxn * (iicyn - shift))
 
                 
                 # print("cnt_y == 1, topleft =", cnt_x, cnt_y, topleft, idx)
@@ -306,13 +261,13 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
 
             if cnt_x == 1:
                 shift = 1
-                ne_topleft += iicxn - shift
-                ne_botleft += iicxn - shift
+                ne_topleft += (iicxn - shift)
+                ne_botleft += (iicxn - shift)
 
             if cnt_x == iicxn:
                 shift = 1
-                ne_topright -= iicxn + shift
-                ne_botright -= iicxn + shift
+                ne_topright -= (iicxn - shift)
+                ne_botright -= (iicxn - shift)
 
             # if cnt_x == (iicxn - 1) and (50 < ne < 100):
             #     print(ne, ne_topleft, ne_topright, ne_botleft, ne_botright)
@@ -322,13 +277,13 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
 
             if cnt_y == 1:
                 shift = 1
-                ne_topright += (iicyn - shift) * iicxn
-                ne_topleft += (iicyn - shift) * iicxn
+                ne_topright += ((iicyn - shift) * iicxn)
+                ne_topleft += ((iicyn - shift) * iicxn)
 
             if cnt_y == iicyn:
                 shift = 1
-                ne_botleft -= (iicyn - shift) * iicxn
-                ne_botright -= (iicyn - shift) * iicxn
+                ne_botleft -= ((iicyn - shift) * iicxn)
+                ne_botright -= ((iicyn - shift) * iicxn)
 
             # if ne_botleft == -1:
             #     ne_botleft += 1
@@ -392,7 +347,6 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
                     +  hcenter[idx] * p[idx]
 
             cnt_x += 1
-            ne += 1
 
         return lap
     return lap2D_try
