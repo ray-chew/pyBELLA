@@ -32,7 +32,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # hf.close()
 
     # print(mpv.wcenter)
-
+    # mpv.wplus[0] = mpv.wplus.flatten()
+    # print(mpv.wplus[0].flatten()[840:850])
+    # print(mpv.wplus[0].flatten()[600:700])
     lap2D = stencil_9pt_2nd_try(elem,node,mpv,ud)
     # lap2D = LinearOperator((53**2,53**2),matvec=lap2D)
     lap2D = LinearOperator((49**2,49**2),matvec=lap2D)
