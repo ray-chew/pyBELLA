@@ -185,7 +185,7 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
                 # midmid += (iicxn + shift)
                 # botmid += (iicxn + shift)
 
-                shift = -2
+                shift = -1
                 topleft += (iicxn + shift)
                 midleft += (iicxn + shift)
                 botleft += (iicxn + shift)
@@ -205,7 +205,7 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
                 # midmid -= (iicxn + shift)
                 # botmid -= (iicxn + shift)
                 
-                shift = -2
+                shift = -1
                 topright -= (iicxn + shift)
                 midright -= (iicxn + shift)
                 botright -= (iicxn + shift)
@@ -223,12 +223,12 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
                 # topmid = idx + iicxn * (iicyn - 1)
                 # topright = idx + iicxn * (iicyn - 1) + 1
 
-                # shift = 1
+                # shift = 0
                 # midleft += (iicxn * (iicyn - shift))
                 # midmid += (iicxn * (iicyn - shift))
                 # midright += (iicxn * (iicyn - shift))
 
-                shift = 2
+                shift = 1
                 topleft += (iicxn * (iicyn - shift))
                 topmid += (iicxn * (iicyn - shift))
                 topright += (iicxn * (iicyn - shift))
@@ -249,7 +249,7 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
                 # midmid -= (iicxn * (iicyn - shift))
                 # midright -= (iicxn * (iicyn - shift))
 
-                shift = 2
+                shift = 1
                 botleft -= (iicxn * (iicyn - shift))
                 botmid -= (iicxn * (iicyn - shift))
                 botright -= (iicxn * (iicyn - shift))
@@ -336,14 +336,14 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
             c4inx = midright - midmid
             c4iny = botmid - midmid
 
-            lap[idx] = - hplusx[ne_topleft] * oodx2 * (c1inx + dp2dxdy1) \
-                    -  hplusy[ne_topleft] * oody2 * (c1iny + dp2dxdy1) \
-                    +  hplusx[ne_topright] * oodx2 * (c2inx + dp2dxdy2) \
-                    -  hplusy[ne_topright] * oody2 * (c2iny - dp2dxdy2) \
-                    -  hplusx[ne_botleft] * oodx2 * (c3inx - dp2dxdy3) \
-                    +  hplusy[ne_botleft] * oody2 * (c3iny + dp2dxdy3) \
-                    +  hplusx[ne_botright] * oodx2 * (c4inx - dp2dxdy4) \
-                    +  hplusy[ne_botright] * oody2 * (c4iny - dp2dxdy4) \
+            lap[idx] = - hplusx[ne_topleft] * oodx2 * (c1inx - dp2dxdy1) \
+                    -  hplusy[ne_topleft] * oody2 * (c1iny - dp2dxdy1) \
+                    +  hplusx[ne_topright] * oodx2 * (c2inx - dp2dxdy2) \
+                    -  hplusy[ne_topright] * oody2 * (c2iny + dp2dxdy2) \
+                    -  hplusx[ne_botleft] * oodx2 * (c3inx + dp2dxdy3) \
+                    +  hplusy[ne_botleft] * oody2 * (c3iny - dp2dxdy3) \
+                    +  hplusx[ne_botright] * oodx2 * (c4inx + dp2dxdy4) \
+                    +  hplusy[ne_botright] * oody2 * (c4iny + dp2dxdy4) \
                     +  hcenter[idx] * p[idx]
 
             cnt_x += 1
