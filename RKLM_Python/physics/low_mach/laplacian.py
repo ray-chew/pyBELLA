@@ -115,11 +115,10 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
 
     sc = node.sc
 
-    amt = 0
-    iicxn = icxn - (2 * igx) - amt
-    iicx = icx - (2 * igx) - amt
-    iicyn = icyn - (2 * igy) - amt
-    iicy = icy - (2 *igy) - amt
+    iicxn = icxn - (2 * igx)
+    iicx = icx - (2 * igx)
+    iicyn = icyn - (2 * igy)
+    iicy = icy - (2 *igy)
     ngnc = (iicxn) * (iicyn)
     dx = node.dy
     dy = node.dy
