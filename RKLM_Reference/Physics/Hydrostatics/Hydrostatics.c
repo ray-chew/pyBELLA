@@ -569,7 +569,7 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
         }
     }
     
-    set_ghostnodes_p2(mpv->p2_nodes, node, 2);    
+    set_ghostnodes_p2(mpv->p2_nodes, node, 2);
     
     for (int nn=0; nn<node->nc; nn++) {
         mpv->dp2_nodes[nn] = 0.0;

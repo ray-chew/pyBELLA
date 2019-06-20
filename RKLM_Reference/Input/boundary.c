@@ -283,7 +283,7 @@ void Bound(
                     }
                     
                     /* mirror wall-normal velocity relative to prescribed boundary mass flux */
-					rhoYu_wall  = bdry->wall_rhoYflux[j]; 
+					rhoYu_wall  = bdry->wall_rhoYflux[j];
                     rhoYu_image = 2.0*rhoYu_wall - Sol->rhou[nsource]*Sol->rhoY[nsource]/Sol->rho[nsource];
 					
 					{
@@ -335,7 +335,7 @@ void Bound(
                     }
                     
                     /* mirror wall-normal velocity */ 
-					rhou_wall = 0.0;  
+					rhou_wall = 0.0;
                     u = (2.0*rhou_wall - Sol->rhou[nsource]) / Sol->rho[nsource];
 					
 					{				    

@@ -50,7 +50,7 @@ HDRS		  = ../Common.h \
 		../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.h \
 		../Physics/NewGroup/molecular_transport.h \
 
-HDRFLAGS	= -I../ -I../Input -I../Management -I../NumericsFundamentals \
+HDRFLAGS	= -g -I../ -I../Input -I../Management -I../NumericsFundamentals \
 		  -I../NumericsFundamentals/Discretization \
 		  -I../NumericsFundamentals/ofGeneralInterest -I../Physics/Gasdynamics \
 		  -I../Physics/Hydrostatics -I../Physics/LowMach \

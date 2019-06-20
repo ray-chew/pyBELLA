@@ -152,7 +152,7 @@ int main( void )
                         
             if (ud.n_time_series > 0) {
                 store_time_series_entry(Sol, elem, step);
-            }            
+            }
             
             t += dt;
             step++;

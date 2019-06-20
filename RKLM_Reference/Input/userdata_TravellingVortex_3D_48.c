@@ -204,7 +204,8 @@ void User_Data_init(User_Data* ud) {
     ud->tout[6] = -1.0;
      */
     
-    ud->stepmax = 20000;
+    // ud->stepmax = 20000;
+    ud->stepmax = 1;
 
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
@@ -215,7 +216,7 @@ void User_Data_init(User_Data* ud) {
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
 
     {
-        char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_travelling_vortex_3d_48_with_initial_projection/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
@@ -332,7 +333,7 @@ void Sol_initial(ConsVars* Sol,
                 double p2c = 0.0;
                 double dp2c = 0.0;
 
-                n = m + i;                
+                n = m + i;
                 x = elem->x[i];
 
                 Sol->rho[n]  = 0.0;

@@ -13,7 +13,6 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     nc = node.sc
     rhs = np.zeros_like(mpv.p2_nodes)
     p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy])
-    # p2 = np.copy(mpv.p2_nodes)
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
@@ -25,38 +24,20 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if ud.is_compressible:
         rhs = rhs_from_p_old(rhs,node,mpv)
 
-    # stencil_9pt_operator(elem,node,mpv,ud)
-    # hf = h5py.File('/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_travelling_vortex_3d_48_with_initial_projection/low_Mach_gravity_comp/wplusx/wplusx_000.h5', 'r')
-    # mpv.wplus[0][...] = (hf.get('Data-Set-2').value)
-    # mpv.wplus[1][...] = (hf.get('Data-Set-2').value)
-    # hf.close()
-
-    # print(mpv.wcenter)
-    # mpv.wplus[0] = mpv.wplus.flatten()
-    # print(mpv.wplus[0].flatten()[840:850])
-    # print(mpv.wplus[0].flatten()[600:700])
     lap2D = stencil_9pt_2nd_try(elem,node,mpv,ud)
-    # lap2D = LinearOperator((53**2,53**2),matvec=lap2D)
-    lap2D = LinearOperator((49**2,49**2),matvec=lap2D)
-    # print(mpv.wplus[0])
-    # rhs = rhs.T
 
-    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),maxiter=500)
+    lap2D = LinearOperator((ud.inx**2,ud.iny**2),matvec=lap2D)
 
-    # p2,_ = bicgstab(lap2D,rhs.ravel(),x0=p2.ravel(),maxiter=200)
-    # p2_full = p2.reshape(53,53)
+    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),maxiter=500)
+
     p2_full = np.zeros(nc).squeeze()
-    p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(49,49)
+    p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
     
-    # hf = h5py.File('/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_travelling_vortex_3d_48_with_initial_projection/low_Mach_gravity_comp/pnew/pnew_000.h5', 'r')
-    # p2_full = hf.get('Data-Set-2').value
-    # hf.close()
     mpv.dp2_nodes[...] = np.copy(p2_full)
     correction_nodes(Sol,elem,node,mpv,p2_full,dt,1.0,ud)
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
-    # mpv.dp2_nodes[...] = p2 - mpv.p2_nodes
     mpv.p2_nodes[...] = p2_full
 
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)

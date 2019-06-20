@@ -9,13 +9,13 @@ def SetTimeIntegratorParameters(ud):
         ud.tips.flux_frac[1][0] = -0.5
         ud.tips.flux_frac[1][1] = 1.0
 
-        for k in range(ud.tips.NO_OF_RK_STAGES):
-            ud.tips.flux_frac[k,:] = 1e10
+        for k in range(2,ud.tips.NO_OF_RK_STAGES):
+            ud.tips.flux_frac[k][1] = 1e10
 
         ud.tips.update_frac[0] = 0.5
         ud.tips.update_frac[1] = 1.0
 
-        for k in range(ud.tips.NO_OF_RK_STAGES):
+        for k in range(2,ud.tips.NO_OF_RK_STAGES):
             ud.tips.update_frac[k] = 1e10
         
         ud.tips.multiD_updt = True
