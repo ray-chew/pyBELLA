@@ -32,7 +32,7 @@ diss = np.zeros((elem.sc))
 W0 = np.zeros((n_aux))
 flux = np.empty((3), dtype=object)
 
-flux[0] = States(elem.sfx,ud)
+flux[0] = States(elem.sfx, ud)
 if elem.ndim > 1:
     flux[1] = States(elem.sfy, ud)
 if elem.ndim > 2:
@@ -44,6 +44,10 @@ th = ThemodynamicInit(ud)
 mpv = MPV(elem, node, ud)
 
 Sol0 = sol_init(Sol, mpv, elem, node, th, ud)
+
+dt_factor = 0.5 if ud.initial_impl_Euler == True else 1.0
+
+
 
 writer = io(ud)
 writer.write_all(Sol0,mpv,elem,node,th,'000')
