@@ -19,6 +19,17 @@ class Vars(object):
             setattr(self,key,value.squeeze())
     # method written for 2D
 
+    def primitives(self):
+        self.u = self.rhou / self.rho
+        self.v = self.rhov / self.rho
+        self.w = self.rhow / self.rho
+        self.Y = self.rhoY / self.rho
+        self.X = self.rhoX / self.rho
+        # self.p = self.rhoY**th.gamm
+        
+
+
+
 class States(Vars):
     def __init__(self,size,ud):
         super().__init__(size,ud)
