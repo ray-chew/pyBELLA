@@ -4,6 +4,7 @@ from management.variable import States, Vars
 from numerics_fundamentals.discretization import kgrid
 from physics.gas_dynamics.thermodynamic import ThemodynamicInit
 from physics.gas_dynamics.numerical_flux import recompute_advective_fluxes
+from physics.gas_dynamics.explicit import advect
 from inputs.enum_bdry import BdryType
 from physics.low_mach.mpv import MPV
 
@@ -61,4 +62,5 @@ while ((t < ud.tout) and (step < ud.stepmax)):
     recompute_advective_fluxes(flux, Sol0)
     writer.populate('000','rhoYu',flux[0].rhoY)
     writer.populate('000','rhoYv',flux[1].rhoY)
+    advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv)
     break
