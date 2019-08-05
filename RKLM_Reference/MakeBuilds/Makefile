@@ -1,8 +1,8 @@
 lCC = gcc
 
-LIBDIR 		  = /usr/lib64/
-HDFLIBDIR	  = /usr/lib64/
-HDFINC		  = /opt/local/include
+LIBDIR 		  = /usr/lib64
+HDFLIBDIR	  = /usr/lib64
+HDFINC		  = /home/ray/anaconda3/envs/python37/include/
 
 CFLAGS		  = -Aa -fPIC -I$(HDFINC)
 
@@ -17,7 +17,7 @@ EXTHDRS		  = /usr/include/math.h \
 		/usr/include/time.h \
 #		/usr/include/varargs.h \
 		/usr/include/memory.h \
-		/usr/include/hdf/dfsd.h
+		/home/ray/anaconda3/envs/python37/include/dfsd.h
 
 HDRS		  = ../Common.h \
 		../Input/userdata.h \
@@ -50,7 +50,7 @@ HDRS		  = ../Common.h \
 		../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.h \
 		../Physics/NewGroup/molecular_transport.h \
 
-HDRFLAGS	= -I../ -I../Input -I../Management -I../NumericsFundamentals \
+HDRFLAGS	= -g -I../ -I../Input -I../Management -I../NumericsFundamentals \
 		  -I../NumericsFundamentals/Discretization \
 		  -I../NumericsFundamentals/ofGeneralInterest -I../Physics/Gasdynamics \
 		  -I../Physics/Hydrostatics -I../Physics/LowMach \
@@ -96,7 +96,7 @@ PRINT		  = pr
 
 PROGRAM	   = rklm
 
-SHELL		  = /bin/sh
+SHELL		  = /bin/zsh
 
 SRCS		  = ../Input/userdata_TravellingVortex_3D_48.c \
 		../Input/boundary.c \

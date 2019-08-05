@@ -28,9 +28,9 @@
 #undef __WINDOWS__
 #endif
 #ifdef RUPERT
-#include  "../hdf/dfsd.h"
+#include  "/home/ray/anaconda3/envs/python37/include/dfsd.h"
 #else 
-#include  "../hdf/dfsd.h" 
+#include  "~/anaconda3/envs/python37/include/dfsd.h" 
 #endif
 #endif
 
@@ -146,6 +146,24 @@ void putout(ConsVars* Sol,
 			sprintf(fieldname, "rhoe_%s_%s", field_name, step_string);
 			WriteHDF(prhoefile, icx, icy, icz, ndim, Sol->rhoe, fn, fieldname);
 			
+			/* rhou velocity component */
+			sprintf(fn, "%s/rhou/rhou_%s.hdf", dir_name, step_string);
+			if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
+			sprintf(fieldname, "rhou_%s_%s", field_name, step_string);
+			WriteHDF(pufile, icx, icy, icz, ndim, Sol->rhou, fn, fieldname);
+			
+			/* rhov velocity component */
+			sprintf(fn, "%s/rhov/rhov_%s.hdf", dir_name, step_string);
+			if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
+			sprintf(fieldname, "rhov_%s_%s", field_name, step_string);
+			WriteHDF(pvfile, icx, icy, icz, ndim, Sol->rhov, fn, fieldname);
+			
+			/* rhow velocity component */
+			sprintf(fn, "%s/rhow/rhow_%s.hdf", dir_name, step_string);
+			if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
+			sprintf(fieldname, "rhow_%s_%s", field_name, step_string);
+			WriteHDF(pwfile, icx, icy, icz, ndim, Sol->rhow, fn, fieldname);
+
 			/* u velocity component */
 			velox(var, Sol, 0, nc);
 			sprintf(fn, "%s/u/u_%s.hdf", dir_name, step_string);

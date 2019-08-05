@@ -98,7 +98,7 @@ void hllestar(
         
         for (nsp = 0; nsp < ud.nspec; nsp++) {
             Fluxes->rhoX[nsp][i] = Fluxes->rhoY[i] * (upl * Xl[nsp]  + upr * Xr[nsp]) ;
-        }        
+        }
     }
 }
 
@@ -279,6 +279,5 @@ void recompute_advective_fluxes(ConsVars* flux[3],
     
     flux_output_count++;
 #endif
-
 }
 

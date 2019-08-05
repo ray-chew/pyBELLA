@@ -224,7 +224,7 @@ void User_Data_init(User_Data* ud) {
 #ifdef RUPERT
         char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
 #else
-        char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
+        char *OutputBaseFolder      = "~/git-projects/RKLM_Reference/RKLM_Reference/";
 #endif
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";

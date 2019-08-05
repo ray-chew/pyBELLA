@@ -113,8 +113,62 @@ int main( void )
             printf("\n-----------------------------------------------------------------------------------------\n");
 
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, bdry, elem, 0.5*dt);
-            advect(Sol, flux, Sol0, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, ud.advec_time_integrator, step%2);
+            FILE *tmpfile = NULL;
+            char fn[120], fieldname[90];
+            if (step < 10) {
+                sprintf(fn, "%s/flux_x/rhoY_00%d.hdf", ud.file_name, step);
+            } else if(step < 100) {
+                sprintf(fn, "%s/flux_x/rhoY_0%d.hdf", ud.file_name, step);
+            } else {
+                sprintf(fn, "%s/flux_x/rhoY_%d.hdf", ud.file_name, step);
+            }
+            sprintf(fieldname, "rhoY");
+            WriteHDF(tmpfile, elem->icx, elem->icy, elem->icz, elem->ndim, Sol->rhoY, fn, fieldname);
+            
+            if (step < 10) {
+                sprintf(fn, "%s/flux_x/rhou_00%d.hdf", ud.file_name, step);
+            } else if(step < 100) {
+                sprintf(fn, "%s/flux_x/rhou_0%d.hdf", ud.file_name, step);
+            } else {
+                sprintf(fn, "%s/flux_x/rhou_%d.hdf", ud.file_name, step);
+            }
+            sprintf(fieldname, "rhou");
+            WriteHDF(tmpfile, elem->icy, elem->icx, elem->icz, elem->ndim, Sol->rhou, fn, fieldname);
 
+            if (step < 10) {
+                sprintf(fn, "%s/flux_x/rho_00%d.hdf", ud.file_name, step);
+            } else if(step < 100) {
+                sprintf(fn, "%s/flux_x/rho_0%d.hdf", ud.file_name, step);
+            } else {
+                sprintf(fn, "%s/flux_x/rho_%d.hdf", ud.file_name, step);
+            }
+            sprintf(fieldname, "rho");
+            WriteHDF(tmpfile, elem->icy, elem->icx, elem->icz, elem->ndim, Sol->rho, fn, fieldname);
+
+
+            FILE *pfluxfile = NULL;
+            if (step < 10) {
+                sprintf(fn, "%s/flux_x/rhoYu_00%d.hdf", ud.file_name, step);
+            } else if(step < 100) {
+                sprintf(fn, "%s/flux_x/rhoYu_0%d.hdf", ud.file_name, step);
+            } else {
+                sprintf(fn, "%s/flux_x/rhoYu_%d.hdf", ud.file_name, step);
+            }
+            sprintf(fieldname, "rhoYu");
+            WriteHDF(pfluxfile, elem->ifx, elem->icy, elem->icz, elem->ndim, flux[0]->rhoY, fn, fieldname);
+
+            if (step < 10) {
+                sprintf(fn, "%s/flux_y/rhoYv_00%d.hdf", ud.file_name, step);
+            } else if(step < 100) {
+                sprintf(fn, "%s/flux_y/rhoYv_0%d.hdf", ud.file_name, step);
+            } else {
+                sprintf(fn, "%s/flux_y/rhoYv_%d.hdf", ud.file_name, step);
+            }
+            sprintf(fieldname, "rhoYv");
+            WriteHDF(pfluxfile, elem->ify, elem->icx, elem->icz, elem->ndim, flux[1]->rhoY, fn, fieldname);
+
+            advect(Sol, flux, Sol0, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, ud.advec_time_integrator, step%2);
+            
             /* divergence-controlled advective fluxes at the half time level */
             for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes0[nn] = mpv->p2_nodes[nn];
             euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt); 
