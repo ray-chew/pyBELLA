@@ -451,7 +451,7 @@ void advect(
                 (*rotate[elem->ndim - 1])(Sol, BACKWARD);
                 const double lambda = time_step/elem->dx;
                 Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);
-            }        
+            }
         }
         
         if (no_of_sweeps == DOUBLE_STRANG_SWEEP) {

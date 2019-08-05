@@ -366,7 +366,7 @@ double residual(double *rhs,
 #else /* NONLINEAR_EOS_ITERATION */
 
 /* ========================================================================== */
-
+int wplus_cnt = 0;
 void euler_backward_non_advective_impl_part(ConsVars* Sol,
                                             MPV* mpv,
                                             const ConsVars* Sol0,
@@ -440,7 +440,25 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
         rhs[i] /= dt;
     }
     printf("\nrhsmax = %e\n", rhs_max);
-    
+
+    // int wplus_cnt = 0;
+    FILE *hcenterfile = NULL;
+    char fn[120], fieldname[90];
+    sprintf(fn, "%s/hcenter/hcenter_00%d.hdf", ud.file_name, wplus_cnt);
+    sprintf(fieldname, "hcenter");    
+    WriteHDF(hcenterfile, node->icx, node->icy, node->icz, node->ndim, hcenter, fn, fieldname);
+
+    FILE *wplusxfile = NULL;
+    sprintf(fn, "%s/wplusx/wplusx_00%d.hdf", ud.file_name, wplus_cnt);
+    sprintf(fieldname, "wplusx");    
+    WriteHDF(wplusxfile, node->icx, node->icy, node->icz, node->ndim, hplus[0], fn, fieldname);
+
+    FILE *wplusyfile = NULL;
+    // char fn[120], fieldname[90];
+    sprintf(fn, "%s/wplusy/wplusy_00%d.hdf", ud.file_name, wplus_cnt);
+    sprintf(fieldname, "wplusy");    
+    WriteHDF(wplusyfile, node->icx, node->icy, node->icz, node->ndim, hplus[1], fn, fieldname);
+    wplus_cnt += 1;
     
 #if OUTPUT_RHS_NODES
     FILE *prhsfile = NULL;
@@ -451,7 +469,7 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
         } else if(rhs_output_count < 100) {
             sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
         } else {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
+            sprintf(fn, "%s/rhs_nodes/rhs_nodescex_%d.hdf", ud.file_name, rhs_output_count);
         }
         sprintf(fieldname, "rhs_nodes");    
         WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
@@ -464,7 +482,7 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     }
         
     variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
-    
+
     correction_nodes(Sol, elem, node, (const double**)hplus, p2, dt, FULL_FIELD);
     Set_Explicit_Boundary_Data(Sol, elem);
     
@@ -474,7 +492,7 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
         mpv->p2_nodes[ii]  = p2_new;
     }
     
-    set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
+    set_ghostnodes_p2(mpv->p2_nodes, node, 2);
     
 #if OUTPUT_RHS_NODES
     memset(rhs, 0.0, node->nc*sizeof(double));
@@ -1042,7 +1060,7 @@ static void operator_coefficients_nodes(
 			ERROR("operator_coefficients_nodes() not implemented for 1D\n");
 			break;
 		}
-		case 2: {			
+		case 2: {
             
             int is_x_periodic = 0;
             int is_y_periodic = 0;
@@ -1869,3 +1887,13 @@ void diss_to_rhs(double* rhs,
  $Log:$
  LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL*/
 
+void print(int matrix[10][10])
+{
+    int i, j;
+    for (i = 0; i < 10; ++i)
+    {
+        for (j = 0; j < 10; ++j)
+            printf("%d ", matrix[i][j]);
+        printf("\n");
+    }
+}

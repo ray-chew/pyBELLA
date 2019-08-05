@@ -205,7 +205,8 @@ void User_Data_init(User_Data* ud) {
     ud->tout[0] = scalefactor * 1.0 * 3000.0 / ud->t_ref; /* 3000 */
     ud->tout[1] = -1.0;
 
-    ud->stepmax = 10000;
+    /* ud->stepmax = 10000; */
+    ud->stepmax = 0;
     
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
@@ -216,7 +217,7 @@ void User_Data_init(User_Data* ud) {
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
 
     {
-        char *OutputBaseFolder      = "/srv/public/ray/RKLM_Reference/Output/";
+        char *OutputBaseFolder      = "/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_internal_long_wave/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {

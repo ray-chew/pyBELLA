@@ -159,7 +159,7 @@ void MPV_free(
     
     if (ud.g_ref > ud.eps_Machine) HydroState_free(mpv);
     
-    free(mpv);    
+    free(mpv);
 }
 
 /* ========================================================================== */

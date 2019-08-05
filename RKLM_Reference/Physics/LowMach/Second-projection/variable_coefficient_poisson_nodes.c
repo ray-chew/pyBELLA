@@ -194,6 +194,7 @@ static double BiCGSTAB_MG_nodes(
     
     
     double precon_inv_scale = precon_prepare(node, elem, hplus, hcenter, x_periodic, y_periodic, z_periodic);
+    // double precon_inv_scale = 1.0;
     
     set_periodic_data(solution_io, node, x_periodic, y_periodic, z_periodic);
 
@@ -394,6 +395,7 @@ static double BiCGSTAB_MG_nodes(
 }
 
 /* ========================================================================== */
+int shitty_count = 0;
 
 void variable_coefficient_poisson_nodes(
                                         double *p2,
@@ -429,5 +431,18 @@ void variable_coefficient_poisson_nodes(
     
     data->max_iterations = maxit;
     
+    double tmp_arr[53*53];
+    for (int ii = 0; ii < nc; ii ++) {
+        tmp_arr[ii] = p2[ii];
+        // printf("tmp_arr[ii] = %e", tmp_arr[ii]);
+    }
+
+    FILE *pnewfile = NULL;
+    char fn[120], fieldname[90];
+    sprintf(fn, "%s/pnew/pnew_00%d.hdf", ud.file_name, shitty_count);
+    sprintf(fieldname, "pnew");    
+    WriteHDF(pnewfile, node->icx, node->icy, node->icz, node->ndim, tmp_arr, fn, fieldname);
+    shitty_count += 1;
+
     BiCGSTABData_free(data); 
 }

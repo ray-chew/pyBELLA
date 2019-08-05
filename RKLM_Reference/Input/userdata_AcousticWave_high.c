@@ -212,7 +212,7 @@ void User_Data_init(User_Data* ud) {
     // ud->tout[4] = 5.0*t_period;
     // ud->tout[6] = -1.0;
 
-    ud->stepmax = 40;
+    ud->stepmax = 0;
     
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
@@ -222,7 +222,7 @@ void User_Data_init(User_Data* ud) {
     
     {
 #ifdef RUPERT
-        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_acoustic_wave_high/";
 #else
         char *OutputBaseFolder      = "~/git-projects/RKLM_Reference/RKLM_Reference/";
 #endif
@@ -345,7 +345,7 @@ void Sol_initial(ConsVars* Sol,
     }
 
     set_ghostcells_p2(mpv->p2_cells, elem, elem->igx);
-    set_ghostnodes_p2(mpv->p2_nodes, node, 2);   
+    set_ghostnodes_p2(mpv->p2_nodes, node, 2);
     
     ud.nonhydrostasy   = nonhydrostasy(0);
     ud.compressibility = compressibility(0);

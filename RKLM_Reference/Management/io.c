@@ -44,6 +44,9 @@ static void putoutSILO(char* file_name);
 
 /* pointers to files */
 static FILE *prhofile      = NULL;   
+static FILE *prhoufile      = NULL;   
+static FILE *prhovfile      = NULL;   
+static FILE *prhowfile      = NULL;   
 static FILE *prhoefile     = NULL;   
 static FILE *prhoYfile     = NULL;   
 static FILE *pdrhoYfile    = NULL;   
@@ -139,6 +142,23 @@ void putout(ConsVars* Sol,
 			if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
 			sprintf(fieldname, "rho_%s_%s", field_name, step_string);
 			WriteHDF(prhofile, icx, icy, icz, ndim, Sol->rho, fn, fieldname);
+
+			/* Ray's addition for debugging */
+			sprintf(fn, "%s/rhou/rhou_%s.hdf", dir_name, step_string);
+			if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
+			sprintf(fieldname, "rhou_%s_%s", field_name, step_string);
+			WriteHDF(prhoufile, icx, icy, icz, ndim, Sol->rhou, fn, fieldname);
+
+			sprintf(fn, "%s/rhov/rhov_%s.hdf", dir_name, step_string);
+			if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
+			sprintf(fieldname, "rhov_%s_%s", field_name, step_string);
+			WriteHDF(prhovfile, icx, icy, icz, ndim, Sol->rhov, fn, fieldname);
+
+			sprintf(fn, "%s/rhow/rhow_%s.hdf", dir_name, step_string);
+			if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
+			sprintf(fieldname, "rhow_%s_%s", field_name, step_string);
+			WriteHDF(prhowfile, icx, icy, icz, ndim, Sol->rhow, fn, fieldname);
+			/* End of Ray's addition */
 			
 			/* energy density */
 			sprintf(fn, "%s/rhoe/rhoe_%s.hdf", dir_name, step_string);
@@ -339,8 +359,8 @@ void WriteHDF(
 	 */
 	
 	float  *image, *pimage;
-	float  pmax, pmin;
-	double *pData;
+	double  pmax, pmin;
+	float *pData;
 	int row, col, layer;
 	
 	int	dims[ 3 ];
@@ -349,8 +369,10 @@ void WriteHDF(
 	dims[1] = cols;
 	dims[2] = layers;
 	
-	image = (float *)malloc( (unsigned)((rows*cols*layers)*sizeof(float)) );
-	
+	image = (float*)malloc( (unsigned)((rows*cols*layers)*sizeof(float)) );
+
+	// image = (double *)malloc( (unsigned)((rows*cols*layers)*sizeof(double)) );
+
 	pimage  = image;
 	pData   = Data;
 	pmax    = -100000.0;
@@ -365,6 +387,7 @@ void WriteHDF(
 			for ( layer = 0; layer < layers; layer++ )
 			{
 				*pimage = (float)(Data[layer*rows*cols+col*rows+row]);
+				// *pimage = (float)(Data[layer*rows*cols+col*rows+row]);
 				pmin    = MIN_own(pmin, *pimage);
 				pmax    = MAX_own(pmax, *pimage);
 				pimage++;

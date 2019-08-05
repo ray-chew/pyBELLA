@@ -204,7 +204,8 @@ void User_Data_init(User_Data* ud) {
     ud->tout[6] = -1.0;
      */
     
-    ud->stepmax = 20000;
+    // ud->stepmax = 20000;
+    ud->stepmax = 1;
 
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
@@ -332,7 +333,7 @@ void Sol_initial(ConsVars* Sol,
                 double p2c = 0.0;
                 double dp2c = 0.0;
 
-                n = m + i;                
+                n = m + i;
                 x = elem->x[i];
 
                 Sol->rho[n]  = 0.0;

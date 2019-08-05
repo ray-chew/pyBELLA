@@ -1,6 +1,7 @@
 import numpy as np
 from inputs.boundary import set_explicit_boundary_data
 from physics.gas_dynamics.recovery import recovery
+from management.variable import Vars
 
 class NO_OF_RK_STAGES(object):
     NO_OF_RK_STAGES = 3
@@ -47,4 +48,6 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv):
 def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mpv):
     set_explicit_boundary_data(Sol, elem, ud, th, mpv, dim = split_step)
 
-    recovery(lefts, rights, Sol, flux, lmbda)
+    lefts = Vars(elem.sc, ud)
+    rights = Vars(elem.sc, ud)
+    recovery(lefts, rights, Sol, flux, lmbda, ud, th, elem)
