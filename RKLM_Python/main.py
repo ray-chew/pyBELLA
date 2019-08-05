@@ -58,7 +58,7 @@ while ((t < ud.tout) and (step < ud.stepmax)):
     print("half-time prediction of advective flux")
     print("---------------------------------------")
     
-    recompute_advective_fluxes(flux, Sol0, elem, 0.5*dt)
+    recompute_advective_fluxes(flux, Sol0)
     writer.populate('000','rhoYu',flux[0].rhoY)
     writer.populate('000','rhoYv',flux[1].rhoY)
     break

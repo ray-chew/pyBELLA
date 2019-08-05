@@ -172,10 +172,12 @@ class UserData(object):
 
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
-        self.tout[0] =  1.0
-        self.tout[1] = -1.0
+        self.tout = 1.0
+        # self.tout[0] =  1.0
+        # self.tout[1] = -1.0
 
-        self.stepmax = 20000
+        self.stepmax = 1
+        # self.stepmax = 20000
 
         self.write_stdout = True
         self.write_stdout_period = 1
