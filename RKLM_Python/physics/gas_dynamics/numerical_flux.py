@@ -5,12 +5,6 @@ def recompute_advective_fluxes(flux, Sol):
     ################################################
     # 2D case for now - generalise in future
     ################################################
-
-    left_idx = (slice(None),slice(0,-2))
-    right_idx = (slice(None),slice(1,-1))
-
-    top_idx = (slice(0,-2),)
-    bottom_idx = (slice(1,-1),)
     
     rhoYu = Sol.rhoY * Sol.rhou.T / Sol.rho
 
