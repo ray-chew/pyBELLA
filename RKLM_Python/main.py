@@ -3,6 +3,7 @@ from management.data import data_init
 from management.variable import States, Vars
 from numerics_fundamentals.discretization import kgrid
 from physics.gas_dynamics.thermodynamic import ThemodynamicInit
+from physics.gas_dynamics.numerical_flux import recompute_advective_fluxes
 from inputs.enum_bdry import BdryType
 from physics.low_mach.mpv import MPV
 
@@ -49,3 +50,15 @@ writer = io(ud)
 writer.write_all(Sol0,mpv,elem,node,th,'000')
 # Explicit_malloc
 # recovery_malloc
+
+step = 0
+dt = 0.0075005354646259159
+while ((t < ud.tout) and (step < ud.stepmax)):
+    print("---------------------------------------")
+    print("half-time prediction of advective flux")
+    print("---------------------------------------")
+    
+    recompute_advective_fluxes(flux, Sol0, elem, 0.5*dt)
+    writer.populate('000','rhoYu',flux[0].rhoY)
+    writer.populate('000','rhoYv',flux[1].rhoY)
+    break
