@@ -8,6 +8,9 @@ def recompute_advective_fluxes(flux, Sol):
     
     rhoYu = Sol.rhoY * Sol.rhou.T / Sol.rho
 
+    # keep for debugging purpose... last checked, function is correct
+    # will need to think of a better method to generalise from 2d
+    
     # idx = 901
     # print("rhoYu_cm = ", rhoYu.flatten()[idx-52])
     # print("rhoYu_mm = ", rhoYu.flatten()[idx-52-1])
@@ -21,4 +24,4 @@ def recompute_advective_fluxes(flux, Sol):
 
     rhoYv = Sol.rhoY * Sol.rhov.T / Sol.rho
     kernel_v = np.array([[0.5,1.,0.5],[0.5,1.,0.5]])
-    flux[1].rhoY[1:-1,1:-2] = signal.convolve2d(rhoYv[:-1,:],kernel_v, mode='valid').T / kernel_v.sum()
+    flux[1].rhoY[1:-1,1:-2] = signal.convolve2d(rhoYv[:-1,:], kernel_v, mode='valid').T / kernel_v.sum()
