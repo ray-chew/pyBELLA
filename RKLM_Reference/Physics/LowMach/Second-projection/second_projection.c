@@ -442,23 +442,23 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     printf("\nrhsmax = %e\n", rhs_max);
 
     // int wplus_cnt = 0;
-    FILE *hcenterfile = NULL;
-    char fn[120], fieldname[90];
-    sprintf(fn, "%s/hcenter/hcenter_00%d.hdf", ud.file_name, wplus_cnt);
-    sprintf(fieldname, "hcenter");    
-    WriteHDF(hcenterfile, node->icx, node->icy, node->icz, node->ndim, hcenter, fn, fieldname);
-
-    FILE *wplusxfile = NULL;
-    sprintf(fn, "%s/wplusx/wplusx_00%d.hdf", ud.file_name, wplus_cnt);
-    sprintf(fieldname, "wplusx");    
-    WriteHDF(wplusxfile, node->icx, node->icy, node->icz, node->ndim, hplus[0], fn, fieldname);
-
-    FILE *wplusyfile = NULL;
+    // FILE *hcenterfile = NULL;
     // char fn[120], fieldname[90];
-    sprintf(fn, "%s/wplusy/wplusy_00%d.hdf", ud.file_name, wplus_cnt);
-    sprintf(fieldname, "wplusy");    
-    WriteHDF(wplusyfile, node->icx, node->icy, node->icz, node->ndim, hplus[1], fn, fieldname);
-    wplus_cnt += 1;
+    // sprintf(fn, "%s/hcenter/hcenter_00%d.hdf", ud.file_name, wplus_cnt);
+    // sprintf(fieldname, "hcenter");    
+    // WriteHDF(hcenterfile, node->icx, node->icy, node->icz, node->ndim, hcenter, fn, fieldname);
+
+    // FILE *wplusxfile = NULL;
+    // sprintf(fn, "%s/wplusx/wplusx_00%d.hdf", ud.file_name, wplus_cnt);
+    // sprintf(fieldname, "wplusx");    
+    // WriteHDF(wplusxfile, node->icx, node->icy, node->icz, node->ndim, hplus[0], fn, fieldname);
+
+    // FILE *wplusyfile = NULL;
+    // // char fn[120], fieldname[90];
+    // sprintf(fn, "%s/wplusy/wplusy_00%d.hdf", ud.file_name, wplus_cnt);
+    // sprintf(fieldname, "wplusy");    
+    // WriteHDF(wplusyfile, node->icx, node->icy, node->icz, node->ndim, hplus[1], fn, fieldname);
+    // wplus_cnt += 1;
     
 #if OUTPUT_RHS_NODES
     FILE *prhsfile = NULL;

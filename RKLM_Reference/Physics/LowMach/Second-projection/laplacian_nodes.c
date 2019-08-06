@@ -221,7 +221,7 @@ double precon_diag_prepare(
                     diag[nn00] += ddiag; 
                     diag[nn01] += ddiag;  
                     diag[nn10] += ddiag; 
-                    diag[nn11] += ddiag;
+                    diag[nn11] += ddiag; 
                 }
             }
             
@@ -741,7 +741,7 @@ void precon_column_invert(
                 vec_out[nn] = v_out[j_inn];
             }
         }
-    }
+    }    
 }
 
 /* ========================================================================== */

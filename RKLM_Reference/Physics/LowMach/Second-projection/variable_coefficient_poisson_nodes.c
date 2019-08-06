@@ -437,12 +437,12 @@ void variable_coefficient_poisson_nodes(
         // printf("tmp_arr[ii] = %e", tmp_arr[ii]);
     }
 
-    FILE *pnewfile = NULL;
-    char fn[120], fieldname[90];
-    sprintf(fn, "%s/pnew/pnew_00%d.hdf", ud.file_name, shitty_count);
-    sprintf(fieldname, "pnew");    
-    WriteHDF(pnewfile, node->icx, node->icy, node->icz, node->ndim, tmp_arr, fn, fieldname);
-    shitty_count += 1;
+    // FILE *pnewfile = NULL;
+    // char fn[120], fieldname[90];
+    // sprintf(fn, "%s/pnew/pnew_00%d.hdf", ud.file_name, shitty_count);
+    // sprintf(fieldname, "pnew");    
+    // WriteHDF(pnewfile, node->icx, node->icy, node->icz, node->ndim, tmp_arr, fn, fieldname);
+    // shitty_count += 1;
 
     BiCGSTABData_free(data); 
 }
