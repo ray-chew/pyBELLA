@@ -13,6 +13,7 @@ class Vars(object):
         self.rhoX = np.zeros(([ud.nspec] + list(size)))
         self.squeezer()
 
+
     # will be a better way of doing this
     def squeezer(self):
         for key, value in vars(self).items():
@@ -26,8 +27,16 @@ class Vars(object):
         self.Y = self.rhoY / self.rho
         self.X = self.rhoX / self.rho
         # self.p = self.rhoY**th.gamm
-        
 
+    def flip(self):
+        for key, value in vars(self).items():
+            setattr(self,key,value.T)
+
+    def trim_zeros(self):
+        for key, value in vars(self).items():
+            tmp = value[:,~np.all(value==0, axis=0)]
+            tmp = tmp[~np.all(tmp == 0, axis = 1)]
+            setattr(self,key,tmp)
 
 
 class States(Vars):
@@ -55,6 +64,21 @@ class States(Vars):
 
         self.squeezer()
 
+class Characters(object):
+    def __init__(self, size):
+        self.u = np.zeros((size))
+        self.v = np.zeros((size))
+        self.w = np.zeros((size))
+        self.Y = np.zeros((size))
+
+        self.plus = np.zeros((size))
+        self.minus = np.zeros((size))
+        self.entro = np.zeros((size))
+
+    def squeezer(self):
+        for key, value in vars(self).items():
+            setattr(self, key, value.squeeze())
+        
 # class StatesSmall(States):
 #     def __init__(self,size,ud):
 #         super().__init__(size,ud)
