@@ -192,12 +192,19 @@ class UserData(object):
         self.output_name_comp = "_low_mach_gravity_comp"
 
         self.stratification = self.stratification_function
+        self.rhoe = self.rhoe_function
 
     def stratification_function(self, y):
         if type(y) == float:
             return 1.0
         else:
             return np.ones((y.shape))
+
+    def rhoe_function(self,rho,u,v,w,p,ud,th):
+        Msq = ud.compressibility * ud.Msq
+        gm1inv = th.gm1inv
+
+        return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
 
 def sol_init(Sol, mpv, elem, node, th, ud):
     u0 = 1.0 * ud.wind_speed
@@ -292,9 +299,9 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     if (ud.is_compressible) :
         p = p0 + ud.Msq * fac**2 * dp2c
         Sol.rhoY[:,igy:-igy] = p**th.gamminv
-        Sol.rhoe[:,igy:-igy] = rhoe(rho,u,v,w,p,ud,th)
+        Sol.rhoe[:,igy:-igy] = ud.rhoe(rho,u,v,w,p,ud,th)
     else:
-        Sol.rhoe[:,igy:-igy] = rhoe(rho,u,v,w,p_hydro,ud,th)
+        Sol.rhoe[:,igy:-igy] = ud.rhoe(rho,u,v,w,p_hydro,ud,th)
         Sol.rhoY[:,igy:-igy] = rhoY
 
     mpv.p2_cells[:,igy:-igy] = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[0,igy:-igy])
@@ -350,9 +357,3 @@ def sol_init(Sol, mpv, elem, node, th, ud):
 
 def T_from_p_rho(p, rho):
     return np.divide(p,rho)
-
-def rhoe(rho,u,v,w,p,ud,th):
-    Msq = ud.compressibility * ud.Msq
-    gm1inv = th.gm1inv
-
-    return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
