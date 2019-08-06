@@ -75,9 +75,15 @@ class Characters(object):
         self.minus = np.zeros((size))
         self.entro = np.zeros((size))
 
+        self.squeezer()
+
     def squeezer(self):
         for key, value in vars(self).items():
             setattr(self, key, value.squeeze())
+
+    def change_dir(self):
+        for key, value in vars(self).items():
+            setattr(self, key, -1. * value)
         
 # class StatesSmall(States):
 #     def __init__(self,size,ud):
