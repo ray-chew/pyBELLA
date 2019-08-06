@@ -10,22 +10,54 @@ def recovery(lefts, rights, Sol, flux, lmbda, ud, th, elem):
 
     Sol.primitives()
 
-    flux_rhoY = flux.rhoY
-    Sol_rhoY = Sol.rhoY[1:-1,1:-2]
     lefts_idx = (slice(None),slice(0,-1))
     rights_idx = (slice(None),slice(1,None))
 
-    u = 0.5 * (flux_rhoY[lefts_idx] + flux_rhoY[rights_idx]) / Sol_rhoY
+    # inner_idx here are where the interface fluxes are calculated with non-zero values.
+    inner_idx = (slice(1,-1), slice(1,-2))
 
-    diffs = States(elem.sc,ud)
-    diffs.u[:,:-1] = Sol.u[rights_idx] - Sol.u[lefts_idx]
-    diffs.v[:,:-1] = Sol.v[rights_idx] - Sol.v[lefts_idx]
-    diffs.w[:,:-1] = Sol.w[rights_idx] - Sol.w[lefts_idx]
-    diffs.Y[:,:-1] = 1.0 / Sol.Y[rights_idx] - 1.0 / Sol.Y[lefts_idx]
+    u = np.zeros_like(Sol.rhoY)
+    u[inner_idx] = 0.5 * (flux.rhoY[lefts_idx] + flux.rhoY[rights_idx]) / Sol.rhoY[inner_idx]
 
-    slopes(Sol, diffs, ud, elem)
+    Diffs = States(elem.sc,ud)
+    Ampls = Characters(elem.sc)
+    Lefts = States(elem.sc, ud)
+    Rights = States(elem.sc, ud)
 
-def slopes(Sol, diffs, ud, elem):
+    Diffs.u[:,:-1] = Sol.u[rights_idx] - Sol.u[lefts_idx]
+    Diffs.v[:,:-1] = Sol.v[rights_idx] - Sol.v[lefts_idx]
+    Diffs.w[:,:-1] = Sol.w[rights_idx] - Sol.w[lefts_idx]
+    Diffs.Y[:,:-1] = 1.0 / Sol.Y[rights_idx] - 1.0 / Sol.Y[lefts_idx]
+
+    Slopes = slopes(Sol, Diffs, ud, elem)
+
+    Ampls.u[...] = 0.5 * Slopes.u * (1. - lmbda * u)
+    Ampls.v[...] = 0.5 * Slopes.v * (1. - lmbda * u)
+    Ampls.w[...] = 0.5 * Slopes.w * (1. - lmbda * u)
+    Ampls.Y[...] = 0.5 * Slopes.Y * (1. - lmbda * u)
+
+    Lefts.u[...] = Sol.u + order_two * Ampls.u
+    Lefts.v[...] = Sol.v + order_two * Ampls.v
+    Lefts.w[...] = Sol.w + order_two * Ampls.w
+    Lefts.Y[...] = 1.0 / (1.0 / Sol.Y + order_two * Ampls.Y)
+
+    Ampls.change_dir()
+
+    Rights.u[...] = Sol.u + order_two * Ampls.u
+    Rights.v[...] = Sol.v + order_two * Ampls.v
+    Rights.w[...] = Sol.w + order_two * Ampls.w
+    Rights.Y[...] = 1.0 / (1.0 / Sol.Y + order_two * Ampls.Y)
+
+    Lefts.rhoY[lefts_idx] = Rights.rhoY[rights_idx] = 0.5 * (Sol.rhoY[lefts_idx] + Sol.rhoY[rights_idx]) \
+        - order_two * 0.5 * lmbda * (Sol.u[rights_idx] * Sol.rhoY[rights_idx] - Sol.u[lefts_idx] * Sol.rhoY[lefts_idx]) 
+    Lefts.p0[lefts_idx] = Rights.p0[rights_idx] = Lefts.rhoY[lefts_idx]**gamm
+
+    get_conservatives(Rights, ud, th)
+    get_conservatives(Lefts, ud, th)
+
+    # print(Slopes.u.shape)
+
+def slopes(Sol, Diffs, ud, elem):
     limiter_type_velocity = ud.limiter_type_velocity
     limiter_type_scalar = ud.limiter_type_scalars
 
@@ -38,21 +70,22 @@ def slopes(Sol, diffs, ud, elem):
     kY = ud.kY
 
     # amplitudes of the left state difference:
-    aul = diffs.u[lefts_idx]
-    avl = diffs.v[lefts_idx]
-    awl = diffs.w[lefts_idx]
-    aYl = diffs.Y[lefts_idx]
+    aul = Diffs.u[lefts_idx]
+    avl = Diffs.v[lefts_idx]
+    awl = Diffs.w[lefts_idx]
+    aYl = Diffs.Y[lefts_idx]
 
-    aur = diffs.u[rights_idx]
-    avr = diffs.v[rights_idx]
-    awr = diffs.w[rights_idx]
-    aYr = diffs.Y[rights_idx]
+    aur = Diffs.u[rights_idx]
+    avr = Diffs.v[rights_idx]
+    awr = Diffs.w[rights_idx]
+    aYr = Diffs.Y[rights_idx]
 
     Slopes = Characters(elem.sc)
-    Slopes.u = limiters(limiter_type_velocity, aul, aur, kp)
-    Slopes.v = limiters(limiter_type_velocity, avl, avr, kz)
-    Slopes.w = limiters(limiter_type_velocity, awl, awr, kz)
-    Slopes.Y = limiters(limiter_type_scalar, aYl, aYr, kY)
+
+    Slopes.u[:,:-1] = limiters(limiter_type_velocity, aul, aur, kp)
+    Slopes.v[:,:-1] = limiters(limiter_type_velocity, avl, avr, kz)
+    Slopes.w[:,:-1] = limiters(limiter_type_velocity, awl, awr, kz)
+    Slopes.Y[:,:-1] = limiters(limiter_type_scalar, aYl, aYr, kY)
 
     return Slopes
 
@@ -62,5 +95,12 @@ def limiters(limiter_type, al, ar, kp):
     if limiter_type == LimiterType.NONE:
         return 0.5 * (al + ar)
 
-    
+def get_conservatives(U, ud, th):
+    U.rho = U.rhoY / U.Y
+    U.rhou = U.u * U.rho
+    U.rhov = U.v * U.rho
+    U.rhow = U.w * U.rho
+    U.rhoY = U.Y * U.rho
 
+    p = U.rhoY**th.gamminv
+    U.rhoe = ud.rhoe(U.rho, U.u, U.v, U.w, p, ud, th)
