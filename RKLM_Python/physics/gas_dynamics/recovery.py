@@ -3,21 +3,21 @@ import numpy as np
 from management.variable import States, Characters
 from management.enumerator import LimiterType
 
-def recovery(lefts, rights, Sol, flux, lmbda, ud, th, elem):
+def recovery(Sol, flux, lmbda, ud, th, elem):
     gamm = th.gamm
     
     order_two = 1 # always 1
 
-    Sol.primitives()
+    Sol.primitives(th)
 
     lefts_idx = (slice(None),slice(0,-1))
     rights_idx = (slice(None),slice(1,None))
 
     # inner_idx here are where the interface fluxes are calculated with non-zero values.
-    inner_idx = (slice(1,-1), slice(1,-2))
+    face_inner_idx = (slice(1,-1), slice(1,-2))
 
     u = np.zeros_like(Sol.rhoY)
-    u[inner_idx] = 0.5 * (flux.rhoY[lefts_idx] + flux.rhoY[rights_idx]) / Sol.rhoY[inner_idx]
+    u[face_inner_idx] = 0.5 * (flux.rhoY[lefts_idx] + flux.rhoY[rights_idx]) / Sol.rhoY[face_inner_idx]
 
     Diffs = States(elem.sc,ud)
     Ampls = Characters(elem.sc)
@@ -35,12 +35,12 @@ def recovery(lefts, rights, Sol, flux, lmbda, ud, th, elem):
     Ampls.v[...] = 0.5 * Slopes.v * (1. - lmbda * u)
     Ampls.w[...] = 0.5 * Slopes.w * (1. - lmbda * u)
     Ampls.Y[...] = 0.5 * Slopes.Y * (1. - lmbda * u)
-
+    
     Lefts.u[...] = Sol.u + order_two * Ampls.u
     Lefts.v[...] = Sol.v + order_two * Ampls.v
     Lefts.w[...] = Sol.w + order_two * Ampls.w
     Lefts.Y[...] = 1.0 / (1.0 / Sol.Y + order_two * Ampls.Y)
-
+    
     Ampls.change_dir()
 
     Rights.u[...] = Sol.u + order_two * Ampls.u
@@ -54,6 +54,8 @@ def recovery(lefts, rights, Sol, flux, lmbda, ud, th, elem):
 
     get_conservatives(Rights, ud, th)
     get_conservatives(Lefts, ud, th)
+
+    return Lefts, Rights
 
     # print(Slopes.u.shape)
 
@@ -70,22 +72,22 @@ def slopes(Sol, Diffs, ud, elem):
     kY = ud.kY
 
     # amplitudes of the left state difference:
-    aul = Diffs.u[lefts_idx]
-    avl = Diffs.v[lefts_idx]
-    awl = Diffs.w[lefts_idx]
-    aYl = Diffs.Y[lefts_idx]
+    aul = Diffs.u[lefts_idx][lefts_idx]
+    avl = Diffs.v[lefts_idx][lefts_idx]
+    awl = Diffs.w[lefts_idx][lefts_idx]
+    aYl = Diffs.Y[lefts_idx][lefts_idx]
 
-    aur = Diffs.u[rights_idx]
-    avr = Diffs.v[rights_idx]
-    awr = Diffs.w[rights_idx]
-    aYr = Diffs.Y[rights_idx]
+    aur = Diffs.u[lefts_idx][rights_idx]
+    avr = Diffs.v[lefts_idx][rights_idx]
+    awr = Diffs.w[lefts_idx][rights_idx]
+    aYr = Diffs.Y[lefts_idx][rights_idx]
 
     Slopes = Characters(elem.sc)
 
-    Slopes.u[:,:-1] = limiters(limiter_type_velocity, aul, aur, kp)
-    Slopes.v[:,:-1] = limiters(limiter_type_velocity, avl, avr, kz)
-    Slopes.w[:,:-1] = limiters(limiter_type_velocity, awl, awr, kz)
-    Slopes.Y[:,:-1] = limiters(limiter_type_scalar, aYl, aYr, kY)
+    Slopes.u[:,1:-1] = limiters(limiter_type_velocity, aul, aur, kp)
+    Slopes.v[:,1:-1] = limiters(limiter_type_velocity, avl, avr, kz)
+    Slopes.w[:,1:-1] = limiters(limiter_type_velocity, awl, awr, kz)
+    Slopes.Y[:,1:-1] = limiters(limiter_type_scalar, aYl, aYr, kY)
 
     return Slopes
 
