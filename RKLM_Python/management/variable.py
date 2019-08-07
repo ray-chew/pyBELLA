@@ -20,13 +20,21 @@ class Vars(object):
             setattr(self,key,value.squeeze())
     # method written for 2D
 
-    def primitives(self):
-        self.u = self.rhou / self.rho
-        self.v = self.rhov / self.rho
-        self.w = self.rhow / self.rho
-        self.Y = self.rhoY / self.rho
-        self.X = self.rhoX / self.rho
-        # self.p = self.rhoY**th.gamm
+    def primitives(self,th):
+        nonzero_idx = np.nonzero(self.rho)
+
+        self.u = np.zeros_like(self.rhou)
+        self.v = np.zeros_like(self.rhov)
+        self.w = np.zeros_like(self.rhow)
+        self.Y = np.zeros_like(self.rhoY)
+        self.p = np.zeros_like(self.rhoY)
+
+        self.u[nonzero_idx] = self.rhou[nonzero_idx] / self.rho[nonzero_idx]
+        self.v[nonzero_idx] = self.rhov[nonzero_idx] / self.rho[nonzero_idx]
+        self.w[nonzero_idx] = self.rhow[nonzero_idx] / self.rho[nonzero_idx]
+        self.Y[nonzero_idx] = self.rhoY[nonzero_idx] / self.rho[nonzero_idx]
+        # self.X[nonzero_idx] = self.rhoX[nonzero_idx] / self.rho[nonzero_idx]
+        self.p = self.rhoY**th.gamm
 
     def flip(self):
         for key, value in vars(self).items():
@@ -34,8 +42,11 @@ class Vars(object):
 
     def trim_zeros(self):
         for key, value in vars(self).items():
-            tmp = value[:,~np.all(value==0, axis=0)]
-            tmp = tmp[~np.all(tmp == 0, axis = 1)]
+            if np.all(value == 0):
+                tmp = value
+            else:
+                tmp = value[:,~np.all(value==0, axis=0)]
+                tmp = tmp[~np.all(tmp == 0, axis = 1)]
             setattr(self,key,tmp)
 
 
