@@ -28,9 +28,12 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv):
         for i_split in range(elem.ndim):
             split = elem.ndim - 1 - i_split
             Sol.flip()
-            flux[split].trim_zeros()
-            flux[split].flip()
-            flux[split].get_flux_inner_idx(i_split)
+            # flux[split].trim_zeros()
+            # if split > 0:
+            #     flux[split].flip()
+            print("Done")
+            # print("flux Y shape:", flux[split].rhoY.shape)
+            # flux[split].get_flux_inner_idx(i_split)
             lmbda = time_step / elem.dx
             explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
 
@@ -43,6 +46,7 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv):
     else:
         for split in range(elem.ndim):
             lmbda = time_step / elem.dx
+            print("Done")
             explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
@@ -55,4 +59,11 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
     # skipped check_flux_bcs for now; first debug other functions
     # will need it for the test cases long waves and acoustic
     hll_solver(flux,Lefts,Rights,Sol, lmbda, ud, th)
+
+    right_idx = (slice(None),slice(1,None))
+    left_idx = (slice(None),slice(0,-1))
+    # flux_inner = (slice(0,-1),slice(None))
+    # print(flux.rho[left_idx].shape)
+    # print(Sol.rho.shape)
+    Sol.rho += lmbda * (flux.rho[left_idx] - flux.rho[right_idx] )
 
