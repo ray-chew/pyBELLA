@@ -40,6 +40,13 @@ if elem.ndim > 1:
 if elem.ndim > 2:
     flux[2] = States(elem.sfz, ud)
 
+# for dim in range(elem.ndim):
+#     if dim > 0:
+#         flux[dim].flip()
+# print(flux[0].rhoY.shape)
+# print(flux[1].rhoY.shape)
+# print(flux[0].rhoY[0].shape)
+
 th = ThemodynamicInit(ud)
 
 # bdry = InitializeBdry(elem, ud)
@@ -48,8 +55,6 @@ mpv = MPV(elem, node, ud)
 Sol0 = sol_init(Sol, mpv, elem, node, th, ud)
 
 dt_factor = 0.5 if ud.initial_impl_Euler == True else 1.0
-
-
 
 writer = io(ud)
 writer.write_all(Sol0,mpv,elem,node,th,'000')
@@ -65,6 +70,7 @@ while ((t < ud.tout) and (step < ud.stepmax)):
     
     recompute_advective_fluxes(flux, Sol0)
     writer.populate('000','rhoYu',flux[0].rhoY)
-    writer.populate('000','rhoYv',flux[1].rhoY)
+    
+    # writer.populate('000','rhoYv',flux[1].rhoY)
     advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv)
     break
