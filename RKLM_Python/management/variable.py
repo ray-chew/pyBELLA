@@ -49,6 +49,11 @@ class Vars(object):
                 tmp = tmp[~np.all(tmp == 0, axis = 1)]
             setattr(self,key,tmp)
 
+    def get_flux_inner_idx(self,split):
+        flux_inner_idx = [slice(1,-1),slice(1,-1)]
+        flux_inner_idx[split] = slice(1,-2)
+        self.flux_inner_idx = flux_inner_idx
+
 
 class States(Vars):
     def __init__(self,size,ud):
