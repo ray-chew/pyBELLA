@@ -92,9 +92,9 @@ class SpaceDiscr(object):
         self.nfy = self.icx * self.ify * self.icz
         self.nfz = self.icx * self.icy * self.ifz
 
-        self.sfx = (self.ifx , self.icy , self.icz)
-        self.sfy = (self.icx , self.ify , self.icz)
-        self.sfz = (self.icx , self.icy , self.ifz)
+        self.sfx = (self.icz , self.icy , self.ifx)
+        self.sfy = (self.icx , self.icz , self.ify)
+        self.sfz = (self.icy , self.icx , self.ifz)
 
         self.nf = self.nfx + self.nfy + self.nfz
 
