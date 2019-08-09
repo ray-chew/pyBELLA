@@ -4,6 +4,8 @@ from physics.gas_dynamics.recovery import recovery
 from physics.gas_dynamics.numerical_flux import hll_solver
 from management.variable import Vars
 
+from debug import find_nearest
+
 class NO_OF_RK_STAGES(object):
     NO_OF_RK_STAGES = 3
 
@@ -18,24 +20,20 @@ class TimeIntegratorParams(NO_OF_RK_STAGES):
 def advect(Sol, flux, dt, elem, odd, ud, th, mpv):
     # double strang sweep
     time_step = 0.5 * dt
-
+    print(time_step)
     stage = 0
     if (odd):
         for split in range(elem.ndim):
             lmbda = time_step / elem.dx
+            Sol.flip()
             explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
+            
     else:
         for i_split in range(elem.ndim):
             split = elem.ndim - 1 - i_split
-            Sol.flip()
-            # flux[split].trim_zeros()
-            # if split > 0:
-            #     flux[split].flip()
-            print("Done")
-            # print("flux Y shape:", flux[split].rhoY.shape)
-            # flux[split].get_flux_inner_idx(i_split)
             lmbda = time_step / elem.dx
             explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
+            Sol.flip()
 
     stage = 1
     if (odd):
@@ -43,27 +41,45 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv):
             split = elem.ndim - 1 - i_split
             lmbda = time_step / elem.dx
             explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
+            Sol.flip()
     else:
         for split in range(elem.ndim):
             lmbda = time_step / elem.dx
-            print("Done")
+            Sol.flip()
             explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
+            
+
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
-
+truefalse = True
 def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mpv):
     set_explicit_boundary_data(Sol, elem, ud, th, mpv, dim = split_step)
 
     Lefts, Rights = recovery(Sol, flux, lmbda, ud, th, elem)
+    # global truefalse
+    # if truefalse == True:
+    #     print(stage, split_step)
+    #     print(Lefts.u[0])
+    #     # val, idx = find_nearest(Lefts.u,0.99999986475549874)
+
+    #     truefalse = False
+
     # skipped check_flux_bcs for now; first debug other functions
     # will need it for the test cases long waves and acoustic
     hll_solver(flux,Lefts,Rights,Sol, lmbda, ud, th)
 
     right_idx = (slice(None),slice(1,None))
     left_idx = (slice(None),slice(0,-1))
-    # flux_inner = (slice(0,-1),slice(None))
-    # print(flux.rho[left_idx].shape)
-    # print(Sol.rho.shape)
-    Sol.rho += lmbda * (flux.rho[left_idx] - flux.rho[right_idx] )
+    # print(flux.rho[left_idx] - flux.rho[right_idx])
+    Sol.rho += lmbda * (flux.rho[left_idx] - flux.rho[right_idx])
+    Sol.rhou += lmbda * (flux.rhou[left_idx] - flux.rhou[right_idx])
+    Sol.rhov += lmbda * (flux.rhov[left_idx] - flux.rhov[right_idx])
+    Sol.rhow += lmbda * (flux.rhow[left_idx] - flux.rhow[right_idx])
+    Sol.rhoe += lmbda * (flux.rhoe[left_idx] - flux.rhoe[right_idx])
+    Sol.rhoY += lmbda * (flux.rhoY[left_idx] - flux.rhoY[right_idx])
+
+    set_explicit_boundary_data(Sol, elem, ud, th, mpv, dim = split_step)
+
+
 

@@ -1,6 +1,5 @@
 import numpy as np
 
-
 # equivalent to States_new
 class Vars(object):
     def __init__(self,size,ud):
@@ -40,19 +39,8 @@ class Vars(object):
         for key, value in vars(self).items():
             setattr(self,key,value.T)
 
-    def trim_zeros(self):
-        for key, value in vars(self).items():
-            if np.all(value == 0):
-                tmp = value
-            else:
-                tmp = value[:,~np.all(value==0, axis=0)]
-                tmp = tmp[~np.all(tmp == 0, axis = 1)]
-            setattr(self,key,tmp)
-
-    def get_flux_inner_idx(self,split):
-        flux_inner_idx = [slice(1,-1),slice(1,-1)]
-        flux_inner_idx[split] = slice(1,-2)
-        self.flux_inner_idx = flux_inner_idx
+        self.rhou, self.rhov = self.rhov, self.rhou.copy()
+        
 
 
 class States(Vars):

@@ -12,6 +12,8 @@ from inputs.travelling_vortex_3D_48 import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
 
+from debug import find_nearest
+
 np.set_printoptions(precision=18)
 
 step = 0
@@ -40,13 +42,6 @@ if elem.ndim > 1:
 if elem.ndim > 2:
     flux[2] = States(elem.sfz, ud)
 
-# for dim in range(elem.ndim):
-#     if dim > 0:
-#         flux[dim].flip()
-# print(flux[0].rhoY.shape)
-# print(flux[1].rhoY.shape)
-# print(flux[0].rhoY[0].shape)
-
 th = ThemodynamicInit(ud)
 
 # bdry = InitializeBdry(elem, ud)
@@ -57,20 +52,31 @@ Sol0 = sol_init(Sol, mpv, elem, node, th, ud)
 dt_factor = 0.5 if ud.initial_impl_Euler == True else 1.0
 
 writer = io(ud)
-writer.write_all(Sol0,mpv,elem,node,th,'000')
+writer.write_all(Sol0,mpv,elem,node,th,'initial')
 # Explicit_malloc
 # recovery_malloc
 
 step = 0
 dt = 0.0075005354646259159
+
+# find_nearest(Sol0.rhou, 0.50000030887122227)
+# print(Sol.rhou[0])
 while ((t < ud.tout) and (step < ud.stepmax)):
+    if step < 10:
+        label = '00' + str(step)
+    elif step < 100:
+        label = '0' + str(step)
+    else:
+        label = str(step)
+
     print("---------------------------------------")
     print("half-time prediction of advective flux")
     print("---------------------------------------")
     
     recompute_advective_fluxes(flux, Sol0)
     writer.populate('000','rhoYu',flux[0].rhoY)
+    writer.populate('000','rhoYv',flux[1].rhoY)
     
-    # writer.populate('000','rhoYv',flux[1].rhoY)
-    advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv)
+    advect(Sol0, flux, 0.5*dt, elem, step%2, ud, th, mpv)
+    writer.write_all(Sol,mpv,elem,node,th,label)    
     break
