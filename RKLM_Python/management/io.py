@@ -7,7 +7,7 @@ class io(object):
         self.ud = ud
 
         self.FORMAT = ".h5"
-        self.OUTPUT_FILENAME = "../output"
+        self.OUTPUT_FILENAME = "./output"
         self.BASE_NAME = self.ud.output_base_name
         if self.ud.is_compressible == 1:
             self.SUFFIX = self.ud.output_name_comp
