@@ -33,7 +33,7 @@ class Vars(object):
         self.w[nonzero_idx] = self.rhow[nonzero_idx] / self.rho[nonzero_idx]
         self.Y[nonzero_idx] = self.rhoY[nonzero_idx] / self.rho[nonzero_idx]
         # self.X[nonzero_idx] = self.rhoX[nonzero_idx] / self.rho[nonzero_idx]
-        self.p = self.rhoY**th.gamm
+        self.p[nonzero_idx] = self.rhoY[nonzero_idx]**th.gamm
 
     def flip(self):
         for key, value in vars(self).items():
