@@ -35,24 +35,24 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
     Diffs.w[:,:-1] = Sol.w[rights_idx] - Sol.w[lefts_idx]
     Diffs.Y[:,:-1] = 1.0 / Sol.Y[rights_idx] - 1.0 / Sol.Y[lefts_idx]
 
-    global truefalse
-    if truefalse == True:
+    # global truefalse
+    # if truefalse == True:
         # print(u[1])
 
         # print(Sol.rhou[-3])
         # print(flux.rhoY[1])
 
-        idx = 0
+        # idx = 0
         # print(Sol.u[idx])
-        print(Sol.rhou[idx])
-        print(Sol.rhov[idx])
+        # print(Sol.rhou[idx])
+        # print(Sol.rhov[idx])
         # print(Diffs.u[idx])
         # print(Diffs.v[idx])
 
         # val, idx = find_nearest(Sol.rhou,0.50000030887122227)
         # print("val = ", val)
         # print("idx = ", idx)
-        truefalse = False
+        # truefalse = False
 
     Slopes = slopes(Sol, Diffs, ud, elem)
 
@@ -66,7 +66,11 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
     Lefts.w[...] = Sol.w + order_two * Ampls.w
     Lefts.Y[...] = 1.0 / (1.0 / Sol.Y + order_two * Ampls.Y)
     
-    Ampls.change_dir()
+    # Ampls.change_dir()
+    Ampls.u[...] = -0.5 * Slopes.u * (1. + lmbda * u)
+    Ampls.v[...] = -0.5 * Slopes.v * (1. + lmbda * u)
+    Ampls.w[...] = -0.5 * Slopes.w * (1. + lmbda * u)
+    Ampls.Y[...] = -0.5 * Slopes.Y * (1. + lmbda * u)
 
     Rights.u[...] = Sol.u + order_two * Ampls.u
     Rights.v[...] = Sol.v + order_two * Ampls.v
@@ -79,6 +83,8 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
 
     get_conservatives(Rights, ud, th)
     get_conservatives(Lefts, ud, th)
+
+    # print(Rights.rhoe[0])
 
     return Lefts, Rights
 
@@ -129,5 +135,6 @@ def get_conservatives(U, ud, th):
     U.rhow = U.w * U.rho
     U.rhoY = U.Y * U.rho
 
-    p = U.rhoY**th.gamminv
+    p = (U.rhoY)**th.gamminv
+    
     U.rhoe = ud.rhoe(U.rho, U.u, U.v, U.w, p, ud, th)
