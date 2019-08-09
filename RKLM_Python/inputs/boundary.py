@@ -6,12 +6,14 @@ import numpy as np
 def set_explicit_boundary_data(Sol, elem, ud, th, mpv, dim=None):
     igs = elem.igs
     ndim = elem.ndim
-    if dim == None:
-        start = 0
-        end = elem.ndim
-    else:
-        start = dim
-        end = dim + 1
+    # if dim == None:
+    #     start = 0
+    #     end = elem.ndim
+    # else:
+    #     start = dim
+    #     end = dim +1
+    start = 0
+    end = elem.ndim
 
     for dim in range(start, end):
         ghost_padding, idx = get_ghost_padding(ndim,dim,igs)
