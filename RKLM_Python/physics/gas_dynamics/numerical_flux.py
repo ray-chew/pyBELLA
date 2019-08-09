@@ -21,49 +21,43 @@ def recompute_advective_fluxes(flux, Sol):
 
     kernel_u = np.array([[0.5, 0.5],[1., 1.],[0.5, 0.5]])
     flux[0].rhoY[1:-1,1:-1] = signal.convolve2d(rhoYu, kernel_u, mode='valid') / kernel_u.sum()
+    # flux[0].rhoY = flux[0].rhoY.T
 
     rhoYv = Sol.rhoY * Sol.rhov.T / Sol.rho
     kernel_v = np.array([[0.5,1.,0.5],[0.5,1.,0.5]])
-    flux[1].rhoY[1:-1,1:-1] = signal.convolve2d(rhoYv, kernel_v, mode='valid').T / kernel_v.sum()
-
+    flux[1].rhoY[1:-1,1:-1] = signal.convolve2d(rhoYv, kernel_v, mode='valid').T /kernel_v.sum()
+    # flux[1].rhoY = flux[1].rhoY.T
 
 def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
 
     # flux: index 1 to end = Left[inner_idx]: index 0 to -1 = Right[inner_idx]: index 1 to end
-    inner_idx = (slice(1,-1),slice(1,-1))
-    # flux_inner_idx = (slice(1,-2),slice(1,-1))
-    # flux_inner_idx = (slice(None),slice(0,-1))
+    remove_cols_idx = (slice(None),slice(1,-1))
     left_idx = (slice(None),slice(0,-1))
     right_idx = (slice(None),slice(1,None))
-    first_col = (slice(None),slice(0))
 
     Lefts.primitives(th)
     Rights.primitives(th)
     
     upwind = 0.5 * (1.0 + np.sign(flux.rhoY))
-    # print(upwind.shape)
-    # print(upwind.shape)
-    # print(Lefts.u[0])
-    upl = upwind[right_idx] # / Lefts.Y
-    # print(Lefts.Y)
-    upr = (1.0 - upwind[left_idx]) # / Rights.Y
-    # print(flux.rhou.shape)
-    # print((upl[left_idx] * Lefts.u[left_idx]).shape)
-    # print((upr[right_idx] * Rights.u[right_idx]).shape)
-    # print(flux.rhoY[:,1:-1].shape)
+    upl = upwind[right_idx]
+    upr = (1.0 - upwind[left_idx]) 
 
-    flux.rhou[:,1:-1] = flux.rhoY[:,1:-1] * (upl[left_idx] / Lefts.Y[left_idx] * Lefts.u[left_idx] + upr[right_idx] / Rights.Y[right_idx] * Rights.u[right_idx])
+    flux.rhou[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (upl[left_idx] / Lefts.Y[left_idx] * Lefts.u[left_idx] + upr[right_idx] / Rights.Y[right_idx] * Rights.u[right_idx])
 
-    flux.rho[:,1:-1] = flux.rhoY[:,1:-1] * (upl[left_idx] / Lefts.Y[left_idx] * 1.0 + upr[right_idx] / Rights.Y[right_idx] * 1.0)
+    flux.rho[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (upl[left_idx] / Lefts.Y[left_idx] * 1.0 + upr[right_idx] / Rights.Y[right_idx] * 1.0)
 
-    # flux.rhou[first_col] = 0.0
-    # print(flux.rhou[1])
+    Hl = Lefts.rhoe[left_idx] + Lefts.p[left_idx]
+    Hr = Rights.rhoe[right_idx] + Rights.p[right_idx]
+
+    flux.rhoe[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (upl[left_idx] / Lefts.Y[left_idx] * Hl + upr[right_idx] / Rights.Y[right_idx] * Hr)
+
+    flux.rhov[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (upl[left_idx] / Lefts.Y[left_idx] * Lefts.v[left_idx] + upr[right_idx] / Rights.Y[right_idx] * Rights.v[right_idx])
+
+    flux.rhow[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (upl[left_idx] / Lefts.Y[left_idx] * Lefts.w[left_idx] + upr[right_idx] / Rights.Y[right_idx] * Rights.w[right_idx])
+
 
     val, idx = find_nearest(flux.rhou,0.50000002985023706)
-    # print(val, idx)
-    # print(flux.rhou[1])
+ 
 def find_nearest(array, value):
-    # print(array.shape)
     idx = (np.abs(array - value)).argmin()
-    # print(idx)
     return array.flat[idx], idx

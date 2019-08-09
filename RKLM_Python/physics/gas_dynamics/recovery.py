@@ -3,6 +3,12 @@ import numpy as np
 from management.variable import States, Characters
 from management.enumerator import LimiterType
 
+truefalse = True
+
+def find_nearest(array, value):
+    idx = (np.abs(array - value)).argmin()
+    return array.flat[idx], idx
+
 def recovery(Sol, flux, lmbda, ud, th, elem):
     gamm = th.gamm
     
@@ -16,11 +22,8 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
 
     # inner_idx here are where the interface fluxes are calculated with non-zero values.
     face_inner_idx = (slice(1,-1), slice(1,-1))
-    # print(flux.rhoY[1])
     u = np.zeros_like(Sol.rhoY)
-    # print(flux.rhoY.shape)
     u[inner_idx] = 0.5 * (flux.rhoY[face_inner_idx][lefts_idx] + flux.rhoY[face_inner_idx][rights_idx]) / Sol.rhoY[inner_idx]
-    
 
     Diffs = States(elem.sc,ud)
     Ampls = Characters(elem.sc)
@@ -31,6 +34,25 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
     Diffs.v[:,:-1] = Sol.v[rights_idx] - Sol.v[lefts_idx]
     Diffs.w[:,:-1] = Sol.w[rights_idx] - Sol.w[lefts_idx]
     Diffs.Y[:,:-1] = 1.0 / Sol.Y[rights_idx] - 1.0 / Sol.Y[lefts_idx]
+
+    global truefalse
+    if truefalse == True:
+        # print(u[1])
+
+        # print(Sol.rhou[-3])
+        # print(flux.rhoY[1])
+
+        idx = 0
+        # print(Sol.u[idx])
+        print(Sol.rhou[idx])
+        print(Sol.rhov[idx])
+        # print(Diffs.u[idx])
+        # print(Diffs.v[idx])
+
+        # val, idx = find_nearest(Sol.rhou,0.50000030887122227)
+        # print("val = ", val)
+        # print("idx = ", idx)
+        truefalse = False
 
     Slopes = slopes(Sol, Diffs, ud, elem)
 
