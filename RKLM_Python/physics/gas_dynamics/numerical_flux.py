@@ -37,6 +37,8 @@ def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
 
     Lefts.primitives(th)
     Rights.primitives(th)
+    # print(Lefts.rhoe[0][:10])
+    # print(Lefts.rhoe[0][:10])
     
     upwind = 0.5 * (1.0 + np.sign(flux.rhoY))
     upl = upwind[right_idx]
@@ -47,17 +49,31 @@ def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
     flux.rho[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (upl[left_idx] / Lefts.Y[left_idx] * 1.0 + upr[right_idx] / Rights.Y[right_idx] * 1.0)
 
     Hl = Lefts.rhoe[left_idx] + Lefts.p[left_idx]
+    # print(Hl.shape)
+    # print(upl[left_idx].shape)
+    # print(Hl[0][:10])
+    # print(Lefts.rhoe[0][:10])
+    # print(Lefts.p[0][:10])
     Hr = Rights.rhoe[right_idx] + Rights.p[right_idx]
 
     flux.rhoe[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (upl[left_idx] / Lefts.Y[left_idx] * Hl + upr[right_idx] / Rights.Y[right_idx] * Hr)
+
+    # print("flux.rhoY = ", flux.rhoY[1][:10])
+    # print("upl = ", upl[1][:10] / Lefts.Y[1][:10])
+    # # print("Lefts.Y = ", Lefts.Y[1][:10])
+    # print("Hl = ", Hl[1][:10])
+    # print("upr = ", upr[1][:10] / Rights.Y[1][:10])
+    # # print("Rights.Y = ", Rights.Y[1][:10])
+    # print("Hr = ", Hr[1][:10])
+    # print("flux.rhoe = ", flux.rhoe[1][:10])
 
     flux.rhov[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (upl[left_idx] / Lefts.Y[left_idx] * Lefts.v[left_idx] + upr[right_idx] / Rights.Y[right_idx] * Rights.v[right_idx])
 
     flux.rhow[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (upl[left_idx] / Lefts.Y[left_idx] * Lefts.w[left_idx] + upr[right_idx] / Rights.Y[right_idx] * Rights.w[right_idx])
 
 
-    val, idx = find_nearest(flux.rhou,0.50000002985023706)
+#     val, idx = find_nearest(flux.rhou,0.50000002985023706)
  
-def find_nearest(array, value):
-    idx = (np.abs(array - value)).argmin()
-    return array.flat[idx], idx
+# def find_nearest(array, value):
+#     idx = (np.abs(array - value)).argmin()
+#     return array.flat[idx], idx

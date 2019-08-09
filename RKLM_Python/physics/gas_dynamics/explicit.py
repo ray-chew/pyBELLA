@@ -20,7 +20,7 @@ class TimeIntegratorParams(NO_OF_RK_STAGES):
 def advect(Sol, flux, dt, elem, odd, ud, th, mpv):
     # double strang sweep
     time_step = 0.5 * dt
-    print(time_step)
+    # print(time_step)
     stage = 0
     if (odd):
         for split in range(elem.ndim):
@@ -48,8 +48,6 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv):
             Sol.flip()
             explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
             
-
-
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 truefalse = True
