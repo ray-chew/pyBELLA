@@ -9,6 +9,9 @@ from scipy.sparse.linalg import LinearOperator, bicgstab
 
 import h5py
 
+def euler_backward_non_advective_expl_part():
+    None
+
 def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff):
     nc = node.sc
     rhs = np.zeros_like(mpv.p2_nodes)
@@ -236,13 +239,14 @@ def divergence_nodes(rhs,elem,node,Sol,mpv,ud):
 def rhs_from_p_old(rhs,node,mpv):
     igs = node.igs
     ndim = node.ndim
-
+    
     assert ndim != 1, "Not implemented for 1D"
     
     inner_idx = np.empty((ndim), dtype=object)
     for dim in range(ndim):
-        igs[dim] = slice(igs[dim],-igs[dim])
-
+        inner_idx[dim] = slice(igs[dim],-igs[dim])
+    
+    inner_idx = tuple(inner_idx)
     rhs_hh = mpv.wcenter[inner_idx] * mpv.p2_nodes[inner_idx]
     rhs[inner_idx] += rhs_hh
     return rhs
