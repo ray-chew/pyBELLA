@@ -9,8 +9,40 @@ from scipy.sparse.linalg import LinearOperator, bicgstab
 
 import h5py
 
-def euler_backward_non_advective_expl_part():
-    None
+def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
+    nonhydro = ud.nonhydrostasy
+
+    # y-axis = gravity-direction
+    g = ud.gravity_strength[1]
+    Msq = ud.Msq
+    dy = elem.dy
+
+    time_offset = 3.0 - ud.acoustic_order
+    coriolis = ud.coriolis_strength[0]
+    u0 = ud.wind_speed
+    fsqsc = dt**2 * coriolis**2
+    ooopfsqsc = 1.0 / (1.0 + fsqsc)
+
+    first_nodes_row_right_idx = (slice(0,1), slice(1,None))
+    first_nodes_row_left_idx = (slice(0,1),slice(0,-1))
+
+    strat = 2.0 * (mpv.HydroState_n.Y0[first_nodes_row_right_idx] - mpv.HydroState_n.Y0[first_nodes_row_left_idx]) / (mpv.HydroState_n.Y0[first_nodes_row_right_idx] + mpv.HydroState_n.Y0[first_nodes_row_left_idx]) / dy
+    print(mpv.HydroState_n.Y0[0])
+    # works for 2d grid - check for non-square
+    strat = strat.reshape(1,-1)
+    strat = np.repeat(strat, elem.icx, axis=0)
+    print(strat)
+
+    Nsqsc = time_offset * dt**2 * (g / Msq) * strat
+    dbouy = 0.0 ###### Incomplete!!! ######
+    rhov = (nonhydro * Sol.rhov + dt * (g/Msq) * dbouy) / (nonhydro + Nsqsc)
+
+    drhou = Sol.rhou - u0 * Sol.rho
+    Sol.rhou[...] = u0 * Sol.rho + ooopfsqsc * (drhou + dt * coriolis * Sol.rhow)
+    Sol.rhov[...] = rhov
+    Sol.rhow[...] = ooopfsqsc * (Sol.rhow - dt * coriolis * drhou)
+
+    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff):
     nc = node.sc
@@ -239,7 +271,7 @@ def divergence_nodes(rhs,elem,node,Sol,mpv,ud):
 def rhs_from_p_old(rhs,node,mpv):
     igs = node.igs
     ndim = node.ndim
-    
+
     assert ndim != 1, "Not implemented for 1D"
     
     inner_idx = np.empty((ndim), dtype=object)
