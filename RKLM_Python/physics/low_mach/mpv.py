@@ -30,3 +30,14 @@ class MPV(object):
         for key, value in vars(self).items():
             if type(value) == np.ndarray:
                 setattr(self,key,value.squeeze())
+
+
+def acoustic_order(ud,t,dt):
+    if ud.is_compressible == 0:
+        return 1.8
+    elif ud.is_compressible == 1:
+        return 2.0
+    elif ud.is_compressible == -1:
+        assert 0
+    else:
+        assert 0
