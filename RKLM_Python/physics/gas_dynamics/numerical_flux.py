@@ -1,31 +1,34 @@
 import numpy as np
 from scipy import signal
+from debug import find_nearest
 
 def recompute_advective_fluxes(flux, Sol):
     ################################################
     # 2D case for now - generalise in future
     ################################################
-    
-    rhoYu = Sol.rhoY * Sol.rhou.T / Sol.rho
+    rhoYu = Sol.rhoY * Sol.rhou / Sol.rho
 
     # keep for debugging purpose... last checked, function is correct
     # will need to think of a better method to generalise from 2d
 
-    # idx = 901
-    # print("rhoYu_cm = ", rhoYu.flatten()[idx-52])
-    # print("rhoYu_mm = ", rhoYu.flatten()[idx-52-1])
-    # print("rhoYu_cc = ", rhoYu.flatten()[idx])
-    # print("rhoYu_mc = ", rhoYu.flatten()[idx-1])
-    # print("rhoYu_cp = ", rhoYu.flatten()[idx+52])
-    # print("rhoYu_mp = ", rhoYu.flatten()[idx+52-1])
+    idx = 874
+    print("rhoYu_cm = ", rhoYu.flatten()[idx-52])
+    print("rhoYu_mm = ", rhoYu.flatten()[idx-52-1])
+    print("rhoYu_cc = ", rhoYu.flatten()[idx])
+    print("rhoYu_mc = ", rhoYu.flatten()[idx-1])
+    print("rhoYu_cp = ", rhoYu.flatten()[idx+52])
+    print("rhoYu_mp = ", rhoYu.flatten()[idx+52-1])
 
-    kernel_u = np.array([[0.5, 0.5],[1., 1.],[0.5, 0.5]])
-    flux[0].rhoY[1:-1,1:-1] = signal.convolve2d(rhoYu, kernel_u, mode='valid') / kernel_u.sum()
+    kernel_u = np.array([[0.5, 0.5],[1., 1.],[0.5, 0.5]]).T
+    flux[0].rhoY[1:-1,1:-1] = signal.convolve2d(rhoYu, kernel_u, mode='valid').T / kernel_u.sum()
     # flux[0].rhoY = flux[0].rhoY.T
 
-    rhoYv = Sol.rhoY * Sol.rhov.T / Sol.rho
-    kernel_v = np.array([[0.5,1.,0.5],[0.5,1.,0.5]])
-    flux[1].rhoY[1:-1,1:-1] = signal.convolve2d(rhoYv, kernel_v, mode='valid').T /kernel_v.sum()
+    # print("rhoYu = ", flux[0].rhoY.flatten()[idx-5:idx+5])
+    find_nearest(flux[0].rhoY, 1.2420080775988327)
+
+    rhoYv = Sol.rhoY * Sol.rhov / Sol.rho
+    kernel_v = np.array([[0.5,1.,0.5],[0.5,1.,0.5]]).T
+    flux[1].rhoY[1:-1,1:-1] = signal.convolve2d(rhoYv, kernel_v, mode='valid') /kernel_v.sum()
     # flux[1].rhoY = flux[1].rhoY.T
 
 def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
