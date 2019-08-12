@@ -4,7 +4,7 @@ def nonhydrostasy(ud,t):
     if ud.is_nonhydrostatic == 0:
         return 0.0
     elif ud.is_nonhydrostatic == 1:
-        return 1,0
+        return 1.0
     elif ud.is_nonhydrostatic == -1:
         a = 12.5
         b = 1.0 / 24.0
