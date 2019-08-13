@@ -9,6 +9,60 @@ from scipy.sparse.linalg import LinearOperator, bicgstab
 
 import h5py
 
+def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
+    nonhydro = ud.nonhydrostasy
+    wp = 1. # with pressure
+
+    g = ud.gravity_strength[1]
+    Msq = ud.Msq
+    Ginv = th.Gammainv
+    coriolis = ud.coriolis_strength[0]
+    u0 = ud.wind_speed
+
+    div = mpv.rhs
+
+    p2n = np.copy(mpv.p2_nodes)
+    dp2n = np.zeros_like(p2n)
+    dx = node.dx
+    dy = node.dy
+
+    ######## Test this! #########
+    # scale_wall_node_values
+    #############################
+
+
+    ## 2D-case ###
+    inner_idx = (slice(1,-1),slice(1,-1))
+    p2n = p2n[inner_idx]
+
+    dpdx_kernel = 0.5 * np.array([[-1.,1.],[-1.,1.]])
+    dpdy_kernel = 0.5 * np.array([[-1.,-1.],[1.,1.]])
+
+    dpdx = wp * signal.convolve2d(p2n, dpdx_kernel, mode='valid') / dx
+    dpdy = wp * signal.convolve2d(p2n, dpdy_kernel, mode='valid') / dy
+
+    rhoYovG = Ginv * Sol.rhoY[inner_idx]
+    dchi = 0. ###### INCOMPLETE!
+    dbuoy = -1. * Sol.rhoY[inner_idx] * dchi
+    drhou = Sol.rhou[inner_idx] - u0 * Sol.rho[inner_idx]
+
+    rhoY = Sol.rhoY[inner_idx]**(th.gamm - 2.0)    
+    dpidP_kernel = np.array([[1.,1.],[1.,1.]])
+    dpidP = (th.gm1 / ud.Msq) * signal.convolve2d(rhoY, dpidP_kernel, mode='valid')
+    
+    Sol.rhou[inner_idx] = Sol.rhou[inner_idx] + dt * ( -1. * rhoYovG * dpdx + coriolis * Sol.rhow[inner_idx])
+    Sol.rhov[inner_idx] = Sol.rhov[inner_idx] + dt * ( -1. * rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro
+    Sol.rhow = Sol.rhow[inner_idx] - dt * coriolis * drhou
+
+    dp2n[inner_idx] -= dt * dpidP * div[inner_idx]
+
+    if (ud.is_compressible):
+        weight = ud.acoustic_order - 1.0
+        mpv.p2_nodes += weight * dp2n
+
+    set_ghostnodes_p2(mpv.p2_nodes,node, ud)
+    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+
 def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     nonhydro = ud.nonhydrostasy
 
@@ -27,11 +81,11 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     first_nodes_row_left_idx = (slice(0,1),slice(0,-1))
 
     strat = 2.0 * (mpv.HydroState_n.Y0[first_nodes_row_right_idx] - mpv.HydroState_n.Y0[first_nodes_row_left_idx]) / (mpv.HydroState_n.Y0[first_nodes_row_right_idx] + mpv.HydroState_n.Y0[first_nodes_row_left_idx]) / dy
-    print(mpv.HydroState_n.Y0[0])
+    # print(mpv.HydroState_n.Y0[0])
     # works for 2d grid - check for non-square
     strat = strat.reshape(1,-1)
     strat = np.repeat(strat, elem.icx, axis=0)
-    print(strat)
+    # print(strat)
 
     Nsqsc = time_offset * dt**2 * (g / Msq) * strat
     dbouy = 0.0 ###### Incomplete!!! ######
@@ -43,6 +97,8 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     Sol.rhow[...] = ooopfsqsc * (Sol.rhow - dt * coriolis * drhou)
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+
+
 
 def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff):
     nc = node.sc
