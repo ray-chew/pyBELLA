@@ -46,15 +46,15 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     dbuoy = -1. * Sol.rhoY[inner_idx] * dchi
     drhou = Sol.rhou[inner_idx] - u0 * Sol.rho[inner_idx]
 
-    rhoY = Sol.rhoY[inner_idx]**(th.gamm - 2.0)    
+    rhoY = Sol.rhoY**(th.gamm - 2.0)    
     dpidP_kernel = np.array([[1.,1.],[1.,1.]])
     dpidP = (th.gm1 / ud.Msq) * signal.convolve2d(rhoY, dpidP_kernel, mode='valid')
     
     Sol.rhou[inner_idx] = Sol.rhou[inner_idx] + dt * ( -1. * rhoYovG * dpdx + coriolis * Sol.rhow[inner_idx])
     Sol.rhov[inner_idx] = Sol.rhov[inner_idx] + dt * ( -1. * rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro
-    Sol.rhow = Sol.rhow[inner_idx] - dt * coriolis * drhou
+    Sol.rhow[inner_idx] = Sol.rhow[inner_idx] - dt * coriolis * drhou
 
-    dp2n[inner_idx] -= dt * dpidP * div[inner_idx]
+    dp2n[inner_idx] -= dt * dpidP * div[:-1,:-1]
 
     if (ud.is_compressible):
         weight = ud.acoustic_order - 1.0
@@ -62,6 +62,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
 
     set_ghostnodes_p2(mpv.p2_nodes,node, ud)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+
 
 def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     nonhydro = ud.nonhydrostasy
