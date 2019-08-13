@@ -30,7 +30,6 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     # scale_wall_node_values
     #############################
 
-
     ## 2D-case ###
     inner_idx = (slice(1,-1),slice(1,-1))
     p2n = p2n[inner_idx]
