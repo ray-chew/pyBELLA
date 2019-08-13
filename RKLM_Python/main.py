@@ -6,7 +6,7 @@ from physics.gas_dynamics.thermodynamic import ThemodynamicInit
 from physics.gas_dynamics.numerical_flux import recompute_advective_fluxes
 from physics.gas_dynamics.explicit import advect
 from physics.gas_dynamics.eos import nonhydrostasy, compressibility
-from physics.low_mach.second_projection import euler_backward_non_advective_impl_part, euler_backward_non_advective_expl_part
+from physics.low_mach.second_projection import euler_backward_non_advective_impl_part, euler_backward_non_advective_expl_part, euler_forward_non_advective
 from inputs.enum_bdry import BdryType
 from physics.low_mach.mpv import MPV, acoustic_order
 
@@ -89,17 +89,26 @@ while ((t < ud.tout) and (step < ud.stepmax)):
 
     # mpv.p2_nodes0 = mpv.p2_nodes.copy()
     euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
-    
     euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0)
     writer.write_all(Sol,mpv,elem,node,th,label) 
     # mpv.p2_nodes = mpv.p2_nodes0.copy()
 
-    # Sol.rhou[...] = Sol.rhou.T
-    # Sol.rhov[...] = Sol.rhov.T
     recompute_advective_fluxes(flux, Sol)
-    writer.populate('000','rhoYu',flux[0].rhoY)
-    writer.populate('000','rhoYv',flux[1].rhoY)
-    print(label)
+    # writer.populate('000','rhoYu',flux[0].rhoY)
+    # writer.populate('000','rhoYv',flux[1].rhoY)
+    # print(label)
+
+    print("-----------------------------------------------")
+    print("full-time step with predicted of advective flux")
+    print("-----------------------------------------------")
+
+    Sol = Sol0
+
+    euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th)
     
+    advect(Sol, flux, dt, elem, step%2, ud, th, mpv)
+
+    euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+    euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0)
     
     break
