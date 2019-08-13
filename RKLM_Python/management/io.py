@@ -15,7 +15,7 @@ class io(object):
             self.SUFFIX = self.ud.output_name_psinc
 
 
-        self.PATHS = [   'bouy',
+        self.PATHS = [  'bouy',
                         'dp2_c',
                         'dp2_nodes',
                         'dpdim',
@@ -34,7 +34,8 @@ class io(object):
                         'v',
                         'w',
                         'vortz',
-                        'Y'
+                        'Y',
+                        'rhs'
                     ]
         
         self.io_create_file(self.PATHS)
@@ -101,6 +102,7 @@ class io(object):
         self.populate(name,'wplusy',mpv.wplus[1])
         self.populate(name,'hcenter',mpv.wcenter)
         self.populate(name,'p2',mpv.dp2_nodes)
+        self.populate(name,'rhs',mpv.rhs)
 
     def vortz(self,Sol,elem,node):
         if elem.ndim != 2:
