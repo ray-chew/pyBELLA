@@ -7,6 +7,8 @@ from itertools import product
 
 from scipy.sparse.linalg import LinearOperator, bicgstab
 
+from debug import find_nearest
+
 import h5py
 
 def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
@@ -19,12 +21,14 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     coriolis = ud.coriolis_strength[0]
     u0 = ud.wind_speed
 
-    div = mpv.rhs
-
     p2n = np.copy(mpv.p2_nodes)
     dp2n = np.zeros_like(p2n)
     dx = node.dx
     dy = node.dy
+
+    mpv.rhs *= 0.0
+    mpv.rhs[...], _ = divergence_nodes(mpv.rhs,elem,node,Sol,mpv,ud)
+    div = mpv.rhs
 
     ######## Test this! #########
     # scale_wall_node_values
@@ -34,11 +38,20 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     inner_idx = (slice(1,-1),slice(1,-1))
     p2n = p2n[inner_idx]
 
-    dpdx_kernel = 0.5 * np.array([[-1.,1.],[-1.,1.]])
-    dpdy_kernel = 0.5 * np.array([[-1.,-1.],[1.,1.]])
+    dpdx_kernel = np.array([[-1.,1.],[-1.,1.]])
+    dpdy_kernel = np.array([[-1.,-1.],[1.,1.]])
 
-    dpdx = wp * signal.convolve2d(p2n, dpdx_kernel, mode='valid') / dx
-    dpdy = wp * signal.convolve2d(p2n, dpdy_kernel, mode='valid') / dy
+    dpdx = -wp * 0.5 * signal.convolve2d(p2n, dpdx_kernel, mode='valid') / dx
+    dpdy = -wp * 0.5 * signal.convolve2d(p2n, dpdy_kernel, mode='valid') / dy
+
+    Sol.rhou[...] = Sol.rhou.T
+    Sol.rhov[...] = Sol.rhov.T
+    Sol.rhow[...] = Sol.rhow.T
+
+    idx = 587
+    # print('Sol.rhou(before) = ', Sol.rhou.T.flatten()[idx])
+    # print('Sol.rhov(before) = ', Sol.rhov.T.flatten()[idx])
+    # find_nearest(Sol.rhou,0.50010834727366982)
 
     rhoYovG = Ginv * Sol.rhoY[inner_idx]
     dchi = 0. ###### INCOMPLETE!
@@ -47,14 +60,41 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
 
     rhoY = Sol.rhoY**(th.gamm - 2.0)    
     dpidP_kernel = np.array([[1.,1.],[1.,1.]])
-    dpidP = (th.gm1 / ud.Msq) * signal.convolve2d(rhoY, dpidP_kernel, mode='valid')
+    dpidP = (th.gm1 / ud.Msq) * signal.convolve2d(rhoY, dpidP_kernel, mode='valid') / dpidP_kernel.sum()
     
     Sol.rhou[inner_idx] = Sol.rhou[inner_idx] + dt * ( -1. * rhoYovG * dpdx + coriolis * Sol.rhow[inner_idx])
     Sol.rhov[inner_idx] = Sol.rhov[inner_idx] + dt * ( -1. * rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro
     Sol.rhow[inner_idx] = Sol.rhow[inner_idx] - dt * coriolis * drhou
 
-    dp2n[inner_idx] -= dt * dpidP * div[:-1,:-1]
+    # idx = 585
+    n_rows = int(np.floor(idx / 52))
+    n_cols = idx - (n_rows * 52)
+    n_rows -= 1
+    n_cols -= 1
+    idx = n_rows * 50 + n_cols
 
+    idx_n = 598
+    n_rows = int(np.floor(idx_n / 53))
+    n_cols = idx_n - (n_rows * 53) 
+    n_rows -= 1
+    n_cols -= 1
+    idx_n = n_rows * 51 + n_cols
+
+    # print(idx_n)
+
+    # print('dt = %.8f, dx = %.8f, dy = %.8f' %(dt,dx,dy))
+    # print('p2n[idx_n] = ', p2n.flatten()[idx_n])
+    # print('dpdx = ', dpdx.flatten()[idx])
+    # print('dpdy = ', dpdy.flatten()[idx])
+    # print('rhoYovG = ', rhoYovG.flatten()[idx])
+    # print('Sol.rhou(after) = ', Sol.rhou[inner_idx].flatten()[idx])
+    # print('Sol.rhov(after) = ', Sol.rhov[inner_idx].flatten()[idx])
+
+    dp2n[inner_idx] -= dt * dpidP * div[inner_idx]
+    find_nearest(dp2n,-5.5631383332701323e-07)
+
+    idx_dp2n = 758
+    print('dp2n = ', dp2n.flatten()[idx_dp2n])
     if (ud.is_compressible):
         weight = ud.acoustic_order - 1.0
         mpv.p2_nodes += weight * dp2n
@@ -62,6 +102,9 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     set_ghostnodes_p2(mpv.p2_nodes,node, ud)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
+    Sol.rhou[...] = Sol.rhou.T
+    Sol.rhov[...] = Sol.rhov.T
+    Sol.rhow[...] = Sol.rhow.T
 
 def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     nonhydro = ud.nonhydrostasy
@@ -130,7 +173,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     mpv.p2_nodes[...] = p2_full
-
+    mpv.rhs = rhs
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
 
@@ -320,7 +363,7 @@ def divergence_nodes(rhs,elem,node,Sol,mpv,ud):
         rhs[inner_idx][index] += np.inner(signs[count], tmp_fxyz)
         count += 1
 
-    rhs_max = np.amax(rhs[inner_idx]) if np.amax(rhs[inner_idx]) > 0 else 0
+    rhs_max = np.max(rhs[inner_idx]) if np.max(rhs[inner_idx]) > 0 else 0
     return rhs, rhs_max
 
 

@@ -13,8 +13,10 @@ from physics.low_mach.mpv import MPV, acoustic_order
 from inputs.travelling_vortex_3D_48 import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
+from copy import deepcopy
 
 from debug import find_nearest
+
 
 np.set_printoptions(precision=18)
 
@@ -50,6 +52,7 @@ th = ThemodynamicInit(ud)
 mpv = MPV(elem, node, ud)
 
 Sol0 = sol_init(Sol, mpv, elem, node, th, ud)
+Sol = deepcopy(Sol0)
 
 dt_factor = 0.5 if ud.initial_impl_Euler == True else 1.0
 
@@ -70,7 +73,7 @@ while ((t < ud.tout) and (step < ud.stepmax)):
         label = '0' + str(step)
     else:
         label = str(step)
-
+    
     print("---------------------------------------")
     print("half-time prediction of advective flux")
     print("---------------------------------------")
@@ -87,13 +90,12 @@ while ((t < ud.tout) and (step < ud.stepmax)):
 
     # writer.write_all(Sol,mpv,elem,node,th,label) 
 
-    # mpv.p2_nodes0 = mpv.p2_nodes.copy()
+    mpv.p2_nodes0 = mpv.p2_nodes.copy()
     euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
     euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0)
-    
-    # mpv.p2_nodes = mpv.p2_nodes0.copy()
-
+    mpv.p2_nodes = mpv.p2_nodes0.copy()
     recompute_advective_fluxes(flux, Sol)
+    
     # writer.populate('000','rhoYu',flux[0].rhoY)
     # writer.populate('000','rhoYv',flux[1].rhoY)
     # print(label)
@@ -101,14 +103,13 @@ while ((t < ud.tout) and (step < ud.stepmax)):
     print("-----------------------------------------------")
     print("full-time step with predicted of advective flux")
     print("-----------------------------------------------")
-
     Sol = Sol0
-
-    euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th)
     
+    euler_forward_non_advective(Sol, mpv, elem, node, 0.5*dt, ud, th)
+    writer.write_all(Sol,mpv,elem,node,th,label)
     advect(Sol, flux, dt, elem, step%2, ud, th, mpv)
 
     euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
     euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0)
-    writer.write_all(Sol,mpv,elem,node,th,label) 
+
     break
