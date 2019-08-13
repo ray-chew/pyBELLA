@@ -90,7 +90,7 @@ while ((t < ud.tout) and (step < ud.stepmax)):
     # mpv.p2_nodes0 = mpv.p2_nodes.copy()
     euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
     euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0)
-    writer.write_all(Sol,mpv,elem,node,th,label) 
+    
     # mpv.p2_nodes = mpv.p2_nodes0.copy()
 
     recompute_advective_fluxes(flux, Sol)
@@ -110,5 +110,5 @@ while ((t < ud.tout) and (step < ud.stepmax)):
 
     euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
     euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0)
-    
+    writer.write_all(Sol,mpv,elem,node,th,label) 
     break
