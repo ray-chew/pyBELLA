@@ -17,7 +17,7 @@ from management.io import io
 from copy import deepcopy
 
 from debug import find_nearest
-
+import h5py
 
 np.set_printoptions(precision=18)
 
@@ -86,9 +86,11 @@ while ((t < ud.tout) and (step < ud.stepmax)):
     ud.acoustic_order = acoustic_order(ud,t,dt)
 
     recompute_advective_fluxes(flux, Sol)
-    # writer.write_all(Sol,mpv,elem,node,th,label)
-    writer.populate('000','rhoYu',flux[0].rhoY)
-    writer.populate('000','rhoYv',flux[1].rhoY)
+
+    base_filename = '/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_acoustic_wave_high/low_Mach_gravity_comp/'
+    flux[0].rhoY = h5py.File(base_filename + 'flux_x/rhoYu_001.h5', 'r')['Data-Set-2'][:].T
+    writer.populate('before_advect','rhoYu',flux[0].rhoY)
+    writer.populate('before_advect','rhoYv',flux[1].rhoY)
     writer.write_all(Sol,mpv,elem,node,th,'before_advect')
     advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, writer)
     writer.write_all(Sol,mpv,elem,node,th,'after_advect')

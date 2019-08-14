@@ -187,7 +187,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     p2_full = np.zeros(nc).squeeze()
     p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
+
     p2_full = h5py.File(base_filename + 'pnew/p2_full_004.h5', 'r')['Data-Set-2'][:]
+
     writer.populate('after_ebnaimp','p2_full',p2_full)
 
     mpv.dp2_nodes[...] = np.copy(p2_full)
