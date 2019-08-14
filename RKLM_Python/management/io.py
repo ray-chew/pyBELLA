@@ -51,7 +51,7 @@ class io(object):
         file.close()
 
     def write_all(self,Sol,mpv,elem,node,th,name):
-        print("writing hdf output...")
+        print("writing hdf output..." + name)
         # rho
         self.populate(name,'rho',Sol.rho)
         # rhoe
