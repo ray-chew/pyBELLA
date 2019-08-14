@@ -195,7 +195,6 @@ def check_flux_bcs(Lefts, Rights, elem, split_step, ud):
             
     else:
         # print('split_step == ', split_step)
-        None
         if ud.bdry_type[split_step] == BdryType.WALL:
 
             # print(truefalse)

@@ -46,7 +46,7 @@ if elem.ndim > 1:
     flux[1] = States(elem.sfy, ud)
 if elem.ndim > 2:
     flux[2] = States(elem.sfz, ud)
-flux[1].flip()
+# flux[1].flip()
 
 th = ThemodynamicInit(ud)
 
@@ -65,6 +65,7 @@ writer.write_all(Sol0,mpv,elem,node,th,'000')
 
 step = 0
 dt = 6.6820499999999995e-05
+# dt = 0.0075005354646259159
 
 # find_nearest(Sol0.rhou, 0.50000030887122227)
 # print(Sol.rhou[0])
