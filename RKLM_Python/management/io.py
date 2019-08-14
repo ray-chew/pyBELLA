@@ -98,9 +98,9 @@ class io(object):
         # species mass fraction perturbation
         self.populate(name,'dY', Sol.rhoY / Sol.rho - self.ud.stratification(elem.y))
 
-        self.populate(name,'wplusx',mpv.wplus[0])
-        self.populate(name,'wplusy',mpv.wplus[1])
-        self.populate(name,'hcenter',mpv.wcenter)
+        # self.populate(name,'wplusx',mpv.wplus[0])
+        # self.populate(name,'wplusy',mpv.wplus[1])
+        # self.populate(name,'hcenter',mpv.wcenter)
         self.populate(name,'p2',mpv.dp2_nodes)
         self.populate(name,'rhs',mpv.rhs)
 

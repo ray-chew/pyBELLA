@@ -39,7 +39,7 @@ class Vars(object):
         for key, value in vars(self).items():
             setattr(self,key,value.T)
 
-        self.rhou, self.rhov = self.rhov, self.rhou.copy()
+        self.rhou, self.rhov = self.rhov, self.rhou
         
 
 

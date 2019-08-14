@@ -10,7 +10,8 @@ from physics.low_mach.second_projection import euler_backward_non_advective_impl
 from inputs.enum_bdry import BdryType
 from physics.low_mach.mpv import MPV, acoustic_order
 
-from inputs.travelling_vortex_3D_48 import UserData, sol_init
+# from inputs.travelling_vortex_3D_48 import UserData, sol_init
+from inputs.acoustic_wave_high import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
 from copy import deepcopy
@@ -45,6 +46,7 @@ if elem.ndim > 1:
     flux[1] = States(elem.sfy, ud)
 if elem.ndim > 2:
     flux[2] = States(elem.sfz, ud)
+flux[1].flip()
 
 th = ThemodynamicInit(ud)
 
@@ -57,12 +59,12 @@ Sol = deepcopy(Sol0)
 dt_factor = 0.5 if ud.initial_impl_Euler == True else 1.0
 
 writer = io(ud)
-writer.write_all(Sol0,mpv,elem,node,th,'initial')
+writer.write_all(Sol0,mpv,elem,node,th,'000')
 # Explicit_malloc
 # recovery_malloc
 
 step = 0
-dt = 0.0075005354646259159
+dt = 6.6820499999999995e-05
 
 # find_nearest(Sol0.rhou, 0.50000030887122227)
 # print(Sol.rhou[0])
@@ -83,33 +85,35 @@ while ((t < ud.tout) and (step < ud.stepmax)):
     ud.acoustic_order = acoustic_order(ud,t,dt)
 
     recompute_advective_fluxes(flux, Sol)
-    # writer.populate('000','rhoYu',flux[0].rhoY)
-    # writer.populate('000','rhoYv',flux[1].rhoY)
-    
-    advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv)
-
-    # writer.write_all(Sol,mpv,elem,node,th,label) 
+    # writer.write_all(Sol,mpv,elem,node,th,label)
+    writer.populate('000','rhoYu',flux[0].rhoY)
+    writer.populate('000','rhoYv',flux[1].rhoY)
+    writer.write_all(Sol,mpv,elem,node,th,'before_advect')
+    advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, writer)
+    writer.write_all(Sol,mpv,elem,node,th,'after_advect')
 
     mpv.p2_nodes0 = mpv.p2_nodes.copy()
     euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
-    euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0)
+    writer.write_all(Sol,mpv,elem,node,th,'after_ebnaexp')
+
+    euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, writer=writer)
+    writer.write_all(Sol,mpv,elem,node,th,'after_ebnaimp')
     mpv.p2_nodes = mpv.p2_nodes0.copy()
     recompute_advective_fluxes(flux, Sol)
-    
-    # writer.populate('000','rhoYu',flux[0].rhoY)
-    # writer.populate('000','rhoYv',flux[1].rhoY)
-    # print(label)
+    writer.write_all(Sol,mpv,elem,node,th,'after_half_step')
+
+    # # writer.populate('000','rhoYu',flux[0].rhoY)
+    # # writer.populate('000','rhoYv',flux[1].rhoY)
+    # # print(label)
 
     print("-----------------------------------------------")
-    print("full-time step with predicted of advective flux")
+    print("full-time step with predicted advective flux")
     print("-----------------------------------------------")
-    Sol = Sol0
+    # Sol = Sol0
     
-    euler_forward_non_advective(Sol, mpv, elem, node, 0.5*dt, ud, th)
-    writer.write_all(Sol,mpv,elem,node,th,label)
-    advect(Sol, flux, dt, elem, step%2, ud, th, mpv)
+    # euler_forward_non_advective(Sol, mpv, elem, node, 0.5*dt, ud, th)
+    # advect(Sol, flux, dt, elem, step%2, ud, th, mpv)
 
-    euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
-    euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0)
-
+    # euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+    # euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0)
     break

@@ -3,15 +3,12 @@ from inputs.enum_bdry import BdryType
 
 import numpy as np
 
-def set_explicit_boundary_data(Sol, elem, ud, th, mpv, dim=None):
+from debug import find_nearest
+
+def set_explicit_boundary_data(Sol, elem, ud, th, mpv):
     igs = elem.igs
     ndim = elem.ndim
-    # if dim == None:
-    #     start = 0
-    #     end = elem.ndim
-    # else:
-    #     start = dim
-    #     end = dim +1
+
     start = 0
     end = elem.ndim
 
@@ -152,3 +149,72 @@ def periodic_plus_one(vector, pad_width, iaxis, kwargs=None):
     if all(pad_width) > 0:
         vector[:pad_width[0]+1], vector[-pad_width[1]-1:] = vector[-pad_width[1]-pad_width[1]-1:-pad_width[1]] , vector[pad_width[0]:pad_width[0]+pad_width[0]+1].copy()
     return vector
+
+truefalse = True
+def check_flux_bcs(Lefts, Rights, elem, split_step, ud):
+    igx = elem.igx
+
+    global truefalse
+    # if truefalse == True:
+
+    #     # print(Lefts.rhou[0])
+    #     # print(Lefts.rhou.shape)
+    #     # print(Rights.rhou[0])
+    #     find_nearest(Lefts.rhoY,0.99632266463501573)
+    #     truefalse = False
+
+    # None 
+    if split_step == 1:
+        if ud.bdry_type[split_step] == BdryType.WALL:
+            # print(Lefts.rhou.shape)
+            rhou_wall = 0.
+            # if truefalse == True:
+            #     print(Lefts.rhoY[igx-1,:])
+                
+            #     truefalse = False
+            # print(Lefts.rhou[:,0])
+            # print(Rights.rhou[:,0])
+            Lefts.rhou[igx-2,:] = Rights.rhou[igx-1,:] = rhou_wall
+            Lefts.rhoY[igx-2,:] = Rights.rhoY[igx-1,:] = Rights.rho[igx-1,:] * ud.stratification(0.0)
+
+            Lefts.rho[igx-2,:] = Rights.rho[igx-1,:]
+            Lefts.rhov[igx-2,:] = Rights.rhov[igx-1,:]
+            Lefts.rhow[igx-2,:] = Rights.rhow[igx-1,:]
+            Lefts.rhoe[igx-2,:] = Rights.rhoe[igx-1,:]
+            # print(Lefts.rhoY[igx-2,:])
+            # print(Rights.rho[0,:])
+
+            Rights.rho[-igx-1,:] = Lefts.rho[-igx-2,:]
+            Rights.rhou[-igx-1,:] = -2. * Lefts.rhou[-igx-2,:]
+            Rights.rhov[-igx-1,:] = Lefts.rhov[-igx-2,:]
+            Rights.rhow[-igx-1,:] = Lefts.rhow[-igx-2,:]
+            Rights.rhoe[-igx-1,:] = Lefts.rhoe[-igx-2,:]
+            Rights.rhoY[-igx-1,:] = Lefts.rhoY[-igx-2,:]
+
+            # print(Lefts.rhoY[:,-igx-2])
+            
+    else:
+        # print('split_step == ', split_step)
+        None
+        if ud.bdry_type[split_step] == BdryType.WALL:
+
+            # print(truefalse)
+            # if truefalse == True:
+            #     print(Lefts.rhou[igx-1,:])
+                
+                # truefalse = False
+            Lefts.rho[igx-1,:] = Rights.rho[:,igx-2]
+            Lefts.rhou[igx-1,:] = -1. * Rights.rhou[:,igx-2]
+            Lefts.rhov[igx-1,:] = Rights.rhov[:,igx-2]
+            Lefts.rhow[igx-1,:] = Rights.rhow[:,igx-2]
+            Lefts.rhoe[igx-1,:] = Rights.rhoe[:,igx-2]
+            Lefts.rhoY[igx-1,:] = Rights.rhoY[:,igx-2]
+
+            # print("#################### TRUE ########################")
+            Rights.rho[-igx-1,:] = Lefts.rho[:,-igx-2]
+            Rights.rhou[-igx-1,:] = -1. * Lefts.rhou[:,-igx-2]
+            Rights.rhov[-igx-1,:] = Lefts.rhov[:,-igx-2]
+            Rights.rhow[-igx-1,:] = Lefts.rhow[:,-igx-2]
+            Rights.rhoe[-igx-1,:] = Lefts.rhoe[:,-igx-2]
+            Rights.rhoY[-igx-1,:] = Lefts.rhoY[:,-igx-2]
+            # print(Rights.rhoY[-igx-1,:])
