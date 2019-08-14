@@ -121,8 +121,6 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
 
     return Lefts, Rights
 
-    # print(Slopes.u.shape)
-
 def slopes(Sol, Diffs, ud, elem):
     limiter_type_velocity = ud.limiter_type_velocity
     limiter_type_scalar = ud.limiter_type_scalars
