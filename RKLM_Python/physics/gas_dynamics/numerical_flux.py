@@ -21,6 +21,8 @@ def recompute_advective_fluxes(flux, Sol):
 
     kernel_u = np.array([[0.5, 0.5],[1., 1.],[0.5, 0.5]]).T
     flux[0].rhoY[1:-1,1:-1] = signal.convolve2d(rhoYu, kernel_u, mode='valid').T / kernel_u.sum()
+    # print(flux[0].rhoY.shape)
+    # flux[0].rhoY[:,-2] = 0.
     # flux[0].rhoY = flux[0].rhoY.T
 
     # print("rhoYu = ", flux[0].rhoY.flatten()[idx-5:idx+5])

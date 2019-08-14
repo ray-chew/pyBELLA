@@ -92,9 +92,13 @@ class SpaceDiscr(object):
         self.nfy = self.icx * self.ify * self.icz
         self.nfz = self.icx * self.icy * self.ifz
 
-        self.sfx = (self.icz , self.icy , self.ifx)
-        self.sfy = (self.icx , self.icz , self.ify)
-        self.sfz = (self.icy , self.icx , self.ifz)
+        # self.sfx = (self.icz , self.icy , self.ifx)
+        # self.sfy = (self.icx , self.icz , self.ify)
+        # self.sfz = (self.icy , self.icx , self.ifz)
+
+        self.sfx = (self.icy , self.ifx , self.icz)
+        self.sfy = (self.ify , self.icx , self.icz)
+        self.sfz = (self.icx , self.icy , self.ifz)
 
         self.nf = self.nfx + self.nfy + self.nfz
 
@@ -141,6 +145,12 @@ class ElemSpaceDiscr(SpaceDiscr):
         self.x = x0 + self.dx * np.arange(self.icx)
         self.y = y0 + self.dy * np.arange(self.icy)
         self.z = z0 + self.dz * np.arange(self.icz)
+
+    def flip(self):
+        self.dx, self.dy = self.dy, self.dx
+        self.icx, self.icy = self.icy, self.icx
+        self.ifx, self.ify = self.ify, self.ifx
+
         
 class NodeSpaceDiscr(SpaceDiscr):
     def __init__(self,g):
@@ -158,3 +168,8 @@ class NodeSpaceDiscr(SpaceDiscr):
         self.z = z0 + self.dz * np.arange(self.icz)
 
         self.sc = (self.icx , self.icy , self.icz)
+
+    def flip(self):
+        self.dx, self.dy = self.dy, self.dx
+        self.icx, self.icy = self.icy, self.icx
+        self.ifx, self.ify = self.ify, self.ifx

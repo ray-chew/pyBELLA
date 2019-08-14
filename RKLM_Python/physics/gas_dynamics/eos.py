@@ -28,3 +28,9 @@ def compressibility(ud,t):
     else:
         assert 0
 
+
+def rhoe(rho,u,v,w,p,ud,th):
+    Msq = ud.compressibility * ud.Msq
+    gm1inv = th.gm1inv
+
+    return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)

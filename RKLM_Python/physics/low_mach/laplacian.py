@@ -136,8 +136,10 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
     oody2 = 0.5 / (dy**2)
     nine_pt = 0.25 * (2.0) * 1.0
 
-    # x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
-    # y_periodic = ud.bdry_type[1] == BdryType.PERIODIC
+    x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
+    y_periodic = ud.bdry_type[1] == BdryType.PERIODIC
+    x_wall = ud.bdry_type[0] == BdryType.WALL
+    y_wall = ud.bdry_type[1] == BdryType.WALL
 
     lap = np.zeros((ngnc))
     # print(lap.shape)
@@ -174,133 +176,183 @@ def stencil_9pt_2nd_try(elem,node,mpv,ud):
             botright = idx + iicxn + 1
 
             # do periodic boundary checks
-            if cnt_x == 1:
-                # topleft = idx - 1
-                # midleft = idx + iicxn - 1
-                # botleft = idx + 2 * iicxn - 1
+            # x-axis periodic:
+            if x_periodic:
+                if cnt_x == 1:
+                    # topleft = idx - 1
+                    # midleft = idx + iicxn - 1
+                    # botleft = idx + 2 * iicxn - 1
+                    
+                    # shift = -1
+                    # topmid += (iicxn + shift)
+                    # midmid += (iicxn + shift)
+                    # botmid += (iicxn + shift)
+
+                    shift = -1
+                    topleft += (iicxn + shift)
+                    midleft += (iicxn + shift)
+                    botleft += (iicxn + shift)
+
+                    # if 50 < idx < 100:
+                    #     print("cnt_x == 1, topleft =", cnt_x, cnt_y, topleft, idx)
+                    #     print("cnt_x == 1, midleft =", cnt_x, cnt_y, midleft, idx)
+                    #     print("cnt_x == 1, botleft =", cnt_x, cnt_y, botleft, idx)
                 
-                # shift = -1
-                # topmid += (iicxn + shift)
-                # midmid += (iicxn + shift)
-                # botmid += (iicxn + shift)
+                if cnt_x == iicxn:
+                    # topright = idx - 2 * iicxn + 1
+                    # midright = idx - icxn +1
+                    # botright = idx + 1
 
-                shift = -1
-                topleft += (iicxn + shift)
-                midleft += (iicxn + shift)
-                botleft += (iicxn + shift)
+                    # shift = -1
+                    # topmid -= (iicxn + shift)
+                    # midmid -= (iicxn + shift)
+                    # botmid -= (iicxn + shift)
+                    
+                    shift = -1
+                    topright -= (iicxn + shift)
+                    midright -= (iicxn + shift)
+                    botright -= (iicxn + shift)
+                    
+                    # if  50 < idx < 100:
+                    #     print("cnt_x == 1, topright =", cnt_x, cnt_y, topright, idx)
+                    #     print("cnt_x == 1, midright =", cnt_x, cnt_y, midright, idx)
+                    #     print("cnt_x == 1, botright =", cnt_x, cnt_y, botright, idx)
 
-                # if 50 < idx < 100:
-                #     print("cnt_x == 1, topleft =", cnt_x, cnt_y, topleft, idx)
-                #     print("cnt_x == 1, midleft =", cnt_x, cnt_y, midleft, idx)
-                #     print("cnt_x == 1, botleft =", cnt_x, cnt_y, botleft, idx)
+                # if cnt_x < 100 and idx < 100:
+                #     print(cnt_x, idx)
+
+                if cnt_x == 1:
+                    shift = 1
+                    ne_topleft += (iicxn - shift)
+                    ne_botleft += (iicxn - shift)
+
+                if cnt_x == iicxn:
+                    shift = 1
+                    ne_topright -= (iicxn - shift)
+                    ne_botright -= (iicxn - shift)
+        
+                    # if cnt_x == (iicxn - 1) and (50 < ne < 100):
+                    #     print(ne, ne_topleft, ne_topright, ne_botleft, ne_botright)
+        
+                    # if cnt_x == (iicxn) and (ne < 50):
+                    #     print(ne, ne_topleft, ne_topright, ne_botleft, ne_botright)
+        
+            if y_periodic:
+                if cnt_y == 1:
+                    # topleft = idx + (iicxn * (iicyn - 1)) - 1
+                    # topmid = idx + iicxn * (iicyn - 1)
+                    # topright = idx + iicxn * (iicyn - 1) + 1
+
+                    # shift = 0
+                    # midleft += (iicxn * (iicyn - shift))
+                    # midmid += (iicxn * (iicyn - shift))
+                    # midright += (iicxn * (iicyn - shift))
+
+                    shift = 1
+                    topleft += (iicxn * (iicyn - shift))
+                    topmid += (iicxn * (iicyn - shift))
+                    topright += (iicxn * (iicyn - shift))
+                    
+                    # if  0 < idx < 50:
+                    #     print("cnt_y == 1, topleft =", cnt_x, cnt_y, topleft, idx)
+                    #     print("cnt_y == 1, topmid =", cnt_x, cnt_y, topmid, idx)
+                    #     print("cnt_y == 1, topright =", cnt_x, cnt_y, topright, idx)
+
+                if cnt_y == iicyn:
+                    # print("botleft", botleft, idx, iicxn, iicyn, idx - iicxn * (iicyn - 1) - 1)
+                    # botleft = idx - iicxn * (iicyn - 1) - 1
+                    # botmid = idx - iicxn * (iicyn - 1)
+                    # botright = idx - iicxn * (iicyn - 1) + 1
+
+                    # shift = 1
+                    # midleft -= (iicxn * (iicyn - shift))
+                    # midmid -= (iicxn * (iicyn - shift))
+                    # midright -= (iicxn * (iicyn - shift))
+
+                    shift = 1
+                    botleft -= (iicxn * (iicyn - shift))
+                    botmid -= (iicxn * (iicyn - shift))
+                    botright -= (iicxn * (iicyn - shift))
+
+                    
+                    # print("cnt_y == 1, topleft =", cnt_x, cnt_y, topleft, idx)
+                    # print("cnt_y == 1, topmid =", cnt_x, cnt_y, topmid, idx)
+                    # print("cnt_y == 1, topright =", cnt_x, cnt_y, topright, idx)
+
+                if cnt_y == 1:
+                    shift = 1
+                    ne_topright += ((iicyn - shift) * iicxn)
+                    ne_topleft += ((iicyn - shift) * iicxn)
+
+                if cnt_y == iicyn:
+                    shift = 1
+                    ne_botleft -= ((iicyn - shift) * iicxn)
+                    ne_botright -= ((iicyn - shift) * iicxn)
+
+                # if ne_botleft == -1:
+                #     ne_botleft += 1
+                # if ne_botright == 0:
+                #     ne_botright += 1
+
+                # if cnt_y == (iicyn):
+                #     print(ne, ne_topleft, ne_topright, ne_botleft, ne_botright)
+
+                # if cnt_x == (iicxn - 1) and idx < 100:
+                #     print("iicxn - 1: ", ne, ne_topleft, ne_topright, ne_botleft, ne_botright)
+
+                # if cnt_x == iicxn and idx < 100:
+                #     print("iicxn: ", ne, ne_topleft, ne_topright, ne_botleft, ne_botright)
+
+                # if cnt_x == 1 and idx < 100:
+                #     print("1: ", ne, ne_topleft, ne_topright, ne_botleft, ne_botright)
+
+            # do wall-boundary checks
+            if x_wall:
+                if cnt_x == 1:
+                    shift = 1
+                    topleft += (shift)
+                    midleft += (shift)
+                    botleft += (shift)
+
+                if cnt_x == iicxn:
+                    shift = 1
+                    topright -= (shift)
+                    midright -= (shift)
+                    botright -= (shift)
+                
+                if cnt_x == 1:
+                    shift = 1
+                    ne_topleft += (shift)
+                    ne_botleft += (shift)
+
+                if cnt_x == iicxn:
+                    shift = 1
+                    ne_topright -= (shift)
+                    ne_botright -= (shift)
+
+            if y_wall:
+                if cnt_y == 1:
+                    shift = 1
+                    topleft += (iicxn * (shift))
+                    topmid += (iicxn * (shift))
+                    topright += (iicxn * (shift))
+
+                if cnt_y == iicyn:
+                    shift = 1
+                    botleft -= (iicxn * (shift))
+                    botmid -= (iicxn * (shift))
+                    botright -= (iicxn * (shift))
+
+                if cnt_y == 1:
+                    shift = 1
+                    ne_topright += ((shift) * iicxn)
+                    ne_topleft += ((shift) * iicxn)
+
+                if cnt_y == iicyn:
+                    shift = 1
+                    ne_botleft -= ((shift) * iicxn)
+                    ne_botright -= ((shift) * iicxn)
             
-            if cnt_x == iicxn:
-                # topright = idx - 2 * iicxn + 1
-                # midright = idx - icxn +1
-                # botright = idx + 1
-
-                # shift = -1
-                # topmid -= (iicxn + shift)
-                # midmid -= (iicxn + shift)
-                # botmid -= (iicxn + shift)
-                
-                shift = -1
-                topright -= (iicxn + shift)
-                midright -= (iicxn + shift)
-                botright -= (iicxn + shift)
-                
-                # if  50 < idx < 100:
-                #     print("cnt_x == 1, topright =", cnt_x, cnt_y, topright, idx)
-                #     print("cnt_x == 1, midright =", cnt_x, cnt_y, midright, idx)
-                #     print("cnt_x == 1, botright =", cnt_x, cnt_y, botright, idx)
-
-            # if cnt_x < 100 and idx < 100:
-            #     print(cnt_x, idx)
-
-            if cnt_y == 1:
-                # topleft = idx + (iicxn * (iicyn - 1)) - 1
-                # topmid = idx + iicxn * (iicyn - 1)
-                # topright = idx + iicxn * (iicyn - 1) + 1
-
-                # shift = 0
-                # midleft += (iicxn * (iicyn - shift))
-                # midmid += (iicxn * (iicyn - shift))
-                # midright += (iicxn * (iicyn - shift))
-
-                shift = 1
-                topleft += (iicxn * (iicyn - shift))
-                topmid += (iicxn * (iicyn - shift))
-                topright += (iicxn * (iicyn - shift))
-                
-                # if  0 < idx < 50:
-                #     print("cnt_y == 1, topleft =", cnt_x, cnt_y, topleft, idx)
-                #     print("cnt_y == 1, topmid =", cnt_x, cnt_y, topmid, idx)
-                #     print("cnt_y == 1, topright =", cnt_x, cnt_y, topright, idx)
-
-            if cnt_y == iicyn:
-                # print("botleft", botleft, idx, iicxn, iicyn, idx - iicxn * (iicyn - 1) - 1)
-                # botleft = idx - iicxn * (iicyn - 1) - 1
-                # botmid = idx - iicxn * (iicyn - 1)
-                # botright = idx - iicxn * (iicyn - 1) + 1
-
-                # shift = 1
-                # midleft -= (iicxn * (iicyn - shift))
-                # midmid -= (iicxn * (iicyn - shift))
-                # midright -= (iicxn * (iicyn - shift))
-
-                shift = 1
-                botleft -= (iicxn * (iicyn - shift))
-                botmid -= (iicxn * (iicyn - shift))
-                botright -= (iicxn * (iicyn - shift))
-
-                
-                # print("cnt_y == 1, topleft =", cnt_x, cnt_y, topleft, idx)
-                # print("cnt_y == 1, topmid =", cnt_x, cnt_y, topmid, idx)
-                # print("cnt_y == 1, topright =", cnt_x, cnt_y, topright, idx)
-
-            if cnt_x == 1:
-                shift = 1
-                ne_topleft += (iicxn - shift)
-                ne_botleft += (iicxn - shift)
-
-            if cnt_x == iicxn:
-                shift = 1
-                ne_topright -= (iicxn - shift)
-                ne_botright -= (iicxn - shift)
-
-            # if cnt_x == (iicxn - 1) and (50 < ne < 100):
-            #     print(ne, ne_topleft, ne_topright, ne_botleft, ne_botright)
-
-            # if cnt_x == (iicxn) and (ne < 50):
-            #     print(ne, ne_topleft, ne_topright, ne_botleft, ne_botright)
-
-            if cnt_y == 1:
-                shift = 1
-                ne_topright += ((iicyn - shift) * iicxn)
-                ne_topleft += ((iicyn - shift) * iicxn)
-
-            if cnt_y == iicyn:
-                shift = 1
-                ne_botleft -= ((iicyn - shift) * iicxn)
-                ne_botright -= ((iicyn - shift) * iicxn)
-
-            # if ne_botleft == -1:
-            #     ne_botleft += 1
-            # if ne_botright == 0:
-            #     ne_botright += 1
-
-            # if cnt_y == (iicyn):
-            #     print(ne, ne_topleft, ne_topright, ne_botleft, ne_botright)
-
-            # if cnt_x == (iicxn - 1) and idx < 100:
-            #     print("iicxn - 1: ", ne, ne_topleft, ne_topright, ne_botleft, ne_botright)
-
-            # if cnt_x == iicxn and idx < 100:
-            #     print("iicxn: ", ne, ne_topleft, ne_topright, ne_botleft, ne_botright)
-
-            # if cnt_x == 1 and idx < 100:
-            #     print("1: ", ne, ne_topleft, ne_topright, ne_botleft, ne_botright)
-
             # get values at indices of the 9pt stencil
             topleft = p[topleft]
             midleft = p[midleft]

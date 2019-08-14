@@ -3,6 +3,7 @@ from inputs.enum_bdry import BdryType
 from management.enumerator import TimeIntegrator, MolecularTransport,HillShapes, BottomBC, LimiterType, RecoveryOrder
 from numerics_fundamentals.discretization.time_discretization import SetTimeIntegratorParameters
 from physics.gas_dynamics.explicit import TimeIntegratorParams
+from physics.gas_dynamics.eos import rhoe
 from physics.hydrostatics.hydrostatics import hydrostatic_state
 from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
 
@@ -174,8 +175,9 @@ class UserData(object):
 
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
-        self.tout[0] =  0.00267282
-        self.tout[1] = -1.0
+        # self.tout[0] =  0.00267282
+        self.tout = 0.00267282
+        # self.tout[1] = -1.0
 
         self.stepmax = 40
 
@@ -253,9 +255,3 @@ def sol_init(Sol, mpv, elem, node, th, ud):
 
 def T_from_p_rho(p, rho):
     return np.divide(p,rho)
-
-def rhoe(rho,u,v,w,p,ud,th):
-    Msq = ud.compressibility * ud.Msq
-    gm1inv = th.gm1inv
-
-    return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
