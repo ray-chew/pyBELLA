@@ -159,22 +159,25 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt)
-    print("!!!!!!!")
+    # print("!!!!!!!")
     
     base_filename = '/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_acoustic_wave_high/low_Mach_gravity_comp/'
-    mpv.wcenter[...] = h5py.File(base_filename + 'hcenter/hcenter_000.h5', 'r')['Data-Set-2'][:]
-    # mpv.wplus[0][...] = h5py.File(base_filename + 'wplusx/wplusx_000.h5', 'r')['Data-Set-2'][:]
-    # mpv.wplus[1][...] = h5py.File(base_filename + 'wplusy/wplusy_000.h5', 'r')['Data-Set-2'][:]
+    # mpv.wcenter[...] = h5py.File(base_filename + 'hcenter/hcenter_004.h5', 'r')['Data-Set-2'][:]
+    # mpv.wplus[0][...] = h5py.File(base_filename + 'wplusx/wplusx_004.h5', 'r')['Data-Set-2'][:]
+    # mpv.wplus[1][...] = h5py.File(base_filename + 'wplusy/wplusy_004.h5', 'r')['Data-Set-2'][:]
 
-    writer.populate('000','hcenter',mpv.wcenter)
-    writer.populate('000','wplusx',mpv.wplus[0])
-    writer.populate('000','wplusy',mpv.wplus[1])
+    writer.populate('after_ebnaimp','hcenter',mpv.wcenter)
+    writer.populate('after_ebnaimp','wplusx',mpv.wplus[0])
+    writer.populate('after_ebnaimp','wplusy',mpv.wplus[1])
 
     rhs[...], rhs_max = divergence_nodes(rhs,elem,node,Sol,mpv,ud)
     rhs /= dt
-
+    
     if ud.is_compressible:
         rhs = rhs_from_p_old(rhs,node,mpv)
+
+    rhs = h5py.File(base_filename + 'rhs_nodes/rhs_nodes_004.h5','r')['Data-Set-2']
+    writer.populate('after_ebnaimp','rhs_nodes',rhs)
 
     lap2D = stencil_9pt_2nd_try(elem,node,mpv,ud)
 
@@ -184,7 +187,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     p2_full = np.zeros(nc).squeeze()
     p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
-    
+    p2_full = h5py.File(base_filename + 'pnew/p2_full_004.h5', 'r')['Data-Set-2'][:]
+    writer.populate('after_ebnaimp','p2_full',p2_full)
+
     mpv.dp2_nodes[...] = np.copy(p2_full)
     correction_nodes(Sol,elem,node,mpv,p2_full,dt,ud)
 
@@ -216,28 +221,28 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
     p = p[inner_idx]
     # print(p)
 
-    # indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat=ndim)]
+    indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat=ndim)]
     
-    # signs_x = [-1., -1., +1., +1.]
-    # signs_y = [-1., +1., -1., +1.]
+    signs_x = [-1., -1., +1., +1.]
+    signs_y = [-1., +1., -1., +1.]
 
-    # Dpx = 0
-    # Dpy = 0
-    # cnt = 0
-    # for index in indices:
-    #     Dpx += signs_x[cnt] * p[index]
-    #     Dpy += signs_y[cnt] * p[index]
-    #     cnt += 1
+    Dpx = 0
+    Dpy = 0
+    cnt = 0
+    for index in indices:
+        Dpx += signs_x[cnt] * p[index]
+        Dpy += signs_y[cnt] * p[index]
+        cnt += 1
 
-    # Dpx *= 0.5 * oodx
-    # Dpy *= 0.5 * oody
+    Dpx *= 0.5 * oodx
+    Dpy *= 0.5 * oody
     
 
-    kernel_Dpx = np.array([[-1.,1],[-1.,1.]])
-    kernel_Dpy = np.array([[-1.,-1],[1.,1.]])
+    # kernel_Dpx = np.array([[-1.,1],[-1.,1.]])
+    # kernel_Dpy = np.array([[-1.,-1],[1.,1.]])
 
-    Dpx = 0.5 * oodx * signal.convolve2d(p,kernel_Dpx,mode='valid')
-    Dpy = 0.5 * oody * signal.convolve2d(p,kernel_Dpy,mode='valid')
+    # Dpx = 0.5 * oodx * signal.convolve2d(p,kernel_Dpx,mode='valid')
+    # Dpy = 0.5 * oody * signal.convolve2d(p,kernel_Dpy,mode='valid')
     
     # find_nearest(Dpx,62915.298150945368)
     thinv = Sol.rho[inner_idx] / Sol.rhoY[inner_idx]
@@ -290,6 +295,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     nindim = tuple(nindim)
     eindim = tuple(eindim)
     innerdim = tuple(innerdim)
+
     # nindim = (slice(None,),slice(None,))
 
     Y = Sol.rhoY[nindim] / Sol.rho[nindim]
@@ -305,14 +311,14 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
         else:
             mpv.wplus[dim][eindim] = coeff * fimp
 
-    # kernel = (ndim - 1) * np.ones((2,2))
-    kernel = np.ones((2,2))
+    kernel = (ndim - 1) * np.ones((2,2))
+    # kernel = np.ones((2,2))
 
-    # for iz in range(icz):
-    #     iz = slice(None,) if iz == 0 else iz
+    for iz in range(icz):
+        iz = slice(None,) if iz == 0 else iz
 
-    #     mpv.wcenter[iz][innerdim] = ccenter * signal.convolve2d(Sol.rhoY[igx-1:-igx+1,igy-1:-igy+1]**cexp,kernel,mode='valid') / kernel.sum()
-    mpv.wcenter[innerdim] = ccenter * signal.convolve2d(Sol.rhoY[igx-1:-igx+1,igy-1:-igy+1]**cexp,kernel,mode='valid') / kernel.sum()
+        mpv.wcenter[iz][innerdim] = ccenter * signal.convolve2d(Sol.rhoY[igx-1:-igx+1,igy-1:-igy+1]**cexp,kernel,mode='valid') / kernel.sum()
+    # mpv.wcenter[innerdim] = ccenter * signal.convolve2d(Sol.rhoY[igx-1:-igx+1,igy-1:-igy+1]**cexp,kernel,mode='valid') / kernel.sum()
         
     scale_wall_node_values(mpv, node, ud)
 
@@ -331,6 +337,8 @@ def scale_wall_node_values(mpv, node, ud, factor=0.5):
         if is_wall:
             for direction in [-1,1]:
                 wall_idx[dim] = (igs[dim]) * direction
+                if direction == -1:
+                    wall_idx[dim] -= 1
                 wall_idx_tuple = tuple(wall_idx)
                 mpv.wcenter[wall_idx_tuple] *= factor
             
