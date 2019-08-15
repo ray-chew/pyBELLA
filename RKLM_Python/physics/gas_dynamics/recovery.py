@@ -165,7 +165,8 @@ def get_conservatives(U, ud, th):
     U.rhov = U.v * U.rho
     U.rhow = U.w * U.rho
     U.rhoY = U.Y * U.rho
-    # sgn = np.sign(U.rhoY)
-    p = U.rhoY**th.gamminv
+    
+    sgn = np.sign(U.rhoY)
+    p = sgn*np.abs(U.rhoY)**th.gamminv
     
     U.rhoe = rhoe(U.rho, U.u, U.v, U.w, p, ud, th)
