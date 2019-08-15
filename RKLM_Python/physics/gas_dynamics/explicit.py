@@ -29,7 +29,6 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
             # elem.flip()
             # flux[0], flux[1] = flux[1], flux[0]
             explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
-            
     else:
         for i_split in range(elem.ndim):
             split = elem.ndim - 1 - i_split
@@ -64,7 +63,7 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
 truefalse = True
 counter = 0
 def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mpv, writer = None):
-    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    set_explicit_boundary_data(Sol, elem, ud, th, mpv, dim=split_step)
 
     Lefts, Rights = recovery(Sol, flux, lmbda, ud, th, elem)
 
@@ -108,7 +107,7 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
     Sol.rhoe += lmbda * (flux.rhoe[left_idx] - flux.rhoe[right_idx])
     Sol.rhoY += lmbda * (flux.rhoY[left_idx] - flux.rhoY[right_idx])
 
-    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    set_explicit_boundary_data(Sol, elem, ud, th, mpv, dim=split_step)
 
 
 
