@@ -8,7 +8,6 @@ from itertools import product
 from scipy.sparse.linalg import LinearOperator, bicgstab
 
 from debug import find_nearest
-
 import h5py
 
 def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
@@ -44,9 +43,10 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     dpdx = -wp * 0.5 * signal.convolve2d(p2n, dpdx_kernel, mode='valid') / dx
     dpdy = -wp * 0.5 * signal.convolve2d(p2n, dpdy_kernel, mode='valid') / dy
 
-    # Sol.rhou[...] = Sol.rhou.T
-    # Sol.rhov[...] = Sol.rhov.T
-    # Sol.rhow[...] = Sol.rhow.T
+    if Sol.rhou.shape[0] == Sol.rhou.shape[1]:
+        Sol.rhou[...] = Sol.rhou.T
+        Sol.rhov[...] = Sol.rhov.T
+        Sol.rhow[...] = Sol.rhow.T
 
     # Sol.rhou = Sol.rhou.T
     # Sol.rhov = Sol.rhov.T
@@ -106,9 +106,10 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     set_ghostnodes_p2(mpv.p2_nodes,node, ud)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
-    # Sol.rhou[...] = Sol.rhou.T
-    # Sol.rhov[...] = Sol.rhov.T
-    # Sol.rhow[...] = Sol.rhow.T
+    if Sol.rhou.shape[0] == Sol.rhou.shape[1]:
+        Sol.rhou[...] = Sol.rhou.T
+        Sol.rhov[...] = Sol.rhov.T
+        Sol.rhow[...] = Sol.rhow.T
 
     # Sol.rhou = Sol.rhou.T
     # Sol.rhov = Sol.rhov.T
@@ -165,10 +166,10 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # mpv.wcenter[...] = h5py.File(base_filename + 'hcenter/hcenter_004.h5', 'r')['Data-Set-2'][:]
     # mpv.wplus[0][...] = h5py.File(base_filename + 'wplusx/wplusx_004.h5', 'r')['Data-Set-2'][:]
     # mpv.wplus[1][...] = h5py.File(base_filename + 'wplusy/wplusy_004.h5', 'r')['Data-Set-2'][:]
-
-    writer.populate('after_ebnaimp','hcenter',mpv.wcenter)
-    writer.populate('after_ebnaimp','wplusx',mpv.wplus[0])
-    writer.populate('after_ebnaimp','wplusy',mpv.wplus[1])
+    if writer != None:
+        writer.populate('after_ebnaimp','hcenter',mpv.wcenter)
+        writer.populate('after_ebnaimp','wplusx',mpv.wplus[0])
+        writer.populate('after_ebnaimp','wplusy',mpv.wplus[1])
 
     rhs[...], rhs_max = divergence_nodes(rhs,elem,node,Sol,mpv,ud)
     rhs /= dt
@@ -176,8 +177,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if ud.is_compressible:
         rhs = rhs_from_p_old(rhs,node,mpv)
 
-    rhs = h5py.File(base_filename + 'rhs_nodes/rhs_nodes_004.h5','r')['Data-Set-2']
-    writer.populate('after_ebnaimp','rhs_nodes',rhs)
+    # rhs = h5py.File(base_filename + 'rhs_nodes/rhs_nodes_004.h5','r')['Data-Set-2']
+    if writer != None:
+        writer.populate('after_ebnaimp','rhs_nodes',rhs)
 
     lap2D = stencil_9pt_2nd_try(elem,node,mpv,ud)
 
@@ -188,9 +190,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     p2_full = np.zeros(nc).squeeze()
     p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
 
-    p2_full = h5py.File(base_filename + 'pnew/p2_full_004.h5', 'r')['Data-Set-2'][:]
-
-    writer.populate('after_ebnaimp','p2_full',p2_full)
+    # p2_full = h5py.File(base_filename + 'pnew/p2_full_004.h5', 'r')['Data-Set-2'][:]
+    if writer != None:
+        writer.populate('after_ebnaimp','p2_full',p2_full)
 
     mpv.dp2_nodes[...] = np.copy(p2_full)
     correction_nodes(Sol,elem,node,mpv,p2_full,dt,ud)

@@ -70,7 +70,7 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
 
     global counter
     global truefalse
-    if counter < 5:
+    if counter < 5 and writer != None:
         writer.populate('00' + str(counter),'Lefts_rhou',Lefts.rhou)
         counter += 1
     # if truefalse == True:
@@ -93,7 +93,7 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
     #     truefalse = False
 
     # skipped check_flux_bcs for now; first debug other functions
-    check_flux_bcs(Lefts, Rights, elem, split_step, ud)
+    # check_flux_bcs(Lefts, Rights, elem, split_step, ud)
 
     # will need it for the test cases long waves and acoustic
     hll_solver(flux,Lefts,Rights,Sol, lmbda, ud, th)
