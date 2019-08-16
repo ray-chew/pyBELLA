@@ -116,6 +116,7 @@ while ((t < ud.tout) and (step < ud.stepmax)):
     Sol = Sol0
     
     euler_forward_non_advective(Sol, mpv, elem, node, 0.5*dt, ud, th)
+    # Sol.rhou = h5py.File(base_filename + 'rhou/rhou_006.h5', 'r')['Data-Set-2'][:]
     writer.write_all(Sol,mpv,elem,node,th,'after_efna')
     advect(Sol, flux, dt, elem, step%2, ud, th, mpv)
 
