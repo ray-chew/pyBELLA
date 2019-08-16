@@ -1,6 +1,6 @@
 from inputs.enum_bdry import BdryType
 from inputs.boundary import set_explicit_boundary_data, set_ghostnodes_p2
-from physics.low_mach.laplacian import stencil_9pt_2nd_try, stencil_9pt
+from physics.low_mach.laplacian import stencil_9pt_3rd_try, stencil_9pt_2nd_try, stencil_9pt
 from scipy import signal
 import numpy as np
 from itertools import product
@@ -25,6 +25,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     dx = node.dx
     dy = node.dy
 
+    mpv.rhs = np.array(mpv.rhs)
     mpv.rhs *= 0.0
     mpv.rhs[...], _ = divergence_nodes(mpv.rhs,elem,node,Sol,mpv,ud)
     div = mpv.rhs
@@ -156,6 +157,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     nc = node.sc
     rhs = np.zeros_like(mpv.p2_nodes)
     p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy])
+    # p2 = np.copy(mpv.p2_nodes[node.igx-1:-node.igx+1,node.igy-1:-node.igy+1])
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
@@ -181,17 +183,22 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if writer != None:
         writer.populate('after_ebnaimp','rhs_nodes',rhs)
 
-    lap2D = stencil_9pt_2nd_try(elem,node,mpv,ud)
+    # lap2D = stencil_9pt_2nd_try(rhs,elem,node,mpv,ud)
+    lap2D = stencil_9pt_3rd_try(rhs,elem,node,mpv,ud)
 
     lap2D = LinearOperator((ud.inx*ud.iny,ud.inx*ud.iny),matvec=lap2D)
+    # lap2D = LinearOperator(((node.icx-2)*(node.icy-2),(node.icx-2)*(node.icy-2)),matvec=lap2D)
 
-    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),maxiter=500)
+    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-8,maxiter=6000)
+    # p2,_ = bicgstab(lap2D,rhs[node.igx-1:-node.igx+1,node.igy-1:-node.igy+1].ravel(),x0=p2.ravel(),maxiter=500)
 
     p2_full = np.zeros(nc).squeeze()
     p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
+    # p2_full[node.igx-1:-node.igx+1,node.igy-1:-node.igy+1] = p2.reshape(node.icx-2,node.icy-2)
 
     # p2_full = h5py.File(base_filename + 'pnew/p2_full_004.h5', 'r')['Data-Set-2'][:]
     if writer != None:
+        print("Yes?!")
         writer.populate('after_ebnaimp','p2_full',p2_full)
 
     mpv.dp2_nodes[...] = np.copy(p2_full)
@@ -307,7 +314,14 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     fsqsc = dt**2 * coriolis**2
     fimp = 1.0 / (1.0 + fsqsc)
     Nsqsc = time_offset * dt**2 * (g / Msq) * strat
+    
     gimp = 1.0 / (nonhydro + Nsqsc)
+    idx = 521
+    idx_s = 0
+
+    print(Sol.rhoY.ravel()[14+13])
+    print(Y.ravel()[idx], coeff.ravel()[idx], fsqsc, fimp, Nsqsc.ravel()[idx_s], gimp.ravel()[idx_s], Sol.rhoY.ravel()[idx])
+    find_nearest(Sol.rhoY,0.9893096665665001)
 
     for dim in range(ndim):
         if dim == 1:

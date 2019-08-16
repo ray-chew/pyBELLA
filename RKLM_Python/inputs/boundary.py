@@ -17,7 +17,8 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, dim=None):
 
     for dim in range(start, end):
         ghost_padding, idx = get_ghost_padding(ndim,dim,igs)
-        
+        # print(dim, ghost_padding)
+        # print(idx)
         if ud.gravity_strength[dim] == 0.0:
             if ud.bdry_type[dim] == BdryType.PERIODIC:
                 set_boundary(Sol,ghost_padding,'wrap',idx)

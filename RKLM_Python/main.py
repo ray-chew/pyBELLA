@@ -87,7 +87,7 @@ while ((t < ud.tout) and (step < ud.stepmax)):
 
     recompute_advective_fluxes(flux, Sol)
 
-    # base_filename = '/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_acoustic_wave_high/low_Mach_gravity_comp/'
+    base_filename = '/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_acoustic_wave_high/low_Mach_gravity_comp/'
     # flux[0].rhoY = h5py.File(base_filename + 'flux_x/rhoYu_001.h5', 'r')['Data-Set-2'][:].T
     
     writer.populate('before_advect','rhoYu',flux[0].rhoY)
