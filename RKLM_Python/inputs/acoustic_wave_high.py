@@ -142,7 +142,7 @@ class UserData(object):
         SetTimeIntegratorParameters(self)
 
         self.inx = 256+1
-        self.iny = 10+1
+        self.iny = 21+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND

@@ -6,6 +6,8 @@ import numpy as np
 from itertools import product
 
 from scipy.sparse.linalg import LinearOperator, bicgstab
+from scipy.sparse import eye
+import matplotlib.pyplot as plt
 
 from debug import find_nearest
 import h5py
@@ -27,7 +29,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
 
     mpv.rhs = np.array(mpv.rhs)
     mpv.rhs *= 0.0
-    mpv.rhs[...], _ = divergence_nodes(mpv.rhs,elem,node,Sol,mpv,ud)
+    mpv.rhs[...], _ = divergence_nodes(mpv.rhs,elem,node,Sol,ud)
     div = mpv.rhs.T
 
     ######## Test this! #########
@@ -168,6 +170,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # slc = (slice(node.igx:-node.igx),slice(node.igy:-node.igy))
     # slc1 = (slice(1,-1),slice(1,-1))
     p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy])
+    
+    if writer != None:
+        writer.populate('after_ebnaimp','p2_initial',mpv.p2_nodes)
     # p2 = np.copy(mpv.p2_nodes[node.igx-1:-node.igx+1,node.igy-1:-node.igy+1])
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
@@ -176,9 +181,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # print("!!!!!!!")
     
     base_filename = '/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_acoustic_wave_high/low_Mach_gravity_comp/'
-    # p2 = h5py.File(base_filename + 'hcenter/p2_initial_004.h5', 'r')['Data-Set-2'][:]
+    # p2 = h5py.File(base_filename + 'p2_initial/p2_initial_004.h5', 'r')['Data-Set-2'][:]
     # p2 = p2[2:-2,2:-2]
-    mpv.wcenter[...] = h5py.File(base_filename + 'hcenter/hcenter_004.h5', 'r')['Data-Set-2'][:]
+    # mpv.wcenter[...] = h5py.File(base_filename + 'hcenter/hcenter_004.h5', 'r')['Data-Set-2'][:]
     # mpv.wplus[0][...] = h5py.File(base_filename + 'wplusx/wplusx_004.h5', 'r')['Data-Set-2'][:]
     # mpv.wplus[1][...] = h5py.File(base_filename + 'wplusy/wplusy_004.h5', 'r')['Data-Set-2'][:]
     if writer != None:
@@ -186,7 +191,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         writer.populate('after_ebnaimp','wplusx',mpv.wplus[0])
         writer.populate('after_ebnaimp','wplusy',mpv.wplus[1])
 
-    rhs[...], rhs_max = divergence_nodes(rhs,elem,node,Sol,mpv,ud)
+    rhs[...], rhs_max = divergence_nodes(rhs,elem,node,Sol,ud)
     rhs /= dt
     
     if ud.is_compressible:
@@ -196,7 +201,6 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if writer != None:
         writer.populate('after_ebnaimp','rhs_nodes',rhs)
 
-    
     # lap2D = stencil_9pt_2nd_try(rhs,elem,node,mpv,ud)
     lap2D = stencil_9pt_3rd_try(elem,node,mpv,ud)
 
@@ -204,9 +208,14 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # ssh = (sh,sh)
 
     lap2D = LinearOperator((sh,sh),matvec=lap2D)
+    # vec = sh * [0.]
+    # vec[4] = 1.
+    # print(len(vec))
+    # test = lap2D.dot(vec)
+    # print(test[:10])
     # lap2D = LinearOperator(((node.icx-2)*(node.icy-2),(node.icx-2)*(node.icy-2)),matvec=lap2D)
 
-    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-8,maxiter=500)
+    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,order='C'),x0=p2.reshape(-1,order='C'),tol=1e-3,maxiter=500)
     # p2,_ = bicgstab(lap2D,rhs[node.igx-1:-node.igx+1,node.igy-1:-node.igy+1].ravel(),x0=p2.ravel(),maxiter=500)
 
     p2_full = np.zeros(nc).squeeze()
@@ -340,9 +349,9 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     idx = 521
     idx_s = 0
 
-    print(Sol.rhoY.ravel()[14+13])
-    print(Y.ravel()[idx], coeff.ravel()[idx], fsqsc, fimp, Nsqsc.ravel()[idx_s], gimp.ravel()[idx_s], Sol.rhoY.ravel()[idx])
-    find_nearest(Sol.rhoY,0.9893096665665001)
+    # print(Sol.rhoY.ravel()[14+13])
+    # print(Y.ravel()[idx], coeff.ravel()[idx], fsqsc, fimp, Nsqsc.ravel()[idx_s], gimp.ravel()[idx_s], Sol.rhoY.ravel()[idx])
+    # find_nearest(Sol.rhoY,0.9893096665665001)
 
     for dim in range(ndim):
         if dim == 1:
@@ -362,7 +371,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     scale_wall_node_values(mpv.wcenter, node, ud)
 
 
-def scale_wall_node_values(rhs, node, ud, factor=0.5):
+def scale_wall_node_values(rhs, node, ud, factor=.5):
     # Test: should be correct.
     ndim = node.ndim
     igs = node.igs
@@ -384,7 +393,7 @@ def scale_wall_node_values(rhs, node, ud, factor=0.5):
             
 
 
-def divergence_nodes(rhs,elem,node,Sol,mpv,ud):
+def divergence_nodes(rhs,elem,node,Sol,ud):
     ndim = elem.ndim
     igs = elem.igs
     dxyz = elem.dxyz
