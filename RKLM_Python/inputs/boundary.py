@@ -5,26 +5,26 @@ import numpy as np
 
 from debug import find_nearest
 
-def set_explicit_boundary_data(Sol, elem, ud, th, mpv, dim=None):
+def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
     igs = elem.igs
     ndim = elem.ndim
-    if dim != None:
-        start = dim
-        end = dim+1
+    if step == None:
+        dims = np.arange(ndim)
     else:
-        start = 0
-        end = ndim
+        # inv = np.abs( 1 - inv)
+        dims = [1]
+    print(dims, Sol.rhou.shape)
 
-    for dim in range(start, end):
+    for dim in dims:
         # print("before = ", dim)
-        # dim0 = np.abs(1 - dim)
-        # print("after = ", dim)
-        # print("")
+        if step != None:
+            current_step = step
+        else:
+            current_step = dim
+
         ghost_padding, idx = get_ghost_padding(ndim,dim,igs)
-        # print(dim, ghost_padding)
-        # print(idx)
         if ud.gravity_strength[dim] == 0.0:
-            if ud.bdry_type[dim] == BdryType.PERIODIC:
+            if ud.bdry_type[current_step] == BdryType.PERIODIC:
                 # print("PERIODIC, dim = ", dim)
                 set_boundary(Sol,ghost_padding,'wrap',idx)
             else:
@@ -92,7 +92,7 @@ def set_boundary(Sol,pads,btype,idx):
 
 def negative_symmetric(vector,pad_width,iaxis,kwargs=None):
     if pad_width[1] > 0:
-        sign = 1.
+        sign = -1.
         vector[:pad_width[0]] = sign * vector[pad_width[0]:2*pad_width[0]][::-1]
         vector[-pad_width[1]:] = sign * vector[-2*pad_width[1]:-pad_width[1]][::-1]
         return vector

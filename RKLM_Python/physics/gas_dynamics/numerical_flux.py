@@ -2,7 +2,7 @@ import numpy as np
 from scipy import signal
 from debug import find_nearest
 
-def recompute_advective_fluxes(flux, Sol):
+def recompute_advective_fluxes(flux, Sol, factor = 1.):
     ################################################
     # 2D case for now - generalise in future
     ################################################
@@ -21,7 +21,7 @@ def recompute_advective_fluxes(flux, Sol):
 
     kernel_u = np.array([[0.5, 0.5],[1., 1.],[0.5, 0.5]]).T
     flux[0].rhoY[1:-1,1:-1] = signal.convolve2d(rhoYu, kernel_u, mode='valid').T / kernel_u.sum()
-    # flux[0].rhoY[:,-2] = 0.
+    flux[0].rhoY[:,-2] *= factor
     # print(flux[0].rhoY.shape)
     # flux[0].rhoY[:,-2] = 0.
     # flux[0].rhoY = flux[0].rhoY.T
@@ -73,9 +73,3 @@ def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
 
     flux.rhov[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (upl[left_idx] / Lefts.Y[left_idx] * Lefts.v[left_idx] + upr[right_idx] / Rights.Y[right_idx] * Rights.v[right_idx])
     flux.rhow[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (upl[left_idx] / Lefts.Y[left_idx] * Lefts.w[left_idx] + upr[right_idx] / Rights.Y[right_idx] * Rights.w[right_idx])
-
-#     val, idx = find_nearest(flux.rhou,0.50000002985023706)
- 
-# def find_nearest(array, value):
-#     idx = (np.abs(array - value)).argmin()
-#     return array.flat[idx], idx
