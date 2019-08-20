@@ -16,13 +16,19 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, dim=None):
         end = ndim
 
     for dim in range(start, end):
+        # print("before = ", dim)
+        # dim0 = np.abs(1 - dim)
+        # print("after = ", dim)
+        # print("")
         ghost_padding, idx = get_ghost_padding(ndim,dim,igs)
         # print(dim, ghost_padding)
         # print(idx)
         if ud.gravity_strength[dim] == 0.0:
             if ud.bdry_type[dim] == BdryType.PERIODIC:
+                # print("PERIODIC, dim = ", dim)
                 set_boundary(Sol,ghost_padding,'wrap',idx)
             else:
+                # print("WALL, dim = ", dim)
                 set_boundary(Sol,ghost_padding,'symmetric',idx)
 
         else:
@@ -72,10 +78,11 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, dim=None):
 
 def set_boundary(Sol,pads,btype,idx):
     Sol.rho[...] = np.pad(Sol.rho[idx],pads,btype)
-    if btype == 'symmetric':
-        Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
-    else:
-        Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
+    # if btype == 'symmetric':
+    #     Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
+    # else:
+    Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
+    # print(pads)
     Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
     Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
     Sol.rhoe[...] = np.pad(Sol.rhoe[idx],pads,btype)

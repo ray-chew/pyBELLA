@@ -63,7 +63,7 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
 truefalse = True
 counter = 0
 def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mpv, writer = None):
-    # split_step = np.abs(1 - split_step)
+    # split_step_inv = np.abs(1 - split_step)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     Lefts, Rights = recovery(Sol, flux, lmbda, ud, th, elem)
