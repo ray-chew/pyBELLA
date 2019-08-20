@@ -1,4 +1,6 @@
 import numpy as np
+
+from inputs.boundary import set_explicit_boundary_data
 from management.data import data_init
 from management.variable import States, Vars
 from numerics_fundamentals.discretization import kgrid
@@ -85,10 +87,11 @@ while ((t < ud.tout) and (step < ud.stepmax)):
     ud.compressibility = compressibility(ud,t)
     ud.acoustic_order = acoustic_order(ud,t,dt)
 
+    writer.write_all(Sol,mpv,elem,node,th,'before_flux')
     recompute_advective_fluxes(flux, Sol)
 
     base_filename = '/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_acoustic_wave_high/low_Mach_gravity_comp/'
-    # flux[0].rhoY = h5py.File(base_filename + 'flux_x/rhoYu_001.h5', 'r')['Data-Set-2'][:].T
+    flux[0].rhoY = h5py.File(base_filename + 'flux_x/rhoYu_001.h5', 'r')['Data-Set-2'][:].T
     
     writer.populate('before_advect','rhoYu',flux[0].rhoY)
     writer.populate('before_advect','rhoYv',flux[1].rhoY)

@@ -164,6 +164,9 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff, writer = None):
     nc = node.sc
     rhs = np.zeros_like(mpv.p2_nodes)
+
+    # slc = (slice(node.igx:-node.igx),slice(node.igy:-node.igy))
+    # slc1 = (slice(1,-1),slice(1,-1))
     p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy])
     # p2 = np.copy(mpv.p2_nodes[node.igx-1:-node.igx+1,node.igy-1:-node.igy+1])
 
@@ -173,7 +176,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # print("!!!!!!!")
     
     base_filename = '/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_acoustic_wave_high/low_Mach_gravity_comp/'
-    # mpv.wcenter[...] = h5py.File(base_filename + 'hcenter/hcenter_004.h5', 'r')['Data-Set-2'][:]
+    # p2 = h5py.File(base_filename + 'hcenter/p2_initial_004.h5', 'r')['Data-Set-2'][:]
+    # p2 = p2[2:-2,2:-2]
+    mpv.wcenter[...] = h5py.File(base_filename + 'hcenter/hcenter_004.h5', 'r')['Data-Set-2'][:]
     # mpv.wplus[0][...] = h5py.File(base_filename + 'wplusx/wplusx_004.h5', 'r')['Data-Set-2'][:]
     # mpv.wplus[1][...] = h5py.File(base_filename + 'wplusy/wplusy_004.h5', 'r')['Data-Set-2'][:]
     if writer != None:
@@ -191,10 +196,14 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if writer != None:
         writer.populate('after_ebnaimp','rhs_nodes',rhs)
 
+    
     # lap2D = stencil_9pt_2nd_try(rhs,elem,node,mpv,ud)
-    lap2D = stencil_9pt_3rd_try(rhs,elem,node,mpv,ud)
+    lap2D = stencil_9pt_3rd_try(elem,node,mpv,ud)
 
-    lap2D = LinearOperator((ud.inx*ud.iny,ud.inx*ud.iny),matvec=lap2D)
+    sh = (ud.inx)*(ud.iny)
+    # ssh = (sh,sh)
+
+    lap2D = LinearOperator((sh,sh),matvec=lap2D)
     # lap2D = LinearOperator(((node.icx-2)*(node.icy-2),(node.icx-2)*(node.icy-2)),matvec=lap2D)
 
     p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-8,maxiter=500)
