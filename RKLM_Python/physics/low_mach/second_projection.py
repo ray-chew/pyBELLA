@@ -166,19 +166,15 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff, writer = None):
     nc = node.sc
     rhs = np.zeros_like(mpv.p2_nodes)
-
-    # slc = (slice(node.igx:-node.igx),slice(node.igy:-node.igy))
-    # slc1 = (slice(1,-1),slice(1,-1))
+    
     p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy])
     
     if writer != None:
         writer.populate('after_ebnaimp','p2_initial',mpv.p2_nodes)
-    # p2 = np.copy(mpv.p2_nodes[node.igx-1:-node.igx+1,node.igy-1:-node.igy+1])
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt)
-    # print("!!!!!!!")
     
     base_filename = '/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_acoustic_wave_high/low_Mach_gravity_comp/'
     # p2 = h5py.File(base_filename + 'p2_initial/p2_initial_004.h5', 'r')['Data-Set-2'][:]
@@ -205,22 +201,13 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     lap2D = stencil_9pt_3rd_try(elem,node,mpv,ud)
 
     sh = (ud.inx)*(ud.iny)
-    # ssh = (sh,sh)
 
     lap2D = LinearOperator((sh,sh),matvec=lap2D)
-    # vec = sh * [0.]
-    # vec[4] = 1.
-    # print(len(vec))
-    # test = lap2D.dot(vec)
-    # print(test[:10])
-    # lap2D = LinearOperator(((node.icx-2)*(node.icy-2),(node.icx-2)*(node.icy-2)),matvec=lap2D)
 
-    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,order='C'),x0=p2.reshape(-1,order='C'),tol=1e-3,maxiter=500)
-    # p2,_ = bicgstab(lap2D,rhs[node.igx-1:-node.igx+1,node.igy-1:-node.igy+1].ravel(),x0=p2.ravel(),maxiter=500)
+    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-8,maxiter=500)
 
     p2_full = np.zeros(nc).squeeze()
     p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
-    # p2_full[node.igx-1:-node.igx+1,node.igy-1:-node.igy+1] = p2.reshape(node.icx-2,node.icy-2)
 
     # p2_full = h5py.File(base_filename + 'pnew/p2_full_004.h5', 'r')['Data-Set-2'][:]
     if writer != None:
@@ -344,20 +331,53 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     fsqsc = dt**2 * coriolis**2
     fimp = 1.0 / (1.0 + fsqsc)
     Nsqsc = time_offset * dt**2 * (g / Msq) * strat
-    
     gimp = 1.0 / (nonhydro + Nsqsc)
-    idx = 521
-    idx_s = 0
-
-    # print(Sol.rhoY.ravel()[14+13])
-    # print(Y.ravel()[idx], coeff.ravel()[idx], fsqsc, fimp, Nsqsc.ravel()[idx_s], gimp.ravel()[idx_s], Sol.rhoY.ravel()[idx])
-    # find_nearest(Sol.rhoY,0.9893096665665001)
 
     for dim in range(ndim):
         if dim == 1:
             mpv.wplus[dim][eindim] = coeff * gimp
         else:
             mpv.wplus[dim][eindim] = coeff * fimp
+
+    # idx = 521
+    # idx_s = 0
+
+    # x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
+    # y_periodic = ud.bdry_type[1] == BdryType.PERIODIC
+
+    # icxe = elem.icx
+    # icye = elem.icy
+
+    # hplusx = np.zeros_like(mpv.wplus[0].reshape(-1,))
+    # hplusy = np.zeros_like(mpv.wplus[1].reshape(-1,))
+
+    # shp = mpv.wplus[0].shape
+    # print(shp)
+
+    # for j in range(igy - y_periodic, icye - igy + y_periodic):
+    #     m = j * icxe
+    #     strat = 2.0 * (mpv.HydroState_n.Y0.ravel()[j+1] - mpv.HydroState_n.Y0.ravel()[j]) / (mpv.HydroState_n.Y0.ravel()[j+1] + mpv.HydroState_n.Y0.ravel()[j]) / dy
+
+    #     for i in range(igx - x_periodic, icxe - igx + x_periodic):
+    #         n = m + i
+
+    #         Y = Sol.rhoY.T.ravel()[n] / Sol.rho.T.ravel()[n]
+    #         coeff = Gammainv * Sol.rhoY.T.ravel()[n] * Y
+    #         fsqsc = dt * dt * coriolis * coriolis
+    #         fimp = 1.0 / (1.0 + fsqsc)
+    #         Nsqsc = time_offset * dt*dt * (g/Msq) * strat
+    #         gimp = 1.0 / (nonhydro + Nsqsc)
+
+    #         hplusx[n] = coeff * gimp
+    #         hplusy[n] = coeff * fimp
+
+    # mpv.wplus[0][...] = hplusx.reshape(26,261).T
+    # mpv.wplus[1][...] = hplusy.reshape(26,261).T
+
+    # coeff = coeff.reshape(-1,1)
+    # print(Sol.rhoY.ravel()[14+13])
+    # print(Y.ravel()[idx], coeff.ravel()[idx], fsqsc, fimp, Nsqsc.ravel()[idx_s], gimp.ravel()[idx_s], Sol.rhoY.ravel()[idx])
+    # find_nearest(Sol.rhoY,0.9893096665665001)
 
     kernel = (ndim - 1) * np.ones((2,2))
     # kernel = np.ones((2,2))
