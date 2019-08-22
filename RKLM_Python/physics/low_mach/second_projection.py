@@ -5,7 +5,7 @@ from scipy import signal
 import numpy as np
 from itertools import product
 
-from scipy.sparse.linalg import LinearOperator, bicgstab
+from scipy.sparse.linalg import LinearOperator, bicgstab, gmres
 from scipy.sparse import eye
 import matplotlib.pyplot as plt
 
@@ -166,7 +166,7 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff, writer = None):
     nc = node.sc
     rhs = np.zeros_like(mpv.p2_nodes)
-    
+
     p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy])
     
     if writer != None:
@@ -193,6 +193,16 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if ud.is_compressible:
         rhs = rhs_from_p_old(rhs,node,mpv)
 
+    x_wall = ud.bdry_type[0] == BdryType.WALL
+    y_wall = ud.bdry_type[1] == BdryType.WALL
+
+    if y_wall:
+        rhs[:,2] *= 2.
+        rhs[:,-3] *= 2.
+    if x_wall:
+        rhs[2,:] *= 2.
+        rhs[-3,:] *= 2.
+
     # rhs = h5py.File(base_filename + 'rhs_nodes/rhs_nodes_004.h5','r')['Data-Set-2']
     if writer != None:
         writer.populate('after_ebnaimp','rhs_nodes',rhs)
@@ -203,8 +213,13 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     sh = (ud.inx)*(ud.iny)
 
     lap2D = LinearOperator((sh,sh),matvec=lap2D)
+    # lap_test = np.zeros_like(mpv.wcenter)
+    # lap_test[node.igx:-node.igx,node.igy:-node.igy] = lap2D(p2.reshape(-1,)).reshape(257,22)
 
-    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-8,maxiter=500)
+    # if writer != None:
+    #     writer.populate('after_ebnaimp','lap_test',lap_test)
+
+    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-6,maxiter=500)
 
     p2_full = np.zeros(nc).squeeze()
     p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
@@ -249,6 +264,7 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
     p = p[inner_idx]
 
     indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat=ndim)]
+    print(indices)
     signs_x = [-1., -1., +1., +1.]
     signs_y = [-1., +1., -1., +1.]
 
