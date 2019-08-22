@@ -12,8 +12,8 @@ from physics.low_mach.second_projection import euler_backward_non_advective_impl
 from inputs.enum_bdry import BdryType
 from physics.low_mach.mpv import MPV, acoustic_order
 
-# from inputs.travelling_vortex_3D_48 import UserData, sol_init
-from inputs.acoustic_wave_high import UserData, sol_init
+from inputs.travelling_vortex_3D_48 import UserData, sol_init
+# from inputs.acoustic_wave_high import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
 from copy import deepcopy
@@ -66,8 +66,8 @@ writer.write_all(Sol0,mpv,elem,node,th,'000')
 # recovery_malloc
 
 step = 0
-dt = 6.6820499999999995e-05
-# dt = 0.0075005354646259159
+# dt = 6.6820499999999995e-05
+dt = 0.0075005354646259159
 
 # find_nearest(Sol0.rhou, 0.50000030887122227)
 # print(Sol.rhou[0])
