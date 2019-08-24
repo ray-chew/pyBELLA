@@ -12,8 +12,9 @@ from physics.low_mach.second_projection import euler_backward_non_advective_impl
 from inputs.enum_bdry import BdryType
 from physics.low_mach.mpv import MPV, acoustic_order
 
-from inputs.travelling_vortex_3D_48 import UserData, sol_init
+# from inputs.travelling_vortex_3D_48 import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
+from inputs.internal_long_wave import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
 from copy import deepcopy
@@ -28,6 +29,7 @@ t = 0.0
 
 initial_data = vars(UserData())
 ud = UserDataInit(**initial_data)
+
 elem, node = data_init(ud)
 
 # Sol0 = States(elem.sc, ud)
@@ -67,8 +69,8 @@ writer.write_all(Sol0,mpv,elem,node,th,'000')
 
 step = 0
 # dt = 6.6820499999999995e-05
-dt = 0.0075005354646259159
-
+# dt = 0.0075005354646259159
+dt = 71.76079734219266
 # find_nearest(Sol0.rhou, 0.50000030887122227)
 # print(Sol.rhou[0])
 while ((t < ud.tout) and (step < ud.stepmax)):
@@ -86,9 +88,9 @@ while ((t < ud.tout) and (step < ud.stepmax)):
     ud.nonhydrostasy = nonhydrostasy(ud,t)
     ud.compressibility = compressibility(ud,t)
     ud.acoustic_order = acoustic_order(ud,t,dt)
-
+    
     writer.write_all(Sol,mpv,elem,node,th,'before_flux')
-    recompute_advective_fluxes(flux, Sol, 0.)
+    recompute_advective_fluxes(flux, Sol)
 
     base_filename = '/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_acoustic_wave_high/low_Mach_gravity_comp/'
     # flux[0].rhoY = h5py.File(base_filename + 'flux_x/rhoYu_001.h5', 'r')['Data-Set-2'][:].T
@@ -106,7 +108,7 @@ while ((t < ud.tout) and (step < ud.stepmax)):
     euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, writer=writer)
     writer.write_all(Sol,mpv,elem,node,th,'after_ebnaimp')
     mpv.p2_nodes = mpv.p2_nodes0.copy()
-    recompute_advective_fluxes(flux, Sol, 0.)
+    recompute_advective_fluxes(flux, Sol)
     writer.write_all(Sol,mpv,elem,node,th,'after_half_step')
 
     print("-----------------------------------------------")
