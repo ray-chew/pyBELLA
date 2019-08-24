@@ -63,7 +63,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     rho = rhoY * S
                     p = rhoY**th.gamm
                     if np.sign(direction) == 1:
-                        v = rhoYv_image / rhoY
+                        v = -rhoYv_image / rhoY
                     else:
                         v = -Sol.rhov[nsource] / Sol.rho[nsource]
 
