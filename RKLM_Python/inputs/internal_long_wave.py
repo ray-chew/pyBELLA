@@ -157,6 +157,7 @@ class UserData(object):
         self.second_projection_max_iterations = 6000
 
         self.initial_projection = False
+        self.initial_impl_Euler = False
 
         self.column_preconditionr = True
         self.synchronize_nodal_pressure = False
@@ -164,8 +165,9 @@ class UserData(object):
 
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
-        self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
-        self.tout[1] = -1.0
+        self.tout =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
+        # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
+        # self.tout[1] = -1.0
 
         self.stepmax = 10000
 
@@ -230,7 +232,8 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     Yn = ud.stratification(yn) + delth * ud.molly(xn) * np.sin(np.pi * yn) / (1.0 + (xn-xc)**2 / (a**2))
 
     hydrostatic_column(HySt, HyStn, Y, Yn, elem, node, th, ud)
-
+    print('mpv.HydroState_n.Y0 = ', mpv.HydroState_n.Y0[0])
+    # print('HyStn = ', HyStn.Y0[0])
     x_idx = slice(None)
     y_idx = slice(elem.igy,-elem.igy+1)
     xc_idx = slice(0,-1)
@@ -246,7 +249,6 @@ def sol_init(Sol, mpv, elem, node, th, ud):
         rhoY = mpv.HydroState.rhoY0[:, y_idx]
     
     rho = rhoY / Y[:,y_idx]
-
     Sol.rho[x_idx,y_idx] = rho
     Sol.rhou[x_idx,y_idx] = rho * u
     Sol.rhov[x_idx,y_idx] = rho * v
@@ -259,7 +261,7 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     # print(mpv.p2_cells[x_idx,y_idx] - mpv.HydroState.p20[0,y_idx])
     # print(mpv.p2_cells[0])
 
-    Sol.rhoX[x_idx,y_idx] = Sol.rho[x_idx,y_idx] * (1.0 / Y[0, y_idx] - mpv.HydroState.S0[0, y_idx])
+    Sol.rhoX[x_idx,y_idx] = Sol.rho[x_idx,y_idx] * (1.0 / Y[:, y_idx] - mpv.HydroState.S0[0, y_idx])
 
     mpv.p2_nodes[:,elem.igy:-elem.igy] = HyStn.p20[:,elem.igy:-elem.igy]
 
