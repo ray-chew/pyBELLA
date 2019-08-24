@@ -56,6 +56,7 @@ counter = 0
 def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mpv, writer = None):
     # split_step_inv = np.abs(1 - split_step)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
+    # set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     Lefts, Rights = recovery(Sol, flux, lmbda, ud, th, elem)
 
@@ -97,9 +98,10 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
     Sol.rhov += lmbda * (flux.rhov[left_idx] - flux.rhov[right_idx])
     Sol.rhow += lmbda * (flux.rhow[left_idx] - flux.rhow[right_idx])
     Sol.rhoe += lmbda * (flux.rhoe[left_idx] - flux.rhoe[right_idx])
+    Sol.rhoX += lmbda * (flux.rhoX[left_idx] - flux.rhoX[right_idx])
     Sol.rhoY += lmbda * (flux.rhoY[left_idx] - flux.rhoY[right_idx])
+    
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
-
-
+    # set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
 
