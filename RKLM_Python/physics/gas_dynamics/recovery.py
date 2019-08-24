@@ -33,6 +33,7 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
     Diffs.u[:,:-1] = Sol.u[rights_idx] - Sol.u[lefts_idx]
     Diffs.v[:,:-1] = Sol.v[rights_idx] - Sol.v[lefts_idx]
     Diffs.w[:,:-1] = Sol.w[rights_idx] - Sol.w[lefts_idx]
+    Diffs.X[:,:-1] = Sol.X[rights_idx] - Sol.X[lefts_idx]
     Diffs.Y[:,:-1] = 1.0 / Sol.Y[rights_idx] - 1.0 / Sol.Y[lefts_idx]
 
     # global truefalse
@@ -59,11 +60,13 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
     Ampls.u[...] = 0.5 * Slopes.u * (1. - lmbda * u)
     Ampls.v[...] = 0.5 * Slopes.v * (1. - lmbda * u)
     Ampls.w[...] = 0.5 * Slopes.w * (1. - lmbda * u)
+    Ampls.X[...] = 0.5 * Slopes.X * (1. - lmbda * u)
     Ampls.Y[...] = 0.5 * Slopes.Y * (1. - lmbda * u)
     
     Lefts.u[...] = Sol.u + order_two * Ampls.u
     Lefts.v[...] = Sol.v + order_two * Ampls.v
     Lefts.w[...] = Sol.w + order_two * Ampls.w
+    Lefts.X[...] = Sol.X + order_two * Ampls.X
     Lefts.Y[...] = 1.0 / (1.0 / Sol.Y + order_two * Ampls.Y)
     
     # Ampls.change_dir()
@@ -103,11 +106,13 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
     Ampls.u[...] = -0.5 * Slopes.u * (1. + lmbda * u)
     Ampls.v[...] = -0.5 * Slopes.v * (1. + lmbda * u)
     Ampls.w[...] = -0.5 * Slopes.w * (1. + lmbda * u)
+    Ampls.X[...] = -0.5 * Slopes.X * (1. + lmbda * u)
     Ampls.Y[...] = -0.5 * Slopes.Y * (1. + lmbda * u)
 
     Rights.u[...] = Sol.u + order_two * Ampls.u
     Rights.v[...] = Sol.v + order_two * Ampls.v
     Rights.w[...] = Sol.w + order_two * Ampls.w
+    Rights.X[...] = Sol.X + order_two * Ampls.X
     Rights.Y[...] = 1.0 / (1.0 / Sol.Y + order_two * Ampls.Y)
 
     Lefts.rhoY[lefts_idx] = Rights.rhoY[rights_idx] = 0.5 * (Sol.rhoY[lefts_idx] + Sol.rhoY[rights_idx]) \
@@ -137,11 +142,13 @@ def slopes(Sol, Diffs, ud, elem):
     aul = Diffs.u[lefts_idx][lefts_idx]
     avl = Diffs.v[lefts_idx][lefts_idx]
     awl = Diffs.w[lefts_idx][lefts_idx]
+    aXl = Diffs.X[lefts_idx][lefts_idx]
     aYl = Diffs.Y[lefts_idx][lefts_idx]
 
     aur = Diffs.u[lefts_idx][rights_idx]
     avr = Diffs.v[lefts_idx][rights_idx]
     awr = Diffs.w[lefts_idx][rights_idx]
+    aXr = Diffs.X[lefts_idx][rights_idx]
     aYr = Diffs.Y[lefts_idx][rights_idx]
 
     Slopes = Characters(Diffs.u.shape)
@@ -149,6 +156,7 @@ def slopes(Sol, Diffs, ud, elem):
     Slopes.u[:,1:-1] = limiters(limiter_type_velocity, aul, aur, kp)
     Slopes.v[:,1:-1] = limiters(limiter_type_velocity, avl, avr, kz)
     Slopes.w[:,1:-1] = limiters(limiter_type_velocity, awl, awr, kz)
+    Slopes.X[:,1:-1] = limiters(limiter_type_scalar, aXl, aXr, kz)
     Slopes.Y[:,1:-1] = limiters(limiter_type_scalar, aYl, aYr, kY)
 
     return Slopes
@@ -165,6 +173,7 @@ def get_conservatives(U, ud, th):
     U.rhov = U.v * U.rho
     U.rhow = U.w * U.rho
     U.rhoY = U.Y * U.rho
+    U.rhoX = U.X * U.rho
     
     sgn = np.sign(U.rhoY)
     p = sgn*np.abs(U.rhoY)**th.gamminv

@@ -65,8 +65,25 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     # print('Sol.rhov(before) = ', Sol.rhov.T.flatten()[idx])
     # find_nearest(Sol.rhou,0.50010834727366982)
 
+    igx = elem.igx
+    igy = elem.igy
+
+    dSdy = mpv.HydroState_n.S0[0][igy-1:-igy+1]
+    dSdy = signal.convolve(dSdy,[1.,-1.],mode='valid').reshape(-1,1)
+    dSdy = np.repeat(dSdy,elem.icx-igx,axis=1)
+    # dSdy = dSdy[inner_idx] / dy
+    print("dSdy = ", dSdy)
+    S0c = mpv.HydroState.S0[0][igy-1:-igy+1].reshape(-1,1)
+    S0c = np.repeat(S0c,elem.icx-igx,axis=1)
+    # S0c = S0c[inner_idx]
+    print("S0c = ", S0c)
+    # print(Sol.rhoX[inner_idx].shape)
+    v = Sol.rhou / Sol.rho
+    v = v[inner_idx]
+    time_offset_expl = ud.acoustic_order - 1.0
+
     rhoYovG = Ginv * Sol.rhoY[inner_idx]
-    dchi = 0. ###### INCOMPLETE!
+    dchi = Sol.rhoX[inner_idx] / Sol.rho[inner_idx]
     dbuoy = -1. * Sol.rhoY[inner_idx] * dchi
     drhou = Sol.rhou[inner_idx] - u0 * Sol.rho[inner_idx]
 
@@ -74,33 +91,17 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     dpidP_kernel = np.array([[1.,1.],[1.,1.]])
     dpidP = (th.gm1 / ud.Msq) * signal.convolve2d(rhoY, dpidP_kernel, mode='valid') / dpidP_kernel.sum()
     
-    Sol.rhou[inner_idx] = Sol.rhou[inner_idx] + dt * ( -1. * rhoYovG * dpdx + coriolis * Sol.rhow[inner_idx])
-    Sol.rhov[inner_idx] = Sol.rhov[inner_idx] + dt * ( -1. * rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro
+    # Sol.rhou[inner_idx] = Sol.rhou[inner_idx] + dt * ( -1. * rhoYovG * dpdx + coriolis * Sol.rhow[inner_idx])
+
+    # Sol.rhov[inner_idx] = Sol.rhov[inner_idx] + dt * ( -1. * rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro
+
+    Sol.rhov[inner_idx] = Sol.rhov[inner_idx] + dt * ( -1. * rhoYovG * dpdy + coriolis * Sol.rhow[inner_idx])
+
+    Sol.rhou[inner_idx] = Sol.rhou[inner_idx] + dt * ( -1. * rhoYovG * dpdx + (g/Msq) * dbuoy) * nonhydro
+
     Sol.rhow[inner_idx] = Sol.rhow[inner_idx] - dt * coriolis * drhou
 
-    # idx = 585
-    # n_rows = int(np.floor(idx / 52))
-    # n_cols = idx - (n_rows * 52)
-    # n_rows -= 1
-    # n_cols -= 1
-    # idx = n_rows * 50 + n_cols
-
-    # idx_n = 598
-    # n_rows = int(np.floor(idx_n / 53))
-    # n_cols = idx_n - (n_rows * 53) 
-    # n_rows -= 1
-    # n_cols -= 1
-    # idx_n = n_rows * 51 + n_cols
-
-    # print(idx_n)
-
-    # print('dt = %.8f, dx = %.8f, dy = %.8f' %(dt,dx,dy))
-    # print('p2n[idx_n] = ', p2n.flatten()[idx_n])
-    # print('dpdx = ', dpdx.flatten()[idx])
-    # print('dpdy = ', dpdy.flatten()[idx])
-    # print('rhoYovG = ', rhoYovG.flatten()[idx])
-    # print('Sol.rhou(after) = ', Sol.rhou[inner_idx].flatten()[idx])
-    # print('Sol.rhov(after) = ', Sol.rhov[inner_idx].flatten()[idx])
+    Sol.rhoX[inner_idx] = (Sol.rho[inner_idx] * (Sol.rho[inner_idx] / Sol.rhoY[inner_idx] - S0c)) + time_offset_expl * dt * (-v * dSdy) * Sol.rho[inner_idx]
 
     dp2n[inner_idx] -= dt * dpidP * div[inner_idx]
     # find_nearest(dp2n,-5.5631383332701323e-07)
@@ -126,6 +127,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     # Sol.rho = Sol.rho.T
     # Sol.rhoY = Sol.rhoY.T
 
+cnt = 0
 def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     nonhydro = ud.nonhydrostasy
 
@@ -143,24 +145,40 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     first_nodes_row_right_idx = (slice(0,1), slice(1,None))
     first_nodes_row_left_idx = (slice(0,1),slice(0,-1))
 
-    strat = 2.0 * (mpv.HydroState_n.Y0[first_nodes_row_right_idx] - mpv.HydroState_n.Y0[first_nodes_row_left_idx]) / (mpv.HydroState_n.Y0[first_nodes_row_right_idx] + mpv.HydroState_n.Y0[first_nodes_row_left_idx]) / dy
+    strat = 2.0 * (mpv.HydroState_n.Y0[first_nodes_row_right_idx] - mpv.HydroState_n.Y0[first_nodes_row_left_idx]) / (mpv.HydroState_n.Y0[first_nodes_row_right_idx] + mpv.HydroState_n.Y0[first_nodes_row_left_idx])
+
     # print(mpv.HydroState_n.Y0[0])
     # works for 2d grid - check for non-square
     strat = strat.reshape(1,-1)
-    strat = np.repeat(strat, elem.icx, axis=0)
-    # print(strat)
+    strat = np.repeat(strat, elem.icx, axis=0) / dy
 
     Nsqsc = time_offset * dt**2 * (g / Msq) * strat
-    dbouy = 0.0 ###### Incomplete!!! ######
-    rhov = (nonhydro * Sol.rhov + dt * (g/Msq) * dbouy) / (nonhydro + Nsqsc)
+    
+    # print('mpv.HydroState_n.Y0 = ', mpv.HydroState_n.Y0[0])
+    # print('strat = ', strat)
+    # print('time_offset = ', time_offset)
+    # print('dt = %.8f, g = %.8f, Msq = %.8f' %(dt,g,Msq))
+    # print(Nsqsc)
+    dbuoy = -Sol.rhoY * Sol.rhoX / Sol.rho
+    
+    # dbuoy = dbuoy.T.ravel().reshape(dbuoy.shape)
+    rhov = (nonhydro * Sol.rhov + dt * (g/Msq) * dbuoy) / (nonhydro + Nsqsc)
 
+    idx = 100
+    print(Nsqsc.ravel()[idx])
+    print(dbuoy.ravel()[idx])
+    print(Sol.rhov.ravel()[idx])
+    print(Sol.rhoX.T.ravel()[idx])
     drhou = Sol.rhou - u0 * Sol.rho
     Sol.rhou[...] = u0 * Sol.rho + ooopfsqsc * (drhou + dt * coriolis * Sol.rhow)
     Sol.rhov[...] = rhov
     Sol.rhow[...] = ooopfsqsc * (Sol.rhow - dt * coriolis * drhou)
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
-
+    # global cnt
+    # if cnt == 0:
+    #     Sol.rhov[:,:elem.igy] *= -1.
+    #     cnt += 1
 
 
 def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff, writer = None):
@@ -219,7 +237,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # if writer != None:
     #     writer.populate('after_ebnaimp','lap_test',lap_test)
 
-    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-6,maxiter=500)
+    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-6,maxiter=300)
 
     p2_full = np.zeros(nc).squeeze()
     p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
@@ -242,7 +260,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
     ndim = node.ndim
     # coriolis = ud.coriolis_strength[0]
-    # time_offset = 3.0 - ud.acoustic_order
+    time_offset = 3.0 - ud.acoustic_order
     vcorr = 1.
 
     igx,igy,igz = node.igs[0],node.igs[1],node.igs[2]
@@ -254,7 +272,7 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
     hplusx = mpv.wplus[0]
     hplusy = mpv.wplus[1]
 
-    # dSdy = (mpv.HydroState_n.S0[0,igy+1:-igy] - mpv.HydroState_n.S0[0,igy:-igy-1]) * oody
+    dSdy = (mpv.HydroState_n.S0[0,igy+1:-igy] - mpv.HydroState_n.S0[0,igy:-igy-1]) * oody
     inner_idx = (slice(igx,-igx),slice(igy,-igy))
     # inner_idx = (slice(1,-1),slice(1,-1))
     # inner_idx = (slice(None,None), slice(None,None))
@@ -293,7 +311,7 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
 
     Sol.rhou[inner_idx] += -dt * thinv * hplusx[inner_eidx] * Dpx
     Sol.rhov[inner_idx] += -dt * thinv * hplusy[inner_eidx] * Dpy * vcorr
-    # Sol.rhoX[inner_idx] += -time_offset * dt * dSdy * Sol.rhov[inner_idx] * vcorr
+    Sol.rhoX[inner_idx] += -time_offset * dt * dSdy * Sol.rhov[inner_idx] * vcorr
 
 
 def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):

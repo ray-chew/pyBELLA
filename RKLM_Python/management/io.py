@@ -103,6 +103,7 @@ class io(object):
         # self.populate(name,'hcenter',mpv.wcenter)
         self.populate(name,'p2',mpv.dp2_nodes)
         self.populate(name,'rhs',mpv.rhs)
+        self.populate(name,'X',Sol.rhoX/Sol.rho)
 
     def vortz(self,Sol,elem,node):
         if elem.ndim != 2:

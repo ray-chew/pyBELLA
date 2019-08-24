@@ -26,13 +26,14 @@ class Vars(object):
         self.v = np.zeros_like(self.rhov)
         self.w = np.zeros_like(self.rhow)
         self.Y = np.zeros_like(self.rhoY)
+        self.X = np.zeros_like(self.rhoX)
         self.p = np.zeros_like(self.rhoY)
 
         self.u[nonzero_idx] = self.rhou[nonzero_idx] / self.rho[nonzero_idx]
         self.v[nonzero_idx] = self.rhov[nonzero_idx] / self.rho[nonzero_idx]
         self.w[nonzero_idx] = self.rhow[nonzero_idx] / self.rho[nonzero_idx]
         self.Y[nonzero_idx] = self.rhoY[nonzero_idx] / self.rho[nonzero_idx]
-        # self.X[nonzero_idx] = self.rhoX[nonzero_idx] / self.rho[nonzero_idx]
+        self.X[nonzero_idx] = self.rhoX[nonzero_idx] / self.rho[nonzero_idx]
         self.p[nonzero_idx] = self.rhoY[nonzero_idx]**th.gamm
 
     def flip(self):
@@ -73,6 +74,7 @@ class Characters(object):
         self.u = np.zeros((size))
         self.v = np.zeros((size))
         self.w = np.zeros((size))
+        self.X = np.zeros((size))
         self.Y = np.zeros((size))
 
         self.plus = np.zeros((size))
