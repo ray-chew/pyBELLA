@@ -22,7 +22,7 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
     time_step = 0.5 * dt
     # print(time_step)
     stage = 0
-    
+
     if (odd):
         for split in range(elem.ndim):
             lmbda = time_step / elem.dx
@@ -32,7 +32,7 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
         for i_split in range(elem.ndim):
             split = elem.ndim - 1 - i_split
             lmbda = time_step / elem.dx
-            print("Done - stage = 0, split = ", split)
+            # print("Done - stage = 0, split = ", split)
             explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, writer)
             Sol.flip()
 
@@ -47,7 +47,7 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
         for split in range(elem.ndim):
             lmbda = time_step / elem.dx
             Sol.flip()
-            print("Done - stage = 1, split = ", split)
+            # print("Done - stage = 1, split = ", split)
             explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, writer)
             
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
