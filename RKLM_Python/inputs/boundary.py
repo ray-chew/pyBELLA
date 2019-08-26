@@ -11,22 +11,23 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
     if step == None:
         dims = np.arange(ndim)
     else:
-        # inv = np.abs( 1 - inv)
         dims = [1]
 
     for dim in dims:
-        # print("before = ", dim)
         if step != None:
             current_step = step
         else:
             current_step = dim
 
         # print("dim = ", dim)
-        ghost_padding, idx = get_ghost_padding(ndim,current_step,igs)
+        # print("dims = ", dims)
+        # print("step = ", step)
+        ghost_padding, idx = get_ghost_padding(ndim,dim,igs)
+        print("current_step = ", current_step)
         if ud.gravity_strength[current_step] == 0.0:
             if ud.bdry_type[current_step] == BdryType.PERIODIC:
-                print("PERIODIC, dim = ", dim)
-                print(ghost_padding)
+                # print("PERIODIC, dim = ", dim)
+                # print(ghost_padding)
                 set_boundary(Sol,ghost_padding,'wrap',idx)
             else:
                 # print("WALL, dim = ", dim)
@@ -35,8 +36,10 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
         else:
             # recursive updating of array - for loop cannot be avoided....?
             # assumption: gravity always acts in the y-axis
-            print("Gravity = True, current_step = %i, dim = %i" %(current_step, dim))
+            # print("Gravity = True, current_step = %i, dim = %i" %(current_step, dim))
             gravity_axis = dim
+            #     gravity_axis = 1
+            
             direction = -1.
             offset = 0
 
@@ -45,7 +48,6 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
             for side in ghost_padding[gravity_axis]:
                 direction *= -1
                 for current_idx in np.arange(side)[::-1]:
-
                     nlast, nsource, nimage = get_gravity_padding(ndim,current_idx,direction,offset,elem)
 
                     Y_last = Sol.rhoY[nlast] / Sol.rho[nlast]
@@ -82,8 +84,8 @@ def set_boundary(Sol,pads,btype,idx):
     Sol.rho[...] = np.pad(Sol.rho[idx],pads,btype)
     if btype == 'symmetric':
         Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
-    # else:
-    Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
+    else:
+        Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
     # print(pads)
     Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
     Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
@@ -94,7 +96,7 @@ def set_boundary(Sol,pads,btype,idx):
 
 def negative_symmetric(vector,pad_width,iaxis,kwargs=None):
     if pad_width[1] > 0:
-        sign = -1.
+        sign = 1.
         vector[:pad_width[0]] = sign * vector[pad_width[0]:2*pad_width[0]][::-1]
         vector[-pad_width[1]:] = sign * vector[-2*pad_width[1]:-pad_width[1]][::-1]
         return vector
@@ -102,11 +104,12 @@ def negative_symmetric(vector,pad_width,iaxis,kwargs=None):
         return vector
 
 
-def get_gravity_padding(ndim,cur_idx,direction,offset,elem):
+def get_gravity_padding(ndim,cur_idx,direction,offset,elem,y_axs=None):
     cur_i = np.copy(cur_idx)
     cur_idx += offset * ((elem.icy - 1) - 2*cur_idx)
     gravity_padding = [(slice(None))] * ndim
-    y_axs = ndim - 1
+    if y_axs == None:
+        y_axs = ndim - 1
 
     nlast = np.copy(gravity_padding)
     nlast[y_axs] = int(cur_idx + direction)

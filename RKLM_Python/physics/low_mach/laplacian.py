@@ -508,13 +508,9 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
     icxn = node.icx
     icy = elem.icy
     icyn = node.icy
-
-    sc = node.sc
-
+    
     iicxn = icxn - (2 * igx)
-    iicx = icx - (2 * igx)
     iicyn = icyn - (2 * igy)
-    iicy = icy - (2 * igy)
 
     iicxn, iicyn = iicyn, iicxn
     ngnc = (iicxn) * (iicyn)
@@ -583,8 +579,8 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
                     midmid += iicxn - 1
                     botmid += iicxn - 1
 
-                ne_topleft += iicxn - 2
-                ne_botleft += iicxn - 2
+                ne_topleft += iicxn - 1
+                ne_botleft += iicxn - 1
 
             if cnt_x == (iicxn - 1):
                 topright -= iicxn - 1

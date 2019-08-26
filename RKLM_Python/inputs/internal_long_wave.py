@@ -232,7 +232,7 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     Yn = ud.stratification(yn) + delth * ud.molly(xn) * np.sin(np.pi * yn) / (1.0 + (xn-xc)**2 / (a**2))
 
     hydrostatic_column(HySt, HyStn, Y, Yn, elem, node, th, ud)
-    print('mpv.HydroState_n.Y0 = ', mpv.HydroState_n.Y0[0])
+    # print('mpv.HydroState_n.Y0 = ', mpv.HydroState_n.Y0[0])
     # print('HyStn = ', HyStn.Y0[0])
     x_idx = slice(None)
     y_idx = slice(elem.igy,-elem.igy+1)
