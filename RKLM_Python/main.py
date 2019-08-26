@@ -8,13 +8,14 @@ from physics.gas_dynamics.thermodynamic import ThemodynamicInit
 from physics.gas_dynamics.numerical_flux import recompute_advective_fluxes
 from physics.gas_dynamics.explicit import advect
 from physics.gas_dynamics.eos import nonhydrostasy, compressibility
+from physics.gas_dynamics.gas_dynamics import dynamic_timestep
 from physics.low_mach.second_projection import euler_backward_non_advective_impl_part, euler_backward_non_advective_expl_part, euler_forward_non_advective
 from inputs.enum_bdry import BdryType
 from physics.low_mach.mpv import MPV, acoustic_order
 
-# from inputs.travelling_vortex_3D_48 import UserData, sol_init
+from inputs.travelling_vortex_3D_48 import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
-from inputs.internal_long_wave import UserData, sol_init
+# from inputs.internal_long_wave import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
 from copy import deepcopy
@@ -70,10 +71,14 @@ writer.write_all(Sol0,mpv,elem,node,th,'000')
 step = 0
 # dt = 6.6820499999999995e-05
 # dt = 0.0075005354646259159
-dt = 71.76079734219266
+# dt = 71.76079734219266
 # find_nearest(Sol0.rhou, 0.50000030887122227)
 # print(Sol.rhou[0])
 while ((t < ud.tout) and (step < ud.stepmax)):
+
+    dt = dynamic_timestep(Sol,elem,ud,th)
+    print('dt = ', dt)
+
     if step < 10:
         label = '00' + str(step)
     elif step < 100:
