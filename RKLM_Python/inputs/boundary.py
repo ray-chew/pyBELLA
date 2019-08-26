@@ -23,7 +23,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
         # print("dims = ", dims)
         # print("step = ", step)
         ghost_padding, idx = get_ghost_padding(ndim,dim,igs)
-        print("current_step = ", current_step)
+        # print("current_step = ", current_step)
         if ud.gravity_strength[current_step] == 0.0:
             if ud.bdry_type[current_step] == BdryType.PERIODIC:
                 # print("PERIODIC, dim = ", dim)
