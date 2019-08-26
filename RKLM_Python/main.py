@@ -13,9 +13,9 @@ from physics.low_mach.second_projection import euler_backward_non_advective_impl
 from inputs.enum_bdry import BdryType
 from physics.low_mach.mpv import MPV, acoustic_order
 
-from inputs.travelling_vortex_3D_48 import UserData, sol_init
+# from inputs.travelling_vortex_3D_48 import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
-# from inputs.internal_long_wave import UserData, sol_init
+from inputs.internal_long_wave import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
 from copy import deepcopy
@@ -110,7 +110,7 @@ while ((t < ud.tout) and (step < ud.stepmax)):
     euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaexp')
 
-    euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, writer=writer)
+    euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, writer=writer, label=label)
     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaimp')
     mpv.p2_nodes = mpv.p2_nodes0.copy()
     recompute_advective_fluxes(flux, Sol)
@@ -123,8 +123,8 @@ while ((t < ud.tout) and (step < ud.stepmax)):
 
     # flux[0].rhoY = h5py.File(base_filename + 'flux_x/rhoYu_005.h5', 'r')['Data-Set-2'][:].T
     # flux[1].rhoY = h5py.File(base_filename + 'flux_y/rhoYv_005.h5', 'r')['Data-Set-2'][:].T
-    writer.populate(str(step)+'_after_half_step','rhoYu',flux[0].rhoY)
-    writer.populate(str(step)+'_after_half_step','rhoYv',flux[1].rhoY)
+    writer.populate(str(label)+'_after_half_step','rhoYu',flux[0].rhoY)
+    writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY)
     euler_forward_non_advective(Sol, mpv, elem, node, 0.5*dt, ud, th)
     # Sol.rhou = h5py.File(base_filename + 'rhou/rhou_006.h5', 'r')['Data-Set-2'][:]
     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_efna')

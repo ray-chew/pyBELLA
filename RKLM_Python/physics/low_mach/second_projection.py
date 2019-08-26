@@ -181,14 +181,14 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     #     cnt += 1
 
 
-def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff, writer = None):
+def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff, writer = None, label=None):
     nc = node.sc
     rhs = np.zeros_like(mpv.p2_nodes)
 
     p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy])
     
     if writer != None:
-        writer.populate('after_ebnaimp','p2_initial',mpv.p2_nodes)
+        writer.populate(str(label)+'_after_ebnaimp','p2_initial',mpv.p2_nodes)
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
@@ -201,9 +201,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # mpv.wplus[0][...] = h5py.File(base_filename + 'wplusx/wplusx_004.h5', 'r')['Data-Set-2'][:]
     # mpv.wplus[1][...] = h5py.File(base_filename + 'wplusy/wplusy_004.h5', 'r')['Data-Set-2'][:]
     if writer != None:
-        writer.populate('after_ebnaimp','hcenter',mpv.wcenter)
-        writer.populate('after_ebnaimp','wplusx',mpv.wplus[0])
-        writer.populate('after_ebnaimp','wplusy',mpv.wplus[1])
+        writer.populate(str(label)+'_after_ebnaimp','hcenter',mpv.wcenter)
+        writer.populate(str(label)+'_ebnaimp','wplusx',mpv.wplus[0])
+        writer.populate(str(label)+'_ebnaimp','wplusy',mpv.wplus[1])
 
     rhs[...], rhs_max = divergence_nodes(rhs,elem,node,Sol,ud)
     rhs /= dt
@@ -223,7 +223,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     # rhs = h5py.File(base_filename + 'rhs_nodes/rhs_nodes_004.h5','r')['Data-Set-2']
     if writer != None:
-        writer.populate('after_ebnaimp','rhs_nodes',rhs)
+        writer.populate(str(label)+'_after_ebnaimp','rhs_nodes',rhs)
 
     # lap2D = stencil_9pt_2nd_try(rhs,elem,node,mpv,ud)
     lap2D = stencil_9pt_3rd_try(elem,node,mpv,ud)
@@ -245,7 +245,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # p2_full = h5py.File(base_filename + 'pnew/p2_full_004.h5', 'r')['Data-Set-2'][:]
     if writer != None:
         # print("Yes?!")
-        writer.populate('after_ebnaimp','p2_full',p2_full)
+        writer.populate(str(label)+'_after_ebnaimp','p2_full',p2_full)
 
     mpv.dp2_nodes[...] = np.copy(p2_full)
     correction_nodes(Sol,elem,node,mpv,p2_full,dt,ud)
