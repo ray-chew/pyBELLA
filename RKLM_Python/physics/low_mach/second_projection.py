@@ -72,11 +72,11 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     dSdy = signal.convolve(dSdy,[1.,-1.],mode='valid').reshape(-1,1)
     dSdy = np.repeat(dSdy,elem.icx-igx,axis=1)
     # dSdy = dSdy[inner_idx] / dy
-    print("dSdy = ", dSdy)
+    # print("dSdy = ", dSdy)
     S0c = mpv.HydroState.S0[0][igy-1:-igy+1].reshape(-1,1)
     S0c = np.repeat(S0c,elem.icx-igx,axis=1)
     # S0c = S0c[inner_idx]
-    print("S0c = ", S0c)
+    # print("S0c = ", S0c)
     # print(Sol.rhoX[inner_idx].shape)
     v = Sol.rhou / Sol.rho
     v = v[inner_idx]
@@ -164,11 +164,11 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     # dbuoy = dbuoy.T.ravel().reshape(dbuoy.shape)
     rhov = (nonhydro * Sol.rhov + dt * (g/Msq) * dbuoy) / (nonhydro + Nsqsc)
 
-    idx = 100
-    print(Nsqsc.ravel()[idx])
-    print(dbuoy.ravel()[idx])
-    print(Sol.rhov.ravel()[idx])
-    print(Sol.rhoX.T.ravel()[idx])
+    # idx = 100
+    # print(Nsqsc.ravel()[idx])
+    # print(dbuoy.ravel()[idx])
+    # print(Sol.rhov.ravel()[idx])
+    # print(Sol.rhoX.T.ravel()[idx])
     drhou = Sol.rhou - u0 * Sol.rho
     Sol.rhou[...] = u0 * Sol.rho + ooopfsqsc * (drhou + dt * coriolis * Sol.rhow)
     Sol.rhov[...] = rhov
@@ -237,14 +237,14 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # if writer != None:
     #     writer.populate('after_ebnaimp','lap_test',lap_test)
 
-    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-6,maxiter=300)
+    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-6,maxiter=500)
 
     p2_full = np.zeros(nc).squeeze()
     p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
 
     # p2_full = h5py.File(base_filename + 'pnew/p2_full_004.h5', 'r')['Data-Set-2'][:]
     if writer != None:
-        print("Yes?!")
+        # print("Yes?!")
         writer.populate('after_ebnaimp','p2_full',p2_full)
 
     mpv.dp2_nodes[...] = np.copy(p2_full)
@@ -282,7 +282,7 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
     p = p[inner_idx]
 
     indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat=ndim)]
-    print(indices)
+    # print(indices)
     signs_x = [-1., -1., +1., +1.]
     signs_y = [-1., +1., -1., +1.]
 

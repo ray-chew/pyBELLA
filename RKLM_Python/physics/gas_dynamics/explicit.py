@@ -22,6 +22,7 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
     time_step = 0.5 * dt
     # print(time_step)
     stage = 0
+    
     if (odd):
         for split in range(elem.ndim):
             lmbda = time_step / elem.dx
@@ -54,17 +55,18 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
 truefalse = True
 counter = 0
 def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mpv, writer = None):
-    # split_step_inv = np.abs(1 - split_step)
+    # split_step = np.abs(1 - split_step)
+    # print("split_step = ", split_step)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
     # set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     Lefts, Rights = recovery(Sol, flux, lmbda, ud, th, elem)
 
-    global counter
-    global truefalse
-    if counter < 5 and writer != None:
-        writer.populate('00' + str(counter),'Lefts_rhou',Lefts.rhou)
-        counter += 1
+    # global counter
+    # global truefalse
+    # if counter < 5 and writer != None:
+    #     writer.populate('00' + str(counter),'Lefts_rhou',Lefts.rhou)
+    #     counter += 1
     # if truefalse == True:
     #     writer.populate('000','Lefts_rhou',Lefts.rhou)
     #     truefalse = False
@@ -101,7 +103,6 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
     Sol.rhoX += lmbda * (flux.rhoX[left_idx] - flux.rhoX[right_idx])
     Sol.rhoY += lmbda * (flux.rhoY[left_idx] - flux.rhoY[right_idx])
     
-
+    # set_explicit_boundary_data(Sol, elem, ud, th, mpv)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
-    # set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
 

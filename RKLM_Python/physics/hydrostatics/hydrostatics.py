@@ -168,9 +168,9 @@ def hydrostatic_state(mpv, elem, node, th, ud):
 
     # Update the node solutions
     mpv.HydroState_n.rhoY0[0,:igy] = rhoY_hydro_n[:igy]
-    print(y_ps)
-    print(y_ms)
-    print(elem.dy)
+    # print(y_ps)
+    # print(y_ms)
+    # print(elem.dy)
     mpv.HydroState_n.Y0[0,:igy+1] = ud.stratification(0.5 * (y_ps[:igy+1] + y_ps[:igy+1] - elem.dy))
     # print(mpv.HydroState_n.Y0[0])
     # print(y_ps[:igy])
