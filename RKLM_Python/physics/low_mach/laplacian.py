@@ -508,7 +508,7 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
     icxn = node.icx
     icy = elem.icy
     icyn = node.icy
-    
+
     iicxn = icxn - (2 * igx)
     iicyn = icyn - (2 * igy)
 
@@ -544,17 +544,7 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
             ne_topleft = idx - iicxn - 1
             ne_topright = idx - iicxn 
             ne_botleft = idx - 1
-            ne_botright = idx 
-
-            # ne_topleft = idx 
-            # ne_topright = idx + 1
-            # ne_botleft = idx + iicxn
-            # ne_botright = idx + iicxn + 1
-
-            # ne_topleft = idx - iicxn
-            # ne_topright = idx - iicxn + 1
-            # ne_botleft = idx
-            # ne_botright = idx + 1
+            ne_botright = idx
 
             # get indices of the 9pt stencil
             topleft = idx - iicxn - 1
@@ -608,7 +598,7 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
                 ne_topleft += ((iicxn) * (iicyn - 1))
                 ne_topright += ((iicxn) * (iicyn - 1))
 
-            if cnt_y == iicyn - 1:
+            if cnt_y == (iicyn - 1):
                 botleft -= ((iicxn) * (iicyn - 1))
                 botmid -= ((iicxn) * (iicyn - 1))
                 botright -= ((iicxn) * (iicyn - 1))
@@ -620,7 +610,6 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
 
                 ne_botleft -= ((iicxn) * (iicyn - 1))
                 ne_botright -= ((iicxn) * (iicyn - 1))
-
 
             # if cnt_x == iicxn-1 and cnt_y == 1:
             #     print([[topleft,topmid,topright],[midleft,midmid,midright],[botleft,botmid,botright]])
@@ -647,25 +636,25 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
             hplusy_topright = hplusy[ne_topright]
             hplusy_botright = hplusy[ne_botright]
 
-            if x_wall * (cnt_x == 0):
+            if x_wall and (cnt_x == 0):
                 hplusx_topleft = 0.
                 hplusy_topleft = 0. 
                 hplusx_botleft = 0.
                 hplusy_botleft = 0.
 
-            if x_wall * (cnt_x == iicxn - 1):
+            if x_wall and (cnt_x == (iicxn - 1)):
                 hplusx_topright = 0.
                 hplusy_topright = 0.
                 hplusx_botright = 0.
                 hplusy_botright = 0.
 
-            if y_wall * (cnt_y == 0):
+            if y_wall and (cnt_y == 0):
                 hplusx_topleft = 0.
                 hplusy_topleft = 0. 
                 hplusx_topright = 0.
                 hplusy_topright = 0.
 
-            if y_wall * (cnt_y == iicyn - 1):
+            if y_wall and (cnt_y == (iicyn - 1)):
                 hplusx_botleft = 0.
                 hplusy_botleft = 0.  
                 hplusx_botright = 0.
@@ -703,6 +692,11 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
             if cnt_x == 0 and x_wall:
                 lap[idx] *= 2.
             if (cnt_x == iicxn - 1) and x_wall:
+                lap[idx] *= 2.
+
+            if cnt_y == 0 and y_wall:
+                lap[idx] *= 2.
+            if (cnt_y == iicyn - 1) and y_wall:
                 lap[idx] *= 2.
 
             cnt_x += 1
