@@ -24,14 +24,15 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
         # print("step = ", step)
         ghost_padding, idx = get_ghost_padding(ndim,dim,igs)
         # print("current_step = ", current_step)
+
         if ud.gravity_strength[current_step] == 0.0:
             if ud.bdry_type[current_step] == BdryType.PERIODIC:
                 # print("PERIODIC, dim = ", dim)
                 # print(ghost_padding)
-                set_boundary(Sol,ghost_padding,'wrap',idx)
+                set_boundary(Sol,ghost_padding,'wrap',idx,step=None)
             else:
                 # print("WALL, dim = ", dim)
-                set_boundary(Sol,ghost_padding,'symmetric',idx)
+                set_boundary(Sol,ghost_padding,'symmetric',idx,step=None)
 
         else:
             # recursive updating of array - for loop cannot be avoided....?
@@ -80,14 +81,24 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                 offset += 1
 
 
-def set_boundary(Sol,pads,btype,idx):
+def set_boundary(Sol,pads,btype,idx,step=None):
     Sol.rho[...] = np.pad(Sol.rho[idx],pads,btype)
-    if btype == 'symmetric':
-        Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
-    else:
+    Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
+    if step == None or step == 0:
         Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
+        if btype == 'symmetric':
+            Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,negative_symmetric)
+        else:
+            Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
+
     # print(pads)
-    Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
+    if step == 1:
+        Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
+        if btype == 'symmetric':
+            Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
+        else:
+            Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
+
     Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
     Sol.rhoe[...] = np.pad(Sol.rhoe[idx],pads,btype)
     Sol.rhoY[...] = np.pad(Sol.rhoY[idx],pads,btype)
@@ -96,7 +107,7 @@ def set_boundary(Sol,pads,btype,idx):
 
 def negative_symmetric(vector,pad_width,iaxis,kwargs=None):
     if pad_width[1] > 0:
-        sign = 1.
+        sign = -1.
         vector[:pad_width[0]] = sign * vector[pad_width[0]:2*pad_width[0]][::-1]
         vector[-pad_width[1]:] = sign * vector[-2*pad_width[1]:-pad_width[1]][::-1]
         return vector
@@ -165,70 +176,57 @@ def periodic_plus_one(vector, pad_width, iaxis, kwargs=None):
         vector[:pad_width[0]+1], vector[-pad_width[1]-1:] = vector[-pad_width[1]-pad_width[1]-1:-pad_width[1]] , vector[pad_width[0]:pad_width[0]+pad_width[0]+1].copy()
     return vector
 
-truefalse = True
+
 def check_flux_bcs(Lefts, Rights, elem, split_step, ud):
     igx = elem.igx
+    igy = elem.igy
 
-    global truefalse
-    # if truefalse == True:
-
-    #     # print(Lefts.rhou[0])
-    #     # print(Lefts.rhou.shape)
-    #     # print(Rights.rhou[0])
-    #     find_nearest(Lefts.rhoY,0.99632266463501573)
-    #     truefalse = False
-
-    # None 
     if split_step == 1:
         if ud.bdry_type[split_step] == BdryType.WALL:
-            # print(Lefts.rhou.shape)
-            rhou_wall = 0.
-            # if truefalse == True:
-            #     print(Lefts.rhoY[igx-1,:])
-                
-            #     truefalse = False
-            # print(Lefts.rhou[:,0])
-            # print(Rights.rhou[:,0])
-            Lefts.rhou[igx-2,:] = Rights.rhou[igx-1,:] = rhou_wall
-            Lefts.rhoY[igx-2,:] = Rights.rhoY[igx-1,:] = Rights.rho[igx-1,:] * ud.stratification(0.0)
 
-            Lefts.rho[igx-2,:] = Rights.rho[igx-1,:]
-            Lefts.rhov[igx-2,:] = Rights.rhov[igx-1,:]
-            Lefts.rhow[igx-2,:] = Rights.rhow[igx-1,:]
-            Lefts.rhoe[igx-2,:] = Rights.rhoe[igx-1,:]
-            # print(Lefts.rhoY[igx-2,:])
+            left_inner = (slice(None),slice(igy,igy+1))
+            left_ghost = (slice(None),slice(igy-1,igy))
+
+            right_inner = (slice(None),slice(-igy-1,-igy))
+            right_ghost = (slice(None),slice(-igy,-igy+1))
+
+            rhou_wall = 0.
+            # Lefts.rhou[left_ghost] = Rights.rhou[left_inner] = rhou_wall
+            Lefts.rhoY[left_ghost] = Rights.rhoY[left_inner] = Rights.rho[left_inner] * ud.stratification(0.0)
+
+            Lefts.rho[left_ghost] = Rights.rho[left_inner]
+            Lefts.rhov[left_ghost] = Rights.rhov[left_inner]
+            Lefts.rhow[left_ghost] = Rights.rhow[left_inner]
+            Lefts.rhoe[left_ghost] = Rights.rhoe[left_inner]
+            Lefts.rhoX[left_ghost] = Rights.rhoX[left_inner]
+            # print(Lefts.rhoY[left_ghost])
             # print(Rights.rho[0,:])
 
-            Rights.rho[-igx-1,:] = Lefts.rho[-igx-2,:]
-            Rights.rhou[-igx-1,:] = -2. * Lefts.rhou[-igx-2,:]
-            Rights.rhov[-igx-1,:] = Lefts.rhov[-igx-2,:]
-            Rights.rhow[-igx-1,:] = Lefts.rhow[-igx-2,:]
-            Rights.rhoe[-igx-1,:] = Lefts.rhoe[-igx-2,:]
-            Rights.rhoY[-igx-1,:] = Lefts.rhoY[-igx-2,:]
+            Rights.rho[right_ghost] = Lefts.rho[right_inner]
+            Rights.rhou[right_ghost] = -1. * Lefts.rhou[right_inner]
+            Rights.rhov[right_ghost] = Lefts.rhov[right_inner]
+            Rights.rhow[right_ghost] = Lefts.rhow[right_inner]
+            Rights.rhoe[right_ghost] = Lefts.rhoe[right_inner]
+            Rights.rhoY[right_ghost] = Lefts.rhoY[right_inner]
 
             # print(Lefts.rhoY[:,-igx-2])
             
     else:
-        # print('split_step == ', split_step)
         if ud.bdry_type[split_step] == BdryType.WALL:
 
-            # print(truefalse)
-            # if truefalse == True:
-            #     print(Lefts.rhou[igx-1,:])
-                
-                # truefalse = False
-            Lefts.rho[igx-1,:] = Rights.rho[:,igx-2]
-            Lefts.rhou[igx-1,:] = -1. * Rights.rhou[:,igx-2]
-            Lefts.rhov[igx-1,:] = Rights.rhov[:,igx-2]
-            Lefts.rhow[igx-1,:] = Rights.rhow[:,igx-2]
-            Lefts.rhoe[igx-1,:] = Rights.rhoe[:,igx-2]
-            Lefts.rhoY[igx-1,:] = Rights.rhoY[:,igx-2]
+            assert(0) # INCOMPLETE!!!
+            Lefts.rho[left_inner] = Rights.rho[:,igx-2]
+            Lefts.rhou[left_inner] = -1. * Rights.rhou[:,igx-2]
+            Lefts.rhov[left_inner] = Rights.rhov[:,igx-2]
+            Lefts.rhow[left_inner] = Rights.rhow[:,igx-2]
+            Lefts.rhoe[left_inner] = Rights.rhoe[:,igx-2]
+            Lefts.rhoY[left_inner] = Rights.rhoY[:,igx-2]
 
             # print("#################### TRUE ########################")
-            Rights.rho[-igx-1,:] = Lefts.rho[:,-igx-2]
-            Rights.rhou[-igx-1,:] = -1. * Lefts.rhou[:,-igx-2]
-            Rights.rhov[-igx-1,:] = Lefts.rhov[:,-igx-2]
-            Rights.rhow[-igx-1,:] = Lefts.rhow[:,-igx-2]
-            Rights.rhoe[-igx-1,:] = Lefts.rhoe[:,-igx-2]
-            Rights.rhoY[-igx-1,:] = Lefts.rhoY[:,-igx-2]
-            # print(Rights.rhoY[-igx-1,:])
+            Rights.rho[right_ghost] = Lefts.rho[:,-igx-2]
+            Rights.rhou[right_ghost] = -1. * Lefts.rhou[:,-igx-2]
+            Rights.rhov[right_ghost] = Lefts.rhov[:,-igx-2]
+            Rights.rhow[right_ghost] = Lefts.rhow[:,-igx-2]
+            Rights.rhoe[right_ghost] = Lefts.rhoe[:,-igx-2]
+            Rights.rhoY[right_ghost] = Lefts.rhoY[:,-igx-2]
+            # print(Rights.rhoY[right_ghost])
