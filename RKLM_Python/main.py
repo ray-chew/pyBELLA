@@ -13,8 +13,8 @@ from physics.low_mach.second_projection import euler_backward_non_advective_impl
 from inputs.enum_bdry import BdryType
 from physics.low_mach.mpv import MPV, acoustic_order
 
-from inputs.travelling_vortex_3D_48 import UserData, sol_init
-# from inputs.acoustic_wave_high import UserData, sol_init
+# from inputs.travelling_vortex_3D_48 import UserData, sol_init
+from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
@@ -77,77 +77,77 @@ step = 0
 
 tout = ud.tout
 while ((t < tout) and (step < ud.stepmax)):
-    while ((t < tout) and (step < ud.stepmax)):
+    
+    dt = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
+    # print('dt = ', dt)
+    Sol0 = deepcopy(Sol)
 
-        dt = dynamic_timestep(Sol,elem,ud,th, step)
-        # print('dt = ', dt)
-        Sol0 = deepcopy(Sol)
+    if step < 10:
+        label = '00' + str(step)
+    elif step < 100:
+        label = '0' + str(step)
+    else:
+        label = str(step)
+    
+    print("---------------------------------------")
+    print("half-time prediction of advective flux")
+    print("---------------------------------------")
+    
+    ud.nonhydrostasy = nonhydrostasy(ud,t)
+    ud.compressibility = compressibility(ud,t)
+    ud.acoustic_order = acoustic_order(ud,t,dt)
 
-        if step < 10:
-            label = '00' + str(step)
-        elif step < 100:
-            label = '0' + str(step)
-        else:
-            label = str(step)
-        
-        print("---------------------------------------")
-        print("half-time prediction of advective flux")
-        print("---------------------------------------")
-        
-        ud.nonhydrostasy = nonhydrostasy(ud,t)
-        ud.compressibility = compressibility(ud,t)
-        ud.acoustic_order = acoustic_order(ud,t,dt)
+    writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_flux')
+    recompute_advective_fluxes(flux, Sol)
 
-        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_flux')
-        recompute_advective_fluxes(flux, Sol)
+    base_filename = '/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_acoustic_wave_high/low_Mach_gravity_comp/'
+    # flux[0].rhoY = h5py.File(base_filename + 'flux_x/rhoYu_001.h5', 'r')['Data-Set-2'][:].T
+    
+    writer.populate(str(label)+'_before_advect','rhoYu',flux[0].rhoY)
+    writer.populate(str(label)+'_before_advect','rhoYv',flux[1].rhoY)
+    writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_advect')
+    advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, writer)
+    writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_advect')
 
-        base_filename = '/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_acoustic_wave_high/low_Mach_gravity_comp/'
-        # flux[0].rhoY = h5py.File(base_filename + 'flux_x/rhoYu_001.h5', 'r')['Data-Set-2'][:].T
-        
-        writer.populate(str(label)+'_before_advect','rhoYu',flux[0].rhoY)
-        writer.populate(str(label)+'_before_advect','rhoYv',flux[1].rhoY)
-        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_advect')
-        advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, writer)
-        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_advect')
+    mpv.p2_nodes0 = mpv.p2_nodes.copy()
+    euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+    writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaexp')
 
-        mpv.p2_nodes0 = mpv.p2_nodes.copy()
-        euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
-        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaexp')
+    euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, writer=writer, label=label)
+    writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaimp')
+    mpv.p2_nodes = mpv.p2_nodes0.copy()
+    recompute_advective_fluxes(flux, Sol)
+    writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_half_step')
 
-        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, writer=writer, label=label)
-        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaimp')
-        mpv.p2_nodes = mpv.p2_nodes0.copy()
-        recompute_advective_fluxes(flux, Sol)
-        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_half_step')
+    print("-----------------------------------------------")
+    print("full-time step with predicted advective flux")
+    print("-----------------------------------------------")
+    Sol = Sol0
 
-        print("-----------------------------------------------")
-        print("full-time step with predicted advective flux")
-        print("-----------------------------------------------")
-        Sol = Sol0
+    # flux[0].rhoY = h5py.File(base_filename + 'flux_x/rhoYu_005.h5', 'r')['Data-Set-2'][:].T
+    # flux[1].rhoY = h5py.File(base_filename + 'flux_y/rhoYv_005.h5', 'r')['Data-Set-2'][:].T
+    writer.populate(str(label)+'_after_half_step','rhoYu',flux[0].rhoY)
+    writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY)
+    euler_forward_non_advective(Sol, mpv, elem, node, 0.5*dt, ud, th)
+    # Sol.rhou = h5py.File(base_filename + 'rhou/rhou_006.h5', 'r')['Data-Set-2'][:]
+    writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_efna')
+    advect(Sol, flux, dt, elem, step%2, ud, th, mpv)
 
-        # flux[0].rhoY = h5py.File(base_filename + 'flux_x/rhoYu_005.h5', 'r')['Data-Set-2'][:].T
-        # flux[1].rhoY = h5py.File(base_filename + 'flux_y/rhoYv_005.h5', 'r')['Data-Set-2'][:].T
-        writer.populate(str(label)+'_after_half_step','rhoYu',flux[0].rhoY)
-        writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY)
-        euler_forward_non_advective(Sol, mpv, elem, node, 0.5*dt, ud, th)
-        # Sol.rhou = h5py.File(base_filename + 'rhou/rhou_006.h5', 'r')['Data-Set-2'][:]
-        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_efna')
-        advect(Sol, flux, dt, elem, step%2, ud, th, mpv)
+    writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_advect')
 
-        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_advect')
+    euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+    writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
 
-        euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
-        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
+    euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0)
+    writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
 
-        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0)
-        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
+    # synchronise_variables(mpv, Sol, elem, node, ud, th)
+    t += dt
+    step += 1
+    dt_factor = 1.0
 
-        # synchronise_variables(mpv, Sol, elem, node, ud, th)
-        t += dt
-        step += 1
-        dt_factor = 1.0
+    print("############################################################################################")
+    print("step %i done, t = %.12f, dt = %.12f" %(step, t, dt))
+    print("############################################################################################")
 
-        print("############################################################################################")
-        print("step %i done, t = %.6f, dt = %.6f" %(step, t, dt))
-        print("############################################################################################")
-    tout += 1
+    # break
