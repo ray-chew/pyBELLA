@@ -202,8 +202,8 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # mpv.wplus[1][...] = h5py.File(base_filename + 'wplusy/wplusy_004.h5', 'r')['Data-Set-2'][:]
     if writer != None:
         writer.populate(str(label)+'_after_ebnaimp','hcenter',mpv.wcenter)
-        writer.populate(str(label)+'_ebnaimp','wplusx',mpv.wplus[0])
-        writer.populate(str(label)+'_ebnaimp','wplusy',mpv.wplus[1])
+        writer.populate(str(label)+'_after_ebnaimp','wplusx',mpv.wplus[0])
+        writer.populate(str(label)+'_after_ebnaimp','wplusy',mpv.wplus[1])
 
     rhs[...], rhs_max = divergence_nodes(rhs,elem,node,Sol,ud)
     rhs /= dt
@@ -237,7 +237,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # if writer != None:
     #     writer.populate('after_ebnaimp','lap_test',lap_test)
 
-    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-6,maxiter=500)
+    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-8,maxiter=500)
 
     p2_full = np.zeros(nc).squeeze()
     p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
