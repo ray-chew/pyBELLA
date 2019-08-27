@@ -2,7 +2,7 @@ import numpy as np
 
 machine_epsilon = np.finfo(float).eps
 
-def dynamic_timestep(Sol, elem, ud, th, step):
+def dynamic_timestep(Sol, time, time_output, elem, ud, th, step):
     global machine_epsilon
 
     gamm = th.gamm
@@ -38,7 +38,11 @@ def dynamic_timestep(Sol, elem, ud, th, step):
         dtz = CFL * elem.dz / wpc_max
 
         dt_cfl = min(min(dtx, dty), dtz)
-        dt = min(dt_cfl, ud.dtfixed0 + min(step, 1) * (ud.dtfixed - ud.dtfixed0))
+        dt = min(dt_cfl, ud.dtfixed0 + min(step, 1.) * (ud.dtfixed - ud.dtfixed0))
+
+        if (2.0*dt >= time_output - time):
+            dt = 0.5 * (time_output - time) + machine_epsilon
+
 
         return dt
     else:
@@ -47,7 +51,15 @@ def dynamic_timestep(Sol, elem, ud, th, step):
         dtz = CFL * elem.dz / w_max
 
         dt_cfl = min(min(dtx, dty), dtz)
-        dt = min(dt_cfl, ud.dtfixed0 + min(step, 1) * (ud.dtfixed - ud.dtfixed0))
+        dt = min(dt_cfl, ud.dtfixed0 + min(step, 1.) * (ud.dtfixed - ud.dtfixed0))
         dt *= min(float(step+1), 1.0)
 
+        if ((2.0*dt) >= (time_output - time)):
+            dt = 0.5 * (time_output - time) + machine_epsilon
+
+        # if step == 38:
+        #     dt = 0.0000668354011612
+        # if step == 39:
+        #     dt = 0.0000668354011612
+            
         return dt
