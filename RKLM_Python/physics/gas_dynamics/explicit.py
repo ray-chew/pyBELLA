@@ -25,14 +25,14 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
 
     if (odd):
         for split in range(elem.ndim):
-            lmbda = time_step / elem.dx
+            # i_split = elem.ndim - 1 - split
+            lmbda = time_step / elem.dxyz[split]
             Sol.flip()
             explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
     else:
         for i_split in range(elem.ndim):
             split = elem.ndim - 1 - i_split
-            lmbda = time_step / elem.dx
-            # print("Done - stage = 0, split = ", split)
+            lmbda = time_step / elem.dxyz[split]
             explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, writer)
             Sol.flip()
 
@@ -40,14 +40,14 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
     if (odd):
         for i_split in range(elem.ndim):
             split = elem.ndim - 1 - i_split
-            lmbda = time_step / elem.dx
+            lmbda = time_step / elem.dxyz[split]
             explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
             Sol.flip()
     else:
         for split in range(elem.ndim):
-            lmbda = time_step / elem.dx
+            # i_split = elem.ndim - 1 - split
+            lmbda = time_step / elem.dxyz[split]
             Sol.flip()
-            # print("Done - stage = 1, split = ", split)
             explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, writer)
             
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
