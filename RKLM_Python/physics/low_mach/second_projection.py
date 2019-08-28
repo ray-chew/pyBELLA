@@ -237,7 +237,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # if writer != None:
     #     writer.populate('after_ebnaimp','lap_test',lap_test)
 
-    p2,_ = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-8,maxiter=500)
+    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-6,maxiter=500)
+
+    print("info = ", info)
 
     p2_full = np.zeros(nc).squeeze()
     p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
