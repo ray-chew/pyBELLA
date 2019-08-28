@@ -169,7 +169,8 @@ class UserData(object):
         # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[1] = -1.0
 
-        self.stepmax = 10000
+        # self.stepmax = 10000
+        self.stepmax = 6
 
         self.write_stdout = True
         self.write_stdout_period = 1

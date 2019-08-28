@@ -163,7 +163,7 @@ class UserData(object):
         self.flux_correction_max_iterations = 6000
         self.second_projection_max_iterations = 6000
 
-        self.initial_projection = True
+        self.initial_projection = False
         self.initial_impl_Euler = False
 
         self.column_preconditionr = False
@@ -176,7 +176,7 @@ class UserData(object):
         # self.tout[0] =  1.0
         # self.tout[1] = -1.0
 
-        self.stepmax = 1
+        self.stepmax = 40
         # self.stepmax = 20000
 
         self.write_stdout = True

@@ -504,9 +504,7 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
     igx = elem.igx
     igy = elem.igy
 
-    icx = elem.icx
     icxn = node.icx
-    icy = elem.icy
     icyn = node.icy
 
     iicxn = icxn - (2 * igx)
@@ -653,12 +651,14 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
                 hplusy_topleft = 0. 
                 hplusx_topright = 0.
                 hplusy_topright = 0.
+                
 
             if y_wall and (cnt_y == (iicyn - 1)):
                 hplusx_botleft = 0.
                 hplusy_botleft = 0.  
                 hplusx_botright = 0.
-                hplusy_botright = 0.                             
+                hplusy_botright = 0.
+                                 
 
             dp2dxdy1 = (midmid - midleft) - (topmid - topleft)
             dp2dxdy1 *= nine_pt

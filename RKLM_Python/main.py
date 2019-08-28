@@ -13,9 +13,9 @@ from physics.low_mach.second_projection import euler_backward_non_advective_impl
 from inputs.enum_bdry import BdryType
 from physics.low_mach.mpv import MPV, acoustic_order
 
-# from inputs.travelling_vortex_3D_48 import UserData, sol_init
-from inputs.acoustic_wave_high import UserData, sol_init
-# from inputs.internal_long_wave import UserData, sol_init
+from inputs.travelling_vortex_3D_48 import UserData, sol_init
+# from inputs.acoustic_wave_high import UserData, sol_init
+from inputs.internal_long_wave import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
 from copy import deepcopy
@@ -64,7 +64,7 @@ Sol = deepcopy(Sol0)
 dt_factor = 0.5 if ud.initial_impl_Euler == True else 1.0
 
 writer = io(ud)
-writer.write_all(Sol0,mpv,elem,node,th,'000')
+writer.write_all(Sol,mpv,elem,node,th,'000_ic')
 # Explicit_malloc
 # recovery_malloc
 
@@ -91,6 +91,7 @@ while ((t < tout) and (step < ud.stepmax)):
     
     print("---------------------------------------")
     print("half-time prediction of advective flux")
+    print("dt = %.16f" %dt)
     print("---------------------------------------")
     
     ud.nonhydrostasy = nonhydrostasy(ud,t)
