@@ -1,6 +1,6 @@
 import numpy as np
 from inputs.enum_bdry import BdryType
-from scipy import sparse
+from scipy import sparse, signal
 from itertools import product
 
 def stencil_9pt_operator(elem,node,mpv,ud):
@@ -520,6 +520,7 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
 
     hplusx = mpv.wplus[1][inner_domain].reshape(-1,)
     hplusy = mpv.wplus[0][inner_domain].reshape(-1,)
+
     hcenter = mpv.wcenter[inner_domain].reshape(-1,)
 
     oodx2 = 0.5 / (dx**2)
@@ -543,6 +544,21 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
             ne_topright = idx - iicxn 
             ne_botleft = idx - 1
             ne_botright = idx
+
+            # ne_topleft = idx - iicxn
+            # ne_topright = idx - iicxn + 1
+            # ne_botleft = idx
+            # ne_botright = idx +1
+
+            # ne_topright = idx
+            # ne_topleft = idx - 1
+            # ne_botleft = idx + iicxn - 1
+            # ne_botright = idx + iicxn
+
+            # ne_topleft = idx
+            # ne_topright = idx + 1
+            # ne_botleft = idx + iicxn
+            # ne_botright = idx + iicxn + 1
 
             # get indices of the 9pt stencil
             topleft = idx - iicxn - 1
@@ -634,30 +650,46 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
             hplusy_topright = hplusy[ne_topright]
             hplusy_botright = hplusy[ne_botright]
 
+            right = (midright - midmid)
+            left = (midmid - midleft)
+            top = (midmid - topmid)
+            bot = (botmid - midmid)
+
             if x_wall and (cnt_x == 0):
-                hplusx_topleft = 0.
-                hplusy_topleft = 0. 
-                hplusx_botleft = 0.
-                hplusy_botleft = 0.
+                hplusx_topleft *= 0.
+                hplusy_topleft *= 0.
+                hplusx_botleft *= 0.
+                hplusy_botleft *= 0.
+            #     # top = 0.
+            #     # bot = 0.
+            #     # right = 0.
+            #     # left= 0.
+            #     # print(hplusx_topright)
+            #     # print(hplusx_botright)
 
             if x_wall and (cnt_x == (iicxn - 1)):
-                hplusx_topright = 0.
-                hplusy_topright = 0.
-                hplusx_botright = 0.
-                hplusy_botright = 0.
+                hplusx_topright *= 0.
+                hplusy_topright *= 0.
+                hplusx_botright *= 0.
+                hplusy_botright *= 0.
+                # top = 0.
+                # bot = 0.
+                # left = 0.
+                # right = 0.
 
             if y_wall and (cnt_y == 0):
                 hplusx_topleft = 0.
                 hplusy_topleft = 0. 
                 hplusx_topright = 0.
                 hplusy_topright = 0.
+                assert(0)
                 
-
             if y_wall and (cnt_y == (iicyn - 1)):
                 hplusx_botleft = 0.
                 hplusy_botleft = 0.  
                 hplusx_botright = 0.
                 hplusy_botright = 0.
+                assert(0)
                                  
 
             dp2dxdy1 = (midmid - midleft) - (topmid - topleft)
@@ -678,16 +710,26 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
             #     print((x_wall) and (cnt_x))
             #     print(x_wall)
             #     print("------------------------")
-            
-            lap[idx] = - hplusx_topleft * oodx2 * ((midmid - midleft) - dp2dxdy1) \
-                    -  hplusy_topleft * oody2 * ((midmid - topmid) - dp2dxdy1) \
-                    +  hplusx_topright * oodx2 * ((midright - midmid) - dp2dxdy2) \
-                    -  hplusy_topright * oody2 * ((midmid - topmid) + dp2dxdy2) \
-                    -  hplusx_botleft * oodx2 * ((midmid - midleft) + dp2dxdy3) \
-                    +  hplusy_botleft * oody2 * ((botmid - midmid) - dp2dxdy3) \
-                    +  hplusx_botright * oodx2 * ((midright - midmid) + dp2dxdy4) \
-                    +  hplusy_botright * oody2 * ((botmid - midmid) + dp2dxdy4) \
-                    +  hcenter[idx] * p[idx]
+
+
+            lap[idx] = - hplusx_topleft * oodx2 * (left - dp2dxdy1) \
+                    -  hplusy_topleft * oody2 * (top - dp2dxdy1) \
+                    +  hplusx_topright * oodx2 * (right - dp2dxdy2) \
+                    -  hplusy_topright * oody2 * (top + dp2dxdy2) \
+                    -  hplusx_botleft * oodx2 * (left + dp2dxdy3) \
+                    +  hplusy_botleft * oody2 * (bot - dp2dxdy3) \
+                    +  hplusx_botright * oodx2 * (right + dp2dxdy4) \
+                    +  hplusy_botright * oody2 * (bot + dp2dxdy4) \
+                    +  hcenter[idx] * p[idx]            
+            # lap[idx] = - hplusx_topleft * oodx2 * ((midmid - midleft) - dp2dxdy1) \
+            #         -  hplusy_topleft * oody2 * ((midmid - topmid) - dp2dxdy1) \
+            #         +  hplusx_topright * oodx2 * ((midright - midmid) - dp2dxdy2) \
+            #         -  hplusy_topright * oody2 * ((midmid - topmid) + dp2dxdy2) \
+            #         -  hplusx_botleft * oodx2 * ((midmid - midleft) + dp2dxdy3) \
+            #         +  hplusy_botleft * oody2 * ((botmid - midmid) - dp2dxdy3) \
+            #         +  hplusx_botright * oodx2 * ((midright - midmid) + dp2dxdy4) \
+            #         +  hplusy_botright * oody2 * ((botmid - midmid) + dp2dxdy4) \
+            #         +  hcenter[idx] * p[idx]
 
             if cnt_x == 0 and x_wall:
                 lap[idx] *= 2.
@@ -706,3 +748,47 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
             
         return lap
     return lap2D_3try
+
+
+def precon_diag_prepare(mpv, elem, node, ud):
+    dx = node.dx
+    dy = node.dy
+
+    x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
+    y_periodic = ud.bdry_type[1] == BdryType.PERIODIC
+
+    igx = node.igx
+    igy = node.igy
+
+    idx_e = (slice(igx - x_periodic,-igx + x_periodic - 1),slice(igy - y_periodic, -igy + y_periodic - 1))
+    idx_periodic = [slice(None)] * elem.ndim
+
+    for dim in range(elem.ndim):
+        if ud.bdry_type[dim] == BdryType.PERIODIC:
+            idx_periodic[dim] = slice(1,-1)
+    idx_periodic = tuple(idx_periodic)
+
+    idx_n = (slice(igx,-igx), slice(igy,-igy))
+    idx_nm1 = (slice(igx-1,-igx+1), slice(igy-1,-igy+1))
+
+    hplusx = mpv.wplus[0]
+    hplusy = mpv.wplus[1]
+
+    nine_pt = 0.25 * (2.0) * 1.0
+
+    wx = (1.0 - nine_pt) / (dx**2)
+    wy = (1.0 - nine_pt) / (dy**2)
+
+    diag_kernel = np.array([[1.,1.],[1.,1.]])
+
+    diag = np.zeros((node.sc)).squeeze()
+    diag[idx_n] = -wx * signal.convolve2d(hplusx[idx_e],diag_kernel,mode='full')[idx_periodic] 
+    diag[idx_n] -= wy * signal.convolve2d(hplusy[idx_e],diag_kernel,mode='full')[idx_periodic]
+
+    diag[idx_n] += mpv.wcenter[idx_n]
+    diag[idx_n] = 1.0 / diag[idx_n]
+
+    return diag
+
+
+    

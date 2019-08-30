@@ -15,7 +15,7 @@ from physics.low_mach.mpv import MPV, acoustic_order
 
 from inputs.travelling_vortex_3D_48 import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
-from inputs.internal_long_wave import UserData, sol_init
+# from inputs.internal_long_wave import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
 from copy import deepcopy
@@ -101,7 +101,7 @@ while ((t < tout) and (step < ud.stepmax)):
     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_flux')
     recompute_advective_fluxes(flux, Sol)
 
-    base_filename = '/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_acoustic_wave_high/low_Mach_gravity_comp/'
+    base_filename = '/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_internal_long_wave/low_Mach_gravity_comp/'
     # flux[0].rhoY = h5py.File(base_filename + 'flux_x/rhoYu_001.h5', 'r')['Data-Set-2'][:].T
     
     writer.populate(str(label)+'_before_advect','rhoYu',flux[0].rhoY)
@@ -110,28 +110,39 @@ while ((t < tout) and (step < ud.stepmax)):
     advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, writer)
     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_advect')
 
-    mpv.p2_nodes0 = mpv.p2_nodes.copy()
+    mpv.p2_nodes0 = deepcopy(mpv.p2_nodes)
     euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaexp')
 
     euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, writer=writer, label=label)
     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaimp')
-    mpv.p2_nodes = mpv.p2_nodes0.copy()
     recompute_advective_fluxes(flux, Sol)
-    writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_half_step')
+    mpv.p2_nodes = deepcopy(mpv.p2_nodes0)
 
     print("-----------------------------------------------")
     print("full-time step with predicted advective flux")
     print("-----------------------------------------------")
-    Sol = Sol0
 
     # flux[0].rhoY = h5py.File(base_filename + 'flux_x/rhoYu_005.h5', 'r')['Data-Set-2'][:].T
     # flux[1].rhoY = h5py.File(base_filename + 'flux_y/rhoYv_005.h5', 'r')['Data-Set-2'][:].T
     writer.populate(str(label)+'_after_half_step','rhoYu',flux[0].rhoY)
     writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY)
+
+    Sol = deepcopy(Sol0)
+    # if step == 1:
+    # Sol.rhou = h5py.File(base_filename + 'rhou/rhou_'+str(label)+'_after_half_step.h5', 'r')['Data-Set-2'][:]
+    # Sol.rhov = h5py.File(base_filename + 'rhov/rhov_'+str(label)+'_after_half_step.h5', 'r')['Data-Set-2'][:]
+    # Sol.rho = h5py.File(base_filename + 'rho/rho_'+str(label)+'_after_half_step.h5', 'r')['Data-Set-2'][:]
+    # Sol.rhoY = h5py.File(base_filename + 'rhoY/rhoY_'+str(label)+'_after_half_step.h5', 'r')['Data-Set-2'][:]
+
+    writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_half_step')
+
     euler_forward_non_advective(Sol, mpv, elem, node, 0.5*dt, ud, th)
-    # Sol.rhou = h5py.File(base_filename + 'rhou/rhou_006.h5', 'r')['Data-Set-2'][:]
+    # buoy = h5py.File(base_filename + 'buoy/buoy_'+str(label)+'_after_efna.h5', 'r')['Data-Set-2'][:]
+    # Sol.rhoX = buoy * Sol.rho
+
     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_efna')
+
     advect(Sol, flux, dt, elem, step%2, ud, th, mpv)
 
     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_advect')

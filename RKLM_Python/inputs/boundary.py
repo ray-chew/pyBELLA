@@ -56,7 +56,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     w = Sol.rhow[nsource] / Sol.rho[nsource]
                     X = Sol.rhoX[nsource] / Sol.rho[nsource]
 
-                    rhoYv_image = Sol.rhov[nsource] * Sol.rhoY[nsource] / Sol.rho[nsource]
+                    rhoYv_image = -Sol.rhov[nsource] * Sol.rhoY[nsource] / Sol.rho[nsource]
 
                     S = 1. / ud.stratification(elem.y[nimage[1]])
 
@@ -66,7 +66,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     rho = rhoY * S
                     p = rhoY**th.gamm
                     if np.sign(direction) == 1:
-                        v = -rhoYv_image / rhoY
+                        v = rhoYv_image / rhoY
                     else:
                         v = -Sol.rhov[nsource] / Sol.rho[nsource]
 
