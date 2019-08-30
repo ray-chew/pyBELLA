@@ -61,5 +61,10 @@ def dynamic_timestep(Sol, time, time_output, elem, ud, th, step):
         #     dt = 0.0000668354011612
         # if step == 39:
         #     dt = 0.0000668354011612
+
+        # if step == 1:
+        #     dt = 71.5337121335972483
+        # if step == 2:
+        #     dt = 71.3741788666122119
             
         return dt
