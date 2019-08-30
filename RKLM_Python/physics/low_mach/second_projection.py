@@ -1,12 +1,12 @@
 from inputs.enum_bdry import BdryType
 from inputs.boundary import set_explicit_boundary_data, set_ghostnodes_p2
-from physics.low_mach.laplacian import stencil_9pt_3rd_try, stencil_9pt_2nd_try, stencil_9pt
+from physics.low_mach.laplacian import stencil_9pt_3rd_try, stencil_9pt_2nd_try, stencil_9pt, precon_diag_prepare
 from scipy import signal
 import numpy as np
 from itertools import product
 
-from scipy.sparse.linalg import LinearOperator, bicgstab, gmres
-from scipy.sparse import eye
+from scipy.sparse.linalg import LinearOperator, spsolve, bicgstab, gmres
+from scipy.sparse import eye, diags
 import matplotlib.pyplot as plt
 
 from debug import find_nearest
@@ -70,13 +70,13 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
 
     dSdy = mpv.HydroState_n.S0[0][igy-1:-igy+1]
     dSdy = signal.convolve(dSdy,[1.,-1.],mode='valid').reshape(-1,1)
-    dSdy = np.repeat(dSdy,elem.icx-igx,axis=1)
-    # dSdy = dSdy[inner_idx] / dy
-    # print("dSdy = ", dSdy)
+    dSdy = np.repeat(dSdy,elem.icx-igx,axis=1) / dx
+    print("dSdy = ", dSdy[:,0])
     S0c = mpv.HydroState.S0[0][igy-1:-igy+1].reshape(-1,1)
     S0c = np.repeat(S0c,elem.icx-igx,axis=1)
+    # S0c = S0c[:,::-1]
     # S0c = S0c[inner_idx]
-    # print("S0c = ", S0c)
+    print("S0c = ", S0c[:,0])
     # print(Sol.rhoX[inner_idx].shape)
     v = Sol.rhou / Sol.rho
     v = v[inner_idx]
@@ -90,6 +90,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     rhoY = Sol.rhoY**(th.gamm - 2.0)    
     dpidP_kernel = np.array([[1.,1.],[1.,1.]])
     dpidP = (th.gm1 / ud.Msq) * signal.convolve2d(rhoY, dpidP_kernel, mode='valid') / dpidP_kernel.sum()
+    # dpidP = dpidP[:,::-1]
     
     # Sol.rhou[inner_idx] = Sol.rhou[inner_idx] + dt * ( -1. * rhoYovG * dpdx + coriolis * Sol.rhow[inner_idx])
 
@@ -100,6 +101,9 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     Sol.rhou[inner_idx] = Sol.rhou[inner_idx] + dt * ( -1. * rhoYovG * dpdx + (g/Msq) * dbuoy) * nonhydro
 
     Sol.rhow[inner_idx] = Sol.rhow[inner_idx] - dt * coriolis * drhou
+
+    print("time_offset_expl = ", time_offset_expl)
+    print("dt = ", dt)
 
     Sol.rhoX[inner_idx] = (Sol.rho[inner_idx] * (Sol.rho[inner_idx] / Sol.rhoY[inner_idx] - S0c)) + time_offset_expl * dt * (-v * dSdy) * Sol.rho[inner_idx]
 
@@ -214,12 +218,16 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     x_wall = ud.bdry_type[0] == BdryType.WALL
     y_wall = ud.bdry_type[1] == BdryType.WALL
 
+    # diag_inv = precon_diag_prepare(mpv, elem, node, ud)
+    # rhs *= diag_inv
+
     if y_wall:
         rhs[:,2] *= 2.
         rhs[:,-3] *= 2.
     if x_wall:
         rhs[2,:] *= 2.
         rhs[-3,:] *= 2.
+
 
     # rhs = h5py.File(base_filename + 'rhs_nodes/rhs_nodes_004.h5','r')['Data-Set-2']
     if writer != None:
@@ -230,23 +238,27 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     sh = (ud.inx)*(ud.iny)
 
-    lap2D = LinearOperator((sh,sh),matvec=lap2D)
+    lap2D = LinearOperator((sh,sh),lap2D)
+    
+    # print(lap2D_sp)
+    # M_x = lambda x: spsolve(lap2D_sp, x)
+    # M = LinearOperator((sh, sh), M_x)
+    # print(M.shape)
     # lap_test = np.zeros_like(mpv.wcenter)
     # lap_test[node.igx:-node.igx,node.igy:-node.igy] = lap2D(p2.reshape(-1,)).reshape(257,22)
 
     # if writer != None:
     #     writer.populate('after_ebnaimp','lap_test',lap_test)
 
-    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-6,maxiter=500)
+    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-8,maxiter=6000)
 
-    print("info = ", info)
+    print("Convergence info = ", info)
 
     p2_full = np.zeros(nc).squeeze()
     p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
 
     # p2_full = h5py.File(base_filename + 'pnew/p2_full_004.h5', 'r')['Data-Set-2'][:]
     if writer != None:
-        # print("Yes?!")
         writer.populate(str(label)+'_after_ebnaimp','p2_full',p2_full)
 
     mpv.dp2_nodes[...] = np.copy(p2_full)
