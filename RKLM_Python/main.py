@@ -14,13 +14,14 @@ from inputs.enum_bdry import BdryType
 from physics.low_mach.mpv import MPV, acoustic_order
 
 from inputs.travelling_vortex_3D_48 import UserData, sol_init
-# from inputs.acoustic_wave_high import UserData, sol_init
+from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
 from copy import deepcopy
 
 from debug import find_nearest
+from time import time
 import h5py
 
 np.set_printoptions(precision=18)
@@ -76,6 +77,7 @@ step = 0
 # print(Sol.rhou[0])
 
 tout = ud.tout
+tic = time()
 while ((t < tout) and (step < ud.stepmax)):
     
     dt = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
@@ -163,3 +165,5 @@ while ((t < tout) and (step < ud.stepmax)):
     print("############################################################################################")
 
     # break
+toc = time()
+print("Time taken = %.6f" %(toc-tic))

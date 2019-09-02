@@ -71,12 +71,12 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     dSdy = mpv.HydroState_n.S0[0][igy-1:-igy+1]
     dSdy = signal.convolve(dSdy,[1.,-1.],mode='valid').reshape(-1,1)
     dSdy = np.repeat(dSdy,elem.icx-igx,axis=1) / dx
-    print("dSdy = ", dSdy[:,0])
+    # print("dSdy = ", dSdy[:,0])
     S0c = mpv.HydroState.S0[0][igy-1:-igy+1].reshape(-1,1)
     S0c = np.repeat(S0c,elem.icx-igx,axis=1)
     # S0c = S0c[:,::-1]
     # S0c = S0c[inner_idx]
-    print("S0c = ", S0c[:,0])
+    # print("S0c = ", S0c[:,0])
     # print(Sol.rhoX[inner_idx].shape)
     v = Sol.rhou / Sol.rho
     v = v[inner_idx]
@@ -218,23 +218,22 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     x_wall = ud.bdry_type[0] == BdryType.WALL
     y_wall = ud.bdry_type[1] == BdryType.WALL
 
-    # diag_inv = precon_diag_prepare(mpv, elem, node, ud)
-    # rhs *= diag_inv
+    diag_inv = precon_diag_prepare(mpv, elem, node, ud)
+    rhs *= diag_inv
 
-    if y_wall:
-        rhs[:,2] *= 2.
-        rhs[:,-3] *= 2.
-    if x_wall:
-        rhs[2,:] *= 2.
-        rhs[-3,:] *= 2.
-
+    # if y_wall:
+    #     rhs[:,2] *= 2.
+    #     rhs[:,-3] *= 2.
+    # if x_wall:
+    #     rhs[2,:] *= 2.
+    #     rhs[-3,:] *= 2.
 
     # rhs = h5py.File(base_filename + 'rhs_nodes/rhs_nodes_004.h5','r')['Data-Set-2']
     if writer != None:
         writer.populate(str(label)+'_after_ebnaimp','rhs_nodes',rhs)
 
     # lap2D = stencil_9pt_2nd_try(rhs,elem,node,mpv,ud)
-    lap2D = stencil_9pt_3rd_try(elem,node,mpv,ud)
+    lap2D = stencil_9pt_3rd_try(elem,node,mpv,ud,diag_inv)
 
     sh = (ud.inx)*(ud.iny)
 
@@ -250,7 +249,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # if writer != None:
     #     writer.populate('after_ebnaimp','lap_test',lap_test)
 
-    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-8,maxiter=6000)
+    
+
+    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-8,maxiter=50)
 
     print("Convergence info = ", info)
 
