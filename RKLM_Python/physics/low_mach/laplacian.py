@@ -500,7 +500,7 @@ def stencil_9pt_2nd_try(rhs,elem,node,mpv,ud):
     return lap2D_try
 
 
-def stencil_9pt_3rd_try(elem,node,mpv,ud):
+def stencil_9pt_3rd_try(elem,node,mpv,ud,diag_inv):
     igx = elem.igx
     igy = elem.igy
 
@@ -522,6 +522,8 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
     hplusy = mpv.wplus[0][inner_domain].reshape(-1,)
 
     hcenter = mpv.wcenter[inner_domain].reshape(-1,)
+
+    diag_inv = diag_inv[inner_domain].reshape(-1,)
 
     oodx2 = 0.5 / (dx**2)
     oody2 = 0.5 / (dy**2)
@@ -731,15 +733,17 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
             #         +  hplusy_botright * oody2 * ((botmid - midmid) + dp2dxdy4) \
             #         +  hcenter[idx] * p[idx]
 
-            if cnt_x == 0 and x_wall:
-                lap[idx] *= 2.
-            if (cnt_x == iicxn - 1) and x_wall:
-                lap[idx] *= 2.
+            # if cnt_x == 0 and x_wall:
+            #     lap[idx] *= 2.
+            # if (cnt_x == iicxn - 1) and x_wall:
+            #     lap[idx] *= 2.
 
-            if cnt_y == 0 and y_wall:
-                lap[idx] *= 2.
-            if (cnt_y == iicyn - 1) and y_wall:
-                lap[idx] *= 2.
+            # if cnt_y == 0 and y_wall:
+            #     lap[idx] *= 2.
+            # if (cnt_y == iicyn - 1) and y_wall:
+            #     lap[idx] *= 2.
+
+            lap[idx] *= diag_inv[idx]
 
             cnt_x += 1
             if cnt_x % iicxn == 0:
@@ -748,7 +752,6 @@ def stencil_9pt_3rd_try(elem,node,mpv,ud):
             
         return lap
     return lap2D_3try
-
 
 def precon_diag_prepare(mpv, elem, node, ud):
     dx = node.dx
