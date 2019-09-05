@@ -21,7 +21,8 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
                                             const NodeSpaceDiscr* node,
                                             const double t,
                                             const double dt,
-                                            const double alpha_diff);
+                                            const double alpha_diff,
+                                            int step);
 
 void euler_backward_non_advective_expl_part(ConsVars* Sol,
                             const MPV* mpv,

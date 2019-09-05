@@ -210,6 +210,7 @@ void dynamic_timestep(TimeStepInfo* TSI,
         dt *= MIN_own((float)(step+1), 1.0);
         
         if (2.0*dt > time_output - time) {
+            printf("dt = %.8f, time_output = %.8f, time = %.8f", dt, time_output, time);
             dt = 0.5 * (time_output - time) + ud.eps_Machine;
             TSI->time_step_switch = 1;
         }

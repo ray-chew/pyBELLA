@@ -431,11 +431,11 @@ void variable_coefficient_poisson_nodes(
     
     data->max_iterations = maxit;
     
-    double tmp_arr[53*53];
-    for (int ii = 0; ii < nc; ii ++) {
-        tmp_arr[ii] = p2[ii];
-        // printf("tmp_arr[ii] = %e", tmp_arr[ii]);
-    }
+    // double tmp_arr[53*53];
+    // for (int ii = 0; ii < nc; ii ++) {
+    //     tmp_arr[ii] = p2[ii];
+    //     // printf("tmp_arr[ii] = %e", tmp_arr[ii]);
+    // }
 
     // FILE *pnewfile = NULL;
     // char fn[120], fieldname[90];

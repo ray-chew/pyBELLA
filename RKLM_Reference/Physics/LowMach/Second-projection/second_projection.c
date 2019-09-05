@@ -100,7 +100,7 @@ void diss_to_rhs(double* rhs,
 /* ========================================================================== */
 
 #if OUTPUT_RHS_NODES
-static int rhs_output_count = 0;
+// static int rhs_output_count = 4;
 static int first_output_step = 0;
 extern int step;  
 #endif
@@ -366,6 +366,7 @@ double residual(double *rhs,
 #else /* NONLINEAR_EOS_ITERATION */
 
 /* ========================================================================== */
+int swtch = 0;
 int wplus_cnt = 0;
 void euler_backward_non_advective_impl_part(ConsVars* Sol,
                                             MPV* mpv,
@@ -374,7 +375,8 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
                                             const NodeSpaceDiscr* node,
                                             const double t,
                                             const double dt,
-                                            const double alpha_diff) {
+                                            const double alpha_diff,
+                                            int step) {
     
     /* as of August 31, 2018, this routine is to be interpreted
      as carrying out an implicit Euler step for the linearized 
@@ -424,7 +426,81 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     }
     
     operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
-    
+
+    swtch += 1;
+    if (swtch == 3){swtch = 1;}
+    char fn[240], fieldname[180];
+    if (swtch == 1){
+        FILE *hcenterfile = NULL;
+        if (step < 10) {
+                sprintf(fn, "%s/hcenter/hcenter_00%d_after_ebnaimp.hdf", ud.file_name, step);
+            } else if(step < 100) {
+                sprintf(fn, "%s/hcenter/hcenter_0%d_after_ebnaimp.hdf", ud.file_name, step);
+            } else {
+                sprintf(fn, "%s/hcenter/hcenter_%d_after_ebnaimp.hdf", ud.file_name, step);
+            }
+        sprintf(fieldname, "hcenter");    
+        WriteHDF(hcenterfile, node->icx, node->icy, node->icz, node->ndim, hcenter, fn, fieldname);
+
+        FILE *p2_initial = NULL;
+        if (step < 10) {
+                sprintf(fn, "%s/p2_initial/p2_initial_00%d_after_ebnaimp.hdf", ud.file_name, step);
+            } else if(step < 100) {
+                sprintf(fn, "%s/p2_initial/p2_initial_0%d_after_ebnaimp.hdf", ud.file_name, step);
+            } else {
+                sprintf(fn, "%s/p2_initial/p2_initial_%d_after_ebnaimp.hdf", ud.file_name, step);
+            }
+        sprintf(fieldname, "p2_initial");    
+        WriteHDF(p2_initial, node->icx, node->icy, node->icz, node->ndim, p2, fn, fieldname);
+
+        FILE *wplusxfile = NULL;
+        if (step < 10) {
+                sprintf(fn, "%s/wplusx/wplusx_00%d_after_ebnaimp.hdf", ud.file_name, step);
+            } else if(step < 100) {
+                sprintf(fn, "%s/wplusx/wplusx_0%d_after_ebnaimp.hdf", ud.file_name, step);
+            } else {
+                sprintf(fn, "%s/wplusx/wplusx_%d_after_ebnaimp.hdf", ud.file_name, step);
+            }
+        sprintf(fieldname, "wplusx");    
+        WriteHDF(wplusxfile, elem->icx, elem->icy, elem->icz, node->ndim, hplus[0], fn, fieldname);
+
+        FILE *wplusyfile = NULL;
+        if (step < 10) {
+                sprintf(fn, "%s/wplusy/wplusy_00%d_after_ebnaimp.hdf", ud.file_name, step);
+            } else if(step < 100) {
+                sprintf(fn, "%s/wplusy/wplusy_0%d_after_ebnaimp.hdf", ud.file_name, step);
+            } else {
+                sprintf(fn, "%s/wplusy/wplusy_%d_after_ebnaimp.hdf", ud.file_name, step);
+            }
+        sprintf(fieldname, "wplusy");    
+        WriteHDF(wplusyfile, elem->icx, elem->icy, elem->icz, node->ndim, hplus[1], fn, fieldname);
+        wplus_cnt += 1;
+    }
+
+    // FILE *tmp_file = NULL;
+    // char fn[240], fieldname[180];
+    // int tmp_step = 0;
+    // if (tmp_step < 10) {
+    //     sprintf(fn, "%s/debug/hplus_00%d.hdf", ud.file_name, tmp_step);
+    // } else if(tmp_step < 100) {
+    //     sprintf(fn, "%s/debug/hplus_0%d.hdf", ud.file_name, tmp_step);
+    // } else {
+    //     sprintf(fn, "%s/debug/hplus_%d.hdf", ud.file_name, tmp_step);
+    // }
+    // sprintf(fieldname, "hplus");
+    // WriteHDF(tmp_file, node->icx, node->icy, node->icz, elem->ndim, *hplus, fn, fieldname);
+
+    // if (tmp_step < 10) {
+    //     sprintf(fn, "%s/debug/hcenter_00%d.hdf", ud.file_name, tmp_step);
+    // } else if(tmp_step < 100) {
+    //     sprintf(fn, "%s/debug/hcenter_0%d.hdf", ud.file_name, tmp_step);
+    // } else {
+    //     sprintf(fn, "%s/debug/hcenter_%d.hdf", ud.file_name, tmp_step);
+    // }
+    // sprintf(fieldname, "hcenter");
+    // WriteHDF(tmp_file, node->icx, node->icy, node->icz, elem->ndim, hcenter, fn, fieldname);
+    // tmp_step++;
+
     if (ud.mol_trans != NO_MOLECULAR_TRANSPORT) {
         extern double* diss;        
         molecular_transport(Sol, diss, elem, alpha_diff*dt);
@@ -433,55 +509,54 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
 
     /* loop for iterating on bottom topography boundary conditions */
     rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
-    assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);         
+    assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);
 
     /* rescaling of flux divergence for r.h.s. of the elliptic pressure equation */ 
     for (int i=0; i<node->nc; i++) {
         rhs[i] /= dt;
     }
     printf("\nrhsmax = %e\n", rhs_max);
-
-    // int wplus_cnt = 0;
-    // FILE *hcenterfile = NULL;
-    // char fn[120], fieldname[90];
-    // sprintf(fn, "%s/hcenter/hcenter_00%d.hdf", ud.file_name, wplus_cnt);
-    // sprintf(fieldname, "hcenter");    
-    // WriteHDF(hcenterfile, node->icx, node->icy, node->icz, node->ndim, hcenter, fn, fieldname);
-
-    // FILE *wplusxfile = NULL;
-    // sprintf(fn, "%s/wplusx/wplusx_00%d.hdf", ud.file_name, wplus_cnt);
-    // sprintf(fieldname, "wplusx");    
-    // WriteHDF(wplusxfile, node->icx, node->icy, node->icz, node->ndim, hplus[0], fn, fieldname);
-
-    // FILE *wplusyfile = NULL;
-    // // char fn[120], fieldname[90];
-    // sprintf(fn, "%s/wplusy/wplusy_00%d.hdf", ud.file_name, wplus_cnt);
-    // sprintf(fieldname, "wplusy");    
-    // WriteHDF(wplusyfile, node->icx, node->icy, node->icz, node->ndim, hplus[1], fn, fieldname);
-    // wplus_cnt += 1;
-    
-#if OUTPUT_RHS_NODES
-    FILE *prhsfile = NULL;
-    char fn[120], fieldname[90];
-    if (step >= first_output_step) {
-        if (rhs_output_count < 10) {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
-        } else if(rhs_output_count < 100) {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
-        } else {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodescex_%d.hdf", ud.file_name, rhs_output_count);
-        }
-        sprintf(fieldname, "rhs_nodes");    
-        WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
-        rhs_output_count++;
-    }
-#endif
     
     if (ud.is_compressible) {
         rhs_from_p_old(rhs, elem, node, mpv, hcenter);
     }
+    int rhs_output_count = 4;
+    #if OUTPUT_RHS_NODES
+        FILE *prhsfile = NULL;
+        // char fn[240], fieldname[180];
+        if (step >= first_output_step) {
+            if (step < 10) {
+                sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d_after_ebnaimp.hdf", ud.file_name, step);
+            } else if(step < 100) {
+                sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d_after_ebnaimp.hdf", ud.file_name, step);
+            } else {
+                sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d_after_ebnaimp.hdf", ud.file_name, step);
+            }
+            sprintf(fieldname, "rhs_nodes");
+            if (swtch == 1){
+            WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+            rhs_output_count++;
+            }
+        }
+    #endif
         
     variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
+
+    FILE *tmp_file = NULL;
+    // char fn[240], fieldname[180];
+    if (swtch == 1){
+        // int tmp_step = 4;
+        if (step < 10) {
+            sprintf(fn, "%s/pnew/p2_full_00%d_after_ebnaimp.hdf", ud.file_name, step);
+        } else if(step < 100) {
+            sprintf(fn, "%s/pnew/p2_full_0%d_after_ebnaimp.hdf", ud.file_name, step);
+        } else {
+            sprintf(fn, "%s/pnew/p2_full_%d_after_ebnaimp.hdf", ud.file_name, step);
+        }
+        sprintf(fieldname, "p2_full");
+        WriteHDF(tmp_file, node->icx, node->icy, node->icz, elem->ndim, p2, fn, fieldname);
+
+    }
 
     correction_nodes(Sol, elem, node, (const double**)hplus, p2, dt, FULL_FIELD);
     Set_Explicit_Boundary_Data(Sol, elem);
@@ -500,20 +575,19 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     /* catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
      */
     
-    if (step >= first_output_step) {
-        if (rhs_output_count < 10) {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
-        } else if(rhs_output_count < 100) {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
-        } else {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
-        }
-        sprintf(fieldname, "rhs_nodes");    
-        WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
-        rhs_output_count++;
-    }
+    // if (step >= first_output_step) {
+    //     if (rhs_output_count < 10) {
+    //         sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
+    //     } else if(rhs_output_count < 100) {
+    //         sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
+    //     } else {
+    //         sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
+    //     }
+    //     sprintf(fieldname, "rhs_nodes");
+    //     WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+    //     rhs_output_count++;
+    // }
 #endif
-    
 }
 #endif /* NONLINEAR_EOS_ITERATION */
 
@@ -1423,7 +1497,7 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
                 
                 /* implicit gravity */
                 double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;
-                double dbuoy = -Sol->rhoY[n]*Sol->rhoX[BUOY][n]/Sol->rho[n];    
+                double dbuoy = -Sol->rhoY[n]*Sol->rhoX[BUOY][n]/Sol->rho[n];
                 double rhov  = (nonhydro * Sol->rhov[n] + dt * (g/Msq) * dbuoy) / (nonhydro + Nsqsc);
                 
                 /* implicit Coriolis */
@@ -1448,7 +1522,8 @@ void euler_forward_non_advective(ConsVars* Sol,
                                  const enum EXPLICIT_PRESSURE wp)
 {
     /* 
-     evaluates Euler forward for the pressure gradient, gravity, 
+     evaluates Euler 
+      for the pressure gradient, gravity, 
      and background stratification advection terms based on cell-
      centered data. 
      */
@@ -1569,7 +1644,7 @@ void euler_forward_non_advective(ConsVars* Sol,
                     double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
 
                     double dpidP   = (th.gm1 / ud.Msq) * \
-                                        0.25 * (pow(Sol->rhoY[nc], th.gamm - 2.0)      + pow(Sol->rhoY[nc-1], th.gamm - 2.0) + \
+                                        0.25 * (pow(Sol->rhoY[nc], th.gamm -  2.0)      + pow(Sol->rhoY[nc-1], th.gamm - 2.0) + \
                                                 pow(Sol->rhoY[nc-icxe], th.gamm - 2.0) + pow(Sol->rhoY[nc-icxe-1], th.gamm - 2.0));
 
                     double time_offset_expl = ud.acoustic_order - 1.0;
@@ -1579,6 +1654,7 @@ void euler_forward_non_advective(ConsVars* Sol,
                     Sol->rhoX[BUOY][nc] = (Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c)) +  time_offset_expl * dt * ( - v * dSdy) * Sol->rho[nc];
 
                     dp2n[nn00] -= dt * dpidP * div[nn00];
+                    
                 }
             }
         }

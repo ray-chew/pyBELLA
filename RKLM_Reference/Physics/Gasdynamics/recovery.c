@@ -87,7 +87,24 @@ void recovery(States* Lefts,
         ul[i] = internal_flux * Sol->u[i] + (1.0-internal_flux) * Fluxes->rhoY[i-1]/(0.5*(Sol->rhoY[i]+Sol->rhoY[i-1]));  
         ur[i] = internal_flux * Sol->u[i] + (1.0-internal_flux) * Fluxes->rhoY[i]/(0.5*(Sol->rhoY[i]+Sol->rhoY[i+1]));    
     }
-    
+
+    // FILE *tmpfile = NULL;
+    //         int tmp_step = 0;
+    //         int step = 0;
+    //         char fn[120], fieldname[90];
+    //         if (step < 10) {
+    //             sprintf(fn, "%s/debug/solu_00%d.hdf", ud.file_name, tmp_step);
+    //         }
+    //         sprintf(fieldname, "rhoY");
+    //         WriteHDF(tmpfile, elem->icx, elem->icy, elem->icz, elem->ndim, Sol->rhoY, fn, fieldname);
+            
+    //         if (step < 10) {
+    //             sprintf(fn, "%s/debug/solu_00%d.hdf", ud.file_name, tmp_step);
+    //         }
+            
+    //         sprintf(fieldname, "solu");
+    //         WriteHDF(tmpfile, elem->icy, elem->icx, elem->icz, elem->ndim, Sol->u, fn, fieldname);
+
 	/* differences of primitive quantities */
 	for( i = 0; i < nmax - 1;  i++) {     
 		Diffs->u[i] =  Sol->u[i+1]- Sol->u[i];

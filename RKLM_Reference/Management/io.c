@@ -69,7 +69,9 @@ void putout(ConsVars* Sol,
 			char* field_name,
             const ElemSpaceDiscr *elem,
             const NodeSpaceDiscr *node,
-            const int writeout) {
+            const int writeout,
+			int step,
+			char* label) {
 	
     /* TODO:  Each call to putout() seems to increase the
      occupied memory by a little bit. I have not found the
@@ -97,27 +99,45 @@ void putout(ConsVars* Sol,
     const int iczn = node->icz;
 
 	double *var;
-	char fn[200], fieldname[90], step_string[30];
+	char fn[200], fieldname[90], step_string[120], step_label[30];
 	int nsp;
 	
 	switch(ud.file_format) {
+		// case HDF: {
+			            
+        //     if (writeout == 0) {
+        //         return;
+        //     }
+			
+        //     if(output_counter<10) {
+        //         sprintf(step_string, "00%d", output_counter);
+        //     }
+        //     else if(output_counter<100) {
+        //         sprintf(step_string, "0%d", output_counter);
+        //     }
+        //     else {
+        //         sprintf(step_string, "%d", output_counter);
+        //     }
+        //     output_counter++;
+            
 		case HDF: {
 			            
             if (writeout == 0) {
                 return;
             }
 			
-            if(output_counter<10) {
-                sprintf(step_string, "00%d", output_counter);
+            if(step<10) {
+                sprintf(step_label, "00%d", step);
             }
-            else if(output_counter<100) {
-                sprintf(step_string, "0%d", output_counter);
+            else if(step<100) {
+                sprintf(step_label, "0%d", step);
             }
             else {
-                sprintf(step_string, "%d", output_counter);
+                sprintf(step_label, "%d", step);
             }
-            output_counter++;
-            
+
+			sprintf(step_string, "%s_%s", step_label, label);
+
 #if OUTPUT_FLUXES
             extern ConsVars* flux[3];
             extern User_Data ud;
@@ -143,21 +163,21 @@ void putout(ConsVars* Sol,
 			sprintf(fieldname, "rho_%s_%s", field_name, step_string);
 			WriteHDF(prhofile, icx, icy, icz, ndim, Sol->rho, fn, fieldname);
 
-			/* Ray's addition for debugging */
-			sprintf(fn, "%s/rhou/rhou_%s.hdf", dir_name, step_string);
-			if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
-			sprintf(fieldname, "rhou_%s_%s", field_name, step_string);
-			WriteHDF(prhoufile, icx, icy, icz, ndim, Sol->rhou, fn, fieldname);
+			// /* Ray's addition for debugging */
+			// sprintf(fn, "%s/rhou/rhou_%s.hdf", dir_name, step_string);
+			// if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
+			// sprintf(fieldname, "rhou_%s_%s", field_name, step_string);
+			// WriteHDF(prhoufile, icx, icy, icz, ndim, Sol->rhou, fn, fieldname);
 
-			sprintf(fn, "%s/rhov/rhov_%s.hdf", dir_name, step_string);
-			if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
-			sprintf(fieldname, "rhov_%s_%s", field_name, step_string);
-			WriteHDF(prhovfile, icx, icy, icz, ndim, Sol->rhov, fn, fieldname);
+			// sprintf(fn, "%s/rhov/rhov_%s.hdf", dir_name, step_string);
+			// if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
+			// sprintf(fieldname, "rhov_%s_%s", field_name, step_string);
+			// WriteHDF(prhovfile, icx, icy, icz, ndim, Sol->rhov, fn, fieldname);
 
-			sprintf(fn, "%s/rhow/rhow_%s.hdf", dir_name, step_string);
-			if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
-			sprintf(fieldname, "rhow_%s_%s", field_name, step_string);
-			WriteHDF(prhowfile, icx, icy, icz, ndim, Sol->rhow, fn, fieldname);
+			// sprintf(fn, "%s/rhow/rhow_%s.hdf", dir_name, step_string);
+			// if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
+			// sprintf(fieldname, "rhow_%s_%s", field_name, step_string);
+			// WriteHDF(prhowfile, icx, icy, icz, ndim, Sol->rhow, fn, fieldname);
 			/* End of Ray's addition */
 			
 			/* energy density */
@@ -312,6 +332,11 @@ void putout(ConsVars* Sol,
             if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
             sprintf(fieldname, "p2_nodes_%s_%s", field_name, step_string);
             WriteHDF(pp2file,icxn, icyn, iczn, ndim, mpv->p2_nodes, fn, fieldname);
+
+			sprintf(fn, "%s/rhs/rhs_%s.hdf", dir_name, step_string);
+            if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
+            sprintf(fieldname, "rhs_%s_%s", field_name, step_string);
+            WriteHDF(pp2file,icxn, icyn, iczn, ndim, mpv->rhs, fn, fieldname);
 
             /* fluctuation(var, mpv->p2_cells, elem); */
             memcpy(var, mpv->p2_cells, elem->nc*sizeof(double));
