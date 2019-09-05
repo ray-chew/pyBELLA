@@ -15,12 +15,11 @@ import h5py
 # taken from https://stackoverflow.com/questions/33512081/getting-the-number-of-iterations-of-scipys-gmres-iterative-method
 class solver_counter(object):
     def __init__(self, disp=True):
-        # self._disp = disp
         self.niter = 0
     def __call__(self, rk=None):
         self.niter += 1
-        # if self._disp:
-        #     print('iter %3i\trk = %s' % (self.niter, str(rk)))
+        self.rk = np.sqrt((rk**2).sum())
+        # self.rk = rk[0]
 
 
 def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
@@ -191,13 +190,12 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     
     p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-8,maxiter=1500,callback=counter)
 
-    print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
-    # assert(info == 0)
+    print("Convergence info = %i, no. of iterations = %i, l2-residual = %.10f" %(info,counter.niter,counter.rk))
 
     global total_calls, total_iter
     total_iter += counter.niter
     total_calls += 1
-    print("total calls = %i, total iter = %i" %(total_calls, total_iter))
+    print("Total calls to BiCGStab routine = %i, total iterations = %i" %(total_calls, total_iter))
 
     p2_full = np.zeros(nc).squeeze()
     p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
