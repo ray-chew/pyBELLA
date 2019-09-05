@@ -1,6 +1,6 @@
 from inputs.enum_bdry import BdryType
 from inputs.boundary import set_explicit_boundary_data, set_ghostnodes_p2
-from physics.low_mach.laplacian import stencil_9pt_4th_try, stencil_9pt_3rd_try, stencil_9pt_2nd_try, stencil_9pt, precon_diag_prepare
+from physics.low_mach.laplacian import stencil_9pt, precon_diag_prepare
 from scipy import signal
 import numpy as np
 from itertools import product
@@ -177,7 +177,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if writer != None:
         writer.populate(str(label)+'_after_ebnaimp','rhs_nodes',rhs)
 
-    lap2D = stencil_9pt_3rd_try(elem,node,mpv,ud,diag_inv)
+    lap2D = stencil_9pt(elem,node,mpv,ud,diag_inv)
 
     sh = (ud.inx)*(ud.iny)
 
