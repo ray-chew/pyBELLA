@@ -24,3 +24,5 @@ low_Mach_gravity_psinc/*
 */.ipynb_checkpoints/*
 *RKLM_Reference/output*
 *.gitignore*
+*RKLM_Python/build*
+
