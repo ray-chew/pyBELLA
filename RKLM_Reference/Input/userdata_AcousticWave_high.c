@@ -83,7 +83,7 @@ void User_Data_init(User_Data* ud) {
     ud->viscbm      = viscbm * t_ref/(h_ref*h_ref);
     ud->visct       = visct  * t_ref/(h_ref*h_ref);
     ud->viscbt      = viscbt * t_ref/(h_ref*h_ref);
-    ud->cond        = cond * t_ref/(h_ref*h_ref*R_gas);
+    ud->cond        = cond * t_ref/(h_ref*R_gas);
 
     /*FULL_MOLECULAR_TRANSPORT, STRAKA_DIFFUSION_MODEL, NO_MOLECULAR_TRANSPORT */
     ud->mol_trans   = NO_MOLECULAR_TRANSPORT; 
@@ -212,12 +212,13 @@ void User_Data_init(User_Data* ud) {
     // ud->tout[4] = 5.0*t_period;
     // ud->tout[6] = -1.0;
 
-    ud->stepmax = 0;
+    ud->stepmax = 41;
+    // ud->stepmax = 1;
     
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 40;
+    ud->write_file_period = 45;
     ud->file_format = HDF;
     
     {

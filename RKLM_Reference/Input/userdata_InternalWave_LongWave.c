@@ -186,8 +186,8 @@ void User_Data_init(User_Data* ud) {
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
     ud->second_projection_local_precision = tol;  /* 1.e-05 should be enough */
-    ud->flux_correction_max_iterations    = 6000;
-    ud->second_projection_max_iterations  = 6000;
+    ud->flux_correction_max_iterations    = 1500;
+    ud->second_projection_max_iterations  = 1500;
     ud->initial_projection                = WRONG; /* WRONG;  CORRECT; */
     
     ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
@@ -206,7 +206,7 @@ void User_Data_init(User_Data* ud) {
     ud->tout[1] = -1.0;
 
     /* ud->stepmax = 10000; */
-    ud->stepmax = 0;
+    ud->stepmax = 40;
     
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;

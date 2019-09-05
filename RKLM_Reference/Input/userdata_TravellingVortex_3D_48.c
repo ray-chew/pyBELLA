@@ -65,7 +65,7 @@ void User_Data_init(User_Data* ud) {
     ud->g_ref       = grav;
     ud->gamm        = gamma;  
     ud->Rg_over_Rv  = R_gas/R_vap;  
-    ud->Q           = Q_vap/(R_gas*T_ref);  
+    ud->Q           = Q_vap/(R_gas*T_ref);
 
     /* number of advected species */
     ud->nspec       = NSPEC;  
@@ -145,8 +145,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 48+1; /*  */
-	ud->iny = 48+1; /*  */
+	ud->inx = 256+1; /*  */
+	ud->iny = 256+1; /*  */
 	ud->inz =     1;
 
     /* explicit predictor step */
@@ -175,7 +175,7 @@ void User_Data_init(User_Data* ud) {
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
     
-    ud->initial_projection                = CORRECT;   /* to be tested: WRONG;  CORRECT; */
+    ud->initial_projection                = WRONG;   /* to be tested: WRONG;  CORRECT; */
     ud->initial_impl_Euler                = WRONG;   /* to be tested: WRONG;  CORRECT; */
     
     ud->column_preconditioner             = WRONG; /* WRONG; CORRECT; */
@@ -205,7 +205,7 @@ void User_Data_init(User_Data* ud) {
      */
     
     // ud->stepmax = 20000;
-    ud->stepmax = 1;
+    ud->stepmax = 11;
 
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
@@ -468,7 +468,7 @@ void Sol_initial(ConsVars* Sol,
         }
         
         //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
-        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed, 1.0);
+        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed, 1.0, 0);
         for (int nn=0; nn<node->nc; nn++) {
             mpv->p2_nodes[nn] = p2aux[nn];
             mpv->dp2_nodes[nn] = 0.0;
