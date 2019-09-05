@@ -25,4 +25,8 @@ low_Mach_gravity_psinc/*
 *RKLM_Reference/output*
 *.gitignore*
 *RKLM_Python/build*
-
+*.h5
+*output_*
+*Untitled*
+*.out
+*.bat
