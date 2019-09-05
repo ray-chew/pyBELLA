@@ -179,7 +179,7 @@ class UserData(object):
         self.tout = 0.00267282
         # self.tout[1] = -1.0
 
-        self.stepmax = 40
+        self.stepmax = 41
 
         self.write_stdout = True
         self.write_stdout_period = 1

@@ -18,7 +18,7 @@ class solver_counter(object):
         self.niter = 0
     def __call__(self, rk=None):
         self.niter += 1
-        self.rk = np.sqrt((rk**2).sum())
+        self.rk = rk
         # self.rk = rk[0]
 
 
@@ -101,7 +101,6 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     set_ghostnodes_p2(mpv.p2_nodes,node, ud)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
-cnt = 0
 def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     nonhydro = ud.nonhydrostasy
 
@@ -180,17 +179,21 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     lap2D = stencil_9pt_3rd_try(elem,node,mpv,ud,diag_inv)
 
-    # lap2D = stencil_9pt_4th_try(elem,node,mpv,ud,diag_inv)
-
     sh = (ud.inx)*(ud.iny)
 
     lap2D = LinearOperator((sh,sh),lap2D)
     
     counter = solver_counter()
     
-    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].reshape(-1,),x0=p2.reshape(-1,),tol=1e-8,maxiter=1500,callback=counter)
+    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-8,maxiter=1500,callback=counter)
 
-    print("Convergence info = %i, no. of iterations = %i, l2-residual = %.10f" %(info,counter.niter,counter.rk))
+    # l2_residual = (rhs[node.igx:-node.igx,node.igy:-node.igy].ravel() - (lap2D * counter.rk))**2
+    # l2_residual = l2_residual.sum()
+    # l2_residual = np.sqrt(l2_residual)
+
+    # print("Convergence info = %i, no. of iterations = %i, l2-residual = %.10f" %(info,counter.niter,l2_residual))
+
+    print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
 
     global total_calls, total_iter
     total_iter += counter.niter

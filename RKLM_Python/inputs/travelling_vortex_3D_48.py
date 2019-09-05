@@ -138,8 +138,8 @@ class UserData(object):
         self.tips = TimeIntegratorParams()
         SetTimeIntegratorParameters(self)
 
-        self.inx = 48+1
-        self.iny = 48+1
+        self.inx = 256+1
+        self.iny = 256+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -176,7 +176,7 @@ class UserData(object):
         # self.tout[0] =  1.0
         # self.tout[1] = -1.0
 
-        self.stepmax = 40
+        self.stepmax = 11
         # self.stepmax = 20000
 
         self.write_stdout = True
