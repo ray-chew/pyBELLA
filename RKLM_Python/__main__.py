@@ -14,7 +14,7 @@ from inputs.enum_bdry import BdryType
 from physics.low_mach.mpv import MPV, acoustic_order
 
 from inputs.travelling_vortex_3D_48 import UserData, sol_init
-# from inputs.acoustic_wave_high import UserData, sol_init
+from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
@@ -80,20 +80,26 @@ while ((t < tout) and (step < ud.stepmax)):
     ud.acoustic_order = acoustic_order(ud,t,dt)
 
     # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_flux')
+    
     recompute_advective_fluxes(flux, Sol)
 
     # writer.populate(str(label)+'_before_advect','rhoYu',flux[0].rhoY)
     # writer.populate(str(label)+'_before_advect','rhoYv',flux[1].rhoY)
     # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_advect')
+
     advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv)
+
     # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_advect')
 
     mpv.p2_nodes0 = deepcopy(mpv.p2_nodes)
     euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+
     # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaexp')
 
     euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, label=label)
+
     # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaimp')
+
     recompute_advective_fluxes(flux, Sol)
     mpv.p2_nodes = deepcopy(mpv.p2_nodes0)
 
@@ -117,6 +123,7 @@ while ((t < tout) and (step < ud.stepmax)):
     # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_advect')
 
     euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+
     # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
 
     euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0)
@@ -131,6 +138,5 @@ while ((t < tout) and (step < ud.stepmax)):
     print("step %i done, t = %.12f, dt = %.12f" %(step, t, dt))
     print("############################################################################################")
 
-    # break
 toc = time()
 print("Time taken = %.6f" %(toc-tic))
