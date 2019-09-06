@@ -91,10 +91,3 @@ class Characters(object):
         for key, value in vars(self).items():
             setattr(self, key, -1. * value)
         
-# class StatesSmall(States):
-#     def __init__(self,size,ud):
-#         super().__init__(size,ud)
-
-
-#         self.squeezer()
-        
