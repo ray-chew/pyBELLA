@@ -7,6 +7,7 @@ Submodules
 .. toctree::
 
    management.data
+   management.debug
    management.enumerator
    management.io
    management.memory
