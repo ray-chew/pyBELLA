@@ -3,7 +3,7 @@ from inputs.enum_bdry import BdryType
 
 import numpy as np
 
-from debug import find_nearest
+from management.debug import find_nearest
 
 def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
     igs = elem.igs

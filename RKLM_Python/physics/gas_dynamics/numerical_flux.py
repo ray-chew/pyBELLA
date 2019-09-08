@@ -13,10 +13,17 @@ literal blocks::
 
     $ python example_numpy.py
 
-
 Section breaks are created with two blank lines. Section breaks are also
 implicitly created anytime a new section starts. Section bodies *may* be
 indented:
+
+.. code-block::
+
+    rhoYv = Sol.rhoY * Sol.rhov / Sol.rho
+    kernel_v = np.array([[0.5,1.,0.5],[0.5,1.,0.5]]).T
+    flux[1].rhoY[1:-1,1:-1] = signal.convolve2d(rhoYv, kernel_v, mode='valid') /kernel_v.sum()
+    flux[1].rhoY[:,-2] *= 0.
+    ...
 
 Notes
 -----
@@ -45,12 +52,15 @@ module_level_variable1 : int
 
 import numpy as np
 from scipy import signal
-from debug import find_nearest
+from management.debug import find_nearest
 
 def recompute_advective_fluxes(flux, Sol):
-    ################################################
-    # 2D case for now - generalise in future
-    ################################################
+    """
+    Todo
+    ----
+    * 2D case for now - generalise in future
+
+    """
     rhoYu = Sol.rhoY * Sol.rhou / Sol.rho
 
     # keep for debugging purpose... last checked, function is correct

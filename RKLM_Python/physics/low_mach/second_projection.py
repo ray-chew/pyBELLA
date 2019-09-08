@@ -9,7 +9,7 @@ from scipy.sparse.linalg import LinearOperator, spsolve, bicgstab, gmres
 from scipy.sparse import eye, diags
 import matplotlib.pyplot as plt
 
-from debug import find_nearest
+from management.debug import find_nearest
 import h5py
 
 # taken from https://stackoverflow.com/questions/33512081/getting-the-number-of-iterations-of-scipys-gmres-iterative-method
