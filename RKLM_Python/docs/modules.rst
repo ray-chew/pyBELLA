@@ -4,9 +4,7 @@ RKLM_Python
 .. toctree::
    :maxdepth: 4
 
-   checker
-   debug
+   discretization
    inputs
    management
-   numerics_fundamentals
    physics

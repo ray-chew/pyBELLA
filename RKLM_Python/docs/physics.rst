@@ -7,8 +7,14 @@ Subpackages
 .. toctree::
 
    physics.gas_dynamics
-   physics.hydrostatics
    physics.low_mach
+
+Submodules
+----------
+
+.. toctree::
+
+   physics.hydrostatics
 
 Module contents
 ---------------

@@ -1,7 +1,7 @@
-physics.hydrostatics module
+discretization.kgrid module
 ===========================
 
-.. automodule:: physics.hydrostatics
+.. automodule:: discretization.kgrid
    :members:
    :undoc-members:
    :show-inheritance:

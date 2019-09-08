@@ -29,7 +29,7 @@ author = 'Author'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.viewcode',
+    #'sphinx.ext.viewcode',
     'sphinx.ext.todo',
     'sphinx.ext.napoleon'
 ]
@@ -55,7 +55,9 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'haiku'
+import wild_sphinx_theme
+html_theme = 'wild'
+html_theme_path = [wild_sphinx_theme.get_theme_dir()]
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
