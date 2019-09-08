@@ -1,10 +1,10 @@
 import numpy as np
 from inputs.enum_bdry import BdryType
 from management.enumerator import TimeIntegrator, MolecularTransport,HillShapes, BottomBC, LimiterType, RecoveryOrder
-from numerics_fundamentals.discretization.time_discretization import SetTimeIntegratorParameters
+from discretization.time_discretization import SetTimeIntegratorParameters
 from physics.gas_dynamics.explicit import TimeIntegratorParams
 from physics.gas_dynamics.eos import rhoe
-from physics.hydrostatics.hydrostatics import hydrostatic_state
+from physics.hydrostatics import hydrostatic_state
 from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
 
 class UserData(object):

@@ -3,7 +3,7 @@ import numpy as np
 from inputs.boundary import set_explicit_boundary_data
 from management.data import data_init
 from management.variable import States, Vars
-from numerics_fundamentals.discretization import kgrid
+from discretization import kgrid
 from physics.gas_dynamics.thermodynamic import ThemodynamicInit
 from physics.gas_dynamics.numerical_flux import recompute_advective_fluxes
 from physics.gas_dynamics.explicit import advect
@@ -20,7 +20,7 @@ from inputs.user_data import UserDataInit
 from management.io import io
 from copy import deepcopy
 
-from debug import find_nearest
+from management.debug import find_nearest
 from time import time
 import h5py
 

@@ -4,7 +4,7 @@ from management.variable import States, Characters
 from management.enumerator import LimiterType
 from physics.gas_dynamics.eos import rhoe
 
-from debug import find_nearest
+from management.debug import find_nearest
 
 truefalse = True
 

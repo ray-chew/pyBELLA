@@ -4,7 +4,7 @@ from physics.gas_dynamics.recovery import recovery
 from physics.gas_dynamics.numerical_flux import hll_solver
 from management.variable import Vars
 
-from debug import find_nearest
+from management.debug import find_nearest
 
 class NO_OF_RK_STAGES(object):
     NO_OF_RK_STAGES = 3
