@@ -6,8 +6,6 @@ from physics.gas_dynamics.eos import rhoe
 
 from management.debug import find_nearest
 
-truefalse = True
-
 def recovery(Sol, flux, lmbda, ud, th, elem):
     gamm = th.gamm
     
@@ -36,25 +34,6 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
     Diffs.X[:,:-1] = Sol.X[rights_idx] - Sol.X[lefts_idx]
     Diffs.Y[:,:-1] = 1.0 / Sol.Y[rights_idx] - 1.0 / Sol.Y[lefts_idx]
 
-    # global truefalse
-    # if truefalse == True:
-    #     # print(u[1])
-
-    #     # print(Sol.rhou[-3])
-    #     # print(flux.rhoY[1])
-
-    #     idx = 130
-    #     print("Sol.u[idx] = ", Sol.u[idx])
-    #     print("Sol.rhou[idx] = ", Sol.rhou[idx])
-    #     print("Sol.rhov[idx] = ", Sol.rhov[idx])
-    #     print("Diffs.u[idx] = ", Diffs.u[idx])
-    #     print("Diffs.v[idx] = ", Diffs.v[idx])
-
-    #     # val, idx = find_nearest(Sol.rhou,0.50000030887122227)
-    #     # print("val = ", val)
-    #     # print("idx = ", idx)
-    #     truefalse = False
-
     Slopes = slopes(Sol, Diffs, ud, elem)
 
     Ampls.u[...] = 0.5 * Slopes.u * (1. - lmbda * u)
@@ -68,40 +47,6 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
     Lefts.w[...] = Sol.w + order_two * Ampls.w
     Lefts.X[...] = Sol.X + order_two * Ampls.X
     Lefts.Y[...] = 1.0 / (1.0 / Sol.Y + order_two * Ampls.Y)
-    
-    # Ampls.change_dir()
-
-    # global truefalse
-    # if truefalse == True:
-    #     # print(u[1])
-
-    #     # print(Sol.rhou[-3])
-    #     # print(flux.rhoY[1])
-
-    #     idx = 265
-    #     # print("Lefts.u[idx] = ", Lefts.u.flatten()[idx])
-
-    #     print("u[idx] = ", u.flatten()[idx])
-    #     # print("Slopes.v[idx] = ", Slopes.v.flatten()[idx])
-    #     print("Sol.rhou[idx] = ", Sol.u.flatten()[0])
-    #     print("Sol.u[idx] = ", Sol.u.flatten()[idx])
-    #     print("Sol.v[idx] = ", Sol.v.flatten()[idx])
-
-    #     print("Ampls.u[idx] = ", Ampls.u.flatten()[idx])
-    #     print("Ampls.v[idx] = ", Ampls.v.flatten()[idx])
-
-    #     print("Slopes.u[idx] = ", Slopes.u.flatten()[idx])
-    #     print("Slopes.v[idx] = ", Slopes.v.flatten()[idx])
-    #     print("Diffs.u[idx] = ", Diffs.u.flatten()[idx])
-    #     print("Diffs.v[idx] = ", Diffs.v.flatten()[idx])
-        
-    #     # print(Slopes.u.shape)
-
-    #     val, idx = find_nearest(Sol.u,-0.66152648868480246)
-    #     # print("val = ", val)
-    #     # print("idx = ", idx)
-        
-    #     truefalse = False
 
     Ampls.u[...] = -0.5 * Slopes.u * (1. + lmbda * u)
     Ampls.v[...] = -0.5 * Slopes.v * (1. + lmbda * u)
@@ -121,8 +66,6 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
 
     get_conservatives(Rights, ud, th)
     get_conservatives(Lefts, ud, th)
-
-    # print(Rights.rhoe[0])
 
     return Lefts, Rights
 
