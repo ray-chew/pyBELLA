@@ -25,7 +25,6 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
 
     if (odd):
         for split in range(elem.ndim):
-            # i_split = elem.ndim - 1 - split
             lmbda = time_step / elem.dxyz[split]
             Sol.flip()
             explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
@@ -45,46 +44,16 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
             Sol.flip()
     else:
         for split in range(elem.ndim):
-            # i_split = elem.ndim - 1 - split
             lmbda = time_step / elem.dxyz[split]
             Sol.flip()
             explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, writer)
             
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
-truefalse = True
-counter = 0
 def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mpv, writer = None):
-    # split_step = np.abs(1 - split_step)
-    # print("split_step = ", split_step)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
-    # set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     Lefts, Rights = recovery(Sol, flux, lmbda, ud, th, elem)
-
-    # global counter
-    # global truefalse
-    # if counter < 5 and writer != None:
-    #     writer.populate('00' + str(counter),'Lefts_rhou',Lefts.rhou)
-    #     counter += 1
-    # if truefalse == True:
-    #     writer.populate('000','Lefts_rhou',Lefts.rhou)
-    #     truefalse = False
-
-    # global truefalse
-    # if truefalse == True:
-    #     print(Lefts.u.shape)
-    #     print(Lefts.u.flatten()[300])
-    #     find_nearest(Lefts.u, 14.294938667740171)
-    #     truefalse = False
-        
-    # global truefalse
-    # if truefalse == True:
-    #     print(stage, split_step)
-    #     print(Lefts.u[0])
-    #     # val, idx = find_nearest(Lefts.u,0.99999986475549874)
-
-    #     truefalse = False
 
     # skipped check_flux_bcs for now; first debug other functions
     # check_flux_bcs(Lefts, Rights, elem, split_step, ud)
@@ -94,7 +63,7 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
 
     right_idx = (slice(None),slice(1,None))
     left_idx = (slice(None),slice(0,-1))
-    # print(flux.rho[left_idx] - flux.rho[right_idx])
+
     Sol.rho += lmbda * (flux.rho[left_idx] - flux.rho[right_idx])
     Sol.rhou += lmbda * (flux.rhou[left_idx] - flux.rhou[right_idx])
     Sol.rhov += lmbda * (flux.rhov[left_idx] - flux.rhov[right_idx])
@@ -103,6 +72,5 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
     Sol.rhoX += lmbda * (flux.rhoX[left_idx] - flux.rhoX[right_idx])
     Sol.rhoY += lmbda * (flux.rhoY[left_idx] - flux.rhoY[right_idx])
     
-    # set_explicit_boundary_data(Sol, elem, ud, th, mpv)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
 

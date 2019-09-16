@@ -65,12 +65,12 @@ def recompute_advective_fluxes(flux, Sol):
 
     kernel_u = np.array([[0.5, 0.5],[1., 1.],[0.5, 0.5]]).T
     flux[0].rhoY[1:-1,1:-1] = signal.convolve2d(rhoYu, kernel_u, mode='valid').T / kernel_u.sum()
-    flux[0].rhoY[:,-2] *= 0.
+    # flux[0].rhoY[:,-2] *= 0.
 
     rhoYv = Sol.rhoY * Sol.rhov / Sol.rho
     kernel_v = np.array([[0.5,1.,0.5],[0.5,1.,0.5]]).T
     flux[1].rhoY[1:-1,1:-1] = signal.convolve2d(rhoYv, kernel_v, mode='valid') /kernel_v.sum()
-    flux[1].rhoY[:,-2] *= 0.
+    # flux[1].rhoY[:,-2] *= 0.
 
 
 def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
