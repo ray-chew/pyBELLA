@@ -72,7 +72,7 @@ class UserData(object):
 
         self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
         self.coriolis_strength[0] = self.omega * self.t_ref
-        self.coriolis_strength[2] = self.omega * self.T_ref
+        self.coriolis_strength[2] = self.omega * self.t_ref
 
         for i in range(3):
             if (self.gravity_strength[i] > np.finfo(np.float).eps) or (i == 1):
