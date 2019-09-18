@@ -81,7 +81,10 @@ def slopes(Sol, Diffs, ud, elem):
     kz = ud.kz
     kY = ud.kY
 
-    # amplitudes of the left state difference:
+    # amplitudes of the state differences:
+    # first lefts_idx removes the zero at the end
+    # since differences always result in len-1
+    # and the second indexing selects lefts and rights
     aul = Diffs.u[lefts_idx][lefts_idx]
     avl = Diffs.v[lefts_idx][lefts_idx]
     awl = Diffs.w[lefts_idx][lefts_idx]
