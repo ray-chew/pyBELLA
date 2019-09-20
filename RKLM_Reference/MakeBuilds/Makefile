@@ -67,7 +67,7 @@ LIBS		= $(HDFLIBDIR)/libmfhdf.so.0 \
 
 MAKEFILE	= Makefile
 
-OBJS		= userdata_TravellingVortex_3D_48.o \
+OBJS		= userdata_RisingBubble1_3D.o \
 		boundary.o \
 		data.o \
 		io.o \
@@ -98,7 +98,7 @@ PROGRAM	   = rklm
 
 SHELL		  = /bin/zsh
 
-SRCS		  = ../Input/userdata_TravellingVortex_3D_48.c \
+SRCS		  = ../Input/userdata_RisingBubble1_3D.c \
 		../Input/boundary.c \
 		../Management/data.c \
 		../Management/io.c \
@@ -155,10 +155,10 @@ update:		$(DEST)/$(PROGRAM)
 $(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)
 		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install
 
-### userdata_TravellingVortex_3D_48
-### userdata_TravellingVortex_3D_48
-userdata_TravellingVortex_3D_48.o : 
-	$(CC) -c $(HDRFLAGS) ../Input/userdata_TravellingVortex_3D_48.c
+### userdata_RisingBubble1_3D
+### userdata_RisingBubble1_3D
+userdata_RisingBubble1_3D.o :
+	$(CC) -c $(HDRFLAGS) ../Input/userdata_RisingBubble1_3D.c
 
 boundary.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/boundary.c

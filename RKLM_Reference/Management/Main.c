@@ -37,7 +37,6 @@
 
 int main( void )
 {
-    time_t tic = time(NULL);
 	/* low Mach */
 	extern MPV* mpv;
 	
@@ -87,6 +86,7 @@ int main( void )
     /* generate divergence-controlled initial data  */
     dt_info.time_step_switch = 0;
 
+    time_t tic = time(NULL);
 	/* Main loop over the sequence of time values of tout */
 	while(t < *tout && step < ud.stepmax) {
 		

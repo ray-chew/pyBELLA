@@ -18,8 +18,6 @@
 #include "space_discretization.h"
 #include "thermodynamic.h"
 #include "Eos.h"
-#include "set_ghostcells_p.h"
-#include "set_ghostnodes_p.h"
 #include "boundary.h"
 #include "memory.h"
 #include "Hydrostatics.h"
@@ -77,14 +75,14 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
 	
     /* Earth */	
-	double grav  = 9.81;                               /* [m/s^2]                         */
-	double omega = 2*PI*sin(0.25*PI)/(24.0*3600.0);    /*  [s^-1]                         */
+	double grav  = 10.0;                               /* [m/s^2]                         */
+	double omega = 0*2*PI*sin(0.25*PI)/(24.0*3600.0);    /*  [s^-1]                         */
 
 	/* references for non-dimensionalization */
 	double h_ref = 10000;            /* [m]                             */
 	double t_ref = 100;              /* [s]                             */
 	double T_ref = 300;              /* [K]                             */
-	double p_ref = 101325;           /* [Pa]                            */
+	double p_ref = 8.61 * 10e4;           /* [Pa]                            */
 	double u_ref = h_ref/t_ref;      /* Strouhal No == 1 always assumed */
 		
 	/* thermodynamics and chemistry */
@@ -100,11 +98,11 @@ void User_Data_init(User_Data* ud) {
     double cond   = 0.0;            /* [m^2/s]                         */
 
     /* references for non-dimensionalization */
-    double h_ref   = 10000;            /* [m]                             */
-    double t_ref   = 100;              /* [s]                             */
-    double T_ref   = 300;              /* [K]                             */
-    double p_ref   = 101325;           /* [Pa]                            */
-    double u_ref   = h_ref/t_ref;      /* Strouhal No == 1 always assumed */
+    // double h_ref   = 10000;            /* [m]                             */
+    // double t_ref   = 100;              /* [s]                             */
+    // double T_ref   = 300;              /* [K]                             */
+    // double p_ref   = 101325;           /* [Pa]                            */
+    // double u_ref   = h_ref/t_ref;      /* Strouhal No == 1 always assumed */
     double rho_ref = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
     double Nsq_ref = grav*1.3e-05;     /* [] */
 
@@ -160,17 +158,17 @@ void User_Data_init(User_Data* ud) {
 	}
 
     /* low Froude */
-    ud->implicit_gravity_theta  = 0;
-    ud->implicit_gravity_press  = 0; /* should be on for compressible option */
-    ud->implicit_gravity_theta2 = 0;
-    ud->implicit_gravity_press2 = 0; /* should this, too, be on for compressible option ?  */
+    // ud->implicit_gravity_theta  = 0;
+    // ud->implicit_gravity_press  = 0; /* should be on for compressible option */
+    // ud->implicit_gravity_theta2 = 0;
+    // ud->implicit_gravity_press2 = 0; /* should this, too, be on for compressible option ?  */
 	    
 	/* flow domain */
-	ud->xmin = - 1.0;  
-	ud->xmax =   1.0;  
+	ud->xmin = - 10.0;  
+	ud->xmax =   10.0;  
 	ud->ymin =   0.0;
 	ud->ymax =   1.0; 
-	ud->zmin = - 1.0;
+	ud->zmin = - 10.0;
 	ud->zmax =   1.0;
 
 	/* boundary/initial conditions */
@@ -180,10 +178,10 @@ void User_Data_init(User_Data* ud) {
     ud->hill_height = 0.0 * 0.096447; /* 0.096447; */ /* hill_height * l_ref = 0.628319 km *//*  BREAKING WAVE CHANGE */
 	ud->hill_length_scale = 0.1535;   /* hill_length * l_ref = 1.0 km */
 	
-	ud->bdrytype_min[0] = WALL; /* DIRICHLET; PERIODIC; WALL; */
+	ud->bdrytype_min[0] = PERIODIC; /* DIRICHLET; PERIODIC; WALL; */
 	ud->bdrytype_min[1] = WALL; /* SLANTED_WALL; */
 	ud->bdrytype_min[2] = WALL;
-	ud->bdrytype_max[0] = WALL; /* DIRICHLET; PERIODIC; WALL; */  
+	ud->bdrytype_max[0] = PERIODIC; /* DIRICHLET; PERIODIC; WALL; */  
 	ud->bdrytype_max[1] = WALL;  
 	ud->bdrytype_max[2] = WALL;
 	
@@ -196,11 +194,11 @@ void User_Data_init(User_Data* ud) {
 	
     /* time discretization */
     ud->time_integrator      = SI_MIDPT;  
-	ud->CFL                  = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0             = 0.1;
-    ud->dtfixed              = 0.1; /* 0.0052; */ /*  0.004; */ 
-    ud->no_of_steps_to_CFL   = 1;
-    ud->no_of_steps_to_dtfixed = 1;
+	ud->CFL                  = 1.0; /* 0.45; 0.9; 0.8; */
+    ud->dtfixed0             = 17.0 / ud->t_ref;
+    ud->dtfixed              = 17.0 / ud->t_ref; /* 0.0052; */ /*  0.004; */ 
+    // ud->no_of_steps_to_CFL   = 1;
+    // ud->no_of_steps_to_dtfixed = 1;
     
     set_time_integrator_parameters(ud);
     
@@ -208,24 +206,24 @@ void User_Data_init(User_Data* ud) {
 	ud->inx = 160+1; /* 641; 321; 161; 129; 81; */    
 	ud->iny =  80+1; /* 321; 161;  81;  65; 41;  */
 	ud->inz =  1;
-	ud->h    = MIN_own((ud->xmax-ud->xmin)/(ud->inx),MIN_own((ud->ymax-ud->ymin)/(ud->iny),(ud->zmax-ud->zmin)/(ud->inz)));
+	// ud->h    = MIN_own((ud->xmax-ud->xmin)/(ud->inx),MIN_own((ud->ymax-ud->ymin)/(ud->iny),(ud->zmax-ud->zmin)/(ud->inz)));
 	
 	/* explicit predictor step */
 	/* Recovery */
 	ud->recovery_order = SECOND;
-	ud->limiter_type_scalars  = RUPE; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
-	ud->limiter_type_velocity = NONE; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
+	ud->limiter_type_scalars  = VANLEER; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
+	ud->limiter_type_velocity = VANLEER; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
 	
     /* first correction */
-	ud->p_flux_correction = WRONG; /* CORRECT, WRONG; */
-    if (ud->time_integrator == OP_SPLIT || ud->time_integrator == OP_SPLIT_MD_UPDATE) {
-        ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.0; 
-        /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25; */
-        /* ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.0; */
-    } else {
-        /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25;*/
-        ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.5; 
-    }
+	// ud->p_flux_correction = WRONG; /* CORRECT, WRONG; */
+    // if (ud->time_integrator == OP_SPLIT || ud->time_integrator == OP_SPLIT_MD_UPDATE) {
+    //     ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.0; 
+    //     /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25; */
+    //     /* ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.0; */
+    // } else {
+    //     /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25;*/
+    //     ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.5; 
+    // }
     
     /* parameters for SWEBY_MUNZ limiter family */
     ud->kp = 1.4;
@@ -260,13 +258,13 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
 
     /* output times */  
-	ud->tout[0] =  2.0;      
-	ud->tout[1] =  4.0;      
-	ud->tout[2] =  6.0;      
-	ud->tout[3] =  8.0;      
-    ud->tout[4] = 10.0;      
-    ud->tout[5] = 10.5;      
-	ud->tout[6] = -1.0;      
+	ud->tout[0] =  1000.0 / ud->t_ref;      
+	ud->tout[1] =  1000.0 / ud->t_ref;      
+	// ud->tout[2] =  6.0;      
+	// ud->tout[3] =  8.0;      
+    // ud->tout[4] = 10.0;      
+    // ud->tout[5] = 10.5;      
+	// ud->tout[6] = -1.0;      
 
     ud->stepmax = 10000;
     
@@ -276,11 +274,11 @@ void User_Data_init(User_Data* ud) {
 	ud->write_file_period = 10000;
 	ud->file_format = HDF;
     
-    ud->write_history = 0;
+    // ud->write_history = 0;
 
 
     {
-        char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_rising_bubble/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
@@ -351,7 +349,7 @@ void Sol_initial(ConsVars* Sol,
 				r = sqrt(x*x + (y-y0)*(y-y0) + (elem->ndim==3)*z*z) / r0;
                 p     = mpv->HydroState->p0[j];
                 rhoY  = mpv->HydroState->rhoY0[j];
-				rho  = rhoY / (stratification(y) + (r >= 1.0 ? 0.0 : (delth/300.0)*cos(0.5*PI*r)*cos(0.5*PI*r)));
+				rho  = rhoY / (stratification(y) + (r > 1.0 ? 0.0 : (delth/300)*cos(0.5*PI*r)*cos(0.5*PI*r)));
 				
 				Sol->rho[n]  = rho;
 				Sol->rhou[n] = rho * u;
@@ -359,7 +357,7 @@ void Sol_initial(ConsVars* Sol,
 				Sol->rhow[n] = rho * w;
 				Sol->rhoe[n] = rhoe(rho, u, v, w, p);
 				Sol->rhoY[n] = rhoY;
-				Sol->geopot[n] = g * y;
+				// Sol->geopot[n] = g * y;
 
 #ifdef THERMCON
                 mpv->p2_cells[n] = (p/rhoY) / ud.Msq;
