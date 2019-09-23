@@ -185,7 +185,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     
     counter = solver_counter()
     
-    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-8,maxiter=1500,callback=counter)
+    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-11,maxiter=1500,callback=counter)
 
     # l2_residual = (rhs[node.igx:-node.igx,node.igy:-node.igy].ravel() - (lap2D * counter.rk))**2
     # l2_residual = l2_residual.sum()

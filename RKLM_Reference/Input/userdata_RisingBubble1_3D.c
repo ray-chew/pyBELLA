@@ -103,7 +103,9 @@ void User_Data_init(User_Data* ud) {
     // double T_ref   = 300;              /* [K]                             */
     // double p_ref   = 101325;           /* [Pa]                            */
     // double u_ref   = h_ref/t_ref;      /* Strouhal No == 1 always assumed */
-    double rho_ref = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
+    // double rho_ref = p_ref / (R_gas*T_ref); /* [kg/m^3]  */
+    double rho_ref = p_ref / (R_gas * T_ref);
+             
     double Nsq_ref = grav*1.3e-05;     /* [] */
 
     ud->h_ref       = h_ref;
@@ -164,11 +166,11 @@ void User_Data_init(User_Data* ud) {
     // ud->implicit_gravity_press2 = 0; /* should this, too, be on for compressible option ?  */
 	    
 	/* flow domain */
-	ud->xmin = - 10.0;  
-	ud->xmax =   10.0;  
+	ud->xmin = - 1.0;  
+	ud->xmax =   1.0;  
 	ud->ymin =   0.0;
 	ud->ymax =   1.0; 
-	ud->zmin = - 10.0;
+	ud->zmin = - 1.0;
 	ud->zmax =   1.0;
 
 	/* boundary/initial conditions */
@@ -193,7 +195,8 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
 	
     /* time discretization */
-    ud->time_integrator      = SI_MIDPT;  
+    ud->time_integrator      = SI_MIDPT;
+    ud->advec_time_integrator = STRANG;
 	ud->CFL                  = 1.0; /* 0.45; 0.9; 0.8; */
     ud->dtfixed0             = 17.0 / ud->t_ref;
     ud->dtfixed              = 17.0 / ud->t_ref; /* 0.0052; */ /*  0.004; */ 
@@ -211,8 +214,8 @@ void User_Data_init(User_Data* ud) {
 	/* explicit predictor step */
 	/* Recovery */
 	ud->recovery_order = SECOND;
-	ud->limiter_type_scalars  = VANLEER; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
-	ud->limiter_type_velocity = VANLEER; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
+	ud->limiter_type_scalars  = NONE; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
+	ud->limiter_type_velocity = NONE; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
 	
     /* first correction */
 	// ud->p_flux_correction = WRONG; /* CORRECT, WRONG; */
@@ -235,7 +238,7 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  300; /* (ud->inx+3); */
 	
     /* linear solver-stuff */
-    double tol                            = 1.e-16 * (ud->is_compressible == 1 ? 0.01 : 1.0);
+    double tol                            = 1.e-8 * (ud->is_compressible == 1 ? 0.01 : 1.0);
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;

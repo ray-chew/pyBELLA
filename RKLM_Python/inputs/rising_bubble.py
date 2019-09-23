@@ -12,7 +12,7 @@ class UserData(object):
     BOUY = 0
 
     grav = 10.0
-    omega = 0.0*0.0001
+    omega = 0.0 * 2.0 * np.pi * np.sin(0.25 * np.pi) / (24.0 * 3600.0)
 
     R_gas = 287.4
     R_vap = 461.0
@@ -28,9 +28,10 @@ class UserData(object):
     h_ref = 10000.0
     t_ref = 100.0
     T_ref = 300.00
-    p_ref = 8.61 * 1e4
+    p_ref = 8.61 * 10e4
     u_ref = h_ref / t_ref
-    rho_ref = p_ref / (R_gas * T_ref)
+    # rho_ref = p_ref / (R_gas * T_ref)
+    rho_ref = 1.0
 
     Nsq_ref = grav * 1.3e-05
 
@@ -165,8 +166,8 @@ class UserData(object):
         # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[1] = -1.0
 
-        # self.stepmax = 10000
-        self.stepmax = 1000
+        self.stepmax = 10000
+        # self.stepmax = 2
 
         self.write_stdout = True
         self.write_stdout_period = 1
@@ -204,43 +205,28 @@ def sol_init(Sol, mpv, elem, node, th, ud):
 
     hydrostatic_state(mpv, elem, node, th, ud)
 
-    x = elem.x.reshape(-1,1)
-    y = elem.y.reshape(1,-1)
+    x = elem.x
+    y = elem.y
 
-    r = np.sqrt(x**2 + (y-y0)**2 ) / r0
-    r = r.reshape(Sol.rho.shape)
+    x, y = np.meshgrid(x,y)
+    print(x)
+    print(y)
+    
+    r = np.sqrt(x**2 + (y-y0)**2) / r0
+    print(r)
+
     p = np.repeat(mpv.HydroState.p0[0].reshape(1,-1),elem.icx,axis=0)
     rhoY = np.repeat(mpv.HydroState.rhoY0[0].reshape(1,-1),elem.icx,axis=0)
-    
-    perturbation = ((delth/300.) * np.cos(0.5 * np.pi * r)**2)
-    perturbation[np.where(r >= 1.0)] = 0.0
-    rho = rhoY / ud.stratification(y) - perturbation
 
-    # Y = ud.stratification(y) + delth * ud.molly(x) * np.sin(np.pi * y) / (1.0 + (x-xc)**2 / (a**2))
+    perturbation = (delth/300.0) * (np.cos(0.5 * np.pi * r)**2)
+    perturbation[np.where(r > 1.0)] = 0.0
+    rho = rhoY / (ud.stratification(y) + perturbation.T)
 
-    # xn = node.x[:-1].reshape(-1,1)
-    # yn = node.y[:-1].reshape(1,-1)
-
-    # Yn = ud.stratification(yn) + delth * ud.molly(xn) * np.sin(np.pi * yn) / (1.0 + (xn-xc)**2 / (a**2))
-
-    # hydrostatic_column(HySt, HyStn, Y, Yn, elem, node, th, ud)
-    # print('mpv.HydroState_n.Y0 = ', mpv.HydroState_n.Y0[0])
-    # print('HyStn = ', HyStn.Y0[0])
     x_idx = slice(None)
     y_idx = slice(None)
-    # xc_idx = slice(0,-1)
-    # yc_idx = slice(0,-1)
-    # c_idx = (xc_idx, yc_idx)
 
     u, v, w = u0, v0, w0
-    # if ud.is_compressible:
-    #     p = HySt.p0[:,y_idx][c_idx]
-    #     rhoY = HySt.rhoY0[:,y_idx][c_idx]
-    # else:
-    #     p = mpv.HydroState.p0[:, y_idx]
-    #     rhoY = mpv.HydroState.rhoY0[:, y_idx]
 
-    # rho = rhoY / Y[:,y_idx]
     Sol.rho[x_idx,y_idx] = rho
     Sol.rhou[x_idx,y_idx] = rho * u
     Sol.rhov[x_idx,y_idx] = rho * v
