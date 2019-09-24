@@ -7,14 +7,14 @@ from discretization import kgrid
 from physics.gas_dynamics.thermodynamic import ThemodynamicInit
 from physics.gas_dynamics.numerical_flux import recompute_advective_fluxes
 from physics.gas_dynamics.explicit import advect
-from physics.gas_dynamics.eos import nonhydrostasy, compressibility, synchronise_variables
+from physics.gas_dynamics.eos import nonhydrostasy, compressibility, synchronise_variables, is_compressible
 from physics.gas_dynamics.gas_dynamics import dynamic_timestep
 from physics.low_mach.second_projection import euler_backward_non_advective_impl_part, euler_backward_non_advective_expl_part, euler_forward_non_advective
 from inputs.enum_bdry import BdryType
 from physics.low_mach.mpv import MPV, acoustic_order
 
-from inputs.travelling_vortex_3D_48 import UserData, sol_init
-from inputs.acoustic_wave_high import UserData, sol_init
+# from inputs.travelling_vortex_3D_48 import UserData, sol_init
+# from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
 from inputs.rising_bubble import UserData, sol_init
 from inputs.user_data import UserDataInit
@@ -76,9 +76,10 @@ while ((t < tout) and (step < ud.stepmax)):
     print("half-time prediction of advective flux")
     print("---------------------------------------")
     
+    ud.is_compressible = is_compressible(ud,step)
     ud.nonhydrostasy = nonhydrostasy(ud,t)
-    ud.compressibility = compressibility(ud,t)
-    ud.acoustic_order = acoustic_order(ud,t,dt)
+    ud.compressibility = compressibility(ud,t,step)
+    ud.acoustic_order = acoustic_order(ud,t,step)
 
     # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_flux')
     

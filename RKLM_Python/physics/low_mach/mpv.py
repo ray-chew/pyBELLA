@@ -32,12 +32,13 @@ class MPV(object):
                 setattr(self,key,value.squeeze())
 
 
-def acoustic_order(ud,t,dt):
+def acoustic_order(ud,t,step):
     if ud.is_compressible == 0:
         return 1.8
     elif ud.is_compressible == 1:
         return 2.0
     elif ud.is_compressible == -1:
-        assert 0
+        current_transition_step = step - ud.no_of_initial
+        return np.linspace(1.8,2.0,ud.no_of_transition+2)[1:-1][current_transition_step]
     else:
         assert 0

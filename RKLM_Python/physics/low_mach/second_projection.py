@@ -92,7 +92,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
 
     dp2n[inner_idx] -= dt * dpidP * div[inner_idx]
 
-    if (ud.is_compressible):
+    if (ud.is_compressible != 0):
         weight = ud.acoustic_order - 1.0
         mpv.p2_nodes += weight * dp2n.T
 
