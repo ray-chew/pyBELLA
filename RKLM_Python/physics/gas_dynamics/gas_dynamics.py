@@ -57,14 +57,5 @@ def dynamic_timestep(Sol, time, time_output, elem, ud, th, step):
         if ((2.0*dt) >= (time_output - time)):
             dt = 0.5 * (time_output - time) + machine_epsilon
 
-        # if step == 38:
-        #     dt = 0.0000668354011612
-        # if step == 39:
-        #     dt = 0.0000668354011612
 
-        # if step == 1:
-        #     dt = 71.5337121335972483
-        # if step == 2:
-        #     dt = 71.3741788666122119
-            
         return dt

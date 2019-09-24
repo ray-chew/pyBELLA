@@ -61,7 +61,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     S = 1. / ud.stratification(elem.y[nimage[1]])
 
                     dpi = direction*(th.Gamma*g) * 0.5 * elem.dy * (1.0 / Y_last + S)
-                    rhoY = ((Sol.rhoY[nlast]**th.gm1) + dpi)**th.gm1inv if ud.is_compressible == 1 else mpv.HydroState.rhoY0[nimage]
+                    rhoY = ((Sol.rhoY[nlast]**th.gm1) + dpi)**th.gm1inv if ud.is_compressible == 1 else mpv.HydroState.rhoY0[0,:][nimage[1]]
 
                     rho = rhoY * S
                     p = rhoY**th.gamm

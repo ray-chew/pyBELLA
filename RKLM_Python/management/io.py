@@ -9,10 +9,14 @@ class io(object):
         self.FORMAT = ".h5"
         self.OUTPUT_FILENAME = "./output"
         self.BASE_NAME = self.ud.output_base_name
-        if self.ud.is_compressible == 1:
-            self.SUFFIX = self.ud.output_name_comp
+
+        if self.ud.continuous_blending == False:
+            if self.ud.is_compressible == 1:
+                self.SUFFIX = self.ud.output_name_comp
+            else:
+                self.SUFFIX = self.ud.output_name_psinc
         else:
-            self.SUFFIX = self.ud.output_name_psinc
+            self.SUFFIX = "_s1=" + str(self.ud.no_of_initial) + "_s2=" + str(self.ud.no_of_transition) + "_continuous_blending"
 
 
         self.PATHS = [  'bouy',
