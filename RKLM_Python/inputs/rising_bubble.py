@@ -28,7 +28,7 @@ class UserData(object):
     h_ref = 10000.0
     t_ref = 100.0
     T_ref = 300.00
-    p_ref = 8.61 * 10e4
+    p_ref = 8.61 * 1e4
     u_ref = h_ref / t_ref
     # rho_ref = p_ref / (R_gas * T_ref)
     rho_ref = 1.0
@@ -64,7 +64,7 @@ class UserData(object):
         self.cond = self.cond * self.t_ref / (self.h_ref * self.h_ref * self.R_gas)
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+        self.is_compressible = 0
         self.compressibility = 0.0
         self.acoustic_timestep = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
@@ -121,9 +121,9 @@ class UserData(object):
 
         self.time_integrator = TimeIntegrator.SI_MIDPT
         self.advec_time_integrator = TimeIntegrator.STRANG
-        self.CFL  = 1.0
-        self.dtfixed0 = 17.0 / self.t_ref
-        self.dtfixed = 17.0 / self.t_ref
+        self.CFL  = 0.5
+        self.dtfixed0 = 1.9 / self.t_ref
+        self.dtfixed = 1.9 / self.t_ref
 
         self.tips = TimeIntegratorParams()
         SetTimeIntegratorParameters(self)
@@ -162,11 +162,15 @@ class UserData(object):
 
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
-        self.tout =  1000.0 / self.t_ref
+        self.tout = 350 / self.t_ref
         # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[1] = -1.0
 
         self.stepmax = 10000
+
+        self.continuous_blending = True
+        self.no_of_initial = 0
+        self.no_of_transition = 20
         # self.stepmax = 2
 
         self.write_stdout = True
@@ -209,11 +213,8 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     y = elem.y
 
     x, y = np.meshgrid(x,y)
-    print(x)
-    print(y)
     
     r = np.sqrt(x**2 + (y-y0)**2) / r0
-    print(r)
 
     p = np.repeat(mpv.HydroState.p0[0].reshape(1,-1),elem.icx,axis=0)
     rhoY = np.repeat(mpv.HydroState.rhoY0[0].reshape(1,-1),elem.icx,axis=0)
@@ -249,7 +250,7 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     # hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th)
     # print(mpv.p2_nodes[103,:10])
     ud.is_nonhydrostasy = 0.0
-    ud.compressibility = 1.0
+    ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 

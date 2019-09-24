@@ -133,7 +133,7 @@ void User_Data_init(User_Data* ud) {
 
     /* Low Mach */
     ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
-    ud->is_compressible   =  1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_compressible   =  0;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep =  0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
 	
@@ -198,8 +198,8 @@ void User_Data_init(User_Data* ud) {
     ud->time_integrator      = SI_MIDPT;
     ud->advec_time_integrator = STRANG;
 	ud->CFL                  = 1.0; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0             = 17.0 / ud->t_ref;
-    ud->dtfixed              = 17.0 / ud->t_ref; /* 0.0052; */ /*  0.004; */ 
+    ud->dtfixed0             = 20.0 / ud->t_ref;
+    ud->dtfixed              = 20.0 / ud->t_ref; /* 0.0052; */ /*  0.004; */ 
     // ud->no_of_steps_to_CFL   = 1;
     // ud->no_of_steps_to_dtfixed = 1;
     
