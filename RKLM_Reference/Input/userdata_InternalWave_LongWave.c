@@ -24,7 +24,7 @@
 double molly(double x);
 
 /* horizontal stretch for S&K94 IGWs: planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0; */
-static double scalefactor = 160.0;      
+static double scalefactor = 20.0;      
 
 void User_Data_init(User_Data* ud) {
     
@@ -36,7 +36,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Earth */
     double grav     = 9.81;             /* gravitational acceleration [m/s^2]    */
-    double omega    = 0.0*0.0001;       /* Coriolis parameter [1/s]              */
+    double omega    = 1.0*0.0001;       /* Coriolis parameter [1/s]              */
                                         /* sin(0.5*PI) * 2.0 * 0.00007272205217; */
     
     /* thermodynamics and chemistry */
@@ -205,8 +205,8 @@ void User_Data_init(User_Data* ud) {
     ud->tout[0] = scalefactor * 1.0 * 3000.0 / ud->t_ref; /* 3000 */
     ud->tout[1] = -1.0;
 
-    /* ud->stepmax = 10000; */
-    ud->stepmax = 40;
+    ud->stepmax = 10000;
+    // ud->stepmax = 2;
     
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
@@ -247,7 +247,7 @@ void Sol_initial(ConsVars* Sol,
     const double u0    = ud.wind_speed;
     const double v0    = 0.0;
     const double w0    = 0.0;
-    const double delth = 0.1 / ud.T_ref;                    /* pot. temp. perturbation amplitude; standard:  0.01 / ud.T_ref */
+    const double delth = 0.01 / ud.T_ref;                    /* pot. temp. perturbation amplitude; standard:  0.01 / ud.T_ref */
     const double xc    = -1.0*scalefactor*50.0e+03/ud.h_ref; /* initial position of center of pot temp perturbation */
     const double a     = scalefactor*5.0e+03/ud.h_ref;       /* characteristic width of the witch of Agnesi type mollifier */
     

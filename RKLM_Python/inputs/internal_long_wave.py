@@ -12,7 +12,7 @@ class UserData(object):
     BOUY = 0
 
     grav = 9.81
-    omega = 0.0*0.0001
+    omega = 1.0*0.0001
 
     R_gas = 287.4
     R_vap = 461.0
@@ -34,7 +34,7 @@ class UserData(object):
 
     Nsq_ref = 1.0e-4
 
-    scale_factor = 160.0
+    scale_factor = 20.0
 
     i_gravity = np.zeros((3))
     i_coriolis = np.zeros((3))
@@ -66,7 +66,7 @@ class UserData(object):
         self.viscbt = self.viscbt * self.t_ref / (self.h_ref * self.h_ref)
         self.cond = self.cond * self.t_ref / (self.h_ref * self.h_ref * self.R_gas)
 
-        self.is_nonhydrostatic = 1
+        self.is_nonhydrostatic = 0
         self.is_compressible = 1
         self.compressibility = 0.0
         self.acoustic_timestep = 0
@@ -77,7 +77,7 @@ class UserData(object):
 
         self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
         self.coriolis_strength[0] = self.omega * self.t_ref
-        self.coriolis_strength[2] = self.omega * self.T_ref
+        self.coriolis_strength[2] = self.omega * self.t_ref
 
         for i in range(3):
             if (self.gravity_strength[i] > np.finfo(np.float).eps) or (i == 1):
@@ -125,6 +125,7 @@ class UserData(object):
         self.time_integrator = TimeIntegrator.SI_MIDPT
         self.advec_time_integrator = TimeIntegrator.STRANG
         self.CFL  = 0.9
+
         self.dtfixed0 = 10.0 * ( 12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
         self.dtfixed = 10.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
 
@@ -165,12 +166,17 @@ class UserData(object):
 
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
+        # tout = 4800s
         self.tout =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[1] = -1.0
 
-        # self.stepmax = 10000
-        self.stepmax = 40
+        self.stepmax = 10000
+        # self.stepmax = 2
+
+        self.continuous_blending = False
+        self.no_of_initial = 0
+        self.no_of_transition = 0
 
         self.write_stdout = True
         self.write_stdout_period = 1
@@ -181,6 +187,7 @@ class UserData(object):
         self.output_base_name = "_internal_long_wave"
         self.output_name_psinc = "_low_mach_gravity_psinc"
         self.output_name_comp = "_low_mach_gravity_comp"
+        self.output_name_hydro = "_low_mach_gravity_hydro"
 
         self.stratification = self.stratification_function
         self.molly = self.molly_function
@@ -211,9 +218,11 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     u0 = ud.wind_speed
     v0 = 0.0
     w0 = 0.0
-    delth = 0.1 / ud.T_ref
+    delth = 0.01 / ud.T_ref
     xc = -1.0 *ud.scale_factor * 50.0e+3 / ud.h_ref
     a = ud.scale_factor * 5.0e+3 / ud.h_ref
+    # xc = 100000 / ud.h_ref
+    # a = 48000 / 
 
     hydrostatic_state(mpv, elem, node, th, ud)
     
@@ -226,11 +235,13 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     y = elem.y.reshape(1,-1)
 
     Y = ud.stratification(y) + delth * ud.molly(x) * np.sin(np.pi * y) / (1.0 + (x-xc)**2 / (a**2))
+    # Y = ud.stratification(y) + delth * np.sin(np.pi * y) / (1.0 + (x-xc)**2 / (a**2))
 
     xn = node.x[:-1].reshape(-1,1)
     yn = node.y[:-1].reshape(1,-1)
 
     Yn = ud.stratification(yn) + delth * ud.molly(xn) * np.sin(np.pi * yn) / (1.0 + (xn-xc)**2 / (a**2))
+    # Yn = ud.stratification(yn) + delth * np.sin(np.pi * yn) / (1.0 + (xn-xc)**2 / (a**2))
 
     hydrostatic_column(HySt, HyStn, Y, Yn, elem, node, th, ud)
     # print('mpv.HydroState_n.Y0 = ', mpv.HydroState_n.Y0[0])
@@ -246,9 +257,9 @@ def sol_init(Sol, mpv, elem, node, th, ud):
         p = HySt.p0[:,y_idx][c_idx]
         rhoY = HySt.rhoY0[:,y_idx][c_idx]
     else:
-        p = mpv.HydroState.p0[:, y_idx]
-        rhoY = mpv.HydroState.rhoY0[:, y_idx]
-    
+        p = mpv.HydroState.p0[0][y_idx]
+        rhoY = mpv.HydroState.rhoY0[0][y_idx]
+
     rho = rhoY / Y[:,y_idx]
     Sol.rho[x_idx,y_idx] = rho
     Sol.rhou[x_idx,y_idx] = rho * u
@@ -268,8 +279,10 @@ def sol_init(Sol, mpv, elem, node, th, ud):
 
     hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th)
     # print(mpv.p2_nodes[103,:10])
-    ud.is_nonhydrostasy = 0.0
-    ud.compressibility = 1.0
+    ud.is_nonhydrostasy = 1.0 if ud.is_nonhydrostatic == 1 else 0.0
+    ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
+    # ud.is_nonhydrostasy = 0.0
+    # ud.compressibility = 0.0
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
