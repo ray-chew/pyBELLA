@@ -11,10 +11,17 @@ class io(object):
         self.BASE_NAME = self.ud.output_base_name
 
         if self.ud.continuous_blending == False:
-            if self.ud.is_compressible == 1:
-                self.SUFFIX = self.ud.output_name_comp
-            else:
-                self.SUFFIX = self.ud.output_name_psinc
+            if self.ud.is_nonhydrostatic == 0:
+                if self.ud.is_compressible == 1:
+                    self.SUFFIX = self.ud.output_name_hydro
+                else:
+                    assert("Not implemented")
+            elif self.ud.is_nonhydrostatic == 1:
+                if self.ud.is_compressible == 1:
+                    self.SUFFIX = self.ud.output_name_comp
+                else:
+                    self.SUFFIX = self.ud.output_name_psinc
+                
         else:
             self.SUFFIX = "_s1=" + str(self.ud.no_of_initial) + "_s2=" + str(self.ud.no_of_transition) + "_continuous_blending"
 
@@ -96,6 +103,8 @@ class io(object):
         # print(mpv.HydroState.p0[0,:])
         # print(mpv.HydroState.rho0[0,:])
         self.populate(name,'dT', Sol.rhoY**th.gamm / Sol.rho - mpv.HydroState.p0[0,:] / mpv.HydroState.rho0[0,:])
+
+        self.populate(name,'drhoY', Sol.rhoY - mpv.HydroState.rho0[0,:] * mpv.HydroState.Y0[0,:])
 
         # species mass fraction(?)
         self.populate(name,'Y', Sol.rhoY / Sol.rho)
