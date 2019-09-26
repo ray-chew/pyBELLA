@@ -76,9 +76,9 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     rhoYovG = Ginv * Sol.rhoY[inner_idx]
     dchi = Sol.rhoX[inner_idx] / Sol.rho[inner_idx]
     dbuoy = -1. * Sol.rhoY[inner_idx] * dchi
-    drhou = Sol.rhou[inner_idx] - u0 * Sol.rho[inner_idx]
+    drhou = Sol.rhov[inner_idx] - u0 * Sol.rho[inner_idx]
 
-    rhoY = Sol.rhoY**(th.gamm - 2.0)    
+    rhoY = Sol.rhoY**(th.gamm - 2.0)
     dpidP_kernel = np.array([[1.,1.],[1.,1.]])
     dpidP = (th.gm1 / ud.Msq) * signal.convolve2d(rhoY, dpidP_kernel, mode='valid') / dpidP_kernel.sum()
 
@@ -185,7 +185,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     
     counter = solver_counter()
     
-    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-11,maxiter=1500,callback=counter)
+    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-11,maxiter=6000,callback=counter)
 
     # l2_residual = (rhs[node.igx:-node.igx,node.igy:-node.igy].ravel() - (lap2D * counter.rk))**2
     # l2_residual = l2_residual.sum()
