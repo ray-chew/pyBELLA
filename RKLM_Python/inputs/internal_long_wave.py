@@ -172,11 +172,13 @@ class UserData(object):
         # self.tout[1] = -1.0
 
         self.stepmax = 10000
-        # self.stepmax = 2
+        # self.stepmax = 10
 
-        self.continuous_blending = False
-        self.no_of_initial = 0
-        self.no_of_transition = 0
+        self.continuous_blending = True
+        self.no_of_pi_initial = 0
+        self.no_of_pi_transition = 0
+        self.no_of_hy_initial = 0
+        self.no_of_hy_transition = 10
 
         self.write_stdout = True
         self.write_stdout_period = 1
@@ -279,7 +281,7 @@ def sol_init(Sol, mpv, elem, node, th, ud):
 
     hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th)
     # print(mpv.p2_nodes[103,:10])
-    ud.is_nonhydrostasy = 1.0 if ud.is_nonhydrostatic == 1 else 0.0
+    ud.nonhydrostasy = 1.0 if ud.is_nonhydrostatic == 1 else 0.0
     ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
     # ud.is_nonhydrostasy = 0.0
     # ud.compressibility = 0.0
