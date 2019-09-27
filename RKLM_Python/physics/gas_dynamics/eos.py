@@ -2,16 +2,16 @@ import numpy as np
 
 from inputs.boundary import set_ghostcells_p2
 
-def nonhydrostasy(ud,t):
+def nonhydrostasy(ud,t,step):
     if ud.is_nonhydrostatic == 0:
         return 0.0
     elif ud.is_nonhydrostatic == 1:
         return 1.0
     elif ud.is_nonhydrostatic == -1:
-        a = 12.5
-        b = 1.0 / 24.0
-        c = np.min(1.0, np.max(0.0, b * (t-a)))
-        return c
+        current_transition_step = step - ud.no_of_hy_initial
+        print("current_transition_step =", step - ud.no_of_hy_initial)
+        # print(np.linspace(0.0,1.0,ud.no_of_hy_transition+2)[1:-1][current_transition_step])
+        return np.linspace(0.0,1.0,ud.no_of_hy_transition+2)[1:-1][current_transition_step]
     else:
         assert 0
 
@@ -21,29 +21,35 @@ def compressibility(ud,t,step):
     elif ud.is_compressible == 1:
         return 1.0
     elif ud.is_compressible == -1:
-        # dtloc = 12.0
-        # a = 0.0 * dtloc
-        # b = 1.0 / dtloc / 20.0
-        # tau = np.min(1.0, np.max(0.0 * b * (t-a)))
-        # c = 0.5 * (1.0 - np.cos(np.pi * tau))
-        # return c
-        current_transition_step = step - ud.no_of_initial
-        print(current_transition_step)
-        print(np.linspace(0.0,1.0,ud.no_of_transition+2)[1:-1][current_transition_step])
-        return np.linspace(0.0,1.0,ud.no_of_transition+2)[1:-1][current_transition_step]
+        current_transition_step = step - ud.no_of_pi_initial
+        return np.linspace(0.0,1.0,ud.no_of_pi_transition+2)[1:-1][current_transition_step]
     else:
         assert 0
 
 def is_compressible(ud,step):
     if ud.continuous_blending == True:
-        if step < ud.no_of_initial:
+        if step < ud.no_of_pi_initial:
             return 0
-        elif step < (ud.no_of_initial + ud.no_of_transition):
+        elif step < (ud.no_of_pi_initial + ud.no_of_pi_transition):
             return -1
         else:
             return 1
     else:
         return ud.is_compressible
+
+def is_nonhydrostatic(ud,step):
+    print("is_nonhydrostatic", ud.is_nonhydrostatic)
+    print("no_of_nhy_initial:", ud.no_of_hy_initial)
+    print("no_of_nhy_transition:", ud.no_of_hy_transition)
+    if ud.continuous_blending == True:
+        if step < ud.no_of_hy_initial:
+            return 0
+        elif step < (ud.no_of_hy_initial + ud.no_of_hy_transition):
+            return -1
+        else:
+            return 1
+    else:
+        return ud.is_nonhydrostatic
 
 
 def rhoe(rho,u,v,w,p,ud,th):
