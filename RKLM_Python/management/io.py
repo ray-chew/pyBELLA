@@ -23,7 +23,11 @@ class io(object):
                     self.SUFFIX = self.ud.output_name_psinc
                 
         else:
-            self.SUFFIX = "_s1=" + str(self.ud.no_of_initial) + "_s2=" + str(self.ud.no_of_transition) + "_continuous_blending"
+            self.SUFFIX = "_PIs1=" + str(self.ud.no_of_pi_initial) + \
+                "_PIs2=" + str(self.ud.no_of_pi_transition) + \
+                "_HYs1=" + str(self.ud.no_of_hy_initial) + \
+                "_HYs1=" + str(self.ud.no_of_hy_transition) + \
+                "_contblend"
 
 
         self.PATHS = [  'bouy',

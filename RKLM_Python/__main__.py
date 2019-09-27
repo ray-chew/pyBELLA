@@ -7,7 +7,7 @@ from discretization import kgrid
 from physics.gas_dynamics.thermodynamic import ThemodynamicInit
 from physics.gas_dynamics.numerical_flux import recompute_advective_fluxes
 from physics.gas_dynamics.explicit import advect
-from physics.gas_dynamics.eos import nonhydrostasy, compressibility, synchronise_variables, is_compressible
+from physics.gas_dynamics.eos import nonhydrostasy, compressibility, synchronise_variables, is_compressible, is_nonhydrostatic
 from physics.gas_dynamics.gas_dynamics import dynamic_timestep
 from physics.low_mach.second_projection import euler_backward_non_advective_impl_part, euler_backward_non_advective_expl_part, euler_forward_non_advective
 from inputs.enum_bdry import BdryType
@@ -79,7 +79,9 @@ while ((t < tout) and (step < ud.stepmax)):
     print("---------------------------------------")
     
     ud.is_compressible = is_compressible(ud,step)
-    ud.nonhydrostasy = nonhydrostasy(ud,t)
+    ud.is_nonhydrostatic = is_nonhydrostatic(ud,step)
+    ud.nonhydrostasy = nonhydrostasy(ud,t,step)
+    print(ud.nonhydrostasy)
     ud.compressibility = compressibility(ud,t,step)
     ud.acoustic_order = acoustic_order(ud,t,step)
 
