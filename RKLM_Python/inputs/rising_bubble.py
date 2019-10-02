@@ -169,9 +169,10 @@ class UserData(object):
         self.stepmax = 10000
 
         self.continuous_blending = True
-        self.no_of_initial = 1
-        self.no_of_transition = 0
-        # self.stepmax = 2
+        self.no_of_pi_initial = 2
+        self.no_of_pi_transition = 20
+        self.no_of_hy_initial = 0
+        self.no_of_hy_transition = 0
 
         self.write_stdout = True
         self.write_stdout_period = 1
