@@ -26,7 +26,7 @@ class io(object):
             self.SUFFIX = "_PIs1=" + str(self.ud.no_of_pi_initial) + \
                 "_PIs2=" + str(self.ud.no_of_pi_transition) + \
                 "_HYs1=" + str(self.ud.no_of_hy_initial) + \
-                "_HYs1=" + str(self.ud.no_of_hy_transition) + \
+                "_HYs2=" + str(self.ud.no_of_hy_transition) + \
                 "_contblend"
 
 
