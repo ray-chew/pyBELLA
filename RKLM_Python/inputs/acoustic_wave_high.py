@@ -65,7 +65,7 @@ class UserData(object):
         self.cond = self.cond * self.t_ref / (self.h_ref * self.h_ref * self.R_gas)
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+        self.is_compressible = 0
         self.compressibility = 0.0
         self.acoustic_timestep = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
@@ -246,7 +246,7 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
     ud.is_nonhydrostasy = 1.0
-    ud.compressibility = 1.0
+    ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
 
     # set_wall_rhoYflux(bdry,Sol,mpv,elem,ud)
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
