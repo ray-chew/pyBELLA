@@ -194,7 +194,7 @@ class UserData(object):
         self.stratification = self.stratification_function
         self.molly = self.molly_function
         self.rhoe = self.rhoe_method
-
+        
     def stratification_function(self, y):
         Nsq = self.Nsq_ref * self.t_ref * self.t_ref
         g = self.gravity_strength[1] / self.Msq

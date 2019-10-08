@@ -15,8 +15,8 @@ from physics.low_mach.mpv import MPV, acoustic_order
 
 # from inputs.travelling_vortex_3D_48 import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
-from inputs.internal_long_wave import UserData, sol_init
-# from inputs.rising_bubble import UserData, sol_init
+# from inputs.internal_long_wave import UserData, sol_init
+from inputs.rising_bubble import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
 from copy import deepcopy
