@@ -40,9 +40,10 @@ def dynamic_timestep(Sol, time, time_output, elem, ud, th, step):
         dt_cfl = min(min(dtx, dty), dtz)
         dt = min(dt_cfl, ud.dtfixed0 + min(step, 1.) * (ud.dtfixed - ud.dtfixed0))
 
-        if (2.0*dt >= time_output - time):
-            dt = 0.5 * (time_output - time) + machine_epsilon
-
+        # if (2.0*dt > time_output - time):
+        #     dt = 0.5 * (time_output - time) + machine_epsilon
+        if (dt > (time_output - time)):
+            dt = (time_output - time) + machine_epsilon
 
         return dt
     else:
@@ -54,8 +55,8 @@ def dynamic_timestep(Sol, time, time_output, elem, ud, th, step):
         dt = min(dt_cfl, ud.dtfixed0 + min(step, 1.) * (ud.dtfixed - ud.dtfixed0))
         dt *= min(float(step+1), 1.0)
 
-        if ((2.0*dt) >= (time_output - time)):
-            dt = 0.5 * (time_output - time) + machine_epsilon
+        if (dt > (time_output - time)):
+            dt = (time_output - time) + machine_epsilon
 
 
         return dt
