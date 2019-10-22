@@ -7,20 +7,24 @@ class io(object):
         self.ud = ud
 
         self.FORMAT = ".h5"
-        self.OUTPUT_FILENAME = "./output"
         self.BASE_NAME = self.ud.output_base_name
+        self.OUTPUT_FILENAME = "./output" + self.BASE_NAME
+        self.OUTPUT_FILENAME = self.OUTPUT_FILENAME + "/output"
 
         if self.ud.continuous_blending == False:
-            if self.ud.is_nonhydrostatic == 0:
-                if self.ud.is_compressible == 1:
-                    self.SUFFIX = self.ud.output_name_hydro
-                else:
-                    assert("Not implemented")
-            elif self.ud.is_nonhydrostatic == 1:
-                if self.ud.is_compressible == 1:
-                    self.SUFFIX = self.ud.output_name_comp
-                else:
-                    self.SUFFIX = self.ud.output_name_psinc
+            if ud.is_ArakawaKonor:
+                self.SUFFIX = self.ud.output_name_ak
+            else:
+                if self.ud.is_nonhydrostatic == 0:
+                    if self.ud.is_compressible == 1:
+                        self.SUFFIX = self.ud.output_name_hydro
+                    else:
+                        assert("Not implemented")
+                elif self.ud.is_nonhydrostatic == 1:
+                    if self.ud.is_compressible == 1:
+                        self.SUFFIX = self.ud.output_name_comp
+                    else:
+                        self.SUFFIX = self.ud.output_name_psinc
                 
         else:
             self.SUFFIX = "_PIs1=" + str(self.ud.no_of_pi_initial) + \
@@ -151,7 +155,7 @@ class io(object):
 
 
     def dpress_dim(self,mpv,ud,th):
-        p0 = (th.Gamma * ud.Msq * mpv.p2_cells) 
+        p0 = (th.Gamma * ud.Msq * mpv.p2_cells)
         p = np.power(p0,th.Gammainv, dtype=np.complex)
         p = p.real
         return (p - mpv.HydroState.p0[0,:]) * self.ud.p_ref
