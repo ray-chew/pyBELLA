@@ -9,7 +9,7 @@ def nonhydrostasy(ud,t,step):
         return 1.0
     elif ud.is_nonhydrostatic == -1:
         current_transition_step = step - ud.no_of_hy_initial
-        print("current_transition_step =", step - ud.no_of_hy_initial)
+        # print("current_transition_step =", step - ud.no_of_hy_initial)
         # print(np.linspace(0.0,1.0,ud.no_of_hy_transition+2)[1:-1][current_transition_step])
         return np.linspace(0.0,1.0,ud.no_of_hy_transition+2)[1:-1][current_transition_step]
     else:
@@ -38,9 +38,9 @@ def is_compressible(ud,step):
         return ud.is_compressible
 
 def is_nonhydrostatic(ud,step):
-    print("is_nonhydrostatic", ud.is_nonhydrostatic)
-    print("no_of_nhy_initial:", ud.no_of_hy_initial)
-    print("no_of_nhy_transition:", ud.no_of_hy_transition)
+    # print("is_nonhydrostatic", ud.is_nonhydrostatic)
+    # print("no_of_nhy_initial:", ud.no_of_hy_initial)
+    # print("no_of_nhy_transition:", ud.no_of_hy_transition)
     if ud.continuous_blending == True:
         if step < ud.no_of_hy_initial:
             return 0
