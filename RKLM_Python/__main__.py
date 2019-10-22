@@ -15,8 +15,8 @@ from physics.low_mach.mpv import MPV, acoustic_order
 
 # from inputs.travelling_vortex_3D_48 import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
-# from inputs.internal_long_wave import UserData, sol_init
-from inputs.rising_bubble import UserData, sol_init
+from inputs.internal_long_wave import UserData, sol_init
+# from inputs.rising_bubble import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
 from copy import deepcopy
@@ -62,6 +62,7 @@ step = 0
 tout = ud.tout
 
 tic = time()
+
 while ((t < tout) and (step < ud.stepmax)):
     
     dt = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
@@ -81,7 +82,6 @@ while ((t < tout) and (step < ud.stepmax)):
     ud.is_compressible = is_compressible(ud,step)
     ud.is_nonhydrostatic = is_nonhydrostatic(ud,step)
     ud.nonhydrostasy = nonhydrostasy(ud,t,step)
-    print(ud.nonhydrostasy)
     ud.compressibility = compressibility(ud,t,step)
     ud.acoustic_order = acoustic_order(ud,t,step)
 
@@ -97,17 +97,39 @@ while ((t < tout) and (step < ud.stepmax)):
 
     if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_advect')
 
-    mpv.p2_nodes0 = deepcopy(mpv.p2_nodes)
-    euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+    mpv.p2_nodes0[...] = mpv.p2_nodes
 
-    if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaexp')
+    if ud.is_ArakawaKonor:
+        ud.is_nonhydrostatic = 0
+        ud.nonhydrostasy = 0.0
+        ud.is_compressible = 1
+        ud.compressibility = 1.0
 
-    euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, label=label)
+        Sol_tmp = deepcopy(Sol)
+        euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+        if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaexp')
+        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, label=label)
+
+        ud.is_nonhydrostatic = 1
+        ud.nonhydrostasy = 1.0
+        ud.is_compressible = 0
+        ud.compressibility = 0.0
+
+        # mpv.p2_nodesh[...] = mpv.p2_nodes
+        Sol = Sol_tmp
+        euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+        if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaexp')
+        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, label=label)
+
+    else:
+        euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+        if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaexp')
+        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, label=label)
 
     if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaimp')
 
     recompute_advective_fluxes(flux, Sol)
-    mpv.p2_nodes = deepcopy(mpv.p2_nodes0)
+    mpv.p2_nodes[...] = mpv.p2_nodes0
 
     print("-----------------------------------------------")
     print("full-time step with predicted advective flux")
@@ -128,11 +150,32 @@ while ((t < tout) and (step < ud.stepmax)):
 
     if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_advect')
 
-    euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+    if ud.is_ArakawaKonor:
+        ud.is_nonhydrostatic = 0
+        ud.nonhydrostasy = 0.0
+        ud.is_compressible = 1
+        ud.compressibility = 1.0
 
-    if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
+        Sol_tmp = deepcopy(Sol)
+        euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0)
 
-    euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0)
+        ud.is_nonhydrostatic = 1
+        ud.nonhydrostasy = 1.0
+        ud.is_compressible = 0
+        ud.compressibility = 0.0
+
+        # mpv.p2_nodesh[...] = mpv.p2_nodes
+        Sol = Sol_tmp
+        euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+        if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
+        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0)
+
+    else:
+        euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+        if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
+        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0)
+
     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
 
     # synchronise_variables(mpv, Sol, elem, node, ud, th)

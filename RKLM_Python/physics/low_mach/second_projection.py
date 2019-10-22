@@ -84,7 +84,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
 
     Sol.rhov[inner_idx] = Sol.rhov[inner_idx] + dt * ( -1. * rhoYovG * dpdy + coriolis * Sol.rhow[inner_idx])
 
-    Sol.rhou[inner_idx] = Sol.rhou[inner_idx] + dt * ( -1. * rhoYovG * dpdx + (g/Msq) * dbuoy) * nonhydro
+    Sol.rhou[inner_idx] = Sol.rhou[inner_idx] + dt * ( -1. * rhoYovG * dpdx + (g/Msq) * dbuoy) * nonhydro * (1 - ud.is_ArakawaKonor)
 
     Sol.rhow[inner_idx] = Sol.rhow[inner_idx] - dt * coriolis * drhou
 
@@ -158,11 +158,17 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     rhs[...], rhs_max = divergence_nodes(rhs,elem,node,Sol,ud)
     rhs /= dt
     
-    if ud.is_compressible:
+    if ud.is_compressible == 1:
         rhs = rhs_from_p_old(rhs,node,mpv)
+    elif ud.is_compressible == 0:
+        if ud.is_ArakawaKonor:
+            rhs -= mpv.wcenter * mpv.dp2_nodes
+            mpv.wcenter[...] = 0.0
+        else:
+            mpv.wcenter[...] = 0.0
 
-    x_wall = ud.bdry_type[0] == BdryType.WALL
-    y_wall = ud.bdry_type[1] == BdryType.WALL
+    # else:
+        # mpv.wcenter *= ud.compressibility
 
     diag_inv = precon_diag_prepare(mpv, elem, node, ud)
     rhs *= diag_inv
@@ -206,15 +212,13 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if writer != None:
         writer.populate(str(label)+'_after_ebnaimp','p2_full',p2_full)
 
-    mpv.dp2_nodes[...] = np.copy(p2_full)
     correction_nodes(Sol,elem,node,mpv,p2_full,dt,ud)
-
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
+    mpv.dp2_nodes[...] = p2_full - mpv.p2_nodes
     mpv.p2_nodes[...] = p2_full
     mpv.rhs = rhs
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
-
 
 def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
     ndim = node.ndim
@@ -273,7 +277,8 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
 
     coriolis = ud.coriolis_strength[0]
 
-    ccenter = - (ud.compressibility * ud.Msq) * th.gm1inv / (dt**2) / time_offset
+    # ccenter = - (ud.compressibility * ud.Msq) * th.gm1inv / (dt**2) / time_offset
+    ccenter = - ud.Msq * th.gm1inv / (dt**2) / time_offset
     cexp = 2.0 - th.gamm
 
     igs = elem.igs
