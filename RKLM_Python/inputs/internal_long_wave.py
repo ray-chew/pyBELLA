@@ -12,7 +12,7 @@ class UserData(object):
     BOUY = 0
 
     grav = 9.81
-    omega = 1.0*0.0001
+    omega = .0*0.0001
 
     R_gas = 287.4
     R_vap = 461.0
@@ -34,7 +34,8 @@ class UserData(object):
 
     Nsq_ref = 1.0e-4
 
-    scale_factor = 20.0
+    # planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0;
+    scale_factor = 160.0
 
     i_gravity = np.zeros((3))
     i_coriolis = np.zeros((3))
@@ -66,8 +67,10 @@ class UserData(object):
         self.viscbt = self.viscbt * self.t_ref / (self.h_ref * self.h_ref)
         self.cond = self.cond * self.t_ref / (self.h_ref * self.h_ref * self.R_gas)
 
-        self.is_nonhydrostatic = 0
+        self.is_nonhydrostatic = 1
         self.is_compressible = 1
+        self.is_ArakawaKonor = 1
+
         self.compressibility = 0.0
         self.acoustic_timestep = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
@@ -174,11 +177,11 @@ class UserData(object):
         self.stepmax = 10000
         # self.stepmax = 10
 
-        self.continuous_blending = True
+        self.continuous_blending = False
         self.no_of_pi_initial = 0
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
-        self.no_of_hy_transition = 10
+        self.no_of_hy_transition = 0
 
         self.write_stdout = True
         self.write_stdout_period = 1
@@ -187,9 +190,25 @@ class UserData(object):
         self.file_format = 'HDF'
 
         self.output_base_name = "_internal_long_wave"
-        self.output_name_psinc = "_low_mach_gravity_psinc"
-        self.output_name_comp = "_low_mach_gravity_comp"
-        self.output_name_hydro = "_low_mach_gravity_hydro"
+        
+
+        if self.scale_factor == 1.0:
+            self.output_name_comp = "_low_mach_gravity_comp_standard"
+            self.output_name_ak = "_low_mach_gravity_ak_standard"
+            self.output_name_psinc = "_low_mach_gravity_psinc_standard"
+            self.output_name_hydro = "_low_mach_gravity_hydro_standard"
+        elif self.scale_factor == 20.0:
+            self.output_name_comp = "_low_mach_gravity_comp_long"
+            self.output_name_ak = "_low_mach_gravity_ak_long"
+            self.output_name_psinc = "_low_mach_gravity_psinc_long"
+            self.output_name_hydro = "_low_mach_gravity_hydro_long"
+        elif self.scale_factor == 160.0:
+            self.output_name_comp = "_low_mach_gravity_comp_planetary"
+            self.output_name_ak = "_low_mach_gravity_ak_planetary"
+            self.output_name_psinc = "_low_mach_gravity_psinc_planetary"
+            self.output_name_hydro = "_low_mach_gravity_hydro_planetary"
+        else:
+            assert("scale factor unsupported")
 
         self.stratification = self.stratification_function
         self.molly = self.molly_function
