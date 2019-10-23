@@ -255,7 +255,7 @@ def stencil_3pt(elem,node,ud):
     dx = node.dx
     # print(node.dx)
 
-    oodx2 = 1.0 / (dx**2)
+    oodx2 = 1. / (dx**2)
 
     # x_periodic = ud.bdry_type[1] == BdryType.PERIODIC
     x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
@@ -271,9 +271,9 @@ def lap2D_exner(p, iicxn, iicyn, oodx2, x_periodic, x_wall):
     cnt_y = 0
 
     for idx in range(iicxn * iicyn):
-        left_idx = idx - 1
-        mid_idx = idx
-        right_idx = idx + 1
+        # left_idx = idx - 1
+        # mid_idx = idx
+        # right_idx = idx + 1
 
         # if cnt_x == 0:
         #     left_idx += iicxn - 1
@@ -306,6 +306,110 @@ def lap2D_exner(p, iicxn, iicyn, oodx2, x_periodic, x_wall):
         right = p[right_idx]
 
         lap[idx] = oodx2 * (left - 2. * mid + right)
+
+        cnt_x += 1
+        if cnt_x % iicxn == 0:
+            cnt_y += 1
+            cnt_x = 0
+        
+    return lap
+
+
+def stencil_5pt(elem,node,ud):
+    igx = elem.igx
+    igy = elem.igy
+
+    icxn = node.icx
+    icyn = node.icy
+
+    iicxn = icxn - (2 * igx)
+    iicyn = icyn - (2 * igy)
+
+    iicxn, iicyn = iicyn, iicxn
+
+    dx = node.dy
+    dy = node.dx
+
+    oodx2 = 1.0 / (dx**2)
+    oody2 = 1.0 / (dy**2)
+
+    # oodx2 = 1.0
+    # oody2 = 1.0
+
+    x_periodic = ud.bdry_type[1] == BdryType.PERIODIC
+    y_periodic = ud.bdry_type[0] == BdryType.PERIODIC
+
+    x_wall = ud.bdry_type[1] == BdryType.WALL
+    y_wall = ud.bdry_type[0] == BdryType.WALL
+
+    return lambda p : lap2D_5pt(p, iicxn, iicyn, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall)
+
+@jit(nopython=True, nogil=True, cache=True)
+def lap2D_5pt(p, iicxn, iicyn, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall):
+    ngnc = (iicxn) * (iicyn)
+    lap = np.zeros((ngnc))
+    cnt_x = 0
+    cnt_y = 0
+
+    for idx in range(iicxn * iicyn):
+
+        # get indices of the 9pt stencil
+        midleft_idx = idx - 1
+        topmid_idx = idx - iicxn
+        midmid_idx = idx
+        botmid_idx = idx + iicxn
+        midright_idx = idx + 1
+
+        if cnt_x == 0:
+            midleft_idx += iicxn - 1
+            if x_periodic:
+                topmid_idx += iicxn - 1
+                midmid_idx += iicxn - 1
+                botmid_idx += iicxn - 1
+
+        if cnt_x == (iicxn - 1):
+            midright_idx -= iicxn - 1
+
+            if x_periodic:
+                topmid_idx -= iicxn - 1
+                midmid_idx -= iicxn - 1
+                botmid_idx -= iicxn - 1
+
+        if cnt_y == 0:
+            topmid_idx += ((iicxn) * (iicyn - 1))
+
+            if y_periodic:
+                midleft_idx += ((iicxn) * (iicyn - 1))
+                midmid_idx += ((iicxn) * (iicyn - 1))
+                midright_idx += ((iicxn) * (iicyn - 1))
+
+        if cnt_y == (iicyn - 1):
+            botmid_idx -= ((iicxn) * (iicyn - 1))
+
+            if y_periodic:
+                midleft_idx -= ((iicxn) * (iicyn - 1))
+                midmid_idx -= ((iicxn) * (iicyn - 1))
+                midright_idx -= ((iicxn) * (iicyn - 1))
+
+        midleft = p[midleft_idx]
+        topmid = p[topmid_idx]
+        midmid = p[midmid_idx]
+        botmid = p[botmid_idx]
+        midright = p[midright_idx]
+
+        if x_wall and (cnt_x == 0):
+            midleft = 0.
+
+        if x_wall and (cnt_x == (iicxn - 1)):
+            midright = 0.
+
+        if y_wall and (cnt_y == 0):
+            topmid = 0.
+            
+        if y_wall and (cnt_y == (iicyn - 1)):
+            botmid = 0.
+                                
+        lap[idx] = oodx2 * (midleft - 2.0 * midmid + midright) + oody2 * (topmid - 2.0 * midmid + botmid)
 
         cnt_x += 1
         if cnt_x % iicxn == 0:
