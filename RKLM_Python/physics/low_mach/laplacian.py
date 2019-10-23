@@ -239,4 +239,77 @@ def precon_diag_prepare(mpv, elem, node, ud):
     return diag
 
 
-    
+def stencil_3pt(elem,node,ud):
+    # 1d stencil for exner pressure perturbation constraint in 2d
+    igx = elem.igx
+    igy = elem.igy
+
+    icxn = node.icx
+    icyn = node.icy
+
+    iicxn = icxn - (2 * igx)
+    iicyn = icyn - (2 * igy)
+
+    iicxn, iicyn = iicyn, iicxn
+
+    dx = node.dx
+    # print(node.dx)
+
+    oodx2 = 1.0 / (dx**2)
+
+    # x_periodic = ud.bdry_type[1] == BdryType.PERIODIC
+    x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
+    x_wall = ud.bdry_type[0] == BdryType.WALL
+
+    return lambda p : lap2D_exner(p,iicxn, iicyn, oodx2, x_periodic, x_wall)
+
+@jit(nopython=True, nogil=True, cache=True)
+def lap2D_exner(p, iicxn, iicyn, oodx2, x_periodic, x_wall):
+    ngnc = (iicxn) * (iicyn)
+    lap = np.zeros((ngnc))
+    cnt_x = 0
+    cnt_y = 0
+
+    for idx in range(iicxn * iicyn):
+        left_idx = idx - 1
+        mid_idx = idx
+        right_idx = idx + 1
+
+        # if cnt_x == 0:
+        #     left_idx += iicxn - 1
+
+        #     if x_periodic:
+        #         mid_idx += iicxn - 1
+
+        # if cnt_x == (iicxn - 1):
+        #     right_idx -= iicxn - 1
+
+        #     if x_periodic:
+        #         mid_idx -= iicxn - 1
+
+        right_idx = idx - iicxn
+        mid_idx = idx
+        left_idx = idx + iicxn
+
+        if cnt_y == 0:
+            if x_periodic:
+                right_idx += ((iicxn) * (iicyn - 1))
+                mid_idx += ((iicxn) * (iicyn - 1))
+
+        if cnt_y == (iicyn - 1):
+            if x_periodic:
+                left_idx -= ((iicxn) * (iicyn - 1))
+                mid_idx -= ((iicxn) * (iicyn - 1))
+
+        left = p[left_idx]
+        mid = p[mid_idx]
+        right = p[right_idx]
+
+        lap[idx] = oodx2 * (left - 2. * mid + right)
+
+        cnt_x += 1
+        if cnt_x % iicxn == 0:
+            cnt_y += 1
+            cnt_x = 0
+        
+    return lap
