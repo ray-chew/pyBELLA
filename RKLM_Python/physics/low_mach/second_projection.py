@@ -1,6 +1,6 @@
 from inputs.enum_bdry import BdryType
 from inputs.boundary import set_explicit_boundary_data, set_ghostnodes_p2
-from physics.low_mach.laplacian import stencil_9pt, stencil_3pt, precon_diag_prepare
+from physics.low_mach.laplacian import stencil_9pt, stencil_5pt, stencil_3pt, precon_diag_prepare
 from scipy import signal
 import numpy as np
 from itertools import product
@@ -84,7 +84,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
 
     Sol.rhov[inner_idx] = Sol.rhov[inner_idx] + dt * ( -1. * rhoYovG * dpdy + coriolis * Sol.rhow[inner_idx])
 
-    Sol.rhou[inner_idx] = Sol.rhou[inner_idx] + dt * ( -1. * rhoYovG * dpdx + (g/Msq) * dbuoy) * nonhydro #* (1 - ud.is_ArakawaKonor)
+    Sol.rhou[inner_idx] = Sol.rhou[inner_idx] + dt * ( -1. * rhoYovG * dpdx + (g/Msq) * dbuoy) * nonhydro * (1 - ud.is_ArakawaKonor)
 
     Sol.rhow[inner_idx] = Sol.rhow[inner_idx] - dt * coriolis * drhou
 
@@ -135,6 +135,7 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
+
 total_iter = 0
 total_calls = 0
 def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff, writer = None, label=None):
@@ -157,7 +158,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     rhs[...], rhs_max = divergence_nodes(rhs,elem,node,Sol,ud)
     rhs /= dt
-    
+
     if ud.is_compressible == 1:
         rhs = rhs_from_p_old(rhs,node,mpv)
     elif ud.is_compressible == 0:
@@ -166,7 +167,6 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
             mpv.wcenter[...] = 0.0
         else:
             mpv.wcenter[...] = 0.0
-
     # else:
         # mpv.wcenter *= ud.compressibility
 
@@ -191,13 +191,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     
     counter = solver_counter()
     
-    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-11,maxiter=6000,callback=counter)
-
-    # l2_residual = (rhs[node.igx:-node.igx,node.igy:-node.igy].ravel() - (lap2D * counter.rk))**2
-    # l2_residual = l2_residual.sum()
-    # l2_residual = np.sqrt(l2_residual)
-
-    # print("Convergence info = %i, no. of iterations = %i, l2-residual = %.10f" %(info,counter.niter,l2_residual))
+    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-9,maxiter=6000,callback=counter)
 
     print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
 
@@ -215,34 +209,38 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     correction_nodes(Sol,elem,node,mpv,p2_full,dt,ud)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
+    mpv.dp2_nodes[...] = p2_full - mpv.p2_nodes
+    
     if ud.is_ArakawaKonor:
-        dp2_rhs = exner_perturbation_constraint(Sol,elem,th)
+        if ud.is_compressible == 0:
+            dp2_rhs = exner_perturbation_constraint(Sol,elem,th,p2.reshape(ud.inx,ud.iny))
 
-        lap2D_exner = stencil_3pt(elem,node,ud)
-        sh = (ud.inx)*(ud.iny)
+            # lap2D_exner = stencil_3pt(elem,node,ud)
+            lap2D_exner = stencil_5pt(elem,node,ud)
+            sh = (ud.inx)*(ud.iny)
 
-        lap2D_exner = LinearOperator((sh,sh),lap2D_exner)
+            lap2D_exner = LinearOperator((sh,sh),lap2D_exner)
 
-        dp2,_ = bicgstab(lap2D_exner,dp2_rhs.ravel(),tol=1e-9,maxiter=6000)
+            dp2,_ = bicgstab(lap2D_exner,dp2_rhs.ravel(),tol=1e-16,maxiter=6000)
 
-        mpv.dp2_nodes[node.igx:-node.igx,node.igy:-node.igy] = dp2.reshape(ud.inx,ud.iny)
-
+            mpv.dp2_nodes[node.igx:-node.igx,node.igy:-node.igy] = dp2.reshape(ud.inx,ud.iny)
+            
     mpv.p2_nodes[...] = p2_full
     mpv.rhs = rhs
     set_ghostnodes_p2(mpv.dp2_nodes,node,ud)
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
-def exner_perturbation_constraint(Sol,elem,th):
+
+def exner_perturbation_constraint(Sol,elem,th,p2):
     # 2D function!
-    rhouv = Sol.rhou * Sol.rhov / Sol.rho
-    rhouv[...] = np.gradient(rhouv,elem.dy,axis=1)
-    rhouv[...] = rhouv * th.Gamma / (Sol.rhoY)
-    
-    rhs = np.gradient(rhouv,elem.dx,axis=0)
+    rhs = np.zeros_like(Sol.rhou)
+
     gathering_kernel = np.array([[1.,1.],[1.,1.]])
     gathering_kernel /= gathering_kernel.sum()
     rhs = signal.convolve2d(rhs, gathering_kernel, mode='valid')
+
     return rhs[1:-1,1:-1]
+
 
 def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
     ndim = node.ndim
@@ -370,8 +368,6 @@ def scale_wall_node_values(rhs, node, ud, factor=.5):
                     wall_idx[dim] -= 1
                 wall_idx_tuple = tuple(wall_idx)
                 rhs[wall_idx_tuple] *= factor
-            
-            
 
 
 def divergence_nodes(rhs,elem,node,Sol,ud):

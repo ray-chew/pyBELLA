@@ -115,7 +115,6 @@ while ((t < tout) and (step < ud.stepmax)):
         ud.is_compressible = 0
         ud.compressibility = 0.0
 
-        # mpv.p2_nodesh[...] = mpv.p2_nodes
         Sol = Sol_tmp
         euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaexp')
@@ -165,7 +164,6 @@ while ((t < tout) and (step < ud.stepmax)):
         ud.is_compressible = 0
         ud.compressibility = 0.0
 
-        # mpv.p2_nodesh[...] = mpv.p2_nodes
         Sol = Sol_tmp
         euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
