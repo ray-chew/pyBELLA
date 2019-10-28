@@ -69,7 +69,7 @@ class UserData(object):
 
         self.is_nonhydrostatic = 1
         self.is_compressible = 1
-        self.is_ArakawaKonor = 1
+        self.is_ArakawaKonor = 0
 
         self.compressibility = 0.0
         self.acoustic_timestep = 0
