@@ -16,13 +16,13 @@ class ensemble(object):
             setattr(self,'mem_' + str(cnt),mem)
 
     def state_vector(self,ensemble):
-        N = ensemble.shape[0]
+        N = ensemble.members(ensemble).shape[0]
         return self.members(ensemble).reshape(N,-1)
 
     def set_members(self,analysis_ensemble):
         cnt = 0
         for xi in analysis_ensemble:
-            setattr(self,'mem_' + str(cnt),xi)
+            setattr(self,'mem_' + str(cnt),xi.reshape(self.mem_0.shape))
             cnt += 1
 
 
