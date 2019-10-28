@@ -145,8 +145,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 256+1; /*  */
-	ud->iny = 256+1; /*  */
+	ud->inx = 64+1; /*  */
+	ud->iny = 64+1; /*  */
 	ud->inz =     1;
 
     /* explicit predictor step */
@@ -205,7 +205,7 @@ void User_Data_init(User_Data* ud) {
      */
     
     // ud->stepmax = 20000;
-    ud->stepmax = 11;
+    ud->stepmax = 40;
 
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
