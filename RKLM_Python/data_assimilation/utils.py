@@ -29,7 +29,7 @@ class ensemble(object):
     def set_members(self,analysis_ensemble):
         cnt = 0
         for xi in analysis_ensemble:
-            setattr(self,'mem_' + str(cnt),xi.reshape(self.mem_0.shape))
+            setattr(self,'mem_' + str(cnt),np.array(xi))
             cnt += 1
 
     # rethink this eveutally....

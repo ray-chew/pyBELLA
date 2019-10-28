@@ -10,7 +10,6 @@ from physics.low_mach.mpv import MPV, acoustic_order
 
 # dependencies of the parallelisation by dask
 from dask.distributed import Client, progress
-# client = Client(threads_per_worker=2, n_workers=4)
 
 # dependencies of the data assimilation module
 from data_assimilation.inputs import da_params
@@ -61,14 +60,12 @@ Sol = deepcopy(Sol0)
 
 # dt_factor = 0.5 if ud.initial_impl_Euler == True else 1.0
 
-# writer = io(ud)
-# writer.write_all(Sol,mpv,elem,node,th,'000_ic')
-
-# tout = ud.tout
+writer = io(ud)
+writer.write_all(Sol,mpv,elem,node,th,'000_ic')
 
 ##########################################################
 # Data Assimilation part
-N = 2
+N = 1
 da_parameters = da_params(N)
 aprior_error_covar = da_parameters.aprior_error_covar
 # sampler = da_parameters.sampler(aprior_error_covar)
@@ -82,23 +79,28 @@ ens.initialise_members([Sol,flux,mpv],N)
 
 
 ##########################################################
+# tout = ud.tout
 
 if __name__ == '__main__':
-    client = Client(threads_per_worker=4, n_workers=2)
+    client = Client(threads_per_worker=1, n_workers=1)    
     tic = time()
     # assert(0)
 
     # main time looping
-    for tout in ud.tout:
+    for tout in [ud.tout]:
         futures = []
         for mem in ens.members(ens):
             # s_ud = client.scatter(ud)
             # time_update = time_update_wrapper(t, tout, ud, elem, node, step, th, writer=writer, debug=debug)
-            future = client.submit(time_update, *[mem[0], mem[1], mem[2], t, tout, ud, elem, node, step, th, None, debug])
+            future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, step, th, writer, debug])
             # future = client.submit(time_update, mem)
             # time_update(t, tout, ud, elem, node, step, th, Sol, flux, mpv, writer, debug)
             futures.append(future)
-        client.gather(futures)
+        results = client.gather(futures)
+        ens.set_members(results)
+        # print(results)
+        # assert(0)
+        
         # synchronise_variables(mpv, Sol, elem, node, ud, th)
 
         # print("############################################################################################")
@@ -107,6 +109,10 @@ if __name__ == '__main__':
         t = tout
         print(tout)
 
+    label = '066'
+    Sol = ens.members(ens)[0][0]
+    mpv = ens.members(ens)[0][2]
+    writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
 
     toc = time()
     print("Time taken = %.6f" %(toc-tic))
