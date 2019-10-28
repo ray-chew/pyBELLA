@@ -155,7 +155,9 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
             euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0)
 
         # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
-
+        print("############################################################################################")
+        print("step %i done, t = %.12f, dt = %.12f" %(step, t, dt))
+        print("############################################################################################")
         t += dt
         step += 1
         # print(t, step)

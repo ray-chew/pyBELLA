@@ -68,7 +68,7 @@ class UserData(object):
         self.cond = self.cond * self.t_ref / (self.h_ref * self.h_ref * self.R_gas)
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+        self.is_compressible = 0
         self.is_ArakawaKonor = 0
 
         self.compressibility = 0.0
