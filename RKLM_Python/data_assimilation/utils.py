@@ -1,4 +1,5 @@
 import numpy as np
+from copy import deepcopy
 
 class ensemble(object):
     def __init__(self):
@@ -8,13 +9,26 @@ class ensemble(object):
         for key,value in vars(self).items():
             setattr(self,key,value)
 
-    def set_members(self,ic,N,sampler):
-        cnt = 0
-        for _ in range(N):
+    def initialise_members(self,ic,N,sampler):
+        for cnt in range(N):
             mem = deepcopy(ic)
-            sampler(mem)
+            mem = sampler(mem)
             setattr(self,'mem_' + str(cnt),mem)
+
+    def state_vector(self,ensemble):
+        N = ensemble.shape[0]
+        return self.members(ensemble).reshape(N,-1)
+
+    def set_members(self,analysis_ensemble):
+        cnt = 0
+        for xi in analysis_ensemble:
+            setattr(self,'mem_' + str(cnt),xi)
             cnt += 1
+
+
+    @staticmethod
+    def members(ensemble):
+        return np.array(list(ensemble.__dict__.values()))
 
 class sampler(object):
     def __init__(self, ic):
