@@ -18,9 +18,9 @@ from data_assimilation.letkf import letkf
 
 
 # input file
-# from inputs.travelling_vortex_3D_48 import UserData, sol_init
+from inputs.travelling_vortex_3D_48 import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
-from inputs.internal_long_wave import UserData, sol_init
+# from inputs.internal_long_wave import UserData, sol_init
 # from inputs.rising_bubble import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
@@ -61,7 +61,7 @@ Sol = deepcopy(Sol0)
 # dt_factor = 0.5 if ud.initial_impl_Euler == True else 1.0
 
 writer = io(ud)
-writer.write_all(Sol,mpv,elem,node,th,'000_ic')
+# writer.write_all(Sol,mpv,elem,node,th,'000_ic')
 
 ##########################################################
 # Data Assimilation part
@@ -87,32 +87,29 @@ if __name__ == '__main__':
     # assert(0)
 
     # main time looping
-    for tout in [ud.tout]:
-        futures = []
+    for tout in ud.tout:
+        # futures = []
         for mem in ens.members(ens):
             # s_ud = client.scatter(ud)
             # time_update = time_update_wrapper(t, tout, ud, elem, node, step, th, writer=writer, debug=debug)
-            future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, step, th, writer, debug])
+            # future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, step, th, writer, debug])
             # future = client.submit(time_update, mem)
-            # time_update(t, tout, ud, elem, node, step, th, Sol, flux, mpv, writer, debug)
-            futures.append(future)
-        results = client.gather(futures)
-        ens.set_members(results)
+            time_update(mem[0], mem[1], mem[2], t, tout, ud, elem, node, step, th, writer, debug)
+            # futures.append(future)
+        # results = client.gather(futures)
+        # ens.set_members(results)
         # print(results)
         # assert(0)
         
         # synchronise_variables(mpv, Sol, elem, node, ud, th)
 
-        # print("############################################################################################")
-        # print("step %i done, t = %.12f, dt = %.12f" %(step, t, dt))
-        # print("############################################################################################")
         t = tout
         print(tout)
 
-    label = '066'
-    Sol = ens.members(ens)[0][0]
-    mpv = ens.members(ens)[0][2]
-    writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
+        # label = t
+        # Sol = ens.members(ens)[0][0]
+        # mpv = ens.members(ens)[0][2]
+        # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
 
     toc = time()
     print("Time taken = %.6f" %(toc-tic))

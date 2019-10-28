@@ -62,7 +62,9 @@ class UserData(object):
 
         self.is_nonhydrostatic = 1
         self.is_compressible = 1
-        self.compressibility = 0.0
+        self.is_ArakawaKonor = 0
+
+        self.compressibility = 1.0
         self.acoustic_timestep = 0
         self.acoustic_order = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
@@ -156,6 +158,12 @@ class UserData(object):
 
         tol = 1.e-10
 
+        self.continuous_blending = False
+        self.no_of_pi_initial = 0
+        self.no_of_pi_transition = 0
+        self.no_of_hy_initial = 0
+        self.no_of_hy_transition = 0
+
         self.flux_correction_precision = tol
         self.flux_correction_local_precision = tol
         self.second_projection_precision = tol
@@ -172,11 +180,11 @@ class UserData(object):
 
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
-        self.tout = 1.0
+        self.tout = [1.0]
         # self.tout[0] =  1.0
         # self.tout[1] = -1.0
 
-        self.stepmax = 11
+        self.stepmax = 10
         # self.stepmax = 20000
 
         self.write_stdout = True

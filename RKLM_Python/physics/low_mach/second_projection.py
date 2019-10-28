@@ -193,12 +193,12 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     
     p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-9,maxiter=6000,callback=counter)
 
-    # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
+    print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
 
     global total_calls, total_iter
     total_iter += counter.niter
     total_calls += 1
-    # print("Total calls to BiCGStab routine = %i, total iterations = %i" %(total_calls, total_iter))
+    print("Total calls to BiCGStab routine = %i, total iterations = %i" %(total_calls, total_iter))
 
     p2_full = np.zeros(nc).squeeze()
     p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
@@ -211,19 +211,19 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     mpv.dp2_nodes[...] = p2_full - mpv.p2_nodes
     
-    if ud.is_ArakawaKonor:
-        if ud.is_compressible == 0:
-            dp2_rhs = exner_perturbation_constraint(Sol,elem,th,p2.reshape(ud.inx,ud.iny))
+    # if ud.is_ArakawaKonor:
+    #     if ud.is_compressible == 0:
+    #         dp2_rhs = exner_perturbation_constraint(Sol,elem,th,p2.reshape(ud.inx,ud.iny))
 
-            # lap2D_exner = stencil_3pt(elem,node,ud)
-            lap2D_exner = stencil_5pt(elem,node,ud)
-            sh = (ud.inx)*(ud.iny)
+    #         # lap2D_exner = stencil_3pt(elem,node,ud)
+    #         lap2D_exner = stencil_5pt(elem,node,ud)
+    #         sh = (ud.inx)*(ud.iny)
 
-            lap2D_exner = LinearOperator((sh,sh),lap2D_exner)
+    #         lap2D_exner = LinearOperator((sh,sh),lap2D_exner)
 
-            dp2,_ = bicgstab(lap2D_exner,dp2_rhs.ravel(),tol=1e-16,maxiter=6000)
+    #         dp2,_ = bicgstab(lap2D_exner,dp2_rhs.ravel(),tol=1e-16,maxiter=6000)
 
-            mpv.dp2_nodes[node.igx:-node.igx,node.igy:-node.igy] = dp2.reshape(ud.inx,ud.iny)
+    #         mpv.dp2_nodes[node.igx:-node.igx,node.igy:-node.igy] = dp2.reshape(ud.inx,ud.iny)
             
     mpv.p2_nodes[...] = p2_full
     mpv.rhs = rhs
