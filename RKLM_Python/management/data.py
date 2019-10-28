@@ -159,4 +159,4 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
         t += dt
         step += 1
         # print(t, step)
-    return 1
+    return True

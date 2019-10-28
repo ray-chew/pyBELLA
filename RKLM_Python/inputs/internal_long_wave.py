@@ -170,7 +170,8 @@ class UserData(object):
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
         # tout = 4800s
-        self.tout =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
+        # self.tout =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
+        self.tout = np.arange(0,4801,100)
         # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[1] = -1.0
 
