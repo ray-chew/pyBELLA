@@ -59,36 +59,37 @@ mpv = MPV(elem, node, ud)
 Sol0 = sol_init(Sol, mpv, elem, node, th, ud)
 Sol = deepcopy(Sol0)
 
-dt_factor = 0.5 if ud.initial_impl_Euler == True else 1.0
+# dt_factor = 0.5 if ud.initial_impl_Euler == True else 1.0
 
-writer = io(ud)
+# writer = io(ud)
 # writer.write_all(Sol,mpv,elem,node,th,'000_ic')
 
-tout = ud.tout
+# tout = ud.tout
+
+##########################################################
+# Data Assimilation part
+N = 2
+da_parameters = da_params(N)
+aprior_error_covar = da_parameters.aprior_error_covar
+# sampler = da_parameters.sampler(aprior_error_covar)
+sampler = da_parameters.sampler_none()
+attributes = da_parameters.attributes
+ens = ensemble()
+ens.initialise_members([Sol,flux,mpv],N)
+
+# print(ens.members(ens))
+# ens.ensemble_spreading(sampler,attributes)
+
+
+##########################################################
 
 if __name__ == '__main__':
-    ##########################################################
-    # Data Assimilation part
-    N = 2
-    da_parameters = da_params(N)
-    aprior_error_covar = da_parameters.aprior_error_covar
-    # sampler = da_parameters.sampler(aprior_error_covar)
-    sampler = da_parameters.sampler_none()
-    attributes = da_parameters.attributes
-    ens = ensemble()
-    ens.initialise_members([Sol,flux,mpv],N)
-
-    # print(ens.members(ens))
-    # ens.ensemble_spreading(sampler,attributes)
-
-    client = Client(threads_per_worker=2, n_workers=2)
-    ##########################################################
-
+    client = Client(threads_per_worker=4, n_workers=2)
     tic = time()
     # assert(0)
 
     # main time looping
-    for tout in [ud.tout]:
+    for tout in ud.tout:
         futures = []
         for mem in ens.members(ens):
             # s_ud = client.scatter(ud)
@@ -104,6 +105,7 @@ if __name__ == '__main__':
         # print("step %i done, t = %.12f, dt = %.12f" %(step, t, dt))
         # print("############################################################################################")
         t = tout
+        print(tout)
 
 
     toc = time()
