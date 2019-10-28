@@ -80,9 +80,9 @@ class SpaceDiscr(object):
         self.sc = (self.icx, self.icy, self.icz)
         self.igs = [self.igx,self.igy,self.igz]
 
-        self.stride[0] = 1
-        self.stride[1] = self.icx if g.iny > 1 else 0
-        self.stride[2] = self.icx * self.icy if g.inz > 1 else 0
+        # self.stride[0] = 1
+        # self.stride[1] = self.icx if g.iny > 1 else 0
+        # self.stride[2] = self.icx * self.icy if g.inz > 1 else 0
 
         self.ifx = self.icx + 1
         self.ify = self.icy + 1 if g.iny > 1 else 0
@@ -114,20 +114,20 @@ class SpaceDiscr(object):
         assert self.dy > 0.0
         assert self.dz > 0.0
 
-        self.dxmin = np.min((self.dx, self.dy, self.dz))
+        # self.dxmin = np.min((self.dx, self.dy, self.dz))
 
         # self.x = np.zeros((self.icx)).reshape(-1,1,1)
         # self.y = np.zeros((self.icy)).reshape(1,-1,1)
         # self.z = np.zeros((self.icz)).reshape(1,1,-1)
 
-        self.left = g.left
-        self.right = g.right
-        self.bottom = g.bottom
-        self.top = g.top
-        self.back = g.back
-        self.front = g.front
+        # self.left = g.left
+        # self.right = g.right
+        # self.bottom = g.bottom
+        # self.top = g.top
+        # self.back = g.back
+        # self.front = g.front
 
-        self.scale_factor = 1.0
+        # self.scale_factor = 1.0
         
         self.inner_domain = np.empty((self.ndim),dtype=object)
         for dim in range(self.ndim):

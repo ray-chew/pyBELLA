@@ -13,7 +13,7 @@ class ensemble(object):
 
     def initialise_members(self,ic,N):
         for cnt in range(N):
-            mem = deepcopy(ic)
+            mem = [deepcopy(arr) for arr in ic]
             # mem = sampler(mem)
             setattr(self,'mem_' + str(cnt),mem)
 

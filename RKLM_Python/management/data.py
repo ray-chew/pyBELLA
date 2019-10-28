@@ -40,12 +40,15 @@ def data_init(ud):
 
     return elem, node
 
-def time_update(t,tout,ud,elem,node,step,th,Sol,flux,mpv,writer=None,debug=False):
+def time_update_wrapper(t,tout,ud,elem,node,step,th,writer=None,debug=False):
+    return lambda mem: time_update(mem[0],mem[1],mem[2],t,tout,ud,elem,node,step,th,writer=writer,debug=debug)
+
+def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False):
     while ((t < tout) and (step < ud.stepmax)):
         # print("---------------------------------------")
         # print("half-time prediction of advective flux")
         # print("---------------------------------------")
-        
+        # assert(0)
         ud.is_compressible = is_compressible(ud,step)
         ud.is_nonhydrostatic = is_nonhydrostatic(ud,step)
         ud.nonhydrostasy = nonhydrostasy(ud,t,step)
@@ -107,12 +110,12 @@ def time_update(t,tout,ud,elem,node,step,th,Sol,flux,mpv,writer=None,debug=False
         recompute_advective_fluxes(flux, Sol)
         mpv.p2_nodes[...] = mpv.p2_nodes0
 
-        writer.populate(str(label)+'_after_half_step','rhoYu',flux[0].rhoY)
-        writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY)
+        if debug == True: writer.populate(str(label)+'_after_half_step','rhoYu',flux[0].rhoY)
+        if debug == True: writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY)
 
-        print("-----------------------------------------------")
-        print("full-time step with predicted advective flux")
-        print("-----------------------------------------------")
+        # print("-----------------------------------------------")
+        # print("full-time step with predicted advective flux")
+        # print("-----------------------------------------------")
 
         Sol = deepcopy(Sol0)
 
@@ -151,8 +154,9 @@ def time_update(t,tout,ud,elem,node,step,th,Sol,flux,mpv,writer=None,debug=False
             if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
             euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0)
 
-        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
+        # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
 
         t += dt
         step += 1
-    return t
+        # print(t, step)
+    return 1
