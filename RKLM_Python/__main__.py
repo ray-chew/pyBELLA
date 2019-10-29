@@ -1,7 +1,7 @@
 import numpy as np
 
 # dependencies of the atmospheric flow solver
-from management.data import data_init, time_update, time_update_wrapper
+from management.data import data_init, time_update
 from management.variable import States, Vars
 from physics.gas_dynamics.thermodynamic import ThemodynamicInit
 from physics.gas_dynamics.eos import nonhydrostasy, compressibility, is_compressible, is_nonhydrostatic
@@ -77,9 +77,34 @@ ens.initialise_members([Sol,flux,mpv],N)
 # print(ens.members(ens))
 ens.ensemble_spreading(sampler,attributes)
 
-
 ##########################################################
-# tout = ud.tout
+# Load observations
+# where are my observations?
+obs_path = './output_travelling_vortex_3d_48/output_travelling_vortex_3d_48_low_mach_gravity_comp_256_256.h5'
+obs_file = h5py.File(obs_path)
+# which attributes do I want to observe?
+obs_attributes = ['rho', 'rhou', 'rhov', 'rhoY']
+# when were these observations taken?
+times = [0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
+
+# axis 0 stores time series
+obs = np.empty(len(times), dtype=object)
+t_cnt = 0
+for time in times:
+    # how were these dataset called?
+    label = '_' + str(time) + '_' + 'after_full_step'
+    # axis 1 stores the attributes
+    obs[t_cnt] = []
+    for attribute in obs_attributes:
+        obs[t_cnt].append((obs_file[str(attribute)][str(attribute) + str(label)][:]))
+    t_cnt += 1
+obs = np.array(obs)
+obs_file.close()
+
+# print(np.array(obs[0]).shape)
+##########################################################
+
+assert(0)
 
 if __name__ == '__main__':
     client = Client(threads_per_worker=2, n_workers=4)    
