@@ -21,11 +21,6 @@ class ensemble(object):
     #     N = self.members(ensemble).shape[0]
     #     return self.members(ensemble).reshape(N,-1)
 
-    # More readable method needed - seems to be most efficient though.
-    @staticmethod
-    def state_vector(ensemble,attributes):
-        return np.array([[getattr(mem,attr).reshape(-1) for mem in ensemble.members(ensemble)] for attr in attributes]).squeeze()
-
     def set_members(self,analysis_ensemble):
         cnt = 0
         for xi in analysis_ensemble:
@@ -33,8 +28,8 @@ class ensemble(object):
             cnt += 1
 
     # rethink this eveutally....
-    def ensemble_spreading(self, sampler, attributes, loc=0):
-        N = self.members(ensemble).shape[0]
+    def ensemble_spreading(self, ens, sampler, attributes, loc=0):
+        N = self.members(ens).shape[0]
         for attribute in attributes:
             for n in range(N):
                 mem = getattr(self,'mem_' + str(n))
