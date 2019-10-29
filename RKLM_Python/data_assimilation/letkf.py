@@ -5,10 +5,16 @@ from inputs.enum_bdry import BdryType
 import numpy as np
 
 def da_interface(results,obs_current,attr,N,ud,loc=0):
-    local_ens = [getattr(results[:,loc,...][n],attr) for n in range(N)]
+    # inner = (slice(ud.igx,-ud.igx),slice(ud.igy,-ud.igy))
+    ig = 2
+    # inner = (slice(ig,-ig),slice(ig,-ig))
+    inner = (slice(None,),slice(None,))
+
+    local_ens = [getattr(results[:,loc,...][n],attr)[inner] for n in range(N)]
     local_ens = analysis(local_ens,attr)
 
     # print(obs_current.shape)
+    obs_current = obs_current[inner]
     x_obs, y_obs = obs_current.shape
     
     forward_operator = lambda ensemble: interpolation_func(ensemble, x_obs, y_obs, ud)
@@ -18,6 +24,7 @@ def da_interface(results,obs_current,attr,N,ud,loc=0):
     # print(obs_covar.shape)
     X = local_ens.analyse(obs_current.reshape(-1), obs_covar)
     local_ens.ensemble = local_ens.to_array(X)
+    # local_ens.ensemble = [np.pad(mem,2,mode='constant') for mem in local_ens.ensemble]
     # print(local_ens.X.shape)
     # return np.array([local_ens.identifier, local_ens.ensemble])
     return [local_ens.identifier, local_ens.ensemble]
@@ -27,12 +34,13 @@ def da_interface(results,obs_current,attr,N,ud,loc=0):
 def interpolation_func(ensemble,x_obs,y_obs,ud):
     if ud.bdry_type[0] == BdryType.WALL or ud.bdry_type[1] == BdryType.WALL:
         assert("WALL NOT IMPLEMENTED!")
-        
-    x = np.linspace(0,x_obs,y_obs)
-    y = np.linspace(0,x_obs,y_obs)
+    x_ens, y_ens = ensemble[0].shape
+    x = np.linspace(0,x_ens,x_obs)
+    y = np.linspace(0,y_ens,y_obs)
     x,y = np.meshgrid(x,y)
 
-    ensemble = [map_coordinates(mem,[x,y],mode='wrap') for mem in ensemble]
+    ensemble = [map_coordinates(mem,[x,y],mode='reflect', order=3) for mem in ensemble]
+    # print(np.array(ensemble).shape)
     return np.array(ensemble)
 
 
@@ -44,7 +52,7 @@ class analysis(object):
         self.member_shape = self.ensemble[0].shape
 
         # ensemble inflation factor
-        self.rho = 1.
+        self.rho = 1.2
         # if anlaysis is over local state space, which is it?
         self.identifier = identifier
 
@@ -76,16 +84,19 @@ class analysis(object):
 
         Pa = (self.no_of_members - 1.) * np.eye(self.no_of_members) / self.rho + np.dot(C,self.Y.T)
 
-        Lambda, P = linalg.eig(Pa)
-        Lambda, P = Lambda.real, P.real
+        Lambda, P = linalg.eigh(Pa)
+        # Lambda, P = Lambda.real, P.real
         Pa = np.dot(P,np.dot(np.diag(1./Lambda),P.T))
+        # Pa = P @ np.diag(1./Lambda) @ P.T
 
-        Wa = (self.no_of_members - 1.)**0.5 * np.dot(P,np.dot(np.diag((1./Lambda)**0.5),P.T))
+        Wa = (self.no_of_members - 1.)**0.5 * np.dot(P,np.dot(np.diag((1./Lambda**0.5)),P.T))
 
         wa = np.dot(Pa,np.dot(C , (obs - self.Y_mean)))
+        # Wa += wa.reshape(1,-1)
         Wa += wa
+        # print(Wa.shape)
 
-        return np.dot(self.X.T, Wa).T + self.X_mean
+        return np.dot(self.X.T, Wa.T).T + self.X_mean
 
     def get_mean(self,vec):
         return np.array(vec).sum(axis=0)
