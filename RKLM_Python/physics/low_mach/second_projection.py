@@ -193,12 +193,12 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     
     p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-9,maxiter=6000,callback=counter)
 
-    print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
+    # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
 
     global total_calls, total_iter
     total_iter += counter.niter
     total_calls += 1
-    print("Total calls to BiCGStab routine = %i, total iterations = %i" %(total_calls, total_iter))
+    # print("Total calls to BiCGStab routine = %i, total iterations = %i" %(total_calls, total_iter))
 
     p2_full = np.zeros(nc).squeeze()
     p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
