@@ -33,13 +33,13 @@ class ensemble(object):
             cnt += 1
 
     # rethink this eveutally....
-    def ensemble_spreading(self, sampler, attributes):
+    def ensemble_spreading(self, sampler, attributes, loc=0):
         N = self.members(ensemble).shape[0]
         for attribute in attributes:
             for n in range(N):
                 mem = getattr(self,'mem_' + str(n))
-                value = getattr(mem,attribute)
-                mem = setattr(mem,attribute,sampler(value))
+                value = getattr(mem[loc],attribute)
+                setattr(mem[loc],attribute,sampler(value))
 
     @staticmethod
     def members(ensemble):
