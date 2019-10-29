@@ -6,7 +6,6 @@ class da_params(object):
         # number of ensemble members
         self.N = 20
 
-        #
         self.attributes = ['rho', 'rhou', 'rhov', 'rhoY']
 
         # forward operator (projector from state space to observation space)
@@ -16,7 +15,7 @@ class da_params(object):
         self.localisation_matrix = np.eye(N)
         #
         # square of empirical RMSE of (48x48) travelling vortex from ref (256x256)
-        self.aprior_error_covar = 0.001#0.5804227421558537
+        self.aprior_error_covar = 0.0001#0.5804227421558537
 
     def load_obs(self,obs):
         None
