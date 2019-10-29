@@ -2,6 +2,7 @@ import numpy as np
 
 # dependencies of the atmospheric flow solver
 from management.data import data_init, time_update
+from inputs.boundary import set_explicit_boundary_data
 from management.variable import States, Vars
 from physics.gas_dynamics.thermodynamic import ThemodynamicInit
 from physics.gas_dynamics.eos import nonhydrostasy, compressibility, is_compressible, is_nonhydrostatic
@@ -65,11 +66,11 @@ writer = io(ud)
 
 ##########################################################
 # Data Assimilation part
-N = 2
+N = 20
 da_parameters = da_params(N)
 aprior_error_covar = da_parameters.aprior_error_covar
 sampler = da_parameters.sampler_gaussian(aprior_error_covar)
-# sampler = da_parameters.sampler_none()
+sampler = da_parameters.sampler_none()
 attributes = da_parameters.attributes
 ens = ensemble()
 ens.initialise_members([Sol,flux,mpv],N)
@@ -87,8 +88,8 @@ obs_attributes = ['rho', 'rhou', 'rhov', 'rhoY']
 # where in the "solutions" container are they located? 0: Sol, 1: flux, 2: mpv
 loc = 0
 # when were these observations taken?
-times = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
-# times = []
+times = [0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
+# times = [0.0,1.0]
 
 # axis 0 stores time series
 obs = np.empty(len(times), dtype=object)
@@ -136,7 +137,8 @@ if __name__ == '__main__':
 
         # if observations are available, do analysis...
         # print(np.array(obs[np.where(times == tout)[0][0]]))
-        if len(np.where(times == tout)[0]) > 0:
+        if len(np.where(times == tout)[0]) > 0 and N > 1:
+            print(True)
             # print(np.where(times == tout)[0][0])
             futures = []
             for attr in obs_attributes:
@@ -154,8 +156,10 @@ if __name__ == '__main__':
             for attr in obs_attributes:
                 current = analysis[attr]
                 for n in range(N):
-                    results[:,loc,...][n].attr = current[n]
-                # [setattr(results[:,loc,...][n],attr,current[n]) for n in range(N)]
+                    # results[:,loc,...][n].attr = current[n]
+                    # print(attr)
+                    # print(results[:,loc,...][n].rho)
+                    setattr(results[:,loc,...][n],attr,current[n])
              
         ens.set_members(results)
         # assert(0)
@@ -168,6 +172,7 @@ if __name__ == '__main__':
 
         for n in range(N):
             Sol = ens.members(ens)[n][0]
+            set_explicit_boundary_data(Sol, elem, ud, th, mpv)
             mpv = ens.members(ens)[n][2]
             label = 'ensemble_mem='+str(n)+'_'+str(t)
             writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')

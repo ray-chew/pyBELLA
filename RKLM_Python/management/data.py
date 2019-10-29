@@ -44,8 +44,8 @@ def data_init(ud):
 #     return lambda mem: time_update(mem[0],mem[1],mem[2],t,tout,ud,elem,node,step,th,writer=writer,debug=debug)
 
 def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False):
-    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
     while ((t < tout) and (step < ud.stepmax)):
+        set_explicit_boundary_data(Sol, elem, ud, th, mpv)
         # print("---------------------------------------")
         # print("half-time prediction of advective flux")
         # print("---------------------------------------")
