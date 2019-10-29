@@ -65,39 +65,39 @@ writer = io(ud)
 
 ##########################################################
 # Data Assimilation part
-N = 1
+N = 20
 da_parameters = da_params(N)
 aprior_error_covar = da_parameters.aprior_error_covar
-# sampler = da_parameters.sampler(aprior_error_covar)
-sampler = da_parameters.sampler_none()
+sampler = da_parameters.sampler_gaussian(aprior_error_covar)
+# sampler = da_parameters.sampler_none()
 attributes = da_parameters.attributes
 ens = ensemble()
 ens.initialise_members([Sol,flux,mpv],N)
 
 # print(ens.members(ens))
-# ens.ensemble_spreading(sampler,attributes)
+ens.ensemble_spreading(sampler,attributes)
 
 
 ##########################################################
 # tout = ud.tout
 
 if __name__ == '__main__':
-    client = Client(threads_per_worker=1, n_workers=1)    
+    client = Client(threads_per_worker=2, n_workers=4)    
     tic = time()
     # assert(0)
 
     # main time looping
     for tout in ud.tout:
-        # futures = []
+        futures = []
         for mem in ens.members(ens):
             # s_ud = client.scatter(ud)
             # time_update = time_update_wrapper(t, tout, ud, elem, node, step, th, writer=writer, debug=debug)
-            # future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, step, th, writer, debug])
+            future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, step, th, None, debug])
             # future = client.submit(time_update, mem)
-            time_update(mem[0], mem[1], mem[2], t, tout, ud, elem, node, step, th, writer, debug)
-            # futures.append(future)
-        # results = client.gather(futures)
-        # ens.set_members(results)
+            # time_update(mem[0], mem[1], mem[2], t, tout, ud, elem, node, step, th, writer, debug)
+            futures.append(future)
+        results = client.gather(futures)
+        ens.set_members(results)
         # print(results)
         # assert(0)
         
@@ -106,10 +106,11 @@ if __name__ == '__main__':
         t = tout
         print(tout)
 
-        # label = t
-        # Sol = ens.members(ens)[0][0]
-        # mpv = ens.members(ens)[0][2]
-        # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
+        for n in range(N):
+            Sol = ens.members(ens)[n][0]
+            mpv = ens.members(ens)[n][2]
+            label = 'ensemble_mem='+str(n)+'_'+str(t)
+            writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
 
     toc = time()
     print("Time taken = %.6f" %(toc-tic))
