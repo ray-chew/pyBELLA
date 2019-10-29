@@ -60,7 +60,7 @@ Sol = deepcopy(Sol0)
 
 # dt_factor = 0.5 if ud.initial_impl_Euler == True else 1.0
 
-# writer = io(ud)
+writer = io(ud)
 # writer.write_all(Sol,mpv,elem,node,th,'000_ic')
 
 ##########################################################
@@ -83,10 +83,12 @@ obs_path = './output_travelling_vortex_3d_48/output_travelling_vortex_3d_48_low_
 obs_file = h5py.File(obs_path, 'r')
 # which attributes do I want to observe?
 obs_attributes = ['rho', 'rhou', 'rhov', 'rhoY']
+# obs_attributes = ['rho']
 # where in the "solutions" container are they located? 0: Sol, 1: flux, 2: mpv
 loc = 0
 # when were these observations taken?
-times = [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
+times = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
+# times = []
 
 # axis 0 stores time series
 obs = np.empty(len(times), dtype=object)
@@ -136,15 +138,27 @@ if __name__ == '__main__':
         # print(np.array(obs[np.where(times == tout)[0][0]]))
         if len(np.where(times == tout)[0]) > 0:
             # print(np.where(times == tout)[0][0])
-            
+            futures = []
             for attr in obs_attributes:
                 obs_current = np.array(obs[np.where(times == tout)[0][0]][attr])
-                da_interface(results,obs_current,attr,N,ud)
-
+                future = client.submit(da_interface, *[results,obs_current,attr,N,ud])
+                futures.append(future)
             # print(np.array(local_ens).shape)
                 # letkf_local = letkf()
-
+            analysis = client.gather(futures)
+            analysis = np.array(analysis)
+            iterable = iter(analysis.flatten())
+            analysis = dict(zip(iterable, iterable))
+        # print(results)
+        # print(results[0][1])
+            for attr in obs_attributes:
+                current = analysis[attr]
+                for n in range(N):
+                    results[:,loc,...][n].attr = current[n]
+                # [setattr(results[:,loc,...][n],attr,current[n]) for n in range(N)]
+             
         ens.set_members(results)
+        # assert(0)
         # print(results.shape)
         # assert(0)
         
@@ -152,11 +166,11 @@ if __name__ == '__main__':
         t = tout
         print('tout = %.3f' %tout)
 
-        # for n in range(N):
-        #     Sol = ens.members(ens)[n][0]
-        #     mpv = ens.members(ens)[n][2]
-        #     label = 'ensemble_mem='+str(n)+'_'+str(t)
-        #     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
+        for n in range(N):
+            Sol = ens.members(ens)[n][0]
+            mpv = ens.members(ens)[n][2]
+            label = 'ensemble_mem='+str(n)+'_'+str(t)
+            writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
 
         tout_cnt += 1
 
