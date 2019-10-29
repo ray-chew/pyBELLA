@@ -22,7 +22,7 @@ class da_params(object):
 
     @staticmethod
     def sampler_gaussian(var):
-        return lambda ic: ic + np.random.normal(0.0,var**0.5,size=ic.shape)
+        return lambda ic: np.random.normal(ic,var**0.5,size=ic.shape)
 
     @staticmethod
     def sampler_none():

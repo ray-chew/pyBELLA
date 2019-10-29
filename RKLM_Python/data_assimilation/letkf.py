@@ -5,7 +5,7 @@ from inputs.enum_bdry import BdryType
 import numpy as np
 
 def da_interface(results,obs_current,attr,N,ud,loc=0):
-    local_ens = ([getattr(results[:,loc,...][n],attr)for n in range(N)])
+    local_ens = [getattr(results[:,loc,...][n],attr) for n in range(N)]
     local_ens = analysis(local_ens,attr)
 
     # print(obs_current.shape)
@@ -16,8 +16,11 @@ def da_interface(results,obs_current,attr,N,ud,loc=0):
 
     obs_covar = sparse.eye(x_obs**2, y_obs**2, format='csr')
     # print(obs_covar.shape)
-    local_ens.X = local_ens.analyse(obs_current.reshape(-1), obs_covar)
+    X = local_ens.analyse(obs_current.reshape(-1), obs_covar)
+    local_ens.ensemble = local_ens.to_array(X)
     # print(local_ens.X.shape)
+    # return np.array([local_ens.identifier, local_ens.ensemble])
+    return [local_ens.identifier, local_ens.ensemble]
     
 
 # let me ust put the forward operator here for now - will need to tidy stuff up....
@@ -32,14 +35,13 @@ def interpolation_func(ensemble,x_obs,y_obs,ud):
     ensemble = [map_coordinates(mem,[x,y],mode='wrap') for mem in ensemble]
     return np.array(ensemble)
 
-    
-
 
 class analysis(object):
     def __init__(self,ensemble, identifier=None):
         self.ensemble = np.array(ensemble)
         self.X = self.state_vector(ensemble)
         self.no_of_members = self.ensemble.shape[0]
+        self.member_shape = self.ensemble[0].shape
 
         # ensemble inflation factor
         self.rho = 1.
@@ -76,11 +78,11 @@ class analysis(object):
 
         Lambda, P = linalg.eig(Pa)
         Lambda, P = Lambda.real, P.real
-        Pa = P @ np.diag(1./Lambda) @ P.T
+        Pa = np.dot(P,np.dot(np.diag(1./Lambda),P.T))
 
-        Wa = (self.no_of_members - 1.) * P @ np.diag((1./Lambda)**0.5) @ P.T
+        Wa = (self.no_of_members - 1.)**0.5 * np.dot(P,np.dot(np.diag((1./Lambda)**0.5),P.T))
 
-        wa = np.dot(np.dot(Pa,C) , obs - self.Y_mean)
+        wa = np.dot(Pa,np.dot(C , (obs - self.Y_mean)))
         Wa += wa
 
         return np.dot(self.X.T, Wa).T + self.X_mean
@@ -93,3 +95,6 @@ class analysis(object):
     def state_vector(ensemble):
         return np.array([mem.reshape(-1) for mem in ensemble])
         # return np.array([[getattr(mem,attr).reshape(-1) for mem in ensemble.members(ensemble)] for attr in attributes]).squeeze()
+
+    def to_array(self,X):
+        return np.array([x.reshape(self.member_shape) for x in X])
