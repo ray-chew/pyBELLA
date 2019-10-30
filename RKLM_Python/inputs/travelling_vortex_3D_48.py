@@ -140,8 +140,8 @@ class UserData(object):
         self.tips = TimeIntegratorParams()
         SetTimeIntegratorParameters(self)
 
-        self.inx = 48+1
-        self.iny = 48+1
+        self.inx = 256+1
+        self.iny = 256+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -180,7 +180,9 @@ class UserData(object):
 
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
-        self.tout = np.arange(0,11,1)/10.
+        # self.tout = np.arange(0,11,1)/10.
+        self.tout = np.linspace(0,1.0,num=21)
+        # self.tout = [0.0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18,0.20]
         # self.tout = [0.1]
         # self.tout[0] =  0.1
         # self.tout[1] = -1.0

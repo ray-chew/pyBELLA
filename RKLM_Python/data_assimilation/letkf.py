@@ -2,6 +2,7 @@ from scipy import sparse, linalg
 from scipy.sparse.linalg import spsolve
 from scipy.ndimage import map_coordinates
 from inputs.enum_bdry import BdryType
+import dask.array as darr
 import numpy as np
 
 def da_interface(results,obs_current,attr,N,ud,loc=0):
@@ -21,6 +22,7 @@ def da_interface(results,obs_current,attr,N,ud,loc=0):
     local_ens.forward(forward_operator)
 
     obs_covar = sparse.eye(x_obs**2, y_obs**2, format='csr')
+
     # print(obs_covar.shape)
     X = local_ens.analyse(obs_current.reshape(-1), obs_covar)
     local_ens.ensemble = local_ens.to_array(X)
@@ -35,11 +37,12 @@ def interpolation_func(ensemble,x_obs,y_obs,ud):
     if ud.bdry_type[0] == BdryType.WALL or ud.bdry_type[1] == BdryType.WALL:
         assert("WALL NOT IMPLEMENTED!")
     x_ens, y_ens = ensemble[0].shape
+    # print(x_ens, y_ens, x_obs, y_obs)
     x = np.linspace(0,x_ens,x_obs)
     y = np.linspace(0,y_ens,y_obs)
     x,y = np.meshgrid(x,y)
 
-    ensemble = [map_coordinates(mem,[x,y],mode='wrap', order=3) for mem in ensemble]
+    ensemble = [map_coordinates(mem,[y,x],mode='wrap', order=3) for mem in ensemble]
     # print(np.array(ensemble).shape)
     return np.array(ensemble)
 
@@ -52,9 +55,12 @@ class analysis(object):
         self.member_shape = self.ensemble[0].shape
 
         # ensemble inflation factor
-        self.rho = 1.3
+        self.rho = 1.5
         # if anlaysis is over local state space, which is it?
         self.identifier = identifier
+
+        # initialise localisation matrix as None
+        self.localisation_matrix = None
 
     def forward(self,forward_operator):
         self.forward_operator = forward_operator
@@ -81,7 +87,10 @@ class analysis(object):
 
         # here is where the R-localisation matrix will come in
         # obs_covar is the error covariance matrix: is spd
+        if self.localisation_matrix != None:
+            obs_covar *= self.localisation_matrix
         C = spsolve(obs_covar, self.Y.T).T # R in (k x l)
+        # C = linalg.solve(obs_covar, self.Y.T, assume_a='pos').T # R in (k x l)
 
         Pa = (self.no_of_members - 1.) * np.eye(self.no_of_members) / self.rho + np.dot(C,self.Y.T)
 

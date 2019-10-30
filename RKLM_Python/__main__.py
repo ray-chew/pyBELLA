@@ -66,7 +66,7 @@ writer = io(ud)
 
 ##########################################################
 # Data Assimilation part
-N = 20
+N = 1
 da_parameters = da_params(N)
 aprior_error_covar = da_parameters.aprior_error_covar
 # sampler = da_parameters.sampler_gaussian(aprior_error_covar)
@@ -83,30 +83,33 @@ obs_path = './output_travelling_vortex_3d_48/output_travelling_vortex_3d_48_low_
 obs_file = h5py.File(obs_path, 'r')
 # which attributes do I want to observe?
 # obs_attributes = ['rho', 'rhou', 'rhov', 'rhoY']
-# obs_attributes = ['rho']
-obs_attributes = ['rhou', 'rhov']
+# obs_attributes = ['rho', 'rhou', 'rhov']
+# obs_attributes = ['rhou', 'rhov']
+obs_attributes = ['rho']
+# obs_attributes = ['rhoX']
 # where in the "solutions" container are they located? 0: Sol, 1: flux, 2: mpv
 loc = 0
 # when were these observations taken?
-times = [0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
+times = [0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+# times= [0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20]
 # times = [0.0,1.0]
 
 # axis 0 stores time series
-obs = np.empty(len(times), dtype=object)
-t_cnt = 0
-for t in times:
-    # how were these dataset called?
-    label = '_' + str(t) + '_' + 'after_full_step'
-    # axis 1 stores the attributes
-    obs[t_cnt] = {}
-    for attribute in obs_attributes:
-        dict_attr = {
-            attribute: obs_file[str(attribute)][str(attribute) + str(label)][:]
-        }
-        obs[t_cnt].update(dict_attr)
-    t_cnt += 1
-obs = np.array(obs)
-obs_file.close()
+# obs = np.empty(len(times), dtype=object)
+# t_cnt = 0
+# for t in times:
+#     # how were these dataset called?
+#     label = '_ensemble_mem=0_' + str(t) + '_' + 'after_full_step'
+#     # axis 1 stores the attributes
+#     obs[t_cnt] = {}
+#     for attribute in obs_attributes:
+#         dict_attr = {
+#             attribute: obs_file[str(attribute)][str(attribute) + str(label)][:]
+#         }
+#         obs[t_cnt].update(dict_attr)
+#     t_cnt += 1
+# obs = np.array(obs)
+# obs_file.close()
 
 # print(np.array(obs[0]).shape)
 ##########################################################
@@ -122,6 +125,8 @@ if __name__ == '__main__':
     tout_cnt = 0
     for tout in ud.tout:
         futures = []
+        print('##############################################')
+        print('current tout = %.3f' %tout)
         # obs_current = obs[tout_cnt]
         print("Starting forecast...")
         for mem in ens.members(ens):
@@ -136,13 +141,14 @@ if __name__ == '__main__':
         # print(results[:,loc,...])
 
         # if observations are available, do analysis...
-        # print(np.array(obs[np.where(times == tout)[0][0]]))
-        if len(np.where(times == tout)[0]) > 0: #and N > 1:
+        # print(np.array(np.where(np.isclose(times,tout))[0]))
+        # print(times == tout)
+        if len(np.where(np.isclose(times,tout))[0]) > 0 and N > 1:
             print("Starting analysis...")
             # print(np.where(times == tout)[0][0])
             futures = []
             for attr in obs_attributes:
-                obs_current = np.array(obs[np.where(times == tout)[0][0]][attr])
+                obs_current = np.array(obs[np.where(np.isclose(times,tout))[0][0]][attr])
                 # print(obs_current)
                 # print(attr)
                 future = client.submit(da_interface, *[results,obs_current,attr,N,ud])
@@ -167,17 +173,20 @@ if __name__ == '__main__':
         # assert(0)
         # print(results.shape)
         # assert(0)
-        
+
+        print("Starting output...")
+        for n in range(N):
+            Sol = ens.members(ens)[n][0]
+            mpv = ens.members(ens)[n][2]
+            set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+            # Sol = results[n][0]
+            # mpv = results[n][2]
+            label = 'ensemble_mem='+str(n)+'_'+str(tout)
+            writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
+
         # synchronise_variables(mpv, Sol, elem, node, ud, th)
         t = tout
         print('tout = %.3f' %tout)
-
-        for n in range(N):
-            Sol = ens.members(ens)[n][0]
-            set_explicit_boundary_data(Sol, elem, ud, th, mpv)
-            mpv = ens.members(ens)[n][2]
-            label = 'ensemble_mem='+str(n)+'_'+str(t)
-            writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
 
         tout_cnt += 1
 
