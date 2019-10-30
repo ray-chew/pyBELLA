@@ -1,5 +1,6 @@
 # input/output
 import h5py
+import os
 import numpy as np
 
 class io(object):
@@ -60,8 +61,11 @@ class io(object):
         self.io_create_file(self.PATHS)
 
     def io_create_file(self,paths):
+        # If file exists, delete it.. Nuclear option
+        if os.path.exists(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT):
+            os.remove(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT)
         # create a new output file for each rerun - old output will be overwritten.
-        file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'w')
+        file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'a')
         for path in paths:
             # check if groups have been created
             # if not created, create empty groups
@@ -174,6 +178,6 @@ class io(object):
 
     def close_everything(self):
         # in parallel, some workers do not close file correctly, this function forces the program to close the hdf file before exiting.
-        file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'r+')
+        file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'r')
         if file.__bool__():
             file.close()
