@@ -69,12 +69,11 @@ writer = io(ud)
 N = 20
 da_parameters = da_params(N)
 aprior_error_covar = da_parameters.aprior_error_covar
-sampler = da_parameters.sampler_gaussian(aprior_error_covar)
+# sampler = da_parameters.sampler_gaussian(aprior_error_covar)
 sampler = da_parameters.sampler_none()
 attributes = da_parameters.attributes
 ens = ensemble()
 ens.initialise_members([Sol,flux,mpv],N)
-
 ens.ensemble_spreading(ens,sampler,attributes)
 
 ##########################################################
@@ -83,8 +82,9 @@ ens.ensemble_spreading(ens,sampler,attributes)
 obs_path = './output_travelling_vortex_3d_48/output_travelling_vortex_3d_48_low_mach_gravity_comp_256_256.h5'
 obs_file = h5py.File(obs_path, 'r')
 # which attributes do I want to observe?
-obs_attributes = ['rho', 'rhou', 'rhov', 'rhoY']
+# obs_attributes = ['rho', 'rhou', 'rhov', 'rhoY']
 # obs_attributes = ['rho']
+obs_attributes = ['rhou', 'rhov']
 # where in the "solutions" container are they located? 0: Sol, 1: flux, 2: mpv
 loc = 0
 # when were these observations taken?
@@ -123,7 +123,7 @@ if __name__ == '__main__':
     for tout in ud.tout:
         futures = []
         # obs_current = obs[tout_cnt]
-
+        print("Starting forecast...")
         for mem in ens.members(ens):
             # s_ud = client.scatter(ud)
             # time_update = time_update_wrapper(t, tout, ud, elem, node, step, th, writer=writer, debug=debug)
@@ -137,12 +137,14 @@ if __name__ == '__main__':
 
         # if observations are available, do analysis...
         # print(np.array(obs[np.where(times == tout)[0][0]]))
-        if len(np.where(times == tout)[0]) > 0 and N > 1:
-            print(True)
+        if len(np.where(times == tout)[0]) > 0: #and N > 1:
+            print("Starting analysis...")
             # print(np.where(times == tout)[0][0])
             futures = []
             for attr in obs_attributes:
                 obs_current = np.array(obs[np.where(times == tout)[0][0]][attr])
+                # print(obs_current)
+                # print(attr)
                 future = client.submit(da_interface, *[results,obs_current,attr,N,ud])
                 futures.append(future)
             # print(np.array(local_ens).shape)
@@ -181,3 +183,5 @@ if __name__ == '__main__':
 
     toc = time()
     print("Time taken = %.6f" %(toc-tic))
+
+    writer.close_everything()

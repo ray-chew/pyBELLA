@@ -171,3 +171,9 @@ class io(object):
         #     file[str(path) + '/' + str(name)].attrs.create(key,options[key])
         # print("writing time = %.1f for arrays %s" %(name,path))
         file.close()
+
+    def close_everything(self):
+        # in parallel, some workers do not close file correctly, this function forces the program to close the hdf file before exiting.
+        file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'r+')
+        if file.__bool__():
+            file.close()
