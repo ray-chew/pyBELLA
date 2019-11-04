@@ -73,7 +73,7 @@ class analysis(object):
         self.member_shape = self.ensemble[0].shape
 
         # ensemble inflation factor
-        self.rho = 0.1
+        self.rho = 1.0
         # if anlaysis is over local state space, which is it?
         self.identifier = identifier
 
@@ -94,12 +94,7 @@ class analysis(object):
         # self.Y = [self.forward_operator(xi) for xi in self.X]
 
         self.Y = self.forward_operator(self.ensemble)
-        # print(self.Y)
         self.Y = self.state_vector(self.Y)
-
-        # print(self.X)
-        # print(self.Y)
-        # print(self.Y.mean())
 
         self.Y_mean = self.get_mean(self.Y) # R in l
         self.Y -= self.Y_mean # R in (l x k)
@@ -107,13 +102,13 @@ class analysis(object):
         self.X_mean = self.get_mean(self.X) # R in m
         self.X -= self.X_mean # R in (m x k)
 
-        # print(obs)
-
-        print("self.ensemble.shape = ", self.ensemble.shape)
-        print("self.no_of_members = ", self.no_of_members)
-        print("self.Y.shape = ", self.Y.shape)
-        print("obs.shape = ", obs.shape)
-        print("obs_covar.shape = ", obs_covar.shape)
+        # print("self.ensemble.shape = ", self.ensemble.shape)
+        # print("self.no_of_members = ", self.no_of_members)
+        # print("self.X.shape = ", self.X.shape)
+        # print("self.Y.shape = ", self.Y.shape)
+        # print("obs.shape = ", obs.shape)
+        # print("obs_covar.shape = ", obs_covar.shape)
+        # print("Sanity check # 1, sum of columns of X = ", self.X.sum(axis=0))
 
         # for now, global == local, i.e. observation space == state space
 
@@ -122,52 +117,32 @@ class analysis(object):
         if self.localisation_matrix != None:
             obs_covar *= self.localisation_matrix
         C = spsolve(obs_covar, self.Y.T).T # R in (k x l)
-        # C /= (self.no_of_members - 1)
-        # C = self.Y.T / obs_covar
-        # C = C.T
-        # C = linalg.solve(obs_covar, self.Y.T, assume_a='pos').T # R in (k x l)
 
         # print("C.shape = ", C.shape)
 
-        Rhs = (self.no_of_members - 1.) * np.eye(self.no_of_members) / self.rho + C * self.Y.T #np.dot(C,self.Y.T)
-        # Rhs = np.eye(self.no_of_members) / self.rho + C @ self.Y.T / (self.no_of_members - 1.)**0.5 #np.dot(C,self.Y.T)
-        # print(np.dot(C,self.Y.T).shape)
-        # Rhs = (self.no_of_members - 1.) * np.eye(self.no_of_members) / self.rho + C @ self.Y.T
+        Pa = (self.no_of_members - 1.) * np.eye(self.no_of_members,self.no_of_members) / self.rho + C.T * self.Y
         
-        Lambda, P = linalg.eigh(Rhs)
-        # Lambda, P = Lambda.real, P.real
+        Lambda, P = linalg.eigh(Pa)
         # Pa = np.dot(P,np.dot(np.diag(1./Lambda),P.T))
         Pa = P @ (np.diag(1./Lambda) @ P.T)
 
         # print("Pa.shape = ", Pa.shape)
 
         # Wa = (self.no_of_members - 1.)**0.5 * np.dot(P,np.dot(np.diag((1./Lambda)**0.5),P.T))
-        Wa = P @ (np.diag(np.sqrt((self.no_of_members - 1.)/Lambda)) @ P.T)
-        # Wa = np.sqrt((self.no_of_members - 1.)) * (P @ np.diag(np.sqrt(1./Lambda)) @ P.T)
-        # print(self.Y_mean.shape)
+        Wa = np.sqrt(self.no_of_members - 1.) * P @ (np.diag(np.sqrt(1./Lambda)) @ P.T)
 
-        # wa = np.dot(Pa,np.dot(C , (obs - self.Y_mean) ))
         # wa = np.dot(Pa , (C * (obs - self.Y_mean)))
         wa = Pa @ (C * (obs - self.Y_mean))
-        # print(wa.shape)
-        # wa = self.X_mean[0]
-        print("iopiopx")
-        # wa = np.dot(Pa,np.dot(C , (obs - self.Y_mean)))
-        # Wa += wa.reshape(1,-1)
-        # Wa = np.array([wi + wa for wi in Wa])
 
-        # Wa += wa.reshape(-1,1)
-        # wa = np.tile(wa,self.no_of_members)
+        print("Sanity check #2, sum of columns of wa:", np.dot(self.X.T , Wa).sum(axis=1))
         Wa += wa
-        # print(wa)
-        # print(Wa.shape)
 
-        # return np.dot(self.X.T , Wa).T + self.X_mean
+        # return np.dot(self.X.T , Wa) + self.X_mean.reshape(-1,1)
         return (self.X.T @ Wa) + self.X_mean.reshape(-1,1)
 
 
     def get_mean(self,vec):
-        return np.array(vec).sum(axis=0)
+        return np.array(vec).mean(axis=0)
     
     # More readable method needed - seems to be most efficient though.
     @staticmethod
