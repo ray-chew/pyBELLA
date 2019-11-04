@@ -67,12 +67,18 @@ Sol = deepcopy(Sol0)
 N = 10
 da_parameters = da_params(N)
 aprior_error_covar = da_parameters.aprior_error_covar
-# sampler = da_parameters.sampler_gaussian(aprior_error_covar)
+
 sampler = da_parameters.sampler_none()
+if N > 1:
+    sampler = da_parameters.sampler_perturbator(1)
+    # sampler = da_parameters.sampler_gaussian(aprior_error_covar)
+
 attributes = da_parameters.attributes
 ens = ensemble()
 ens.initialise_members([Sol,flux,mpv],N)
 ens.ensemble_spreading(ens,sampler,attributes)
+# assert(0)
+# print(ens.members(ens)[0])
 
 ##########################################################
 # Load observations
