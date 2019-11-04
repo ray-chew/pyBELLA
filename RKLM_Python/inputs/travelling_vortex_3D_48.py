@@ -140,8 +140,8 @@ class UserData(object):
         self.tips = TimeIntegratorParams()
         SetTimeIntegratorParameters(self)
 
-        self.inx = 256+1
-        self.iny = 256+1
+        self.inx = 48+1
+        self.iny = 48+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -198,9 +198,10 @@ class UserData(object):
 
         self.n_time_series = 500
 
-        self.output_base_name = "_travelling_vortex_3d_48"
+        self.output_base_name = "_travelling_vortex"
         self.output_name_psinc = "_low_mach_gravity_psinc"
         self.output_name_comp = "_low_mach_gravity_comp"
+        # self.output_name_comp = 
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
