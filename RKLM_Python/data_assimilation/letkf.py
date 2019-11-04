@@ -73,7 +73,7 @@ class analysis(object):
         self.member_shape = self.ensemble[0].shape
 
         # ensemble inflation factor
-        self.rho = 1.0
+        self.rho = 1.5
         # if anlaysis is over local state space, which is it?
         self.identifier = identifier
 
@@ -120,7 +120,7 @@ class analysis(object):
 
         # print("C.shape = ", C.shape)
 
-        Pa = (self.no_of_members - 1.) * np.eye(self.no_of_members,self.no_of_members) / self.rho + C.T * self.Y
+        Pa = (self.no_of_members - 1.) * np.eye(self.no_of_members,self.no_of_members) / self.rho + np.dot(C , self.Y.T)
         
         Lambda, P = linalg.eigh(Pa)
         # Pa = np.dot(P,np.dot(np.diag(1./Lambda),P.T))
@@ -131,14 +131,16 @@ class analysis(object):
         # Wa = (self.no_of_members - 1.)**0.5 * np.dot(P,np.dot(np.diag((1./Lambda)**0.5),P.T))
         Wa = np.sqrt(self.no_of_members - 1.) * P @ (np.diag(np.sqrt(1./Lambda)) @ P.T)
 
-        # wa = np.dot(Pa , (C * (obs - self.Y_mean)))
-        wa = Pa @ (C * (obs - self.Y_mean))
+        # wa = np.dot(Pa , np.dot(C , (obs - self.Y_mean)))
+        wa = Pa @ (C @ (obs - self.Y_mean))
 
-        print("Sanity check #2, sum of columns of wa:", np.dot(self.X.T , Wa).sum(axis=1))
+        # print("Sanity check #2, sum of columns of wa:", np.dot(self.X.T , Wa).sum(axis=1))
+
         Wa += wa
 
         # return np.dot(self.X.T , Wa) + self.X_mean.reshape(-1,1)
-        return (self.X.T @ Wa) + self.X_mean.reshape(-1,1)
+        return ((self.X.T @ Wa) + self.X_mean.reshape(-1,1)).T
+        # return result
 
 
     def get_mean(self,vec):
