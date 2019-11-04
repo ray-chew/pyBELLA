@@ -6,7 +6,8 @@ class da_params(object):
         # number of ensemble members
         self.N = 20
 
-        self.attributes = ['rho', 'rhou', 'rhov', 'rhoY']
+        # self.attributes = ['rho', 'rhou', 'rhov', 'rhoY']
+        self.attributes = ['rho']
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)
@@ -27,3 +28,7 @@ class da_params(object):
     @staticmethod
     def sampler_none():
         return lambda ic: ic
+
+    @staticmethod
+    def sampler_perturbator(max_shift):
+        return lambda ic: np.roll(np.roll(ic, np.random.randint(-max_shift,max_shift), axis=1), np.random.randint(-max_shift,max_shift), axis=0)
