@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from copy import deepcopy
 
 class ensemble(object):
@@ -34,6 +35,9 @@ class ensemble(object):
             for n in range(N):
                 mem = getattr(self,'mem_' + str(n))
                 value = getattr(mem[loc],attribute)
+                plt.figure()
+                plt.imshow(sampler(value))
+                plt.savefig("./output_images/initial_%03d" %n, bbox_inches='tight')
                 setattr(mem[loc],attribute,sampler(value))
 
     @staticmethod
