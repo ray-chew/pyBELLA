@@ -33,6 +33,7 @@ class ensemble(object):
     # rethink this eveutally....
     def ensemble_spreading(self, ens, sampler, attributes, loc=0):
         N = self.members(ens).shape[0]
+        np.random.seed(555)
         for attribute in attributes:
             for n in range(N):
                 mem = getattr(self,'mem_' + str(n))
