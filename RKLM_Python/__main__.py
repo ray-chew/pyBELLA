@@ -69,34 +69,36 @@ aprior_error_covar = da_parameters.aprior_error_covar
 
 sampler = da_parameters.sampler_none()
 if N > 1:
-    None
+    # None
     # sampler = da_parameters.sampler_perturbator(5)
-    # sampler = da_parameters.sampler_gaussian(aprior_error_covar)
+    sampler = da_parameters.sampler_gaussian(aprior_error_covar)
 
 attributes = da_parameters.attributes
-# Sol = [([sol_init(deepcopy(Sol), mpv, elem, node, th, ud), deepcopy(flux), deepcopy(mpv)]) for _ in range(N)]
-sol_ens = np.zeros((N), dtype=object)
-print("Generating initial ensemble...")
-for n in range(N):
-    Sol0 = deepcopy(Sol)
-    mpv0 = deepcopy(mpv)
-    Sol0 = sol_init(Sol0,mpv0,elem,node,th,ud)
-    sol_ens[n] = [Sol0,deepcopy(flux),mpv]
 
-ens = ensemble(sol_ens)
-# ens.initialise_members([Sol,flux,mpv],N)
-# ens.ensemble_spreading(ens,sampler,attributes)
+print("Generating initial ensemble...")
+# sol_ens = np.zeros((N), dtype=object)
+# for n in range(N):
+#     Sol0 = deepcopy(Sol)
+#     mpv0 = deepcopy(mpv)
+#     Sol0 = sol_init(Sol0,mpv0,elem,node,th,ud)
+#     sol_ens[n] = [Sol0,deepcopy(flux),mpv]
+
+# ens = ensemble(sol_ens)
+
+ens = ensemble()
+ens.initialise_members([Sol,flux,mpv],N)
+ens.ensemble_spreading(ens,sampler,attributes)
+
 # assert(0)
-# print(ens.members(ens)[0])
 
 ##########################################################
 # Load observations
 # where are my observations?
-obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_256_256_1.0.h5'
+obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_256_256_0.2.h5'
 # obs_path = './output_travelling_vortex/output_travelling_vortex_3d_48_low_mach_gravity_comp_256_256_old.h5'
 obs_file = h5py.File(obs_path, 'r')
 #### which attributes do I want to observe?
-obs_attributes = ['rho', 'rhou', 'rhov', 'rhoY']
+obs_attributes = ['rho', 'rhou', 'rhov']
 # obs_attributes = ['rho', 'rhou', 'rhov']
 # obs_attributes = ['rhou', 'rhov']
 # obs_attributes = ['rho']
@@ -104,8 +106,8 @@ obs_attributes = ['rho', 'rhou', 'rhov', 'rhoY']
 loc = 0
 #### when were these observations taken?
 # times = [0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
-times = [0.20,0.25,0.30,0.35,0.40,0.45,0.50,0.55,0.60,0.65,0.70,0.75,0.80,0.85,0.90,0.95,1.0]
-# times = [0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20]
+# times = [0.20,0.25,0.30,0.35,0.40,0.45,0.50,0.55,0.60,0.65,0.70,0.75,0.80,0.85,0.90,0.95,1.0]
+times = [0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20]
 # print(obs_file['rho'].keys())
 # assert(0)
 
@@ -125,13 +127,13 @@ for t in times:
     t_cnt += 1
 obs = np.array(obs)
 obs_file.close()
-ud.output_name_comp = ("_ensemble=%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,ud.tout[-1])) 
+ud.output_name_comp = ("_ensemble=%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,ud.tout[-1]))
 ##########################################################
 
 writer = io(ud)
 
 if __name__ == '__main__':
-    client = Client(threads_per_worker=4, n_workers=2)    
+    client = Client(threads_per_worker=4, n_workers=2)
     tic = time()
     # assert(0)
 
@@ -153,6 +155,7 @@ if __name__ == '__main__':
         results = client.gather(futures)
         results = np.array(results)
         # print(results[:,loc,...])
+        results_before = deepcopy(results)
 
         #### if observations are available, do analysis...
         # print(np.array(np.where(np.isclose(times,tout))[0]))
@@ -163,6 +166,7 @@ if __name__ == '__main__':
             # print(np.where(times == tout)[0][0])
             futures = []
             for attr in obs_attributes:
+                print("Assimilating %s..." %attr)
                 obs_current = np.array(obs[np.where(np.isclose(times,tout))[0][0]][attr])
                 future = client.submit(da_interface, *[results,obs_current,attr,N,ud])
                 futures.append(future)
@@ -179,6 +183,12 @@ if __name__ == '__main__':
                     # print(attr)
                     # print(results[:,loc,...][n].rho)
                     setattr(results[:,loc,...][n],attr,current[n])
+
+        # print(results_before[:,loc,...][0].rho)
+        # print(results[:,loc,...][0].rho)
+        if np.allclose(results_before[:,loc,...][0].rho, results[:,loc,...][0].rho):
+            print("MIAUUUUUUU")
+            # assert(0,"Assimilation failed")
              
         ens.set_members(results)
 
@@ -186,7 +196,7 @@ if __name__ == '__main__':
         for n in range(N):
             Sol = ens.members(ens)[n][0]
             mpv = ens.members(ens)[n][2]
-            # set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+            set_explicit_boundary_data(Sol, elem, ud, th, mpv)
             label = ('ensemble_mem=%i_%.2f' %(n,tout))
             writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
 
