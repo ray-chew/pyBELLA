@@ -285,6 +285,9 @@ def sol_init(Sol, mpv, elem, node, th, ud):
 
     r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
 
+    max_shift = 1
+    r = np.roll(np.roll(r, np.random.randint(-max_shift,max_shift), axis=1), np.random.randint(-max_shift,max_shift), axis=0)
+
     uth = (rotdir * fac * (1.0 - r/R0)**6 * (r/R0)**6) * (r < R0)
 
     u = u0 + uth * (-(ys-yccs)/r)
