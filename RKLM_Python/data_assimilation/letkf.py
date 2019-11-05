@@ -8,9 +8,9 @@ import numpy as np
 
 def da_interface(results,obs_current,attr,N,ud,loc=0):
     # inner = (slice(ud.igx,-ud.igx),slice(ud.igy,-ud.igy))
-    ig = 2
-    inner = (slice(ig,-ig),slice(ig,-ig))
-    # inner = (slice(None,),slice(None,))
+    # ig = 2
+    # inner = (slice(ig,-ig),slice(ig,-ig))
+    inner = (slice(None,),slice(None,))
 
     local_ens = [getattr(results[:,loc,...][n],attr)[inner] for n in range(N)]
     local_ens = analysis(local_ens,attr)
@@ -27,8 +27,9 @@ def da_interface(results,obs_current,attr,N,ud,loc=0):
     # print(obs_covar.shape)
     X = local_ens.analyse(obs_current.reshape(-1), obs_covar)
     local_ens.ensemble = local_ens.to_array(X)
-    local_ens.ensemble = [np.pad(mem,2,mode='wrap') for mem in local_ens.ensemble]
+    # local_ens.ensemble = [np.pad(mem,2,mode='wrap') for mem in local_ens.ensemble]
     # print(local_ens.X.shape)
+    # print(local_ens.ensemble.shape)
     # return np.array([local_ens.identifier, local_ens.ensemble])
     return [local_ens.identifier, local_ens.ensemble]
     
@@ -38,28 +39,21 @@ def interpolation_func(ensemble,x_obs,y_obs,ud):
     if ud.bdry_type[0] == BdryType.WALL or ud.bdry_type[1] == BdryType.WALL:
         assert("WALL NOT IMPLEMENTED!")
     x_ens, y_ens = ensemble[0].shape
-    # print(x_ens, y_ens, x_obs, y_obs)
     x = np.linspace(0,x_ens,x_obs)
     y = np.linspace(0,y_ens,y_obs)
 
-    # x = np.linspace(-0.5,0.5,48)
-    # y = np.linspace(-0.5,0.5,48)
-    # x = np.linspace(0,1,48)
-    # y = np.linspace(0,1,48)
+    # x = np.linspace(-0.5,0.5,x_ens)
+    # y = np.linspace(-0.5,0.5,y_ens)
 
-    # # x,y = np.meshgrid(x,y)
-    # x0 = np.linspace(-0.5,0.5,256)
-    # y0 = np.linspace(-0.5,0.5,256)
-
-    # x0 = np.linspace(0,1,256)
-    # y0 = np.linspace(0,1,256)
-    # mesh = np.array(np.meshgrid(x0,y0))
+    # x0 = np.linspace(-0.5,0.5,x_obs)
+    # y0 = np.linspace(-0.5,0.5,y_obs)
+    # mesh = np.array(np.meshgrid(x0,y0))n
     # pts = np.rollaxis(mesh, 0, 3).reshape((-1, 2))
 
-    # ensemble = [interpn((y,x),mem.T,pts, method='splinef2d').reshape(256,256) for mem in ensemble]
-    x,y = np.meshgrid(x,y)
+    # ensemble = [interpn((x,y),mem,pts, method='splinef2d').reshape(x_obs,y_obs) for mem in ensemble]
 
-    ensemble = [map_coordinates(mem,[x,y],mode='wrap', order=3) for mem in ensemble]
+    x,y = np.meshgrid(x,y)
+    ensemble = [map_coordinates(mem,[y,x],mode='wrap', order=3) for mem in ensemble]
     # print(np.array(ensemble).shape)
     return np.array(ensemble)
 
@@ -68,12 +62,11 @@ class analysis(object):
     def __init__(self,ensemble, identifier=None):
         self.ensemble = np.array(ensemble)
         self.X = self.state_vector(ensemble)
-        # self.X = self.ensemble
         self.no_of_members = self.ensemble.shape[0]
         self.member_shape = self.ensemble[0].shape
 
         # ensemble inflation factor
-        self.rho = 1.5
+        self.rho = 100.
         # if anlaysis is over local state space, which is it?
         self.identifier = identifier
 
@@ -88,7 +81,8 @@ class analysis(object):
 
     def analyse(self,obs,obs_covar):
         obs = obs.reshape(-1)
-        # obs = np.random.normal(obs, obs.max()**0.5)
+        # obs = np.ones_like(obs) * 100.
+        # obs = np.random.normal(obs, np.abs(obs.max()))
         #obs: R in l
         #obs_covar: R in (l x l)
         # self.Y = [self.forward_operator(xi) for xi in self.X]
@@ -106,9 +100,12 @@ class analysis(object):
         # print("self.no_of_members = ", self.no_of_members)
         # print("self.X.shape = ", self.X.shape)
         # print("self.Y.shape = ", self.Y.shape)
+        # print("self.Y_mean.shape = ", self.Y_mean.shape)
         # print("obs.shape = ", obs.shape)
         # print("obs_covar.shape = ", obs_covar.shape)
         # print("Sanity check # 1, sum of columns of X = ", self.X.sum(axis=0))
+        # col_sum_X = self.X.sum(axis=0)
+        # assert(np.allclose(col_sum_X,np.zeros_like(col_sum_X), "sum != 0 "))
 
         # for now, global == local, i.e. observation space == state space
 
@@ -120,8 +117,8 @@ class analysis(object):
 
         # print("C.shape = ", C.shape)
 
-        Pa = (self.no_of_members - 1.) * np.eye(self.no_of_members,self.no_of_members) / self.rho + np.dot(C , self.Y.T)
-        
+        Pa = (self.no_of_members - 1.) * np.eye(self.no_of_members) / self.rho + (C @ self.Y.T)
+
         Lambda, P = linalg.eigh(Pa)
         # Pa = np.dot(P,np.dot(np.diag(1./Lambda),P.T))
         Pa = P @ (np.diag(1./Lambda) @ P.T)
@@ -131,17 +128,22 @@ class analysis(object):
         # Wa = (self.no_of_members - 1.)**0.5 * np.dot(P,np.dot(np.diag((1./Lambda)**0.5),P.T))
         Wa = np.sqrt(self.no_of_members - 1.) * P @ (np.diag(np.sqrt(1./Lambda)) @ P.T)
 
-        # wa = np.dot(Pa , np.dot(C , (obs - self.Y_mean)))
+        # wa = np.dot(Pa , np.dot(C * (obs - self.Y_mean)))
         wa = Pa @ (C @ (obs - self.Y_mean))
-
+        # print(Pa)
+        # print(wa)
         # print("Sanity check #2, sum of columns of wa:", np.dot(self.X.T , Wa).sum(axis=1))
+        # col_sum = np.dot(self.X.T , Wa).sum(axis=1)
+        # assert(np.allclose(col_sum,np.zeros_like(col_sum), "sum != 0 "))
 
+        # Wa += wa.reshape(1,-1)
         Wa += wa
+        # print(Wa)
 
         # return np.dot(self.X.T , Wa) + self.X_mean.reshape(-1,1)
+        # return np.zeros_like(self.X)
         return ((self.X.T @ Wa) + self.X_mean.reshape(-1,1)).T
         # return result
-
 
     def get_mean(self,vec):
         return np.array(vec).mean(axis=0)
