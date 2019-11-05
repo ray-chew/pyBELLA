@@ -3,11 +3,13 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 
 class ensemble(object):
-    def __init__(self, input_ensemble=None):
-        if input_ensemble != None:
+    def __init__(self, input_ensemble=[None]):
+        if input_ensemble[0] != None:
             cnt = 0
             for mem in input_ensemble:
                 setattr(self,'mem_' + str(cnt),mem)
+                self.debug_im(mem[0].rho, cnt)
+                cnt += 1
         else:
             None
         
@@ -35,16 +37,15 @@ class ensemble(object):
             for n in range(N):
                 mem = getattr(self,'mem_' + str(n))
                 value = getattr(mem[loc],attribute)
-                plt.figure()
-                plt.imshow(sampler(value))
-                plt.savefig("./output_images/initial_%03d" %n, bbox_inches='tight')
+                self.debug_im(sampler(value), n)
                 setattr(mem[loc],attribute,sampler(value))
 
     @staticmethod
     def members(ensemble):
         return np.array(list(ensemble.__dict__.values()))
 
-class sampler(object):
-    def __init__(self, ic):
-        # ic is a class instance of type variable container
-        None
+    @staticmethod
+    def debug_im(value, n):
+        plt.figure()
+        plt.imshow(value)
+        plt.savefig("./output_images/initial_%03d" %n, bbox_inches='tight')
