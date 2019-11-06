@@ -181,8 +181,8 @@ class UserData(object):
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
         # self.tout = np.arange(0,11,1)/10.
-        # self.tout = np.linspace(0,1.0,num=21)
-        self.tout = [0.0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18,0.20]
+        self.tout = np.linspace(0,1.0,num=21)
+        # self.tout = [0.0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18,0.20]
         # self.tout = [0.1]
         # self.tout[0] =  0.1
         # self.tout[1] = -1.0
@@ -218,7 +218,7 @@ class UserData(object):
 
         return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
 
-def sol_init(Sol, mpv, elem, node, th, ud):
+def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     u0 = 1.0 * ud.wind_speed
     v0 = 1.0 * ud.wind_speed
     w0 = 0.0
@@ -285,8 +285,10 @@ def sol_init(Sol, mpv, elem, node, th, ud):
 
     r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
 
-    # max_shift = 1
-    # r = np.roll(np.roll(r, np.random.randint(-max_shift,max_shift+1), axis=1), np.random.randint(-max_shift,max_shift+1), axis=0)
+    if seed != None:
+        np.random.seed(seed)
+        max_shift = 1
+        r = np.roll(np.roll(r, np.random.randint(-max_shift,max_shift+1), axis=1), np.random.randint(-max_shift,max_shift+1), axis=0)
 
     uth = (rotdir * fac * (1.0 - r/R0)**6 * (r/R0)**6) * (r < R0)
 
