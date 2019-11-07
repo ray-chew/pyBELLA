@@ -35,7 +35,7 @@ class UserData(object):
     Nsq_ref = 1.0e-4
 
     # planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0;
-    scale_factor = 160.0
+    scale_factor = 1.0
 
     i_gravity = np.zeros((3))
     i_coriolis = np.zeros((3))
@@ -68,7 +68,7 @@ class UserData(object):
         self.cond = self.cond * self.t_ref / (self.h_ref * self.h_ref * self.R_gas)
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 0
+        self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
         self.compressibility = 0.0
@@ -170,8 +170,10 @@ class UserData(object):
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
         # tout = 4800s
-        # self.tout =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
-        self.tout = np.arange(0,4801,100)
+        # self.tout =  [self.scale_factor * 1.0 * 3000.0 / self.t_ref]
+        # self.tout = np.arange(0,4801,100)
+        # self.tout = np.arange(0,601,6)
+        self.tout = np.arange(0,301,3)/10.
         # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[1] = -1.0
 
@@ -192,7 +194,6 @@ class UserData(object):
 
         self.output_base_name = "_internal_long_wave"
         
-
         if self.scale_factor == 1.0:
             self.output_name_comp = "_low_mach_gravity_comp_standard"
             self.output_name_ak = "_low_mach_gravity_ak_standard"
@@ -243,8 +244,6 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     delth = 0.01 / ud.T_ref
     xc = -1.0 *ud.scale_factor * 50.0e+3 / ud.h_ref
     a = ud.scale_factor * 5.0e+3 / ud.h_ref
-    # xc = 100000 / ud.h_ref
-    # a = 48000 / 
 
     hydrostatic_state(mpv, elem, node, th, ud)
     
