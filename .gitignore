@@ -33,3 +33,6 @@ low_Mach_gravity_psinc/*
 *RKLM_Python/docs/_*
 *.png
 *.gif
+*.lock
+*.dirlock
+*dask_parallel*
