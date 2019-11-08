@@ -56,8 +56,6 @@ th = ThemodynamicInit(ud)
 
 mpv = MPV(elem, node, ud)
 
-# Sol = sol_init(Sol, mpv, elem, node, th, ud)
-
 # dt_factor = 0.5 if ud.initial_impl_Euler == True else 1.0
 # writer.write_all(Sol,mpv,elem,node,th,'000_ic')
 
@@ -65,7 +63,7 @@ mpv = MPV(elem, node, ud)
 # Data Assimilation part
 N = 10
 da_parameters = da_params(N)
-# aprior_error_covar = da_parameters.aprior_error_covar
+aprior_error_covar = da_parameters.aprior_error_covar
 
 sampler = da_parameters.sampler_none()
 if N > 1:
@@ -74,18 +72,20 @@ if N > 1:
     # sampler = da_parameters.sampler_gaussian(aprior_error_covar)
 
 attributes = da_parameters.attributes
-np.random.seed(555)
-seeds = np.random.randint(10000,size=N)
-print("Seeds used in generating initial ensemble spread = ", seeds)
 
 print("Generating initial ensemble...")
 sol_ens = np.zeros((N), dtype=object)
-for n in range(N):
-    Sol0 = deepcopy(Sol)
-    mpv0 = deepcopy(mpv)
-    Sol0 = sol_init(Sol0,mpv0,elem,node,th,ud, seed=seeds[n])
-    sol_ens[n] = [Sol0,deepcopy(flux),mpv0]
-
+np.random.seed(555)
+seeds = np.random.randint(10000,size=N) if N > 1 else [None]
+if seeds[0] != None:
+    print("Seeds used in generating initial ensemble spread = ", seeds)
+    for n in range(N):
+        Sol0 = deepcopy(Sol)
+        mpv0 = deepcopy(mpv)
+        Sol0 = sol_init(Sol0,mpv0,elem,node,th,ud, seed=seeds[n])
+        sol_ens[n] = [Sol0,deepcopy(flux),mpv0]
+else:
+    sol_ens = [[sol_init(Sol, mpv, elem, node, th, ud),flux,mpv]]
 ens = ensemble(sol_ens)
 
 # ens = ensemble()
@@ -151,7 +151,7 @@ if __name__ == '__main__':
         for mem in ens.members(ens):
             # s_ud = client.scatter(ud)
             # time_update = time_update_wrapper(t, tout, ud, elem, node, step, th, writer=writer, debug=debug)
-            future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, step, th, None, debug])
+            future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, step, th, writer, debug])
             # future = client.submit(time_update, mem)
             # time_update(mem[0], mem[1], mem[2], t, tout, ud, elem, node, step, th, writer, debug)
             futures.append(future)
@@ -164,36 +164,48 @@ if __name__ == '__main__':
         # print(np.array(np.where(np.isclose(times,tout))[0]))
         # print(np.isclose(times,tout))
         # print(tout, times)
+        
         if len(np.where(np.isclose(times,tout))[0]) > 0 and N > 1:
             print("Starting analysis...")
             # print(np.where(times == tout)[0][0])
             futures = []
+            anals = [] 
             for attr in obs_attributes:
                 print("Assimilating %s..." %attr)
                 obs_current = np.array(obs[np.where(np.isclose(times,tout))[0][0]][attr])
-                future = client.submit(da_interface, *[results,obs_current,attr,N,ud])
-                futures.append(future)
+                # future = client.submit(da_interface, *[results,obs_current,attr,N,ud])
+                analysis = da_interface(results,obs_current,attr,N,ud)
+                anals.append(analysis)
 
-            analysis = client.gather(futures)
-            analysis = np.array(analysis)
-            iterable = iter(analysis.flatten())
-            analysis = dict(zip(iterable, iterable))
-            
+            # analysis = client.gather(futures)
+            analysis = np.array(anals)
+            # print(analysis.shape)
+            # print(analysis)
+            # iterable = iter(analysis.flatten())
+            # print(iterable)
+            # analysis = dict(zip(iterable, iterable))
+            # print(analysis.keys())
+
+            cnt = 0
             for attr in obs_attributes:
-                current = analysis[attr]
+                # current = analysis[attr]
+            # for i in range(len(obs_attributes)):
+                current = analysis[cnt]
                 for n in range(N):
                     # results[:,loc,...][n].attr = current[n]
                     # print(attr)
                     # print(results[:,loc,...][n].rho)
                     setattr(results[:,loc,...][n],attr,current[n])
+                cnt += 1
 
         # print(results_before[:,loc,...][0].rho)
         # print(results[:,loc,...][0].rho)
-        if np.allclose(results_before[:,loc,...][0].rho, results[:,loc,...][0].rho):
-            print("Assimilated quantities changed.")
             # assert(0,"Assimilation failed")
              
         ens.set_members(results)
+
+        if np.allclose(ens.members(ens)[0][0].rho, results_before[:,loc,...][0].rho):
+            print("Rho quantities unchanged, i.e. no assimilation took place in rho.")
 
         print("Starting output...")
         for n in range(N):
