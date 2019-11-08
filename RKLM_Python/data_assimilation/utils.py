@@ -50,3 +50,4 @@ class ensemble(object):
         plt.figure()
         plt.imshow(value)
         plt.savefig("./output_images/initial_%03d" %n, bbox_inches='tight')
+        plt.close()
