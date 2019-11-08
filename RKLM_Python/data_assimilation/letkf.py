@@ -16,13 +16,14 @@ def da_interface(results,obs_current,attr,N,ud,loc=0):
     inner = (slice(ig,-ig),slice(ig,-ig))
     # inner = (slice(None,),slice(None,))
 
-    local_ens = [getattr(results[:,loc,...][n],attr)[inner] for n in range(N)]
+    local_ens = np.array([getattr(results[:,loc,...][n],attr) for n in range(N)])
+    local_ens = np.array([mem[inner] for mem in local_ens])
     local_ens = analysis(local_ens,attr)
 
     # print(obs_current.shape)
     obs_current = obs_current[inner]
     obs_current = bin_func(obs_current, local_ens.member_shape)
-    local_ens.debug(obs_current)
+    local_ens.debug(obs_current,"0before")
     
     x_obs, y_obs = obs_current.shape
     
@@ -35,12 +36,15 @@ def da_interface(results,obs_current,attr,N,ud,loc=0):
     # print(obs_covar.shape)
     X = local_ens.analyse(obs_current.reshape(-1), obs_covar)
     local_ens.ensemble = local_ens.to_array(X)
-    local_ens.ensemble = [np.pad(mem,2,mode='wrap') for mem in local_ens.ensemble]
+    local_ens.debug(obs_current,"1after")
+    local_ens.ensemble = np.array([np.pad(mem,2,mode='wrap') for mem in local_ens.ensemble])
+
+    
     # print(local_ens.X.shape)
     # print(local_ens.ensemble.shape)
     # return np.array([local_ens.identifier, local_ens.ensemble])
-    return [local_ens.identifier, local_ens.ensemble]
-    
+    # return [local_ens.identifier, local_ens.ensemble]
+    return local_ens.ensemble
 
 # let me ust put the forward operator here for now - will need to tidy stuff up....
 def interpolation_func(ensemble,x_obs,y_obs,ud):
@@ -84,7 +88,7 @@ class analysis(object):
         self.member_shape = self.ensemble[0].shape
 
         # ensemble inflation factor
-        self.rho = 50000.
+        self.rho = 2.0
         # if anlaysis is over local state space, which is it?
         self.identifier = identifier
 
@@ -98,7 +102,7 @@ class analysis(object):
         self.localisation_matrix = localisation_matrix
 
     def analyse(self,obs,obs_covar):
-        obs = obs.reshape(-1)
+        # obs = obs.reshape(-1)
         # obs = np.ones_like(obs) * 100.
         # obs = np.random.normal(obs, np.abs(obs.max()))
         #obs: R in l
@@ -135,6 +139,8 @@ class analysis(object):
 
         # print("C.shape = ", C.shape)
 
+        # Pa = (self.no_of_members - 1.) * np.eye(self.no_of_members) / self.rho + np.dot(C , self.Y.T)
+
         Pa = (self.no_of_members - 1.) * np.eye(self.no_of_members) / self.rho + (C @ self.Y.T)
 
         Lambda, P = linalg.eigh(Pa)
@@ -147,7 +153,7 @@ class analysis(object):
         Wa = np.sqrt(self.no_of_members - 1.) * P @ (np.diag(np.sqrt(1./Lambda)) @ P.T)
 
         # wa = np.dot(Pa , np.dot(C , (obs - self.Y_mean)))
-        wa = Pa @ np.dot(C , (obs - self.Y_mean))
+        wa = Pa @ (C @ (obs - self.Y_mean))
         # print(Pa)
         # print(wa)
         # print("Sanity check #2, sum of columns of wa:", np.dot(self.X.T , Wa).sum(axis=1))
@@ -158,9 +164,9 @@ class analysis(object):
         Wa += wa
         # print(Wa)
 
-        # return (np.dot(self.X.T , Wa) + self.X_mean.reshape(-1,1)).T
+        return (np.dot(self.X.T , Wa.T) + self.X_mean.reshape(-1,1)).T
         # return np.zeros_like(self.X)
-        return ((self.X.T @ Wa) + self.X_mean.reshape(-1,1)).T
+        # return ((self.X.T @ Wa) + self.X_mean.reshape(-1,1)).T
         # return result
 
     def get_mean(self,vec):
@@ -175,12 +181,14 @@ class analysis(object):
     def to_array(self,X):
         return np.array([x.reshape(self.member_shape) for x in X])
 
-    def debug(self, obs_current):
+    def debug(self, obs_current, suffix=""):
         global debug_cnt
+        N = self.ensemble.shape[0]
         ens_mean = self.ensemble.mean(axis=0)
-        _, ax = plt.subplots(ncols=2)
-        ax[0].imshow(ens_mean)
-        ax[1].imshow(obs_current)
-        plt.savefig("./output_images/da_inputs_%s_%i" %(self.identifier,debug_cnt), bbox_inches='tight')
+        _, ax = plt.subplots(ncols=N+1, figsize=(15,4))
+        for n in range(N):
+            ax[n].imshow(self.ensemble[n])
+        ax[n+1].imshow(obs_current)
+        plt.savefig("./output_images/da_debug_%s_%i_%s" %(self.identifier,debug_cnt // 3,suffix), bbox_inches='tight')
         plt.close()
         debug_cnt += 1
