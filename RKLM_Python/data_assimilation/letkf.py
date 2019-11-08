@@ -23,7 +23,7 @@ def da_interface(results,obs_current,attr,N,ud,loc=0):
     # print(obs_current.shape)
     obs_current = obs_current[inner]
     obs_current = bin_func(obs_current, local_ens.member_shape)
-    local_ens.debug(obs_current,"0before")
+    # local_ens.debug(obs_current,"0before")
     
     x_obs, y_obs = obs_current.shape
     
@@ -36,7 +36,7 @@ def da_interface(results,obs_current,attr,N,ud,loc=0):
     # print(obs_covar.shape)
     X = local_ens.analyse(obs_current.reshape(-1), obs_covar)
     local_ens.ensemble = local_ens.to_array(X)
-    local_ens.debug(obs_current,"1after")
+    # local_ens.debug(obs_current,"1after")
     local_ens.ensemble = np.array([np.pad(mem,2,mode='wrap') for mem in local_ens.ensemble])
 
     
@@ -88,7 +88,7 @@ class analysis(object):
         self.member_shape = self.ensemble[0].shape
 
         # ensemble inflation factor
-        self.rho = 2.0
+        self.rho = 1.4
         # if anlaysis is over local state space, which is it?
         self.identifier = identifier
 

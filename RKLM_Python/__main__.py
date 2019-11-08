@@ -169,16 +169,18 @@ if __name__ == '__main__':
             print("Starting analysis...")
             # print(np.where(times == tout)[0][0])
             futures = []
-            anals = [] 
+            # anals = [] 
             for attr in obs_attributes:
                 print("Assimilating %s..." %attr)
                 obs_current = np.array(obs[np.where(np.isclose(times,tout))[0][0]][attr])
-                # future = client.submit(da_interface, *[results,obs_current,attr,N,ud])
-                analysis = da_interface(results,obs_current,attr,N,ud)
-                anals.append(analysis)
+                future = client.submit(da_interface, *[results,obs_current,attr,N,ud])
+                # analysis = da_interfaces(results,obs_current,attr,N,ud)
+                # anals.append(analysis)
+                futures.append(future)
 
-            # analysis = client.gather(futures)
-            analysis = np.array(anals)
+            analysis = client.gather(futures)
+            # analysis = np.array(anals)
+            analysis = np.array(analysis)
             # print(analysis.shape)
             # print(analysis)
             # iterable = iter(analysis.flatten())
@@ -186,6 +188,7 @@ if __name__ == '__main__':
             # analysis = dict(zip(iterable, iterable))
             # print(analysis.keys())
 
+            print("Storing analysis...")
             cnt = 0
             for attr in obs_attributes:
                 # current = analysis[attr]
