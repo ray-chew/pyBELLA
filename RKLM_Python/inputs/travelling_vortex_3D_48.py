@@ -140,8 +140,8 @@ class UserData(object):
         self.tips = TimeIntegratorParams()
         SetTimeIntegratorParameters(self)
 
-        self.inx = 48+1
-        self.iny = 48+1
+        self.inx = 32+1
+        self.iny = 32+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -234,6 +234,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     xc = 0.0
     yc = 0.0
 
+    if seed != None:
+        np.random.seed(seed)
+        xc = (np.random.random() - 0.5)/10.
+        yc = (np.random.random() - 0.5)/10.
+        # print(xc,yc)
+
     xcm = xc - (ud.xmax - ud.xmin)
     ycm = yc - (ud.ymax - ud.ymin)
 
@@ -278,17 +284,17 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     yccs = np.zeros_like(ys)
 
     xccs[...] = xc * (np.abs(xs - xc) < np.abs(xs - xcm))
-    xccs[...] = xcm * (np.abs(xs - xc) > np.abs(xs - xcm))
+    xccs[...] += xcm * (np.abs(xs - xc) > np.abs(xs - xcm))
 
     yccs[...] = yc * (np.abs(ys - yc) < np.abs(ys - ycm))
-    yccs[...] = ycm * (np.abs(ys - yc) > np.abs(ys - ycm))
+    yccs[...] += ycm * (np.abs(ys - yc) > np.abs(ys - ycm))
 
     r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
 
-    if seed != None:
-        np.random.seed(seed)
-        max_shift = 1
-        r = np.roll(np.roll(r, np.random.randint(-max_shift,max_shift+1), axis=1), np.random.randint(-max_shift,max_shift+1), axis=0)
+    # if seed != None:
+    #     np.random.seed(seed)
+    #     max_shift = 1
+    #     r = np.roll(np.roll(r, np.random.randint(-max_shift,max_shift+1), axis=1), np.random.randint(-max_shift,max_shift+1), axis=0)
 
     uth = (rotdir * fac * (1.0 - r/R0)**6 * (r/R0)**6) * (r < R0)
 
