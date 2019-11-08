@@ -1,25 +1,33 @@
 from scipy import sparse, linalg
 from scipy.sparse.linalg import spsolve
 from scipy.ndimage import map_coordinates
+from scipy.signal import convolve2d
 from scipy.interpolate import interpn
 from inputs.enum_bdry import BdryType
+import matplotlib.pyplot as plt
 import dask.array as darr
 import numpy as np
 
+debug_cnt = 0
+
 def da_interface(results,obs_current,attr,N,ud,loc=0):
     # inner = (slice(ud.igx,-ud.igx),slice(ud.igy,-ud.igy))
-    # ig = 2
-    # inner = (slice(ig,-ig),slice(ig,-ig))
-    inner = (slice(None,),slice(None,))
+    ig = 2
+    inner = (slice(ig,-ig),slice(ig,-ig))
+    # inner = (slice(None,),slice(None,))
 
     local_ens = [getattr(results[:,loc,...][n],attr)[inner] for n in range(N)]
     local_ens = analysis(local_ens,attr)
 
     # print(obs_current.shape)
     obs_current = obs_current[inner]
+    obs_current = bin_func(obs_current, local_ens.member_shape)
+    local_ens.debug(obs_current)
+    
     x_obs, y_obs = obs_current.shape
     
-    forward_operator = lambda ensemble: interpolation_func(ensemble, x_obs, y_obs, ud)
+    # forward_operator = lambda ensemble: interpolation_func(ensemble, x_obs, y_obs, ud)
+    forward_operator = lambda ensemble : ensemble
     local_ens.forward(forward_operator)
 
     obs_covar = sparse.eye(x_obs**2, y_obs**2, format='csr')
@@ -27,7 +35,7 @@ def da_interface(results,obs_current,attr,N,ud,loc=0):
     # print(obs_covar.shape)
     X = local_ens.analyse(obs_current.reshape(-1), obs_covar)
     local_ens.ensemble = local_ens.to_array(X)
-    # local_ens.ensemble = [np.pad(mem,2,mode='wrap') for mem in local_ens.ensemble]
+    local_ens.ensemble = [np.pad(mem,2,mode='wrap') for mem in local_ens.ensemble]
     # print(local_ens.X.shape)
     # print(local_ens.ensemble.shape)
     # return np.array([local_ens.identifier, local_ens.ensemble])
@@ -58,6 +66,16 @@ def interpolation_func(ensemble,x_obs,y_obs,ud):
     return np.array(ensemble)
 
 
+def bin_func(obs,ens_mem_shape):
+    obs = obs.reshape(ens_mem_shape[0],obs.shape[0]//ens_mem_shape[0],
+                      ens_mem_shape[1],obs.shape[1]//ens_mem_shape[1])
+    return obs.mean(axis=(1,3))
+
+
+def none_func(ensemble):
+    return lambda ensemble : ensemble
+
+
 class analysis(object):
     def __init__(self,ensemble, identifier=None):
         self.ensemble = np.array(ensemble)
@@ -66,7 +84,7 @@ class analysis(object):
         self.member_shape = self.ensemble[0].shape
 
         # ensemble inflation factor
-        self.rho = 100.
+        self.rho = 50000.
         # if anlaysis is over local state space, which is it?
         self.identifier = identifier
 
@@ -87,7 +105,7 @@ class analysis(object):
         #obs_covar: R in (l x l)
         # self.Y = [self.forward_operator(xi) for xi in self.X]
 
-        self.Y = self.forward_operator(self.ensemble)
+        self.Y = self.forward_operator(self.X)
         self.Y = self.state_vector(self.Y)
 
         self.Y_mean = self.get_mean(self.Y) # R in l
@@ -128,8 +146,8 @@ class analysis(object):
         # Wa = (self.no_of_members - 1.)**0.5 * np.dot(P,np.dot(np.diag((1./Lambda)**0.5),P.T))
         Wa = np.sqrt(self.no_of_members - 1.) * P @ (np.diag(np.sqrt(1./Lambda)) @ P.T)
 
-        # wa = np.dot(Pa , np.dot(C * (obs - self.Y_mean)))
-        wa = Pa @ (C @ (obs - self.Y_mean))
+        # wa = np.dot(Pa , np.dot(C , (obs - self.Y_mean)))
+        wa = Pa @ np.dot(C , (obs - self.Y_mean))
         # print(Pa)
         # print(wa)
         # print("Sanity check #2, sum of columns of wa:", np.dot(self.X.T , Wa).sum(axis=1))
@@ -140,7 +158,7 @@ class analysis(object):
         Wa += wa
         # print(Wa)
 
-        # return np.dot(self.X.T , Wa) + self.X_mean.reshape(-1,1)
+        # return (np.dot(self.X.T , Wa) + self.X_mean.reshape(-1,1)).T
         # return np.zeros_like(self.X)
         return ((self.X.T @ Wa) + self.X_mean.reshape(-1,1)).T
         # return result
@@ -156,3 +174,13 @@ class analysis(object):
 
     def to_array(self,X):
         return np.array([x.reshape(self.member_shape) for x in X])
+
+    def debug(self, obs_current):
+        global debug_cnt
+        ens_mean = self.ensemble.mean(axis=0)
+        _, ax = plt.subplots(ncols=2)
+        ax[0].imshow(ens_mean)
+        ax[1].imshow(obs_current)
+        plt.savefig("./output_images/da_inputs_%s_%i" %(self.identifier,debug_cnt), bbox_inches='tight')
+        plt.close()
+        debug_cnt += 1
