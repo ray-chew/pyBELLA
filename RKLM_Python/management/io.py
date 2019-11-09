@@ -35,27 +35,27 @@ class io(object):
                 "_contblend"
 
 
-        self.PATHS = [  'bouy',
-                        'dp2_c',
+        self.PATHS = [  #'bouy',
+                        # 'dp2_c',
                         'dp2_nodes',
-                        'dpdim',
+                        # 'dpdim',
                         'drhoY',
                         'dT',
                         'dY',
-                        'p',
-                        'p2_c',
+                        # 'p',
+                        # 'p2_c',
                         'p2_nodes',
                         'rho',
-                        'rhoe',
+                        # 'rhoe',
                         'rhoY',
-                        'S',
-                        'T',
-                        'u',
-                        'v',
-                        'w',
-                        'vortz',
+                        # 'S',
+                        # 'T',
+                        # 'u',
+                        # 'v',
+                        # 'w',
+                        # 'vortz',
                         'Y',
-                        'rhs'
+                        # 'rhs'
                     ]
         
         self.io_create_file(self.PATHS)
@@ -78,14 +78,15 @@ class io(object):
         # rho
         self.populate(name,'rho',Sol.rho)
         # rhoe
-        self.populate(name,'rhoe',Sol.rhoe)
+        # self.populate(name,'rhoe',Sol.rhoe)
         # rhoY
         self.populate(name,'rhoY',Sol.rhoY)
 
         # rho u ,v w
         self.populate(name,'rhou',Sol.rhou)
         self.populate(name,'rhov',Sol.rhov)
-        self.populate(name,'rhow',Sol.rhow)
+        # self.populate(name,'rhow',Sol.rhow)
+        self.populate(name,'rhoX',Sol.rhoX)
 
         # dp2_nodes
         self.populate(name,'dp2_nodes',mpv.dp2_nodes)
@@ -97,20 +98,20 @@ class io(object):
         self.populate(name,'dp2_cells',mpv.dp2_cells)
 
         # pressure
-        self.populate(name,'p',Sol.rhoY**th.gamm)
+        # self.populate(name,'p',Sol.rhoY**th.gamm)
         # pressure difference
-        self.populate(name,'dpdim', self.dpress_dim(mpv,self.ud,th))
+        # self.populate(name,'dpdim', self.dpress_dim(mpv,self.ud,th))
 
         # velocity (u,v,w)
-        self.populate(name,'u',Sol.rhou / Sol.rho)
-        self.populate(name,'v',Sol.rhov / Sol.rho)
-        self.populate(name,'w',Sol.rhow / Sol.rho)
+        # self.populate(name,'u',Sol.rhou / Sol.rho)
+        # self.populate(name,'v',Sol.rhov / Sol.rho)
+        # self.populate(name,'w',Sol.rhow / Sol.rho)
 
         # vorticity in (x,z)
         self.populate(name,'vortz', self.vortz(Sol,elem,node))
 
         # temperature
-        self.populate(name,'T', Sol.rhoY**th.gamm / Sol.rho)
+        # self.populate(name,'T', Sol.rhoY**th.gamm / Sol.rho)
         # temperature difference
         # print(mpv.HydroState.p0[0,:])
         # print(mpv.HydroState.rho0[0,:])
@@ -126,9 +127,9 @@ class io(object):
         # self.populate(name,'wplusx',mpv.wplus[0])
         # self.populate(name,'wplusy',mpv.wplus[1])
         # self.populate(name,'hcenter',mpv.wcenter)
-        self.populate(name,'p2',mpv.dp2_nodes)
-        self.populate(name,'rhs',mpv.rhs)
-        self.populate(name,'X',Sol.rhoX/Sol.rho)
+        # self.populate(name,'p2',mpv.dp2_nodes)
+        # self.populate(name,'rhs',mpv.rhs)
+        # self.populate(name,'X',Sol.rhoX/Sol.rho)
 
     def vortz(self,Sol,elem,node):
         if elem.ndim != 2:
