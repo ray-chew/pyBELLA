@@ -61,7 +61,7 @@ mpv = MPV(elem, node, ud)
 
 ##########################################################
 # Data Assimilation part
-N = 1
+N = 40
 da_parameters = da_params(N)
 aprior_error_covar = da_parameters.aprior_error_covar
 
@@ -98,7 +98,7 @@ ens = ensemble(sol_ens)
 # Load observations
 # where are my observations?
 if N > 1:
-    obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_256_256_1.0.h5'
+    obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_256_256_10.0.h5'
     # obs_path = './output_travelling_vortex/output_travelling_vortex_3d_48_low_mach_gravity_comp_256_256_old.h5'
     obs_file = h5py.File(obs_path, 'r')
     #### which attributes do I want to observe?
@@ -110,7 +110,9 @@ if N > 1:
     loc = 0
     #### when were these observations taken?
     # times = [0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
-    times = [0.20,0.25,0.30,0.35,0.40,0.45,0.50,0.55,0.60,0.65,0.70,0.75,0.80,0.85,0.90,0.95,1.0]
+    # times = [0.20,0.25,0.30,0.35,0.40,0.45,0.50,0.55,0.60,0.65,0.70,0.75,0.80,0.85,0.90,0.95,1.0]
+    times = np.linspace(0.2,10.0,99)
+    # times = np.linspace(0.2,10.0,99*2-1)
     # times = [0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20]
     # print(obs_file['rho'].keys())
     # assert(0)
