@@ -61,7 +61,7 @@ mpv = MPV(elem, node, ud)
 
 ##########################################################
 # Data Assimilation part
-N = 40
+N = 10
 da_parameters = da_params(N)
 aprior_error_covar = da_parameters.aprior_error_covar
 
@@ -139,7 +139,7 @@ if N > 1:
 writer = io(ud)
 
 if __name__ == '__main__':
-    client = Client(threads_per_worker=4, n_workers=1)
+    client = Client(threads_per_worker=4, n_workers=2)
     tic = time()
     # assert(0)
 
@@ -167,7 +167,7 @@ if __name__ == '__main__':
         # print(np.array(np.where(np.isclose(times,tout))[0]))
         # print(np.isclose(times,tout))
         # print(tout, times)
-        if N > 1:
+        if N > 100:
             if len(np.where(np.isclose(times,tout))[0]) > 0:
                 print("Starting analysis...")
                 # print(np.where(times == tout)[0][0])
@@ -212,7 +212,7 @@ if __name__ == '__main__':
 
         if N > 1:
             if np.allclose(ens.members(ens)[0][0].rho, results_before[:,loc,...][0].rho):
-                print("Rho quantities unchanged, i.e. no assimilation took place in rho.")
+                print("Assimilation check: Rho quantities unchanged, i.e. no assimilation took place in rho.")
 
         print("Starting output...")
         for n in range(N):
