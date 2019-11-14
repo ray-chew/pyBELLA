@@ -1,8 +1,8 @@
 inputs package
 ==============
 
-Submodules
-----------
+.. Submodules
+.. ----------
 
 .. toctree::
 

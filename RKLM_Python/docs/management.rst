@@ -1,8 +1,8 @@
 management package
 ==================
 
-Submodules
-----------
+.. Submodules
+.. ----------
 
 .. toctree::
 
