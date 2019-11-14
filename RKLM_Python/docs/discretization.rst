@@ -1,18 +1,18 @@
 discretization package
 ======================
 
-Submodules
-----------
+.. Submodules
+.. ----------
 
 .. toctree::
 
    discretization.kgrid
-   discretization.time_discretization
+..    discretization.time_discretization
 
-Module contents
----------------
-
+.. Module contents
+.. ---------------
+.. 
 .. automodule:: discretization
-   :members:
-   :undoc-members:
-   :show-inheritance:
+..    :members:
+..    :undoc-members:
+..    :show-inheritance:

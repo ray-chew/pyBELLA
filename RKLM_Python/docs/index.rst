@@ -6,25 +6,26 @@
 .. Welcome to RKLM_Python's documentation!
 .. =======================================
 
-First steps
-===========
+Documentation
+=============
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
-   Intro <./intro.rst>
+   Introduction <./intro.rst>
    Boundary handling <./boundary.rst>
+   Grid discretisation <./grid_discretisation.rst>
+   Time-stepping <./time_stepping.rst>
    
 Modules
-======
+=======
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    
    inputs <./inputs.rst>
    management <./management.rst>
-..    discretization
-..    physics
+   discretization
+   physics
 
 
 Indices and tables
