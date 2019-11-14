@@ -17,6 +17,22 @@ import numpy as np
 from copy import deepcopy
 
 def data_init(ud):
+    """
+    Helper function to initialise the `elem` and `node` grids, corresponding to the cell and node grids, from a given user iniital data file.
+
+    Parameters
+    ----------
+    ud : :class:`inputs.user_data.UserDataInit`
+        Data container for the initial conditions.
+
+    Returns
+    -------
+    elem : :class:`discretization.kgrid.ElemSpaceDiscr`
+        Cells grid.
+    node : :class:`discretization.kgrid.NodeSpaceDiscr`
+        Nodes grid.
+
+    """
     inx = ud.inx
     iny = ud.iny
     inz = ud.inz
@@ -44,6 +60,50 @@ def data_init(ud):
 #     return lambda mem: time_update(mem[0],mem[1],mem[2],t,tout,ud,elem,node,step,th,writer=writer,debug=debug)
 
 def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False):
+    """
+    For more details, refer to the write-up :ref:`time-stepping`.
+
+    Does a time-step for the atmospheric solver.
+
+    Parameters
+    ----------
+    Sol : :class:`management.variable.Vars`
+        Solution data container.
+    flux : :class:`management.variable.States`
+        Data container for the fluxes.
+    mpv : :class:`physics.low_mach.mpv.MPV`
+        Variables relating to the elliptic solver.
+    t : float
+        Current time
+    tout : float
+        Next output time
+    ud : :class:`inputs.user_data.UserDataInit`
+        Data container for the initial conditions
+    elem : :class:`discretization.kgrid.ElemSpaceDiscr`
+        Cells grid.
+    node : :class:`discretization.kgrid.NodeSpaceDiscr`
+        Nodes grid.
+    step : int
+        Current step.
+    th : :class:`physics.gas_dynamics.thermodynamic.ThemodynamicInit`
+        Thermodynamic variables of the system
+    writer : :class:`management.io.io`, optional
+        `default == None`. If given, output after each time-step will be written in the hdf5 format.  
+    debug : boolean, optional
+        `default == False`. If `True`, then writer will output `Sol`:
+            1. before flux calculation 
+            2. before advection routine 
+            3. after advection routine 
+            4. after explicit solver 
+            5. after implicit solver
+        
+        during both the half-step for the prediction of advective flux and the full-step.
+
+    Returns
+    -------
+    list
+        A list of `[Sol,flux,mpv]` data containers at time `tout`.
+    """
     while ((t < tout) and (step < ud.stepmax)):
         set_explicit_boundary_data(Sol, elem, ud, th, mpv)
         # print("---------------------------------------")
