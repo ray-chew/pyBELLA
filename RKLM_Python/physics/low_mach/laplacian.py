@@ -1,7 +1,6 @@
 import numpy as np
 from inputs.enum_bdry import BdryType
 from scipy import sparse, signal
-from itertools import product
 from numba import jit
 
 def stencil_9pt(elem,node,mpv,ud,diag_inv):

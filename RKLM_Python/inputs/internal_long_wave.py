@@ -1,8 +1,8 @@
 import numpy as np
 from inputs.enum_bdry import BdryType
 from management.enumerator import TimeIntegrator, MolecularTransport,HillShapes, BottomBC, LimiterType, RecoveryOrder
-from discretization.time_discretization import SetTimeIntegratorParameters
-from physics.gas_dynamics.explicit import TimeIntegratorParams
+# from discretization.time_discretization import SetTimeIntegratorParameters
+# from physics.gas_dynamics.explicit import TimeIntegratorParams
 from physics.hydrostatics import hydrostatic_state, hydrostatic_column, hydrostatic_initial_pressure
 from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
 from management.variable import States
@@ -132,8 +132,8 @@ class UserData(object):
         self.dtfixed0 = 10.0 * ( 12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
         self.dtfixed = 10.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
 
-        self.tips = TimeIntegratorParams()
-        SetTimeIntegratorParameters(self)
+        # self.tips = TimeIntegratorParams()
+        # SetTimeIntegratorParameters(self)
 
         self.inx = 301+1
         self.iny = 10+1
