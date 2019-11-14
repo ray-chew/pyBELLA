@@ -30,7 +30,7 @@ low_Mach_gravity_psinc/*
 *Untitled*
 *.out
 *.bat
-*RKLM_Python/docs/_*
+*RKLM_Python/docs/_build*
 *.png
 *.gif
 *.lock
