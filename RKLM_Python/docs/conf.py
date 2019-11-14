@@ -12,7 +12,7 @@
 #
 import os
 import sys
-sys.path.insert(0, '/home/ray/git-projects/RKLM_Reference/RKLM_Python')
+sys.path.insert(0, '/home/ray/git-projects/RKLM_Reference/RKLM_Python/')
 
 
 # -- Project information -----------------------------------------------------
@@ -66,6 +66,7 @@ html_theme_path = [wild_sphinx_theme.get_theme_dir()]
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+autoclass_content = 'both'
 
 
 # -- Extension configuration -------------------------------------------------

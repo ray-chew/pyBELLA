@@ -8,7 +8,7 @@ physics package
 
    physics.gas_dynamics
    physics.low_mach
-   physics.hydrostatics
+   physics.hydrostatics (incomplete) <physics.hydrostatics>
 
 .. Module contents
 .. ---------------
