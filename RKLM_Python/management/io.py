@@ -4,7 +4,20 @@ import os
 import numpy as np
 
 class io(object):
+    """
+    HDF5 writer class. Contains methods to create HDF5 file, create data sets and populate them with output variables.
+
+    """
     def __init__(self,ud):
+        """
+        Creates HDF5 file based on filename given in user input data.
+
+        Parameters
+        ----------
+        ud : :class:`inputs.user_data.UserDataInit`
+            Data container for the initial conditions
+
+        """
         self.ud = ud
 
         self.FORMAT = ".h5"
@@ -61,6 +74,21 @@ class io(object):
         self.io_create_file(self.PATHS)
 
     def io_create_file(self,paths):
+        """
+        Helper function to create file.
+
+        Parameters
+        ----------
+        paths : list
+            List of strings containing the name of the data sets. For now,
+
+                PATH = ['dp2_nodes', 'drhoY', 'dT', 'dY', 'p2_nodes', 'rho', 'rhoY', 'Y']
+
+        Notes
+        -----
+        Currently, if the filename of the HDF5 file already exists, this function will delete the file and create an empty HDF5 file with the same filename in its place. This was enabled to prevent certain parallel-writing issues.
+
+        """
         # If file exists, delete it.. Nuclear option
         if os.path.exists(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT):
             os.remove(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT)
@@ -74,6 +102,25 @@ class io(object):
         file.close()
 
     def write_all(self,Sol,mpv,elem,node,th,name):
+        """
+        At a given time, write output from `Sol` and `mpv` to the HDF5 file.
+
+        Parameters
+        ----------
+        Sol : :class:`management.variable.Vars`
+            Solution data container
+        mpv : :class:`physics.low_mach.mpv.MPV`
+            Variables relating to the elliptic solver
+        elem : :class:`discretization.kgrid.ElemSpaceDiscr`
+            Cells grid
+        node : :class:`discretization.kgrid.NodeSpaceDiscr`
+            Nodes grid
+        th : :class:`physics.gas_dynamics.thermodynamic.ThemodynamicInit`
+            Thermodynamic variables of the system
+        name: str
+            The time and additional suffix label for the dataset, e.g. "_10.0_after_full_step", where 10.0 is the time and "after_full_step" denotes when the output was made.
+
+        """
         print("writing hdf output..." + name)
         # rho
         self.populate(name,'rho',Sol.rho)
@@ -132,6 +179,24 @@ class io(object):
         # self.populate(name,'X',Sol.rhoX/Sol.rho)
 
     def vortz(self,Sol,elem,node):
+        """
+        Calculate the vorticity of the solution.
+
+        Parameters
+        ----------
+        Sol : :class:`management.variable.Vars`
+            Solution data container
+        elem : :class:`discretization.kgrid.ElemSpaceDiscr`
+            Cells grid
+        node : :class:`discretization.kgrid.NodeSpaceDiscr`
+            Nodes grid
+
+        Returns
+        -------
+        ndarray
+            An ndarray with the vorticity of the solution and with the shape of `node`.
+
+        """
         if elem.ndim != 2:
             return
         # 2d-case
@@ -167,6 +232,21 @@ class io(object):
 
 
     def populate(self,name,path,data,options=None):
+        """
+        Helper function to write data into HDF5 dataset.
+
+        Parameters
+        ----------
+        name : str
+            The time and additional suffix label for the dataset
+        path : str
+            Path of the dataset, e.g. `rhoY`.
+        data : ndarray
+            The output data to write to the dataset
+        options : list
+            `default == None`. Additional options to write to dataset, currently unused.
+
+        """
         # name is the simulation time of the output array
         # path is the array type, e.g. U,V,H, and data is it's data.
         file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'r+')
@@ -178,7 +258,9 @@ class io(object):
         file.close()
 
     def close_everything(self):
-        # in parallel, some workers do not close file correctly, this function forces the program to close the hdf file before exiting.
+        """
+        In parallel, some workers do not close file correctly, this function forces the program to close the HDF file before exiting.
+        """
         file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'r')
         if file.__bool__():
             file.close()
