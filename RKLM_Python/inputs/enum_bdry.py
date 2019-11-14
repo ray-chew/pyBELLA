@@ -1,6 +1,11 @@
 from enum import Enum # ! Version > Python 3.4
 
 class BdryType(Enum):
+    """
+    An enumeration class that defines the accepted boundary condition types.
+
+    For now, only `WALL` and `PERIODIC` are implemented.
+    """
     TUNIX = 0
     WALL = 'symmetric'
     INFLOW = 2
