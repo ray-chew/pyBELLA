@@ -2,7 +2,25 @@ import numpy as np
 
 # equivalent to States_new
 class Vars(object):
+    """
+    The data container for the solution state variables, i.e. `Sol`.
+
+    """
     def __init__(self,size,ud):
+        """
+        Parameters
+        ----------
+        size : tuple
+            Tuple containing the number of cells in the respective directions including ghost cells, e.g. `(48,48,10)` has 48 cells in the x and y-directions, and 10 cells in the z-directions
+        ud : :class:`inputs.user_data.UserDataInit`
+            Data container for the initial conditions
+
+        Notes
+        -----
+        1. `rhoe` is currently unused.
+        2. `rhoX` has to be extended by `ud.nspec` for moist process.
+        
+        """
         self.rho = np.zeros((size))
         self.rhou = np.zeros((size))
         self.rhov = np.zeros((size))
@@ -15,11 +33,27 @@ class Vars(object):
 
     # will be a better way of doing this
     def squeezer(self):
+        """
+        Removes dimension of size 1. All arrays are initialised as 3D arrays, this function will remove the unnecessary dimensions.
+
+        """
         for key, value in vars(self).items():
             setattr(self,key,value.squeeze())
     # method written for 2D
 
     def primitives(self,th):
+        """
+        Calculate the primitive quantities from the state variables and extend the data container to include these quantities.
+
+        The primitive quantities calculated are:
+            `[u,v,w,Y,X,p]`
+
+        Parameters
+        ----------
+        th : :class:`physics.gas_dynamics.thermodynamic.ThemodynamicInit`
+            Thermodynamic variables of the system   
+     
+        """
         nonzero_idx = np.nonzero(self.rho)
 
         self.u = np.zeros_like(self.rhou)
@@ -37,6 +71,12 @@ class Vars(object):
         self.p[nonzero_idx] = self.rhoY[nonzero_idx]**th.gamm
 
     def flip(self):
+        """
+        Flips the solution variables arrays for the advection routine. `rhou` and `rhov` are also flipped, i.e.
+        ::
+            self.rhou, self.rhov = self.rhov, self.rhou    
+
+        """
         for key, value in vars(self).items():
             setattr(self,key,value.T)
 
@@ -45,7 +85,24 @@ class Vars(object):
 
 
 class States(Vars):
+    """
+    Data container for `Lefts` and `Rights` for the Riemann solver. Inherits the solution class :class:`management.variable.Vars`.
+
+    """
     def __init__(self,size,ud):
+        """
+        Parameters
+        ----------
+        size : tuple
+            Tuple containing the number of cells in the respective directions including ghost cells.
+        ud : :class:`inputs.user_data.UserDataInit`
+            Data container for the initial conditions
+
+        Notes
+        -----
+        Many variables in this data container are unused and can be removed.
+
+        """
         super().__init__(size,ud)
         self.u = np.zeros((size))
         self.v = np.zeros((size))
@@ -70,7 +127,18 @@ class States(Vars):
         self.squeezer()
 
 class Characters(object):
+    """
+    Data container for the slope and amplitude of the interpolation to the faces for the Riemann solver.
+
+    """
     def __init__(self, size):
+        """
+        Parameters
+        ----------
+        size : tuple
+            Tuple containing the number of cells in the respective directions including ghost cells.
+
+        """
         self.u = np.zeros((size))
         self.v = np.zeros((size))
         self.w = np.zeros((size))
@@ -84,10 +152,14 @@ class Characters(object):
         self.squeezer()
 
     def squeezer(self):
+        """
+        Removes dimension of size 1. All arrays are initialised as 3D arrays, this function will remove the unnecessary dimensions.
+
+        """
         for key, value in vars(self).items():
             setattr(self, key, value.squeeze())
 
-    def change_dir(self):
-        for key, value in vars(self).items():
-            setattr(self, key, -1. * value)
+    # def change_dir(self):
+    #     for key, value in vars(self).items():
+    #         setattr(self, key, -1. * value)
         
