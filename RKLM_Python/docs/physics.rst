@@ -1,25 +1,19 @@
 physics package
 ===============
 
-Subpackages
------------
+.. Subpackages and submodules
+.. --------------------------
 
 .. toctree::
 
    physics.gas_dynamics
    physics.low_mach
-
-Submodules
-----------
-
-.. toctree::
-
    physics.hydrostatics
 
-Module contents
----------------
-
+.. Module contents
+.. ---------------
+.. 
 .. automodule:: physics
-   :members:
-   :undoc-members:
-   :show-inheritance:
+..    :members:
+..    :undoc-members:
+..    :show-inheritance:

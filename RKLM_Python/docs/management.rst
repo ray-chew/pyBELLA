@@ -7,16 +7,14 @@ management package
 .. toctree::
 
    management.data
-   management.debug
    management.enumerator
    management.io
-   management.memory
    management.variable
 
-Module contents
----------------
-
+.. Module contents
+.. ---------------
+.. 
 .. automodule:: management
-   :members:
-   :undoc-members:
-   :show-inheritance:
+..    :members:
+..    :undoc-members:
+..    :show-inheritance:

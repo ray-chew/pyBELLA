@@ -1,8 +1,8 @@
 physics.gas\_dynamics package
 =============================
 
-Submodules
-----------
+.. Submodules
+.. ----------
 
 .. toctree::
 
@@ -13,10 +13,10 @@ Submodules
    physics.gas_dynamics.recovery
    physics.gas_dynamics.thermodynamic
 
-Module contents
----------------
-
+.. Module contents
+.. ---------------
+.. 
 .. automodule:: physics.gas_dynamics
-   :members:
-   :undoc-members:
-   :show-inheritance:
+..    :members:
+..    :undoc-members:
+..    :show-inheritance:

@@ -1,8 +1,8 @@
 physics.low\_mach package
 =========================
 
-Submodules
-----------
+.. Submodules
+.. ----------
 
 .. toctree::
 
@@ -10,10 +10,10 @@ Submodules
    physics.low_mach.mpv
    physics.low_mach.second_projection
 
-Module contents
----------------
-
+.. Module contents
+.. ---------------
+.. 
 .. automodule:: physics.low_mach
-   :members:
-   :undoc-members:
-   :show-inheritance:
+..    :members:
+..    :undoc-members:
+..    :show-inheritance:
