@@ -42,14 +42,15 @@ def data_init(ud):
     y1 = ud.ymax
     z0 = ud.zmin
     z1 = ud.zmax
-    left = ud.bdry_type_min[0]
-    right = ud.bdry_type_max[0]
-    bottom = ud.bdry_type_min[1]
-    top = ud.bdry_type_max[1]
-    back = ud.bdry_type_min[2]
-    front = ud.bdry_type_max[2]
+    # left = ud.bdry_type_min[0]
+    # right = ud.bdry_type_max[0]
+    # bottom = ud.bdry_type_min[1]
+    # top = ud.bdry_type_max[1]
+    # back = ud.bdry_type_min[2]
+    # front = ud.bdry_type_max[2]
 
-    grid = Grid(inx,iny,inz,x0,x1,y0,y1,z0,z1,left,right,bottom,top,back,front)
+    # grid = Grid(inx,iny,inz,x0,x1,y0,y1,z0,z1,left,right,bottom,top,back,front)
+    grid = Grid(inx,iny,inz,x0,x1,y0,y1,z0,z1)
 
     elem = ElemSpaceDiscr(grid)
     node = NodeSpaceDiscr(grid)

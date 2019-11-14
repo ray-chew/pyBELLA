@@ -2,7 +2,8 @@ import numpy as np
 from inputs.enum_bdry import BdryType
 
 class Grid(object):
-    def __init__(self, inx,iny,inz,x0,x1,y0,y1,z0,z1,left,right,bottom,top,back,front):
+    # def __init__(self, inx,iny,inz,x0,x1,y0,y1,z0,z1,left,right,bottom,top,back,front):
+    def __init__(self, inx,iny,inz,x0,x1,y0,y1,z0,z1):
         assert inx > 1
         assert iny >= 1
         assert inz >= 1
@@ -37,12 +38,12 @@ class Grid(object):
         self.y = y0 + self.dy * np.arange(iny)
         self.z = z0 + self.dz * np.arange(inz)
 
-        self.left = left
-        self.right = right
-        self.bottom = bottom
-        self.top = top
-        self.back = back
-        self.front = front
+        # self.left = left
+        # self.right = right
+        # self.bottom = bottom
+        # self.top = top
+        # self.back = back
+        # self.front = front
 
         if iny == 1:
             self.bottom = BdryType.TUNIX
