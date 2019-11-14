@@ -14,14 +14,14 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
     Parameters
     ----------
     Sol : :class:`management.variable.Vars`
-        Solution data container.
+        Solution data container
     elem : :class:`discretization.kgrid.ElemSpaceDiscr`
-        Cell grid.
+        Cells grid.
     ud : :class:`inputs.user_data.UserDataInit`
         Data container for the initial conditions
     th : :class:`physics.gas_dynamics.thermodynamic.ThemodynamicInit`
-        Thermodynamic variables of the system.
-    mpv :
+        Thermodynamic variables of the system
+    mpv : :class:`physics.low_mach.mpv.MPV`
         Variables relating to the elliptic solver
     step : int, optional
         Current step
@@ -285,56 +285,56 @@ def periodic_plus_one(vector, pad_width, iaxis, kwargs=None):
     return vector
 
 
-# def check_flux_bcs(Lefts, Rights, elem, split_step, ud):
-#     igx = elem.igx
-#     igy = elem.igy
+def check_flux_bcs(Lefts, Rights, elem, split_step, ud):
+    igx = elem.igx
+    igy = elem.igy
 
-#     if split_step == 1:
-#         if ud.bdry_type[split_step] == BdryType.WALL:
+    if split_step == 1:
+        if ud.bdry_type[split_step] == BdryType.WALL:
 
-#             left_inner = (slice(None),slice(igy,igy+1))
-#             left_ghost = (slice(None),slice(igy-1,igy))
+            left_inner = (slice(None),slice(igy,igy+1))
+            left_ghost = (slice(None),slice(igy-1,igy))
 
-#             right_inner = (slice(None),slice(-igy-1,-igy))
-#             right_ghost = (slice(None),slice(-igy,-igy+1))
+            right_inner = (slice(None),slice(-igy-1,-igy))
+            right_ghost = (slice(None),slice(-igy,-igy+1))
 
-#             rhou_wall = 0.
-#             # Lefts.rhou[left_ghost] = Rights.rhou[left_inner] = rhou_wall
-#             Lefts.rhoY[left_ghost] = Rights.rhoY[left_inner] = Rights.rho[left_inner] * ud.stratification(0.0)
+            rhou_wall = 0.
+            # Lefts.rhou[left_ghost] = Rights.rhou[left_inner] = rhou_wall
+            Lefts.rhoY[left_ghost] = Rights.rhoY[left_inner] = Rights.rho[left_inner] * ud.stratification(0.0)
 
-#             Lefts.rho[left_ghost] = Rights.rho[left_inner]
-#             Lefts.rhov[left_ghost] = Rights.rhov[left_inner]
-#             Lefts.rhow[left_ghost] = Rights.rhow[left_inner]
-#             Lefts.rhoe[left_ghost] = Rights.rhoe[left_inner]
-#             Lefts.rhoX[left_ghost] = Rights.rhoX[left_inner]
-#             # print(Lefts.rhoY[left_ghost])
-#             # print(Rights.rho[0,:])
+            Lefts.rho[left_ghost] = Rights.rho[left_inner]
+            Lefts.rhov[left_ghost] = Rights.rhov[left_inner]
+            Lefts.rhow[left_ghost] = Rights.rhow[left_inner]
+            Lefts.rhoe[left_ghost] = Rights.rhoe[left_inner]
+            Lefts.rhoX[left_ghost] = Rights.rhoX[left_inner]
+            # print(Lefts.rhoY[left_ghost])
+            # print(Rights.rho[0,:])
 
-#             Rights.rho[right_ghost] = Lefts.rho[right_inner]
-#             Rights.rhou[right_ghost] = -1. * Lefts.rhou[right_inner]
-#             Rights.rhov[right_ghost] = Lefts.rhov[right_inner]
-#             Rights.rhow[right_ghost] = Lefts.rhow[right_inner]
-#             Rights.rhoe[right_ghost] = Lefts.rhoe[right_inner]
-#             Rights.rhoY[right_ghost] = Lefts.rhoY[right_inner]
+            Rights.rho[right_ghost] = Lefts.rho[right_inner]
+            Rights.rhou[right_ghost] = -1. * Lefts.rhou[right_inner]
+            Rights.rhov[right_ghost] = Lefts.rhov[right_inner]
+            Rights.rhow[right_ghost] = Lefts.rhow[right_inner]
+            Rights.rhoe[right_ghost] = Lefts.rhoe[right_inner]
+            Rights.rhoY[right_ghost] = Lefts.rhoY[right_inner]
 
-#             # print(Lefts.rhoY[:,-igx-2])
+            # print(Lefts.rhoY[:,-igx-2])
             
-#     else:
-#         if ud.bdry_type[split_step] == BdryType.WALL:
+    else:
+        if ud.bdry_type[split_step] == BdryType.WALL:
 
-#             assert(0) # INCOMPLETE!!!
-#             Lefts.rho[left_inner] = Rights.rho[:,igx-2]
-#             Lefts.rhou[left_inner] = -1. * Rights.rhou[:,igx-2]
-#             Lefts.rhov[left_inner] = Rights.rhov[:,igx-2]
-#             Lefts.rhow[left_inner] = Rights.rhow[:,igx-2]
-#             Lefts.rhoe[left_inner] = Rights.rhoe[:,igx-2]
-#             Lefts.rhoY[left_inner] = Rights.rhoY[:,igx-2]
+            assert(0) # INCOMPLETE!!!
+            Lefts.rho[left_inner] = Rights.rho[:,igx-2]
+            Lefts.rhou[left_inner] = -1. * Rights.rhou[:,igx-2]
+            Lefts.rhov[left_inner] = Rights.rhov[:,igx-2]
+            Lefts.rhow[left_inner] = Rights.rhow[:,igx-2]
+            Lefts.rhoe[left_inner] = Rights.rhoe[:,igx-2]
+            Lefts.rhoY[left_inner] = Rights.rhoY[:,igx-2]
 
-#             # print("#################### TRUE ########################")
-#             Rights.rho[right_ghost] = Lefts.rho[:,-igx-2]
-#             Rights.rhou[right_ghost] = -1. * Lefts.rhou[:,-igx-2]
-#             Rights.rhov[right_ghost] = Lefts.rhov[:,-igx-2]
-#             Rights.rhow[right_ghost] = Lefts.rhow[:,-igx-2]
-#             Rights.rhoe[right_ghost] = Lefts.rhoe[:,-igx-2]
-#             Rights.rhoY[right_ghost] = Lefts.rhoY[:,-igx-2]
-#             # print(Rights.rhoY[right_ghost])
+            # print("#################### TRUE ########################")
+            Rights.rho[right_ghost] = Lefts.rho[:,-igx-2]
+            Rights.rhou[right_ghost] = -1. * Lefts.rhou[:,-igx-2]
+            Rights.rhov[right_ghost] = Lefts.rhov[:,-igx-2]
+            Rights.rhow[right_ghost] = Lefts.rhow[:,-igx-2]
+            Rights.rhoe[right_ghost] = Lefts.rhoe[:,-igx-2]
+            Rights.rhoY[right_ghost] = Lefts.rhoY[:,-igx-2]
+            # print(Rights.rhoY[right_ghost])
