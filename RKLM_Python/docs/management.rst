@@ -7,7 +7,6 @@ management package
 .. toctree::
 
    management.data
-   management.enumerator
    management.io
    management.variable
 
