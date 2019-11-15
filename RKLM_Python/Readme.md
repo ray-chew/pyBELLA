@@ -1,6 +1,8 @@
 # RKLM_Python
 ---
-Running the atmospheric flow solver:
+## Running the atmospheric flow solver
+
+To run the solve,
 `python ./RKLM_Python/__main__.py`
 
 * Initial condition files are used according to lines 21-24 of `__main__.py`.
@@ -8,7 +10,26 @@ Running the atmospheric flow solver:
 * Setting `N=1` will disable the data assimilation part of the code.
 * The output filenames and directories are given in the initial condition data files in `./inputs/`.
 
+
 ---
+## Example
+
+Running the solver for the travelling vortex test case.
+
+1. Leave only the line 21 uncommented of the initial conditions,
+`from inputs.travelling_vortex_3D_48 import UserData, sol_init`
+2. In `./inputs/travelling_vortex_3D_48.py`, adjust
+    a. `self.tout` to determine end time and time to make outputs.
+    b. `self.output_base_name` for the output directory.
+    c. `self.inx` and `self.iny` for the grid resolution
+3. The filename is currently determined by line 137 of `__main__.py`:
+    `ud.output_name_comp = ("_ensemble=%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,ud.tout[-1]))`
+4. Run `python ./RKLM_Python/__main__.py`.
+5. A file with the filename, e.g. `output_travelling_vortex_ensemble=1_32_32_10.0`, will be created in the directory `output_travelling_vortex` in the root directory of the git repository.
+
+---
+## Documentation
+
 A draft documentation can be compiled by the code
 `./docs/make html`
 or
@@ -22,7 +43,7 @@ This requires:
 The documentation will be improved in the coming days...
 
 ---
-Requirements
+## Requirements
 
 0. `python 3.6`
 1. `numpy 1.16`
