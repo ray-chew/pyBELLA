@@ -1,5 +1,5 @@
 # RKLM_Python
----
+
 ## Running the atmospheric flow solver
 
 To run the solve,
@@ -10,8 +10,6 @@ To run the solve,
 * Setting `N=1` will disable the data assimilation part of the code.
 * The output filenames and directories are given in the initial condition data files in `./inputs/`.
 
-
----
 ## Example
 
 Running the solver for the travelling vortex test case.
@@ -27,7 +25,6 @@ Running the solver for the travelling vortex test case.
 4. Run `python ./RKLM_Python/__main__.py`.
 5. A file with the filename, e.g. `output_travelling_vortex_ensemble=1_32_32_10.0`, will be created in the directory `output_travelling_vortex` in the root directory of the git repository.
 
----
 ## Documentation
 
 A draft documentation can be compiled by the code
@@ -42,7 +39,6 @@ This requires:
 
 The documentation will be improved in the coming days...
 
----
 ## Requirements
 
 0. `python 3.6`
