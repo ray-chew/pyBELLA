@@ -16,7 +16,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
     Sol : :class:`management.variable.Vars`
         Solution data container
     elem : :class:`discretization.kgrid.ElemSpaceDiscr`
-        Cells grid.
+        Cells grid
     ud : :class:`inputs.user_data.UserDataInit`
         Data container for the initial conditions
     th : :class:`physics.gas_dynamics.thermodynamic.ThemodynamicInit`
@@ -144,9 +144,7 @@ def set_boundary(Sol,pads,btype,idx,step=None):
 
 def negative_symmetric(vector,pad_width,iaxis,kwargs=None):
     """
-    For more details, refer to: https://docs.scipy.org/doc/numpy/reference/generated/numpy.pad.html.
-
-    Taken from the link:
+    Taken from the reference:
 
     Parameters
     ----------
@@ -158,6 +156,10 @@ def negative_symmetric(vector,pad_width,iaxis,kwargs=None):
         The axis currently being calculated.
     kwargs : dict
         Any keyword arguments the function requires.
+
+    References
+    ----------
+    https://docs.scipy.org/doc/numpy/reference/generated/numpy.pad.html
 
     """
     if pad_width[1] > 0:
@@ -180,7 +182,7 @@ def get_gravity_padding(ndim,cur_idx,direction,offset,elem,y_axs=None):
     direction : int
         Top of the domain, `direction=+1`, bottom of the domain, `direction=-1`.
     offset : int
-        ?
+        `offset=0`, index starts counting from 0,1.... `offset=1`, index starts counting from -1,-2,..., i.e. end-selection of the array.
     elem : :class:`discretization.kgrid.ElemSpaceDiscr`
         Cell grid.
     y_axs : int, optional
@@ -264,9 +266,7 @@ def get_ghost_padding(ndim,dim,igs):
 
 def periodic_plus_one(vector, pad_width, iaxis, kwargs=None):
     """
-    For more details, refer to: https://docs.scipy.org/doc/numpy/reference/generated/numpy.pad.html.
-
-    Taken from the link:
+    Taken from the reference:
 
     Parameters
     ----------
@@ -278,6 +278,10 @@ def periodic_plus_one(vector, pad_width, iaxis, kwargs=None):
         The axis currently being calculated.
     kwargs : dict
         Any keyword arguments the function requires.
+
+    References
+    ----------
+    https://docs.scipy.org/doc/numpy/reference/generated/numpy.pad.html
 
     """
     if all(pad_width) > 0:
