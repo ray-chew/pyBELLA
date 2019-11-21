@@ -83,6 +83,7 @@ void User_Data_init(User_Data* ud) {
     ud->cond        = cond * t_ref/(h_ref*h_ref*R_gas);
 
     /* Low Mach */
+    ud->is_nonhydrostatic = 1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
     ud->is_compressible   = 1;    /* 0: psinc;  1: comp;  -1: transition (see compressibility()) */
     ud->acoustic_timestep = 0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
@@ -114,7 +115,7 @@ void User_Data_init(User_Data* ud) {
     ud->xmax =   1.0;
     ud->ymin = - 1.0;
     ud->ymax =   1.0;
-    ud->zmin = - 1.0;
+    ud->zmin = - 0.0;
     ud->zmax =   1.0;
     
     /* boundary/initial conditions */
@@ -147,14 +148,14 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx =  31+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =  31+1; /* 321; 161;  81;  65; 41;  */
+    ud->inx =  101+1; /* 641; 321; 161; 129; 81; */
+    ud->iny =  101+1; /* 321; 161;  81;  65; 41;  */
     ud->inz =  1;
     
     /* explicit predictor step */
     /* Recovery */
     ud->recovery_order = SECOND; /* FIRST, SECOND */ 
-    ud->limiter_type_scalars  = NONE; 
+    ud->limiter_type_scalars  = VANLEER; 
     ud->limiter_type_velocity = NONE; 
     /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; SWEBY_MUNZ; SUPERBEE; */
     
@@ -184,7 +185,7 @@ void User_Data_init(User_Data* ud) {
     /* =====  CODE FLOW CONTROL  ======================================================== */
     /* ================================================================================== */
     
-    ud->tout[0] = 3000.0 / ud->t_ref;
+    ud->tout[0] = (ud->xmax-ud->xmin) / ud->wind_speed;
     ud->tout[1] = -1.0;
 
     ud->stepmax = 10000;
@@ -192,11 +193,15 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 1;
+    ud->write_file_period = 10;
     ud->file_format = HDF;
     
     {
+#ifdef RUPERT
+        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+#else
         char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
+#endif
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
@@ -218,16 +223,17 @@ void Sol_initial(ConsVars* Sol,
     
     extern Thermodynamic th;
     extern User_Data ud;
-    
-    const int compressible = (ud.is_compressible == 0 ? 0 : 1);
-    
-    
-    /* advection test */
-    const double phi   = 2.0*PI/4.0;
-    const double theta = 2.0*PI/4.0;
+        
+    /* advection test 
+    const double phi   = 0.5*PI/4.0;
+    const double theta = 0.0*PI/4.0;
     const double u0    = cos(phi)*cos(theta)*ud.wind_speed;
     const double v0    = sin(phi)*cos(theta)*ud.wind_speed;
     const double w0    = sin(theta)*ud.wind_speed;
+     */
+    const double u0    = ud.wind_speed;
+    const double v0    = 0.05*ud.wind_speed;
+    const double w0    = 0.0;
     const double delth = 0.25; /* pot. temp. perturbation amplitude; standard:  0.01 / ud.T_ref */
     const double xc    = 0.0;  /* initial position of center of pot temp perturbation */
     const double yc    = 0.0;  /* initial position of center of pot temp perturbation */
@@ -237,13 +243,6 @@ void Sol_initial(ConsVars* Sol,
     const int icx = elem->icx;
     const int icy = elem->icy;
     const int icz = elem->icz;
-    const int igx = elem->igx;
-    const int igy = elem->igy;
-    
-    const int icxn = node->icx;
-    const int icyn = node->icy;
-    
-    double rho, u, v, w, p, rhoY;
     
     double g;
         
@@ -285,13 +284,13 @@ void Sol_initial(ConsVars* Sol,
                 Sol->rhoe[nc]   = rhoe(rho, u0, v0, w0, p);
                 Sol->rhoY[nc]   = rhoY;
                 
-                mpv->p2_cells[nc]   = 0.0;
+                mpv->p2_cells[nc]   = 1.0;
                 Sol->rhoX[BUOY][nc] = Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - mpv->HydroState->S0[j]);
             }
         }
     }
     for (int nn=0; nn < node->nc; nn++) {
-        mpv->p2_nodes[nn] = 0.0;
+        mpv->p2_nodes[nn] = 1.0;
     }
 }
 
@@ -317,7 +316,12 @@ double molly(
     
     extern User_Data ud;
         
-    return(0.5*(1.0+cos(MIN_own(0.5*PI*r/a,PI))));
+    
+    /* 
+     return(0.5*(1.0+cos(MIN_own(0.5*PI*r/a,PI))));
+     */
+    double eps = 0.05;
+    return(0.5*(1.0+tanh((r/a-1.0)/eps)));
 }
 
 

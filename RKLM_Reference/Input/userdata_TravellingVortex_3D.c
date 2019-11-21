@@ -46,13 +46,14 @@ void User_Data_init(User_Data* ud) {
     double cond   = 0.0;             /* [m^2/s]                         */
     
     /* references for non-dimensionalization */
-    double h_ref    = 100;                  /* [m]               */
+    double h_ref    = 10000;                  /* [m]               */
     double t_ref    = 100;                  /* [s]               */
     double T_ref    = 300.00;                /* [K]               */
     double p_ref    = 1e+5;                  /* [Pa]              */
     double u_ref    = h_ref/t_ref;           /* [m/s]; Sr = 1     */
     double rho_ref  = p_ref / (R_gas*T_ref); /* [kg/m^3]          */
     
+    /* reference stratification as (buoyancy frequency)^2 */
     double Nsq_ref  = 0.0;                   /* [1/s^2]           */
     
     ud->h_ref       = h_ref;
@@ -128,7 +129,7 @@ void User_Data_init(User_Data* ud) {
     ud->bdrytype_max[1] = PERIODIC;  
     ud->bdrytype_max[2] = WALL;
     
-    ud->absorber = WRONG; /* CORRECT; */   
+    ud->absorber        = WRONG; /* CORRECT; */   
     ud->bottom_theta_bc = BOTTOM_BC_DEFAULT;
     
     /* ======================================================================== */
@@ -147,7 +148,7 @@ void User_Data_init(User_Data* ud) {
     /* Grid and space discretization */
     ud->inx = 48+1; /*   */
     ud->iny = 48+1; /*   */
-    ud->inz = 12+1;
+    ud->inz = 10+1;
 
     /* explicit predictor step */
     /* Recovery */
@@ -163,7 +164,7 @@ void User_Data_init(User_Data* ud) {
     ud->kY = 0.0; /* 1.4; */
     ud->kZ = 0.0; /* 1.4; */
     
-    /* al explicit predictor operations are done on ncache-size data worms to save memory */ 
+    /* all explicit predictor operations are done on ncache-size data worms to save memory */ 
     ud->ncache =  201; /* (ud->inx+3); */
     
     /* linear solver-stuff */
@@ -179,9 +180,6 @@ void User_Data_init(User_Data* ud) {
     ud->initial_impl_Euler                = WRONG;   /* to be tested: WRONG;  CORRECT; */
     
     ud->column_preconditioner             = WRONG; /* WRONG; CORRECT; */
-    ud->synchronize_nodal_pressure        = WRONG;   /* WRONG; CORRECT; */
-    ud->synchronize_weight                = 0.0;    /* relevant only when prev. option is "CORRECT"
-                                                     Should ultimately be a function of dt . */  
     
     /* numerics parameters */
     ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -189,6 +187,7 @@ void User_Data_init(User_Data* ud) {
     /* ================================================================================== */
     /* =====  CODE FLOW CONTROL  ======================================================== */
     /* ================================================================================== */
+   
     ud->tout[0] =  1.0;      
     //ud->tout[1] =  2.0;      
     //ud->tout[2] =  3.0;      
@@ -209,7 +208,7 @@ void User_Data_init(User_Data* ud) {
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 10;
+    ud->write_file_period = 20;
     ud->file_format = HDF;
 
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
@@ -241,6 +240,7 @@ void Sol_initial(ConsVars* Sol,
     
     extern Thermodynamic th;
     extern User_Data ud;
+    extern double* diss_midpnt;
     
     const double u0    = 1.0*ud.wind_speed;
     const double v0    = 1.0*ud.wind_speed;
@@ -291,9 +291,7 @@ void Sol_initial(ConsVars* Sol,
     double rho, u, v, w, rhoY, theta, T, p_hydro;
     double r, uth;
     double xcc, ycc;
-    
-    Hydrostatics_State(mpv, elem, node);
-    
+        
     /* data needed for the pressure distribution in the Kadioglu et al. paper */ 
     double coe[25];
     coe[0]  =     1.0 / 12.0;
@@ -322,6 +320,8 @@ void Sol_initial(ConsVars* Sol,
     coe[23] = -   6.0 / 35.0;
     coe[24] =     1.0 / 72.0;
     
+    Hydrostatics_State(mpv, elem, node);
+
     /* Initial data and hydro-states in the flow domain */
     for(k = igz; k < icz - igz; k++) {
         l = k * icx * icy; 
@@ -447,7 +447,7 @@ void Sol_initial(ConsVars* Sol,
     ud.compressibility = compressibility(0);
     
     set_wall_rhoYflux(bdry, Sol, mpv, elem);
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
     ConsVars_set(Sol0, Sol, elem->nc);
     
@@ -471,7 +471,7 @@ void Sol_initial(ConsVars* Sol,
         }
         
         //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
-        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed, 1.0);
+        euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, elem, node, 0.0, ud.dtfixed, 1.0);
         for (int nn=0; nn<node->nc; nn++) {
             mpv->p2_nodes[nn] = p2aux[nn];
             mpv->dp2_nodes[nn] = 0.0;
@@ -511,4 +511,5 @@ double stratification(
  Added csr.c and sod1d.c (user data for 3d code)
  
  LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL*/
+
 

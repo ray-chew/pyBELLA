@@ -146,8 +146,8 @@ void User_Data_init(User_Data* ud) {
     ud->time_integrator       = SI_MIDPT;  /* this code version has only one option */
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
     ud->CFL                   = 0.9; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0              = 0.125 / ud->t_ref;
-    ud->dtfixed               = 0.125 / ud->t_ref;
+    ud->dtfixed0              = 0.5 / ud->t_ref;
+    ud->dtfixed               = 0.5 / ud->t_ref;
     
     set_time_integrator_parameters(ud);
     
@@ -174,7 +174,7 @@ void User_Data_init(User_Data* ud) {
     ud->ncache = 154; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
     
     /* linear solver-stuff */
-    double tol                            = 1.e-8;
+    double tol                            = 1.e-13;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -185,9 +185,6 @@ void User_Data_init(User_Data* ud) {
     ud->initial_impl_Euler                = WRONG;   /* WRONG;  CORRECT; */
     
     ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
-    ud->synchronize_nodal_pressure        = WRONG;   /* WRONG; CORRECT; */
-    ud->synchronize_weight                = 0.0;    /* relevant only when prev. option is "CORRECT"
-                                                     Should ultimately be a function of dt . */  
 
     /* numerics parameters */
     ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -202,7 +199,7 @@ void User_Data_init(User_Data* ud) {
     ud->stepmax = 100000000;
     
     ud->write_stdout = ON;
-    ud->write_stdout_period = 1;
+    ud->write_stdout_period = 100;
     ud->write_file = ON;
     ud->write_file_period = 28800;
     ud->file_format = HDF;
@@ -211,7 +208,7 @@ void User_Data_init(User_Data* ud) {
 
     {
 #ifdef RUPERT
-        char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
+        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
 #else
         char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
 #endif
@@ -296,7 +293,11 @@ void Sol_initial(ConsVars* Sol,
             
             /* mpv->p2_cells[n]   = mpv->HydroState->p20[j]; */
             mpv->p2_cells[n]   = 0.0; 
+#ifdef FULL_VARIABLES
+            Sol->rhoX[BUOY][n] = Sol->rho[n] * Sol->rho[n]/Sol->rhoY[n];
+#else
             Sol->rhoX[BUOY][n] = Sol->rho[n] * (Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
+#endif
         
             /* nodal pressure */
             nn   = j*icxn+i;
@@ -336,7 +337,7 @@ void Sol_initial(ConsVars* Sol,
     
     //set_wall_massflux(bdry, Sol, elem);
     set_wall_rhoYflux(bdry, Sol, mpv, elem);
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
     ConsVars_set(Sol0, Sol, elem->nc);
     

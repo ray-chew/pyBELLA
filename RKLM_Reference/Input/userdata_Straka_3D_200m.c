@@ -179,9 +179,6 @@ void User_Data_init(User_Data* ud) {
     ud->initial_impl_Euler                = WRONG;   /* to be tested: WRONG;  CORRECT; */
 
     ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
-    ud->synchronize_nodal_pressure        = WRONG;   /* WRONG; CORRECT; */
-    ud->synchronize_weight                = 0.0;    /* relevant only when prev. option is "CORRECT"
-                                                     Should ultimately be a function of dt . */  
     
 	/* numerics parameters */
 	ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -196,18 +193,22 @@ void User_Data_init(User_Data* ud) {
     ud->tout[2] =  9.0;
     ud->tout[3] = -1.0;
         
-    ud->stepmax = 5000000;
+    ud->stepmax = 1000000;
     
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
 	ud->write_file = ON;
-	ud->write_file_period = 100000;
+	ud->write_file_period = 20;
 	ud->file_format = HDF;
     
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
     
     {
-        char *OutputBaseFolder      = "/home/tommaso/prova/RKLM_Reference/";
+#ifdef TOMMASO
+        char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
+#else
+        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+#endif
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
@@ -320,7 +321,11 @@ void Sol_initial(ConsVars* Sol,
             Sol->rhoY[n]   = rhoY;
             
             mpv->p2_cells[n]   = HySt->p20[j];
-            Sol->rhoX[BUOY][n] = Sol->rho[n] * (Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
+#ifdef FULL_VARIABLES
+            Sol->rhoX[BUOY][n] = Sol->rho[n]/Y[j];
+#else
+            Sol->rhoX[BUOY][n] = Sol->rho[n] * (1.0/Y[j] - mpv->HydroState->S0[j]);
+#endif
             
             /* nodal pressure */
             mpv->p2_nodes[nn] = HyStn->p20[j];
@@ -364,7 +369,7 @@ void Sol_initial(ConsVars* Sol,
     ud.compressibility = compressibility(0);
     
     set_wall_rhoYflux(bdry, Sol, mpv, elem);
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
     ConsVars_set(Sol0, Sol, elem->nc);
     

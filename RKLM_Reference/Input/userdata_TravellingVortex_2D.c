@@ -16,8 +16,6 @@
 #include "enum_bdry.h"
 #include "thermodynamic.h"
 #include "Eos.h"
-#include "set_ghostcells_p.h"
-#include "set_ghostnodes_p.h"
 #include "boundary.h"
 #include "memory.h"
 #include "Hydrostatics.h"
@@ -108,7 +106,6 @@ void User_Data_init(User_Data* ud) {
 
     /* number of advected species */
     ud->nspec       = NSPEC;  
-    ud->naux        = NAUX;  
 
 	/* Low Mach */
     ud->is_compressible = 0;
@@ -137,10 +134,6 @@ void User_Data_init(User_Data* ud) {
 		}
 	}
     
-    /* low Froude */
-    ud->implicit_gravity_theta  = 0;
-    ud->implicit_gravity_theta2 = 0;
-
 	/* flow domain */
 	ud->xmin = - 0.5;  
 	ud->xmax =   0.5;  
@@ -174,8 +167,6 @@ void User_Data_init(User_Data* ud) {
 	ud->CFL                    = 0.96;       /* 0.9; 0.8; 1.1*sqrt(0.5) */
     ud->dtfixed0               = 10000.999;
     ud->dtfixed                = 10000.999;     /* ud->dtfixed = 0.5/ud->t_ref;  */
-    ud->no_of_steps_to_CFL     = 1;
-    ud->no_of_steps_to_dtfixed = 1;
 
     set_time_integrator_parameters(ud);
     
@@ -183,25 +174,12 @@ void User_Data_init(User_Data* ud) {
 	ud->inx =  128+1; /*  */
 	ud->iny =  128+1; /*  */
 	ud->inz =  1;
-	ud->h   = MIN_own((ud->xmax-ud->xmin)/(ud->inx),MIN_own((ud->ymax-ud->ymin)/(ud->iny),(ud->zmax-ud->zmin)/(ud->inz)));
 
 	/* explicit predictor step */
 	/* Recovery */
 	ud->recovery_order        = SECOND;
 	ud->limiter_type_scalars  = VANLEER; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; VANLEERSmooth; SWEBY_MUNZ; SUPERBEE; NO_SLOPE;*/
 	ud->limiter_type_velocity = VANLEER; /*  RUPE; NONE; MONOTONIZED_CENTRAL; MINMOD; VANLEER; VANLEERSmooth; SWEBY_MUNZ; SUPERBEE; NO_SLOPE;*/
-
-    /* first correction */
-	ud->p_flux_correction = WRONG; /* CORRECT, WRONG; */
-    if (ud->time_integrator == OP_SPLIT || ud->time_integrator == OP_SPLIT_MD_UPDATE) {
-        ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.0;
-        /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25; */
-        /* ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.0; */
-        /* ud->latw[0] = ud->latw[2] = 0.2; ud->latw[1] = 0.6; ud->p_extrapol = 1.5;  */ 
-    } else {
-        /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25;*/
-        ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.5; 
-    }
         
     /* parameters for SWEBY_MUNZ limiter family */
     ud->kp = 1.4;
@@ -213,26 +191,15 @@ void User_Data_init(User_Data* ud) {
 	ud->ncache =  201; /* (ud->inx+3); */
 	
 	/* linear solver-stuff */
-    ud->which_projection_first = 1;
-	ud->Solver = BICGSTAB_PRECON;        /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
-	ud->Solver_Node = BICGSTAB_PRECON;   /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
-    ud->precondition = WRONG;
     double tol = 1.e-6;
 	ud->flux_correction_precision = tol;
 	ud->flux_correction_local_precision = tol;   /* 1.e-05 should be enough */
 	ud->second_projection_precision = tol;  
 	ud->second_projection_local_precision = tol;   /* 1.e-05 should be enough */
-	ud->implicitness = 1.0;   
-	ud->flux_correction_max_MG_cycles = 100;
-	ud->flux_correction_output_period = 50;
-	ud->max_projection_iterations = 1;
 	ud->flux_correction_max_iterations = 6000;
 	ud->second_projection_max_iterations = 6000;
 	
     max_no_of_levels = 1;
-    
-    ud->max_no_of_multigrid_levels = max_no_of_levels;
-    ud->no_of_multigrid_levels     = max_no_of_levels-1;    /* optimal for BICGSTAB with MG:  5 (128x128-Grid) */
     
 	/* numerics parameters */
 	ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -290,13 +257,15 @@ void User_Data_init(User_Data* ud) {
 
 /* ================================================================================== */
 
-void Sol_initial(ConsVars* Sol,
+void Sol_initial(ConsVars* Sol, 
+                 ConsVars* Sol0, 
+                 MPV* mpv,
+                 BDRY* bdry,
                  const ElemSpaceDiscr* elem,
                  const NodeSpaceDiscr* node) {
 	
 	extern Thermodynamic th;
 	extern User_Data ud;
-    extern MPV* mpv;
     extern double *Yinvbg;
     
 	const double u0    = 1.0*ud.wind_speed;
@@ -329,7 +298,7 @@ void Sol_initial(ConsVars* Sol,
 	                
     g = ud.gravity_strength[1];
 
-    Hydrostatics_State(mpv, Yinvbg, elem);
+    Hydrostatics_State(mpv, elem, node);
     
     /* Initial data and hydro-states in the flow domain */
 	for(k = igz; k < icz - igz; k++) {l = k * icx * icy; 
@@ -363,7 +332,7 @@ void Sol_initial(ConsVars* Sol,
                 Sol->rhou[n] = rho * u;
                 Sol->rhov[n] = rho * v;
                 Sol->rhow[n] = rho * w;
-                Sol->rhoe[n] = rhoe(rho, u, v, w, p_hydro, g*y);
+                Sol->rhoe[n] = rhoe(rho, u, v, w, p_hydro);
                 Sol->rhoY[n] = rhoY;
                 
                 if (ud.nspec == 3) {
@@ -371,9 +340,7 @@ void Sol_initial(ConsVars* Sol,
                     Sol->rhoX[QC][n] = rho*qc;
                     Sol->rhoX[QR][n] = rho*qr;                    
                 }
-                
-                Sol->geopot[n] = g * y;
-                
+                                
                 if ( r/R0 < 1.0 ) {
                     
                     int ii;
@@ -432,24 +399,8 @@ void Sol_initial(ConsVars* Sol,
 #endif
             }            
 		}
+    }
                 
-		/* set all dummy cells */
-		/* geopotential in bottom and top dummy cells */
-		for(j = 0; j < igy; j++) {m = l + j * icx;  
-			y = elem->y[j];
-			for(i = 0; i < icx; i++) {n = m + i;
-				Sol->geopot[n] = g * y;
-			}
-		}
-		
-		for(j = icy-igy; j < icy; j++) {m = l + j * icx;  
-			y = elem->y[j];
-			for(i = 0; i < icx; i++) {n = m + i;
-				Sol->geopot[n] = g * y;
-			}
-		}
-	}  
-
     /*set nodal pressures */
     for(int k = 0; k < iczn; k++) {int l = k * icxn * icyn;   
         
@@ -473,13 +424,13 @@ void Sol_initial(ConsVars* Sol,
 
 /* ================================================================================== */
 
-double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma){
+double pressure_function(double r, double p0, double S0, double u_theta, double Msq, double Gamma) {
 	return pow((pow(p0,Gamma) + Gamma*S0*Msq*u_theta*u_theta*(1.0 - pow((1.0-r),5.0)*(5.0*r+1.0))/30.0), (1.0/Gamma));
 }
 
 /* ================================================================================== */
 
-double rho_function(double psi){
+double rho_function(double psi) {
 	
 	double rhomax = 1.0;
 	double percent = 0.0;

@@ -24,7 +24,7 @@
 double molly(double x);
 
 /* horizontal stretch for S&K94 IGWs: planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0; */
-static double scalefactor = 20.0;
+static double scalefactor = 1.0;      
 
 void User_Data_init(User_Data* ud) {
     
@@ -36,7 +36,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Earth */
     double grav     = 9.81;             /* gravitational acceleration [m/s^2]    */
-    double omega    = 0.0*0.0001;       /* Coriolis parameter [1/s]              */
+    double omega    = 1.0*0.0001;       /* Coriolis parameter [1/s]              */
                                         /* sin(0.5*PI) * 2.0 * 0.00007272205217; */
     
     /* thermodynamics and chemistry */
@@ -86,6 +86,7 @@ void User_Data_init(User_Data* ud) {
     ud->cond        = cond * t_ref/(h_ref*h_ref*R_gas);
 
     /* Low Mach */
+    ud->is_ArakawaKonor   =  0;    /* 1: AK09;  0: model determined by is_nonhydrostatic and is_compressible    */
     ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
     ud->is_compressible   =  1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep =  0;    /* advective time step -> 0;  acoustic time step -> 1; */
@@ -136,7 +137,7 @@ void User_Data_init(User_Data* ud) {
     ud->bdrytype_max[2] = WALL;
     
     ud->absorber = WRONG; /* CORRECT;  WRONG; */ /*  BREAKING WAVE CHANGE */
-    ud->bottom_theta_bc = BOTTOM_BC_DEFAULT;
+    ud->bottom_theta_bc = BOTTOM_BC_DEFAULT; /* ZERO_ORDER_EXTRAPOL, BOTTOM_BC_DEFAULT */
 
     /* ================================================================================== */
     /* =====  NUMERICS  ================================================================= */
@@ -144,12 +145,16 @@ void User_Data_init(User_Data* ud) {
     
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;  /* this code version has only one option */
-    ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
-    ud->CFL                   = 0.9; /* 0.45; 0.9; 0.8; */
+    ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT; NO_ADVECTION;  best tested: STRANG; */
+    ud->CFL                   = 0.45; /* 0.45; 0.9; 0.8; */
     /* large time step test variant  (N*dt = 20.0, or  dt = 2000 s in the planetary IGW test) */
-    ud->dtfixed0              = 10.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
-    ud->dtfixed               = 10.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
-     
+    /*
+     ud->dtfixed0              = 0.1123;
+     ud->dtfixed               = 0.1123;     
+     */
+    ud->dtfixed0              = 5.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed               = 5.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+
      
     /* short time step test variant  (N*dt = 1.0, or  dt = 100 s in the planetary IGW test) 
     ud->dtfixed0               = 0.05*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
@@ -159,8 +164,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx =  301+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
+    ud->inx = 301+1; /* 641; 321; 161; 129; 81; */
+    ud->iny =  10+1; /* 321; 161;  81;  65; 41;  */
     ud->inz =      1;
     
     /* explicit predictor step */
@@ -181,20 +186,17 @@ void User_Data_init(User_Data* ud) {
     ud->ncache = 154; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
     
     /* linear solver-stuff */
-    double tol                            = 1.e-11 * (ud->is_compressible == 1 ? 0.01 : 1.0);
+    double tol                            = 1.e-8; // 1.e-8 * (ud->is_compressible == 1 ? 0.01 : 1.0);
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
     ud->second_projection_local_precision = tol;  /* 1.e-05 should be enough */
-    ud->flux_correction_max_iterations    = 1500;
-    ud->second_projection_max_iterations  = 1500;
+    ud->flux_correction_max_iterations    = 6000;
+    ud->second_projection_max_iterations  = 6000;
     ud->initial_projection                = WRONG; /* WRONG;  CORRECT; */
     
     ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
-    ud->synchronize_nodal_pressure        = WRONG; /* WRONG; CORRECT; */
-    ud->synchronize_weight                = 1.0;    /* relevant only when prev. option is "CORRECT"
-                                                      Should ultimately be a function of dt . */  
-
+    
     /* numerics parameters */
     ud->eps_Machine = sqrt(DBL_EPSILON);
     
@@ -206,18 +208,17 @@ void User_Data_init(User_Data* ud) {
     ud->tout[1] = -1.0;
 
     ud->stepmax = 10000;
-    // ud->stepmax = 2;
     
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 30;
+    ud->write_file_period = 20;
     ud->file_format = HDF;
     
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
 
     {
-        char *OutputBaseFolder      = "/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_internal_long_wave/";
+        char *OutputBaseFolder      = "/srv/public/ray/RKLM_Reference/Output/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
@@ -330,7 +331,11 @@ void Sol_initial(ConsVars* Sol,
             Sol->rhoY[n]   = rhoY;
             
             mpv->p2_cells[n]   = HySt->p20[j];
+#ifdef FULL_VARIABLES
+            Sol->rhoX[BUOY][n] = Sol->rho[n]/Y[j];
+#else
             Sol->rhoX[BUOY][n] = Sol->rho[n] * (1.0/Y[j] - mpv->HydroState->S0[j]);
+#endif
         
             /* nodal pressure */
             nn   = j*icxn+i;
@@ -375,7 +380,7 @@ void Sol_initial(ConsVars* Sol,
     ud.compressibility = compressibility(0);
     
     set_wall_rhoYflux(bdry, Sol, mpv, elem);
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
     ConsVars_set(Sol0, Sol, elem->nc);
     

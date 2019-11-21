@@ -196,7 +196,7 @@ void User_Data_init(User_Data* ud) {
     ud->tout[0] = (scalefactor == 1.0 ? 0.5 * 3600.0 : 8.0 * 3600.0) / ud->t_ref; 
     ud->tout[1] = -1.0;
 
-    ud->stepmax = 100000;
+    ud->stepmax = 100000000;
     
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
@@ -208,9 +208,9 @@ void User_Data_init(User_Data* ud) {
 
     {
 #ifdef RUPERT
-        char *OutputBaseFolder      = "/home/benacchio/work/code/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
 #else
-        char *OutputBaseFolder      = "/home/benacchio/work/code/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
 #endif
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";

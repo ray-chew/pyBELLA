@@ -269,11 +269,11 @@ void Bound(
                 for(i=elem->igx-1;i>=0;i--) {
                     int nimage  = njk + i;
 					int nlast   = nimage + 1;
-                    int isource = 2*elem->igx-1 - i;
+                    int isource = 2*elem->igx - 1 - i;
                     int nsource = njk + isource;
 					
 					double Y_last = Sol->rhoY[nlast] / Sol->rho[nlast];
-					double rhoYu_wall, rhoYu_image;
+					double rhoYu_wall, rhoYu_image, S;
 					
                     /* copy wall-tangential velocities and scalars */
                     v = Sol->rhov[nsource] / Sol->rho[nsource]; 
@@ -283,35 +283,53 @@ void Bound(
                     }
                     
                     /* mirror wall-normal velocity relative to prescribed boundary mass flux */
-					rhoYu_wall  = bdry->wall_rhoYflux[j];
+					rhoYu_wall  = bdry->wall_rhoYflux[j]; 
                     rhoYu_image = 2.0*rhoYu_wall - Sol->rhou[nsource]*Sol->rhoY[nsource]/Sol->rho[nsource];
-					
-					{
-						/* double S = (2.0*Sol->rho[nimage+1]/Sol->rhoY[nimage+1] - Sol->rho[nimage+2]/Sol->rhoY[nimage+2]); */
-                        double S = 1.0;
-                        
+                    	
+                    {
+                        /* double S = (2.0*Sol->rho[nimage+1]/Sol->rhoY[nimage+1] - Sol->rho[nimage+2]/Sol->rhoY[nimage+2]);                         double S = 1.0;
+                         */
+                        double dpi; 
+                        double rhoY;
+                        double rho;
+                        double p;  
+                        double u;  
+
                         if (ud.bottom_theta_bc == ZERO_ORDER_EXTRAPOL) {
                             /* for the Straka test */
                             S    = 1.0/Y_last; 
+                            dpi  = (th.Gamma*g) * 0.5*dh*(1.0/Y_last + S);
+                            rhoY = (compressible == 1 ? pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv) : mpv->HydroState->rhoY0[i]);
+                            rho  = rhoY * S;
+                            p    = pow(rhoY, th.gamm);
+                            u    = rhoYu_image/rhoY;
+                            Sol->rho[nimage]  = rho;
+                            Sol->rhou[nimage] = rho*u;
+                            Sol->rhov[nimage] = rho*v;
+                            Sol->rhow[nimage] = rho*w;
+                            Sol->rhoe[nimage] = rhoe(rho, u, v, w, p);
+                            Sol->rhoY[nimage] = rhoY;                  /* should probably be adjusted not to take HydroState values*/
+                            for (nsp = 0; nsp < NSPEC; nsp++) {
+                                Sol->rhoX[nsp][nimage] = rho * X[nsp];
+                            }
                         } else {
                             /* for all other tests so far */
                             int iimage  = i;
                             S    = 1./stratification(elem->x[iimage]); 
-                        }
-                        double dpi  = (th.Gamma*g) * 0.5*dh*(1.0/Y_last + S);
-                        double rhoY = (compressible == 1 ? pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv) : mpv->HydroState->rhoY0[i]);
-                        double rho  = rhoY * S;
-                        double p    = pow(rhoY, th.gamm);
-                        double u    = rhoYu_image/rhoY;
-
-                        Sol->rho[nimage]  = rho;
-						Sol->rhou[nimage] = rho*u;
-						Sol->rhov[nimage] = rho*v;
-						Sol->rhow[nimage] = rho*w;
-						Sol->rhoe[nimage] = rhoe(rho, u, v, w, p);
-						Sol->rhoY[nimage] = rhoY;				  /* should probably be adjusted not to take HydroState values*/
-                        for (nsp = 0; nsp < NSPEC; nsp++) {
-                            Sol->rhoX[nsp][nimage] = rho * X[nsp];
+                            dpi  = (th.Gamma*g) * 0.5*dh*(1.0/Y_last + S);
+                            rhoY = (compressible == 1 ? pow(pow(Sol->rhoY[nlast],th.gm1) + dpi, th.gm1inv) : mpv->HydroState->rhoY0[i]);
+                            rho  = rhoY * S;
+                            p    = pow(rhoY, th.gamm);
+                            u    = rhoYu_image/rhoY;
+                            Sol->rho[nimage]  = rho;
+                            Sol->rhou[nimage] = rho*u;
+                            Sol->rhov[nimage] = Sol->rhov[nsource] * (Y_last*S);
+                            Sol->rhow[nimage] = Sol->rhow[nsource] * (Y_last*S);
+                            Sol->rhoe[nimage] = rhoe(rho, u, v, w, p);
+                            Sol->rhoY[nimage] = rhoY;                  /* should probably be adjusted not to take HydroState values*/
+                            for (nsp = 0; nsp < NSPEC; nsp++) {
+                                Sol->rhoX[nsp][nimage] = rho * X[nsp];
+                            }                            
                         }
 					}
                 }
@@ -335,7 +353,7 @@ void Bound(
                     }
                     
                     /* mirror wall-normal velocity */ 
-					rhou_wall = 0.0;
+					rhou_wall = 0.0;  
                     u = (2.0*rhou_wall - Sol->rhou[nsource]) / Sol->rho[nsource];
 					
 					{				    
@@ -353,8 +371,12 @@ void Bound(
 
                         Sol->rho[nimage]  = rho;
 						Sol->rhou[nimage] = rho*u;
-						Sol->rhov[nimage] = rho*v;
-						Sol->rhow[nimage] = rho*w;
+                        Sol->rhov[nimage] = rho*v;
+                        Sol->rhow[nimage] = rho*w;
+                        /*
+                        Sol->rhov[nimage] = Sol->rhov[nsource] * (Y_last*S);
+                        Sol->rhow[nimage] = Sol->rhow[nsource] * (Y_last*S);
+                         */
 						Sol->rhoe[nimage] = rhoe(rho, u, v, w, p);
 						Sol->rhoY[nimage] = rhoY;       /* should probably be adjusted not to take HydroState values*/
                         for (nsp = 0; nsp < NSPEC; nsp++) {
@@ -1053,7 +1075,8 @@ static void (*rotate[])(ConsVars* Sol, const enum Direction dir) = {NULL, rotate
 
 void Set_Explicit_Boundary_Data(
                                 ConsVars* Sol,
-                                const ElemSpaceDiscr* elem) 
+                                const ElemSpaceDiscr* elem,
+                                const int output) 
 {
     int SplitStep;
     
@@ -1063,15 +1086,14 @@ void Set_Explicit_Boundary_Data(
         (*rotate[elem->ndim - 1])(Sol, FORWARD);
     }   
     
-#if OUTPUT_SUBSTEPS /* 5 */
-    extern User_Data ud;
-    extern NodeSpaceDiscr* node;
-    extern int step;
-    if (step >= OUTPUT_SUBSTEPS - 1) {
-        putout(Sol, ud.file_name, "Sol", elem, node, 1);
+    if (output) {
+        extern User_Data ud;
+        extern NodeSpaceDiscr* node;
+        extern int step;
+        if (step >= OUTPUT_SUBSTEPS - 1) {
+            putout(Sol, ud.file_name, "Sol", elem, node, 1);
+        }
     }
-#endif
-
 }
 
 /* ============================================================================= */

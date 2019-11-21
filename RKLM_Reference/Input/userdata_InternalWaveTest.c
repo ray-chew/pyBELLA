@@ -18,8 +18,6 @@
 #include "space_discretization.h"
 #include "thermodynamic.h"
 #include "Eos.h"
-#include "set_ghostcells_p.h"
-#include "set_ghostnodes_p.h"
 #include "boundary.h"
 #include "memory.h"
 #include "Hydrostatics.h"
@@ -69,10 +67,9 @@ void User_Data_init(User_Data* ud) {
     
     /* number of advected species */
     ud->nspec       = NSPEC;
-    ud->naux        = NAUX;
     
     /* Low Mach */
-    ud->is_compressible   = 0; /* 0:psinc; 1:comp;  -1:psinc-comp-trans -> compressibility() */
+    ud->is_compressible   = 1; /* 0:psinc; 1:comp;  -1:psinc-comp-trans -> compressibility() */
     ud->acoustic_timestep = 0; /* 0;  1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
     
@@ -97,18 +94,7 @@ void User_Data_init(User_Data* ud) {
             ud->i_coriolis[i] = 1;
         }
     }
-    
-#ifdef GRAVITY_IMPLICIT
-    /* TODO: fix this option in only one location 
-     low Froude */
-    ud->implicit_gravity_theta  = 1;
-    ud->implicit_gravity_theta2 = 1;
-#else
-    /* low Froude */
-    ud->implicit_gravity_theta  = 0;
-    ud->implicit_gravity_theta2 = 0;
-#endif
-    
+        
     /* flow domain */
     ud->xmin = -15.0 * scalefactor;
     ud->xmax =  15.0 * scalefactor;
@@ -143,8 +129,6 @@ void User_Data_init(User_Data* ud) {
     ud->CFL                    = 0.96; /* 0.45; 0.9; 0.8; */
     ud->dtfixed0               = 3.0*3.75 / ud->t_ref;
     ud->dtfixed                = 3.0*3.75 / ud->t_ref;
-    ud->no_of_steps_to_CFL     = 1;
-    ud->no_of_steps_to_dtfixed = 1;
 
 #ifdef NODAL_PROJECTION_ONLY
     assert(ud->time_integrator != OP_SPLIT);
@@ -156,7 +140,6 @@ void User_Data_init(User_Data* ud) {
     ud->inx =  600+1; /* 641; 321; 161; 129; 81; */
     ud->iny =   40+1; /* 321; 161;  81;  65; 41;  */
     ud->inz = 1;
-    ud->h   = MIN_own((ud->xmax-ud->xmin)/(ud->inx),MIN_own((ud->ymax-ud->ymin)/(ud->iny),(ud->zmax-ud->zmin)/(ud->inz)));
     
     /* explicit predictor step */
     /* Recovery */
@@ -172,43 +155,17 @@ void User_Data_init(User_Data* ud) {
     ud->kY = 1.4;
     ud->kZ = 1.4; /* 2.0 */
     
-    /* first correction */
-    ud->p_flux_correction = WRONG; /* CORRECT, WRONG; */
-    if (ud->time_integrator == OP_SPLIT || ud->time_integrator == OP_SPLIT_MD_UPDATE) {
-        ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.0;  /* BEST RESULTS */
-        /* ud->latw[0] = ud->latw[2] = 0.0; ud->latw[1] = 1.0; ud->p_extrapol = 1.0; */   
-        /* ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.0; */  
-        /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25; */
-        /* ud->latw[0] = ud->latw[2] = 0.2; ud->latw[1] = 0.6; ud->p_extrapol = 1.5;  */
-    } else {
-        /* ud->latw[0] = ud->latw[2] = 0.125; ud->latw[1] = 0.75; ud->p_extrapol = 1.25;*/
-        ud->latw[0] = ud->latw[2] = 0.25; ud->latw[1] = 0.5; ud->p_extrapol = 1.5;
-    }
-
     ud->ncache = 48; /* 604*44; (ud->inx+3); */
     
     /* linear solver-stuff */
-    ud->which_projection_first = 1;
-    ud->Solver = BICGSTAB_PRECON;        /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
-    ud->Solver_Node = BICGSTAB_PRECON;   /* options:   JACOBI, BICGSTAB, BICGSTAB_PRECON */
-    ud->precondition = CORRECT;
     double tol = 1.e-8;
     ud->flux_correction_precision = tol;
     ud->flux_correction_local_precision = tol;   /* 1.e-05 should be enough */
     ud->second_projection_precision = tol;
     ud->second_projection_local_precision = tol;   /* 1.e-05 should be enough */
-    ud->implicitness = 1.0;
-    ud->flux_correction_max_MG_cycles = 100;
-    ud->flux_correction_output_period = 50;
-    ud->max_projection_iterations = 1;
     ud->flux_correction_max_iterations = 6000;
     ud->second_projection_max_iterations = 6000;
-    
-    max_no_of_levels = 1;
-    
-    ud->max_no_of_multigrid_levels = max_no_of_levels;
-    ud->no_of_multigrid_levels     = max_no_of_levels-1;    /* optimal for BICGSTAB with MG:  5 (128x128-Grid) */
-    
+        
     /* numerics parameters */
     ud->eps_Machine = sqrt(DBL_EPSILON);
     
@@ -243,7 +200,11 @@ void User_Data_init(User_Data* ud) {
     ud->file_format = HDF;
     
     {
+#ifdef RUPERT
+        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+#else
         char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
+#endif
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
@@ -256,11 +217,15 @@ void User_Data_init(User_Data* ud) {
 
 /* ================================================================================== */
 
-void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr* node) {
+void Sol_initial(ConsVars* Sol, 
+                 ConsVars* Sol0, 
+                 MPV* mpv,
+                 BDRY* bdry,
+                 const ElemSpaceDiscr* elem,
+                 const NodeSpaceDiscr* node) {
     
     extern Thermodynamic th;
     extern User_Data ud;
-    extern MPV* mpv;
     extern double *Sbg;
     
     const double u0 = ud.wind_speed;
@@ -286,7 +251,7 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
         
     g = ud.gravity_strength[1];
     
-    Hydrostatics_State(mpv, Sbg, elem);
+    Hydrostatics_State(mpv, elem, node);
         
     for(i = 0; i < icx; i++) {
                 
@@ -312,38 +277,16 @@ void Sol_initial(ConsVars* Sol, const ElemSpaceDiscr* elem, const NodeSpaceDiscr
             Sol->rhou[n] = rho * u;
             Sol->rhov[n] = rho * v;
             Sol->rhow[n] = rho * w;
-            Sol->rhoe[n] = rhoe(rho, u, v, w, p, g*y);
+            Sol->rhoe[n] = rhoe(rho, u, v, w, p);
             Sol->rhoY[n] = rhoY;
-            Sol->geopot[n] = g * y;
             
             mpv->p2_cells[n]   = (p/rhoY) / ud.Msq;
-            Sol->rhoZ[PRES][n] = mpv->p2_cells[n];
             Sol->rhoX[BUOY][n] = Sol->rho[n] * ( Sol->rho[n]/Sol->rhoY[n] - mpv->HydroState->S0[j]);
             
         }
     }
     
     /* set all dummy cells */
-    /* geopotential in bottom and top dummy cells */
-    for(j = 0; j < igy; j++) {m = j * icx;
-        y = elem->y[j];
-        for(i = 0; i < icx; i++) {n = m + i;
-            Sol->geopot[n] = g * y;
-        }
-    }
-    
-    for(j = icy-igy; j < icy; j++) {m = j * icx;
-        y = elem->y[j];
-        for(i = 0; i < icx; i++) {n = m + i;
-            Sol->geopot[n] = g * y;
-        }
-    }
-    
-    
-    /* put p2_cells into Z for advection */
-    for(i=0; i<elem->nc; i++) {
-        Sol->rhoZ[PRES][i]  = mpv->p2_cells[i];
-    }
     
     /*set nodal pressures */
     for(int k = 0; k < iczn; k++) {int l = k * icxn * icyn;   

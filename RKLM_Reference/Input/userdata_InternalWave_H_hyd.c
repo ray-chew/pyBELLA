@@ -192,9 +192,6 @@ void User_Data_init(User_Data* ud) {
     ud->initial_projection                = WRONG; /* WRONG;  CORRECT; */
     
     ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
-    ud->synchronize_nodal_pressure        = WRONG; /* WRONG; CORRECT; */
-    ud->synchronize_weight                = 1.0;    /* relevant only when prev. option is "CORRECT"
-                                                      Should ultimately be a function of dt . */  
 
     /* numerics parameters */
     ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -283,7 +280,6 @@ void Sol_initial(ConsVars* Sol,
      
     /* computations for the vertical slice at  k=0 */
     for(i = 0; i < icx; i++) {
-        double xi;
         
         /* set potential temperature stratification in the column */
         for(j = 0; j < elem->icy; j++) {
@@ -377,7 +373,7 @@ void Sol_initial(ConsVars* Sol,
     
     //set_wall_massflux(bdry, Sol, elem);
     set_wall_rhoYflux(bdry, Sol, mpv, elem);
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
     ConsVars_set(Sol0, Sol, elem->nc);
     

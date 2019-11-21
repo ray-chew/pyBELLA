@@ -148,8 +148,8 @@ void User_Data_init(User_Data* ud) {
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
     ud->CFL                   = 0.9; /* 0.45; 0.9; 0.8; */
     /* large time step test variant  (N*dt = 20.0, or  dt = 2000 s in the planetary IGW test) */
-    ud->dtfixed0              = 10.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
-    ud->dtfixed               = 10.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed0              = 5.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed               = 5.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
      
      
     /* short time step test variant  (N*dt = 1.0, or  dt = 100 s in the planetary IGW test) 
@@ -160,8 +160,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx =  301+1; /* 641; 321; 161; 129; 81; */
-    ud->iny =   10+1; /* 321; 161;  81;  65; 41;  */
+    ud->inx =  601+1; /* 641; 321; 161; 129; 81; */
+    ud->iny =   20+1; /* 321; 161;  81;  65; 41;  */
     ud->inz =      1;
     
     /* explicit predictor step */
@@ -182,7 +182,7 @@ void User_Data_init(User_Data* ud) {
     ud->ncache = 154; /* 71+4; 304*44; 604*44; (ud->inx+3); (ud->inx+3)*(ud->iny+3);*/
     
     /* linear solver-stuff */
-    double tol                            = 1.e-8;
+    double tol                            = 1.e-13;
     ud->flux_correction_precision         = tol;
     ud->flux_correction_local_precision   = tol;    /* 1.e-05 should be enough */
     ud->second_projection_precision       = tol;
@@ -192,9 +192,6 @@ void User_Data_init(User_Data* ud) {
     ud->initial_projection                = WRONG; /* WRONG;  CORRECT; */
     
     ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
-    ud->synchronize_nodal_pressure        = WRONG; /* WRONG; CORRECT; */
-    ud->synchronize_weight                = 1.0;    /* relevant only when prev. option is "CORRECT"
-                                                      Should ultimately be a function of dt . */  
 
     /* numerics parameters */
     ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -283,7 +280,6 @@ void Sol_initial(ConsVars* Sol,
      
     /* computations for the vertical slice at  k=0 */
     for(i = 0; i < icx; i++) {
-        double xi;
         
         /* set potential temperature stratification in the column */
         for(j = 0; j < elem->icy; j++) {
@@ -331,7 +327,11 @@ void Sol_initial(ConsVars* Sol,
             Sol->rhoY[n]   = rhoY;
             
             mpv->p2_cells[n]   = HySt->p20[j];
+#ifdef FULL_VARIABLES
+            Sol->rhoX[BUOY][n] = Sol->rho[n]/Y[j];
+#else
             Sol->rhoX[BUOY][n] = Sol->rho[n] * (1.0/Y[j] - mpv->HydroState->S0[j]);
+#endif
         
             /* nodal pressure */
             nn   = j*icxn+i;
@@ -377,7 +377,7 @@ void Sol_initial(ConsVars* Sol,
     
     //set_wall_massflux(bdry, Sol, elem);
     set_wall_rhoYflux(bdry, Sol, mpv, elem);
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
     ConsVars_set(Sol0, Sol, elem->nc);
     

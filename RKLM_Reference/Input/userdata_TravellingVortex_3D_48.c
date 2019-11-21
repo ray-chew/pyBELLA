@@ -65,7 +65,7 @@ void User_Data_init(User_Data* ud) {
     ud->g_ref       = grav;
     ud->gamm        = gamma;  
     ud->Rg_over_Rv  = R_gas/R_vap;  
-    ud->Q           = Q_vap/(R_gas*T_ref);
+    ud->Q           = Q_vap/(R_gas*T_ref);  
 
     /* number of advected species */
     ud->nspec       = NSPEC;  
@@ -145,8 +145,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 32+1; /*  */
-	ud->iny = 32+1; /*  */
+	ud->inx = 48+1; /*  */
+	ud->iny = 48+1; /*  */
 	ud->inz =     1;
 
     /* explicit predictor step */
@@ -175,13 +175,10 @@ void User_Data_init(User_Data* ud) {
     ud->flux_correction_max_iterations    = 6000;
     ud->second_projection_max_iterations  = 6000;
     
-    ud->initial_projection                = WRONG;   /* to be tested: WRONG;  CORRECT; */
+    ud->initial_projection                = CORRECT;   /* to be tested: WRONG;  CORRECT; */
     ud->initial_impl_Euler                = WRONG;   /* to be tested: WRONG;  CORRECT; */
     
     ud->column_preconditioner             = WRONG; /* WRONG; CORRECT; */
-    ud->synchronize_nodal_pressure        = WRONG;   /* WRONG; CORRECT; */
-    ud->synchronize_weight                = 0.0;    /* relevant only when prev. option is "CORRECT"
-                                                     Should ultimately be a function of dt . */  
             
 	/* numerics parameters */
 	ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -189,7 +186,7 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
     /* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
-    ud->tout[0] =  10.0;      
+    ud->tout[0] =  1.0;      
     //ud->tout[1] =  2.0;      
     //ud->tout[2] =  3.0;      
     ud->tout[1] = -1.0;
@@ -204,8 +201,7 @@ void User_Data_init(User_Data* ud) {
     ud->tout[6] = -1.0;
      */
     
-    ud->stepmax = 200000;
-    // ud->stepmax = 40;
+    ud->stepmax = 20000;
 
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;
@@ -216,7 +212,7 @@ void User_Data_init(User_Data* ud) {
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
 
     {
-        char *OutputBaseFolder      = "/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_travelling_vortex_3d_48_with_initial_projection/";
+        char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
@@ -238,6 +234,7 @@ void Sol_initial(ConsVars* Sol,
 	
 	extern Thermodynamic th;
 	extern User_Data ud;
+    extern double* diss_midpnt;
 
 	const double u0    = 1.0*ud.wind_speed;
 	const double v0    = 1.0*ud.wind_speed;
@@ -333,7 +330,7 @@ void Sol_initial(ConsVars* Sol,
                 double p2c = 0.0;
                 double dp2c = 0.0;
 
-                n = m + i;
+                n = m + i;                
                 x = elem->x[i];
 
                 Sol->rho[n]  = 0.0;
@@ -444,7 +441,7 @@ void Sol_initial(ConsVars* Sol,
     ud.compressibility = compressibility(0);
     
     set_wall_rhoYflux(bdry, Sol, mpv, elem);
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
 
     ConsVars_set(Sol0, Sol, elem->nc);
 
@@ -468,7 +465,7 @@ void Sol_initial(ConsVars* Sol,
         }
         
         //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
-        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed, 1.0, 0);
+        euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed, 1.0);
         for (int nn=0; nn<node->nc; nn++) {
             mpv->p2_nodes[nn] = p2aux[nn];
             mpv->dp2_nodes[nn] = 0.0;

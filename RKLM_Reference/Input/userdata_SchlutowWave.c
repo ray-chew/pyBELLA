@@ -189,9 +189,6 @@ void User_Data_init(User_Data* ud) {
     ud->initial_impl_Euler                = CORRECT;   /* WRONG;  CORRECT; */
     
     ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
-    ud->synchronize_nodal_pressure        = WRONG; /* WRONG; CORRECT; */
-    ud->synchronize_weight                = 1.0;    /* relevant only when prev. option is "CORRECT"
-                                                     Should ultimately be a function of dt . */  
 
 	/* numerics parameters */
 	ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -313,7 +310,7 @@ void Sol_initial(ConsVars* Sol,
     ud.compressibility = compressibility(0);
     
     set_wall_rhoYflux(bdry, Sol, mpv, elem);
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
     ConsVars_set(Sol0, Sol, elem->nc);
     
@@ -323,6 +320,8 @@ void Sol_initial(ConsVars* Sol,
      pseudo-incompressible divergence constraint in an atmospheric flow setting
      */ 
     if (ud.initial_projection == CORRECT) {
+        extern double* diss_midpnt;
+        
         int is_compressible    = ud.is_compressible;
         double compressibility = ud.compressibility;
         ud.is_compressible = 0;
@@ -337,7 +336,7 @@ void Sol_initial(ConsVars* Sol,
         }
         
         //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
-        euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed);
+        euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed, 1.0);
         for (int nn=0; nn<node->nc; nn++) {
             mpv->p2_nodes[nn] = p2aux[nn];
             mpv->dp2_nodes[nn] = 0.0;

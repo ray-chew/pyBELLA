@@ -79,7 +79,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Low Mach */
     ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
-    ud->is_compressible   =  1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_compressible   =  0;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep =  0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
 	
@@ -129,7 +129,7 @@ void User_Data_init(User_Data* ud) {
 	
 	ud->absorber = WRONG; /* CORRECT;  WRONG; */ /*  BREAKING WAVE CHANGE */
     ud->bottom_theta_bc = ZERO_ORDER_EXTRAPOL;
-    
+	
 	/* ================================================================================== */
 	/* =====  NUMERICS  ================================================================= */
 	/* ================================================================================== */
@@ -138,14 +138,14 @@ void User_Data_init(User_Data* ud) {
     ud->time_integrator       = SI_MIDPT;  /* this code version has only one option */
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
 	ud->CFL                   = 0.96; /* 0.45; 0.9; 0.8; */
-    ud->dtfixed0              = 0.020;
-	ud->dtfixed               = 0.020; /* 0.0052; */ /*  0.004; */
+    ud->dtfixed0              = 0.160;
+	ud->dtfixed               = 0.160; /* 0.0052; */ /*  0.004; */
     
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 2049+1; /* 641; 321; 161; 129; 81; */
-	ud->iny = 256+1; /* 321; 161;  81;  65; 41;  */
+	ud->inx = 257+1; /* 641; 321; 161; 129; 81; */
+	ud->iny = 32+1; /* 321; 161;  81;  65; 41;  */
 	ud->inz =  1;
 	
 	/* explicit predictor step */

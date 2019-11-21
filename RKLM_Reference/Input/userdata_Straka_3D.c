@@ -69,7 +69,7 @@ void User_Data_init(User_Data* ud) {
     /* number of advected species */
     ud->nspec       = NSPEC;
     
-    /*FULL_MOLECULAR_TRANSPORT, STRAKA_DIFFUSION_MODEL, NO_MOLECULAR_TRANSPORT */
+    /* FULL_MOLECULAR_TRANSPORT, STRAKA_DIFFUSION_MODEL, NO_MOLECULAR_TRANSPORT */
     ud->mol_trans   = STRAKA_DIFFUSION_MODEL; 
     ud->viscm       = viscm  * t_ref/(h_ref*h_ref);
     ud->viscbm      = viscbm * t_ref/(h_ref*h_ref);
@@ -79,7 +79,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Low Mach */
     ud->is_nonhydrostatic =  1;    /* 0: hydrostatic;  1: nonhydrostatic;  -1: transition (see nonhydrostasy()) */
-    ud->is_compressible   =  1;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
+    ud->is_compressible   =  0;    /* 0: psinc;  1: comp;  -1: psinc-comp-transition (see compressibility()) */
     ud->acoustic_timestep =  0;    /* advective time step -> 0;  acoustic time step -> 1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref);
 	
@@ -137,9 +137,9 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;  /* this code version has only one option */
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT;   best tested: STRANG; */
-	ud->CFL                   = 0.45; /* 0.45; 0.9; 0.8; */
+	ud->CFL                   = 0.9; /* 0.45; 0.9; 0.8; */
     ud->dtfixed0              = 0.0465;
-	ud->dtfixed               = 0.0465; /* 0.0052; */ /*  0.004; */
+	ud->dtfixed               = 0.0465; /* 0.0465; 0.0052; */ /*  0.004; */
     
     set_time_integrator_parameters(ud);
     
@@ -179,9 +179,6 @@ void User_Data_init(User_Data* ud) {
     ud->initial_impl_Euler                = WRONG;   /* to be tested: WRONG;  CORRECT; */
 
     ud->column_preconditioner             = CORRECT; /* WRONG; CORRECT; */
-    ud->synchronize_nodal_pressure        = WRONG;   /* WRONG; CORRECT; */
-    ud->synchronize_weight                = 0.0;    /* relevant only when prev. option is "CORRECT"
-                                                     Should ultimately be a function of dt . */  
     
 	/* numerics parameters */
 	ud->eps_Machine = sqrt(DBL_EPSILON);
@@ -207,7 +204,11 @@ void User_Data_init(User_Data* ud) {
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
     
     {
+#ifdef TOMMASO
         char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
+#else
+        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+#endif
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
@@ -229,6 +230,8 @@ void Sol_initial(ConsVars* Sol,
 	
 	extern Thermodynamic th;
 	extern User_Data ud;
+    extern double *diss_midpnt;
+    extern double *diss_trpzdl;
     
     const int compressible = (ud.is_compressible == 0 ? 0 : 1);
 
@@ -364,9 +367,14 @@ void Sol_initial(ConsVars* Sol,
     ud.compressibility = compressibility(0);
     
     set_wall_rhoYflux(bdry, Sol, mpv, elem);
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
     ConsVars_set(Sol0, Sol, elem->nc);
+    
+    for (int ic = 0; ic<elem->nc; ic++) {
+        diss_midpnt[ic] = 0.0;
+        diss_trpzdl[ic] = 0.0;
+    }
     
     /* the initial projection should ensure the velocity field is discretely
      divergence-controlled when sound-free initial data are required.

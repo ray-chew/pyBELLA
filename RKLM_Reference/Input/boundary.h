@@ -65,7 +65,8 @@ void check_flux_bcs(
 
 void Set_Explicit_Boundary_Data(
                                 ConsVars* Sol,
-                                const ElemSpaceDiscr* elem);
+                                const ElemSpaceDiscr* elem, 
+                                const int output);
 
 
 
