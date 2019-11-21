@@ -20,6 +20,7 @@ sys.path.insert(0, '/home/ray/git-projects/RKLM_Reference/RKLM_Python/')
 project = 'RKLM_Python'
 copyright = '2019, Author'
 author = 'Author'
+numfig = True
 
 
 # -- General configuration ---------------------------------------------------
@@ -31,7 +32,8 @@ extensions = [
     'sphinx.ext.autodoc',
     #'sphinx.ext.viewcode',
     'sphinx.ext.todo',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'sphinx.ext.imgconverter'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

@@ -18,9 +18,9 @@ from data_assimilation.utils import ensemble
 from data_assimilation.letkf import da_interface
 
 # input file
-from inputs.travelling_vortex_3D_48 import UserData, sol_init
+# from inputs.travelling_vortex_3D_48 import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
-# from inputs.internal_long_wave import UserData, sol_init
+from inputs.internal_long_wave import UserData, sol_init
 # from inputs.rising_bubble import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
@@ -61,7 +61,7 @@ mpv = MPV(elem, node, ud)
 
 ##########################################################
 # Data Assimilation part
-N = 10
+N = 1
 da_parameters = da_params(N)
 aprior_error_covar = da_parameters.aprior_error_covar
 
@@ -133,7 +133,8 @@ if N > 1:
         t_cnt += 1
     obs = np.array(obs)
     obs_file.close()
-    ud.output_name_comp = ("_ensemble=%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,ud.tout[-1]))
+    
+# ud.output_name_comp = ("_ensemble=%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,ud.tout[-1]))
 ##########################################################
 
 writer = io(ud)
@@ -167,7 +168,7 @@ if __name__ == '__main__':
         # print(np.array(np.where(np.isclose(times,tout))[0]))
         # print(np.isclose(times,tout))
         # print(tout, times)
-        if N > 100:
+        if N > 10:
             if len(np.where(np.isclose(times,tout))[0]) > 0:
                 print("Starting analysis...")
                 # print(np.where(times == tout)[0][0])

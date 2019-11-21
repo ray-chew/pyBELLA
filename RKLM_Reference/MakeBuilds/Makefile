@@ -67,7 +67,7 @@ LIBS		= $(HDFLIBDIR)/libmfhdf.so.0 \
 
 MAKEFILE	= Makefile
 
-OBJS		= userdata_InternalWave_LongWave.o \
+OBJS		= userdata_BaroclinicInstability_periodic_3D.o \
 		boundary.o \
 		data.o \
 		io.o \
@@ -98,7 +98,7 @@ PROGRAM	   = rklm
 
 SHELL		  = /bin/zsh
 
-SRCS		  = ../Input/userdata_InternalWave_LongWave.c \
+SRCS		  = ../Input/userdata_BaroclinicInstability_periodic_3D.c \
 		../Input/boundary.c \
 		../Management/data.c \
 		../Management/io.c \
@@ -155,10 +155,10 @@ update:		$(DEST)/$(PROGRAM)
 $(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)
 		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install
 
-### userdata_InternalWave_LongWave
-### userdata_InternalWave_LongWave
-userdata_InternalWave_LongWave.o :
-	$(CC) -c $(HDRFLAGS) ../Input/userdata_InternalWave_LongWave.c
+### userdata_BaroclinicInstability_periodic_3D
+### userdata_BaroclinicInstability_periodic_3D
+userdata_BaroclinicInstability_periodic_3D.o :
+	$(CC) -c $(HDRFLAGS) ../Input/userdata_BaroclinicInstability_periodic_3D.c
 
 boundary.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/boundary.c

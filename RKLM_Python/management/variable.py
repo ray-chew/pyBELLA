@@ -15,6 +15,15 @@ class Vars(object):
         ud : :class:`inputs.user_data.UserDataInit`
             Data container for the initial conditions
 
+        Attributes
+        ----------
+        rho : ndarray(size)
+        rhou : ndarray(size)
+        rhov : ndarray(size)
+        rhow : ndarray(size)
+        rhoY : ndarray(size)
+        rhoX : ndarray(size)
+
         Notes
         -----
         1. `rhoe` is currently unused.
@@ -45,13 +54,19 @@ class Vars(object):
         """
         Calculate the primitive quantities from the state variables and extend the data container to include these quantities.
 
-        The primitive quantities calculated are:
-            `[u,v,w,Y,X,p]`
-
         Parameters
         ----------
         th : :class:`physics.gas_dynamics.thermodynamic.ThemodynamicInit`
-            Thermodynamic variables of the system   
+            Thermodynamic variables of the system
+
+        Attributes
+        ----------
+        u : ndarray(size_of_rhou)
+        v : ndarray(size_of_rhov)
+        w : ndarray(size_of_rhow)
+        Y : ndarray(size_of_rhoY)
+        X : ndarray(size_of_rhoX)
+        p : ndarray(size_of_rhoY)
      
         """
         nonzero_idx = np.nonzero(self.rho)
@@ -137,6 +152,17 @@ class Characters(object):
         ----------
         size : tuple
             Tuple containing the number of cells in the respective directions including ghost cells.
+
+        Attributes
+        ----------
+        u : ndarray(size)
+        v : ndarray(size)
+        w : ndarray(size)
+        Y : ndarray(size)
+        X : ndarray(size)
+        plus : ndarray(size)
+        minus : ndarray(size)
+        entro : ndarray(size)
 
         """
         self.u = np.zeros((size))

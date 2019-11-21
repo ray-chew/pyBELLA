@@ -156,7 +156,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         writer.populate(str(label)+'_after_ebnaimp','wplusx',mpv.wplus[0])
         writer.populate(str(label)+'_after_ebnaimp','wplusy',mpv.wplus[1])
 
-    rhs[...], rhs_max = divergence_nodes(rhs,elem,node,Sol,ud)
+    rhs[...], _ = divergence_nodes(rhs,elem,node,Sol,ud)
     rhs /= dt
 
     if ud.is_compressible == 1:
@@ -191,7 +191,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     
     counter = solver_counter()
     
-    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-9,maxiter=6000,callback=counter)
+    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-10,maxiter=6000,callback=counter)
 
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
 

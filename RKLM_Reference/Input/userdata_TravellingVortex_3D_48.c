@@ -145,8 +145,8 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx = 64+1; /*  */
-	ud->iny = 64+1; /*  */
+	ud->inx = 32+1; /*  */
+	ud->iny = 32+1; /*  */
 	ud->inz =     1;
 
     /* explicit predictor step */
@@ -189,7 +189,7 @@ void User_Data_init(User_Data* ud) {
 	/* ================================================================================== */
     /* =====  CODE FLOW CONTROL  ======================================================== */
 	/* ================================================================================== */
-    ud->tout[0] =  1.0;      
+    ud->tout[0] =  10.0;      
     //ud->tout[1] =  2.0;      
     //ud->tout[2] =  3.0;      
     ud->tout[1] = -1.0;
@@ -204,8 +204,8 @@ void User_Data_init(User_Data* ud) {
     ud->tout[6] = -1.0;
      */
     
-    // ud->stepmax = 20000;
-    ud->stepmax = 40;
+    ud->stepmax = 200000;
+    // ud->stepmax = 40;
 
 	ud->write_stdout = ON;
 	ud->write_stdout_period = 1;

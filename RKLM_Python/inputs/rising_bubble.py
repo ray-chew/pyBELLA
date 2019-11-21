@@ -63,6 +63,7 @@ class UserData(object):
         self.viscbt = self.viscbt * self.t_ref / (self.h_ref * self.h_ref)
         self.cond = self.cond * self.t_ref / (self.h_ref * self.h_ref * self.R_gas)
 
+        self.is_ArakawaKonor = 0
         self.is_nonhydrostatic = 1
         self.is_compressible = 0
         self.compressibility = 0.0
@@ -162,7 +163,7 @@ class UserData(object):
 
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
-        self.tout = 350 / self.t_ref
+        self.tout = [350 / self.t_ref]
         # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[1] = -1.0
 

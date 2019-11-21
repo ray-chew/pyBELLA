@@ -8,13 +8,13 @@ Cell boundarys are handled by the function :func:`inputs.boundary.set_explicit_b
 
 For ghost cells in directions without gravity, the ghost cells are padded by the ``np.pad()`` function.
 
-For ghost cells in direction with gravity, the update follows :ref:`fig_1`, where the blue and red sets of `nlast`, `nimage`, and `nsource` are used together in an update step depending on the values of `offset` and `direction`.
+For ghost cells in direction with gravity, the update follows :numref:`figure %s <fig_1>`, where the blue and red sets of `nlast`, `nimage`, and `nsource` are used together in an update step depending on the values of `offset` and `direction`.
 
 .. _fig_1:
 .. figure:: ./_static/boundary_handling.svg
     :width: 80%
 
-    Figure 1: Boundary handling of gravity axis.
+    Boundary handling of gravity axis.
     
 
 Todos
