@@ -3,7 +3,34 @@ from inputs.enum_bdry import BdryType
 
 class Grid(object):
     # def __init__(self, inx,iny,inz,x0,x1,y0,y1,z0,z1,left,right,bottom,top,back,front):
+    """
+    Base grid class, defines the extent of grid and the grid spacing.
+
+    """
     def __init__(self, inx,iny,inz,x0,x1,y0,y1,z0,z1):
+        """
+        Parameters
+        ----------
+        inx : int
+            Number of grid points in the x direction
+        iny : int
+            Number of grid points in the y direction
+        inz : int
+            Number of grid points in the z direction
+        x0 : float
+            Minimum extent in the x direction
+        x1 : float
+            Maximum extent in the x direction
+        y0 : float
+            Minimum extent in the y direction
+        y1 : float
+            Maximum extent in the y direction
+        z0 : float
+            Minimum extent in the z direction
+        z1 : float
+            Maximum extent in the z direction   
+        
+        """
         assert inx > 1
         assert iny >= 1
         assert inz >= 1
@@ -19,7 +46,7 @@ class Grid(object):
         self.iny = iny
         self.inz = inz
 
-        self.dx = (x1 - x0) / (inx - 1.)
+        self.dx = (x1 - x0) / (inx - 1.) 
         self.dy = (y1 - y0) / (iny - 1.) if iny > 1 else 0.0
         self.dz = (z1 - z0) / (inz - 1.) if inz > 1 else 0.0
         
@@ -45,16 +72,15 @@ class Grid(object):
         # self.back = back
         # self.front = front
 
-        if iny == 1:
-            self.bottom = BdryType.TUNIX
-            self.top = BdryType.TUNIX
+        # if iny == 1:
+        #     self.bottom = BdryType.TUNIX
+        #     self.top = BdryType.TUNIX
 
-        if inz == 1:
-            self.back = BdryType.TUNIX
-            self.front = BdryType.TUNIX
+        # if inz == 1:
+        #     self.back = BdryType.TUNIX
+        #     self.front = BdryType.TUNIX
 
 big = 1.0
-
 class SpaceDiscr(object):
     ig = np.zeros((3))
     ic = np.zeros((3))
