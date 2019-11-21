@@ -345,7 +345,7 @@ void Absorber(
             }
         }
     }
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
 }
 
 
@@ -430,7 +430,7 @@ void advect(
             (*rotate[elem->ndim - 1])(Sol, BACKWARD);
         }
         fullD_explicit_updates(Sol, Sol, (const ConsVars**)flux, elem, timestep);
-        Set_Explicit_Boundary_Data(Sol, elem);      
+        Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);      
         
         stage = 1;
         for(int Split = 0; Split < elem->ndim; Split++) {
@@ -442,7 +442,7 @@ void advect(
             (*rotate[elem->ndim - 1])(Sol, BACKWARD);
         }
         fullD_explicit_updates(Sol, Sol, (const ConsVars**)flux, elem, ud.tips.update_frac[1]*dt);
-        Set_Explicit_Boundary_Data(Sol, elem);      
+        Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);      
     }
     else {  /* Strang splitting == STRANG is the default */ 
         /*
@@ -509,7 +509,7 @@ void advect(
             }
             
         }
-        Set_Explicit_Boundary_Data(Sol, elem);
+        Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     }
 }
 

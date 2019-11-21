@@ -299,7 +299,7 @@ int main( void )
             }
             euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt, 2.0, step);
 
-            synchronize_variables(mpv, Sol, elem, node, ud.synchronize_nodal_pressure);
+            synchronize_variables(mpv, Sol, elem, node);
            
             if (ud.absorber) {
                 Absorber(Sol, (const ElemSpaceDiscr*)elem, (const double)t, (const double)dt); 

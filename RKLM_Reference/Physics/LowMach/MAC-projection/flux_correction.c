@@ -225,7 +225,7 @@ void flux_correction(ConsVars* flux[3],
     }
     
     set_ghostcells_p2(mpv->p2_cells, elem, elem->igx);
-    Set_Explicit_Boundary_Data(Sol, elem);  
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);  
 }
 
 
@@ -1094,7 +1094,7 @@ void update_SI_MIDPT_buoyancy(ConsVars* Sol,
         default:
             break;
     }
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
 }
 
 /* ========================================================================== */

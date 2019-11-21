@@ -171,7 +171,7 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     printf("\nImplicit step with nonlinear EOS control");
     printf("\n====================================================\n");
     
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
     /* There is the option of starting with the previous solution, 
      but that seems not to come with sizeable advantages */
@@ -223,7 +223,7 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
     
     correction_nodes(Sol, elem, node, (const double**)hplus, p2, dt, FULL_FIELD);
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
     if (ud.is_compressible) {
         memset(rhs, 0.0, node->nc*sizeof(double));
@@ -263,7 +263,7 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
                 dp2[nn] /= scale;
             }
             correction_nodes(Sol, elem, node, (const double**)hplus, dp2, dt, FULL_FIELD);
-            Set_Explicit_Boundary_Data(Sol, elem);        
+            Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);        
             for (int nn=0; nn<node->nc; nn++) {
                 p2[nn]  += dp2[nn];
             }
@@ -415,7 +415,7 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     printf("\nSecond Projection");
     printf("\n====================================================\n");
     
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
 
     /* There is the option of starting with the previous solution, 
      but that seems not to come with sizeable advantages */
@@ -559,7 +559,7 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     }
 
     correction_nodes(Sol, elem, node, (const double**)hplus, p2, dt, FULL_FIELD);
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
     for(ii=0; ii<nc; ii++) {
         double p2_new      = p2[ii];
@@ -1508,7 +1508,7 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
             }
         }
     }
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
 }
 
 /* ========================================================================== */
@@ -1754,7 +1754,7 @@ void euler_forward_non_advective(ConsVars* Sol,
     W0_in_use = WRONG;
 
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
 }
 

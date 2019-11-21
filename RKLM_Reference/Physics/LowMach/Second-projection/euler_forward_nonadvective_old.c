@@ -30,7 +30,7 @@ void euler_forward_non_advective(ConsVars* Sol,
     }
     
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
 }
 #else
 
@@ -270,7 +270,7 @@ void euler_forward_non_advective(ConsVars* Sol,
     W0_in_use = WRONG;
     
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
 }
 

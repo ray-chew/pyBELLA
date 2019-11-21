@@ -4,7 +4,7 @@ LIBDIR 		  = /usr/lib64
 HDFLIBDIR	  = /usr/lib64
 HDFINC		  = /home/ray/anaconda3/envs/python37/include/
 
-CFLAGS		  = -Aa -fPIC -I$(HDFINC)
+CFLAGS		  = -DFULL_VARIABLES -Aa -fPIC -I$(HDFINC)
 
 DEST		  = ../MakeBuilds 
 

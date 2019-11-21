@@ -190,7 +190,7 @@ void euler_backward_non_advective_impl_part(
     }
     
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
 #if 0
     memset(rhs, 0.0, node->nc*sizeof(double));
@@ -1088,7 +1088,7 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
             }
         }
     }
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
 }
 
 /* ========================================================================== */
@@ -1337,7 +1337,7 @@ void euler_forward_non_advective(ConsVars* Sol,
     W0_in_use = WRONG;
 
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);       
-    Set_Explicit_Boundary_Data(Sol, elem);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
 }
 
