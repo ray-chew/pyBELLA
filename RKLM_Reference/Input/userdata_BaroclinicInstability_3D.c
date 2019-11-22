@@ -221,6 +221,8 @@ void User_Data_init(User_Data* ud) {
     {
 #ifdef TOMMASO
         char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
+#elif RAY
+        char *OutputBaseFolder      = "/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_baroclinic_instability_periodic"
 #else
         char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
 #endif
