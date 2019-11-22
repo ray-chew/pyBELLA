@@ -36,3 +36,5 @@ low_Mach_gravity_psinc/*
 *.lock
 *.dirlock
 *dask_parallel*
+*_old
+*_new
