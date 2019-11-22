@@ -131,39 +131,42 @@ int main( void )
             if (ud.mol_trans != NO_MOLECULAR_TRANSPORT) {
                 diss_to_rhoY(Sol, diss_trpzdl, elem, node, 0.5*dt); 
             }
+
+            
             FILE *tmpfile = NULL;
             int tmp_step = 0;
-            printf("current tmpstep = %d", tmp_step);
             char fn[120], fieldname[90];
-            if (step < 10) {
-                sprintf(fn, "%s/flux_x/rhoY_00%d.hdf", ud.file_name, tmp_step);
-            } else if(step < 100) {
-                sprintf(fn, "%s/flux_x/rhoY_0%d.hdf", ud.file_name, tmp_step);
-            } else {
-                sprintf(fn, "%s/flux_x/rhoY_%d.hdf", ud.file_name, tmp_step);
-            }
-            sprintf(fieldname, "rhoY");
-            WriteHDF(tmpfile, elem->icx, elem->icy, elem->icz, elem->ndim, Sol->rhoY, fn, fieldname);
+            printf("current tmpstep = %d", tmp_step);
+            // 
+            // if (step < 10) {
+            //     sprintf(fn, "%s/flux_x/rhoY_00%d.hdf", ud.file_name, tmp_step);
+            // } else if(step < 100) {
+            //     sprintf(fn, "%s/flux_x/rhoY_0%d.hdf", ud.file_name, tmp_step);
+            // } else {
+            //     sprintf(fn, "%s/flux_x/rhoY_%d.hdf", ud.file_name, tmp_step);
+            // }
+            // sprintf(fieldname, "rhoY");
+            // WriteHDF(tmpfile, elem->icx, elem->icy, elem->icz, elem->ndim, Sol->rhoY, fn, fieldname);
             
-            if (step < 10) {
-                sprintf(fn, "%s/flux_x/rhou_00%d.hdf", ud.file_name, tmp_step);
-            } else if(step < 100) {
-                sprintf(fn, "%s/flux_x/rhou_0%d.hdf", ud.file_name, tmp_step);
-            } else {
-                sprintf(fn, "%s/flux_x/rhou_%d.hdf", ud.file_name, tmp_step);
-            }
-            sprintf(fieldname, "rhou");
-            WriteHDF(tmpfile, elem->icy, elem->icx, elem->icz, elem->ndim, Sol->rhou, fn, fieldname);
+            // if (step < 10) {
+            //     sprintf(fn, "%s/flux_x/rhou_00%d.hdf", ud.file_name, tmp_step);
+            // } else if(step < 100) {
+            //     sprintf(fn, "%s/flux_x/rhou_0%d.hdf", ud.file_name, tmp_step);
+            // } else {
+            //     sprintf(fn, "%s/flux_x/rhou_%d.hdf", ud.file_name, tmp_step);
+            // }
+            // sprintf(fieldname, "rhou");
+            // WriteHDF(tmpfile, elem->icy, elem->icx, elem->icz, elem->ndim, Sol->rhou, fn, fieldname);
 
-            if (step < 10) {
-                sprintf(fn, "%s/flux_x/rho_00%d.hdf", ud.file_name, tmp_step);
-            } else if(step < 100) {
-                sprintf(fn, "%s/flux_x/rho_0%d.hdf", ud.file_name, tmp_step);
-            } else {
-                sprintf(fn, "%s/flux_x/rho_%d.hdf", ud.file_name, tmp_step);
-            }
-            sprintf(fieldname, "rho");
-            WriteHDF(tmpfile, elem->icy, elem->icx, elem->icz, elem->ndim, Sol->rho, fn, fieldname);
+            // if (step < 10) {
+            //     sprintf(fn, "%s/flux_x/rho_00%d.hdf", ud.file_name, tmp_step);
+            // } else if(step < 100) {
+            //     sprintf(fn, "%s/flux_x/rho_0%d.hdf", ud.file_name, tmp_step);
+            // } else {
+            //     sprintf(fn, "%s/flux_x/rho_%d.hdf", ud.file_name, tmp_step);
+            // }
+            // sprintf(fieldname, "rho");
+            // WriteHDF(tmpfile, elem->icy, elem->icx, elem->icz, elem->ndim, Sol->rho, fn, fieldname);
 
             if (swtch == 1){
                 int tmp_step = 1;

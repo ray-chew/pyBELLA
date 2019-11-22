@@ -96,7 +96,7 @@ void putout(ConsVars* Sol,
     const int iczn = node->icz;
 
 	double *var;
-	char fn[200], fieldname[90], step_string[30];
+	char fn[200], fieldname[90], step_string[30], step_label[30];
 	int nsp;
 	
 	switch(ud.file_format) {
@@ -106,16 +106,17 @@ void putout(ConsVars* Sol,
                 return;
             }
 			
-            if(output_counter<10) {
-                sprintf(step_string, "00%d", output_counter);
+            if(step<10) {
+                sprintf(step_label, "00%d", step);
             }
-            else if(output_counter<100) {
-                sprintf(step_string, "0%d", output_counter);
+            else if(step<100) {
+                sprintf(step_label, "0%d", step);
             }
             else {
-                sprintf(step_string, "%d", output_counter);
+                sprintf(step_label, "%d", step);
             }
-            output_counter++;
+
+			sprintf(step_string, "%s_%s", step_label, label);
             
 #if OUTPUT_FLUXES
             extern ConsVars* flux[3];

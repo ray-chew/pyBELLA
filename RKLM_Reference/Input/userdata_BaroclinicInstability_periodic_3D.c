@@ -209,14 +209,17 @@ void User_Data_init(User_Data* ud) {
     ud->tout[3] = 1.00*day;  
     ud->tout[4] = -1.0;
      */
-    ud->tout[0] = 2.5e+2;  
-    ud->tout[1] = 5.0e+2;  
-    ud->tout[2] = 1.0e+3;  
-    ud->tout[3] = 1.5e+3;  
-    ud->tout[4] = 2.0e+3;  
-    ud->tout[5] = 2.5e+3;  
-    ud->tout[6] = 3.0e+3;  
-    ud->tout[7] = -1.0;
+    // ud->tout[0] = 2.5e+2;  
+    // ud->tout[1] = 5.0e+2;  
+    // ud->tout[2] = 1.0e+3;  
+    // ud->tout[3] = 1.5e+3;  
+    // ud->tout[4] = 2.0e+3;  
+    // ud->tout[5] = 2.5e+3;  
+    // ud->tout[6] = 3.0e+3;  
+    // ud->tout[7] = -1.0;
+
+    ud->tout[0] = 2.5e+1;  
+    ud->tout[1] = -1.0;
 
     ud->stepmax = 1000000;
     
