@@ -237,7 +237,7 @@ class UserData(object):
         gm1inv = th.gm1inv
         return (p * gm1inv + 0.5 * Msq * rho * (u*u + v*v + w*w))
 
-def sol_init(Sol, mpv, elem, node, th, ud):
+def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     u0 = ud.wind_speed
     v0 = 0.0
     w0 = 0.0
