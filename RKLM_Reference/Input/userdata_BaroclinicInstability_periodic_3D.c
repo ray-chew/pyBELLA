@@ -229,9 +229,7 @@ void User_Data_init(User_Data* ud) {
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
     
     {
-#ifdef RAY
-        char *OutputBaseFolder      = "/home/ray/git-projects/RKLM_Reference/"
-#elif TOMMASO
+#ifdef TOMMASO
         char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
 #else
         char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
@@ -397,11 +395,11 @@ void Sol_initial(ConsVars* Sol,
                 Sol->rhoY[n]   = rhoY;
                 
                 mpv->p2_cells[n]   = p2/ud.Msq;
-// #ifdef FULL_VARIABLES
+#ifdef FULL_VARIABLES
                 Sol->rhoX[BUOY][n] = rho/(P/rho);
-// #else
-//                 assert(0); /* baroclinic test currently with full variables */
-// #endif
+#else
+                assert(0); /* baroclinic test currently with full variables */
+#endif
             }        
         }
     }    

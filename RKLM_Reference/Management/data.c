@@ -41,11 +41,13 @@ Thermodynamic th;
 /* Arrays */
 ConsVars* Sol;            /* full size */
 ConsVars* Sol0;           /* full size (M < 1.0) */
+ConsVars* Sol1;           /* full size (M < 1.0) */
 ConsVars* dSol;           /* full size */ /* TODO: Can I work without full-size dSol arrays? 
                                            -> No: currently still needed in Explicit_step_update */
 
 ConsVars* flux[3];        /* full size (M < 1.0) */
-double* diss;
+double* diss_midpnt;
+double* diss_trpzdl;
 
 /* Infrastructure for semi-implicit scheme */
 MPV* mpv;
@@ -102,7 +104,8 @@ void Data_init() {
 	Thermodynamic_init(&th, &ud);
 	
 	/* Arrays */
-    Sol0    = ConsVars_new(elem->nc);
+    Sol1 = ConsVars_new(elem->nc);
+    Sol0 = ConsVars_new(elem->nc);
 	Sol  = ConsVars_new(elem->nc);
 	dSol = ConsVars_new(elem->nc);
 	Solk = States_small_new(3 * ud.ncache / 2);
@@ -112,7 +115,8 @@ void Data_init() {
     n_aux *= (node->ndim > 1 ? node->ify : 1);
     n_aux *= (node->ndim > 2 ? node->ifz : 1);
     
-    diss  = (double*)malloc((unsigned)(elem->nc * sizeof(double)));
+    diss_midpnt = (double*)malloc((unsigned)(elem->nc * sizeof(double)));
+    diss_trpzdl = (double*)malloc((unsigned)(elem->nc * sizeof(double)));
     W0  = (double*)malloc((unsigned)(n_aux * sizeof(double)));
         
     flux[0] = ConsVars_new(elem->nfx);

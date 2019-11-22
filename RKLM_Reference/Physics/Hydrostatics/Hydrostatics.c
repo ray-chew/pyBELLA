@@ -407,7 +407,12 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
     
     double *beta, *bdpdx, *pibot, *coeff;
     double dotPU;
+    
+#ifdef FULL_VARIABLES
+    double NoBG = 0.0;
+#else
     double NoBG = (ud.time_integrator == SI_MIDPT ? 1.0 : 0.0);
+#endif
     
     beta  = (double*)malloc(node->icx*sizeof(double));
     bdpdx = (double*)malloc(node->icx*sizeof(double));
@@ -569,7 +574,7 @@ void Hydrostatic_Initial_Pressure(ConsVars* Sol,
         }
     }
     
-    set_ghostnodes_p2(mpv->p2_nodes, node, 2);
+    set_ghostnodes_p2(mpv->p2_nodes, node, 2);    
     
     for (int nn=0; nn<node->nc; nn++) {
         mpv->dp2_nodes[nn] = 0.0;

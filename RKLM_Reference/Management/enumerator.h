@@ -47,7 +47,8 @@ enum TimeIntegrator {
     RK3_SKAMA,
     RK3_TEST,
     SI_MIDPT,
-    STRANG
+    STRANG,
+    NO_ADVECTION
 };
 
 enum HillShapes {

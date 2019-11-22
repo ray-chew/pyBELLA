@@ -95,15 +95,6 @@ void dp2_first_projection(
                           const ElemSpaceDiscr *elem);
 
 /*------------------------------------------------------------------------------
- deviation of Exner pressure from background state values
- ------------------------------------------------------------------------------*/
-void dp_exner(
-              double *dpi, 
-              const ConsVars* U, 
-              const MPV *mpv,
-              const ElemSpaceDiscr *elem);
-
-/*------------------------------------------------------------------------------
  deviation of thermodynamic pressure from background state (dimensional)
  ------------------------------------------------------------------------------*/
 void dpress_dim(
@@ -130,6 +121,19 @@ void pressure_asymptotic(
 						 const ConsVars* U, 
 						 const MPV* mpv,
 						 const ElemSpaceDiscr* elem);
+
+/*------------------------------------------------------------------------------
+ nodal perturbation pressure from from full or perturbation pressure
+ ------------------------------------------------------------------------------*/
+void Nodal_Pressure_perturbation(
+                                 double* var, 
+                                 MPV* mpv, 
+                                 const NodeSpaceDiscr* node);
+
+void Nodal_Pressure_perturbation0(
+                                 double* var, 
+                                 MPV* mpv, 
+                                 const NodeSpaceDiscr* node);
 
 /*------------------------------------------------------------------------------
  
@@ -242,18 +246,11 @@ void dt_average(ConsVars *Sol,
 /*------------------------------------------------------------------------------
  
  ------------------------------------------------------------------------------*/
+
 void synchronize_variables(MPV* mpv,
                            ConsVars* Sol,
                            const ElemSpaceDiscr* elem, 
                            const NodeSpaceDiscr* node);
-
-
-/*------------------------------------------------------------------------------
- 
- ------------------------------------------------------------------------------*/
-void reset_Y_perturbation(ConsVars* Sol,
-                          const MPV* mpv,
-                          const ElemSpaceDiscr* elem);
 
 /*------------------------------------------------------------------------------
  
@@ -286,13 +283,6 @@ void cell_pressure_to_nodal_pressure(
                                      const ElemSpaceDiscr* elem,
                                      const NodeSpaceDiscr* node,
                                      const double weight);
-
-/*------------------------------------------------------------------------------
- 
- ------------------------------------------------------------------------------*/
-void reset_rhoY(ConsVars *Sol, 
-                const ConsVars *Sol0, 
-                const ElemSpaceDiscr *elem);
 
 #endif /* EOS_H */
 

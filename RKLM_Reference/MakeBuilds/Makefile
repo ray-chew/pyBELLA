@@ -1,10 +1,10 @@
 lCC = gcc
 
-LIBDIR 		  = /usr/lib64
-HDFLIBDIR	  = /usr/lib64
-HDFINC		  = /home/ray/anaconda3/envs/python37/include/
+LIBDIR 		  = /usr/lib64/
+HDFLIBDIR	  = /usr/lib64/
+HDFINC		  = /opt/local/include
 
-CFLAGS		  = -DFULL_VARIABLES -Aa -fPIC -I$(HDFINC)
+CFLAGS		  = -Aa -fPIC -I$(HDFINC)
 
 DEST		  = ../MakeBuilds 
 
@@ -17,7 +17,7 @@ EXTHDRS		  = /usr/include/math.h \
 		/usr/include/time.h \
 #		/usr/include/varargs.h \
 		/usr/include/memory.h \
-		/home/ray/anaconda3/envs/python37/include/dfsd.h
+		/usr/include/hdf/dfsd.h
 
 HDRS		  = ../Common.h \
 		../Input/userdata.h \
@@ -48,13 +48,13 @@ HDRS		  = ../Common.h \
 		../Physics/LowMach/Second-projection/second_projection.h \
 		../Physics/LowMach/Second-projection/laplacian_nodes.h \
 		../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.h \
-		../Physics/NewGroup/molecular_transport.h \
+		../Physics/MolecularTransport/molecular_transport.h \
 
-HDRFLAGS	= -g -I../ -I../Input -I../Management -I../NumericsFundamentals \
+HDRFLAGS	= -I../ -I../Input -I../Management -I../NumericsFundamentals \
 		  -I../NumericsFundamentals/Discretization \
 		  -I../NumericsFundamentals/ofGeneralInterest -I../Physics/Gasdynamics \
 		  -I../Physics/Hydrostatics -I../Physics/LowMach \
-		  -I../Physics/LowMach/Second-projection -I../Physics/NewGroup
+		  -I../Physics/LowMach/Second-projection -I../Physics/MolecularTransport
 
 INSTALL		= install
 
@@ -96,7 +96,7 @@ PRINT		  = pr
 
 PROGRAM	   = rklm
 
-SHELL		  = /bin/zsh
+SHELL		  = /bin/sh
 
 SRCS		  = ../Input/userdata_BaroclinicInstability_periodic_3D.c \
 		../Input/boundary.c \
@@ -155,9 +155,8 @@ update:		$(DEST)/$(PROGRAM)
 $(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)
 		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install
 
-### userdata_BaroclinicInstability_periodic_3D
-### userdata_BaroclinicInstability_periodic_3D
-userdata_BaroclinicInstability_periodic_3D.o :
+###
+userdata_BaroclinicInstability_periodic_3D.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/userdata_BaroclinicInstability_periodic_3D.c
 
 boundary.o : 
@@ -227,5 +226,5 @@ variable_coefficient_poisson_nodes.o :
 	$(CC) -c $(HDRFLAGS) ../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.c
 
 molecular_transport.o :
-	$(CC) -c $(HDRFLAGS) ../Physics/NewGroup/molecular_transport.c
+	$(CC) -c $(HDRFLAGS) ../Physics/MolecularTransport/molecular_transport.c
 	

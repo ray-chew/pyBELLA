@@ -1,4 +1,4 @@
-#!/bin/bash
+  #!/bin/bash
 
 # Run test
 #
@@ -48,6 +48,12 @@ source change_output_dir.sh $TESTNAME $SRC_DIR
 make clean
 # Compile the code
 make
+
+if [ $? -ne 0 ]
+then
+    echo "Make failed!"
+    exit 1
+fi
 
 # Run the code 
 ./rklm 

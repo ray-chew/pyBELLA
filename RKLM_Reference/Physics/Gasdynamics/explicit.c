@@ -25,8 +25,6 @@
 #include "io.h"
 #endif
 
-int debug_counter = 0;
-
 static enum Boolean allocated = WRONG;
 
 static int arraysize = 0;
@@ -163,9 +161,8 @@ void Explicit_step_and_flux(
         
 		/* flux computation*/
         recovery(Lefts, Rights, Solk, Fluxes, lambda, nmax, adv_fluxes_from, muscl_on_off);
-
         check_flux_bcs(Lefts, Rights, nmax, kcache, njump, elem, SplitStep);
-
+                    
         hllestar(Fluxes, Lefts, Rights, Solk, lambda, nmax, adv_fluxes_from);
 		
 		/* time updates for conservative variables */
@@ -247,22 +244,6 @@ void Explicit_step_and_flux(
     if (ud.advec_time_integrator == STRANG) {
         Explicit_step_update(Sol, n); 
     }
-
-    // if (debug_counter < 5){
-    // FILE *tmpfile = NULL;
-    // // printf("current tmpstep = %d", tmp_step);
-    // char fn[120], fieldname[90];
-    // if (debug_counter < 10) {
-    //     sprintf(fn, "%s/debug/Lefts_00%d.hdf", ud.file_name, debug_counter);
-    // } else if(debug_counter < 100) {
-    //     sprintf(fn, "%s/debug/Lefts_0%d.hdf", ud.file_name, debug_counter);
-    // } else {
-    //     sprintf(fn, "%s/debug/Lefts_%d.hdf", ud.file_name, debug_counter);
-    // }
-    // sprintf(fieldname, "Lefts_rhou");
-    // WriteHDF(tmpfile, elem->icx, elem->icy, elem->icz, elem->ndim, Lefts->rhou, fn, fieldname);
-    // debug_counter++;
-    // }
     
     /* bring dummy cells in the current space direction up to date  */
     Bound(Sol, lambda, n, SplitStep);
@@ -412,12 +393,27 @@ void advect(
 {
     extern User_Data ud;    
     
+#ifdef FULL_VARIABLES
+    extern MPV* mpv;
+    for (int k = 0; k < elem->icz; k++) {
+        int nk = k * elem->icx*elem->icy;
+        for (int j = 0; j < elem->icy; j++) {
+            int njk = nk + j*elem->icx;
+            for (int i = 0; i < elem->icx; i++) {
+                int nijk = njk + i;
+                Sol->rhoX[BUOY][nijk] -= Sol->rho[nijk] * mpv->HydroState->S0[j];
+            }
+        }
+    }
+#endif
+    
     if (advec_time_integrator == EXPL_MIDPT || advec_time_integrator == HEUN) {
         
+#ifndef MINIMIZE_STD_OUT
         printf("\n\n====================================================");
         printf("\nAdvection by explicit midpoint rule, dt = %e", dt);
         printf("\n====================================================\n");
-        
+#endif
         int stage = 0;
         double timestep = ud.tips.update_frac[0] * dt;
         
@@ -444,7 +440,7 @@ void advect(
         fullD_explicit_updates(Sol, Sol, (const ConsVars**)flux, elem, ud.tips.update_frac[1]*dt);
         Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);      
     }
-    else {  /* Strang splitting == STRANG is the default */ 
+    else if ( advec_time_integrator == STRANG ) {  /* Strang splitting == STRANG is the default */ 
         /*
          Simple or Strang splitting for the advection step.
          odd = 0:  even time steps
@@ -453,11 +449,12 @@ void advect(
          */
         double time_step = (no_of_sweeps == DOUBLE_STRANG_SWEEP ? 0.5*dt : dt);
         
+#ifndef MINIMIZE_STD_OUT
         printf("\n\n====================================================");
         printf("\nAdvection by Strang splitting, dt = %e", dt);
         printf("\n====================================================\n");
-        int tmp_step = 0;
-
+#endif
+        
         int stage = 0;
         if (odd) {
             for(int Split = 0; Split < elem->ndim; Split++) {
@@ -471,24 +468,7 @@ void advect(
                 (*rotate[elem->ndim - 1])(Sol, BACKWARD);
                 const double lambda = time_step/elem->dx;
                 Explicit_step_and_flux(Sol, flux[Split], lambda, elem->nc, Split, stage, adv_fluxes_from, muscl_on_off);
-            }
-
-            // if (debug_counter < 2){
-            // FILE *tmpfile = NULL;
-            // // printf("current tmpstep = %d", tmp_step);
-            // char fn[120], fieldname[90];
-            // if (debug_counter < 10) {
-            //     sprintf(fn, "%s/debug/solrhoe_00%d.hdf", ud.file_name, debug_counter);
-            // } else if(debug_counter < 100) {
-            //     sprintf(fn, "%s/debug/solrhoe_0%d.hdf", ud.file_name, debug_counter);
-            // } else {
-            //     sprintf(fn, "%s/debug/solrhoe_%d.hdf", ud.file_name, debug_counter);
-            // }
-            // sprintf(fieldname, "solrhoe");
-            // WriteHDF(tmpfile, elem->icx, elem->icy, elem->icz, elem->ndim, Sol->rhoe, fn, fieldname);
-            // debug_counter++;
-            // }
-            
+            }        
         }
         
         if (no_of_sweeps == DOUBLE_STRANG_SWEEP) {
@@ -510,7 +490,24 @@ void advect(
             
         }
         Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
+    } else {
+        return;
     }
+    
+#ifdef FULL_VARIABLES
+    extern MPV* mpv;
+    for (int k = 0; k < elem->icz; k++) {
+        int nk = k * elem->icx*elem->icy;
+        for (int j = 0; j < elem->icy; j++) {
+            int njk = nk + j*elem->icx;
+            for (int i = 0; i < elem->icx; i++) {
+                int nijk = njk + i;
+                Sol->rhoX[BUOY][nijk] += Sol->rho[nijk] * mpv->HydroState->S0[j];
+            }
+        }
+    }
+#endif
+
 }
 
 /* ================================================================================ */

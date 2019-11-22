@@ -33,7 +33,17 @@ source clean_hdf_output_test.sh TEST
 where TEST is one of the test cases set in 2).
 
 =======
-4) To run a test of the form ../Input/userdata_TEST.c, within the RKLM_Reference/MakeBuilds type:
+4) Include the location of the HDF libraries in your system in ../Management/io.c
+
+This is currently handled by the preprocessor flag {RUPERT, TOMMASO}
+
+Example change:
+
+#sed -i "s|//\ #define\ TOMMASO|#define\ TOMMASO|g" ../Common.h
+#sed -i "s|#define\ RUPERT|//#define\ RUPERT|g" ../Common.h
+
+=======
+5) To run a test of the form ../Input/userdata_TEST.c, within the RKLM_Reference/MakeBuilds type:
 
 chmod +x run_test.sh
 source run_test.sh TEST
@@ -54,8 +64,8 @@ low_mach_gravity_{comp, psinc} to the case-dependent ones in the hdf_output
 subfolder;
 
 =======
-5) In order to run the suite of tests for the paper "A semi-implicit 
-numerical model for small-to-planetary scale atmospheric dynamics", run:
+6) In order to run the suite of tests for the paper "A semi-implicit compressible
+model for atmospheric flows with seamless access to soundproof and hydrostatic dynamics", run:
 
 chmod +x run_suite.sh
 source run_suite.sh
@@ -70,8 +80,8 @@ the relevant tests in make_plots.m.
 SUMMARY 
 =======
 
-In order to download and run the code and plot results, please execute
-the following:
+In order to download and run the code and plot results, after checking
+the dependencies, please execute the following:
 
 git clone https://git.imp.fu-berlin.de/rupert/RKLM_Reference.git
 cd RKLM_Reference

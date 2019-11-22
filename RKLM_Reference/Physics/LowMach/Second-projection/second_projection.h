@@ -16,13 +16,12 @@
 
 void euler_backward_non_advective_impl_part(ConsVars* Sol,
                                             MPV* mpv,
-                                            const ConsVars* Sol0,
+                                            double *diss,
                                             const ElemSpaceDiscr* elem,
                                             const NodeSpaceDiscr* node,
                                             const double t,
-                                            const double dt,
-                                            const double alpha_diff,
-                                            int step);
+                                            const double dt, 
+                                            const double alpha_diff);
 
 void euler_backward_non_advective_expl_part(ConsVars* Sol,
                             const MPV* mpv,
@@ -43,10 +42,7 @@ void scale_wall_node_values(
                        const ElemSpaceDiscr* elem,
                        const double factor);
 
-
-
 #endif /* SECOND_PROJECTION_H */
-
 
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log:$

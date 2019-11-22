@@ -308,39 +308,6 @@ void dp2_first_projection(
     }
 }
 
-
-/*------------------------------------------------------------------------------
- deviation of Exner pressure from background state values
- ------------------------------------------------------------------------------*/
-void dp_exner(
-              double *dpi, 
-              const ConsVars* U, 
-              const MPV *mpv,
-              const ElemSpaceDiscr *elem) 
-{
-    extern User_Data ud;
-    extern Thermodynamic th;
-    
-    int i, j, k, l, m, n;
-    int icx = elem->icx;
-    int icy = elem->icy;
-    int igy = elem->igy;
-    int icz = elem->icz;
-    
-    double p2_o = th.Gammainv * pow(mpv->HydroState->p0[igy],th.Gamma) / ud.Msq;
-    
-    for (k=0; k<icz; k++) {
-        l = k*icx*icy;
-        for (j=0; j<icy; j++) {
-            m = l + j*icx;
-            for (i=0; i<icx; i++) {
-                n = m + i;
-                dpi[n] = mpv->p2_cells[n] - mpv->HydroState->p20[j] - p2_o;
-            }
-        }
-    }
-}
-
 /*------------------------------------------------------------------------------
  inverse of potential temperature
  ------------------------------------------------------------------------------*/
@@ -586,10 +553,81 @@ void MassFrac_q(
     
 	int i;
 	
+#ifdef RHOX_OUTPUT_AS_THETAPRIME
+    extern MPV* mpv;
+    extern ElemSpaceDiscr *elem;
+    int stride_z = elem->icy*elem->icx;
+    int stride_y = elem->icx;
+    if (which_q == BUOY) {
+        for( i = nstart; i < nende; i++) {
+            int j = (i - (i/stride_z)*stride_z) / stride_y;  
+            q[i] =  1.0/(U->rhoX[BUOY][i] / U->rho[i] + mpv->HydroState->S0[j]) - mpv->HydroState->Y0[j];
+            // q[i] =  1.0/(U->rhoX[BUOY][i] / U->rho[i] + mpv->HydroState->S0[j]) - U->rhoY[i]/U->rho[i];
+        }
+    } else {
+        for( i = nstart; i < nende; i++) {
+            q[i] =  U->rhoX[which_q][i] / U->rho[i];
+        }
+    }
+#else    
 	for( i = nstart; i < nende; i++)
     {
 		q[i] =  U->rhoX[which_q][i] / U->rho[i];
     }
+#endif
+}
+
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
+void Nodal_Pressure_perturbation(
+                                 double* var, 
+                                 MPV* mpv, 
+                                 const NodeSpaceDiscr* node) {
+    
+#ifdef FULL_VARIABLES
+    for (int k = 0; k < node->icz; k++) {
+        int nk = k*node->icx*node->icy;
+        for (int j = 0; j < node->icy; j++) {
+            int njk = nk + j*node->icx;
+            for (int i = 0; i < node->icx; i++) {
+                int nijk = njk + i;
+                var[nijk] = mpv->p2_nodes[nijk] - mpv->HydroState_n->p20[j];
+                // var[nijk] = mpv->p2_nodes[nijk] - mpv->HydroState_n->p20[j];
+            }
+        }
+    }
+#else
+    for (int i = 0; i < node->nc; i++) {
+        var[i] = mpv->p2_nodes[i];
+    }
+#endif
+}
+
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
+void Nodal_Pressure_perturbation0(
+                                 double* var, 
+                                 MPV* mpv, 
+                                 const NodeSpaceDiscr* node) {
+    
+#ifdef FULL_VARIABLES
+    for (int k = 0; k < node->icz; k++) {
+        int nk = k*node->icx*node->icy;
+        for (int j = 0; j < node->icy; j++) {
+            int njk = nk + j*node->icx;
+            for (int i = 0; i < node->icx; i++) {
+                int nijk = njk + i;
+                var[nijk] = mpv->p2_nodes0[nijk] - mpv->HydroState_n->p20[j];
+            }
+        }
+    }
+#else
+    for (int i = 0; i < node->nc; i++) {
+        var[i] = mpv->p2_nodes0[i];
+    }
+#endif
 }
 
 /*------------------------------------------------------------------------------
@@ -674,13 +712,41 @@ void dt_average(ConsVars *Sol,
 /*------------------------------------------------------------------------------
  
  ------------------------------------------------------------------------------*/
+void reset_Y_perturbation(ConsVars* Sol,
+                          const MPV* mpv,
+                          const ElemSpaceDiscr* elem) 
+{   
+    for (int k=0; k<elem->icz; k++) {
+        int nk = k*elem->icx*elem->icy;
+        for (int j=0; j<elem->icy; j++) {
+            int nkj = nk + j*elem->icx;
+            for (int i=0; i<elem->icx; i++) {
+                int nkji = nkj + i;
+                Sol->rhoX[BUOY][nkji] = Sol->rho[nkji] * ( Sol->rho[nkji]/Sol->rhoY[nkji] - mpv->HydroState->S0[j]); 
+            }
+        }
+    }
+    
+#if OUTPUT_SUBSTEPS  /* 1 */
+    extern User_Data ud;
+    extern NodeSpaceDiscr* node;
+    extern int step;
+    if (step >= OUTPUT_SUBSTEPS - 1) {
+        putout(Sol, ud.file_name, "Sol", elem, node, 1);
+    }
+#endif
+}
+
+/*------------------------------------------------------------------------------
+ 
+ ------------------------------------------------------------------------------*/
 void synchronize_variables(MPV* mpv,
                            ConsVars* Sol,
                            const ElemSpaceDiscr* elem, 
                            const NodeSpaceDiscr* node) {
 	
     /*
-     Here we recompute the cell-centered Exner pressure from the 
+     Here we (re-)compute the cell-centered Exner pressure from the 
      cell-centered  rhoY = P
      */
     
@@ -708,45 +774,10 @@ void synchronize_variables(MPV* mpv,
         }
     }
     
-    set_ghostcells_p2(mpv->p2_cells, elem, elem->igx);
-
-    /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 
-     the following line was commented out in the Nov. 11 version. 
-     A call to Set_Explicit_Boundary_Data() is not needed if I don't
-     change the Sol-arrays. */
-    // reset_Y_perturbation(Sol, (const MPV*)mpv, elem);
-    // Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
+    set_ghostcells_p2(mpv->p2_cells, elem, elem->igx);  
     
-    // if (synchronize_nodal_pressure == CORRECT) {
-    //     cell_pressure_to_nodal_pressure(mpv, elem, node, ud.synchronize_weight);
-    // }
-}
-
-/*------------------------------------------------------------------------------
- 
- ------------------------------------------------------------------------------*/
-void reset_Y_perturbation(ConsVars* Sol,
-                          const MPV* mpv,
-                          const ElemSpaceDiscr* elem) 
-{   
-    for (int k=0; k<elem->icz; k++) {
-        int nk = k*elem->icx*elem->icy;
-        for (int j=0; j<elem->icy; j++) {
-            int nkj = nk + j*elem->icx;
-            for (int i=0; i<elem->icx; i++) {
-                int nkji = nkj + i;
-                Sol->rhoX[BUOY][nkji] = Sol->rho[nkji] * ( Sol->rho[nkji]/Sol->rhoY[nkji] - mpv->HydroState->S0[j]); 
-            }
-        }
-    }
-
-#if OUTPUT_SUBSTEPS  /* 1 */
-    extern User_Data ud;
-    extern NodeSpaceDiscr* node;
-    extern int step;
-    if (step >= OUTPUT_SUBSTEPS - 1) {
-        putout(Sol, ud.file_name, "Sol", elem, node, 1);
-    }
+#ifdef IMPLICIT_MIDPT_FOR_NODAL_P
+    reset_Y_perturbation(Sol,mpv,elem); 
 #endif
 }
 
@@ -901,28 +932,6 @@ void cell_pressure_to_nodal_pressure(
         }
     }
     set_ghostnodes_p2(mpv->p2_nodes, node, igx);
-}
-
-
-/*------------------------------------------------------------------------------
- 
- ------------------------------------------------------------------------------*/
-
-void reset_rhoY(ConsVars *Sol, 
-                const ConsVars *Sol0, 
-                const ElemSpaceDiscr *elem)
-{
-    extern User_Data ud;
-    
-    for (int ic=0; ic<elem->nc; ic++) {
-        Sol->rho[ic]  *= Sol0->rhoY[ic]/Sol->rhoY[ic];  
-        Sol->rhou[ic] *= Sol0->rhoY[ic]/Sol->rhoY[ic];  
-        Sol->rhov[ic] *= Sol0->rhoY[ic]/Sol->rhoY[ic];  
-        Sol->rhow[ic] *= Sol0->rhoY[ic]/Sol->rhoY[ic];  
-        for (int isp=0; isp<ud.nspec; isp++) {
-            Sol->rhoX[isp][ic] *= Sol0->rhoY[ic]/Sol->rhoY[ic];  
-        }
-    }
 }
 
 

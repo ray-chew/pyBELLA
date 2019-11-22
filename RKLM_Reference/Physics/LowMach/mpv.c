@@ -146,11 +146,11 @@ void MPV_free(
     free(mpv->p2_cells );
     free(mpv->dp2_cells);
     free(mpv->p2_nodes );
-    free(mpv->p2_nodes0);
     free(mpv->dp2_nodes);
+    free(mpv->p2_nodes0);
 
-    // free(mpv->rhs    );
-    // free(mpv->diaginv);
+    free(mpv->rhs    );
+    free(mpv->diaginv);
     free(mpv->wcenter);
     free(mpv->wgrav  );
     for (int idim = 0; idim < elem->ndim; idim++) {
@@ -159,7 +159,7 @@ void MPV_free(
     
     if (ud.g_ref > ud.eps_Machine) HydroState_free(mpv);
     
-    free(mpv);
+    free(mpv);    
 }
 
 /* ========================================================================== */

@@ -28,9 +28,9 @@
 #undef __WINDOWS__
 #endif
 #ifdef RUPERT
-#include  "/home/ray/anaconda3/envs/python37/include/dfsd.h"
+#include  "../hdf/dfsd.h"
 #else 
-#include  "~/anaconda3/envs/python37/include/dfsd.h" 
+#include  "../hdf/dfsd.h" 
 #endif
 #endif
 
@@ -44,9 +44,6 @@ static void putoutSILO(char* file_name);
 
 /* pointers to files */
 static FILE *prhofile      = NULL;   
-static FILE *prhoufile      = NULL;   
-static FILE *prhovfile      = NULL;   
-static FILE *prhowfile      = NULL;   
 static FILE *prhoefile     = NULL;   
 static FILE *prhoYfile     = NULL;   
 static FILE *pdrhoYfile    = NULL;   
@@ -99,45 +96,27 @@ void putout(ConsVars* Sol,
     const int iczn = node->icz;
 
 	double *var;
-	char fn[200], fieldname[90], step_string[120], step_label[30];
+	char fn[200], fieldname[90], step_string[30];
 	int nsp;
 	
 	switch(ud.file_format) {
-		// case HDF: {
-			            
-        //     if (writeout == 0) {
-        //         return;
-        //     }
-			
-        //     if(output_counter<10) {
-        //         sprintf(step_string, "00%d", output_counter);
-        //     }
-        //     else if(output_counter<100) {
-        //         sprintf(step_string, "0%d", output_counter);
-        //     }
-        //     else {
-        //         sprintf(step_string, "%d", output_counter);
-        //     }
-        //     output_counter++;
-            
 		case HDF: {
 			            
             if (writeout == 0) {
                 return;
             }
 			
-            if(step<10) {
-                sprintf(step_label, "00%d", step);
+            if(output_counter<10) {
+                sprintf(step_string, "00%d", output_counter);
             }
-            else if(step<100) {
-                sprintf(step_label, "0%d", step);
+            else if(output_counter<100) {
+                sprintf(step_string, "0%d", output_counter);
             }
             else {
-                sprintf(step_label, "%d", step);
+                sprintf(step_string, "%d", output_counter);
             }
-
-			sprintf(step_string, "%s_%s", step_label, label);
-
+            output_counter++;
+            
 #if OUTPUT_FLUXES
             extern ConsVars* flux[3];
             extern User_Data ud;
@@ -162,23 +141,6 @@ void putout(ConsVars* Sol,
 			if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
 			sprintf(fieldname, "rho_%s_%s", field_name, step_string);
 			WriteHDF(prhofile, icx, icy, icz, ndim, Sol->rho, fn, fieldname);
-
-			// /* Ray's addition for debugging */
-			// sprintf(fn, "%s/rhou/rhou_%s.hdf", dir_name, step_string);
-			// if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
-			// sprintf(fieldname, "rhou_%s_%s", field_name, step_string);
-			// WriteHDF(prhoufile, icx, icy, icz, ndim, Sol->rhou, fn, fieldname);
-
-			// sprintf(fn, "%s/rhov/rhov_%s.hdf", dir_name, step_string);
-			// if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
-			// sprintf(fieldname, "rhov_%s_%s", field_name, step_string);
-			// WriteHDF(prhovfile, icx, icy, icz, ndim, Sol->rhov, fn, fieldname);
-
-			// sprintf(fn, "%s/rhow/rhow_%s.hdf", dir_name, step_string);
-			// if(ud.write_stdout == ON) printf("writing %s ...\n", fn);
-			// sprintf(fieldname, "rhow_%s_%s", field_name, step_string);
-			// WriteHDF(prhowfile, icx, icy, icz, ndim, Sol->rhow, fn, fieldname);
-			/* End of Ray's addition */
 			
 			/* energy density */
 			sprintf(fn, "%s/rhoe/rhoe_%s.hdf", dir_name, step_string);
@@ -186,24 +148,6 @@ void putout(ConsVars* Sol,
 			sprintf(fieldname, "rhoe_%s_%s", field_name, step_string);
 			WriteHDF(prhoefile, icx, icy, icz, ndim, Sol->rhoe, fn, fieldname);
 			
-			/* rhou velocity component */
-			sprintf(fn, "%s/rhou/rhou_%s.hdf", dir_name, step_string);
-			if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
-			sprintf(fieldname, "rhou_%s_%s", field_name, step_string);
-			WriteHDF(pufile, icx, icy, icz, ndim, Sol->rhou, fn, fieldname);
-			
-			/* rhov velocity component */
-			sprintf(fn, "%s/rhov/rhov_%s.hdf", dir_name, step_string);
-			if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
-			sprintf(fieldname, "rhov_%s_%s", field_name, step_string);
-			WriteHDF(pvfile, icx, icy, icz, ndim, Sol->rhov, fn, fieldname);
-			
-			/* rhow velocity component */
-			sprintf(fn, "%s/rhow/rhow_%s.hdf", dir_name, step_string);
-			if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
-			sprintf(fieldname, "rhow_%s_%s", field_name, step_string);
-			WriteHDF(pwfile, icx, icy, icz, ndim, Sol->rhow, fn, fieldname);
-
 			/* u velocity component */
 			velox(var, Sol, 0, nc);
 			sprintf(fn, "%s/u/u_%s.hdf", dir_name, step_string);
@@ -224,6 +168,24 @@ void putout(ConsVars* Sol,
 			 if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
 			 sprintf(fieldname, "w_%s_%s", field_name, step_string);
 			 WriteHDF(pwfile, icx, icy, icz, ndim, var, fn, fieldname);
+
+            /* rhou momentum component */
+            sprintf(fn, "%s/rhou/rhou_%s.hdf", dir_name, step_string);
+            if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
+            sprintf(fieldname, "rhou_%s_%s", field_name, step_string);
+            WriteHDF(pufile, icx, icy, icz, ndim, Sol->rhou, fn, fieldname);
+            
+            /* rhov momentum component */
+            sprintf(fn, "%s/rhov/rhov_%s.hdf", dir_name, step_string);
+            if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
+            sprintf(fieldname, "rhov_%s_%s", field_name, step_string);
+            WriteHDF(pvfile, icx, icy, icz, ndim, Sol->rhov, fn, fieldname);
+            
+            /* rhow momentum component */
+            sprintf(fn, "%s/rhow/rhow_%s.hdf", dir_name, step_string);
+            if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
+            sprintf(fieldname, "rhow_%s_%s", field_name, step_string);
+            WriteHDF(pwfile, icx, icy, icz, ndim, Sol->rhow, fn, fieldname);
 
             /* u-v vorticity */
             vortz(var, Sol, elem, node, 0, nc);
@@ -328,15 +290,17 @@ void putout(ConsVars* Sol,
 			sprintf(fieldname, "dp2_nodes_%s_%s", field_name, step_string);
 			WriteHDF(pp2file, icxn, icyn, iczn, ndim, mpv->dp2_nodes, fn, fieldname);
 
+            Nodal_Pressure_perturbation(var, mpv, node);
             sprintf(fn, "%s/p2_nodes/p2_n_%s.hdf", dir_name, step_string);
             if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
             sprintf(fieldname, "p2_nodes_%s_%s", field_name, step_string);
-            WriteHDF(pp2file,icxn, icyn, iczn, ndim, mpv->p2_nodes, fn, fieldname);
+            WriteHDF(pp2file,icxn, icyn, iczn, ndim, var, fn, fieldname);
 
-			sprintf(fn, "%s/rhs/rhs_%s.hdf", dir_name, step_string);
+            Nodal_Pressure_perturbation0(var, mpv, node);
+            sprintf(fn, "%s/p2_nodes0/p2_n0_%s.hdf", dir_name, step_string);
             if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
-            sprintf(fieldname, "rhs_%s_%s", field_name, step_string);
-            WriteHDF(pp2file,icxn, icyn, iczn, ndim, mpv->rhs, fn, fieldname);
+            sprintf(fieldname, "p2_nodes0_%s_%s", field_name, step_string);
+            WriteHDF(pp2file,icxn, icyn, iczn, ndim, var, fn, fieldname);
 
             /* fluctuation(var, mpv->p2_cells, elem); */
             memcpy(var, mpv->p2_cells, elem->nc*sizeof(double));
@@ -345,7 +309,6 @@ void putout(ConsVars* Sol,
 			sprintf(fieldname, "p2_c_%s", step_string);
 			WriteHDF(pp2file, icx, icy, icz, ndim, var, fn, fieldname);
 
-            /* dp_exner(var, Sol, mpv, elem); */
             dp2_first_projection(var, Sol, mpv, elem);
 			sprintf(fn, "%s/dp2_c/dp2_c_%s.hdf", dir_name, step_string);
 			if(ud.write_stdout == ON ) printf("writing %s ...\n", fn);
@@ -384,8 +347,8 @@ void WriteHDF(
 	 */
 	
 	float  *image, *pimage;
-	double  pmax, pmin;
-	float *pData;
+	float  pmax, pmin;
+	double *pData;
 	int row, col, layer;
 	
 	int	dims[ 3 ];
@@ -394,10 +357,8 @@ void WriteHDF(
 	dims[1] = cols;
 	dims[2] = layers;
 	
-	image = (float*)malloc( (unsigned)((rows*cols*layers)*sizeof(float)) );
-
-	// image = (double *)malloc( (unsigned)((rows*cols*layers)*sizeof(double)) );
-
+	image = (float *)malloc( (unsigned)((rows*cols*layers)*sizeof(float)) );
+	
 	pimage  = image;
 	pData   = Data;
 	pmax    = -100000.0;
@@ -412,7 +373,6 @@ void WriteHDF(
 			for ( layer = 0; layer < layers; layer++ )
 			{
 				*pimage = (float)(Data[layer*rows*cols+col*rows+row]);
-				// *pimage = (float)(Data[layer*rows*cols+col*rows+row]);
 				pmin    = MIN_own(pmin, *pimage);
 				pmax    = MAX_own(pmax, *pimage);
 				pimage++;

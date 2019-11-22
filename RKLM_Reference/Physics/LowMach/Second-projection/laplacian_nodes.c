@@ -923,6 +923,143 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                 }
             }
             
+#ifdef SLANTED_BC_IMPLICIT
+            {
+                
+#if 1
+                /* second try without proper flux averaging */
+                extern BDRY* bdry;
+                extern MPV* mpv;
+                
+                double alpha       = 0.5;
+                double nine_pt_bot = 0.0;
+                double oodxdy      = 0.5/(dx*dy);
+                
+                double slope;
+                double Pratio;
+                double flux_bottom;
+                double flux_bot_sum;
+                
+                double *flux_aux = lap; /* using bottom row for auxiliary storage */
+                
+                int is_dummy_cell;
+                
+                j  = igye;
+                me = j * icxe;
+                mn = j * icxn;
+                
+                Pratio = mpv->HydroState_n->rhoY0[j]/mpv->HydroState->rhoY0[j];
+                
+                flux_bot_sum =0.0;
+                
+                for(i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
+                    ne       = me + i;
+                    
+                    nn       = mn + i;
+                    nn1      = nn + 1;
+                    nnicxn   = nn + icxn;
+                    nn1icxn  = nn + 1 + icxn;
+                    
+                    slope = bdry->wall_slope[i];
+                    
+                    dsq_p_dxdy    = p[nn1icxn] - p[nnicxn] - p[nn1] + p[nn];
+                    
+                    flux_x_lower  = hplusx[ne] * oodxdy * ( (p[nn1]     - p[nn]    ) + nine_pt_bot * dsq_p_dxdy);
+                    flux_x_upper  = hplusx[ne] * oodxdy * ( (p[nn1icxn] - p[nnicxn]) - nine_pt_bot * dsq_p_dxdy);
+                    
+                    flux_aux[i]   = - (alpha * flux_x_lower + (1.0-alpha)*flux_x_upper) * slope * Pratio;
+                }
+
+                /* proper flux averaging */
+                /* periodicize the auxiliary bottom fluxes */
+                for (int i=0; i<igxe; i++) {
+                    flux_aux[i]             = flux_aux[icxe-igxe-2+i];
+                    flux_aux[icxe-igxe-1-i] = flux_aux[igxe+1-i];
+                }
+                
+                f0 = flux_aux[igxe-1];
+                for (int i=igxe; i<icxe-igxe; i++) {
+                    nn       = mn + i;
+                    nn1      = nn + 1;
+                    double fm = f0;
+                    double f0 = flux_aux[i];
+                    double fp = flux_aux[i+1];
+                    flux_aux[i] = 0.25*(fm + fp) + 0.5*f0; 
+                    flux_bot_sum += 2.0*flux_aux[i];
+
+                    lap[nn]      += flux_aux[i];
+                    lap[nn1]     += flux_aux[i];
+                }
+                flux_bot_sum /= icxe-2*igxe;
+
+                for(i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
+                    nn       = mn + i;
+                    nn1      = nn + 1;
+                    lap[nn]  -= 0.5*flux_bot_sum;
+                    lap[nn1] -= 0.5*flux_bot_sum;
+                    
+                }
+#else 
+                /* initial trial without proper flux averaging */
+                extern BDRY* bdry;
+                extern MPV* mpv;
+                
+                double alpha       = 0.5;
+                double nine_pt_bot = 0.0;
+                double oodxdy      = 0.5/(dx*dy);
+                
+                double slope;
+                double Pratio;
+                double flux_bottom;
+                double flux_bot_sum;
+                                
+                int is_dummy_cell;
+
+                j  = igye;
+                me = j * icxe;
+                mn = j * icxn;
+                    
+                Pratio = mpv->HydroState_n->rhoY0[j]/mpv->HydroState->rhoY0[j];
+                
+                flux_bot_sum =0.0;
+                
+                for(i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
+                    ne       = me + i;
+                        
+                    nn       = mn + i;
+                    nn1      = nn + 1;
+                    nnicxn   = nn + icxn;
+                    nn1icxn  = nn + 1 + icxn;
+                        
+                    slope = bdry->wall_slope[i];
+
+                    dsq_p_dxdy    = p[nn1icxn] - p[nnicxn] - p[nn1] + p[nn];
+                    
+                    flux_x_lower  = hplusx[ne] * oodxdy * ( (p[nn1]     - p[nn]    ) + nine_pt_bot * dsq_p_dxdy);
+                    flux_x_upper  = hplusx[ne] * oodxdy * ( (p[nn1icxn] - p[nnicxn]) - nine_pt_bot * dsq_p_dxdy);
+                                                
+                    flux_bottom   = - (alpha * flux_x_lower + (1.0-alpha)*flux_x_upper) * slope * Pratio;
+                    
+                    lap[nn]      += flux_bottom;
+                    lap[nn1]     += flux_bottom;
+                    
+                    is_dummy_cell = ((i >= igxe) && (i <= icxe-igxe)); 
+                    
+                    flux_bot_sum += 2.0*flux_bottom*is_dummy_cell;
+                }
+                flux_bot_sum /= icxe-2*igxe;
+                
+                for(i = igxe - is_x_periodic; i < icxe - igxe + is_x_periodic; i++) {
+                    nn       = mn + i;
+                    nn1      = nn + 1;
+                    lap[nn]  -= 0.5*flux_bot_sum;
+                    lap[nn1] -= 0.5*flux_bot_sum;
+
+                }
+#endif 
+            }                
+#endif /* SLANTED_BC_IMPLICIT */
+            
             precon_invert(lap, lap, node, is_x_periodic, is_y_periodic, is_z_periodic);
 
             break;
@@ -1022,6 +1159,10 @@ void EnthalpyWeightedLap_Node_bilinear_p_scatter(
                 }
             }
             
+#ifdef SLANTED_BC_IMPLICIT
+            assert(0);
+#endif
+
             precon_invert(lap, lap, node, is_x_periodic, is_y_periodic, is_z_periodic);
 
             break;

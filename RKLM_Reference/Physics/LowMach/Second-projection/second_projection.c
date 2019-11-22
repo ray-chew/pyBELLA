@@ -33,12 +33,12 @@
 #include "molecular_transport.h"
 
 static double divergence_nodes(
-							 double* rhs,
-							 const ElemSpaceDiscr* elem,
-							 const NodeSpaceDiscr* node,
-							 const ConsVars* Sol,
-							 const MPV* mpv,
-							 const BDRY* bdry);
+                             double* rhs,
+                             const ElemSpaceDiscr* elem,
+                             const NodeSpaceDiscr* node,
+                             const ConsVars* Sol,
+                             const MPV* mpv,
+                             const BDRY* bdry);
 
 static void rhs_from_p_old(
                            double* rhs,
@@ -48,37 +48,37 @@ static void rhs_from_p_old(
                            const double* hcenter);
 
 static enum Constraint integral_condition_nodes(
-												double* rhs,
-												const NodeSpaceDiscr* node,
-												const int x_periodic,
-												const int y_periodic,
-												const int z_periodic);
+                                                double* rhs,
+                                                const NodeSpaceDiscr* node,
+                                                const int x_periodic,
+                                                const int y_periodic,
+                                                const int z_periodic);
 
-static void	catch_periodic_directions(
-									  double* rhs,  
-									  const NodeSpaceDiscr* node, 
-									  const ElemSpaceDiscr* elem,
-									  const int x_periodic,
-									  const int y_periodic,
-									  const int z_periodic);
+static void    catch_periodic_directions(
+                                      double* rhs,  
+                                      const NodeSpaceDiscr* node, 
+                                      const ElemSpaceDiscr* elem,
+                                      const int x_periodic,
+                                      const int y_periodic,
+                                      const int z_periodic);
 
 static void operator_coefficients_nodes(
-										double* Splus[3], 
-										double* wcenter,
-										const ElemSpaceDiscr* elem,
-										const NodeSpaceDiscr* node,
-										ConsVars* Sol,
-										const ConsVars* Sol0,
-										const MPV* mpv,
+                                        double* Splus[3], 
+                                        double* wcenter,
+                                        const ElemSpaceDiscr* elem,
+                                        const NodeSpaceDiscr* node,
+                                        ConsVars* Sol,
+                                        const MPV* mpv,
                                         const double dt);
 
 void correction_nodes(
-					  ConsVars* Sol,
-					  const ElemSpaceDiscr* elem,
-					  const NodeSpaceDiscr* node,
+                      ConsVars* Sol,
+                      const ElemSpaceDiscr* elem,
+                      const NodeSpaceDiscr* node,
                       const double* hplus[3], 
-					  double* p2, 
-					  const double dt,
+                      double* p2, 
+                      const double dt,
+                      const int adjust_chi,
                       const enum CorrectionRange crange);
 
 void bottom_grid_layer_set(double* obj, 
@@ -97,10 +97,17 @@ void diss_to_rhs(double* rhs,
                  const NodeSpaceDiscr* node,
                  const double dt);
 
+void diss_psinc_correction(double* rhs,
+                           const ConsVars* Sol,
+                           const double* diss,
+                           const ElemSpaceDiscr* elem,
+                           const NodeSpaceDiscr* node,
+                           const double dt);
+
 /* ========================================================================== */
 
 #if OUTPUT_RHS_NODES
-// static int rhs_output_count = 4;
+static int rhs_output_count = 0;
 static int first_output_step = 0;
 extern int step;  
 #endif
@@ -115,6 +122,7 @@ double residual(double *rhs,
                 const double* p2o,
                 const double* div,
                 const MPV* mpv,
+                const ElemSpaceDiscr* elem,
                 const NodeSpaceDiscr* node,
                 const double dt,
                 const int x_periodic,
@@ -125,11 +133,11 @@ double residual(double *rhs,
 
 void euler_backward_non_advective_impl_part(ConsVars* Sol,
                                             MPV* mpv,
-                                            const ConsVars* Sol0,
+                                            double* diss,
                                             const ElemSpaceDiscr* elem,
                                             const NodeSpaceDiscr* node,
                                             const double t,
-                                            const double dt,
+                                            const double dt, 
                                             const double alpha_diff) {
     
     /* as of August 31, 2018, this routine is to be interpreted
@@ -167,62 +175,67 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     if(ud.bdrytype_min[1] == PERIODIC) y_periodic = 1;
     if(ud.bdrytype_min[2] == PERIODIC) z_periodic = 1;
     
+#ifndef MINIMIZE_STD_OUT
     printf("\n\n====================================================");
     printf("\nImplicit step with nonlinear EOS control");
     printf("\n====================================================\n");
+#endif
     
     Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
     /* There is the option of starting with the previous solution, 
      but that seems not to come with sizeable advantages */
     for(int nn=0; nn<nc; nn++){
-        p2[nn]  = mpv->p2_nodes[nn];
+#ifdef PRESSURE_INCREMENTS_IN_ELLIPTIC_SOLVE
+        p2[nn]  = 0.0; 
+#else
+        p2[nn] = mpv->p2_nodes[nn];
+#endif
         p2o[nn] = mpv->p2_nodes[nn];
         rhs[nn] = 0.0;
     }
     
-    operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
+    operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, mpv, dt);
     
+#ifdef PRESSURE_INCREMENTS_IN_ELLIPTIC_SOLVE
+    correction_nodes(Sol, elem, node, (const double**)hplus, mpv->p2_nodes, dt, 0, FULL_FIELD);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS); 
+#endif
+
     if (ud.mol_trans != NO_MOLECULAR_TRANSPORT) {
-        extern double* diss;        
-        molecular_transport(Sol, diss, elem, alpha_diff*dt);
-        diss_to_rhs(rhs,diss,elem,node, dt); /* diss_to_rhs(rhs,W0,elem,node, alpha_diff*dt);  */        
+        molecular_transport(Sol, diss, elem, dt);
+        diss_to_rhs(rhs, diss, elem, node, dt); /* diss_to_rhs(rhs,W0,elem,node, alpha_diff*dt);  */        
+        if (ud.is_compressible == 0) {
+            diss_psinc_correction(rhs, Sol, diss, elem, node, dt);
+        }
+        rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
+        if (ud.is_compressible == 0) {
+            assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);  
+        }
+    } else {
+        /* loop for iterating on bottom topography boundary conditions */
+        rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
+        assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);                 
     }
-    
-    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
-    assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);         
-    
+        
     /* rescaling of flux divergence for r.h.s. of the elliptic pressure equation */ 
     for (int i=0; i<node->nc; i++) {
         rhs[i] /= dt;
     }
+    
+#ifndef MINIMIZE_STD_OUT
     printf("\nrhsmax = %e\n", rhs_max);
-    
-    
-#if OUTPUT_RHS_NODES
-    FILE *prhsfile = NULL;
-    char fn[120], fieldname[90];
-    if (step >= first_output_step) {
-        if (rhs_output_count < 10) {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
-        } else if(rhs_output_count < 100) {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
-        } else {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
-        }
-        sprintf(fieldname, "rhs_nodes");    
-        WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
-        rhs_output_count++;
-    }
-#endif
-    
+#endif    
+        
+#if !defined PRESSURE_INCREMENTS_IN_ELLIPTIC_SOLVE
     if (ud.is_compressible) {
         rhs_from_p_old(rhs, elem, node, mpv, hcenter);
     }
+#endif
     
     variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
     
-    correction_nodes(Sol, elem, node, (const double**)hplus, p2, dt, FULL_FIELD);
+    correction_nodes(Sol, elem, node, (const double**)hplus, p2, dt, 1, FULL_FIELD);
     Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
     
     if (ud.is_compressible) {
@@ -233,27 +246,11 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
             rhs[nn] /= dt;
             dp2[nn] = 0.0;
         }
-        rhs_Newton = residual(rhs, p2, p2o, rhs, mpv, node, dt, x_periodic, y_periodic, z_periodic);
+        rhs_Newton = residual(rhs, p2, p2o, rhs, mpv, elem, node, dt, x_periodic, y_periodic, z_periodic);
         
-        
-#if OUTPUT_RHS_NODES
-        if (step >= first_output_step) {
-            if (rhs_output_count < 10) {
-                sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
-            } else if(rhs_output_count < 100) {
-                sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
-            } else {
-                sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
-            }
-            sprintf(fieldname, "rhs_nodes");    
-            WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
-            rhs_output_count++;
-        }
-#endif
-
         /* while (rhs_Newton > ud.second_projection_precision*ud.Msq/dt) { */
         while (rhs_Newton > ud.second_projection_precision) {
-            double scale = 1000;
+            double scale = 1.0;
             printf("\nrhs_Newton = %e\n", rhs_Newton);
             for (int nn=0; nn<node->nc; nn++) {
                 rhs[nn] *= scale;
@@ -262,7 +259,7 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
             for (int nn=0; nn<node->nc; nn++) {
                 dp2[nn] /= scale;
             }
-            correction_nodes(Sol, elem, node, (const double**)hplus, dp2, dt, FULL_FIELD);
+            correction_nodes(Sol, elem, node, (const double**)hplus, dp2, dt, 1, FULL_FIELD);
             Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);        
             for (int nn=0; nn<node->nc; nn++) {
                 p2[nn]  += dp2[nn];
@@ -274,40 +271,24 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
             for (int nn=0; nn<node->nc; nn++) {
                 rhs[nn] /= dt;
             }
-            rhs_Newton = residual(rhs, p2, p2o, rhs, mpv, node, dt, x_periodic, y_periodic, z_periodic);
+            rhs_Newton = residual(rhs, p2, p2o, rhs, mpv, elem, node, dt, x_periodic, y_periodic, z_periodic);
         }
     }
 
-
+#ifdef PRESSURE_INCREMENTS_IN_ELLIPTIC_SOLVE
+    for(ii=0; ii<nc; ii++) {
+        mpv->p2_nodes[ii] += p2[ii];
+    }
+#else
     for(ii=0; ii<nc; ii++) {
         double p2_new      = p2[ii];
         mpv->dp2_nodes[ii] = p2_new - mpv->p2_nodes[ii];
         mpv->p2_nodes[ii]  = p2_new;
     }
-    
+#endif
     set_ghostnodes_p2(mpv->p2_nodes, node, 2);   
     
-    free(dp2);
-    
-#if OUTPUT_RHS_NODES
-    memset(rhs, 0.0, node->nc*sizeof(double));
-    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
-    /* catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
-     */
-    
-    if (step >= first_output_step) {
-        if (rhs_output_count < 10) {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
-        } else if(rhs_output_count < 100) {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
-        } else {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
-        }
-        sprintf(fieldname, "rhs_nodes");    
-        WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
-        rhs_output_count++;
-    }
-#endif
+    free(dp2);    
 }
 
 /* ========================================================================== */
@@ -317,6 +298,7 @@ double residual(double *rhs,
                 const double* p2o,
                 const double* div,
                 const MPV* mpv,
+                const ElemSpaceDiscr* elem,
                 const NodeSpaceDiscr* node,
                 const double dt,
                 const int x_periodic,
@@ -345,14 +327,49 @@ double residual(double *rhs,
     const int kmax = MAX_own(1, iczn - igzn);
 
     
+#if 1
+    double* hc    = mpv->wcenter;
+    double Msqinv = 1.0/ud.Msq; 
+    
+    scale_wall_node_values(hc, node, elem, 2.0);
     for (int k=igzn; k < kmax ; k++) {
         int ln = k*icxn*icyn;
         for (int j=igyn; j < jmax ; j++) {
             int mn = ln+j*icxn;
             for (int i=igxn; i < imax ; i++) {
                 int nn = mn + i;
+#ifdef FULL_VARIABLES
+                double pin = ud.Msq*p2[nn];
+                double pio = ud.Msq*p2o[nn];
+#else
                 double pin = ud.Msq*(mpv->HydroState_n->p20[j]+p2[nn]);
                 double pio = ud.Msq*(mpv->HydroState_n->p20[j]+p2o[nn]);
+#endif
+                double rhoYn = pow(pin,th.gm1inv);
+                double rhoYo = pow(pio,th.gm1inv);
+                
+                rhs[nn] = (hc[nn]*Msqinv*(pin-pio) + (rhoYn - rhoYo) / (dt*dt));
+                rhsmax  = MAX_own(rhsmax, fabs(rhs[nn]));
+            }
+        }
+    }
+    scale_wall_node_values(hc, node, elem, 0.5);
+    scale_wall_node_values(rhs, node, elem, 0.5);
+
+#else
+    for (int k=igzn; k < kmax ; k++) {
+        int ln = k*icxn*icyn;
+        for (int j=igyn; j < jmax ; j++) {
+            int mn = ln+j*icxn;
+            for (int i=igxn; i < imax ; i++) {
+                int nn = mn + i;
+#ifdef FULL_VARIABLES
+                double pin = ud.Msq*p2[nn];
+                double pio = ud.Msq*p2o[nn];
+#else
+                double pin = ud.Msq*(mpv->HydroState_n->p20[j]+p2[nn]);
+                double pio = ud.Msq*(mpv->HydroState_n->p20[j]+p2o[nn]);
+#endif
                 double rhoYn = pow(pin,th.gm1inv);
                 double rhoYo = pow(pio,th.gm1inv);
                 rhs[nn] = (div[nn] + (rhoYn - rhoYo) / (dt*dt));
@@ -360,23 +377,22 @@ double residual(double *rhs,
             }
         }
     }
+#endif
     return rhsmax;
 }
 
 #else /* NONLINEAR_EOS_ITERATION */
 
 /* ========================================================================== */
-int swtch = 0;
-int wplus_cnt = 0;
+
 void euler_backward_non_advective_impl_part(ConsVars* Sol,
                                             MPV* mpv,
-                                            const ConsVars* Sol0,
+                                            double *diss,
                                             const ElemSpaceDiscr* elem,
                                             const NodeSpaceDiscr* node,
                                             const double t,
-                                            const double dt,
-                                            const double alpha_diff,
-                                            int step) {
+                                            const double dt, 
+                                            const double alpha_diff) {
     
     /* as of August 31, 2018, this routine is to be interpreted
      as carrying out an implicit Euler step for the linearized 
@@ -395,7 +411,8 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     double*  hcenter = mpv->wcenter;
     
     double* rhs      = mpv->rhs;
-    double* p2       = mpv->dp2_nodes;
+    /* double* p2       = mpv->dp2_nodes; */
+    double* p2       = (double*)malloc(nc*sizeof(double));
     
     double rhs_max;
     
@@ -411,163 +428,94 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     if(ud.bdrytype_min[1] == PERIODIC) y_periodic = 1;
     if(ud.bdrytype_min[2] == PERIODIC) z_periodic = 1;
     
+#ifndef MINIMIZE_STD_OUT
     printf("\n\n====================================================");
     printf("\nSecond Projection");
     printf("\n====================================================\n");
+#endif
     
     Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
 
     /* There is the option of starting with the previous solution, 
      but that seems not to come with sizeable advantages */
     for(ii=0; ii<nc; ii++){
-        p2[ii] = mpv->p2_nodes[ii];
-        /* p2[ii]  = 0.0;   */
+#ifdef PRESSURE_INCREMENTS_IN_ELLIPTIC_SOLVE
+        p2[ii]  = 0.0; 
+#else
+        p2[ii]  = mpv->p2_nodes[ii];
+#endif
         rhs[ii] = 0.0;
     }
     
-    operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, Sol0, mpv, dt);
-
-    swtch += 1;
-    if (swtch == 3){swtch = 1;}
-    char fn[240], fieldname[180];
-    if (swtch == 1){
-        FILE *hcenterfile = NULL;
-        if (step < 10) {
-                sprintf(fn, "%s/hcenter/hcenter_00%d_after_ebnaimp.hdf", ud.file_name, step);
-            } else if(step < 100) {
-                sprintf(fn, "%s/hcenter/hcenter_0%d_after_ebnaimp.hdf", ud.file_name, step);
-            } else {
-                sprintf(fn, "%s/hcenter/hcenter_%d_after_ebnaimp.hdf", ud.file_name, step);
-            }
-        sprintf(fieldname, "hcenter");    
-        WriteHDF(hcenterfile, node->icx, node->icy, node->icz, node->ndim, hcenter, fn, fieldname);
-
-        FILE *p2_initial = NULL;
-        if (step < 10) {
-                sprintf(fn, "%s/p2_initial/p2_initial_00%d_after_ebnaimp.hdf", ud.file_name, step);
-            } else if(step < 100) {
-                sprintf(fn, "%s/p2_initial/p2_initial_0%d_after_ebnaimp.hdf", ud.file_name, step);
-            } else {
-                sprintf(fn, "%s/p2_initial/p2_initial_%d_after_ebnaimp.hdf", ud.file_name, step);
-            }
-        sprintf(fieldname, "p2_initial");    
-        WriteHDF(p2_initial, node->icx, node->icy, node->icz, node->ndim, p2, fn, fieldname);
-
-        FILE *wplusxfile = NULL;
-        if (step < 10) {
-                sprintf(fn, "%s/wplusx/wplusx_00%d_after_ebnaimp.hdf", ud.file_name, step);
-            } else if(step < 100) {
-                sprintf(fn, "%s/wplusx/wplusx_0%d_after_ebnaimp.hdf", ud.file_name, step);
-            } else {
-                sprintf(fn, "%s/wplusx/wplusx_%d_after_ebnaimp.hdf", ud.file_name, step);
-            }
-        sprintf(fieldname, "wplusx");    
-        WriteHDF(wplusxfile, elem->icx, elem->icy, elem->icz, node->ndim, hplus[0], fn, fieldname);
-
-        FILE *wplusyfile = NULL;
-        if (step < 10) {
-                sprintf(fn, "%s/wplusy/wplusy_00%d_after_ebnaimp.hdf", ud.file_name, step);
-            } else if(step < 100) {
-                sprintf(fn, "%s/wplusy/wplusy_0%d_after_ebnaimp.hdf", ud.file_name, step);
-            } else {
-                sprintf(fn, "%s/wplusy/wplusy_%d_after_ebnaimp.hdf", ud.file_name, step);
-            }
-        sprintf(fieldname, "wplusy");    
-        WriteHDF(wplusyfile, elem->icx, elem->icy, elem->icz, node->ndim, hplus[1], fn, fieldname);
-        wplus_cnt += 1;
-    }
-
-    // FILE *tmp_file = NULL;
-    // char fn[240], fieldname[180];
-    // int tmp_step = 0;
-    // if (tmp_step < 10) {
-    //     sprintf(fn, "%s/debug/hplus_00%d.hdf", ud.file_name, tmp_step);
-    // } else if(tmp_step < 100) {
-    //     sprintf(fn, "%s/debug/hplus_0%d.hdf", ud.file_name, tmp_step);
-    // } else {
-    //     sprintf(fn, "%s/debug/hplus_%d.hdf", ud.file_name, tmp_step);
-    // }
-    // sprintf(fieldname, "hplus");
-    // WriteHDF(tmp_file, node->icx, node->icy, node->icz, elem->ndim, *hplus, fn, fieldname);
-
-    // if (tmp_step < 10) {
-    //     sprintf(fn, "%s/debug/hcenter_00%d.hdf", ud.file_name, tmp_step);
-    // } else if(tmp_step < 100) {
-    //     sprintf(fn, "%s/debug/hcenter_0%d.hdf", ud.file_name, tmp_step);
-    // } else {
-    //     sprintf(fn, "%s/debug/hcenter_%d.hdf", ud.file_name, tmp_step);
-    // }
-    // sprintf(fieldname, "hcenter");
-    // WriteHDF(tmp_file, node->icx, node->icy, node->icz, elem->ndim, hcenter, fn, fieldname);
-    // tmp_step++;
-
+    operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, mpv, dt);
+    
+#ifdef PRESSURE_INCREMENTS_IN_ELLIPTIC_SOLVE
+    correction_nodes(Sol, elem, node, (const double**)hplus, mpv->p2_nodes, dt, 0, FULL_FIELD);
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS); 
+#endif
+    
     if (ud.mol_trans != NO_MOLECULAR_TRANSPORT) {
-        extern double* diss;        
         molecular_transport(Sol, diss, elem, alpha_diff*dt);
-        diss_to_rhs(rhs,diss,elem,node, dt); /* diss_to_rhs(rhs,W0,elem,node, alpha_diff*dt);  */        
+        diss_to_rhs(rhs, diss, elem, node, dt);               
+        if (ud.is_compressible == 0) {
+            diss_psinc_correction(rhs, Sol, diss, elem, node, dt);
+        }
+        rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
+        if (ud.is_compressible == 0) {
+            assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);  
+        }
+    } else {
+        /* loop for iterating on bottom topography boundary conditions */
+        rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
+        assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);                 
     }
-
-    /* loop for iterating on bottom topography boundary conditions */
-    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
-    assert(integral_condition_nodes(rhs, node, x_periodic, y_periodic, z_periodic) != VIOLATED);
-
+    
     /* rescaling of flux divergence for r.h.s. of the elliptic pressure equation */ 
     for (int i=0; i<node->nc; i++) {
         rhs[i] /= dt;
     }
+#ifndef MINIMIZE_STD_OUT
     printf("\nrhsmax = %e\n", rhs_max);
+#endif
     
+#if !defined PRESSURE_INCREMENTS_IN_ELLIPTIC_SOLVE
     if (ud.is_compressible) {
         rhs_from_p_old(rhs, elem, node, mpv, hcenter);
-    }
-    int rhs_output_count = 4;
-    #if OUTPUT_RHS_NODES
-        FILE *prhsfile = NULL;
-        // char fn[240], fieldname[180];
-        if (step >= first_output_step) {
-            if (step < 10) {
-                sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d_after_ebnaimp.hdf", ud.file_name, step);
-            } else if(step < 100) {
-                sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d_after_ebnaimp.hdf", ud.file_name, step);
-            } else {
-                sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d_after_ebnaimp.hdf", ud.file_name, step);
-            }
-            sprintf(fieldname, "rhs_nodes");
-            if (swtch == 1){
-            WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
-            rhs_output_count++;
-            }
-        }
-    #endif
-        
-    variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
-
-    FILE *tmp_file = NULL;
-    // char fn[240], fieldname[180];
-    if (swtch == 1){
-        // int tmp_step = 4;
-        if (step < 10) {
-            sprintf(fn, "%s/pnew/p2_full_00%d_after_ebnaimp.hdf", ud.file_name, step);
-        } else if(step < 100) {
-            sprintf(fn, "%s/pnew/p2_full_0%d_after_ebnaimp.hdf", ud.file_name, step);
+    } else if ( !ud.is_compressible ) {
+        if (ud.is_ArakawaKonor ) {
+            for (int nn=0; nn<node->nc; nn++) {
+                rhs[nn]    -= hcenter[nn] * mpv->dp2_nodes[nn];
+                hcenter[nn] = 0.0;
+            }        
         } else {
-            sprintf(fn, "%s/pnew/p2_full_%d_after_ebnaimp.hdf", ud.file_name, step);
+            for (int nn=0; nn<node->nc; nn++) {
+                hcenter[nn] = 0.0;
+            }                    
         }
-        sprintf(fieldname, "p2_full");
-        WriteHDF(tmp_file, node->icx, node->icy, node->icz, elem->ndim, p2, fn, fieldname);
-
     }
 
-    correction_nodes(Sol, elem, node, (const double**)hplus, p2, dt, FULL_FIELD);
-    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
+#endif
     
+    variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
+    
+    correction_nodes(Sol, elem, node, (const double**)hplus, p2, dt, 1, FULL_FIELD);
+    
+#ifdef PRESSURE_INCREMENTS_IN_ELLIPTIC_SOLVE
+    for(ii=0; ii<nc; ii++) {
+        mpv->p2_nodes[ii] += p2[ii];
+        mpv->dp2_nodes[ii] = p2[ii];
+    }
+#else
     for(ii=0; ii<nc; ii++) {
         double p2_new      = p2[ii];
         mpv->dp2_nodes[ii] = p2_new - mpv->p2_nodes[ii];
         mpv->p2_nodes[ii]  = p2_new;
     }
+#endif
+    set_ghostnodes_p2(mpv->p2_nodes, node, 2); 
     
-    set_ghostnodes_p2(mpv->p2_nodes, node, 2);
+        
+    Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS); 
     
 #if OUTPUT_RHS_NODES
     memset(rhs, 0.0, node->nc*sizeof(double));
@@ -575,19 +523,22 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     /* catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
      */
     
-    // if (step >= first_output_step) {
-    //     if (rhs_output_count < 10) {
-    //         sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
-    //     } else if(rhs_output_count < 100) {
-    //         sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
-    //     } else {
-    //         sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
-    //     }
-    //     sprintf(fieldname, "rhs_nodes");
-    //     WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
-    //     rhs_output_count++;
-    // }
+    if (step >= first_output_step) {
+        if (rhs_output_count < 10) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
+        } else if(rhs_output_count < 100) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
+        } else {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
+        }
+        sprintf(fieldname, "rhs_nodes");    
+        WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+        rhs_output_count++;
+    }
 #endif
+    
+    free(p2);
+    
 }
 #endif /* NONLINEAR_EOS_ITERATION */
 
@@ -595,16 +546,16 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
 /* ========================================================================== */
 
 static double divergence_nodes(
-							   double* rhs,
-							   const ElemSpaceDiscr* elem,
-							   const NodeSpaceDiscr* node,
-							   const ConsVars* Sol,
-							   const MPV* mpv,
-							   const BDRY* bdry) {
-	
-	extern User_Data ud;
-	    
-	const int ndim = node->ndim;
+                               double* rhs,
+                               const ElemSpaceDiscr* elem,
+                               const NodeSpaceDiscr* node,
+                               const ConsVars* Sol,
+                               const MPV* mpv,
+                               const BDRY* bdry) {
+    
+    extern User_Data ud;
+        
+    const int ndim = node->ndim;
 
     double div_max = 0.0;
         
@@ -905,23 +856,23 @@ static void rhs_from_p_old(
 /* ========================================================================== */
 
 static enum Constraint integral_condition_nodes(
-												double* rhs,
-												const NodeSpaceDiscr* node,
-												const int x_periodic,
-												const int y_periodic,
-												const int z_periodic) {
-	
-	/* Rupert, this is valid only for periodic data so far!!! */
-	
-	int i, j, k, l, m, n;
-	
-	const int igx = node->igx;
-	const int icx = node->icx;
-	const int igy = node->igy;
-	const int icy = node->icy;
-	const int igz = node->igz;
-	const int icz = node->icz;
-	const int icxicy = icx * icy;
+                                                double* rhs,
+                                                const NodeSpaceDiscr* node,
+                                                const int x_periodic,
+                                                const int y_periodic,
+                                                const int z_periodic) {
+    
+    /* Rupert, this is valid only for periodic data so far!!! */
+    
+    int i, j, k, l, m, n;
+    
+    const int igx = node->igx;
+    const int icx = node->icx;
+    const int igy = node->igy;
+    const int icy = node->icy;
+    const int igz = node->igz;
+    const int icz = node->icz;
+    const int icxicy = icx * icy;
     
     const int imax = MAX_own(1, icx - igx - x_periodic);
     const int jmax = MAX_own(1, icy - igy - y_periodic);
@@ -929,16 +880,16 @@ static enum Constraint integral_condition_nodes(
     
     const double del = DBL_EPSILON * node->nc;
     
-	double tmp = 0.0, rhs_max=0.0;
-	
-	for(k = igz; k < kmax; k++) {l = k * icxicy;
-		for(j = igy; j < jmax; j++) {m = l + j * icx; 
-			for(i = igx; i < imax; i++) {n = m + i;
-				tmp += rhs[n];
+    double tmp = 0.0, rhs_max=0.0;
+    
+    for(k = igz; k < kmax; k++) {l = k * icxicy;
+        for(j = igy; j < jmax; j++) {m = l + j * icx; 
+            for(i = igx; i < imax; i++) {n = m + i;
+                tmp += rhs[n];
                 if(fabs(rhs[n])>rhs_max) rhs_max = fabs(rhs[n]);
-			}
-		}
-	}
+            }
+        }
+    }
     
     /* if(fabs(tmp) > 100*del) { */
     if(fabs(tmp) > 10000*del) {
@@ -952,21 +903,23 @@ static enum Constraint integral_condition_nodes(
     }
     else {
         /* printf("integral_condition_nodes = OK;    tmp = %e,  rhs_max = %e\n", tmp, rhs_max); */
+#ifndef MINIMIZE_STD_OUT
         printf("integral_condition_nodes = OK; tmp = %e\n", tmp);
+#endif
         return SATISFIED;
     }
 }
 
 /* ========================================================================== */
 
-static void	catch_periodic_directions(
-									  double* rhs,  
-									  const NodeSpaceDiscr* node, 
-									  const ElemSpaceDiscr* elem,
-									  const int x_periodic,
-									  const int y_periodic,
-									  const int z_periodic) {
-		    
+static void    catch_periodic_directions(
+                                      double* rhs,  
+                                      const NodeSpaceDiscr* node, 
+                                      const ElemSpaceDiscr* elem,
+                                      const int x_periodic,
+                                      const int y_periodic,
+                                      const int z_periodic) {
+            
     int i, j, k, l, m, l0, l1, m0, m1, n0, n1;
     
     const int igx = node->igx;
@@ -1099,21 +1052,21 @@ void scale_wall_node_values(
         }
     }
 }
+
 /* ========================================================================== */
 
 static void operator_coefficients_nodes(
-										double* hplus[3], 
-										double* hcenter,
-										const ElemSpaceDiscr* elem,
-										const NodeSpaceDiscr* node,
-										ConsVars* Sol,
-										const ConsVars* Sol0,
-										const MPV* mpv,
+                                        double* hplus[3], 
+                                        double* hcenter,
+                                        const ElemSpaceDiscr* elem,
+                                        const NodeSpaceDiscr* node,
+                                        ConsVars* Sol,
+                                        const MPV* mpv,
                                         const double dt) {
-	
+    
     extern User_Data ud;
-	extern Thermodynamic th;
-	
+    extern Thermodynamic th;
+    
     const double g   = ud.gravity_strength[1];
     const double Msq = ud.Msq;
     const double Gammainv = th.Gammainv;
@@ -1129,12 +1082,12 @@ static void operator_coefficients_nodes(
     const double coriolis  = ud.coriolis_strength[0];
 
                     
-	switch(ndim) {
-		case 1: {    
-			ERROR("operator_coefficients_nodes() not implemented for 1D\n");
-			break;
-		}
-		case 2: {
+    switch(ndim) {
+        case 1: {    
+            ERROR("operator_coefficients_nodes() not implemented for 1D\n");
+            break;
+        }
+        case 2: {            
             
             int is_x_periodic = 0;
             int is_y_periodic = 0;
@@ -1142,22 +1095,23 @@ static void operator_coefficients_nodes(
             if(ud.bdrytype_min[0] == PERIODIC) is_x_periodic = 1;
             if(ud.bdrytype_min[1] == PERIODIC) is_y_periodic = 1;
             
-			const int igx = elem->igx;
+            const int igx = elem->igx;
             const int igy = elem->igy;
 
             const int icxe = elem->icx;
-			const int icye = elem->icy;
+            const int icye = elem->icy;
 
             const double dy = elem->dy;
-			
+            
             const int icxn = node->icx;
             const int icyn = node->icy;
             
-			double* hplusx  = hplus[0];
-			double* hplusy  = hplus[1];
-			double* hc      = hcenter;
+            double* hplusx  = hplus[0];
+            double* hplusy  = hplus[1];
+            double* hc      = hcenter;
 
-			const double ccenter = - (ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt)/time_offset;
+            /* const double ccenter = - (ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt)/time_offset; */
+            const double ccenter = - ud.Msq*th.gm1inv/(dt*dt)/time_offset;
             const double cexp    = 2.0-th.gamm;
             
             for(int i=0; i<elem->nc; i++) hc[i] = hplusx[i] = hplusy[i] = 0.0;
@@ -1165,8 +1119,12 @@ static void operator_coefficients_nodes(
             for(int j = igy - is_y_periodic; j < icye - igy + is_y_periodic; j++) {
                 int m = j * icxe;
                 
+#ifdef LOCAL_BRUNT_VAISALA
+                double strat = (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j]) / dy;
+#else
                 double strat = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j]) \
                 /(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
+#endif
                 
                 for(int i = igx - is_x_periodic; i < icxe - igx + is_x_periodic; i++) {
                     int n = m + i;    
@@ -1175,7 +1133,11 @@ static void operator_coefficients_nodes(
                     double coeff = Gammainv * Sol->rhoY[n] * Y;
                     double fsqsc = dt*dt * coriolis*coriolis;
                     double fimp  = 1.0 / (1.0 + fsqsc);
+#ifdef LOCAL_BRUNT_VAISALA
+                    double Nsqsc = time_offset * dt*dt * (g/Msq) * strat / Y;                    
+#else
                     double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;                    
+#endif
                     double gimp  = 1.0 / (nonhydro + Nsqsc);
                     
                     hplusx[n]    = coeff * fimp;
@@ -1196,14 +1158,16 @@ static void operator_coefficients_nodes(
                                              + pow(Sol->rhoY[ne01],cexp) \
                                              + pow(Sol->rhoY[ne10],cexp) \
                                              + pow(Sol->rhoY[ne11],cexp));
+
+                    hc[nn] *= 1.0;
                 }
             }
             
             scale_wall_node_values(hc, node, elem, 0.5);
             
             break;
-		}
-		case 3: {			
+        }
+        case 3: {            
             
             int is_x_periodic = 0;
             int is_y_periodic = 0;
@@ -1213,13 +1177,13 @@ static void operator_coefficients_nodes(
             if(ud.bdrytype_min[1] == PERIODIC) is_y_periodic = 1;
             if(ud.bdrytype_min[2] == PERIODIC) is_z_periodic = 1;
             
-			const int igx = elem->igx;
+            const int igx = elem->igx;
             const int igy = elem->igy;
             const int igz = elem->igz;
 
             const int icxe = elem->icx;
-			const int icye = elem->icy;
-			const int icze = elem->icz;
+            const int icye = elem->icy;
+            const int icze = elem->icz;
             
             const int icxn = node->icx;
             const int icyn = node->icy;
@@ -1228,33 +1192,40 @@ static void operator_coefficients_nodes(
             const double dy = elem->dy;
 
             double Msq = ud.Msq;
-			
-			double* hplusx  = hplus[0];
-			double* hplusy  = hplus[1];
-			double* hplusz  = hplus[2];
-			double* hc      = hcenter;
             
-			const double ccenter = - (ud.compressibility*ud.Msq)*th.gamminv/(dt*dt)/time_offset;
-			const double cexp    = 2.0-th.gamm;
+            double* hplusx  = hplus[0];
+            double* hplusy  = hplus[1];
+            double* hplusz  = hplus[2];
+            double* hc      = hcenter;
+            
+            const double ccenter = - (ud.compressibility*ud.Msq)*th.gm1inv/(dt*dt)/time_offset;
+            const double cexp    = 2.0-th.gamm;
             
             for(int i=0; i<elem->nc; i++) hc[i] = hplusx[i] = hplusy[i] = hplusz[i] = 0.0;
             
-			for(int k = igz - is_z_periodic; k < icze - igz + is_z_periodic; k++) {
+            for(int k = igz - is_z_periodic; k < icze - igz + is_z_periodic; k++) {
                 int l = k * icxe*icye;
                 
                 for(int j = igy - is_y_periodic; j < icye - igy + is_y_periodic; j++) {
                     int m = l + j * icxe;
                     
+#ifdef LOCAL_BRUNT_VAISALA
+                    double strat = (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j]) / dy;
+#else
                     double strat = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j]) \
                                         /(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
-
+#endif
                     for(int i = igx - is_x_periodic; i < icxe - igx + is_x_periodic; i++) {
                         int n = m + i;
                         double Y     = Sol->rhoY[n]/Sol->rho[n]; 
                         double coeff = Gammainv * Sol->rhoY[n] * Y;
                         double fsqsc = dt*dt * coriolis*coriolis;
                         double fimp  = 1.0 / (1.0 + fsqsc);
-                        double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;                    
+#ifdef LOCAL_BRUNT_VAISALA
+                        double Nsqsc = time_offset * dt*dt * (g/Msq) * strat / Y;     
+#else
+                        double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;     
+#endif
                         double gimp  = 1.0 / (nonhydro + Nsqsc);
                         
                         hplusx[n]  = coeff * fimp;
@@ -1262,7 +1233,7 @@ static void operator_coefficients_nodes(
                         hplusz[n]  = coeff * fimp;
                     }
                 }
-			}
+            }
             
             
             for(int k = igz; k < iczn - igz; k++) {
@@ -1289,66 +1260,71 @@ static void operator_coefficients_nodes(
                                                   + pow(Sol->rhoY[ne011],cexp) \
                                                   + pow(Sol->rhoY[ne101],cexp) \
                                                   + pow(Sol->rhoY[ne111],cexp));
+                        hc[nn] *= 1.0;
                     }
                 }
             }
             
             scale_wall_node_values(hc, node, elem, 0.5);
 
-			break;
-		}
-		default: ERROR("ndim not in {1,2,3}");
-	}
+            break;
+        }
+        default: ERROR("ndim not in {1,2,3}");
+    }
 }
 
 /* ========================================================================== */
 
 void correction_nodes(
-					  ConsVars* Sol,
-					  const ElemSpaceDiscr* elem,
-					  const NodeSpaceDiscr* node,
+                      ConsVars* Sol,
+                      const ElemSpaceDiscr* elem,
+                      const NodeSpaceDiscr* node,
                       const double* hplus[3], 
-					  double* p, 
+                      double* p, 
                       const double dt,
+                      const int adjust_chi,
                       const enum CorrectionRange crange) {
-	
-	extern User_Data ud;
+    
+    extern User_Data ud;
+    extern Thermodynamic th;
     extern MPV* mpv;
 
-	const int ndim = elem->ndim;
-    	    
-    const double coriolis  = ud.coriolis_strength[0];
+    const int ndim = elem->ndim;
+            
+    const double g        = ud.gravity_strength[1];
+    const double Msq      = ud.Msq;
+    const double coriolis = ud.coriolis_strength[0];
     
     /* TODO: controlled redo of changes from 2018.10.24 to 2018.11.11 */
     double time_offset = 3.0 - ud.acoustic_order; 
     // double time_offset = 1.0; 
 
 
-	switch(ndim) {
-		case 1: {
-			ERROR("function not available");
-			break;
-		}
-			
-		case 2: {
-			
-			const int igx = node->igx;
-			const int icx = node->icx;
-			const int igy = node->igy;
-			const int icy = node->icy;
-			
-			const int icxe = node->icx - 1;
-			
-			const double dx     = node->dx;
-			const double dy     = node->dy;
-			const double oodx   = 1.0 / dx;
-			const double oody   = 1.0 / dy;
-                        			
+    switch(ndim) {
+        case 1: {
+            ERROR("function not available");
+            break;
+        }
+            
+        case 2: {
+            
+            const int igx = node->igx;
+            const int icx = node->icx;
+            const int igy = node->igy;
+            const int icy = node->icy;
+            
+            const int icxe = node->icx - 1;
+            
+            const double dx     = node->dx;
+            const double dy     = node->dy;
+            const double oodx   = 1.0 / dx;
+            const double oody   = 1.0 / dy;
+                                    
             const double* hplusx = hplus[0];
             const double* hplusy = hplus[1];
             
             int i, j, m, me;
-			
+            
             int jmax  = icy - igy - 1;
             int vcorr = 1;
             
@@ -1357,31 +1333,34 @@ void correction_nodes(
                 vcorr = 0;
             }
             
-			for(j = igy; j < jmax; j++) {
-				m = j * icx; 
-				me = j * icxe;
+            for(j = igy; j < jmax; j++) {
+                m = j * icx; 
+                me = j * icxe;
                 
                 double dSdy = (mpv->HydroState_n->S0[j+1] - mpv->HydroState_n->S0[j]) * oody;
 
-				for(i = igx; i < icx - igx - 1; i++) {
-					const int n     = m + i;
-					const int nicx  = n + icx;
-					const int n1    = n + 1;
-					const int n1icx = n + 1 + icx;
-					const int ne    = me + i; 
-					
-					const double Dpx   = 0.5 * oodx * (p[n1]   - p[n] + p[n1icx] - p[nicx]);
-					const double Dpy   = 0.5 * oody * (p[nicx] - p[n] + p[n1icx] - p[n1]);
+                for(i = igx; i < icx - igx - 1; i++) {
+                    const int n     = m + i;
+                    const int nicx  = n + icx;
+                    const int n1    = n + 1;
+                    const int n1icx = n + 1 + icx;
+                    const int ne    = me + i; 
+                    
                     const double thinv = Sol->rho[ne] / Sol->rhoY[ne];
-					                    
+                    const double Dpx   = 0.5 * oodx * (p[n1]   - p[n] + p[n1icx] - p[nicx]);
+#ifdef FULL_VARIABLES
+                    const double Dpy   = 0.5 * oody * (p[nicx] - p[n] + p[n1icx] - p[n1]) + (1-adjust_chi)*th.Gamma*(g/Msq)*mpv->HydroState->S0[j];
+#else
+                    const double Dpy   = 0.5 * oody * (p[nicx] - p[n] + p[n1icx] - p[n1]);
+#endif                                   
                     Sol->rhou[ne] += - dt * thinv * hplusx[ne] * Dpx;
-					Sol->rhov[ne] += - dt * thinv * hplusy[ne] * Dpy * vcorr;
-                    Sol->rhoX[BUOY][ne] += - time_offset * dt * dSdy * Sol->rhov[ne] * vcorr;
-				}
-			} 
-			
-			break;
-		}
+                    Sol->rhov[ne] += - dt * thinv * hplusy[ne] * Dpy * vcorr;
+                    Sol->rhoX[BUOY][ne] += - adjust_chi * time_offset * dt * dSdy * Sol->rhov[ne] * vcorr;
+                }
+            } 
+            
+            break;
+        }
         case 3: {
             
             const int igx = node->igx;
@@ -1433,22 +1412,28 @@ void correction_nodes(
                         int ne   = me + i; 
                         
                         double Dpx   = 0.25 * oodx * (p[n001] - p[n000] + p[n011] - p[n010] + p[n101] - p[n100] + p[n111] - p[n110]);
-                        double Dpy   = 0.25 * oody * (p[n010] - p[n000] + p[n011] - p[n001] + p[n110] - p[n100] + p[n111] - p[n101]);
                         double Dpz   = 0.25 * oodz * (p[n100] - p[n000] + p[n110] - p[n010] + p[n101] - p[n001] + p[n111] - p[n011]);
+#ifdef FULL_VARIABLES
+                        double Dpy   = 0.25 * oody * (p[n010] - p[n000] + p[n011] - p[n001] + p[n110] - p[n100] + p[n111] - p[n101]);
+                        Dpy         += (1-adjust_chi)*th.Gamma*(g/Msq)*mpv->HydroState->S0[j];
+#else
+                        double Dpy   = 0.25 * oody * (p[n010] - p[n000] + p[n011] - p[n001] + p[n110] - p[n100] + p[n111] - p[n101]);
+#endif                                   
+
                         double thinv = Sol->rho[ne] / Sol->rhoY[ne];
                         
                         Sol->rhou[ne] += - dt * thinv * hplusx[ne] * (Dpx + dt * coriolis * Dpz);
                         Sol->rhov[ne] += - dt * thinv * hplusy[ne] * Dpy;
                         Sol->rhow[ne] += - dt * thinv * hplusz[ne] * (Dpz - dt * coriolis * Dpx);
-                        Sol->rhoX[BUOY][ne] += - time_offset * dt * dSdy * Sol->rhov[ne];
+                        Sol->rhoX[BUOY][ne] += - adjust_chi * time_offset * dt * dSdy * Sol->rhov[ne];
                     }
                 } 
             }
             
             break;
         }
-		default: ERROR("ndim not in {1, 2, 3}");
-	}
+        default: ERROR("ndim not in {1, 2, 3}");
+    }
 }
 
 
@@ -1465,6 +1450,10 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
      trapezoidal or midpoint discretization of the pressure gradient and 
      gravity terms. 
      */
+    
+    // Rupert:  Double-check treatment of rhoX[BUOY]-treatment at all levels. Are we missing
+    //the contribution of \chibar P_t ? //
+    
     extern User_Data ud;
     
     double nonhydro = ud.nonhydrostasy;
@@ -1490,14 +1479,27 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
         int l = k*icy*icx;
         for (int j=0; j<icy; j++) {
             int m = l + j*icx;
-            double strat = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j])/(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
             
+#ifdef LOCAL_BRUNT_VAISALA
+            double strat = (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j]) / dy;
+#else
+            double strat = 2.0 * (mpv->HydroState_n->Y0[j+1]-mpv->HydroState_n->Y0[j])/(mpv->HydroState_n->Y0[j+1]+mpv->HydroState_n->Y0[j])/dy;
+#endif
             for (int i=0; i<icx; i++) {
                 int n        = m + i;
                 
                 /* implicit gravity */
+#ifdef LOCAL_BRUNT_VAISALA
+                double Y     = Sol->rhoY[n]/Sol->rho[n];
+                double Nsqsc = time_offset * dt*dt * (g/Msq) * strat / Y;
+#else
                 double Nsqsc = time_offset * dt*dt * (g/Msq) * strat;
-                double dbuoy = -Sol->rhoY[n]*Sol->rhoX[BUOY][n]/Sol->rho[n];
+#endif
+#ifdef FULL_VARIABLES
+                double dbuoy = -Sol->rhoY[n]*(Sol->rhoX[BUOY][n]/Sol->rho[n] - mpv->HydroState->S0[j]);   
+#else
+                double dbuoy = -Sol->rhoY[n]*Sol->rhoX[BUOY][n]/Sol->rho[n];    
+#endif
                 double rhov  = (nonhydro * Sol->rhov[n] + dt * (g/Msq) * dbuoy) / (nonhydro + Nsqsc);
                 
                 /* implicit Coriolis */
@@ -1522,15 +1524,14 @@ void euler_forward_non_advective(ConsVars* Sol,
                                  const enum EXPLICIT_PRESSURE wp)
 {
     /* 
-     evaluates Euler 
-      for the pressure gradient, gravity, 
+     evaluates Euler forward for the pressure gradient, gravity, 
      and background stratification advection terms based on cell-
      centered data. 
      */
     extern User_Data ud;
     extern Thermodynamic th;
     extern BDRY* bdry;
-
+    
     extern double *W0;
     extern enum Boolean W0_in_use;
 
@@ -1638,23 +1639,26 @@ void euler_forward_non_advective(ConsVars* Sol,
                     double dpdy    = wp*0.5*(p2n[nn10]-p2n[nn00]+p2n[nn11]-p2n[nn01])/dy;
                     double dSdy    = (S0p-S0m) / dy;
                     double rhoYovG = Ginv*Sol->rhoY[nc];
-                    double v       = Sol->rhov[nc]/Sol->rho[nc];
                     double dchi    = Sol->rhoX[BUOY][nc]/Sol->rho[nc];
                     double dbuoy   = -Sol->rhoY[nc]*dchi;  
-                    double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];
+                    double drhou   = Sol->rhou[nc] - u0*Sol->rho[nc];                    
+                    double v       = Sol->rhov[nc]/Sol->rho[nc];
 
                     double dpidP   = (th.gm1 / ud.Msq) * \
-                                        0.25 * (pow(Sol->rhoY[nc], th.gamm -  2.0)      + pow(Sol->rhoY[nc-1], th.gamm - 2.0) + \
+                                        0.25 * (pow(Sol->rhoY[nc], th.gamm - 2.0)      + pow(Sol->rhoY[nc-1], th.gamm - 2.0) + \
                                                 pow(Sol->rhoY[nc-icxe], th.gamm - 2.0) + pow(Sol->rhoY[nc-icxe-1], th.gamm - 2.0));
 
                     double time_offset_expl = ud.acoustic_order - 1.0;
                     Sol->rhou[nc]  = Sol->rhou[nc] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[nc]);
-                    Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
+                    Sol->rhov[nc]  = Sol->rhov[nc] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro * (1.0-ud.is_ArakawaKonor); 
                     Sol->rhow[nc]  = Sol->rhow[nc] - dt * coriolis * drhou;
+#ifdef FULL_VARIABLES
+                    Sol->rhoX[BUOY][nc] = Sol->rho[nc] * Sol->rho[nc]/Sol->rhoY[nc] + time_offset_expl * dt * ( - v * dSdy) * Sol->rho[nc];
+#else
                     Sol->rhoX[BUOY][nc] = (Sol->rho[nc] * ( Sol->rho[nc]/Sol->rhoY[nc] - S0c)) +  time_offset_expl * dt * ( - v * dSdy) * Sol->rho[nc];
+#endif
 
                     dp2n[nn00] -= dt * dpidP * div[nn00];
-                    
                 }
             }
         }
@@ -1728,8 +1732,11 @@ void euler_forward_non_advective(ConsVars* Sol,
                         Sol->rhou[ne]  = Sol->rhou[ne] + dt * ( - rhoYovG * dpdx + coriolis * Sol->rhow[ne]);
                         Sol->rhov[ne]  = Sol->rhov[ne] + dt * ( - rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro; 
                         Sol->rhow[ne]  = Sol->rhow[ne] + dt * ( - rhoYovG * dpdz - coriolis * drhou);
+#ifdef FULL_VARIABLES
+                        Sol->rhoX[BUOY][ne] = Sol->rho[ne] * Sol->rho[ne]/Sol->rhoY[ne] + time_offset_expl * dt * (-v*dSdy) * Sol->rho[ne];
+#else
                         Sol->rhoX[BUOY][ne] = (Sol->rho[ne] * ( Sol->rho[ne]/Sol->rhoY[ne] - S0c)) + time_offset_expl * dt * (-v*dSdy) * Sol->rho[ne];
-                        
+#endif                   
                         dp2n[nn000] -= dt * dpidP * div[nn000];
                     }
                 }
@@ -1870,6 +1877,7 @@ void hydrostatic_vertical_velo(ConsVars* Sol,
     W0_in_use = WRONG;
 }
 
+
 /* ========================================================================== */
 
 void diss_to_rhs(double* rhs,
@@ -1914,7 +1922,7 @@ void diss_to_rhs(double* rhs,
                         int nnijpp = nnij + 1 + icxn;
                         int nnijmp = nnij + icxn;
                         
-                        double drhs = 0.25*diss[ncij]/dt;
+                        double drhs = 0.25*diss[ncij];
                         
                         rhs[nnijmm] -= drhs;
                         rhs[nnijpm] -= drhs;
@@ -1937,10 +1945,10 @@ void diss_to_rhs(double* rhs,
                         double drhsl = 0.25*diss[ncijl];
                         double drhsr = 0.25*diss[ncijr];
                         
-                        rhs[nnijml] += drhsl;
-                        rhs[nnijpl] += drhsl;
-                        rhs[nnijmr] += drhsr;
-                        rhs[nnijpr] += drhsr;
+                        rhs[nnijml] -= drhsr;
+                        rhs[nnijpl] -= drhsr;
+                        rhs[nnijmr] -= drhsl;
+                        rhs[nnijpr] -= drhsl;
                     }
                 }
                 if (ud.bdrytype_max[1] == PERIODIC) {
@@ -1959,17 +1967,145 @@ void diss_to_rhs(double* rhs,
     } 
 }
 
+/* ========================================================================== */
+
+void diss_psinc_correction(double* rhs,
+                           const ConsVars* Sol,
+                           const double* diss,
+                           const ElemSpaceDiscr* elem,
+                           const NodeSpaceDiscr* node,
+                           const double dt)
+{
+    /* This routine is to be called only for the 
+       pseudo-incompressible model!
+     
+     Here we calculate the mean pressure change due to 
+     non-zero averages of the energy dissipation term, 
+     and the horizontal mean vertical velocity that is
+     induced by this. This mean velocity is then mapped
+     to a corresponding correction of the vertical 
+     advective flux of rhoY, and its divergence is used
+     to correct the Poisson-equations right hand side for
+     solvability.
+     */
+    extern User_Data ud;
+    extern Thermodynamic th;
+    
+    if (ud.mol_trans == FULL_MOLECULAR_TRANSPORT) {
+        
+        assert(0); /* not implemented yet */
+        
+    } else if (ud.mol_trans == STRAKA_DIFFUSION_MODEL) {
+        
+        switch (elem->ndim) {
+            case 1:
+                assert(0);  /* not implemented yet */ 
+                break;
+                
+            case 2: {
+                
+                /* obtain horizontal mean of the dissipation term, 
+                 store it in an auxiliary array
+                 */                
+                int icxe = elem->icx;
+                int icye = elem->icy;
+                int igxe = elem->igx;
+                int igye = elem->igy;
+
+                int icxn = node->icx;
+                int icyn = node->icy;
+                int igxn = node->igx;
+                int igyn = node->igy;
+
+                double dy = elem->dy;
+                double gammainv = th.gamminv;
+                
+                double* SovPave = (double*)malloc(icyn*sizeof(double));
+                double* w0      = (double*)malloc(icyn*sizeof(double));
+                double* p0      = (double*)malloc(icyn*sizeof(double));
+                double* P0      = (double*)malloc(icyn*sizeof(double));
+                double* dP0dt   = (double*)malloc(icyn*sizeof(double));
+                double dp0dt, SovPint, oovGamp0int;
+                
+                /* horizontal average of the energy source term, store P0[j] */
+                for (int j=igye; j<icye-igye; j++) {
+                    int ncj = j*icxe;
+                    SovPave[j] = 0.0;
+                    P0[j]      = Sol->rhoY[ncj + igxe];
+                    for (int i=igxe; i<icxe-igxe; i++) {
+                        int ncij = ncj + i;
+                        SovPave[j] += diss[ncij];
+                    }
+                    SovPave[j] /= (icxe-2*igxe) * P0[j];
+                }
+                
+                /* Rate of change of physical pressure at domain top (thesis O'Neill (3.30)) */
+                SovPint     = 0.0;
+                oovGamp0int = 0.0;
+                for (int j=igye; j<icye-igye; j++) {
+                    SovPint     += dy * SovPave[j];
+                    p0[j]        = pow(P0[j],gammainv);
+                    oovGamp0int += dy * gammainv / p0[j];
+                }
+                dp0dt = SovPint / oovGamp0int;
+                
+                /* Associated mean vertical velocities at top/bottom primary cell faces */
+                w0[igyn]      = 0.0;
+                for (int j=igyn; j<icyn-igyn-1; j++) {
+                    w0[j+1] = w0[j] + dy * (SovPave[j] - gammainv * dp0dt / p0[j]); 
+                }
+                /* double-check whether the last computed value from the loop is zero! */
+                w0[icyn-igyn-1] = 0.0;
+                
+                /* Average these vertical velocities to the cell centers */
+                for (int j=igye; j<icye-igye; j++) {
+                    w0[j] = 0.5 * (w0[j] + w0[j+1]); 
+                }
+                
+                /* Compute change of mean  P0 = rhoY at cell face/nodal levels */
+                dP0dt[igyn] = 0.5*P0[igye]*SovPave[igye] - (1.0/dy)*P0[igye]*w0[igye];
+                for (int j=igyn+1; j<icyn-igyn-1; j++) {
+                    dP0dt[j] = 0.5 * (P0[j]*SovPave[j] + P0[j-1]*SovPave[j-1]) - (1.0/dy) * (P0[j]*w0[j] - P0[j-1]*w0[j-1]); 
+                }
+                dP0dt[icyn-igyn-1] = 0.5*P0[icye-igye-1]*SovPave[icye-igye-1] + (1.0/dy)*P0[icye-igye-1]*w0[icye-igye-1];
+                
+#if 1
+                /* check the sums */
+                double Qsum = 0.5*P0[igye]*SovPave[igye] - dP0dt[igyn];
+                for (int j=igyn+1; j<icyn-igyn-1; j++) {
+                    Qsum += 0.5 * (P0[j]*SovPave[j] + P0[j-1]*SovPave[j-1]) - dP0dt[j];
+                }              
+                Qsum += 0.5*P0[icye-igye-1]*SovPave[icye-igye-1] - dP0dt[icyn-igyn-1];
+                Qsum *=1.0;
+#endif
+                
+                /* solvability correction for the rhs of the pressure Poisson equation */
+                for (int j=igyn; j<icyn-igyn; j++) {
+                    int nnj = j*icxn;
+                    for (int i=igxn; i<icxn-igxn; i++) {
+                        int nnij = nnj + i;
+                        rhs[nnij] += dP0dt[j];
+                    }
+                }
+                
+                free(SovPave);
+                free(w0);
+                free(p0);
+                free(P0);
+                free(dP0dt);
+            }
+                break;
+                
+            case 3:
+                assert(0);  /* not implemented yet */
+                break;
+                
+            default:
+                break;
+        }  
+    } 
+}
 /*LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
  $Log:$
  LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL*/
 
-void print(int matrix[10][10])
-{
-    int i, j;
-    for (i = 0; i < 10; ++i)
-    {
-        for (j = 0; j < 10; ++j)
-            printf("%d ", matrix[i][j]);
-        printf("\n");
-    }
-}

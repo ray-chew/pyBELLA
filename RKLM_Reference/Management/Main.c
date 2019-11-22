@@ -40,7 +40,7 @@ int main( void )
 	/* low Mach */
 	extern MPV* mpv;
 	
-	// /* User data */
+	/* User data */
 	extern User_Data ud;
 	extern BDRY* bdry;
 	
@@ -56,17 +56,18 @@ int main( void )
 	/* Arrays */
 	extern ConsVars* Sol; 
 	extern ConsVars* Sol0; 
+    extern ConsVars* Sol1; 
     extern ConsVars* flux[3];
-    extern double* diss;
+
+    extern double* diss_midpnt;
+    extern double* diss_trpzdl;
 
     TimeStepInfo dt_info;
 	const double* tout = ud.tout;
 	int output_switch = 0;
-
-    // FILE *pfluxfile = NULL;
-    char fn[120], fieldname[90];
+    
     int swtch = 0;
-        
+
     double dt_factor;
         
 	/* data allocation and initialization */
@@ -85,8 +86,13 @@ int main( void )
             	    
     /* generate divergence-controlled initial data  */
     dt_info.time_step_switch = 0;
-
+    
     time_t tic = time(NULL);
+    
+#ifdef IMPLICIT_MIDPT_FOR_NODAL_P
+    for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes0[nn] = mpv->p2_nodes[nn];
+#endif
+
 	/* Main loop over the sequence of time values of tout */
 	while(t < *tout && step < ud.stepmax) {
 		
@@ -114,12 +120,17 @@ int main( void )
             /* Semi-implicit discretization of non-advective terms a la EULAG          */
             /* ======================================================================= */
             
+#ifndef MINIMIZE_STD_OUT
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nhalf-time prediction of advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
-
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, bdry, elem, 0.5*dt);
-
+#endif
+            
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, bdry, elem);
+            /* add effect of heat conduction and diffusion as computed in euler_backward_...() to rhoY */
+            if (ud.mol_trans != NO_MOLECULAR_TRANSPORT) {
+                diss_to_rhoY(Sol, diss_trpzdl, elem, node, 0.5*dt); 
+            }
             FILE *tmpfile = NULL;
             int tmp_step = 0;
             printf("current tmpstep = %d", tmp_step);
@@ -182,37 +193,70 @@ int main( void )
             if (swtch == 1){
                 putout(Sol, ud.file_name, "Sol", elem, node, 1, step, "before_advect");
                 // swtch = 0;
-            }            
+            }     
             advect(Sol, flux, Sol0, 0.5*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, ud.advec_time_integrator, step%2);
 
             if (swtch == 1){
                 putout(Sol, ud.file_name, "Sol", elem, node, 1, step, "after_advect");
                 // swtch = 0;
             }
-          
             /* divergence-controlled advective fluxes at the half time level */
+#ifndef IMPLICIT_MIDPT_FOR_NODAL_P
             for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes0[nn] = mpv->p2_nodes[nn];
-            euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt); 
+#endif
+            if (ud.is_ArakawaKonor) {
+                /* get hydrostatic pressure field */
+                ud.is_nonhydrostatic = 0;
+                ud.nonhydrostasy     = 0.0;
+                ud.is_compressible   = 1;
+                ud.compressibility   = 1.0;
 
+                /* store current flow state in Sol1 */
+                ConsVars_set(Sol1, Sol, elem->nc);
+
+                /* hydrostatic pressure prediction */
+                euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt); 
+                euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, elem, node, t, 0.5*dt, 1.0);
+                                
+                /* restore flow state from before the hydrostate */
+                ConsVars_set(Sol, Sol1, elem->nc);
+                
+                /* psinc part of pressure and the advective fluxes */
+                ud.is_nonhydrostatic = 1;
+                ud.nonhydrostasy     = 1.0;
+                ud.is_compressible   = 0;
+                ud.compressibility   = 0.0;
+                
+                euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt); 
+       
+                euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, elem, node, t, 0.5*dt, 1.0);
+            } else {
+                euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt); 
             if (swtch == 1){
                 putout(Sol, ud.file_name, "Sol", elem, node, 1, step, "after_ebnaexp");
                 // swtch = 0;
-            }        
-            euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt, 1.0, step);
+            } 
+                euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, elem, node, t, 0.5*dt, 1.0);
 
             if (swtch == 1){
                 putout(Sol, ud.file_name, "Sol", elem, node, 1, step, "after_ebnaimp");
                 // swtch = 0;
             }
-            recompute_advective_fluxes(flux, (const ConsVars*)Sol, bdry, elem, 0.5*dt);
-            for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes[nn] = mpv->p2_nodes0[nn];
-
-            ConsVars_set(Sol, Sol0, elem->nc);
+            }
+            
+            recompute_advective_fluxes(flux, (const ConsVars*)Sol, bdry, elem);
+            if (step >= 0) {
+                for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes[nn] = mpv->p2_nodes0[nn];
+#ifdef IMPLICIT_MIDPT_FOR_NODAL_P
+                for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes0[nn] = mpv->p2_nodes[nn] + 2.0*mpv->dp2_nodes[nn];
+#endif
+                ConsVars_set(Sol, Sol0, elem->nc);
+            }
             if (swtch == 1){
                 putout(Sol, ud.file_name, "Sol", elem, node, 1, step, "after_half_step");
                 // swtch = 0;
             }
-
+            
             if (swtch == 1){
                 int tmp_step = 5;
                 FILE *pfluxfile = NULL;
@@ -266,13 +310,16 @@ int main( void )
                 WriteHDF(pfluxfile, elem->ify, elem->icx, elem->icz, elem->ndim, flux[1]->rhoY, fn, fieldname);
                 tmp_step++;
             }
-
+#ifndef MINIMIZE_STD_OUT
             printf("\n\n-----------------------------------------------------------------------------------------");
             printf("\nfull time step with predicted advective flux");
             printf("\n-----------------------------------------------------------------------------------------\n");
-
+#endif
+            
             /* add effect of heat conduction and diffusion as computed in euler_backward_...() to rhoY */
-            diss_to_rhoY(Sol, diss, elem, node);
+            if (ud.mol_trans != NO_MOLECULAR_TRANSPORT) {
+                diss_to_rhoY(Sol, diss_midpnt, elem, node, (dt_factor-0.5)*dt);   
+            }
 
             /* explicit EULER half time step for gravity and pressure gradient */ 
             euler_forward_non_advective(Sol, mpv, (const ConsVars*)Sol0, elem, node, (dt_factor-0.5)*dt, WITH_PRESSURE);
@@ -280,7 +327,7 @@ int main( void )
             if (swtch == 1){
                 putout(Sol, ud.file_name, "Sol", elem, node, 1, step, "after_efna");
                 // swtch = 0;
-            }
+            }               
             /* explicit full time step advection using div-controlled advective fluxes */
             advect(Sol, flux, Sol0, dt_factor*dt, elem, FLUX_EXTERNAL, WITH_MUSCL, DOUBLE_STRANG_SWEEP, ud.advec_time_integrator, step%2); 
             if (swtch == 1){
@@ -288,26 +335,59 @@ int main( void )
                 // swtch = 0;
             }
 
-            /* add effect of heat conduction and diffusion as computed in euler_backward_...() to rhoY */
-            diss_to_rhoY(Sol, diss, elem, node);        
+            if (ud.mol_trans != NO_MOLECULAR_TRANSPORT) {
+                /* add effect of heat conduction and diffusion as computed in euler_backward_...() to rhoY */
+                diss_to_rhoY(Sol, diss_midpnt, elem, node, 0.5*dt);    
+            }
 
             /* implicit EULER half time step for gravity and pressure gradient */ 
-            euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt);
-            if (swtch == 1){
+            if (ud.is_ArakawaKonor) {
+                /* get hydrostatic pressure field */
+                ud.is_nonhydrostatic = 0;
+                ud.nonhydrostasy     = 0.0;
+                ud.is_compressible   = 1;
+                ud.compressibility   = 1.0;
+                
+                /* store current flow state in Sol1 */
+                ConsVars_set(Sol1, Sol, elem->nc);
+
+                /* hydrostatic pressure prediction */
+                euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt);
+                euler_backward_non_advective_impl_part(Sol, mpv, diss_trpzdl, elem, node, t, 0.5*dt, 2.0);
+
+                /* restore pre-hydro flow state from Sol1 */
+                ConsVars_set(Sol, Sol1, elem->nc);
+                
+                /* psinc part of pressure and final momentum fields */
+                ud.is_nonhydrostatic = 1;
+                ud.nonhydrostasy     = 1.0;
+                ud.is_compressible   = 0;
+                ud.compressibility   = 0.0;
+                
+                euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt);
+                euler_backward_non_advective_impl_part(Sol, mpv, diss_trpzdl, elem, node, t, 0.5*dt, 2.0);                
+            } else {
+                euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt);
+                if (swtch == 1){
                 putout(Sol, ud.file_name, "Sol", elem, node, 1, step, "after_full_ebnaexp");
                 // swtch = 0;
+                }
+                euler_backward_non_advective_impl_part(Sol, mpv, diss_trpzdl, elem, node, t, 0.5*dt, 2.0);
             }
-            euler_backward_non_advective_impl_part(Sol, mpv, (const ConsVars*)Sol0, elem, node, t, 0.5*dt, 2.0, step);
-
+                
             synchronize_variables(mpv, Sol, elem, node);
-           
+#ifdef IMPLICIT_MIDPT_FOR_NODAL_P
+            for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes[nn] = mpv->p2_nodes0[nn];
+#endif
+            
             if (ud.absorber) {
                 Absorber(Sol, (const ElemSpaceDiscr*)elem, (const double)t, (const double)dt); 
             }                                    
-                        
+                      
+
             if (ud.n_time_series > 0) {
                 store_time_series_entry(Sol, elem, step);
-            }
+            }     
 
             putout(Sol, ud.file_name, "Sol", elem, node, 1, step, "after_full_step");
 
@@ -316,15 +396,20 @@ int main( void )
             step++;
             dt_factor = 1.0;
 
-
             // if((ud.write_file == ON && (step % ud.write_file_period  == 0)) || output_switch) 
             //     putout(Sol, ud.file_name, "Sol", elem, node, 1);
 
-            // if((ud.write_stdout == ON && step % ud.write_stdout_period == 0) || output_switch) {
-            printf("\n############################################################################################");
-            printf("\nstep %d done,  t=%f,  dt=%.16f,  cfl=%f, cfl_ac=%f, cfl_adv=%f, dt_factor=%f", step, t, dt, dt_info.cfl, dt_info.cfl_ac, dt_info.cfl_adv, dt_factor);
-            printf("\n############################################################################################\n");
-            // }            
+            if((ud.write_stdout == ON && step % ud.write_stdout_period == 0) || output_switch) {
+                printf("\n############################################################################################");
+                printf("\nstep %d done,  t=%f,  dt=%f,  cfl=%f, cfl_ac=%f, cfl_adv=%f", step, t, dt, dt_info.cfl, dt_info.cfl_ac, dt_info.cfl_adv);
+                printf("\n############################################################################################\n");
+            }     
+            
+#if 0
+            if(t <= 39.0 && t+dt >= 39.0) {
+                ud.write_file_period = 20;
+            }
+#endif
 		}  
         
         // if(ud.write_file == ON) {
@@ -333,12 +418,6 @@ int main( void )
         // }
 		tout++;
 	}
-
-    time_t toc = time(NULL);
-    printf("\n################");
-    printf("\nTime spent = %ds", (toc - tic));
-    printf("\n################");
-    printf("\n");
 	
 	/* data release */
 	Data_free();

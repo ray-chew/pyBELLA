@@ -98,7 +98,7 @@ void hllestar(
         
         for (nsp = 0; nsp < ud.nspec; nsp++) {
             Fluxes->rhoX[nsp][i] = Fluxes->rhoY[i] * (upl * Xl[nsp]  + upr * Xr[nsp]) ;
-        }
+        }        
     }
 }
 
@@ -114,8 +114,7 @@ static int flux_output_count = 0;
 void recompute_advective_fluxes(ConsVars* flux[3], 
                                 const ConsVars* Sol, 
                                 const BDRY* bdry,
-                                const ElemSpaceDiscr* elem,
-                                const double dt)
+                                const ElemSpaceDiscr* elem)
 {
     extern User_Data ud;
             
@@ -185,7 +184,7 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                     flux[1]->rhoY[nfyij] = 0.25*(rhoYv_m + 2.0*rhoYv_c + rhoYv_p);
                 }
             }
-            
+                        
             break;
         }
             
@@ -215,17 +214,17 @@ void recompute_advective_fluxes(ConsVars* flux[3],
                 flux[2]->rhoY[i] = 0.0;
             }
             
-            for (int k=igz; k<icz-igz+1; k++) {
+            for (int k=igz-1; k<icz-igz+1; k++) {
                 int nck  = k*icx*icy;
                 int nfxk = k*ifx*icy;
                 int nfyk = k*ify;
                 int nfzk = k;
-                for (int j=igy; j<icy-igy+1; j++) {
+                for (int j=igy-1; j<icy-igy+1; j++) {
                     int ncjk  = nck  + j*icx;
                     int nfxjk = nfxk + j*ifx;
                     int nfyjk = nfyk + j;
                     int nfzjk = nfzk + j*ifz*icx;
-                    for(int i=igx; i<icx-igx+1; i++) {
+                    for(int i=igx-1; i<icx-igx+1; i++) {
                         int ncijk  = ncjk  + i;
                         int nfxijk = nfxjk + i;
                         int nfyijk = nfyjk + i*ify*icz;
@@ -260,24 +259,49 @@ void recompute_advective_fluxes(ConsVars* flux[3],
     
 #if OUTPUT_ADV_FLUXES
     extern User_Data ud;
+    extern NodeSpaceDiscr *node;
+    double *W1 = (double*)malloc(node->nc*sizeof(double));
+            
     FILE *pfluxfile = NULL;
-    char fnx[120], fny[120], fieldname[90];
+    char fnx[120], fny[120], fnz[120], fieldname[90];
     if (flux_output_count < 10) {
         sprintf(fnx, "%s/flux_x/flux_x_00%d.hdf", ud.file_name, flux_output_count);
         sprintf(fny, "%s/flux_y/flux_y_00%d.hdf", ud.file_name, flux_output_count);
+        sprintf(fnz, "%s/flux_z/flux_z_00%d.hdf", ud.file_name, flux_output_count);
     } else if(flux_output_count < 100) {
         sprintf(fnx, "%s/flux_x/flux_x_0%d.hdf", ud.file_name, flux_output_count);
         sprintf(fny, "%s/flux_y/flux_y_0%d.hdf", ud.file_name, flux_output_count);
+        sprintf(fnz, "%s/flux_z/flux_z_0%d.hdf", ud.file_name, flux_output_count);
     } else {
         sprintf(fnx, "%s/flux_x/flux_x_%d.hdf", ud.file_name, flux_output_count);
         sprintf(fny, "%s/flux_y/flux_y_%d.hdf", ud.file_name, flux_output_count);
+        sprintf(fnz, "%s/flux_z/flux_z_%d.hdf", ud.file_name, flux_output_count);
     }
     sprintf(fieldname, "flux_x");    
     WriteHDF(pfluxfile, elem->ifx, elem->icy, elem->icz, elem->ndim, flux[0]->rhoY, fnx, fieldname);
-    sprintf(fieldname, "flux_y");   
-    WriteHDF(pfluxfile, elem->ify, elem->icx, elem->icz, elem->ndim, flux[1]->rhoY, fny, fieldname);
+    if (elem->ndim == 2) {
+        sprintf(fieldname, "flux_y");  
+        flip2D(flux[1]->rhoY,  elem->ify, elem->icx, elem->nfy, W1); 
+        WriteHDF(pfluxfile, elem->icx, elem->ify, elem->icz, elem->ndim, flux[1]->rhoY, fny, fieldname);
+        flip2D(flux[1]->rhoY, elem->icx, elem->ify, elem->nfy, W1); 
+    }
+    if (elem->ndim == 3) {
+        sprintf(fieldname, "flux_y");   
+        flip3D_b(flux[1]->rhoY,  elem->ify, elem->icz, elem->icx, elem->nfy, W1); 
+        WriteHDF(pfluxfile, elem->icx, elem->ify, elem->icz, elem->ndim, flux[1]->rhoY, fny, fieldname);
+        flip3D_f(flux[1]->rhoY,  elem->icx, elem->ify, elem->icz, elem->nfy, W1); 
+
+        sprintf(fieldname, "flux_z");   
+        flip3D_b(flux[2]->rhoY,  elem->ifz, elem->icx, elem->icy, elem->nfz, W1); 
+        flip3D_b(flux[2]->rhoY,  elem->icy, elem->ifz, elem->icx, elem->nfz, W1); 
+        WriteHDF(pfluxfile, elem->icx, elem->icy, elem->ifz, elem->ndim, flux[2]->rhoY, fnz, fieldname);
+        flip3D_f(flux[2]->rhoY,  elem->icx, elem->icy, elem->ifz, elem->nfz, W1); 
+        flip3D_f(flux[2]->rhoY,  elem->icy, elem->ifz, elem->icx, elem->nfz, W1); 
+    }
     
     flux_output_count++;
+    free(W1);
 #endif
+
 }
 

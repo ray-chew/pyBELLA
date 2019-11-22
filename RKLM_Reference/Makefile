@@ -1,25 +1,25 @@
 CC = gcc
 CC = gcc
 
-HDFLIBDIR	  = /opt/local/lib
-HDFINC	      = /opt/local/include
+HDFLIBDIR      = /opt/local/lib
+HDFINC          = /opt/local/include
 
-CFLAGS	      = -Aa -I$(HDFINC) 
+CFLAGS          = -Aa -I$(HDFINC) 
 
-DEST	      = ./MakeBuilds
+DEST          = ./MakeBuilds
 
-EXTHDRS	      = /usr/include/math.h \
-		/usr/include/stdarg.h \
-		/usr/include/stdio.h \
-		/usr/include/stdlib.h \
-#		/usr/include/sys/stdsyms.h \
-		/usr/include/sys/time.h \
-		/usr/include/time.h \
-#		/usr/include/varargs.h \
-		/usr/include/memory.h \
-		/opt/local/include/dfsd.h
+EXTHDRS          = /usr/include/math.h \
+        /usr/include/stdarg.h \
+        /usr/include/stdio.h \
+        /usr/include/stdlib.h \
+#        /usr/include/sys/stdsyms.h \
+        /usr/include/sys/time.h \
+        /usr/include/time.h \
+#        /usr/include/varargs.h \
+        /usr/include/memory.h \
+        /opt/local/include/dfsd.h
 
-HDRS	      = ../Common.h
+HDRS          = ../Common.h
         ../Input/userdata.h \
         ../Input/boundary.h \
         ../Input/enum_bdry.h \
@@ -48,17 +48,17 @@ HDRS	      = ../Common.h
         ../Physics/LowMach/Second-projection/laplacian_nodes.h \
         ../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.h \
         
-INSTALL	      = install
+INSTALL          = install
 
-LD	      = cc
+LD          = cc
 
-LDFLAGS	      = 
+LDFLAGS          = 
 
-LIBS	      = $(HDFLIBDIR)/libmfhdf.dylib \
-		$(HDFLIBDIR)/libdf.dylib  $(HDFLIBDIR)/libjpeg.a $(HDFLIBDIR)/libz.dylib -lm
+LIBS          = $(HDFLIBDIR)/libmfhdf.dylib \
+        $(HDFLIBDIR)/libdf.dylib  $(HDFLIBDIR)/libjpeg.a $(HDFLIBDIR)/libz.dylib -lm
 
 MAKEFILE      = Makefile
 
-OBJS	      = userdata_TravellingVortex_3D_48.o :
+OBJS	      = userdata_InternalWave_H.o :
 
 

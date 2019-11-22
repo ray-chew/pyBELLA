@@ -10,20 +10,50 @@
 #define QC    2   /* foreseen for: cloud water */
 #define QR    3   /* foreseen for: rain water  */
 
-/* Output parameters */
+/* Output parameters 
+ #define MINIMIZE_STD_OUT
+ */
 #define HDFFORMAT  
 
 /* Debugging output options in various places */
-#define OUTPUT_SUBSTEPS    0       /* time step after which detailed output is generated - off */
-#define OUTPUT_SPLITSTEPS  0       /* on-off */
-#define OUTPUT_HYDROSTATES 0       /* on-off */
-#define OUTPUT_FLUXES      0       /* on-off */
-#define OUTPUT_LAP_CELLS   0       /* on-off */
-#define OUTPUT_RHS_CELLS   0       /* on-off */
-#define OUTPUT_LAP_NODES   0       /* on-off */
-#define OUTPUT_RHS_NODES   1       /* on-off */
-#define OUTPUT_ADV_FLUXES  0       /* on-off */
+#define OUTPUT_SUBSTEPS      0       /* time step after which detailed output is generated - off */
+#define OUTPUT_SPLITSTEPS    0       /* on-off */
+#define OUTPUT_HYDROSTATES   0       /* on-off */
+#define OUTPUT_FLUXES        0       /* on-off */
+#define OUTPUT_LAP_CELLS     0       /* on-off */
+#define OUTPUT_RHS_CELLS     0       /* on-off */
+#define OUTPUT_LAP_NODES     0       /* on-off */
+#define OUTPUT_RHS_NODES     0       /* on-off */
+#define OUTPUT_ADV_FLUXES    0       /* on-off */
+#define PRESSURE_TEST_OUTPUT 0
 	
+#define RHOX_OUTPUT_AS_THETAPRIME
+
+
+/* ============================================= 
+ General solver options
+ ============================================= */
+/*
+ #define PRESSURE_INCREMENTS_IN_ELLIPTIC_SOLVE
+ NOTE: this latter option can also be invoked independently of FULL_VARIABLES 
+
+ #define FULL_VARIABLES
+ #ifdef FULL_VARIABLES
+ #define PRESSURE_INCREMENTS_IN_ELLIPTIC_SOLVE
+ #endif
+
+ #define LOCAL_BRUNT_VAISALA
+ */
+
+/**/
+#define FULL_VARIABLES
+#ifdef FULL_VARIABLES
+#define PRESSURE_INCREMENTS_IN_ELLIPTIC_SOLVE
+#endif
+
+#define LOCAL_BRUNT_VAISALA
+
+
 /* ============================================= 
  Explicit predictor options
  ============================================= */
@@ -31,6 +61,10 @@
 /* ============================================= 
  Semi-implicit solver options  
  ============================================= */
+/*  
+#define IMPLICIT_MIDPT_FOR_NODAL_P
+ */
+
 /* PRECON:
  0: no preconditioner
  1: diagonal (no gravity) or column-wise (with gravity) preconditioner
@@ -44,7 +78,8 @@
 /*
 #define NEUMANN_Y_BOTTOM_BC
 #define IMP_MIDPT_FOR_NODAL_PI
- #define NONLINEAR_EOS_ITERATION
+#define NONLINEAR_EOS_ITERATION
+#define SLANTED_BC_IMPLICIT
  */
 
 
