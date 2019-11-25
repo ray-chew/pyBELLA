@@ -18,7 +18,7 @@ class convert(object):
         self.t_label = t_label
         self.time = time
         
-    def convert_files(self,directories,filenames):
+    def convert_files(self,directories,filenames,debug=False):
         if self.time == self.t_label + '_' + 'after_ebnaimp':
             directories += ['wplusx', 'wplusy', 'hcenter', 'pnew', 'rhs_nodes', 'p2_initial']
             filenames += ['wplusx', 'wplusy', 'hcenter', 'p2_full', 'rhs_nodes', 'p2_initial']
@@ -34,8 +34,9 @@ class convert(object):
             i += 1 
 
         # print the list of paths
-        for path in lst_hdf:
-            print(path)
+        if debug==True:
+            for path in lst_hdf:
+                print(path)
 
         # now, convert the arrays specified in the list of paths
         for item in lst_hdf:
