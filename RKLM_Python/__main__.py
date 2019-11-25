@@ -136,6 +136,8 @@ if N > 1:
     obs_file.close()
     
 ud.output_name_comp = ("_ensemble=%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,ud.tout[-1]))
+if len(ud.output_suffix) > 0:
+    ud.output_name_comp += '_' + ud.output_suffix
 ##########################################################
 
 writer = io(ud)
