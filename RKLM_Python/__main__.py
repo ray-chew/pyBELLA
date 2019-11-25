@@ -18,6 +18,7 @@ from data_assimilation.utils import ensemble
 from data_assimilation.letkf import da_interface
 
 # input file
+# from inputs.baroclinic_instability_periodic import UserData, sol_init
 # from inputs.travelling_vortex_3D_48 import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
 from inputs.internal_long_wave import UserData, sol_init
@@ -85,7 +86,7 @@ if seeds[0] != None:
         Sol0 = sol_init(Sol0,mpv0,elem,node,th,ud, seed=seeds[n])
         sol_ens[n] = [Sol0,deepcopy(flux),mpv0]
 else:
-    sol_ens = [[sol_init(Sol, mpv, elem, node, th, ud),flux,mpv]]
+    sol_ens = [[sol_init(Sol, mpv, elem, node, th, ud),flux,mpv,step]]
 ens = ensemble(sol_ens)
 
 # ens = ensemble()
@@ -134,10 +135,12 @@ if N > 1:
     obs = np.array(obs)
     obs_file.close()
     
-# ud.output_name_comp = ("_ensemble=%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,ud.tout[-1]))
+ud.output_name_comp = ("_ensemble=%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,ud.tout[-1]))
 ##########################################################
 
 writer = io(ud)
+# steps = np.zeros((N))
+# assert(0)
 
 if __name__ == '__main__':
     client = Client(threads_per_worker=4, n_workers=2)
@@ -155,12 +158,15 @@ if __name__ == '__main__':
         for mem in ens.members(ens):
             # s_ud = client.scatter(ud)
             # time_update = time_update_wrapper(t, tout, ud, elem, node, step, th, writer=writer, debug=debug)
-            future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, step, th, writer, debug])
+            future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, writer, debug])
             # future = client.submit(time_update, mem)
             # time_update(mem[0], mem[1], mem[2], t, tout, ud, elem, node, step, th, writer, debug)
+
             futures.append(future)
         results = client.gather(futures)
         results = np.array(results)
+        # print(results.flatten())
+        # assert(0)
         # print(results[:,loc,...])
         results_before = deepcopy(results)
 
@@ -208,11 +214,10 @@ if __name__ == '__main__':
         # print(results_before[:,loc,...][0].rho)
         # print(results[:,loc,...][0].rho)
             # assert(0,"Assimilation failed")
-             
         ens.set_members(results)
 
         if N > 1:
-            if np.allclose(ens.members(ens)[0][0].rho, results_before[:,loc,...][0].rho):
+            if np.allclose(ens.members(ens)[0][0].rho, results_before[0][:,loc,...][0].rho):
                 print("Assimilation check: Rho quantities unchanged, i.e. no assimilation took place in rho.")
 
         print("Starting output...")
