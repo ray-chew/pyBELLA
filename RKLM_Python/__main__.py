@@ -18,10 +18,10 @@ from data_assimilation.utils import ensemble
 from data_assimilation.letkf import da_interface
 
 # input file
-# from inputs.baroclinic_instability_periodic import UserData, sol_init
+from inputs.baroclinic_instability_periodic import UserData, sol_init
 # from inputs.travelling_vortex_3D_48 import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
-from inputs.internal_long_wave import UserData, sol_init
+# from inputs.internal_long_wave import UserData, sol_init
 # from inputs.rising_bubble import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io

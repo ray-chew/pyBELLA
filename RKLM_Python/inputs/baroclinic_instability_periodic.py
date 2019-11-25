@@ -149,6 +149,164 @@ class UserData(object):
         self.output_base_name = "_baroclinic_instability_periodic"
         self.output_name_psinc = "_low_mach_gravity_psinc"
         self.output_name_comp = "_low_mach_gravity_comp"
+        self.output_suffix = ""
 
-    def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
-        None
+        self.ltrans = 525.0e3
+        self.Temp0 = 273.0
+
+        self.stratification = self.stratification_func
+        self.zzero = self.zzero_func
+        self.Thetae = self.Thetae_func
+        self.Thetat = self.Thetat_func
+        self.Thetas = self.Thetas_func
+        self.Zeta = self.Zeta_func
+
+    def zzero_func(self,z):
+        zmin = self.zmin
+        zmax = self.zmax
+
+        z[np.where(z >= 0.0)] = zmin + 3.0 * zmax
+        z[np.where(z < 0.0)] = 3.0 * zmin + zmax
+        return 0.25 * z
+    
+    def Thetae_func(self,y,z,inx):
+        HTz = self.HT(z)
+
+        # print(self.Thetat(y,z).shape)
+        # print(self.Thetas(y,z).shape)
+        # print((y < HTz))
+        # print(~(y < HTz))
+
+        tmp = (y < HTz) * self.Thetat(y,z) + ~(y < HTz) * self.Thetas(y,z)
+        return np.repeat(tmp, inx, axis=0)
+        # print(tmp.shape)
+        # print(tmp[0])
+        # print(tmp[1])
+
+        # assert(0)
+
+    def HT(self,z):
+        dth = self.ltrans / self.h_ref      # [km]
+        ht0 = 8.0e3 / self.h_ref            # [km]
+        DTh = 30.0 / self.T_ref           # [K]
+        Th0 = self.Temp0 / self.T_ref            # [K]
+        Nsqs = 0.0245**2 * self.t_ref**2    # [s^{-2}]
+        Nsqt = 0.01**2 * self.t_ref**2     # [s^{-2}]
+        dNsq = Nsqs - Nsqt
+        g = self.gravity_strength[1] / self.Msq
+
+        dht = 0.5 * g * DTh / Th0 / dNsq
+        fH0 = self.fH(z,dth)
+
+        return (ht0 - dht * fH0)
+
+    def fH(self, z, dth):
+        z0 = self.zzero(z)
+        return (np.sign(z) * self.F(z-z0,dth))
+
+    @staticmethod
+    def F(z, dth):
+        eta = z / dth
+        tmp = np.zeros_like(eta)
+        tmp[...] = np.sin(np.pi * eta / 2.0)
+        tmp[np.where(eta > 1.0)] = 1.0
+        tmp[np.where(eta < -1.0)] = -1.0
+
+        return tmp
+
+    def Thetat_func(self,y,z):
+        dth = self.ltrans / self.h_ref          # [km]
+        DTh = 30.0 / self.T_ref                 # [K]
+        Th0 = self.Temp0 / self.T_ref                # [K]
+
+        Nsqt = 0.01**2 * self.t_ref**2          # [s^{-2}]
+        g = self.gravity_strength[1] / self.Msq
+
+        kappa = np.sign(z) * 70.0
+        fHv = self.fH(z - kappa * y, dth)
+
+        return Th0 * (1.0 + Nsqt * y / g) - 0.5 * DTh * fHv
+
+    def Thetas_func(self,y,z):
+        dth = self.ltrans / self.h_ref
+        DTh = 30.0 / self.T_ref
+        Th0 = self.Temp0 / self.T_ref
+
+        Nsqs = 0.0245**2 * self.t_ref**2
+        Nsqt = 0.01**2 * self.t_ref**2
+        g = self.gravity_strength[1] / self.Msq
+
+        # z0 = self.zzero(z)
+        kappa = np.sign(z) * 70.0
+
+        zeta = self.Zeta(y,z)
+
+        HTz = self.HT(z)
+        # H = 3.0e3 / self.h_ref
+        # fHv = self.fH(z - kappa * HTz, dth)
+
+        return Th0 * (1.0 + Nsqs * y / g) - Th0 * (Nsqs - Nsqt) * HTz * zeta / g - zeta * 0.5 * DTh * self.fH(z - kappa * HTz, dth) * (1.0 + 5.0 * (HTz - y) / HTz)
+
+
+    def Zeta_func(self,y,z):
+        H = 24.0e3 / self.h_ref
+        return np.sin(0.5 * np.pi * (H - y) / (H - self.HT(z)))
+
+    def stratification_func(self,y):
+        Nsq = self.Nsq_ref * self.t_ref * self.t_ref
+        g = self.gravity_strength[1] / self.Msq
+
+        return np.exp(Nsq * y / g)
+
+
+
+
+def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
+    xc = 0.5 * (ud.xmax + ud.xmin)
+    yc = 9.0e3 / ud.h_ref
+    wxz = 500.0e3 / ud.h_ref
+    wy = 2.0e3 / ud.h_ref
+    u0 = 0.0
+    v0 = 0.0
+    w0 = 0.0
+    delth = 3.0 / ud.T_ref
+    Ginv = th.Gammainv
+    f = ud.coriolis_strength[0]
+    dz = elem.dz
+    dy = elem.dy
+
+    icx = elem.icx
+    icy = elem.icy
+    icz = elem.icz
+
+    igx = elem.igx
+    igy = elem.igy
+    igz = elem.igz
+
+    icxn = node.icx
+    icyn = node.icy
+
+    g = ud.gravity_strength[1]
+
+    hydrostatics.hydrostatic_state(mpv, elem, node, th, ud)
+
+    HySt = variable.States([icyn], ud)
+    Y = np.zeros((icyn))
+    HyStn = variable.States([icyn], ud)
+    Yn = np.zeros((icyn))
+
+    x = elem.x.reshape(-1,1,1)
+    y = elem.y.reshape(1,-1,1)
+    z = node.z.reshape(1,1,-1)
+    # x = elem.x
+    # y = elem.y
+    # z = node.z
+
+    zc = ud.zzero(z)
+    r = np.sqrt( ((x-xc)**2 + (z-zc)**2) / (wxz**2) + (y-yc)**2 / (wy**2))
+    r[np.where(r > 1.0)] = 1.0
+
+    thp = delth * np.cos(0.5 * np.pi * r)**2
+    the = ud.Thetae(y,z,elem.icx)
+
+    Y = the + thp
