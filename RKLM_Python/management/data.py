@@ -223,4 +223,4 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
         t += dt
         step += 1
         # print(t, step)
-    return [Sol,flux,mpv]
+    return [Sol,flux,mpv,step]
