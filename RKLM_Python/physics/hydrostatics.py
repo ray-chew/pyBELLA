@@ -119,13 +119,13 @@ def hydrostatic_state(mpv, elem, node, th, ud):
     rhoY_hydro = pi_hydro**gm1_inv
 
     # Update the cell solutions
-    mpv.HydroState.rhoY0[0,:] = rhoY_hydro
-    mpv.HydroState.rho0[0,:] = rhoY_hydro * S_ps
-    mpv.HydroState.p0[0,:] = p_hydro
-    mpv.HydroState.p20[0,:] = pi_hydro / ud.Msq
-    mpv.HydroState.S0[0,:] = S_ps
-    mpv.HydroState.S10[0,:] = 0.0
-    mpv.HydroState.Y0[0,:] = 1.0 / S_ps
+    mpv.HydroState.rhoY0[:] = rhoY_hydro
+    mpv.HydroState.rho0[:] = rhoY_hydro * S_ps
+    mpv.HydroState.p0[:] = p_hydro
+    mpv.HydroState.p20[:] = pi_hydro / ud.Msq
+    mpv.HydroState.S0[:] = S_ps
+    mpv.HydroState.S10[:] = 0.0
+    mpv.HydroState.Y0[:] = 1.0 / S_ps
     #
     # End of update cell hydrostates
     #
@@ -136,12 +136,12 @@ def hydrostatic_state(mpv, elem, node, th, ud):
     # Update node hydrostates
     #
     # Update the bottom reference node (bottom-most vertical height)
-    mpv.HydroState_n.Y0[0,igy] = ud.stratification(0.0)
-    mpv.HydroState_n.rhoY0[0,igy] = rhoY0
-    mpv.HydroState_n.rho0[0,igy] = rhoY0 / ud.stratification(0.0)
-    mpv.HydroState_n.S0[0,igy] = 1.0 / mpv.HydroState_n.Y0[0,igy]
-    mpv.HydroState_n.p0[0,igy] = p0
-    mpv.HydroState_n.p20[0,igy] = pi0 / ud.Msq
+    mpv.HydroState_n.Y0[igy] = ud.stratification(0.0)
+    mpv.HydroState_n.rhoY0[igy] = rhoY0
+    mpv.HydroState_n.rho0[igy] = rhoY0 / ud.stratification(0.0)
+    mpv.HydroState_n.S0[igy] = 1.0 / mpv.HydroState_n.Y0[igy]
+    mpv.HydroState_n.p0[igy] = p0
+    mpv.HydroState_n.p20[igy] = pi0 / ud.Msq
 
     # Get midpoint quadrature for the ghost cells below the bottom (minus!)
     Sn_integral_p = np.zeros((igy))
@@ -167,25 +167,25 @@ def hydrostatic_state(mpv, elem, node, th, ud):
     rhoY_hydro_n = pi_hydro_n**gm1_inv
 
     # Update the node solutions
-    mpv.HydroState_n.rhoY0[0,:igy] = rhoY_hydro_n[:igy]
+    mpv.HydroState_n.rhoY0[:igy] = rhoY_hydro_n[:igy]
     # print(y_ps)
     # print(y_ms)
     # print(elem.dy)
-    mpv.HydroState_n.Y0[0,:igy+1] = ud.stratification(0.5 * (y_ps[:igy+1] + y_ps[:igy+1] - elem.dy))
+    mpv.HydroState_n.Y0[:igy+1] = ud.stratification(0.5 * (y_ps[:igy+1] + y_ps[:igy+1] - elem.dy))
     # print(mpv.HydroState_n.Y0[0])
     # print(y_ps[:igy])
     # print(y_ms[:igy])
-    mpv.HydroState_n.rho0[0,:igy] = rhoY_hydro_n[:igy] / mpv.HydroState_n.Y0[0,:igy]
-    mpv.HydroState_n.S0[0,:igy] = 1.0 / mpv.HydroState_n.Y0[0,:igy]
-    mpv.HydroState_n.p0[0,:igy] = rhoY_hydro_n[:igy]**th.gamm
-    mpv.HydroState_n.p20[0,:igy] = pi_hydro_n[:igy] / ud.Msq
+    mpv.HydroState_n.rho0[:igy] = rhoY_hydro_n[:igy] / mpv.HydroState_n.Y0[:igy]
+    mpv.HydroState_n.S0[:igy] = 1.0 / mpv.HydroState_n.Y0[:igy]
+    mpv.HydroState_n.p0[:igy] = rhoY_hydro_n[:igy]**th.gamm
+    mpv.HydroState_n.p20[:igy] = pi_hydro_n[:igy] / ud.Msq
 
-    mpv.HydroState_n.rhoY0[0,igy+1:] = rhoY_hydro_n[igy:]
-    mpv.HydroState_n.Y0[0,igy+1:] = ud.stratification(0.5 * (y_ps[igy:] + y_ps[igy:] + elem.dy))
-    mpv.HydroState_n.rho0[0,igy+1:] = rhoY_hydro_n[igy:] / mpv.HydroState_n.Y0[0,igy+1:]
-    mpv.HydroState_n.S0[0,igy+1:] = 1.0 / mpv.HydroState_n.Y0[0,igy+1:]
-    mpv.HydroState_n.p0[0,igy+1:] = rhoY_hydro_n[igy:]**th.gamm
-    mpv.HydroState_n.p20[0,igy+1:] = pi_hydro_n[igy:] / ud.Msq
+    mpv.HydroState_n.rhoY0[igy+1:] = rhoY_hydro_n[igy:]
+    mpv.HydroState_n.Y0[igy+1:] = ud.stratification(0.5 * (y_ps[igy:] + y_ps[igy:] + elem.dy))
+    mpv.HydroState_n.rho0[igy+1:] = rhoY_hydro_n[igy:] / mpv.HydroState_n.Y0[igy+1:]
+    mpv.HydroState_n.S0[igy+1:] = 1.0 / mpv.HydroState_n.Y0[igy+1:]
+    mpv.HydroState_n.p0[igy+1:] = rhoY_hydro_n[igy:]**th.gamm
+    mpv.HydroState_n.p20[igy+1:] = pi_hydro_n[igy:] / ud.Msq
     #
     # End of update node hydrostates
     #
@@ -231,7 +231,7 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
     x_idx = slice(igx,-igx+1)
     y_idx = slice(igy,-igy+1)
 
-    mpv.p2_cells[x_idx,y_idx] += pibot[x_idx].reshape(-1,1) - 1.0 * mpv.HydroState.p20[0,y_idx].reshape(1,-1)
+    mpv.p2_cells[x_idx,y_idx] += pibot[x_idx].reshape(-1,1) - 1.0 * mpv.HydroState.p20[y_idx].reshape(1,-1)
     set_ghostcells_p2(mpv.p2_cells, elem, ud)
 
     icxn = node.icx
@@ -264,7 +264,7 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
 
     x_idx = slice(igx,-igx+1)
     y_idx = slice(igy,-igy+1)
-    mpv.p2_nodes[x_idx,y_idx] += pibot[x_idx].reshape(-1,1) - 1.0 * mpv.HydroState_n.p20[0,y_idx].reshape(1,-1)
+    mpv.p2_nodes[x_idx,y_idx] += pibot[x_idx].reshape(-1,1) - 1.0 * mpv.HydroState_n.p20[y_idx].reshape(1,-1)
 
     mpv.dp2_nodes[:,:] = mpv.p2_nodes
 
@@ -286,7 +286,7 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
     mpv.dp2_nodes[:,:] = 0.0
 
     inner_domain = (slice(igx,-igx), slice(igy,-igy))
-    pi = ud.Msq * (mpv.p2_cells[inner_domain] + 1.0 * mpv.HydroState.p20[0,igy:-igy])
+    pi = ud.Msq * (mpv.p2_cells[inner_domain] + 1.0 * mpv.HydroState.p20[igy:-igy])
     Y = Sol.rhoY[inner_domain] / Sol.rho[inner_domain]
     rhoold = np.copy(Sol.rho[inner_domain])
     Sol.rhoY[inner_domain] = pi**th.gm1inv

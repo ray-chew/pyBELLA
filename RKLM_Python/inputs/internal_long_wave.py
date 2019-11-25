@@ -294,7 +294,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     # print(mpv.p2_cells[x_idx,y_idx] - mpv.HydroState.p20[0,y_idx])
     # print(mpv.p2_cells[0])
 
-    Sol.rhoX[x_idx,y_idx] = Sol.rho[x_idx,y_idx] * (1.0 / Y[:, y_idx] - mpv.HydroState.S0[0, y_idx])
+    Sol.rhoX[x_idx,y_idx] = Sol.rho[x_idx,y_idx] * (1.0 / Y[:, y_idx] - mpv.HydroState.S0[y_idx])
 
     mpv.p2_nodes[:,elem.igy:-elem.igy] = HyStn.p20[:,elem.igy:-elem.igy]
 

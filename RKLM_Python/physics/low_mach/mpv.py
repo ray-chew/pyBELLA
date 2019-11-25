@@ -21,8 +21,8 @@ class MPV(object):
         self.wgrav = np.zeros((sn))
         self.wplus = np.zeros(([elem.ndim]+list(sn)))
 
-        self.HydroState = States(sc,ud)
-        self.HydroState_n = States(sn,ud)
+        self.HydroState = States([sc[1]],ud)
+        self.HydroState_n = States([sn[1]],ud)
 
         self.squeezer()
 

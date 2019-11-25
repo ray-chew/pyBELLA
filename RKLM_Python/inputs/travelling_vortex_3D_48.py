@@ -302,8 +302,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     u = u0 + uth * (-(ys-yccs)/r)
     v = v0 + uth * (+(xs-xccs)/r)
     w = w0
-    p_hydro = mpv.HydroState.p0[0,igy:-igy]
-    rhoY = mpv.HydroState.rhoY0[0,igy:-igy]
+    p_hydro = mpv.HydroState.p0[igy:-igy]
+    rhoY = mpv.HydroState.rhoY0[igy:-igy]
 
     rho = np.zeros_like(r)
     rho[...] += (rho0 + del_rho * (1. - (r/R0)**2)**6) * (r < R0)
@@ -328,7 +328,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         Sol.rhoe[:,igy:-igy] = ud.rhoe(rho,u,v,w,p_hydro,ud,th)
         Sol.rhoY[:,igy:-igy] = rhoY
 
-    mpv.p2_cells[:,igy:-igy] = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[0,igy:-igy])
+    mpv.p2_cells[:,igy:-igy] = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy])
     
     set_ghostcells_p2(mpv.p2_cells, elem, ud)
 
@@ -350,7 +350,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         mpv.p2_nodes[igxn:-igxn,igyn:-igyn] += coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
     mpv.p2_nodes[igxn:-igxn,igyn:-igyn] *= r/R0 < 1.0
 
-    mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[0,igyn:-igyn+1])
+    mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[igyn:-igyn+1])
 
     ud.nonhydrostasy = 1.0
     ud.compressibility = 0.0
