@@ -62,11 +62,11 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     igx = elem.igx
     igy = elem.igy
 
-    dSdy = mpv.HydroState_n.S0[0][igy-1:-igy+1]
+    dSdy = mpv.HydroState_n.S0[igy-1:-igy+1]
     dSdy = signal.convolve(dSdy,[1.,-1.],mode='valid').reshape(-1,1)
     dSdy = np.repeat(dSdy,elem.icx-igx,axis=1) / dx
 
-    S0c = mpv.HydroState.S0[0][igy-1:-igy+1].reshape(-1,1)
+    S0c = mpv.HydroState.S0[igy-1:-igy+1].reshape(-1,1)
     S0c = np.repeat(S0c,elem.icx-igx,axis=1)
 
     v = Sol.rhou / Sol.rho
@@ -115,8 +115,11 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     fsqsc = dt**2 * coriolis**2
     ooopfsqsc = 1.0 / (1.0 + fsqsc)
 
-    first_nodes_row_right_idx = (slice(0,1), slice(1,None))
-    first_nodes_row_left_idx = (slice(0,1),slice(0,-1))
+    # first_nodes_row_right_idx = (slice(0,1), slice(1,None))
+    # first_nodes_row_left_idx = (slice(0,1),slice(0,-1))
+
+    first_nodes_row_right_idx = (slice(1,None))
+    first_nodes_row_left_idx = (slice(0,-1))
 
     strat = 2.0 * (mpv.HydroState_n.Y0[first_nodes_row_right_idx] - mpv.HydroState_n.Y0[first_nodes_row_left_idx]) / (mpv.HydroState_n.Y0[first_nodes_row_right_idx] + mpv.HydroState_n.Y0[first_nodes_row_left_idx])
 
@@ -257,7 +260,7 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
     hplusx = mpv.wplus[0]
     hplusy = mpv.wplus[1]
 
-    dSdy = (mpv.HydroState_n.S0[0,igy+1:-igy] - mpv.HydroState_n.S0[0,igy:-igy-1]) * oody
+    dSdy = (mpv.HydroState_n.S0[igy+1:-igy] - mpv.HydroState_n.S0[igy:-igy-1]) * oody
     inner_idx = (slice(igx,-igx),slice(igy,-igy))
     inner_eidx = (slice(igx,-igx-1),slice(igy,-igy-1))
     
@@ -322,7 +325,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
             right_idx = None if -igs[dim]+is_periodic == 0 else -igs[dim]+is_periodic
             y_idx1 = slice(igs[dim]-is_periodic+1, right_idx)
  
-    strat = 2.0 * (mpv.HydroState_n.Y0[0,y_idx1] - mpv.HydroState_n.Y0[0,y_idx]) / (mpv.HydroState_n.Y0[0,y_idx1] + mpv.HydroState_n.Y0[0,y_idx]) / dy
+    strat = 2.0 * (mpv.HydroState_n.Y0[y_idx1] - mpv.HydroState_n.Y0[y_idx]) / (mpv.HydroState_n.Y0[y_idx1] + mpv.HydroState_n.Y0[y_idx]) / dy
 
     nindim = tuple(nindim)
     eindim = tuple(eindim)

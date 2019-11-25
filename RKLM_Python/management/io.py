@@ -162,9 +162,9 @@ class io(object):
         # temperature difference
         # print(mpv.HydroState.p0[0,:])
         # print(mpv.HydroState.rho0[0,:])
-        self.populate(name,'dT', Sol.rhoY**th.gamm / Sol.rho - mpv.HydroState.p0[0,:] / mpv.HydroState.rho0[0,:])
+        self.populate(name,'dT', Sol.rhoY**th.gamm / Sol.rho - mpv.HydroState.p0[:] / mpv.HydroState.rho0[:])
 
-        self.populate(name,'drhoY', Sol.rhoY - mpv.HydroState.rho0[0,:] * mpv.HydroState.Y0[0,:])
+        self.populate(name,'drhoY', Sol.rhoY - mpv.HydroState.rho0[:] * mpv.HydroState.Y0[:])
 
         # species mass fraction(?)
         self.populate(name,'Y', Sol.rhoY / Sol.rho)
