@@ -35,7 +35,7 @@ class UserData(object):
     Nsq_ref = 1.0e-4
 
     # planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0;
-    scale_factor = 1.0
+    scale_factor = 160.0
 
     i_gravity = np.zeros((3))
     i_coriolis = np.zeros((3))
@@ -171,9 +171,10 @@ class UserData(object):
 
         # tout = 4800s
         # self.tout =  [self.scale_factor * 1.0 * 3000.0 / self.t_ref]
-        # self.tout = np.arange(0,4801,100)
+        if self.scale_factor == 160.0:
+            self.tout = np.arange(0,4801,100)
         # self.tout = np.arange(0,601,6)
-        self.tout = np.arange(0,301,3)/10.
+        # self.tout = np.arange(0,301,3)/10.
         # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[1] = -1.0
 
@@ -199,16 +200,19 @@ class UserData(object):
             self.output_name_ak = "_low_mach_gravity_ak_standard"
             self.output_name_psinc = "_low_mach_gravity_psinc_standard"
             self.output_name_hydro = "_low_mach_gravity_hydro_standard"
+            self.output_suffix = "standard"
         elif self.scale_factor == 20.0:
             self.output_name_comp = "_low_mach_gravity_comp_long"
             self.output_name_ak = "_low_mach_gravity_ak_long"
             self.output_name_psinc = "_low_mach_gravity_psinc_long"
             self.output_name_hydro = "_low_mach_gravity_hydro_long"
+            self.output_suffix = "long"
         elif self.scale_factor == 160.0:
             self.output_name_comp = "_low_mach_gravity_comp_planetary"
             self.output_name_ak = "_low_mach_gravity_ak_planetary"
             self.output_name_psinc = "_low_mach_gravity_psinc_planetary"
             self.output_name_hydro = "_low_mach_gravity_hydro_planetary"
+            self.output_suffix = "planetary"
         else:
             assert("scale factor unsupported")
 
