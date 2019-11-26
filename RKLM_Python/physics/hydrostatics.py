@@ -11,8 +11,17 @@ def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
 
     icy = elem.icy
     igy = elem.igy
+
+    # c_idx = np.empty((elem.ndim), dtype='object')
+    # for dim in elem.ndim:
+    #     c_idx[dim] = slice(0,-1)
+    # c_idx = tuple(c_idx)
     xc_idx = slice(0,-1)
+    # if elem.ndim > 1:
     yc_idx = slice(0,-1)
+    # if elem.ndim > 2:
+    #     zc_idx = slice(0,-1)
+
     c_idx = (xc_idx,yc_idx)
 
     rhoY0 = 1.0
@@ -31,9 +40,9 @@ def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     dys = np.array([-elem.dy] + [-elem.dy/2] + [elem.dy/2] + list(np.ones((icy-3)) * elem.dy))
     S_p = 1.0 / Y[:,:]
     S_m = np.zeros_like(S_p)
-    S_m[:,1:3] = 1.0 / Y_n[:,igy].reshape(-1,1)
-    S_m[:,0] = 1.0 / Y[:,1]
-    S_m[:,3:] = 1.0 / Y[:,2:-1]
+    S_m[:,igy-1:igy+1] = 1.0 / Y_n[:,igy].reshape(-1,1)
+    S_m[:,0] = 1.0 / Y[:,igy-1]
+    S_m[:,igy+1:] = 1.0 / Y[:,igy:-1]
 
     S_integral_p = dys * 0.5 * (S_p + S_m)
     S_integral_p[:,:igy] = np.cumsum(S_integral_p[:,:igy][:,::-1],axis=1)[:,::-1]
@@ -53,10 +62,10 @@ def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
 
     Sn_p = 1.0 / Y[:,:]
     dys = np.ones((icy)) * elem.dy
-    dys[:2] *= -1
+    dys[:igy] *= -1
     Sn_integral_p = dys * Sn_p
-    Sn_integral_p[:,:2] = np.cumsum(Sn_integral_p[:,:2][:,::-1],axis=1)[:,::-1]
-    Sn_integral_p[:,2:] = np.cumsum(Sn_integral_p[:,2:],axis=1)
+    Sn_integral_p[:,:igy] = np.cumsum(Sn_integral_p[:,:igy][:,::-1],axis=1)[:,::-1]
+    Sn_integral_p[:,igy:] = np.cumsum(Sn_integral_p[:,igy:],axis=1)
 
     pi_hydro_n = pi0 - Gamma * g * Sn_integral_p
     rhoY_hydro_n = pi_hydro_n**gm1_inv

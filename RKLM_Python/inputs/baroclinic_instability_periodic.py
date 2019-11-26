@@ -290,23 +290,38 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     hydrostatics.hydrostatic_state(mpv, elem, node, th, ud)
 
-    HySt = variable.States([icyn], ud)
-    Y = np.zeros((icyn))
-    HyStn = variable.States([icyn], ud)
-    Yn = np.zeros((icyn))
+    HySt = variable.States([icxn,icyn], ud)
+    HyStn = variable.States([icxn,icyn], ud)
 
     x = elem.x.reshape(-1,1,1)
     y = elem.y.reshape(1,-1,1)
     z = node.z.reshape(1,1,-1)
-    # x = elem.x
-    # y = elem.y
-    # z = node.z
 
     zc = ud.zzero(z)
     r = np.sqrt( ((x-xc)**2 + (z-zc)**2) / (wxz**2) + (y-yc)**2 / (wy**2))
     r[np.where(r > 1.0)] = 1.0
 
-    thp = delth * np.cos(0.5 * np.pi * r)**2
+    thp = delth * np.cos(0.5 * np.pi * r)**2.0
     the = ud.Thetae(y,z,elem.icx)
 
     Y = the + thp
+    
+    xn = node.x.reshape(-1,1,1)
+    yn = node.y.reshape(1,-1,1)
+    zn = node.z.reshape(1,1,-1)
+    zc = ud.zzero(zn)
+    r = np.sqrt( ((xn-xc)**2 + (zn-zc)**2) / (wxz**2) + (yn-yc)**2 / (wy**2))
+    r[np.where(r > 1.0)] = 1.0
+    thpn = delth * np.cos(0.5 * np.pi * r)**2.0
+    then = ud.Thetae(yn,zn,node.icx)
+    Yn = then + thpn
+    print(Yn.shape)
+
+    # print(Yn.shape)
+    for k in range(icz):
+        hydrostatics.hydrostatic_column(HySt, HyStn, Y[:,:,k], Yn[:-1,:-1,k], elem, node, th, ud)
+        mpv.p2_nodes[:,:,k] = HyStn.p20[...]
+
+
+
+    assert(0)
