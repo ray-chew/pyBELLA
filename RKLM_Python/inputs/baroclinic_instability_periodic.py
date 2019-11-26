@@ -162,17 +162,19 @@ class UserData(object):
         self.Thetat = self.Thetat_func
         self.Thetas = self.Thetas_func
         self.Zeta = self.Zeta_func
+        self.ht = self.ht_func
 
     def zzero_func(self,z):
         zmin = self.zmin
         zmax = self.zmax
 
-        z[np.where(z >= 0.0)] = zmin + 3.0 * zmax
-        z[np.where(z < 0.0)] = 3.0 * zmin + zmax
-        return 0.25 * z
+        tmp = np.zeros_like(z)
+        tmp[np.where(z >= 0.0)] = zmin + 3.0 * zmax
+        tmp[np.where(z < 0.0)] = 3.0 * zmin + zmax
+        return 0.25 * tmp
     
     def Thetae_func(self,y,z,inx):
-        HTz = self.HT(z)
+        HTz = self.ht(z)
 
         # print(self.Thetat(y,z).shape)
         # print(self.Thetas(y,z).shape)
@@ -187,7 +189,7 @@ class UserData(object):
 
         # assert(0)
 
-    def HT(self,z):
+    def ht_func(self,z):
         dth = self.ltrans / self.h_ref      # [km]
         ht0 = 8.0e3 / self.h_ref            # [km]
         DTh = 30.0 / self.T_ref           # [K]
@@ -243,7 +245,7 @@ class UserData(object):
 
         zeta = self.Zeta(y,z)
 
-        HTz = self.HT(z)
+        HTz = self.ht(z)
         # H = 3.0e3 / self.h_ref
         # fHv = self.fH(z - kappa * HTz, dth)
 
@@ -252,7 +254,7 @@ class UserData(object):
 
     def Zeta_func(self,y,z):
         H = 24.0e3 / self.h_ref
-        return np.sin(0.5 * np.pi * (H - y) / (H - self.HT(z)))
+        return np.sin(0.5 * np.pi * (H - y) / (H - self.ht(z)))
 
     def stratification_func(self,y):
         Nsq = self.Nsq_ref * self.t_ref * self.t_ref
@@ -312,14 +314,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     yn = node.y.reshape(1,-1,1)
     zn = node.z.reshape(1,1,-1)
     zc = ud.zzero(zn)
-    r = np.sqrt( ((xn-xc)**2 + (zn-zc)**2) / (wxz**2) + (yn-yc)**2 / (wy**2))
+    r = np.sqrt( ((xn-xc)**2 + (zn-zc)**2) / (wxz**2) + (yn-yc)**2 / (wy**2) )
     r[np.where(r > 1.0)] = 1.0
+
     thpn = delth * np.cos(0.5 * np.pi * r)**2.0
     then = ud.Thetae(yn,zn,node.icx)
     Yn = then + thpn
-    print(Yn.shape)
 
-    # print(Yn.shape)
     for k in range(icz):
         hydrostatics.hydrostatic_column(HySt, HyStn, Y[:,:,k], Yn[:-1,:-1,k], elem, node, th, ud)
         mpv.p2_nodes[:,:,k] = HyStn.p20[...]
@@ -328,6 +329,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     kernel /= kernel.sum()
 
     p2 = signal.fftconvolve(mpv.p2_nodes, kernel, mode='valid') * ud.Msq
+
+    # print(p2)
+    # assert(0)
     P = p2**th.gm1inv
     p = p2**th.Gammainv
 
