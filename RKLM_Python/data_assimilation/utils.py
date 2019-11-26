@@ -8,7 +8,7 @@ class ensemble(object):
             cnt = 0
             for mem in input_ensemble:
                 setattr(self,'mem_' + str(cnt),mem)
-                self.debug_im(mem[0].rho, cnt)
+                # self.debug_im(mem[0].rho, cnt)
                 cnt += 1
         else:
             None
@@ -38,7 +38,7 @@ class ensemble(object):
             for n in range(N):
                 mem = getattr(self,'mem_' + str(n))
                 value = getattr(mem[loc],attribute)
-                self.debug_im(sampler(value), n)
+                # self.debug_im(sampler(value), n)
                 setattr(mem[loc],attribute,sampler(value))
 
     @staticmethod

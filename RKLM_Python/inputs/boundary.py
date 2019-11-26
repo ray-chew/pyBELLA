@@ -92,7 +92,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     Sol.rhou[nimage] = rho*u
                     Sol.rhov[nimage] = rho*v
                     Sol.rhow[nimage] = rho*w
-                    Sol.rhoe[nimage] = ud.rhoe(rho, u, v, w, p, ud, th)
+                    # Sol.rhoe[nimage] = ud.rhoe(rho, u, v, w, p, ud, th)
                     Sol.rhoY[nimage] = rhoY
                     Sol.rhoX[nimage] = rho * X
 
