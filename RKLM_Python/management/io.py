@@ -132,7 +132,7 @@ class io(object):
         # rho u ,v w
         self.populate(name,'rhou',Sol.rhou)
         self.populate(name,'rhov',Sol.rhov)
-        # self.populate(name,'rhow',Sol.rhow)
+        self.populate(name,'rhow',Sol.rhow)
         self.populate(name,'rhoX',Sol.rhoX)
 
         # dp2_nodes
@@ -155,21 +155,21 @@ class io(object):
         # self.populate(name,'w',Sol.rhow / Sol.rho)
 
         # vorticity in (x,z)
-        self.populate(name,'vortz', self.vortz(Sol,elem,node))
+        # self.populate(name,'vortz', self.vortz(Sol,elem,node))
 
         # temperature
         # self.populate(name,'T', Sol.rhoY**th.gamm / Sol.rho)
         # temperature difference
         # print(mpv.HydroState.p0[0,:])
         # print(mpv.HydroState.rho0[0,:])
-        self.populate(name,'dT', Sol.rhoY**th.gamm / Sol.rho - mpv.HydroState.p0[:] / mpv.HydroState.rho0[:])
+        # self.populate(name,'dT', Sol.rhoY**th.gamm / Sol.rho - mpv.HydroState.p0[:] / mpv.HydroState.rho0[:])
 
-        self.populate(name,'drhoY', Sol.rhoY - mpv.HydroState.rho0[:] * mpv.HydroState.Y0[:])
+        # self.populate(name,'drhoY', Sol.rhoY - mpv.HydroState.rho0[:] * mpv.HydroState.Y0[:])
 
         # species mass fraction(?)
         self.populate(name,'Y', Sol.rhoY / Sol.rho)
         # species mass fraction perturbation
-        self.populate(name,'dY', Sol.rhoY / Sol.rho - self.ud.stratification(elem.y))
+        # self.populate(name,'dY', Sol.rhoY / Sol.rho - self.ud.stratification(elem.y))
 
         # self.populate(name,'wplusx',mpv.wplus[0])
         # self.populate(name,'wplusy',mpv.wplus[1])

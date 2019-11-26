@@ -144,7 +144,11 @@ if len(ud.output_suffix) > 0:
 ##########################################################
 
 writer = io(ud)
-writer.write_all(Sol,mpv,elem,node,th,'000_ic')
+for n in range(N):
+    Sol = ens.members(ens)[n][0]
+    mpv = ens.members(ens)[n][2]
+    label = ('ensemble_mem=%i_%.3d' %(n,step))
+    writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 # steps = np.zeros((N))
 assert(0)
 
