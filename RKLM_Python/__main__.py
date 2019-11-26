@@ -134,15 +134,19 @@ if N > 1:
         t_cnt += 1
     obs = np.array(obs)
     obs_file.close()
-    
-ud.output_name_comp = ("_ensemble=%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,ud.tout[-1]))
+
+if elem.ndim == 2: 
+    ud.output_name_comp = ("_ensemble=%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,ud.tout[-1]))
+if elem.ndim == 3:
+    ud.output_name_comp = ("_ensemble=%i_%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,elem.icz-2*elem.igz,ud.tout[-1]))
 if len(ud.output_suffix) > 0:
     ud.output_name_comp += '_' + ud.output_suffix
 ##########################################################
 
 writer = io(ud)
+writer.write_all(Sol,mpv,elem,node,th,'000_ic')
 # steps = np.zeros((N))
-# assert(0)
+assert(0)
 
 if __name__ == '__main__':
     client = Client(threads_per_worker=4, n_workers=2)

@@ -5,6 +5,8 @@ import physics.hydrostatics as hydrostatics
 import inputs.boundary as boundary
 import management.variable as variable
 
+from scipy import signal
+
 class UserData(object):
     NSPEC = 1
 
@@ -322,6 +324,51 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         hydrostatics.hydrostatic_column(HySt, HyStn, Y[:,:,k], Yn[:-1,:-1,k], elem, node, th, ud)
         mpv.p2_nodes[:,:,k] = HyStn.p20[...]
 
+    kernel = np.array([[[1.,1.],[1.,1.]], [[1.,1.],[1.,1.]]])
+    kernel /= kernel.sum()
+
+    p2 = signal.fftconvolve(mpv.p2_nodes, kernel, mode='valid') * ud.Msq
+    P = p2**th.gm1inv
+    p = p2**th.Gammainv
+
+    kernel_dp2dy = np.array([[[1.,1.],[-1.,-1.]], [[1.,1.],[-1.,-1.]]])
+    # kernel_dp2dy /= kernel_dp2dy.sum()
+
+    dp2dy = 0.25 * signal.fftconvolve(mpv.p2_nodes, kernel_dp2dy, mode='valid') * ud.Msq / dy
+
+    rhoY = P
+    rho = -th.Gammainv * P * dp2dy / g
+
+    Sol.rho[...] = rho
+    Sol.rhou[...] = rho * u0
+    Sol.rhov[...] = rho * v0
+    Sol.rhow[...] = rho * w0
+    Sol.rhoY[...] = rhoY
+
+    mpv.p2_cells[...] = p2 / ud.Msq
+    Sol.rhoX[...] = rho / (P / rho)
+
+    theta = Sol.rhoY / Sol.rho
+    
+    kernel_dpidz = np.array([[[-1.,-1.],[-1.,-1.]], [[1.,1.],[1.,1.]]])
+    # kernel_dpidz /= kernel_dpidz.sum()
+
+    dpidz = 0.25 * signal.fftconvolve(mpv.p2_nodes, kernel_dpidz, mode='valid') / dz
+    u = -theta * Ginv * dpidz / f
+    Sol.rhou = Sol.rho * u
+
+    ud.nonhydrostasy = 0.0
+    ud.compressibility = 0.0
+
+    boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+
+    Ybar = Sol.rhoY / Sol.rho
+    Ybar = np.mean(Ybar, axis=(0,2))
+
+    mpv.HydroState.Y0[...] = Ybar
+    mpv.HydroState.S0[...] = 1.0 / Ybar
+
+    return Sol
 
 
-    assert(0)
+    
