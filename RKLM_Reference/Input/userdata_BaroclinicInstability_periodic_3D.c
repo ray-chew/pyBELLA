@@ -384,7 +384,7 @@ void Sol_initial(ConsVars* Sol,
                 double dp2dy = 0.25 * (- p2n[nn000] - p2n[nn001] + p2n[nn011] + p2n[nn010] - p2n[nn100] - p2n[nn101] + p2n[nn111] + p2n[nn110])  * ud.Msq / dy;
 
                 n  = k*icy*icx + j*icx + i;
-                                
+                
                 u   = u0;
                 v   = v0;
                 w   = w0;
