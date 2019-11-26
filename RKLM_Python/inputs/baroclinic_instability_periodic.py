@@ -7,6 +7,8 @@ import management.variable as variable
 
 from scipy import signal
 
+import h5py
+
 class UserData(object):
     NSPEC = 1
 
@@ -163,6 +165,7 @@ class UserData(object):
         self.Thetas = self.Thetas_func
         self.Zeta = self.Zeta_func
         self.ht = self.ht_func
+        self.sign = self.sign_func
 
     def zzero_func(self,z):
         zmin = self.zmin
@@ -176,18 +179,8 @@ class UserData(object):
     def Thetae_func(self,y,z,inx):
         HTz = self.ht(z)
 
-        # print(self.Thetat(y,z).shape)
-        # print(self.Thetas(y,z).shape)
-        # print((y < HTz))
-        # print(~(y < HTz))
-
         tmp = (y < HTz) * self.Thetat(y,z) + ~(y < HTz) * self.Thetas(y,z)
         return np.repeat(tmp, inx, axis=0)
-        # print(tmp.shape)
-        # print(tmp[0])
-        # print(tmp[1])
-
-        # assert(0)
 
     def ht_func(self,z):
         dth = self.ltrans / self.h_ref      # [km]
@@ -206,7 +199,7 @@ class UserData(object):
 
     def fH(self, z, dth):
         z0 = self.zzero(z)
-        return (np.sign(z) * self.F(z-z0,dth))
+        return (self.sign(z) * self.F(z-z0,dth))
 
     @staticmethod
     def F(z, dth):
@@ -218,6 +211,12 @@ class UserData(object):
 
         return tmp
 
+    @staticmethod
+    def sign_func(z):
+        zsign = np.sign(z)
+        zsign[np.where(zsign == 0)] = 1.0
+        return zsign
+
     def Thetat_func(self,y,z):
         dth = self.ltrans / self.h_ref          # [km]
         DTh = 30.0 / self.T_ref                 # [K]
@@ -226,7 +225,7 @@ class UserData(object):
         Nsqt = 0.01**2 * self.t_ref**2          # [s^{-2}]
         g = self.gravity_strength[1] / self.Msq
 
-        kappa = np.sign(z) * 70.0
+        kappa = self.sign(z) * 70.0
         fHv = self.fH(z - kappa * y, dth)
 
         return Th0 * (1.0 + Nsqt * y / g) - 0.5 * DTh * fHv
@@ -241,7 +240,7 @@ class UserData(object):
         g = self.gravity_strength[1] / self.Msq
 
         # z0 = self.zzero(z)
-        kappa = np.sign(z) * 70.0
+        kappa = self.sign(z) * 70.0
 
         zeta = self.Zeta(y,z)
 
@@ -325,6 +324,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         hydrostatics.hydrostatic_column(HySt, HyStn, Y[:,:,k], Yn[:-1,:-1,k], elem, node, th, ud)
         mpv.p2_nodes[:,:,k] = HyStn.p20[...]
 
+    # file = h5py.File("/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_baroclinic_instability_periodic/low_Mach_gravity_comp/p2_nodes/p2_n_000_ic.h5")
+    # mpv.p2_nodes[...] = file['Data-Set-2'][:]
+
     kernel = np.array([[[1.,1.],[1.,1.]], [[1.,1.],[1.,1.]]])
     kernel /= kernel.sum()
 
@@ -332,8 +334,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     # print(p2)
     # assert(0)
+    # P = np.sign(p2) * np.abs(p2)**th.gm1inv
     P = p2**th.gm1inv
-    p = p2**th.Gammainv
+    # p = p2**th.Gammainv
 
     kernel_dp2dy = np.array([[[1.,1.],[-1.,-1.]], [[1.,1.],[-1.,-1.]]])
     # kernel_dp2dy /= kernel_dp2dy.sum()
