@@ -202,7 +202,7 @@ class UserData(object):
         self.output_base_name = "_travelling_vortex"
         self.output_name_psinc = "_low_mach_gravity_psinc"
         self.output_name_comp = "_low_mach_gravity_comp"
-        # self.output_name_comp = 
+        self.output_suffix = ""
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
