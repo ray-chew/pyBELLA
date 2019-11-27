@@ -105,7 +105,7 @@ class analysis(object):
         self.localisation_matrix = localisation_matrix
 
     def analyse(self,obs,obs_covar):
-        # obs = obs.reshape(-1)
+        obs = obs.reshape(-1)
         # obs = np.ones_like(obs) * 100.
         # obs = np.random.normal(obs, np.abs(obs.max()))
         #obs: R in l
@@ -139,6 +139,9 @@ class analysis(object):
         if self.localisation_matrix != None:
             obs_covar *= self.localisation_matrix
         C = spsolve(obs_covar, self.Y.T).T # R in (k x l)
+        # print(self.Y.shape)
+        # print(obs_covar.shape)
+        # C = linalg.solve(obs_covar, self.Y.T).T
 
         # print("C.shape = ", C.shape)
 

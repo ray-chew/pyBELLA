@@ -15,8 +15,9 @@ from dask.distributed import Client, progress
 # dependencies of the data assimilation module
 from data_assimilation.params import da_params
 from data_assimilation.utils import ensemble, sliding_window_view
-from data_assimilation.letkf import da_interface
+from data_assimilation.letkf import da_interface, bin_func
 from data_assimilation.letkf import analysis as letkf_analysis
+from scipy import sparse
 
 # input file
 # from inputs.baroclinic_instability_periodic import UserData, sol_init
@@ -63,7 +64,7 @@ mpv = MPV(elem, node, ud)
 
 ##########################################################
 # Data Assimilation part
-N = 2
+N = 10
 da_parameters = da_params(N,)
 da_type = da_parameters.da_type
 aprior_error_covar = da_parameters.aprior_error_covar
@@ -144,19 +145,19 @@ if elem.ndim == 3:
 if len(ud.output_suffix) > 0:
     ud.output_name_comp += '_' + ud.output_suffix
 ##########################################################
-
-writer = io(ud)
-for n in range(N):
-    Sol = ens.members(ens)[n][0]
-    mpv = ens.members(ens)[n][2]
-    label = ('ensemble_mem=%i_%.3d' %(n,step))
-    writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 # steps = np.zeros((N))
 # assert(0)
 
 
 if __name__ == '__main__':
-    client = Client(threads_per_worker=2, n_workers=1)
+    writer = io(ud)
+    for n in range(N):
+        Sol = ens.members(ens)[n][0]
+        mpv = ens.members(ens)[n][2]
+        label = ('ensemble_mem=%i_%.3d' %(n,step))
+        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
+
+    client = Client(threads_per_worker=4, n_workers=2)
     tic = time()
     # assert(0)
 
@@ -223,15 +224,35 @@ if __name__ == '__main__':
 
                     tmp = np.array([getattr(results[:,loc,...][n],obs_attributes[0])[inner] for n in range(N)])
                     tmp = tmp[:,np.newaxis,...]
+                    obs_current = np.array(obs[np.where(np.isclose(times,tout))[0][0]][obs_attributes[0]])[inner]
+                    
+                    obs_current = bin_func(obs_current,(Nx,Ny))
+                    obs_current = obs_current[np.newaxis,...]
+                    
                     for attr in obs_attributes[1:]:
                         tmp = np.hstack((tmp,np.array([getattr(results[:,loc,...][n],attr)[inner] for n in range(N)])[:,np.newaxis,...]))
+                        tmp01 = np.array(obs[np.where(np.isclose(times,tout))[0][0]][attr])[inner]
+                        tmp01 = bin_func(tmp01,(Nx,Ny))
+                        tmp01 = tmp01[np.newaxis,...]
+                        obs_current = np.vstack((obs_current,tmp01))
+
+                    print("obs_c (before win) = ", obs_current.shape)
                     X = np.array([sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in tmp])
                     X = np.swapaxes(X,0,1)
-                    print(tmp.shape)
-                    print(X.shape)
 
+                    # print(tmp.shape)
+                    # print(X.shape
+                    
                     obs_X = 5
                     obs_Y = 5
+                    #.reshape(Nx*Ny,attr_len)
+                    obs_current = np.array([np.pad(obs_current_attr,2,mode='wrap') for obs_current_attr in obs_current])
+                    obs_current = np.array([sliding_window_view(obs_current_attr, (obs_X,obs_Y), (1,1)) for obs_current_attr in obs_current])
+                    obs_current = np.swapaxes(obs_current,0,2)
+                    obs_current = np.swapaxes(obs_current,0,1)
+                    obs_current = obs_current.reshape(Nx*Ny,attr_len,obs_X,obs_Y)
+                    
+                    print("obs_c = ", obs_current.shape)
 
                     tmp = np.array([getattr(results[:,loc,...][n],obs_attributes[0]) for n in range(N)])
                     tmp = tmp[:,np.newaxis,...]
@@ -239,22 +260,24 @@ if __name__ == '__main__':
                         tmp = np.hstack((tmp,np.array([getattr(results[:,loc,...][n],attr) for n in range(N)])[:,np.newaxis,...]))
                     Y = np.array([sliding_window_view(mem, (obs_X,obs_Y), (1,1)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in tmp])
                     Y = np.swapaxes(Y,0,1)
-
                     print(Y.shape)
-                    obs_covar = np.eye(obs_X,obs_Y)
+
+                    obs_covar = sparse.eye(attr_len*obs_X**2,attr_len*obs_Y**2, format='csr')
                     analysis = np.empty_like(X)
                     for n in range(Nx*Ny):
                         forward_operator = lambda ensemble : Y[n]
                         local_ens = letkf_analysis(X[n],n)
                         local_ens.forward(forward_operator)
+                        analysis_ens = local_ens.analyse(obs_current[n],obs_covar)
+                        # print(X.shape)
                         # local_ens.ensemble = np.array([np.pad(mem,2,mode='wrap') for mem in local_ens.ensemble])
-                        analysis[n] = local_ens.ensemble
+                        analysis[n] = analysis_ens
 
                     # analysis = np.swapaxes(analysis,0,1)
                     # analysis = np.array([np.pad()])
 
                     analysis = np.swapaxes(analysis,0,2)
-                    print(analysis.shape)
+                    # print(analysis.shape)
                     cnt = 0
                     for attr in obs_attributes:
                         current = analysis[cnt]
