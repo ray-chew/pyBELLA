@@ -46,6 +46,8 @@ def da_interface(results,obs_current,attr,N,ud,loc=0):
     # return [local_ens.identifier, local_ens.ensemble]
     return local_ens.ensemble
 
+
+
 # let me ust put the forward operator here for now - will need to tidy stuff up....
 def interpolation_func(ensemble,x_obs,y_obs,ud):
     if ud.bdry_type[0] == BdryType.WALL or ud.bdry_type[1] == BdryType.WALL:

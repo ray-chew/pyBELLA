@@ -18,8 +18,8 @@ from data_assimilation.utils import ensemble
 from data_assimilation.letkf import da_interface
 
 # input file
-from inputs.baroclinic_instability_periodic import UserData, sol_init
-# from inputs.travelling_vortex_3D_48 import UserData, sol_init
+# from inputs.baroclinic_instability_periodic import UserData, sol_init
+from inputs.travelling_vortex_3D_48 import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
 # from inputs.rising_bubble import UserData, sol_init
@@ -62,8 +62,9 @@ mpv = MPV(elem, node, ud)
 
 ##########################################################
 # Data Assimilation part
-N = 1
+N = 2
 da_parameters = da_params(N)
+da_type = da_parameters.da_type
 aprior_error_covar = da_parameters.aprior_error_covar
 
 sampler = da_parameters.sampler_none()
@@ -84,7 +85,7 @@ if seeds[0] != None:
         Sol0 = deepcopy(Sol)
         mpv0 = deepcopy(mpv)
         Sol0 = sol_init(Sol0,mpv0,elem,node,th,ud, seed=seeds[n])
-        sol_ens[n] = [Sol0,deepcopy(flux),mpv0]
+        sol_ens[n] = [Sol0,deepcopy(flux),mpv0,step]
 else:
     sol_ens = [[sol_init(Sol, mpv, elem, node, th, ud),flux,mpv,step]]
 ens = ensemble(sol_ens)
@@ -150,7 +151,7 @@ for n in range(N):
     label = ('ensemble_mem=%i_%.3d' %(n,step))
     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 # steps = np.zeros((N))
-assert(0)
+# assert(0)
 
 if __name__ == '__main__':
     client = Client(threads_per_worker=4, n_workers=2)
@@ -184,31 +185,36 @@ if __name__ == '__main__':
         # print(np.array(np.where(np.isclose(times,tout))[0]))
         # print(np.isclose(times,tout))
         # print(tout, times)
-        if N > 10:
+        if N > 1:
             if len(np.where(np.isclose(times,tout))[0]) > 0:
-                print("Starting analysis...")
                 # print(np.where(times == tout)[0][0])
                 futures = []
-                # anals = [] 
-                for attr in obs_attributes:
-                    print("Assimilating %s..." %attr)
-                    obs_current = np.array(obs[np.where(np.isclose(times,tout))[0][0]][attr])
-                    future = client.submit(da_interface, *[results,obs_current,attr,N,ud])
-                    # analysis = da_interfaces(results,obs_current,attr,N,ud)
-                    # anals.append(analysis)
-                    futures.append(future)
+                # anals = []
+                if da_type == 'batch_obs':
+                    print("Starting analysis... for batch observations")
+                    for attr in obs_attributes:
+                        print("Assimilating %s..." %attr)
+                        obs_current = np.array(obs[np.where(np.isclose(times,tout))[0][0]][attr])
+                        future = client.submit(da_interface, *[results,obs_current,attr,N,ud])
+                        # analysis = da_interfaces(results,obs_current,attr,N,ud)
+                        # anals.append(analysis)
+                        futures.append(future)
 
-                analysis = client.gather(futures)
-                # analysis = np.array(anals)
-                analysis = np.array(analysis)
-                # print(analysis.shape)
-                # print(analysis)
-                # iterable = iter(analysis.flatten())
-                # print(iterable)
-                # analysis = dict(zip(iterable, iterable))
-                # print(analysis.keys())
+                    analysis = client.gather(futures)
+                    analysis = np.array(analysis)
+                elif da_type == 'rloc':
+                    print("Starting analysis... for R-localisation")
+                    tmp = np.array([getattr(results[:,loc,...][n],obs_attributes[0]) for n in range(N)])
+                    tmp = tmp[np.newaxis,...]
+                    for attr in obs_attributes[1:]:
+                        tmp = np.vstack((tmp,np.array([getattr(results[:,loc,...][n],attr) for n in range(N)])[np.newaxis,...]))
+                    
+                    print(tmp.shape)
+                    assert(0)
 
-                print("Storing analysis...")
+
+
+                print("Writing analysis...")
                 cnt = 0
                 for attr in obs_attributes:
                     # current = analysis[attr]
@@ -226,9 +232,9 @@ if __name__ == '__main__':
             # assert(0,"Assimilation failed")
         ens.set_members(results)
 
-        if N > 1:
-            if np.allclose(ens.members(ens)[0][0].rho, results_before[0][:,loc,...][0].rho):
-                print("Assimilation check: Rho quantities unchanged, i.e. no assimilation took place in rho.")
+        # if N > 1:
+        #     if np.allclose(ens.members(ens)[0].rho, results_before[:,loc,...][0].rho):
+        #         print("Assimilation check: Rho quantities unchanged, i.e. no assimilation took place in rho.")
 
         print("Starting output...")
         for n in range(N):

@@ -2,7 +2,7 @@ import numpy as np
 
 class da_params(object):
 
-    def __init__(self,N):
+    def __init__(self,N,da_type='rloc'):
         # number of ensemble members
         self.N = 20
 
@@ -17,6 +17,7 @@ class da_params(object):
         
         # square of empirical RMSE of (48x48) travelling vortex from ref (256x256)
         self.aprior_error_covar = 0.0001#0.5804227421558537
+        self.da_type = da_type
 
     def load_obs(self,obs):
         None
