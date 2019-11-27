@@ -14,8 +14,9 @@ from dask.distributed import Client, progress
 
 # dependencies of the data assimilation module
 from data_assimilation.params import da_params
-from data_assimilation.utils import ensemble
+from data_assimilation.utils import ensemble, sliding_window_view
 from data_assimilation.letkf import da_interface
+from data_assimilation.letkf import analysis as letkf_analysis
 
 # input file
 # from inputs.baroclinic_instability_periodic import UserData, sol_init
@@ -63,7 +64,7 @@ mpv = MPV(elem, node, ud)
 ##########################################################
 # Data Assimilation part
 N = 2
-da_parameters = da_params(N)
+da_parameters = da_params(N,)
 da_type = da_parameters.da_type
 aprior_error_covar = da_parameters.aprior_error_covar
 
@@ -153,8 +154,9 @@ for n in range(N):
 # steps = np.zeros((N))
 # assert(0)
 
+
 if __name__ == '__main__':
-    client = Client(threads_per_worker=4, n_workers=2)
+    client = Client(threads_per_worker=2, n_workers=1)
     tic = time()
     # assert(0)
 
@@ -202,30 +204,77 @@ if __name__ == '__main__':
 
                     analysis = client.gather(futures)
                     analysis = np.array(analysis)
+
+                    print("Writing analysis...")
+                    cnt = 0
+                    for attr in obs_attributes:
+                        current = analysis[cnt]
+                        for n in range(N):
+                            setattr(results[:,loc,...][n],attr,current[n])
+                        cnt += 1
+
                 elif da_type == 'rloc':
                     print("Starting analysis... for R-localisation")
-                    tmp = np.array([getattr(results[:,loc,...][n],obs_attributes[0]) for n in range(N)])
-                    tmp = tmp[np.newaxis,...]
+                    inner = (slice(elem.igx,-elem.igx),slice(elem.igy,-elem.igy))
+
+                    Nx = elem.icx - 2*elem.igx
+                    Ny = elem.icy - 2*elem.igy
+                    attr_len = len(obs_attributes)
+
+                    tmp = np.array([getattr(results[:,loc,...][n],obs_attributes[0])[inner] for n in range(N)])
+                    tmp = tmp[:,np.newaxis,...]
                     for attr in obs_attributes[1:]:
-                        tmp = np.vstack((tmp,np.array([getattr(results[:,loc,...][n],attr) for n in range(N)])[np.newaxis,...]))
-                    
+                        tmp = np.hstack((tmp,np.array([getattr(results[:,loc,...][n],attr)[inner] for n in range(N)])[:,np.newaxis,...]))
+                    X = np.array([sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in tmp])
+                    X = np.swapaxes(X,0,1)
                     print(tmp.shape)
-                    assert(0)
+                    print(X.shape)
+
+                    obs_X = 5
+                    obs_Y = 5
+
+                    tmp = np.array([getattr(results[:,loc,...][n],obs_attributes[0]) for n in range(N)])
+                    tmp = tmp[:,np.newaxis,...]
+                    for attr in obs_attributes[1:]:
+                        tmp = np.hstack((tmp,np.array([getattr(results[:,loc,...][n],attr) for n in range(N)])[:,np.newaxis,...]))
+                    Y = np.array([sliding_window_view(mem, (obs_X,obs_Y), (1,1)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in tmp])
+                    Y = np.swapaxes(Y,0,1)
+
+                    print(Y.shape)
+                    obs_covar = np.eye(obs_X,obs_Y)
+                    analysis = np.empty_like(X)
+                    for n in range(Nx*Ny):
+                        forward_operator = lambda ensemble : Y[n]
+                        local_ens = letkf_analysis(X[n],n)
+                        local_ens.forward(forward_operator)
+                        # local_ens.ensemble = np.array([np.pad(mem,2,mode='wrap') for mem in local_ens.ensemble])
+                        analysis[n] = local_ens.ensemble
+
+                    # analysis = np.swapaxes(analysis,0,1)
+                    # analysis = np.array([np.pad()])
+
+                    analysis = np.swapaxes(analysis,0,2)
+                    print(analysis.shape)
+                    cnt = 0
+                    for attr in obs_attributes:
+                        current = analysis[cnt]
+
+                        for n in range(N):
+                            data = current[n]
+                            data = data.reshape(Nx,Ny)
+                            data = np.pad(data,2,mode='wrap')
+                            # print("data shape = ", data.shape)
+                            
+                            setattr(results[:,loc,...][n],attr,data)
+                        cnt += 1
 
 
-
-                print("Writing analysis...")
-                cnt = 0
-                for attr in obs_attributes:
-                    # current = analysis[attr]
-                # for i in range(len(obs_attributes)):
-                    current = analysis[cnt]
-                    for n in range(N):
-                        # results[:,loc,...][n].attr = current[n]
-                        # print(attr)
-                        # print(results[:,loc,...][n].rho)
-                        setattr(results[:,loc,...][n],attr,current[n])
-                    cnt += 1
+                    # print(tmp[0].shape)
+                    # Y = np.array([sliding_window_view(mem, (obs_X,obs_Y), (1,1)) for mem in tmp])
+                    
+                    # assert 0 
+                else:
+                    assert 0, "DA type not implemented: use 'rloc' or 'batch_obs'."
 
         # print(results_before[:,loc,...][0].rho)
         # print(results[:,loc,...][0].rho)
