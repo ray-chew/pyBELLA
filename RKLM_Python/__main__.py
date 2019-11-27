@@ -236,7 +236,7 @@ if __name__ == '__main__':
                         tmp01 = tmp01[np.newaxis,...]
                         obs_current = np.vstack((obs_current,tmp01))
 
-                    print("obs_c (before win) = ", obs_current.shape)
+                    # print("obs_c (before win) = ", obs_current.shape)
                     X = np.array([sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in tmp])
                     X = np.swapaxes(X,0,1)
 
@@ -252,7 +252,7 @@ if __name__ == '__main__':
                     obs_current = np.swapaxes(obs_current,0,1)
                     obs_current = obs_current.reshape(Nx*Ny,attr_len,obs_X,obs_Y)
                     
-                    print("obs_c = ", obs_current.shape)
+                    # print("obs_c = ", obs_current.shape)
 
                     tmp = np.array([getattr(results[:,loc,...][n],obs_attributes[0]) for n in range(N)])
                     tmp = tmp[:,np.newaxis,...]
@@ -260,7 +260,7 @@ if __name__ == '__main__':
                         tmp = np.hstack((tmp,np.array([getattr(results[:,loc,...][n],attr) for n in range(N)])[:,np.newaxis,...]))
                     Y = np.array([sliding_window_view(mem, (obs_X,obs_Y), (1,1)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in tmp])
                     Y = np.swapaxes(Y,0,1)
-                    print(Y.shape)
+                    # print(Y.shape)
 
                     obs_covar = sparse.eye(attr_len*obs_X**2,attr_len*obs_Y**2, format='csr')
                     analysis = np.empty_like(X)
