@@ -96,7 +96,7 @@ class analysis(object):
         self.identifier = identifier
 
         # initialise localisation matrix as None
-        self.localisation_matrix = None
+        self.localisation_matrix = []
 
     def forward(self,forward_operator):
         self.forward_operator = forward_operator
@@ -136,9 +136,14 @@ class analysis(object):
 
         # here is where the R-localisation matrix will come in
         # obs_covar is the error covariance matrix: is spd
-        if self.localisation_matrix != None:
-            obs_covar *= self.localisation_matrix
+        # if self.localisation_matrix != None:
+            # obs_covar *= self.localisation_matrix
         C = spsolve(obs_covar, self.Y.T).T # R in (k x l)
+        if len(self.localisation_matrix) > 0:
+            "Starting localisation..."
+            # print(self.localisation_matrix.shape)
+            # print(C.shape)
+            C[...] = ((np.array(self.localisation_matrix) + 1.) @ C.T).T
         # print(self.Y.shape)
         # print(obs_covar.shape)
         # C = linalg.solve(obs_covar, self.Y.T).T

@@ -68,6 +68,7 @@ N = 10
 da_parameters = da_params(N,)
 da_type = da_parameters.da_type
 aprior_error_covar = da_parameters.aprior_error_covar
+localisation_matrix = da_parameters.localisation_matrix
 
 sampler = da_parameters.sampler_none()
 if N > 1:
@@ -102,8 +103,8 @@ ens = ensemble(sol_ens)
 # Load observations
 # where are my observations?
 if N > 1:
-    obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_256_256_10.0.h5'
-    # obs_path = './output_travelling_vortex/output_travelling_vortex_3d_48_low_mach_gravity_comp_256_256_old.h5'
+    # obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_256_256_10.0.h5'
+    obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_10.0_truth.h5'
     obs_file = h5py.File(obs_path, 'r')
     #### which attributes do I want to observe?
     obs_attributes = ['rho', 'rhou', 'rhov']
@@ -115,11 +116,14 @@ if N > 1:
     #### when were these observations taken?
     # times = [0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
     # times = [0.20,0.25,0.30,0.35,0.40,0.45,0.50,0.55,0.60,0.65,0.70,0.75,0.80,0.85,0.90,0.95,1.0]
-    times = np.linspace(0.2,10.0,99)
+    # times = np.linspace(0.2,10.0,99)
     # times = np.linspace(0.2,10.0,99*2-1)
     # times = [0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20]
     # print(obs_file['rho'].keys())
     # assert(0)
+    steps = np.arange(0,321,8)
+    times = steps / 32
+    times = times[1:]
 
     #### axis 0 stores time series
     obs = np.empty(len(times), dtype=object)
@@ -226,13 +230,14 @@ if __name__ == '__main__':
                     tmp = tmp[:,np.newaxis,...]
                     obs_current = np.array(obs[np.where(np.isclose(times,tout))[0][0]][obs_attributes[0]])[inner]
                     
-                    obs_current = bin_func(obs_current,(Nx,Ny))
+                    # obs_current = bin_func(obs_current,(Nx,Ny))
                     obs_current = obs_current[np.newaxis,...]
                     
                     for attr in obs_attributes[1:]:
                         tmp = np.hstack((tmp,np.array([getattr(results[:,loc,...][n],attr)[inner] for n in range(N)])[:,np.newaxis,...]))
                         tmp01 = np.array(obs[np.where(np.isclose(times,tout))[0][0]][attr])[inner]
-                        tmp01 = bin_func(tmp01,(Nx,Ny))
+                        # tmp01 = bin_func(tmp01,(Nx,Ny))
+                        # print(tmp01.shape)
                         tmp01 = tmp01[np.newaxis,...]
                         obs_current = np.vstack((obs_current,tmp01))
 
@@ -251,6 +256,8 @@ if __name__ == '__main__':
                     obs_current = np.swapaxes(obs_current,0,2)
                     obs_current = np.swapaxes(obs_current,0,1)
                     obs_current = obs_current.reshape(Nx*Ny,attr_len,obs_X,obs_Y)
+                    # print(obs_current.shape)
+                    # assert(0)
                     
                     # print("obs_c = ", obs_current.shape)
 
@@ -268,6 +275,7 @@ if __name__ == '__main__':
                         forward_operator = lambda ensemble : Y[n]
                         local_ens = letkf_analysis(X[n],n)
                         local_ens.forward(forward_operator)
+                        local_ens.localisation_matrix = localisation_matrix
                         analysis_ens = local_ens.analyse(obs_current[n],obs_covar)
                         # print(X.shape)
                         # local_ens.ensemble = np.array([np.pad(mem,2,mode='wrap') for mem in local_ens.ensemble])

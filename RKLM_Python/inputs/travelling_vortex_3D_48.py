@@ -188,6 +188,8 @@ class UserData(object):
         # self.tout[0] =  0.1
         # self.tout[1] = -1.0
 
+        # self.tout = times.copy()
+
         # self.stepmax = 3
         self.stepmax = 20000
 
