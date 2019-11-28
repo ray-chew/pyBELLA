@@ -143,7 +143,7 @@ class analysis(object):
             "Starting localisation..."
             # print(self.localisation_matrix.shape)
             # print(C.shape)
-            C[...] = ((np.array(self.localisation_matrix) + 1.) @ C.T).T
+            C[...] = ((np.array(self.localisation_matrix)) @ C.T).T
         # print(self.Y.shape)
         # print(obs_covar.shape)
         # C = linalg.solve(obs_covar, self.Y.T).T
