@@ -40,7 +40,6 @@ def da_interface(results,obs_current,attr,N,ud,loc=0):
     # local_ens.debug(obs_current,"1after")
     local_ens.ensemble = np.array([np.pad(mem,2,mode='wrap') for mem in local_ens.ensemble])
 
-    
     # print(local_ens.X.shape)
     # print(local_ens.ensemble.shape)
     # return np.array([local_ens.identifier, local_ens.ensemble])
