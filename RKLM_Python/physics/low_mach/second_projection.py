@@ -128,8 +128,8 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
     Nsqsc = time_offset * dt**2 * (g / Msq) * strat
     
-    dbuoy = -Sol.rhoY * Sol.rhoX / Sol.rho
-    rhov = (nonhydro * Sol.rhov + dt * (g/Msq) * dbuoy) / (nonhydro + Nsqsc)
+    dbuoy = Sol.rhoY * Sol.rhoX / Sol.rho
+    rhov = (nonhydro * Sol.rhov - dt * (g/Msq) * dbuoy) / (nonhydro + Nsqsc)
 
     drhou = Sol.rhou - u0 * Sol.rho
     Sol.rhou[...] = u0 * Sol.rho + ooopfsqsc * (drhou + dt * coriolis * Sol.rhow)
