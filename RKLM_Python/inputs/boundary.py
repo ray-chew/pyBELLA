@@ -65,9 +65,12 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
             # for the number of ghost cells in the gravity axis...
             for side in ghost_padding[gravity_axis]:
                 direction *= -1
+                # print(direction)
                 # loop through each of these ghost cells.
                 for current_idx in np.arange(side)[::-1]:
                     nlast, nsource, nimage = get_gravity_padding(ndim,current_idx,direction,offset,elem)
+
+                    # print(nlast, nsource, nimage)
 
                     Y_last = Sol.rhoY[nlast] / Sol.rho[nlast]
                     u = Sol.rhou[nsource] / Sol.rho[nsource]
@@ -79,18 +82,27 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     S = 1. / ud.stratification(elem.y[nimage[1]])
 
                     dpi = direction*(th.Gamma*g) * 0.5 * elem.dy * (1.0 / Y_last + S)
-                    rhoY = ((Sol.rhoY[nlast]**th.gm1) + dpi)**th.gm1inv if ud.is_compressible == 1 else mpv.HydroState.rhoY0[0,:][nimage[1]]
+
+                    rhoY = ((Sol.rhoY[nlast]**th.gm1) + dpi)**th.gm1inv if ud.is_compressible == 1 else mpv.HydroState.rhoY0[nimage[1]]
 
                     rho = rhoY * S
                     p = rhoY**th.gamm
+
+                    print(np.sign(direction))
                     if np.sign(direction) == 1:
                         v = rhoYv_image / rhoY
                     else:
                         v = -Sol.rhov[nsource] / Sol.rho[nsource]
 
                     Sol.rho[nimage] = rho
-                    Sol.rhou[nimage] = rho*u
-                    Sol.rhov[nimage] = rho*v
+
+                    if np.sign(direction) == 1:
+                        Sol.rhou[nimage] = Sol.rhou[nsource] * (Y_last * S)
+                        Sol.rhow[nimage] = Sol.rhow[nsource] * (Y_last * S)
+                    else:
+                        Sol.rhou[nimage] = rho*u
+                        Sol.rhov[nimage] = rho*v
+
                     Sol.rhow[nimage] = rho*w
                     # Sol.rhoe[nimage] = ud.rhoe(rho, u, v, w, p, ud, th)
                     Sol.rhoY[nimage] = rhoY
@@ -163,7 +175,7 @@ def negative_symmetric(vector,pad_width,iaxis,kwargs=None):
 
     """
     if pad_width[1] > 0:
-        sign = -1.
+        sign = -1
         vector[:pad_width[0]] = sign * vector[pad_width[0]:2*pad_width[0]][::-1]
         vector[-pad_width[1]:] = sign * vector[-2*pad_width[1]:-pad_width[1]][::-1]
         return vector
@@ -193,7 +205,8 @@ def get_gravity_padding(ndim,cur_idx,direction,offset,elem,y_axs=None):
     cur_idx += offset * ((elem.icy - 1) - 2*cur_idx)
     gravity_padding = [(slice(None))] * ndim
     if y_axs == None:
-        y_axs = ndim - 1
+        # y_axs = ndim - 1
+        y_axs = 1
 
     nlast = np.copy(gravity_padding)
     nlast[y_axs] = int(cur_idx + direction)
