@@ -20,8 +20,8 @@ from data_assimilation.letkf import analysis as letkf_analysis
 from scipy import sparse
 
 # input file
-# from inputs.baroclinic_instability_periodic import UserData, sol_init
-from inputs.travelling_vortex_3D_48 import UserData, sol_init
+from inputs.baroclinic_instability_periodic import UserData, sol_init
+# from inputs.travelling_vortex_3D_48 import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
 # from inputs.rising_bubble import UserData, sol_init
@@ -60,11 +60,15 @@ th = ThemodynamicInit(ud)
 mpv = MPV(elem, node, ud)
 
 # dt_factor = 0.5 if ud.initial_impl_Euler == True else 1.0
+
+# Baroclinic IC test code snippet
+# Sol = sol_init(Sol, mpv, elem, node, th, ud)
+# writer = io(ud)
 # writer.write_all(Sol,mpv,elem,node,th,'000_ic')
 
 ##########################################################
 # Data Assimilation part
-N = 10
+N = 1
 da_parameters = da_params(N,)
 da_type = da_parameters.da_type
 aprior_error_covar = da_parameters.aprior_error_covar
@@ -163,7 +167,7 @@ if __name__ == '__main__':
 
     client = Client(threads_per_worker=4, n_workers=2)
     tic = time()
-    # assert(0)
+    assert(0)
 
     #### main time looping
     tout_cnt = 0

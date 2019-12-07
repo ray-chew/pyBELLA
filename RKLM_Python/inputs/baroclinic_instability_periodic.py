@@ -22,7 +22,7 @@ class UserData(object):
     h_ref = 1000
     t_ref = 100
     T_ref = 300.00
-    p_ref = 1e5
+    p_ref = 1.0e5
     u_ref = h_ref / t_ref
     rho_ref = p_ref / (R_gas * T_ref)
 
@@ -292,6 +292,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     g = ud.gravity_strength[1]
 
     hydrostatics.hydrostatic_state(mpv, elem, node, th, ud)
+    # print(mpv.HydroState.rhoY.shape)
 
     HySt = variable.States([icxn,icyn], ud)
     HyStn = variable.States([icxn,icyn], ud)
@@ -308,6 +309,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     the = ud.Thetae(y,z,elem.icx)
 
     Y = the + thp
+    # print(Y)
     
     xn = node.x.reshape(-1,1,1)
     yn = node.y.reshape(1,-1,1)
@@ -322,6 +324,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     for k in range(icz):
         hydrostatics.hydrostatic_column(HySt, HyStn, Y[:,:,k], Yn[:-1,:-1,k], elem, node, th, ud)
+        # print(HyStn.p20)
         mpv.p2_nodes[:,:,k] = HyStn.p20[...]
 
     # file = h5py.File("/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_baroclinic_instability_periodic/low_Mach_gravity_comp/p2_nodes/p2_n_000_ic.h5")
@@ -330,7 +333,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     kernel = np.array([[[1.,1.],[1.,1.]], [[1.,1.],[1.,1.]]])
     kernel /= kernel.sum()
 
-    p2 = signal.fftconvolve(mpv.p2_nodes, kernel, mode='valid') * ud.Msq
+    # print(ud.Msq)
+    # print(th.gm1inv)
+
+    p2 = signal.convolve(mpv.p2_nodes, kernel, mode='valid') * ud.Msq
+
+    # p2 = np.abs(p2)
 
     # print(p2)
     # assert(0)
@@ -357,11 +365,15 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     theta = Sol.rhoY / Sol.rho
     
-    kernel_dpidz = np.array([[[-1.,-1.],[-1.,-1.]], [[1.,1.],[1.,1.]]])
+    # kernel_dpidz = np.array([[[1.,1.],[1.,1.]], [[-1.,-1.],[-1.,-1.]]])
+    kernel_dpidz = np.array([[[1,-1],[1,-1]]])
+    # kernel_dpidz = np.swapaxes(kernel_dpidz,0,1)
+    # print(kernel_dpidz)
+    # print(kernel_dpidz.shape)
     # kernel_dpidz /= kernel_dpidz.sum()
 
-    dpidz = 0.25 * signal.fftconvolve(mpv.p2_nodes, kernel_dpidz, mode='valid') / dz
-    u = -theta * Ginv * dpidz / f
+    dpidz = 0.5 * signal.fftconvolve(mpv.p2_nodes, kernel_dpidz, mode='valid') / dz
+    u = -theta * Ginv * dpidz[:-1,:,:] / f
     Sol.rhou = Sol.rho * u
 
     ud.nonhydrostasy = 0.0
