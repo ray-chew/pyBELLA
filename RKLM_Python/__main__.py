@@ -69,7 +69,7 @@ mpv = MPV(elem, node, ud)
 
 ##########################################################
 # Data Assimilation part
-N = 30
+N = 10
 da_parameters = da_params(N,)
 da_type = da_parameters.da_type
 aprior_error_covar = da_parameters.aprior_error_covar
