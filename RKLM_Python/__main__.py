@@ -69,7 +69,7 @@ mpv = MPV(elem, node, ud)
 
 ##########################################################
 # Data Assimilation part
-N = 1
+N = 30
 da_parameters = da_params(N,)
 da_type = da_parameters.da_type
 aprior_error_covar = da_parameters.aprior_error_covar
@@ -306,13 +306,9 @@ if __name__ == '__main__':
                         cnt += 1
 
                 elif da_type == 'etpf':
-                    None
+                    results = etpf.da_interface(results,obs,obs_attributes,times,tout,N)
 
-
-                    # print(tmp[0].shape)
-                    # Y = np.array([sliding_window_view(mem, (obs_X,obs_Y), (1,1)) for mem in tmp])
-                    
-                    # assert 0 
+                    # assert(0)
                 else:
                     assert 0, "DA type not implemented: use 'rloc' or 'batch_obs'."
 
