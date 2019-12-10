@@ -14,8 +14,10 @@ def da_interface(results, obs, obs_attributes, times, tout, N, loc=0):
     attributes = ['rho','rhou','rhov','rhow','rhoY','rhoX']
     tmp = np.array([getattr(results[:,loc,...][n],obs_attributes[0])[inner] for n in range(N)])
     tmp = tmp[:,np.newaxis,...]
+
     ensemble = np.array([getattr(results[:,loc,...][n],attributes[0])[inner] for n in range(N)])
     ensemble = ensemble[:,np.newaxis,...]
+
     obs_current = np.array(obs[np.where(np.isclose(times,tout))[0][0]][obs_attributes[0]])[inner]
     
     # obs_current = bin_func(obs_current,(Nx,Ny))
@@ -46,7 +48,6 @@ def da_interface(results, obs, obs_attributes, times, tout, N, loc=0):
 
     analysis_ens = etpf.get_ensemble_from_X()
 
-    
     for n in range(N):
         cnt = 0
         current = analysis_ens[n]
@@ -86,7 +87,8 @@ class analysis(object):
         T = np.array(T)
         T = T*N
 
-        self.X = np.dot(self.X.T,T) + self.delta * np.random.randn(self.X.T.shape[0],self.X.T.shape[1])
+        self.X = np.dot(self.X.T,T).T + self.delta * np.random.randn(self.X.shape[0],self.X.shape[1])
+        # print(self.X.shape)
 
     @staticmethod
     def state_vector(ensemble):
