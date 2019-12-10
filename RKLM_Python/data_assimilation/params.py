@@ -2,7 +2,7 @@ import numpy as np
 
 class da_params(object):
 
-    def __init__(self,N,da_type='rloc'):
+    def __init__(self,N,da_type='etpf'):
         # number of ensemble members
         self.N = 20
 
