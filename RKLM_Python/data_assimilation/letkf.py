@@ -18,7 +18,6 @@ def da_interface(results,obs_current,attr,N,ud,loc=0):
 
     local_ens = np.array([getattr(results[:,loc,...][n],attr) for n in range(N)])
     local_ens = np.array([mem[inner] for mem in local_ens])
-    print(local_ens.shape)
     local_ens = analysis(local_ens,attr)
 
     # print(obs_current.shape)
