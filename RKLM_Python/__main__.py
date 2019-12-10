@@ -17,11 +17,12 @@ from data_assimilation.params import da_params
 from data_assimilation.utils import ensemble, sliding_window_view
 from data_assimilation.letkf import da_interface, bin_func
 from data_assimilation.letkf import analysis as letkf_analysis
+from data_assimilation import etpf
 from scipy import sparse
 
 # input file
-from inputs.baroclinic_instability_periodic import UserData, sol_init
-# from inputs.travelling_vortex_3D_48 import UserData, sol_init
+# from inputs.baroclinic_instability_periodic import UserData, sol_init
+from inputs.travelling_vortex_3D_48 import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
 # from inputs.rising_bubble import UserData, sol_init
@@ -167,7 +168,8 @@ if __name__ == '__main__':
 
     client = Client(threads_per_worker=4, n_workers=2)
     tic = time()
-    assert(0)
+
+    # assert(0)
 
     #### main time looping
     tout_cnt = 0
@@ -302,6 +304,9 @@ if __name__ == '__main__':
                             
                             setattr(results[:,loc,...][n],attr,data)
                         cnt += 1
+
+                elif da_type == 'etpf':
+                    None
 
 
                     # print(tmp[0].shape)
