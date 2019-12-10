@@ -44,7 +44,7 @@ def da_interface(results, obs, obs_attributes, times, tout, N, loc=0):
     # print(ensemble.shape)
     
     etpf = analysis(ensemble)
-    etpf.analyse(obs_current,0.01,Hx,N)
+    etpf.analyse(obs_current,0.1,Hx,N)
 
     analysis_ens = etpf.get_ensemble_from_X()
 
@@ -68,26 +68,31 @@ class analysis(object):
         self.identifier = identifier
 
         # rejuvenation factor
-        self.delta = 0.1
+        self.delta = 0.001
 
     def analyse(self,obs_current,obs_covar,Hx,N):
         print("starting ETPF analysis...")
 
-        r = Hx - obs_current
+        r = (Hx - obs_current)**2
         r = np.sum(r, axis=1)
+        print(r.shape)
 
-        ww = np.exp(-r**2 / (2. * obs_covar))
+        ww = np.exp(-r / (2. * obs_covar))
         ww /= np.sum(ww)
+
+        print(ww)
 
         Co = self.X @ self.X.T
         diag = np.diag(Co)
         Co = diag * np.ones((1,N)) - 2. * Co + np.ones((N,1)) * diag.T
 
+        # print(Co)
+
         _, T = pyemd.emd_with_flow(ww,np.ones(N)/N, Co, -1)
         T = np.array(T)
         T = T*N
 
-        self.X = np.dot(self.X.T,T).T + self.delta * np.random.randn(self.X.shape[0],self.X.shape[1])
+        self.X = np.dot(self.X.T,T).T #+ self.delta * np.random.randn(self.X.shape[0],self.X.shape[1])
         # print(self.X.shape)
 
     @staticmethod

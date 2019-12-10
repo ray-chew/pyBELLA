@@ -180,9 +180,10 @@ class UserData(object):
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
         # self.tout = np.arange(0,11,1)/10.
-        # self.tout = np.linspace(0,1.0,num=21)
+        self.tout = np.linspace(0,1.0,num=21)
         # self.tout = np.linspace(0.0,10.0,101)
-        self.tout = np.linspace(0.0,10.0,101*2-1)
+        # self.tout = np.linspace(0.0,10.0,101*2-1)
+
         # self.tout = [0.5]
         # self.tout = [0.0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18,0.20]
         # self.tout = [0.1]
