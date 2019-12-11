@@ -14,7 +14,7 @@ from dask.distributed import Client, progress
 
 # dependencies of the data assimilation module
 from data_assimilation.params import da_params
-from data_assimilation.utils import ensemble, sliding_window_view
+from data_assimilation.utils import ensemble, sliding_window_view, ensemble_inflation
 from data_assimilation.letkf import da_interface, bin_func
 from data_assimilation.letkf import analysis as letkf_analysis
 from data_assimilation import etpf
@@ -306,6 +306,9 @@ if __name__ == '__main__':
                         cnt += 1
 
                 elif da_type == 'etpf':
+                    # print(results.shape)
+                    # print(results[0][0].rho.shape)
+                    ensemble_inflation(results,attributes,1.2,N)
                     results = etpf.da_interface(results,obs,obs_attributes,times,tout,N)
 
                     # assert(0)
