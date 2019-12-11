@@ -53,6 +53,18 @@ class ensemble(object):
         plt.savefig("./output_images/initial_%03d" %n, bbox_inches='tight')
         plt.close()
 
+def ensemble_inflation(results, attributes, factor, N, loc=0):
+    for attribute in attributes:
+        mean = [getattr(results[n][loc],attribute) for n in range(N)]
+        mean = np.array(mean)
+        # print(mean.shape)
+        mean = np.mean(mean,axis=0)
+        for n in range(N):
+            inflation = mean + factor * (getattr(results[n][loc],attribute) - mean)
+            setattr(results[n][loc],attribute,inflation)
+            
+
+
 
 # ref: https://gist.github.com/meowklaski/4bda7c86c6168f3557657d5fb0b5395a
 def sliding_window_view(arr, window_shape, steps):
