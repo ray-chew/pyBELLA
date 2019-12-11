@@ -12,6 +12,7 @@ def da_interface(results, obs, obs_attributes, times, tout, N, loc=0):
     # print(results[:,0,...][0].rho)
 
     attributes = ['rho','rhou','rhov','rhow','rhoY','rhoX']
+    # attributes = ['rho', 'rhou', 'rhov']
     tmp = np.array([getattr(results[:,loc,...][n],obs_attributes[0])[inner] for n in range(N)])
     tmp = tmp[:,np.newaxis,...]
 
@@ -44,7 +45,7 @@ def da_interface(results, obs, obs_attributes, times, tout, N, loc=0):
     # print(ensemble.shape)
     
     etpf = analysis(ensemble)
-    etpf.analyse(obs_current,0.1,Hx,N)
+    etpf.analyse(obs_current,1.0,Hx,N)
 
     analysis_ens = etpf.get_ensemble_from_X()
 
@@ -80,7 +81,7 @@ class analysis(object):
         ww = np.exp(-r / (2. * obs_covar))
         ww /= np.sum(ww)
 
-        print(ww)
+        # print(ww)
 
         Co = self.X @ self.X.T
         diag = np.diag(Co)
