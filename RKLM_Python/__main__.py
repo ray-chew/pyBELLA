@@ -74,14 +74,15 @@ da_parameters = da_params(N,)
 da_type = da_parameters.da_type
 aprior_error_covar = da_parameters.aprior_error_covar
 localisation_matrix = da_parameters.localisation_matrix
+inflation_factor = da_parameters.inflation_factor
+rejuvenation_factor = da_parameters.rejuvenation_factor
+attributes = ['rho', 'rhou', 'rhov','rhow','rhoY','rhoX']
 
 sampler = da_parameters.sampler_none()
 if N > 1:
     None
     # sampler = da_parameters.sampler_perturbator(5)
     # sampler = da_parameters.sampler_gaussian(aprior_error_covar)
-
-attributes = da_parameters.attributes
 
 print("Generating initial ensemble...")
 sol_ens = np.zeros((N), dtype=object)
@@ -112,7 +113,8 @@ if N > 1:
     obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_10.0_truth.h5'
     obs_file = h5py.File(obs_path, 'r')
     #### which attributes do I want to observe?
-    obs_attributes = ['rho', 'rhou', 'rhov']
+    # obs_attributes = ['rho', 'rhou', 'rhov']
+    obs_attributes = da_parameters.obs_attributes
     # obs_attributes = ['rho', 'rhou', 'rhov']
     # obs_attributes = ['rhou', 'rhov']
     # obs_attributes = ['rho']
@@ -160,6 +162,9 @@ if len(ud.output_suffix) > 0:
 
 if __name__ == '__main__':
     writer = io(ud)
+    writer.write_attrs()
+    if N > 1:
+        writer.write_da_attrs(da_parameters)
     for n in range(N):
         Sol = ens.members(ens)[n][0]
         mpv = ens.members(ens)[n][2]
@@ -279,7 +284,7 @@ if __name__ == '__main__':
                     analysis = np.empty_like(X)
                     for n in range(Nx*Ny):
                         forward_operator = lambda ensemble : Y[n]
-                        local_ens = letkf_analysis(X[n],n)
+                        local_ens = letkf_analysis(X[n],inflation_factor,n)
                         local_ens.forward(forward_operator)
                         local_ens.localisation_matrix = localisation_matrix
                         analysis_ens = local_ens.analyse(obs_current[n],obs_covar)
@@ -308,8 +313,8 @@ if __name__ == '__main__':
                 elif da_type == 'etpf':
                     # print(results.shape)
                     # print(results[0][0].rho.shape)
-                    ensemble_inflation(results,attributes,1.2,N)
-                    results = etpf.da_interface(results,obs,obs_attributes,times,tout,N)
+                    ensemble_inflation(results,attributes,inflation_factor,N)
+                    results = etpf.da_interface(results,obs,obs_attributes,rejuvenation_factor,times,tout,N)
 
                     # assert(0)
                 else:
