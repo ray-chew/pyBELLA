@@ -69,7 +69,7 @@ mpv = MPV(elem, node, ud)
 
 ##########################################################
 # Data Assimilation part
-N = 10
+N = 1
 da_parameters = da_params(N,)
 da_type = da_parameters.da_type
 aprior_error_covar = da_parameters.aprior_error_covar
@@ -311,8 +311,6 @@ if __name__ == '__main__':
                         cnt += 1
 
                 elif da_type == 'etpf':
-                    # print(results.shape)
-                    # print(results[0][0].rho.shape)
                     ensemble_inflation(results,attributes,inflation_factor,N)
                     results = etpf.da_interface(results,obs,obs_attributes,rejuvenation_factor,times,tout,N)
 
