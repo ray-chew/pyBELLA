@@ -5,9 +5,8 @@ class da_params(object):
     def __init__(self,N,da_type='etpf'):
         # number of ensemble members
         self.N = 20
-
-        # self.attributes = ['rho', 'rhou', 'rhov', 'rhoY']
-        self.attributes = ['rho']
+        # self.state_attributes = ['rho', 'rhou', 'rhov','rhow','rhoY','rhoX']
+        self.obs_attributes = ['rho', 'rhou', 'rhov']
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)
@@ -22,6 +21,12 @@ class da_params(object):
         # square of empirical RMSE of (48x48) travelling vortex from ref (256x256)
         self.aprior_error_covar = 0.0001#0.5804227421558537
         self.da_type = da_type
+
+        # ensemble inflation factor for LETKF
+        self.inflation_factor = 1.4
+
+        # rejuvenation factor for ETPF
+        self.rejuvenation_factor = 0.001
 
     def load_obs(self,obs):
         None

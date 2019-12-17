@@ -10,7 +10,7 @@ import numpy as np
 
 debug_cnt = 0
 
-def da_interface(results,obs_current,attr,N,ud,loc=0):
+def da_interface(results,obs_current,rho,attr,N,ud,loc=0):
     # inner = (slice(ud.igx,-ud.igx),slice(ud.igy,-ud.igy))
     ig = 2
     inner = (slice(ig,-ig),slice(ig,-ig))
@@ -18,7 +18,7 @@ def da_interface(results,obs_current,attr,N,ud,loc=0):
 
     local_ens = np.array([getattr(results[:,loc,...][n],attr) for n in range(N)])
     local_ens = np.array([mem[inner] for mem in local_ens])
-    local_ens = analysis(local_ens,attr)
+    local_ens = analysis(local_ens,rho,attr)
 
     # print(obs_current.shape)
     obs_current = obs_current[inner]
@@ -82,14 +82,14 @@ def none_func(ensemble):
 
 
 class analysis(object):
-    def __init__(self,ensemble, identifier=None):
+    def __init__(self,ensemble, rho, identifier=None):
         self.ensemble = np.array(ensemble)
         self.X = self.state_vector(ensemble)
         self.no_of_members = self.ensemble.shape[0]
         self.member_shape = self.ensemble[0].shape
 
         # ensemble inflation factor
-        self.rho = 1.4
+        self.rho = rho
         # if anlaysis is over local state space, which is it?
         self.identifier = identifier
 
