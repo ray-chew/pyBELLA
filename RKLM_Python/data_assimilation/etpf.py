@@ -1,7 +1,7 @@
 import numpy as np
 import pyemd
 
-def da_interface(results, obs, obs_attributes, times, tout, N, loc=0):
+def da_interface(results, obs, obs_attributes, delta, times, tout, N, loc=0):
     ig = 2
     inner = (slice(ig,-ig),slice(ig,-ig))
 
@@ -44,7 +44,7 @@ def da_interface(results, obs, obs_attributes, times, tout, N, loc=0):
     # ensemble = ensemble.reshape(N,-1)
     # print(ensemble.shape)
     
-    etpf = analysis(ensemble)
+    etpf = analysis(ensemble, delta)
     etpf.analyse(obs_current,1.0,Hx,N)
 
     analysis_ens = etpf.get_ensemble_from_X()
@@ -61,7 +61,7 @@ def da_interface(results, obs, obs_attributes, times, tout, N, loc=0):
     return results
 
 class analysis(object):
-    def __init__(self,ensemble,identifier=None):
+    def __init__(self,ensemble,delta,identifier=None):
         self.ensemble = np.array(ensemble)
         self.ensemble_shape = self.ensemble.shape
 
@@ -69,7 +69,7 @@ class analysis(object):
         self.identifier = identifier
 
         # rejuvenation factor
-        self.delta = 0.001
+        self.delta = delta
 
     def analyse(self,obs_current,obs_covar,Hx,N):
         print("starting ETPF analysis...")
