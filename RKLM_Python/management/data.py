@@ -105,17 +105,18 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
     list
         A list of `[Sol,flux,mpv]` data containers at time `tout`.
     """
+    window_step = 0
     while ((t < tout) and (step < ud.stepmax)):
         set_explicit_boundary_data(Sol, elem, ud, th, mpv)
         # print("---------------------------------------")
         # print("half-time prediction of advective flux")
         # print("---------------------------------------")
         # assert(0)
-        ud.is_compressible = is_compressible(ud,step)
-        ud.is_nonhydrostatic = is_nonhydrostatic(ud,step)
-        ud.nonhydrostasy = nonhydrostasy(ud,t,step)
-        ud.compressibility = compressibility(ud,t,step)
-        ud.acoustic_order = acoustic_order(ud,t,step)
+        ud.is_compressible = is_compressible(ud,window_step)
+        ud.is_nonhydrostatic = is_nonhydrostatic(ud,window_step)
+        ud.nonhydrostasy = nonhydrostasy(ud,t,window_step)
+        ud.compressibility = compressibility(ud,t,window_step)
+        ud.acoustic_order = acoustic_order(ud,t,window_step)
         
         dt = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
 
@@ -222,5 +223,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
         # print("############################################################################################")
         t += dt
         step += 1
+        window_step += 1
+        # print(window_step)
         # print(t, step)
     return [Sol,flux,mpv,step]

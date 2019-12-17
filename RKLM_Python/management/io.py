@@ -25,32 +25,32 @@ class io(object):
         self.OUTPUT_FILENAME = "./output" + self.BASE_NAME
         self.OUTPUT_FILENAME = self.OUTPUT_FILENAME + "/output"
 
-        if self.ud.continuous_blending == False:
-            if ud.is_ArakawaKonor:
-                self.SUFFIX = self.ud.output_name_ak
-            else:
-                if self.ud.is_nonhydrostatic == 0:
-                    if self.ud.is_compressible == 1:
-                        self.SUFFIX = self.ud.output_name_hydro
-                    else:
-                        assert("Not implemented")
-                elif self.ud.is_nonhydrostatic == 1:
-                    if self.ud.is_compressible == 1:
-                        self.SUFFIX = self.ud.output_name_comp
-                    else:
-                        self.SUFFIX = self.ud.output_name_psinc
-                
+        if ud.is_ArakawaKonor:
+            self.SUFFIX = self.ud.output_name_ak
         else:
-            self.SUFFIX = "_PIs1=" + str(self.ud.no_of_pi_initial) + \
-                "_PIs2=" + str(self.ud.no_of_pi_transition) + \
-                "_HYs1=" + str(self.ud.no_of_hy_initial) + \
-                "_HYs2=" + str(self.ud.no_of_hy_transition) + \
-                "_contblend"
+            if self.ud.is_nonhydrostatic == 0:
+                if self.ud.is_compressible == 1:
+                    self.SUFFIX = self.ud.output_name_hydro
+                else:
+                    assert("Not implemented")
+            elif self.ud.is_nonhydrostatic == 1:
+                if self.ud.is_compressible == 1:
+                    self.SUFFIX = self.ud.output_name_comp
+                else:
+                    self.SUFFIX = self.ud.output_name_psinc
+
+        if self.ud.continuous_blending == True:
+            self.SUFFIX += "_cont_blend"
+                
+        # else:
+        #     self.SUFFIX = "_PIs1=" + str(self.ud.no_of_pi_initial) + \
+        #         "_PIs2=" + str(self.ud.no_of_pi_transition) + \
+        #         "_HYs1=" + str(self.ud.no_of_hy_initial) + \
+        #         "_HYs2=" + str(self.ud.no_of_hy_transition) + \
+        #         "_contblend"
 
 
-        self.PATHS = [  
-                        'da_parameters',
-                        #'bouy',
+        self.PATHS = [  #'bouy',
                         # 'dp2_c',
                         'dp2_nodes',
                         # 'dpdim',
@@ -271,7 +271,7 @@ class io(object):
             try:
                 file.attrs.create(key,value)
             except:
-                print(str(repr(value)))
+                # print(str(repr(value)))
                 file.attrs.create(key,repr(value),dtype='<S' + str(len(repr(value))))
         file.close()
 
@@ -280,11 +280,15 @@ class io(object):
         Method to write all data-assimilation attributes in the userdata initial condition to HDF5 file.
         """
         file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'a')
+        path = 'da_parameters'
+        if not (path in file):
+            file.create_group(path,track_order=True)
+
         for key, value in vars(params).items():
             try:
                 file['da_parameters'].attrs.create(key,value)
             except:
-                print(str(repr(value)))
+                # print(str(repr(value)))
                 file['da_parameters'].attrs.create(key,repr(value),dtype='<S' + str(len(repr(value))))
         file.close()
 
