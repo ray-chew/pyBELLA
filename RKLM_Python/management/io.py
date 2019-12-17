@@ -48,7 +48,9 @@ class io(object):
                 "_contblend"
 
 
-        self.PATHS = [  #'bouy',
+        self.PATHS = [  
+                        'da_parameters',
+                        #'bouy',
                         # 'dp2_c',
                         'dp2_nodes',
                         # 'dpdim',
@@ -255,6 +257,35 @@ class io(object):
         # for key in options:
         #     file[str(path) + '/' + str(name)].attrs.create(key,options[key])
         # print("writing time = %.1f for arrays %s" %(name,path))
+        file.close()
+
+    def write_attrs(self):
+        """
+        Method to write all attributes in the userdata initial condition to HDF5 file.
+        """
+        file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'a')
+        for key, value in vars(self.ud).items():
+            # print(key)
+            # print(value)
+            # print(value.__name__)
+            try:
+                file.attrs.create(key,value)
+            except:
+                print(str(repr(value)))
+                file.attrs.create(key,repr(value),dtype='<S' + str(len(repr(value))))
+        file.close()
+
+    def write_da_attrs(self,params):
+        """
+        Method to write all data-assimilation attributes in the userdata initial condition to HDF5 file.
+        """
+        file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'a')
+        for key, value in vars(params).items():
+            try:
+                file['da_parameters'].attrs.create(key,value)
+            except:
+                print(str(repr(value)))
+                file['da_parameters'].attrs.create(key,repr(value),dtype='<S' + str(len(repr(value))))
         file.close()
 
     def close_everything(self):
