@@ -139,8 +139,8 @@ class UserData(object):
         # self.tips = TimeIntegratorParams()
         # SetTimeIntegratorParameters(self)
 
-        self.inx = 32+1
-        self.iny = 32+1
+        self.inx = 64+1
+        self.iny = 64+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -157,8 +157,8 @@ class UserData(object):
 
         tol = 1.e-10
 
-        self.continuous_blending = False
-        self.no_of_pi_initial = 0
+        self.continuous_blending = True
+        self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
@@ -357,6 +357,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     ud.nonhydrostasy = 1.0
     ud.compressibility = 0.0
+
+    Sol.rhoY[...] = 1.0
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
