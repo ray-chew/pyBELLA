@@ -212,7 +212,7 @@ void User_Data_init(User_Data* ud) {
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
 
     {
-        char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_travelling_vortex_3d_48_with_initial_projection/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {
@@ -465,7 +465,7 @@ void Sol_initial(ConsVars* Sol,
         }
         
         //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
-        euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed, 1.0);
+        euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, elem, node, 0.0, ud.dtfixed, 1.0);
         for (int nn=0; nn<node->nc; nn++) {
             mpv->p2_nodes[nn] = p2aux[nn];
             mpv->dp2_nodes[nn] = 0.0;

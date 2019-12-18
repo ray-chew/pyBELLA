@@ -139,8 +139,8 @@ class UserData(object):
         # self.tips = TimeIntegratorParams()
         # SetTimeIntegratorParameters(self)
 
-        self.inx = 64+1
-        self.iny = 64+1
+        self.inx = 48+1
+        self.iny = 48+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -157,8 +157,8 @@ class UserData(object):
 
         tol = 1.e-10
 
-        self.continuous_blending = True
-        self.no_of_pi_initial = 1
+        self.continuous_blending = False
+        self.no_of_pi_initial = 0
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
@@ -180,14 +180,15 @@ class UserData(object):
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
         # self.tout = np.arange(0,11,1)/10.
-        self.tout = np.linspace(0,1.0,num=21)
+        # self.tout = np.linspace(0,1.0,num=21)
         # self.tout = np.linspace(0.0,10.0,101)
         # self.tout = np.linspace(0.0,10.0,101*2-1)
         # self.tout = [0.5]
         # self.tout = [0.0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18,0.20]
         # self.tout = [0.1]
-        # self.tout[0] =  0.1
+        # self.tout[0] =  1.0
         # self.tout[1] = -1.0
+        self.tout = [1.0]
 
         # self.tout = times.copy()
 
@@ -358,7 +359,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     ud.nonhydrostasy = 1.0
     ud.compressibility = 0.0
 
-    Sol.rhoY[...] = 1.0
+    # Sol.rhoY[...] = 1.0
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 

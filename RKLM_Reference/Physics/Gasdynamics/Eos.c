@@ -592,7 +592,8 @@ void Nodal_Pressure_perturbation(
             int njk = nk + j*node->icx;
             for (int i = 0; i < node->icx; i++) {
                 int nijk = njk + i;
-                var[nijk] = mpv->p2_nodes[nijk] - mpv->HydroState_n->p20[j];
+                // var[nijk] = mpv->p2_nodes[nijk] - mpv->HydroState_n->p20[j];
+                var[nijk] = mpv->p2_nodes[nijk];
                 // var[nijk] = mpv->p2_nodes[nijk] - mpv->HydroState_n->p20[j];
             }
         }

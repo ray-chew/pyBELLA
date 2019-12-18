@@ -66,7 +66,7 @@ int main( void )
 	const double* tout = ud.tout;
 	int output_switch = 0;
     
-    int swtch = 0;
+    int swtch = 1;
 
     double dt_factor;
         

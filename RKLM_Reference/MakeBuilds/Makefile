@@ -50,7 +50,7 @@ HDRS		  = ../Common.h \
 		../Physics/LowMach/Second-projection/variable_coefficient_poisson_nodes.h \
 		../Physics/MolecularTransport/molecular_transport.h \
 
-HDRFLAGS	= -I../ -I../Input -I../Management -I../NumericsFundamentals \
+HDRFLAGS	= -g -I../ -I../Input -I../Management -I../NumericsFundamentals \
 		  -I../NumericsFundamentals/Discretization \
 		  -I../NumericsFundamentals/ofGeneralInterest -I../Physics/Gasdynamics \
 		  -I../Physics/Hydrostatics -I../Physics/LowMach \
@@ -63,11 +63,11 @@ LD		= $(CC)
 LDFLAGS		= 
 
 LIBS		= $(HDFLIBDIR)/libmfhdf.so.0 \
-		$(HDFLIBDIR)/libdf.so.0  $(LIBDIR)/libjpeg.so $(LIBDIR)/libz.so -lm -fPIC
+		$(HDFLIBDIR)/libdf.so.0  $(LIBDIR)/libjpeg.so $(LIBDIR)/libz.so -lm -fPIC 
 
 MAKEFILE	= Makefile
 
-OBJS		= userdata_BaroclinicInstability_periodic_3D.o \
+OBJS		= userdata_TravellingVortex_3D_48.o \
 		boundary.o \
 		data.o \
 		io.o \
@@ -98,7 +98,7 @@ PROGRAM	   = rklm
 
 SHELL		  = /bin/sh
 
-SRCS		  = ../Input/userdata_BaroclinicInstability_periodic_3D.c \
+SRCS		  = ../Input/userdata_TravellingVortex_3D_48.c \
 		../Input/boundary.c \
 		../Management/data.c \
 		../Management/io.c \
@@ -141,7 +141,7 @@ echo:;		@echo $(HDRS) $(SRCS)
 index:;		@ctags -wx $(HDRS) $(SRCS)
 
 install:	$(PROGRAM)
-		@echo Installing $(PROGRAM) in $(DEST)
+	@echo Installing $(PROGRAM) in $(DEST)
 		@-strip $(PROGRAM)
 		@if [ $(DEST) != . ]; then \
 		(rm -f $(DEST)/$(PROGRAM); $(INSTALL) -f $(DEST) $(PROGRAM)); fi
@@ -156,8 +156,8 @@ $(DEST)/$(PROGRAM): $(SRCS) $(LIBS) $(HDRS) $(EXTHDRS)
 		@$(MAKE) -f $(MAKEFILE) ROOT=$(ROOT) DEST=$(DEST) install
 
 ###
-userdata_BaroclinicInstability_periodic_3D.o : 
-	$(CC) -c $(HDRFLAGS) ../Input/userdata_BaroclinicInstability_periodic_3D.c
+userdata_TravellingVortex_3D_48.o : 
+	$(CC) -c $(HDRFLAGS) ../Input/userdata_TravellingVortex_3D_48.c
 
 boundary.o : 
 	$(CC) -c $(HDRFLAGS) ../Input/boundary.c

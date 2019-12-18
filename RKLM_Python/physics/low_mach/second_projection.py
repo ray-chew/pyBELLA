@@ -164,6 +164,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     if ud.is_compressible == 1:
         rhs = rhs_from_p_old(rhs,node,mpv)
+
     elif ud.is_compressible == 0:
         if ud.is_ArakawaKonor:
             rhs -= mpv.wcenter * mpv.dp2_nodes
@@ -175,6 +176,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     diag_inv = precon_diag_prepare(mpv, elem, node, ud)
     rhs *= diag_inv
+    # diag_inv = np.ones_like(rhs)
 
     # if y_wall:
     #     rhs[:,2] *= 2.
@@ -194,7 +196,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     
     counter = solver_counter()
     
-    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-10,maxiter=6000,callback=counter)
+    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-8,maxiter=6000,callback=counter)
 
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
 
@@ -209,10 +211,12 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if writer != None:
         writer.populate(str(label)+'_after_ebnaimp','p2_full',p2_full)
 
+    mpv.dp2_nodes[...] = np.copy(p2_full)
+
     correction_nodes(Sol,elem,node,mpv,p2_full,dt,ud)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
-    mpv.dp2_nodes[...] = p2_full - mpv.p2_nodes
+    # mpv.dp2_nodes[...] = p2_full - mpv.p2_nodes
     
     # if ud.is_ArakawaKonor:
     #     if ud.is_compressible == 0:
@@ -230,7 +234,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
             
     mpv.p2_nodes[...] = p2_full
     mpv.rhs = rhs
-    set_ghostnodes_p2(mpv.dp2_nodes,node,ud)
+    # set_ghostnodes_p2(mpv.dp2_nodes,node,ud)
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
 
