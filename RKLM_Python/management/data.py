@@ -120,12 +120,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
         
         dt = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
 
-        if step < 10:
-            label = '00' + str(step)
-        elif step < 100:
-            label = '0' + str(step)
-        else:
-            label = str(step)
+        label = '%.3d' %step
 
         Sol0 = deepcopy(Sol)    
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_flux')
@@ -217,7 +212,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
             if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
             euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0)
 
-        # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
+        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
         # print("############################################################################################")
         # print("step %i done, t = %.12f, dt = %.12f" %(step, t, dt))
         # print("############################################################################################")
@@ -226,4 +221,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
         window_step += 1
         # print(window_step)
         # print(t, step)
+
+        assert(0)
     return [Sol,flux,mpv,step]

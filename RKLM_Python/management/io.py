@@ -41,6 +41,7 @@ class io(object):
 
         if self.ud.continuous_blending == True:
             self.SUFFIX += "_cont_blend"
+            self.SUFFIX += "_fs=%i_ts=%i" %(ud.no_of_pi_initial, ud.no_of_pi_transition)
                 
         # else:
         #     self.SUFFIX = "_PIs1=" + str(self.ud.no_of_pi_initial) + \
