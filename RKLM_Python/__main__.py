@@ -36,7 +36,8 @@ from management.debug import find_nearest
 from time import time
 
 
-debug = False
+debug = True
+label_type = 'STEP'
 np.set_printoptions(precision=18)
 
 step = 0
@@ -327,13 +328,18 @@ if __name__ == '__main__':
         #     if np.allclose(ens.members(ens)[0].rho, results_before[:,loc,...][0].rho):
         #         print("Assimilation check: Rho quantities unchanged, i.e. no assimilation took place in rho.")
 
-        print("Starting output...")
-        for n in range(N):
-            Sol = ens.members(ens)[n][0]
-            mpv = ens.members(ens)[n][2]
-            set_explicit_boundary_data(Sol, elem, ud, th, mpv)
-            label = ('ensemble_mem=%i_%.2f' %(n,tout))
-            writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
+        # print("Starting output...")
+        # for n in range(N):
+        #     Sol = ens.members(ens)[n][0]
+        #     mpv = ens.members(ens)[n][2]
+        #     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+        #     if label_type == 'STEP':
+        #         step = ens.members(ens)[0][3]
+        #         print(step)
+        #         label = ('ensemble_mem=%i_%.3d' %(n,step))
+        #     else:
+        #         label = ('ensemble_mem=%i_%.2f' %(n,tout))
+        #     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
 
         # synchronise_variables(mpv, Sol, elem, node, ud, th)
         t = tout
