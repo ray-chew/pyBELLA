@@ -139,8 +139,8 @@ class UserData(object):
         # self.tips = TimeIntegratorParams()
         # SetTimeIntegratorParameters(self)
 
-        self.inx = 48+1
-        self.iny = 48+1
+        self.inx = 64+1
+        self.iny = 64+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -157,8 +157,8 @@ class UserData(object):
 
         tol = 1.e-10
 
-        self.continuous_blending = False
-        self.no_of_pi_initial = 0
+        self.continuous_blending = True
+        self.no_of_pi_initial = 10
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
@@ -170,7 +170,7 @@ class UserData(object):
         self.flux_correction_max_iterations = 6000
         self.second_projection_max_iterations = 6000
 
-        self.initial_projection = False
+        self.initial_projection = True
         self.initial_impl_Euler = False
 
         self.column_preconditionr = False
@@ -359,9 +359,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     ud.nonhydrostasy = 1.0
     ud.compressibility = 0.0
 
-    # Sol.rhoY[...] = 1.0
-
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
+
+    Sol.rhoY[...] = 1.0
+    # mpv.p2_nodes[...] = 0.0
 
     if ud.initial_projection == True:
         ud.is_compressible = 0
@@ -375,13 +376,16 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5)
 
         mpv.p2_nodes[...] = p2aux
-        # mpv.dp2_nodes[...] = 0.0
+        mpv.dp2_nodes[...] = 0.0
 
         Sol.rhou += u0 * Sol.rho
         Sol.rhov += v0 * Sol.rho
 
         ud.is_compressible = 1
         ud.compressibility = 1.0
+
+    Sol.rhoY[...] = 1.0
+    # mpv.p2_nodes[...] = 1.0
 
     return Sol
 

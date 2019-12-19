@@ -36,7 +36,7 @@ from management.debug import find_nearest
 from time import time
 
 
-debug = True
+debug = False
 label_type = 'STEP'
 np.set_printoptions(precision=18)
 

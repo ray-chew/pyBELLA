@@ -195,8 +195,8 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     lap2D = LinearOperator((sh,sh),lap2D)
     
     counter = solver_counter()
-    
-    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-8,maxiter=6000,callback=counter)
+
+    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-10,maxiter=6000,callback=counter)
 
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
 
