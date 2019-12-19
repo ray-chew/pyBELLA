@@ -222,5 +222,4 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
         # print(window_step)
         # print(t, step)
 
-        assert(0)
     return [Sol,flux,mpv,step]
