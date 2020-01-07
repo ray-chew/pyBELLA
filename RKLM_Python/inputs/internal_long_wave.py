@@ -12,7 +12,7 @@ class UserData(object):
     BOUY = 0
 
     grav = 9.81
-    omega = .0*0.0001
+    omega = 0.0*0.0001
 
     R_gas = 287.4
     R_vap = 461.0
@@ -35,7 +35,9 @@ class UserData(object):
     Nsq_ref = 1.0e-4
 
     # planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0;
-    scale_factor = 160.0
+    scale_factor = 1.0
+    # scale_factor = 3.41333333333 # 1024
+    scale_factor = 4.01333333333
 
     i_gravity = np.zeros((3))
     i_coriolis = np.zeros((3))
@@ -90,8 +92,10 @@ class UserData(object):
             if (self.coriolis_strength[i] > np.finfo(np.float).eps):
                 self.i_coriolis[i] = 1
 
-        self.xmin = -15.0 * self.scale_factor
-        self.xmax =  15.0 * self.scale_factor
+        # self.xmin = -15.0 * self.scale_factor
+        # self.xmax =  15.0 * self.scale_factor
+        self.xmin = -60.2
+        self.xmax = 60.2
         self.ymin =   0.0
         self.ymax =   1.0
         self.zmin = - 1.0
@@ -135,8 +139,10 @@ class UserData(object):
         # self.tips = TimeIntegratorParams()
         # SetTimeIntegratorParameters(self)
 
-        self.inx = 301+1
+        # self.inx = 301+1
+        self.inx = 1205+1
         self.iny = 10+1
+        self.iny = 40+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -171,14 +177,17 @@ class UserData(object):
 
         # tout = 4800s
         # self.tout =  [self.scale_factor * 1.0 * 3000.0 / self.t_ref]
-        if self.scale_factor == 160.0:
-            self.tout = np.arange(0,4801,100)
+        # if self.scale_factor == 160.0:
+            # self.tout = np.arange(0,4801,100)
         # self.tout = np.arange(0,601,6)
         # self.tout = np.arange(0,301,3)/10.
         # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[1] = -1.0
+        # self.tout = [4800]
+        # self.tout = [30]
+        self.tout = [120.4]
 
-        self.stepmax = 10000
+        self.stepmax = 100000
         # self.stepmax = 10
 
         self.continuous_blending = False
@@ -195,7 +204,7 @@ class UserData(object):
 
         self.output_base_name = "_internal_long_wave"
         
-        if self.scale_factor == 1.0:
+        if self.scale_factor < 10.0:
             self.output_name_comp = "_low_mach_gravity_comp_standard"
             self.output_name_ak = "_low_mach_gravity_ak_standard"
             self.output_name_psinc = "_low_mach_gravity_psinc_standard"
@@ -214,7 +223,7 @@ class UserData(object):
             self.output_name_hydro = "_low_mach_gravity_hydro_planetary"
             self.output_suffix = "planetary"
         else:
-            assert("scale factor unsupported")
+            assert(0, "scale factor unsupported")
 
         self.stratification = self.stratification_function
         self.molly = self.molly_function
