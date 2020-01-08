@@ -80,7 +80,7 @@ void User_Data_init(User_Data* ud) {
 
 	/* Low Mach */
     ud->is_nonhydrostatic = 1;
-    ud->is_compressible   = 1;
+    ud->is_compressible   = 0;
     ud->acoustic_timestep =  0; /* 0;  1; */
 	ud->Msq =  u_ref*u_ref / (R_gas*T_ref); 
 	
@@ -481,12 +481,12 @@ void Sol_initial(ConsVars* Sol,
         ud.compressibility = compressibility;
     }
 
-    // for (int ne=0; ne<elem->nc; ne++) {
-    //     Sol->rhoY[ne] = 1.0;
-    // }
-    // for (int nn=0; nn<node->nc; nn++) {
-    //     mpv->p2_nodes[nn] = 0.0;
-    // }
+    for (int ne=0; ne<elem->nc; ne++) {
+        Sol->rhoY[ne] = 1.0;
+    }
+    for (int nn=0; nn<node->nc; nn++) {
+        mpv->p2_nodes[nn] = 0.0;
+    }
 
 }
 

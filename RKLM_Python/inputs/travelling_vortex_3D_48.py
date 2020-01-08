@@ -61,7 +61,7 @@ class UserData(object):
         self.cond = self.cond * self.t_ref / (self.h_ref * self.h_ref * self.R_gas)
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+        self.is_compressible = 0
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -335,8 +335,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         Sol.rhoe[:,igy:-igy] = ud.rhoe(rho,u,v,w,p_hydro,ud,th)
         Sol.rhoY[:,igy:-igy] = rhoY
 
-    mpv.p2_cells[:,igy:-igy] = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy])
-    
+    # mpv.p2_cells[:,igy:-igy] = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy].T)
+
+    mpv.p2_cells[:,igy:-igy] = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy])    
+
     set_ghostcells_p2(mpv.p2_cells, elem, ud)
 
     xs = node.x[igxn:-igxn].reshape(-1,1)
@@ -358,6 +360,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     mpv.p2_nodes[igxn:-igxn,igyn:-igyn] *= r/R0 < 1.0
 
     mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[igyn:-igyn+1])
+
+    # mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[0,igyn:-igyn+1])
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
     # ud.is_nonhydrostatic = 1
@@ -403,10 +407,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         ud.is_compressible = is_compressible
         ud.compressibility = compressibility
 
-    # Sol.rhoY[...] = 1.0
-    # mpv.p2_nodes[...] = 0.0
-    # mpv.dp2_nodes[...] = 0.0
-    # mpv.p2_cells[...] = 1.0
+    Sol.rhoY[...] = 1.0
+    mpv.p2_nodes[...] = 0.0
+    mpv.dp2_nodes[...] = 0.0
+    mpv.p2_cells[...] = 1.0
 
     return Sol
 
