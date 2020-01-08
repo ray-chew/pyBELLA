@@ -117,18 +117,22 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
         ud.nonhydrostasy = nonhydrostasy(ud,t,window_step)
         ud.compressibility = compressibility(ud,t,window_step)
         ud.acoustic_order = acoustic_order(ud,t,window_step)
+        # print(ud.is_compressible, ud.is_nonhydrostatic)
+        # print(ud.nonhydrostasy, ud.compressibility)
         
         dt = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
 
         label = '%.3d' %step
+
+        if step == 0: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
         Sol0 = deepcopy(Sol)    
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_flux')
         
         recompute_advective_fluxes(flux, Sol)
 
-        if debug == True: writer.populate(str(label)+'_before_advect','rhoYu',flux[0].rhoY)
-        if debug == True: writer.populate(str(label)+'_before_advect','rhoYv',flux[1].rhoY)
+        if debug == True: writer.populate(str(label)+'_before_advect','rhoYu',flux[0].rhoY.T)
+        if debug == True: writer.populate(str(label)+'_before_advect','rhoYv',flux[1].rhoY.T)
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_advect')
 
         advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv)
@@ -168,8 +172,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
         recompute_advective_fluxes(flux, Sol)
         mpv.p2_nodes[...] = mpv.p2_nodes0
 
-        if debug == True: writer.populate(str(label)+'_after_half_step','rhoYu',flux[0].rhoY)
-        if debug == True: writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY)
+        if debug == True: writer.populate(str(label)+'_after_half_step','rhoYu',flux[0].rhoY.T)
+        if debug == True: writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY.T)
 
         # print("-----------------------------------------------")
         # print("full-time step with predicted advective flux")
@@ -221,5 +225,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
         window_step += 1
         # print(window_step)
         # print(t, step)
+        if step == 10:
+            assert(0)
 
     return [Sol,flux,mpv,step]

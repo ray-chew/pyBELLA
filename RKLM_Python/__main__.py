@@ -36,7 +36,7 @@ from management.debug import find_nearest
 from time import time
 
 
-debug = False
+debug = True
 label_type = 'STEP'
 np.set_printoptions(precision=18)
 
@@ -150,12 +150,13 @@ if N > 1:
     obs = np.array(obs)
     obs_file.close()
 
-if elem.ndim == 2: 
-    ud.output_name_comp = ("_ensemble=%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,ud.tout[-1]))
-if elem.ndim == 3:
-    ud.output_name_comp = ("_ensemble=%i_%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,elem.icz-2*elem.igz,ud.tout[-1]))
-if len(ud.output_suffix) > 0:
-    ud.output_name_comp += '_' + ud.output_suffix
+# if elem.ndim == 2: 
+#     ud.output_name_comp = ("_ensemble=%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,ud.tout[-1]))
+# if elem.ndim == 3:
+#     ud.output_name_comp = ("_ensemble=%i_%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,elem.icz-2*elem.igz,ud.tout[-1]))
+# if len(ud.output_suffix) > 0:
+#     ud.output_name_comp += '_' + ud.output_suffix
+ud.output_suffix = '_ensemble=%i%s' %(N, ud.output_suffix)
 ##########################################################
 # steps = np.zeros((N))
 # assert(0)
