@@ -25,19 +25,20 @@ class io(object):
         self.OUTPUT_FILENAME = "./output" + self.BASE_NAME
         self.OUTPUT_FILENAME = self.OUTPUT_FILENAME + "/output"
 
-        if ud.is_ArakawaKonor:
-            self.SUFFIX = self.ud.output_name_ak
-        else:
-            if self.ud.is_nonhydrostatic == 0:
-                if self.ud.is_compressible == 1:
-                    self.SUFFIX = self.ud.output_name_hydro
-                else:
-                    assert("Not implemented")
-            elif self.ud.is_nonhydrostatic == 1:
-                if self.ud.is_compressible == 1:
-                    self.SUFFIX = self.ud.output_name_comp
-                else:
-                    self.SUFFIX = self.ud.output_name_psinc
+        self.SUFFIX = self.ud.output_suffix
+        # if ud.is_ArakawaKonor:
+        #     self.SUFFIX = self.ud.output_name_ak
+        # else:
+        #     if self.ud.is_nonhydrostatic == 0:
+        #         if self.ud.is_compressible == 1:
+        #             self.SUFFIX = self.ud.output_name_hydro
+        #         else:
+        #             assert("Not implemented")
+        #     elif self.ud.is_nonhydrostatic == 1:
+        #         if self.ud.is_compressible == 1:
+        #             self.SUFFIX = self.ud.output_name_comp
+        #         else:
+        #             self.SUFFIX = self.ud.output_name_psinc
 
         if self.ud.continuous_blending == True:
             self.SUFFIX += "_cont_blend"
