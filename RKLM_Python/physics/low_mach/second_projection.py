@@ -40,9 +40,14 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     mpv.rhs = np.array(mpv.rhs)
     mpv.rhs *= 0.0
     mpv.rhs[...], _ = divergence_nodes(mpv.rhs,elem,node,Sol,ud)
-    div = mpv.rhs.T
-
+    # div = np.copy(mpv.rhs).T
+    # mpv.rhs *= 0.0
+    # div = np.copy(mpv.rhs)
+    # div = divergence_nodes(div,elem,node,Sol,ud)
+    # mpv.rhs *= 0.0
+    # scale_wall_node_values(div, node, ud, 2.0)
     scale_wall_node_values(mpv.rhs, node, ud, 2.0)
+    div = np.copy(mpv.rhs)
 
     ## 2D-case ###
     inner_idx = (slice(1,-1),slice(1,-1))
@@ -92,7 +97,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
 
     dp2n[inner_idx] -= dt * dpidP * div[inner_idx]
 
-    if (ud.is_compressible != 0):
+    if (ud.is_compressible):
         weight = ud.acoustic_order - 1.0
         mpv.p2_nodes += weight * dp2n.T
 
@@ -196,7 +201,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     
     counter = solver_counter()
 
-    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-10,maxiter=6000,callback=counter)
+    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-8,maxiter=6000,callback=counter)
 
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
 
@@ -211,9 +216,15 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if writer != None:
         writer.populate(str(label)+'_after_ebnaimp','p2_full',p2_full)
 
-    mpv.dp2_nodes[...] = np.copy(p2_full)
+    # mpv.dp2_nodes[...] = np.copy(p2_full)
 
     correction_nodes(Sol,elem,node,mpv,p2_full,dt,ud)
+    mpv.p2_nodes = p2_full - mpv.p2_nodes
+    mpv.dp2_nodes = p2_full
+    mpv.rhs = rhs
+
+    set_ghostnodes_p2(mpv.p2_nodes,node,ud)
+
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     # mpv.dp2_nodes[...] = p2_full - mpv.p2_nodes
@@ -232,11 +243,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     #         mpv.dp2_nodes[node.igx:-node.igx,node.igy:-node.igy] = dp2.reshape(ud.inx,ud.iny)
             
-    mpv.p2_nodes[...] = p2_full
-    mpv.rhs = rhs
+    # mpv.p2_nodes[...] = p2_full
+    # mpv.rhs = rhs
     # set_ghostnodes_p2(mpv.dp2_nodes,node,ud)
-    set_ghostnodes_p2(mpv.p2_nodes,node,ud)
-
 
 def exner_perturbation_constraint(Sol,elem,th,p2):
     # 2D function!

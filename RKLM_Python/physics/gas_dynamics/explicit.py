@@ -56,7 +56,7 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
     Lefts, Rights = recovery(Sol, flux, lmbda, ud, th, elem)
 
     # skipped check_flux_bcs for now; first debug other functions
-    # check_flux_bcs(Lefts, Rights, elem, split_step, ud)
+    check_flux_bcs(Lefts, Rights, elem, split_step, ud)
 
     # will need it for the test cases long waves and acoustic
     hll_solver(flux,Lefts,Rights,Sol, lmbda, ud, th)

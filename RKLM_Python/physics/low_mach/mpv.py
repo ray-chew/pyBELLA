@@ -34,7 +34,7 @@ class MPV(object):
 
 def acoustic_order(ud,t,step):
     if ud.is_compressible == 0:
-        return 1.8
+        return 2.0
     elif ud.is_compressible == 1:
         return 2.0
     elif ud.is_compressible == -1:

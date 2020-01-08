@@ -62,6 +62,8 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
 
     Lefts.rhoY[lefts_idx] = Rights.rhoY[rights_idx] = 0.5 * (Sol.rhoY[lefts_idx] + Sol.rhoY[rights_idx]) \
         - order_two * 0.5 * lmbda * (Sol.u[rights_idx] * Sol.rhoY[rights_idx] - Sol.u[lefts_idx] * Sol.rhoY[lefts_idx]) 
+
+    # print(Sol.rhoY)
     Lefts.p0[lefts_idx] = Rights.p0[rights_idx] = Lefts.rhoY[lefts_idx]**gamm
 
     get_conservatives(Rights, ud, th)
