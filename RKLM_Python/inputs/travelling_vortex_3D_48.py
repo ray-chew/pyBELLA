@@ -139,8 +139,8 @@ class UserData(object):
         # self.tips = TimeIntegratorParams()
         # SetTimeIntegratorParameters(self)
 
-        self.inx = 64+1
-        self.iny = 64+1
+        self.inx = 48+1
+        self.iny = 48+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -157,9 +157,9 @@ class UserData(object):
 
         tol = 1.e-10
 
-        self.continuous_blending = True
-        self.no_of_pi_initial = 10
-        self.no_of_pi_transition = 0
+        self.continuous_blending = False
+        self.no_of_pi_initial = 0
+        self.no_of_pi_transition = 20
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
@@ -206,7 +206,10 @@ class UserData(object):
         self.output_base_name = "_travelling_vortex"
         self.output_name_psinc = "_low_mach_gravity_psinc"
         self.output_name_comp = "_low_mach_gravity_comp"
-        self.output_suffix = ""
+        if self.is_compressible == 1:
+            self.output_suffix = "_%i_%i_%.1f_comp" %(self.inx-1,self.iny-1,self.tout[-1])
+        if self.is_compressible == 0:
+            self.output_suffix = "_%i_%i_%.1f_psinc" %(self.inx-1,self.iny-1,self.tout[-1])
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
@@ -356,15 +359,31 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[igyn:-igyn+1])
 
-    ud.nonhydrostasy = 1.0
-    ud.compressibility = 0.0
+    ud.nonhydrostasy = float(ud.is_nonhydrostatic)
+    # ud.is_nonhydrostatic = 1
+    # ud.is_compressible = 0
+    ud.compressibility = float(ud.is_compressible)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
-    Sol.rhoY[...] = 1.0
+    # x1,x2 = mpv.p2_nodes.shape
+    # tmp = np.random.uniform(-0.1,0.1,(x1,x2))
+    # tmp -= np.sign(tmp.mean()) * tmp.mean()
+    # tmp += 1.0
+    # # if tmp.mean()<0:
+    # #     tmp += tmp.mean()
+    # # else:
+    # #     tmp -= tmp.mean()
+    # Sol.rhoY[...] = tmp
+    # print(Sol.rhoY.mean())
+    # Sol.rhoY[...] = 1.0
     # mpv.p2_nodes[...] = 0.0
+    # mpv.dp2_nodes[...] = 1.0
+    # mpv.p2_cells[...] = 1.0
 
     if ud.initial_projection == True:
+        is_compressible = np.copy(ud.is_compressible)
+        compressibility = np.copy(ud.compressibility)
         ud.is_compressible = 0
         ud.compressibility = 0.0
 
@@ -381,11 +400,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         Sol.rhou += u0 * Sol.rho
         Sol.rhov += v0 * Sol.rho
 
-        ud.is_compressible = 1
-        ud.compressibility = 1.0
+        ud.is_compressible = is_compressible
+        ud.compressibility = compressibility
 
     Sol.rhoY[...] = 1.0
-    # mpv.p2_nodes[...] = 1.0
+    mpv.p2_nodes[...] = 0.0
+    # mpv.dp2_nodes[...] = 0.0
+    # mpv.p2_cells[...] = 1.0
 
     return Sol
 

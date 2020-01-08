@@ -169,24 +169,24 @@ int main( void )
             // WriteHDF(tmpfile, elem->icy, elem->icx, elem->icz, elem->ndim, Sol->rho, fn, fieldname);
 
             if (swtch == 1){
-                int tmp_step = 1;
+                // int tmp_step = 1;
                 FILE *pfluxfile = NULL;
                 if (step < 10) {
-                    sprintf(fn, "%s/flux_x/rhoYu_00%d_before_advect.hdf", ud.file_name, tmp_step);
+                    sprintf(fn, "%s/rhoYu/rhoYu_00%d_before_advect.hdf", ud.file_name, step);
                 } else if(step < 100) {
-                    sprintf(fn, "%s/flux_x/rhoYu_0%d_before_advect.hdf", ud.file_name, tmp_step);
+                    sprintf(fn, "%s/rhoYu/rhoYu_0%d_before_advect.hdf", ud.file_name, step);
                 } else {
-                    sprintf(fn, "%s/flux_x/rhoYu_%d_before_advect.hdf", ud.file_name, tmp_step);
+                    sprintf(fn, "%s/rhoYu/rhoYu_%d_before_advect.hdf", ud.file_name, step);
                 }
                 sprintf(fieldname, "rhoYu");
                 WriteHDF(pfluxfile, elem->ifx, elem->icy, elem->icz, elem->ndim, flux[0]->rhoY, fn, fieldname);
 
                 if (step < 10) {
-                    sprintf(fn, "%s/flux_y/rhoYv_00%d_before_advect.hdf", ud.file_name, tmp_step);
+                    sprintf(fn, "%s/rhoYv/rhoYv_00%d_before_advect.hdf", ud.file_name, step);
                 } else if(step < 100) {
-                    sprintf(fn, "%s/flux_y/rhoYv_0%d_before_advect.hdf", ud.file_name, tmp_step);
+                    sprintf(fn, "%s/rhoYv/rhoYv_0%d_before_advect.hdf", ud.file_name, step);
                 } else {
-                    sprintf(fn, "%s/flux_y/rhoYv_%d_before_advect.hdf", ud.file_name, tmp_step);
+                    sprintf(fn, "%s/rhoYv/rhoYv_%d_before_advect.hdf", ud.file_name, step);
                 }
                 sprintf(fieldname, "rhoYv");
                 WriteHDF(pfluxfile, elem->ify, elem->icx, elem->icz, elem->ndim, flux[1]->rhoY, fn, fieldname);
@@ -261,28 +261,28 @@ int main( void )
             }
             
             if (swtch == 1){
-                int tmp_step = 5;
+                // int tmp_step = 0;
                 FILE *pfluxfile = NULL;
                 if (step < 10) {
-                    sprintf(fn, "%s/flux_x/rhoYu_00%d_after_half_step.hdf", ud.file_name, tmp_step);
+                    sprintf(fn, "%s/rhoYu/rhoYu_00%d_after_half_step.hdf", ud.file_name, step);
                 } else if(step < 100) {
-                    sprintf(fn, "%s/flux_x/rhoYu_0%d_after_half_step.hdf", ud.file_name, tmp_step);
+                    sprintf(fn, "%s/rhoYu/rhoYu_0%d_after_half_step.hdf", ud.file_name, step);
                 } else {
-                    sprintf(fn, "%s/flux_x/rhoYu_%d_after_half_step.hdf", ud.file_name, tmp_step);
+                    sprintf(fn, "%s/rhoYu/rhoYu_%d_after_half_step.hdf", ud.file_name, step);
                 }
                 sprintf(fieldname, "rhoYu");
                 WriteHDF(pfluxfile, elem->ifx, elem->icy, elem->icz, elem->ndim, flux[0]->rhoY, fn, fieldname);
 
                 if (step < 10) {
-                    sprintf(fn, "%s/flux_y/rhoYv_00%d_after_half_step.hdf", ud.file_name, tmp_step);
+                    sprintf(fn, "%s/rhoYv/rhoYv_00%d_after_half_step.hdf", ud.file_name, step);
                 } else if(step < 100) {
-                    sprintf(fn, "%s/flux_y/rhoYv_0%d_after_half_step.hdf", ud.file_name, tmp_step);
+                    sprintf(fn, "%s/rhoYv/rhoYv_0%d_after_half_step.hdf", ud.file_name, step);
                 } else {
-                    sprintf(fn, "%s/flux_y/rhoYv_%d_after_half_step.hdf", ud.file_name, tmp_step);
+                    sprintf(fn, "%s/rhoYv/rhoYv_%d_after_half_step.hdf", ud.file_name, step);
                 }
                 sprintf(fieldname, "rhoYv");
                 WriteHDF(pfluxfile, elem->ify, elem->icx, elem->icz, elem->ndim, flux[1]->rhoY, fn, fieldname);
-                tmp_step++;
+                // tmp_step++;
                 // swtch = 0;
             }
 

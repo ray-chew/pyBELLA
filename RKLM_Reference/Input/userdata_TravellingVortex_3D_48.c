@@ -481,6 +481,13 @@ void Sol_initial(ConsVars* Sol,
         ud.compressibility = compressibility;
     }
 
+    for (int ne=0; ne<elem->nc; ne++) {
+        Sol->rhoY[ne] = 1.0;
+    }
+    for (int nn=0; nn<node->nc; nn++) {
+        mpv->p2_nodes[nn] = 0.0;
+    }
+
 }
 
 /* ================================================================================== */
