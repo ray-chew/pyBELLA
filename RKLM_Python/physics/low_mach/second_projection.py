@@ -148,16 +148,16 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy])
     
     if writer != None:
-        writer.populate(str(label)+'_after_ebnaimp','p2_initial',mpv.p2_nodes)
+        writer.populate(str(label),'p2_initial',mpv.p2_nodes)
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt)
     
     if writer != None:
-        writer.populate(str(label)+'_after_ebnaimp','hcenter',mpv.wcenter)
-        writer.populate(str(label)+'_after_ebnaimp','wplusx',mpv.wplus[0])
-        writer.populate(str(label)+'_after_ebnaimp','wplusy',mpv.wplus[1])
+        writer.populate(str(label),'hcenter',mpv.wcenter)
+        writer.populate(str(label),'wplusx',mpv.wplus[0])
+        writer.populate(str(label),'wplusy',mpv.wplus[1])
 
     rhs[...], _ = divergence_nodes(rhs,elem,node,Sol,ud)
     rhs /= dt
@@ -187,7 +187,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     #     rhs[-3,:] *= 2.
 
     if writer != None:
-        writer.populate(str(label)+'_after_ebnaimp','rhs_nodes',rhs)
+        writer.populate(str(label),'rhs_nodes',rhs)
 
     lap2D = stencil_9pt(elem,node,mpv,ud,diag_inv)
 
@@ -210,7 +210,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
 
     if writer != None:
-        writer.populate(str(label)+'_after_ebnaimp','p2_full',p2_full)
+        writer.populate(str(label),'p2_full',p2_full)
 
     mpv.dp2_nodes[...] = np.copy(p2_full)
 
