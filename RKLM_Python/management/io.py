@@ -72,7 +72,7 @@ class io(object):
                         # 'w',
                         # 'vortz',
                         'Y',
-                        # 'rhs'
+                        'rhs'
                     ]
         
         self.io_create_file(self.PATHS)
@@ -179,7 +179,7 @@ class io(object):
         # self.populate(name,'wplusy',mpv.wplus[1])
         # self.populate(name,'hcenter',mpv.wcenter)
         # self.populate(name,'p2',mpv.dp2_nodes)
-        # self.populate(name,'rhs',mpv.rhs)
+        self.populate(name,'rhs',mpv.rhs)
         # self.populate(name,'X',Sol.rhoX/Sol.rho)
 
     def vortz(self,Sol,elem,node):
