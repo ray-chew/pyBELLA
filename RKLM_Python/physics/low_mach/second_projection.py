@@ -161,6 +161,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     rhs[...], _ = divergence_nodes(rhs,elem,node,Sol,ud)
     rhs /= dt
+    mpv.rhs = rhs
 
     if ud.is_compressible == 1:
         rhs = rhs_from_p_old(rhs,node,mpv)
@@ -233,7 +234,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     #         mpv.dp2_nodes[node.igx:-node.igx,node.igy:-node.igy] = dp2.reshape(ud.inx,ud.iny)
             
     mpv.p2_nodes[...] = p2_full
-    mpv.rhs = rhs
+    # mpv.rhs = rhs
     # set_ghostnodes_p2(mpv.dp2_nodes,node,ud)
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
