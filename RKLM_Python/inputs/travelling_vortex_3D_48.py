@@ -407,8 +407,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         ud.is_compressible = is_compressible
         ud.compressibility = compressibility
 
-    Sol.rhoY[...] = 1.0
-    mpv.p2_nodes[...] = 0.0
+    # Sol.rhoY[...] = 1.0
+    # mpv.p2_nodes[...] = 0.0
 
     return Sol
 
