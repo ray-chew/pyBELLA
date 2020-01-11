@@ -161,7 +161,6 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     rhs[...], _ = divergence_nodes(rhs,elem,node,Sol,ud)
     rhs /= dt
-    mpv.rhs = rhs
 
     if ud.is_compressible == 1:
         rhs = rhs_from_p_old(rhs,node,mpv)
@@ -175,8 +174,14 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # else:
         # mpv.wcenter *= ud.compressibility
 
+    if writer != None:
+        writer.populate(str(label),'rhs_nodes',rhs)
+
+    mpv.rhs = rhs
+
     diag_inv = precon_diag_prepare(mpv, elem, node, ud)
     rhs *= diag_inv
+
     # diag_inv = np.ones_like(rhs)
 
     # if y_wall:
@@ -186,9 +191,6 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     #     rhs[2,:] *= 2.
     #     rhs[-3,:] *= 2.
 
-    if writer != None:
-        writer.populate(str(label),'rhs_nodes',rhs)
-
     lap2D = stencil_9pt(elem,node,mpv,ud,diag_inv)
 
     sh = (ud.inx)*(ud.iny)
@@ -197,7 +199,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     
     counter = solver_counter()
 
-    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-10,maxiter=6000,callback=counter)
+    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-8,maxiter=6000,callback=counter)
 
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
 
