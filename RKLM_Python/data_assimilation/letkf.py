@@ -138,9 +138,6 @@ class analysis(object):
             # obs_covar *= self.localisation_matrix
         C = spsolve(obs_covar, self.Y.T).T # R in (k x l)
         if len(self.localisation_matrix) > 0:
-            "Starting localisation..."
-            # print(self.localisation_matrix.shape)
-            # print(C.shape)
             C[...] = ((np.array(self.localisation_matrix)) @ C.T).T
         # print(self.Y.shape)
         # print(obs_covar.shape)

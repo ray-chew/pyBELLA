@@ -28,7 +28,7 @@ class ensemble(object):
         cnt = 0
         for xi in analysis_ensemble:
             setattr(self,'mem_' + str(cnt),np.array(xi))
-            self.debug_im(xi[0].rho, cnt)
+            # self.debug_im(xi[0].rho, cnt)
             cnt += 1
 
     # rethink this eveutally....
