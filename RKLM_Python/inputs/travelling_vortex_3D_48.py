@@ -53,13 +53,6 @@ class UserData(object):
 
         self.nspec = self.NSPEC
 
-        self.mol_trans = MolecularTransport.NO_MOLECULAR_TRANSPORT
-        self.viscm = self.viscm * self.t_ref / (self.h_ref * self.h_ref)
-        self.viscbm = self.viscbm * self.t_ref / (self.h_ref * self.h_ref)
-        self.visct = self.visct * self.t_ref / (self.h_ref * self.h_ref)
-        self.viscbt = self.viscbt * self.t_ref / (self.h_ref * self.h_ref)
-        self.cond = self.cond * self.t_ref / (self.h_ref * self.h_ref * self.R_gas)
-
         self.is_nonhydrostatic = 1
         self.is_compressible = 0
         self.is_ArakawaKonor = 0
@@ -133,14 +126,12 @@ class UserData(object):
         self.time_integrator = TimeIntegrator.SI_MIDPT
         self.advec_time_integrator = TimeIntegrator.STRANG
         self.CFL  = 0.9/2.0
+        # self.CFL = 0.95
         self.dtfixed0 = 2.1 * 1.200930e-2
         self.dtfixed = 2.1 * 1.200930e-2
 
-        # self.tips = TimeIntegratorParams()
-        # SetTimeIntegratorParameters(self)
-
-        self.inx = 48+1
-        self.iny = 48+1
+        self.inx = 64+1
+        self.iny = 64+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -153,22 +144,14 @@ class UserData(object):
         self.kY = 0.0
         self.kZ = 0.0
 
-        self.ncache = 201
+        self.tol = 1.e-6
+        self.max_iterations = 6000
 
-        tol = 1.e-10
-
-        self.continuous_blending = False
-        self.no_of_pi_initial = 0
+        self.continuous_blending = True
+        self.no_of_pi_initial = 20
         self.no_of_pi_transition = 20
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
-
-        self.flux_correction_precision = tol
-        self.flux_correction_local_precision = tol
-        self.second_projection_precision = tol
-        self.second_projection_local_precision = tol
-        self.flux_correction_max_iterations = 6000
-        self.second_projection_max_iterations = 6000
 
         self.initial_projection = True
         self.initial_impl_Euler = False
@@ -176,8 +159,6 @@ class UserData(object):
         self.column_preconditionr = False
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
-
-        self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
         # self.tout = np.arange(0,11,1)/10.
         # self.tout = np.linspace(0,1.0,num=21)
@@ -188,20 +169,14 @@ class UserData(object):
         # self.tout = [0.1]
         # self.tout[0] =  1.0
         # self.tout[1] = -1.0
-        self.tout = [1.0]
+        # self.tout = np.arange(0.0,6.1,0.25)
+        # self.tout = [1.0,2.0,3.0]
+        self.tout = [3.0]
 
         # self.tout = times.copy()
 
         # self.stepmax = 3
         self.stepmax = 20000
-
-        self.write_stdout = True
-        self.write_stdout_period = 1
-        self.write_file = True
-        self.write_file_period = 10000
-        self.file_format = 'HDF'
-
-        self.n_time_series = 500
 
         self.output_base_name = "_travelling_vortex"
         self.output_name_psinc = "_low_mach_gravity_psinc"
@@ -210,6 +185,10 @@ class UserData(object):
             self.output_suffix = "_%i_%i_%.1f_comp" %(self.inx-1,self.iny-1,self.tout[-1])
         if self.is_compressible == 0:
             self.output_suffix = "_%i_%i_%.1f_psinc" %(self.inx-1,self.iny-1,self.tout[-1])
+        if self.continuous_blending == True:
+            self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
+        
+        self.output_suffix = "_%i_%i_%.1f_nocorrection" %(self.inx-1,self.iny-1,self.tout[-1])
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
@@ -246,7 +225,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         np.random.seed(seed)
         xc = (np.random.random() - 0.5)/10.
         yc = (np.random.random() - 0.5)/10.
-        # print(xc,yc)
 
     xcm = xc - (ud.xmax - ud.xmin)
     ycm = yc - (ud.ymax - ud.ymin)
@@ -298,12 +276,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     yccs[...] += ycm * (np.abs(ys - yc) > np.abs(ys - ycm))
 
     r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
-
-    # if seed != None:
-    #     np.random.seed(seed)
-    #     max_shift = 1
-    #     r = np.roll(np.roll(r, np.random.randint(-max_shift,max_shift+1), axis=1), np.random.randint(-max_shift,max_shift+1), axis=0)
-
     uth = (rotdir * fac * (1.0 - r/R0)**6 * (r/R0)**6) * (r < R0)
 
     u = u0 + uth * (-(ys-yccs)/r)
@@ -370,20 +342,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
-    # x1,x2 = mpv.p2_nodes.shape
-    # tmp = np.random.uniform(-0.1,0.1,(x1,x2))
-    # tmp -= np.sign(tmp.mean()) * tmp.mean()
-    # tmp += 1.0
-    # # if tmp.mean()<0:
-    # #     tmp += tmp.mean()
-    # # else:
-    # #     tmp -= tmp.mean()
-    # Sol.rhoY[...] = tmp
-    # print(Sol.rhoY.mean())
-    # Sol.rhoY[...] = 1.0
-    # mpv.p2_nodes[...] = 0.0
-    # mpv.dp2_nodes[...] = 1.0
-    # mpv.p2_cells[...] = 1.0
+    Sol.rhoY[...] = 1.0
+    mpv.p2_nodes[...] = 0.0
 
     if ud.initial_projection == True:
         is_compressible = np.copy(ud.is_compressible)
@@ -406,9 +366,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
         ud.is_compressible = is_compressible
         ud.compressibility = compressibility
-
-    # Sol.rhoY[...] = 1.0
-    # mpv.p2_nodes[...] = 0.0
 
     return Sol
 
