@@ -21,8 +21,8 @@ from data_assimilation import etpf
 from scipy import sparse
 
 # input file
-# from inputs.baroclinic_instability_periodic import UserData, sol_init
-from inputs.travelling_vortex_3D_48 import UserData, sol_init
+from inputs.baroclinic_instability_periodic import UserData, sol_init
+# from inputs.travelling_vortex_3D_48 import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
 # from inputs.rising_bubble import UserData, sol_init
@@ -36,8 +36,8 @@ from management.debug import find_nearest
 from time import time
 
 
-debug = True
-label_type = 'STEP'
+debug = False
+label_type = 'TIME'
 np.set_printoptions(precision=18)
 
 step = 0
@@ -77,7 +77,8 @@ aprior_error_covar = da_parameters.aprior_error_covar
 localisation_matrix = da_parameters.localisation_matrix
 inflation_factor = da_parameters.inflation_factor
 rejuvenation_factor = da_parameters.rejuvenation_factor
-attributes = ['rho', 'rhou', 'rhov','rhow','rhoY','rhoX']
+# attributes = ['rho', 'rhou', 'rhov','rhow','rhoY','rhoX']
+attributes = ['rho','rhou','rhov']
 
 sampler = da_parameters.sampler_none()
 if N > 1:
@@ -111,7 +112,7 @@ ens = ensemble(sol_ens)
 # where are my observations?
 if N > 1:
     # obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_256_256_10.0.h5'
-    obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_10.0_truth.h5'
+    obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_6.0_generated.h5'
     obs_file = h5py.File(obs_path, 'r')
     #### which attributes do I want to observe?
     # obs_attributes = ['rho', 'rhou', 'rhov']
@@ -129,9 +130,12 @@ if N > 1:
     # times = [0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20]
     # print(obs_file['rho'].keys())
     # assert(0)
-    steps = np.arange(0,321,8)
-    times = steps / 32
+    # steps = np.arange(0,321,8)
+    # times = steps / 32
+    # times = times[1:]
+    times = np.arange(0.0,6.1,0.25)
     times = times[1:]
+    # times = [1.0,2.0,3.0,4.0,5.0]
 
     #### axis 0 stores time series
     obs = np.empty(len(times), dtype=object)
@@ -170,7 +174,10 @@ if __name__ == '__main__':
     for n in range(N):
         Sol = ens.members(ens)[n][0]
         mpv = ens.members(ens)[n][2]
-        label = ('ensemble_mem=%i_%.3d' %(n,step))
+        if label_type == 'STEP':
+            label = ('ensemble_mem=%i_%.3d' %(n,step))
+        else:
+            label = ('ensemble_mem=%i_%.2f' %(n,0.0))
         writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
     client = Client(threads_per_worker=4, n_workers=2)
@@ -329,18 +336,17 @@ if __name__ == '__main__':
         #     if np.allclose(ens.members(ens)[0].rho, results_before[:,loc,...][0].rho):
         #         print("Assimilation check: Rho quantities unchanged, i.e. no assimilation took place in rho.")
 
-        # print("Starting output...")
-        # for n in range(N):
-        #     Sol = ens.members(ens)[n][0]
-        #     mpv = ens.members(ens)[n][2]
-        #     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
-        #     if label_type == 'STEP':
-        #         step = ens.members(ens)[0][3]
-        #         print(step)
-        #         label = ('ensemble_mem=%i_%.3d' %(n,step))
-        #     else:
-        #         label = ('ensemble_mem=%i_%.2f' %(n,tout))
-        #     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
+        print("Starting output...")
+        for n in range(N):
+            Sol = ens.members(ens)[n][0]
+            mpv = ens.members(ens)[n][2]
+            set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+            if label_type == 'STEP':
+                step = ens.members(ens)[0][3]
+                label = ('ensemble_mem=%i_%.3d' %(n,step))
+            else:
+                label = ('ensemble_mem=%i_%.2f' %(n,tout))
+            writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
 
         # synchronise_variables(mpv, Sol, elem, node, ud, th)
         t = tout
