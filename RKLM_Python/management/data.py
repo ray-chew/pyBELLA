@@ -117,14 +117,15 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
         ud.nonhydrostasy = nonhydrostasy(ud,t,window_step)
         ud.compressibility = compressibility(ud,t,window_step)
         ud.acoustic_order = acoustic_order(ud,t,window_step)
-        # print(ud.is_compressible, ud.is_nonhydrostatic)
-        # print(ud.nonhydrostasy, ud.compressibility)
+        # if ud.continuous_blending == True:
+        #     print("is_compressible = %i, is_nonhydrostatic = %i" %(ud.is_compressible, ud.is_nonhydrostatic))
+        #     print("nonhydrostasy = %.3f, compressibility = %.3f" %(ud.nonhydrostasy, ud.compressibility))
         
         dt = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
 
         label = '%.3d' %step
 
-        if step == 0: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
+        if step == 0 and writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
         Sol0 = deepcopy(Sol)    
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_flux')
@@ -170,18 +171,23 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaimp')
 
         recompute_advective_fluxes(flux, Sol)
-        mpv.p2_nodes[...] = mpv.p2_nodes0
 
         if debug == True: writer.populate(str(label)+'_after_half_step','rhoYu',flux[0].rhoY.T)
         if debug == True: writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY.T)
 
-        # print("-----------------------------------------------")
-        # print("full-time step with predicted advective flux")
-        # print("-----------------------------------------------")
-
+        # if step == 0 or ud.is_compressible == 0:
+        if step == 0:
+            mpv.p2_nodes[...] = 0.5 * mpv.p2_nodes + 0.5 * mpv.p2_nodes0
+        else:
+            mpv.p2_nodes[...] = mpv.p2_nodes0
+            
         Sol = deepcopy(Sol0)
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_half_step')
+
+        # print("-----------------------------------------------")
+        # print("full-time step with predicted advective flux")
+        # print("-----------------------------------------------")
 
         euler_forward_non_advective(Sol, mpv, elem, node, 0.5*dt, ud, th)
 
@@ -216,7 +222,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
             if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
             euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0, writer=writer, label=str(label)+'_after_full_step')
 
-        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
+        if writer != None:
+            writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
         # print("############################################################################################")
         # print("step %i done, t = %.12f, dt = %.12f" %(step, t, dt))
         # print("############################################################################################")
