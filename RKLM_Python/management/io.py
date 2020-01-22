@@ -52,7 +52,7 @@ class io(object):
         #         "_contblend"
 
 
-        self.PATHS = [  #'bouy',
+        self.PATHS = [  'buoy',
                         # 'dp2_c',
                         'dp2_nodes',
                         # 'dpdim',
@@ -137,7 +137,7 @@ class io(object):
         self.populate(name,'rhou',Sol.rhou)
         self.populate(name,'rhov',Sol.rhov)
         self.populate(name,'rhow',Sol.rhow)
-        self.populate(name,'rhoX',Sol.rhoX)
+        self.populate(name,'buoy',Sol.rhoX / Sol.rho)
 
         # dp2_nodes
         self.populate(name,'dp2_nodes',mpv.dp2_nodes)
