@@ -66,8 +66,8 @@ def recompute_advective_fluxes(flux, Sol):
     inner_idx = tuple([slice(1,-1)] * ndim)
 
     if ndim == 2:
-        kernel_u = np.array([[0.5, 0.5],[1., 1.],[0.5, 0.5]]).T
-        kernel_v = np.array([[0.5,1.,0.5],[0.5,1.,0.5]]).T
+        kernel_u = np.array([[0.5,1.,0.5],[0.5,1.,0.5]])
+        kernel_v = kernel_u.T
     elif ndim == 3:
         kernel_w = np.array([[[1,2,1],[2,4,2],[1,2,1]],[[1,2,1],[2,4,2],[1,2,1]]])
         kernel_v = np.swapaxes(kernel_w,1,0)
@@ -87,9 +87,19 @@ def recompute_advective_fluxes(flux, Sol):
 
 def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
     # flux: index 1 to end = Left[inner_idx]: index 0 to -1 = Right[inner_idx]: index 1 to end
-    remove_cols_idx = (slice(None),slice(1,-1))
-    left_idx = (slice(None),slice(0,-1))
-    right_idx = (slice(None),slice(1,None))
+    
+    ndim = Sol.rho.ndim
+    left_idx, right_idx, remove_cols_idx = [slice(None)] * ndim, [slice(None)] * ndim, [slice(None)] * ndim
+
+    remove_cols_idx[-1] = slice(1,-1)
+    left_idx[-1] = slice(0,-1)
+    right_idx[-1] = slice(1,None)
+
+    left_idx, right_idx, remove_cols_idx = tuple(left_idx), tuple(right_idx), tuple(remove_cols_idx)
+
+    # remove_cols_idx = (slice(None),slice(1,-1))
+    # left_idx = (slice(None),slice(0,-1))
+    # right_idx = (slice(None),slice(1,None))
 
     Lefts.primitives(th)
     Rights.primitives(th)
