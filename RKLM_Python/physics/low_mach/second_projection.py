@@ -33,14 +33,14 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     u0 = ud.wind_speed
 
     p2n = np.copy(mpv.p2_nodes)
-    dp2n = np.zeros_like(p2n.T)
-    dx = node.dy
-    dy = node.dx
+    dp2n = np.zeros_like(p2n)
+    dx = node.dx
+    dy = node.dy
 
     mpv.rhs = np.array(mpv.rhs)
     mpv.rhs *= 0.0
     mpv.rhs[...], _ = divergence_nodes(mpv.rhs,elem,node,Sol,ud)
-    div = mpv.rhs.T
+    div = mpv.rhs
 
     scale_wall_node_values(mpv.rhs, node, ud, 2.0)
 
@@ -48,43 +48,40 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     inner_idx = (slice(1,-1),slice(1,-1))
     p2n = p2n[inner_idx]
 
-    dpdx_kernel = np.array([[-1.,1.],[-1.,1.]])
-    dpdy_kernel = np.array([[-1.,-1.],[1.,1.]])
+    dpdy_kernel = np.array([[-1.,1.],[-1.,1.]])
+    dpdx_kernel = np.array([[-1.,-1.],[1.,1.]])
 
     dpdx = -wp * 0.5 * signal.convolve2d(p2n, dpdx_kernel, mode='valid') / dx
     dpdy = -wp * 0.5 * signal.convolve2d(p2n, dpdy_kernel, mode='valid') / dy
 
-    dpdx = dpdx.T
-    dpdy = dpdy.T
-
-    Sol.flip()
+    # Sol.flip()
 
     igx = elem.igx
     igy = elem.igy
 
     dSdy = mpv.HydroState_n.S0[igy-1:-igy+1]
-    dSdy = signal.convolve(dSdy,[1.,-1.],mode='valid').reshape(-1,1)
-    dSdy = np.repeat(dSdy,elem.icx-igx,axis=1) / dx
+    dSdy = signal.convolve(dSdy,[-1.,1.],mode='valid').reshape(-1,1)
+    dSdy = np.repeat(dSdy,elem.icx-igx,axis=1).T / dy
 
     S0c = mpv.HydroState.S0[igy-1:-igy+1].reshape(-1,1)
-    S0c = np.repeat(S0c,elem.icx-igx,axis=1)
+    S0c = np.repeat(S0c,elem.icx-igx,axis=1).T
 
-    v = Sol.rhou / Sol.rho
+    v = Sol.rhov / Sol.rho
     v = v[inner_idx]
     time_offset_expl = ud.acoustic_order - 1.0
 
     rhoYovG = Ginv * Sol.rhoY[inner_idx]
     dchi = Sol.rhoX[inner_idx] / Sol.rho[inner_idx]
     dbuoy = -1. * Sol.rhoY[inner_idx] * dchi
-    drhou = Sol.rhov[inner_idx] - u0 * Sol.rho[inner_idx]
+    drhou = Sol.rhou[inner_idx] - u0 * Sol.rho[inner_idx]
 
     rhoY = Sol.rhoY**(th.gamm - 2.0)
     dpidP_kernel = np.array([[1.,1.],[1.,1.]])
     dpidP = (th.gm1 / ud.Msq) * signal.convolve2d(rhoY, dpidP_kernel, mode='valid') / dpidP_kernel.sum()
 
-    Sol.rhov[inner_idx] = Sol.rhov[inner_idx] + dt * ( -1. * rhoYovG * dpdy + coriolis * Sol.rhow[inner_idx])
+    Sol.rhou[inner_idx] = Sol.rhou[inner_idx] + dt * ( -1. * rhoYovG * dpdx + coriolis * Sol.rhow[inner_idx])
 
-    Sol.rhou[inner_idx] = Sol.rhou[inner_idx] + dt * ( -1. * rhoYovG * dpdx + (g/Msq) * dbuoy) * nonhydro * (1 - ud.is_ArakawaKonor)
+    Sol.rhov[inner_idx] = Sol.rhov[inner_idx] + dt * ( -1. * rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro * (1 - ud.is_ArakawaKonor)
 
     Sol.rhow[inner_idx] = Sol.rhow[inner_idx] - dt * coriolis * drhou
 
@@ -92,11 +89,11 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
 
     dp2n[inner_idx] -= dt * dpidP * div[inner_idx]
 
-    if (ud.is_compressible != 0):
+    if (ud.is_compressible == 1):
         weight = ud.acoustic_order - 1.0
-        mpv.p2_nodes += weight * dp2n.T
+        mpv.p2_nodes += weight * dp2n
 
-    Sol.flip()
+    # Sol.flip()
 
     set_ghostnodes_p2(mpv.p2_nodes,node, ud)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
