@@ -37,7 +37,7 @@ class UserData(object):
     # planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0;
     scale_factor = 1.0
     # scale_factor = 3.41333333333 # 1024
-    scale_factor = 4.01333333333
+    # scale_factor = 4.01333333333
 
     i_gravity = np.zeros((3))
     i_coriolis = np.zeros((3))
@@ -92,10 +92,10 @@ class UserData(object):
             if (self.coriolis_strength[i] > np.finfo(np.float).eps):
                 self.i_coriolis[i] = 1
 
-        # self.xmin = -15.0 * self.scale_factor
-        # self.xmax =  15.0 * self.scale_factor
-        self.xmin = -60.2
-        self.xmax = 60.2
+        self.xmin = -15.0 * self.scale_factor
+        self.xmax =  15.0 * self.scale_factor
+        # self.xmin = -60.2
+        # self.xmax = 60.2
         self.ymin =   0.0
         self.ymax =   1.0
         self.zmin = - 1.0
@@ -139,10 +139,10 @@ class UserData(object):
         # self.tips = TimeIntegratorParams()
         # SetTimeIntegratorParameters(self)
 
-        # self.inx = 301+1
-        self.inx = 1205+1
+        self.inx = 301+1
+        # self.inx = 1205+1
         self.iny = 10+1
-        self.iny = 40+1
+        # self.iny = 40+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -176,7 +176,7 @@ class UserData(object):
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
         # tout = 4800s
-        # self.tout =  [self.scale_factor * 1.0 * 3000.0 / self.t_ref]
+        self.tout =  [self.scale_factor * 1.0 * 3000.0 / self.t_ref]
         # if self.scale_factor == 160.0:
             # self.tout = np.arange(0,4801,100)
         # self.tout = np.arange(0,601,6)
@@ -185,7 +185,7 @@ class UserData(object):
         # self.tout[1] = -1.0
         # self.tout = [4800]
         # self.tout = [30]
-        self.tout = [120.4]
+        # self.tout = [120.4]
 
         self.stepmax = 100000
         # self.stepmax = 10
@@ -209,19 +209,19 @@ class UserData(object):
             self.output_name_ak = "_low_mach_gravity_ak_standard"
             self.output_name_psinc = "_low_mach_gravity_psinc_standard"
             self.output_name_hydro = "_low_mach_gravity_hydro_standard"
-            self.output_suffix = "standard"
+            self.output_suffix = "_%i_%i_%.1f_standard" %(self.inx-1,self.iny-1, self.tout[-1])
         elif self.scale_factor == 20.0:
             self.output_name_comp = "_low_mach_gravity_comp_long"
             self.output_name_ak = "_low_mach_gravity_ak_long"
             self.output_name_psinc = "_low_mach_gravity_psinc_long"
             self.output_name_hydro = "_low_mach_gravity_hydro_long"
-            self.output_suffix = "long"
+            self.output_suffix = "_%i_%i_%.1f_long" %(self.inx-1,self.iny-1, self.tout[-1])
         elif self.scale_factor == 160.0:
             self.output_name_comp = "_low_mach_gravity_comp_planetary"
             self.output_name_ak = "_low_mach_gravity_ak_planetary"
             self.output_name_psinc = "_low_mach_gravity_psinc_planetary"
             self.output_name_hydro = "_low_mach_gravity_hydro_planetary"
-            self.output_suffix = "planetary"
+            self.output_suffix = "_%i_%i_%.1f_planetary" %(self.inx-1,self.iny-1, self.tout[-1])
         else:
             assert(0, "scale factor unsupported")
 
@@ -254,8 +254,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     u0 = ud.wind_speed
     v0 = 0.0
     w0 = 0.0
-    delth = 0.01 / ud.T_ref
-    xc = -1.0 *ud.scale_factor * 50.0e+3 / ud.h_ref
+    delth = 0.1 / ud.T_ref
+    xc = -1.0 * ud.scale_factor * 50.0e+3 / ud.h_ref
     a = ud.scale_factor * 5.0e+3 / ud.h_ref
 
     hydrostatic_state(mpv, elem, node, th, ud)
