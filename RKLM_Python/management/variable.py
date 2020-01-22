@@ -39,7 +39,6 @@ class Vars(object):
         self.rhoX = np.zeros(([ud.nspec] + list(size)))
         self.squeezer()
 
-
     # will be a better way of doing this
     def squeezer(self):
         """
@@ -95,7 +94,15 @@ class Vars(object):
         for key, value in vars(self).items():
             setattr(self,key,value.T)
 
-        self.rhou, self.rhov = self.rhov, self.rhou
+        # self.rhou, self.rhov = self.rhov, self.rhou
+
+    def flip_forward(self):
+        for key, value in vars(self).items():
+            setattr(self,key,np.moveaxis(value,-1,0))
+
+    def flip_backward(self):
+        for key, value in vars(self).items():
+            setattr(self,key,np.moveaxis(value,0,-1))
         
 
 
