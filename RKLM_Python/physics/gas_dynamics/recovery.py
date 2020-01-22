@@ -81,8 +81,13 @@ def slopes(Sol, Diffs, ud, elem):
     limiter_type_velocity = ud.limiter_type_velocity
     limiter_type_scalar = ud.limiter_type_scalars
 
-    lefts_idx = (slice(None),slice(0,-1))
-    rights_idx = (slice(None),slice(1,None))
+    # lefts_idx = (slice(None),slice(0,-1))
+    # rights_idx = (slice(None),slice(1,None))
+    ndim = elem.ndim
+    lefts_idx, rights_idx = [slice(None)] * ndim, [slice(None)] * ndim
+    lefts_idx[-1] = slice(0,-1)
+    rights_idx[-1] = slice(1,None)
+    lefts_idx, rights_idx = tuple(lefts_idx), tuple(rights_idx)
 
     # what are these?
     kp = ud.kp
