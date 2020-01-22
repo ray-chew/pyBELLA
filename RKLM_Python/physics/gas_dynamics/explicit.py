@@ -62,8 +62,11 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
     # will need it for the test cases long waves and acoustic
     hll_solver(flux,Lefts,Rights,Sol, lmbda, ud, th)
 
-    right_idx = (slice(None),slice(1,None))
-    left_idx = (slice(None),slice(0,-1))
+    ndim = elem.ndim
+    left_idx, right_idx = [slice(None)] * ndim, [slice(None)] * ndim
+    right_idx[-1] = slice(1,None)
+    left_idx[-1] = slice(0,-1)
+    left_idx, right_idx = tuple(left_idx), tuple(right_idx)
 
     Sol.rho += lmbda * (flux.rho[left_idx] - flux.rho[right_idx])
     Sol.rhou += lmbda * (flux.rhou[left_idx] - flux.rhou[right_idx])
