@@ -13,12 +13,18 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
 
     Sol.primitives(th)
 
-    lefts_idx = (slice(None),slice(0,-1))
-    rights_idx = (slice(None),slice(1,None))
-    inner_idx = (slice(1,-1), slice(1,-1))
+    # lefts_idx = (slice(None),slice(0,-1))
+    # rights_idx = (slice(None),slice(1,None))
+    # inner_idx = (slice(1,-1), slice(1,-1))
+
+    ndim = elem.ndim
+    lefts_idx, rights_idx, inner_idx = [slice(None)] * ndim, [slice(None)] * ndim, [slice(1,-1)] * ndim
+    lefts_idx[-1] = slice(0,-1)
+    rights_idx[-1] = slice(1,None)
+    lefts_idx, rights_idx, inner_idx = tuple(lefts_idx), tuple(rights_idx), tuple(inner_idx)
 
     # inner_idx here are where the interface fluxes are calculated with non-zero values.
-    face_inner_idx = (slice(1,-1), slice(1,-1))
+    face_inner_idx = inner_idx
     u = np.zeros_like(Sol.rhoY)
     u[inner_idx] = 0.5 * (flux.rhoY[face_inner_idx][lefts_idx] + flux.rhoY[face_inner_idx][rights_idx]) / Sol.rhoY[inner_idx]
 
