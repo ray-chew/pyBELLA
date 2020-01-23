@@ -82,15 +82,15 @@ def recompute_advective_fluxes(flux, Sol):
 
     flux[0].rhoY[inner_idx] = np.moveaxis(signal.fftconvolve(rhoYu, kernel_u, mode='valid') / kernel_u.sum(), 0, -1)
 
-    flux[0].rhoY[inner_idx][...,-1] = 0.
+    # flux[0].rhoY[inner_idx][...,-1] = 0.
     # flux[0].rhoY[...,-1] = 0.
-    flux[2].rhoY[...,-1] = 0.
+    # flux[2].rhoY[...,-1] = 0.
     rhoYv = Sol.rhoY * Sol.rhov / Sol.rho
     if ndim == 2:
         flux[1].rhoY[inner_idx] = signal.fftconvolve(rhoYv, kernel_v, mode='valid') / kernel_v.sum()
     elif ndim == 3:
         flux[1].rhoY[inner_idx] = np.moveaxis(signal.fftconvolve(rhoYv, kernel_v, mode='valid') / kernel_v.sum(), -1,0)
-    flux[1].rhoY[...,-1] = 0.
+    # flux[1].rhoY[...,-1] = 0.
 
 def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
     # flux: index 1 to end = Left[inner_idx]: index 0 to -1 = Right[inner_idx]: index 1 to end
