@@ -34,7 +34,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
     if step == None:
         dims = np.arange(ndim)
     else:
-        dims = [1]
+        dims = [ndim-1]
 
     for dim in dims:
         if step != None:
@@ -68,47 +68,66 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                 # print(direction)
                 # loop through each of these ghost cells.
                 for current_idx in np.arange(side)[::-1]:
-                    nlast, nsource, nimage = get_gravity_padding(ndim,current_idx,direction,offset,elem)
+                    if step != None:
+                        y_axs = (ndim - 1)
+                    else:
+                        y_axs = 1
+                    nlast, nsource, nimage = get_gravity_padding(ndim,current_idx,direction,offset,elem,y_axs=y_axs)
 
                     # print(nlast, nsource, nimage)
+                    # print(y_axs)
 
                     Y_last = Sol.rhoY[nlast] / Sol.rho[nlast]
                     u = Sol.rhou[nsource] / Sol.rho[nsource]
+                    v = Sol.rhov[nsource] / Sol.rho[nsource]
                     w = Sol.rhow[nsource] / Sol.rho[nsource]
                     X = Sol.rhoX[nsource] / Sol.rho[nsource]
 
                     rhoYv_image = -Sol.rhov[nsource] * Sol.rhoY[nsource] / Sol.rho[nsource]
 
-                    S = 1. / ud.stratification(elem.y[nimage[1]])
+                    S = 1. / ud.stratification(elem.y[nimage[y_axs]])
 
                     dpi = direction*(th.Gamma*g) * 0.5 * elem.dy * (1.0 / Y_last + S)
 
-                    rhoY = ((Sol.rhoY[nlast]**th.gm1) + dpi)**th.gm1inv if ud.is_compressible == 1 else mpv.HydroState.rhoY0[nimage[1]]
+                    rhoY = ((Sol.rhoY[nlast]**th.gm1) + dpi)**th.gm1inv if ud.is_compressible == 1 else mpv.HydroState.rhoY0[nimage[y_axs]]
 
                     rho = rhoY * S
-                    p = rhoY**th.gamm
+                    # p = rhoY**th.gamm
 
                     # print(np.sign(direction))
+
+                    # direction == 1 is the bottom
                     if np.sign(direction) == 1:
+                        # v = rhoYv_image / rhoY
+                        rhoYv_image = -Sol.rhov[nsource] * Sol.rhoY[nsource] / Sol.rho[nsource]
                         v = rhoYv_image / rhoY
                     else:
                         v = -Sol.rhov[nsource] / Sol.rho[nsource]
 
+
                     Sol.rho[nimage] = rho
 
-                    # if np.sign(direction) == 1:
-                        # Sol.rhou[nimage] = Sol.rhou[nsource] * (Y_last * S)
-                        # Sol.rhov[nimage] = Sol.rhov[nsource] * (Y_last * S)
-                        # Sol.rhow[nimage] = Sol.rhow[nsource] * (Y_last * S)
+                    if np.sign(direction) == 1:
+                        Sol.rhou[nimage] = Sol.rhou[nsource] * (Y_last * S)
+                        Sol.rhov[nimage] = Sol.rhov[nsource] * (Y_last * S)
+                        Sol.rhow[nimage] = Sol.rhow[nsource] * (Y_last * S)
                         # Sol.rhov[nimage] = rho*v
+                        Sol.rhov[nimage] = rho*v
 
-                    # else:
-                    #     Sol.rhou[nimage] = rho*u
-                    #     Sol.rhov[nimage] = rho*v
-                    #     Sol.rhow[nimage] = rho*w
-                    Sol.rhou[nimage] = rho*u
-                    Sol.rhov[nimage] = rho*v
-                    Sol.rhow[nimage] = rho*w
+                        # print(nlast, nsource, nimage)
+                        # print(Y_last)
+                        # print(S)
+                        
+
+                    else:
+                        Sol.rhou[nimage] = rho*u
+                        Sol.rhov[nimage] = rho*v
+                        Sol.rhow[nimage] = rho*w
+
+                    # print(Sol.rhou[...,:2])
+                    # Sol.rhou[nimage] = rho*u
+                    # Sol.rhov[nimage] = rho*v
+                    # Sol.rhow[nimage] = rho*w
                     # Sol.rhoe[nimage] = ud.rhoe(rho, u, v, w, p, ud, th)
                     Sol.rhoY[nimage] = rhoY
                     Sol.rhoX[nimage] = rho * X
