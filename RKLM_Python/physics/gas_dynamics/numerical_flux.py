@@ -69,9 +69,9 @@ def recompute_advective_fluxes(flux, Sol):
         kernel_u = np.array([[0.5,1.,0.5],[0.5,1.,0.5]])
         kernel_v = kernel_u.T
     elif ndim == 3:
-        kernel_w = np.array([[[1,2,1],[2,4,2],[1,2,1]],[[1,2,1],[2,4,2],[1,2,1]]])
-        kernel_v = np.swapaxes(kernel_w,1,0)
-        kernel_u = np.swapaxes(kernel_w,2,0)
+        kernel_u = np.array([[[1,2,1],[2,4,2],[1,2,1]],[[1,2,1],[2,4,2],[1,2,1]]])
+        kernel_v = np.swapaxes(kernel_u,1,0)
+        kernel_w = np.swapaxes(kernel_u,2,0)
 
         rhoYw = Sol.rhoY * Sol.rhow / Sol.rho
         flux[2].rhoY[inner_idx] = signal.fftconvolve(rhoYw, kernel_w, mode='valid') / kernel_w.sum()
@@ -79,11 +79,18 @@ def recompute_advective_fluxes(flux, Sol):
         assert(0, "Unsupported dimension in recompute_advective_flux")
 
     rhoYu = Sol.rhoY * Sol.rhou / Sol.rho
-    flux[0].rhoY[inner_idx] = signal.fftconvolve(rhoYu, kernel_u, mode='valid').T / kernel_u.sum()
 
+    flux[0].rhoY[inner_idx] = np.moveaxis(signal.fftconvolve(rhoYu, kernel_u, mode='valid') / kernel_u.sum(), 0, -1)
+
+    flux[0].rhoY[inner_idx][...,-1] = 0.
+    # flux[0].rhoY[...,-1] = 0.
+    flux[2].rhoY[...,-1] = 0.
     rhoYv = Sol.rhoY * Sol.rhov / Sol.rho
-    flux[1].rhoY[inner_idx] = signal.fftconvolve(rhoYv, kernel_v, mode='valid') /kernel_v.sum()
-
+    if ndim == 2:
+        flux[1].rhoY[inner_idx] = signal.fftconvolve(rhoYv, kernel_v, mode='valid') / kernel_v.sum()
+    elif ndim == 3:
+        flux[1].rhoY[inner_idx] = np.moveaxis(signal.fftconvolve(rhoYv, kernel_v, mode='valid') / kernel_v.sum(), -1,0)
+    flux[1].rhoY[...,-1] = 0.
 
 def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
     # flux: index 1 to end = Left[inner_idx]: index 0 to -1 = Right[inner_idx]: index 1 to end
