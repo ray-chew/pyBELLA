@@ -34,11 +34,11 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
     Lefts = States(shape, ud)
     Rights = States(shape, ud)
 
-    Diffs.u[:,:-1] = Sol.u[rights_idx] - Sol.u[lefts_idx]
-    Diffs.v[:,:-1] = Sol.v[rights_idx] - Sol.v[lefts_idx]
-    Diffs.w[:,:-1] = Sol.w[rights_idx] - Sol.w[lefts_idx]
-    Diffs.X[:,:-1] = Sol.X[rights_idx] - Sol.X[lefts_idx]
-    Diffs.Y[:,:-1] = 1.0 / Sol.Y[rights_idx] - 1.0 / Sol.Y[lefts_idx]
+    Diffs.u[...,:-1] = Sol.u[rights_idx] - Sol.u[lefts_idx]
+    Diffs.v[...,:-1] = Sol.v[rights_idx] - Sol.v[lefts_idx]
+    Diffs.w[...,:-1] = Sol.w[rights_idx] - Sol.w[lefts_idx]
+    Diffs.X[...,:-1] = Sol.X[rights_idx] - Sol.X[lefts_idx]
+    Diffs.Y[...,:-1] = 1.0 / Sol.Y[rights_idx] - 1.0 / Sol.Y[lefts_idx]
 
     Slopes = slopes(Sol, Diffs, ud, elem)
 
@@ -67,9 +67,11 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
     Rights.Y[...] = 1.0 / (1.0 / Sol.Y + order_two * Ampls.Y)
 
     Lefts.rhoY[lefts_idx] = Rights.rhoY[rights_idx] = 0.5 * (Sol.rhoY[lefts_idx] + Sol.rhoY[rights_idx]) \
-        - order_two * 0.5 * lmbda * (Sol.u[rights_idx] * Sol.rhoY[rights_idx] - Sol.u[lefts_idx] * Sol.rhoY[lefts_idx]) 
+        - order_two * 0.5 * lmbda * (Sol.u[rights_idx] * Sol.rhoY[rights_idx] - Sol.u[lefts_idx] * Sol.rhoY[lefts_idx])
 
-    # print(Sol.rhoY)
+    # print(Lefts.rhoY[lefts_idx][np.where(Lefts.rhoY[lefts_idx] < 0)])
+    print(np.where(Lefts.rhoY[lefts_idx] < 0))
+
     Lefts.p0[lefts_idx] = Rights.p0[rights_idx] = Lefts.rhoY[lefts_idx]**gamm
 
     get_conservatives(Rights, ud, th)
@@ -112,11 +114,11 @@ def slopes(Sol, Diffs, ud, elem):
 
     Slopes = Characters(Diffs.u.shape)
 
-    Slopes.u[:,1:-1] = limiters(limiter_type_velocity, aul, aur, kp)
-    Slopes.v[:,1:-1] = limiters(limiter_type_velocity, avl, avr, kz)
-    Slopes.w[:,1:-1] = limiters(limiter_type_velocity, awl, awr, kz)
-    Slopes.X[:,1:-1] = limiters(limiter_type_scalar, aXl, aXr, kz)
-    Slopes.Y[:,1:-1] = limiters(limiter_type_scalar, aYl, aYr, kY)
+    Slopes.u[...,1:-1] = limiters(limiter_type_velocity, aul, aur, kp)
+    Slopes.v[...,1:-1] = limiters(limiter_type_velocity, avl, avr, kz)
+    Slopes.w[...,1:-1] = limiters(limiter_type_velocity, awl, awr, kz)
+    Slopes.X[...,1:-1] = limiters(limiter_type_scalar, aXl, aXr, kz)
+    Slopes.Y[...,1:-1] = limiters(limiter_type_scalar, aYl, aYr, kY)
 
     return Slopes
 
