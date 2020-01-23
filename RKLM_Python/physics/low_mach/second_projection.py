@@ -36,6 +36,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     dp2n = np.zeros_like(p2n)
     dx = node.dx
     dy = node.dy
+    dz = node.dz
 
     mpv.rhs = np.array(mpv.rhs)
     mpv.rhs *= 0.0
@@ -60,7 +61,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     igy = elem.igy
 
     dSdy = mpv.HydroState_n.S0[igy-1:-igy+1]
-    dSdy = signal.convolve(dSdy,[-1.,1.],mode='valid').reshape(-1,1)
+    dSdy = signal.convolve(dSdy,[1.,-1.],mode='valid').reshape(-1,1)
     dSdy = np.repeat(dSdy,elem.icx-igx,axis=1).T / dy
 
     S0c = mpv.HydroState.S0[igy-1:-igy+1].reshape(-1,1)
@@ -120,8 +121,10 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
     strat = 2.0 * (mpv.HydroState_n.Y0[first_nodes_row_right_idx] - mpv.HydroState_n.Y0[first_nodes_row_left_idx]) / (mpv.HydroState_n.Y0[first_nodes_row_right_idx] + mpv.HydroState_n.Y0[first_nodes_row_left_idx])
 
-    strat = strat.reshape(1,-1)
-    strat = np.repeat(strat, elem.icx, axis=0) / dy
+    for dim in range(0,elem.ndim,2):
+        strat = np.expand_dims(strat, dim)
+        strat = np.repeat(strat, elem.sc[dim], axis=dim)
+    strat /= dy
 
     Nsqsc = time_offset * dt**2 * (g / Msq) * strat
     
@@ -196,7 +199,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     
     counter = solver_counter()
 
-    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-6,maxiter=6000,callback=counter)
+    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
 
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
 
