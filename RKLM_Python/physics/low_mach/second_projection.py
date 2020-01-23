@@ -319,6 +319,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
 
     nindim = np.empty((ndim),dtype='object')
     innerdim = np.copy(nindim)
+    innerdim1 = np.copy(nindim)
     eindim = np.empty((ndim),dtype='object')
 
     for dim in range(ndim):
@@ -331,18 +332,26 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
             y_idx = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic-1)
             right_idx = None if -igs[dim]+is_periodic == 0 else -igs[dim]+is_periodic
             y_idx1 = slice(igs[dim]-is_periodic+1, right_idx)
+        print(dim)
+        innerdim1[dim] = slice(igs[dim]-1, (-igs[dim]+1))
  
     strat = 2.0 * (mpv.HydroState_n.Y0[y_idx1] - mpv.HydroState_n.Y0[y_idx]) / (mpv.HydroState_n.Y0[y_idx1] + mpv.HydroState_n.Y0[y_idx]) / dy
 
     nindim = tuple(nindim)
     eindim = tuple(eindim)
     innerdim = tuple(innerdim)
+    innerdim1 = tuple(innerdim1)
+
+    for dim in range(0,elem.ndim,2):
+        strat = np.expand_dims(strat, dim)
+        strat = np.repeat(strat, elem.sc[dim]-igx, axis=dim)
 
     Y = Sol.rhoY[nindim] / Sol.rho[nindim]
     coeff = Gammainv * Sol.rhoY[nindim] * Y
     fsqsc = dt**2 * coriolis**2
     fimp = 1.0 / (1.0 + fsqsc)
     Nsqsc = time_offset * dt**2 * (g / Msq) * strat
+
     gimp = 1.0 / (nonhydro + Nsqsc)
 
     for dim in range(ndim):
@@ -351,13 +360,21 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
         else:
             mpv.wplus[dim][eindim] = coeff * fimp
 
-    kernel = (ndim - 1) * np.ones((2,2))
+    kernel = np.ones([2] * ndim)
 
-    for iz in range(icz):
-        iz = slice(None,) if iz == 0 else iz
+    # print(mpv.wcenter.shape)
+    # print(Sol.rhoY.shape)
+    # print(Sol.rhoY[innerdim1].shape)
+    # print(innerdim1)
+    # print(eindim)
 
-        mpv.wcenter[iz][innerdim] = ccenter * signal.convolve2d(Sol.rhoY[igx-1:-igx+1,igy-1:-igy+1]**cexp,kernel,mode='valid') / kernel.sum()
-        
+    # for iz in range(icz):
+    #     iz = slice(None,) if iz == 0 else iz
+
+    #     mpv.wcenter[iz][innerdim] = ccenter * signal.fftconvolve(Sol.rhoY[innerdim1]**cexp,kernel,mode='valid') / kernel.sum()
+
+    mpv.wcenter[innerdim] = ccenter * signal.fftconvolve(Sol.rhoY[innerdim1]**cexp,kernel,mode='valid') / kernel.sum()
+
     scale_wall_node_values(mpv.wcenter, node, ud)
 
 
@@ -395,7 +412,7 @@ def divergence_nodes(rhs,elem,node,Sol,ud):
     signs = [sgn for sgn in product([1,-1], repeat = ndim)]
 
     inner_idx = tuple(inner_idx)
-    Sols = np.dstack((Sol.rhou[inner_idx], Sol.rhov[inner_idx], Sol.rhow[inner_idx]))
+    Sols = np.stack((Sol.rhou[inner_idx], Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
 
     oodxyz = 1./dxyz
     Y = Sol.rhoY[inner_idx] / Sol.rho[inner_idx]
