@@ -19,9 +19,9 @@ class convert(object):
         self.time = time
         
     def convert_files(self,directories,filenames,debug=False):
-        if self.time == self.t_label + '_' + 'after_ebnaimp':
-            directories += ['wplusx', 'wplusy', 'hcenter', 'pnew', 'rhs_nodes', 'p2_initial']
-            filenames += ['wplusx', 'wplusy', 'hcenter', 'p2_full', 'rhs_nodes', 'p2_initial']
+        #if self.time == self.t_label + '_' + 'after_ebnaimp':
+            #directories += ['wplusx', 'wplusy', 'hcenter', 'pnew', 'rhs_nodes', 'p2_initial']
+            #filenames += ['wplusx', 'wplusy', 'hcenter', 'p2_full', 'rhs_nodes', 'p2_initial']
 
         lst_hdf = []
         lst_h5 = []
@@ -46,9 +46,9 @@ class convert(object):
         test_cases_folders = case_folders
         test_cases_names = case_names
         
-        if self.time == self.t_label + '_' + 'after_ebnaimp':
-            test_cases_folders += ['wplusx', 'wplusy', 'hcenter', 'pnew', 'rhs_nodes', 'p2_initial']
-            test_cases_names += ['wplusx', 'wplusy', 'hcenter', 'p2_full', 'rhs_nodes', 'p2_initial']
+        #if self.time == self.t_label + '_' + 'after_ebnaimp':
+            #test_cases_folders += ['wplusx', 'wplusy', 'hcenter', 'pnew', 'rhs_nodes', 'p2_initial']
+            #test_cases_names += ['wplusx', 'wplusy', 'hcenter', 'p2_full', 'rhs_nodes', 'p2_initial']
             
         test_cases_folders = np.char.array(test_cases_folders)
         test_cases_names = np.char.array(test_cases_names)

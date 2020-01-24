@@ -16,19 +16,18 @@ def py_out(pyfile,py_dataset,time):
 #inner = (slice(2,-2),slice(2,-2))
 inner = (slice(None,),slice(None,))
 
-def ensemble_test_case(time, path, N, attribute, suffix='after_full_step'):
+def ensemble_test_case(time, path, N, attribute, tag):
 
     file = h5py.File(path,'r')
 
     array = []
     for n in range(N):
-        if type(time) is int:
-            t_label = '_ensemble_mem=%i_%.3d_%s' %(n,time,suffix)
-        elif type(time) is float:
-            t_label = '_ensemble_mem=%i_%.2f_%s' %(n,time,suffix)
+        
+        if type(time) == 'float':
+            t_label = '_ensemble_mem=%i_%.3d_after_full_step' %(n,time)
         else:
-            assert("time label type unsupported")
-            
+#             t_label = '_ensemble_mem=%i_%s_after_full_step' %(n,time)
+            t_label = '_%.3d_%s' %(time,tag)
         array.append(py_out(file,attribute,time=t_label)[inner])
 
     array = np.array(array)
