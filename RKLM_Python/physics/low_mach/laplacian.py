@@ -2,6 +2,7 @@ import numpy as np
 from inputs.enum_bdry import BdryType
 from scipy import sparse, signal
 from numba import jit
+import numba as nb
 
 def stencil_9pt(elem,node,mpv,ud,diag_inv):
     igx = elem.igx
@@ -198,39 +199,117 @@ def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_per
         
     return lap
 
+
+def stencil_27pt(elem,node,mpv,ud,diag_inv):
+    oodxyz = node.dxyz
+    oodxyz = 1./(oodxyz**2)
+    oodx2, oody2, oodz2 = oodxyz[0], oodxyz[1], oodxyz[2]
+
+    i1 = (slice(1,-1),slice(1,-1),slice(1,-1))
+    i2 = (slice(2,-2),slice(2,-2),slice(2,-2))
+
+    # shp = mpv.wplus[0].shape
+
+    hplusx = mpv.wplus[0][i1]
+    hplusy = mpv.wplus[1][i1]
+    hplusz = mpv.wplus[2][i1]
+
+    hcenter = mpv.wcenter[i1]
+    diag_inv = diag_inv[i2]
+
+    return lambda p : lap3D(p, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2)
+    # return lambda p : lap3D(p)
+
+@nb.jit(nopython=True, cache=False)
+# def lap3D(p0):
+def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2):
+    # p = p0.reshape(shp[0],shp[1],shp[2])
+    # p = p0.reshape(hcenter.shape)
+    shx, shy, shz = hplusx.shape
+    p = p0.reshape(shx+2,shy+2,shz+2)
+    # p = p0.reshape(66,34,66)
+
+    coeff = 1./16
+    # hplusx, hplusy, hplusz = 1.0, 1.0, 1.0
+    # hcenter = 1.0
+    # oodx2, oody2, oodz2 = 1.0, 1.0, 1.0
+    lap = np.zeros_like(p)
+    
+    pinner = p[1:-1,1:-1,:]
+    leftx = pinner[:,:,:-1]
+    rightx = pinner[:,:,1:]
+
+    x_fluxes = (rightx - leftx)
+
+    pinner = p[1:-1,:,1:-1]
+    lefty = pinner[:,:-1,:]
+    righty = pinner[:,1:,:]
+
+    y_fluxes = (righty - lefty)
+
+    pinner = p[:,1:-1,1:-1]
+    leftz = pinner[:-1,:,:]
+    rightz = pinner[1:,:,:]
+
+    z_fluxes = (rightz - leftz)
+
+    lap[1:-1,1:-1,1:-1] = hplusx * oodx2 * coeff * (- x_fluxes[:,:,:-1] + x_fluxes[:,:,1:]) \
+        + hplusy * oody2 * coeff * (- y_fluxes[:,:-1,:] + y_fluxes[:,1:,:]) \
+        + hplusz * oodz2 * coeff * (- z_fluxes[:-1,:,:] + z_fluxes[1:,:,:]) \
+        + hcenter * p[1:-1,1:-1,1:-1]
+
+    return lap
+
 def precon_diag_prepare(mpv, elem, node, ud):
-    dx = node.dx
-    dy = node.dy
+    dx, dy, dz = node.dx, node.dy, node.dz
 
     x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
     y_periodic = ud.bdry_type[1] == BdryType.PERIODIC
+    z_periodic = ud.bdry_type[2] == BdryType.PERIODIC
+    periodicity = (x_periodic, y_periodic, z_periodic)
+    # igx = node.igx
+    # igy = node.igy
+    igs = node.igs
+    ndim = elem.ndim
 
-    igx = node.igx
-    igy = node.igy
-
-    idx_e = (slice(igx - x_periodic,-igx + x_periodic - 1),slice(igy - y_periodic, -igy + y_periodic - 1))
+    # idx_e = (slice(igx - x_periodic,-igx + x_periodic - 1),slice(igy - y_periodic, -igy + y_periodic - 1))
     idx_periodic = [slice(None)] * elem.ndim
+    idx_n, idx_e = np.copy(idx_periodic), np.copy(idx_periodic)
 
-    for dim in range(elem.ndim):
+    for dim in range(ndim):
         if ud.bdry_type[dim] == BdryType.PERIODIC:
             idx_periodic[dim] = slice(1,-1)
-    idx_periodic = tuple(idx_periodic)
 
-    idx_n = (slice(igx,-igx), slice(igy,-igy))
+        idx_e[dim] = slice(igs[dim] - periodicity[dim], -igs[dim] + periodicity[dim] - 1)
+        idx_n[dim] = slice(igs[dim], -igs[dim])
+
+    idx_periodic, idx_e, idx_n = tuple(idx_periodic), tuple(idx_e), tuple(idx_n)
+
+    # idx_n = (slice(igx,-igx), slice(igy,-igy))
 
     hplusx = mpv.wplus[0]
     hplusy = mpv.wplus[1]
+    if ndim == 3: hplusz = mpv.wplus[2]
 
     nine_pt = 0.25 * (2.0) * 1.0
+    if ndim == 2:
+        coeff = 1.0 - nine_pt
+    elif ndim == 3:
+        coeff = 0.0625
+    else:
+        assert(0, "ndim = 1?")
 
-    wx = (1.0 - nine_pt) / (dx**2)
-    wy = (1.0 - nine_pt) / (dy**2)
+    wx = coeff / (dx**2)
+    wy = coeff / (dy**2)
+    wz = coeff / (dz**2)
 
-    diag_kernel = np.array([[1.,1.],[1.,1.]])
+    diag_kernel = np.array(np.ones([2] * ndim))
 
     diag = np.zeros((node.sc)).squeeze()
-    diag[idx_n] = -wx * signal.convolve2d(hplusx[idx_e],diag_kernel,mode='full')[idx_periodic] 
-    diag[idx_n] -= wy * signal.convolve2d(hplusy[idx_e],diag_kernel,mode='full')[idx_periodic]
+    diag[idx_n] = -wx * signal.fftconvolve(hplusx[idx_e],diag_kernel,mode='full')[idx_periodic] 
+    diag[idx_n] -= wy * signal.fftconvolve(hplusy[idx_e],diag_kernel,mode='full')[idx_periodic]
+    if ndim == 3:
+        diag[idx_n] -= wz * signal.fftconvolve(hplusz[idx_e],diag_kernel,mode='full')[idx_periodic]
 
     diag[idx_n] += mpv.wcenter[idx_n]
     diag[idx_n] = 1.0 / diag[idx_n]
@@ -409,202 +488,6 @@ def lap2D_5pt(p, iicxn, iicyn, oodx2, oody2, x_periodic, y_periodic, x_wall, y_w
             botmid = 0.
                                 
         lap[idx] = oodx2 * (midleft - 2.0 * midmid + midright) + oody2 * (topmid - 2.0 * midmid + botmid)
-
-        cnt_x += 1
-        if cnt_x % iicxn == 0:
-            cnt_y += 1
-            cnt_x = 0
-        
-    return lap
-
-
-def stencil_9pt_3rd_try(elem,node,mpv,ud,diag_inv):
-    igx = elem.igx
-    igy = elem.igy
-
-    icxn = node.icx
-    icyn = node.icy
-
-    iicxn = icxn - (2 * igx)
-    iicyn = icyn - (2 * igy)
-
-    iicxn, iicyn = iicyn, iicxn
-
-    dx = node.dy
-    dy = node.dx
-
-    inner_domain = (slice(igx,-igx),slice(igy,-igy))
-
-    hplusx = mpv.wplus[1][inner_domain].reshape(-1,)
-    hplusy = mpv.wplus[0][inner_domain].reshape(-1,)
-
-    hcenter = mpv.wcenter[inner_domain].reshape(-1,)
-
-    diag_inv = diag_inv[inner_domain].reshape(-1,)
-
-    oodx2 = 0.5 / (dx**2)
-    oody2 = 0.5 / (dy**2)
-
-    x_periodic = ud.bdry_type[1] == BdryType.PERIODIC
-    y_periodic = ud.bdry_type[0] == BdryType.PERIODIC
-
-    x_wall = ud.bdry_type[1] == BdryType.WALL
-    y_wall = ud.bdry_type[0] == BdryType.WALL
-
-    return lambda p : lap2D_3try(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv)
-
-@jit(nopython=True, nogil=True, cache=True)
-def lap2D_3try(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv):
-    ngnc = (iicxn) * (iicyn)
-    lap = np.zeros((ngnc))
-    cnt_x = 0
-    cnt_y = 0
-
-    nine_pt = 0.25 * (2.0) * 1.0
-
-    for idx in range(iicxn * iicyn):
-        ne_topleft = idx - iicxn - 1
-        ne_topright = idx - iicxn 
-        ne_botleft = idx - 1
-        ne_botright = idx
-
-        # get indices of the 9pt stencil
-        topleft_idx = idx - iicxn - 1
-        midleft_idx = idx - 1
-        botleft_idx = idx + iicxn - 1
-
-        topmid_idx = idx - iicxn
-        midmid_idx = idx
-        botmid_idx = idx + iicxn
-
-        topright_idx = idx - iicxn + 1
-        midright_idx = idx + 1
-        botright_idx = idx + iicxn + 1
-
-        if cnt_x == 0:
-            topleft_idx += iicxn - 1
-            midleft_idx += iicxn - 1
-            botleft_idx += iicxn - 1
-
-            if x_periodic:
-                topmid_idx += iicxn - 1
-                midmid_idx += iicxn - 1
-                botmid_idx += iicxn - 1
-
-            ne_topleft += iicxn - 1
-            ne_botleft += iicxn - 1
-
-        if cnt_x == (iicxn - 1):
-            topright_idx -= iicxn - 1
-            midright_idx -= iicxn - 1
-            botright_idx -= iicxn - 1
-
-            if x_periodic:
-                topmid_idx -= iicxn - 1
-                midmid_idx -= iicxn - 1
-                botmid_idx -= iicxn - 1
-
-            ne_topright -= iicxn - 1
-            ne_botright -= iicxn - 1
-
-        if cnt_y == 0:
-            topleft_idx += ((iicxn) * (iicyn - 1)) 
-            topmid_idx += ((iicxn) * (iicyn - 1))
-            topright_idx += ((iicxn) * (iicyn - 1))
-
-            if y_periodic:
-                midleft_idx += ((iicxn) * (iicyn - 1))
-                midmid_idx += ((iicxn) * (iicyn - 1))
-                midright_idx += ((iicxn) * (iicyn - 1))
-
-            ne_topleft += ((iicxn) * (iicyn - 1))
-            ne_topright += ((iicxn) * (iicyn - 1))
-
-        if cnt_y == (iicyn - 1):
-            botleft_idx -= ((iicxn) * (iicyn - 1))
-            botmid_idx -= ((iicxn) * (iicyn - 1))
-            botright_idx -= ((iicxn) * (iicyn - 1))
-
-            if y_periodic:
-                midleft_idx -= ((iicxn) * (iicyn - 1))
-                midmid_idx -= ((iicxn) * (iicyn - 1))
-                midright_idx -= ((iicxn) * (iicyn - 1))
-
-            ne_botleft -= ((iicxn) * (iicyn - 1))
-            ne_botright -= ((iicxn) * (iicyn - 1))
-
-        topleft = p[topleft_idx]
-        midleft = p[midleft_idx]
-        botleft = p[botleft_idx]
-
-        topmid = p[topmid_idx]
-        midmid = p[midmid_idx]
-        botmid = p[botmid_idx]
-
-        topright = p[topright_idx]
-        midright = p[midright_idx]
-        botright = p[botright_idx]
-
-        hplusx_topleft = hplusx[ne_topleft]
-        hplusx_botleft = hplusx[ne_botleft]
-        hplusy_topleft = hplusy[ne_topleft]
-        hplusy_botleft = hplusy[ne_botleft]
-
-        hplusx_topright = hplusx[ne_topright]
-        hplusx_botright = hplusx[ne_botright]
-        hplusy_topright = hplusy[ne_topright]
-        hplusy_botright = hplusy[ne_botright]
-
-        if x_wall and (cnt_x == 0):
-            hplusx_topleft = 0.
-            hplusy_topleft = 0.
-            hplusx_botleft = 0.
-            hplusy_botleft = 0.
-
-        if x_wall and (cnt_x == (iicxn - 1)):
-            hplusx_topright = 0.
-            hplusy_topright = 0.
-            hplusx_botright = 0.
-            hplusy_botright = 0.
-
-        if y_wall and (cnt_y == 0):
-            hplusx_topleft = 0.
-            hplusy_topleft = 0. 
-            hplusx_topright = 0.
-            hplusy_topright = 0.
-            
-        if y_wall and (cnt_y == (iicyn - 1)):
-            hplusx_botleft = 0.
-            hplusy_botleft = 0.  
-            hplusx_botright = 0.
-            hplusy_botright = 0.
-                                
-        dp2dxdy1 = ((midmid - midleft) - (topmid - topleft)) * nine_pt
-        dp2dxdy2 = ((midright - midmid) - (topright - topmid)) * nine_pt
-        dp2dxdy3 = ((botmid - botleft) - (midmid - midleft)) * nine_pt
-        dp2dxdy4 = ((botright - botmid) - (midright - midmid)) * nine_pt
-
-        lap[idx] = - hplusx_topleft * oodx2 * ((midmid - midleft) - dp2dxdy1) \
-                -  hplusy_topleft * oody2 * ((midmid - topmid) - dp2dxdy1) \
-                +  hplusx_topright * oodx2 * ((midright - midmid) - dp2dxdy2) \
-                -  hplusy_topright * oody2 * ((midmid - topmid) + dp2dxdy2) \
-                -  hplusx_botleft * oodx2 * ((midmid - midleft) + dp2dxdy3) \
-                +  hplusy_botleft * oody2 * ((botmid - midmid) - dp2dxdy3) \
-                +  hplusx_botright * oodx2 * ((midright - midmid) + dp2dxdy4) \
-                +  hplusy_botright * oody2 * ((botmid - midmid) + dp2dxdy4) \
-                +  hcenter[idx] * p[idx]
-
-        # if cnt_x == 0 and x_wall:
-        #     lap[idx] *= 2.
-        # if (cnt_x == iicxn - 1) and x_wall:
-        #     lap[idx] *= 2.
-
-        # if cnt_y == 0 and y_wall:
-        #     lap[idx] *= 2.
-        # if (cnt_y == iicyn - 1) and y_wall:
-        #     lap[idx] *= 2.
-
-        lap[idx] *= diag_inv[idx]
 
         cnt_x += 1
         if cnt_x % iicxn == 0:
