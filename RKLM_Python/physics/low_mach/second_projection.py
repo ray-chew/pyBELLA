@@ -1,6 +1,6 @@
 from inputs.enum_bdry import BdryType
 from inputs.boundary import set_explicit_boundary_data, set_ghostnodes_p2
-from physics.low_mach.laplacian import stencil_9pt, stencil_5pt, stencil_3pt, precon_diag_prepare
+from physics.low_mach.laplacian import stencil_9pt, stencil_27pt, precon_diag_prepare
 from scipy import signal
 import numpy as np
 from itertools import product
@@ -19,6 +19,7 @@ class solver_counter(object):
     def __call__(self, rk=None):
         self.niter += 1
         self.rk = rk
+        print(self.niter)
         # self.rk = rk[0]
 
 
@@ -145,7 +146,10 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     nc = node.sc
     rhs = np.zeros_like(mpv.p2_nodes)
 
-    p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy])
+    if elem.ndim == 2:
+        p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy])
+    elif elem.ndim == 3:
+        p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy,node.igz:-node.igz])
     
     if writer != None:
         writer.populate(str(label),'p2_initial',mpv.p2_nodes)
@@ -191,16 +195,27 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     #     rhs[2,:] *= 2.
     #     rhs[-3,:] *= 2.
 
-    lap2D = stencil_9pt(elem,node,mpv,ud,diag_inv)
+    if elem.ndim == 2:
+        lap = stencil_9pt(elem,node,mpv,ud,diag_inv)
 
-    sh = (ud.inx)*(ud.iny)
+        sh = (ud.inx)*(ud.iny)
 
-    lap2D = LinearOperator((sh,sh),lap2D)
+        # lap = LinearOperator((sh,sh),lap)
+    elif elem.ndim == 3:
+        lap = stencil_27pt(elem,node,mpv,ud,diag_inv)
+        # p2 = mpv.p2_nodes[...]
+
+        sh = p2.reshape(-1).shape[0]
+    lap = LinearOperator((sh,sh),lap)
     
     counter = solver_counter()
 
-    p2,info = bicgstab(lap2D,rhs[node.igx:-node.igx,node.igy:-node.igy].ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
-
+    if elem.ndim == 2:
+        rhs_inner = rhs[node.igx:-node.igx,node.igy:-node.igy].ravel()
+    elif elem.ndim == 3:
+        rhs_inner = rhs[node.igx:-node.igx,node.igy:-node.igy,node.igz:-node.igz].ravel()
+    p2,info = bicgstab(lap,rhs_inner,x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
+    # p2,info = bicgstab(lap,rhs.ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
 
     global total_calls, total_iter
@@ -332,7 +347,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
             y_idx = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic-1)
             right_idx = None if -igs[dim]+is_periodic == 0 else -igs[dim]+is_periodic
             y_idx1 = slice(igs[dim]-is_periodic+1, right_idx)
-        print(dim)
+
         innerdim1[dim] = slice(igs[dim]-1, (-igs[dim]+1))
  
     strat = 2.0 * (mpv.HydroState_n.Y0[y_idx1] - mpv.HydroState_n.Y0[y_idx]) / (mpv.HydroState_n.Y0[y_idx1] + mpv.HydroState_n.Y0[y_idx]) / dy
