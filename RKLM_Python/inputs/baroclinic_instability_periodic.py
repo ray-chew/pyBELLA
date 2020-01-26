@@ -153,7 +153,7 @@ class UserData(object):
         self.output_base_name = "_baroclinic_instability_periodic"
         self.output_name_psinc = "_low_mach_gravity_psinc"
         self.output_name_comp = "_low_mach_gravity_comp"
-        self.output_suffix = ""
+        self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
 
         self.ltrans = 525.0e3
         self.Temp0 = 273.0
