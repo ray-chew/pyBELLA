@@ -203,7 +203,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         # lap = LinearOperator((sh,sh),lap)
     elif elem.ndim == 3:
         lap = stencil_27pt(elem,node,mpv,ud,diag_inv)
-        p2 = mpv.p2_nodes[...]
+        p2 = mpv.p2_nodes[1:-1,1:-1,1:-1]
 
         sh = p2.reshape(-1).shape[0]
     lap = LinearOperator((sh,sh),lap)
@@ -213,8 +213,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if elem.ndim == 2:
         rhs_inner = rhs[node.igx:-node.igx,node.igy:-node.igy].ravel()
     elif elem.ndim == 3:
-        # rhs_inner = rhs[node.igx:-node.igx,node.igy:-node.igy,node.igz:-node.igz].ravel()
-        rhs_inner = rhs.ravel()
+        rhs_inner = rhs[1:-1,1:-1,1:-1].ravel()
+        # p2 = mpv.p2_nodes[1:-1,1:-1,1:-1]
+        # rhs_inner = rhs.ravel()
     p2,info = bicgstab(lap,rhs_inner,x0=p2.ravel(),tol=1e-6,maxiter=6000,callback=counter)
     # p2,info = bicgstab(lap,rhs.ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
@@ -234,6 +235,8 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     correction_nodes(Sol,elem,node,mpv,p2_full,dt,ud)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    # mpv.rhs = rhs
+    # set_ghostnodes_p2(mpv.dp2_nodes,node,ud)
 
     # mpv.dp2_nodes[...] = p2_full - mpv.p2_nodes
     

@@ -210,11 +210,15 @@ def stencil_27pt(elem,node,mpv,ud,diag_inv):
 
     # shp = mpv.wplus[0].shape
 
-    hplusx = mpv.wplus[0][i1]
-    hplusy = mpv.wplus[1][i1]
-    hplusz = mpv.wplus[2][i1]
+    hplusx = mpv.wplus[0][2:-2,2:-2,1:-1][:,:,:-1]
+    hplusy = mpv.wplus[1][2:-2,1:-1,2:-2][:,:-1,:]
+    hplusz = mpv.wplus[2][1:-1,2:-2,2:-2][:-1,:,:]
 
-    hcenter = mpv.wcenter[i1]
+    print(hplusx.shape)
+    print(hplusy.shape)
+    print(hplusz.shape)
+
+    hcenter = mpv.wcenter[i2]
     diag_inv = diag_inv[i2]
 
     return lambda p : lap3D(p, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2)
@@ -225,7 +229,8 @@ def stencil_27pt(elem,node,mpv,ud,diag_inv):
 def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2):
     # p = p0.reshape(shp[0],shp[1],shp[2])
     # p = p0.reshape(hcenter.shape)
-    shx, shy, shz = hplusx.shape
+    shx, shy, shz = hcenter.shape
+    # p = p0.reshape(shx+2,shy+2,shz+2)
     p = p0.reshape(shx+2,shy+2,shz+2)
     # p = p0.reshape(66,34,66)
 
@@ -238,7 +243,7 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2):
     pinner = p[1:-1,1:-1,:]
     leftx = pinner[:,:,:-1]
     rightx = pinner[:,:,1:]
-
+    
     x_fluxes = (rightx - leftx)
 
     pinner = p[1:-1,:,1:-1]
@@ -253,9 +258,9 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2):
 
     z_fluxes = (rightz - leftz)
 
-    lap[1:-1,1:-1,1:-1] = hplusx * oodx2 * coeff * (- x_fluxes[:,:,:-1] + x_fluxes[:,:,1:]) \
-        + hplusy * oody2 * coeff * (- y_fluxes[:,:-1,:] + y_fluxes[:,1:,:]) \
-        + hplusz * oodz2 * coeff * (- z_fluxes[:-1,:,:] + z_fluxes[1:,:,:]) \
+    lap[1:-1,1:-1,1:-1] = oodx2 * coeff * (- hplusx[:,:,:-1] * x_fluxes[:,:,:-1] + hplusx[:,:,1:] * x_fluxes[:,:,1:]) \
+        + oody2 * coeff * (- hplusy[:,:-1,:] * y_fluxes[:,:-1,:] + hplusy[:,1:,:] * y_fluxes[:,1:,:]) \
+        + oodz2 * coeff * (- hplusz[:-1,:,:] * z_fluxes[:-1,:,:] + hplusz[1:,:,:] * z_fluxes[1:,:,:]) \
         + hcenter * p[1:-1,1:-1,1:-1]
 
     return lap
