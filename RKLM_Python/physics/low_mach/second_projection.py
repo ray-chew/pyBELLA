@@ -226,7 +226,10 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     # print("Total calls to BiCGStab routine = %i, total iterations = %i" %(total_calls, total_iter))
 
     p2_full = np.zeros(nc).squeeze()
-    p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
+    if elem.ndim == 2:
+        p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
+    elif elem.ndim == 3:
+         p2_full[1:-1,1:-1,1:-1] = p2.reshape(ud.inx+2,ud.iny+2,ud.inz+2)
 
     if writer != None:
         writer.populate(str(label),'p2_full',p2_full)
