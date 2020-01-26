@@ -205,18 +205,27 @@ def stencil_27pt(elem,node,mpv,ud,diag_inv):
     oodxyz = 1./(oodxyz**2)
     oodx2, oody2, oodz2 = oodxyz[0], oodxyz[1], oodxyz[2]
 
+    i0 = (slice(0,-1),slice(0,-1),slice(0,-1))
     i1 = (slice(1,-1),slice(1,-1),slice(1,-1))
     i2 = (slice(2,-2),slice(2,-2),slice(2,-2))
 
     # shp = mpv.wplus[0].shape
 
-    hplusx = mpv.wplus[0][2:-2,2:-2,1:-1][:,:,:-1]
-    hplusy = mpv.wplus[1][2:-2,1:-1,2:-2][:,:-1,:]
-    hplusz = mpv.wplus[2][1:-1,2:-2,2:-2][:-1,:,:]
+    kernel_x = np.ones((1,2,2))
+    kernel_y = np.ones((2,1,2))
+    kernel_z = np.ones((2,2,1))
 
-    print(hplusx.shape)
-    print(hplusy.shape)
-    print(hplusz.shape)
+    # hplusx = mpv.wplus[0][2:-2,2:-2,1:-1][:,:,:-1]
+    # hplusy = mpv.wplus[1][2:-2,1:-1,2:-2][:,:-1,:]
+    # hplusz = mpv.wplus[2][1:-1,2:-2,2:-2][:-1,:,:]
+
+    hplusx = mpv.wplus[0][i0][i1]
+    hplusy = mpv.wplus[1][i0][i1]
+    hplusz = mpv.wplus[2][i0][i1]
+
+    hplusx = signal.fftconvolve(hplusx,kernel_x,mode='valid')
+    hplusy = signal.fftconvolve(hplusy,kernel_y,mode='valid')
+    hplusz = signal.fftconvolve(hplusz,kernel_z,mode='valid')
 
     hcenter = mpv.wcenter[i2]
     diag_inv = diag_inv[i2]
@@ -241,10 +250,10 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2):
     lap = np.zeros_like(p)
     
     pinner = p[1:-1,1:-1,:]
-    leftx = pinner[:,:,:-1]
-    rightx = pinner[:,:,1:]
+    leftz = pinner[:,:,:-1]
+    rightz = pinner[:,:,1:]
     
-    x_fluxes = (rightx - leftx)
+    z_fluxes = (rightz - leftz)
 
     pinner = p[1:-1,:,1:-1]
     lefty = pinner[:,:-1,:]
@@ -253,14 +262,14 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2):
     y_fluxes = (righty - lefty)
 
     pinner = p[:,1:-1,1:-1]
-    leftz = pinner[:-1,:,:]
-    rightz = pinner[1:,:,:]
+    leftx = pinner[:-1,:,:]
+    rightx = pinner[1:,:,:]
 
-    z_fluxes = (rightz - leftz)
+    x_fluxes = (rightx - leftx)
 
-    lap[1:-1,1:-1,1:-1] = oodx2 * coeff * (- hplusx[:,:,:-1] * x_fluxes[:,:,:-1] + hplusx[:,:,1:] * x_fluxes[:,:,1:]) \
+    lap[1:-1,1:-1,1:-1] = oodz2 * coeff * (- hplusz[:,:,:-1] * z_fluxes[:,:,:-1] + hplusz[:,:,1:] * z_fluxes[:,:,1:]) \
         + oody2 * coeff * (- hplusy[:,:-1,:] * y_fluxes[:,:-1,:] + hplusy[:,1:,:] * y_fluxes[:,1:,:]) \
-        + oodz2 * coeff * (- hplusz[:-1,:,:] * z_fluxes[:-1,:,:] + hplusz[1:,:,:] * z_fluxes[1:,:,:]) \
+        + oodx2 * coeff * (- hplusx[:-1,:,:] * x_fluxes[:-1,:,:] + hplusx[1:,:,:] * x_fluxes[1:,:,:]) \
         + hcenter * p[1:-1,1:-1,1:-1]
 
     return lap
