@@ -165,10 +165,10 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt)
 
     i0 = (slice(0,-1),slice(0,-1),slice(0,-1))
-    mpv.wplus[0][i0][...] = h5py.File('/home/ray/git-projects/RKLM_Reference/wplusx.h5')['Data-Set-2'][...]
-    mpv.wplus[1][i0][...] = h5py.File('/home/ray/git-projects/RKLM_Reference/wplusy.h5')['Data-Set-2'][...]
-    mpv.wplus[2][i0][...] = h5py.File('/home/ray/git-projects/RKLM_Reference/wplusz.h5')['Data-Set-2'][...]
-    mpv.wcenter[...] = h5py.File('/home/ray/git-projects/RKLM_Reference/hcenter.h5')['Data-Set-2'][...]
+    # mpv.wplus[0][i0][...] = h5py.File('/home/ray/git-projects/RKLM_Reference/wplusx.h5')['Data-Set-2'][...]
+    # mpv.wplus[1][i0][...] = h5py.File('/home/ray/git-projects/RKLM_Reference/wplusy.h5')['Data-Set-2'][...]
+    # mpv.wplus[2][i0][...] = h5py.File('/home/ray/git-projects/RKLM_Reference/wplusz.h5')['Data-Set-2'][...]
+    # mpv.wcenter[...] = h5py.File('/home/ray/git-projects/RKLM_Reference/hcenter.h5')['Data-Set-2'][...]
     
     if writer != None:
         writer.populate(str(label),'hcenter',mpv.wcenter)
@@ -190,9 +190,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     else:
         mpv.wcenter *= ud.compressibility
 
-
-    rhs[...] = h5py.File('/home/ray/git-projects/RKLM_Reference/rhs.h5')['Data-Set-2'][...]
-
+    # rhs[...] = h5py.File('/home/ray/git-projects/RKLM_Reference/rhs.h5')['Data-Set-2'][...]
     
     if writer != None:
         writer.populate(str(label),'rhs_nodes',rhs)

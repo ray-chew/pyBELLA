@@ -290,17 +290,17 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
     cnt = 0
     for bc in periodicity:
         if bc == True and cnt == 0:
-            # tmp = p[1,:,:]
-            p[0,:,:] = p[-2,:,:]
-            p[-1,:,:] = p[1,:,:]
-            # p[1,:,:] = p[-2,:,:]
-            # p[-2,:,:] = tmp
+            tmp = p[1,:,:]
+            p[0,:,:] = p[-3,:,:]
+            p[-1,:,:] = p[2,:,:]
+            p[1,:,:] = p[-2,:,:]
+            p[-2,:,:] = tmp
         elif bc == True and cnt == 2:
-            # tmp = p[:,:,1]
-            p[:,:,0] = p[:,:,-2]
-            p[:,:,-1] = p[:,:,1]
-            # p[:,:,1] = p[:,:,-2]
-            # p[:,:,-2] = tmp
+            tmp = p[:,:,1]
+            p[:,:,0] = p[:,:,-3]
+            p[:,:,-1] = p[:,:,2]
+            p[:,:,1] = p[:,:,-2]
+            p[:,:,-2] = tmp
         cnt += 1
     
     # pinner = p[1:-1,1:-1,:]
@@ -343,9 +343,9 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
     z_flxp = z_flx[:,:,1:]
     z_flxp = z_flxp[toplefts[2]] + z_flxp[toprights[2]] + z_flxp[botlefts[2]] + z_flxp[botrights[2]]
 
-    lap[1:-1,1:-1,1:-1] = oodx2 * coeff * (+x_flxm - x_flxp) + \
-                          oody2 * coeff * (+y_flxm - y_flxp) + \
-                          oodz2 * coeff * (+z_flxm - z_flxp) + \
+    lap[1:-1,1:-1,1:-1] = oodx2 * coeff * (-x_flxm + x_flxp) + \
+                          oody2 * coeff * (-y_flxm + y_flxp) + \
+                          oodz2 * coeff * (-z_flxm + z_flxp) + \
                           hcenter * p[1:-1,1:-1,1:-1]
 
     # lap[1:-1,1:-1,1:-1] = oodx2 * coeff * (-(hplusx[:,:,:-1] * x_fluxes[:,:,:-1]) + (hplusx[:,:,1:] * x_fluxes[:,:,1:])) \
