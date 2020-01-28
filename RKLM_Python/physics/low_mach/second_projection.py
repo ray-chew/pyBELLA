@@ -292,45 +292,61 @@ def exner_perturbation_constraint(Sol,elem,th,p2):
 
 def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
     ndim = node.ndim
-    # coriolis = ud.coriolis_strength[0]
+    coriolis = ud.coriolis_strength[0]
     time_offset = 3.0 - ud.acoustic_order
-    vcorr = 1.
 
-    igx,igy,igz = node.igs[0],node.igs[1],node.igs[2]
-    dx = node.dx
-    dy = node.dy
-    oodx = 1.0/dx
-    oody = 1.0/dy
+    # igx,igy,igz = node.igs[0],node.igs[1],node.igs[2]
+    igs, igy = node.igs, node.igy
+    oodxyz = 1.0 / node.dxyz
+    oodx , oody ,oodz = oodxyz[0], oodxyz[1], oodxyz[2]
 
     hplusx = mpv.wplus[0]
     hplusy = mpv.wplus[1]
+    hplusz = mpv.wplus[2]
 
     dSdy = (mpv.HydroState_n.S0[igy+1:-igy] - mpv.HydroState_n.S0[igy:-igy-1]) * oody
-    inner_idx = (slice(igx,-igx),slice(igy,-igy))
-    inner_eidx = (slice(igx,-igx-1),slice(igy,-igy-1))
+
+    for dim in range(0,ndim,2):
+        dSdy = np.expand_dims(dSdy, dim)
+        dSdy = np.repeat(dSdy, elem.sc[dim]-2*igs[dim], axis=dim)
+    print(dSdy.shape)
+
+    n2e, i2 = np.empty(ndim, dtype='object'), np.empty(ndim, dtype='object')
+    for dim in range(ndim):
+        n2e[dim] = slice(0,-1)
+        i2[dim] = slice(igs[dim],-igs[dim])
+    n2e, i2 = tuple(n2e), tuple(i2)
     
-    p = p[inner_idx]
+    p = p[i2]
 
     indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat=ndim)]
-    signs_x = [-1., -1., +1., +1.]
-    signs_y = [-1., +1., -1., +1.]
+    if ndim == 2:
+        signs_x = (-1., -1., +1., +1.)
+        signs_y = (-1., +1., -1., +1.)
+        signs_z = ( 0.,  0.,  0.,  0.)
+    elif ndim == 3:
+        signs_x = (-1., -1., -1., -1., +1., +1., +1., +1.)
+        signs_y = (-1., -1., +1., +1., -1., -1., +1., +1.)
+        signs_z = (-1., +1., -1., +1., -1., +1., -1., +1.)
 
-    Dpx = 0
-    Dpy = 0
+    Dpx, Dpy, Dpz = 0., 0., 0.
     cnt = 0
     for index in indices:
         Dpx += signs_x[cnt] * p[index]
         Dpy += signs_y[cnt] * p[index]
+        Dpz += signs_z[cnt] * p[index]
         cnt += 1
 
-    Dpx *= 0.5 * oodx
-    Dpy *= 0.5 * oody
+    Dpx *= 0.5**(ndim-1) * oodx
+    Dpy *= 0.5**(ndim-1) * oody
+    Dpz *= 0.5**(ndim-1) * oodz
 
-    thinv = Sol.rho[inner_idx] / Sol.rhoY[inner_idx]
+    thinv = Sol.rho[i2] / Sol.rhoY[i2]
 
-    Sol.rhou[inner_idx] += -dt * thinv * hplusx[inner_eidx] * Dpx
-    Sol.rhov[inner_idx] += -dt * thinv * hplusy[inner_eidx] * Dpy * vcorr
-    Sol.rhoX[inner_idx] += -time_offset * dt * dSdy * Sol.rhov[inner_idx] * vcorr
+    Sol.rhou[i2] += -dt * thinv * hplusx[n2e][i2] * (Dpx + dt * coriolis * Dpz)
+    Sol.rhov[i2] += -dt * thinv * hplusy[n2e][i2] * Dpy
+    Sol.rhow[i2] += -dt * thinv * hplusz[n2e][i2] * (Dpz - dt * coriolis * Dpx)
+    Sol.rhoX[i2] += -time_offset * dt * dSdy * Sol.rhov[i2]
 
 
 def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
@@ -455,6 +471,8 @@ def divergence_nodes(rhs,elem,node,Sol,ud):
     signs = [sgn for sgn in product([1,-1], repeat = ndim)]
     inner_idx = tuple(inner_idx)
     Sols = np.stack((Sol.rhou[inner_idx], Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
+
+    # print(signs)
 
     oodxyz = 1./dxyz
     Y = Sol.rhoY[inner_idx] / Sol.rho[inner_idx]
