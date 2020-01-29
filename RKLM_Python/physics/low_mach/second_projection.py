@@ -35,9 +35,8 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
 
     p2n = np.copy(mpv.p2_nodes)
     dp2n = np.zeros_like(p2n)
-    dx = node.dx
-    dy = node.dy
-    dz = node.dz
+    ndim = elem.ndim
+    dx, dy, dz = node.dx, node.dy, node.dz
 
     mpv.rhs = np.array(mpv.rhs)
     mpv.rhs *= 0.0
@@ -46,56 +45,72 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
 
     scale_wall_node_values(mpv.rhs, node, ud, 2.0)
 
-    ## 2D-case ###
-    inner_idx = (slice(1,-1),slice(1,-1))
-    p2n = p2n[inner_idx]
+    i1 = np.empty(ndim, dtype='object')
+    for dim in range(ndim):
+        i1[dim] = slice(1,-1)
+    i1 = tuple(i1)
+    p2n = p2n[i1]
 
-    dpdy_kernel = np.array([[-1.,1.],[-1.,1.]])
-    dpdx_kernel = np.array([[-1.,-1.],[1.,1.]])
+    # kernels = np.empty(ndim, dtype='ndarray')
+    kernels = []
+    for dim in range(ndim):
+        kernel = np.ones([2]*ndim)
+        slc = [slice(None,)]*ndim
+        slc[dim] = slice(0,1)
+        kernel[tuple(slc)] *= -1.0
+        kernels.append(kernel)
 
-    dpdx = -wp * 0.5 * signal.convolve2d(p2n, dpdx_kernel, mode='valid') / dx
-    dpdy = -wp * 0.5 * signal.convolve2d(p2n, dpdy_kernel, mode='valid') / dy
+    # dpdy_kernel = np.array([[-1.,1.],[-1.,1.]])
+    # dpdx_kernel = np.array([[-1.,-1.],[1.,1.]])
 
-    # Sol.flip()
+    # dpdx = -wp * 0.5 * signal.convolve2d(p2n, dpdx_kernel, mode='valid') / dx
+    # dpdy = -wp * 0.5 * signal.convolve2d(p2n, dpdy_kernel, mode='valid') / dy
 
-    igx = elem.igx
-    igy = elem.igy
+    dpdx = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[0], mode='valid') / dx
+    dpdy = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[1], mode='valid') / dy
+    if ndim == 3: dpdz = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[2], mode='valid') / dz
+    else: dpdz = 0
+
+    igx, igy, igz, igs = elem.igx, elem.igy, elem.igz, elem.igs
 
     dSdy = mpv.HydroState_n.S0[igy-1:-igy+1]
-    dSdy = signal.convolve(dSdy,[1.,-1.],mode='valid').reshape(-1,1)
-    dSdy = np.repeat(dSdy,elem.icx-igx,axis=1).T / dy
+    dSdy = signal.convolve(dSdy,[1.,-1.],mode='valid') / dy
+    # dSdy = np.repeat(dSdy,elem.icx-igx,axis=1).T / dy
 
-    S0c = mpv.HydroState.S0[igy-1:-igy+1].reshape(-1,1)
-    S0c = np.repeat(S0c,elem.icx-igx,axis=1).T
+    S0c = mpv.HydroState.S0[igy-1:-igy+1]
+
+    for dim in range(0,ndim,2):
+        dSdy = np.expand_dims(dSdy, dim)
+        dSdy = np.repeat(dSdy, elem.sc[dim]-igs[dim], axis=dim)
+        S0c = np.expand_dims(S0c, dim)
+        S0c = np.repeat(S0c, elem.sc[dim]-igs[dim], axis=dim)
 
     v = Sol.rhov / Sol.rho
-    v = v[inner_idx]
+    v = v[i1]
     time_offset_expl = ud.acoustic_order - 1.0
 
-    rhoYovG = Ginv * Sol.rhoY[inner_idx]
-    dchi = Sol.rhoX[inner_idx] / Sol.rho[inner_idx]
-    dbuoy = -1. * Sol.rhoY[inner_idx] * dchi
-    drhou = Sol.rhou[inner_idx] - u0 * Sol.rho[inner_idx]
+    rhoYovG = Ginv * Sol.rhoY[i1]
+    dchi = Sol.rhoX[i1] / Sol.rho[i1]
+    dbuoy = -1. * Sol.rhoY[i1] * dchi
+    drhou = Sol.rhou[i1] - u0 * Sol.rho[i1]
 
     rhoY = Sol.rhoY**(th.gamm - 2.0)
-    dpidP_kernel = np.array([[1.,1.],[1.,1.]])
-    dpidP = (th.gm1 / ud.Msq) * signal.convolve2d(rhoY, dpidP_kernel, mode='valid') / dpidP_kernel.sum()
+    dpidP_kernel = np.ones([2]*ndim)
+    dpidP = (th.gm1 / ud.Msq) * signal.fftconvolve(rhoY, dpidP_kernel, mode='valid') / dpidP_kernel.sum()
 
-    Sol.rhou[inner_idx] = Sol.rhou[inner_idx] + dt * ( -1. * rhoYovG * dpdx + coriolis * Sol.rhow[inner_idx])
+    Sol.rhou[i1] = Sol.rhou[i1] + dt * ( -1. * rhoYovG * dpdx + coriolis * Sol.rhow[i1])
 
-    Sol.rhov[inner_idx] = Sol.rhov[inner_idx] + dt * ( -1. * rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro * (1 - ud.is_ArakawaKonor)
+    Sol.rhov[i1] = Sol.rhov[i1] + dt * ( -1. * rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro * (1 - ud.is_ArakawaKonor)
 
-    Sol.rhow[inner_idx] = Sol.rhow[inner_idx] - dt * coriolis * drhou
+    Sol.rhow[i1] = Sol.rhow[i1] + dt * ( -(ndim == 3) * rhoYovG * dpdz - coriolis * drhou)
 
-    Sol.rhoX[inner_idx] = (Sol.rho[inner_idx] * (Sol.rho[inner_idx] / Sol.rhoY[inner_idx] - S0c)) + time_offset_expl * dt * (-v * dSdy) * Sol.rho[inner_idx]
+    Sol.rhoX[i1] = (Sol.rho[i1] * (Sol.rho[i1] / Sol.rhoY[i1] - S0c)) + time_offset_expl * dt * (-v * dSdy) * Sol.rho[i1]
 
-    dp2n[inner_idx] -= dt * dpidP * div[inner_idx]
+    dp2n[i1] -= dt * dpidP * div[i1]
 
     if (ud.is_compressible == 1):
         weight = ud.acoustic_order - 1.0
         mpv.p2_nodes += weight * dp2n
-
-    # Sol.flip()
 
     set_ghostnodes_p2(mpv.p2_nodes,node, ud)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
@@ -174,7 +189,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         writer.populate(str(label),'hcenter',mpv.wcenter)
         writer.populate(str(label),'wplusx',mpv.wplus[0])
         writer.populate(str(label),'wplusy',mpv.wplus[1])
-        writer.populate(str(label),'wplusz',mpv.wplus[2])
+        if elem.ndim == 3: writer.populate(str(label),'wplusz',mpv.wplus[2])
 
     rhs[...], _ = divergence_nodes(rhs,elem,node,Sol,ud)
     rhs /= dt
@@ -238,7 +253,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     global total_calls, total_iter
     total_iter += counter.niter
     total_calls += 1
-    print(counter.niter)
+    # print(counter.niter)
     # print("Total calls to BiCGStab routine = %i, total iterations = %i" %(total_calls, total_iter))
 
     p2_full = np.zeros(nc).squeeze()
@@ -302,14 +317,14 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
 
     hplusx = mpv.wplus[0]
     hplusy = mpv.wplus[1]
-    hplusz = mpv.wplus[2]
+    if ndim == 3: hplusz = mpv.wplus[2]
 
     dSdy = (mpv.HydroState_n.S0[igy+1:-igy] - mpv.HydroState_n.S0[igy:-igy-1]) * oody
 
     for dim in range(0,ndim,2):
         dSdy = np.expand_dims(dSdy, dim)
         dSdy = np.repeat(dSdy, elem.sc[dim]-2*igs[dim], axis=dim)
-    print(dSdy.shape)
+    # print(dSdy.shape)
 
     n2e, i2 = np.empty(ndim, dtype='object'), np.empty(ndim, dtype='object')
     for dim in range(ndim):
@@ -345,7 +360,7 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
 
     Sol.rhou[i2] += -dt * thinv * hplusx[n2e][i2] * (Dpx + dt * coriolis * Dpz)
     Sol.rhov[i2] += -dt * thinv * hplusy[n2e][i2] * Dpy
-    Sol.rhow[i2] += -dt * thinv * hplusz[n2e][i2] * (Dpz - dt * coriolis * Dpx)
+    if ndim == 3: Sol.rhow[i2] += -dt * thinv * hplusz[n2e][i2] * (Dpz - dt * coriolis * Dpx)
     Sol.rhoX[i2] += -time_offset * dt * dSdy * Sol.rhov[i2]
 
 
