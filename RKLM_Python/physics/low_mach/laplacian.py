@@ -72,10 +72,10 @@ def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_per
             midleft_idx += iicxn - 1
             botleft_idx += iicxn - 1
 
-            if x_periodic:
-                topmid_idx += iicxn - 1
-                midmid_idx += iicxn - 1
-                botmid_idx += iicxn - 1
+            # if x_periodic:
+            #     topmid_idx += iicxn - 1
+            #     midmid_idx += iicxn - 1
+            #     botmid_idx += iicxn - 1
 
             ne_topleft += iicxn - 1
             ne_botleft += iicxn - 1
@@ -85,10 +85,10 @@ def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_per
             midright_idx -= iicxn - 1
             botright_idx -= iicxn - 1
 
-            if x_periodic:
-                topmid_idx -= iicxn - 1
-                midmid_idx -= iicxn - 1
-                botmid_idx -= iicxn - 1
+            # if x_periodic:
+            #     topmid_idx -= iicxn - 1
+            #     midmid_idx -= iicxn - 1
+            #     botmid_idx -= iicxn - 1
 
             ne_topright -= iicxn - 1
             ne_botright -= iicxn - 1
@@ -98,10 +98,10 @@ def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_per
             topmid_idx += ((iicxn) * (iicyn - 1))
             topright_idx += ((iicxn) * (iicyn - 1))
 
-            if y_periodic:
-                midleft_idx += ((iicxn) * (iicyn - 1))
-                midmid_idx += ((iicxn) * (iicyn - 1))
-                midright_idx += ((iicxn) * (iicyn - 1))
+            # if y_periodic:
+            #     midleft_idx += ((iicxn) * (iicyn - 1))
+            #     midmid_idx += ((iicxn) * (iicyn - 1))
+            #     midright_idx += ((iicxn) * (iicyn - 1))
 
             ne_topleft += ((iicxn) * (iicyn - 1))
             ne_topright += ((iicxn) * (iicyn - 1))
@@ -111,10 +111,10 @@ def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_per
             botmid_idx -= ((iicxn) * (iicyn - 1))
             botright_idx -= ((iicxn) * (iicyn - 1))
 
-            if y_periodic:
-                midleft_idx -= ((iicxn) * (iicyn - 1))
-                midmid_idx -= ((iicxn) * (iicyn - 1))
-                midright_idx -= ((iicxn) * (iicyn - 1))
+            # if y_periodic:
+            #     midleft_idx -= ((iicxn) * (iicyn - 1))
+            #     midmid_idx -= ((iicxn) * (iicyn - 1))
+            #     midright_idx -= ((iicxn) * (iicyn - 1))
 
             ne_botleft -= ((iicxn) * (iicyn - 1))
             ne_botright -= ((iicxn) * (iicyn - 1))
@@ -205,7 +205,7 @@ def stencil_27pt(elem,node,mpv,ud,diag_inv):
     oodxyz = 1./(oodxyz**2)
     oodx2, oody2, oodz2 = oodxyz[0], oodxyz[1], oodxyz[2]
 
-    print(oodxyz)
+    # print(oodxyz)
     i0 = (slice(0,-1),slice(0,-1),slice(0,-1))
     i1 = (slice(1,-1),slice(1,-1),slice(1,-1))
     i2 = (slice(2,-2),slice(2,-2),slice(2,-2))
@@ -242,7 +242,7 @@ def stencil_27pt(elem,node,mpv,ud,diag_inv):
     return lambda p : lap3D(p, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity, diag_inv)
     # return lambda p : lap3D(p)
 
-@nb.jit(nopython=True, cache=False)
+@nb.jit(nopython=True, cache=True)
 # def lap3D(p0):
 def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity, diag_inv):
     # p = p0.reshape(shp[0],shp[1],shp[2])
