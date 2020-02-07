@@ -51,6 +51,9 @@ def dynamic_timestep(Sol, time, time_output, elem, ud, th, step):
         dty = CFL * elem.dy / v_max
         dtz = CFL * elem.dz / w_max
 
+        # print("dtx=%.8f, dty=%.8f, dtz=%.8f" %(dtx,dty,dtz))
+        # print("u_max=%.8f, v_max=%.8f, w_max=%.8f" %(u_max, v_max, w_max))
+
         dt_cfl = min(min(dtx, dty), dtz)
         dt = min(dt_cfl, ud.dtfixed0 + min(step, 1.) * (ud.dtfixed - ud.dtfixed0))
         dt *= min(float(step+1), 1.0)
@@ -58,5 +61,7 @@ def dynamic_timestep(Sol, time, time_output, elem, ud, th, step):
         if (dt > (time_output - time)):
             dt = (time_output - time) + machine_epsilon
 
+        cfl = CFL * dt / dt_cfl
+        cfl_ac = max(dt * upc_max / elem.dx, dt * vpc_max / elem.dy, dt * wpc_max / elem.dz)
 
-        return dt
+        return dt, cfl, cfl_ac
