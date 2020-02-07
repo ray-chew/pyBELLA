@@ -22,7 +22,7 @@ from scipy import sparse
 
 # input file
 from inputs.baroclinic_instability_periodic import UserData, sol_init
-# from inputs.travelling_vortex_3D_48 import UserData, sol_init
+from inputs.travelling_vortex_3D_48 import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
 # from inputs.rising_bubble import UserData, sol_init
@@ -180,7 +180,7 @@ if __name__ == '__main__':
             label = ('ensemble_mem=%i_%.2f' %(n,0.0))
         writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
-    client = Client(threads_per_worker=4, n_workers=2)
+    client = Client(threads_per_worker=4, n_workers=1)
     tic = time()
 
     # assert(0)
