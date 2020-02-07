@@ -185,30 +185,30 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
         # print(Y)
         # print(mpv.HydroState_n.rhoY0)
 
-        Sol = deepcopy(Sol0)
-
         # offset = 0 if step % 2 == 0 and step == (ud.no_of_pi_initial + ud.no_of_pi_transition) and step != 0 else 0
         offset = 0
 
-        if step == ((ud.no_of_pi_initial + ud.no_of_pi_transition) - offset) and ud.continuous_blending == True:
+        c1 = step == (ud.no_of_pi_initial) and ud.continuous_blending == True and ud.no_of_pi_initial > 0
+
+        c2 = step <= (ud.no_of_pi_transition) and ud.continuous_blending == True and ud.no_of_pi_transition > 0
+
+        if c1 or c2:
         # if False:
             # assert(0)
             print("WINDOW STEP === %i, STEP == %i" %(window_step,step))
             print("OFFSET == %i" %offset)
             # Sol = deepcopy(Sol0)
             # mpv.p2_nodes[...] = mpv.p2_nodes0
-            # euler_forward_non_advective(Sol, mpv, elem, node, 0.5*dt, ud, th)
-
-            # advect(Sol, flux, dt, elem, step%2, ud, th, mpv)
-
-            # euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
-            # euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0, writer=None, label=str(label)+'_after_full_step')
             # mpv.p2_nodes[...] = mpv.p2_nodes
             ndim = elem.ndim
             # p2 = 0.5*(mpv.p2_nodes0 - mpv.p2_nodes0.mean()) + 0.5*(mpv.p2_nodes - mpv.p2_nodes.mean())
-            p2 = 0.5*(mpv.p2_nodes0 + mpv.p2_nodes)
-            p2 = mpv.p2_nodes
-            dp2n_psinc = p2 - p2.mean()
+            if c1:
+                
+                p2 = 0.5*(mpv.p2_nodes0 + mpv.p2_nodes)
+            # p2 = mpv.p2_nodes
+                dp2n_psinc = p2 #- p2.mean()
+            else:
+                dp2n_psinc = mpv.p2_nodes0 #- mpv.p2_nodes0
             # dp2n_psinc = np.copy(mpv.p2_nodes)
             # dp2n_psinc = mpv.p2_nodes0 - mpv.p2_nodes0.mean()
             # dp2n_psinc = mpv.p2_nodes0 - mpv.p2_nodes0.mean()
@@ -232,28 +232,40 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
             # writer.populate(str(label)+'_after_full_step','rhoYn',rhoYn)
             # print((rhoYn**th.gm1).mean())
             # print(ud.Msq)
-            fac = ud.Msq
-            # mpv.p2_nodes[...] =  1./fac * (rhoYn**th.gm1 - 1.0 + fac * dp2n_psinc)
-            mpv.p2_nodes[...] = dp2n_psinc
-            Y = Sol.rhoY / Sol.rho
-            # # print(Y)
-
-            # Yn = np.zeros_like(dp2n_psinc)
-            # Yn[i1] = signal.fftconvolve(Y,kernel,mode='valid') / kernel.sum()
-            # boundary.set_ghostnodes_p2(Yn,node,ud)
+            # Sol = deepcopy(Sol0)
             
-            # writer.populate(str(label)+'_after_full_step','Yn',Yn)
-            rho_psinc = np.copy(Sol.rho)
 
-            Sol.rhoY[...] = (Sol.rhoY**th.gm1 + fac * dp2c_psinc)**(th.gm1inv)
-            Sol.rho[...] = Sol.rhoY / Y
+            # euler_forward_non_advective(Sol, mpv, elem, node, 0.5*dt, ud, th)
 
-            rho_fac = Sol.rho / rho_psinc
-            Sol.rhou[...] *= rho_fac
-            Sol.rhov[...] *= rho_fac
-            Sol.rhow[...] *= rho_fac
-            Sol.rhoX[...] *= rho_fac
-            boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+            # advect(Sol, flux, dt, elem, step%2, ud, th, mpv)
+
+            # euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+            # euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0, writer=None, label=str(label)+'_after_full_step')
+            if c1:
+                fac = ud.Msq
+                # mpv.p2_nodes[...] =  1./fac * (rhoYn**th.gm1 - 1.0 + fac * dp2n_psinc)
+                mpv.p2_nodes[...] = dp2n_psinc
+                Y = Sol.rhoY / Sol.rho
+                # # print(Y)
+
+                # Yn = np.zeros_like(dp2n_psinc)
+                # Yn[i1] = signal.fftconvolve(Y,kernel,mode='valid') / kernel.sum()
+                # boundary.set_ghostnodes_p2(Yn,node,ud)
+                
+                Sol = deepcopy(Sol0)
+
+                # writer.populate(str(label)+'_after_full_step','Yn',Yn)
+                rho_psinc = np.copy(Sol.rho)
+
+                Sol.rhoY[...] = (Sol.rhoY**th.gm1 + fac * dp2c_psinc)**(th.gm1inv)
+                Sol.rho[...] = Sol.rhoY / Y
+
+                rho_fac = Sol.rho / rho_psinc
+                Sol.rhou[...] *= rho_fac
+                Sol.rhov[...] *= rho_fac
+                Sol.rhow[...] *= rho_fac
+                Sol.rhoX[...] *= rho_fac
+                boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
             # rhoYncomp = np.zeros_like(dp2n_psinc)
             # rhoYncomp[i1] = signal.fftconvolve(Sol.rhoY,kernel,mode='valid') / kernel.sum()
@@ -271,6 +283,29 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
             # mpv.p2_nodes -= mpv.p2_nodes.mean()
         # elif step == 0:
         #     mpv.p2_nodes[...] = mpv.p2_nodes
+
+        # elif step <= ud.no_of_pi_transition and ud.no_of_pi_transition > 0:
+        #     mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
+            
+        #     dp2n_psinc = np.copy(mpv.p2_nodes)
+        #     kernel = np.ones([2]*dp2n_psinc.ndim)
+        #     dp2c_psinc = signal.fftconvolve(dp2n_psinc,kernel, mode='valid') / kernel.sum()
+
+        #     Y = Sol.rhoY / Sol.rho
+        #     Sol = deepcopy(Sol0)
+
+        #     rho_psinc = np.copy(Sol.rho)
+
+        #     Sol.rhoY[...] = (Sol.rhoY**th.gm1 + ud.Msq * dp2c_psinc)**(th.gm1inv)
+        #     Sol.rho[...] = Sol.rhoY / Y
+
+        #     rho_fac = Sol.rho / rho_psinc
+        #     Sol.rhou[...] *= rho_fac
+        #     Sol.rhov[...] *= rho_fac
+        #     Sol.rhow[...] *= rho_fac
+        #     Sol.rhoX[...] *= rho_fac
+        #     boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+
         else:
             # if ud.is_compressible == 0 and step >= ud.no_of_pi_transition:
             #     mpv.p2_nodes[...] = mpv.p2_nodes
@@ -278,11 +313,13 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
                 # mpv.p2_nodes[...] = mpv.p2_nodes0
                 # mpv.p2_nodes[...] = 0.5 * (mpv.p2_nodes0 + mpv.p2_nodes)
             mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
+            Sol = deepcopy(Sol0)
             # mpv.p2_nodes -= mpv.p2_nodes.mean()
             # None
             # None 
             # mpv.p2_nodes[...] = mpv.p2_nodes
         # if step == 0:
+
         #     mpv.p2_nodes[...] = 0.5 * mpv.p2_nodes + 0.5 * mpv.p2_nodes0
         # else:
             # mpv.p2_nodes[...] = mpv.p2_nodes0
@@ -290,14 +327,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
 
         print("step = %i, compressibility = %.4f, is_compressible = %i" %(window_step, ud.compressibility, ud.is_compressible))
 
-        if offset == 1:
-            ud.is_compressible = is_compressible(ud,window_step+1)
-            ud.compressibility = compressibility(ud, t, window_step+1)
-        # mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
-
-        # if step == 41:
-        #     assert(0)
-            
+        if step == 41:
+            assert(0)
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_half_step')
 

@@ -109,9 +109,9 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
 
     dp2n[i1] -= dt * dpidP * div[i1]
 
-    if (ud.is_compressible == 1):
-        weight = ud.acoustic_order - 1.0
-        mpv.p2_nodes += weight * dp2n
+    # if (ud.is_compressible == 1):
+    weight = ud.compressibility * ud.acoustic_order - 1.0
+    mpv.p2_nodes += weight * dp2n
 
     set_ghostnodes_p2(mpv.p2_nodes,node, ud)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
@@ -198,14 +198,14 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     if ud.is_compressible == 1:
         rhs = rhs_from_p_old(rhs,node,mpv)
-    # rhs_new = rhs_from_p_old(rhs,node,mpv)
-    # rhs = ud.compressibility * rhs_new + (1.0 - ud.compressibility) * rhs
     # if 
     elif ud.is_compressible == 0:
         if ud.is_ArakawaKonor:
             rhs -= mpv.wcenter * mpv.dp2_nodes
             mpv.wcenter[...] = 0.0
         else:
+            rhs_new = rhs_from_p_old(rhs,node,mpv)
+            rhs = ud.compressibility * rhs_new + (1.0 - ud.compressibility) * rhs
             mpv.wcenter[...] *= ud.compressibility
     else:
         mpv.wcenter *= ud.compressibility
@@ -508,6 +508,7 @@ def rhs_from_p_old(rhs,node,mpv):
         inner_idx[dim] = slice(igs[dim],-igs[dim])
     
     inner_idx = tuple(inner_idx)
+    rhs_n = np.zeros_like(rhs)
     rhs_hh = mpv.wcenter[inner_idx] * mpv.p2_nodes[inner_idx]
-    rhs[inner_idx] += rhs_hh
-    return rhs
+    rhs_n[inner_idx] = rhs[inner_idx] + rhs_hh
+    return rhs_n
