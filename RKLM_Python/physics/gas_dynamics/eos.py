@@ -17,12 +17,16 @@ def nonhydrostasy(ud,t,step):
 
 def compressibility(ud,t,step):
     if ud.is_compressible == 0:
-        return 0.0
+        if step < ud.no_of_pi_initial:
+            return 0.0
+        if ud.continuous_blending == False:
+            return 0.0
+        else:
+            current_transition_step = step - ud.no_of_pi_initial
+            return np.linspace(0.0,1.0,ud.no_of_pi_transition+2)[1:-1][current_transition_step]
     elif ud.is_compressible == 1:
         return 1.0
-    elif ud.is_compressible == -1:
-        current_transition_step = step - ud.no_of_pi_initial
-        return np.linspace(0.0,1.0,ud.no_of_pi_transition+2)[1:-1][current_transition_step]
+    # elif ud.is_compressible == 0:
     else:
         assert 0
 
@@ -31,7 +35,7 @@ def is_compressible(ud,step):
         if step < ud.no_of_pi_initial:
             return 0
         elif step < (ud.no_of_pi_initial + ud.no_of_pi_transition):
-            return -1
+            return 0
         else:
             return 1
     else:
