@@ -95,7 +95,8 @@ class io(object):
         """
         # If file exists, delete it.. Nuclear option
         if os.path.exists(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT):
-            os.remove(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT)
+            os.rename(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + '_old' + self.FORMAT)
+            
         # create a new output file for each rerun - old output will be overwritten.
         file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'a')
         for path in paths:
@@ -179,7 +180,7 @@ class io(object):
         # self.populate(name,'wplusy',mpv.wplus[1])
         # self.populate(name,'hcenter',mpv.wcenter)
         # self.populate(name,'p2',mpv.dp2_nodes)
-        self.populate(name,'rhs',mpv.rhs)
+        # self.populate(name,'rhs',mpv.rhs)
         # self.populate(name,'X',Sol.rhoX/Sol.rho)
 
     def vortz(self,Sol,elem,node):
