@@ -41,9 +41,10 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     mpv.rhs = np.array(mpv.rhs)
     mpv.rhs *= 0.0
     mpv.rhs[...], _ = divergence_nodes(mpv.rhs,elem,node,Sol,ud)
-    div = mpv.rhs
+    # div = mpv.rhs
 
     scale_wall_node_values(mpv.rhs, node, ud, 2.0)
+    div = mpv.rhs
 
     i1 = np.empty(ndim, dtype='object')
     for dim in range(ndim):
@@ -74,7 +75,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     igx, igy, igz, igs = elem.igx, elem.igy, elem.igz, elem.igs
 
     dSdy = mpv.HydroState_n.S0[igy-1:-igy+1]
-    dSdy = signal.convolve(dSdy,[1.,-1.],mode='valid') / dy
+    dSdy = signal.convolve(dSdy,[-1.,1.],mode='valid') / dy
     # dSdy = np.repeat(dSdy,elem.icx-igx,axis=1).T / dy
 
     S0c = mpv.HydroState.S0[igy-1:-igy+1]
@@ -114,6 +115,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
 
     set_ghostnodes_p2(mpv.p2_nodes,node, ud)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+
 
 def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     nonhydro = ud.nonhydrostasy
@@ -179,12 +181,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt)
 
-    i0 = (slice(0,-1),slice(0,-1),slice(0,-1))
-    # mpv.wplus[0][i0][...] = h5py.File('/home/ray/git-projects/RKLM_Reference/wplusx.h5')['Data-Set-2'][...]
-    # mpv.wplus[1][i0][...] = h5py.File('/home/ray/git-projects/RKLM_Reference/wplusy.h5')['Data-Set-2'][...]
-    # mpv.wplus[2][i0][...] = h5py.File('/home/ray/git-projects/RKLM_Reference/wplusz.h5')['Data-Set-2'][...]
-    # mpv.wcenter[...] = h5py.File('/home/ray/git-projects/RKLM_Reference/hcenter.h5')['Data-Set-2'][...]
-    
+    i0 = node.ndim * [(slice(0,-1))]
+    i0 = tuple(i0)
+
     if writer != None:
         writer.populate(str(label),'hcenter',mpv.wcenter)
         writer.populate(str(label),'wplusx',mpv.wplus[0])
@@ -194,19 +193,23 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     rhs[...], _ = divergence_nodes(rhs,elem,node,Sol,ud)
     rhs /= dt
 
+    if writer != None:
+        writer.populate(str(label),'rhs',rhs)
+
     if ud.is_compressible == 1:
         rhs = rhs_from_p_old(rhs,node,mpv)
+    # rhs_new = rhs_from_p_old(rhs,node,mpv)
+    # rhs = ud.compressibility * rhs_new + (1.0 - ud.compressibility) * rhs
+    # if 
     elif ud.is_compressible == 0:
         if ud.is_ArakawaKonor:
             rhs -= mpv.wcenter * mpv.dp2_nodes
             mpv.wcenter[...] = 0.0
         else:
-            mpv.wcenter[...] = 0.0
+            mpv.wcenter[...] *= ud.compressibility
     else:
         mpv.wcenter *= ud.compressibility
 
-    # rhs[...] = h5py.File('/home/ray/git-projects/RKLM_Reference/rhs.h5')['Data-Set-2'][...]
-    
     if writer != None:
         writer.populate(str(label),'rhs_nodes',rhs)
 
@@ -214,8 +217,6 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     diag_inv = precon_diag_prepare(mpv, elem, node, ud)
     rhs *= diag_inv
-
-    # diag_inv = np.ones_like(rhs)
 
     # if y_wall:
     #     rhs[:,2] *= 2.
@@ -265,14 +266,12 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if writer != None:
         writer.populate(str(label),'p2_full',p2_full)
 
-    mpv.dp2_nodes[...] = np.copy(p2_full)
+    # mpv.dp2_nodes[...] = np.copy(p2_full)
 
     correction_nodes(Sol,elem,node,mpv,p2_full,dt,ud)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
     # mpv.rhs = rhs
     # set_ghostnodes_p2(mpv.dp2_nodes,node,ud)
-
-    # mpv.dp2_nodes[...] = p2_full - mpv.p2_nodes
     
     # if ud.is_ArakawaKonor:
     #     if ud.is_compressible == 0:
@@ -287,12 +286,12 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     #         dp2,_ = bicgstab(lap2D_exner,dp2_rhs.ravel(),tol=1e-16,maxiter=6000)
 
     #         mpv.dp2_nodes[node.igx:-node.igx,node.igy:-node.igy] = dp2.reshape(ud.inx,ud.iny)
-            
+    
     mpv.p2_nodes[...] = p2_full
+    # mpv.dp2_nodes[...] = p2_full - mpv.p2_nodes 
+    set_ghostnodes_p2(mpv.p2_nodes,node,ud)
     # mpv.rhs = rhs
     # set_ghostnodes_p2(mpv.dp2_nodes,node,ud)
-    set_ghostnodes_p2(mpv.p2_nodes,node,ud)
-
 
 def exner_perturbation_constraint(Sol,elem,th,p2):
     # 2D function!
@@ -372,7 +371,6 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     ndim = node.ndim
     nonhydro = ud.nonhydrostasy
     dy = elem.dy
-    icz = elem.icz
 
     time_offset = 3.0 - ud.acoustic_order
 
@@ -474,20 +472,17 @@ def scale_wall_node_values(rhs, node, ud, factor=.5):
 def divergence_nodes(rhs,elem,node,Sol,ud):
     ndim = elem.ndim
     igs = elem.igs
-    dxyz = elem.dxyz
+    dxyz = node.dxyz
     inner_idx = np.empty((ndim), dtype=object)
 
     for dim in range(ndim):
         is_periodic = ud.bdry_type[dim] == BdryType.PERIODIC
-
         inner_idx[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic)
         
     indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat = ndim)]
     signs = [sgn for sgn in product([1,-1], repeat = ndim)]
     inner_idx = tuple(inner_idx)
     Sols = np.stack((Sol.rhou[inner_idx], Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
-
-    # print(signs)
 
     oodxyz = 1./dxyz
     Y = Sol.rhoY[inner_idx] / Sol.rho[inner_idx]
