@@ -4,7 +4,7 @@ from management.enumerator import TimeIntegrator, MolecularTransport,HillShapes,
 # from discretization.time_discretization import SetTimeIntegratorParameters
 # from physics.gas_dynamics.explicit import TimeIntegratorParams
 from physics.hydrostatics import hydrostatic_state
-from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2
+from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
 from physics.low_mach.second_projection import euler_backward_non_advective_impl_part
 
 class UserData(object):
@@ -24,7 +24,7 @@ class UserData(object):
     viscbt = 0.0
     cond = 0.0
 
-    h_ref = 100
+    h_ref = 10000
     t_ref = 100
     T_ref = 300.00
     p_ref = 1e+5
@@ -54,7 +54,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 0
+        self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -148,8 +148,8 @@ class UserData(object):
         self.max_iterations = 6000
 
         self.continuous_blending = True
-        self.no_of_pi_initial = 20
-        self.no_of_pi_transition = 20
+        self.no_of_pi_initial = 10
+        self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
@@ -171,7 +171,7 @@ class UserData(object):
         # self.tout[1] = -1.0
         # self.tout = np.arange(0.0,6.1,0.25)
         # self.tout = [1.0,2.0,3.0]
-        self.tout = [3.0]
+        self.tout = [1.0]
 
         # self.tout = times.copy()
 
@@ -188,7 +188,11 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        self.output_suffix = "_%i_%i_%.1f_nocorrection" %(self.inx-1,self.iny-1,self.tout[-1])
+        # aux = 'truth'
+        # aux = 'nocorrection'
+        # aux = 'truth_corrected'
+        # aux = 'even' if self.no_of_pi_initial % 2 == 0 else 'odd'
+        # self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
@@ -332,7 +336,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     mpv.p2_nodes[igxn:-igxn,igyn:-igyn] *= r/R0 < 1.0
 
     mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[igyn:-igyn+1])
-
+    # mpv.p2_nodes -= mpv.p2_nodes.mean()
     # mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[0,igyn:-igyn+1])
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
@@ -341,9 +345,17 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     ud.compressibility = float(ud.is_compressible)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
+    # set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
     Sol.rhoY[...] = 1.0
     mpv.p2_nodes[...] = 0.0
+
+    # from scipy import signal
+    # p2n = mpv.p2_nodes - mpv.p2_nodes.mean()
+    # p2n -= p2n.min()
+    # rhoY = (p2n + 1.0)**th.gm1inv - 1.0
+    # rhoY = signal.fftconvolve(rhoY,np.ones([2] * rhoY.ndim),mode='valid') * 0.25
+    # Sol.rhoY[...] = rhoY
 
     if ud.initial_projection == True:
         is_compressible = np.copy(ud.is_compressible)
