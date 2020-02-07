@@ -69,9 +69,6 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
     Lefts.rhoY[lefts_idx] = Rights.rhoY[rights_idx] = 0.5 * (Sol.rhoY[lefts_idx] + Sol.rhoY[rights_idx]) \
         - order_two * 0.5 * lmbda * (Sol.u[rights_idx] * Sol.rhoY[rights_idx] - Sol.u[lefts_idx] * Sol.rhoY[lefts_idx])
 
-    # print(Lefts.rhoY[lefts_idx][np.where(Lefts.rhoY[lefts_idx] < 0)])
-    print(np.where(Lefts.rhoY[lefts_idx] < 0))
-
     Lefts.p0[lefts_idx] = Rights.p0[rights_idx] = Lefts.rhoY[lefts_idx]**gamm
 
     get_conservatives(Rights, ud, th)
@@ -86,7 +83,7 @@ def slopes(Sol, Diffs, ud, elem):
     # lefts_idx = (slice(None),slice(0,-1))
     # rights_idx = (slice(None),slice(1,None))
     ndim = elem.ndim
-    lefts_idx, rights_idx = [slice(None)] * ndim, [slice(None)] * ndim
+    lefts_idx, rights_idx = [slice(None,)] * ndim, [slice(None,)] * ndim
     lefts_idx[-1] = slice(0,-1)
     rights_idx[-1] = slice(1,None)
     lefts_idx, rights_idx = tuple(lefts_idx), tuple(rights_idx)
