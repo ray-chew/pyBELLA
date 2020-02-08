@@ -10,6 +10,10 @@ class da_params(object):
 
         self.da_times = [0.25,0.50,0.75,1.0]
         self.obs_attributes = ['rho', 'rhou', 'rhov']
+
+        # which attributes to inflate in ensemble inflation?
+        self.attributes = ['rho', 'rhou', 'rhov']
+
         self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_1.0_truthgen.h5'
 
         # forward operator (projector from state space to observation space)
