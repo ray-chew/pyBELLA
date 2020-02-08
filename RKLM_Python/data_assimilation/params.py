@@ -1,12 +1,16 @@
 import numpy as np
+import h5py
 
 class da_params(object):
 
-    def __init__(self,N,da_type='rloc'):
+    def __init__(self,N,da_type='rloc',loc=0):
         # number of ensemble members
         self.N = 20
         # self.state_attributes = ['rho', 'rhou', 'rhov','rhow','rhoY','rhoX']
+
+        self.da_times = [0.25,0.50,0.75,1.0]
         self.obs_attributes = ['rho', 'rhou', 'rhov']
+        self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_1.0_truthgen.h5'
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)
@@ -29,8 +33,36 @@ class da_params(object):
         # rejuvenation factor for ETPF
         self.rejuvenation_factor = 0.001
 
-    def load_obs(self,obs):
-        None
+        self.loc = loc
+
+    def load_obs(self,obs_path,loc=0):
+        if self.N > 1:
+            obs_file = h5py.File(obs_path, 'r')
+            obs_attributes = self.obs_attributes
+
+            loc = self.loc # where in the "solutions" container are they located? 0: Sol, 1: flux, 2: mpv
+
+            #### when were these observations taken?
+            times = self.da_times
+            # times = [1.0,2.0,3.0,4.0,5.0]
+
+            #### axis 0 stores time series
+            obs = np.empty(len(times), dtype=object)
+            t_cnt = 0
+            for t in times:
+                #### how were these dataset called?
+                label = '_ensemble_mem=0_%.2f_after_full_step' %t
+                #### axis 1 stores the attributes
+                obs[t_cnt] = {}
+                for attribute in obs_attributes:
+                    dict_attr = {
+                        attribute: obs_file[str(attribute)][str(attribute) + str(label)][:]
+                    }
+                    obs[t_cnt].update(dict_attr)
+                t_cnt += 1
+            obs = np.array(obs)
+            obs_file.close()
+        return obs
 
     @staticmethod
     def sampler_gaussian(var):
