@@ -20,7 +20,6 @@ def da_interface(results,obs_current,rho,attr,N,ud,loc=0):
     local_ens = np.array([mem[inner] for mem in local_ens])
     local_ens = analysis(local_ens,rho,attr)
 
-    # print(obs_current.shape)
     obs_current = obs_current[inner]
     obs_current = bin_func(obs_current, local_ens.member_shape)
     # local_ens.debug(obs_current,"0before")

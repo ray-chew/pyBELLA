@@ -65,7 +65,8 @@ class UserData(object):
         self.cond = self.cond * self.t_ref / (self.h_ref * self.h_ref * self.R_gas)
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 0
+        self.is_compressible = 1
+        self.is_ArakawaKonor = 0
         self.compressibility = 0.0
         self.acoustic_timestep = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
@@ -159,6 +160,12 @@ class UserData(object):
 
         tol = 1.e-8
 
+        self.continuous_blending = False
+        self.no_of_pi_initial = 20
+        self.no_of_pi_transition = 20
+        self.no_of_hy_initial = 0
+        self.no_of_hy_transition = 0
+
         self.flux_correction_precision = tol
         self.flux_correction_local_precision = tol
         self.second_projection_precision = tol
@@ -176,7 +183,7 @@ class UserData(object):
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
         # self.tout[0] =  0.00267282
-        self.tout = 0.00267282
+        self.tout = [0.00267282]
         # self.tout[1] = -1.0
 
         self.stepmax = 41
@@ -187,10 +194,16 @@ class UserData(object):
         self.write_file_period = 40
         self.file_format = 'HDF'
 
-        self.output_base_name = "_acoustic_wave_high"
+        self.output_base_name = "_acoustic_wave"
         self.output_name_psinc = "_low_mach_gravity_psinc"
         self.output_name_comp = "_low_mach_gravity_comp"
-
+        if self.is_compressible == 1:
+            self.output_suffix = "_%i_%i_%.5f_comp" %(self.inx-1,self.iny-1,self.tout[-1])
+        if self.is_compressible == 0:
+            self.output_suffix = "_%i_%i_%.5f_psinc" %(self.inx-1,self.iny-1,self.tout[-1])
+        if self.continuous_blending == True:
+            self.output_suffix = "_%i_%i_%.5f" %(self.inx-1,self.iny-1,self.tout[-1])
+        
         self.stratification = self.stratification_function
 
     def stratification_function(self, y):
@@ -215,12 +228,12 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     y_idx = slice(elem.igy,-elem.igy+1)
 
     v, w = v0, w0
-    p = mpv.HydroState.p0[0, y_idx] * (1.0 + del0 * np.sin(wn * x))**(2.0 * th.gamm * th.gm1inv)
+    p = mpv.HydroState.p0[y_idx] * (1.0 + del0 * np.sin(wn * x))**(2.0 * th.gamm * th.gm1inv)
     rhoY = p**(th.gamminv)
     rho = np.copy(rhoY)
 
     c = np.sqrt(th.gamm * np.divide(p , rho))
-    u = u0 + (p - mpv.HydroState.p0[0, y_idx]) / (rho * c) / Ma
+    u = u0 + (p - mpv.HydroState.p0[y_idx]) / (rho * c) / Ma
     
     # u_shape = u.shape
     # u = np.cumsum(u.T.reshape(-1)).reshape(u_shape)
@@ -234,10 +247,10 @@ def sol_init(Sol, mpv, elem, node, th, ud):
 
     mpv.p2_cells[x_idx,y_idx] = (p**th.Gamma - 1.0) / ud.Msq
 
-    Sol.rhoX[x_idx,y_idx] = Sol.rho[x_idx,y_idx] * (Sol.rho[x_idx,y_idx] / Sol.rhoY[x_idx,y_idx] - mpv.HydroState.S0[0,y_idx])
+    Sol.rhoX[x_idx,y_idx] = Sol.rho[x_idx,y_idx] * (Sol.rho[x_idx,y_idx] / Sol.rhoY[x_idx,y_idx] - mpv.HydroState.S0[y_idx])
 
     x = node.x[x_idx][:-1].reshape(-1,1)
-    p = mpv.HydroState_n.p0[0,y_idx] * (1.0 + del0 * np.sin(wn * x))**(2.0 * th.gamm * th.gm1inv)
+    p = mpv.HydroState_n.p0[y_idx] * (1.0 + del0 * np.sin(wn * x))**(2.0 * th.gamm * th.gm1inv)
     mpv.p2_nodes[:-1,y_idx] = (p**th.Gamma - 1.0) / ud.Msq
 
     ud.initial_projection = False

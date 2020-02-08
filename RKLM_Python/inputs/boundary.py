@@ -1,11 +1,8 @@
 """
 For more details on this module, refer to the write-up :ref:`boundary_handling`.
 """
-from inputs.enum_bdry import BdryType
-
+from .enum_bdry import BdryType
 import numpy as np
-
-from management.debug import find_nearest
 
 def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
     """

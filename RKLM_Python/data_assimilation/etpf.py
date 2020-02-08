@@ -76,7 +76,7 @@ class analysis(object):
 
         r = (Hx - obs_current)**2
         r = np.sum(r, axis=1)
-        print(r.shape)
+        # print(r.shape)
 
         ww = np.exp(-r / (2. * obs_covar))
         ww /= np.sum(ww)

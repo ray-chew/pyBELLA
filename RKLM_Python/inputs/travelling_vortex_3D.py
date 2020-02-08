@@ -147,8 +147,8 @@ class UserData(object):
         self.tol = 1.e-6
         self.max_iterations = 6000
 
-        self.continuous_blending = True
-        self.no_of_pi_initial = 10
+        self.continuous_blending = False
+        self.no_of_pi_initial = 20
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
@@ -161,7 +161,7 @@ class UserData(object):
         self.synchronize_weight = 0.0
 
         # self.tout = np.arange(0,11,1)/10.
-        # self.tout = np.linspace(0,1.0,num=21)
+        self.tout = np.linspace(0,1.0,num=21)
         # self.tout = np.linspace(0.0,10.0,101)
         # self.tout = np.linspace(0.0,10.0,101*2-1)
         # self.tout = [0.5]
@@ -171,7 +171,7 @@ class UserData(object):
         # self.tout[1] = -1.0
         # self.tout = np.arange(0.0,6.1,0.25)
         # self.tout = [1.0,2.0,3.0]
-        self.tout = [1.0]
+        # self.tout = [1.0]
 
         # self.tout = times.copy()
 
@@ -188,11 +188,11 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        # aux = 'truth'
+        aux = 'test'
         # aux = 'nocorrection'
         # aux = 'truth_corrected'
         # aux = 'even' if self.no_of_pi_initial % 2 == 0 else 'odd'
-        # self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
+        self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
@@ -347,8 +347,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
     # set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
-    Sol.rhoY[...] = 1.0
-    mpv.p2_nodes[...] = 0.0
+    # Sol.rhoY[...] = 1.0
+    # mpv.p2_nodes[...] = 0.0
 
     # from scipy import signal
     # p2n = mpv.p2_nodes - mpv.p2_nodes.mean()

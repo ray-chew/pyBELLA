@@ -135,6 +135,8 @@ class UserData(object):
 
         self.dtfixed0 = 10.0 * ( 12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
         self.dtfixed = 10.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
+        # self.dtfixed0 = 5.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
+        # self.dtfixed = 5.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
 
         # self.tips = TimeIntegratorParams()
         # SetTimeIntegratorParameters(self)
@@ -254,7 +256,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     u0 = ud.wind_speed
     v0 = 0.0
     w0 = 0.0
-    delth = 0.1 / ud.T_ref
+    delth = 0.01 / ud.T_ref
     xc = -1.0 * ud.scale_factor * 50.0e+3 / ud.h_ref
     a = ud.scale_factor * 5.0e+3 / ud.h_ref
 
