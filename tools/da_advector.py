@@ -16,6 +16,7 @@ from physics.low_mach import mpv as m
 from data_assimilation import utils
 from data_assimilation import params
 from data_assimilation import letkf
+from data_assimilation import etpf
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -65,7 +66,7 @@ label_type = 'STEP'     # output time-series in terms time or step?
 # initialise data assimilation
 # parameters
 #
-dap = params.da_params(N,da_type='batch_obs')
+dap = params.da_params(N,da_type='etpf')
 obs = dap.load_obs(dap.obs_path)
 #
 ######################################
@@ -171,7 +172,8 @@ for tout in ud.tout:
 
         ######################################
         #
-        # localisation: batch observations
+        # algorithm:
+        # localisation w/ batch observations
         #
         if dap.da_type == 'batch_obs':
             print("Starting analysis... for batch observations")
@@ -193,11 +195,26 @@ for tout in ud.tout:
                     setattr(results[:,dap.loc,...][n],attr,current[n])
                 cnt += 1
         #
-        # end localisation: batch observations
+        # end localisation w/ batch
+        # observations
         #
         ###################################### 
         
-        
+
+        ######################################
+        #
+        # algorithm: ETPF
+        #
+        elif dap.da_type == 'etpf':
+            utils.ensemble_inflation(results,dap.attributes,dap.inflation_factor,N)
+            results = etpf.da_interface(results,obs,dap.obs_attributes,dap.rejuvenation_factor,dap.da_times,tout,N)
+        #
+        # end ETPF
+        #
+        ###################################### 
+
+        else:
+            assert 0, "DA type not implemented: use 'rloc' or 'batch_obs'."
     #
     # end data assimilation step
     #
