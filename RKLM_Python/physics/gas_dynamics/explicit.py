@@ -1,21 +1,8 @@
 import numpy as np
 from inputs.boundary import set_explicit_boundary_data, check_flux_bcs
-from physics.gas_dynamics.recovery import recovery
-from physics.gas_dynamics.numerical_flux import hll_solver
+from .recovery import recovery
+from .numerical_flux import hll_solver
 from management.variable import Vars
-
-from management.debug import find_nearest
-
-# class NO_OF_RK_STAGES(object):
-#     NO_OF_RK_STAGES = 3
-
-# class TimeIntegratorParams(NO_OF_RK_STAGES):
-#     def __init__(self):
-#         self.dt_frac = 0
-#         self.flux_frac = np.zeros((self.NO_OF_RK_STAGES,2))
-#         self.update_frac = np.zeros((self.NO_OF_RK_STAGES))
-#         self.multiD_updt = False
-
 
 def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
     # double strang sweep

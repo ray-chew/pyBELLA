@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 
 # dependencies of the atmospheric flow solver
 from management.data import data_init, time_update
@@ -22,7 +23,7 @@ from scipy import sparse
 
 # input file
 from inputs.baroclinic_instability_periodic import UserData, sol_init
-from inputs.travelling_vortex_3D_48 import UserData, sol_init
+from inputs.travelling_vortex_3D import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
 # from inputs.rising_bubble import UserData, sol_init
@@ -323,7 +324,6 @@ if __name__ == '__main__':
                     ensemble_inflation(results,attributes,inflation_factor,N)
                     results = etpf.da_interface(results,obs,obs_attributes,rejuvenation_factor,times,tout,N)
 
-                    # assert(0)
                 else:
                     assert 0, "DA type not implemented: use 'rloc' or 'batch_obs'."
 
