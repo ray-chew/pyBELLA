@@ -54,7 +54,7 @@ import numpy as np
 from scipy import signal
 from management.debug import find_nearest
 
-def recompute_advective_fluxes(flux, Sol):
+def recompute_advective_fluxes(flux, Sol, *args, **kwargs):
     """
     Todo
     ----
@@ -78,14 +78,11 @@ def recompute_advective_fluxes(flux, Sol):
     else:
         assert(0, "Unsupported dimension in recompute_advective_flux")
 
-    rhoYu = Sol.rhoY * Sol.rhou / Sol.rho
+    rhoYu = kwargs.get('u',Sol.rhoY * Sol.rhou / Sol.rho)
 
     flux[0].rhoY[inner_idx] = np.moveaxis(signal.fftconvolve(rhoYu, kernel_u, mode='valid') / kernel_u.sum(), 0, -1)
 
-    # flux[0].rhoY[inner_idx][...,-1] = 0.
-    # flux[0].rhoY[...,-1] = 0.
-    # flux[2].rhoY[...,-1] = 0.
-    rhoYv = Sol.rhoY * Sol.rhov / Sol.rho
+    rhoYv = kwargs.get('v',Sol.rhoY * Sol.rhov / Sol.rho)
     if ndim == 2:
         flux[1].rhoY[inner_idx] = signal.fftconvolve(rhoYv, kernel_v, mode='valid') / kernel_v.sum()
     elif ndim == 3:
@@ -103,10 +100,6 @@ def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
     right_idx[-1] = slice(1,None)
 
     left_idx, right_idx, remove_cols_idx = tuple(left_idx), tuple(right_idx), tuple(remove_cols_idx)
-
-    # remove_cols_idx = (slice(None),slice(1,-1))
-    # left_idx = (slice(None),slice(0,-1))
-    # right_idx = (slice(None),slice(1,None))
 
     Lefts.primitives(th)
     Rights.primitives(th)
