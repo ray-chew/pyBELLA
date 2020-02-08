@@ -25,7 +25,7 @@
 #define OUTPUT_LAP_CELLS     0       /* on-off */
 #define OUTPUT_RHS_CELLS     0       /* on-off */
 #define OUTPUT_LAP_NODES     0       /* on-off */
-#define OUTPUT_RHS_NODES     0       /* on-off */
+#define OUTPUT_RHS_NODES     1       /* on-off */
 #define OUTPUT_ADV_FLUXES    0       /* on-off */
 #define PRESSURE_TEST_OUTPUT 0
 	
@@ -49,11 +49,11 @@
 
 /**/
 #define FULL_VARIABLES
-#ifdef FULL_VARIABLES
-#define PRESSURE_INCREMENTS_IN_ELLIPTIC_SOLVE
-#endif
+// #ifdef FULL_VARIABLES
+// #define PRESSURE_INCREMENTS_IN_ELLIPTIC_SOLVE
+// #endif
 
-#define LOCAL_BRUNT_VAISALA
+// #define LOCAL_BRUNT_VAISALA
 
 
 /* ============================================= 

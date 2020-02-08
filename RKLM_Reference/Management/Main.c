@@ -219,7 +219,7 @@ int main( void )
 
                 /* hydrostatic pressure prediction */
                 euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt); 
-                euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, elem, node, t, 0.5*dt, 1.0);
+                euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, elem, node, t, 0.5*dt, 1.0, step, 0);
                                 
                 /* restore flow state from before the hydrostate */
                 ConsVars_set(Sol, Sol1, elem->nc);
@@ -232,14 +232,14 @@ int main( void )
                 
                 euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt); 
        
-                euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, elem, node, t, 0.5*dt, 1.0);
+                euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, elem, node, t, 0.5*dt, 1.0, step, 0);
             } else {
                 euler_backward_non_advective_expl_part(Sol, (const MPV*)mpv, elem, 0.5*dt); 
             if (swtch == 1){
                 putout(Sol, ud.file_name, "Sol", elem, node, 1, step, "after_ebnaexp");
                 // swtch = 0;
             } 
-                euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, elem, node, t, 0.5*dt, 1.0);
+                euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, elem, node, t, 0.5*dt, 1.0, step, 0);
 
             if (swtch == 1){
                 putout(Sol, ud.file_name, "Sol", elem, node, 1, step, "after_ebnaimp");
@@ -249,7 +249,10 @@ int main( void )
             
             recompute_advective_fluxes(flux, (const ConsVars*)Sol, bdry, elem);
             if (step >= 0) {
-                for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes[nn] = mpv->p2_nodes0[nn];
+                // for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes[nn] = mpv->p2_nodes0[nn];
+                for (int nn=0; nn<node->nc; nn++){
+                    mpv->p2_nodes[nn] = ud.compressibility * mpv->p2_nodes0[nn] + (1.0 - ud.compressibility) * mpv->p2_nodes[nn];
+                }
 #ifdef IMPLICIT_MIDPT_FOR_NODAL_P
                 for (int nn=0; nn<node->nc; nn++) mpv->p2_nodes0[nn] = mpv->p2_nodes[nn] + 2.0*mpv->dp2_nodes[nn];
 #endif
@@ -356,7 +359,7 @@ int main( void )
 
                 /* hydrostatic pressure prediction */
                 euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt);
-                euler_backward_non_advective_impl_part(Sol, mpv, diss_trpzdl, elem, node, t, 0.5*dt, 2.0);
+                euler_backward_non_advective_impl_part(Sol, mpv, diss_trpzdl, elem, node, t, 0.5*dt, 2.0, step, 1);
 
                 /* restore pre-hydro flow state from Sol1 */
                 ConsVars_set(Sol, Sol1, elem->nc);
@@ -368,14 +371,14 @@ int main( void )
                 ud.compressibility   = 0.0;
                 
                 euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt);
-                euler_backward_non_advective_impl_part(Sol, mpv, diss_trpzdl, elem, node, t, 0.5*dt, 2.0);                
+                euler_backward_non_advective_impl_part(Sol, mpv, diss_trpzdl, elem, node, t, 0.5*dt, 2.0, step, 1);                
             } else {
                 euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt);
                 if (swtch == 1){
                 putout(Sol, ud.file_name, "Sol", elem, node, 1, step, "after_full_ebnaexp");
                 // swtch = 0;
                 }
-                euler_backward_non_advective_impl_part(Sol, mpv, diss_trpzdl, elem, node, t, 0.5*dt, 2.0);
+                euler_backward_non_advective_impl_part(Sol, mpv, diss_trpzdl, elem, node, t, 0.5*dt, 2.0, step, 1);
             }
                 
             synchronize_variables(mpv, Sol, elem, node);

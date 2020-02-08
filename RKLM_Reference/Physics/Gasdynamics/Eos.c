@@ -560,8 +560,10 @@ void MassFrac_q(
     int stride_y = elem->icx;
     if (which_q == BUOY) {
         for( i = nstart; i < nende; i++) {
-            int j = (i - (i/stride_z)*stride_z) / stride_y;  
-            q[i] =  1.0/(U->rhoX[BUOY][i] / U->rho[i] + mpv->HydroState->S0[j]) - mpv->HydroState->Y0[j];
+            // int j = (i - (i/stride_z)*stride_z) / stride_y;  
+            // q[i] =  1.0/(U->rhoX[BUOY][i] / U->rho[i] + mpv->HydroState->S0[j]) - mpv->HydroState->Y0[j];
+            q[i] =  U->rhoX[which_q][i] / U->rho[i];
+            // q[i] = U->rhoX[which_q][i];
             // q[i] =  1.0/(U->rhoX[BUOY][i] / U->rho[i] + mpv->HydroState->S0[j]) - U->rhoY[i]/U->rho[i];
         }
     } else {

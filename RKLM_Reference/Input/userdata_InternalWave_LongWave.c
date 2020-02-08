@@ -146,14 +146,17 @@ void User_Data_init(User_Data* ud) {
     /* time discretization */
     ud->time_integrator       = SI_MIDPT;  /* this code version has only one option */
     ud->advec_time_integrator = STRANG; /* HEUN; EXPL_MIDPT; NO_ADVECTION;  best tested: STRANG; */
-    ud->CFL                   = 0.45; /* 0.45; 0.9; 0.8; */
+    ud->CFL                   = 0.90; /* 0.45; 0.9; 0.8; */
     /* large time step test variant  (N*dt = 20.0, or  dt = 2000 s in the planetary IGW test) */
     /*
      ud->dtfixed0              = 0.1123;
      ud->dtfixed               = 0.1123;     
      */
-    ud->dtfixed0              = 5.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
-    ud->dtfixed               = 5.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    // ud->dtfixed0              = 5.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    // ud->dtfixed               = 5.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+
+    ud->dtfixed0              = 10.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
+    ud->dtfixed               = 10.0*(12.5/15.0)*0.5*scalefactor*30.0 / ud->t_ref;
 
      
     /* short time step test variant  (N*dt = 1.0, or  dt = 100 s in the planetary IGW test) 
@@ -218,7 +221,7 @@ void User_Data_init(User_Data* ud) {
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
 
     {
-        char *OutputBaseFolder      = "/srv/public/ray/RKLM_Reference/Output/";
+        char *OutputBaseFolder      = "/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_internal_long_wave/";
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
         if (ud->is_compressible == 0) {

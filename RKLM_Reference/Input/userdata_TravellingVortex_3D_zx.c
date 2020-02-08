@@ -112,8 +112,8 @@ void User_Data_init(User_Data* ud) {
     ud->xmax =   0.5;  
     ud->ymin = - 0.5;
     ud->ymax =   0.5; 
-    ud->zmin = - 1.0;
-    ud->zmax =   1.0;
+    ud->zmin = - 0.5;
+    ud->zmax =   0.5;
 
 	/* boundary/initial conditions */
 	ud->wind_speed        =  1.0;              /* velocity in [u_ref] */
@@ -146,9 +146,9 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
 	/* Grid and space discretization */
-	ud->inx =  48+1; /*  */
-	ud->iny =   3+1; /*  */
-	ud->inz =  96+1;
+	ud->inx =  64+1; /*  */
+	ud->iny =  5+1; /*  */
+	ud->inz =  64+1;
 
     /* explicit predictor step */
 	/* Recovery */
@@ -217,10 +217,10 @@ void User_Data_init(User_Data* ud) {
 #ifdef TOMMASO
         char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
 #else
-        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_travelling_vortex_3d/";
 #endif
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
-        char *OutputFolderNameComp  = "low_Mach_gravity_comp";
+        char *OutputFolderNameComp  = "low_Mach_gravity_truth";
         if (ud->is_compressible == 0) {
             sprintf(ud->file_name, "%s%s", OutputBaseFolder, OutputFolderNamePsinc);
         } else {
@@ -240,6 +240,7 @@ void Sol_initial(ConsVars* Sol,
 	
 	extern Thermodynamic th;
 	extern User_Data ud;
+    extern ConsVars* flux[3];
     extern double* diss_midpnt;
     
 	const double u0    = 1.0*ud.wind_speed;
@@ -414,6 +415,7 @@ void Sol_initial(ConsVars* Sol,
     
     set_wall_rhoYflux(bdry, Sol, mpv, elem);
     Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS);
+    set_ghostnodes_p2(mpv->p2_nodes, node, 2); 
     
     ConsVars_set(Sol0, Sol, elem->nc);
     
@@ -431,31 +433,34 @@ void Sol_initial(ConsVars* Sol,
         for (int nn=0; nn<node->nc; nn++) {
             p2aux[nn] = mpv->p2_nodes[nn];
         }
+        
+        /**/
         for (int nc=0; nc<elem->nc; nc++) {
             Sol->rhou[nc] -= u0*Sol->rho[nc];
             Sol->rhov[nc] -= v0*Sol->rho[nc];
             Sol->rhow[nc] -= w0*Sol->rho[nc];
         }
+         
         
         //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
-        euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, (const ConsVars*)Sol0, elem, node, 0.0, ud.dtfixed, 1.0);
+        euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, elem, node, 0.0, ud.dtfixed, 1.0, 0, 1);
         for (int nn=0; nn<node->nc; nn++) {
             mpv->p2_nodes[nn] = p2aux[nn];
             mpv->dp2_nodes[nn] = 0.0;
         }
         free(p2aux);
         
+        /**/
         for (int nc=0; nc<elem->nc; nc++) {
             Sol->rhou[nc] += u0*Sol->rho[nc];
             Sol->rhov[nc] += v0*Sol->rho[nc];
             Sol->rhow[nc] += w0*Sol->rho[nc];
         }
-        
+         
+                
         ud.is_compressible = is_compressible;
         ud.compressibility = compressibility;
     }
-    
-
 }
 
 /* ================================================================================== */

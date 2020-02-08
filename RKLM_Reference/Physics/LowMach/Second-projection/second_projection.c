@@ -384,7 +384,7 @@ double residual(double *rhs,
 #else /* NONLINEAR_EOS_ITERATION */
 
 /* ========================================================================== */
-
+int swtch = 1;
 void euler_backward_non_advective_impl_part(ConsVars* Sol,
                                             MPV* mpv,
                                             double *diss,
@@ -392,7 +392,9 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
                                             const NodeSpaceDiscr* node,
                                             const double t,
                                             const double dt, 
-                                            const double alpha_diff) {
+                                            const double alpha_diff,
+                                            int step,
+                                            int tag) {
     
     /* as of August 31, 2018, this routine is to be interpreted
      as carrying out an implicit Euler step for the linearized 
@@ -413,8 +415,16 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     double* rhs      = mpv->rhs;
     /* double* p2       = mpv->dp2_nodes; */
     double* p2       = (double*)malloc(nc*sizeof(double));
-    
+    double* p2_tmp   = (double*)malloc(nc*sizeof(double));
     double rhs_max;
+
+    char label[40];
+    if(tag == 0){
+        sprintf(label,"after_ebnaimp");
+    }
+    if(tag == 1){
+        sprintf(label,"after_full_step");
+    }
     
     int x_periodic, y_periodic, z_periodic;
     int ii;
@@ -449,6 +459,47 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     
     operator_coefficients_nodes(hplus, hcenter, elem, node, Sol, mpv, dt);
     
+
+    char fn[240], fieldname[180];
+    
+    // assert(0);
+    if (swtch == 1){
+        FILE *hcenterfile = NULL;
+        
+        sprintf(fn, "%s/hcenter/hcenter_%.3d_%s.hdf", ud.file_name, step, label);
+            
+        sprintf(fieldname, "hcenter");    
+        WriteHDF(hcenterfile, node->icx, node->icy, node->icz, node->ndim, hcenter, fn, fieldname);
+
+        FILE *p2_initial = NULL;
+        
+        sprintf(fn, "%s/p2_initial/p2_initial_%.3d_%s.hdf", ud.file_name, step, label);
+            
+        sprintf(fieldname, "p2_initial");    
+        WriteHDF(p2_initial, node->icx, node->icy, node->icz, node->ndim, p2, fn, fieldname);
+
+        FILE *wplusxfile = NULL;
+
+        sprintf(fn, "%s/wplusx/wplusx_%.3d_%s.hdf", ud.file_name, step, label);
+
+        sprintf(fieldname, "wplusx");    
+        WriteHDF(wplusxfile, elem->icx, elem->icy, elem->icz, node->ndim, hplus[0], fn, fieldname);
+
+        FILE *wplusyfile = NULL;
+
+        sprintf(fn, "%s/wplusy/wplusy_%.3d_%s.hdf", ud.file_name, step, label);
+
+        sprintf(fieldname, "wplusy");    
+        WriteHDF(wplusyfile, elem->icx, elem->icy, elem->icz, node->ndim, hplus[1], fn, fieldname);
+
+        FILE *wpluszfile = NULL;
+
+        sprintf(fn, "%s/wplusz/wplusz_%.3d_%s.hdf", ud.file_name, step, label);
+
+        sprintf(fieldname, "wplusz");    
+        WriteHDF(wplusyfile, elem->icx, elem->icy, elem->icz, node->ndim, hplus[2], fn, fieldname);
+    }
+
 #ifdef PRESSURE_INCREMENTS_IN_ELLIPTIC_SOLVE
     correction_nodes(Sol, elem, node, (const double**)hplus, mpv->p2_nodes, dt, 0, FULL_FIELD);
     Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS); 
@@ -477,6 +528,13 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
 #ifndef MINIMIZE_STD_OUT
     printf("\nrhsmax = %e\n", rhs_max);
 #endif
+
+    FILE *rhsfile = NULL;
+
+    sprintf(fn, "%s/rhs/rhs_%.3d_%s.hdf", ud.file_name, step, label);
+
+    sprintf(fieldname, "rhs");    
+    WriteHDF(rhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
     
 #if !defined PRESSURE_INCREMENTS_IN_ELLIPTIC_SOLVE
     if (ud.is_compressible) {
@@ -495,8 +553,39 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     }
 
 #endif
+
+    #if OUTPUT_RHS_NODES
+        // memset(rhs, 0.0, node->nc*sizeof(double));
+        // rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
+        /* catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
+        */
+        FILE *prhsfile = NULL;
+        
+        if (step >= first_output_step) {
+            sprintf(fn, "%s/rhs_nodes/rhs_nodes_%.3d_%s.hdf", ud.file_name, step, label);
+
+            sprintf(fieldname, "rhs_nodes");
+            if (swtch == 1){
+            WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
+            // rhs_output_count++;
+            }
+            // rhs_output_count++;
+        }
+    #endif
     
     variable_coefficient_poisson_nodes(p2, (const double **)hplus, hcenter, rhs, elem, node, x_periodic, y_periodic, z_periodic, dt);
+
+    FILE *tmp_file = NULL;
+    if (swtch == 1){
+
+        sprintf(fn, "%s/p2_full/p2_full_%.3d_%s.hdf", ud.file_name, step, label);
+        for(ii=0; ii<nc; ii++) {
+            // p2_tmp[ii] = p2[ii] + mpv->p2_nodes[ii];
+            p2_tmp[ii] = p2[ii];
+        }
+        sprintf(fieldname, "p2_full");
+        WriteHDF(tmp_file, node->icx, node->icy, node->icz, elem->ndim, p2_tmp, fn, fieldname);
+    }
     
     correction_nodes(Sol, elem, node, (const double**)hplus, p2, dt, 1, FULL_FIELD);
     
@@ -516,26 +605,6 @@ void euler_backward_non_advective_impl_part(ConsVars* Sol,
     
         
     Set_Explicit_Boundary_Data(Sol, elem, OUTPUT_SUBSTEPS); 
-    
-#if OUTPUT_RHS_NODES
-    memset(rhs, 0.0, node->nc*sizeof(double));
-    rhs_max = divergence_nodes(rhs, elem, node, (const ConsVars*)Sol, mpv, bdry);
-    /* catch_periodic_directions(rhs, node, elem, x_periodic, y_periodic, z_periodic);
-     */
-    
-    if (step >= first_output_step) {
-        if (rhs_output_count < 10) {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_00%d.hdf", ud.file_name, rhs_output_count);
-        } else if(rhs_output_count < 100) {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_0%d.hdf", ud.file_name, rhs_output_count);
-        } else {
-            sprintf(fn, "%s/rhs_nodes/rhs_nodes_%d.hdf", ud.file_name, rhs_output_count);
-        }
-        sprintf(fieldname, "rhs_nodes");    
-        WriteHDF(prhsfile, node->icx, node->icy, node->icz, node->ndim, rhs, fn, fieldname);
-        rhs_output_count++;
-    }
-#endif
     
     free(p2);
     
@@ -1498,7 +1567,7 @@ void euler_backward_non_advective_expl_part(ConsVars* Sol,
 #ifdef FULL_VARIABLES
                 double dbuoy = -Sol->rhoY[n]*(Sol->rhoX[BUOY][n]/Sol->rho[n] - mpv->HydroState->S0[j]);   
 #else
-                double dbuoy = -Sol->rhoY[n]*Sol->rhoX[BUOY][n]/Sol->rho[n];    
+                double dbuoy = -Sol->rhoY[n]*Sol->rhoX[BUOY][n]/Sol->rho[n];
 #endif
                 double rhov  = (nonhydro * Sol->rhov[n] + dt * (g/Msq) * dbuoy) / (nonhydro + Nsqsc);
                 
@@ -1590,7 +1659,7 @@ void euler_forward_non_advective(ConsVars* Sol,
             const double dx = node->dx;
                         
             for (int i=igx; i<icx-igx+1; i++) {
-                int nc = i;
+            int nc = i;
                 int nn0 = i;
                 int nn1 = i+1;
                 

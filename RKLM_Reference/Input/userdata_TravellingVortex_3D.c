@@ -81,7 +81,7 @@ void User_Data_init(User_Data* ud) {
     
     /* Low Mach */
     ud->is_nonhydrostatic = 1;
-    ud->is_compressible   = 1;
+    ud->is_compressible   = 0;
     ud->acoustic_timestep =  0; /* 0;  1; */
     ud->Msq =  u_ref*u_ref / (R_gas*T_ref); 
     
@@ -146,9 +146,9 @@ void User_Data_init(User_Data* ud) {
     set_time_integrator_parameters(ud);
     
     /* Grid and space discretization */
-    ud->inx = 48+1; /*   */
-    ud->iny = 48+1; /*   */
-    ud->inz = 10+1;
+    ud->inx = 64+1; /*   */
+    ud->iny = 64+1; /*   */
+    ud->inz = 1+1;
 
     /* explicit predictor step */
     /* Recovery */
@@ -203,12 +203,13 @@ void User_Data_init(User_Data* ud) {
      ud->tout[6] = -1.0;
      */
     
-    ud->stepmax = 20000;
+    // ud->stepmax = 20000;
+    ud->stepmax = 41;
 
     ud->write_stdout = ON;
     ud->write_stdout_period = 1;
     ud->write_file = ON;
-    ud->write_file_period = 20;
+    ud->write_file_period = 1;
     ud->file_format = HDF;
 
     ud->n_time_series = 500; /* n_t_s > 0 => store_time_series_entry() called each timestep */
@@ -217,10 +218,11 @@ void User_Data_init(User_Data* ud) {
 #ifdef TOMMASO
         char *OutputBaseFolder      = "/home/tommaso/work/repos/RKLM_Reference/";
 #else
-        char *OutputBaseFolder      = "/Users/rupert/Documents/Computation/RKLM_Reference/";
+        char *OutputBaseFolder      = "/home/ray/git-projects/RKLM_Reference/RKLM_Reference/output_travelling_vortex_3d/";
 #endif
         char *OutputFolderNamePsinc = "low_Mach_gravity_psinc";
         char *OutputFolderNameComp  = "low_Mach_gravity_comp";
+        // char *OutputFolderNameComp  = "low_Mach_gravity_truth";
         if (ud->is_compressible == 0) {
             sprintf(ud->file_name, "%s%s", OutputBaseFolder, OutputFolderNamePsinc);
         } else {
@@ -299,6 +301,8 @@ void Sol_initial(ConsVars* Sol,
     coe[2]  =     9.0 /  2.0;
     coe[3]  = - 184.0 / 15.0;
     coe[4]  =   609.0 / 32.0;
+    coe[4]  =   609.0 / 32.0;
+    coe[4]  =   609.0 / 32.0;
     coe[5]  = - 222.0 / 17.0;
     coe[6]  = -  38.0 /  9.0; 
     coe[7]  =    54.0 / 19.0;
@@ -369,7 +373,7 @@ void Sol_initial(ConsVars* Sol,
                         theta   = stratification(yy);
                         rho     =  (r < R0 ? (rho0 + del_rho*pow( 1-(r/R0)*(r/R0) , 6)) : rho0);
                         T       = T_from_p_rho(p_hydro,rho);
-                        
+                        \
                         dp2c = 0.0;
                         if ( r/R0 < 1.0 ) {
                             for (int ip = 0; ip < 25; ip++)
@@ -456,6 +460,38 @@ void Sol_initial(ConsVars* Sol,
      This can mean vanishing divergence in a zero-Mach flow or the 
      pseudo-incompressible divergence constraint in an atmospheric flow setting
      */ 
+
+    for(k = igz; k < icz - igz; k++) {
+        l = k * icx * icy;
+        
+        for(j = igy; j < icy - igy; j++) {
+            m = l + j * icx;
+            
+            for(i = 0; i < icx; i++) {
+                n = m + i;
+
+                Sol->rhoY[n] = 1.0;
+            }
+        }
+    }
+
+
+    for(k = igzn; k < iczn - igzn; k++) {
+        l = k * icxn * icyn;
+        
+        for(j = igyn; j < icyn - igyn; j++) {
+            m = l + j * icxn;
+            
+            for(i = igxn; i < icxn - igxn; i++) {
+                n = m + i; 
+
+                mpv->p2_nodes[n] = 0.0;
+            }
+        }
+    }
+
+
+
     if (ud.initial_projection == CORRECT) {
         int is_compressible    = ud.is_compressible;
         double compressibility = ud.compressibility;
@@ -471,7 +507,7 @@ void Sol_initial(ConsVars* Sol,
         }
         
         //euler_backward_non_advective_expl_part(Sol, mpv, elem, ud.dtfixed);
-        euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, elem, node, 0.0, ud.dtfixed, 1.0);
+        euler_backward_non_advective_impl_part(Sol, mpv, diss_midpnt, elem, node, 0.0, ud.dtfixed, 1.0, 0, 1);
         for (int nn=0; nn<node->nc; nn++) {
             mpv->p2_nodes[nn] = p2aux[nn];
             mpv->dp2_nodes[nn] = 0.0;
@@ -491,8 +527,7 @@ void Sol_initial(ConsVars* Sol,
 
 /* ================================================================================== */
 
-double stratification(
-                      double y) {
+double stratification(double y) {
     
     extern User_Data ud;
     
