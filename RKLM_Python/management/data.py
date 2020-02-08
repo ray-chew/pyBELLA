@@ -203,10 +203,12 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
             ndim = elem.ndim
             # p2 = 0.5*(mpv.p2_nodes0 - mpv.p2_nodes0.mean()) + 0.5*(mpv.p2_nodes - mpv.p2_nodes.mean())
             if c1:
-                
+                pn = mpv.p2_nodes
+                ps = mpv.p2_nodes0
                 p2 = 0.5*(mpv.p2_nodes0 + mpv.p2_nodes)
-            # p2 = mpv.p2_nodes
-                dp2n_psinc = p2 #- p2.mean()
+                # p2 = 0.5 * (mpv.p2_nodes - mpv.p2_nodes0
+                p2 = 0.5*((pn-pn.mean() + ps-ps.mean()))
+                dp2n_psinc = p2 - p2.mean()
             else:
                 dp2n_psinc = mpv.p2_nodes0 #- mpv.p2_nodes0
             # dp2n_psinc = np.copy(mpv.p2_nodes)
@@ -252,25 +254,27 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
                 # Yn[i1] = signal.fftconvolve(Y,kernel,mode='valid') / kernel.sum()
                 # boundary.set_ghostnodes_p2(Yn,node,ud)
                 
+                
                 Sol = deepcopy(Sol0)
 
                 # writer.populate(str(label)+'_after_full_step','Yn',Yn)
                 rho_psinc = np.copy(Sol.rho)
+                rhoY_psinc = np.copy(Sol.rhoY)
 
                 Sol.rhoY[...] = (Sol.rhoY**th.gm1 + fac * dp2c_psinc)**(th.gm1inv)
-                Sol.rho[...] = Sol.rhoY / Y
+                # Sol.rho[...] = Sol.rhoY / Y
 
-                rho_fac = Sol.rho / rho_psinc
-                Sol.rhou[...] *= rho_fac
-                Sol.rhov[...] *= rho_fac
-                Sol.rhow[...] *= rho_fac
-                Sol.rhoX[...] *= rho_fac
-                boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
-
-            # rhoYncomp = np.zeros_like(dp2n_psinc)
-            # rhoYncomp[i1] = signal.fftconvolve(Sol.rhoY,kernel,mode='valid') / kernel.sum()
-            # boundary.set_ghostnodes_p2(rhoYncomp,node,ud)
-            # # mpv.p2_nodes[...] = (rhoYncomp**th.gm1 - 1.0)/fac + Yn
+                # rho_fac = Sol.rho / rho_psinc
+                # Sol.rhou[...] *= rho_fac
+                # Sol.rhov[...] *= rho_fac
+                # Sol.rhow[...] *= rho_fac
+                # Sol.rhoX[...] *= rho_fac
+                # boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+            pnm = ps - ps.mean()
+            rhoYncomp = np.zeros_like(dp2n_psinc)
+            rhoYncomp[1:-1,1:-1] = signal.fftconvolve(Sol.rhoY,kernel,mode='valid') / kernel.sum()
+            boundary.set_ghostnodes_p2(rhoYncomp,node,ud)
+            mpv.p2_nodes[...] = (rhoYncomp**th.gm1 - 1.0 + dp2n_psinc)
             # writer.populate(str(label)+'_after_full_step','rhoYcomp',rhoYncomp)
         # mpv.p2_nodes0 = mpv.p2_nodes# - mpv.p2_nodes.mean()
 
@@ -327,8 +331,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
 
         print("step = %i, compressibility = %.4f, is_compressible = %i" %(window_step, ud.compressibility, ud.is_compressible))
 
-        if step == 41:
-            assert(0)
+        # if step == 41:
+        #     assert(0)
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_half_step')
 
