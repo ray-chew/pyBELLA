@@ -2,9 +2,7 @@ import numpy as np
 
 from management.variable import States, Characters
 from management.enumerator import LimiterType
-from physics.gas_dynamics.eos import rhoe
-
-from management.debug import find_nearest
+from .eos import rhoe
 
 def recovery(Sol, flux, lmbda, ud, th, elem):
     gamm = th.gamm
