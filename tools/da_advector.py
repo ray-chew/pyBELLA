@@ -55,7 +55,7 @@ mpv = m.MPV(elem, node, ud)
 N = 2                   # no. of ensemble members.
 step = 0
 t = 0.0
-dt = 0.001              # temporal step-size
+dt = 0.01              # temporal step-size
 
 label_type = 'STEP'     # output time-series in terms time or step?
 #
@@ -219,6 +219,7 @@ for tout in ud.tout:
     # end data assimilation step
     #
     ######################################
+    ens.set_members(results)
 
     print("Starting output...")
     for n in range(N):
