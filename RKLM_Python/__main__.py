@@ -19,6 +19,7 @@ from data_assimilation.utils import ensemble, sliding_window_view, ensemble_infl
 from data_assimilation.letkf import da_interface, bin_func
 from data_assimilation.letkf import analysis as letkf_analysis
 from data_assimilation import etpf
+from data_assimilation import blending
 from scipy import sparse
 
 # input file
@@ -61,6 +62,8 @@ if elem.ndim > 2:
 th = ThemodynamicInit(ud)
 
 mpv = MPV(elem, node, ud)
+
+bld = blending.Blend(ud)
 
 # dt_factor = 0.5 if ud.initial_impl_Euler == True else 1.0
 
