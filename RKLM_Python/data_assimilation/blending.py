@@ -32,12 +32,12 @@ class Blend(object):
 
         ndim =  self.pn.ndim
 
-        if self.cb and not self.bb:
-            dp2n = p2n0
-            assert(0)
-        else:
-            # dp2n = 0.5*(self.ps + self.pn)
-            dp2n = p2n0
+        # if self.cb and not self.bb:
+        #     dp2n = p2n0
+        # else:
+        #     dp2n = p2n0
+        dp2n = 0.5*(self.ps + self.pn)
+            
 
         self.kernel = np.ones([2]*ndim)
         dp2c = signal.fftconvolve(dp2n,self.kernel, mode='valid') / self.kernel.sum()
