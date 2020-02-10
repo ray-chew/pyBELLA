@@ -214,12 +214,18 @@ for tout in ud.tout:
 
         else:
             assert 0, "DA type not implemented: use 'rloc' or 'batch_obs'."
+
+    ens.set_members(results)
     #
     # end data assimilation step
     #
     ######################################
-    ens.set_members(results)
 
+
+    ######################################
+    #
+    # start writing anlysis output
+    #
     print("Starting output...")
     for n in range(N):
         Sol = ens.members(ens)[n][0]
@@ -231,6 +237,10 @@ for tout in ud.tout:
         else:
             label = ('%s%.2f' %(ens_str,tout))
         writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step') 
+    #
+    # end writing analysis output
+    #
+    ######################################
 
     step += 1
     t = tout
