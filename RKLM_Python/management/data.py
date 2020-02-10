@@ -62,7 +62,7 @@ def data_init(ud):
 # def time_update_wrapper(t,tout,ud,elem,node,step,th,writer=None,debug=False):
 #     return lambda mem: time_update(mem[0],mem[1],mem[2],t,tout,ud,elem,node,step,th,writer=writer,debug=debug)
 
-def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False):
+def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld,writer=None,debug=False):
     """
     For more details, refer to the write-up :ref:`time-stepping`.
 
@@ -90,6 +90,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
         Current step.
     th : :class:`physics.gas_dynamics.thermodynamic.ThemodynamicInit`
         Thermodynamic variables of the system
+    bld : :class:`data_assimilation.blending.Blend()`
+        Blending class used to initalise interface blending methods.
     writer : :class:`management.io.io`, optional
         `default == None`. If given, output after each time-step will be written in the hdf5 format.  
     debug : boolean, optional
@@ -107,7 +109,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
     list
         A list of `[Sol,flux,mpv]` data containers at time `tout`.
     """
-    window_step = 0
+    window_step, cnt_p2 = 0, 0
 
     while ((t < tout) and (step < ud.stepmax)):
         boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
@@ -115,21 +117,35 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
         # print("half-time prediction of advective flux")
         # print("---------------------------------------")
         # assert(0)
-        ud.is_compressible = is_compressible(ud,window_step)
-        ud.is_nonhydrostatic = is_nonhydrostatic(ud,window_step)
-        ud.nonhydrostasy = nonhydrostasy(ud,t,window_step)
-        ud.compressibility = compressibility(ud,t,window_step)
-        ud.acoustic_order = acoustic_order(ud,t,window_step)
+        ud.is_compressible = is_compressible(ud,step)
+        ud.is_nonhydrostatic = is_nonhydrostatic(ud,step)
+        ud.nonhydrostasy = nonhydrostasy(ud,t,step)
+        ud.compressibility = compressibility(ud,t,step)
+        ud.acoustic_order = acoustic_order(ud,t, window_step)
 
         if ud.continuous_blending == True:
+            print("step = %i, window_step = %i" %(step,window_step))
             print("is_compressible = %i, is_nonhydrostatic = %i" %(ud.is_compressible, ud.is_nonhydrostatic))
-            print("nonhydrostasy = %.3f, compressibility = %.3f" %(ud.nonhydrostasy, ud.compressibility))
+            print("compressibility = %.3f, nonhydrostasy = %.3f" %(ud.compressibility,ud.nonhydrostasy))
+            print("-------")
 
         dt, cfl, cfl_ac = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
 
         label = '%.3d' %step
         
         if step == 0 and writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
+
+        c_init, c_trans = bld.criterion_init(window_step), bld.criterion_trans(window_step)
+
+        if c_init:
+            print("Blending... step = %i" %window_step)
+            bld.convert_p2n(mpv.p2_nodes, mpv.p2_nodes0)
+            bld.update_Sol(Sol,th,ud)
+            # bld.update_p2n(Sol,mpv,node,th,ud)
+
+            # assert(0)
+        # elif c_trans:
+            # None
 
         Sol0 = deepcopy(Sol)
 
@@ -180,29 +196,10 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
         if debug == True: writer.populate(str(label)+'_after_half_step','rhoYu',flux[0].rhoY.T)
         if debug == True: writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY.T)
 
-        offset = 0
+        mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
+        Sol = deepcopy(Sol0)
 
-        c1 = step == (ud.no_of_pi_initial) and ud.continuous_blending == True and ud.no_of_pi_initial > 0
-
-        c2 = step <= (ud.no_of_pi_transition) and ud.continuous_blending == True and ud.no_of_pi_transition > 0
-
-        if c1 or c2:
-            print("WINDOW STEP === %i, STEP == %i" %(window_step,step))
-            print("OFFSET == %i" %offset)
-            
-            if c1:
-                # mpv.p2_nodes[...] = dp2n_psinc
-                # Y = Sol.rhoY / Sol.rho
-                
-                Sol = deepcopy(Sol0)
-        else:
-            mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
-            Sol = deepcopy(Sol0)
-
-        print("step = %i, compressibility = %.4f, is_compressible = %i" %(window_step, ud.compressibility, ud.is_compressible))
-
-        # if step == 41:
-        #     assert(0)
+        # print("step = %i, compressibility = %.4f, is_compressible = %i" %(window_step, ud.compressibility, ud.is_compressible))
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_half_step')
 
@@ -251,6 +248,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,writer=None,debug=False
         t += dt
         step += 1
         window_step += 1
+
+        # print(cnt_p2)
         # print(window_step)
         # print(t, step)
         # if step == 10:
