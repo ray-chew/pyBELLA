@@ -62,7 +62,7 @@ def data_init(ud):
 # def time_update_wrapper(t,tout,ud,elem,node,step,th,writer=None,debug=False):
 #     return lambda mem: time_update(mem[0],mem[1],mem[2],t,tout,ud,elem,node,step,th,writer=writer,debug=debug)
 
-def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld,writer=None,debug=False):
+def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,debug=False):
     """
     For more details, refer to the write-up :ref:`time-stepping`.
 
@@ -116,12 +116,17 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld,writer=None,debug=F
         # print("---------------------------------------")
         # print("half-time prediction of advective flux")
         # print("---------------------------------------")
-        # assert(0)
-        ud.is_compressible = is_compressible(ud,step)
-        ud.is_nonhydrostatic = is_nonhydrostatic(ud,step)
-        ud.nonhydrostasy = nonhydrostasy(ud,t,step)
-        ud.compressibility = compressibility(ud,t,step)
-        ud.acoustic_order = acoustic_order(ud,t, window_step)
+
+        label = '%.3d' %step
+        dt, cfl, cfl_ac = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
+
+        if bld != None:
+            c_init, c_trans = bld.criterion_init(window_step), bld.criterion_trans(window_step)
+        else:
+            c_init, c_trans = False, False
+        
+        # print(step, writer)
+        if writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_blending')
 
         if ud.continuous_blending == True:
             print("step = %i, window_step = %i" %(step,window_step))
@@ -129,23 +134,35 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld,writer=None,debug=F
             print("compressibility = %.3f, nonhydrostasy = %.3f" %(ud.compressibility,ud.nonhydrostasy))
             print("-------")
 
-        dt, cfl, cfl_ac = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
+        if c_init:
+            Sol_freeze = deepcopy(Sol)
+            mpv_freeze = deepcopy(mpv)
+            ret = time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, step-1, th, bld=None, writer=None, debug=False)
 
-        label = '%.3d' %step
+            dp2n = (ret[2].p2_nodes + mpv_freeze.p2_nodes) * 0.5
+            Sol = Sol_freeze
+            mpv = mpv_freeze
+            # step -= 1
+            # window_step -= 1
+            # t -= dt
+            # print(step)
+            print("Blending... step = %i" %window_step)
+            writer.populate(str(label)+'_before_blending', 'dp2n', dp2n)
+            bld.convert_p2n(dp2n)
+            bld.update_Sol(Sol,elem,node,th,ud, mpv,label=label,writer=writer)
+            bld.update_p2n(Sol,mpv,node,th,ud)
+
+
+        ud.is_compressible = is_compressible(ud,step)
+        ud.is_nonhydrostatic = is_nonhydrostatic(ud,step)
+        ud.nonhydrostasy = nonhydrostasy(ud,t,step)
+        ud.compressibility = compressibility(ud,t,step)
+        ud.acoustic_order = acoustic_order(ud,t, window_step)
+
+        # if step == 41:
+        #     assert(0)
         
         if step == 0 and writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
-
-        c_init, c_trans = bld.criterion_init(window_step), bld.criterion_trans(window_step)
-
-        if c_init:
-            print("Blending... step = %i" %window_step)
-            bld.convert_p2n(mpv.p2_nodes, mpv.p2_nodes0)
-            bld.update_Sol(Sol,th,ud)
-            # bld.update_p2n(Sol,mpv,node,th,ud)
-
-            # assert(0)
-        # elif c_trans:
-            # None
 
         Sol0 = deepcopy(Sol)
 
@@ -197,6 +214,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld,writer=None,debug=F
         if debug == True: writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY.T)
 
         mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
+
         Sol = deepcopy(Sol0)
 
         # print("step = %i, compressibility = %.4f, is_compressible = %i" %(window_step, ud.compressibility, ud.is_compressible))

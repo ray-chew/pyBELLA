@@ -18,7 +18,7 @@ class Blend(object):
         self.fac = ud.Msq
     
     def criterion_init(self, step):
-        return step == self.psinc_init and self.cb and self.bb
+        return step == (self.psinc_init) and self.cb and self.bb
 
     def criterion_trans(self, step):
         return step <= self.psinc_trans and self.cb and not self.bb
@@ -26,46 +26,64 @@ class Blend(object):
     def interface(self):
         None
         
-    def convert_p2n(self, p2n, p2n0):
-        self.ps = p2n0 - p2n0.mean()
-        self.pn = p2n - p2n.mean()
-
-        ndim =  self.pn.ndim
-
-        # if self.cb and not self.bb:
-        #     dp2n = p2n0
-        # else:
-        #     dp2n = p2n0
-        dp2n = 0.5*(self.ps + self.pn)
-            
+    def convert_p2n(self, p2n):
+        ndim =  p2n.ndim
+        dp2n = p2n - p2n.mean()
 
         self.kernel = np.ones([2]*ndim)
         dp2c = signal.fftconvolve(dp2n,self.kernel, mode='valid') / self.kernel.sum()
-
-        self.pnc = signal.fftconvolve(self.pn,self.kernel, mode='valid') / self.kernel.sum()
-
-        self.psc = signal.fftconvolve(self.ps,self.kernel, mode='valid') / self.kernel.sum()
 
         self.dp2n = dp2n - dp2n.mean()
         self.dp2c = dp2c - dp2c.mean()
 
         return dp2c
 
-    def update_Sol(self, Sol, th, ud):
+    def update_Sol(self, Sol, elem, node, th, ud, mpv, label=None,writer=None):
         rho = np.copy(Sol.rho)
         rhoY = np.copy(Sol.rhoY)
 
         Y = rhoY / rho
 
-        Sol.rhoY = (Sol.rhoY**th.gm1 + self.fac * self.dp2c)**(th.gm1inv)
+        rhoYc = (Sol.rhoY**th.gm1 + self.fac * self.dp2c)**(th.gm1inv)
 
-        Sol.rho[...] = Sol.rhoY / Y
+        alpha = rhoYc / Sol.rhoY
 
-        rho_fac = Sol.rho / rho
-        Sol.rhou[...] *= rho_fac
-        Sol.rhov[...] *= rho_fac
-        Sol.rhow[...] *= rho_fac
-        Sol.rhoX[...] *= rho_fac
+
+        ### keep theta, convert rho
+        # diff = alpha - Sol.rhoY
+        # # locs = np.where(diff < 0.0005)
+
+        # Sol.rho[...] = rho*alpha
+        # Sol.rhoY[...] = (Sol.rho * Y)
+        ### shift rhoY
+        # Sol.rhoY[locs] -= diff[locs]
+
+        # rho_fac = Sol.rho / rho
+        # Sol.rhou[...] *= rho_fac
+        # Sol.rhov[...] *= rho_fac
+        # Sol.rhow[...] *= rho_fac
+        # Sol.rhoX[...] *= rho_fac
+
+
+        ### keep rho, convert theta
+        # tol = 100.
+        # diffY = alpha - Sol.rhoY
+        # diffX = alpha - Sol.rhoX
+
+        # locsY = np.where(np.abs(diffY) < tol)
+        # locsX = np.where(np.abs(diffX) < tol)
+
+        Yc = Y * alpha
+        Sol.rhoY[...] = rho * Yc
+        Sol.rhoX[...] = rho / Yc
+        
+        ### shift rhoY and rhoX
+        # Sol.rhoY[locsY] -= diffY[locsY]
+        # Sol.rhoX[locsX] -= diffX[locsX]
+
+
+        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_blending')
+        # writer.populate(str(label)+'_before_blending', 'dp2n', self.dp2n)
 
     def update_p2n(self,Sol, mpv, node, th, ud):
         # rhoYncomp = np.zeros_like(self.dp2n)
@@ -74,12 +92,19 @@ class Blend(object):
         # mpv.p2_nodes[...] = (rhoYncomp**th.gm1) - 1.0 + self.dp2n
         # mpv.p2_nodes -= mpv.p2_nodes.mean()
 
-        # pn = self.pn - self.pn.mean()
-        # ps = self.ps - self.ps.mean()
-        mpv.p2_nodes[...] = self.dp2n
+        mpv.p2_nodes = self.dp2n
 
-    def walk_half_step(self):
+        ### shift p2n
+        # tol = 100.
+        # diff = mpv.p2_nodes - 0.0
+        # locs = np.where(np.abs(diff) < tol)
+        # mpv.p2_nodes[locs] -= diff[locs]
+
+
+
+    def walk_half_step(self, Sol, flux, mpv, elem, node, dt, ud):
         None
+        # recompute_advective_fluxes(flux, Sol)
 
         # euler_forward_non_advective(Sol, mpv, elem, node, 0.5*dt, ud, th)
 
