@@ -22,9 +22,6 @@ class Blend(object):
 
     def criterion_trans(self, step):
         return step <= self.psinc_trans and self.cb and not self.bb
-
-    def interface(self):
-        None
         
     def convert_p2n(self, p2n):
         ndim =  p2n.ndim
@@ -39,6 +36,9 @@ class Blend(object):
         return dp2c
 
     def update_Sol(self, Sol, elem, node, th, ud, mpv, label=None,writer=None):
+        # if writer != None: writer.populate(str(label)+'_before_blending', 'dp2n', self.dp2n)
+        # if writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_blending')
+
         rho = np.copy(Sol.rho)
         rhoY = np.copy(Sol.rhoY)
 
@@ -47,7 +47,6 @@ class Blend(object):
         rhoYc = (Sol.rhoY**th.gm1 + self.fac * self.dp2c)**(th.gm1inv)
 
         alpha = rhoYc / Sol.rhoY
-
 
         ### keep theta, convert rho
         # diff = alpha - Sol.rhoY
@@ -66,7 +65,7 @@ class Blend(object):
 
 
         ### keep rho, convert theta
-        # tol = 100.
+        # tol = .0002
         # diffY = alpha - Sol.rhoY
         # diffX = alpha - Sol.rhoX
 
@@ -81,9 +80,7 @@ class Blend(object):
         # Sol.rhoY[locsY] -= diffY[locsY]
         # Sol.rhoX[locsX] -= diffX[locsX]
 
-
-        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_blending')
-        # writer.populate(str(label)+'_before_blending', 'dp2n', self.dp2n)
+        # if writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_blending')
 
     def update_p2n(self,Sol, mpv, node, th, ud):
         # rhoYncomp = np.zeros_like(self.dp2n)
@@ -95,20 +92,7 @@ class Blend(object):
         mpv.p2_nodes = self.dp2n
 
         ### shift p2n
-        # tol = 100.
+        # tol = .001
         # diff = mpv.p2_nodes - 0.0
         # locs = np.where(np.abs(diff) < tol)
         # mpv.p2_nodes[locs] -= diff[locs]
-
-
-
-    def walk_half_step(self, Sol, flux, mpv, elem, node, dt, ud):
-        None
-        # recompute_advective_fluxes(flux, Sol)
-
-        # euler_forward_non_advective(Sol, mpv, elem, node, 0.5*dt, ud, th)
-
-        # advect(Sol, flux, dt, elem, step%2, ud, th, mpv)
-
-        # euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
-        # euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0, writer=None, label=str(label)+'_after_full_step')

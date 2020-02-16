@@ -125,9 +125,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
         else:
             c_init, c_trans = False, False
         
-        # print(step, writer)
-        if writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_blending')
-
         if ud.continuous_blending == True:
             print("step = %i, window_step = %i" %(step,window_step))
             print("is_compressible = %i, is_nonhydrostatic = %i" %(ud.is_compressible, ud.is_nonhydrostatic))
@@ -142,10 +139,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
             dp2n = (ret[2].p2_nodes + mpv_freeze.p2_nodes) * 0.5
             Sol = Sol_freeze
             mpv = mpv_freeze
-            # step -= 1
-            # window_step -= 1
-            # t -= dt
-            # print(step)
+
             print("Blending... step = %i" %window_step)
             writer.populate(str(label)+'_before_blending', 'dp2n', dp2n)
             bld.convert_p2n(dp2n)
@@ -159,8 +153,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
         ud.compressibility = compressibility(ud,t,step)
         ud.acoustic_order = acoustic_order(ud,t, window_step)
 
-        # if step == 41:
-        #     assert(0)
         
         if step == 0 and writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
