@@ -148,7 +148,7 @@ class UserData(object):
         self.max_iterations = 6000
 
         self.continuous_blending = False
-        self.no_of_pi_initial = 20
+        self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
@@ -161,7 +161,7 @@ class UserData(object):
         self.synchronize_weight = 0.0
 
         # self.tout = np.arange(0,11,1)/10.
-        self.tout = np.linspace(0,1.0,num=21)
+        # self.tout = np.linspace(0,1.0,num=21)
         # self.tout = np.linspace(0.0,10.0,101)
         # self.tout = np.linspace(0.0,10.0,101*2-1)
         # self.tout = [0.5]
@@ -171,7 +171,7 @@ class UserData(object):
         # self.tout[1] = -1.0
         # self.tout = np.arange(0.0,6.1,0.25)
         # self.tout = [1.0,2.0,3.0]
-        # self.tout = [1.0]
+        self.tout = [3.0]
 
         # self.tout = times.copy()
 
@@ -188,11 +188,11 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        aux = 'test'
-        # aux = 'nocorrection'
-        # aux = 'truth_corrected'
+        # aux = 'truth'
+        # aux = 'very_low_mach'
+        # aux = 'theta_fixed'
         # aux = 'even' if self.no_of_pi_initial % 2 == 0 else 'odd'
-        self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
+        # self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
