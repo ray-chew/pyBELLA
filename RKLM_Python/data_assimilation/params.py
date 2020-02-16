@@ -1,0 +1,81 @@
+import numpy as np
+import h5py
+
+class da_params(object):
+
+    def __init__(self,N,da_type='rloc',loc=0):
+        # number of ensemble members
+        self.N = 20
+        # self.state_attributes = ['rho', 'rhou', 'rhov','rhow','rhoY','rhoX']
+
+        self.da_times = [0.25,0.50,0.75,1.0]
+        self.obs_attributes = ['rho', 'rhou', 'rhov']
+
+        # which attributes to inflate in ensemble inflation?
+        self.attributes = ['rho', 'rhou', 'rhov']
+
+        self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_1.0_truthgen.h5'
+
+        # forward operator (projector from state space to observation space)
+        self.forward_operator = np.eye(N)
+
+        # localisation matrix
+        self.localisation_matrix = np.eye(N)
+        weights = [0.05719096,0.25464401,0.33333333,0.25464401,0.05719096,0.25464401,0.52859548,0.66666667,0.52859548,0.25464401,0.33333333,0.66666667,1.,0.66666667,0.33333333,0.25464401,0.52859548,0.66666667,0.52859548,0.25464401,0.05719096,0.25464401,0.33333333,0.25464401,0.05719096]
+        # weights = [0.01831564,0.082085,0.13533528,0.082085,0.01831564,0.082085,0.36787944,0.60653066,0.36787944,0.082085,0.13533528,0.60653066,1.,0.60653066,0.13533528,0.082085,0.36787944,0.60653066,0.36787944,0.082085,0.01831564,0.082085,0.13533528,0.082085,0.01831564]
+        weights3 = weights*3
+        self.localisation_matrix = np.diag(weights3)
+        self.localisation_matrix += np.diag(np.ones_like(weights3))
+        
+        # square of empirical RMSE of (48x48) travelling vortex from ref (256x256)
+        self.aprior_error_covar = 0.0001#0.5804227421558537
+        self.da_type = da_type
+
+        # ensemble inflation factor for LETKF
+        self.inflation_factor = 1.4
+
+        # rejuvenation factor for ETPF
+        self.rejuvenation_factor = 0.001
+
+        self.loc = loc
+
+    def load_obs(self,obs_path,loc=0):
+        if self.N > 1:
+            obs_file = h5py.File(obs_path, 'r')
+            obs_attributes = self.obs_attributes
+
+            loc = self.loc # where in the "solutions" container are they located? 0: Sol, 1: flux, 2: mpv
+
+            #### when were these observations taken?
+            times = self.da_times
+            # times = [1.0,2.0,3.0,4.0,5.0]
+
+            #### axis 0 stores time series
+            obs = np.empty(len(times), dtype=object)
+            t_cnt = 0
+            for t in times:
+                #### how were these dataset called?
+                label = '_ensemble_mem=0_%.2f_after_full_step' %t
+                #### axis 1 stores the attributes
+                obs[t_cnt] = {}
+                for attribute in obs_attributes:
+                    dict_attr = {
+                        attribute: obs_file[str(attribute)][str(attribute) + str(label)][:]
+                    }
+                    obs[t_cnt].update(dict_attr)
+                t_cnt += 1
+            obs = np.array(obs)
+            obs_file.close()
+        return obs
+
+    @staticmethod
+    def sampler_gaussian(var):
+        return lambda ic: np.random.normal(ic,var**0.5)
+
+    @staticmethod
+    def sampler_none():
+        return lambda ic: ic
+
+    @staticmethod
+    def sampler_perturbator(max_shift):
+        return lambda ic: np.roll(np.roll(ic, np.random.randint(-max_shift,max_shift), axis=1), np.random.randint(-max_shift,max_shift), axis=0)

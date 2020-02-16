@@ -1,0 +1,15 @@
+*pycache*
+*RKLM_Reference*
+*BI_half_step*
+*.vscode*
+*.ipynb_checkpoints*
+*.hdf
+*.h5
+*output*
+*.png*
+*dask-worker-space*
+*dask_parallel.ipynb*
+*RKLM_Python/docs/*
+*Untitled*
+*.out*
+*_old*
