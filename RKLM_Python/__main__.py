@@ -22,7 +22,7 @@ from data_assimilation import etpf
 from scipy import sparse
 
 # input file
-from inputs.baroclinic_instability_periodic import UserData, sol_init
+# from inputs.baroclinic_instability_periodic import UserData, sol_init
 from inputs.travelling_vortex_3D import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
@@ -181,7 +181,7 @@ if __name__ == '__main__':
             label = ('ensemble_mem=%i_%.2f' %(n,0.0))
         writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
-    client = Client(threads_per_worker=4, n_workers=1)
+    client = Client(threads_per_worker=1, n_workers=1)
     tic = time()
 
     # assert(0)
@@ -195,11 +195,8 @@ if __name__ == '__main__':
         # obs_current = obs[tout_cnt]
         print("Starting forecast...")
         for mem in ens.members(ens):
-            # s_ud = client.scatter(ud)
-            # time_update = time_update_wrapper(t, tout, ud, elem, node, step, th, writer=writer, debug=debug)
-            future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, writer, debug])
-            # future = client.submit(time_update, mem)
-            # time_update(mem[0], mem[1], mem[2], t, tout, ud, elem, node, step, th, writer, debug)
+            # future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, writer, debug])
+            future = time_update(mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, writer, debug)
 
             futures.append(future)
         results = client.gather(futures)
