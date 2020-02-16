@@ -115,15 +115,15 @@ class UserData(object):
         self.bdry_type_max = np.empty((3), dtype=object)
 
         self.bdry_type_min[0] = BdryType.PERIODIC
-        self.bdry_type_min[1] = BdryType.WALL
+        self.bdry_type_min[1] = BdryType.PERIODIC
         self.bdry_type_min[2] = BdryType.WALL
         self.bdry_type_max[0] = BdryType.PERIODIC
-        self.bdry_type_max[1] = BdryType.WALL
+        self.bdry_type_max[1] = BdryType.PERIODIC
         self.bdry_type_max[2] = BdryType.WALL
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.WALL
+        self.bdry_type[1] = BdryType.PERIODIC
         self.bdry_type[2] = BdryType.WALL
 
         self.absorber = False # 0 == WRONG == FALSE 
@@ -142,8 +142,8 @@ class UserData(object):
         # self.tips = TimeIntegratorParams()
         # SetTimeIntegratorParameters(self)
 
-        self.inx = 256+1
-        self.iny = 10+1
+        self.inx = 64+1
+        self.iny = 32+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
