@@ -134,9 +134,18 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
         if c_init:
             Sol_freeze = deepcopy(Sol)
             mpv_freeze = deepcopy(mpv)
-            ret = time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, step-1, th, bld=None, writer=None, debug=False)
 
-            dp2n = (ret[2].p2_nodes + mpv_freeze.p2_nodes) * 0.5
+            ret = time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, step-1, th, bld=None, writer=None, debug=False)
+            dp2n = (1.0 * ret[2].p2_nodes + 3.0 * mpv_freeze.p2_nodes) * 0.25
+
+            # dp2n = ret[2].p2_nodes
+            # ret = half_step(Sol, flux, mpv, t, t+0.5*dt, ud, elem, node, step-1, th)
+            # dp2n = ret.p2_nodes
+
+            # ret = time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, step-1, th, bld=None, writer=None, debug=False)
+            # dp2n = (1.0 * ret[2].p2_nodes + 1.0 * mpv_freeze.p2_nodes) * 0.5
+
+
             Sol = Sol_freeze
             mpv = mpv_freeze
 
@@ -145,7 +154,18 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
             bld.convert_p2n(dp2n)
             bld.update_Sol(Sol,elem,node,th,ud, mpv,label=label,writer=writer)
             bld.update_p2n(Sol,mpv,node,th,ud)
+        
+        # if step > 0 and bld != None:
+        #     Sol_freeze = deepcopy(Sol)
+        #     mpv_freeze = deepcopy(mpv)
+        #     step_tmp = np.copy(step)
+        #     ret = time_update(Sol,flux,mpv, t, t+0.5*dt, ud, elem, node, step-1, th, bld=None, writer=None, debug=False)
+        #     dp2n = (ret[2].p2_nodes + mpv_freeze.p2_nodes) * 0.5
+        #     # dp2n = ret[2].p2_nodes
 
+        #     Sol = Sol_freeze
+        #     mpv = mpv_freeze
+        #     step = step_tmp
 
         ud.is_compressible = is_compressible(ud,step)
         ud.is_nonhydrostatic = is_nonhydrostatic(ud,step)
@@ -153,7 +173,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
         ud.compressibility = compressibility(ud,t,step)
         ud.acoustic_order = acoustic_order(ud,t, window_step)
 
-        
         if step == 0 and writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
         Sol0 = deepcopy(Sol)
@@ -205,6 +224,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
         if debug == True: writer.populate(str(label)+'_after_half_step','rhoYu',flux[0].rhoY.T)
         if debug == True: writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY.T)
 
+        p2_half = np.copy(mpv.p2_nodes)
+
         mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
 
         Sol = deepcopy(Sol0)
@@ -250,14 +271,19 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
             if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
             euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0, writer=writer, label=str(label)+'_after_full_step')
 
+        # tmp = np.copy(mpv.p2_nodes)
+        # if step > 0 and bld != None:
+        # mpv.p2_nodes[...] = dp2n
+        # mpv.p2_nodes[...] = p2_half
         if writer != None:
             writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
-        print("###############################################################################################")
-        print("step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f" %(step, t, dt, cfl, cfl_ac))
-        print("###############################################################################################")
+            print("###############################################################################################")
+            print("step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f" %(step, t, dt, cfl, cfl_ac))
+            print("###############################################################################################")
         t += dt
         step += 1
         window_step += 1
+        # mpv.p2_nodes[...] = tmp
 
         # print(cnt_p2)
         # print(window_step)
@@ -266,3 +292,13 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
         #     assert(0)
 
     return [Sol,flux,mpv,step]
+
+def half_step(Sol,flux,mpv,t,tout,ud,elem,node,step,th):
+    dt, _, _ = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
+    recompute_advective_fluxes(flux, Sol)
+    advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv)
+
+    euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+    euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, label=None, writer=None)
+
+    return mpv
