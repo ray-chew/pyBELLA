@@ -74,7 +74,7 @@ bld = blending.Blend(ud)
 
 ##########################################################
 # Data Assimilation part
-N = 1
+N = 10
 da_parameters = da_params(N,)
 da_type = da_parameters.da_type
 aprior_error_covar = da_parameters.aprior_error_covar
@@ -116,7 +116,7 @@ ens = ensemble(sol_ens)
 # where are my observations?
 if N > 1:
     # obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_256_256_10.0.h5'
-    obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_6.0_generated.h5'
+    obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_6.0_truthgen.h5'
     obs_file = h5py.File(obs_path, 'r')
     #### which attributes do I want to observe?
     # obs_attributes = ['rho', 'rhou', 'rhov']
@@ -137,8 +137,9 @@ if N > 1:
     # steps = np.arange(0,321,8)
     # times = steps / 32
     # times = times[1:]
-    times = np.arange(0.0,6.1,0.25)
-    times = times[1:]
+    # times = np.arange(0.0,6.1,0.25)
+    # times = times[1:]
+    times = []
     # times = [1.0,2.0,3.0,4.0,5.0]
 
     #### axis 0 stores time series
@@ -184,7 +185,7 @@ if __name__ == '__main__':
             label = ('ensemble_mem=%i_%.2f' %(n,0.0))
         writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
-    client = Client(threads_per_worker=1, n_workers=1)
+    client = Client(threads_per_worker=2, n_workers=4)
     tic = time()
 
     # assert(0)
@@ -198,8 +199,8 @@ if __name__ == '__main__':
         # obs_current = obs[tout_cnt]
         print("Starting forecast...")
         for mem in ens.members(ens):
-            # future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, writer, debug])
-            future = time_update(mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, writer, debug)
+            future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, None, False])
+            # future = time_update(mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, writer, debug)
 
             futures.append(future)
         results = client.gather(futures)
