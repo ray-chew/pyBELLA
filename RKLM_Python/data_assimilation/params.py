@@ -7,6 +7,7 @@ class da_params(object):
         # number of ensemble members
         self.N = N
         self.da_times = np.arange(0.0,6.1,0.25)[1:]
+        # self.obs_attributes = ['rhoY']
         # self.obs_attributes = ['p2_nodes']
         self.obs_attributes = ['rho', 'rhou', 'rhov', 'p2_nodes']
 

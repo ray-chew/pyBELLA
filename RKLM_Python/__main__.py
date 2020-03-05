@@ -142,9 +142,9 @@ if __name__ == '__main__':
                     future = da_interface(results,obs_current,dap.inflation_factor,attr,N,ud,dap.loc[attr])
 
                     if attr == 'rhoY':
-                        set_p2_nodes(results,N,th,node,ud)
+                        set_p2_nodes(future,results,N,th,node,ud)
                     if attr == 'p2_nodes':
-                        set_rhoY_cells(results,N,th,ud)
+                        set_rhoY_cells(future,results,N,th,ud)
 
                     futures.append(future)
 
@@ -163,8 +163,8 @@ if __name__ == '__main__':
                 print("Starting analysis... for R-localisation")
                 inner = (slice(elem.igx,-elem.igx),slice(elem.igy,-elem.igy))
 
-                Nx = elem.icx - 2*elem.igx
-                Ny = elem.icy - 2*elem.igy
+                Nx = elem.iicx
+                Ny = elem.iicy
                 attr_len = len(obs_attributes)
 
                 tmp = np.array([getattr(results[:,loc,...][n],obs_attributes[0])[inner] for n in range(N)])
