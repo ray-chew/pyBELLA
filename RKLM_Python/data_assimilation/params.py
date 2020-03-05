@@ -5,16 +5,17 @@ class da_params(object):
 
     def __init__(self,N,da_type='rloc',loc=0):
         # number of ensemble members
-        self.N = 20
-        # self.state_attributes = ['rho', 'rhou', 'rhov','rhow','rhoY','rhoX']
+        self.N = N
+        self.da_times = np.arange(0.0,6.1,0.25)[1:]
+        # self.obs_attributes = ['p2_nodes']
+        self.obs_attributes = ['rho', 'rhou', 'rhov', 'p2_nodes']
 
-        self.da_times = [0.25,0.50,0.75,1.0]
-        self.obs_attributes = ['rho', 'rhou', 'rhov']
+        # self.obs_attributes = ['rho', 'rhou', 'rhov']
 
         # which attributes to inflate in ensemble inflation?
-        self.attributes = ['rho', 'rhou', 'rhov']
+        # self.attributes = ['rho', 'rhou', 'rhov']
 
-        self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_1.0_truthgen.h5'
+        self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_6.0_truthgen.h5'
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)
@@ -23,28 +24,38 @@ class da_params(object):
         self.localisation_matrix = np.eye(N)
         weights = [0.05719096,0.25464401,0.33333333,0.25464401,0.05719096,0.25464401,0.52859548,0.66666667,0.52859548,0.25464401,0.33333333,0.66666667,1.,0.66666667,0.33333333,0.25464401,0.52859548,0.66666667,0.52859548,0.25464401,0.05719096,0.25464401,0.33333333,0.25464401,0.05719096]
         # weights = [0.01831564,0.082085,0.13533528,0.082085,0.01831564,0.082085,0.36787944,0.60653066,0.36787944,0.082085,0.13533528,0.60653066,1.,0.60653066,0.13533528,0.082085,0.36787944,0.60653066,0.36787944,0.082085,0.01831564,0.082085,0.13533528,0.082085,0.01831564]
+
         weights3 = weights*3
         self.localisation_matrix = np.diag(weights3)
         self.localisation_matrix += np.diag(np.ones_like(weights3))
         
-        # square of empirical RMSE of (48x48) travelling vortex from ref (256x256)
-        self.aprior_error_covar = 0.0001#0.5804227421558537
+        self.aprior_error_covar = 0.0001
         self.da_type = da_type
 
         # ensemble inflation factor for LETKF
-        self.inflation_factor = 1.4
+        self.inflation_factor = 2.0
 
         # rejuvenation factor for ETPF
         self.rejuvenation_factor = 0.001
 
-        self.loc = loc
+        self.loc = {
+            'rho' : 0,
+            'rhou' : 0,
+            'rhov' : 0,
+            'rhow' : 0,
+            'rhoY' : 0,
+            'rhoX' : 0,
+            'p2_nodes' : 2,
+        }
+
+        self.loc_c = 0 # container list location of cell-based arrays
+        self.loc_f = 1 # ... of face-based arrays
+        self.loc_n = 2 # ... of node-based arrays
 
     def load_obs(self,obs_path,loc=0):
         if self.N > 1:
             obs_file = h5py.File(obs_path, 'r')
             obs_attributes = self.obs_attributes
-
-            loc = self.loc # where in the "solutions" container are they located? 0: Sol, 1: flux, 2: mpv
 
             #### when were these observations taken?
             times = self.da_times
