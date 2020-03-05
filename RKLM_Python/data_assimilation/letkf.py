@@ -34,6 +34,8 @@ def da_interface(results,obs_current,rho,attr,N,ud,loc=0):
     local_ens.ensemble = local_ens.to_array(X)
 
     local_ens.ensemble = np.array([np.pad(mem,ig,mode='constant', constant_values=(0.0)) for mem in local_ens.ensemble])
+    # if attr == 'p2_nodes':
+    #     local_ens.ensemble = np.array([mem-mem.mean() for mem in local_ens.ensemble])
     # local_ens.ensemble = np.array([np.pad(mem,ig,mode='wrap') for mem in local_ens.ensemble])
     return local_ens.ensemble
 
@@ -58,7 +60,7 @@ def interpolation_func(ensemble,x_obs,y_obs,ud):
 
     x,y = np.meshgrid(x,y)
     ensemble = [map_coordinates(mem,[y,x],mode='wrap', order=3) for mem in ensemble]
-    
+
     return np.array(ensemble)
 
 

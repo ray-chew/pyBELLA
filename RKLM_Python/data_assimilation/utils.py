@@ -65,28 +65,29 @@ def ensemble_inflation(results, attributes, factor, N, loc=0):
             inflation = mean + factor * (getattr(results[n][loc],attribute) - mean)
             setattr(results[n][loc],attribute,inflation)
 
-def set_p2_nodes(results,N,th,node,ud,loc_c=0,loc_n=2):
+def set_p2_nodes(analysis,results,N,th,node,ud,loc_c=0,loc_n=2):
     for n in range(N):
-        rhoY = getattr(results[n][loc_c],'rhoY')
+        rhoY = analysis[n]
         p2_n = getattr(results[n][loc_n],'p2_nodes')
         rhoY_n = np.zeros_like(p2_n)
         kernel = np.array([[1.,1.],[1.,1.]])
         rhoY_n[1:-1,1:-1] = signal.fftconvolve(rhoY,kernel,mode='valid') / kernel.sum()
-        p2_n = rhoY_n**th.gm1 - 1.0 + p2_n
+        boundary.set_ghostnodes_p2(rhoY_n,node,ud)
+        p2_n = rhoY_n**th.gm1 - 1.0 + (p2_n - p2_n.mean())
         p2_n -= p2_n.mean()
         # p2_n = np.pad(p2_n,2,mode='wrap')
         boundary.set_ghostnodes_p2(p2_n,node,ud)
         setattr(results[n][loc_n],'p2_nodes',p2_n)
 
-def set_rhoY_cells(results,N,th,ud,loc_c=0,loc_n=2):
+def set_rhoY_cells(analysis,results,N,th,ud,loc_c=0,loc_n=2):
     for n in range(N):
-        p2n = getattr(results[n][loc_n], 'p2_nodes')
+        p2n = analysis[n]
         rhoYc0 = getattr(results[n][loc_c], 'rhoY')
         kernel = np.array([[1.,1.],[1.,1.]])
         p2c = signal.fftconvolve(p2n,kernel,mode='valid') / kernel.sum()
         p2c -= p2c.mean()
 
-        rhoYc = rhoYc0**th.gm1 + ud.Msq * p2c
+        rhoYc = (rhoYc0**th.gm1 + ud.Msq*p2c)**th.gm1inv
         setattr(results[n][loc_c], 'rhoYc', rhoYc)
         
 def boundary_mask(ud,elem,node,loc_c,loc_n):
