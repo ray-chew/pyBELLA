@@ -130,8 +130,8 @@ class UserData(object):
         self.dtfixed0 = 2.1 * 1.200930e-2
         self.dtfixed = 2.1 * 1.200930e-2
 
-        self.inx = 64+1
-        self.iny = 64+1
+        self.inx = 32+1
+        self.iny = 32+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -169,9 +169,10 @@ class UserData(object):
         # self.tout = [0.1]
         # self.tout[0] =  1.0
         # self.tout[1] = -1.0
-        # self.tout = np.arange(0.0,6.1,0.25)
+        self.tout = np.arange(0.0,6.1,0.25)
         # self.tout = [1.0,2.0,3.0]
-        self.tout = [3.0]
+        # self.tout = [1.0]
+
 
         # self.tout = times.copy()
 
@@ -188,9 +189,9 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
+        # aux = 'hypo'
         # aux = 'truth'
-        # aux = 'very_low_mach'
-        # aux = 'theta_fixed'
+        # aux = 'conversion_2'
         # aux = 'even' if self.no_of_pi_initial % 2 == 0 else 'odd'
         # self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
@@ -225,10 +226,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     xc = 0.0
     yc = 0.0
 
-    if seed != None:
-        np.random.seed(seed)
-        xc = (np.random.random() - 0.5)/10.
-        yc = (np.random.random() - 0.5)/10.
+    # if seed != None:
+    #     np.random.seed(seed)
+    #     xc = (np.random.random() - 0.5)/10.
+    #     yc = (np.random.random() - 0.5)/10.
 
     xcm = xc - (ud.xmax - ud.xmin)
     ycm = yc - (ud.ymax - ud.ymin)
@@ -291,6 +292,19 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rho = np.zeros_like(r)
     rho[...] += (rho0 + del_rho * (1. - (r/R0)**2)**6) * (r < R0)
     rho[...] += rho0 * (r > R0)
+
+    if seed != None:
+        np.random.seed(seed)
+        rhop = np.fft.fft2(rho)
+        rhop00 = np.copy(rhop[0,0])
+
+        rhop = np.fft.fftshift(rhop)
+        slc = (slice(int(elem.icx/2-1),int(elem.icx/2+2)),slice(int(elem.icy/2-1),int(elem.icy/2+2)))
+        print(slc)
+        rhop[slc] += 30.0 * np.random.random(rhop[slc].shape)
+        rhop = np.fft.ifftshift(rhop)
+        rhop[0,0] = rhop00
+        rho = np.fft.ifft2(rhop).real
 
     dp2c = np.zeros_like((r))
     for ip in range(25):
