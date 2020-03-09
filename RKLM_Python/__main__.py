@@ -104,7 +104,7 @@ if __name__ == '__main__':
         if label_type == 'STEP':
             label = ('ensemble_mem=%i_%.3d' %(n,step))
         else:
-            label = ('ensemble_mem=%i_%.2f' %(n,0.0))
+            label = ('ensemble_mem=%i_%.3f' %(n,0.0))
         writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
     client = Client(threads_per_worker=1, n_workers=1)
@@ -117,11 +117,14 @@ if __name__ == '__main__':
         print('##############################################')
         print('Next tout = %.3f' %tout)
         print("Starting forecast...")
+        mem_cnt = 0
         for mem in ens.members(ens):
             # future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, None, False])
+            print("For ensemble member = %i..." %mem_cnt)
             future = time_update(mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, None, debug)
 
             futures.append(future)
+            mem_cnt += 1
         results = client.gather(futures)
         results = np.array(results)
 
@@ -141,10 +144,10 @@ if __name__ == '__main__':
 
                     future = da_interface(results,obs_current,dap.inflation_factor,attr,N,ud,dap.loc[attr])
 
-                    if attr == 'rhoY':
-                        set_p2_nodes(future,results,N,th,node,ud)
-                    if attr == 'p2_nodes':
-                        set_rhoY_cells(future,results,N,th,ud)
+                    # if attr == 'rhoY':
+                    #     set_p2_nodes(future,results,N,th,node,ud)
+                    # if attr == 'p2_nodes':
+                    #     set_rhoY_cells(future,results,N,th,ud)
 
                     futures.append(future)
 
@@ -254,7 +257,7 @@ if __name__ == '__main__':
             set_ghostnodes_p2(p2_nodes, node, ud)
             setattr(results[n][dap.loc_n], 'p2_nodes', p2_nodes)
 
-        ens.set_members(results)
+        ens.set_members(results, tout)
 
         print("Starting output...")
         for n in range(N):
@@ -265,7 +268,7 @@ if __name__ == '__main__':
                 step = ens.members(ens)[0][3]
                 label = ('ensemble_mem=%i_%.3d' %(n,step))
             else:
-                label = ('ensemble_mem=%i_%.2f' %(n,tout))
+                label = ('ensemble_mem=%i_%.3f' %(n,tout))
             writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
 
         # synchronise_variables(mpv, Sol, elem, node, ud, th)
