@@ -44,7 +44,9 @@ class Blend(object):
 
         Y = rhoY / rho
 
-        rhoYc = (Sol.rhoY**th.gm1 + self.fac * self.dp2c)**(th.gm1inv)
+        # rhoYc = (Sol.rhoY**th.gm1 + self.fac * self.dp2c)**(th.gm1inv)
+        
+        rhoYc = (1.0 + self.fac * self.dp2c)**(th.gm1inv)
 
         alpha = rhoYc / Sol.rhoY
 
