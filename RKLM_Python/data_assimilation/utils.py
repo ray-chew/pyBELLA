@@ -51,7 +51,7 @@ class ensemble(object):
     @staticmethod
     def debug_im(value, n, tout):
         plt.figure()
-        plt.imshow(value)
+        plt.imshow(value, origin='lower')
         plt.savefig("./output_images/ensemble_snapshots/%.3f_%03d.png" %(tout,n), bbox_inches='tight')
         plt.close()
 
@@ -74,6 +74,7 @@ def set_p2_nodes(analysis,results,N,th,node,ud,loc_c=0,loc_n=2):
         rhoY_n[1:-1,1:-1] = signal.fftconvolve(rhoY,kernel,mode='valid') / kernel.sum()
         boundary.set_ghostnodes_p2(rhoY_n,node,ud)
         p2_n = rhoY_n**th.gm1 - 1.0 + (p2_n - p2_n.mean())
+        # p2_n = rhoY_n**th.gm1 - 1.0
         p2_n -= p2_n.mean()
         # p2_n = np.pad(p2_n,2,mode='wrap')
         boundary.set_ghostnodes_p2(p2_n,node,ud)
