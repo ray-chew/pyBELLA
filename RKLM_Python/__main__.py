@@ -24,7 +24,7 @@ from scipy import sparse
 
 # input file
 # from inputs.baroclinic_instability_periodic import UserData, sol_init
-from inputs.travelling_vortex_3D import UserData, sol_init
+from inputs.travelling_vortex_2D import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
 # from inputs.rising_bubble import UserData, sol_init
@@ -96,8 +96,10 @@ ud.output_suffix = '_ensemble=%i%s' %(N, ud.output_suffix)
 if __name__ == '__main__':
     writer = io(ud)
     writer.write_attrs()
+    wrtr = None
     if N > 1:
         writer.write_da_attrs(dap)
+        wrtr = writer
     for n in range(N):
         Sol = ens.members(ens)[n][0]
         mpv = ens.members(ens)[n][2]
@@ -121,7 +123,7 @@ if __name__ == '__main__':
         for mem in ens.members(ens):
             # future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, None, False])
             print("For ensemble member = %i..." %mem_cnt)
-            future = time_update(mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, None, debug)
+            future = time_update(mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, wrtr, debug)
 
             futures.append(future)
             mem_cnt += 1
