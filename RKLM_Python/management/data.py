@@ -109,7 +109,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
     list
         A list of `[Sol,flux,mpv]` data containers at time `tout`.
     """
-    window_step, cnt_p2 = 0, 0
+    window_step = 0
 
     while ((t < tout) and (step < ud.stepmax)):
         boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
@@ -119,19 +119,17 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
 
         label = '%.3d' %step
         dt, cfl, cfl_ac = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
+        # dt = 0.005
+        # cfl = ud.CFL
+        # cfl_ac = cfl
 
         if bld != None:
             c_init, c_trans = bld.criterion_init(window_step), bld.criterion_trans(window_step)
         else:
             c_init, c_trans = False, False
-        
-        if ud.continuous_blending == True:
-            print("step = %i, window_step = %i" %(step,window_step))
-            print("is_compressible = %i, is_nonhydrostatic = %i" %(ud.is_compressible, ud.is_nonhydrostatic))
-            print("compressibility = %.3f, nonhydrostasy = %.3f" %(ud.compressibility,ud.nonhydrostasy))
-            print("-------")
 
         if c_init:
+            print("Blending... step = %i" %window_step)
             Sol_freeze = deepcopy(Sol)
             mpv_freeze = deepcopy(mpv)
 
@@ -142,15 +140,14 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
             # ret = half_step(Sol, flux, mpv, t, t+0.5*dt, ud, elem, node, step-1, th)
             # dp2n = ret.p2_nodes
 
-            # ret = time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, step-1, th, bld=None, writer=None, debug=False)
+            # ret = time_update(Sol,flux,mpv, t, t+0.5*dt, ud, elem, node, step-1, th, bld=None, writer=None, debug=False)
             # dp2n = (1.0 * ret[2].p2_nodes + 1.0 * mpv_freeze.p2_nodes) * 0.5
-
-
+            if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_start', mpv_freeze.p2_nodes)
+            if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_end', ret[2].p2_nodes)
             Sol = Sol_freeze
             mpv = mpv_freeze
 
-            print("Blending... step = %i" %window_step)
-            writer.populate(str(label)+'_before_blending', 'dp2n', dp2n)
+            if writer != None: writer.populate(str(label)+'_after_full_step', 'dp2n', dp2n)
             bld.convert_p2n(dp2n)
             bld.update_Sol(Sol,elem,node,th,ud, mpv,label=label,writer=writer)
             bld.update_p2n(Sol,mpv,node,th,ud)
@@ -167,11 +164,17 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
         #     mpv = mpv_freeze
         #     step = step_tmp
 
-        ud.is_compressible = is_compressible(ud,step)
-        ud.is_nonhydrostatic = is_nonhydrostatic(ud,step)
-        ud.nonhydrostasy = nonhydrostasy(ud,t,step)
-        ud.compressibility = compressibility(ud,t,step)
+        ud.is_compressible = is_compressible(ud,window_step)
+        ud.is_nonhydrostatic = is_nonhydrostatic(ud,window_step)
+        ud.nonhydrostasy = nonhydrostasy(ud,t,window_step)
+        ud.compressibility = compressibility(ud,t,window_step)
         ud.acoustic_order = acoustic_order(ud,t, window_step)
+
+        if ud.continuous_blending == True:
+            print("step = %i, window_step = %i" %(step,window_step))
+            print("is_compressible = %i, is_nonhydrostatic = %i" %(ud.is_compressible, ud.is_nonhydrostatic))
+            print("compressibility = %.3f, nonhydrostasy = %.3f" %(ud.compressibility,ud.nonhydrostasy))
+            print("-------")
 
         if step == 0 and writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
@@ -283,13 +286,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
         t += dt
         step += 1
         window_step += 1
-        # mpv.p2_nodes[...] = tmp
-
-        # print(cnt_p2)
-        # print(window_step)
-        # print(t, step)
-        # if step == 10:
-        #     assert(0)
 
     return [Sol,flux,mpv,step]
 

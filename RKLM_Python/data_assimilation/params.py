@@ -7,9 +7,10 @@ class da_params(object):
         # number of ensemble members
         self.N = N
         self.da_times = np.arange(0.0,6.1,0.25)[1:]
-        # self.obs_attributes = ['rhoY']
+        # self.da_times = []
+        self.obs_attributes = ['rhoY']
         # self.obs_attributes = ['p2_nodes']
-        self.obs_attributes = ['rho', 'rhou', 'rhov', 'p2_nodes']
+        # self.obs_attributes = ['rho', 'rhou', 'rhov', 'p2_nodes']
 
         # self.obs_attributes = ['rho', 'rhou', 'rhov']
 
@@ -67,7 +68,7 @@ class da_params(object):
             t_cnt = 0
             for t in times:
                 #### how were these dataset called?
-                label = '_ensemble_mem=0_%.2f_after_full_step' %t
+                label = '_ensemble_mem=0_%.3f_after_full_step' %t
                 #### axis 1 stores the attributes
                 obs[t_cnt] = {}
                 for attribute in obs_attributes:
