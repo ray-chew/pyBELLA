@@ -26,11 +26,11 @@ class ensemble(object):
     #     N = self.members(ensemble).shape[0]
     #     return self.members(ensemble).reshape(N,-1)
 
-    def set_members(self,analysis_ensemble):
+    def set_members(self,analysis_ensemble, tout):
         cnt = 0
         for xi in analysis_ensemble:
             setattr(self,'mem_' + str(cnt),np.array(xi))
-            # self.debug_im(xi[0].rho, cnt)
+            self.debug_im(xi[0].rhoY, cnt, tout)
             cnt += 1
 
     # rethink this eveutally....
@@ -49,10 +49,10 @@ class ensemble(object):
         return np.array(list(ensemble.__dict__.values()))
 
     @staticmethod
-    def debug_im(value, n):
+    def debug_im(value, n, tout):
         plt.figure()
         plt.imshow(value)
-        plt.savefig("./output_images/initial_%03d" %n, bbox_inches='tight')
+        plt.savefig("./output_images/ensemble_snapshots/%.3f_%03d.png" %(tout,n), bbox_inches='tight')
         plt.close()
 
 def ensemble_inflation(results, attributes, factor, N, loc=0):
