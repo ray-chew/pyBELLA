@@ -39,6 +39,7 @@ from time import time
 
 
 debug = False
+output_timesteps = False
 label_type = 'TIME'
 np.set_printoptions(precision=18)
 
@@ -99,6 +100,7 @@ if __name__ == '__main__':
     wrtr = None
     if N > 1:
         writer.write_da_attrs(dap)
+    elif output_timesteps == True:
         wrtr = writer
     for n in range(N):
         Sol = ens.members(ens)[n][0]
