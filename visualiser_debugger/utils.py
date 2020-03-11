@@ -1,87 +1,123 @@
 import numpy as np
 import h5py
 
-def cb_suffix(fs,ts):
-    return "_cont_blend_fs=%i_ts=%i" %(fs,ts)
-
-def get_tag_dict():
-    td = {
-            0 : 'before_flux',
-            1 : 'before_advect',
-            2 : 'after_advect',
-            3 : 'after_ebnaexp',
-            4 : 'after_ebnaimp',
-            5 : 'after_half_step',
-            6 : 'after_efna',
-            7 : 'after_full_ebnaexp',
-            8 : 'after_full_step',
-    }
-    return td
-    
-def spatially_averaged_rmse(arr,ref):
-    arr = arr[2:-2,2:-2]
-    ref = ref[2:-2,2:-2]
-    
-    arr -= arr.mean()
-    ref -= ref.mean()
-
-    return np.sqrt(((arr - ref)**2).mean())
-
-def get_filename(base_fn,grid_x,grid_y,size,end_time,suffix):
-    return base_fn + "_ensemble=" + str(size) + "_" + str(grid_x) + "_" + str(grid_y) + "_" + str(end_time) + suffix + ".h5"
-
-def get_path(py_directory,filename):
-    return py_directory + filename
-
-def py_out(pyfile,py_dataset,time):
-    return pyfile[str(py_dataset)][str(py_dataset)+time][:]
-
-def test_case(time,path, N, attribute, label_type='TIME', tag='after_full_step', inner='None'):
-    if inner == 'None':
-        inner = (slice(None,),slice(None,))
-    else:
-        inner = (slice(2,-2),slice(2,-2))
+class test_case(object):
+    def __init__(self,base_fn,py_dir,Nx,Ny,end_time):
+        self.base_fn = base_fn
+        self.py_dir = py_dir
+        self.grid_x = Nx
+        self.grid_y = Ny
+        self.end_time = end_time
         
-    file = h5py.File(path,'r')
+        self.cb_suffix = self.cb_suffix
+        self.get_tag_dict = self.get_tag_dict
+        self.py_out = self.py_out
+        
+        self.get_filename = self.get_filename
+        self.get_path = self.get_path
+        self.get_arr = self.get_arr
+        
+        
+    def cb_suffix(self,fs,ts):
+        return "cont_blend_fs=%i_ts=%i" %(fs,ts)
+
+
+    @staticmethod
+    def get_tag_dict():
+        td = {
+                0 : 'before_flux',
+                1 : 'before_advect',
+                2 : 'after_advect',
+                3 : 'after_ebnaexp',
+                4 : 'after_ebnaimp',
+                5 : 'after_half_step',
+                6 : 'after_efna',
+                7 : 'after_full_ebnaexp',
+                8 : 'after_full_step',
+        }
+        return td
     
-    if label_type == 'TIME':
-        t_label = '_ensemble_mem=%i_%.3f_%s' %(n,time, tag)
-    elif label_type == 'STEP':
-        if N==1:
-            t_label = '_%.3d_%s' %(time, tag)
+    
+    def spatially_averaged_rmse(self,arr,ref):
+        arr = arr[2:-2,2:-2]
+        ref = ref[2:-2,2:-2]
+        
+        arr -= arr.mean()
+        ref -= ref.mean()
+
+        return np.sqrt(((arr - ref)**2).mean())
+
+
+    def get_filename(self,N,suffix):
+        fn = "%s_ensemble=%i_%i_%i_%.1f_%s.h5" %(self.base_fn,N,self.grid_x,self.grid_y,self.end_time,suffix)
+        return fn
+
+
+    def get_path(self,fn):
+        path = self.py_dir + fn
+        return path
+
+
+    @staticmethod
+    def py_out(pyfile,py_dataset,time):
+        return pyfile[str(py_dataset)][str(py_dataset)+time][:]
+
+
+    def get_arr(self, path, time, N, attribute, label_type='TIME', tag='after_full_step', inner='None'):
+        if inner == 'None':
+            inner = (slice(None,),slice(None,))
         else:
-            t_label = '_ensemble_mem=%i_%.3d_%s' %(n,time, tag)
+            inner = (slice(2,-2),slice(2,-2))
             
-    array = py_out(file,attribute,t_label)[inner]
+        file = h5py.File(path,'r')
+        
+        array = []
+        for n in range(N):
+            if label_type == 'TIME':
+                t_label = '_ensemble_mem=%i_%.3f_%s' %(n,time, tag)
+            elif label_type == 'STEP':
+                if N==1:
+                    t_label = '_%.3d_%s' %(time, tag)
+                else:
+                    t_label = '_ensemble_mem=%i_%.3d_%s' %(n,time, tag)
+                
+            array.append(self.py_out(file,attribute,time=t_label)[inner])
+
+        array = np.array(array)
+        array = array.mean(axis=0)
+
+        file.close()
+        return np.array(array)
     
-    file.close()
-    return np.array(array)
+    
+    def get_ensemble(self,base_fn, time, attribute, suffix, end_time, cont_blend=False, ts=0, fs=0):
 
-def ensemble_test_case(time, path, N, attribute, label_type='TIME', tag='after_full_step',inner='None'):
-    if inner == 'None':
-        inner = (slice(None,),slice(None,))
-    else:
-        inner = (slice(2,-2),slice(2,-2))
-    file = h5py.File(path,'r')
 
-    array = []
-    for n in range(N):
-        if label_type == 'TIME':
-            t_label = '_ensemble_mem=%i_%.3f_%s' %(n,time, tag)
-        elif label_type == 'STEP':
-            if N==1:
-                t_label = '_%.3d_%s' %(time, tag)
-            else:
-                t_label = '_ensemble_mem=%i_%.3d_%s' %(n,time, tag)
+        fn = get_filename(base_fn, grid_x, grid_y, ens_size, end_time, suffix)
+        path = get_path(py_dir, fn)
+    
+        return ensemble_test_case(time, path, ens_size, attribute, label_type='STEP')
+    
+    
+    def get_time_series(self, times, N, attribute, suffix, probe_loc, cont_blend=False, ts=0, fs=0, label_type='TIME'):
+        probe_row = probe_loc[0]
+        probe_col = probe_loc[1]
+        
+        if cont_blend == True:
+            suffix += cb_suffix(fs,ts)
             
-        array.append(py_out(file,attribute,time=t_label)[inner])
+        fn = self.get_filename(N,suffix)
+        path = self.get_path(fn)
+        
+        probe = []
+        for time in times:
+            arr = self.get_arr(path, time, N, attribute, label_type=label_type)
+            probe.append(arr[probe_row,probe_col])
+            
+        probe = np.array(probe)
+        return get_diff(probe)
 
-    array = np.array(array)
-    array = array.mean(axis=0)
 
-    file.close()
-    file.close()
-    return np.array(array)
 
 def bin_func(obs,ens_mem_shape):
     obs = obs.reshape(ens_mem_shape[0],obs.shape[0]//ens_mem_shape[0],
@@ -90,3 +126,7 @@ def bin_func(obs,ens_mem_shape):
 
 def rmse(diff):
     return np.sqrt((diff**2).mean())
+
+def get_diff(probe):
+    probe = np.array(probe)
+    return probe[1:] - probe[:-1]
