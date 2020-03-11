@@ -65,7 +65,7 @@ class UserData(object):
 
         self.is_ArakawaKonor = 0
         self.is_nonhydrostatic = 1
-        self.is_compressible = 0
+        self.is_compressible = 1
         self.compressibility = 0.0
         self.acoustic_timestep = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
@@ -126,9 +126,6 @@ class UserData(object):
         self.dtfixed0 = 1.9 / self.t_ref
         self.dtfixed = 1.9 / self.t_ref
 
-        # self.tips = TimeIntegratorParams()
-        # SetTimeIntegratorParameters(self)
-
         self.inx = 160+1
         self.iny = 80+1
         self.inz = 1
@@ -142,8 +139,6 @@ class UserData(object):
         self.km = 1.4
         self.kY = 1.4
         self.kZ = 1.4
-
-        self.ncache = 154
 
         tol = 1.e-11 if self.is_compressible == 0 else 1.e-11 * 0.01
 
@@ -171,19 +166,17 @@ class UserData(object):
 
         self.continuous_blending = True
         self.no_of_pi_initial = 2
-        self.no_of_pi_transition = 20
+        self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.write_stdout = True
-        self.write_stdout_period = 1
-        self.write_file = True
-        self.write_file_period = 30
-        self.file_format = 'HDF'
-
         self.output_base_name = "_rising_bubble"
-        self.output_name_psinc = "_low_mach_gravity_psinc"
-        self.output_name_comp = "_low_mach_gravity_comp"
+        if self.is_compressible == 1:
+            self.output_suffix = "_%i_%i_%.1f_comp" %(self.inx-1,self.iny-1,self.tout[-1])
+        if self.is_compressible == 0:
+            self.output_suffix = "_%i_%i_%.1f_psinc" %(self.inx-1,self.iny-1,self.tout[-1])
+        if self.continuous_blending == True:
+            self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_method
