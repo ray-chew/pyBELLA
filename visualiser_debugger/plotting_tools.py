@@ -20,8 +20,11 @@ class plotter(object):
         cidx = np.arange(self.ncols)
 
         self.idx = []
-        for pair in itertools.product(ridx, cidx):
-            self.idx.append(pair)
+        if self.nrows > 1:
+            for pair in itertools.product(ridx, cidx):
+                self.idx.append(pair)
+        else:
+            self.idx = cidx
             
         self.visualise = self.visualise
     
@@ -38,8 +41,11 @@ class plotter(object):
         
         if self.N > 1:
             for n, arr in enumerate(self.arr_lst):
+                title = arr[1]
+                arr = arr[0]
                 cax = ax[self.idx[n]] 
                 im = self.visualise(method,cax,arr)
+                cax.set_title(title)
                 divider = make_axes_locatable(cax)
                 cax = divider.append_axes("right", size="5%", pad=0.05)
                 plt.colorbar(im, cax=cax)
@@ -47,14 +53,17 @@ class plotter(object):
             for i in range(n+1,self.nrows*self.ncols):
                 fig.delaxes(ax[self.idx[i]])
         else:
+            arr, title = self.arr_lst[0][0], self.arr_lst[0][1]
             cax = fig.gca()
-            im = self.visualise(method,cax,self.arr_lst[0])
+            im = self.visualise(method,cax,arr)
+            cax.set_title(title)
             divider = make_axes_locatable(cax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             plt.colorbar(im, cax=cax)
         
         plt.tight_layout()
         plt.show()
+        
         
     @staticmethod
     def visualise(method,cax,arr,lvls=[None]):
@@ -66,6 +75,8 @@ class plotter(object):
             else:
                 im = cax.contour(arr,levels=lvls)
         return im
+    
+    
             
             
             
