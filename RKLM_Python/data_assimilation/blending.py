@@ -44,9 +44,9 @@ class Blend(object):
 
         Y = rhoY / rho
 
-        # rhoYc = (Sol.rhoY**th.gm1 + self.fac * self.dp2c)**(th.gm1inv)
+        rhoYc = (Sol.rhoY**th.gm1 + self.fac * self.dp2c)**(th.gm1inv)
         
-        rhoYc = (1.0 + self.fac * self.dp2c)**(th.gm1inv)
+        # rhoYc = (1.0 + self.fac * self.dp2c)**(th.gm1inv)
 
         alpha = rhoYc / Sol.rhoY
 
@@ -54,16 +54,16 @@ class Blend(object):
         # diff = alpha - Sol.rhoY
         # # locs = np.where(diff < 0.0005)
 
-        # Sol.rho[...] = rho*alpha
-        # Sol.rhoY[...] = (Sol.rho * Y)
+        Sol.rho[...] = rho*alpha
+        Sol.rhoY[...] = (Sol.rho * Y)
         ### shift rhoY
         # Sol.rhoY[locs] -= diff[locs]
 
-        # rho_fac = Sol.rho / rho
-        # Sol.rhou[...] *= rho_fac
-        # Sol.rhov[...] *= rho_fac
-        # Sol.rhow[...] *= rho_fac
-        # Sol.rhoX[...] *= rho_fac
+        rho_fac = Sol.rho / rho
+        Sol.rhou[...] *= rho_fac
+        Sol.rhov[...] *= rho_fac
+        Sol.rhow[...] *= rho_fac
+        Sol.rhoX[...] *= rho_fac
 
 
         ### keep rho, convert theta
@@ -74,9 +74,9 @@ class Blend(object):
         # locsY = np.where(np.abs(diffY) < tol)
         # locsX = np.where(np.abs(diffX) < tol)
 
-        Yc = Y * alpha
-        Sol.rhoY[...] = rho * Yc
-        Sol.rhoX[...] = rho / Yc
+        # Yc = Y * alpha
+        # Sol.rhoY[...] = rho * Yc
+        # Sol.rhoX[...] = rho / Yc
         
         ### shift rhoY and rhoX
         # Sol.rhoY[locsY] -= diffY[locsY]
