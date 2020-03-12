@@ -29,7 +29,7 @@ class plotter(object):
         self.visualise = self.visualise
     
             
-    def plot(self,method='imshow',figsize=[None]):
+    def plot(self,method='imshow',figsize=[None],inner=False):
         if method != 'imshow' or method != 'contour':
             assert(0, "Visualisation method not implemented!")
             
@@ -41,9 +41,9 @@ class plotter(object):
         
         if self.N > 1:
             for n, arr in enumerate(self.arr_lst):
-                title = arr[1]
-                arr = arr[0]
-                cax = ax[self.idx[n]] 
+                arr, title = arr[0], arr[1]
+                arr = arr[2:-2,2:-2]
+                cax = ax[self.idx[n]]
                 im = self.visualise(method,cax,arr)
                 cax.set_title(title)
                 divider = make_axes_locatable(cax)
@@ -54,6 +54,7 @@ class plotter(object):
                 fig.delaxes(ax[self.idx[i]])
         else:
             arr, title = self.arr_lst[0][0], self.arr_lst[0][1]
+            arr = arr[2:-2,2:-2]
             cax = fig.gca()
             im = self.visualise(method,cax,arr)
             cax.set_title(title)
