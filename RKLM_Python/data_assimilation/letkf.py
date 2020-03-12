@@ -28,7 +28,7 @@ def da_interface(results,obs_current,rho,attr,N,ud,loc=0):
     forward_operator = lambda ensemble : ensemble
     local_ens.forward(forward_operator)
 
-    obs_covar = sparse.eye(x_obs**2, y_obs**2, format='csr')
+    obs_covar = sparse.eye((x_obs*y_obs), (x_obs*y_obs), format='csr')
 
     X = local_ens.analyse(obs_current.reshape(-1), obs_covar)
     local_ens.ensemble = local_ens.to_array(X)
