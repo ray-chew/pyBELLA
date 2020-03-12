@@ -36,16 +36,6 @@ class test_case(object):
                 8 : 'after_full_step',
         }
         return td
-    
-    
-    def spatially_averaged_rmse(self,arr,ref):
-        arr = arr[2:-2,2:-2]
-        ref = ref[2:-2,2:-2]
-        
-        arr -= arr.mean()
-        ref -= ref.mean()
-
-        return np.sqrt(((arr - ref)**2).mean())
 
 
     def get_filename(self,N,suffix):
@@ -63,8 +53,8 @@ class test_case(object):
         return pyfile[str(py_dataset)][str(py_dataset)+time][:]
 
 
-    def get_arr(self, path, time, N, attribute, label_type='TIME', tag='after_full_step', inner='None'):
-        if inner == 'None':
+    def get_arr(self, path, time, N, attribute, label_type='TIME', tag='after_full_step', inner=False):
+        if inner == False:
             inner = (slice(None,),slice(None,))
         else:
             inner = (slice(2,-2),slice(2,-2))
@@ -89,17 +79,43 @@ class test_case(object):
         file.close()
         return np.array(array)
     
-    
-    def get_ensemble(self,base_fn, time, attribute, suffix, end_time, cont_blend=False, ts=0, fs=0):
+    @staticmethod
+    def spatially_averaged_rmse(arrs,refs):
+        diff = []
+        for arr, ref in zip(arrs,refs):
+            arr = arr[2:-2,2:-2]
+            ref = ref[2:-2,2:-2]
+            
+            arr -= arr.mean()
+            ref -= ref.mean()
 
-
-        fn = get_filename(base_fn, grid_x, grid_y, ens_size, end_time, suffix)
-        path = get_path(py_dir, fn)
+            diff.append(np.sqrt(((arr - ref)**2).mean()))
+        return np.array(diff)
     
-        return ensemble_test_case(time, path, ens_size, attribute, label_type='STEP')
+    @staticmethod
+    def get_probe_loc(arrs, probe_loc):
+        time_series = []
+        for arr in arrs:
+            time_series.append(arr[probe_loc[0],probe_loc[1]])
+        return time_series
     
     
-    def get_time_series(self, times, N, attribute, suffix, probe_loc, cont_blend=False, ts=0, fs=0, label_type='TIME'):
+    def get_ensemble(self, times, N, attribute, suffix, cont_blend=False, ts=0, fs=0, label_type='TIME'):
+        if cont_blend == True:
+            suffix += cb_suffix(fs,ts)
+            
+        fn = self.get_filename(N,suffix)
+        path = self.get_path(fn)
+        
+        arr_lst = []
+        for time in times:
+            arr = self.get_arr(path, time, N, attribute, label_type=label_type)
+            arr_lst.append(arr)
+            
+        return np.array(arr_lst)
+    
+    
+    def get_time_series(self, times, N, attribute, suffix, probe_loc, cont_blend=False, ts=0, fs=0, label_type='TIME', diff=False):
         probe_row = probe_loc[0]
         probe_col = probe_loc[1]
         
@@ -115,7 +131,10 @@ class test_case(object):
             probe.append(arr[probe_row,probe_col])
             
         probe = np.array(probe)
-        return get_diff(probe)
+        if diff==True:
+            return get_diff(probe)
+        elif diff==False:
+            return probe
 
 
 
@@ -130,3 +149,12 @@ def rmse(diff):
 def get_diff(probe):
     probe = np.array(probe)
     return probe[1:] - probe[:-1]
+
+def spatially_averaged_rmse(arr,ref):
+    arr = arr[2:-2,2:-2]
+    ref = ref[2:-2,2:-2]
+    
+    arr -= arr.mean()
+    ref -= ref.mean()
+
+    return np.sqrt(((arr - ref)**2).mean())
