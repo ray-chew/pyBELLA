@@ -30,7 +30,7 @@ class ensemble(object):
         cnt = 0
         for xi in analysis_ensemble:
             setattr(self,'mem_' + str(cnt),np.array(xi))
-            self.debug_im(xi[0].rhoY, cnt, tout)
+            self.debug_im(xi[0].rho, cnt, tout)
             cnt += 1
 
     # rethink this eveutally....
@@ -101,11 +101,11 @@ def boundary_mask(ud,elem,node,loc_c,loc_n):
 
         if ud.bdry_type[dim] == enum_bdry.BdryType.PERIODIC:
             cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(1.0))
-            nmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(1.0))
+            nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(1.0))
 
         elif ud.bdry_type[dim] == enum_bdry.BdryType.WALL:
             cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(0.0))
-            nmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(0.0))
+            nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(0.0))
     
     return cmask, nmask
 
