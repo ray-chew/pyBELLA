@@ -8,12 +8,14 @@ import matplotlib.pyplot as plt
 import dask.array as darr
 import numpy as np
 
+import data_assimilation.utils as dau
+
 debug_cnt = 0
 
 def da_interface(results,obs_current,rho,attr,N,ud,loc=0):
-    ig = 2
-    inner = (slice(ig,-ig),slice(ig,-ig))
-    # inner = (slice(None,),slice(None,))
+    # ig = 2
+    # inner = (slice(ig,-ig),slice(ig,-ig))
+    inner = (slice(None,),slice(None,))
 
     local_ens = np.array([getattr(results[:,loc,...][n],attr) for n in range(N)])
     local_ens = np.array([mem[inner] for mem in local_ens])
@@ -33,7 +35,7 @@ def da_interface(results,obs_current,rho,attr,N,ud,loc=0):
     X = local_ens.analyse(obs_current.reshape(-1), obs_covar)
     local_ens.ensemble = local_ens.to_array(X)
 
-    local_ens.ensemble = np.array([np.pad(mem,ig,mode='constant', constant_values=(0.0)) for mem in local_ens.ensemble])
+    # local_ens.ensemble = np.array([np.pad(mem,ig,mode='constant', constant_values=(0.0)) for mem in local_ens.ensemble])
     # if attr == 'p2_nodes':
     #     local_ens.ensemble = np.array([mem-mem.mean() for mem in local_ens.ensemble])
     # local_ens.ensemble = np.array([np.pad(mem,ig,mode='wrap') for mem in local_ens.ensemble])
@@ -147,3 +149,183 @@ class analysis(object):
         plt.savefig("./output_images/da_debug_%s_%i_%s" %(self.identifier,debug_cnt // 3,suffix), bbox_inches='tight')
         plt.close()
         debug_cnt += 1
+
+
+class prepare_rloc(object):
+    def __init__(self, elem, node, dap, N, obs_X=5, obs_Y=5):
+        # self.elem = elem
+        self.iicx = elem.iicx
+        self.iicy = elem.iigy
+        self.iicxn = node.iicx
+        self.iicyn = node.iicy
+        self.N = N
+
+        self.i2 = (slice(elem.igx,-elem.igx),slice(elem.igy,-elem.igy))
+        self.i0 = (slice(None,),slice(None,))
+
+        self.attr_len = len(dap.obs_attributes)
+        self.loc = dap.loc
+
+        self.loc_c = dap.loc_c
+        self.loc_f = dap.loc_f
+        self.loc_n = dap.loc_n
+
+        self.oa = dap.obs_attributes
+        self.da_times = dap.da_times
+
+        self.ca, self.na = self.sort_locs()
+        self.cattr_len = len(self.ca)
+        self.nattr_len = len(self.na)
+
+        self.obs_X = obs_X
+        self.obs_Y = obs_Y
+
+        self.cmask, self.nmask = dau.boundary_mask(elem,node, self.loc_c, self.loc_n)
+
+        self.inf_fac = dap.inflation_factor
+        self.loc_mat = dap.localisation_matrix
+        
+
+    def sort_locs(self):
+        cell_attributes = [key for key,value in self.loc.items() if value == self.loc_c and key in self.oa]
+        node_attributes = [key for key,value in self.loc.items() if value == self.loc_n and key in self.oa]
+        face_attributes = [key for key,value in self.loc.items() if value == self.loc_f and key in self.oa]
+
+        if len(face_attributes) > 0:
+            assert 0, "r-localisation for values on faces not supported."
+
+        return cell_attributes, node_attributes
+
+    def analyse(self,results,obs,tout):
+        Nx, Ny, obs_attr, attr_len, loc = self.get_properties('cell')
+
+        obs_X, obs_Y = self.obs_X, self.obs_Y
+
+        state_p, obs_p = self.stack(results,obs,obs_attr,tout)
+
+        X = self.get_state(state_p,Nx,Ny,attr_len)
+        obs_p = self.get_obs(obs_p,obs_X,obs_Y,Nx,Ny,attr_len)
+        Y = self.get_state_in_obs_space(state_p,obs_attr,obs_X,obs_Y,Nx,Ny,attr_len)
+
+        obs_covar = self.get_obs_covar('cell', obs_X, obs_Y)
+
+        analysis_res = np.zeros_like(X)
+
+        for n in range(Nx * Ny):
+            forward_operator = lambda ensemble : Y[n]
+            local_ens = analysis(X[n],self.inf_fac)
+            local_ens.forward(forward_operator)
+            local_ens.localisation_matrix = self.loc_mat
+            analysis_ens = local_ens.analyse(obs_p[n],obs_covar)
+            analysis_res[n] = analysis_ens
+
+        analysis_res = np.swapaxes(analysis_res,0,2)
+
+        return analysis_res
+        # for cnt, attr in enumerate(obs_attr):
+        #     current = analysis_res[cnt]
+
+        #     for n in range(N):
+        #         data = current[n]
+        #         data = data.reshape(Nx, Ny)
+                
+        #         data = np.pad(data,2,mode='constant')
+
+        #         setattr(results[:,loc,...][n],attr,data)
+
+    # stack variables on grid according to grid-type. 
+    # Currently supports only inner domain with no ghost cells. NO BC handling!
+    def stack(self,results,obs,obs_attr,tout):
+        state = self.get_quantity(results,obs_attr[0])
+        state = state[:,np.newaxis,...]
+
+        obs = np.array(obs[list(self.da_times).index(tout)][obs_attr[0]])[self.i2]
+        obs = obs[np.newaxis,...]
+
+        for attr in obs_attr[1:]:
+            next_attr = self.get_quantity(results,attr)[:,np.newaxis,...]
+            state = np.hstack((state,next_attr))
+
+            next_obs = np.array(obs[list(self.da_times).index(tout)][attr])[self.i2]
+            next_obs = next_obs[np.newaxis,...]
+
+            obs = np.vstack((obs,next_obs))
+
+        return state, obs
+
+    def get_state(self,state,Nx,Ny,attr_len):
+        X = np.array([dau.sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in state])
+        X = np.swapaxes(X,0,1)
+        return X
+
+    # currently supports only 5x5 local counterparts.
+    def get_obs(self,obs,obs_X,obs_Y,Nx,Ny,attr_len):
+        x_pad = int((obs_X - 1) / 2)
+        y_pad = int((obs_Y - 1) / 2)
+        obs = np.array([np.pad(obs_attr,(x_pad,y_pad),mode='wrap') for obs_attr in obs])
+
+        obs = np.array([dau.sliding_window_view(obs_attr, (obs_X,obs_Y), (1,1)) for obs_attr in obs])
+
+        obs = np.swapaxes(obs,0,2)
+        obs = np.swapaxes(obs,0,1)
+        obs = obs.reshape(Nx*Ny,attr_len,obs_X,obs_Y)
+
+        return obs
+
+    def get_state_in_obs_space(self,state,obs_attr,obs_X,obs_Y,Nx,Ny,attr_len):
+        sios = self.get_quantity(state,obs_attr[0])
+        sios = sios[:,np.newaxis,...]
+
+        for attr in obs_attr[1:]:
+            next_attr = self.get_quantity(state,attr,inner=False)[:,np.newaxis,...]
+            sios = np.hstack((sios,next_attr))
+
+        sios = np.array([dau.sliding_window_view(mem, (obs_X,obs_Y), (1,1)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in sios])
+
+        sios = np.swapaxes(sios,0,1)
+        return sios
+
+    def get_obs_covar(self,type, obs_X, obs_Y):
+        if type == 'cell':
+            obs_covar = np.ones((self.iicx,self.iicy))
+        else:
+            obs_covar = np.ones((self.iicxn,self.iicyn))
+
+        obs_covar = np.pad(obs_covar, 2, mode='constant', constant_values=(1.0))
+
+        if type == 'cell':
+            obs_covar *= self.cmask
+        else:
+            obs_covar *= self.nmask
+
+        obs_covar = np.array(dau.sliding_window_view(obs_covar, (obs_X,obs_Y), (1,1))).reshape(Nx*Ny,obs_X,obs_Y)
+
+        return obs_covar
+
+
+    def get_properties(self,type):
+        if type != 'cell' and type != 'node':
+            assert 0, "rloc: grid-type not supported"
+
+        Nx = self.iicx if type == 'cell' else self.iicxn
+        Ny = self.iicxy if type == 'cell' else self.iicyn
+        obs_attr = self.ca if type == 'cell' else self.na
+        attr_len = self.cattr_len if type == 'cell' else self.nattr_len
+        loc = self.loc_c if type == 'cell' else self.loc_n
+
+        return Nx, Ny, obs_attr, attr_len, loc
+    
+
+    def get_quantity(self,results,quantity,inner=True):
+        if inner == True:
+            slc = self.i2
+        else:
+            slc = self.i0
+
+        loc = self.loc[quantity]
+        quantity = [getattr(results[:,loc,...][n], self.oa[0])[inner] for n in range(self.N)]
+        return np.array(quantity)
+
+
+
+    
