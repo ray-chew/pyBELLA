@@ -4,14 +4,14 @@ import numpy as np
 import itertools
 
 class plotter(object):
-    def __init__(self,arr_lst):
+    def __init__(self,arr_lst, ncols=4):
         self.arr_lst = np.array(arr_lst)
         N = self.arr_lst.shape[0]
         
-        if N > 4:
-            self.nrows = int(int(N/4)+1)
-            self.ncols = 4
-        if N <= 4:
+        if N > ncols:
+            self.nrows = int(int(N/ncols)+1)
+            self.ncols = ncols
+        if N <= ncols:
             self.nrows = 1
             self.ncols = N
         self.N = N
@@ -42,7 +42,8 @@ class plotter(object):
         if self.N > 1:
             for n, arr in enumerate(self.arr_lst):
                 arr, title = arr[0], arr[1]
-                arr = arr[2:-2,2:-2]
+                if inner == True:
+                    arr = arr[2:-2,2:-2]
                 cax = ax[self.idx[n]]
                 im = self.visualise(method,cax,arr)
                 cax.set_title(title)
@@ -54,7 +55,8 @@ class plotter(object):
                 fig.delaxes(ax[self.idx[i]])
         else:
             arr, title = self.arr_lst[0][0], self.arr_lst[0][1]
-            arr = arr[2:-2,2:-2]
+            if inner == True:
+                arr = arr[2:-2,2:-2]
             cax = fig.gca()
             im = self.visualise(method,cax,arr)
             cax.set_title(title)
