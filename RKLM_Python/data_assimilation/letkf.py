@@ -197,7 +197,13 @@ class prepare_rloc(object):
         return cell_attributes, node_attributes
 
     def analyse(self,results,obs,N,tout):
-        Nx, Ny, obs_attr, attr_len, loc = self.get_properties('cell')
+        results = self.analyse_by_grid_type(results,obs,N,tout,'cell')
+        results = self.analyse_by_grid_type(results,obs,N,tout,'node')
+        return results
+
+    def analyse_by_grid_type(self,results,obs,N,tout,grid_type):
+        print("Analysis grid type = %s" %grid_type)
+        Nx, Ny, obs_attr, attr_len, loc = self.get_properties(grid_type)
 
         obs_X, obs_Y = self.obs_X, self.obs_Y
 
@@ -207,13 +213,13 @@ class prepare_rloc(object):
         obs_p = self.get_obs(obs_p,obs_X,obs_Y,Nx,Ny,attr_len)
         Y = self.get_state_in_obs_space(results,obs_attr,obs_X,obs_Y,Nx,Ny,attr_len)
 
-        obs_covar = self.get_obs_covar('cell', Nx, Ny, obs_X, obs_Y)
+        obs_covar = self.get_obs_covar(grid_type, Nx, Ny, obs_X, obs_Y)
 
         analysis_res = np.zeros_like(X)
 
         for n in range(Nx * Ny):
-            # obs_covar_current = sparse.diags(list(obs_covar[n].ravel()) * attr_len, format='csr')
-            obs_covar_current = sparse.eye(attr_len*obs_X*obs_Y,attr_len*obs_X*obs_Y, format='csr')
+            obs_covar_current = sparse.diags(list(obs_covar[n].ravel()) * attr_len, format='csr')
+            # obs_covar_current = sparse.eye(attr_len*obs_X*obs_Y,attr_len*obs_X*obs_Y, format='csr')
 
             forward_operator = lambda ensemble : Y[n]
             local_ens = analysis(X[n],self.inf_fac)
