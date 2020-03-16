@@ -92,11 +92,11 @@ def set_rhoY_cells(analysis,results,N,th,ud,loc_c=0,loc_n=2):
         setattr(results[n][loc_c], 'rhoYc', rhoYc)
         
 def boundary_mask(ud,elem,node,loc_c,loc_n):
-    cmask = np.zeros(elem.isc)
-    nmask = np.zeros(node.isc)
+    cmask = np.ones(elem.isc).squeeze()
+    nmask = np.ones(node.isc).squeeze()
 
-    for dim in elem.ndim:
-        ghost_padding = np.zeros(elem.ndim)
+    for dim in range(elem.ndim):
+        ghost_padding = np.zeros(elem.ndim, dtype='int')
         ghost_padding[dim] = elem.igs[dim]
 
         if ud.bdry_type[dim] == enum_bdry.BdryType.PERIODIC:
