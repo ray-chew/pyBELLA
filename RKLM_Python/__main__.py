@@ -16,7 +16,7 @@ from dask.distributed import Client, progress
 # dependencies of the data assimilation module
 from data_assimilation.params import da_params
 from data_assimilation.utils import ensemble, sliding_window_view, ensemble_inflation, set_p2_nodes, set_rhoY_cells
-from data_assimilation.letkf import da_interface, bin_func
+from data_assimilation.letkf import da_interface, bin_func, prepare_rloc
 from data_assimilation.letkf import analysis as letkf_analysis
 from data_assimilation import etpf
 from data_assimilation import blending
@@ -36,7 +36,6 @@ import h5py
 from copy import deepcopy
 from management.debug import find_nearest
 from time import time
-
 
 debug = False
 output_timesteps = False
@@ -64,10 +63,14 @@ th = ThemodynamicInit(ud)
 mpv = MPV(elem, node, ud)
 bld = blending.Blend(ud)
 
+print("Input file is%s" %ud.output_base_name.replace('_',' '))
+
 ##########################################################
 # Data Assimilation part
 N = 10
-dap = da_params(N,da_type='batch_obs')
+# dap = da_params(N,da_type='batch_obs')
+dap = da_params(N, da_type='test')
+rloc = prepare_rloc(ud, elem, node, dap, N)
 
 print("Generating initial ensemble...")
 sol_ens = np.zeros((N), dtype=object)
@@ -155,7 +158,8 @@ if __name__ == '__main__':
 
                     futures.append(future)
 
-                analysis = client.gather(futures)
+                # analysis = client.gather(futures)
+                analysis = futures
                 # analysis = np.array(analysis)
 
                 print("Writing analysis...")
@@ -165,6 +169,21 @@ if __name__ == '__main__':
                     for n in range(N):
                         setattr(results[:,dap.loc[attr],...][n],attr,current[n])
                     cnt += 1
+
+            elif dap.da_type == 'test':
+                print("Starting analysis... for test algorithm")
+                results = rloc.analyse(results,obs,N,tout)
+
+                # for cnt, attr in enumerate(dap.obs_attributes):
+                #     current = analysis[cnt]
+
+                #     for n in range(N):
+                #         data = current[n]
+                #         data = data.reshape(Nx, Ny)
+                        
+                #         data = np.pad(data,2,mode='constant')
+
+                #         setattr(results[:,dap.loc[attr],...][n],attr,data)
 
             elif dap.da_type == 'rloc':
                 print("Starting analysis... for R-localisation")
