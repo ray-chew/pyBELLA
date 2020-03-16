@@ -152,10 +152,10 @@ class analysis(object):
 
 
 class prepare_rloc(object):
-    def __init__(self, elem, node, dap, N, obs_X=5, obs_Y=5):
+    def __init__(self, ud, elem, node, dap, N, obs_X=5, obs_Y=5):
         # self.elem = elem
         self.iicx = elem.iicx
-        self.iicy = elem.iigy
+        self.iicy = elem.iicy
         self.iicxn = node.iicx
         self.iicyn = node.iicy
         self.N = N
@@ -180,7 +180,7 @@ class prepare_rloc(object):
         self.obs_X = obs_X
         self.obs_Y = obs_Y
 
-        self.cmask, self.nmask = dau.boundary_mask(elem,node, self.loc_c, self.loc_n)
+        self.cmask, self.nmask = dau.boundary_mask(ud, elem,node, self.loc_c, self.loc_n)
 
         self.inf_fac = dap.inflation_factor
         self.loc_mat = dap.localisation_matrix
@@ -196,7 +196,7 @@ class prepare_rloc(object):
 
         return cell_attributes, node_attributes
 
-    def analyse(self,results,obs,tout):
+    def analyse(self,results,obs,N,tout):
         Nx, Ny, obs_attr, attr_len, loc = self.get_properties('cell')
 
         obs_X, obs_Y = self.obs_X, self.obs_Y
@@ -205,42 +205,45 @@ class prepare_rloc(object):
 
         X = self.get_state(state_p,Nx,Ny,attr_len)
         obs_p = self.get_obs(obs_p,obs_X,obs_Y,Nx,Ny,attr_len)
-        Y = self.get_state_in_obs_space(state_p,obs_attr,obs_X,obs_Y,Nx,Ny,attr_len)
+        Y = self.get_state_in_obs_space(results,obs_attr,obs_X,obs_Y,Nx,Ny,attr_len)
 
-        obs_covar = self.get_obs_covar('cell', obs_X, obs_Y)
+        obs_covar = self.get_obs_covar('cell', Nx, Ny, obs_X, obs_Y)
 
         analysis_res = np.zeros_like(X)
 
         for n in range(Nx * Ny):
+            # obs_covar_current = sparse.diags(list(obs_covar[n].ravel()) * attr_len, format='csr')
+            obs_covar_current = sparse.eye(attr_len*obs_X*obs_Y,attr_len*obs_X*obs_Y, format='csr')
+
             forward_operator = lambda ensemble : Y[n]
             local_ens = analysis(X[n],self.inf_fac)
             local_ens.forward(forward_operator)
             local_ens.localisation_matrix = self.loc_mat
-            analysis_ens = local_ens.analyse(obs_p[n],obs_covar)
+            analysis_ens = local_ens.analyse(obs_p[n],obs_covar_current)
             analysis_res[n] = analysis_ens
 
         analysis_res = np.swapaxes(analysis_res,0,2)
 
-        return analysis_res
-        # for cnt, attr in enumerate(obs_attr):
-        #     current = analysis_res[cnt]
+        for cnt, attr in enumerate(obs_attr):
+            current = analysis_res[cnt]
 
-        #     for n in range(N):
-        #         data = current[n]
-        #         data = data.reshape(Nx, Ny)
+            for n in range(N):
+                data = current[n]
+                data = data.reshape(Nx, Ny)
                 
-        #         data = np.pad(data,2,mode='constant')
+                data = np.pad(data,2,mode='constant')
 
-        #         setattr(results[:,loc,...][n],attr,data)
+                setattr(results[:,loc,...][n],attr,data)
 
+        return results
     # stack variables on grid according to grid-type. 
     # Currently supports only inner domain with no ghost cells. NO BC handling!
     def stack(self,results,obs,obs_attr,tout):
         state = self.get_quantity(results,obs_attr[0])
         state = state[:,np.newaxis,...]
 
-        obs = np.array(obs[list(self.da_times).index(tout)][obs_attr[0]])[self.i2]
-        obs = obs[np.newaxis,...]
+        obs_stack = np.array(obs[list(self.da_times).index(tout)][obs_attr[0]])[self.i2]
+        obs_stack = obs_stack[np.newaxis,...]
 
         for attr in obs_attr[1:]:
             next_attr = self.get_quantity(results,attr)[:,np.newaxis,...]
@@ -249,9 +252,9 @@ class prepare_rloc(object):
             next_obs = np.array(obs[list(self.da_times).index(tout)][attr])[self.i2]
             next_obs = next_obs[np.newaxis,...]
 
-            obs = np.vstack((obs,next_obs))
+            obs_stack = np.vstack((obs_stack,next_obs))
 
-        return state, obs
+        return state, obs_stack
 
     def get_state(self,state,Nx,Ny,attr_len):
         X = np.array([dau.sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in state])
@@ -273,7 +276,7 @@ class prepare_rloc(object):
         return obs
 
     def get_state_in_obs_space(self,state,obs_attr,obs_X,obs_Y,Nx,Ny,attr_len):
-        sios = self.get_quantity(state,obs_attr[0])
+        sios = self.get_quantity(state,obs_attr[0],inner=False)
         sios = sios[:,np.newaxis,...]
 
         for attr in obs_attr[1:]:
@@ -285,7 +288,7 @@ class prepare_rloc(object):
         sios = np.swapaxes(sios,0,1)
         return sios
 
-    def get_obs_covar(self,type, obs_X, obs_Y):
+    def get_obs_covar(self,type, Nx, Ny, obs_X, obs_Y):
         if type == 'cell':
             obs_covar = np.ones((self.iicx,self.iicy))
         else:
@@ -308,7 +311,7 @@ class prepare_rloc(object):
             assert 0, "rloc: grid-type not supported"
 
         Nx = self.iicx if type == 'cell' else self.iicxn
-        Ny = self.iicxy if type == 'cell' else self.iicyn
+        Ny = self.iicy if type == 'cell' else self.iicyn
         obs_attr = self.ca if type == 'cell' else self.na
         attr_len = self.cattr_len if type == 'cell' else self.nattr_len
         loc = self.loc_c if type == 'cell' else self.loc_n
@@ -323,8 +326,8 @@ class prepare_rloc(object):
             slc = self.i0
 
         loc = self.loc[quantity]
-        quantity = [getattr(results[:,loc,...][n], self.oa[0])[inner] for n in range(self.N)]
-        return np.array(quantity)
+        attribute_array = [getattr(results[:,loc,...][n],quantity)[slc] for n in range(self.N)]
+        return np.array(attribute_array)
 
 
 
