@@ -96,8 +96,8 @@ def boundary_mask(ud,elem,node,loc_c,loc_n):
     nmask = np.ones(node.isc).squeeze()
 
     for dim in range(elem.ndim):
-        ghost_padding = np.zeros(elem.ndim, dtype='int')
-        ghost_padding[dim] = elem.igs[dim]
+        ghost_padding = [[0,0]] * elem.ndim
+        ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
 
         if ud.bdry_type[dim] == enum_bdry.BdryType.PERIODIC:
             cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(1.0))
