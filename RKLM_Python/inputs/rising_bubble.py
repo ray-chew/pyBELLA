@@ -126,8 +126,8 @@ class UserData(object):
         self.dtfixed0 = 1.9 / self.t_ref
         self.dtfixed = 1.9 / self.t_ref
 
-        self.inx = 160+1
-        self.iny = 80+1
+        self.inx = 100+1
+        self.iny = 50+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -158,14 +158,15 @@ class UserData(object):
 
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
-        self.tout = [350 / self.t_ref]
+        # self.tout = [350 / self.t_ref]
+        self.tout = np.arange(0.0,3.51,0.05)
         # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[1] = -1.0
 
         self.stepmax = 10000
 
-        self.continuous_blending = True
-        self.no_of_pi_initial = 2
+        self.continuous_blending = False
+        self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
@@ -191,13 +192,13 @@ class UserData(object):
         gm1inv = th.gm1inv
         return (p * gm1inv + 0.5 * Msq * rho * (u*u + v*v + w*w))
 
-def sol_init(Sol, mpv, elem, node, th, ud):
+def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     u0 = ud.wind_speed
     v0 = 0.0
     w0 = 0.0
     delth = 2.0
     
-    y0 = 0.2
+    y0 = 0.3
     r0 = 0.2
 
     g = ud.gravity_strength[1]
@@ -208,8 +209,12 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     y = elem.y
 
     x, y = np.meshgrid(x,y)
+
+    if seed != None:
+        np.random.seed(seed)
+        y0 += (np.random.random()-.5)/2.0
     
-    r = np.sqrt(x**2 + (y-y0)**2) / r0
+    r = np.sqrt((x)**2 + (y-y0)**2) / r0
 
     p = np.repeat(mpv.HydroState.p0[0].reshape(1,-1),elem.icx,axis=0)
     rhoY = np.repeat(mpv.HydroState.rhoY0[0].reshape(1,-1),elem.icx,axis=0)
@@ -244,7 +249,7 @@ def sol_init(Sol, mpv, elem, node, th, ud):
 
     # hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th)
     # print(mpv.p2_nodes[103,:10])
-    ud.is_nonhydrostasy = 0.0
+    ud.is_nonhydrostasy = 1.0
     ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
