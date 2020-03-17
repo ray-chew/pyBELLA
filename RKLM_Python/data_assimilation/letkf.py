@@ -197,8 +197,10 @@ class prepare_rloc(object):
         return cell_attributes, node_attributes
 
     def analyse(self,results,obs,N,tout):
-        results = self.analyse_by_grid_type(results,obs,N,tout,'cell')
-        results = self.analyse_by_grid_type(results,obs,N,tout,'node')
+        if self.cattr_len > 0:
+            results = self.analyse_by_grid_type(results,obs,N,tout,'cell')
+        if self.nattr_len > 0:
+            results = self.analyse_by_grid_type(results,obs,N,tout,'node')
         return results
 
     def analyse_by_grid_type(self,results,obs,N,tout,grid_type):
@@ -213,18 +215,18 @@ class prepare_rloc(object):
         obs_p = self.get_obs(obs_p,obs_X,obs_Y,Nx,Ny,attr_len)
         Y = self.get_state_in_obs_space(results,obs_attr,obs_X,obs_Y,Nx,Ny,attr_len)
 
-        obs_covar = self.get_obs_covar(grid_type, Nx, Ny, obs_X, obs_Y)
+        bc_mask = self.get_bc_mask(grid_type, Nx, Ny, obs_X, obs_Y)
 
         analysis_res = np.zeros_like(X)
 
         for n in range(Nx * Ny):
-            obs_covar_current = sparse.diags(list(obs_covar[n].ravel()) * attr_len, format='csr')
-            # obs_covar_current = sparse.eye(attr_len*obs_X*obs_Y,attr_len*obs_X*obs_Y, format='csr')
+            obs_covar_current = sparse.eye(attr_len*obs_X*obs_Y,attr_len*obs_X*obs_Y, format='csr')
 
             forward_operator = lambda ensemble : Y[n]
             local_ens = analysis(X[n],self.inf_fac)
             local_ens.forward(forward_operator)
-            local_ens.localisation_matrix = self.loc_mat
+            # local_ens.localisation_matrix = self.loc_mat
+            local_ens.localisation_matrix = np.diag(list(bc_mask[n].ravel()) * attr_len) * np.diag((list(self.loc_mat) * attr_len))
             analysis_ens = local_ens.analyse(obs_p[n],obs_covar_current)
             analysis_res[n] = analysis_ens
 
@@ -294,22 +296,22 @@ class prepare_rloc(object):
         sios = np.swapaxes(sios,0,1)
         return sios
 
-    def get_obs_covar(self,type, Nx, Ny, obs_X, obs_Y):
+    def get_bc_mask(self,type, Nx, Ny, obs_X, obs_Y):
         if type == 'cell':
-            obs_covar = np.ones((self.iicx,self.iicy))
+            bc_mask = np.ones((self.iicx,self.iicy))
         else:
-            obs_covar = np.ones((self.iicxn,self.iicyn))
+            bc_mask = np.ones((self.iicxn,self.iicyn))
 
-        obs_covar = np.pad(obs_covar, 2, mode='constant', constant_values=(1.0))
+        bc_mask = np.pad(bc_mask, 2, mode='constant', constant_values=(1.0))
 
         if type == 'cell':
-            obs_covar *= self.cmask
+            bc_mask *= self.cmask
         else:
-            obs_covar *= self.nmask
+            bc_mask *= self.nmask
 
-        obs_covar = np.array(dau.sliding_window_view(obs_covar, (obs_X,obs_Y), (1,1))).reshape(Nx*Ny,obs_X,obs_Y)
+        bc_mask = np.array(dau.sliding_window_view(bc_mask, (obs_X,obs_Y), (1,1))).reshape(Nx*Ny,obs_X,obs_Y)
 
-        return obs_covar
+        return bc_mask
 
 
     def get_properties(self,type):
