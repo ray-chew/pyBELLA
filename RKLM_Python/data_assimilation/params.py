@@ -3,39 +3,46 @@ import h5py
 
 class da_params(object):
 
-    def __init__(self,N,da_type='rloc',loc=0):
+    def __init__(self,N,da_type='rloc'):
         # number of ensemble members
         self.N = N
-        self.da_times = np.arange(0.0,6.1,0.25)[1:]
+        self.da_times = np.arange(0.0,3.51,0.25)[1:]
+        # self.da_times = np.arange(0.0,6.1,0.25)[1:]
         # self.da_times = []
-        self.obs_attributes = ['rhoY']
-        # self.obs_attributes = ['p2_nodes']
-        # self.obs_attributes = ['rho', 'rhou', 'rhov', 'p2_nodes']
+        self.obs_attributes = ['rhov']
+        self.obs_attributes = ['rho','rhou','rhov','rhoY','p2_nodes']
+        # self.obs_attributes = ['rhoY',/'p2_nodes']
+        # self.obs_attributes = ['rhov']
 
-        # self.obs_attributes = ['rho', 'rhou', 'rhov']
+        # self.obs_attributes = ['rhoY']
+        # self.obs_attributes = ['rho', 'rhou', 'rhov','rhoY','p2_nodes']
 
         # which attributes to inflate in ensemble inflation?
-        # self.attributes = ['rho', 'rhou', 'rhov']
+        self.attributes = ['rho', 'rhou', 'rhov']
 
-        self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_6.0_truthgen.h5'
+        # self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_6.0_truthgen.h5'
+        self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_3.5_psinc.h5'
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)
 
         # localisation matrix
-        self.localisation_matrix = np.eye(N)
+        # self.localisation_matrix = np.eye(N)
         weights = [0.05719096,0.25464401,0.33333333,0.25464401,0.05719096,0.25464401,0.52859548,0.66666667,0.52859548,0.25464401,0.33333333,0.66666667,1.,0.66666667,0.33333333,0.25464401,0.52859548,0.66666667,0.52859548,0.25464401,0.05719096,0.25464401,0.33333333,0.25464401,0.05719096]
         # weights = [0.01831564,0.082085,0.13533528,0.082085,0.01831564,0.082085,0.36787944,0.60653066,0.36787944,0.082085,0.13533528,0.60653066,1.,0.60653066,0.13533528,0.082085,0.36787944,0.60653066,0.36787944,0.082085,0.01831564,0.082085,0.13533528,0.082085,0.01831564]
 
-        weights3 = weights*3
-        self.localisation_matrix = np.diag(weights3)
-        self.localisation_matrix += np.diag(np.ones_like(weights3))
+        # weights3 = weights*len(self.obs_attributes)
+        # self.localisation_matrix = np.diag(weights)
+        # self.localisation_matrix += np.diag(np.ones_like(weights))
+        # self.localisation_matrix = np.diag(np.ones((len(weights3))))
+        self.localisation_matrix = weights
+        self.localisation_matrix = np.ones_like(weights)
         
         self.aprior_error_covar = 0.0001
         self.da_type = da_type
 
         # ensemble inflation factor for LETKF
-        self.inflation_factor = 2.0
+        self.inflation_factor = 1.0
 
         # rejuvenation factor for ETPF
         self.rejuvenation_factor = 0.001
