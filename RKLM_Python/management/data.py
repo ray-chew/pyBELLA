@@ -150,7 +150,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
             if writer != None: writer.populate(str(label)+'_after_full_step', 'dp2n', dp2n)
             bld.convert_p2n(dp2n)
-            # bld.update_Sol(Sol,elem,node,th,ud, mpv,label=label,writer=writer)
+            bld.update_Sol(Sol,elem,node,th,ud, mpv,label=label,writer=writer)
             bld.update_p2n(Sol,mpv,node,th,ud)
         
         # if step > 0 and bld != None:
