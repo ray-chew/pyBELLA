@@ -147,7 +147,7 @@ class UserData(object):
         self.tol = 1.e-6
         self.max_iterations = 6000
 
-        self.continuous_blending = True
+        self.continuous_blending = False
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
@@ -170,8 +170,8 @@ class UserData(object):
         # self.tout[0] =  1.0
         # self.tout[1] = -1.0
         self.tout = np.arange(0.0,6.1,0.25)
-        # self.tout = np.arange(0.0,6.001,0.005)
-        # self.tout = [1.0]
+        # self.tout = np.arange(0.0,1.001,0.005)
+        # self.tout = [6.0]
 
 
         # self.tout = times.copy()
@@ -180,8 +180,6 @@ class UserData(object):
         self.stepmax = 20000
 
         self.output_base_name = "_travelling_vortex"
-        self.output_name_psinc = "_low_mach_gravity_psinc"
-        self.output_name_comp = "_low_mach_gravity_comp"
         if self.is_compressible == 1:
             self.output_suffix = "_%i_%i_%.1f_comp" %(self.inx-1,self.iny-1,self.tout[-1])
         if self.is_compressible == 0:
@@ -226,10 +224,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     xc = 0.0
     yc = 0.0
 
-    # if seed != None:
-    #     np.random.seed(seed)
-    #     xc = (np.random.random() - 0.5)/10.
-    #     yc = (np.random.random() - 0.5)/10.
+    if seed != None:
+        np.random.seed(seed)
+        xc = (np.random.random() - 0.5)/10.
+        yc = (np.random.random() - 0.5)/10.
 
     xcm = xc - (ud.xmax - ud.xmin)
     ycm = yc - (ud.ymax - ud.ymin)
@@ -293,18 +291,18 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rho[...] += (rho0 + del_rho * (1. - (r/R0)**2)**6) * (r < R0)
     rho[...] += rho0 * (r > R0)
 
-    if seed != None:
-        np.random.seed(seed)
-        rhop = np.fft.fft2(rho)
-        rhop00 = np.copy(rhop[0,0])
+    # if seed != None:
+    #     np.random.seed(seed)
+    #     rhop = np.fft.fft2(rho)
+    #     rhop00 = np.copy(rhop[0,0])
 
-        rhop = np.fft.fftshift(rhop)
-        slc = (slice(int(elem.icx/2-1),int(elem.icx/2+2)),slice(int(elem.icy/2-1),int(elem.icy/2+2)))
+    #     rhop = np.fft.fftshift(rhop)
+    #     slc = (slice(int(elem.icx/2-1),int(elem.icx/2+2)),slice(int(elem.icy/2-1),int(elem.icy/2+2)))
 
-        rhop[slc] += 30.0 * np.random.random(rhop[slc].shape)
-        rhop = np.fft.ifftshift(rhop)
-        rhop[0,0] = rhop00
-        rho = np.fft.ifft2(rhop).real
+    #     rhop[slc] += 30.0 * np.random.random(rhop[slc].shape)
+    #     rhop = np.fft.ifftshift(rhop)
+    #     rhop[0,0] = rhop00
+    #     rho = np.fft.ifft2(rhop).real
 
     dp2c = np.zeros_like((r))
     for ip in range(25):
@@ -361,8 +359,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
     # set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
-    Sol.rhoY[...] = 1.0
-    mpv.p2_nodes[...] = 0.0
+    # Sol.rhoY[...] = 1.0
+    # mpv.p2_nodes[...] = 0.0
 
     # from scipy import signal
     # p2n = mpv.p2_nodes - mpv.p2_nodes.mean()
