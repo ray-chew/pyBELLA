@@ -62,7 +62,7 @@ def data_init(ud):
 # def time_update_wrapper(t,tout,ud,elem,node,step,th,writer=None,debug=False):
 #     return lambda mem: time_update(mem[0],mem[1],mem[2],t,tout,ud,elem,node,step,th,writer=writer,debug=debug)
 
-def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,debug=False):
+def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,debug=False):
     """
     For more details, refer to the write-up :ref:`time-stepping`.
 
@@ -109,7 +109,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
     list
         A list of `[Sol,flux,mpv]` data containers at time `tout`.
     """
-    window_step = 0
+    window_step = steps[0]
+    step = steps[1]
 
     while ((t < tout) and (step < ud.stepmax)):
         boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
@@ -133,7 +134,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
             Sol_freeze = deepcopy(Sol)
             mpv_freeze = deepcopy(mpv)
 
-            ret = time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, step-1, th, bld=None, writer=None, debug=False)
+            ret = time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, [0,step-1], th, bld=None, writer=None, debug=False)
             dp2n = (1.0 * ret[2].p2_nodes + 3.0 * mpv_freeze.p2_nodes) * 0.25
 
             # dp2n = ret[2].p2_nodes
@@ -149,7 +150,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
 
             if writer != None: writer.populate(str(label)+'_after_full_step', 'dp2n', dp2n)
             bld.convert_p2n(dp2n)
-            bld.update_Sol(Sol,elem,node,th,ud, mpv,label=label,writer=writer)
+            # bld.update_Sol(Sol,elem,node,th,ud, mpv,label=label,writer=writer)
             bld.update_p2n(Sol,mpv,node,th,ud)
         
         # if step > 0 and bld != None:
@@ -171,7 +172,10 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
         ud.acoustic_order = acoustic_order(ud,t, window_step)
 
         if ud.continuous_blending == True:
-            print("step = %i, window_step = %i" %(step,window_step))
+            if window_step >= 0:
+                print("step = %i, window_step = %i" %(step,window_step))
+            else:
+                print("step = %i, window_step = %f" %(step,window_step))
             print("is_compressible = %i, is_nonhydrostatic = %i" %(ud.is_compressible, ud.is_nonhydrostatic))
             print("compressibility = %.3f, nonhydrostasy = %.3f" %(ud.compressibility,ud.nonhydrostasy))
             print("-------")
@@ -287,7 +291,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,step,th,bld=None,writer=None,de
         step += 1
         window_step += 1
 
-    return [Sol,flux,mpv,step]
+    return [Sol,flux,mpv,[window_step,step]]
 
 def half_step(Sol,flux,mpv,t,tout,ud,elem,node,step,th):
     dt, _, _ = dynamic_timestep(Sol,t,tout,elem,ud,th, step)

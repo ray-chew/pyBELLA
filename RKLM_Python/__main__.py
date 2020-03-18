@@ -24,10 +24,10 @@ from scipy import sparse
 
 # input file
 # from inputs.baroclinic_instability_periodic import UserData, sol_init
-from inputs.travelling_vortex_2D import UserData, sol_init
+# from inputs.travelling_vortex_2D import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
-# from inputs.rising_bubble import UserData, sol_init
+from inputs.rising_bubble import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
 import h5py
@@ -68,7 +68,7 @@ print("Input file is%s" %ud.output_base_name.replace('_',' '))
 ##########################################################
 # Data Assimilation part
 N = 10
-# dap = da_params(N,da_type='batch_obs')
+dap = da_params(N,da_type='batch_obs')
 dap = da_params(N, da_type='test')
 rloc = prepare_rloc(ud, elem, node, dap, N)
 
@@ -82,9 +82,9 @@ if seeds[0] != None:
         Sol0 = deepcopy(Sol)
         mpv0 = deepcopy(mpv)
         Sol0 = sol_init(Sol0,mpv0,elem,node,th,ud, seed=seeds[n])
-        sol_ens[n] = [Sol0,deepcopy(flux),mpv0,step]
+        sol_ens[n] = [Sol0,deepcopy(flux),mpv0,[-np.inf,step]]
 else:
-    sol_ens = [[sol_init(Sol, mpv, elem, node, th, ud),flux,mpv,step]]
+    sol_ens = [[sol_init(Sol, mpv, elem, node, th, ud),flux,mpv,[-np.inf,step]]]
 ens = ensemble(sol_ens)
 
 ##########################################################
@@ -118,17 +118,22 @@ if __name__ == '__main__':
     tic = time()
 
     #### main time looping
+    tout_old = -np.inf
     tout_cnt = 0
     for tout in ud.tout:
         futures = []
+
+        blend = bld if tout_old in dap.da_times else None
+
         print('##############################################')
         print('Next tout = %.3f' %tout)
         print("Starting forecast...")
         mem_cnt = 0
         for mem in ens.members(ens):
             # future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, None, False])
+            mem[3][0] = 0 if tout_old in dap.da_times else mem[3][0]
             print("For ensemble member = %i..." %mem_cnt)
-            future = time_update(mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, wrtr, debug)
+            future = time_update(mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, blend, wrtr, debug)
 
             futures.append(future)
             mem_cnt += 1
@@ -296,6 +301,7 @@ if __name__ == '__main__':
 
         # synchronise_variables(mpv, Sol, elem, node, ud, th)
         t = tout
+        tout_old = np.copy(tout)
         print('tout = %.3f' %tout)
 
         tout_cnt += 1
