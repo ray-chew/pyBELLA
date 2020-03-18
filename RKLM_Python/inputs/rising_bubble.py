@@ -165,7 +165,7 @@ class UserData(object):
 
         self.stepmax = 10000
 
-        self.continuous_blending = False
+        self.continuous_blending = True
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
