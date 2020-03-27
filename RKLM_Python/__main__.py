@@ -25,9 +25,9 @@ from scipy import sparse
 # input file
 # from inputs.baroclinic_instability_periodic import UserData, sol_init
 # from inputs.travelling_vortex_2D import UserData, sol_init
-# from inputs.acoustic_wave_high import UserData, sol_init
+from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
-from inputs.rising_bubble import UserData, sol_init
+# from inputs.rising_bubble import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
 import h5py
@@ -38,8 +38,8 @@ from management.debug import find_nearest
 from time import time
 
 debug = False
-output_timesteps = False
-label_type = 'TIME'
+output_timesteps = True
+label_type = 'STEP'
 np.set_printoptions(precision=18)
 
 step = 0
@@ -67,7 +67,7 @@ print("Input file is%s" %ud.output_base_name.replace('_',' '))
 
 ##########################################################
 # Data Assimilation part
-N = 10
+N = 1
 dap = da_params(N,da_type='batch_obs')
 dap = da_params(N, da_type='test')
 rloc = prepare_rloc(ud, elem, node, dap, N)
@@ -111,7 +111,7 @@ if __name__ == '__main__':
         if label_type == 'STEP':
             label = ('ensemble_mem=%i_%.3d' %(n,step))
         else:
-            label = ('ensemble_mem=%i_%.3f' %(n,0.0))
+            label = ('ensemble_mem=%i_%.6f' %(n,0.0))
         writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
     client = Client(threads_per_worker=1, n_workers=1)
@@ -120,10 +120,14 @@ if __name__ == '__main__':
     #### main time looping
     tout_old = -np.inf
     tout_cnt = 0
+    outer_step = 0
     for tout in ud.tout:
         futures = []
 
-        blend = bld if tout_old in dap.da_times else None
+        if N > 0 :
+            blend = bld if tout_old in dap.da_times else None
+        else:
+            blend = bld
 
         print('##############################################')
         print('Next tout = %.3f' %tout)
@@ -293,7 +297,8 @@ if __name__ == '__main__':
             mpv = ens.members(ens)[n][2]
 
             if label_type == 'STEP':
-                step = ens.members(ens)[0][3]
+                # step = ens.members(ens)[0][3]
+                step = outer_step
                 label = ('ensemble_mem=%i_%.3d' %(n,step))
             else:
                 label = ('ensemble_mem=%i_%.3f' %(n,tout))
@@ -305,6 +310,7 @@ if __name__ == '__main__':
         print('tout = %.3f' %tout)
 
         tout_cnt += 1
+        outer_step += 1
 
     toc = time()
     print("Time taken = %.6f" %(toc-tic))
