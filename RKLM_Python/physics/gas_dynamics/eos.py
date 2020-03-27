@@ -41,8 +41,11 @@ def is_compressible(ud,step):
                 return 0
             else:
                 return 1
+        else:
+            return ud.is_compressible
     else:
         return ud.is_compressible
+    
 
 def is_nonhydrostatic(ud,step):
     # print("is_nonhydrostatic", ud.is_nonhydrostatic)
@@ -56,6 +59,8 @@ def is_nonhydrostatic(ud,step):
                 return -1
             else:
                 return 1
+        else:
+            return ud.is_nonhydrostatic
     else:
         return ud.is_nonhydrostatic
 
