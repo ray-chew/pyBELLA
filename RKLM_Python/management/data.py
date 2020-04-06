@@ -135,13 +135,16 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             mpv_freeze = deepcopy(mpv)
 
             ret = time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, [0,step-1], th, bld=None, writer=None, debug=False)
-            dp2n = (1.0 * ret[2].p2_nodes + 3.0 * mpv_freeze.p2_nodes) * 0.25
+
+            fac_old = 0./16
+            fac_new = 1.0 - fac_old
+            dp2n = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
 
             # dp2n = ret[2].p2_nodes
             # ret = half_step(Sol, flux, mpv, t, t+0.5*dt, ud, elem, node, step-1, th)
             # dp2n = ret.p2_nodes
 
-            # ret = time_update(Sol,flux,mpv, t, t+0.5*dt, ud, elem, node, step-1, th, bld=None, writer=None, debug=False)
+            # ret = time_update(Sol,flux,mpv, t, t+0.5*dt, ud, elem, node, [0,step-1], th, bld=None, writer=None, debug=False)
             # dp2n = (1.0 * ret[2].p2_nodes + 1.0 * mpv_freeze.p2_nodes) * 0.5
             if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_start', mpv_freeze.p2_nodes)
             if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_end', ret[2].p2_nodes)
