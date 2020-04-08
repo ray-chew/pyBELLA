@@ -27,9 +27,8 @@ class plotter(object):
             self.idx = cidx
             
         self.visualise = self.visualise
-    
             
-    def plot(self,method='imshow',figsize=[None],inner=False):
+    def plot(self,method='imshow',figsize=[None],inner=False,suptitle=""):
         if method != 'imshow' or method != 'contour':
             assert(0, "Visualisation method not implemented!")
             
@@ -63,7 +62,8 @@ class plotter(object):
             divider = make_axes_locatable(cax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             plt.colorbar(im, cax=cax)
-        
+            
+        plt.suptitle(suptitle)
         plt.tight_layout()
         plt.show()
         
