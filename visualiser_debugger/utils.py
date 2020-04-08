@@ -18,8 +18,11 @@ class test_case(object):
         self.get_arr = self.get_arr
         
         
-    def cb_suffix(self,fs,ts):
-        return "cont_blend_fs=%i_ts=%i" %(fs,ts)
+    def cb_suffix(self,fs,ts,suffix=""):
+        if suffix != "":
+            return "%s_cont_blend_fs=%i_ts=%i" %(suffix,fs,ts)
+        else:
+            return "cont_blend_fs=%i_ts=%i" %(fs,ts)
 
 
     @staticmethod
@@ -53,7 +56,7 @@ class test_case(object):
         return pyfile[str(py_dataset)][str(py_dataset)+time][:]
 
 
-    def get_arr(self, path, time, N, attribute, label_type='TIME', tag='after_full_step', inner=False):
+    def get_arr(self, path, time, N, attribute, label_type='TIME', tag='after_full_step', inner=False, avg=True):
         if inner == False:
             inner = (slice(None,),slice(None,))
         else:
@@ -74,20 +77,22 @@ class test_case(object):
             array.append(self.py_out(file,attribute,time=t_label)[inner])
 
         array = np.array(array)
-        array = array.mean(axis=0)
+        if avg == True:
+            array = array.mean(axis=0)
 
         file.close()
         return np.array(array)
     
     @staticmethod
-    def spatially_averaged_rmse(arrs,refs):
+    def spatially_averaged_rmse(arrs,refs,avg=False):
         diff = []
         for arr, ref in zip(arrs,refs):
             arr = arr[2:-2,2:-2]
             ref = ref[2:-2,2:-2]
             
-            arr -= arr.mean()
-            ref -= ref.mean()
+            if avg==True:
+                arr -= arr.mean()
+                ref -= ref.mean()
 
             diff.append(np.sqrt(((arr - ref)**2).mean()))
         return np.array(diff)
@@ -151,10 +156,10 @@ def get_diff(probe):
     return probe[1:] - probe[:-1]
 
 def spatially_averaged_rmse(arr,ref):
-    arr = arr[2:-2,2:-2]
-    ref = ref[2:-2,2:-2]
+    #arr = arr[2:-2,2:-2]
+    #ref = ref[2:-2,2:-2]
     
-    arr -= arr.mean()
-    ref -= ref.mean()
+    #arr -= arr.mean()
+    #ref -= ref.mean()
 
     return np.sqrt(((arr - ref)**2).mean())
