@@ -136,7 +136,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
             ret = time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, [0,step-1], th, bld=None, writer=None, debug=False)
 
-            fac_old = 0./16
+            fac_old = 12./16
             fac_new = 1.0 - fac_old
             dp2n = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
 
