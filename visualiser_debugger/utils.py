@@ -1,5 +1,6 @@
 import numpy as np
 import h5py
+from time import time
 
 class test_case(object):
     def __init__(self,base_fn,py_dir,Nx,Ny,end_time):
@@ -163,3 +164,14 @@ def spatially_averaged_rmse(arr,ref):
     #ref -= ref.mean()
 
     return np.sqrt(((arr - ref)**2).mean())
+
+class prt_time(object):
+    def __init__(self, debug=True):
+        self.tic = time()
+        self.debug = debug
+        
+    def prtt(self, label=""):
+        curr_time = time()
+        if self.debug==True:
+            print(label, curr_time - self.tic)
+        self.tic = curr_time
