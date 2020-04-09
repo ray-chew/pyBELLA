@@ -79,9 +79,19 @@ class plotter(object):
                 im = cax.contour(arr,levels=lvls)
         return im
     
-    
-            
-            
-            
-            
+class plotter_1d(object):
+    def __init__(self,ncols=2,nrows=3,figsize=(12,12)):
+        self.fig, self.ax = plt.subplots(ncols=2,nrows=3, figsize=(12,12))
         
+    def set_x(self,x_axs):
+        self.x = x_axs
+        
+    def get_ax(self,i):
+        
+        #if not hasattr(self,'x'):
+            #assert 0, "x-axis has not been set, use set_x(x_axs)."
+            
+        row = int(np.floor(i/2))
+        col = int(i%2)
+        
+        return self.ax[row,col]
