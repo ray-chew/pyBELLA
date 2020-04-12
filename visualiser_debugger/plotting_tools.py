@@ -4,7 +4,7 @@ import numpy as np
 import itertools
 
 class plotter(object):
-    def __init__(self,arr_lst, ncols=4):
+    def __init__(self,arr_lst, ncols=4, figsize=(12,8)):
         self.arr_lst = np.array(arr_lst)
         N = self.arr_lst.shape[0]
         
@@ -27,36 +27,47 @@ class plotter(object):
             self.idx = cidx
             
         self.visualise = self.visualise
+        self.fig, self.ax = plt.subplots(ncols=self.ncols,nrows=self.nrows,figsize=figsize)
+        
+        self.img = plt
             
-    def plot(self,method='imshow',figsize=[None],inner=False,suptitle=""):
+    def set_axes(self,x_locs=None,x_axs=None,y_locs=None,y_axs=None):
+       self.x_locs= x_locs
+       self.x_axs = x_axs
+       self.y_locs = y_locs
+       self.y_axs = y_axs
+       
+    def plot(self,method='imshow',inner=False,suptitle=""):
         if method != 'imshow' or method != 'contour':
             assert(0, "Visualisation method not implemented!")
             
-        if figsize[0] != None:
-            figsize = figsize
-        else:
-            figsize = (12,8)
-        fig, ax = plt.subplots(ncols=self.ncols,nrows=self.nrows,figsize=figsize)
-        
         if self.N > 1:
             for n, arr in enumerate(self.arr_lst):
                 arr, title = arr[0], arr[1]
                 if inner == True:
                     arr = arr[2:-2,2:-2]
-                cax = ax[self.idx[n]]
+                cax = self.ax[self.idx[n]]
+                
                 im = self.visualise(method,cax,arr)
                 cax.set_title(title)
+                loc = cax.get_xticklabels()
+                
+                if hasattr(self, 'x_locs') : cax.set_xticks(self.x_locs)
+                if hasattr(self, 'x_axs') : cax.set_xticklabels(self.x_axs)
+                if hasattr(self, 'y_locs') : cax.set_yticks(self.y_locs)
+                if hasattr(self, 'y_axs') : cax.set_yticklabels(self.y_axs)
+                
                 divider = make_axes_locatable(cax)
                 cax = divider.append_axes("right", size="5%", pad=0.05)
                 plt.colorbar(im, cax=cax)
                 
             for i in range(n+1,self.nrows*self.ncols):
-                fig.delaxes(ax[self.idx[i]])
+                self.fig.delaxes(self.ax[self.idx[i]])
         else:
             arr, title = self.arr_lst[0][0], self.arr_lst[0][1]
             if inner == True:
                 arr = arr[2:-2,2:-2]
-            cax = fig.gca()
+            cax = self.fig.gca()
             im = self.visualise(method,cax,arr)
             cax.set_title(title)
             divider = make_axes_locatable(cax)
@@ -64,9 +75,10 @@ class plotter(object):
             plt.colorbar(im, cax=cax)
             
         plt.suptitle(suptitle)
-        plt.tight_layout()
-        plt.show()
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
         
+    def save_fig(self, fn, format='.pdf'):
+        self.img.savefig(fn + format)
         
     @staticmethod
     def visualise(method,cax,arr,lvls=[None]):
@@ -80,8 +92,9 @@ class plotter(object):
         return im
     
 class plotter_1d(object):
-    def __init__(self,ncols=2,nrows=3,figsize=(12,12)):
-        self.fig, self.ax = plt.subplots(ncols=2,nrows=3, figsize=(12,12))
+    def __init__(self,ncols=3,nrows=2,figsize=(12,12),fontsize=16):
+        plt.rcParams.update({'font.size': fontsize})
+        self.fig, self.ax = plt.subplots(ncols=3,nrows=2, figsize=figsize)
         
     def set_x(self,x_axs):
         self.x = x_axs
@@ -91,7 +104,8 @@ class plotter_1d(object):
         #if not hasattr(self,'x'):
             #assert 0, "x-axis has not been set, use set_x(x_axs)."
             
-        row = int(np.floor(i/2))
-        col = int(i%2)
+        row = int(np.floor(i/3))
+        col = int(i%3)
         
         return self.ax[row,col]
+        return self.ax
