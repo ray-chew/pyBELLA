@@ -37,7 +37,8 @@ class plotter(object):
        self.y_locs = y_locs
        self.y_axs = y_axs
        
-    def plot(self,method='imshow',inner=False,suptitle=""):
+    def plot(self,method='imshow',inner=False,suptitle="",rect=[0, 0.03, 1, 0.95],fontsize=14):
+        plt.rcParams.update({'font.size': fontsize})
         if method != 'imshow' or method != 'contour':
             assert(0, "Visualisation method not implemented!")
             
@@ -75,10 +76,11 @@ class plotter(object):
             plt.colorbar(im, cax=cax)
             
         plt.suptitle(suptitle)
-        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plt.tight_layout(rect=rect)
         
     def save_fig(self, fn, format='.pdf'):
-        self.img.savefig(fn + format)
+        self.img.savefig(fn + format, bbox_inches = 'tight', pad_inches = 0)
+        
         
     @staticmethod
     def visualise(method,cax,arr,lvls=[None]):
