@@ -169,9 +169,9 @@ class UserData(object):
         # self.tout = [0.1]
         # self.tout[0] =  1.0
         # self.tout[1] = -1.0
-        self.tout = np.arange(0.0,6.1,0.25)
         # self.tout = np.arange(0.0,1.001,0.005)
-        # self.tout = [6.0]
+        # self.tout = np.arange(0.0,6.05,0.05)
+        self.tout = [1.0]
 
 
         # self.tout = times.copy()
@@ -381,6 +381,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         Sol.rhov -= v0 * Sol.rho
 
         euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5)
+        # euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, 2.5e-3, 0.5)
 
         mpv.p2_nodes[...] = p2aux
         mpv.dp2_nodes[...] = 0.0

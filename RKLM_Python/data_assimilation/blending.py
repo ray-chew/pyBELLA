@@ -65,7 +65,6 @@ class Blend(object):
         Sol.rhow[...] *= rho_fac
         Sol.rhoX[...] *= rho_fac
 
-
         ### keep rho, convert theta
         # tol = .0002
         # diffY = alpha - Sol.rhoY
