@@ -39,7 +39,7 @@ from time import time
 
 debug = False
 output_timesteps = True
-label_type = 'STEP'
+label_type = 'TIME'
 np.set_printoptions(precision=18)
 
 step = 0
@@ -69,7 +69,7 @@ print("Input file is%s" %ud.output_base_name.replace('_',' '))
 # Data Assimilation part
 N = 1
 dap = da_params(N,da_type='batch_obs')
-dap = da_params(N, da_type='test')
+# dap = da_params(N, da_type='test')
 rloc = prepare_rloc(ud, elem, node, dap, N)
 
 print("Generating initial ensemble...")
@@ -220,9 +220,6 @@ if __name__ == '__main__':
                 # print("obs_c (before win) = ", obs_current.shape)
                 X = np.array([sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in tmp])
                 X = np.swapaxes(X,0,1)
-
-                # print(tmp.shape)
-                # print(X.shape
                 
                 obs_X = 5
                 obs_Y = 5

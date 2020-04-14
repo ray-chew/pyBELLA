@@ -135,15 +135,18 @@ class UserData(object):
 
         self.time_integrator = TimeIntegrator.SI_MIDPT
         self.advec_time_integrator = TimeIntegrator.STRANG
-        self.CFL  = 77.0
+        # self.CFL  = 77.0
+        self.CFL = 0.45
         self.dtfixed0 = 0.0000668205
         self.dtfixed = 0.0000668205
 
         # self.tips = TimeIntegratorParams()
         # SetTimeIntegratorParameters(self)
 
+        # self.inx = 64+1
+        # self.iny = 32+1
         self.inx = 64+1
-        self.iny = 32+1
+        self.iny = 64+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -183,10 +186,12 @@ class UserData(object):
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
         # self.tout[0] =  0.00267282
-        self.tout = [0.00267282]
+        # self.tout = [0.00267282]
+        # self.tout = np.arange(0.0,0.00267282,2.5e-5)
+        self.tout = np.arange(0.0,0.002+2.5e-5,2.5e-5)
         # self.tout[1] = -1.0
 
-        self.stepmax = 41
+        self.stepmax = 999
 
         self.write_stdout = True
         self.write_stdout_period = 1

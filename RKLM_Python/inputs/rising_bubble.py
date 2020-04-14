@@ -7,6 +7,8 @@ from physics.hydrostatics import hydrostatic_state, hydrostatic_initial_pressure
 from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
 from management.variable import States
 
+from physics.low_mach.second_projection import euler_backward_non_advective_impl_part
+
 class UserData(object):
     NSPEC = 1
     BOUY = 0
@@ -122,9 +124,12 @@ class UserData(object):
 
         self.time_integrator = TimeIntegrator.SI_MIDPT
         self.advec_time_integrator = TimeIntegrator.STRANG
-        self.CFL  = 0.5
+        # self.CFL  = 0.5
+        self.CFL = 0.5
         self.dtfixed0 = 1.9 / self.t_ref
         self.dtfixed = 1.9 / self.t_ref
+        # self.dtfixed0 = 0.025
+        # self.dtfixed = 0.025
 
         self.inx = 100+1
         self.iny = 50+1
@@ -159,7 +164,9 @@ class UserData(object):
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
         # self.tout = [350 / self.t_ref]
-        self.tout = np.arange(0.0,3.51,0.05)
+        # self.tout = [10.0]
+        # self.tout = np.arange(0.0,3.51,0.05)
+        self.tout = np.arange(0.0,10.05,0.05)
         # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[1] = -1.0
 
@@ -213,6 +220,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     if seed != None:
         np.random.seed(seed)
         y0 += (np.random.random()-.5)/2.0
+        # delth += 10.0*(np.random.random()-.5)
     
     r = np.sqrt((x)**2 + (y-y0)**2) / r0
 
@@ -251,6 +259,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     # print(mpv.p2_nodes[103,:10])
     ud.is_nonhydrostasy = 1.0
     ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
+    # ud.nonhydrostasy = float(ud.is_nonhydrostasy)
+    # ud.acoustic_order = 1.0
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 

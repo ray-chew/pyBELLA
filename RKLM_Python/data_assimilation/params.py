@@ -6,12 +6,13 @@ class da_params(object):
     def __init__(self,N,da_type='rloc'):
         # number of ensemble members
         self.N = N
-        self.da_times = np.arange(0.0,3.51,0.25)[1:]
+        # self.da_times = np.arange(0.0,3.75,0.25)[1:]
+        self.da_times = np.arange(0.0,10.25,0.25)[1:]
         # self.da_times = np.arange(0.0,6.1,0.25)[1:]
         # self.da_times = []
-        self.obs_attributes = ['rhov']
         self.obs_attributes = ['rho','rhou','rhov','rhoY','p2_nodes']
-        # self.obs_attributes = ['rhoY',/'p2_nodes']
+        # self.obs_attributes = ['rho','rhou','rhov']
+        # self.obs_attributes = ['rhoY','p2_nodeps']
         # self.obs_attributes = ['rhov']
 
         # self.obs_attributes = ['rhoY']
@@ -21,7 +22,7 @@ class da_params(object):
         self.attributes = ['rho', 'rhou', 'rhov']
 
         # self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_6.0_truthgen.h5'
-        self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_3.5_psinc.h5'
+        self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_psinc_delth_ref.h5'
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)
@@ -36,7 +37,7 @@ class da_params(object):
         # self.localisation_matrix += np.diag(np.ones_like(weights))
         # self.localisation_matrix = np.diag(np.ones((len(weights3))))
         self.localisation_matrix = weights
-        self.localisation_matrix = np.ones_like(weights)
+        self.localisation_matrix = np.ones_like(weights) * 1.0 #+ weights
         
         self.aprior_error_covar = 0.0001
         self.da_type = da_type
