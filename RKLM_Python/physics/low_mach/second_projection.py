@@ -1,6 +1,6 @@
 from inputs.enum_bdry import BdryType
 from inputs.boundary import set_explicit_boundary_data, set_ghostnodes_p2
-from physics.low_mach.laplacian import stencil_9pt, stencil_27pt, precon_diag_prepare
+from physics.low_mach.laplacian import stencil_9pt, stencil_32pt, precon_diag_prepare
 from scipy import signal
 import numpy as np
 from itertools import product
@@ -232,7 +232,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
         # lap = LinearOperator((sh,sh),lap)
     elif elem.ndim == 3:
-        lap = stencil_27pt(elem,node,mpv,ud,diag_inv)
+        lap = stencil_32pt(elem,node,mpv,ud,diag_inv)
         # p2 = mpv.p2_nodes[1:-1,1:-1,1:-1]
 
         sh = p2.reshape(-1).shape[0]
