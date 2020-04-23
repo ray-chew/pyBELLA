@@ -200,12 +200,11 @@ def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_per
     return lap
 
 
-def stencil_27pt(elem,node,mpv,ud,diag_inv):
+def stencil_32pt(elem,node,mpv,ud,diag_inv):
     oodxyz = node.dxyz
     oodxyz = 1./(oodxyz**2)
     oodx2, oody2, oodz2 = oodxyz[0], oodxyz[1], oodxyz[2]
 
-    # print(oodxyz)
     i0 = (slice(0,-1),slice(0,-1),slice(0,-1))
     i1 = (slice(1,-1),slice(1,-1),slice(1,-1))
     i2 = (slice(2,-2),slice(2,-2),slice(2,-2))
@@ -215,59 +214,35 @@ def stencil_27pt(elem,node,mpv,ud,diag_inv):
     for dim in range(ndim):
         periodicity[dim] = ud.bdry_type[dim] == BdryType.PERIODIC
 
-    # kernel_x = np.ones((1,2,2))
-    # kernel_y = np.ones((2,1,2))
-    # kernel_z = np.ones((2,2,1))
-
     hplusx = mpv.wplus[0][i0][i1]
     hplusy = mpv.wplus[1][i0][i1]
     hplusz = mpv.wplus[2][i0][i1]
-
-    # print(hplusx[:,0,:],hplusx[:,-1,:])
-
-    # hplusx = signal.fftconvolve(hplusx,kernel_x,mode='valid')
-    # hplusy = signal.fftconvolve(hplusy,kernel_y,mode='valid')
-    # hplusz = signal.fftconvolve(hplusz,kernel_z,mode='valid')
-
-    # generalise to support wall along any axis, and not just the y-axis.
-    # hplusx[:,0,:],hplusx[:,-1,:] = 0.0, 0.0
-    # hplusy[:,0,:],hplusy[:,-1,:] = 0.0, 0.0
-    # hplusz[:,0,:],hplusz[:,-1,:] = 0.0, 0.0
-
-    # print(hplusx.shape, hplusy.shape, hplusz.shape)
 
     hcenter = mpv.wcenter[i2]
     diag_inv = diag_inv[i1]
 
     return lambda p : lap3D(p, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity, diag_inv)
-    # return lambda p : lap3D(p)
 
 @nb.jit(nopython=True, cache=True)
-# def lap3D(p0):
 def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity, diag_inv):
-    # p = p0.reshape(shp[0],shp[1],shp[2])
-    # p = p0.reshape(hcenter.shape)
     shx, shy, shz = hcenter.shape
-    # p = p0.reshape(shx+2,shy+2,shz+2)
     p = p0.reshape(shz+2,shy+2,shx+2)
-    # p = p0.reshape(66,34,66)
 
     coeff = 1./16
-    # hplusx, hplusy, hplusz = 1.0, 1.0, 1.0
-    # hcenter = 1.0
-    # oodx2, oody2, oodz2 = 1.0, 1.0, 1.0
     lap = np.zeros_like(p)
 
-    lefts = [(slice(0,-1),slice(0,None),slice(0,None)),
-             (slice(0,None,),slice(0,-1),slice(0,None)),
-             (slice(0,None,),slice(0,None),slice(0,-1))
-            ]
+    # lefts = [(slice(0,-1),slice(0,None),slice(0,None)),
+    #          (slice(0,None,),slice(0,-1),slice(0,None)),
+    #          (slice(0,None,),slice(0,None),slice(0,-1))
+    #         ]
     
-    rights = [(slice(1,None),slice(0,None),slice(0,None)),
-              (slice(0,None),slice(1,None),slice(0,None)),
-              (slice(0,None),slice(0,None),slice(1,None))
-             ]
+    # rights = [(slice(1,None),slice(0,None),slice(0,None)),
+    #           (slice(0,None),slice(1,None),slice(0,None)),
+    #           (slice(0,None),slice(0,None),slice(1,None))
+    #          ]
     
+    # cut out four cubes from the 3d array corresponding to the nodes...
+    # in each axial direction.
     toplefts = [(slice(0,None),slice(0,-1),slice(0,-1)),
                 (slice(0,-1),slice(0,None),slice(0,-1)),
                 (slice(0,-1),slice(0,-1),slice(0,None))
@@ -286,7 +261,7 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
                  (slice(1,None),slice(1,None),slice(0,None))
                 ]
 
-    corners = [toplefts,toprights,botlefts,botrights]
+    # corners = [toplefts,toprights,botlefts,botrights]
     cnt = 0
     for bc in periodicity:
         if bc == True and cnt == 0:
@@ -357,6 +332,11 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
 
     return lap
 
+
+
+
+
+
 def precon_diag_prepare(mpv, elem, node, ud):
     dx, dy, dz = node.dx, node.dy, node.dz
 
@@ -412,6 +392,9 @@ def precon_diag_prepare(mpv, elem, node, ud):
     diag[idx_n] = 1.0 / diag[idx_n]
 
     return diag
+
+
+
 
 
 def stencil_3pt(elem,node,ud):
