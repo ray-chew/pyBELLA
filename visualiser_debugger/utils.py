@@ -3,12 +3,17 @@ import h5py
 from time import time
 
 class test_case(object):
-    def __init__(self,base_fn,py_dir,Nx,Ny,end_time):
+    def __init__(self,base_fn,py_dir,Nx,Ny,end_time,Nz=None):
         self.base_fn = base_fn
         self.py_dir = py_dir
         self.grid_x = Nx
         self.grid_y = Ny
         self.end_time = end_time
+        if Nz != None:
+            self.grid_z = Nz
+            self.ndim = 3
+        else:
+            self.ndim = 2
         
         self.cb_suffix = self.cb_suffix
         self.get_tag_dict = self.get_tag_dict
@@ -18,6 +23,8 @@ class test_case(object):
         self.get_path = self.get_path
         self.get_arr = self.get_arr
         
+        self.i0 = tuple([slice(None,)]*self.ndim)
+        self.i2 = tuple([slice(2,-2)]*self.ndim)
         
     def cb_suffix(self,fs,ts,suffix=""):
         if suffix != "":
@@ -59,9 +66,9 @@ class test_case(object):
 
     def get_arr(self, path, time, N, attribute, label_type='TIME', tag='after_full_step', inner=False, avg=True):
         if inner == False:
-            inner = (slice(None,),slice(None,))
+            inner = self.i0
         else:
-            inner = (slice(2,-2),slice(2,-2))
+            inner = self.i2
             
         file = h5py.File(path,'r')
         
@@ -88,8 +95,8 @@ class test_case(object):
     def spatially_averaged_rmse(arrs,refs,avg=False):
         diff = []
         for arr, ref in zip(arrs,refs):
-            arr = arr[2:-2,2:-2]
-            ref = ref[2:-2,2:-2]
+            arr = arr[self.i2]
+            ref = ref[self.i2]
             
             if avg==True:
                 arr -= arr.mean()
