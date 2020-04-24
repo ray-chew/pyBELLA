@@ -48,6 +48,19 @@ class test_case(object):
         }
         return td
 
+    @staticmethod
+    def get_debug_attrs():
+        dd = {
+            'p2_initial' : 'p2_initial',
+            'hecenter' : 'hcenter',
+            'wplusx' : 'wplusx',
+            'wplusy' : 'wplusy',
+            'wplusz' : 'wplusz',
+            'rhs' : 'rhs',
+            'rhs_nodes' : 'rhs_nodes',
+            'p2_full' : 'p2_full'
+        }
+        return dd
 
     def get_filename(self,N,suffix):
         if self.ndim == 2:
