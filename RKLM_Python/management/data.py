@@ -191,8 +191,9 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         
         recompute_advective_fluxes(flux, Sol)
 
-        if debug == True: writer.populate(str(label)+'_before_advect','rhoYu',flux[0].rhoY.T)
-        if debug == True: writer.populate(str(label)+'_before_advect','rhoYv',flux[1].rhoY.T)
+        if debug == True: writer.populate(str(label)+'_before_advect','rhoYu',flux[0].rhoY)
+        if debug == True: writer.populate(str(label)+'_before_advect','rhoYv',flux[1].rhoY)
+        if debug == True and elem.ndim == 3: writer.populate(str(label)+'_before_advect','rhoYw',flux[2].rhoY)
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_advect')
 
         advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv)
@@ -231,8 +232,9 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         recompute_advective_fluxes(flux, Sol)
 
-        if debug == True: writer.populate(str(label)+'_after_half_step','rhoYu',flux[0].rhoY.T)
-        if debug == True: writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY.T)
+        if debug == True: writer.populate(str(label)+'_after_half_step','rhoYu',flux[0].rhoY)
+        if debug == True: writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY)
+        if debug == True and elem.ndim == 3: writer.populate(str(label)+'_after_half_step','rhoYw',flux[2].rhoY)
 
         p2_half = np.copy(mpv.p2_nodes)
 
