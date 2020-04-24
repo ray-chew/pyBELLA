@@ -50,7 +50,10 @@ class test_case(object):
 
 
     def get_filename(self,N,suffix):
-        fn = "%s_ensemble=%i_%i_%i_%.1f_%s.h5" %(self.base_fn,N,self.grid_x,self.grid_y,self.end_time,suffix)
+        if self.ndim == 2:
+            fn = "%s_ensemble=%i_%i_%i_%.1f_%s.h5" %(self.base_fn,N,self.grid_x,self.grid_y,self.end_time,suffix)
+        if self.ndim == 3:
+            fn = "%s_ensemble=%i_%i_%i_%i_%.1f_%s.h5" %(self.base_fn,N,self.grid_x,self.grid_y,self.grid_z,self.end_time,suffix)
         return fn
 
 
