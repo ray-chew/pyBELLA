@@ -61,7 +61,6 @@ class UserData(object):
         self.acoustic_timestep = 0
         self.acoustic_order = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
-        # self.Msq = 1e-16
 
         self.gravity_strength = np.zeros((3))
         self.coriolis_strength = np.zeros((3))
@@ -155,18 +154,18 @@ class UserData(object):
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.initial_projection = True
+        self.initial_projection = False
         self.initial_impl_Euler = False
 
         self.column_preconditionr = False
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        # self.tout = np.arange(0.0,1.1,0.25)
-        self.tout = [1.0]
+        self.tout = np.arange(0.0,1.001,0.005)
+        # self.tout = [1.0]
 
         # self.stepmax = 3
-        self.stepmax = 20000
+        self.stepmax = 10
 
         self.output_base_name = "_travelling_vortex"
         self.output_name_psinc = "_low_mach_gravity_psinc"
@@ -200,6 +199,20 @@ class UserData(object):
         return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
 
 def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
+    igs = elem.igs
+    igy = igs[1]
+
+    igxn = node.igx
+    igyn = node.igy
+
+    i2, iy = [slice(None,)] * elem.ndim, [slice(None,)] * elem.ndim
+    iy[1] = slice(igy,-igy)
+    for dim in range(elem.ndim):
+        i2[dim] = slice(igs[dim],-igs[dim])
+    hi2 = np.copy(i2)
+    hi2[1] = slice(None,)
+    i2, iy, hi2 = tuple(i2), tuple(iy), tuple(hi2)
+
     u0 = 1.0 #* ud.wind_speed
     v0 = 0.0 #* ud.wind_speed
     w0 = 1.0 #* ud.wind_speed
@@ -226,12 +239,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     xcm = xc - (ud.xmax - ud.xmin)
     ycm = yc - (ud.ymax - ud.ymin)
     zcm = zc - (ud.zmax - ud.zmin)
-
-    igs = elem.igs
-    igy = igs[1]
-
-    igxn = node.igx
-    igyn = node.igy
 
     hydrostatic_state(mpv, elem, node, th, ud)
 
@@ -278,18 +285,20 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     zccs[...] = zc * (np.abs(zs - zc) < np.abs(zs - zcm))
     zccs[...] += zcm * (np.abs(zs - zc) > np.abs(zs - zcm))
 
-    rs = [(xs-xccs)**2,(ys-yccs)**2,(zs-zccs)**2]
+    # rs = [(xs-xccs)**2,(ys-yccs)**2,(zs-zccs)**2]
+    rs = [(xs-xccs)**2,(zs-zccs)**2]
 
     rs = np.array(rs[:elem.ndim])
     r = np.sqrt(rs.sum())
+    r = np.repeat(r,elem.icy,axis=1)[iy]
     
     uth = (rotdir * fac * (1.0 - r/R0)**6 * (r/R0)**6) * (r < R0)
 
-    u = u0 + uth * (-(ys-yccs)/r)
+    u = u0 + uth * (-(zs-zccs)/r)
     # u = u0 + uth * (-(zs-zccs)/r)
-    v = v0 + uth * (+(xs-xccs)/r)
+    v = v0 #+ uth * (+(ys-yccs)/r)
     # w = w0 + uth * (+(xc-xccs)/r)
-    w = w0
+    w = w0 + uth * (+(xs-xccs)/r)
     p_hydro = mpv.HydroState.p0[igy:-igy]
     rhoY = mpv.HydroState.rhoY0[igy:-igy]
 
@@ -303,15 +312,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     p2c = np.copy(dp2c).squeeze()
 
-    i2, iy = [slice(None,)] * elem.ndim, [slice(None,)] * elem.ndim
-    iy[1] = slice(igy,-igy)
-    for dim in range(elem.ndim):
-        i2[dim] = slice(igs[dim],-igs[dim])
-    hi2 = np.copy(i2)
-    hi2[1] = slice(None,)
-    i2, iy, hi2 = tuple(i2), tuple(iy), tuple(hi2)
-
-    rho, u, v = rho.squeeze(), u.squeeze(), v.squeeze()
+    # rho, u, v = rho.squeeze(), u.squeeze(), v.squeeze()
+    rho, u, w = rho.squeeze(), u.squeeze(), w.squeeze()
 
     Sol.rho[iy] = rho
     Sol.rhou[iy] = rho * u
@@ -359,10 +361,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     zccs[np.where(np.abs(zs - zc) > np.abs(zs - zcm))] = zcm
 
     # r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
-    rs = [(xs-xccs)**2,(ys-yccs)**2,(zs-zccs)**2]
+    # rs = [(xs-xccs)**2,(ys-yccs)**2,(zs-zccs)**2]
+    rs = [(xs-xccs)**2,(zs-zccs)**2]
 
     rs = np.array(rs[:elem.ndim])
-    r = np.sqrt(rs.sum().squeeze())
+    r = np.sqrt(rs.sum())
+    r = np.repeat(r,node.icy,axis=1)[iy]
     
     for ip in range(25):
         mpv.p2_nodes[i2] += coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
@@ -406,6 +410,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
         Sol.rhou -= u0 * Sol.rho
         Sol.rhov -= v0 * Sol.rho
+        Sol.rhow -= w0 * Sol.rho
 
         euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5)
 
@@ -414,6 +419,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
         Sol.rhou += u0 * Sol.rho
         Sol.rhov += v0 * Sol.rho
+        Sol.rhow += w0 * Sol.rho
 
         ud.is_compressible = is_compressible
         ud.compressibility = compressibility
