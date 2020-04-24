@@ -24,7 +24,8 @@ from scipy import sparse
 
 # input file
 # from inputs.baroclinic_instability_periodic import UserData, sol_init
-from inputs.travelling_vortex_2D import UserData, sol_init
+# from inputs.travelling_vortex_2D import UserData, sol_init
+from inputs.travelling_vortex_3D import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
 # from inputs.rising_bubble import UserData, sol_init
@@ -70,7 +71,8 @@ print("Input file is%s" %ud.output_base_name.replace('_',' '))
 N = 1
 dap = da_params(N,da_type='batch_obs')
 # dap = da_params(N, da_type='test')
-rloc = prepare_rloc(ud, elem, node, dap, N)
+if elem.ndim == 2:
+    rloc = prepare_rloc(ud, elem, node, dap, N)
 
 print("Generating initial ensemble...")
 sol_ens = np.zeros((N), dtype=object)
