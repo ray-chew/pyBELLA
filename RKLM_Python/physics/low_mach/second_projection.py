@@ -122,6 +122,7 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
     # y-axis = gravity-direction
     g = ud.gravity_strength[1]
+
     Msq = ud.Msq
     dy = elem.dy
 
@@ -130,9 +131,6 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     u0 = ud.wind_speed
     fsqsc = dt**2 * coriolis**2
     ooopfsqsc = 1.0 / (1.0 + fsqsc)
-
-    # first_nodes_row_right_idx = (slice(0,1), slice(1,None))
-    # first_nodes_row_left_idx = (slice(0,1),slice(0,-1))
 
     first_nodes_row_right_idx = (slice(1,None))
     first_nodes_row_left_idx = (slice(0,-1))

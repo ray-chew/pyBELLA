@@ -7,7 +7,6 @@ from management.variable import Vars
 def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
     # double strang sweep
     time_step = 0.5 * dt
-    # print(time_step)
     ndim = elem.ndim
     stage = 0
 
