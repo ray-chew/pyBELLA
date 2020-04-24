@@ -11,7 +11,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 1.0
+    omega = 0.0
 
     R_gas = 287.4
     R_vap = 461.0
@@ -85,7 +85,7 @@ class UserData(object):
         self.zmin = - 0.5
         self.zmax =   0.5
 
-        self.wind_speed = 1.0
+        self.wind_speed = 0.0
         self.wind_shear = -0.0
         self.hill_shape = HillShapes.AGNESI
         self.hill_height = 0.0
@@ -200,9 +200,9 @@ class UserData(object):
         return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
 
 def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
-    u0 = 0.0 * ud.wind_speed
-    v0 = 0.0 * ud.wind_speed
-    w0 = 0.0 * ud.wind_speed
+    u0 = 1.0 #* ud.wind_speed
+    v0 = 0.0 #* ud.wind_speed
+    w0 = 1.0 #* ud.wind_speed
 
     rotdir = 1.0
 
