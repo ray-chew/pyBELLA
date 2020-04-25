@@ -4,7 +4,7 @@ from .recovery import recovery
 from .numerical_flux import hll_solver
 from management.variable import Vars
 
-def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
+def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
     # double strang sweep
     time_step = 0.5 * dt
     ndim = elem.ndim
@@ -19,7 +19,7 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
         for i_split in range(ndim):
             split = elem.ndim - 1 - i_split
             lmbda = time_step / elem.dxyz[split]
-            explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, writer)
+            explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, [writer,node,label])
             Sol.flip_backward()
 
     stage = 1
@@ -33,14 +33,34 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, writer = None):
         for split in range(ndim):
             lmbda = time_step / elem.dxyz[split]
             Sol.flip_forward()
-            explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, writer)
+            explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
             
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
-def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mpv, writer = None):
+def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mpv, writer = [None]):
     set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
 
-    Lefts, Rights = recovery(Sol, flux, lmbda, ud, th, elem)
+    if writer[0] != None:
+        writer[0].write_all(Sol,mpv,elem,writer[1],th,str(writer[2])+'_before_split_%i' %split_step)
+
+    Lefts, Rights, u = recovery(Sol, flux, lmbda, ud, th, elem, split_step)
+
+    if writer[0] != None:
+        writer[0].write_all(Sol,mpv,elem,writer[1],th,str(writer[2])+'_split_%i' %split_step)
+
+    if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'u',u)
+
+    if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Leftsu',Lefts.u)
+    if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Rightsu',Rights.u)
+
+    if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Leftsv',Lefts.v)
+    if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Rightsv',Rights.v)
+
+    if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Leftsw',Lefts.w)
+    if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Rightsw',Rights.w)
+
+    if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'LeftsrhoY',Lefts.rhoY)
+    if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'RightsrhoY',Rights.rhoY)
 
     # skipped check_flux_bcs for now; first debug other functions
     # check_flux_bcs(Lefts, Rights, elem, split_step, ud)

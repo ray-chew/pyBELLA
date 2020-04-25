@@ -196,7 +196,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True and elem.ndim == 3: writer.populate(str(label)+'_before_advect','rhoYw',flux[2].rhoY)
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_advect')
 
-        advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv)
+        advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, node, str(label)+'_half', writer)
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_advect')
 
@@ -254,7 +254,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_efna')
 
-        advect(Sol, flux, dt, elem, step%2, ud, th, mpv)
+        # advect(Sol, flux, dt, elem, step%2, ud, th, mpv)
+        advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, node, str(label)+'_full', writer)
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_advect')
 

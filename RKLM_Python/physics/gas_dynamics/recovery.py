@@ -4,7 +4,7 @@ from management.variable import States, Characters
 from management.enumerator import LimiterType
 from .eos import rhoe
 
-def recovery(Sol, flux, lmbda, ud, th, elem):
+def recovery(Sol, flux, lmbda, ud, th, elem, split_step):
     gamm = th.gamm
     
     order_two = 1 # always 1
@@ -16,7 +16,7 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
     # inner_idx = (slice(1,-1), slice(1,-1))
 
     ndim = elem.ndim
-    lefts_idx, rights_idx, inner_idx = [slice(None)] * ndim, [slice(None)] * ndim, [slice(1,-1)] * ndim
+    lefts_idx, rights_idx, inner_idx = [slice(None,)] * ndim, [slice(None,)] * ndim, [slice(1,-1)] * ndim
     lefts_idx[-1] = slice(0,-1)
     rights_idx[-1] = slice(1,None)
     lefts_idx, rights_idx, inner_idx = tuple(lefts_idx), tuple(rights_idx), tuple(inner_idx)
@@ -64,15 +64,19 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
     Rights.X[...] = Sol.X + order_two * Ampls.X
     Rights.Y[...] = 1.0 / (1.0 / Sol.Y + order_two * Ampls.Y)
 
+    vel = [Sol.u,Sol.v,Sol.w]
+
+    # Lefts.rhoY[lefts_idx] = Rights.rhoY[rights_idx] = 0.5 * (Sol.rhoY[lefts_idx] + Sol.rhoY[rights_idx]) \
+    #     - order_two * 0.5 * lmbda * (Sol.u[rights_idx] * Sol.rhoY[rights_idx] - Sol.u[lefts_idx] * Sol.rhoY[lefts_idx])
     Lefts.rhoY[lefts_idx] = Rights.rhoY[rights_idx] = 0.5 * (Sol.rhoY[lefts_idx] + Sol.rhoY[rights_idx]) \
-        - order_two * 0.5 * lmbda * (Sol.u[rights_idx] * Sol.rhoY[rights_idx] - Sol.u[lefts_idx] * Sol.rhoY[lefts_idx])
+        - order_two * 0.5 * lmbda * (vel[split_step][rights_idx] * Sol.rhoY[rights_idx] - vel[split_step][lefts_idx] * Sol.rhoY[lefts_idx])
 
     Lefts.p0[lefts_idx] = Rights.p0[rights_idx] = Lefts.rhoY[lefts_idx]**gamm
 
     get_conservatives(Rights, ud, th)
     get_conservatives(Lefts, ud, th)
 
-    return Lefts, Rights
+    return Lefts, Rights, u
 
 def slopes(Sol, Diffs, ud, elem):
     limiter_type_velocity = ud.limiter_type_velocity
