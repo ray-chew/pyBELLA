@@ -72,6 +72,7 @@ def recompute_advective_fluxes(flux, Sol, *args, **kwargs):
         kernel_u = np.array([[[1,2,1],[2,4,2],[1,2,1]],[[1,2,1],[2,4,2],[1,2,1]]])
         kernel_v = np.swapaxes(kernel_u,1,0)
         kernel_w = np.swapaxes(kernel_u,2,0)
+        # kernel_w = np.swapaxes(kernel_u,1,0)
 
         rhoYw = Sol.rhoY * Sol.rhow / Sol.rho
         flux[2].rhoY[inner_idx] = signal.fftconvolve(rhoYw, kernel_w, mode='valid') / kernel_w.sum()
