@@ -76,14 +76,12 @@ def recovery(Sol, flux, lmbda, ud, th, elem, split_step):
     get_conservatives(Rights, ud, th)
     get_conservatives(Lefts, ud, th)
 
-    return Lefts, Rights, u
+    return Lefts, Rights, u, Diffs, Ampls, Slopes
 
 def slopes(Sol, Diffs, ud, elem):
     limiter_type_velocity = ud.limiter_type_velocity
     limiter_type_scalar = ud.limiter_type_scalars
 
-    # lefts_idx = (slice(None),slice(0,-1))
-    # rights_idx = (slice(None),slice(1,None))
     ndim = elem.ndim
     lefts_idx, rights_idx = [slice(None,)] * ndim, [slice(None,)] * ndim
     lefts_idx[-1] = slice(0,-1)
