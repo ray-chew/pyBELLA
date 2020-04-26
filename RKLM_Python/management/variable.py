@@ -77,6 +77,8 @@ class Vars(object):
         self.X = np.zeros_like(self.rhoX)
         self.p = np.zeros_like(self.rhoY)
 
+        # the non-zero indices are used here for the case where Lefts and
+        # Rights in the HLLE Solver has one column that is zeros.
         self.u[nonzero_idx] = self.rhou[nonzero_idx] / self.rho[nonzero_idx]
         self.v[nonzero_idx] = self.rhov[nonzero_idx] / self.rho[nonzero_idx]
         self.w[nonzero_idx] = self.rhow[nonzero_idx] / self.rho[nonzero_idx]
