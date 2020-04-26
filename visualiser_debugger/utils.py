@@ -43,8 +43,9 @@ class test_case(object):
                 4 : 'after_ebnaimp',
                 5 : 'after_half_step',
                 6 : 'after_efna',
-                7 : 'after_full_ebnaexp',
-                8 : 'after_full_step',
+                7 : 'after_full_advect',
+                8 : 'after_full_ebnaexp',
+                9 : 'after_full_step',
         }
         return td
 
