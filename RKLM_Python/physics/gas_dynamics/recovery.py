@@ -76,7 +76,8 @@ def recovery(Sol, flux, lmbda, ud, th, elem, split_step):
     get_conservatives(Rights, ud, th)
     get_conservatives(Lefts, ud, th)
 
-    return Lefts, Rights, u, Diffs, Ampls, Slopes
+    # return Lefts, Rights, u, Diffs, Ampls, Slopes
+    return Lefts, Rights
 
 def slopes(Sol, Diffs, ud, elem):
     limiter_type_velocity = ud.limiter_type_velocity
