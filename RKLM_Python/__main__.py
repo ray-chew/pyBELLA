@@ -38,7 +38,7 @@ from copy import deepcopy
 from management.debug import find_nearest
 from time import time
 
-debug = False
+debug = True
 output_timesteps = True
 label_type = 'TIME'
 np.set_printoptions(precision=18)
@@ -311,6 +311,7 @@ if __name__ == '__main__':
 
         tout_cnt += 1
         outer_step += 1
+        if outer_step > ud.stepmax: break
 
     toc = time()
     print("Time taken = %.6f" %(toc-tic))
