@@ -1,1 +1,0 @@
-void Thomas_Algorithm(double* x,  double* rhs, double*  upper, double* diago, double* lower, int size);
