@@ -106,15 +106,15 @@ class UserData(object):
         self.bdry_type_max = np.empty((3), dtype=object)
 
         self.bdry_type_min[0] = BdryType.PERIODIC
-        self.bdry_type_min[1] = BdryType.PERIODIC
+        self.bdry_type_min[1] = BdryType.WALL
         self.bdry_type_min[2] = BdryType.PERIODIC
         self.bdry_type_max[0] = BdryType.PERIODIC
-        self.bdry_type_max[1] = BdryType.PERIODIC
+        self.bdry_type_max[1] = BdryType.WALL
         self.bdry_type_max[2] = BdryType.PERIODIC
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.PERIODIC
+        self.bdry_type[1] = BdryType.WALL
         self.bdry_type[2] = BdryType.PERIODIC
 
         self.absorber = 0 # 0 == WRONG == FALSE 
