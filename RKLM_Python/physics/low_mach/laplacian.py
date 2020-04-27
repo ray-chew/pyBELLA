@@ -344,8 +344,8 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
     lap[1:-1,1:-1,1:-1] = oodx2 * coeff * (-x_flxm + x_flxp) + \
                           oody2 * coeff * (-y_flxm + y_flxp) + \
                           oodz2 * coeff * (-z_flxm + z_flxp) + \
-                          corrf * coeff * (odx * (x_hxp - x_hxm) * odz * (z_pp - z_pm)) - \
-                          corrf * coeff * (odz * (z_hzp - z_hzm) * odx * (x_pp - x_pm)) + \
+                          corrf * coeff * (odx * (z_hzp - z_hzm) * odz * (z_pp - z_pm)) - \
+                          corrf * coeff * (odz * (x_hxp - x_hxm) * odx * (x_pp - x_pm)) + \
                           hcenter * p[1:-1,1:-1,1:-1]
 
     # lap[1:-1,1:-1,1:-1] = oodx2 * coeff * (-(hplusx[:,:,:-1] * x_fluxes[:,:,:-1]) + (hplusx[:,:,1:] * x_fluxes[:,:,1:])) \
