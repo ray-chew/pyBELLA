@@ -106,8 +106,6 @@ class Vars(object):
         for key, value in vars(self).items():
             setattr(self,key,np.moveaxis(value,-1,0))
         
-
-
 class States(Vars):
     """
     Data container for `Lefts` and `Rights` for the Riemann solver. Inherits the solution class :class:`management.variable.Vars`.

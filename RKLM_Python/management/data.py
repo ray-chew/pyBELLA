@@ -120,9 +120,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         label = '%.3d' %step
         dt, cfl, cfl_ac = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
-        # dt = 0.005
-        # cfl = ud.CFL
-        # cfl_ac = cfl
 
         if bld != None:
             c_init, c_trans = bld.criterion_init(window_step), bld.criterion_trans(window_step)
@@ -236,8 +233,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True: writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY)
         if debug == True and elem.ndim == 3: writer.populate(str(label)+'_after_half_step','rhoYw',flux[2].rhoY)
 
-        p2_half = np.copy(mpv.p2_nodes)
-
         mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
 
         Sol = deepcopy(Sol0)
@@ -255,7 +250,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_efna')
 
         # advect(Sol, flux, dt, elem, step%2, ud, th, mpv)
-        advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, node, str(label)+'_full', writer)
+        advect(Sol, flux, dt, elem, step%2, ud, th, mpv, node, str(label)+'_full', writer)
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_advect')
 
