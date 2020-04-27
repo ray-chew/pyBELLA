@@ -230,7 +230,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
         # lap = LinearOperator((sh,sh),lap)
     elif elem.ndim == 3:
-        lap = stencil_32pt(elem,node,mpv,ud,diag_inv)
+        lap = stencil_32pt(elem,node,mpv,ud,diag_inv,dt)
         # p2 = mpv.p2_nodes[1:-1,1:-1,1:-1]
 
         sh = p2.reshape(-1).shape[0]
