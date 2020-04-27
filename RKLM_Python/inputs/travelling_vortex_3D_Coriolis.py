@@ -59,6 +59,7 @@ class UserData(object):
         self.acoustic_timestep = 0
         self.acoustic_order = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
+        self.Msq = 0
 
         self.gravity_strength = np.zeros((3))
         self.coriolis_strength = np.zeros((3))
@@ -147,7 +148,7 @@ class UserData(object):
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.initial_projection = True
+        self.initial_projection = False
         self.initial_impl_Euler = False
 
         self.column_preconditionr = False
@@ -227,10 +228,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         yc = (np.random.random() - 0.5)/10.
         zc = (np.random.random() - 0.5)/10.
 
-    xcm = xc - (ud.xmax - ud.xmin)
-    ycm = yc - (ud.ymax - ud.ymin)
-    zcm = zc - (ud.zmax - ud.zmin)
-
     hydrostatic_state(mpv, elem, node, th, ud)
 
     coe = np.zeros((25))
@@ -288,19 +285,24 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     yccs = np.zeros_like(ys)
     zccs = np.zeros_like(zs)
 
-    # xccs[...] = xc * (np.abs(xs - xc) < np.abs(xs - xcm))
-    # xccs[...] += xcm * (np.abs(xs - xc) > np.abs(xs - xcm))
+    xcm = xc - (ud.xmax - ud.xmin)
+    ycm = yc - (ud.ymax - ud.ymin)
+    zcm = zc - (ud.zmax - ud.zmin)
 
-    # yccs[...] = yc * (np.abs(ys - yc) < np.abs(ys - ycm))
-    # yccs[...] += ycm * (np.abs(ys - yc) > np.abs(ys - ycm))
+    xccs[...] = xc * (np.abs(xs - xc) < np.abs(xs - xcm))
+    xccs[...] += xcm * (np.abs(xs - xc) > np.abs(xs - xcm))
 
-    # zccs[...] = zc * (np.abs(zs - zc) < np.abs(zs - zcm))
-    # zccs[...] += zcm * (np.abs(zs - zc) > np.abs(zs - zcm))
+    yccs[...] = yc * (np.abs(ys - yc) < np.abs(ys - ycm))
+    yccs[...] += ycm * (np.abs(ys - yc) > np.abs(ys - ycm))
 
-    dxc = xs - xc 
-    dzc = zs - zc
+    zccs[...] = zc * (np.abs(zs - zc) < np.abs(zs - zcm))
+    zccs[...] += zcm * (np.abs(zs - zc) > np.abs(zs - zcm))
 
-    rs = [(dxc)**2,(dyc)**2]
+    # dxc = xc * (xs - xc)
+    # dzc = zs - zc
+
+    # rs = [(dxc)**2,(dzc)**2]
+    rs = [(xs-xccs)**2,(zs-zccs)**2]
 
     rs = np.array(rs[:elem.ndim])
     r = np.sqrt(rs.sum())
@@ -308,13 +310,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     
     uth = (rotdir * fac * (1.0 - r/R0)**6 * (r/R0)**6) * (r < R0)
 
-    u = u0 + uth * (-(dzc)/r)
+    u = u0 + uth * (-(zs-zccs)/r)
     v = v0
-    w = w0 + uth * (+(dxc)/r)
+    w = w0 + uth * (+(xs-xccs)/r)
     # p_hydro = mpv.HydroState.p0[igy:-igy]
     # rhoY = mpv.HydroState.rhoY0[igy:-igy]
     p_hydro = 1.0
-    rhoY = 1.0
+    rhoY = np.ones_like(Sol.rhoY)
 
     rho = np.zeros_like(r)
     rho[...] += (rho0 + del_rho * (1. - (r/R0)**2)**6) * (r < R0)
@@ -337,7 +339,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     p = p0 + ud.Msq * fac * dp2c
     p = p.squeeze()
-    Sol.rhoY[iy] = p**th.gamminv
+    # Sol.rhoY[iy] = p**th.gamminv
+    Sol.rhoY = rhoY
     Sol.rhoe[iy] = ud.rhoe(rho,u,v,w,p,ud,th)
 
     # rhoY0c = mpv.HydroState.rhoY0[igy:-igy]
@@ -354,33 +357,35 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     ys = node.y[igs[1]:-igs[1]].reshape(1,-1,1)
     zs = node.z[igs[2]:-igs[2]].reshape(1,1,-1)
 
-    # xccs = np.zeros_like(xs)
-    # yccs = np.zeros_like(ys)
-    # zccs = np.zeros_like(zs)
+    xccs = np.zeros_like(xs)
+    yccs = np.zeros_like(ys)
+    zccs = np.zeros_like(zs)
 
-    # yccs[np.where(np.abs(ys - yc) < np.abs(ys - ycm))] = yc
-    # yccs[np.where(np.abs(ys - yc) > np.abs(ys - ycm))] = ycm
+    yccs[np.where(np.abs(ys - yc) < np.abs(ys - ycm))] = yc
+    yccs[np.where(np.abs(ys - yc) >= np.abs(ys - ycm))] = ycm
 
-    # xccs[np.where(np.abs(xs - xc) < np.abs(xs - xcm))] = xc
-    # xccs[np.where(np.abs(xs - xc) > np.abs(xs - xcm))] = xcm
+    xccs[np.where(np.abs(xs - xc) < np.abs(xs - xcm))] = xc
+    xccs[np.where(np.abs(xs - xc) >= np.abs(xs - xcm))] = xcm
 
-    # zccs[np.where(np.abs(zs - zc) < np.abs(zs - zcm))] = zc
-    # zccs[np.where(np.abs(zs - zc) > np.abs(zs - zcm))] = zcm
+    zccs[np.where(np.abs(zs - zc) < np.abs(zs - zcm))] = zc
+    zccs[np.where(np.abs(zs - zc) >= np.abs(zs - zcm))] = zcm
 
-    dxcn = xs - xc
-    dzcn = zs - zc
+    # dxcn = xs - xc
+    # dzcn = zs - zc
 
-    rs = [(dxcn)**2,(dzcn)**2]
+    # rs = [(dxcn)**2,(dzcn)**2]
+
+    rs = [(xs-xccs)**2, (zs-zccs)**2]
 
     rs = np.array(rs[:elem.ndim])
     r = np.sqrt(rs.sum())
     r = np.repeat(r,node.icy,axis=1)[iy]
     
     for ip in range(25):
-        mpv.p2_nodes[i2] += coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
+        mpv.p2_nodes[i2] += fac* (a_rho * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2)
 
     for ip in range(19):
-        mpv.p2_nodes[i2] += f * ccoe[ip] * ((r/R0)**(7+ip) - 1.0) * (r/R0 < 1.0)
+        mpv.p2_nodes[i2] += f * ccoe[ip] * ((r/R0)**(7+ip) - 1.0)
     mpv.p2_nodes[i2] *= r/R0 < 1.0
 
     # rhoY0n = mpv.HydroState.rhoY0[igyn:-igyn+1]
@@ -391,12 +396,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     # mpv.p2_nodes[i2] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[i2] , rhoY0n[hi2])
 
-    mpv.p2_nodes[i2] = th.Gamma * fac**2 * mpv.p2_nodes[i2]
+    mpv.p2_nodes[i2] = th.Gamma * fac * mpv.p2_nodes[i2]
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
     ud.compressibility = float(ud.is_compressible)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
+    # set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
     # Sol.rhoY[...] = 1.0
     # mpv.p2_nodes[...] = 0.0
