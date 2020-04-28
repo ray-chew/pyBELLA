@@ -9,7 +9,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 1.0
+    omega = 0.01
 
     R_gas = 287.4
     R_vap = 461.0
@@ -59,7 +59,6 @@ class UserData(object):
         self.acoustic_timestep = 0
         self.acoustic_order = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
-        self.Msq = 0
 
         self.gravity_strength = np.zeros((3))
         self.coriolis_strength = np.zeros((3))
@@ -148,7 +147,7 @@ class UserData(object):
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.initial_projection = False
+        self.initial_projection = True
         self.initial_impl_Euler = False
 
         self.column_preconditionr = False
@@ -157,7 +156,7 @@ class UserData(object):
 
         self.tout = np.arange(0.0,1.001,0.005)
 
-        self.stepmax = 10
+        self.stepmax = 1
         # self.stepmax = 20000
 
         self.output_base_name = "_travelling_vortex"
@@ -381,8 +380,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     r = np.sqrt(rs.sum())
     r = np.repeat(r,node.icy,axis=1)[iy]
     
+    mpv.p2_nodes[i2] = 0.0
     for ip in range(25):
-        mpv.p2_nodes[i2] += fac* (a_rho * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2)
+        mpv.p2_nodes[i2] += fac * (a_rho * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2)
 
     for ip in range(19):
         mpv.p2_nodes[i2] += f * ccoe[ip] * ((r/R0)**(7+ip) - 1.0)
