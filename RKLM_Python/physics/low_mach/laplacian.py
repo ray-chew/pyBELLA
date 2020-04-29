@@ -226,7 +226,7 @@ def stencil_32pt(elem,node,mpv,ud,diag_inv,dt):
 
     return lambda p : lap3D(p, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity, diag_inv, corrf, odx, odz)
 
-@nb.jit(nopython=True, cache=True)
+@nb.jit(nopython=True, cache=True, nogil=True)
 def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity, diag_inv, corrf, odx, odz):
     shx, shy, shz = hcenter.shape
     p = p0.reshape(shz+2,shy+2,shx+2)
@@ -303,25 +303,37 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
     y_flx = y_fluxes[toplefts[1]] + y_fluxes[toprights[1]] + y_fluxes[botlefts[1]] + y_fluxes[botrights[1]]
     z_flx = z_fluxes[toplefts[2]] + z_fluxes[toprights[2]] + z_fluxes[botlefts[2]] + z_fluxes[botrights[2]]
 
-    x_pm = x_flx[:-1,:,:]
-    x_pm = x_pm[toplefts[0]] + x_pm[toprights[0]] + x_pm[botlefts[0]] + x_pm[botrights[0]]
-    x_pp = x_flx[1:,:,:]
-    x_pp = x_pp[toplefts[0]] + x_pp[toprights[0]] + x_pp[botlefts[0]] + x_pp[botrights[0]]
+    hxzp = hplusx * z_flx
+    hxzpm = hxzp[:-1,:,:]
+    hxzpm = hxzpm[toplefts[0]] + hxzpm[toprights[0]] + hxzpm[botlefts[0]] + hxzpm[botrights[0]]
+    hxzpp = hxzp[1:,:,:]
+    hxzpp = hxzpp[toplefts[0]] + hxzpp[toprights[0]] + hxzpp[botlefts[0]] + hxzpp[botrights[0]]
 
-    z_pm = z_flx[:,:,:-1]
-    z_pm = z_pm[toplefts[2]] + z_pm[toprights[2]] + z_pm[botlefts[2]] + z_pm[botrights[2]]
-    z_pp = z_flx[:,:,1:]
-    z_pp = z_pp[toplefts[2]] + z_pp[toprights[2]] + z_pp[botlefts[2]] + z_pp[botrights[2]]
+    hzxp = hplusz * x_flx
+    hzxpm = hzxp[:,:,:-1]
+    hzxpm = hzxpm[toplefts[2]] + hzxpm[toprights[2]] + hzxpm[botlefts[2]] + hzxpm[botrights[2]]
+    hzxpp = hzxp[:,:,1:]
+    hzxpp = hzxpp[toplefts[2]] + hzxpp[toprights[2]] + hzxpp[botlefts[2]] + hzxpp[botrights[2]]
 
-    x_hxm = hplusx[:-1,:,:]
-    x_hxm = x_hxm[toplefts[0]] + x_hxm[toprights[0]] + x_hxm[botlefts[0]] + x_hxm[botrights[0]]
-    x_hxp = hplusx[1:,:,:]
-    x_hxp = x_hxp[toplefts[0]] + x_hxp[toprights[0]] + x_hxp[botlefts[0]] + x_hxp[botrights[0]]
+    # x_pm = x_flx[:-1,:,:]
+    # x_pm = x_pm[toplefts[0]] + x_pm[toprights[0]] + x_pm[botlefts[0]] + x_pm[botrights[0]]
+    # x_pp = x_flx[1:,:,:]
+    # x_pp = x_pp[toplefts[0]] + x_pp[toprights[0]] + x_pp[botlefts[0]] + x_pp[botrights[0]]
 
-    z_hzm = hplusz[:,:,:-1]
-    z_hzm = z_hzm[toplefts[2]] + z_hzm[toprights[2]] + z_hzm[botlefts[2]] + z_hzm[botrights[2]]
-    z_hzp = hplusz[:,:,1:]
-    z_hzp = z_hzp[toplefts[2]] + z_hzp[toprights[2]] + z_hzp[botlefts[2]] + z_hzp[botrights[2]]
+    # z_pm = z_flx[:,:,:-1]
+    # z_pm = z_pm[toplefts[2]] + z_pm[toprights[2]] + z_pm[botlefts[2]] + z_pm[botrights[2]]
+    # z_pp = z_flx[:,:,1:]
+    # z_pp = z_pp[toplefts[2]] + z_pp[toprights[2]] + z_pp[botlefts[2]] + z_pp[botrights[2]]
+
+    # x_hxm = hplusx[:-1,:,:]
+    # x_hxm = x_hxm[toplefts[0]] + x_hxm[toprights[0]] + x_hxm[botlefts[0]] + x_hxm[botrights[0]]
+    # x_hxp = hplusx[1:,:,:]
+    # x_hxp = x_hxp[toplefts[0]] + x_hxp[toprights[0]] + x_hxp[botlefts[0]] + x_hxp[botrights[0]]
+
+    # z_hzm = hplusz[:,:,:-1]
+    # z_hzm = z_hzm[toplefts[2]] + z_hzm[toprights[2]] + z_hzm[botlefts[2]] + z_hzm[botrights[2]]
+    # z_hzp = hplusz[:,:,1:]
+    # z_hzp = z_hzp[toplefts[2]] + z_hzp[toprights[2]] + z_hzp[botlefts[2]] + z_hzp[botrights[2]]
 
     x_flx = hplusx * x_flx
     x_flxm = x_flx[:-1,:,:]
@@ -344,8 +356,8 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
     lap[1:-1,1:-1,1:-1] = oodx2 * coeff * (-x_flxm + x_flxp) + \
                           oody2 * coeff * (-y_flxm + y_flxp) + \
                           oodz2 * coeff * (-z_flxm + z_flxp) + \
-                          corrf * coeff * (odx * (z_hzp - z_hzm) * odz * (z_pp - z_pm)) - \
-                          corrf * coeff * (odz * (x_hxp - x_hxm) * odx * (x_pp - x_pm)) + \
+                          +1.0 * odx * odz * coeff * corrf * (hxzpp - hxzpm) + \
+                          -1.0 * odx * odz * coeff * corrf * (hzxpp - hzxpm) + \
                           hcenter * p[1:-1,1:-1,1:-1]
 
     # lap[1:-1,1:-1,1:-1] = oodx2 * coeff * (-(hplusx[:,:,:-1] * x_fluxes[:,:,:-1]) + (hplusx[:,:,1:] * x_fluxes[:,:,1:])) \
