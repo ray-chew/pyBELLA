@@ -125,8 +125,8 @@ class UserData(object):
 
         self.time_integrator = TimeIntegrator.SI_MIDPT
         self.advec_time_integrator = TimeIntegrator.STRANG
-        self.CFL  = 0.9/2.0
-        # self.CFL = 0.95
+        # self.CFL  = 0.9/2.0
+        self.CFL = 0.95
         self.dtfixed0 = 2.1 * 1.200930e-2
         self.dtfixed = 2.1 * 1.200930e-2
 
@@ -148,13 +148,13 @@ class UserData(object):
         self.tol = 1.e-6
         self.max_iterations = 6000
 
-        self.continuous_blending = False
-        self.no_of_pi_initial = 0
-        self.no_of_pi_transition = 10
+        self.continuous_blending = True
+        self.no_of_pi_initial = 1
+        self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.initial_projection = False
+        self.initial_projection = True
         self.initial_impl_Euler = False
 
         self.column_preconditionr = False
@@ -164,8 +164,8 @@ class UserData(object):
         self.tout = np.arange(0.0,1.001,0.005)
         # self.tout = [1.0]
 
-        # self.stepmax = 3
-        self.stepmax = 10
+        # self.stepmax = 10
+        self.stepmax = 20000
 
         self.output_base_name = "_travelling_vortex"
         self.output_name_psinc = "_low_mach_gravity_psinc"
@@ -327,9 +327,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         # Y = np.zeros_like(Sol.rhoY)
         # Y[:,igy:-igy] = Sol.rhoY[:,igy:-igy] / Sol.rho[:,igy:-igy]
         # Sol.rhoX[:,igy:-igy] = Sol.rho[:,igy:-igy] / Y[:,igy:-igy]
-        Sol.rhoe[iy] = ud.rhoe(rho,u,v,w,p,ud,th)
+        # Sol.rhoe[iy] = ud.rhoe(rho,u,v,w,p,ud,th)
     else:
-        Sol.rhoe[iy] = ud.rhoe(rho,u,v,w,p_hydro,ud,th)
+        # Sol.rhoe[iy] = ud.rhoe(rho,u,v,w,p_hydro,ud,th)
+        for dim in range(0,elem.ndim,2):
+            rhoY = np.expand_dims(rhoY, dim)
+            rhoY = np.repeat(rhoY, elem.sc[dim], axis=dim)
         Sol.rhoY[iy] = rhoY
 
     # mpv.p2_cells[:,igy:-igy] = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy].T)
@@ -390,8 +393,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
     # set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
-    # Sol.rhoY[...] = 1.0
-    # mpv.p2_nodes[...] = 0.0
+    Sol.rhoY[...] = 1.0
+    mpv.p2_nodes[...] = 0.0
 
     # from scipy import signal
     # p2n = mpv.p2_nodes - mpv.p2_nodes.mean()
@@ -401,8 +404,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     # Sol.rhoY[...] = rhoY
 
     if ud.initial_projection == True:
-        is_compressible = np.copy(ud.is_compressible)
-        compressibility = np.copy(ud.compressibility)
+        is_compressible = ud.is_compressible
+        compressibility = ud.compressibility
         ud.is_compressible = 0
         ud.compressibility = 0.0
 
