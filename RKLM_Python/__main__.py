@@ -26,6 +26,7 @@ from scipy import sparse
 # from inputs.baroclinic_instability_periodic import UserData, sol_init
 # from inputs.travelling_vortex_2D import UserData, sol_init
 from inputs.travelling_vortex_3D import UserData, sol_init
+# from inputs.travelling_vortex_3D_Coriolis import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
 # from inputs.rising_bubble import UserData, sol_init
@@ -38,7 +39,7 @@ from copy import deepcopy
 from management.debug import find_nearest
 from time import time
 
-debug = True
+debug = False
 output_timesteps = True
 label_type = 'TIME'
 np.set_printoptions(precision=18)
@@ -138,7 +139,7 @@ if __name__ == '__main__':
         for mem in ens.members(ens):
             # future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, None, False])
             if N > 1 : mem[3][0] = 0 if tout_old in dap.da_times else mem[3][0]
-            if N == 1 : mem[3][0] = 0
+            if N == 1 : mem[3][0] = mem[3][1]
             print("For ensemble member = %i..." %mem_cnt)
             future = time_update(mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, blend, wrtr, debug)
 
