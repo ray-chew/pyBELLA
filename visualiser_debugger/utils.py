@@ -145,12 +145,15 @@ class test_case(object):
         return np.array(arr_lst)
     
     
-    def get_time_series(self, times, N, attribute, suffix, probe_loc, cont_blend=False, ts=0, fs=0, label_type='TIME', diff=False):
+    def get_time_series(self, times, N, attribute, suffix, probe_loc, cont_blend=False, ts=0, fs=0, label_type='TIME', diff=False, slc=[None]):
+        if self.ndim == 3 and slc[0] == None:
+            assert(0, "3D array has no 2D slice, define argument slc=(slice(...),slice(...),slice(...))")
+            
         probe_row = probe_loc[0]
         probe_col = probe_loc[1]
         
         if cont_blend == True:
-            suffix += cb_suffix(fs,ts)
+            suffix += '_' + self.cb_suffix(fs,ts)
             
         fn = self.get_filename(N,suffix)
         path = self.get_path(fn)
@@ -158,6 +161,8 @@ class test_case(object):
         probe = []
         for time in times:
             arr = self.get_arr(path, time, N, attribute, label_type=label_type)
+            if self.ndim == 3:
+                arr = arr[slc].squeeze()
             probe.append(arr[probe_row,probe_col])
             
         probe = np.array(probe)
