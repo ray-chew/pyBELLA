@@ -21,10 +21,12 @@ low_Mach_gravity_psinc/*
 *.kate-swp
 
 *pycache*
-*/.ipynb_checkpoints/*
+*.ipynb_checkpoints/*
 *RKLM_Reference/output*
 *.gitignore*
 *RKLM_Python/build*
+*MatLab*
+*.xcodeproj*
 *.h5
 *output_*
 *Untitled*
@@ -39,3 +41,4 @@ low_Mach_gravity_psinc/*
 *_old*
 *_new*
 RKLM_Reference*
+plots_beautifier.ipynb
