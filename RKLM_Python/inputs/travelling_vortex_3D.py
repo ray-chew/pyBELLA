@@ -291,7 +291,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rs = np.array(rs[:elem.ndim])
     r = np.sqrt(rs.sum())
     r = np.repeat(r,elem.icy,axis=1)[iy]
-    
+
     uth = (rotdir * fac * (1.0 - r/R0)**6 * (r/R0)**6) * (r < R0)
 
     u = u0 + uth * (-(zs-zccs)/r)
