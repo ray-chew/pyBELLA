@@ -130,8 +130,8 @@ class UserData(object):
         self.dtfixed0 = 2.1 * 1.200930e-2
         self.dtfixed = 2.1 * 1.200930e-2
 
-        self.inx = 32+1
-        self.iny = 32+1
+        self.inx = 64+1
+        self.iny = 64+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -169,15 +169,15 @@ class UserData(object):
         # self.tout = [0.1]
         # self.tout[0] =  1.0
         # self.tout[1] = -1.0
-        # self.tout = np.arange(0.0,1.001,0.005)
+        self.tout = np.arange(0.0,1.001,0.005)
         # self.tout = np.arange(0.0,6.05,0.05)
-        self.tout = [1.0]
+        # self.tout = [1.0]
 
 
         # self.tout = times.copy()
 
-        # self.stepmax = 3
-        self.stepmax = 20000
+        self.stepmax = 10
+        # self.stepmax = 20000
 
         self.output_base_name = "_travelling_vortex"
         if self.is_compressible == 1:
@@ -187,11 +187,11 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        # aux = 'hypo'
+        aux = '2D'
         # aux = 'truth'
         # aux = 'conversion_2'
         # aux = 'even' if self.no_of_pi_initial % 2 == 0 else 'odd'
-        # self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
+        self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function

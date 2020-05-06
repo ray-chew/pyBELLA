@@ -9,7 +9,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 0.01
+    omega = 0.01 * 100.0 
 
     R_gas = 287.4
     R_vap = 461.0
