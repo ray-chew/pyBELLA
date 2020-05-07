@@ -96,7 +96,11 @@ class plotter(object):
 class plotter_1d(object):
     def __init__(self,ncols=3,nrows=2,figsize=(12,12),fontsize=16):
         plt.rcParams.update({'font.size': fontsize})
-        self.fig, self.ax = plt.subplots(ncols=3,nrows=2, figsize=figsize)
+        self.fig, self.ax = plt.subplots(ncols=ncols,nrows=nrows, figsize=figsize)
+        self.nrows = nrows
+        self.ncols = ncols
+        
+        self.img = plt
         
     def set_x(self,x_axs):
         self.x = x_axs
@@ -105,9 +109,15 @@ class plotter_1d(object):
         
         #if not hasattr(self,'x'):
             #assert 0, "x-axis has not been set, use set_x(x_axs)."
+        if self.ncols == 1 and self.nrows == 1:
+            return self.ax
+        elif self.nrows == 1 or self.ncols == 1:
+            return self.ax[i]
+        else:
+            row = int(np.floor(i/self.ncols))
+            col = int(i%self.ncols)
             
-        row = int(np.floor(i/3))
-        col = int(i%3)
-        
-        return self.ax[row,col]
-        return self.ax
+            return self.ax[row,col]
+
+    def save_fig(self, fn, format='.pdf'):
+        self.img.savefig(fn + format, bbox_inches = 'tight', pad_inches = 0)
