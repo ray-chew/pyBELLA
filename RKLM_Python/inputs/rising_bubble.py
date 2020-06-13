@@ -125,11 +125,11 @@ class UserData(object):
         self.time_integrator = TimeIntegrator.SI_MIDPT
         self.advec_time_integrator = TimeIntegrator.STRANG
         # self.CFL  = 0.5
-        self.CFL = 0.5
+        self.CFL = 0.9
         self.dtfixed0 = 1.9 / self.t_ref
         self.dtfixed = 1.9 / self.t_ref
-        # self.dtfixed0 = 0.025
-        # self.dtfixed = 0.025
+        # self.dtfixed0 = 0.05
+        # self.dtfixed = 0.05
 
         self.inx = 100+1
         self.iny = 50+1
@@ -164,13 +164,17 @@ class UserData(object):
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
         # self.tout = [350 / self.t_ref]
-        # self.tout = [10.0]
+        self.tout = [10.0]
         # self.tout = np.arange(0.0,3.51,0.05)
-        self.tout = np.arange(0.0,10.05,0.05)
+        # self.tout = np.arange(0.0,10.05,0.05)
         # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[1] = -1.0
 
         self.stepmax = 10000
+
+        self.blending_weight = 16./16
+        self.blending_mean = 'rhoY' # 1.0, rhoY
+        self.blending_conv = 'rho' #theta, rho
 
         self.continuous_blending = True
         self.no_of_pi_initial = 1
@@ -185,6 +189,12 @@ class UserData(object):
             self.output_suffix = "_%i_%i_%.1f_psinc" %(self.inx-1,self.iny-1,self.tout[-1])
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
+        
+        # aux = 'vertp_rloc_EnDAB'
+        # aux += '_' + self.blending_conv + '_conv'
+        # aux += '_' + self.blending_mean + '_mean'
+        aux = 'cb1_debug'
+        self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_method
@@ -220,7 +230,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     if seed != None:
         np.random.seed(seed)
         y0 += (np.random.random()-.5)/2.0
-        # delth += 10.0*(np.random.random()-.5)
+        # delth += 1.0*(np.random.random()-.5)
     
     r = np.sqrt((x)**2 + (y-y0)**2) / r0
 
