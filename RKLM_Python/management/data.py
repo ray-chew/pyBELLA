@@ -133,13 +133,15 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
             ret = time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, [0,step-1], th, bld=None, writer=None, debug=False)
 
-            fac_old = 12./16
+            fac_old = ud.blending_weight
             fac_new = 1.0 - fac_old
             dp2n = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
 
             # dp2n = ret[2].p2_nodes
             # ret = half_step(Sol, flux, mpv, t, t+0.5*dt, ud, elem, node, step-1, th)
             # dp2n = ret.p2_nodes
+
+            # dp2n = mpv_freeze.p2_nodes
 
             # ret = time_update(Sol,flux,mpv, t, t+0.5*dt, ud, elem, node, [0,step-1], th, bld=None, writer=None, debug=False)
             # dp2n = (1.0 * ret[2].p2_nodes + 1.0 * mpv_freeze.p2_nodes) * 0.5
@@ -234,6 +236,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True and elem.ndim == 3: writer.populate(str(label)+'_after_half_step','rhoYw',flux[2].rhoY)
 
         mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
+        # mpv.p2_nodes[...] = mpv.p2_nodes0
 
         Sol = deepcopy(Sol0)
 
