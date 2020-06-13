@@ -43,3 +43,5 @@ low_Mach_gravity_psinc/*
 *_new*
 RKLM_Reference*
 plots_beautifier.ipynb
+*.ods
+log0.txt
