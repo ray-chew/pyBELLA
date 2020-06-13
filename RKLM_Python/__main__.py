@@ -25,11 +25,11 @@ from scipy import sparse
 # input file
 # from inputs.baroclinic_instability_periodic import UserData, sol_init
 # from inputs.travelling_vortex_2D import UserData, sol_init
-from inputs.travelling_vortex_3D import UserData, sol_init
+# from inputs.travelling_vortex_3D import UserData, sol_init
 # from inputs.travelling_vortex_3D_Coriolis import UserData, sol_init
 # from inputs.acoustic_wave_high import UserData, sol_init
 # from inputs.internal_long_wave import UserData, sol_init
-# from inputs.rising_bubble import UserData, sol_init
+from inputs.rising_bubble import UserData, sol_init
 from inputs.user_data import UserDataInit
 from management.io import io
 import h5py
@@ -39,9 +39,9 @@ from copy import deepcopy
 from management.debug import find_nearest
 from time import time
 
-debug = False
+debug = True
 output_timesteps = True
-label_type = 'TIME'
+label_type = 'STEP'
 np.set_printoptions(precision=18)
 
 step = 0
@@ -70,8 +70,8 @@ print("Input file is%s" %ud.output_base_name.replace('_',' '))
 ##########################################################
 # Data Assimilation part
 N = 1
-dap = da_params(N,da_type='batch_obs')
-# dap = da_params(N, da_type='test')
+# dap = da_params(N,da_type='batch_obs')
+dap = da_params(N, da_type='test')
 if elem.ndim == 2:
     rloc = prepare_rloc(ud, elem, node, dap, N)
 
