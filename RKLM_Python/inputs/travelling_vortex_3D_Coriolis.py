@@ -75,13 +75,6 @@ class UserData(object):
             if (self.coriolis_strength[i] > np.finfo(np.float).eps):
                 self.i_coriolis[i] = 1
 
-        # self.xmin = - 0.5
-        # self.xmax =   0.5
-        # self.ymin = - 0.5
-        # self.ymax =   0.5
-        # self.zmin = - 0.5
-        # self.zmax =   0.5
-
         self.xmin = 0.0
         self.xmax = 1.0
         self.ymin = 0.0
@@ -332,7 +325,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     for ip in range(25):
         dp2c += fac * (a_rho * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2) * (r/R0 < 1.0)
     for ip in range(19):
-        dp2c += f * ccoe[ip] * ((r/R0)**(7+ip) - 1.0) * (r/R0 < 1.0)
+        dp2c += R0 * f * ccoe[ip] * ((r/R0)**(7+ip) - 1.0) * (r/R0 < 1.0)
 
     p2c = np.copy(dp2c).squeeze()
 
