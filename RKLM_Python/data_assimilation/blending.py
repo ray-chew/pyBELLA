@@ -1,7 +1,6 @@
 import numpy as np
 from scipy import signal
 from inputs import boundary
-
 class Blend(object):
     def __init__(self,ud):
         self.bb = False
@@ -44,28 +43,29 @@ class Blend(object):
 
         Y = rhoY / rho
 
-        # rhoYc = (Sol.rhoY**th.gm1 + self.fac * self.dp2c)**(th.gm1inv)
-        
-        rhoYc = (1.0 + self.fac * self.dp2c)**(th.gm1inv)
+        if ud.blending_mean == 'rhoY':
+            rhoYc = (rhoY**th.gm1 + self.fac * self.dp2c)**(th.gm1inv)
+        elif ud.blending_mean == '1.0':
+            rhoYc = (1.0 + self.fac * self.dp2c)**(th.gm1inv)
 
         alpha = rhoYc / Sol.rhoY
 
+        if ud.blending_conv == 'rho':
         ### keep theta, convert rho
+            Sol.rho[...] = rho*alpha
+            Sol.rhoY[...] = (Sol.rho * Y)
 
-        Sol.rho[...] = rho*alpha
-        Sol.rhoY[...] = (Sol.rho * Y)
+            rho_fac = Sol.rho / rho
+            Sol.rhou[...] *= rho_fac
+            Sol.rhov[...] *= rho_fac
+            Sol.rhow[...] *= rho_fac
+            Sol.rhoX[...] *= rho_fac
 
-        rho_fac = Sol.rho / rho
-        Sol.rhou[...] *= rho_fac
-        Sol.rhov[...] *= rho_fac
-        Sol.rhow[...] *= rho_fac
-        Sol.rhoX[...] *= rho_fac
-
+        if ud.blending_conv == 'theta':
         ### keep rho, convert theta
-
-        # Yc = Y * alpha
-        # Sol.rhoY[...] = rho * Yc
-        # Sol.rhoX[...] = rho / Yc
+            Yc = Y * alpha
+            Sol.rhoY[...] = rho * Yc
+            Sol.rhoX[...] = rho / Yc
 
         # if writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_blending')
 
