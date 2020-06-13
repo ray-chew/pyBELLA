@@ -31,11 +31,14 @@ class plotter(object):
         
         self.img = plt
             
-    def set_axes(self,x_locs=None,x_axs=None,y_locs=None,y_axs=None):
+    def set_axes(self,x_locs=None,x_axs=None,y_locs=None,y_axs=None,x_label=None,y_label=None):
+        ## rewrite the above as *kwargs so that hasattr() checks will work as intended!!!
        self.x_locs= x_locs
        self.x_axs = x_axs
        self.y_locs = y_locs
        self.y_axs = y_axs
+       self.x_label = x_label
+       self.y_label = y_label
        
     def plot(self,method='imshow',inner=False,suptitle="",rect=[0, 0.03, 1, 0.95],fontsize=14):
         plt.rcParams.update({'font.size': fontsize})
@@ -57,6 +60,8 @@ class plotter(object):
                 if hasattr(self, 'x_axs') : cax.set_xticklabels(self.x_axs)
                 if hasattr(self, 'y_locs') : cax.set_yticks(self.y_locs)
                 if hasattr(self, 'y_axs') : cax.set_yticklabels(self.y_axs)
+                if hasattr(self, 'x_label') : cax.set_xlabel(self.x_label)
+                if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
                 
                 divider = make_axes_locatable(cax)
                 cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -96,11 +101,14 @@ class plotter(object):
 class plotter_1d(object):
     def __init__(self,ncols=3,nrows=2,figsize=(12,12),fontsize=16):
         plt.rcParams.update({'font.size': fontsize})
-        self.fig, self.ax = plt.subplots(ncols=ncols,nrows=nrows, figsize=figsize)
+        self.fig, self.ax = plt.subplots(ncols=ncols,nrows=nrows, sharex=True, figsize=figsize)
         self.nrows = nrows
         self.ncols = ncols
         
         self.img = plt
+        
+    def set_suptitle(self,suptitle):
+        self.img.suptitle(suptitle)
         
     def set_x(self,x_axs):
         self.x = x_axs
@@ -121,3 +129,16 @@ class plotter_1d(object):
 
     def save_fig(self, fn, format='.pdf'):
         self.img.savefig(fn + format, bbox_inches = 'tight', pad_inches = 0)
+
+    
+    @staticmethod
+    def labels():
+        labels_dict = {
+            'rho'       : r'$\rho$, density',
+            'rhou'      : r'$\rho u$, horizontal momentum',
+            'rhov'      : r'$\rho v$, vertical momentum',
+            'buoy'      : r'buoyancy',
+            'rhoY'      : r'$\rho \theta$, mass-weighted potential temperature',
+            'p2_nodes'  : r'$\delta \pi$, nodal Exner pressure increment'
+            }
+        return labels_dict
