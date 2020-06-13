@@ -153,12 +153,14 @@ def set_boundary(Sol,pads,btype,idx,step=None):
     """
     Sol.rho[...] = np.pad(Sol.rho[idx],pads,btype)
     Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
-    # Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
+    Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
+
     Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
     if btype == 'symmetric':
         Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,negative_symmetric)
     else:
         Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
+
     # if step == None or step == 0:
     #     Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
     #     Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
