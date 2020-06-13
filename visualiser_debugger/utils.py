@@ -108,8 +108,7 @@ class test_case(object):
         file.close()
         return np.array(array)
     
-    @staticmethod
-    def spatially_averaged_rmse(arrs,refs,avg=False):
+    def spatially_averaged_rmse(self, arrs,refs,avg=False):
         diff = []
         for arr, ref in zip(arrs,refs):
             arr = arr[self.i2]
@@ -121,7 +120,22 @@ class test_case(object):
 
             diff.append(np.sqrt(((arr - ref)**2).mean()))
         return np.array(diff)
-    
+
+    def probe_rmse(self, arrs, refs, probe_loc, avg=False):
+        diff = []
+       
+        for arr, ref in zip(arrs,refs):
+            if avg == True:
+                arr -= arr.mean()
+                ref -= ref.mean()
+               
+            arr = arr[self.i2][probe_loc[0],probe_loc[1]]
+            ref = ref[self.i2][probe_loc[0],probe_loc[1]]
+           
+            #diff.append(np.sqrt(((arr - ref)**2).mean()))
+            diff.append(np.linalg.norm(arr-ref))
+        return np.array(diff)
+
     @staticmethod
     def get_probe_loc(arrs, probe_loc):
         time_series = []
@@ -130,7 +144,7 @@ class test_case(object):
         return time_series
     
     
-    def get_ensemble(self, times, N, attribute, suffix, cont_blend=False, ts=0, fs=0, label_type='TIME'):
+    def get_ensemble(self, times, N, attribute, suffix, cont_blend=False, ts=0, fs=0, label_type='TIME', tag='after_full_step'):
         if cont_blend == True:
             suffix += cb_suffix(fs,ts)
             
@@ -139,13 +153,13 @@ class test_case(object):
         
         arr_lst = []
         for time in times:
-            arr = self.get_arr(path, time, N, attribute, label_type=label_type)
+            arr = self.get_arr(path, time, N, attribute, tag=tag, label_type=label_type)
             arr_lst.append(arr)
             
         return np.array(arr_lst)
     
     
-    def get_time_series(self, times, N, attribute, suffix, probe_loc, cont_blend=False, ts=0, fs=0, label_type='TIME', diff=False, slc=[None]):
+    def get_time_series(self, times, N, attribute, suffix, probe_loc, tag='after_full_step', cont_blend=False, ts=0, fs=0, label_type='TIME', diff=False, slc=[None], avg=False):
         if self.ndim == 3 and slc[0] == None:
             assert(0, "3D array has no 2D slice, define argument slc=(slice(...),slice(...),slice(...))")
             
@@ -160,7 +174,11 @@ class test_case(object):
         
         probe = []
         for time in times:
-            arr = self.get_arr(path, time, N, attribute, label_type=label_type)
+            arr = self.get_arr(path, time, N, attribute, tag=tag, label_type=label_type, inner=True)
+            
+            if avg == True:
+                arr -= arr.mean()
+            
             if self.ndim == 3:
                 arr = arr[slc].squeeze()
             probe.append(arr[probe_row,probe_col])
