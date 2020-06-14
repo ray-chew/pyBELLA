@@ -3,7 +3,9 @@
 ## Running the atmospheric flow solver
 
 In the top directory, run command
-`python ./RKLM_Python/__main__.py -ic {tv_corr,rb,aw,tv_3d,igw,tv_2d,tv} [-N N]`
+```code
+python ./RKLM_Python/__main__.py -ic {tv_corr,rb,aw,tv_3d,igw,tv_2d,tv} [-N N]
+```
 
 * `-ic` specifies the initial condition file used. Choices are
     1. `tv` or `tv_2d` - 2D travelling vortex horizontal slice
