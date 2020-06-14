@@ -68,7 +68,7 @@ class UserData(object):
         self.cond = self.cond * self.t_ref / (self.h_ref * self.h_ref * self.R_gas)
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+        self.is_compressible = 0
         self.is_ArakawaKonor = 0
 
         self.compressibility = 0.0
@@ -268,8 +268,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         p = HySt.p0[:,y_idx][c_idx]
         rhoY = HySt.rhoY0[:,y_idx][c_idx]
     else:
-        p = mpv.HydroState.p0[0][y_idx]
-        rhoY = mpv.HydroState.rhoY0[0][y_idx]
+        p = mpv.HydroState.p0[y_idx]
+        rhoY = mpv.HydroState.rhoY0[y_idx]
 
     rho = rhoY / Y[:,y_idx]
     Sol.rho[x_idx,y_idx] = rho
