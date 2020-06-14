@@ -24,9 +24,9 @@ python ./RKLM_Python/__main__.py -ic {tv_corr,rb,aw,tv_3d,igw,tv_2d,tv} [-N N]
 Running the solver for the ensemble travelling vortex test case, `python ./RKLM_Python/__main__.py -ic tv -N 10`
 
 1. In `./inputs/travelling_vortex_2D.py`, adjust
-    a. `self.tout` to determine end time and time to make outputs.
-    b. `self.output_base_name` for the output directory.
-    c. `self.inx` and `self.iny` for the grid resolution
+   a. `self.tout` to determine end time and time to make outputs.
+   b. `self.output_base_name` for the output directory.
+   c. `self.inx` and `self.iny` for the grid resolution
 2. Adjust data assimilation parameters at `./data_assimilation/params.py`
 5. Outputs are stored in a HDF5 file with the filename, e.g. `output_travelling_vortex_ensemble=10_32_32_10.0.h5` (ensemble size, grid_x, grid_y,end_time), in the directory `output_travelling_vortex`.
 
