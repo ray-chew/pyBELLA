@@ -233,19 +233,8 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
 
     coeff = 1./16
     lap = np.zeros_like(p)
-
-    # lefts = [(slice(0,-1),slice(0,None),slice(0,None)),
-    #          (slice(0,None,),slice(0,-1),slice(0,None)),
-    #          (slice(0,None,),slice(0,None),slice(0,-1))
-    #         ]
     
-    # rights = [(slice(1,None),slice(0,None),slice(0,None)),
-    #           (slice(0,None),slice(1,None),slice(0,None)),
-    #           (slice(0,None),slice(0,None),slice(1,None))
-    #          ]
-    
-    # cut out four cubes from the 3d array corresponding to the nodes...
-    # in each axial direction.
+    # cut out four cubes from the 3d array corresponding to the nodes... in each axial direction.
     toplefts = [(slice(0,None),slice(0,-1),slice(0,-1)),
                 (slice(0,-1),slice(0,None),slice(0,-1)),
                 (slice(0,-1),slice(0,-1),slice(0,None))
@@ -264,7 +253,6 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
                  (slice(1,None),slice(1,None),slice(0,None))
                 ]
 
-    # corners = [toplefts,toprights,botlefts,botrights]
     cnt = 0
     for bc in periodicity:
         if bc == True and cnt == 0:
@@ -281,19 +269,16 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
             p[:,:,-2] = tmp
         cnt += 1
     
-    # pinner = p[1:-1,1:-1,:]
     leftz = p[:,:,:-1]
     rightz = p[:,:,1:]
     
     z_fluxes = (rightz - leftz)
 
-    # pinner = p[1:-1,:,1:-1]
     lefty = p[:,:-1,:]
     righty = p[:,1:,:]
 
     y_fluxes = (righty - lefty)
 
-    # pinner = p[:,1:-1,1:-1]
     leftx = p[:-1,:,:]
     rightx = p[1:,:,:]
 
@@ -314,26 +299,6 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
     hzxpm = hzxpm[toplefts[2]] + hzxpm[toprights[2]] + hzxpm[botlefts[2]] + hzxpm[botrights[2]]
     hzxpp = hzxp[:,:,1:]
     hzxpp = hzxpp[toplefts[2]] + hzxpp[toprights[2]] + hzxpp[botlefts[2]] + hzxpp[botrights[2]]
-
-    # x_pm = x_flx[:-1,:,:]
-    # x_pm = x_pm[toplefts[0]] + x_pm[toprights[0]] + x_pm[botlefts[0]] + x_pm[botrights[0]]
-    # x_pp = x_flx[1:,:,:]
-    # x_pp = x_pp[toplefts[0]] + x_pp[toprights[0]] + x_pp[botlefts[0]] + x_pp[botrights[0]]
-
-    # z_pm = z_flx[:,:,:-1]
-    # z_pm = z_pm[toplefts[2]] + z_pm[toprights[2]] + z_pm[botlefts[2]] + z_pm[botrights[2]]
-    # z_pp = z_flx[:,:,1:]
-    # z_pp = z_pp[toplefts[2]] + z_pp[toprights[2]] + z_pp[botlefts[2]] + z_pp[botrights[2]]
-
-    # x_hxm = hplusx[:-1,:,:]
-    # x_hxm = x_hxm[toplefts[0]] + x_hxm[toprights[0]] + x_hxm[botlefts[0]] + x_hxm[botrights[0]]
-    # x_hxp = hplusx[1:,:,:]
-    # x_hxp = x_hxp[toplefts[0]] + x_hxp[toprights[0]] + x_hxp[botlefts[0]] + x_hxp[botrights[0]]
-
-    # z_hzm = hplusz[:,:,:-1]
-    # z_hzm = z_hzm[toplefts[2]] + z_hzm[toprights[2]] + z_hzm[botlefts[2]] + z_hzm[botrights[2]]
-    # z_hzp = hplusz[:,:,1:]
-    # z_hzp = z_hzp[toplefts[2]] + z_hzp[toprights[2]] + z_hzp[botlefts[2]] + z_hzp[botrights[2]]
 
     x_flx = hplusx * x_flx
     x_flxm = x_flx[:-1,:,:]
@@ -359,11 +324,6 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
                           +1.0 * odx * odz * coeff * corrf * (hxzpp - hxzpm) + \
                           -1.0 * odx * odz * coeff * corrf * (hzxpp - hzxpm) + \
                           hcenter * p[1:-1,1:-1,1:-1]
-
-    # lap[1:-1,1:-1,1:-1] = oodx2 * coeff * (-(hplusx[:,:,:-1] * x_fluxes[:,:,:-1]) + (hplusx[:,:,1:] * x_fluxes[:,:,1:])) \
-    #     + oody2 * coeff * (-(hplusy[:,:-1,:] * y_fluxes[:,:-1,:]) + (hplusy[:,1:,:] * y_fluxes[:,1:,:])) \
-    #     + oodz2 * coeff * (-(hplusx[:-1,:,:] * z_fluxes[:-1,:,:]) + (hplusx[1:,:,:] * z_fluxes[1:,:,:])) \
-    #     + hcenter * p[1:-1,1:-1,1:-1]
 
     lap = lap * diag_inv
 

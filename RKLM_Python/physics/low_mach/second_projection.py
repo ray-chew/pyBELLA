@@ -19,9 +19,6 @@ class solver_counter(object):
     def __call__(self, rk=None):
         self.niter += 1
         self.rk = rk
-        # print(self.niter)
-        # self.rk = rk[0]
-
 
 def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     nonhydro = ud.nonhydrostasy
@@ -216,13 +213,6 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     diag_inv = precon_diag_prepare(mpv, elem, node, ud)
     rhs *= diag_inv
 
-    # if y_wall:
-    #     rhs[:,2] *= 2.
-    #     rhs[:,-3] *= 2.
-    # if x_wall:
-    #     rhs[2,:] *= 2.
-    #     rhs[-3,:] *= 2.
-
     if elem.ndim == 2:
         lap = stencil_9pt(elem,node,mpv,ud,diag_inv)
 
@@ -264,32 +254,11 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if writer != None:
         writer.populate(str(label),'p2_full',p2_full)
 
-    # mpv.dp2_nodes[...] = np.copy(p2_full)
-
     correction_nodes(Sol,elem,node,mpv,p2_full,dt,ud)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
-    # mpv.rhs = rhs
-    # set_ghostnodes_p2(mpv.dp2_nodes,node,ud)
-    
-    # if ud.is_ArakawaKonor:
-    #     if ud.is_compressible == 0:
-    #         dp2_rhs = exner_perturbation_constraint(Sol,elem,th,p2.reshape(ud.inx,ud.iny))
 
-    #         # lap2D_exner = stencil_3pt(elem,node,ud)
-    #         lap2D_exner = stencil_5pt(elem,node,ud)
-    #         sh = (ud.inx)*(ud.iny)
-
-    #         lap2D_exner = LinearOperator((sh,sh),lap2D_exner)
-
-    #         dp2,_ = bicgstab(lap2D_exner,dp2_rhs.ravel(),tol=1e-16,maxiter=6000)
-
-    #         mpv.dp2_nodes[node.igx:-node.igx,node.igy:-node.igy] = dp2.reshape(ud.inx,ud.iny)
-    
     mpv.p2_nodes[...] = p2_full
-    # mpv.dp2_nodes[...] = p2_full - mpv.p2_nodes 
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
-    # mpv.rhs = rhs
-    # set_ghostnodes_p2(mpv.dp2_nodes,node,ud)
 
 def exner_perturbation_constraint(Sol,elem,th,p2):
     # 2D function!
@@ -307,7 +276,6 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
     coriolis = ud.coriolis_strength[0]
     time_offset = 3.0 - ud.acoustic_order
 
-    # igx,igy,igz = node.igs[0],node.igs[1],node.igs[2]
     igs, igy = node.igs, node.igy
     oodxyz = 1.0 / node.dxyz
     oodx , oody ,oodz = oodxyz[0], oodxyz[1], oodxyz[2]
@@ -321,7 +289,6 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
     for dim in range(0,ndim,2):
         dSdy = np.expand_dims(dSdy, dim)
         dSdy = np.repeat(dSdy, elem.sc[dim]-2*igs[dim], axis=dim)
-    # print(dSdy.shape)
 
     n2e, i2 = np.empty(ndim, dtype='object'), np.empty(ndim, dtype='object')
     for dim in range(ndim):
@@ -374,7 +341,6 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
 
     coriolis = ud.coriolis_strength[0]
 
-    # ccenter = - (ud.compressibility * ud.Msq) * th.gm1inv / (dt**2) / time_offset
     ccenter = - ud.Msq * th.gm1inv / (dt**2) / time_offset
     cexp = 2.0 - th.gamm
 
@@ -400,13 +366,8 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
 
         innerdim1[dim] = slice(igs[dim]-1, (-igs[dim]+1))
  
-    # print(y_idx)
-    # print(y_idx1)
-    # print(dy)
     strat = 2.0 * (mpv.HydroState_n.Y0[y_idx1] - mpv.HydroState_n.Y0[y_idx]) / (mpv.HydroState_n.Y0[y_idx1] + mpv.HydroState_n.Y0[y_idx]) / dy
 
-    # print(mpv.HydroState_n.Y0)
-    # print(strat)
     nindim = tuple(nindim)
     eindim = tuple(eindim)
     innerdim = tuple(innerdim)
@@ -431,17 +392,6 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
             mpv.wplus[dim][eindim] = coeff * fimp
 
     kernel = np.ones([2] * ndim)
-
-    # print(mpv.wcenter.shape)
-    # print(Sol.rhoY.shape)
-    # print(Sol.rhoY[innerdim1].shape)
-    # print(innerdim1)
-    # print(eindim)
-
-    # for iz in range(icz):
-    #     iz = slice(None,) if iz == 0 else iz
-
-    #     mpv.wcenter[iz][innerdim] = ccenter * signal.fftconvolve(Sol.rhoY[innerdim1]**cexp,kernel,mode='valid') / kernel.sum()
 
     mpv.wcenter[innerdim] = ccenter * signal.fftconvolve(Sol.rhoY[innerdim1]**cexp,kernel,mode='valid') / kernel.sum()
 

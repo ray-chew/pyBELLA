@@ -122,7 +122,7 @@ class States(Vars):
 
         Notes
         -----
-        Many variables in this data container are unused and can be removed.
+        Many variables in this data container are no longer used and can be removed.
 
         """
         super().__init__(size,ud)
@@ -191,8 +191,3 @@ class Characters(object):
         """
         for key, value in vars(self).items():
             setattr(self, key, value.squeeze())
-
-    # def change_dir(self):
-    #     for key, value in vars(self).items():
-    #         setattr(self, key, -1. * value)
-        

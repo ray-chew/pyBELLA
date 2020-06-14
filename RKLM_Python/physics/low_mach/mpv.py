@@ -23,8 +23,6 @@ class MPV(object):
 
         self.HydroState = States([sc[1]],ud)
         self.HydroState_n = States([sn[1]],ud)
-        # self.HydroState = States(sc,ud)
-        # self.HydroState_n = States(sn,ud)
 
         self.squeezer()
 
