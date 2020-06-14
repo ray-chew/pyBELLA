@@ -23,15 +23,8 @@ from data_assimilation import blending
 from scipy import sparse
 
 # input file, uncomment to run
-# from inputs.baroclinic_instability_periodic import UserData, sol_init
-# from inputs.travelling_vortex_2D import UserData, sol_init
-# from inputs.travelling_vortex_3D import UserData, sol_init
-# from inputs.travelling_vortex_3D_Coriolis import UserData, sol_init
-# from inputs.acoustic_wave_high import UserData, sol_init
-# from inputs.internal_long_wave import UserData, sol_init
-from inputs.rising_bubble import UserData, sol_init
 from inputs.user_data import UserDataInit
-from management.io import io
+from management.io import io, get_args
 import h5py
 
 # some diagnostics
@@ -50,6 +43,8 @@ t = 0.0
 ##########################################################
 # Initialisation of data containers and helper classes
 ##########################################################
+# get arguments for initial condition and ensemble size
+N, UserData, sol_init = get_args()
 
 initial_data = vars(UserData())
 ud = UserDataInit(**initial_data)
@@ -74,8 +69,6 @@ print("Input file is%s" %ud.output_base_name.replace('_',' '))
 ##########################################################
 # Initialisation of data assimilation module
 ##########################################################
-
-N = 1 # ensemble size
 
 # possible da_types:
 # 1) batch_obs for the LETKF with batch observations

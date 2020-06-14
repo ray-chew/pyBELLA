@@ -3,6 +3,8 @@ import h5py
 import os
 import numpy as np
 
+import argparse
+
 class io(object):
     """
     HDF5 writer class. Contains methods to create HDF5 file, create data sets and populate them with output variables.
@@ -277,3 +279,39 @@ class io(object):
         file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'r')
         if file.__bool__():
             file.close()
+
+
+def get_args():
+    """
+    Argument parser for initial conditions and ensemble size.
+
+    """
+
+    parser = argparse.ArgumentParser(description='Python solver for unified numerical model based on (Benacchio and Klein, 2019) with data assimilation and blending. Written by Ray Chew and based on Prof. Rupert Klein\'s C code.')
+    parser.add_argument('-N',action='store',dest='N',help='<Optional> Set ensemble size, if none is given N=1 is used.',required=False,type=int)
+    parser.add_argument('-ic','--initial_conditions',action='store',dest='ic',help='<Required> Set initial conditions',required=True,choices={'aw','tv','tv_2d','tv_3d','tv_corr','rb','igw'})
+    args = parser.parse_args() # collect cmd line args
+    ic = args.ic
+
+    if ic == 'bi':
+        from inputs.baroclinic_instability_periodic import UserData, sol_init
+    elif ic == 'tv' or ic == 'tv_2d':
+        from inputs.travelling_vortex_2D import UserData, sol_init
+    elif ic == 'tv_3d':
+        from inputs.travelling_vortex_3D import UserData, sol_init
+    elif ic == 'tv_corr':
+        from inputs.travelling_vortex_3D_Coriolis import UserData, sol_init
+    elif ic == 'aw':
+        from inputs.acoustic_wave_high import UserData, sol_init
+    elif ic == 'igw':
+        from inputs.internal_long_wave import UserData, sol_init
+    elif ic == 'rb':
+        from inputs.rising_bubble import UserData, sol_init
+
+    if UserData is None or sol_init is None:
+        assert(0, "Initial condition file is not well defined.")
+    if args.N is None:
+        N = 1
+    else:
+        N = args.N
+    return N, UserData, sol_init
