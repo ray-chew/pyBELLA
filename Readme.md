@@ -13,7 +13,7 @@ In the top directory, run command
     5. `aw` - Acoustic wave, 2D slice
     6. `igw` - Skamarock / Klemp internal gravity waves, 2D vertical slice
 
-* <Optional> `-N` (int) defines the ensemble size. If not given, `N=1`. Setting `N=1` will disable the data assimilation part of the code.
+* `-N` (Optional, int) defines the ensemble size. If not given, `N=1`. Setting `N=1` will disable the data assimilation part of the code.
 
 * The output filenames and directories are defined in the respective initial condition data files in `./inputs/`.
 
