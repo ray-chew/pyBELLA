@@ -22,7 +22,7 @@ from data_assimilation import etpf
 from data_assimilation import blending
 from scipy import sparse
 
-# input file
+# input file, uncomment to run
 # from inputs.baroclinic_instability_periodic import UserData, sol_init
 # from inputs.travelling_vortex_2D import UserData, sol_init
 # from inputs.travelling_vortex_3D import UserData, sol_init
@@ -34,7 +34,7 @@ from inputs.user_data import UserDataInit
 from management.io import io
 import h5py
 
-# some diagnostics and 
+# some diagnostics
 from copy import deepcopy
 from management.debug import find_nearest
 from time import time
@@ -46,6 +46,10 @@ np.set_printoptions(precision=18)
 
 step = 0
 t = 0.0
+
+##########################################################
+# Initialisation of data containers and helper classes
+##########################################################
 
 initial_data = vars(UserData())
 ud = UserDataInit(**initial_data)
@@ -68,10 +72,17 @@ bld = blending.Blend(ud)
 print("Input file is%s" %ud.output_base_name.replace('_',' '))
 
 ##########################################################
-# Data Assimilation part
-N = 1
-# dap = da_params(N,da_type='batch_obs')
-dap = da_params(N, da_type='test')
+# Initialisation of data assimilation module
+##########################################################
+
+N = 1 # ensemble size
+
+# possible da_types:
+# 1) batch_obs for the LETKF with batch observations
+# 2) rloc for LETKF with grid-point localisation
+# 3) etpf for the ETPF algorithm
+dap = da_params(N, da_type='rloc') 
+
 if elem.ndim == 2:
     rloc = prepare_rloc(ud, elem, node, dap, N)
 
@@ -91,16 +102,25 @@ else:
 ens = ensemble(sol_ens)
 
 ##########################################################
-# Load observations
+# Load data assimilation observations
+##########################################################
+
 # where are my observations?
 if N > 1:
     obs = dap.load_obs(dap.obs_path)
 
 # add ensemble info to filename
 ud.output_suffix = '_ensemble=%i%s' %(N, ud.output_suffix)
-##########################################################
 
+
+##########################################################
+# Start main looping
+##########################################################
 if __name__ == '__main__':
+
+    ######################################################
+    # Initialise writer class for I/O operations
+    ######################################################
     writer = io(ud)
     writer.write_attrs()
     wrtr = None
@@ -108,7 +128,7 @@ if __name__ == '__main__':
         writer.write_da_attrs(dap)
     elif output_timesteps == True:
         wrtr = writer
-    for n in range(N):
+    for n in range(N): # write initial ensemble
         Sol = ens.members(ens)[n][0]
         mpv = ens.members(ens)[n][2]
         if label_type == 'STEP':
@@ -117,27 +137,36 @@ if __name__ == '__main__':
             label = ('ensemble_mem=%i_%.6f' %(n,0.0))
         writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
+    # initialise dask parallelisation and timer
     client = Client(threads_per_worker=1, n_workers=1)
     tic = time()
 
-    #### main time looping
+    ######################################################
+    # Time looping over data assimilation windows
+    ######################################################
     tout_old = -np.inf
     tout_cnt = 0
     outer_step = 0
     for tout in ud.tout:
         futures = []
 
+        # In ensemble case, do blending for each DA window
         if N > 1 :
             blend = bld if tout_old in dap.da_times else None
         else:
             blend = bld
 
+        ######################################################
+        # Forecast step
+        ######################################################
         print('##############################################')
         print('Next tout = %.3f' %tout)
         print("Starting forecast...")
         mem_cnt = 0
         for mem in ens.members(ens):
             # future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, None, False])
+
+            # handling of DA window step counter
             if N > 1 : mem[3][0] = 0 if tout_old in dap.da_times else mem[3][0]
             if N == 1 : mem[3][0] = mem[3][1]
             print("For ensemble member = %i..." %mem_cnt)
@@ -145,30 +174,30 @@ if __name__ == '__main__':
 
             futures.append(future)
             mem_cnt += 1
+
+        # Dask commands, used only when parallelisation is
+        # enabled
         results = client.gather(futures)
         results = np.array(results)
-
         s_res = client.scatter(results)
 
-        #### if observations are available, do analysis...
+        ######################################################
+        # Analysis step
+        ######################################################
         if N > 1 and tout in dap.da_times:
             futures = []
+
+            ##################################################
+            # LETKF with batch observations
+            ##################################################
             if dap.da_type == 'batch_obs':
                 print("Starting analysis... for batch observations")
                 for attr in dap.obs_attributes:
                     print("Assimilating %s..." %attr)
 
                     obs_current = np.array(obs[list(dap.da_times).index(tout)][attr])
-
                     # future = client.submit(da_interface, *[s_res,obs_current,dap.inflation_factor,attr,N,ud,dap.loc[attr]])
-
                     future = da_interface(results,obs_current,dap.inflation_factor,attr,N,ud,dap.loc[attr])
-
-                    # if attr == 'rhoY':
-                    #     set_p2_nodes(future,results,N,th,node,ud)
-                    # if attr == 'p2_nodes':
-                    #     set_rhoY_cells(future,results,N,th,ud)
-
                     futures.append(future)
 
                 # analysis = client.gather(futures)
@@ -183,98 +212,16 @@ if __name__ == '__main__':
                         setattr(results[:,dap.loc[attr],...][n],attr,current[n])
                     cnt += 1
 
-            elif dap.da_type == 'test':
-                print("Starting analysis... for test algorithm")
+            ##################################################
+            # LETKF with grid-point localisation
+            ##################################################
+            elif dap.da_type == 'rloc':
+                print("Starting analysis... for rloc algorithm")
                 results = rloc.analyse(results,obs,N,tout)
 
-                # for cnt, attr in enumerate(dap.obs_attributes):
-                #     current = analysis[cnt]
-
-                #     for n in range(N):
-                #         data = current[n]
-                #         data = data.reshape(Nx, Ny)
-                        
-                #         data = np.pad(data,2,mode='constant')
-
-                #         setattr(results[:,dap.loc[attr],...][n],attr,data)
-
-            elif dap.da_type == 'rloc':
-                print("Starting analysis... for R-localisation")
-                inner = (slice(elem.igx,-elem.igx),slice(elem.igy,-elem.igy))
-
-                Nx = elem.iicx
-                Ny = elem.iicy
-                attr_len = len(obs_attributes)
-
-                tmp = np.array([getattr(results[:,loc,...][n],obs_attributes[0])[inner] for n in range(N)])
-                tmp = tmp[:,np.newaxis,...]
-                obs_current = np.array(obs[np.where(np.isclose(times,tout))[0][0]][obs_attributes[0]])[inner]
-                
-                obs_current = obs_current[np.newaxis,...]
-                
-                for attr in obs_attributes[1:]:
-                    tmp = np.hstack((tmp,np.array([getattr(results[:,loc,...][n],attr)[inner] for n in range(N)])[:,np.newaxis,...]))
-                    tmp01 = np.array(obs[np.where(np.isclose(times,tout))[0][0]][attr])[inner]
-                    # tmp01 = bin_func(tmp01,(Nx,Ny))
-                    # print(tmp01.shape)
-                    tmp01 = tmp01[np.newaxis,...]
-                    obs_current = np.vstack((obs_current,tmp01))
-
-                # print("obs_c (before win) = ", obs_current.shape)
-                X = np.array([sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in tmp])
-                X = np.swapaxes(X,0,1)
-                
-                obs_X = 5
-                obs_Y = 5
-                #.reshape(Nx*Ny,attr_len)
-                obs_current = np.array([np.pad(obs_current_attr,2,mode='wrap') for obs_current_attr in obs_current])
-                obs_current = np.array([sliding_window_view(obs_current_attr, (obs_X,obs_Y), (1,1)) for obs_current_attr in obs_current])
-                obs_current = np.swapaxes(obs_current,0,2)
-                obs_current = np.swapaxes(obs_current,0,1)
-                obs_current = obs_current.reshape(Nx*Ny,attr_len,obs_X,obs_Y)
-                # print(obs_current.shape)
-                # assert(0)
-                
-                # print("obs_c = ", obs_current.shape)
-
-                tmp = np.array([getattr(results[:,loc,...][n],obs_attributes[0]) for n in range(N)])
-                tmp = tmp[:,np.newaxis,...]
-                for attr in obs_attributes[1:]:
-                    tmp = np.hstack((tmp,np.array([getattr(results[:,loc,...][n],attr) for n in range(N)])[:,np.newaxis,...]))
-                Y = np.array([sliding_window_view(mem, (obs_X,obs_Y), (1,1)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in tmp])
-                Y = np.swapaxes(Y,0,1)
-                # print(Y.shape)
-
-                obs_covar = sparse.eye(attr_len*obs_X**2,attr_len*obs_Y**2, format='csr')
-                analysis = np.empty_like(X)
-                for n in range(Nx*Ny):
-                    forward_operator = lambda ensemble : Y[n]
-                    local_ens = letkf_analysis(X[n],inflation_factor,n)
-                    local_ens.forward(forward_operator)
-                    local_ens.localisation_matrix = localisation_matrix
-                    analysis_ens = local_ens.analyse(obs_current[n],obs_covar)
-                    # print(X.shape)
-                    # local_ens.ensemble = np.array([np.pad(mem,2,mode='wrap') for mem in local_ens.ensemble])
-                    analysis[n] = analysis_ens
-
-                # analysis = np.swapaxes(analysis,0,1)
-                # analysis = np.array([np.pad()])
-
-                analysis = np.swapaxes(analysis,0,2)
-                # print(analysis.shape)
-                cnt = 0
-                for attr in obs_attributes:
-                    current = analysis[cnt]
-
-                    for n in range(N):
-                        data = current[n]
-                        data = data.reshape(Nx,Ny)
-                        data = np.pad(data,2,mode='wrap')
-                        # print("data shape = ", data.shape)
-                        
-                        setattr(results[:,loc,...][n],attr,data)
-                    cnt += 1
-
+            ##################################################
+            # ETPF
+            ##################################################
             elif dap.da_type == 'etpf':
                 ensemble_inflation(results,dap.attributes,dap.inflation_factor,N)
                 results = etpf.da_interface(results,obs,dap.obs_attributes,dap.rejuvenation_factor,dap.da_times,tout,N)
@@ -282,6 +229,9 @@ if __name__ == '__main__':
             else:
                 assert 0, "DA type not implemented: use 'rloc', 'batch_obs' or 'etpf'."
 
+        ######################################################
+        # Update ensemble with analysis
+        ######################################################
         for n in range(N):
             Sol = results[n][dap.loc_c]
             set_explicit_boundary_data(Sol, elem, ud, th, mpv)
@@ -292,13 +242,15 @@ if __name__ == '__main__':
 
         ens.set_members(results, tout)
 
+        ######################################################
+        # Write output at tout
+        ######################################################
         print("Starting output...")
         for n in range(N):
             Sol = ens.members(ens)[n][0]
             mpv = ens.members(ens)[n][2]
 
             if label_type == 'STEP':
-                # step = ens.members(ens)[0][3]
                 step = outer_step
                 label = ('ensemble_mem=%i_%.3d' %(n,step))
             else:
