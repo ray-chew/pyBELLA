@@ -82,12 +82,25 @@ class Grid(object):
 
 big = 1.0
 class SpaceDiscr(object):
+    """
+    For a given grid extent and number of grid-points, this class returns an equidistant discretised grid.
+
+    """
+
     ig = np.zeros((3))
     ic = np.zeros((3))
     stride = np.zeros((3))
     dxyz = np.zeros((3))
 
     def __init__(self,g):
+        """
+        Parameters
+        ----------
+        g : :class:`discretization.kgrid.Grid`
+            A grid class defining the grid extent and number of grid-points in each direction.
+
+        """
+
         assert g.inx > 1
         assert g.iny >= 1
         assert g.inz >= 1
@@ -145,7 +158,19 @@ class SpaceDiscr(object):
         
 
 class ElemSpaceDiscr(SpaceDiscr):
+    """
+    Inherits the class :class:`discretization.kgrid.SpaceDiscr`. For a given grid extent and number of grid-points, this class returns an equidistant discretised cell-based grid.
+
+    """
+
     def __init__(self,g):
+        """
+        Parameters
+        ----------
+        g : :class:`discretization.kgrid.Grid`
+            A grid class defining the grid extent and number of grid-points in each direction.
+
+        """
         super().__init__(g)
         x0 = g.x0 - self.igx * self.dx + 0.5 * self.dx
         y0 = g.y0 - self.igy * self.dy + 0.5 * self.dy if self.icy > 1 else g.y0
@@ -162,7 +187,18 @@ class ElemSpaceDiscr(SpaceDiscr):
 
         
 class NodeSpaceDiscr(SpaceDiscr):
+    """
+    Inherits the class :class:`discretization.kgrid.SpaceDiscr`. For a given grid extent and number of grid-points, this class returns an equidistant discretised node-based grid.
+
+    """
     def __init__(self,g):
+        """
+        Parameters
+        ----------
+        g : :class:`discretization.kgrid.Grid`
+            A grid class defining the grid extent and number of grid-points in each direction.
+
+        """
         super().__init__(g)
         x0 = g.x0 - self.igx * self.dx
         y0 = g.y0 - self.igy * self.dy if self.icy > 1 else g.y0
