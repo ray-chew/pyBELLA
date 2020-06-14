@@ -69,7 +69,7 @@ class io(object):
 
         Notes
         -----
-        Currently, if the filename of the HDF5 file already exists, this function will delete the file and create an empty HDF5 file with the same filename in its place. This was enabled to prevent certain parallel-writing issues.
+        Currently, if the filename of the HDF5 file already exists, this function will append the existing filename with '_old' and create an empty HDF5 file with the same filename in its place.
 
         """
         # If file exists, delete it.. Nuclear option
