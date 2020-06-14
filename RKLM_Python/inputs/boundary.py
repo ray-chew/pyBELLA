@@ -62,7 +62,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
             # for the number of ghost cells in the gravity axis...
             for side in ghost_padding[gravity_axis]:
                 direction *= -1
-                # print(direction)
+
                 # loop through each of these ghost cells.
                 for current_idx in np.arange(side)[::-1]:
                     if step != None:
@@ -70,9 +70,6 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     else:
                         y_axs = 1
                     nlast, nsource, nimage = get_gravity_padding(ndim,current_idx,direction,offset,elem,y_axs=y_axs)
-
-                    # print(nlast, nsource, nimage)
-                    # print(y_axs)
 
                     Y_last = Sol.rhoY[nlast] / Sol.rho[nlast]
                     u = Sol.rhou[nsource] / Sol.rho[nsource]
@@ -91,8 +88,6 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     rho = rhoY * S
                     # p = rhoY**th.gamm
 
-                    # print(np.sign(direction))
-
                     # direction == 1 is the bottom
                     if np.sign(direction) == 1:
                         # v = rhoYv_image / rhoY
@@ -107,23 +102,13 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                         Sol.rhou[nimage] = Sol.rhou[nsource] * (Y_last * S)
                         Sol.rhov[nimage] = Sol.rhov[nsource] * (Y_last * S)
                         Sol.rhow[nimage] = Sol.rhow[nsource] * (Y_last * S)
-                        # Sol.rhov[nimage] = rho*v
                         Sol.rhov[nimage] = rho*v
-
-                        # print(nlast, nsource, nimage)
-                        # print(Y_last)
-                        # print(S)
                         
                     else:
                         Sol.rhou[nimage] = rho*u
                         Sol.rhov[nimage] = rho*v
                         Sol.rhow[nimage] = rho*w
 
-                    # print(Sol.rhou[...,:2])
-                    # Sol.rhou[nimage] = rho*u
-                    # Sol.rhov[nimage] = rho*v
-                    # Sol.rhow[nimage] = rho*w
-                    # Sol.rhoe[nimage] = ud.rhoe(rho, u, v, w, p, ud, th)
                     Sol.rhoY[nimage] = rhoY
                     Sol.rhoX[nimage] = rho * X
 
@@ -360,8 +345,6 @@ def check_flux_bcs(Lefts, Rights, elem, split_step, ud):
             Lefts.rhow[left_ghost] = Rights.rhow[left_inner]
             Lefts.rhoe[left_ghost] = Rights.rhoe[left_inner]
             Lefts.rhoX[left_ghost] = Rights.rhoX[left_inner]
-            # print(Lefts.rhoY[left_ghost])
-            # print(Rights.rho[0,:])
 
             Rights.rho[right_ghost] = Lefts.rho[right_inner]
             Rights.rhou[right_ghost] = -1. * Lefts.rhou[right_inner]
@@ -370,8 +353,6 @@ def check_flux_bcs(Lefts, Rights, elem, split_step, ud):
             Rights.rhoe[right_ghost] = Lefts.rhoe[right_inner]
             Rights.rhoY[right_ghost] = Lefts.rhoY[right_inner]
 
-            # print(Lefts.rhoY[:,-igx-2])
-            
     else:
         if ud.bdry_type[split_step] == BdryType.WALL:
 

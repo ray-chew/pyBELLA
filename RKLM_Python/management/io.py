@@ -26,32 +26,11 @@ class io(object):
         self.OUTPUT_FILENAME = self.OUTPUT_FILENAME + "/output"
 
         self.SUFFIX = self.ud.output_suffix
-        # if ud.is_ArakawaKonor:
-        #     self.SUFFIX = self.ud.output_name_ak
-        # else:
-        #     if self.ud.is_nonhydrostatic == 0:
-        #         if self.ud.is_compressible == 1:
-        #             self.SUFFIX = self.ud.output_name_hydro
-        #         else:
-        #             assert("Not implemented")
-        #     elif self.ud.is_nonhydrostatic == 1:
-        #         if self.ud.is_compressible == 1:
-        #             self.SUFFIX = self.ud.output_name_comp
-        #         else:
-        #             self.SUFFIX = self.ud.output_name_psinc
 
         if self.ud.continuous_blending == True:
             self.SUFFIX += "_cont_blend"
             self.SUFFIX += "_fs=%i_ts=%i" %(ud.no_of_pi_initial, ud.no_of_pi_transition)
                 
-        # else:
-        #     self.SUFFIX = "_PIs1=" + str(self.ud.no_of_pi_initial) + \
-        #         "_PIs2=" + str(self.ud.no_of_pi_transition) + \
-        #         "_HYs1=" + str(self.ud.no_of_hy_initial) + \
-        #         "_HYs2=" + str(self.ud.no_of_hy_transition) + \
-        #         "_contblend"
-
-
         self.PATHS = [  'buoy',
                         # 'dp2_c',
                         'dp2_nodes',
@@ -268,13 +247,9 @@ class io(object):
         """
         file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'a')
         for key, value in vars(self.ud).items():
-            # print(key)
-            # print(value)
-            # print(value.__name__)
             try:
                 file.attrs.create(key,value)
             except:
-                # print(str(repr(value)))
                 file.attrs.create(key,repr(value),dtype='<S' + str(len(repr(value))))
         file.close()
 

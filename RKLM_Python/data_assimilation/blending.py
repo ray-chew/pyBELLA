@@ -2,6 +2,10 @@ import numpy as np
 from scipy import signal
 from inputs import boundary
 class Blend(object):
+    """
+    Class that takes care of the blending interface.
+    """
+
     def __init__(self,ud):
         self.bb = False
         self.cb = ud.continuous_blending
@@ -35,8 +39,8 @@ class Blend(object):
         return dp2c
 
     def update_Sol(self, Sol, elem, node, th, ud, mpv, label=None,writer=None):
-        # if writer != None: writer.populate(str(label)+'_before_blending', 'dp2n', self.dp2n)
-        # if writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_blending')
+        if writer != None: writer.populate(str(label)+'_before_blending', 'dp2n', self.dp2n)
+        if writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_blending')
 
         rho = np.copy(Sol.rho)
         rhoY = np.copy(Sol.rhoY)
@@ -67,19 +71,7 @@ class Blend(object):
             Sol.rhoY[...] = rho * Yc
             Sol.rhoX[...] = rho / Yc
 
-        # if writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_blending')
+        if writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_blending')
 
     def update_p2n(self,Sol, mpv, node, th, ud):
-        # rhoYncomp = np.zeros_like(self.dp2n)
-        # rhoYncomp[1:-1,1:-1] = signal.fftconvolve(Sol.rhoY,self.kernel,mode='valid') / self.kernel.sum()
-        # boundary.set_ghostnodes_p2(rhoYncomp,node,ud)
-        # mpv.p2_nodes[...] = (rhoYncomp**th.gm1) - 1.0 + self.dp2n
-        # mpv.p2_nodes -= mpv.p2_nodes.mean()
-
         mpv.p2_nodes = self.dp2n
-
-        ### shift p2n
-        # tol = .001
-        # diff = mpv.p2_nodes - 0.0
-        # locs = np.where(np.abs(diff) < tol)
-        # mpv.p2_nodes[locs] -= diff[locs]
