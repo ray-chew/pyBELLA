@@ -155,7 +155,7 @@ class io(object):
         # species mass fraction(?)
         self.populate(name,'Y', Sol.rhoY / Sol.rho)
         # species mass fraction perturbation
-        # self.populate(name,'dY', Sol.rhoY / Sol.rho - self.ud.stratification(elem.y))
+        self.populate(name,'dY', Sol.rhoY / Sol.rho - self.ud.stratification(elem.y))
 
         # self.populate(name,'wplusx',mpv.wplus[0])
         # self.populate(name,'wplusy',mpv.wplus[1])
