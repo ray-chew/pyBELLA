@@ -91,7 +91,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     # direction == 1 is the bottom
                     if np.sign(direction) == 1:
                         # v = rhoYv_image / rhoY
-                        rhoYv_image = -Sol.rhov[nsource] * Sol.rhoY[nsource] / Sol.rho[nsource]
+                        # rhoYv_image = -Sol.rhov[nsource] * Sol.rhoY[nsource] / Sol.rho[nsource]
                         v = rhoYv_image / rhoY
                     else:
                         v = -Sol.rhov[nsource] / Sol.rho[nsource]
@@ -102,6 +102,9 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                         Sol.rhou[nimage] = Sol.rhou[nsource] * (Y_last * S)
                         Sol.rhov[nimage] = Sol.rhov[nsource] * (Y_last * S)
                         Sol.rhow[nimage] = Sol.rhow[nsource] * (Y_last * S)
+                        # Sol.rhou[nimage] = rho*u
+                        # Sol.rhov[nimage] = rho*v
+                        # Sol.rhow[nimage] = rho*w
                         Sol.rhov[nimage] = rho*v
                         
                     else:
