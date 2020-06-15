@@ -40,7 +40,7 @@ class plotter(object):
        self.x_label = x_label
        self.y_label = y_label
        
-    def plot(self,method='imshow',inner=False,suptitle="",rect=[0, 0.03, 1, 0.95],fontsize=14):
+    def plot(self,method='imshow',inner=False,suptitle="",rect=[0, 0.03, 1, 0.95],fontsize=14,aspect='auto',lvls=None):
         plt.rcParams.update({'font.size': fontsize})
         if method != 'imshow' or method != 'contour':
             assert(0, "Visualisation method not implemented!")
@@ -52,7 +52,7 @@ class plotter(object):
                     arr = arr[2:-2,2:-2]
                 cax = self.ax[self.idx[n]]
                 
-                im = self.visualise(method,cax,arr)
+                im = self.visualise(method,cax,arr,aspect,lvls)
                 cax.set_title(title)
                 loc = cax.get_xticklabels()
                 
@@ -74,7 +74,7 @@ class plotter(object):
             if inner == True:
                 arr = arr[2:-2,2:-2]
             cax = self.fig.gca()
-            im = self.visualise(method,cax,arr)
+            im = self.visualise(method,cax,arr,aspect,lvls)
             cax.set_title(title)
             divider = make_axes_locatable(cax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -88,14 +88,16 @@ class plotter(object):
         
         
     @staticmethod
-    def visualise(method,cax,arr,lvls=[None]):
+    def visualise(method,cax,arr,aspect,lvls):
         if method == 'imshow':
-            im = cax.imshow(arr,origin='lower')
+            im = cax.imshow(arr,aspect=aspect,origin='lower')
         elif method == 'contour':
-            if lvls[0] == None:
-                im = cax.contour(arr)
+            if lvls is None:
+                im = cax.contour(arr,colors='k')
+                im = cax.contourf(arr)
             else:
-                im = cax.contour(arr,levels=lvls)
+                im = cax.contour(arr,levels=lvls,colors='k')
+                im = cax.contourf(arr,levels=lvls,extend='both')
         return im
     
 class plotter_1d(object):
