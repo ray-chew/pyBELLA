@@ -72,7 +72,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     igx, igy, igz, igs = elem.igx, elem.igy, elem.igz, elem.igs
 
     dSdy = mpv.HydroState_n.S0[igy-1:-igy+1]
-    dSdy = signal.convolve(dSdy,[-1.,1.],mode='valid') / dy
+    dSdy = signal.convolve(dSdy,[1.,-1.],mode='valid') / dy
     # dSdy = np.repeat(dSdy,elem.icx-igx,axis=1).T / dy
 
     S0c = mpv.HydroState.S0[igy-1:-igy+1]
