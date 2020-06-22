@@ -67,7 +67,7 @@ class UserData(object):
 
         self.is_ArakawaKonor = 0
         self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+        self.is_compressible = 0
         self.compressibility = 0.0
         self.acoustic_timestep = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
@@ -128,6 +128,10 @@ class UserData(object):
         self.CFL = 0.9
         self.dtfixed0 = 1.9 / self.t_ref
         self.dtfixed = 1.9 / self.t_ref
+
+        # self.CFL = 1.0
+        # self.dtfixed0 = 20.0 / self.t_ref
+        # self.dtfixed = 20.0 / self.t_ref
         # self.dtfixed0 = 0.05
         # self.dtfixed = 0.05
 
@@ -170,13 +174,14 @@ class UserData(object):
         # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[1] = -1.0
 
+        # self.stepmax = 80
         self.stepmax = 10000
 
         self.blending_weight = 16./16
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'rho' #theta, rho
 
-        self.continuous_blending = True
+        self.continuous_blending = False
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
@@ -193,8 +198,11 @@ class UserData(object):
         # aux = 'vertp_rloc_EnDAB'
         # aux += '_' + self.blending_conv + '_conv'
         # aux += '_' + self.blending_mean + '_mean'
-        aux = 'cb1_debug'
+
+        aux = 'psinc_debug'
         self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
+
+        # self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_method
@@ -234,8 +242,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     
     r = np.sqrt((x)**2 + (y-y0)**2) / r0
 
-    p = np.repeat(mpv.HydroState.p0[0].reshape(1,-1),elem.icx,axis=0)
-    rhoY = np.repeat(mpv.HydroState.rhoY0[0].reshape(1,-1),elem.icx,axis=0)
+    p = np.repeat(mpv.HydroState.p0.reshape(1,-1),elem.icx,axis=0)
+    rhoY = np.repeat(mpv.HydroState.rhoY0.reshape(1,-1),elem.icx,axis=0)
 
     perturbation = (delth/300.0) * (np.cos(0.5 * np.pi * r)**2)
     perturbation[np.where(r > 1.0)] = 0.0
