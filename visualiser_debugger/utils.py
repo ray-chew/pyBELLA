@@ -95,7 +95,7 @@ class test_case(object):
                 t_label = '_ensemble_mem=%i_%.3f_%s' %(n,time, tag)
             elif label_type == 'STEP':
                 if N==1:
-                    t_label = '_%.3d_%s' %(time, tag)
+                    t_label = '_ensemble_mem=0_%.3d_%s' %(time, tag)
                 else:
                     t_label = '_ensemble_mem=%i_%.3d_%s' %(n,time, tag)
                 

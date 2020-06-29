@@ -27,7 +27,14 @@ class UserData(object):
     h_ref = 1.0
     t_ref = 1.0
     T_ref = 300.00
-    p_ref = 1e+5
+    p_ref = 1024.0
+
+    # T_ref = .0
+    # R_gas = 300.0
+    R_vap = 1.0
+    Q_vap = 1.0
+    p_ref = 1024.0
+
     u_ref = h_ref / t_ref
     rho_ref = p_ref / (R_gas * T_ref)
 
@@ -54,7 +61,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+        self.is_compressible = 0
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -62,6 +69,8 @@ class UserData(object):
         self.acoustic_order = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
         # self.Msq = 1.0
+
+        self.g = 9.81 * self.h_ref / (self.R_gas * self.T_ref)
 
         self.gravity_strength = np.zeros((3))
         self.coriolis_strength = np.zeros((3))
@@ -124,7 +133,7 @@ class UserData(object):
         self.kY = 0.0
         self.kZ = 0.0
 
-        self.tol = 1.e-8
+        self.tol = 1.e-6
         self.max_iterations = 6000
 
         self.perturb_type = 'pos_perturb'
@@ -146,11 +155,10 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        stepsize = 800
+        stepsize = 100
         # self.tout = np.arange(0,2E5+stepsize,stepsize)
-        self.stepmax = 31
-        self.tout = np.arange(0,self.stepmax+stepsize,stepsize)
-        
+        self.tout = np.arange(0,1E6+100,100)
+        self.stepmax = 301
 
         self.output_base_name = "_swe"
         if self.is_compressible == 1:
@@ -172,10 +180,10 @@ class UserData(object):
         self.rhoe = self.rhoe_function
 
     def stratification_function(self, y):
-        if type(y) == float:
-            return 1.0
-        else:
-            return np.ones((y.shape))
+        # if type(y) == float:
+        return 1.0
+        # else:
+        #     return np.ones((y.shape))
 
     def rhoe_function(self,rho,u,v,w,p,ud,th):
         Msq = ud.compressibility * ud.Msq
@@ -190,20 +198,21 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     w0 = 0.0
 
     # initial velocities
-    u, v, w = 0.0, 0.0 , 0.0
+    u, v, w = 1.0, 1.0 , 0.0
 
     igs = elem.igs
     igy = igs[1]
 
-    # g = ud.gravity_strength[1]
-    g = 9.81    # [m/s^2]
-    H = 100.0 * ud.h_ref  # [m]
+    # g = ud.g
+    g = 9.81
+    # g = 9.81 * ud.h_ref / (ud.R_gas * ud.T_ref)   # [m/s^2]
+    H = 100.0 #* ud.h_ref # [m]
 
     # dx = np.diff(elem.x).min()
     # dy = np.diff(elem.y).min()
     dx = 1E6/149
     dy = dx
-    ud.tout = np.arange(0,500000.0,0.1*min(dx, dy)/np.sqrt(g*H)*20)
+    # ud.tout = np.arange(0,500000.0,0.1*min(dx, dy)/np.sqrt(g*ud.h_ref)*20)
     # ud.dtfixed = 0.1*min(dx, dy)/np.sqrt(g*H) * 100.0
 
     i2 = (slice(igs[0],-igs[0]),slice(igs[1],-igs[1]))
@@ -212,42 +221,63 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     # X,Y = np.meshgrid(elem.x[igs[0:-igs[0]]],elem.y[igs[1]:-igs[1]])
     X,Y = np.meshgrid(elem.x,elem.y)
-    rho = np.ones_like(Sol.rho[i2]) * H
+    rho = np.ones_like(Sol.rho[...]) * H * ud.h_ref
     # rho0 = np.copy(rho)
+    rho += np.exp(-((X-X.max()/4)**2/(2*(0.05E+6)**2) + (Y-Y.max()/4)**2/(2*(0.05E+6)**2)))
     # rho += np.exp(-((X-X.max()/2.7)**2/(2*(0.05E+6)**2) + (Y-Y.max()/4)**2/(2*(0.05E+6)**2)))
-    rho += np.load('./output_swe/eta_list.npy')[0]
+    # rho += np.load('./output_swe/eta_list.npy')[0]
     # rhoH = rho + H
+    # rho *= ud.rho_ref
 
     # rhoH = rho + rho0
 
-    Sol.rho[i2] = rho
-    Sol.rhou[i2] = rho * u
-    Sol.rhov[i2] = rho * v
-    Sol.rhow[i2] = rho * w
+    # Sol.rho[i2] = rho
+    # Sol.rhou[i2] = rho * u
+    # Sol.rhov[i2] = rho * v
+    # Sol.rhow[i2] = rho * w
 
-    # Sol.rho[...] = rho
-    # Sol.rhou[...] = rho * u
-    # Sol.rhov[...] = rho * v
-    # Sol.rhow[...] = rho * w
+    Sol.rho[...] = rho
+    Sol.rhou[...] = rho * u
+    Sol.rhov[...] = rho * v
+    Sol.rhow[...] = rho * w
 
     if (ud.is_compressible) :
+        # rhoY = mpv.HydroState.rhoY0[igy:-igy]
+
         Sol.rhoY[...] = 1.0
+        # Sol.rhoX[...] = 1.0
     else:
         Sol.rhoY[...] = 1.0
-
+        # Sol.rhoX[...] = 1.0 / Sol.rho
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
+    # rho = np.pad(rho,2,mode='wrap')
 
     kernel = np.ones((2,2))
     kernel /= kernel.sum()
     rho_n = signal.convolve(Sol.rho, kernel, mode='valid')
 
+    
+    points = np.zeros((Sol.rho.flatten().shape[0],2))
+    points[:,0] = X.flatten()
+    points[:,1] = Y.flatten()
+
+    values = Sol.rho.flatten()
+
+    grid_x, grid_y = np.meshgrid(node.x,node.y)
+
+    from scipy.interpolate import griddata
+    rho_n = griddata(points, values, (grid_x, grid_y), method='cubic')
+
     # print(rho_n.shape)
     # mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = g *s rho_n**2 / 2.0
-    mpv.p2_nodes[1:-1,1:-1] = g * rho_n**th.gamm / 2.0
+    mpv.p2_nodes[...] = g / 2.0 * (rho_n)**th.gamm
+    # mpv.p2_nodes[1:-1,1:-1] = g / 2.0 * rho_n**th.gamm
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
     ud.compressibility = float(ud.is_compressible)
+
+    set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
     return Sol
 
