@@ -61,7 +61,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 0
+        self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -198,7 +198,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     w0 = 0.0
 
     # initial velocities
-    u, v, w = 1.0, 1.0 , 0.0
+    u, v, w = 0.0, 0.0 , 0.0
 
     igs = elem.igs
     igy = igs[1]
@@ -244,7 +244,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     if (ud.is_compressible) :
         # rhoY = mpv.HydroState.rhoY0[igy:-igy]
 
-        Sol.rhoY[...] = 1.0
+        Sol.rhoY[...] = 1.0 #rho#1.0
         # Sol.rhoX[...] = 1.0
     else:
         Sol.rhoY[...] = 1.0
@@ -252,11 +252,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
     # rho = np.pad(rho,2,mode='wrap')
 
-    kernel = np.ones((2,2))
-    kernel /= kernel.sum()
-    rho_n = signal.convolve(Sol.rho, kernel, mode='valid')
+    # kernel = np.ones((2,2))
+    # kernel /= kernel.sum()
+    # rho_n = signal.convolve(Sol.rho, kernel, mode='valid')
 
-    
     points = np.zeros((Sol.rho.flatten().shape[0],2))
     points[:,0] = X.flatten()
     points[:,1] = Y.flatten()
