@@ -27,13 +27,13 @@ class UserData(object):
     h_ref = 1.0
     t_ref = 1.0
     T_ref = 300.00
-    p_ref = 1024.0
+    p_ref = 1e5
 
     # T_ref = .0
     # R_gas = 300.0
     R_vap = 1.0
     Q_vap = 1.0
-    p_ref = 1024.0
+    # p_ref = 1024.0
 
     u_ref = h_ref / t_ref
     rho_ref = p_ref / (R_gas * T_ref)
@@ -71,6 +71,7 @@ class UserData(object):
         # self.Msq = 1.0
 
         self.g = 9.81 * self.h_ref / (self.R_gas * self.T_ref)
+        self.R_gas = self.R_gas
 
         self.gravity_strength = np.zeros((3))
         self.coriolis_strength = np.zeros((3))
@@ -205,9 +206,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     # g = ud.g
     g = 9.81
+    ud.Msq = 1.0
     # g = 9.81 * ud.h_ref / (ud.R_gas * ud.T_ref)   # [m/s^2]
-    H = 100.0 #* ud.h_ref # [m]
-
+    H = 100 #* ud.h_ref # [m]
+    # H = 93.03673529
     # dx = np.diff(elem.x).min()
     # dy = np.diff(elem.y).min()
     dx = 1E6/149
@@ -223,9 +225,15 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     X,Y = np.meshgrid(elem.x,elem.y)
     rho = np.ones_like(Sol.rho[...]) * H * ud.h_ref
     # rho0 = np.copy(rho)
-    rho += np.exp(-((X-X.max()/4)**2/(2*(0.05E+6)**2) + (Y-Y.max()/4)**2/(2*(0.05E+6)**2)))
+    # perturb = np.exp(-((X-X.max()/4)**2/(2*(0.05E+6)**2) + (Y-Y.max()/4)**2/(2*(0.05E+6)**2)))
+    # perturb -= perturb.mean()
+    # rho += perturb
+
+    # rho -= rho.mean()
+
     # rho += np.exp(-((X-X.max()/2.7)**2/(2*(0.05E+6)**2) + (Y-Y.max()/4)**2/(2*(0.05E+6)**2)))
-    # rho += np.load('./output_swe/eta_list.npy')[0]
+    perturb = np.load('./output_swe/eta_list.npy')[0]
+    rho += np.pad(perturb,2,mode='constant')
     # rhoH = rho + H
     # rho *= ud.rho_ref
 
@@ -236,6 +244,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     # Sol.rhov[i2] = rho * v
     # Sol.rhow[i2] = rho * w
 
+    p = g / 2.0 * rho**2
+    # p0 = g / 2.0 * perturb**2 
+
     Sol.rho[...] = rho
     Sol.rhou[...] = rho * u
     Sol.rhov[...] = rho * v
@@ -243,8 +254,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     if (ud.is_compressible) :
         # rhoY = mpv.HydroState.rhoY0[igy:-igy]
-
-        Sol.rhoY[...] = 1.0 #rho#1.0
+        # xs, ys = Sol.rho.shape
+        # Sol.rhoY[...] = np.eye(xs,ys)
+        Sol.rhoY[...] = np.sqrt(p) #* 0.5
+        # Sol.rhoY[...] = perturb
+        # Sol.rhoY -= Sol.rhoY.mean()
+        # Sol.rhoY[...] = 1.0
         # Sol.rhoX[...] = 1.0
     else:
         Sol.rhoY[...] = 1.0
@@ -256,11 +271,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     # kernel /= kernel.sum()
     # rho_n = signal.convolve(Sol.rho, kernel, mode='valid')
 
-    points = np.zeros((Sol.rho.flatten().shape[0],2))
-    points[:,0] = X.flatten()
-    points[:,1] = Y.flatten()
+    points = np.zeros((Sol.rhoY[...].flatten().shape[0],2))
+    points[:,0] = X[...].flatten()
+    points[:,1] = Y[...].flatten()
 
-    values = Sol.rho.flatten()
+    # values = Sol.rhoY.flatten() #/ 2.0
+    values = np.sqrt(p).flatten()
 
     grid_x, grid_y = np.meshgrid(node.x,node.y)
 
@@ -269,7 +285,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     # print(rho_n.shape)
     # mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = g *s rho_n**2 / 2.0
-    mpv.p2_nodes[...] = g / 2.0 * (rho_n)**th.gamm
+    # mpv.p2_nodes[...] = g / 2.0 * (rho_n)**th.gamm
+    mpv.p2_nodes[...] = rho_n
     # mpv.p2_nodes[1:-1,1:-1] = g / 2.0 * rho_n**th.gamm
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
