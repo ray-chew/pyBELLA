@@ -13,7 +13,7 @@ class UserData(object):
     grav = 0.0
     omega = 0.0
 
-    R_gas = 287.4
+    R_gas = 1.0
     R_vap = 461.0
     Q_vap = 2.53e+06
     gamma = 2.0
@@ -26,14 +26,11 @@ class UserData(object):
 
     h_ref = 1.0
     t_ref = 1.0
-    T_ref = 300.00
+    T_ref = 1.0
     p_ref = 1e5
 
-    # T_ref = .0
-    # R_gas = 300.0
     R_vap = 1.0
     Q_vap = 1.0
-    # p_ref = 1024.0
 
     u_ref = h_ref / t_ref
     rho_ref = p_ref / (R_gas * T_ref)
@@ -68,7 +65,6 @@ class UserData(object):
         self.acoustic_timestep = 0
         self.acoustic_order = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
-        # self.Msq = 1.0
 
         self.g = 9.81 * self.h_ref / (self.R_gas * self.T_ref)
         self.R_gas = self.R_gas
@@ -181,10 +177,7 @@ class UserData(object):
         self.rhoe = self.rhoe_function
 
     def stratification_function(self, y):
-        # if type(y) == float:
         return 1.0
-        # else:
-        #     return np.ones((y.shape))
 
     def rhoe_function(self,rho,u,v,w,p,ud,th):
         Msq = ud.compressibility * ud.Msq
@@ -204,48 +197,22 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     igs = elem.igs
     igy = igs[1]
 
-    # g = ud.g
     g = 9.81
-    ud.Msq = 1.0
-    # g = 9.81 * ud.h_ref / (ud.R_gas * ud.T_ref)   # [m/s^2]
-    H = 100 #* ud.h_ref # [m]
-    # H = 93.03673529
-    # dx = np.diff(elem.x).min()
-    # dy = np.diff(elem.y).min()
+    H = 0.0
     dx = 1E6/149
     dy = dx
-    # ud.tout = np.arange(0,500000.0,0.1*min(dx, dy)/np.sqrt(g*ud.h_ref)*20)
-    # ud.dtfixed = 0.1*min(dx, dy)/np.sqrt(g*H) * 100.0
 
     i2 = (slice(igs[0],-igs[0]),slice(igs[1],-igs[1]))
 
     hydrostatic_state(mpv, elem, node, th, ud)
 
-    # X,Y = np.meshgrid(elem.x[igs[0:-igs[0]]],elem.y[igs[1]:-igs[1]])
     X,Y = np.meshgrid(elem.x,elem.y)
     rho = np.ones_like(Sol.rho[...]) * H * ud.h_ref
-    # rho0 = np.copy(rho)
-    # perturb = np.exp(-((X-X.max()/4)**2/(2*(0.05E+6)**2) + (Y-Y.max()/4)**2/(2*(0.05E+6)**2)))
-    # perturb -= perturb.mean()
-    # rho += perturb
 
-    # rho -= rho.mean()
-
-    # rho += np.exp(-((X-X.max()/2.7)**2/(2*(0.05E+6)**2) + (Y-Y.max()/4)**2/(2*(0.05E+6)**2)))
     perturb = np.load('./output_swe/eta_list.npy')[0]
     rho += np.pad(perturb,2,mode='constant')
-    # rhoH = rho + H
-    # rho *= ud.rho_ref
-
-    # rhoH = rho + rho0
-
-    # Sol.rho[i2] = rho
-    # Sol.rhou[i2] = rho * u
-    # Sol.rhov[i2] = rho * v
-    # Sol.rhow[i2] = rho * w
 
     p = g / 2.0 * rho**2
-    # p0 = g / 2.0 * perturb**2 
 
     Sol.rho[...] = rho
     Sol.rhou[...] = rho * u
@@ -253,18 +220,11 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     Sol.rhow[...] = rho * w
 
     if (ud.is_compressible) :
-        # rhoY = mpv.HydroState.rhoY0[igy:-igy]
-        # xs, ys = Sol.rho.shape
-        # Sol.rhoY[...] = np.eye(xs,ys)
-        Sol.rhoY[...] = np.sqrt(p) #* 0.5
-        # Sol.rhoY[...] = perturb
-        # Sol.rhoY -= Sol.rhoY.mean()
-        # Sol.rhoY[...] = 1.0
-        # Sol.rhoX[...] = 1.0
+        Sol.rhoY[...] = np.sqrt(p) 
     else:
         Sol.rhoY[...] = 1.0
-        # Sol.rhoX[...] = 1.0 / Sol.rho
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
+    
     # rho = np.pad(rho,2,mode='wrap')
 
     # kernel = np.ones((2,2))
@@ -275,7 +235,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     points[:,0] = X[...].flatten()
     points[:,1] = Y[...].flatten()
 
-    # values = Sol.rhoY.flatten() #/ 2.0
     values = np.sqrt(p).flatten()
 
     grid_x, grid_y = np.meshgrid(node.x,node.y)
@@ -283,11 +242,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     from scipy.interpolate import griddata
     rho_n = griddata(points, values, (grid_x, grid_y), method='cubic')
 
-    # print(rho_n.shape)
-    # mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = g *s rho_n**2 / 2.0
-    # mpv.p2_nodes[...] = g / 2.0 * (rho_n)**th.gamm
     mpv.p2_nodes[...] = rho_n
-    # mpv.p2_nodes[1:-1,1:-1] = g / 2.0 * rho_n**th.gamm
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
