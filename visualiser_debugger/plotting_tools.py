@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import matplotlib.animation as animation
 import numpy as np
 import itertools
 
@@ -9,7 +10,7 @@ class plotter(object):
         N = self.arr_lst.shape[0]
         
         if N > ncols:
-            self.nrows = int(int(N/ncols)+1)
+            self.nrows = int(int(N/ncols)+1)-1
             self.ncols = ncols
         if N <= ncols:
             self.nrows = 1
@@ -46,6 +47,7 @@ class plotter(object):
             assert(0, "Visualisation method not implemented!")
             
         if self.N > 1:
+            ims = []
             for n, arr in enumerate(self.arr_lst):
                 arr, title = arr[0], arr[1]
                 if inner == True:
@@ -67,8 +69,11 @@ class plotter(object):
                 cax = divider.append_axes("right", size="5%", pad=0.05)
                 plt.colorbar(im, cax=cax)
                 
+                ims.append(im)
+                
             for i in range(n+1,self.nrows*self.ncols):
                 self.fig.delaxes(self.ax[self.idx[i]])
+            
         else:
             arr, title = self.arr_lst[0][0], self.arr_lst[0][1]
             if inner == True:
@@ -79,9 +84,12 @@ class plotter(object):
             divider = make_axes_locatable(cax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             plt.colorbar(im, cax=cax)
+            ims = im
             
         plt.suptitle(suptitle)
         plt.tight_layout(rect=rect)
+        
+        return ims
         
     def save_fig(self, fn, format='.pdf'):
         self.img.savefig(fn + format, bbox_inches = 'tight', pad_inches = 0)
@@ -99,6 +107,30 @@ class plotter(object):
                 im = cax.contour(arr,levels=lvls,colors='k')
                 im = cax.contourf(arr,levels=lvls,extend='both')
         return im
+    
+
+class animator_2D(plotter):
+    def __init__(self,time_series,ncols,figsize=(16,8)):
+        self.time_series = time_series
+        self.frns = time_series.shape[0]
+        super().__init__(self.time_series[0], ncols, figsize)
+        
+        self.update_plot = self.update_plot
+        self.fig.tight_layout()
+        
+    def animate(self, interval=100, **kwargs):
+        self.ims = self.plot(**kwargs)
+        self.imsize= len(self.ims)
+        anim = animation.FuncAnimation(self.fig, self.update_plot, self.frns, fargs=(self.time_series, self.ims, self.fig), interval=interval) 
+        return anim
+
+    @staticmethod
+    def update_plot(frame_number, time_series, ims, img):
+        for ii,im in enumerate(ims):
+            im.set_array(time_series[frame_number][ii][0])
+            
+        img.suptitle(frame_number)
+    
     
 class plotter_1d(object):
     def __init__(self,ncols=3,nrows=2,figsize=(12,12),fontsize=16):
