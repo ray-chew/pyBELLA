@@ -84,7 +84,7 @@ class plotter(object):
             divider = make_axes_locatable(cax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             plt.colorbar(im, cax=cax)
-            ims = im
+            ims = [im]
             
         plt.suptitle(suptitle)
         plt.tight_layout(rect=rect)
@@ -117,19 +117,24 @@ class animator_2D(plotter):
         
         self.update_plot = self.update_plot
         self.fig.tight_layout()
+        self.suptitle = None
         
     def animate(self, interval=100, **kwargs):
         self.ims = self.plot(**kwargs)
-        self.imsize= len(self.ims)
-        anim = animation.FuncAnimation(self.fig, self.update_plot, self.frns, fargs=(self.time_series, self.ims, self.fig), interval=interval) 
+        anim = animation.FuncAnimation(self.fig, self.update_plot, self.frns, fargs=(self.time_series, self.ims, self.fig, self.suptitle), interval=interval) 
         return anim
 
     @staticmethod
-    def update_plot(frame_number, time_series, ims, img):
+    def update_plot(frame_number, time_series, ims, img, title):
         for ii,im in enumerate(ims):
-            im.set_array(time_series[frame_number][ii][0])
-            
-        img.suptitle(frame_number)
+            arr = time_series[frame_number][ii][0]
+            im.set_array(arr)
+            im.set_clim(arr.min(),arr.max()) 
+        if title is not None:
+            stt = title(frame_number)
+            img.suptitle(stt)
+        else:
+            img.suptitle(frame_number)
     
     
 class plotter_1d(object):
