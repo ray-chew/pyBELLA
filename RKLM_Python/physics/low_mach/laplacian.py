@@ -261,12 +261,39 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
             p[-1,:,:] = p[2,:,:]
             p[1,:,:] = p[-2,:,:]
             p[-2,:,:] = tmp
-        elif bc == True and cnt == 2:
+        else:
+            hplusx[0,:,:] = 0.0
+            hplusx[-1,:,:] = 0.0
+            hplusy[0,:,:] = 0.0
+            hplusy[-1,:,:] = 0.0
+            hplusz[0,:,:] = 0.0
+            hplusz[-1,:,:] = 0.0
+        if bc == True and cnt == 1:
+            tmp = p[:,1,:]
+            p[:,0,:] = p[:,-3,:]
+            p[:,-1,:] = p[:,2,:]
+            p[:,1,:] = p[:,-2,:]
+            p[:,-2,:] = tmp
+        else:
+            hplusx[:,0,:] = 0.0
+            hplusx[:,-1,:] = 0.0
+            hplusy[:,0,:] = 0.0
+            hplusy[:,-1,:] = 0.0
+            hplusz[:,0,:] = 0.0
+            hplusz[:,-1,:] = 0.0
+        if bc == True and cnt == 2:
             tmp = p[:,:,1]
             p[:,:,0] = p[:,:,-3]
             p[:,:,-1] = p[:,:,2]
             p[:,:,1] = p[:,:,-2]
             p[:,:,-2] = tmp
+        else:
+            hplusx[:,:,0] = 0.0
+            hplusx[:,:,-1] = 0.0
+            hplusy[:,:,0] = 0.0
+            hplusy[:,:,-1] = 0.0
+            hplusz[:,:,0] = 0.0
+            hplusz[:,:,-1] = 0.0
         cnt += 1
     
     leftz = p[:,:,:-1]
