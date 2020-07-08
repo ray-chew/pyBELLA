@@ -289,7 +289,7 @@ def get_args():
 
     parser = argparse.ArgumentParser(description='Python solver for unified numerical model based on (Benacchio and Klein, 2019) with data assimilation and blending. Written by Ray Chew and based on Prof. Rupert Klein\'s C code.')
     parser.add_argument('-N',action='store',dest='N',help='<Optional> Set ensemble size, if none is given N=1 is used.',required=False,type=int)
-    parser.add_argument('-ic','--initial_conditions',action='store',dest='ic',help='<Required> Set initial conditions',required=True,choices={'aw','tv','tv_2d','tv_3d','tv_corr','rb','igw','swe','bal_swe'})
+    parser.add_argument('-ic','--initial_conditions',action='store',dest='ic',help='<Required> Set initial conditions',required=True,choices={'aw','tv','tv_2d','tv_3d','tv_corr','rb','igw','swe','bal_swe','swe_3D'})
     args = parser.parse_args() # collect cmd line args
     ic = args.ic
 
@@ -311,6 +311,9 @@ def get_args():
         from inputs.shallow_water_2D import UserData, sol_init
     elif ic == 'bal_swe':
         from inputs.balanced_shallow_water_2D import UserData, sol_init
+    elif ic == 'swe_3D':
+        from inputs.shallow_water_3D import UserData, sol_init
+
 
     if UserData is None or sol_init is None:
         assert(0, "Initial condition file is not well defined.")
