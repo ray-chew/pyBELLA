@@ -115,9 +115,9 @@ class UserData(object):
         self.dtfixed0 = 1000.0
         self.dtfixed = 1000.0
 
-        self.inx = 64+1
+        self.inx = 150+1
         self.iny = 1+1
-        self.inz = 64+1
+        self.inz = 150+1
 
         self.recovery_order = RecoveryOrder.SECOND
         self.limiter_type_scalars = LimiterType.NONE
