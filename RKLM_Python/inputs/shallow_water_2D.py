@@ -155,7 +155,7 @@ class UserData(object):
         stepsize = 100
         # self.tout = np.arange(0,2E5+stepsize,stepsize)
         self.tout = np.arange(0,1E6+100,100)
-        self.stepmax = 301
+        self.stepmax = 201
 
         self.output_base_name = "_swe"
         if self.is_compressible == 1:
@@ -199,9 +199,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     g = 9.81
     H = 100.0
-    dx = 1E6/149
     ud.Msq = 1.0
-    dy = dx
 
     i2 = (slice(igs[0],-igs[0]),slice(igs[1],-igs[1]))
 
