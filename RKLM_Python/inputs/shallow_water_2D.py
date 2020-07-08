@@ -198,8 +198,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     igy = igs[1]
 
     g = 9.81
-    H = 0.0
+    H = 100.0
     dx = 1E6/149
+    ud.Msq = 1.0
     dy = dx
 
     i2 = (slice(igs[0],-igs[0]),slice(igs[1],-igs[1]))
@@ -209,8 +210,11 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     X,Y = np.meshgrid(elem.x,elem.y)
     rho = np.ones_like(Sol.rho[...]) * H * ud.h_ref
 
-    perturb = np.load('./output_swe/eta_list.npy')[0]
-    rho += np.pad(perturb,2,mode='constant')
+    # perturb = np.load('./output_swe/eta_list.npy')[0]
+    # rho += np.pad(perturb,2,mode='constant')
+
+    perturb = np.exp(-((X-X.max()/4)**2/(2*(0.05E+6)**2) + (Y-Y.max()/4)**2/(2*(0.05E+6)**2)))
+    rho += perturb
 
     p = g / 2.0 * rho**2
 
@@ -220,7 +224,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     Sol.rhow[...] = rho * w
 
     if (ud.is_compressible) :
-        Sol.rhoY[...] = np.sqrt(p) 
+        Sol.rhoY[...] = p**th.gamminv
     else:
         Sol.rhoY[...] = 1.0
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
@@ -235,14 +239,14 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     points[:,0] = X[...].flatten()
     points[:,1] = Y[...].flatten()
 
-    values = np.sqrt(p).flatten()
+    values = (p**th.gamminv).flatten()
 
     grid_x, grid_y = np.meshgrid(node.x,node.y)
 
     from scipy.interpolate import griddata
-    rho_n = griddata(points, values, (grid_x, grid_y), method='cubic')
+    pn = griddata(points, values, (grid_x, grid_y), method='cubic')
 
-    mpv.p2_nodes[...] = rho_n
+    mpv.p2_nodes[...] = pn
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
