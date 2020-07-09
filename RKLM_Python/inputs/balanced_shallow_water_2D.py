@@ -6,6 +6,7 @@ from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_g
 from physics.low_mach.second_projection import euler_backward_non_advective_impl_part
 
 from scipy import signal
+from scipy.interpolate import griddata
 
 class UserData(object):
     NSPEC = 1
@@ -211,7 +212,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     yc = 0.0
 
     g = 9.81
-    H = 100.0
+    H = 10.0
+    # ud.Msq = (th.gamm / g)**2.0
+    # ud.Msq = 1.0/(g)
 
     xcm = xc - (ud.xmax - ud.xmin)
     ycm = yc - (ud.ymax - ud.ymin)
@@ -246,7 +249,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rho[...] += (rho0 + del_rho * (1. - (r/R0)**2)**6) * (r < R0)
     rho[...] += rho0 * (r > R0)
 
-    rho = H - rho
+    # rho = H - rho
+    # perturb = np.copy(rho)
+    rho += H
 
     Sol.rho[:,igy:-igy] = rho
     Sol.rhou[:,igy:-igy] = rho * u
@@ -268,13 +273,11 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     points[:,0] = X[...].flatten()
     points[:,1] = Y[...].flatten()
 
-    values = -np.sqrt(Sol.rhoY[...]).flatten()
+    values = (Sol.rhoY[...]**th.gamminv).flatten()
 
     grid_x, grid_y = np.meshgrid(node.x,node.y)
 
-    from scipy.interpolate import griddata
     pn = griddata(points, values, (grid_x, grid_y), method='cubic')
-
 
     mpv.p2_nodes[...] = pn
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)

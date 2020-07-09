@@ -157,7 +157,7 @@ class UserData(object):
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.blending_weight = 10./16
+        self.blending_weight = 16./16
 
         self.initial_projection = True
         self.initial_impl_Euler = False
@@ -196,8 +196,10 @@ class UserData(object):
         # aux = 'posp_rloc'
         # aux += '_' + self.blending_conv + '_conv'
         # aux += '_' + self.blending_mean + '_mean'
-        aux = 'cb1_debug'
-        self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
+        # aux = 'cb1_w=-6_debug'
+        self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))
+        # aux = 'psinc_bal_debug'
+        # self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
