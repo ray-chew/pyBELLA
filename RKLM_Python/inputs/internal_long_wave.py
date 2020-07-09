@@ -33,7 +33,7 @@ class UserData(object):
     Nsq_ref = 1.0e-4
 
     # planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0;
-    scale_factor = 1.0
+    scale_factor = 160.0
     # scale_factor = 3.41333333333 # 1024
     # scale_factor = 4.01333333333
 
@@ -68,7 +68,7 @@ class UserData(object):
         self.cond = self.cond * self.t_ref / (self.h_ref * self.h_ref * self.R_gas)
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 0
+        self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
         self.compressibility = 0.0
@@ -174,12 +174,12 @@ class UserData(object):
         self.stepmax = 100000
         # self.stepmax = 10
 
-        self.blending_weight = 0./16
+        self.blending_weight = 8./16
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'rho' #theta, rho
 
-        self.continuous_blending = False
-        self.no_of_pi_initial = 0
+        self.continuous_blending = True
+        self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
@@ -206,6 +206,10 @@ class UserData(object):
             self.output_suffix = "_%i_%i_%.1f_planetary" %(self.inx-1,self.iny-1, self.tout[-1])
         else:
             assert(0, "scale factor unsupported")
+
+        self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))
+
+        # self.output_suffix += '_psinc_debug'
 
         self.stratification = self.stratification_function
         self.molly = self.molly_function

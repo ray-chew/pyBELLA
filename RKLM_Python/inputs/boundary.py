@@ -102,10 +102,10 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                         Sol.rhou[nimage] = Sol.rhou[nsource] * (Y_last * S)
                         Sol.rhov[nimage] = Sol.rhov[nsource] * (Y_last * S)
                         Sol.rhow[nimage] = Sol.rhow[nsource] * (Y_last * S)
+                        Sol.rhov[nimage] = rho*v
                         # Sol.rhou[nimage] = rho*u
                         # Sol.rhov[nimage] = rho*v
                         # Sol.rhow[nimage] = rho*w
-                        Sol.rhov[nimage] = rho*v
                         
                     else:
                         Sol.rhou[nimage] = rho*u
@@ -142,37 +142,54 @@ def set_boundary(Sol,pads,btype,idx,step=None):
     Sol.rho[...] = np.pad(Sol.rho[idx],pads,btype)
     Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
     Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
-
     Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
+
     if btype == 'symmetric':
+        Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
         Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,negative_symmetric)
+        Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,negative_symmetric)
     else:
+        Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
         Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
+        Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
 
-    # if step == None or step == 0:
-    #     Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
-    #     Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
-    #     if btype == 'symmetric':
-    #         Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,negative_symmetric)
-    #     else:
-    #         Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
+    if step == 0:
+        Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
+        # Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
+        Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
+        if btype == 'symmetric':
+            # Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,negative_symmetric)
+            Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
+            # Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,negative_symmetric)
+        else:
+            Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
+            Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
+            Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
 
-    # if step == 1:
-    #     Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
-    #     Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
-    #     if btype == 'symmetric':
-    #         Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
-    #     else:
-    #         Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
+    if step == 1:
+        Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
+        Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
+        if btype == 'symmetric':
+            # Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
+            Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,negative_symmetric)
+            # Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,negative_symmetric)
+        else:
+            Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
+            Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
+            Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
 
-    # if step == 2:
-    #     Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
-    #     Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
-    #     if btype == 'symmetric':
-    #         Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,negative_symmetric)
-    #     else:
-    #         Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
-
+    if step == 2:
+        Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
+        Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
+        if btype == 'symmetric':
+            # Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
+            # Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,negative_symmetric)
+            Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,negative_symmetric)
+        else:
+            Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
+            Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
+            Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
+            
     Sol.rhoe[...] = np.pad(Sol.rhoe[idx],pads,btype)
     Sol.rhoY[...] = np.pad(Sol.rhoY[idx],pads,btype)
     Sol.rhoX[...] = np.pad(Sol.rhoX[idx],pads,btype)
