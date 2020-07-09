@@ -235,7 +235,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         # rhs_inner = rhs.ravel()
         # p2 = mpv.p2_nodes[1:-1,1:-1,1:-1]
         # rhs_inner = rhs.ravel()
-    p2,info = bicgstab(lap,rhs_inner,tol=1e-8,maxiter=1000,callback=counter)
+    p2,info = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
     # p2,info = bicgstab(lap,rhs.ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
 
@@ -367,6 +367,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
         innerdim1[dim] = slice(igs[dim]-1, (-igs[dim]+1))
  
     strat = 2.0 * (mpv.HydroState_n.Y0[y_idx1] - mpv.HydroState_n.Y0[y_idx]) / (mpv.HydroState_n.Y0[y_idx1] + mpv.HydroState_n.Y0[y_idx]) / dy
+    # strat = 2.0 * (np.diff(mpv.HydroState_n.Y0)[igs[1]:-igs[1]]) / np.diff(mpv.HydroState_n.Y0)[igs[1]:-igs[1]] / dy
 
     nindim = tuple(nindim)
     eindim = tuple(eindim)
@@ -374,8 +375,9 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     innerdim1 = tuple(innerdim1)
 
     for dim in range(0,elem.ndim,2):
+        is_periodic = ud.bdry_type[dim] != BdryType.PERIODIC
         strat = np.expand_dims(strat, dim)
-        strat = np.repeat(strat, elem.sc[dim]-igx, axis=dim)
+        strat = np.repeat(strat, elem.sc[dim]-int(2*is_periodic+igs[dim]), axis=dim)
 
     Y = Sol.rhoY[nindim] / Sol.rho[nindim]
     coeff = Gammainv * Sol.rhoY[nindim] * Y
