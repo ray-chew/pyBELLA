@@ -32,8 +32,9 @@ from copy import deepcopy
 from management.debug import find_nearest
 from time import time
 
-debug = True
-output_timesteps = True
+debug = False
+output_timesteps = False
+if debug == True: output_timesteps = True
 label_type = 'STEP'
 np.set_printoptions(precision=18)
 
@@ -105,6 +106,8 @@ if N > 1:
 # add ensemble info to filename
 ud.output_suffix = '_ensemble=%i%s' %(N, ud.output_suffix)
 
+# ud.output_suffix = '%s_%s' %(ud.output_suffix, 'nr')
+
 
 ##########################################################
 # Start main looping
@@ -127,7 +130,7 @@ if __name__ == '__main__':
         if label_type == 'STEP':
             label = ('ensemble_mem=%i_%.3d' %(n,step))
         else:
-            label = ('ensemble_mem=%i_%.6f' %(n,0.0))
+            label = ('ensemble_mem=%i_%.3f' %(n,0.0))
         writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
     # initialise dask parallelisation and timer
