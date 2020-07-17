@@ -109,6 +109,13 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         label = '%.3d' %step
         dt, cfl, cfl_ac = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
 
+        if bld is not None and window_step == 0:
+            if bld.bb or bld.cb:
+                dp2n = mpv.p2_nodes
+                bld.convert_p2n(dp2n)
+                bld.update_Sol(Sol,elem,node,th,ud,mpv,'aft',label=label,writer=writer)
+                bld.update_p2n(Sol,mpv,node,th,ud)
+
         if bld != None:
             c_init, c_trans = bld.criterion_init(window_step), bld.criterion_trans(window_step)
         else:
@@ -132,7 +139,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
             if writer != None: writer.populate(str(label)+'_after_full_step', 'dp2n', dp2n)
             bld.convert_p2n(dp2n)
-            bld.update_Sol(Sol,elem,node,th,ud, mpv,label=label,writer=writer)
+            bld.update_Sol(Sol,elem,node,th,ud,mpv,'aft',label=label,writer=writer)
             bld.update_p2n(Sol,mpv,node,th,ud)
 
         ud.is_compressible = is_compressible(ud,window_step)
