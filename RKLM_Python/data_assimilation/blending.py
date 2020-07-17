@@ -12,7 +12,7 @@ class Blend(object):
         self.psinc_init = ud.no_of_pi_initial
         self.psinc_trans = ud.no_of_pi_transition
 
-        if self.psinc_init > 0 and self.psinc_trans == 0:
+        if self.psinc_init > 0 and self.psinc_trans == 0 and self.cb:
             self.bb = True
 
         self.c_init = self.criterion_init
@@ -27,7 +27,7 @@ class Blend(object):
         return step <= self.psinc_trans and self.cb and not self.bb
         
     def convert_p2n(self, p2n):
-        ndim =  p2n.ndim
+        ndim = p2n.ndim
         dp2n = p2n - p2n.mean()
 
         self.kernel = np.ones([2]*ndim)
@@ -38,9 +38,16 @@ class Blend(object):
 
         return dp2c
 
-    def update_Sol(self, Sol, elem, node, th, ud, mpv, label=None,writer=None):
+    def update_Sol(self, Sol, elem, node, th, ud, mpv, sgn, label=None,writer=None):
         if writer != None: writer.populate(str(label)+'_before_blending', 'dp2n', self.dp2n)
         if writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_blending')
+
+        if sgn == 'bef':
+            sign = -1.0
+        elif sgn == 'aft':
+            sign = +1.0
+        else:
+            assert 0, "sgn == bef or sgn == aft"
 
         rho = np.copy(Sol.rho)
         rhoY = np.copy(Sol.rhoY)
@@ -48,7 +55,7 @@ class Blend(object):
         Y = rhoY / rho
 
         if ud.blending_mean == 'rhoY':
-            rhoYc = (rhoY**th.gm1 + self.fac * self.dp2c)**(th.gm1inv)
+            rhoYc = (rhoY**th.gm1 + sign * self.fac * self.dp2c)**(th.gm1inv)
         elif ud.blending_mean == '1.0':
             rhoYc = (1.0 + self.fac * self.dp2c)**(th.gm1inv)
 
