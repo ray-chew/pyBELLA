@@ -254,6 +254,48 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
                 ]
 
     cnt = 0
+    # for bc in periodicity:
+    #     if bc == True and cnt == 0:
+    #         tmp = p[1,:,:]
+    #         p[0,:,:] = p[-3,:,:]
+    #         p[-1,:,:] = p[2,:,:]
+    #         p[1,:,:] = p[-2,:,:]
+    #         p[-2,:,:] = tmp
+    #     else:
+    #         hplusx[0,:,:] = 0.0
+    #         hplusx[-1,:,:] = 0.0
+    #         hplusy[0,:,:] = 0.0
+    #         hplusy[-1,:,:] = 0.0
+    #         hplusz[0,:,:] = 0.0
+    #         hplusz[-1,:,:] = 0.0
+    #     if bc == True and cnt == 1:
+    #         tmp = p[:,1,:]
+    #         p[:,0,:] = p[:,-3,:]
+    #         p[:,-1,:] = p[:,2,:]
+    #         p[:,1,:] = p[:,-2,:]
+    #         p[:,-2,:] = tmp
+    #     else:
+    #         hplusx[:,0,:] = 0.0
+    #         hplusx[:,-1,:] = 0.0
+    #         hplusy[:,0,:] = 0.0
+    #         hplusy[:,-1,:] = 0.0
+    #         hplusz[:,0,:] = 0.0
+    #         hplusz[:,-1,:] = 0.0
+    #     if bc == True and cnt == 2:
+    #         tmp = p[:,:,1]
+    #         p[:,:,0] = p[:,:,-3]
+    #         p[:,:,-1] = p[:,:,2]
+    #         p[:,:,1] = p[:,:,-2]
+    #         p[:,:,-2] = tmp
+    #     else:
+    #         hplusx[:,:,0] = 0.0
+    #         hplusx[:,:,-1] = 0.0
+    #         hplusy[:,:,0] = 0.0
+    #         hplusy[:,:,-1] = 0.0
+    #         hplusz[:,:,0] = 0.0
+    #         hplusz[:,:,-1] = 0.0
+    #     cnt += 1
+
     for bc in periodicity:
         if bc == True and cnt == 0:
             tmp = p[1,:,:]
@@ -261,39 +303,39 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
             p[-1,:,:] = p[2,:,:]
             p[1,:,:] = p[-2,:,:]
             p[-2,:,:] = tmp
-        else:
-            hplusx[0,:,:] = 0.0
-            hplusx[-1,:,:] = 0.0
-            hplusy[0,:,:] = 0.0
-            hplusy[-1,:,:] = 0.0
-            hplusz[0,:,:] = 0.0
-            hplusz[-1,:,:] = 0.0
+        # else:
+        #     hplusx[0,:,:] = 0.0
+        #     hplusx[-1,:,:] = 0.0
+        #     hplusy[0,:,:] = 0.0
+        #     hplusy[-1,:,:] = 0.0
+        #     hplusz[0,:,:] = 0.0
+        #     hplusz[-1,:,:] = 0.0
         if bc == True and cnt == 1:
             tmp = p[:,1,:]
             p[:,0,:] = p[:,-3,:]
             p[:,-1,:] = p[:,2,:]
             p[:,1,:] = p[:,-2,:]
             p[:,-2,:] = tmp
-        else:
-            hplusx[:,0,:] = 0.0
-            hplusx[:,-1,:] = 0.0
-            hplusy[:,0,:] = 0.0
-            hplusy[:,-1,:] = 0.0
-            hplusz[:,0,:] = 0.0
-            hplusz[:,-1,:] = 0.0
+        # else:
+        #     hplusx[:,0,:] = 0.0
+        #     hplusx[:,-1,:] = 0.0
+        #     hplusy[:,0,:] = 0.0
+        #     hplusy[:,-1,:] = 0.0
+        #     hplusz[:,0,:] = 0.0
+        #     hplusz[:,-1,:] = 0.0
         if bc == True and cnt == 2:
             tmp = p[:,:,1]
             p[:,:,0] = p[:,:,-3]
             p[:,:,-1] = p[:,:,2]
             p[:,:,1] = p[:,:,-2]
             p[:,:,-2] = tmp
-        else:
-            hplusx[:,:,0] = 0.0
-            hplusx[:,:,-1] = 0.0
-            hplusy[:,:,0] = 0.0
-            hplusy[:,:,-1] = 0.0
-            hplusz[:,:,0] = 0.0
-            hplusz[:,:,-1] = 0.0
+        # else:
+        #     hplusx[:,:,0] = 0.0
+        #     hplusx[:,:,-1] = 0.0
+        #     hplusy[:,:,0] = 0.0
+        #     hplusy[:,:,-1] = 0.0
+        #     hplusz[:,:,0] = 0.0
+        #     hplusz[:,:,-1] = 0.0
         cnt += 1
     
     leftz = p[:,:,:-1]
@@ -357,6 +399,128 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
     return lap
 
 
+
+def stencil_hs(elem,node,mpv,ud,diag_inv,dt):
+    oodx2 = 1./node.dx**2
+    oodz2 = 1./node.dz**2
+    odx, odz = 1./node.dx, 1./node.dz
+    igy = elem.igs[1]
+
+    proj = (slice(None,),igy,slice(None,))
+    i0 = (slice(0,-1),slice(0,-1))
+    i1 = (slice(1,-1),slice(1,-1))
+    i2 = (slice(2,-2),slice(2,-2))
+
+    ndim = elem.ndim
+    periodicity = np.empty(ndim, dtype='int')
+    for dim in range(ndim,2):
+        periodicity[dim] = ud.bdry_type[dim] == BdryType.PERIODIC
+
+    hplusx = mpv.wplus[0][proj][i0][i1]
+    hplusz = mpv.wplus[2][proj][i0][i1]
+    hcenter = mpv.wcenter[proj][i2]
+    diag_inv = diag_inv[proj][i1]
+
+    corrf = dt * ud.coriolis_strength[0]
+
+    return lambda p : lapHS(p, hplusx, hplusz, hcenter, oodx2, oodz2, periodicity, diag_inv, corrf, odx, odz)
+
+
+
+
+@nb.jit(nopython=True, cache=True, nogil=True)
+def lapHS(p0, hplusx, hplusz, hcenter, oodx2, oodz2, periodicity, diag_inv, corrf, odx, odz):
+    shx, shz = hcenter.shape
+    p = p0.reshape(shz+2,shx+2)
+
+    coeff = 1./4
+    lap = np.zeros_like(p)
+    
+    cnt = 0
+    for bc in periodicity:
+        if bc == True and cnt == 0:
+            tmp = p[1,:]
+            p[0,:] = p[-3,:]
+            p[-1,:] = p[2,:]
+            p[1,:] = p[-2,:]
+            p[-2,:] = tmp
+
+            # p[0,:] = p[-4,:]
+            # p[-1,:] = p[3,:]
+            # p[1,:] = p[-3,:]
+            # p[-2,:] = p[2,:]
+        # else:
+        #     hplusx[0,:] = 0.0
+        #     hplusx[-1,:] = 0.0
+        #     hplusz[0,:] = 0.0
+        #     hplusz[-1,:] = 0.0
+        if bc == True and cnt == 1:
+            tmp = p[:,1]
+            p[:,0] = p[:,-3]
+            p[:,-1] = p[:,2]
+            p[:,1] = p[:,-2]
+            p[:,-2] = tmp
+            # p[:,0] = p[:,-4]
+            # p[:,-1] = p[:,3]
+            # p[:,1] = p[:,-3]
+            # p[:,-2] = p[:,2]
+        # else:
+        #     hplusx[:,0] = 0.0
+        #     hplusx[:,-1] = 0.0
+        #     hplusz[:,0] = 0.0
+        #     hplusz[:,-1] = 0.0
+        cnt += 1
+    
+    leftz = p[:,:-1]
+    rightz = p[:,1:]
+    
+    z_fluxes = (rightz - leftz)
+
+    leftx = p[:-1,:]
+    rightx = p[1:,:]
+
+    x_fluxes = (rightx - leftx)
+
+    x_flx = x_fluxes[:,:-1] + x_fluxes[:,1:]
+    z_flx = z_fluxes[:-1,:] + z_fluxes[1:,:]
+
+    hxzp = hplusx * z_flx
+    hxzpm = hxzp[:-1,:]
+    hxzpm = hxzpm[:,:-1] + hxzpm[:,1:]
+    # hxzpm = hxzpm[:-1,:] + hxzpm[1:,:]
+    hxzpp = hxzp[1:,:]
+    hxzpp = hxzpp[:,:-1] + hxzpp[:,1:]
+    # hxzpp = hxzpp[:-1,:] + hxzpp[1:,:]
+
+    hzxp = hplusz * x_flx
+    hzxpm = hzxp[:,:-1]
+    hzxpm = hzxpm[:-1,:] + hzxpm[1:,:]
+    # hzxpm = hzxpm[:,:-1] + hzxpm[:,1:]
+    hzxpp = hzxp[:,1:]
+    hzxpp = hzxpp[:-1,:] + hzxpp[1:,:]
+    # hzxpp = hzxpp[:,:-1] + hzxpp[:,1:]
+
+    x_flx = hplusx * x_flx
+    x_flxm = x_flx[:-1,:]
+    x_flxm = x_flxm[:,:-1] + x_flxm[:,1:]
+    x_flxp = x_flx[1:,:]
+    x_flxp = x_flxp[:,:-1] + x_flxp[:,1:]
+
+    z_flx = hplusz * z_flx
+    z_flxm = z_flx[:,:-1]
+    z_flxm = z_flxm[:-1,:] + z_flxm[1:,:]
+    z_flxp = z_flx[:,1:]
+    z_flxp = z_flxp[:-1,:] + z_flxp[1:,:]
+
+    lap[1:-1,1:-1] = oodx2 * coeff * (-x_flxm + x_flxp) + \
+                     oodz2 * coeff * (-z_flxm + z_flxp) + \
+                     +1.0 * odx * odz * coeff * corrf * (hxzpp - hxzpm) + \
+                     -1.0 * odx * odz * coeff * corrf * (hzxpp - hzxpm) + \
+                     hcenter * p[1:-1,1:-1]
+
+    lap = lap * diag_inv
+
+    return lap
 
 
 
