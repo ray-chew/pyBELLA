@@ -92,15 +92,15 @@ class UserData(object):
         self.bdry_type_max = np.empty((3), dtype=object)
 
         self.bdry_type_min[0] = BdryType.PERIODIC
-        self.bdry_type_min[1] = BdryType.WALL
+        self.bdry_type_min[1] = BdryType.PERIODIC
         self.bdry_type_min[2] = BdryType.PERIODIC
         self.bdry_type_max[0] = BdryType.PERIODIC
-        self.bdry_type_max[1] = BdryType.WALL
+        self.bdry_type_max[1] = BdryType.PERIODIC
         self.bdry_type_max[2] = BdryType.PERIODIC
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.WALL
+        self.bdry_type[1] = BdryType.PERIODIC
         self.bdry_type[2] = BdryType.PERIODIC
 
         self.absorber = 0 # 0 == WRONG == FALSE 
@@ -117,7 +117,7 @@ class UserData(object):
         self.dtfixed = 2.1 * 1.200930e-2
 
         self.inx = 64+1
-        self.iny = 2+1
+        self.iny = 1+1
         # self.iny = 1+1
         self.inz = 64+1
 
@@ -147,10 +147,10 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        self.tout = np.arange(0.0,1.001,0.005)
+        self.tout = np.arange(0.0,1.001)[1:]
 
-        self.stepmax = 1
-        # self.stepmax = 20000
+        # self.stepmax = 1
+        self.stepmax = 20000
 
         self.output_base_name = "_travelling_vortex"
         self.output_name_psinc = "_low_mach_gravity_psinc"
@@ -189,6 +189,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     i2, iy = [slice(None,)] * elem.ndim, [slice(None,)] * elem.ndim
     iy[1] = slice(igy,-igy)
+    iy[1] = slice(None,)
     for dim in range(elem.ndim):
         i2[dim] = slice(igs[dim],-igs[dim])
     hi2 = np.copy(i2)
@@ -371,7 +372,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     rs = np.array(rs[:elem.ndim])
     r = np.sqrt(rs.sum())
-    r = np.repeat(r,node.icy,axis=1)[iy]
+    r = np.repeat(r,node.icy-2*igs[1],axis=1)[iy]
     
     mpv.p2_nodes[i2] = 0.0
     for ip in range(25):
