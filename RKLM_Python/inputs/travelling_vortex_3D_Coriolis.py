@@ -396,7 +396,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     ud.compressibility = float(ud.is_compressible)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
-    # set_ghostnodes_p2(mpv.p2_nodes,node,ud)
+    set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
     # Sol.rhoY[...] = 1.0
     # mpv.p2_nodes[...] = 0.0

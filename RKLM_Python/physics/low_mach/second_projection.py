@@ -220,12 +220,12 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         sh = (ud.inx)*(ud.iny)
 
         # lap = LinearOperator((sh,sh),lap)
-    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 1:
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
         lap = stencil_32pt(elem,node,mpv,ud,diag_inv,dt)
         # p2 = mpv.p2_nodes[1:-1,1:-1,1:-1]
 
         sh = p2.reshape(-1).shape[0]
-    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] == 1:
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2:
         p2 = np.copy(mpv.p2_nodes[1:-1,elem.igs[1],1:-1])
         lap = stencil_hs(elem,node,mpv,ud,diag_inv,dt)
         sh = p2.reshape(-1).shape[0]
@@ -235,7 +235,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     if elem.ndim == 2:
         rhs_inner = rhs[node.igx:-node.igx,node.igy:-node.igy].ravel()
-    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 1:
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
         rhs_inner = rhs[1:-1,1:-1,1:-1].ravel()
         # rhs_inner = rhs.ravel()
         # p2 = mpv.p2_nodes[1:-1,1:-1,1:-1]
@@ -255,9 +255,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     p2_full = np.zeros(nc).squeeze()
     if elem.ndim == 2:
         p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
-    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 1:
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
         p2_full[1:-1,1:-1,1:-1] = p2.reshape(ud.inx+2,ud.iny+2,ud.inz+2)
-    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] == 1:
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2:
         p2 = p2.reshape(ud.inx+2, ud.inz+2)
         p2 = np.expand_dims(p2,1)
         p2 = np.repeat(p2, node.icy, axis=1)

@@ -413,7 +413,7 @@ def stencil_hs(elem,node,mpv,ud,diag_inv,dt):
 
     ndim = elem.ndim
     periodicity = np.empty(ndim, dtype='int')
-    for dim in range(ndim,2):
+    for dim in range(0,ndim,2):
         periodicity[dim] = ud.bdry_type[dim] == BdryType.PERIODIC
 
     hplusx = mpv.wplus[0][proj][i0][i1]
@@ -426,12 +426,10 @@ def stencil_hs(elem,node,mpv,ud,diag_inv,dt):
     return lambda p : lapHS(p, hplusx, hplusz, hcenter, oodx2, oodz2, periodicity, diag_inv, corrf, odx, odz)
 
 
-
-
 @nb.jit(nopython=True, cache=True, nogil=True)
 def lapHS(p0, hplusx, hplusz, hcenter, oodx2, oodz2, periodicity, diag_inv, corrf, odx, odz):
     shx, shz = hcenter.shape
-    p = p0.reshape(shz+2,shx+2)
+    p = p0.reshape(shx+2,shz+2)
 
     coeff = 1./4
     lap = np.zeros_like(p)
@@ -454,7 +452,7 @@ def lapHS(p0, hplusx, hplusz, hcenter, oodx2, oodz2, periodicity, diag_inv, corr
         #     hplusx[-1,:] = 0.0
         #     hplusz[0,:] = 0.0
         #     hplusz[-1,:] = 0.0
-        if bc == True and cnt == 1:
+        if bc == True and cnt == 2:
             tmp = p[:,1]
             p[:,0] = p[:,-3]
             p[:,-1] = p[:,2]
