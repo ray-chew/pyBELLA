@@ -53,7 +53,7 @@ class test_case(object):
     def get_debug_attrs():
         dd = {
             'p2_initial' : 'p2_initial',
-            'hecenter' : 'hcenter',
+            'hcenter' : 'hcenter',
             'wplusx' : 'wplusx',
             'wplusy' : 'wplusy',
             'wplusz' : 'wplusz',
