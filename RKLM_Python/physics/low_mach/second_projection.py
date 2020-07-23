@@ -185,6 +185,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         writer.populate(str(label),'wplusx',mpv.wplus[0])
         writer.populate(str(label),'wplusy',mpv.wplus[1])
         if elem.ndim == 3: writer.populate(str(label),'wplusz',mpv.wplus[2])
+        else: writer.populate(str(label),'wplusz',np.zeros_like(mpv.wplus[0]))
 
     rhs[...], _ = divergence_nodes(rhs,elem,node,Sol,ud)
     rhs /= dt
