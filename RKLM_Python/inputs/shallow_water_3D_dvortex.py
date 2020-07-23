@@ -12,7 +12,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 6.147 * 1E-5 #* (24.0 * 60.0**2)    # [rad/s]
+    omega = 6.147 * 1E-5 # 360 # (24.0 * 60.0**2)    # [rad/s]
     # omega = 0.0001
 
     R_gas = 1.0
@@ -86,11 +86,11 @@ class UserData(object):
                 self.i_coriolis[i] = 1
 
         self.xmin =   0.0
-        self.xmax =   5000.0*1E3 #/ self.h_ref
-        self.ymin = - 0.0
-        self.ymax =   1.0
+        self.xmax =   5000.0*1E3 / self.h_ref
+        self.ymin = - 0.5 * self.h_ref
+        self.ymax =   0.5 * self.h_ref
         self.zmin =   0.0
-        self.zmax =   4330.0*1E3 #/ self.h_ref
+        self.zmax =   4330.0*1E3 / self.h_ref
 
         self.wind_speed = 0.0
 
@@ -114,12 +114,12 @@ class UserData(object):
         ##########################################
         self.CFL = 0.5
         # self.CFL = 0.9 / 2.0
-        self.dtfixed0 = 1000
-        self.dtfixed = 1000
+        self.dtfixed0 = 1200.0 / self.t_ref
+        self.dtfixed = 1200.0 / self.t_ref
 
-        self.inx = 32+1
+        self.inx = 64+1
         self.iny = 1+1
-        self.inz = 32+1
+        self.inz = 64+1
 
         self.recovery_order = RecoveryOrder.SECOND
         self.limiter_type_scalars = LimiterType.NONE
@@ -131,7 +131,7 @@ class UserData(object):
         self.kY = 0.0
         self.kZ = 0.0
 
-        self.tol = 1.e-12
+        self.tol = 1.e-6
         self.max_iterations = 6000
 
         self.perturb_type = 'pos_perturb'
@@ -155,8 +155,9 @@ class UserData(object):
 
         stepsize = 100
         # self.tout = np.arange(0,2E5+stepsize,stepsize)
-        self.tout = np.arange(0,1E6+10000,10000)[1:]
-        self.stepmax = 1001
+        # self.tout = np.arange(0,1E6+10000,10000)[1:]
+        self.tout = [864000.0]
+        self.stepmax = 10001
 
         self.output_base_name = "_swe"
         if self.is_compressible == 1:
@@ -195,7 +196,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     igs = elem.igs
     igy = igs[1]
 
-    g0 = ud.gravity_strength[1]
+    # g0 = ud.gravity_strength[1]
     f0 = ud.coriolis_strength[0]
     ud.Msq = 1.0
 
@@ -214,12 +215,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     # Lx = ud.xmax
     # Lz = ud.zmax
 
-    Lx = 5000.0 * 1E3
-    Lz = 4330.0 * 1E3
+    Lx = elem.x[-1] - elem.x[0]
+    Lz = elem.z[-1] - elem.z[0]
 
-    Hp = 75.0 #/ ud.h_ref
-    H0 = 10000.0
-    g0 = 9.81 #/ ud.h_ref
+    Hp = 75.0 / ud.h_ref
+    H0 = 10000.0 / ud.h_ref
+    g0 = 9.81 / ud.u_ref
 
     sigx, sigz = sigma(Lx), sigma(Lz)
     
@@ -243,8 +244,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rho = np.expand_dims(rho, 1)
     rho = np.repeat(rho, elem.icy-aa*igs[1], axis=1)
 
-    u[...] = - g0 * Hp / (f0 * sigz) * (zpp1 * exp1 + zpp2 * exp2)
-    w[...] = + g0 * Hp / (f0 * sigx) * (xpp1 * exp1 + xpp2 * exp2) 
+    u[...] = - g0 * Hp / (f0 * sigz) * (zpp1 * exp1 + zpp2 * exp2).T
+    w[...] = + g0 * Hp / (f0 * sigx) * (xpp1 * exp1 + xpp2 * exp2).T 
 
     u = np.expand_dims(u, 1)
     u = np.repeat(u, elem.icy-aa*igs[1], axis=1)
@@ -299,7 +300,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
-    if ud.initial_projection == True:
+    if ud.initial_projection == False:
         is_compressible = np.copy(ud.is_compressible)
         compressibility = np.copy(ud.compressibility)
         ud.is_compressible = 0
@@ -322,6 +323,24 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
         ud.is_compressible = is_compressible
         ud.compressibility = compressibility
+
+    # u = Sol.rhou / Sol.rho
+    # v = Sol.rhov / Sol.rho
+    # w = Sol.rhow / Sol.rho
+
+    # p2 = signal.convolve(mpv.p2_nodes[:,igy,:], kernel, mode='valid')
+    # rho = (2.0/g0)**th.gamminv * p2
+    # rho = np.expand_dims(rho,axis=1)
+    # rho = np.repeat(rho, elem.icy, axis=1)
+    # rho = np.pad(rho, [[2,2],[0,0],[2,2]], mode='wrap')
+    # rho = np.repeat(rho, elem.icy, axis=1)
+    # Sol.rhou[...] = rho * u
+    # Sol.rhov[...] = rho * v
+    # Sol.rhow[...] = rho * w
+    # Sol.rhoY[...] = rho / np.sqrt(2.0/g0)
+    # Sol.rho[...] = rho
+
+    # set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
     return Sol
 
