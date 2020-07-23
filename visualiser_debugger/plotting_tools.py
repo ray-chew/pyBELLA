@@ -101,11 +101,15 @@ class plotter(object):
             im = cax.imshow(arr,aspect=aspect,origin='lower')
         elif method == 'contour':
             if lvls is None:
+                cax.set_aspect(aspect)
                 im = cax.contour(arr,colors='k')
                 im = cax.contourf(arr)
+                cax.set_aspect(aspect)
             else:
+                cax.set_aspect(aspect)
                 im = cax.contour(arr,levels=lvls,colors='k')
                 im = cax.contourf(arr,levels=lvls,extend='both')
+                cax.set_aspect(aspect)
         return im
     
 
@@ -118,18 +122,20 @@ class animator_2D(plotter):
         self.update_plot = self.update_plot
         self.fig.tight_layout()
         self.suptitle = None
+        self.method = None
         
     def animate(self, interval=100, **kwargs):
         self.ims = self.plot(**kwargs)
-        anim = animation.FuncAnimation(self.fig, self.update_plot, self.frns, fargs=(self.time_series, self.ims, self.fig, self.suptitle), interval=interval) 
+        anim = animation.FuncAnimation(self.fig, self.update_plot, self.frns, fargs=(self.time_series, self.ims, self.fig, self.suptitle, self.method), interval=interval) 
         return anim
 
     @staticmethod
-    def update_plot(frame_number, time_series, ims, img, title):
+    def update_plot(frame_number, time_series, ims, img, title, method='imshow'):
         for ii,im in enumerate(ims):
-            arr = time_series[frame_number][ii][0]
-            im.set_array(arr)
-            im.set_clim(arr.min(),arr.max()) 
+            if method == 'imshow':
+                arr = time_series[frame_number][ii][0]
+                im.set_array(arr)
+                im.set_clim(arr.min(),arr.max()) 
         if title is not None:
             stt = title(frame_number)
             img.suptitle(stt)
