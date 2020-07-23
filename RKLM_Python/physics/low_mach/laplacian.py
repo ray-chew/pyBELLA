@@ -254,48 +254,6 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
                 ]
 
     cnt = 0
-    # for bc in periodicity:
-    #     if bc == True and cnt == 0:
-    #         tmp = p[1,:,:]
-    #         p[0,:,:] = p[-3,:,:]
-    #         p[-1,:,:] = p[2,:,:]
-    #         p[1,:,:] = p[-2,:,:]
-    #         p[-2,:,:] = tmp
-    #     else:
-    #         hplusx[0,:,:] = 0.0
-    #         hplusx[-1,:,:] = 0.0
-    #         hplusy[0,:,:] = 0.0
-    #         hplusy[-1,:,:] = 0.0
-    #         hplusz[0,:,:] = 0.0
-    #         hplusz[-1,:,:] = 0.0
-    #     if bc == True and cnt == 1:
-    #         tmp = p[:,1,:]
-    #         p[:,0,:] = p[:,-3,:]
-    #         p[:,-1,:] = p[:,2,:]
-    #         p[:,1,:] = p[:,-2,:]
-    #         p[:,-2,:] = tmp
-    #     else:
-    #         hplusx[:,0,:] = 0.0
-    #         hplusx[:,-1,:] = 0.0
-    #         hplusy[:,0,:] = 0.0
-    #         hplusy[:,-1,:] = 0.0
-    #         hplusz[:,0,:] = 0.0
-    #         hplusz[:,-1,:] = 0.0
-    #     if bc == True and cnt == 2:
-    #         tmp = p[:,:,1]
-    #         p[:,:,0] = p[:,:,-3]
-    #         p[:,:,-1] = p[:,:,2]
-    #         p[:,:,1] = p[:,:,-2]
-    #         p[:,:,-2] = tmp
-    #     else:
-    #         hplusx[:,:,0] = 0.0
-    #         hplusx[:,:,-1] = 0.0
-    #         hplusy[:,:,0] = 0.0
-    #         hplusy[:,:,-1] = 0.0
-    #         hplusz[:,:,0] = 0.0
-    #         hplusz[:,:,-1] = 0.0
-    #     cnt += 1
-
     for bc in periodicity:
         if bc == True and cnt == 0:
             tmp = p[1,:,:]
@@ -303,41 +261,41 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
             p[-1,:,:] = p[2,:,:]
             p[1,:,:] = p[-2,:,:]
             p[-2,:,:] = tmp
-        # else:
-        #     hplusx[0,:,:] = 0.0
-        #     hplusx[-1,:,:] = 0.0
-        #     hplusy[0,:,:] = 0.0
-        #     hplusy[-1,:,:] = 0.0
-        #     hplusz[0,:,:] = 0.0
-        #     hplusz[-1,:,:] = 0.0
+        elif bc == False and cnt == 0:
+            hplusx[0,:,:] = 0.0
+            hplusx[-1,:,:] = 0.0
+            hplusy[0,:,:] = 0.0
+            hplusy[-1,:,:] = 0.0
+            hplusz[0,:,:] = 0.0
+            hplusz[-1,:,:] = 0.0
         if bc == True and cnt == 1:
             tmp = p[:,1,:]
             p[:,0,:] = p[:,-3,:]
             p[:,-1,:] = p[:,2,:]
             p[:,1,:] = p[:,-2,:]
             p[:,-2,:] = tmp
-        # else:
-        #     hplusx[:,0,:] = 0.0
-        #     hplusx[:,-1,:] = 0.0
-        #     hplusy[:,0,:] = 0.0
-        #     hplusy[:,-1,:] = 0.0
-        #     hplusz[:,0,:] = 0.0
-        #     hplusz[:,-1,:] = 0.0
+        elif bc == False and cnt == 1:
+            hplusx[:,0,:] = 0.0
+            hplusx[:,-1,:] = 0.0
+            hplusy[:,0,:] = 0.0
+            hplusy[:,-1,:] = 0.0
+            hplusz[:,0,:] = 0.0
+            hplusz[:,-1,:] = 0.0
         if bc == True and cnt == 2:
             tmp = p[:,:,1]
             p[:,:,0] = p[:,:,-3]
             p[:,:,-1] = p[:,:,2]
             p[:,:,1] = p[:,:,-2]
             p[:,:,-2] = tmp
-        # else:
-        #     hplusx[:,:,0] = 0.0
-        #     hplusx[:,:,-1] = 0.0
-        #     hplusy[:,:,0] = 0.0
-        #     hplusy[:,:,-1] = 0.0
-        #     hplusz[:,:,0] = 0.0
-        #     hplusz[:,:,-1] = 0.0
+        elif bc == False and cnt ==2:
+            hplusx[:,:,0] = 0.0
+            hplusx[:,:,-1] = 0.0
+            hplusy[:,:,0] = 0.0
+            hplusy[:,:,-1] = 0.0
+            hplusz[:,:,0] = 0.0
+            hplusz[:,:,-1] = 0.0
         cnt += 1
-    
+
     leftz = p[:,:,:-1]
     rightz = p[:,:,1:]
     
@@ -447,11 +405,11 @@ def lapHS(p0, hplusx, hplusz, hcenter, oodx2, oodz2, periodicity, diag_inv, corr
             # p[-1,:] = p[3,:]
             # p[1,:] = p[-3,:]
             # p[-2,:] = p[2,:]
-        # else:
-        #     hplusx[0,:] = 0.0
-        #     hplusx[-1,:] = 0.0
-        #     hplusz[0,:] = 0.0
-        #     hplusz[-1,:] = 0.0
+        elif bc == False and cnt == 0:
+            hplusx[0,:] = 0.0
+            hplusx[-1,:] = 0.0
+            hplusz[0,:] = 0.0
+            hplusz[-1,:] = 0.0
         if bc == True and cnt == 2:
             tmp = p[:,1]
             p[:,0] = p[:,-3]
@@ -462,11 +420,11 @@ def lapHS(p0, hplusx, hplusz, hcenter, oodx2, oodz2, periodicity, diag_inv, corr
             # p[:,-1] = p[:,3]
             # p[:,1] = p[:,-3]
             # p[:,-2] = p[:,2]
-        # else:
-        #     hplusx[:,0] = 0.0
-        #     hplusx[:,-1] = 0.0
-        #     hplusz[:,0] = 0.0
-        #     hplusz[:,-1] = 0.0
+        elif bc == False and cnt == 2:
+            hplusx[:,0] = 0.0
+            hplusx[:,-1] = 0.0
+            hplusz[:,0] = 0.0
+            hplusz[:,-1] = 0.0
         cnt += 1
     
     leftz = p[:,:-1]
