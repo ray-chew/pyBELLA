@@ -52,6 +52,7 @@ class io(object):
                         # 'v',
                         # 'w',
                         # 'vortz',
+                        'vorty',
                         'Y',
                         'rhs'
                     ]
@@ -142,6 +143,8 @@ class io(object):
 
         # vorticity in (x,z)
         # self.populate(name,'vortz', self.vortz(Sol,elem,node))
+        # self.vorty(Sol,elem,node)
+        self.populate(name,'vorty', self.vorty(Sol,elem,node))
 
         # temperature
         # self.populate(name,'T', Sol.rhoY**th.gamm / Sol.rho)
@@ -153,9 +156,9 @@ class io(object):
         # self.populate(name,'drhoY', Sol.rhoY - mpv.HydroState.rho0[:] * mpv.HydroState.Y0[:])
 
         # species mass fraction(?)
-        self.populate(name,'Y', Sol.rhoY / Sol.rho)
+        # self.populate(name,'Y', Sol.rhoY / Sol.rho)
         # species mass fraction perturbation
-        self.populate(name,'dY', Sol.rhoY / Sol.rho - self.ud.stratification(elem.y))
+        # self.populate(name,'dY', Sol.rhoY / Sol.rho - self.ud.stratification(elem.y))
 
         # self.populate(name,'wplusx',mpv.wplus[0])
         # self.populate(name,'wplusy',mpv.wplus[1])
@@ -166,7 +169,7 @@ class io(object):
 
     def vortz(self,Sol,elem,node):
         """
-        Calculate the vorticity of the solution.
+        Calculate the vorticity of the solution in the x-y plane.
 
         Parameters
         ----------
@@ -207,6 +210,57 @@ class io(object):
         vortz = np.zeros((node.sc)).squeeze()
 
         vortz[igs[0]:-igs[0]-1, igs[1]:-igs[1]-1] = dvdx - dudy
+        return vortz
+
+    def vorty(self,Sol,elem,node):
+        """
+        Calculate the vorticity of the solution in the x-z plane.
+
+        Parameters
+        ----------
+        Sol : :class:`management.variable.Vars`
+            Solution data container
+        elem : :class:`discretization.kgrid.ElemSpaceDiscr`
+            Cells grid
+        node : :class:`discretization.kgrid.NodeSpaceDiscr`
+            Nodes grid
+
+        Returns
+        -------
+        ndarray
+            An ndarray with the vorticity of the solution and with the shape of `node`.
+
+        """
+        if elem.ndim != 3 or (elem.ndim == 3 and elem.iicy > 1):
+            return
+        # 2d-case
+        igs = elem.igs
+        dx = elem.dx
+        dy = elem.dz
+
+        rho = Sol.rho[:,igs[1],:]
+        rhou = Sol.rhou[:,igs[1],:]
+        rhov = Sol.rhow[:,igs[1],:]
+
+        inner_domain_rho = rho[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
+        inner_domain_rhou = rhou[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
+        inner_domain_rhov = rhov[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
+
+        top_left_idx     = (slice(0,-1)    , slice(0,-1))
+        top_right_idx    = (slice(1, None) , slice(0,-1))
+        bottom_left_idx  = (slice(0,-1)    , slice(1, None))
+        bottom_right_idx = (slice(1, None) , slice(1,None))
+
+        # print(inner_domain_rhov[bottom_right_idx])
+        dvdx = 0.5 * ((inner_domain_rhov[bottom_right_idx] / inner_domain_rho[bottom_right_idx] - inner_domain_rhov[bottom_left_idx] / inner_domain_rho[bottom_left_idx]) + (inner_domain_rhov[top_right_idx] / inner_domain_rho[top_right_idx] - inner_domain_rhov[top_left_idx] / inner_domain_rho[top_left_idx])) / dx
+
+        dudy = 0.5 * ((inner_domain_rhou[bottom_right_idx] / inner_domain_rho[bottom_right_idx] - inner_domain_rhou[top_right_idx] / inner_domain_rho[top_right_idx]) + (inner_domain_rhou[bottom_left_idx] / inner_domain_rho[bottom_left_idx] - inner_domain_rhou[top_left_idx] / inner_domain_rho[top_left_idx])) / dy
+
+        vortz = np.zeros((node.sc)).squeeze()
+        tmp = np.expand_dims((dvdx - dudy) * 1.0, axis=1)
+        tmp = np.repeat(tmp, node.icy, axis=1)
+        vortz[igs[0]:-igs[0]-1, :, igs[2]:-igs[2]-1] = tmp
+        # vortz = np.repeat(vortz[:,igs[1],:], node.icy, axis=1)
         return vortz
 
 
@@ -289,7 +343,7 @@ def get_args():
 
     parser = argparse.ArgumentParser(description='Python solver for unified numerical model based on (Benacchio and Klein, 2019) with data assimilation and blending. Written by Ray Chew and based on Prof. Rupert Klein\'s C code.')
     parser.add_argument('-N',action='store',dest='N',help='<Optional> Set ensemble size, if none is given N=1 is used.',required=False,type=int)
-    parser.add_argument('-ic','--initial_conditions',action='store',dest='ic',help='<Required> Set initial conditions',required=True,choices={'aw','tv','tv_2d','tv_3d','tv_corr','rb','igw','swe','bal_swe','swe_3D','swe_icshear'})
+    parser.add_argument('-ic','--initial_conditions',action='store',dest='ic',help='<Required> Set initial conditions',required=True,choices={'aw','tv','tv_2d','tv_3d','tv_corr','rb','igw','swe','bal_swe','swe_3D','swe_icshear','swe_icshear_3D', 'swe_test'})
     args = parser.parse_args() # collect cmd line args
     ic = args.ic
 
@@ -310,11 +364,16 @@ def get_args():
     elif ic == 'swe':
         from inputs.shallow_water_2D import UserData, sol_init
     elif ic == 'bal_swe':
-        from inputs.balanced_shallow_water_2D import UserData, sol_init
+        from inputs.balanced_shallow_water_3D import UserData, sol_init
     elif ic == 'swe_3D':
         from inputs.shallow_water_3D import UserData, sol_init
     elif ic == 'swe_icshear':
         from inputs.shallow_water_2D_icshear import UserData, sol_init
+    elif ic == 'swe_icshear_3D':
+        from inputs.shallow_water_3D_icshear import UserData, sol_init
+    elif ic == 'swe_test':
+        from inputs.shallow_water_3D_dvortex import UserData, sol_init
+
 
 
     if UserData is None or sol_init is None:
