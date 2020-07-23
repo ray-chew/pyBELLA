@@ -14,12 +14,14 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
         for split in range(ndim):
             lmbda = time_step / elem.dxyz[split]
             Sol.flip_forward()
-            explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
+            if elem.isc[split] > 1: 
+                explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
     else:
         for i_split in range(ndim):
             split = elem.ndim - 1 - i_split
             lmbda = time_step / elem.dxyz[split]
-            explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, [writer,node,label])
+            if elem.isc[split] > 1:
+                explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, [writer,node,label])
             Sol.flip_backward()
 
     stage = 1
@@ -27,51 +29,53 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
         for i_split in range(ndim):
             split = elem.ndim - 1 - i_split
             lmbda = time_step / elem.dxyz[split]
-            explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
+            if elem.isc[split] > 1:
+                explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
             Sol.flip_backward()
     else:
         for split in range(ndim):
             lmbda = time_step / elem.dxyz[split]
             Sol.flip_forward()
-            explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
+            if elem.isc[split] > 1:
+                explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
             
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
-def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mpv, writer = [None]):
+def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mpv, writer=None):
     set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
 
     Lefts, Rights = recovery(Sol, flux, lmbda, ud, th, elem, split_step)
 
     # Lefts, Rights, u, Diffs, Ampls, Slopes = recovery(Sol, flux, lmbda, ud, th, elem, split_step)
 
-    # if writer[0] != None:
+    # if writer is not None:
     #     writer[0].write_all(Sol,mpv,elem,writer[1],th,str(writer[2])+'_split_%i' %split_step)
 
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'u',u)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'u',u)
 
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Leftsu',Lefts.u)
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Rightsu',Rights.u)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Leftsu',Lefts.u)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Rightsu',Rights.u)
 
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Leftsv',Lefts.v)
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Rightsv',Rights.v)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Leftsv',Lefts.v)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Rightsv',Rights.v)
 
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Leftsw',Lefts.w)
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Rightsw',Rights.w)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Leftsw',Lefts.w)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Rightsw',Rights.w)
 
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'LeftsrhoY',Lefts.rhoY)
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'RightsrhoY',Rights.rhoY)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'LeftsrhoY',Lefts.rhoY)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'RightsrhoY',Rights.rhoY)
 
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Diffsu',Diffs.u)
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Diffsv',Diffs.v)
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Diffsw',Diffs.w)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Diffsu',Diffs.u)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Diffsv',Diffs.v)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Diffsw',Diffs.w)
 
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Amplsu',Ampls.u)
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Amplsv',Ampls.v)
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Amplsw',Ampls.w)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Amplsu',Ampls.u)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Amplsv',Ampls.v)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Amplsw',Ampls.w)
 
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Slopesu',Slopes.u)
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Slopesv',Slopes.v)
-    # if writer[0] != None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Slopesw',Slopes.w)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Slopesu',Slopes.u)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Slopesv',Slopes.v)
+    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Slopesw',Slopes.w)
 
     # skipped check_flux_bcs for now; first debug other functions
     # check_flux_bcs(Lefts, Rights, elem, split_step, ud)
