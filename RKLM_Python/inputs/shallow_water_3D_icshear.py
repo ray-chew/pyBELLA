@@ -13,6 +13,7 @@ class UserData(object):
 
     grav = 0.0
     omega = 6.147 * 1E-5     # [rad/s]
+    # omega = 0.7071 * 4. * np.pi
 
     R_gas = 1.0
     R_vap = 461.0
@@ -40,9 +41,9 @@ class UserData(object):
     h_ref = d        # [m]
     u_ref = U
     t_ref = d / U      # [day] -> [s]
-    # h_ref = 1.0        # [m]
-    # u_ref = 1.0
-    # t_ref = 1.0      # [day] -> [s]
+    h_ref = 1.0        # [m]
+    u_ref = 1.0
+    t_ref = 1.0      # [day] -> [s]
     T_ref = 1.0
     p_ref = 1.0
 
@@ -109,8 +110,8 @@ class UserData(object):
 
         self.xmin =   0.0
         self.xmax =   5000.0*1E3 / self.h_ref
-        self.ymin = - 0.0
-        self.ymax =   1.0
+        self.ymin =  -0.5 * self.h_ref
+        self.ymax =   0.5 * self.h_ref
         self.zmin =   0.0
         self.zmax =   4330.0*1E3 / self.h_ref
 
@@ -134,14 +135,14 @@ class UserData(object):
         ##########################################
         # NUMERICS
         ##########################################
-        self.CFL = 0.45
+        self.CFL = 0.95
         # self.CFL = 0.9 / 2.0
-        self.dtfixed0 = 100 
-        self.dtfixed = 100
+        self.dtfixed0 = 1200 / self.t_ref
+        self.dtfixed = 1200 / self.t_ref
 
-        self.inx = 32+1
+        self.inx = 128+1
         self.iny = 1+1
-        self.inz = 32+1
+        self.inz = 128+1
 
         self.recovery_order = RecoveryOrder.SECOND
         self.limiter_type_scalars = LimiterType.NONE
@@ -153,7 +154,7 @@ class UserData(object):
         self.kY = 0.0
         self.kZ = 0.0
 
-        self.tol = 1.e-16
+        self.tol = 1.e-6
         self.max_iterations = 6000
 
         self.perturb_type = 'pos_perturb'
@@ -177,8 +178,9 @@ class UserData(object):
 
         stepsize = 100
         # self.tout = np.arange(0,2E5+stepsize,stepsize)
-        self.tout = np.arange(0,1E6+100,100)[1:]
-        self.stepmax = 201
+        # self.tout = np.arange(0,1E6+100,100)[1:]
+        self.tout = np.arange(0,86400.0*10.0+86400.0,86400.0)[1:]
+        self.stepmax = 2001
 
         self.output_base_name = "_swe"
         if self.is_compressible == 1:
@@ -223,11 +225,11 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     igy = igs[1]
 
     g0 = ud.gravity_strength[1]
-    g0 = 9.81 * ud.h_ref# / ud.T_ref
+    g0 = 9.81 / ud.h_ref# / ud.T_ref
     f0 = ud.coriolis_strength[0]
-    # ud.Msq = 1.0
+    ud.Msq = 1.0
     # ud.Msq = ud.u_ref
-    ud.Msq = ud.u_ref**2 / (g0 * ud.h_ref)
+    # ud.Msq = ud.u_ref**2 / (g0 * ud.h_ref)
 
     i2 = (slice(igs[0],-igs[0]),slice(igs[1],-igs[1]),slice(igs[2],-igs[2]))
     i2 = (slice(None,),slice(None,),slice(None,))
@@ -238,8 +240,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     # hydrostatic_state(mpv, elem, node, th, ud)
 
-    Lx = 5000.0*1E3 / ud.h_ref #elem.x[-1] - elem.x[0]
-    Lz = 4330.0*1E3 / ud.h_ref #elem.z[-1] - elem.z[0]
+    # Lx = ud.xmax
+    # Lz = ud.zmax
+    # Lx = elem.x[-1] - elem.x[0]
+    # Lz = elem.z[-1] - elem.z[0]
+    Lx = 5000.0*1E3 #/ ud.h_ref #elem.x[-1] - elem.x[0]
+    Lz = 4330.0*1E3 #/ ud.h_ref #elem.z[-1] - elem.z[0]
 
     sigz = 1.0 / 12
     lambdx = 0.5
@@ -252,12 +258,16 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     exp0 = np.exp(- zp(Z, Lz)**2 / (2.0 * sigz**2) + 0.5)
 
-    rho = H0 - Hp - zpp(Z, Lz) / sigz * exp0 * (1.0 + kappa * np.sin(2.0 * np.pi * xp / lambdx))
+    rho = H0 - Hp * zpp(Z, Lz) / sigz * exp0 * (1.0 + kappa * np.sin(2.0 * np.pi * xp / lambdx))
 
     u = g0 * Hp / (sigz * f0 * Lz) * (cz(Z,Lz) - zpp(Z, Lz)**2 / sigz**2) * exp0 * (1.0 + kappa * np.sin(2.0 * np.pi * xp / lambdx))
 
-    w = -g0 * Hp / (f0 * Lx) * 2.0 * np.pi * zpp(Z,Lz) / (lambdx * sigz) * exp0 * np.cos(2.0 * np.pi * xp / lambdx)
+    w = -g0 * Hp / (f0 * Lx) * 2.0 * np.pi * kappa * zpp(Z,Lz) / (lambdx * sigz) * exp0 * np.cos(2.0 * np.pi * xp / lambdx)
 
+    rho, u, w = rho.T, u.T, w.T
+
+    # N = 64
+    # dx = np.diff(elem.x)[0]
     # factor = 256./N * np.sqrt(3.)
     # g0 = factor**2 * Lx*Lz
     # f0 = 0.7071 * 4. * np.pi ## temp
@@ -274,15 +284,15 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     # Uw = -g0 * Hz / f0
     # Wu = +g0 * Hx / f0
 
-    # # u = -g0 * Hz / f0
-    # # w = +g0 * Hx / f0
+    # u = -g0 * Hz / f0
+    # w = +g0 * Hx / f0
 
     # u = interpolate(elem.x,elem.z,Uw,N,Lx,X,Z+dx/2)
     # w = interpolate(elem.x,elem.z,Wu,N,Lz,X+dx/2.,Z)
 
-    # rho[i2] = np.load('H0.npy')
-    # u[i2] = np.load('Uc0.npy')
-    # w[i2] = np.load('Vc0.npy')
+    # rho = np.load('H0.npy')
+    # u = np.load('Uc0.npy')
+    # w = np.load('Vc0.npy')
 
     # rho = np.expand_dims(rho, 1)
     # rho = np.repeat(rho, elem.icy, axis=1)
