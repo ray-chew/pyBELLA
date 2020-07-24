@@ -20,6 +20,7 @@ from data_assimilation.letkf import da_interface, bin_func, prepare_rloc
 from data_assimilation.letkf import analysis as letkf_analysis
 from data_assimilation import etpf
 from data_assimilation import blending
+from data_assimilation import post_processing
 from scipy import sparse
 
 # input file, uncomment to run
@@ -107,7 +108,6 @@ if N > 1:
 ud.output_suffix = '_ensemble=%i%s' %(N, ud.output_suffix)
 
 # ud.output_suffix = '%s_%s' %(ud.output_suffix, 'nr')
-
 
 ##########################################################
 # Start main looping
@@ -222,8 +222,15 @@ if __name__ == '__main__':
                 ensemble_inflation(results,dap.attributes,dap.inflation_factor,N)
                 results = etpf.da_interface(results,obs,dap.obs_attributes,dap.rejuvenation_factor,dap.da_times,tout,N)
 
+            ##################################################
+            # Post-processing
+            ##################################################            
+            elif dap.da_type == 'pprocess':
+                results = post_processing.interface()
+
             else:
                 assert 0, "DA type not implemented: use 'rloc', 'batch_obs' or 'etpf'."
+
 
         ######################################################
         # Update ensemble with analysis
