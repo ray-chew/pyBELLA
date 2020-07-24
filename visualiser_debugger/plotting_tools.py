@@ -5,7 +5,7 @@ import numpy as np
 import itertools
 
 class plotter(object):
-    def __init__(self,arr_lst, ncols=4, figsize=(12,8)):
+    def __init__(self,arr_lst, ncols=4, figsize=(12,8), sharex=False, sharey=False):
         self.arr_lst = np.array(arr_lst)
         N = self.arr_lst.shape[0]
         
@@ -28,7 +28,7 @@ class plotter(object):
             self.idx = cidx
             
         self.visualise = self.visualise
-        self.fig, self.ax = plt.subplots(ncols=self.ncols,nrows=self.nrows,figsize=figsize)
+        self.fig, self.ax = plt.subplots(ncols=self.ncols,nrows=self.nrows,figsize=figsize,sharex=sharex,sharey=sharey)
         
         self.img = plt
             
@@ -81,6 +81,12 @@ class plotter(object):
             cax = self.fig.gca()
             im = self.visualise(method,cax,arr,aspect,lvls)
             cax.set_title(title)
+            if hasattr(self, 'x_locs') : cax.set_xticks(self.x_locs)
+            if hasattr(self, 'x_axs') : cax.set_xticklabels(self.x_axs)
+            if hasattr(self, 'y_locs') : cax.set_yticks(self.y_locs)
+            if hasattr(self, 'y_axs') : cax.set_yticklabels(self.y_axs)
+            if hasattr(self, 'x_label') : cax.set_xlabel(self.x_label)
+            if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
             divider = make_axes_locatable(cax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             plt.colorbar(im, cax=cax)
@@ -107,7 +113,7 @@ class plotter(object):
                 cax.set_aspect(aspect)
             else:
                 cax.set_aspect(aspect)
-                im = cax.contour(arr,levels=lvls,colors='k')
+                im = cax.contour(arr,linewidths=0.5,levels=lvls,colors='k')
                 im = cax.contourf(arr,levels=lvls,extend='both')
                 cax.set_aspect(aspect)
         return im
