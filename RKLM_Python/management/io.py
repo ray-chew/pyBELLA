@@ -2,6 +2,10 @@
 import h5py
 import os
 import numpy as np
+import shutil # for copying of simulation restart file
+
+from management.variable import Vars
+from physics.low_mach.mpv import MPV
 
 import argparse
 
@@ -10,7 +14,7 @@ class io(object):
     HDF5 writer class. Contains methods to create HDF5 file, create data sets and populate them with output variables.
 
     """
-    def __init__(self,ud):
+    def __init__(self,ud,restart=False):
         """
         Creates HDF5 file based on filename given in user input data.
 
@@ -28,6 +32,7 @@ class io(object):
         self.OUTPUT_FILENAME = self.OUTPUT_FILENAME + "/output"
 
         self.SUFFIX = self.ud.output_suffix
+        if restart: self.OLD_SUFFIX = self.ud.old_suffix
 
         if self.ud.continuous_blending == True:
             self.SUFFIX += "_cont_blend"
@@ -56,10 +61,10 @@ class io(object):
                         'Y',
                         'rhs'
                     ]
-        
-        self.io_create_file(self.PATHS)
+ 
+        self.io_create_file(self.PATHS,restart)
 
-    def io_create_file(self,paths):
+    def io_create_file(self,paths,restart):
         """
         Helper function to create file.
 
@@ -80,13 +85,20 @@ class io(object):
             os.rename(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + '_old' + self.FORMAT)
             
         # create a new output file for each rerun - old output will be overwritten.
-        file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'a')
-        for path in paths:
-            # check if groups have been created
-            # if not created, create empty groups
-            if not (path in file):
-                file.create_group(path,track_order=True)
-        file.close()
+        if restart:
+            src = self.OUTPUT_FILENAME + self.BASE_NAME + self.OLD_SUFFIX + self.FORMAT
+            dest = self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT
+            shutil.copy2(src, dest)
+        else:
+            file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'a')
+            for path in paths:
+                # check if groups have been created
+                # if not created, create empty groups
+                if not (path in file):
+                    file.create_group(path,track_order=True)
+            
+            file.close()
+
 
     def write_all(self,Sol,mpv,elem,node,th,name):
         """
@@ -342,8 +354,20 @@ def get_args():
     """
 
     parser = argparse.ArgumentParser(description='Python solver for unified numerical model based on (Benacchio and Klein, 2019) with data assimilation and blending. Written by Ray Chew and based on Prof. Rupert Klein\'s C code.')
+
     parser.add_argument('-N',action='store',dest='N',help='<Optional> Set ensemble size, if none is given N=1 is used.',required=False,type=int)
+
     parser.add_argument('-ic','--initial_conditions',action='store',dest='ic',help='<Required> Set initial conditions',required=True,choices={'aw','tv','tv_2d','tv_3d','tv_corr','rb','igw','swe','bal_swe','swe_3D','swe_icshear','swe_icshear_3D', 'swe_test'})
+
+    # parser.add_argument('-r','--restart_sim',action='store',dest='rstrt',help='<Optional> Restart simulation?.',required=False,default=False,type=bool)
+
+    subparsers = parser.add_subparsers(dest='subcommand')
+    restart = subparsers.add_parser('restart')
+    restart.add_argument('-p', '--path', action='store', dest='path', help='path to data for simulation restart.', required=True, type=str)
+    restart.add_argument('-n', '--name', action='store', dest='name', help='name of datasets for simulation restart.', required=True, type=str)
+    restart.add_argument('-t', '--time', nargs="*", help='time outputs for simulation restart in format [start,stop,interval). Use None for ud.tout settings.', type=float, required=False, default=None)
+
+
     args = parser.parse_args() # collect cmd line args
     ic = args.ic
 
@@ -382,4 +406,63 @@ def get_args():
         N = 1
     else:
         N = args.N
-    return N, UserData, sol_init
+
+
+    if args.subcommand == 'restart':
+        rstrt = True
+        if args.time is not None:
+            t_vals = args.time
+            time = np.arange(t_vals[0],t_vals[1],t_vals[2])
+        params = [args.path,args.name,time]
+    else:
+        rstrt = False
+        params = None
+
+
+    return N, UserData, sol_init, rstrt, params
+
+
+
+def sim_restart(path, name, elem, node, ud, Sol, mpv, restart_touts):
+    """
+    Function to restart simulation from a saved file. Dataset has to be structured in the same way as the output format of this file.
+
+    Parameters
+    ----------
+    path : str
+        path to the hdf5 file for simulation restart.
+
+    """
+    file = h5py.File(str(path), 'r')
+
+    Sol_data = ['rho','rhou','rhov','rhow','buoy','rhoY']
+    mpv_data = ['p2_nodes']
+
+    for data in Sol_data:
+        value = file[data][data+name][:]
+        
+        if hasattr(Sol,data):
+            setattr(Sol,data,value)
+        else:
+            assert(0, "Sol attribute mismatch")
+
+    for data in mpv_data:
+        value = file[data][data+name][:]
+        if hasattr(mpv,data):
+            setattr(mpv,data,value)
+        else:
+            assert(0, "mpv attribute mismatch")
+
+    t = restart_touts
+
+    ud.output_suffix = "_%i_%i_%i_%.1f_%s" %(ud.inx-1,ud.iny-1,ud.inz-1,t[-1],ud.aux)
+
+
+    file.close()
+    return Sol, mpv, t
+    
+
+
+
+
+
