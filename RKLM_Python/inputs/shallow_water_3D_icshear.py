@@ -135,14 +135,14 @@ class UserData(object):
         ##########################################
         # NUMERICS
         ##########################################
-        self.CFL = 0.95
+        self.CFL = 0.45
         # self.CFL = 0.9 / 2.0
-        self.dtfixed0 = 1200 / self.t_ref
-        self.dtfixed = 1200 / self.t_ref
+        self.dtfixed0 = 12.0 / self.t_ref
+        self.dtfixed = 12.0 / self.t_ref
 
-        self.inx = 128+1
+        self.inx = 64+1
         self.iny = 1+1
-        self.inz = 128+1
+        self.inz = 64+1
 
         self.recovery_order = RecoveryOrder.SECOND
         self.limiter_type_scalars = LimiterType.NONE
@@ -179,8 +179,8 @@ class UserData(object):
         stepsize = 100
         # self.tout = np.arange(0,2E5+stepsize,stepsize)
         # self.tout = np.arange(0,1E6+100,100)[1:]
-        self.tout = np.arange(0,86400.0*10.0+86400.0,86400.0)[1:]
-        self.stepmax = 2001
+        self.tout = np.arange(0,86400.0*10.0+1200.0,1200.0)[1:]
+        self.stepmax = 2E6
 
         self.output_base_name = "_swe"
         if self.is_compressible == 1:
