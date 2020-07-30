@@ -67,7 +67,6 @@ class UserData(object):
         self.acoustic_timestep = 0
         self.acoustic_order = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
-        # self.Msq = self.u_ref * self.u_ref / (9.81 * 10000)
         self.R_gas = self.R_gas
 
         self.gravity_strength = np.zeros((3))
@@ -112,14 +111,14 @@ class UserData(object):
         ##########################################
         # NUMERICS
         ##########################################
-        self.CFL = 0.5
+        self.CFL = 0.95
         # self.CFL = 0.9 / 2.0
         self.dtfixed0 = 1200.0 / self.t_ref
         self.dtfixed = 1200.0 / self.t_ref
 
-        self.inx = 64+1
+        self.inx = 256+1
         self.iny = 1+1
-        self.inz = 64+1
+        self.inz = 256+1
 
         self.recovery_order = RecoveryOrder.SECOND
         self.limiter_type_scalars = LimiterType.NONE
@@ -153,11 +152,13 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        stepsize = 100
         # self.tout = np.arange(0,2E5+stepsize,stepsize)
         # self.tout = np.arange(0,1E6+10000,10000)[1:]
-        self.tout = [864000.0]
-        self.stepmax = 10001
+        stepsize = 86400.0/4
+        stepsize = 1200.0
+        end = 86400.0*10.0
+        self.tout = np.arange(0,end+stepsize, stepsize)[1:]
+        self.stepmax = 2E6
 
         self.output_base_name = "_swe"
         if self.is_compressible == 1:
@@ -174,6 +175,7 @@ class UserData(object):
         # self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))
         # aux = 'psinc_bal_debug'
         self.output_suffix = "_%i_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1],aux)
+        self.aux = aux
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
