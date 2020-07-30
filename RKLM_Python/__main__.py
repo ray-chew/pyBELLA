@@ -9,6 +9,7 @@ from physics.gas_dynamics.thermodynamic import ThemodynamicInit
 from physics.gas_dynamics.eos import nonhydrostasy, compressibility, is_compressible, is_nonhydrostatic
 from physics.gas_dynamics.gas_dynamics import dynamic_timestep
 from physics.low_mach.mpv import MPV, acoustic_order
+from physics.hydrostatics import hydrostatic_state
 
 # dependencies of the parallelisation by dask
 from dask.distributed import Client, progress
@@ -95,12 +96,14 @@ if seeds is not None and restart == False:
 elif restart == False:
     sol_ens = [[sol_init(Sol, mpv, elem, node, th, ud),flux,mpv,[-np.inf,step]]]
 elif restart == True:
+    hydrostatic_state(mpv, elem, node, th, ud)
     ud.old_suffix = np.copy(ud.output_suffix)
     ud.old_suffix = '_ensemble=%i%s' %(N, ud.old_suffix)
-    Sol, mpv, touts = sim_restart(r_params[0], r_params[1], elem, node, ud, Sol, mpv, r_params[2])
-    sol_ens = [[sol_init(Sol, mpv, elem, node, th, ud),flux,mpv,[-np.inf,step]]]
+    Sol0, mpv0, touts = sim_restart(r_params[0], r_params[1], elem, node, ud, Sol, mpv, r_params[2])
+    sol_ens = [[Sol0,flux,mpv0,[-np.inf,step]]]
     ud.tout = touts[1:]
     t = touts[0]
+    
 ens = ensemble(sol_ens)
 
 ##########################################################
