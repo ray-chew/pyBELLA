@@ -132,12 +132,15 @@ class io(object):
         self.populate(name,'rhou',Sol.rhou)
         self.populate(name,'rhov',Sol.rhov)
         self.populate(name,'rhow',Sol.rhow)
-        self.populate(name,'buoy',Sol.rhoX / Sol.rho)
+        self.populate(name,'rhoX',Sol.rhoX)
+        # self.populate(name,'buoy',Sol.rhoX / Sol.rho)
 
         # dp2_nodes
         self.populate(name,'dp2_nodes',mpv.dp2_nodes)
         # p2_nodes
         self.populate(name,'p2_nodes',mpv.p2_nodes)
+        # p2_nodes0
+        # self.populate(name,'p2_nodes0',mpv.p2_nodes0)
         # p2_cells
         self.populate(name,'p2_cells',mpv.p2_cells)
         # dp2_cells
@@ -254,9 +257,13 @@ class io(object):
         rhou = Sol.rhou[:,igs[1],:]
         rhov = Sol.rhow[:,igs[1],:]
 
-        inner_domain_rho = rho[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
-        inner_domain_rhou = rhou[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
-        inner_domain_rhov = rhov[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
+        # inner_domain_rho = rho[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
+        # inner_domain_rhou = rhou[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
+        # inner_domain_rhov = rhov[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
+
+        inner_domain_rho = rho
+        inner_domain_rhou = rhou
+        inner_domain_rhov = rhov
 
         top_left_idx     = (slice(0,-1)    , slice(0,-1))
         top_right_idx    = (slice(1, None) , slice(0,-1))
@@ -271,7 +278,7 @@ class io(object):
         vortz = np.zeros((node.sc)).squeeze()
         tmp = np.expand_dims((dvdx - dudy) * 1.0, axis=1)
         tmp = np.repeat(tmp, node.icy, axis=1)
-        vortz[igs[0]:-igs[0]-1, :, igs[2]:-igs[2]-1] = tmp
+        vortz[1:-1, :, 1:-1] = tmp
         # vortz = np.repeat(vortz[:,igs[1],:], node.icy, axis=1)
         return vortz
 
@@ -435,21 +442,25 @@ def sim_restart(path, name, elem, node, ud, Sol, mpv, restart_touts):
     """
     file = h5py.File(str(path), 'r')
 
-    Sol_data = ['rho','rhou','rhov','rhow','buoy','rhoY']
+    Sol_data = ['rho','rhou','rhov','rhow','rhoX', 'rhoY']
     mpv_data = ['p2_nodes']
 
     for data in Sol_data:
         value = file[data][data+name][:]
         
         if hasattr(Sol,data):
+            shp = getattr(Sol,data).shape
             setattr(Sol,data,value)
+            assert(getattr(Sol,data).shape == shp)
         else:
             assert(0, "Sol attribute mismatch")
 
     for data in mpv_data:
         value = file[data][data+name][:]
         if hasattr(mpv,data):
+            shp = getattr(mpv,data).shape
             setattr(mpv,data,value)
+            assert(getattr(mpv,data).shape == shp)
         else:
             assert(0, "mpv attribute mismatch")
 
