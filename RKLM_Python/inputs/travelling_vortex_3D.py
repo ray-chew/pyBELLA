@@ -148,7 +148,11 @@ class UserData(object):
         self.tol = 1.e-6
         self.max_iterations = 6000
 
-        self.continuous_blending = True
+        self.perturb_type = 'pos_perturb'
+        self.blending_mean = 'rhoY' # 1.0, rhoY
+        self.blending_conv = 'rho' #theta, rho
+
+        self.continuous_blending = False
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
