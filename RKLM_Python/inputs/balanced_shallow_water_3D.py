@@ -78,12 +78,12 @@ class UserData(object):
             if (self.coriolis_strength[i] > np.finfo(np.float).eps):
                 self.i_coriolis[i] = 1
 
-        self.xmin = - 0.5E6
-        self.xmax =   0.5E6
+        self.xmin = - 0.5
+        self.xmax =   0.5
         self.ymin = - 0.5
         self.ymax =   0.5
-        self.zmin = - 0.5E6
-        self.zmax =   0.5E6
+        self.zmin = - 0.5
+        self.zmax =   0.5
 
         self.wind_speed = 0.0
         self.wind_shear = -0.0
@@ -116,12 +116,12 @@ class UserData(object):
         self.advec_time_integrator = TimeIntegrator.STRANG
         self.CFL  = 0.9/2.0
         # self.CFL = 0.95
-        self.dtfixed0 = 1000.0
-        self.dtfixed = 1000.0
+        self.dtfixed0 = 0.01
+        self.dtfixed = 0.01
 
-        self.inx = 150+1
+        self.inx = 64+1
         self.iny = 1+1
-        self.inz = 150+1
+        self.inz = 64+1
 
         self.recovery_order = RecoveryOrder.SECOND
         self.limiter_type_scalars = LimiterType.NONE
@@ -155,7 +155,7 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        self.tout = np.arange(0,1E6+1000,1000)[1:]
+        self.tout = np.arange(0,1.0+0.01,0.01)[1:]
         # self.tout = [1E6]
 
         # self.tout = times.copy()
@@ -195,9 +195,9 @@ class UserData(object):
         return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
 
 def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
-    u0 = 0.0 #* ud.wind_speed
+    u0 = 1.0 #* ud.wind_speed
     v0 = 0.0 #* ud.wind_speed
-    w0 = 0.0
+    w0 = 1.0
 
     rotdir = 1.0
 
@@ -206,7 +206,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rho0 = a_rho * 0.0
     del_rho = a_rho * 0.5
     # R0 = 0.4
-    R0 = 400000
+    R0 = 0.4
     fac = 1. * 1024.0
     xc = 0.0
     zc = 0.0
