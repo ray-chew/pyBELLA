@@ -13,8 +13,11 @@ import data_assimilation.utils as dau
 debug_cnt = 0
 
 def da_interface(results,obs_current,rho,attr,N,ud,loc=0):
-    # ig = 2
-    # inner = (slice(ig,-ig),slice(ig,-ig))
+    """
+    Interface for batch-observations localisation with LETKF.
+
+    """
+
     inner = (slice(None,),slice(None,))
 
     local_ens = np.array([getattr(results[:,loc,...][n],attr) for n in range(N)])
@@ -22,8 +25,6 @@ def da_interface(results,obs_current,rho,attr,N,ud,loc=0):
     local_ens = analysis(local_ens,rho,attr)
 
     obs_current = obs_current[inner]
-    # obs_current = bin_func(obs_current, local_ens.member_shape)
-    # local_ens.debug(obs_current,"0before")
     
     x_obs, y_obs = obs_current.shape
     
@@ -77,6 +78,11 @@ def none_func(ensemble):
 
 
 class analysis(object):
+    """
+    LETKF Analysis based on (Hunt et al., 2007). 
+
+    """
+
     def __init__(self,ensemble, rho, identifier=None):
         self.ensemble = np.array(ensemble)
         self.X = self.state_vector(ensemble)
@@ -91,6 +97,9 @@ class analysis(object):
         # initialise localisation matrix as None
         self.localisation_matrix = []
 
+        self.forward_operator = None
+        self.localisation_matrix = None
+
     def forward(self,forward_operator):
         self.forward_operator = forward_operator
 
@@ -98,6 +107,17 @@ class analysis(object):
         self.localisation_matrix = localisation_matrix
 
     def analyse(self,obs,obs_covar):
+        """
+        Analysis method. 'l' is the observation space. 'm' the state space, 'k' the ensemble size. 
+
+        """
+        if self.forward_operator is None:
+            print("Forward operator undefined. Using identity...")
+            assert(0, "not implemented.")
+        if self.localisation is None:
+            print("Localisation matrix undefined. Using identity...")
+            assert(0, "not implemented.")
+
         obs = obs.reshape(-1)
 
         self.Y = self.forward_operator(self.X)
@@ -133,7 +153,6 @@ class analysis(object):
     @staticmethod
     def state_vector(ensemble):
         return np.array([mem.reshape(-1) for mem in ensemble])
-        # return np.array([[getattr(mem,attr).reshape(-1) for mem in ensemble.members(ensemble)] for attr in attributes]).squeeze()
 
     def to_array(self,X):
         return np.array([x.reshape(self.member_shape) for x in X])
@@ -152,17 +171,23 @@ class analysis(object):
 
 
 class prepare_rloc(object):
+    """
+    Helper class to get grid-based localisation for LETKF. Used only when da_type=='rloc' is True.
+    
+    """
     def __init__(self, ud, elem, node, dap, N, obs_X=5, obs_Y=5):
-        # self.elem = elem
+        # get grid properties
         self.iicx = elem.iicx
         self.iicy = elem.iicy
         self.iicxn = node.iicx
         self.iicyn = node.iicy
         self.N = N
 
+        # define inner and outer domains
         self.i2 = (slice(elem.igx,-elem.igx),slice(elem.igy,-elem.igy))
         self.i0 = (slice(None,),slice(None,))
 
+        # get da parameters
         self.attr_len = len(dap.obs_attributes)
         self.loc = dap.loc
 
@@ -173,20 +198,33 @@ class prepare_rloc(object):
         self.oa = dap.obs_attributes
         self.da_times = dap.da_times
 
+        # get cell and node-based attributes for DA
         self.ca, self.na = self.sort_locs()
         self.cattr_len = len(self.ca)
         self.nattr_len = len(self.na)
 
+        # get size of the local counterpart. default = (5x5).
         self.obs_X = obs_X
         self.obs_Y = obs_Y
 
+        # get mask to handle BC. Periodic mask includes ghost cells/nodes and wall masks takes only the inner domain.
         self.cmask, self.nmask = dau.boundary_mask(ud, elem,node, self.loc_c, self.loc_n)
 
+        # get from da parameters the localisation matrix and inflation factor
         self.inf_fac = dap.inflation_factor
         self.loc_mat = dap.localisation_matrix
         
 
     def sort_locs(self):
+        """
+        Given a dictionary of attributes and the index (locs) of its data container, return attributes that are cell-based and node-based.
+
+        Note
+        ----
+        Face-based flux is not yet supported.
+
+        """
+
         cell_attributes = [key for key,value in self.loc.items() if value == self.loc_c and key in self.oa]
         node_attributes = [key for key,value in self.loc.items() if value == self.loc_n and key in self.oa]
         face_attributes = [key for key,value in self.loc.items() if value == self.loc_f and key in self.oa]
@@ -197,6 +235,11 @@ class prepare_rloc(object):
         return cell_attributes, node_attributes
 
     def analyse(self,results,obs,N,tout):
+        """
+        Wrapper to do analysis by grid-type.
+
+        """
+
         if self.cattr_len > 0:
             results = self.analyse_by_grid_type(results,obs,N,tout,'cell')
         if self.nattr_len > 0:
@@ -204,13 +247,22 @@ class prepare_rloc(object):
         return results
 
     def analyse_by_grid_type(self,results,obs,N,tout,grid_type):
+        """
+        Do analysis by grid-type. Wrapper of the LETKF analysis.
+
+        """
+
         print("Analysis grid type = %s" %grid_type)
+        # get properties from class attributes
         Nx, Ny, obs_attr, attr_len, loc = self.get_properties(grid_type)
 
+        # get the size of local counterpart
         obs_X, obs_Y = self.obs_X, self.obs_Y
 
+        # get stacked state space and observation
         state_p, obs_p = self.stack(results,obs,obs_attr,tout)
 
+        # Here, the 2D arrays are split into local counterparts, say of (5x5) arrays. 
         X = self.get_state(state_p,Nx,Ny,attr_len)
         obs_p = self.get_obs(obs_p,obs_X,obs_Y,Nx,Ny,attr_len)
         Y = self.get_state_in_obs_space(results,obs_attr,obs_X,obs_Y,Nx,Ny,attr_len)
@@ -219,19 +271,32 @@ class prepare_rloc(object):
 
         analysis_res = np.zeros_like(X)
 
+        # loop through all grid-points
         for n in range(Nx * Ny):
+            # using identity for observation covariance
             obs_covar_current = sparse.eye(attr_len*obs_X*obs_Y,attr_len*obs_X*obs_Y, format='csr')
 
+            # using forward operator as a projection of the state into observation space.
             forward_operator = lambda ensemble : Y[n]
+
+            # setup LETKF class with state vector
             local_ens = analysis(X[n],self.inf_fac)
+
+            # setup forward operator method in LETKF class
             local_ens.forward(forward_operator)
-            # local_ens.localisation_matrix = self.loc_mat
+            
+            # get the localisation matrix with BC handling
+            # BC is handled by localisation matrix.
             local_ens.localisation_matrix = np.diag(list(bc_mask[n].ravel()) * attr_len) * np.diag((list(self.loc_mat) * attr_len))
+
+            # do analysis given observations and obs covar.
             analysis_ens = local_ens.analyse(obs_p[n],obs_covar_current)
+
             analysis_res[n] = analysis_ens
 
         analysis_res = np.swapaxes(analysis_res,0,2)
 
+        # put analysis back into results container
         for cnt, attr in enumerate(obs_attr):
             current = analysis_res[cnt]
 
@@ -244,9 +309,15 @@ class prepare_rloc(object):
                 setattr(results[:,loc,...][n],attr,data)
 
         return results
-    # stack variables on grid according to grid-type. 
-    # Currently supports only inner domain with no ghost cells. NO BC handling!
+
+
     def stack(self,results,obs,obs_attr,tout):
+        """
+        On each grid-point, stack all the quantities to be assimilated. This stacking is done separately for cells and nodes.
+
+        Quantities, e.g. {rho, rhou, ...}.
+
+        """
         state = self.get_quantity(results,obs_attr[0])
         state = state[:,np.newaxis,...]
 
@@ -264,13 +335,24 @@ class prepare_rloc(object):
 
         return state, obs_stack
 
+
     def get_state(self,state,Nx,Ny,attr_len):
+        """
+        Get state vector in grid-localised view.
+
+        """
+
         X = np.array([dau.sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in state])
         X = np.swapaxes(X,0,1)
         return X
 
-    # currently supports only 5x5 local counterparts.
+
     def get_obs(self,obs,obs_X,obs_Y,Nx,Ny,attr_len):
+        """
+        Get observations vector in grid-localised view.
+
+        """
+
         x_pad = int((obs_X - 1) / 2)
         y_pad = int((obs_Y - 1) / 2)
         obs = np.array([np.pad(obs_attr,(x_pad,y_pad),mode='wrap') for obs_attr in obs])
@@ -283,7 +365,12 @@ class prepare_rloc(object):
 
         return obs
 
+
     def get_state_in_obs_space(self,state,obs_attr,obs_X,obs_Y,Nx,Ny,attr_len):
+        """
+        Get state vector projected onto observation space, in grid-localised view.
+
+        """
         sios = self.get_quantity(state,obs_attr[0],inner=False)
         sios = sios[:,np.newaxis,...]
 
@@ -296,7 +383,12 @@ class prepare_rloc(object):
         sios = np.swapaxes(sios,0,1)
         return sios
 
+
     def get_bc_mask(self,type, Nx, Ny, obs_X, obs_Y):
+        """
+        Mask handling the boundary condition for either cell or node grids.
+
+        """
         if type == 'cell':
             bc_mask = np.ones((self.iicx,self.iicy))
         else:
@@ -315,8 +407,20 @@ class prepare_rloc(object):
 
 
     def get_properties(self,type):
+        """
+        For a given grid-type (cell / node), return the 2D grid-size (Nx,Ny), the attributes {rho, rhou...} observed on this grid (obs_attr), the number of attributes (attr_len), and the index location of its data container.
+
+        Returns
+        -------
+        Nx : int
+        Ny : int
+        obs_attr : list of str
+        attr_len : int
+        loc : int
+
+        """
         if type != 'cell' and type != 'node':
-            assert 0, "rloc: grid-type not supported"
+            assert(0, "rloc: grid-type not supported")
 
         Nx = self.iicx if type == 'cell' else self.iicxn
         Ny = self.iicy if type == 'cell' else self.iicyn
@@ -328,6 +432,10 @@ class prepare_rloc(object):
     
 
     def get_quantity(self,results,quantity,inner=True):
+        """
+        Get ensemble representation of {rho, rhou...}.
+
+        """
         if inner == True:
             slc = self.i2
         else:
