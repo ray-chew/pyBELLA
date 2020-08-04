@@ -9,7 +9,7 @@ class test_case(object):
         self.grid_x = Nx
         self.grid_y = Ny
         self.end_time = end_time
-        if Nz != None:
+        if Nz is not None:
             self.grid_z = Nz
             self.ndim = 3
         else:
