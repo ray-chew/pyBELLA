@@ -80,7 +80,7 @@ class io(object):
         Currently, if the filename of the HDF5 file already exists, this function will append the existing filename with '_old' and create an empty HDF5 file with the same filename in its place.
 
         """
-        # If file exists, delete it.. Nuclear option
+        # If file exists, rename it with old.
         if os.path.exists(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT):
             os.rename(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + '_old' + self.FORMAT)
             
@@ -247,7 +247,7 @@ class io(object):
 
         """
         if elem.ndim != 3 or (elem.ndim == 3 and elem.iicy > 1):
-            return
+            return np.zeros_like(Sol.rho)
         # 2d-case
         igs = elem.igs
         dx = elem.dx
