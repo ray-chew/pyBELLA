@@ -5,8 +5,8 @@ from scipy import signal
 from inputs import boundary, enum_bdry
 
 class ensemble(object):
-    def __init__(self, input_ensemble=[None]):
-        if input_ensemble[0] != None:
+    def __init__(self, input_ensemble=None):
+        if input_ensemble is not None:
             cnt = 0
             for mem in input_ensemble:
                 setattr(self,'mem_' + str(cnt),mem)
@@ -91,22 +91,40 @@ def set_rhoY_cells(analysis,results,N,th,ud,loc_c=0,loc_n=2):
         rhoYc = (rhoYc0**th.gm1 + ud.Msq*p2c)**th.gm1inv
         setattr(results[n][loc_c], 'rhoYc', rhoYc)
         
-def boundary_mask(ud,elem,node,loc_c,loc_n):
-    cmask = np.ones(elem.isc).squeeze()
-    nmask = np.ones(node.isc).squeeze()
+def boundary_mask(ud,elem,node):
+    if elem.iicy > 1:
+        cmask = np.ones(elem.isc).squeeze()
+        nmask = np.ones(node.isc).squeeze()
 
-    for dim in range(elem.ndim):
-        ghost_padding = [[0,0]] * elem.ndim
-        ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
+        for dim in range(elem.ndim):
+            ghost_padding = [[0,0]] * elem.ndim
+            ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
 
-        if ud.bdry_type[dim] == enum_bdry.BdryType.PERIODIC:
-            cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(1.0))
-            nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(1.0))
+            if ud.bdry_type[dim] == enum_bdry.BdryType.PERIODIC:
+                cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(1.0))
+                nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(1.0))
 
-        elif ud.bdry_type[dim] == enum_bdry.BdryType.WALL:
-            cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(0.0))
-            nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(0.0))
+            elif ud.bdry_type[dim] == enum_bdry.BdryType.WALL:
+                cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(0.0))
+                nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(0.0))
     
+    elif elem.iicy == 1:
+        cmask = np.ones(elem.isc).squeeze()
+        nmask = np.ones(node.isc)[:,0,:]
+
+        ndim = elem.ndim - 1
+        for dim in range(ndim):
+            ghost_padding = [[0,0]] * ndim
+            ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
+
+            if ud.bdry_type[dim] == enum_bdry.BdryType.PERIODIC:
+                cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(1.0))
+                nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(1.0))
+
+            elif ud.bdry_type[dim] == enum_bdry.BdryType.WALL:
+                cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(0.0))
+                nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(0.0))
+        
     return cmask, nmask
 
 
@@ -190,3 +208,49 @@ def sliding_window_view(arr, window_shape, steps):
     # outshape: ([X, (...), Z], ..., [Wx, (...), Wz])
     outshape = outshape + arr.shape[:-len(steps)] + tuple(window_shape)
     return as_strided(arr, shape=outshape, strides=strides, writeable=False)
+
+
+def HSprojector_3t2D(results, elem, dap, N):
+    """
+    Projection method from 3D horizontal slice to 2D array. For use in data assimilation module.
+
+    Parameters
+    ----------
+    results : nd.array
+        An array of ensemble size k. Each ensemble member has [Sol,flux,mpv,[window_step,step]]. 
+    dap : data assimilation input class
+    N : int
+        ensemble size.
+
+    Note
+    ----
+    I will first test this out before extending the DA algorithm to 3D.
+
+    """
+
+    slc = (slice(None,), 2, slice(None,))
+
+    # implying horizontal slice...
+    if elem.ndim == 3 and elem.iicy == 1: 
+        for key, value in dap.loc.items():
+            # only reshape data arrays that are involved in DA. 
+            if key in dap.obs_attributes: 
+                for n in range(N):
+                    p_arr = getattr(results[n][value],key)[slc]
+                    setattr(results[n][value],key, p_arr)
+
+    return results
+
+def HSprojector_2t3D(results,elem, dap, N):
+    """
+    Projection method from 2D array to 3D horizontal slice. To be used after data assimilation.
+
+    """
+    if elem.ndim == 3 and elem.iicy == 1:
+        for key, value in dap.loc.items():
+            if key in dap.obs_attributes:
+                for n in range(N):
+                    results[n][value] = getattr(results[n][value],key)[:,np.newaxis,:]
+
+    return results
+    
