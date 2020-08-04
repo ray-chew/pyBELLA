@@ -16,7 +16,7 @@ from dask.distributed import Client, progress
 
 # dependencies of the data assimilation module
 from data_assimilation.params import da_params
-from data_assimilation.utils import ensemble, sliding_window_view, ensemble_inflation, set_p2_nodes, set_rhoY_cells
+from data_assimilation.utils import ensemble, sliding_window_view, ensemble_inflation, set_p2_nodes, set_rhoY_cells, HSprojector_2t3D, HSprojector_3t2D
 from data_assimilation.letkf import da_interface, bin_func, prepare_rloc
 from data_assimilation.letkf import analysis as letkf_analysis
 from data_assimilation import etpf
@@ -79,7 +79,8 @@ print("Input file is%s" %ud.output_base_name.replace('_',' '))
 # 3) etpf for the ETPF algorithm
 dap = da_params(N, da_type='rloc') 
 
-if elem.ndim == 2:
+# if elem.ndim == 2:
+if dap.da_type == 'rloc':
     rloc = prepare_rloc(ud, elem, node, dap, N)
 
 print("Generating initial ensemble...")
@@ -223,7 +224,9 @@ if __name__ == '__main__':
             ##################################################
             elif dap.da_type == 'rloc':
                 print("Starting analysis... for rloc algorithm")
+                results = HSprojector_3t2D(results, elem, dap, N)
                 results = rloc.analyse(results,obs,N,tout)
+                results = HSprojector_2t3D(results, elem, dap, N)
 
             ##################################################
             # ETPF
