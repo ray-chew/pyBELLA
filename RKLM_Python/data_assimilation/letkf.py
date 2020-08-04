@@ -179,8 +179,10 @@ class prepare_rloc(object):
         # get grid properties
         self.iicx = elem.iicx
         self.iicy = elem.iicy
+        self.iicz = elem.iicz
         self.iicxn = node.iicx
         self.iicyn = node.iicy
+        self.iiczn = node.iicz
         self.N = N
 
         # define inner and outer domains
@@ -208,7 +210,7 @@ class prepare_rloc(object):
         self.obs_Y = obs_Y
 
         # get mask to handle BC. Periodic mask includes ghost cells/nodes and wall masks takes only the inner domain.
-        self.cmask, self.nmask = dau.boundary_mask(ud, elem,node, self.loc_c, self.loc_n)
+        self.cmask, self.nmask = dau.boundary_mask(ud, elem, node)
 
         # get from da parameters the localisation matrix and inflation factor
         self.inf_fac = dap.inflation_factor
@@ -389,10 +391,14 @@ class prepare_rloc(object):
         Mask handling the boundary condition for either cell or node grids.
 
         """
-        if type == 'cell':
+        if type == 'cell' and self.iicy > 1:
             bc_mask = np.ones((self.iicx,self.iicy))
-        else:
+        elif type == 'cell' and self.iicy == 1:
+            bc_mask = np.ones((self.iicx,self.iicz))
+        elif type == 'node' and self.iicyn > 2:
             bc_mask = np.ones((self.iicxn,self.iicyn))
+        elif type == 'node' and self.iicyn == 2:
+            bc_mask = np.ones((self.iicxn,self.iiczn))
 
         bc_mask = np.pad(bc_mask, 2, mode='constant', constant_values=(1.0))
 
@@ -423,7 +429,10 @@ class prepare_rloc(object):
             assert(0, "rloc: grid-type not supported")
 
         Nx = self.iicx if type == 'cell' else self.iicxn
-        Ny = self.iicy if type == 'cell' else self.iicyn
+        if self.iicy > 1:
+            Ny = self.iicy if type == 'cell' else self.iicyn
+        else:
+            Ny = self.iicz if type == 'cell' else self.iiczn
         obs_attr = self.ca if type == 'cell' else self.na
         attr_len = self.cattr_len if type == 'cell' else self.nattr_len
         loc = self.loc_c if type == 'cell' else self.loc_n
