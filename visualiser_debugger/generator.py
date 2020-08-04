@@ -111,15 +111,18 @@ class load_gen(object):
         
        
 class interpolate(object):
-    def __init__(self, nNx, nNy, Lx, Ly):
+    def __init__(self, nNx, nNy, Lx, Ly, a_type):
         self.nNx = nNx
         self.nNy = nNy
         
         self.Lx = Lx
         self.Ly = Ly
         
-        # meshgrid for the new grid onto which data will be interpolated.
-        self.grid_x, self.grid_y = np.meshgrid(np.linspace(0,Lx,nNx), np.linspace(0,Ly,nNy))
+        self.a_type = a_type
+        
+        # cells and nodes meshgrids for the new grid onto which data will be interpolated.
+        self.gridc_x, self.gridc_y = np.meshgrid(np.linspace(0,Lx,nNx), np.linspace(0,Ly,nNy))
+        self.gridn_x, self.gridn_y = np.meshgrid(np.linspace(0,Lx,nNx+1),np.linspace(0,Ly,nNy+1))
         
     def convert(self, ts, data_type='array'):
         """
@@ -133,6 +136,13 @@ class interpolate(object):
         tsn = np.zeros_like(ts)
         
         for aa in range(alen):
+            if self.a_type[aa] == 'cell':
+                grid_x, grid_y = self.gridc_x, self.gridc_y
+                nx, ny = self.nNx, self.nNy
+            elif self.a_type[aa] == 'node':
+                grid_x, grid_y = self.gridn_x, self.gridn_y
+                nx, ny = self.nNx + 1, self.nNy + 1
+                
             for tt in range(tlen):
                 arr = ts[tt][aa]
                 
@@ -146,8 +156,8 @@ class interpolate(object):
             
                 values = (arr).flatten()
 
-                arr_interp = griddata(points, values, (self.grid_x, self.grid_y), method='cubic')
-                arr_interp = arr_interp.reshape(self.nNx,self.nNy)
+                arr_interp = griddata(points, values, (grid_x, grid_y), method='cubic')
+                arr_interp = arr_interp.reshape(nx,ny)
                 
                 tsn[tt][aa] = arr_interp
                 
