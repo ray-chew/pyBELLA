@@ -26,21 +26,6 @@ class UserData(object):
     viscbt = 0.0
     cond = 0.0
 
-    Lx = 5000.0 * 1E3
-    Ly = 4330.0 * 1E3
-    sigx = 3.0 / 40 * Lx
-    sigy = 3.0 / 40 * Ly
-
-    sig = 0.5 * (sigx + sigy)
-    d = 4.0 * sig
-
-    g = 9.81
-    Hp = 30.0
-    U = 2.0 * g * Hp / (omega * d)
-
-    h_ref = d        # [m]
-    u_ref = U
-    t_ref = d / U      # [day] -> [s]
     h_ref = 1.0        # [m]
     u_ref = 1.0
     t_ref = 1.0      # [day] -> [s]
@@ -101,13 +86,6 @@ class UserData(object):
             if (self.coriolis_strength[i] > np.finfo(np.float).eps):
                 self.i_coriolis[i] = 1
 
-        self.xmin = - 0.0
-        self.xmax =   2.0 * np.pi #3840*1E3 / self.h_ref
-        self.ymin = - 0.0
-        self.ymax =   1.0
-        self.zmin = - 0.0
-        self.zmax =   2.0 * np.pi #3840*1E3 / self.h_ref
-
         self.xmin =   0.0
         self.xmax =   5000.0*1E3 / self.h_ref
         self.ymin =  -0.5 * self.h_ref
@@ -137,8 +115,8 @@ class UserData(object):
         ##########################################
         self.CFL = 0.45
         # self.CFL = 0.9 / 2.0
-        self.dtfixed0 = 12.0 / self.t_ref
-        self.dtfixed = 12.0 / self.t_ref
+        self.dtfixed0 = 1200.0 / self.t_ref
+        self.dtfixed = 1200.0 / self.t_ref
 
         self.inx = 64+1
         self.iny = 1+1
@@ -190,7 +168,7 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        aux = 'icshear_3D'
+        aux = 'icshear_da'
         # aux += '_' + self.blending_conv + '_conv'
         # aux += '_' + self.blending_mean + '_mean'
         # aux = 'cb1_w=-6_debug'
@@ -254,7 +232,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     xp = X / Lx
 
     Hp = 30.0 / ud.h_ref
-    H0 = 1076.0 / ud.h_ref
+
+    if seed is not None:
+        H0 = 1076.0 / ud.h_ref + 10.0 * np.random.random() / ud.h_ref
+        # print(H0)
+    else:
+        H0 = 1076.0 / ud.h_ref
 
     exp0 = np.exp(- zp(Z, Lz)**2 / (2.0 * sigz**2) + 0.5)
 
