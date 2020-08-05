@@ -226,7 +226,7 @@ if __name__ == '__main__':
                 print("Starting analysis... for rloc algorithm")
                 results = HSprojector_3t2D(results, elem, dap, N)
                 results = rloc.analyse(results,obs,N,tout)
-                results = HSprojector_2t3D(results, elem, dap, N)
+                results = HSprojector_2t3D(results, elem, node, dap, N)
 
             ##################################################
             # ETPF

@@ -188,8 +188,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True: writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY)
         if debug == True and elem.ndim == 3: writer.populate(str(label)+'_after_half_step','rhoYw',flux[2].rhoY)
 
-        mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
-        # mpv.p2_nodes[...] = mpv.p2_nodes0
+        # mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
+        mpv.p2_nodes[...] = mpv.p2_nodes0
 
         Sol = deepcopy(Sol0)
 
