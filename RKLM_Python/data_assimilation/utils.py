@@ -241,7 +241,7 @@ def HSprojector_3t2D(results, elem, dap, N):
 
     return results
 
-def HSprojector_2t3D(results,elem, dap, N):
+def HSprojector_2t3D(results, elem, node, dap, N):
     """
     Projection method from 2D array to 3D horizontal slice. To be used after data assimilation.
 
@@ -249,8 +249,14 @@ def HSprojector_2t3D(results,elem, dap, N):
     if elem.ndim == 3 and elem.iicy == 1:
         for key, value in dap.loc.items():
             if key in dap.obs_attributes:
+                if value == 0: # cell container
+                    ys = elem.icy
+                if value == 2: # node container
+                    ys = node.icy
                 for n in range(N):
-                    results[n][value] = getattr(results[n][value],key)[:,np.newaxis,:]
+                    p_arr = getattr(results[n][value],key)[:,np.newaxis,:]
+                    p_arr = np.repeat(p_arr, ys, axis=1)
+                    setattr(results[n][value],key, p_arr)
 
     return results
     
