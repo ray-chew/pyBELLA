@@ -9,10 +9,10 @@ class da_params(object):
         # self.da_times = np.arange(0.0,3.75,0.25)[1:]
         # self.da_times = np.arange(0.0,10.25,0.25)[1:]
         # self.da_times = np.arange(0.0,6.1,0.25)[1:]
-        self.da_times = np.arange(0.0,864000.0+1200.0,1200.0)[1:]
+        self.da_times = np.arange(0.0,864000.0+1200.0,1200.0)[1:][::4]
         # self.da_times = []
         # self.obs_attributes = ['rho','rhou','rhow','rhoY','p2_nodes']
-        self.obs_attributes = ['rhou', 'rhow']
+        self.obs_attributes = ['rho', 'rhou', 'rhow']
         # self.obs_attributes = ['rho','rhou','rhov']
         # self.obs_attributes = ['rhoY','p2_nodes']
         # self.obs_attributes = ['p2_nodes']
@@ -21,13 +21,14 @@ class da_params(object):
         # self.obs_attributes = ['rho', 'rhou', 'rhov','rhoY','p2_nodes']
 
         # which attributes to inflate in ensemble inflation?
-        self.attributes = ['rho', 'rhou', 'rhov']
+        self.attributes = ['rhou', 'rhov']
 
         # self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_6.0_truthgen.h5'
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_psinc_delth_ref.h5'
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_delth_1.0_psinc.h5'
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_psinc.h5'
-        self.obs_path = './output_swe/output_swe_ensemble=1_256_1_256_864000.0_truthgen.h5'
+        self.obs_path = './output_swe/output_swe_ensemble=1_256_1_256_864000.0_dvortex_3D_truthgen.h5'
+        # self.obs_path = './output_swe/output_swe_ensemble=1_256_1_256_864000.0_truthgen.h5'
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)

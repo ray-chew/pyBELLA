@@ -116,9 +116,9 @@ class UserData(object):
         self.dtfixed0 = 1200.0 / self.t_ref
         self.dtfixed = 1200.0 / self.t_ref
 
-        self.inx = 256+1
+        self.inx = 64+1
         self.iny = 1+1
-        self.inz = 256+1
+        self.inz = 64+1
 
         self.recovery_order = RecoveryOrder.SECOND
         self.limiter_type_scalars = LimiterType.NONE
@@ -168,7 +168,7 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        aux = 'dvortex_3D'
+        aux = 'dvortex_da'
         # aux += '_' + self.blending_conv + '_conv'
         # aux += '_' + self.blending_mean + '_mean'
         # aux = 'cb1_w=-6_debug'
@@ -221,7 +221,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     Lz = elem.z[-1] - elem.z[0]
 
     Hp = 75.0 / ud.h_ref
-    H0 = 10000.0 / ud.h_ref
+    # H0 = 10000.0 / ud.h_ref
+    if seed is not None:
+        H0 = 10000.0 / ud.h_ref + 10.0 * np.random.random() / ud.h_ref
+        # print(H0)
+    else:
+        H0 = 10000.0 / ud.h_ref
+
     g0 = 9.81 / ud.u_ref
 
     sigx, sigz = sigma(Lx), sigma(Lz)
