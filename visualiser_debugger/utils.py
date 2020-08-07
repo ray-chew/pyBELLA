@@ -147,7 +147,7 @@ class test_case(object):
         return time_series
     
     
-    def get_ensemble(self, times, N, attribute, suffix, cont_blend=False, ts=0, fs=0, label_type='TIME', tag='after_full_step'):
+    def get_ensemble(self, times, N, attribute, suffix, cont_blend=False, ts=0, fs=0, label_type='TIME', tag='after_full_step', avg=False):
         if cont_blend == True:
             suffix += cb_suffix(fs,ts)
             
@@ -156,7 +156,7 @@ class test_case(object):
         
         arr_lst = []
         for time in times:
-            arr = self.get_arr(path, time, N, attribute, tag=tag, label_type=label_type)
+            arr = self.get_arr(path, time, N, attribute, tag=tag, label_type=label_type, avg=avg)
             arr_lst.append(arr)
             
         return np.array(arr_lst)
