@@ -26,9 +26,9 @@ class UserData(object):
     viscbt = 0.0
     cond = 0.0
 
-    h_ref = 1.0        # [m]
-    u_ref = 1.0
-    t_ref = 1.0      # [day] -> [s]
+    h_ref = 1000.0        # [m]
+    t_ref = 1200.0      # [day] -> [s]
+    u_ref = h_ref / t_ref
     T_ref = 1.0
     p_ref = 1.0
 
@@ -61,7 +61,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+        self.is_compressible = 0
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -132,7 +132,7 @@ class UserData(object):
         self.kY = 0.0
         self.kZ = 0.0
 
-        self.tol = 1.e-6
+        self.tol = 1.e-10
         self.max_iterations = 6000
 
         self.perturb_type = 'pos_perturb'
@@ -157,7 +157,7 @@ class UserData(object):
         stepsize = 100
         # self.tout = np.arange(0,2E5+stepsize,stepsize)
         # self.tout = np.arange(0,1E6+100,100)[1:]
-        self.tout = np.arange(0,86400.0*10.0+1200.0,1200.0)[1:]
+        self.tout = np.arange(0,(86400.0*10.0+1200.0) / self.t_ref,1200.0 / self.t_ref)[1:]
         self.stepmax = 2E6
 
         self.output_base_name = "_swe"
@@ -168,7 +168,7 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        aux = 'icshear_da'
+        aux = 'icshear_pi'
         # aux += '_' + self.blending_conv + '_conv'
         # aux += '_' + self.blending_mean + '_mean'
         # aux = 'cb1_w=-6_debug'
@@ -203,9 +203,11 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     igy = igs[1]
 
     g0 = ud.gravity_strength[1]
-    g0 = 9.81 / ud.h_ref# / ud.T_ref
+    g0 = 9.81 / (ud.u_ref / ud.t_ref)
+    # g0 = 1.0
     f0 = ud.coriolis_strength[0]
     ud.Msq = 1.0
+    # ud.Msq = 1e-16
     # ud.Msq = ud.u_ref
     # ud.Msq = ud.u_ref**2 / (g0 * ud.h_ref)
 
@@ -220,10 +222,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     # Lx = ud.xmax
     # Lz = ud.zmax
-    # Lx = elem.x[-1] - elem.x[0]
-    # Lz = elem.z[-1] - elem.z[0]
-    Lx = 5000.0*1E3 #/ ud.h_ref #elem.x[-1] - elem.x[0]
-    Lz = 4330.0*1E3 #/ ud.h_ref #elem.z[-1] - elem.z[0]
+    Lx = elem.x[-1] - elem.x[0]
+    Lz = elem.z[-1] - elem.z[0]
+    Lx = 5000.0*1E3 / ud.h_ref #elem.x[-1] - elem.x[0]
+    Lz = 4330.0*1E3 / ud.h_ref #elem.z[-1] - elem.z[0]
 
     sigz = 1.0 / 12
     lambdx = 0.5
@@ -247,6 +249,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     w = -g0 * Hp / (f0 * Lx) * 2.0 * np.pi * kappa * zpp(Z,Lz) / (lambdx * sigz) * exp0 * np.cos(2.0 * np.pi * xp / lambdx)
 
+    # rho, u, w = rho.T, u.T[::-1,:], w.T[:,::-1]
     rho, u, w = rho.T, u.T, w.T
 
     # N = 64
@@ -302,6 +305,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     w = np.repeat(w, elem.icy-aa*igs[1], axis=1)
 
     p = g0 / 2.0 * rho**2
+    # p = rho**2
 
     Sol.rho[i2] = rho
     Sol.rhou[i2] = rho * u
@@ -311,14 +315,22 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     if (ud.is_compressible):
         Sol.rhoY[i2] = p**th.gamminv
     else:
-        Sol.rhoY[...] = 1.0
+        Sol.rhoY[i2] = p**th.gamminv
+        # Sol.rhoY[i2] = 1.0#**th.gamminv
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
     
     # rho = np.pad(rho,2,mode='wrap')
 
     kernel = np.ones((2,2))
     kernel /= kernel.sum()
-    pn = signal.convolve(Sol.rhoY[:,igy,:], kernel, mode='valid')
+
+    if (ud.is_compressible):
+        pn = signal.convolve(Sol.rhoY[:,igy,:], kernel, mode='valid')
+    else:
+        # pn = signal.convolve(1.0 * (Sol.rho)[:,igy,:], kernel, mode='valid')
+        # pn = signal.convolve(Sol.rho[:,igy,:] - H0, kernel, mode='valid')
+        pn = signal.convolve(Sol.rhoY[:,igy,:], kernel, mode='valid')
+    
 
     # points = np.zeros((Sol.rhoY[:,igy,:][...].flatten().shape[0],2))
     # points[:,0] = X[...].flatten()
