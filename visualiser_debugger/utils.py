@@ -156,7 +156,7 @@ class test_case(object):
         
         arr_lst = []
         for time in times:
-            arr = self.get_arr(path, time, N, attribute, tag=tag, label_type=label_type, avg=avg)
+            arr = self.get_arr(path, time, N, attribute, tag=tag, label_type=label_type, avg=avg, inner=True)
             arr_lst.append(arr)
             
         return np.array(arr_lst)
