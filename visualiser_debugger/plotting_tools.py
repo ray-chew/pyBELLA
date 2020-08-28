@@ -54,7 +54,9 @@ class plotter(object):
                     arr = arr[2:-2,2:-2]
                 cax = self.ax[self.idx[n]]
                 
-                im = self.visualise(method,cax,arr,aspect,lvls)
+                lvl = lvls[n]
+                
+                im = self.visualise(method,cax,arr,aspect,lvl)
                 cax.set_title(title)
                 loc = cax.get_xticklabels()
                 
