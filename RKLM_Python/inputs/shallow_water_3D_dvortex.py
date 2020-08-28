@@ -26,8 +26,8 @@ class UserData(object):
     viscbt = 0.0
     cond = 0.0
 
-    h_ref = 1.0        # [m]
-    t_ref = 1.0        # [day] -> [s]
+    h_ref = 1000.0        # [m]
+    t_ref = 1200.0        # [day] -> [s]
     T_ref = 1.0
     p_ref = 1.0
 
@@ -60,7 +60,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+        self.is_compressible = 0
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -130,7 +130,7 @@ class UserData(object):
         self.kY = 0.0
         self.kZ = 0.0
 
-        self.tol = 1.e-6
+        self.tol = 1.e-10
         self.max_iterations = 6000
 
         self.perturb_type = 'pos_perturb'
@@ -155,8 +155,8 @@ class UserData(object):
         # self.tout = np.arange(0,2E5+stepsize,stepsize)
         # self.tout = np.arange(0,1E6+10000,10000)[1:]
         stepsize = 86400.0/4
-        stepsize = 1200.0
-        end = 86400.0*10.0
+        stepsize = 1200.0 / self.t_ref
+        end = 86400.0*10.0 / self.t_ref
         self.tout = np.arange(0,end+stepsize, stepsize)[1:]
         self.stepmax = 2E6
 
@@ -168,7 +168,7 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        aux = 'dvortex_da'
+        aux = 'dvortex_12s'
         # aux += '_' + self.blending_conv + '_conv'
         # aux += '_' + self.blending_mean + '_mean'
         # aux = 'cb1_w=-6_debug'
@@ -201,6 +201,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     # g0 = ud.gravity_strength[1]
     f0 = ud.coriolis_strength[0]
     ud.Msq = 1.0
+    # ud.Msq = 1e-16
 
     i2 = (slice(igs[0],-igs[0]),slice(igs[1],-igs[1]),slice(igs[2],-igs[2]))
     # i2 = (slice(None,),slice(None,),slice(None,))
@@ -217,18 +218,20 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     # Lx = ud.xmax
     # Lz = ud.zmax
 
-    Lx = elem.x[-1] - elem.x[0]
-    Lz = elem.z[-1] - elem.z[0]
+    Lx = (elem.x[-1] - elem.x[0]) #/ ud.h_ref
+    Lz = (elem.z[-1] - elem.z[0]) #/ ud.h_ref
+    Lx = 5000.0*1E3 / ud.h_ref #elem.x[-1] - elem.x[0]
+    Lz = 4330.0*1E3 / ud.h_ref #elem.z[-1] - elem.z[0]
 
     Hp = 75.0 / ud.h_ref
     # H0 = 10000.0 / ud.h_ref
     if seed is not None:
-        H0 = 10000.0 / ud.h_ref + 10.0 * np.random.random() / ud.h_ref
+        H0 = 10000.0 / ud.h_ref + 100.0 * (np.random.random() - 0.5) / ud.h_ref
         # print(H0)
     else:
         H0 = 10000.0 / ud.h_ref
 
-    g0 = 9.81 / ud.u_ref
+    g0 = 9.81 / (ud.u_ref / ud.t_ref)
 
     sigx, sigz = sigma(Lx), sigma(Lz)
     
@@ -270,14 +273,18 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     if (ud.is_compressible) :
         Sol.rhoY[i2] = p**th.gamminv
     else:
-        Sol.rhoY[...] = 1.0
+        Sol.rhoY[i2] = p**th.gamminv
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
     
     # rho = np.pad(rho,2,mode='wrap')
 
     kernel = np.ones((2,2))
     kernel /= kernel.sum()
-    pn = signal.convolve(Sol.rhoY[:,igy,:], kernel, mode='valid')
+    if (ud.is_compressible) :
+        pn = signal.convolve(Sol.rhoY[:,igy,:], kernel, mode='valid')
+    else:
+        pn = signal.convolve(Sol.rhoY[:,igy,:], kernel, mode='valid')
+    
 
     # x, z = elem.x[igs[0]:-igs[0]], elem.z[igs[2]:-igs[2]]
     # X,Z = np.meshgrid(x,z)
@@ -297,7 +304,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     pn = np.repeat(pn, node.icy, axis=1)
 
     mpv.p2_nodes[1:-1,:,1:-1] = pn
-    # mpv.p2_nodes[...] = pn
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
     pn = np.expand_dims(mpv.p2_nodes[:,igy,:], 1)
