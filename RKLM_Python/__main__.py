@@ -77,7 +77,7 @@ print("Input file is%s" %ud.output_base_name.replace('_',' '))
 # 1) batch_obs for the LETKF with batch observations
 # 2) rloc for LETKF with grid-point localisation
 # 3) etpf for the ETPF algorithm
-dap = da_params(N, da_type='rloc') 
+dap = da_params(N, da_type='rloc')
 
 # if elem.ndim == 2:
 if dap.da_type == 'rloc':
@@ -163,6 +163,10 @@ if __name__ == '__main__':
         else:
             blend = bld
 
+        # initial blending?
+        if ud.initial_blending == True and outer_step == 0:
+            blend = bld
+
         ######################################################
         # Forecast step
         ######################################################
@@ -201,10 +205,8 @@ if __name__ == '__main__':
                 print("Starting analysis... for batch observations")
                 for attr in dap.obs_attributes:
                     print("Assimilating %s..." %attr)
-
-                    obs_current = np.array(obs[list(dap.da_times).index(tout)][attr])
                     # future = client.submit(da_interface, *[s_res,obs_current,dap.inflation_factor,attr,N,ud,dap.loc[attr]])
-                    future = da_interface(results,obs_current,dap.inflation_factor,attr,N,ud,dap.loc[attr])
+                    future = da_interface(results,dap,obs,attr,tout,N,ud)
                     futures.append(future)
 
                 # analysis = client.gather(futures)
