@@ -212,8 +212,11 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     mpv.rhs = rhs
 
+    # if ud.is_compressible == 1:
     diag_inv = precon_diag_prepare(mpv, elem, node, ud)
     rhs *= diag_inv
+    # else:
+    #     diag_inv = np.ones_like(mpv.rhs)
 
     if elem.ndim == 2:
         lap = stencil_9pt(elem,node,mpv,ud,diag_inv)
@@ -226,7 +229,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         # p2 = mpv.p2_nodes[1:-1,1:-1,1:-1]
 
         sh = p2.reshape(-1).shape[0]
-    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2:
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2: # horizonral slice hack
         p2 = np.copy(mpv.p2_nodes[1:-1,elem.igs[1],1:-1])
         lap = stencil_hs(elem,node,mpv,ud,diag_inv,dt)
         sh = p2.reshape(-1).shape[0]
