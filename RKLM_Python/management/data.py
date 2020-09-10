@@ -113,15 +113,15 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             if bld.bb or bld.cb:
                 dp2n = mpv.p2_nodes
                 bld.convert_p2n(dp2n)
-                bld.update_Sol(Sol,elem,node,th,ud,mpv,'aft',label=label,writer=writer)
+                bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
                 bld.update_p2n(Sol,mpv,node,th,ud)
 
-        if bld != None:
+        if bld is not None:
             c_init, c_trans = bld.criterion_init(window_step), bld.criterion_trans(window_step)
         else:
             c_init, c_trans = False, False
 
-        if c_init:
+        if c_init and bld.cb:
             print("Blending... step = %i" %window_step)
             Sol_freeze = deepcopy(Sol)
             mpv_freeze = deepcopy(mpv)
@@ -131,6 +131,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             fac_old = ud.blending_weight
             fac_new = 1.0 - fac_old
             dp2n = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
+            # dp2n = mpv.p2_nodes
 
             if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_start', mpv_freeze.p2_nodes)
             if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_end', ret[2].p2_nodes)
@@ -142,13 +143,30 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             bld.update_Sol(Sol,elem,node,th,ud,mpv,'aft',label=label,writer=writer)
             bld.update_p2n(Sol,mpv,node,th,ud)
 
-        ud.is_compressible = is_compressible(ud,window_step)
+        if ud.initial_blending == True and step == 0:
+            ud.is_compressible = 0
+            ud.compressibility = 0.0
+            dp2n = mpv.p2_nodes
+            bld.convert_p2n(dp2n)
+            bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
+            bld.update_p2n(Sol,mpv,node,th,ud)
+
+        elif ud.initial_blending == True and step == 1:
+            ud.is_compressible = 1
+            ud.compressibility = 1.0
+            dp2n = mpv.p2_nodes
+            bld.convert_p2n(dp2n)
+            bld.update_Sol(Sol,elem,node,th,ud,mpv,'aft',label=label,writer=writer)
+            bld.update_p2n(Sol,mpv,node,th,ud)
+        else:
+            ud.is_compressible = is_compressible(ud,window_step)
+            ud.compressibility = compressibility(ud,t,window_step)
+
         ud.is_nonhydrostatic = is_nonhydrostatic(ud,window_step)
         ud.nonhydrostasy = nonhydrostasy(ud,t,window_step)
-        ud.compressibility = compressibility(ud,t,window_step)
         ud.acoustic_order = acoustic_order(ud,t, window_step)
 
-        if ud.continuous_blending == True:
+        if ud.continuous_blending == True or ud.initial_blending == True:
             if window_step >= 0:
                 print("step = %i, window_step = %i" %(step,window_step))
             else:
@@ -188,8 +206,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True: writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY)
         if debug == True and elem.ndim == 3: writer.populate(str(label)+'_after_half_step','rhoYw',flux[2].rhoY)
 
-        # mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
-        mpv.p2_nodes[...] = mpv.p2_nodes0
+        mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
+        # mpv.p2_nodes[...] = mpv.p2_nodes0
 
         Sol = deepcopy(Sol0)
 
@@ -207,12 +225,12 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
         euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0, writer=writer, label=str(label)+'_after_full_step')
 
+        t += dt
         if writer != None:
             writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
             print("###############################################################################################")
             print("step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f" %(step, t, dt, cfl, cfl_ac))
             print("###############################################################################################")
-        t += dt
         step += 1
         window_step += 1
 
