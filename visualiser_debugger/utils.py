@@ -124,7 +124,7 @@ class test_case(object):
             diff.append(np.sqrt(((arr - ref)**2).mean()))
         return np.array(diff)
 
-    def probe_rmse(self, arrs, refs, probe_loc, avg=False):
+    def probe_rmse(self, arrs, refs, probe_loc, avg=False, inner=False):
         diff = []
        
         for arr, ref in zip(arrs,refs):
@@ -132,9 +132,13 @@ class test_case(object):
                 arr -= arr.mean()
                 ref -= ref.mean()
                
-            arr = arr[self.i2][probe_loc[0],probe_loc[1]]
-            ref = ref[self.i2][probe_loc[0],probe_loc[1]]
-           
+            if inner == True:
+                arr = arr[self.i2][probe_loc[0],probe_loc[1]]
+                ref = ref[self.i2][probe_loc[0],probe_loc[1]]
+            else:
+                arr = arr[probe_loc[0],probe_loc[1]]
+                ref = ref[probe_loc[0],probe_loc[1]]
+                
             #diff.append(np.sqrt(((arr - ref)**2).mean()))
             diff.append(np.linalg.norm(arr-ref))
         return np.array(diff)
@@ -147,7 +151,7 @@ class test_case(object):
         return time_series
     
     
-    def get_ensemble(self, times, N, attribute, suffix, cont_blend=False, ts=0, fs=0, label_type='TIME', tag='after_full_step', avg=False):
+    def get_ensemble(self, times, N, attribute, suffix, cont_blend=False, ts=0, fs=0, label_type='TIME', tag='after_full_step', avg=False, diff=False):
         if cont_blend == True:
             suffix += cb_suffix(fs,ts)
             
@@ -158,6 +162,9 @@ class test_case(object):
         for time in times:
             arr = self.get_arr(path, time, N, attribute, tag=tag, label_type=label_type, avg=avg, inner=True)
             arr_lst.append(arr)
+            
+        if diff == True:    
+            arr_lst = get_diff(arr_lst)
             
         return np.array(arr_lst)
     
@@ -216,6 +223,7 @@ def spatially_averaged_rmse(arr,ref):
     return np.sqrt(((arr - ref)**2).mean())
 
 class prt_time(object):
+    # simple profiler for utils and plottting_tools
     def __init__(self, debug=True):
         self.tic = time()
         self.debug = debug
