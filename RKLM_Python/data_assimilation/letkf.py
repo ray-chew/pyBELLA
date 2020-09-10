@@ -12,24 +12,32 @@ import data_assimilation.utils as dau
 
 debug_cnt = 0
 
-def da_interface(results,obs_current,rho,attr,N,ud,loc=0):
+def da_interface(results,dap,obs,attr,tout,N,ud):
     """
     Interface for batch-observations localisation with LETKF.
 
     """
 
+    obs_current = np.array(obs[list(dap.da_times).index(tout)][attr])
+    inf_fac = dap.inflation_factor
+    loc = dap.loc[attr]
+
     inner = (slice(None,),slice(None,))
 
     local_ens = np.array([getattr(results[:,loc,...][n],attr) for n in range(N)])
     local_ens = np.array([mem[inner] for mem in local_ens])
-    local_ens = analysis(local_ens,rho,attr)
+    local_ens = analysis(local_ens,inf_fac,attr)
 
     obs_current = obs_current[inner]
     
     x_obs, y_obs = obs_current.shape
     
-    forward_operator = lambda ensemble : ensemble
+    forward_operator = lambda ensemble : ensemble # state space == observation space
+    # forward_operator = dap.forward_operator
+    # localisation_matrix = dap.localisation_matrix
+    # localisation_matrix = np.ones_like(obs_current.flatten())
     local_ens.forward(forward_operator)
+    # local_ens.localisation(localisation_matrix)
 
     obs_covar = sparse.eye((x_obs*y_obs), (x_obs*y_obs), format='csr')
 
@@ -95,8 +103,6 @@ class analysis(object):
         self.identifier = identifier
 
         # initialise localisation matrix as None
-        self.localisation_matrix = []
-
         self.forward_operator = None
         self.localisation_matrix = None
 
@@ -108,15 +114,15 @@ class analysis(object):
 
     def analyse(self,obs,obs_covar):
         """
-        Analysis method. 'l' is the observation space. 'm' the state space, 'k' the ensemble size. 
+        Analysis method. 'l' is the observation space. 'm' the state space, 'k' the ensemble size.
 
         """
         if self.forward_operator is None:
             print("Forward operator undefined. Using identity...")
             assert(0, "not implemented.")
-        if self.localisation is None:
+        if self.localisation_matrix is None:
             print("Localisation matrix undefined. Using identity...")
-            assert(0, "not implemented.")
+            # assert(0, "not implemented.")
 
         obs = obs.reshape(-1)
 
@@ -130,7 +136,7 @@ class analysis(object):
         self.X -= self.X_mean # R in (m x k)
 
         C = spsolve(obs_covar, self.Y.T).T # R in (k x l)
-        if len(self.localisation_matrix) > 0:
+        if self.localisation_matrix is not None:
             C[...] = ((np.array(self.localisation_matrix)) @ C.T).T
 
         Pa = (self.no_of_members - 1.) * np.eye(self.no_of_members) / self.rho + (C @ self.Y.T)
