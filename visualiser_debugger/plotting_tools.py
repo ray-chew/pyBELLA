@@ -54,7 +54,7 @@ class plotter(object):
                     arr = arr[2:-2,2:-2]
                 cax = self.ax[self.idx[n]]
                 
-                lvl = lvls[n]
+                lvl = lvls[n] if lvls is not None else None
                 
                 im = self.visualise(method,cax,arr,aspect,lvl)
                 cax.set_title(title)
@@ -154,7 +154,7 @@ class animator_2D(plotter):
 class plotter_1d(object):
     def __init__(self,ncols=3,nrows=2,figsize=(12,12),fontsize=16):
         plt.rcParams.update({'font.size': fontsize})
-        self.fig, self.ax = plt.subplots(ncols=ncols,nrows=nrows, sharex=True, figsize=figsize)
+        self.fig, self.ax = plt.subplots(ncols=ncols,nrows=nrows, sharex=False, figsize=figsize)
         self.nrows = nrows
         self.ncols = ncols
         
@@ -184,14 +184,32 @@ class plotter_1d(object):
         self.img.savefig(fn + format, bbox_inches = 'tight', pad_inches = 0)
 
     
-    @staticmethod
-    def labels():
-        labels_dict = {
-            'rho'       : r'$\rho$, density',
-            'rhou'      : r'$\rho u$, horizontal momentum',
-            'rhov'      : r'$\rho v$, vertical momentum',
-            'buoy'      : r'buoyancy',
-            'rhoY'      : r'$\rho \theta$, mass-weighted potential temperature',
-            'p2_nodes'  : r'$\delta \pi$, nodal Exner pressure increment'
-            }
-        return labels_dict
+def labels():
+    labels_dict = {
+        'rho'       : r'$\rho$, density',
+        'rhou'      : r'$\rho u$, horizontal momentum',
+        'rhov'      : r'$\rho v$, vertical momentum',
+        'buoy'      : r'buoyancy',
+        'rhoX'      : r'$\rho / \Theta$, mass-weighted inverse pot. temp.',
+        'rhoY'      : r'$\rho \Theta$, mass-weighted potential temperature',
+        'p2_nodes'  : r'$\pi$, nodal Exner pressure'
+        }
+    return labels_dict
+
+def labels_increment():
+    labels_dict = labels()
+    labels_dict['p2_nodes'] = r'$\delta \pi$, nodal Exner pressure increment'
+    return labels_dict
+
+def short_labels():
+    labels_dict = {
+        'rho'       : r'$\rho$',
+        'rhou'      : r'$\rho u$',
+        'rhov'      : r'$\rho v$',
+        'buoy'      : r'buoyancy',
+        'rhoX'      : r'$\rho / \Theta$',
+        'rhoY'      : r'$\rho \Theta$',
+        'p2_nodes'  : r'$\pi$'
+        }
+
+    return labels_dict
