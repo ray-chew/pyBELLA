@@ -57,7 +57,7 @@ class Blend(object):
         if ud.blending_mean == 'rhoY':
             rhoYc = (rhoY**th.gm1 + sign * self.fac * self.dp2c)**(th.gm1inv)
         elif ud.blending_mean == '1.0':
-            rhoYc = (1.0 + self.fac * self.dp2c)**(th.gm1inv)
+            rhoYc = (1.0 + sign * self.fac * self.dp2c)**(th.gm1inv)
 
         alpha = rhoYc / Sol.rhoY
 
@@ -72,11 +72,13 @@ class Blend(object):
             Sol.rhow[...] *= rho_fac
             Sol.rhoX[...] *= rho_fac
 
-        if ud.blending_conv == 'theta':
+        elif ud.blending_conv == 'theta':
         ### keep rho, convert theta
             Yc = Y * alpha
             Sol.rhoY[...] = rho * Yc
             Sol.rhoX[...] = rho / Yc
+        else:
+            assert(0, "ud.blending_conv undefined.")
 
         if writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_blending')
 
