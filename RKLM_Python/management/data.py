@@ -110,7 +110,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         dt, cfl, cfl_ac = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
 
         if bld is not None and window_step == 0:
-            if bld.bb or bld.cb:
+            if (bld.bb or bld.cb) and ud.blending_conv is not None:
+                # assert(0)
                 dp2n = mpv.p2_nodes
                 bld.convert_p2n(dp2n)
                 bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
@@ -121,7 +122,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         else:
             c_init, c_trans = False, False
 
-        if c_init and bld.cb:
+        if c_init and bld.cb and ud.blending_conv is not None:
+            # assert(0)
             print("Blending... step = %i" %window_step)
             Sol_freeze = deepcopy(Sol)
             mpv_freeze = deepcopy(mpv)
@@ -143,7 +145,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             bld.update_Sol(Sol,elem,node,th,ud,mpv,'aft',label=label,writer=writer)
             bld.update_p2n(Sol,mpv,node,th,ud)
 
-        if ud.initial_blending == True and step == 0:
+        if ud.initial_blending == True and step < 1 and bld is not None:
+            print("passed")
             ud.is_compressible = 0
             ud.compressibility = 0.0
             dp2n = mpv.p2_nodes
@@ -151,13 +154,29 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
             bld.update_p2n(Sol,mpv,node,th,ud)
 
-        elif ud.initial_blending == True and step == 1:
-            ud.is_compressible = 1
-            ud.compressibility = 1.0
-            dp2n = mpv.p2_nodes
+        elif ud.initial_blending == True and step == 1 and bld is not None:
+            # dp2n = mpv.p2_nodes
+
+            Sol_freeze = deepcopy(Sol)
+            mpv_freeze = deepcopy(mpv)
+
+            ret = time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, [0,step-1], th, bld=None, writer=None, debug=False)
+
+            fac_old = ud.blending_weight
+            fac_new = 1.0 - fac_old
+            dp2n = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
+            # dp2n = mpv.p2_nodes
+
+            if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_start', mpv_freeze.p2_nodes)
+            if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_end', ret[2].p2_nodes)
+            Sol = Sol_freeze
+            mpv = mpv_freeze
+
             bld.convert_p2n(dp2n)
             bld.update_Sol(Sol,elem,node,th,ud,mpv,'aft',label=label,writer=writer)
             bld.update_p2n(Sol,mpv,node,th,ud)
+            ud.is_compressible = 1
+            ud.compressibility = 1.0
         else:
             ud.is_compressible = is_compressible(ud,window_step)
             ud.compressibility = compressibility(ud,t,window_step)
@@ -232,6 +251,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             print("step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f" %(step, t, dt, cfl, cfl_ac))
             print("###############################################################################################")
         step += 1
+        # print("step = ", step)
         window_step += 1
 
     return [Sol,flux,mpv,[window_step,step]]
