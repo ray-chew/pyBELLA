@@ -12,7 +12,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 6.147 * 1E-5     # [rad/s]
+    omega = 6.147 * 1E-5  # [rad/s] *
     # omega = 0.7071 * 4. * np.pi
 
     R_gas = 1.0
@@ -26,8 +26,8 @@ class UserData(object):
     viscbt = 0.0
     cond = 0.0
 
-    h_ref = 1000.0        # [m]
-    t_ref = 1200.0      # [day] -> [s]
+    h_ref = 1.0        # [m]
+    t_ref = 1.0      # [day] -> [s]
     u_ref = h_ref / t_ref
     T_ref = 1.0
     p_ref = 1.0
@@ -61,7 +61,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 0
+        self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -132,7 +132,7 @@ class UserData(object):
         self.kY = 0.0
         self.kZ = 0.0
 
-        self.tol = 1.e-10
+        self.tol = 1.e-6
         self.max_iterations = 6000
 
         self.perturb_type = 'pos_perturb'
@@ -146,6 +146,8 @@ class UserData(object):
         self.no_of_hy_transition = 0
 
         self.blending_weight = 16./16
+
+        self.initial_blending = False
 
         self.initial_projection = True
         self.initial_impl_Euler = False
@@ -168,7 +170,8 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        aux = 'icshear_pi'
+        # aux = 'icshear_pi'
+        aux = 'icshear_comp'
         # aux += '_' + self.blending_conv + '_conv'
         # aux += '_' + self.blending_mean + '_mean'
         # aux = 'cb1_w=-6_debug'
@@ -204,12 +207,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     g0 = ud.gravity_strength[1]
     g0 = 9.81 / (ud.u_ref / ud.t_ref)
-    # g0 = 1.0
+    
     f0 = ud.coriolis_strength[0]
-    ud.Msq = 1.0
     # ud.Msq = 1e-16
-    # ud.Msq = ud.u_ref
-    # ud.Msq = ud.u_ref**2 / (g0 * ud.h_ref)
 
     i2 = (slice(igs[0],-igs[0]),slice(igs[1],-igs[1]),slice(igs[2],-igs[2]))
     i2 = (slice(None,),slice(None,),slice(None,))
@@ -233,13 +233,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     xp = X / Lx
 
-    Hp = 30.0 / ud.h_ref
+    Hp = 0.0 / ud.h_ref
 
     if seed is not None:
-        H0 = 1076.0 / ud.h_ref + 10.0 * np.random.random() / ud.h_ref
+        H0 = 10076.0 / ud.h_ref + 10.0 * np.random.random() / ud.h_ref
         # print(H0)
     else:
-        H0 = 1076.0 / ud.h_ref
+        H0 = 10076.0 / ud.h_ref
 
     exp0 = np.exp(- zp(Z, Lz)**2 / (2.0 * sigz**2) + 0.5)
 
@@ -304,22 +304,39 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     w = np.expand_dims(w, 1)
     w = np.repeat(w, elem.icy-aa*igs[1], axis=1)
 
-    p = g0 / 2.0 * rho**2
-    # p = rho**2
-
-    Sol.rho[i2] = rho
-    Sol.rhou[i2] = rho * u
-    Sol.rhov[i2] = rho * v
-    Sol.rhow[i2] = rho * w
+    fr = ((u.max()*ud.u_ref)**2 + (w.max()*ud.u_ref)**2)**0.5 / (g0 * (ud.u_ref / ud.t_ref) * (rho.max() * (ud.h_ref)))**0.5
+    print("Froude number =", fr)
+    print("Fr2 = ", fr**2)
 
     if (ud.is_compressible):
+        p = g0 / 2.0 * rho**2
+
+        Sol.rho[i2] = rho
+        Sol.rhou[i2] = rho * u
+        Sol.rhov[i2] = rho * v
+        Sol.rhow[i2] = rho * w
         Sol.rhoY[i2] = p**th.gamminv
     else:
-        Sol.rhoY[i2] = p**th.gamminv
-        # Sol.rhoY[i2] = 1.0#**th.gamminv
+        # H0 = 10.0
+        # min_val = H0
+        H0 = rho.min()
+        min_val = rho.min()
+
+        rho_diff = rho.max() - min_val#rho.min()
+
+        H1 = (rho - min_val) / rho_diff
+
+        p = g0 / 2.0 * H0**2
+
+        H1 = g0 / 2.0 * (H1)**2
+
+        Sol.rho[i2] = H0
+        Sol.rhou[i2] = H0 * u
+        Sol.rhov[i2] = H0 * v
+        Sol.rhow[i2] = H0 * w
+        Sol.rhoY[i2] = H1**th.gamminv
+
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
-    
-    # rho = np.pad(rho,2,mode='wrap')
 
     kernel = np.ones((2,2))
     kernel /= kernel.sum()
@@ -327,21 +344,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     if (ud.is_compressible):
         pn = signal.convolve(Sol.rhoY[:,igy,:], kernel, mode='valid')
     else:
-        # pn = signal.convolve(1.0 * (Sol.rho)[:,igy,:], kernel, mode='valid')
-        # pn = signal.convolve(Sol.rho[:,igy,:] - H0, kernel, mode='valid')
-        pn = signal.convolve(Sol.rhoY[:,igy,:], kernel, mode='valid')
-    
-
-    # points = np.zeros((Sol.rhoY[:,igy,:][...].flatten().shape[0],2))
-    # points[:,0] = X[...].flatten()
-    # points[:,1] = Z[...].flatten()
-
-    # values = (p[:,igy,:]**th.gamminv).flatten()
-
-    # grid_x, grid_z = np.meshgrid(node.x,node.z)
-
-    # from scipy.interpolate import griddata
-    # pn = griddata(points, values, (grid_x, grid_z), method='cubic')
+        pn = signal.convolve((Sol.rhoY[:,igy,:]), kernel, mode='valid')
+        Sol.rhoY[i2] = p**th.gamminv
+        set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
     pn = np.expand_dims(pn, 1)
     pn = np.repeat(pn, node.icy, axis=1)
@@ -356,30 +361,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     ud.compressibility = float(ud.is_compressible)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
-
-    if ud.initial_projection == False:
-        is_compressible = np.copy(ud.is_compressible)
-        compressibility = np.copy(ud.compressibility)
-        ud.is_compressible = 0
-        ud.compressibility = 0.0
-
-        p2aux = np.copy(mpv.p2_nodes)
-
-        Sol.rhou -= u0 * Sol.rho
-        Sol.rhov -= v0 * Sol.rho
-        Sol.rhow -= w0 * Sol.rho
-
-        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5)
-
-        mpv.p2_nodes[...] = p2aux
-        mpv.dp2_nodes[...] = 0.0
-
-        Sol.rhou += u0 * Sol.rho
-        Sol.rhov += v0 * Sol.rho
-        Sol.rhow += w0 * Sol.rho
-
-        ud.is_compressible = is_compressible
-        ud.compressibility = compressibility
 
     return Sol
 
