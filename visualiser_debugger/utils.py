@@ -8,9 +8,9 @@ class test_case(object):
         self.py_dir = py_dir
         self.grid_x = Nx
         self.grid_y = Ny
+        self.grid_z = Nz
         self.end_time = end_time
-        if Nz is not None:
-            self.grid_z = Nz
+        if Nz is not None and Ny > 1:
             self.ndim = 3
         else:
             self.ndim = 2
@@ -66,7 +66,7 @@ class test_case(object):
     def get_filename(self,N,suffix):
         if self.ndim == 2:
             fn = "%s_ensemble=%i_%i_%i_%.1f_%s.h5" %(self.base_fn,N,self.grid_x,self.grid_y,self.end_time,suffix)
-        if self.ndim == 3:
+        if self.ndim == 3 or self.grid_z is not None:
             fn = "%s_ensemble=%i_%i_%i_%i_%.1f_%s.h5" %(self.base_fn,N,self.grid_x,self.grid_y,self.grid_z,self.end_time,suffix)
         return fn
 
@@ -114,8 +114,8 @@ class test_case(object):
     def spatially_averaged_rmse(self, arrs,refs,avg=False):
         diff = []
         for arr, ref in zip(arrs,refs):
-            arr = arr[self.i2]
-            ref = ref[self.i2]
+            arr = (arr[self.i2])
+            ref = (ref[self.i2])
             
             if avg==True:
                 arr -= arr.mean()
