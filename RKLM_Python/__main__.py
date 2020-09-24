@@ -145,7 +145,7 @@ if __name__ == '__main__':
         if not restart: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
     # initialise dask parallelisation and timer
-    client = Client(threads_per_worker=1, n_workers=1)
+    # client = Client(threads_per_worker=1, n_workers=1)
     tic = time()
 
     ######################################################
@@ -188,9 +188,10 @@ if __name__ == '__main__':
 
         # Dask commands, used only when parallelisation is
         # enabled
-        results = client.gather(futures)
+        # results = client.gather(futures)
+        results = np.copy(futures)
         results = np.array(results)
-        s_res = client.scatter(results)
+        # s_res = client.scatter(results)
 
         ######################################################
         # Analysis step
