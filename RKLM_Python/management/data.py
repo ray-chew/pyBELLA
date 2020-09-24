@@ -115,14 +115,18 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                     print("swe to lake conversion...")
 
                     setattr(ud,'min_val',Sol.rho.min()) # save the min value to Sol container
-                    eps = Sol.rho.max() - Sol.rho.min()
+                    # eps = Sol.rho.max() - Sol.rho.min()
                     Sol.rhou[...] = Sol.rhou / Sol.rho * ud.min_val
-                    Sol.rhov[...] = Sol.rhov / Sol.rho * ud.min_val
+                    # Sol.rhov[...] = Sol.rhov / Sol.rho * ud.min_val
+                    Sol.rhow[...] = Sol.rhow / Sol.rho * ud.min_val
                     Sol.rhoY[...] = Sol.rhoY / Sol.rho * ud.min_val
                     Sol.rho[...] = ud.min_val
 
-                    setattr(ud,'p2_min_val',mpv.p2_nodes.min())
-                    mpv.p2_nodes[...] = (mpv.p2_nodes - ud.p2_min_val) / eps
+                    setattr(ud,'p2_min_val',Sol.rhoY.min())
+                    eps = mpv.p2_nodes.max() - ud.p2_min_val
+                    mpv.p2_nodes[:,1:,:] = (mpv.p2_nodes[:,1:,:] - ud.p2_min_val) #/ eps
+
+                    # if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_swe_to_lake')
 
                 else:
                     assert(0)
@@ -140,8 +144,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             if ud.blending_conv == 'swe':
                 print("lake to swe conversion...")
 
-                H1 = mpv.p2_nodes - mpv.p2_nodes.min()
-                H1 = H1[:,0,:] # project horizontal slice to 2D
+                H10 = mpv.p2_nodes - mpv.p2_nodes.min()
+                H1 = H10[:,1,:] # project horizontal slice to 2D
 
                 # define 2D kernel
                 kernel = np.ones((2,2))
@@ -154,11 +158,14 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                 H1 = np.expand_dims(H1, 1)
                 H1 = np.repeat(H1, elem.icy, axis=1)
 
-                Sol.rho = H1 + ud.min_val
+                Sol.rho += H1 #+ ud.min_val
                 Sol.rhou = Sol.rhou / ud.min_val * Sol.rho
-                Sol.rhov = Sol.rhov / ud.min_val * Sol.rho
-                Sol.rhoY = Sol.rhoY / ud.min_val * Sol.rho
-                mpv.p2_nodes += ud.p2_min_val
+                # Sol.rhov = Sol.rhov / ud.min_val * Sol.rho
+                Sol.rhow = Sol.rhow / ud.min_val * Sol.rho
+                Sol.rhoY = Sol.rhoY / ud.min_val * (ud.min_val+H1)#* Sol.rho
+                mpv.p2_nodes = H10 + ud.p2_min_val
+
+                # if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_lake_to_swe')
 
             else:
                 assert(0)
