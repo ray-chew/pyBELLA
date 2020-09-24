@@ -24,7 +24,10 @@ class test_case(object):
         self.get_arr = self.get_arr
         
         self.i0 = tuple([slice(None,)]*self.ndim)
-        self.i2 = tuple([slice(2,-2)]*self.ndim)
+        if self.grid_z is not None and Ny == 1:
+            self.i2 = tuple([slice(2,-2)]*(self.ndim+1))
+        else:
+            self.i2 = tuple([slice(2,-2)]*self.ndim)
         
     def cb_suffix(self,fs,ts,suffix=""):
         if suffix != "":
