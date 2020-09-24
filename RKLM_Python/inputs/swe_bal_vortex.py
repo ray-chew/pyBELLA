@@ -78,12 +78,12 @@ class UserData(object):
             if (self.coriolis_strength[i] > np.finfo(np.float).eps):
                 self.i_coriolis[i] = 1
 
-        self.xmin = - 0.5
-        self.xmax =   0.5
+        self.xmin = - 0.5 / self.h_ref
+        self.xmax =   0.5 / self.h_ref
         self.ymin = - 0.5
         self.ymax =   0.5
-        self.zmin = - 0.5
-        self.zmax =   0.5
+        self.zmin = - 0.5 / self.h_ref
+        self.zmax =   0.5 / self.h_ref
 
         self.wind_speed = 0.0
         self.wind_shear = -0.0
@@ -114,10 +114,10 @@ class UserData(object):
 
         self.time_integrator = TimeIntegrator.SI_MIDPT
         self.advec_time_integrator = TimeIntegrator.STRANG
-        self.CFL  = 0.9/2.0
-        # self.CFL = 0.95
-        self.dtfixed0 = 0.01
-        self.dtfixed = 0.01
+        # self.CFL  = 0.
+        self.CFL = 0.45
+        self.dtfixed0 = 1.0 / self.t_ref
+        self.dtfixed = 1.0 / self.t_ref
 
         self.inx = 64+1
         self.iny = 1+1
@@ -133,12 +133,14 @@ class UserData(object):
         self.kY = 0.0
         self.kZ = 0.0
 
-        self.tol = 1.e-6
+        self.tol = 1.e-8
         self.max_iterations = 6000
 
         self.perturb_type = 'pos_perturb'
         self.blending_mean = 'rhoY' # 1.0, rhoY
-        self.blending_conv = 'rho' #theta, rho
+        self.blending_conv = 'swe' #theta, rho, None
+
+        self.initial_blending = False
 
         self.continuous_blending = False
         self.no_of_pi_initial = 1
@@ -148,22 +150,22 @@ class UserData(object):
 
         self.blending_weight = 16./16
 
-        self.initial_projection = True
+        self.initial_projection = False
         self.initial_impl_Euler = False
 
         self.column_preconditionr = False
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        self.tout = np.arange(0,1.0+0.01,0.01)[1:]
+        self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
         # self.tout = [1E6]
 
         # self.tout = times.copy()
 
         # self.stepmax = 10
-        self.stepmax = 301
+        self.stepmax = 100001
 
-        self.output_base_name = "_bal_swe"
+        self.output_base_name = "_swe_vortex"
         if self.is_compressible == 1:
             self.output_suffix = "_%i_%i_%i_%.1f_comp" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         if self.is_compressible == 0:
@@ -171,13 +173,13 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
-        # aux = 'posp_rloc'
-        # aux += '_' + self.blending_conv + '_conv'
-        # aux += '_' + self.blending_mean + '_mean'
-        # aux = 'cb1_w=-6_debug'
-        # self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))
-        # aux = 'psinc_bal_debug'
-        # self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
+        aux = 'wdawloc_1.0_rhou_rhow'
+        # aux = 'comp_test_0'
+        # aux = 'noda'
+        # aux = 'bld_test'
+        # aux = 'comp_0.1'
+        # aux = 'psinc'
+        self.output_suffix = "_%i_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
@@ -211,13 +213,23 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     xc = 0.0
     zc = 0.0
 
-    g = 9.81 #/ ud.h_ref
-    H = 1.0
+    g = 9.81
+    H0 = 1.0
     # ud.Msq = (th.gamm / g)**2.0
     # ud.Msq = 1.0/(g)
 
+    if seed != None:
+        np.random.seed(seed)
+        # perturb = (np.random.random() - 0.5) / 10.0
+        # print(perturb)
+        xc += (np.random.random() - 0.5) / 10.0
+        zc += (np.random.random() - 0.5) / 10.0
+        print(seed, xc, zc)
+
     xcm = xc - (ud.xmax - ud.xmin)
     zcm = zc - (ud.zmax - ud.zmin)
+
+    # xcm, zcm = 1.0, 1.0
 
     igs = elem.igs
     igy = igs[1]
@@ -225,10 +237,16 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     igxn = node.igx
     igzn = node.igz
 
+    i2 = (slice(igs[0],-igs[0]),slice(igs[1],-igs[1]),slice(igs[2],-igs[2]))
+
     hydrostatic_state(mpv, elem, node, th, ud)
 
     xs = elem.x.reshape(-1,1,1)
     zs = elem.z.reshape(1,1,-1)
+
+    # xs = np.linspace(-0.5,0.5,64).reshape(-1,1,1)
+    # zs = np.linspace(-0.5,0.5,64).reshape(1,1,-1)
+    
     xccs = np.zeros_like(xs)
     zccs = np.zeros_like(zs)
 
@@ -261,42 +279,68 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     coe[12] = +1.0/24
 
     rho = np.zeros_like(r)
-    Frsq = 1.0**2 / (g * 1.0)
+    Frsq = np.sqrt((u0**2 + w0**2))**2 / (g * H0)
+    Frsq = 1.0 / (g * 1.0)
+
     for i in range(12,24+1):
         rho[...] += fac**2 * coe[i-12] * (r/R0)**i * (r < R0)
 
     rho *= Frsq #* (r < R0)
-    rho = (rho - rho.max()) * (r < R0)
-    rho += 1.0 #* (r < R0)
+    rho = (rho - rho.max()) * (r < R0) #* H0
+    rho += H0 #* (r < R0)
 
-    Sol.rho[:,igy:-igy,:] = rho
-    Sol.rhou[:,igy:-igy,:] = rho * u
-    Sol.rhov[:,igy:-igy,:] = rho * v
-    Sol.rhow[:,igy:-igy,:] = rho * w
+    if (ud.is_compressible):
+        p = g / 2.0 * rho**2
 
-    p = g / 2.0 * rho**2
+        Sol.rho[:,igy:-igy,:] = rho #* 1.2
+        Sol.rhou[:,igy:-igy,:] = rho * u
+        Sol.rhov[:,igy:-igy,:] = rho * v
+        Sol.rhow[:,igy:-igy,:] = rho * w
 
-    if (ud.is_compressible) :
         Sol.rhoY[:,igy:-igy,:] = p**th.gamminv
-        Sol.rhoe[:,igy:-igy,:] = ud.rhoe(rho,u,v,w,p,ud,th)
+
+        # Sol.rho[i2] = rho
+        # Sol.rhou[i2] = rho * u
+        # Sol.rhov[i2] = rho * v
+        # Sol.rhow[i2] = rho * w
+        # Sol.rhoY[i2] = p**th.gamminv
     else:
-        assert(0, "not implemented")
+        min_val = H0
+
+        rho_diff = rho.max() - rho.min()
+        # rho_diff = H0 - rho.min()
+
+        H1 = (rho - min_val) / rho_diff
+
+        p = g / 2.0 * H0**2
+        H1 = g / 2.0 * (H1)**2
+
+        Sol.rho[:,igy:-igy,:] = H0
+        Sol.rhou[:,igy:-igy,:] = H0 * u
+        Sol.rhov[:,igy:-igy,:] = H0 * v
+        Sol.rhow[:,igy:-igy,:] = H0 * w
+        Sol.rhoY[:,igy:-igy,:] = H1**th.gamminv
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
-    X,Z = np.meshgrid(elem.x,elem.z)
-    points = np.zeros((Sol.rhoY[:,igy,:].flatten().shape[0],2))
-    points[:,0] = X[...].flatten()
-    points[:,1] = Z[...].flatten()
+    kernel = np.ones((2,2))
+    kernel /= kernel.sum()
+    if (ud.is_compressible):
+        pn = signal.convolve(Sol.rhoY[:,igy,:], kernel, mode='valid')
+    else:
+        pn = signal.convolve((Sol.rhoY[:,igy,:]), kernel, mode='valid')
+        Sol.rhoY[:,igy:-igy,:] = p**th.gamminv
+        set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
-    values = (Sol.rhoY[:,igy,:]).flatten()
+    set_explicit_boundary_data(Sol,elem,ud,th,mpv)
+    pn = np.expand_dims(pn, 1)
+    pn = np.repeat(pn, node.icy, axis=1)
 
-    grid_x, grid_z = np.meshgrid(node.x,node.z)
-
-    pn = griddata(points, values, (grid_x, grid_z), method='cubic')
-
-    mpv.p2_nodes[:,igy,:] = pn
+    mpv.p2_nodes[1:-1,:,1:-1] = pn
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
+
+    pn = np.expand_dims(mpv.p2_nodes[:,igy,:], 1)
+    mpv.p2_nodes[...] = np.repeat(pn[...], node.icy, axis=1)
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
     ud.compressibility = float(ud.is_compressible)
