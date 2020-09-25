@@ -142,7 +142,7 @@ class UserData(object):
 
         self.initial_blending = False
 
-        self.continuous_blending = False
+        self.continuous_blending = True
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
@@ -173,9 +173,9 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
-        aux = 'wdawloc_1.0_rhou_rhow'
+        aux = 'wdawloc_1.0_rhou_rhow_p0.5'
         # aux = 'comp_test_0'
-        # aux = 'noda'
+        # aux = 'noda_p0.5'
         # aux = 'bld_test'
         # aux = 'comp_0.1'
         # aux = 'psinc'
@@ -222,8 +222,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         np.random.seed(seed)
         # perturb = (np.random.random() - 0.5) / 10.0
         # print(perturb)
-        xc += (np.random.random() - 0.5) / 10.0
-        zc += (np.random.random() - 0.5) / 10.0
+        xc += (np.random.random() - 0.5) / 2.0
+        zc += (np.random.random() - 0.5) / 2.0
         print(seed, xc, zc)
 
     xcm = xc - (ud.xmax - ud.xmin)
