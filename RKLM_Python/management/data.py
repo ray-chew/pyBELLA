@@ -129,7 +129,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                     # if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_swe_to_lake')
 
                 else:
-                    assert(0)
                     dp2n = mpv.p2_nodes
                     bld.convert_p2n(dp2n)
                     bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
@@ -168,7 +167,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                 # if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_lake_to_swe')
 
             else:
-                assert(0)
                 print("Blending... step = %i" %window_step)
                 Sol_freeze = deepcopy(Sol)
                 mpv_freeze = deepcopy(mpv)
