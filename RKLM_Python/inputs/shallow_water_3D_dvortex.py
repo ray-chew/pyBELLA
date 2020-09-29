@@ -60,7 +60,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 0
+        self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -111,7 +111,7 @@ class UserData(object):
         ##########################################
         # NUMERICS
         ##########################################
-        self.CFL = 0.95
+        self.CFL = 0.45
         # self.CFL = 0.9 / 2.0
         self.dtfixed0 = 1200.0 / self.t_ref
         self.dtfixed = 1200.0 / self.t_ref
@@ -170,7 +170,7 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        aux = 'dvortex_pi_10000'
+        aux = 'dvortex_comp_geostrophic'
         # aux += '_' + self.blending_conv + '_conv'
         # aux += '_' + self.blending_mean + '_mean'
         # aux = 'cb1_w=-6_debug'
@@ -216,8 +216,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     Hp = 75.0 / ud.h_ref
     H00 = 450.0 # semi-geostrophic
-    H00 = 750.0 # quasi-geostrophic
-    H00 = 10000.0 # incompressible
+    # H00 = 750.0 # quasi-geostrophic
+    # H00 = 10000.0 # incompressible
     if seed is not None:
         H0 = H00 / ud.h_ref + 100.0 * 2.0 * (np.random.random() - 0.5) / ud.h_ref
     else:
@@ -264,10 +264,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         Sol.rhow[i2] = rho * w
         Sol.rhoY[i2] = p**th.gamminv
     else:
-        # H0 = 10.0
-        # min_val = H0
-        H0 = rho.min()
-        min_val = rho.min()
+        H0 = H00
+        min_val = H0
+        # H0 = rho.min()
+        # min_val = rho.min()
 
         rho_diff = rho.max() - min_val
 
