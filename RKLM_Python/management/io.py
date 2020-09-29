@@ -3,6 +3,7 @@ import h5py
 import os
 import numpy as np
 import shutil # for copying of simulation restart file
+import pickle
 
 from management.variable import Vars
 from physics.low_mach.mpv import MPV
@@ -354,6 +355,17 @@ class io(object):
             file.close()
 
 
+    def jar(self, elem, node):
+        fn = self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + '.dat'
+
+        file = open(fn,"wb")
+        # let's fill the pickle jar
+        pickle.dump(self.ud, file)
+        pickle.dump(elem, file)
+        pickle.dump(node, file)
+        file.close()
+
+
 def get_args():
     """
     Argument parser for initial conditions and ensemble size.
@@ -364,7 +376,7 @@ def get_args():
 
     parser.add_argument('-N',action='store',dest='N',help='<Optional> Set ensemble size, if none is given N=1 is used.',required=False,type=int)
 
-    parser.add_argument('-ic','--initial_conditions',action='store',dest='ic',help='<Required> Set initial conditions',required=True,choices={'aw','tv','tv_2d','tv_3d','tv_corr','rb', 'rbc', 'igw','swe','swe_bal_vortex','swe_3D','swe_icshear','swe_icshear_3D', 'swe_test'})
+    parser.add_argument('-ic','--initial_conditions',action='store',dest='ic',help='<Required> Set initial conditions',required=True,choices={'aw','tv','tv_2d','tv_3d','tv_corr','rb', 'rbc', 'igw','swe','swe_bal_vortex','swe_icshear', 'swe_dvortex'})
 
     # parser.add_argument('-r','--restart_sim',action='store',dest='rstrt',help='<Optional> Restart simulation?.',required=False,default=False,type=bool)
 
@@ -394,17 +406,13 @@ def get_args():
         from inputs.rising_bubble import UserData, sol_init
     elif ic == 'rbc':
         from inputs.rising_bubble_cold import UserData, sol_init
-    elif ic == 'swe':
-        from inputs.shallow_water_2D import UserData, sol_init
     elif ic == 'swe_bal_vortex':
         from inputs.swe_bal_vortex import UserData, sol_init
-    elif ic == 'swe_3D':
+    elif ic == 'swe':
         from inputs.shallow_water_3D import UserData, sol_init
     elif ic == 'swe_icshear':
-        from inputs.shallow_water_2D_icshear import UserData, sol_init
-    elif ic == 'swe_icshear_3D':
         from inputs.shallow_water_3D_icshear import UserData, sol_init
-    elif ic == 'swe_test':
+    elif ic == 'swe_dvortex':
         from inputs.shallow_water_3D_dvortex import UserData, sol_init
 
 
@@ -473,9 +481,3 @@ def sim_restart(path, name, elem, node, ud, Sol, mpv, restart_touts):
 
     file.close()
     return Sol, mpv, t
-    
-
-
-
-
-
