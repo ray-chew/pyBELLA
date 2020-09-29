@@ -144,6 +144,8 @@ if __name__ == '__main__':
             label = ('ensemble_mem=%i_%.3f' %(n,0.0))
         if not restart: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
+    writer.jar(elem, node)
+
     # initialise dask parallelisation and timer
     # client = Client(threads_per_worker=1, n_workers=1)
     tic = time()
