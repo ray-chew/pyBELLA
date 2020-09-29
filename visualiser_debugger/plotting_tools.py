@@ -10,13 +10,13 @@ class plotter(object):
         N = self.arr_lst.shape[0]
         
         if N > ncols:
-            self.nrows = int(int(N/ncols)+1)-1
+            self.nrows = int(int(N/ncols)+1)
             self.ncols = ncols
         if N <= ncols:
             self.nrows = 1
             self.ncols = N
         self.N = N
-            
+        
         ridx = np.arange(self.nrows)
         cidx = np.arange(self.ncols)
 
@@ -47,7 +47,7 @@ class plotter(object):
             assert(0, "Visualisation method not implemented!")
             
         if self.N > 1:
-            ims = []
+            ims, caxs = [], []
             for n, arr in enumerate(self.arr_lst):
                 arr, title = arr[0], arr[1]
                 if inner == True:
@@ -67,6 +67,7 @@ class plotter(object):
                 if hasattr(self, 'x_label') : cax.set_xlabel(self.x_label)
                 if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
                 
+                caxs.append(cax)
                 divider = make_axes_locatable(cax)
                 cax = divider.append_axes("right", size="5%", pad=0.05)
                 plt.colorbar(im, cax=cax)
@@ -97,7 +98,7 @@ class plotter(object):
         plt.suptitle(suptitle)
         plt.tight_layout(rect=rect)
         
-        return ims
+        return ims, caxs
         
     def save_fig(self, fn, format='.pdf'):
         self.img.savefig(fn + format, bbox_inches = 'tight', pad_inches = 0)
@@ -110,8 +111,8 @@ class plotter(object):
         elif method == 'contour':
             if lvls is None:
                 cax.set_aspect(aspect)
-                im = cax.contour(arr,colors='k')
-                im = cax.contourf(arr)
+                im = cax.contour(arr,colors='k',levels=5)
+                im = cax.contourf(arr,levels=5)
                 cax.set_aspect(aspect)
             else:
                 cax.set_aspect(aspect)
@@ -130,20 +131,33 @@ class animator_2D(plotter):
         self.update_plot = self.update_plot
         self.fig.tight_layout()
         self.suptitle = None
-        self.method = None
+        self.method = None 
         
     def animate(self, interval=100, **kwargs):
-        self.ims = self.plot(**kwargs)
-        anim = animation.FuncAnimation(self.fig, self.update_plot, self.frns, fargs=(self.time_series, self.ims, self.fig, self.suptitle, self.method), interval=interval) 
+        self.ims, self.caxs = self.plot(**kwargs)
+        anim = animation.FuncAnimation(self.fig, self.update_plot, self.frns, fargs=(self.time_series, self.ims, self.caxs, self.fig, self.suptitle, self.method), interval=interval) 
         return anim
 
     @staticmethod
-    def update_plot(frame_number, time_series, ims, img, title, method='imshow'):
-        for ii,im in enumerate(ims):
-            if method == 'imshow':
+    def update_plot(frame_number, time_series, ims, caxs, img, title, method):
+        
+        if method == 'imshow':
+            for ii,im in enumerate(ims):
                 arr = time_series[frame_number][ii][0]
                 im.set_array(arr)
                 im.set_clim(arr.min(),arr.max()) 
+        elif method == 'contour':
+            for ii, cax in enumerate(caxs):
+                arr = time_series[frame_number][ii][0]
+                im = ims[ii]
+                for c in cax.collections:
+                    cax.collections.remove(c)
+                for c in cax.collections:
+                    cax.collections.remove(c)
+                for c in cax.collections:
+                    cax.collections.remove(c)
+                im = cax.contourf(arr,levels=5)
+                im = cax.contour(arr,colors='k',levels=5)
         if title is not None:
             stt = title(frame_number)
             img.suptitle(stt)
