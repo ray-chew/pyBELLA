@@ -111,8 +111,8 @@ class plotter(object):
         elif method == 'contour':
             if lvls is None:
                 cax.set_aspect(aspect)
-                im = cax.contour(arr,colors='k',levels=5)
-                im = cax.contourf(arr,levels=5)
+                im = cax.contour(arr,colors='k')
+                im = cax.contourf(arr)
                 cax.set_aspect(aspect)
             else:
                 cax.set_aspect(aspect)
@@ -156,8 +156,8 @@ class animator_2D(plotter):
                     cax.collections.remove(c)
                 for c in cax.collections:
                     cax.collections.remove(c)
-                im = cax.contourf(arr,levels=5)
-                im = cax.contour(arr,colors='k',levels=5)
+                im = cax.contourf(arr)
+                im = cax.contour(arr,colors='k')
         if title is not None:
             stt = title(frame_number)
             img.suptitle(stt)
