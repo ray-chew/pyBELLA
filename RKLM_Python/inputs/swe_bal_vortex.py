@@ -142,7 +142,7 @@ class UserData(object):
 
         self.initial_blending = False
 
-        self.continuous_blending = True
+        self.continuous_blending = False
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
@@ -157,7 +157,7 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
+        self.tout = np.arange(0, 1.0 + 0.01, 0.01)
         # self.tout = [1E6]
 
         # self.tout = times.copy()
@@ -177,8 +177,8 @@ class UserData(object):
         # aux = 'comp_test_0'
         # aux = 'noda_p0.5'
         # aux = 'bld_test'
-        # aux = 'comp_0.1'
-        # aux = 'psinc'
+        aux = 'comp_1.0'
+        aux = 'debug'
         self.output_suffix = "_%i_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
@@ -226,8 +226,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         zc += (np.random.random() - 0.5) / 2.0
         print(seed, xc, zc)
 
-    xcm = xc - (ud.xmax - ud.xmin)
-    zcm = zc - (ud.zmax - ud.zmin)
+    xcm = xc - np.sign(xc) * (ud.xmax - ud.xmin)
+    zcm = zc - np.sign(zc) * (ud.zmax - ud.zmin)
 
     # xcm, zcm = 1.0, 1.0
 
