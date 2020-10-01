@@ -70,7 +70,7 @@ class test_case(object):
         if self.ndim == 2:
             fn = "%s_ensemble=%i_%i_%i_%.1f_%s.%s" %(self.base_fn,N,self.grid_x,self.grid_y,self.end_time,suffix,format)
         if self.ndim == 3 or self.grid_z is not None:
-            fn = "%s_ensemble=%i_%i_%i_%i_%.1f_%s.%s" %(self.base_fn,N,self.grid_x,self.grid_y,self.grid_z,self.end_time,suffix, format)
+            fn = "%s_ensemble=%i_%i_%i_%i_%.1f_%s.%s" %(self.base_fn,N,self.grid_x,self.grid_y,self.grid_z,self.end_time,suffix,format)
         return fn
 
 
@@ -154,7 +154,7 @@ class test_case(object):
         return time_series
     
     
-    def get_ensemble(self, times, N, attribute, suffix, cont_blend=False, ts=0, fs=0, label_type='TIME', tag='after_full_step', avg=False, diff=False):
+    def get_ensemble(self, times, N, attribute, suffix, cont_blend=False, ts=0, fs=0, label_type='TIME', tag='after_full_step', avg=False, diff=False, inner=True):
         if cont_blend == True:
             suffix += cb_suffix(fs,ts)
             
@@ -163,7 +163,7 @@ class test_case(object):
         
         arr_lst = []
         for time in times:
-            arr = self.get_arr(path, time, N, attribute, tag=tag, label_type=label_type, avg=avg, inner=True)
+            arr = self.get_arr(path, time, N, attribute, tag=tag, label_type=label_type, avg=avg, inner=inner)
             arr_lst.append(arr)
             
         if diff == True:    
