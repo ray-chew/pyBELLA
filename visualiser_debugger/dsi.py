@@ -2,22 +2,26 @@ import numpy as np
 from scipy import signal
 
 def get_B(data,g, ud):
+    # equation 3
     return 0.5*(data.u**2 + data.v**2) + g * (data.rho * ud.h_ref)
     
 def get_Pi(data,ud):
-    # get relative vorticity
+    # equation 4
+    # node-to-cell averaging, (nx+1)*(ny+1) -> nx*ny
     kernel = np.array([[1.0,1.0],[1.0,1.0]])
     kernel /= kernel.sum()
     vorty = signal.convolve(data.vorty, kernel, mode='valid')
+    # get relative vorticity
     vorty /= (data.rho * ud.h_ref)
-#     vorty *= 86400.0 / ud.t_ref
-    vorty /= ud.t_ref
+#     vorty *= 86400.0 / ud.t_ref # vorticity in days^(-1)
+    vorty /= ud.t_ref # vorticity in s^(-1)
     
     f = ud.coriolis_strength[0] / ud.t_ref
     
     return (vorty + f) / (data.rho * ud.h_ref)
     
 def grad(arr,dd,direction):
+    # get partial derivatives
     if direction == 'x':
         axs = 0
     elif direction == 'y':
@@ -28,6 +32,7 @@ def grad(arr,dd,direction):
     return np.gradient(arr,dd,axis=axs)
     
 def get_DSI_SW(data, g, ud, elem):
+    # equation 1
 #     print(ud.h_ref, ud.t_ref, ud.u_ref)
     
     u = data.rhou / data.rho * ud.u_ref
