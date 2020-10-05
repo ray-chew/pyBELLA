@@ -155,8 +155,8 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        self.tout = np.arange(0,1E6+100,100)
-
+        self.tout = np.arange(0,1E6+1000,1000)[1:]
+        # self.tout = [1E6]
 
         # self.tout = times.copy()
 
@@ -211,8 +211,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     xc = 0.0
     yc = 0.0
 
-    g = 9.81
-    H = 10.0
+    g = 9.81 #/ ud.h_ref
+    H = 1.0
     # ud.Msq = (th.gamm / g)**2.0
     # ud.Msq = 1.0/(g)
 
@@ -245,13 +245,29 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     v = v0 + uth * (+(xs-xccs)/r)
     w = w0
 
-    rho = np.zeros_like(r)
-    rho[...] += (rho0 + del_rho * (1. - (r/R0)**2)**6) * (r < R0)
-    rho[...] += rho0 * (r > R0)
+    coe = np.zeros((13))
+    coe[0] = +1.0/12
+    coe[1] = -12.0/13
+    coe[2] = +33.0/7
+    coe[3] = -44.0/3
+    coe[4] = +495.0/16
+    coe[5] = -792.0/17
+    coe[6] = +154.0/3
+    coe[7] = -792.0/19
+    coe[8] = +99.0/4
+    coe[9] = -220.0/21
+    coe[10] = +3.0
+    coe[11] = -12.0/23
+    coe[12] = +1.0/24
 
-    # rho = H - rho
-    # perturb = np.copy(rho)
-    rho += H
+    rho = np.zeros_like(r)
+    Frsq = 1.0**2 / (g * 1.0)
+    for i in range(12,24+1):
+        rho[...] += fac**2 * coe[i-12] * (r/R0)**i * (r < R0)
+
+    rho *= Frsq #* (r < R0)
+    rho = (rho - rho.max()) * (r < R0)
+    rho += 1.0 #* (r < R0)
 
     Sol.rho[:,igy:-igy] = rho
     Sol.rhou[:,igy:-igy] = rho * u
@@ -273,7 +289,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     points[:,0] = X[...].flatten()
     points[:,1] = Y[...].flatten()
 
-    values = (Sol.rhoY[...]**th.gamminv).flatten()
+    values = (Sol.rhoY[...]).flatten()
 
     grid_x, grid_y = np.meshgrid(node.x,node.y)
 

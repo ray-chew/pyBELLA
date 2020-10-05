@@ -130,8 +130,8 @@ class UserData(object):
         self.dtfixed0 = 2.1 * 1.200930e-2
         self.dtfixed = 2.1 * 1.200930e-2
 
-        self.inx = 128+1
-        self.iny = 128+1
+        self.inx = 64+1
+        self.iny = 64+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -144,22 +144,24 @@ class UserData(object):
         self.kY = 0.0
         self.kZ = 0.0
 
-        self.tol = 1.e-6
+        self.tol = 1.e-8
         self.max_iterations = 6000
 
         self.perturb_type = 'pos_perturb'
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'rho' #theta, rho
 
-        self.continuous_blending = True
+        self.continuous_blending = False
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.blending_weight = 16./16
+        self.blending_weight = 0./16
 
-        self.initial_projection = True
+        self.initial_blending = True
+
+        self.initial_projection = False
         self.initial_impl_Euler = False
 
         self.column_preconditionr = False
@@ -175,7 +177,7 @@ class UserData(object):
         # self.tout = [0.1]
         # self.tout[0] =  1.0
         # self.tout[1] = -1.0
-        # self.tout = np.arange(0.0,1.001,0.005)
+        # self.tout = np.arange(0.0,1.05,0.05)
         # self.tout = np.arange(0.0,6.05,0.05)
         self.tout = [1.0]
 
@@ -193,13 +195,14 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        # aux = 'posp_rloc'
+        aux = 'ib-0'
+        # aux = 'ib_noconv_reset_remake'
         # aux += '_' + self.blending_conv + '_conv'
         # aux += '_' + self.blending_mean + '_mean'
         # aux = 'cb1_w=-6_debug'
-        self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))
+        # self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))
         # aux = 'psinc_bal_debug'
-        # self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
+        self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function

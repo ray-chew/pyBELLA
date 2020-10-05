@@ -109,13 +109,97 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         label = '%.3d' %step
         dt, cfl, cfl_ac = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
 
-        if bld != None:
+        if bld is not None and window_step == 0:
+            if (bld.bb or bld.cb) and ud.blending_conv is not None:
+                if ud.blending_conv == 'swe':
+                    print("swe to lake conversion...")
+
+                    setattr(ud,'min_val',Sol.rho.min()) # save the min value to Sol container
+                    # eps = Sol.rho.max() - Sol.rho.min()
+                    Sol.rhou[...] = Sol.rhou / Sol.rho * ud.min_val
+                    # Sol.rhov[...] = Sol.rhov / Sol.rho * ud.min_val
+                    Sol.rhow[...] = Sol.rhow / Sol.rho * ud.min_val
+                    Sol.rhoY[...] = Sol.rhoY / Sol.rho * ud.min_val
+                    Sol.rho[...] = ud.min_val
+
+                    setattr(ud,'p2_min_val',Sol.rhoY.min())
+                    eps = mpv.p2_nodes.max() - ud.p2_min_val
+                    mpv.p2_nodes[:,1:,:] = (mpv.p2_nodes[:,1:,:] - ud.p2_min_val) #/ eps
+
+                    # if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_swe_to_lake')
+
+                else:
+                    dp2n = mpv.p2_nodes
+                    bld.convert_p2n(dp2n)
+                    bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
+                    bld.update_p2n(Sol,mpv,node,th,ud)
+
+        if bld is not None:
             c_init, c_trans = bld.criterion_init(window_step), bld.criterion_trans(window_step)
         else:
             c_init, c_trans = False, False
 
-        if c_init:
-            print("Blending... step = %i" %window_step)
+        if c_init and bld.cb and ud.blending_conv is not None:
+            if ud.blending_conv == 'swe':
+                print("lake to swe conversion...")
+
+                H10 = mpv.p2_nodes - mpv.p2_nodes.min()
+                H1 = H10[:,1,:] # project horizontal slice to 2D
+
+                # define 2D kernel
+                kernel = np.ones((2,2))
+                kernel /= kernel.sum()
+
+                # do node-to-cell averaging
+                H1 = signal.convolve(H1, kernel, mode='valid')
+
+                # project H1 back to horizontal slice with ghost cells
+                H1 = np.expand_dims(H1, 1)
+                H1 = np.repeat(H1, elem.icy, axis=1)
+
+                Sol.rho += H1 #+ ud.min_val
+                Sol.rhou = Sol.rhou / ud.min_val * Sol.rho
+                # Sol.rhov = Sol.rhov / ud.min_val * Sol.rho
+                Sol.rhow = Sol.rhow / ud.min_val * Sol.rho
+                Sol.rhoY = Sol.rhoY / ud.min_val * (ud.min_val+H1)#* Sol.rho
+                mpv.p2_nodes = H10 + ud.p2_min_val
+
+                # if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_lake_to_swe')
+
+            else:
+                print("Blending... step = %i" %window_step)
+                Sol_freeze = deepcopy(Sol)
+                mpv_freeze = deepcopy(mpv)
+
+                ret = time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, [0,step-1], th, bld=None, writer=None, debug=False)
+
+                fac_old = ud.blending_weight
+                fac_new = 1.0 - fac_old
+                dp2n = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
+                # dp2n = mpv.p2_nodes
+
+                if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_start', mpv_freeze.p2_nodes)
+                if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_end', ret[2].p2_nodes)
+                Sol = Sol_freeze
+                mpv = mpv_freeze
+
+                if writer != None: writer.populate(str(label)+'_after_full_step', 'dp2n', dp2n)
+                bld.convert_p2n(dp2n)
+                bld.update_Sol(Sol,elem,node,th,ud,mpv,'aft',label=label,writer=writer)
+                bld.update_p2n(Sol,mpv,node,th,ud)
+
+        if ud.initial_blending == True and step < 1 and bld is not None:
+            print("passed")
+            ud.is_compressible = 0
+            ud.compressibility = 0.0
+            dp2n = mpv.p2_nodes
+            bld.convert_p2n(dp2n)
+            bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
+            bld.update_p2n(Sol,mpv,node,th,ud)
+
+        elif ud.initial_blending == True and step == 1 and bld is not None:
+            # dp2n = mpv.p2_nodes
+
             Sol_freeze = deepcopy(Sol)
             mpv_freeze = deepcopy(mpv)
 
@@ -124,24 +208,29 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             fac_old = ud.blending_weight
             fac_new = 1.0 - fac_old
             dp2n = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
+            # dp2n = mpv.p2_nodes
 
             if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_start', mpv_freeze.p2_nodes)
             if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_end', ret[2].p2_nodes)
             Sol = Sol_freeze
             mpv = mpv_freeze
 
-            if writer != None: writer.populate(str(label)+'_after_full_step', 'dp2n', dp2n)
             bld.convert_p2n(dp2n)
-            bld.update_Sol(Sol,elem,node,th,ud, mpv,label=label,writer=writer)
+            bld.update_Sol(Sol,elem,node,th,ud,mpv,'aft',label=label,writer=writer)
             bld.update_p2n(Sol,mpv,node,th,ud)
+            ud.is_compressible = 1
+            ud.compressibility = 1.0
+        else:
+            # if ud.initial_blending == False and window_step == 0:
+                # window_step = -np.inf
+            ud.is_compressible = is_compressible(ud,window_step)
+            ud.compressibility = compressibility(ud,t,window_step)
 
-        ud.is_compressible = is_compressible(ud,window_step)
         ud.is_nonhydrostatic = is_nonhydrostatic(ud,window_step)
         ud.nonhydrostasy = nonhydrostasy(ud,t,window_step)
-        ud.compressibility = compressibility(ud,t,window_step)
         ud.acoustic_order = acoustic_order(ud,t, window_step)
 
-        if ud.continuous_blending == True:
+        if ud.continuous_blending == True or ud.initial_blending == True:
             if window_step >= 0:
                 print("step = %i, window_step = %i" %(step,window_step))
             else:
@@ -200,13 +289,14 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
         euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0, writer=writer, label=str(label)+'_after_full_step')
 
+        t += dt
         if writer != None:
             writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
             print("###############################################################################################")
             print("step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f" %(step, t, dt, cfl, cfl_ac))
             print("###############################################################################################")
-        t += dt
         step += 1
+        # print("step = ", step)
         window_step += 1
 
     return [Sol,flux,mpv,[window_step,step]]

@@ -67,7 +67,7 @@ class UserData(object):
 
         self.is_ArakawaKonor = 0
         self.is_nonhydrostatic = 1
-        self.is_compressible = 0
+        self.is_compressible = 1
         self.compressibility = 0.0
         self.acoustic_timestep = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
@@ -168,9 +168,9 @@ class UserData(object):
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
         # self.tout = [350 / self.t_ref]
-        self.tout = [10.0]
+        # self.tout = [10.0]
         # self.tout = np.arange(0.0,3.51,0.05)
-        # self.tout = np.arange(0.0,10.05,0.05)
+        self.tout = np.arange(0.0,10.05,0.05)[1:]
         # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[1] = -1.0
 
@@ -181,11 +181,16 @@ class UserData(object):
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'rho' #theta, rho
 
-        self.continuous_blending = False
+        self.continuous_blending = True
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
+
+        self.initial_blending = False
+
+        self.tol = 1.e-8
+        self.max_iterations = 6000
 
         self.output_base_name = "_rising_bubble"
         if self.is_compressible == 1:
@@ -199,7 +204,15 @@ class UserData(object):
         # aux += '_' + self.blending_conv + '_conv'
         # aux += '_' + self.blending_mean + '_mean'
 
-        aux = 'psinc_debug'
+        # aux = 'obs_truthgen_freezelt5_wdawloc_4.0_rhov_rhoY_inflation_0.95'
+        aux = 'obs_psinc_wdawloc_1.0_rho_rhov_inflation_1.2'
+        # aux = 'ip_noconv_noreset'
+        # aux = 'ip_ref'
+        # aux = 'cold_wdawloc_4.0'
+        # aux = 'psinc_ref'
+        # aux = 'wdawoloc'
+        # aux = 'noda_noperturb'
+        aux = 'time_test'
         self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
         # self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))
@@ -221,7 +234,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     u0 = ud.wind_speed
     v0 = 0.0
     w0 = 0.0
-    delth = 2.0
+    delth = 3.0
     
     y0 = 0.3
     r0 = 0.2
@@ -237,8 +250,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     if seed != None:
         np.random.seed(seed)
-        y0 += (np.random.random()-.5)/2.0
-        # delth += 1.0*(np.random.random()-.5)
+        # y0 += (np.random.random()-.5)/2.0
+        delth += 6.0*(np.random.random()-.5)
+        print(delth)
     
     r = np.sqrt((x)**2 + (y-y0)**2) / r0
 

@@ -9,22 +9,24 @@ from physics.gas_dynamics.thermodynamic import ThemodynamicInit
 from physics.gas_dynamics.eos import nonhydrostasy, compressibility, is_compressible, is_nonhydrostatic
 from physics.gas_dynamics.gas_dynamics import dynamic_timestep
 from physics.low_mach.mpv import MPV, acoustic_order
+from physics.hydrostatics import hydrostatic_state
 
 # dependencies of the parallelisation by dask
 from dask.distributed import Client, progress
 
 # dependencies of the data assimilation module
 from data_assimilation.params import da_params
-from data_assimilation.utils import ensemble, sliding_window_view, ensemble_inflation, set_p2_nodes, set_rhoY_cells
+from data_assimilation.utils import ensemble, sliding_window_view, ensemble_inflation, set_p2_nodes, set_rhoY_cells, HSprojector_2t3D, HSprojector_3t2D
 from data_assimilation.letkf import da_interface, bin_func, prepare_rloc
 from data_assimilation.letkf import analysis as letkf_analysis
 from data_assimilation import etpf
 from data_assimilation import blending
+from data_assimilation import post_processing
 from scipy import sparse
 
 # input file, uncomment to run
 from inputs.user_data import UserDataInit
-from management.io import io, get_args
+from management.io import io, get_args, sim_restart
 import h5py
 
 # some diagnostics
@@ -35,7 +37,7 @@ from time import time
 debug = False
 output_timesteps = False
 if debug == True: output_timesteps = True
-label_type = 'STEP'
+label_type = 'TIME'
 np.set_printoptions(precision=18)
 
 step = 0
@@ -45,7 +47,7 @@ t = 0.0
 # Initialisation of data containers and helper classes
 ##########################################################
 # get arguments for initial condition and ensemble size
-N, UserData, sol_init = get_args()
+N, UserData, sol_init, restart, r_params = get_args()
 
 initial_data = vars(UserData())
 ud = UserDataInit(**initial_data)
@@ -75,24 +77,34 @@ print("Input file is%s" %ud.output_base_name.replace('_',' '))
 # 1) batch_obs for the LETKF with batch observations
 # 2) rloc for LETKF with grid-point localisation
 # 3) etpf for the ETPF algorithm
-dap = da_params(N, da_type='rloc') 
+dap = da_params(N, da_type='rloc')
 
-if elem.ndim == 2:
+# if elem.ndim == 2:
+if dap.da_type == 'rloc':
     rloc = prepare_rloc(ud, elem, node, dap, N)
 
 print("Generating initial ensemble...")
 sol_ens = np.zeros((N), dtype=object)
 np.random.seed(555)
-seeds = np.random.randint(10000,size=N) if N > 1 else [None]
-if seeds[0] != None:
+seeds = np.random.randint(10000,size=N) if N > 1 else None
+if seeds is not None and restart == False:
     print("Seeds used in generating initial ensemble spread = ", seeds)
     for n in range(N):
         Sol0 = deepcopy(Sol)
         mpv0 = deepcopy(mpv)
         Sol0 = sol_init(Sol0,mpv0,elem,node,th,ud, seed=seeds[n])
         sol_ens[n] = [Sol0,deepcopy(flux),mpv0,[-np.inf,step]]
-else:
+elif restart == False:
     sol_ens = [[sol_init(Sol, mpv, elem, node, th, ud),flux,mpv,[-np.inf,step]]]
+elif restart == True:
+    hydrostatic_state(mpv, elem, node, th, ud)
+    ud.old_suffix = np.copy(ud.output_suffix)
+    ud.old_suffix = '_ensemble=%i%s' %(N, ud.old_suffix)
+    Sol0, mpv0, touts = sim_restart(r_params[0], r_params[1], elem, node, ud, Sol, mpv, r_params[2])
+    sol_ens = [[Sol0,flux,mpv0,[-np.inf,step]]]
+    ud.tout = touts[1:]
+    t = touts[0]
+    
 ens = ensemble(sol_ens)
 
 ##########################################################
@@ -108,7 +120,6 @@ ud.output_suffix = '_ensemble=%i%s' %(N, ud.output_suffix)
 
 # ud.output_suffix = '%s_%s' %(ud.output_suffix, 'nr')
 
-
 ##########################################################
 # Start main looping
 ##########################################################
@@ -117,7 +128,7 @@ if __name__ == '__main__':
     ######################################################
     # Initialise writer class for I/O operations
     ######################################################
-    writer = io(ud)
+    writer = io(ud,restart)
     writer.write_attrs()
     wrtr = None
     if N > 1:
@@ -131,10 +142,12 @@ if __name__ == '__main__':
             label = ('ensemble_mem=%i_%.3d' %(n,step))
         else:
             label = ('ensemble_mem=%i_%.3f' %(n,0.0))
-        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
+        if not restart: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
+
+    writer.jar(elem, node)
 
     # initialise dask parallelisation and timer
-    client = Client(threads_per_worker=1, n_workers=1)
+    # client = Client(threads_per_worker=1, n_workers=1)
     tic = time()
 
     ######################################################
@@ -150,6 +163,10 @@ if __name__ == '__main__':
         if N > 1 :
             blend = bld if tout_old in dap.da_times else None
         else:
+            blend = bld
+
+        # initial blending?
+        if ud.initial_blending == True and outer_step == 0:
             blend = bld
 
         ######################################################
@@ -173,9 +190,10 @@ if __name__ == '__main__':
 
         # Dask commands, used only when parallelisation is
         # enabled
-        results = client.gather(futures)
+        # results = client.gather(futures)
+        results = np.copy(futures)
         results = np.array(results)
-        s_res = client.scatter(results)
+        # s_res = client.scatter(results)
 
         ######################################################
         # Analysis step
@@ -190,10 +208,8 @@ if __name__ == '__main__':
                 print("Starting analysis... for batch observations")
                 for attr in dap.obs_attributes:
                     print("Assimilating %s..." %attr)
-
-                    obs_current = np.array(obs[list(dap.da_times).index(tout)][attr])
                     # future = client.submit(da_interface, *[s_res,obs_current,dap.inflation_factor,attr,N,ud,dap.loc[attr]])
-                    future = da_interface(results,obs_current,dap.inflation_factor,attr,N,ud,dap.loc[attr])
+                    future = da_interface(results,dap,obs,attr,tout,N,ud)
                     futures.append(future)
 
                 # analysis = client.gather(futures)
@@ -213,7 +229,9 @@ if __name__ == '__main__':
             ##################################################
             elif dap.da_type == 'rloc':
                 print("Starting analysis... for rloc algorithm")
+                results = HSprojector_3t2D(results, elem, dap, N)
                 results = rloc.analyse(results,obs,N,tout)
+                results = HSprojector_2t3D(results, elem, node, dap, N)
 
             ##################################################
             # ETPF
@@ -222,8 +240,15 @@ if __name__ == '__main__':
                 ensemble_inflation(results,dap.attributes,dap.inflation_factor,N)
                 results = etpf.da_interface(results,obs,dap.obs_attributes,dap.rejuvenation_factor,dap.da_times,tout,N)
 
+            ##################################################
+            # Post-processing
+            ##################################################            
+            elif dap.da_type == 'pprocess':
+                results = post_processing.interface()
+
             else:
                 assert 0, "DA type not implemented: use 'rloc', 'batch_obs' or 'etpf'."
+
 
         ######################################################
         # Update ensemble with analysis
