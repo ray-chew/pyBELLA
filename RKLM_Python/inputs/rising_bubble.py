@@ -204,13 +204,15 @@ class UserData(object):
         # aux += '_' + self.blending_conv + '_conv'
         # aux += '_' + self.blending_mean + '_mean'
 
-        aux = 'obs_psinc_wdawloc_1.0_rho_rhov'
+        # aux = 'obs_truthgen_freezelt5_wdawloc_4.0_rhov_rhoY_inflation_0.95'
+        aux = 'obs_psinc_wdawloc_1.0_rho_rhov_inflation_1.2'
         # aux = 'ip_noconv_noreset'
         # aux = 'ip_ref'
         # aux = 'cold_wdawloc_4.0'
         # aux = 'psinc_ref'
         # aux = 'wdawoloc'
-        # aux = 'noda'
+        # aux = 'noda_noperturb'
+        aux = 'time_test'
         self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
         # self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))

@@ -1,37 +1,28 @@
 # unit tester for DA infrastructure
+import os
+import sys, getopt
+import argparse
 
-import numpy as np
-from data_assimilation.utils import ensemble
-from data_assimilation.letkf import letkf
+def main ():
+    parser = argparse.ArgumentParser(description='Test script')
+    parser.add_argument('-N',action='store',dest='N',help='<Optional> Set ensemble size, if none is given N=1 is used.',required=False,type=int)
+    parser.add_argument('-ic','--initial_conditions',action='store',dest='ic',help='<Required> Set initial conditions',required=True,choices={'aw','tv','tv_3d','rb','igw'})
+    args = parser.parse_args() # collect cmd line args
+    ic = args.ic
 
-import numpy as np
-from copy import deepcopy
+    if ic == 'bi':
+        from inputs.baroclinic_instability_periodic import UserData, sol_init
+    elif ic == 'tv' or ic == 'tv_2d':
+        from inputs.travelling_vortex_2D import UserData, sol_init
 
-input_array = np.arange(25).reshape(5,5)
-N = 20
-sampler = lambda ic : ic + np.random.randint(5)
+    if args.N is None:
+        N = 1
+    else:
+        N = args.N
+    print(sol_init)
+    return N, ic
 
-# def sampler(ic):
-#     # ic.A += np.random.randint(5)
-#     ic += np.random.randint(5)
+if __name__ == '__main__':
+    N,ic = main()
+    print(N, ic)
 
-ens = ensemble()
-ens.initialise_members(input_array,N)
-
-localisation_matrix = np.eye(5,5)
-forward_operator = np.eye(5,5)
-
-obs = np.random.randn(5,5)
-obs_covar = np.eye(25,25)
-
-da = letkf(ens)
-da.forward(forward_operator)
-da.localisation(localisation_matrix)
-analysis_ensemble = da.analyse(obs,obs_covar)
-ens.set_members(analysis_ensemble)
-
-# print(ens.members(ens))
-
-# print(sampler(input_array))
-
-# print(sampler(5))

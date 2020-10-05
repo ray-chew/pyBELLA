@@ -2,10 +2,10 @@ import sys
 import subprocess
 import numpy as np
 
-# import os
-# os.chdir('../')
+import os
+os.chdir('../')
 
-N = 10
+N = 1
 
 restart = False
 #########################################################
@@ -25,9 +25,7 @@ time_start, time_end, time_int = str(time_start), str(time_end), str(time_int)
 #########################################################
 
 if restart == False:
-    subprocess.call([sys.executable, './RKLM_Python/__main__.py', '-ic', 'swe_test', '-N', '%i' %N])
+    subprocess.call([sys.executable, './RKLM_Python/__main__.py', '-ic', 'swe_bal_vortex', '-N', '%i' %N])
 
 elif restart == True:
     subprocess.call([sys.executable, './RKLM_Python/__main__.py', '-ic', 'swe_test', 'restart', '-p', path, '-n', name, '-t', time_start, time_end, time_int])
-
-

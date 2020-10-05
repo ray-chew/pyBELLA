@@ -121,8 +121,8 @@ class UserData(object):
         self.dtfixed0 = 1.0/24.*3
         self.dtfixed = 1.0/24.*3
 
-        self.inx = 124+1
-        self.iny = 124+1
+        self.inx = 128+1
+        self.iny = 128+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -233,6 +233,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     u = interpolate(elem.x,elem.y,Uv,N,Lx,X,Y+dx/2)
     v = interpolate(elem.x,elem.y,Vu,N,Ly,X+dx/2.,Y)
 
+    rho[i2] = np.load('H0.npy')
+    u[i2] = np.load('Uc0.npy')
+    v[i2] = np.load('Vc0.npy')    
+
     p = g0 / 2.0 * rho**2
 
     Sol.rho[...] = rho
@@ -271,7 +275,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
-    if ud.initial_projection == True:
+    if ud.initial_projection == False:
         is_compressible = np.copy(ud.is_compressible)
         compressibility = np.copy(ud.compressibility)
         ud.is_compressible = 0

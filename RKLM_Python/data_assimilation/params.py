@@ -7,12 +7,12 @@ class da_params(object):
         # number of ensemble members
         self.N = N
         # self.da_times = np.arange(0.0,3.75,0.25)[1:]
-        self.da_times = np.arange(0.0,10.25,0.25)[1:]
+        # self.da_times = np.arange(0.0,10.25,0.25)[1:]
         # self.da_times = np.arange(0.0,6.1,0.25)[1:]
         # self.da_times = np.arange(0.0,864000.0+1200.0,1200.0)[1:][::4]
         self.da_times = np.arange(0.0,1.05,0.05)[1:]
         # self.da_times = []
-        self.obs_attributes = ['rhou','rhow']
+        self.obs_attributes = ['rhou', 'rhow']
         # self.obs_attributes = ['rhou', 'rhow']
         # self.obs_attributes = ['rho','rhou','rhov']
         # self.obs_attributes = ['rhou','p2_nodes']
@@ -26,6 +26,7 @@ class da_params(object):
 
         # self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_6.0_truthgen.h5'
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_psinc_ref.h5'
+        # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_truthgen_freezelt5.h5'
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_comp_ref.h5'
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_psinc.h5'
         # self.obs_path = './output_swe/output_swe_ensemble=1_256_1_256_864000.0_dvortex_3D_truthgen_flipped.h5'
@@ -48,6 +49,7 @@ class da_params(object):
         # self.localisation_matrix = np.diag(np.ones((len(weights3))))
         # self.localisation_matrix = weights + 1.0
         self.localisation_matrix = np.ones_like(weights) * 1.0 #+ weights
+
         
         self.aprior_error_covar = 0.0001
         self.da_type = da_type
@@ -92,7 +94,7 @@ class da_params(object):
                 obs[t_cnt] = {}
                 for attribute in obs_attributes:
                     data = obs_file[str(attribute)][str(attribute) + str(label)][:]
-                    if data.shape[1] > 1: # implying horizontal slice...
+                    if data.ndim == 3: # implying horizontal slice...
                         data = data[:,0,:]
                     dict_attr = {
                         attribute: data
