@@ -26,8 +26,8 @@ class UserData(object):
     viscbt = 0.0
     cond = 0.0
 
-    h_ref = 1.0        # [m]
-    t_ref = 1.0      # [day] -> [s]
+    h_ref = 1000.0        # [m]
+    t_ref = 1200.0      # [day] -> [s]
     u_ref = h_ref / t_ref
     T_ref = 1.0
     p_ref = 1.0
@@ -205,7 +205,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     igs = elem.igs
     igy = igs[1]
 
-    g0 = ud.gravity_strength[1]
+    # g0 = ud.gravity_strength[1]
     g0 = 9.81 / (ud.u_ref / ud.t_ref)
     
     f0 = ud.coriolis_strength[0]
@@ -233,13 +233,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     xp = X / Lx
 
-    Hp = 0.0 / ud.h_ref
+    Hp = 30.0 / ud.h_ref
 
     if seed is not None:
-        H0 = 10076.0 / ud.h_ref + 10.0 * np.random.random() / ud.h_ref
+        H0 = 1076.0 / ud.h_ref + 10.0 * np.random.random() / ud.h_ref
         # print(H0)
     else:
-        H0 = 10076.0 / ud.h_ref
+        H0 = 1076.0 / ud.h_ref
 
     exp0 = np.exp(- zp(Z, Lz)**2 / (2.0 * sigz**2) + 0.5)
 
@@ -317,8 +317,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         Sol.rhow[i2] = rho * w
         Sol.rhoY[i2] = p**th.gamminv
     else:
-        # H0 = 10.0
-        # min_val = H0
         H0 = rho.min()
         min_val = rho.min()
 

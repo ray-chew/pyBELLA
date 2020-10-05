@@ -177,8 +177,8 @@ class UserData(object):
         # aux = 'comp_test_0'
         # aux = 'noda_p0.5'
         # aux = 'bld_test'
-        aux = 'comp_1.0'
-        aux = 'debug'
+        # aux = 'comp_1.0'
+        # aux = 'debug'
         self.output_suffix = "_%i_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
