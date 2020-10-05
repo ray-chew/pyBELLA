@@ -83,10 +83,10 @@ class UserData(object):
 
         self.xmin = - 5E+5
         self.xmax =   5E+5
-        self.ymin = - 1E+1
-        self.ymax =   1E+1
-        self.ymin = -7812.5
-        self.ymax = +7812.5
+        self.ymin = - 0.5
+        self.ymax =   0.5
+        # self.ymin = -7812.5
+        # self.ymax = +7812.5
         self.zmin = - 5E+5
         self.zmax =   5E+5
 
@@ -115,9 +115,9 @@ class UserData(object):
         self.dtfixed0 = 1000.0
         self.dtfixed = 1000.0
 
-        self.inx = 150+1
+        self.inx = 128+1
         self.iny = 1+1
-        self.inz = 150+1
+        self.inz = 128+1
 
         self.recovery_order = RecoveryOrder.SECOND
         self.limiter_type_scalars = LimiterType.NONE
@@ -153,10 +153,10 @@ class UserData(object):
 
         stepsize = 100
         # self.tout = np.arange(0,2E5+stepsize,stepsize)
-        self.tout = np.arange(0,1E6+100,100)
+        self.tout = np.arange(0,1E6+100,100)[1:]
         self.stepmax = 301
 
-        self.output_base_name = "_swe_3D"
+        self.output_base_name = "_swe"
         if self.is_compressible == 1:
             self.output_suffix = "_%i_%i_%i_%.1f_comp" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         if self.is_compressible == 0:

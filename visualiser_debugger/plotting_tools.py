@@ -5,18 +5,18 @@ import numpy as np
 import itertools
 
 class plotter(object):
-    def __init__(self,arr_lst, ncols=4, figsize=(12,8)):
+    def __init__(self,arr_lst, ncols=4, figsize=(12,8), sharex=False, sharey=False):
         self.arr_lst = np.array(arr_lst)
         N = self.arr_lst.shape[0]
         
         if N > ncols:
-            self.nrows = int(int(N/ncols)+1)-1
+            self.nrows = int(int(N/ncols)+1)
             self.ncols = ncols
         if N <= ncols:
             self.nrows = 1
             self.ncols = N
         self.N = N
-            
+        
         ridx = np.arange(self.nrows)
         cidx = np.arange(self.ncols)
 
@@ -28,7 +28,7 @@ class plotter(object):
             self.idx = cidx
             
         self.visualise = self.visualise
-        self.fig, self.ax = plt.subplots(ncols=self.ncols,nrows=self.nrows,figsize=figsize)
+        self.fig, self.ax = plt.subplots(ncols=self.ncols,nrows=self.nrows,figsize=figsize,sharex=sharex,sharey=sharey)
         
         self.img = plt
             
@@ -47,14 +47,16 @@ class plotter(object):
             assert(0, "Visualisation method not implemented!")
             
         if self.N > 1:
-            ims = []
+            ims, caxs = [], []
             for n, arr in enumerate(self.arr_lst):
                 arr, title = arr[0], arr[1]
                 if inner == True:
                     arr = arr[2:-2,2:-2]
                 cax = self.ax[self.idx[n]]
                 
-                im = self.visualise(method,cax,arr,aspect,lvls)
+                lvl = lvls[n] if lvls is not None else None
+                
+                im = self.visualise(method,cax,arr,aspect,lvl)
                 cax.set_title(title)
                 loc = cax.get_xticklabels()
                 
@@ -65,6 +67,7 @@ class plotter(object):
                 if hasattr(self, 'x_label') : cax.set_xlabel(self.x_label)
                 if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
                 
+                caxs.append(cax)
                 divider = make_axes_locatable(cax)
                 cax = divider.append_axes("right", size="5%", pad=0.05)
                 plt.colorbar(im, cax=cax)
@@ -81,6 +84,12 @@ class plotter(object):
             cax = self.fig.gca()
             im = self.visualise(method,cax,arr,aspect,lvls)
             cax.set_title(title)
+            if hasattr(self, 'x_locs') : cax.set_xticks(self.x_locs)
+            if hasattr(self, 'x_axs') : cax.set_xticklabels(self.x_axs)
+            if hasattr(self, 'y_locs') : cax.set_yticks(self.y_locs)
+            if hasattr(self, 'y_axs') : cax.set_yticklabels(self.y_axs)
+            if hasattr(self, 'x_label') : cax.set_xlabel(self.x_label)
+            if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
             divider = make_axes_locatable(cax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             plt.colorbar(im, cax=cax)
@@ -89,7 +98,7 @@ class plotter(object):
         plt.suptitle(suptitle)
         plt.tight_layout(rect=rect)
         
-        return ims
+        return ims, caxs
         
     def save_fig(self, fn, format='.pdf'):
         self.img.savefig(fn + format, bbox_inches = 'tight', pad_inches = 0)
@@ -101,11 +110,15 @@ class plotter(object):
             im = cax.imshow(arr,aspect=aspect,origin='lower')
         elif method == 'contour':
             if lvls is None:
+                cax.set_aspect(aspect)
                 im = cax.contour(arr,colors='k')
                 im = cax.contourf(arr)
+                cax.set_aspect(aspect)
             else:
-                im = cax.contour(arr,levels=lvls,colors='k')
+                cax.set_aspect(aspect)
+                im = cax.contour(arr,linewidths=0.5,levels=lvls,colors='k')
                 im = cax.contourf(arr,levels=lvls,extend='both')
+                cax.set_aspect(aspect)
         return im
     
 
@@ -118,18 +131,33 @@ class animator_2D(plotter):
         self.update_plot = self.update_plot
         self.fig.tight_layout()
         self.suptitle = None
+        self.method = None 
         
     def animate(self, interval=100, **kwargs):
-        self.ims = self.plot(**kwargs)
-        anim = animation.FuncAnimation(self.fig, self.update_plot, self.frns, fargs=(self.time_series, self.ims, self.fig, self.suptitle), interval=interval) 
+        self.ims, self.caxs = self.plot(**kwargs)
+        anim = animation.FuncAnimation(self.fig, self.update_plot, self.frns, fargs=(self.time_series, self.ims, self.caxs, self.fig, self.suptitle, self.method), interval=interval) 
         return anim
 
     @staticmethod
-    def update_plot(frame_number, time_series, ims, img, title):
-        for ii,im in enumerate(ims):
-            arr = time_series[frame_number][ii][0]
-            im.set_array(arr)
-            im.set_clim(arr.min(),arr.max()) 
+    def update_plot(frame_number, time_series, ims, caxs, img, title, method):
+        
+        if method == 'imshow':
+            for ii,im in enumerate(ims):
+                arr = time_series[frame_number][ii][0]
+                im.set_array(arr)
+                im.set_clim(arr.min(),arr.max()) 
+        elif method == 'contour':
+            for ii, cax in enumerate(caxs):
+                arr = time_series[frame_number][ii][0]
+                im = ims[ii]
+                for c in cax.collections:
+                    cax.collections.remove(c)
+                for c in cax.collections:
+                    cax.collections.remove(c)
+                for c in cax.collections:
+                    cax.collections.remove(c)
+                im = cax.contourf(arr)
+                im = cax.contour(arr,colors='k')
         if title is not None:
             stt = title(frame_number)
             img.suptitle(stt)
@@ -140,7 +168,7 @@ class animator_2D(plotter):
 class plotter_1d(object):
     def __init__(self,ncols=3,nrows=2,figsize=(12,12),fontsize=16):
         plt.rcParams.update({'font.size': fontsize})
-        self.fig, self.ax = plt.subplots(ncols=ncols,nrows=nrows, sharex=True, figsize=figsize)
+        self.fig, self.ax = plt.subplots(ncols=ncols,nrows=nrows, sharex=False, figsize=figsize)
         self.nrows = nrows
         self.ncols = ncols
         
@@ -170,14 +198,34 @@ class plotter_1d(object):
         self.img.savefig(fn + format, bbox_inches = 'tight', pad_inches = 0)
 
     
-    @staticmethod
-    def labels():
-        labels_dict = {
-            'rho'       : r'$\rho$, density',
-            'rhou'      : r'$\rho u$, horizontal momentum',
-            'rhov'      : r'$\rho v$, vertical momentum',
-            'buoy'      : r'buoyancy',
-            'rhoY'      : r'$\rho \theta$, mass-weighted potential temperature',
-            'p2_nodes'  : r'$\delta \pi$, nodal Exner pressure increment'
-            }
-        return labels_dict
+def labels():
+    labels_dict = {
+        'rho'       : r'$\rho$, density',
+        'rhou'      : r'$\rho u$, horizontal momentum',
+        'rhov'      : r'$\rho v$, vertical momentum',
+        'rhow'      : r'$\rho w$, horizontal momentum',
+        'buoy'      : r'buoyancy',
+        'rhoX'      : r'$\rho / \Theta$, mass-weighted inverse pot. temp.',
+        'rhoY'      : r'$\rho \Theta$, mass-weighted potential temperature',
+        'p2_nodes'  : r'$\pi$, nodal Exner pressure'
+        }
+    return labels_dict
+
+def labels_increment():
+    labels_dict = labels()
+    labels_dict['p2_nodes'] = r'$\delta \pi$, nodal Exner pressure increment'
+    return labels_dict
+
+def short_labels():
+    labels_dict = {
+        'rho'       : r'$\rho$',
+        'rhou'      : r'$\rho u$',
+        'rhov'      : r'$\rho v$',
+        'rhow'      : r'$\rho w$',
+        'buoy'      : r'buoyancy',
+        'rhoX'      : r'$\rho / \Theta$',
+        'rhoY'      : r'$\rho \Theta$',
+        'p2_nodes'  : r'$\pi$'
+        }
+
+    return labels_dict

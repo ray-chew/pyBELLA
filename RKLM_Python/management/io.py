@@ -2,6 +2,11 @@
 import h5py
 import os
 import numpy as np
+import shutil # for copying of simulation restart file
+import pickle
+
+from management.variable import Vars
+from physics.low_mach.mpv import MPV
 
 import argparse
 
@@ -10,7 +15,7 @@ class io(object):
     HDF5 writer class. Contains methods to create HDF5 file, create data sets and populate them with output variables.
 
     """
-    def __init__(self,ud):
+    def __init__(self,ud,restart=False):
         """
         Creates HDF5 file based on filename given in user input data.
 
@@ -28,6 +33,7 @@ class io(object):
         self.OUTPUT_FILENAME = self.OUTPUT_FILENAME + "/output"
 
         self.SUFFIX = self.ud.output_suffix
+        if restart: self.OLD_SUFFIX = self.ud.old_suffix
 
         if self.ud.continuous_blending == True:
             self.SUFFIX += "_cont_blend"
@@ -52,13 +58,14 @@ class io(object):
                         # 'v',
                         # 'w',
                         # 'vortz',
+                        'vorty',
                         'Y',
                         'rhs'
                     ]
-        
-        self.io_create_file(self.PATHS)
+ 
+        self.io_create_file(self.PATHS,restart)
 
-    def io_create_file(self,paths):
+    def io_create_file(self,paths,restart):
         """
         Helper function to create file.
 
@@ -74,18 +81,25 @@ class io(object):
         Currently, if the filename of the HDF5 file already exists, this function will append the existing filename with '_old' and create an empty HDF5 file with the same filename in its place.
 
         """
-        # If file exists, delete it.. Nuclear option
+        # If file exists, rename it with old.
         if os.path.exists(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT):
             os.rename(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + '_old' + self.FORMAT)
             
         # create a new output file for each rerun - old output will be overwritten.
-        file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'a')
-        for path in paths:
-            # check if groups have been created
-            # if not created, create empty groups
-            if not (path in file):
-                file.create_group(path,track_order=True)
-        file.close()
+        if restart:
+            src = self.OUTPUT_FILENAME + self.BASE_NAME + self.OLD_SUFFIX + self.FORMAT
+            dest = self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT
+            shutil.copy2(src, dest)
+        else:
+            file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'a')
+            for path in paths:
+                # check if groups have been created
+                # if not created, create empty groups
+                if not (path in file):
+                    file.create_group(path,track_order=True)
+            
+            file.close()
+
 
     def write_all(self,Sol,mpv,elem,node,th,name):
         """
@@ -119,12 +133,15 @@ class io(object):
         self.populate(name,'rhou',Sol.rhou)
         self.populate(name,'rhov',Sol.rhov)
         self.populate(name,'rhow',Sol.rhow)
-        self.populate(name,'buoy',Sol.rhoX / Sol.rho)
+        self.populate(name,'rhoX',Sol.rhoX)
+        # self.populate(name,'buoy',Sol.rhoX / Sol.rho)
 
         # dp2_nodes
         self.populate(name,'dp2_nodes',mpv.dp2_nodes)
         # p2_nodes
         self.populate(name,'p2_nodes',mpv.p2_nodes)
+        # p2_nodes0
+        # self.populate(name,'p2_nodes0',mpv.p2_nodes0)
         # p2_cells
         self.populate(name,'p2_cells',mpv.p2_cells)
         # dp2_cells
@@ -142,6 +159,8 @@ class io(object):
 
         # vorticity in (x,z)
         # self.populate(name,'vortz', self.vortz(Sol,elem,node))
+        # self.vorty(Sol,elem,node)
+        self.populate(name,'vorty', self.vorty(Sol,elem,node))
 
         # temperature
         # self.populate(name,'T', Sol.rhoY**th.gamm / Sol.rho)
@@ -153,9 +172,9 @@ class io(object):
         # self.populate(name,'drhoY', Sol.rhoY - mpv.HydroState.rho0[:] * mpv.HydroState.Y0[:])
 
         # species mass fraction(?)
-        self.populate(name,'Y', Sol.rhoY / Sol.rho)
+        # self.populate(name,'Y', Sol.rhoY / Sol.rho)
         # species mass fraction perturbation
-        self.populate(name,'dY', Sol.rhoY / Sol.rho - self.ud.stratification(elem.y))
+        # self.populate(name,'dY', Sol.rhoY / Sol.rho - self.ud.stratification(elem.y))
 
         # self.populate(name,'wplusx',mpv.wplus[0])
         # self.populate(name,'wplusy',mpv.wplus[1])
@@ -166,7 +185,7 @@ class io(object):
 
     def vortz(self,Sol,elem,node):
         """
-        Calculate the vorticity of the solution.
+        Calculate the vorticity of the solution in the x-y plane.
 
         Parameters
         ----------
@@ -207,6 +226,61 @@ class io(object):
         vortz = np.zeros((node.sc)).squeeze()
 
         vortz[igs[0]:-igs[0]-1, igs[1]:-igs[1]-1] = dvdx - dudy
+        return vortz
+
+    def vorty(self,Sol,elem,node):
+        """
+        Calculate the vorticity of the solution in the x-z plane.
+
+        Parameters
+        ----------
+        Sol : :class:`management.variable.Vars`
+            Solution data container
+        elem : :class:`discretization.kgrid.ElemSpaceDiscr`
+            Cells grid
+        node : :class:`discretization.kgrid.NodeSpaceDiscr`
+            Nodes grid
+
+        Returns
+        -------
+        ndarray
+            An ndarray with the vorticity of the solution and with the shape of `node`.
+
+        """
+        if elem.ndim != 3 or (elem.ndim == 3 and elem.iicy > 1):
+            return np.zeros_like(Sol.rho)
+        # 2d-case
+        igs = elem.igs
+        dx = elem.dx
+        dy = elem.dz
+
+        rho = Sol.rho[:,igs[1],:]
+        rhou = Sol.rhou[:,igs[1],:]
+        rhov = Sol.rhow[:,igs[1],:]
+
+        # inner_domain_rho = rho[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
+        # inner_domain_rhou = rhou[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
+        # inner_domain_rhov = rhov[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
+
+        inner_domain_rho = rho
+        inner_domain_rhou = rhou
+        inner_domain_rhov = rhov
+
+        top_left_idx     = (slice(0,-1)    , slice(0,-1))
+        top_right_idx    = (slice(1, None) , slice(0,-1))
+        bottom_left_idx  = (slice(0,-1)    , slice(1, None))
+        bottom_right_idx = (slice(1, None) , slice(1,None))
+
+        # print(inner_domain_rhov[bottom_right_idx])
+        dvdx = 0.5 * ((inner_domain_rhov[bottom_right_idx] / inner_domain_rho[bottom_right_idx] - inner_domain_rhov[bottom_left_idx] / inner_domain_rho[bottom_left_idx]) + (inner_domain_rhov[top_right_idx] / inner_domain_rho[top_right_idx] - inner_domain_rhov[top_left_idx] / inner_domain_rho[top_left_idx])) / dx
+
+        dudy = 0.5 * ((inner_domain_rhou[bottom_right_idx] / inner_domain_rho[bottom_right_idx] - inner_domain_rhou[top_right_idx] / inner_domain_rho[top_right_idx]) + (inner_domain_rhou[bottom_left_idx] / inner_domain_rho[bottom_left_idx] - inner_domain_rhou[top_left_idx] / inner_domain_rho[top_left_idx])) / dy
+
+        vortz = np.zeros((node.sc)).squeeze()
+        tmp = np.expand_dims((dvdx - dudy) * 1.0, axis=1)
+        tmp = np.repeat(tmp, node.icy, axis=1)
+        vortz[1:-1, :, 1:-1] = tmp
+        # vortz = np.repeat(vortz[:,igs[1],:], node.icy, axis=1)
         return vortz
 
 
@@ -281,6 +355,17 @@ class io(object):
             file.close()
 
 
+    def jar(self, elem, node):
+        fn = self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + '.dat'
+
+        file = open(fn,"wb")
+        # let's fill the pickle jar
+        pickle.dump(self.ud, file)
+        pickle.dump(elem, file)
+        pickle.dump(node, file)
+        file.close()
+
+
 def get_args():
     """
     Argument parser for initial conditions and ensemble size.
@@ -288,8 +373,20 @@ def get_args():
     """
 
     parser = argparse.ArgumentParser(description='Python solver for unified numerical model based on (Benacchio and Klein, 2019) with data assimilation and blending. Written by Ray Chew and based on Prof. Rupert Klein\'s C code.')
+
     parser.add_argument('-N',action='store',dest='N',help='<Optional> Set ensemble size, if none is given N=1 is used.',required=False,type=int)
-    parser.add_argument('-ic','--initial_conditions',action='store',dest='ic',help='<Required> Set initial conditions',required=True,choices={'aw','tv','tv_2d','tv_3d','tv_corr','rb','igw','swe','bal_swe','swe_3D'})
+
+    parser.add_argument('-ic','--initial_conditions',action='store',dest='ic',help='<Required> Set initial conditions',required=True,choices={'aw','tv','tv_2d','tv_3d','tv_corr','rb', 'rbc', 'igw','swe','swe_bal_vortex','swe_icshear', 'swe_dvortex'})
+
+    # parser.add_argument('-r','--restart_sim',action='store',dest='rstrt',help='<Optional> Restart simulation?.',required=False,default=False,type=bool)
+
+    subparsers = parser.add_subparsers(dest='subcommand')
+    restart = subparsers.add_parser('restart')
+    restart.add_argument('-p', '--path', action='store', dest='path', help='path to data for simulation restart.', required=True, type=str)
+    restart.add_argument('-n', '--name', action='store', dest='name', help='name of datasets for simulation restart.', required=True, type=str)
+    restart.add_argument('-t', '--time', nargs="*", help='time outputs for simulation restart in format [start,stop,interval). Use None for ud.tout settings.', type=float, required=False, default=None)
+
+
     args = parser.parse_args() # collect cmd line args
     ic = args.ic
 
@@ -307,12 +404,17 @@ def get_args():
         from inputs.internal_long_wave import UserData, sol_init
     elif ic == 'rb':
         from inputs.rising_bubble import UserData, sol_init
+    elif ic == 'rbc':
+        from inputs.rising_bubble_cold import UserData, sol_init
+    elif ic == 'swe_bal_vortex':
+        from inputs.swe_bal_vortex import UserData, sol_init
     elif ic == 'swe':
-        from inputs.shallow_water_2D import UserData, sol_init
-    elif ic == 'bal_swe':
-        from inputs.balanced_shallow_water_2D import UserData, sol_init
-    elif ic == 'swe_3D':
         from inputs.shallow_water_3D import UserData, sol_init
+    elif ic == 'swe_icshear':
+        from inputs.shallow_water_3D_icshear import UserData, sol_init
+    elif ic == 'swe_dvortex':
+        from inputs.shallow_water_3D_dvortex import UserData, sol_init
+
 
 
     if UserData is None or sol_init is None:
@@ -321,4 +423,61 @@ def get_args():
         N = 1
     else:
         N = args.N
-    return N, UserData, sol_init
+
+
+    if args.subcommand == 'restart':
+        rstrt = True
+        if args.time is not None:
+            t_vals = args.time
+            time = np.arange(t_vals[0],t_vals[1],t_vals[2])
+        params = [args.path,args.name,time]
+    else:
+        rstrt = False
+        params = None
+
+
+    return N, UserData, sol_init, rstrt, params
+
+
+
+def sim_restart(path, name, elem, node, ud, Sol, mpv, restart_touts):
+    """
+    Function to restart simulation from a saved file. Dataset has to be structured in the same way as the output format of this file.
+
+    Parameters
+    ----------
+    path : str
+        path to the hdf5 file for simulation restart.
+
+    """
+    file = h5py.File(str(path), 'r')
+
+    Sol_data = ['rho','rhou','rhov','rhow','rhoX', 'rhoY']
+    mpv_data = ['p2_nodes']
+
+    for data in Sol_data:
+        value = file[data][data+name][:]
+        
+        if hasattr(Sol,data):
+            shp = getattr(Sol,data).shape
+            setattr(Sol,data,value)
+            assert(getattr(Sol,data).shape == shp)
+        else:
+            assert(0, "Sol attribute mismatch")
+
+    for data in mpv_data:
+        value = file[data][data+name][:]
+        if hasattr(mpv,data):
+            shp = getattr(mpv,data).shape
+            setattr(mpv,data,value)
+            assert(getattr(mpv,data).shape == shp)
+        else:
+            assert(0, "mpv attribute mismatch")
+
+    t = restart_touts
+
+    ud.output_suffix = "_%i_%i_%i_%.1f_%s" %(ud.inx-1,ud.iny-1,ud.inz-1,t[-1],ud.aux)
+
+
+    file.close()
+    return Sol, mpv, t

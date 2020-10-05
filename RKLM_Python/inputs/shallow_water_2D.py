@@ -88,6 +88,10 @@ class UserData(object):
         self.xmax =   5E+5
         self.ymin = - 5E+5
         self.ymax =   5E+5
+        # self.xmin = - 0.0
+        # self.xmax =   2.0 * np.pi
+        # self.ymin = - 0.0
+        # self.ymax =   2.0 * np.pi
         self.zmin = - 0.5
         self.zmax =   0.5
 
@@ -116,8 +120,8 @@ class UserData(object):
         self.dtfixed0 = 1000.0
         self.dtfixed = 1000.0
 
-        self.inx = 150+1
-        self.iny = 150+1
+        self.inx = 128+1
+        self.iny = 128+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -154,7 +158,7 @@ class UserData(object):
 
         stepsize = 100
         # self.tout = np.arange(0,2E5+stepsize,stepsize)
-        self.tout = np.arange(0,1E6+100,100)
+        self.tout = np.arange(0,1E6+100,100)[1:]
         self.stepmax = 201
 
         self.output_base_name = "_swe"
@@ -165,7 +169,7 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        # aux = 'posp_rloc'
+        # aux = 'icshear'
         # aux += '_' + self.blending_conv + '_conv'
         # aux += '_' + self.blending_mean + '_mean'
         # aux = 'cb1_w=-6_debug'
@@ -214,6 +218,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     perturb = np.exp(-((X-X.max()/4)**2/(2*(0.05E+6)**2) + (Y-Y.max()/4)**2/(2*(0.05E+6)**2)))
     rho += perturb
 
+    # f0 = 0.7071 * 4. * np.pi
+    # rho = icshear(X/1E6,Y/1E6,f0)
+
     p = g / 2.0 * rho**2
 
     Sol.rho[...] = rho
@@ -256,3 +263,15 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
 def T_from_p_rho(p, rho):
     return np.divide(p,rho)
+
+def icshear(X,Y,f0):
+    Y = Y - np.pi
+    dq = 1./np.pi * Y * np.exp(-2. * Y**2) * (1. + 0.1 * np.sin(2. * X))
+    
+    dq -= np.mean(dq)
+    
+    q = f0 * (1. + dq)
+    
+    H = f0/q
+    H = 1. + (H - np.mean(H))
+    return H

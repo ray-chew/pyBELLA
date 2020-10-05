@@ -1,6 +1,6 @@
 from inputs.enum_bdry import BdryType
 from inputs.boundary import set_explicit_boundary_data, set_ghostnodes_p2
-from physics.low_mach.laplacian import stencil_9pt, stencil_32pt, precon_diag_prepare
+from physics.low_mach.laplacian import stencil_9pt, stencil_32pt, stencil_hs, precon_diag_prepare
 from scipy import signal
 import numpy as np
 from itertools import product
@@ -65,7 +65,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     # dpdy = -wp * 0.5 * signal.convolve2d(p2n, dpdy_kernel, mode='valid') / dy
 
     dpdx = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[0], mode='valid') / dx
-    dpdy = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[1], mode='valid') / dy
+    dpdy = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[1], mode='valid') / dy if elem.iicy > 1 else 0.0
     if ndim == 3: dpdz = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[2], mode='valid') / dz
     else: dpdz = 0
 
@@ -167,6 +167,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     elif elem.ndim == 3:
         # p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy,node.igz:-node.igz])
         p2 = np.copy(mpv.p2_nodes[1:-1,1:-1,1:-1])
+
         # p2 = np.copy(mpv.p2_nodes)
     
     if writer != None:
@@ -184,6 +185,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         writer.populate(str(label),'wplusx',mpv.wplus[0])
         writer.populate(str(label),'wplusy',mpv.wplus[1])
         if elem.ndim == 3: writer.populate(str(label),'wplusz',mpv.wplus[2])
+        else: writer.populate(str(label),'wplusz',np.zeros_like(mpv.wplus[0]))
 
     rhs[...], _ = divergence_nodes(rhs,elem,node,Sol,ud)
     rhs /= dt
@@ -210,8 +212,11 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     mpv.rhs = rhs
 
+    # if ud.is_compressible == 1:
     diag_inv = precon_diag_prepare(mpv, elem, node, ud)
     rhs *= diag_inv
+    # else:
+    #     diag_inv = np.ones_like(mpv.rhs)
 
     if elem.ndim == 2:
         lap = stencil_9pt(elem,node,mpv,ud,diag_inv)
@@ -219,10 +224,14 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         sh = (ud.inx)*(ud.iny)
 
         # lap = LinearOperator((sh,sh),lap)
-    elif elem.ndim == 3:
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
         lap = stencil_32pt(elem,node,mpv,ud,diag_inv,dt)
         # p2 = mpv.p2_nodes[1:-1,1:-1,1:-1]
 
+        sh = p2.reshape(-1).shape[0]
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2: # horizonral slice hack
+        p2 = np.copy(mpv.p2_nodes[1:-1,elem.igs[1],1:-1])
+        lap = stencil_hs(elem,node,mpv,ud,diag_inv,dt)
         sh = p2.reshape(-1).shape[0]
     lap = LinearOperator((sh,sh),lap)
     
@@ -230,11 +239,13 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     if elem.ndim == 2:
         rhs_inner = rhs[node.igx:-node.igx,node.igy:-node.igy].ravel()
-    elif elem.ndim == 3:
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
         rhs_inner = rhs[1:-1,1:-1,1:-1].ravel()
         # rhs_inner = rhs.ravel()
         # p2 = mpv.p2_nodes[1:-1,1:-1,1:-1]
         # rhs_inner = rhs.ravel()
+    else:
+        rhs_inner = rhs[1:-1,elem.igs[1],1:-1].ravel()
     p2,info = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
     # p2,info = bicgstab(lap,rhs.ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
@@ -248,9 +259,13 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     p2_full = np.zeros(nc).squeeze()
     if elem.ndim == 2:
         p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
-    elif elem.ndim == 3:
-         p2_full[1:-1,1:-1,1:-1] = p2.reshape(ud.inx+2,ud.iny+2,ud.inz+2)
-
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
+        p2_full[1:-1,1:-1,1:-1] = p2.reshape(ud.inx+2,ud.iny+2,ud.inz+2)
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2:
+        p2 = p2.reshape(ud.inx+2, ud.inz+2)
+        p2 = np.expand_dims(p2,1)
+        p2 = np.repeat(p2, node.icy, axis=1)
+        p2_full[1:-1,:,1:-1] = p2
     if writer != None:
         writer.populate(str(label),'p2_full',p2_full)
 

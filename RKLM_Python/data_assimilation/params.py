@@ -8,12 +8,14 @@ class da_params(object):
         self.N = N
         # self.da_times = np.arange(0.0,3.75,0.25)[1:]
         # self.da_times = np.arange(0.0,10.25,0.25)[1:]
-        self.da_times = np.arange(0.0,6.1,0.25)[1:]
-        # self.da_times = np.arange(0.0,1.05,0.1)[1:]
-        self.da_times = []
-        self.obs_attributes = ['rho','rhou','rhov','rhoY','p2_nodes']
+        # self.da_times = np.arange(0.0,6.1,0.25)[1:]
+        # self.da_times = np.arange(0.0,864000.0+1200.0,1200.0)[1:][::4]
+        self.da_times = np.arange(0.0,1.05,0.05)[1:]
+        # self.da_times = []
+        self.obs_attributes = ['rhou', 'rhow']
+        # self.obs_attributes = ['rhou', 'rhow']
         # self.obs_attributes = ['rho','rhou','rhov']
-        # self.obs_attributes = ['rhoY','p2_nodes']
+        # self.obs_attributes = ['rhou','p2_nodes']
         # self.obs_attributes = ['p2_nodes']
 
         # self.obs_attributes = ['rhoY']
@@ -22,10 +24,16 @@ class da_params(object):
         # which attributes to inflate in ensemble inflation?
         self.attributes = ['rho', 'rhou', 'rhov']
 
-        self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_6.0_truthgen.h5'
-        # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_psinc_delth_ref.h5'
-        # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_delth_1.0_psinc.h5'
+        # self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_6.0_truthgen.h5'
+        # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_psinc_ref.h5'
+        # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_truthgen_freezelt5.h5'
+        # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_comp_ref.h5'
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_psinc.h5'
+        # self.obs_path = './output_swe/output_swe_ensemble=1_256_1_256_864000.0_dvortex_3D_truthgen_flipped.h5'
+        # self.obs_path = './output_swe/output_swe_ensemble=1_256_1_256_864000.0_dvortex_3D_truthgen_flipped.h5'
+        # self.obs_path = './output_swe/output_swe_ensemble=1_256_1_256_864000.0_truthgen.h5'
+
+        self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0.h5'
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)
@@ -39,8 +47,9 @@ class da_params(object):
         # self.localisation_matrix = np.diag(weights)
         # self.localisation_matrix += np.diag(np.ones_like(weights))
         # self.localisation_matrix = np.diag(np.ones((len(weights3))))
-        self.localisation_matrix = weights
+        # self.localisation_matrix = weights + 1.0
         self.localisation_matrix = np.ones_like(weights) * 1.0 #+ weights
+
         
         self.aprior_error_covar = 0.0001
         self.da_type = da_type
@@ -51,6 +60,11 @@ class da_params(object):
         # rejuvenation factor for ETPF
         self.rejuvenation_factor = 0.001
 
+        self.loc_c = 0 # container list location of cell-based arrays
+        self.loc_f = 1 # ... of face-based arrays
+        self.loc_n = 2 # ... of node-based arrays
+
+        # in which data container are the attributes involved in the DA procedure?
         self.loc = {
             'rho' : 0,
             'rhou' : 0,
@@ -60,10 +74,6 @@ class da_params(object):
             'rhoX' : 0,
             'p2_nodes' : 2,
         }
-
-        self.loc_c = 0 # container list location of cell-based arrays
-        self.loc_f = 1 # ... of face-based arrays
-        self.loc_n = 2 # ... of node-based arrays
 
     def load_obs(self,obs_path,loc=0):
         if self.N > 1:
@@ -83,8 +93,11 @@ class da_params(object):
                 #### axis 1 stores the attributes
                 obs[t_cnt] = {}
                 for attribute in obs_attributes:
+                    data = obs_file[str(attribute)][str(attribute) + str(label)][:]
+                    if data.ndim == 3: # implying horizontal slice...
+                        data = data[:,0,:]
                     dict_attr = {
-                        attribute: obs_file[str(attribute)][str(attribute) + str(label)][:]
+                        attribute: data
                     }
                     obs[t_cnt].update(dict_attr)
                 t_cnt += 1
