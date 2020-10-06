@@ -114,7 +114,7 @@ ens = ensemble(sol_ens)
 # where are my observations?
 if N > 1:
     obs = dap.load_obs(dap.obs_path)
-    obs, sparse_obs_mask = sparse_obs_selector(obs, elem, node, ud, dap)
+    obs, obs_mask = sparse_obs_selector(obs, elem, node, ud, dap)
 
 # add ensemble info to filename
 ud.output_suffix = '_ensemble=%i%s' %(N, ud.output_suffix)
@@ -231,7 +231,7 @@ if __name__ == '__main__':
             elif dap.da_type == 'rloc':
                 print("Starting analysis... for rloc algorithm")
                 results = HSprojector_3t2D(results, elem, dap, N)
-                results = rloc.analyse(results,obs,N,tout)
+                results = rloc.analyse(results,obs,obs_mask,N,tout)
                 results = HSprojector_2t3D(results, elem, node, dap, N)
 
             ##################################################

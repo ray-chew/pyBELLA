@@ -52,6 +52,10 @@ class da_params(object):
 
         self.sparse_obs = True
         self.sparse_obs_by_attr = False
+
+        if self.sparse_obs_by_attr:
+            assert(0, "Not yet implemented.")
+
         self.obs_frac = 0.5 # fraction of the observations to pick.
         da_len = len(self.da_times)
         if self.sparse_obs_by_attr == True:

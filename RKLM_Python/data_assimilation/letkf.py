@@ -242,19 +242,19 @@ class prepare_rloc(object):
 
         return cell_attributes, node_attributes
 
-    def analyse(self,results,obs,N,tout):
+    def analyse(self,results,obs,mask,N,tout):
         """
         Wrapper to do analysis by grid-type.
 
         """
 
         if self.cattr_len > 0:
-            results = self.analyse_by_grid_type(results,obs,N,tout,'cell')
+            results = self.analyse_by_grid_type(results,obs,mask,N,tout,'cell')
         if self.nattr_len > 0:
-            results = self.analyse_by_grid_type(results,obs,N,tout,'node')
+            results = self.analyse_by_grid_type(results,obs,mask,N,tout,'node')
         return results
 
-    def analyse_by_grid_type(self,results,obs,N,tout,grid_type):
+    def analyse_by_grid_type(self,results,obs,mask,N,tout,grid_type):
         """
         Do analysis by grid-type. Wrapper of the LETKF analysis.
 
@@ -268,7 +268,9 @@ class prepare_rloc(object):
         obs_X, obs_Y = self.obs_X, self.obs_Y
 
         # get stacked state space and observation
-        state_p, obs_p = self.stack(results,obs,obs_attr,tout)
+        state_p, obs_p, mask_p = self.stack(results,obs,mask,obs_attr,tout)
+
+        mask_p = mask_p[0].flatten()
 
         # Here, the 2D arrays are split into local counterparts, say of (5x5) arrays. 
         X = self.get_state(state_p,Nx,Ny,attr_len)
@@ -281,26 +283,30 @@ class prepare_rloc(object):
 
         # loop through all grid-points
         for n in range(Nx * Ny):
-            # using identity for observation covariance
-            obs_covar_current = sparse.eye(attr_len*obs_X*obs_Y,attr_len*obs_X*obs_Y, format='csr')
+            if mask_p[n]:
+                # if no observation is at grid location, analysis = forecast.
+                analysis_res[n] = X[n]
+            else:
+                # using identity for observation covariance
+                obs_covar_current = sparse.eye(attr_len*obs_X*obs_Y,attr_len*obs_X*obs_Y, format='csr')
 
-            # using forward operator as a projection of the state into observation space.
-            forward_operator = lambda ensemble : Y[n]
+                # using forward operator as a projection of the state into observation space.
+                forward_operator = lambda ensemble : Y[n]
 
-            # setup LETKF class with state vector
-            local_ens = analysis(X[n],self.inf_fac)
+                # setup LETKF class with state vector
+                local_ens = analysis(X[n],self.inf_fac)
 
-            # setup forward operator method in LETKF class
-            local_ens.forward(forward_operator)
-            
-            # get the localisation matrix with BC handling
-            # BC is handled by localisation matrix.
-            local_ens.localisation_matrix = np.diag(list(bc_mask[n].ravel()) * attr_len) * np.diag((list(self.loc_mat) * attr_len))
+                # setup forward operator method in LETKF class
+                local_ens.forward(forward_operator)
+                
+                # get the localisation matrix with BC handling
+                # BC is handled by localisation matrix.
+                local_ens.localisation_matrix = np.diag(list(bc_mask[n].ravel()) * attr_len) * np.diag((list(self.loc_mat) * attr_len))
 
-            # do analysis given observations and obs covar.
-            analysis_ens = local_ens.analyse(obs_p[n],obs_covar_current)
+                # do analysis given observations and obs covar.
+                analysis_ens = local_ens.analyse(obs_p[n],obs_covar_current)
 
-            analysis_res[n] = analysis_ens
+                analysis_res[n] = analysis_ens
 
         analysis_res = np.swapaxes(analysis_res,0,2)
 
@@ -319,7 +325,7 @@ class prepare_rloc(object):
         return results
 
 
-    def stack(self,results,obs,obs_attr,tout):
+    def stack(self,results,obs,mask,obs_attr,tout):
         """
         On each grid-point, stack all the quantities to be assimilated. This stacking is done separately for cells and nodes.
 
@@ -332,6 +338,9 @@ class prepare_rloc(object):
         obs_stack = np.array(obs[list(self.da_times).index(tout)][obs_attr[0]])[self.i2]
         obs_stack = obs_stack[np.newaxis,...]
 
+        mask_stack = np.array(mask[list(self.da_times).index(tout)][obs_attr[0]])[self.i2]
+        mask_stack = mask_stack[np.newaxis,...]
+
         for attr in obs_attr[1:]:
             next_attr = self.get_quantity(results,attr)[:,np.newaxis,...]
             state = np.hstack((state,next_attr))
@@ -341,7 +350,12 @@ class prepare_rloc(object):
 
             obs_stack = np.vstack((obs_stack,next_obs))
 
-        return state, obs_stack
+            next_mask = np.array(mask[list(self.da_times).index(tout)][attr])[self.i2]
+            next_mask = next_mask[np.newaxis,...]
+
+            mask_stack = np.vstack((mask_stack,next_mask))
+
+        return state, obs_stack, mask_stack
 
 
     def get_state(self,state,Nx,Ny,attr_len):
