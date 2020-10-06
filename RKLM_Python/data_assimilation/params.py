@@ -7,13 +7,13 @@ class da_params(object):
         # number of ensemble members
         self.N = N
         # self.da_times = np.arange(0.0,3.75,0.25)[1:]
-        # self.da_times = np.arange(0.0,10.25,0.25)[1:]
+        self.da_times = np.arange(0.0,10.25,0.25)[1:]
         # self.da_times = np.arange(0.0,6.1,0.25)[1:]
         # self.da_times = np.arange(0.0,864000.0+1200.0,1200.0)[1:][::4]
-        self.da_times = np.arange(0.0,1.05,0.05)[1:]
+        # self.da_times = np.arange(0.0,1.05,0.05)[1:]
         # self.da_times = []
-        self.obs_attributes = ['rhou', 'rhow']
         # self.obs_attributes = ['rhou', 'rhow']
+        self.obs_attributes = ['rho', 'rhov']
         # self.obs_attributes = ['rho','rhou','rhov']
         # self.obs_attributes = ['rhou','p2_nodes']
         # self.obs_attributes = ['p2_nodes']
@@ -25,7 +25,7 @@ class da_params(object):
         self.attributes = ['rho', 'rhou', 'rhov']
 
         # self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_6.0_truthgen.h5'
-        # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_psinc_ref.h5'
+        self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_psinc_ref.h5'
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_truthgen_freezelt5.h5'
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_comp_ref.h5'
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_psinc.h5'
@@ -33,7 +33,7 @@ class da_params(object):
         # self.obs_path = './output_swe/output_swe_ensemble=1_256_1_256_864000.0_dvortex_3D_truthgen_flipped.h5'
         # self.obs_path = './output_swe/output_swe_ensemble=1_256_1_256_864000.0_truthgen.h5'
 
-        self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0.h5'
+        # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0.h5'
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)
@@ -50,6 +50,17 @@ class da_params(object):
         # self.localisation_matrix = weights + 1.0
         self.localisation_matrix = np.ones_like(weights) * 1.0 #+ weights
 
+        self.sparse_obs = True
+        self.sparse_obs_by_attr = False
+        self.obs_frac = 0.5 # fraction of the observations to pick.
+        da_len = len(self.da_times)
+        if self.sparse_obs_by_attr == True:
+            da_depth = len(self.obs_attributes)
+        else:
+            da_depth = 1
+        if self.sparse_obs == True and da_len > 0:
+            np.random.seed(777)
+            self.sparse_obs_seeds = np.random.randint(10000,size=(da_len,da_depth)).squeeze()
         
         self.aprior_error_covar = 0.0001
         self.da_type = da_type
