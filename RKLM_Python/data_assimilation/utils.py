@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy
 from scipy import signal
+from scipy.interpolate import griddata
 from inputs import boundary, enum_bdry
 
 class ensemble(object):
@@ -260,3 +261,70 @@ def HSprojector_2t3D(results, elem, node, dap, N):
 
     return results
     
+
+def sparse_obs_selector(obs, elem, node, ud, dap):
+    sparse_obs = dap.sparse_obs
+    sparse_obs_by_attr = dap.sparse_obs_by_attr
+    seeds = dap.sparse_obs_seeds
+    K = dap.obs_frac
+
+    # define inner and outer domains in 2D
+    i2 = (slice(elem.igx,-elem.igx),slice(elem.igy,-elem.igy))
+    i0 = (slice(None,),slice(None,))
+
+    Nx, Ny = elem.iicx, elem.iicy # get inner domain size
+    N = Nx * Ny
+    K *= N
+    K = int(K)
+
+    if elem.iicy == 1: # implying horizontal slice
+        Xc, Yc = elem.x, elem.z
+        Xc, Yc = np.meshgrid(Xc, Yc)
+        Xn, Yn = node.x, node.z
+        Xn, Yn = np.meshgrid(Xn, Yn)
+    else: # implying vertical slice
+        Xc, Yc = elem.x, elem.y
+        Xc, Yc = np.meshgrid(Xc, Yc)
+        Xn, Yn = node.x, node.y
+        Xn, Yn = np.meshgrid(Xn, Yn)
+
+    mask_arr = np.copy(obs)
+
+    # obs is a list of dictionaries, list length da_len, dictionary length attr_len.
+    for tt,obs_t in enumerate(obs):
+        attr_cnt = tt
+        for key, value in obs_t.items():
+            if key == 'p2_nodes':
+                grid_x, grid_y = Xn[i2], Yn[i2]
+            else:
+                grid_x, grid_y = Xc[i2], Yc[i2]
+            grid_x, grid_y = grid_x.T, grid_y.T
+            np.random.seed(seeds[attr_cnt])
+
+            # ref: method for generating random boolean array given a probability of 1's and 0's.
+            # https://stackoverflow.com/questions/19597473/binary-random-array-with-a-specific-proportion-of-ones/19597805
+
+            # append mask array with new seed
+            mask = np.array([0] * K + [1] * (N-K))
+            np.random.shuffle(mask)
+            # mask = mask.reshape(Nx,Ny)
+
+            values = np.ma.array(value[i2], mask=mask).compressed()
+            X = np.ma.array(grid_x, mask=mask).compressed()
+            Y = np.ma.array(grid_y, mask=mask).compressed()
+
+            points = np.zeros((len(values),2))
+            points[:,0] = X[...].flatten()
+            points[:,1] = Y[...].flatten()
+
+            values = griddata(points, values, (grid_x, grid_y), method='cubic')
+
+            obs[tt][key][...] = 0.0
+            mask_arr[tt][key][...] = 0.0
+            obs[tt][key][i2] = values
+            mask_arr[tt][key][i2] = mask.reshape(Nx,Ny)
+            
+            if sparse_obs_by_attr:
+                attr_cnt += 1
+
+    return obs, mask

@@ -16,7 +16,7 @@ from dask.distributed import Client, progress
 
 # dependencies of the data assimilation module
 from data_assimilation.params import da_params
-from data_assimilation.utils import ensemble, sliding_window_view, ensemble_inflation, set_p2_nodes, set_rhoY_cells, HSprojector_2t3D, HSprojector_3t2D
+from data_assimilation.utils import ensemble, sliding_window_view, ensemble_inflation, set_p2_nodes, set_rhoY_cells, HSprojector_2t3D, HSprojector_3t2D, sparse_obs_selector
 from data_assimilation.letkf import da_interface, bin_func, prepare_rloc
 from data_assimilation.letkf import analysis as letkf_analysis
 from data_assimilation import etpf
@@ -114,6 +114,7 @@ ens = ensemble(sol_ens)
 # where are my observations?
 if N > 1:
     obs = dap.load_obs(dap.obs_path)
+    obs, sparse_obs_mask = sparse_obs_selector(obs, elem, node, ud, dap)
 
 # add ensemble info to filename
 ud.output_suffix = '_ensemble=%i%s' %(N, ud.output_suffix)
