@@ -16,7 +16,7 @@ from dask.distributed import Client, progress
 
 # dependencies of the data assimilation module
 from data_assimilation.params import da_params
-from data_assimilation.utils import ensemble, sliding_window_view, ensemble_inflation, set_p2_nodes, set_rhoY_cells, HSprojector_2t3D, HSprojector_3t2D, sparse_obs_selector
+from data_assimilation.utils import ensemble, sliding_window_view, ensemble_inflation, set_p2_nodes, set_rhoY_cells, HSprojector_2t3D, HSprojector_3t2D, sparse_obs_selector, obs_noiser
 from data_assimilation.letkf import da_interface, bin_func, prepare_rloc
 from data_assimilation.letkf import analysis as letkf_analysis
 from data_assimilation import etpf
@@ -114,6 +114,7 @@ ens = ensemble(sol_ens)
 # where are my observations?
 if N > 1:
     obs = dap.load_obs(dap.obs_path)
+    obs, obs_covar = obs_noiser(obs,dap)
     obs, obs_mask = sparse_obs_selector(obs, elem, node, ud, dap)
 
 # add ensemble info to filename
@@ -231,7 +232,7 @@ if __name__ == '__main__':
             elif dap.da_type == 'rloc':
                 print("Starting analysis... for rloc algorithm")
                 results = HSprojector_3t2D(results, elem, dap, N)
-                results = rloc.analyse(results,obs,obs_mask,N,tout)
+                results = rloc.analyse(results,obs,obs_covar,obs_mask,N,tout)
                 results = HSprojector_2t3D(results, elem, node, dap, N)
 
             ##################################################
