@@ -242,19 +242,19 @@ class prepare_rloc(object):
 
         return cell_attributes, node_attributes
 
-    def analyse(self,results,obs,mask,N,tout):
+    def analyse(self,results,obs,covar,mask,N,tout):
         """
         Wrapper to do analysis by grid-type.
 
         """
 
         if self.cattr_len > 0:
-            results = self.analyse_by_grid_type(results,obs,mask,N,tout,'cell')
+            results = self.analyse_by_grid_type(results,obs,covar,mask,N,tout,'cell')
         if self.nattr_len > 0:
-            results = self.analyse_by_grid_type(results,obs,mask,N,tout,'node')
+            results = self.analyse_by_grid_type(results,obs,covar,mask,N,tout,'node')
         return results
 
-    def analyse_by_grid_type(self,results,obs,mask,N,tout,grid_type):
+    def analyse_by_grid_type(self,results,obs,covar,mask,N,tout,grid_type):
         """
         Do analysis by grid-type. Wrapper of the LETKF analysis.
 
@@ -281,14 +281,28 @@ class prepare_rloc(object):
 
         analysis_res = np.zeros_like(X)
 
+        if covar is None:
+            # use identity for observation covariance
+            obs_covar_current = sparse.eye(attr_len*obs_X*obs_Y,attr_len*obs_X*obs_Y, format='csr')
+        else:
+            # get covar at current time
+            covar = covar[list(self.da_times).index(tout)]
+            
+            # expand obs covar to size of the subdomain
+            covar = np.expand_dims(covar,axis=-1)
+            covar = np.repeat(covar, obs_X, axis=-1)
+
+            covar = np.expand_dims(covar,axis=-1)
+            covar = np.repeat(covar, obs_Y, axis=-1)
+
+            obs_covar_current = sparse.diags(covar.flatten(), format='csr')
+
         # loop through all grid-points
         for n in range(Nx * Ny):
             if not mask_p[n]:
                 # if no observation is at grid location, analysis = forecast.
                 analysis_res[n] = X[n]
             else:
-                # using identity for observation covariance
-                obs_covar_current = sparse.eye(attr_len*obs_X*obs_Y,attr_len*obs_X*obs_Y, format='csr')
 
                 # using forward operator as a projection of the state into observation space.
                 forward_operator = lambda ensemble : Y[n]
