@@ -283,7 +283,7 @@ class prepare_rloc(object):
 
         # loop through all grid-points
         for n in range(Nx * Ny):
-            if mask_p[n]:
+            if not mask_p[n]:
                 # if no observation is at grid location, analysis = forecast.
                 analysis_res[n] = X[n]
             else:
