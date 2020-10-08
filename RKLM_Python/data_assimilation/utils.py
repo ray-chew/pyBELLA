@@ -342,37 +342,35 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
 
 def obs_noiser(obs,dap):
     if dap.add_obs_noise:
-        if dap.obs_noise_by_attr:
-            assert isinstance(dap.obs_noise, dict), "obs_noise has to be dict"
-            assert len(dap.obs_noise) == len(dap.obs_attributes), "obs_noise length has to be equal to obs_attributes len"
+        assert isinstance(dap.obs_noise, dict), "obs_noise has to be dict"
+        assert len(dap.obs_noise) == len(dap.obs_attributes), "obs_noise length has to be equal to obs_attributes len"
 
-            obs_covar = np.zeros((len(dap.obs_attributes)))
+        obs_covar = np.zeros((len(dap.da_times),len(dap.obs_attributes)))
 
-            for tt, obs_t in enumerate(obs):
-                attr_cnt = 0
-                for key, value in obs_t.items():
-                    seed = dap.obs_noise_seeds[attr_cnt]
-                    np.random.seed(seed)
+        for tt, obs_t in enumerate(obs):
+            attr_cnt = 0
+            for key, value in obs_t.items():
+                seed = dap.obs_noise_seeds[attr_cnt]
+                np.random.seed(seed)
 
-                    shp = value.shape
-                    obs_max = value.max()
+                shp = value.shape
+                obs_max = value.max()
 
-                    # here, we take the fraction defined by obs_noise multiplied by the maximum value of the observation as the standard deviation of the measurement noise.
-                    std_dev = (dap.obs_noise[key] * obs_max)
-                    var = std_dev**2
+                # here, we take the fraction defined by obs_noise multiplied by the maximum value of the observation as the standard deviation of the measurement noise.
+                std_dev = (dap.obs_noise[key] * obs_max)
+                var = std_dev**2
 
-                    # generate gaussian noise for observations.
-                    noise = np.random.normal(0.0,std_dev, size=(shp))
+                # generate gaussian noise for observations.
+                noise = np.random.normal(0.0,std_dev, size=(shp))
 
-                    # add noise onto observation
-                    obs[tt][key][...] += noise
+                # add noise onto observation
+                obs[tt][key][...] += noise
 
-                    attr_cnt += 1
-                obs_covar[attr_cnt] = var 
+                obs_covar[tt,attr_cnt] = var
+                attr_cnt += 1
+                 
 
-            obs, obs_covar
+        return obs, obs_covar
 
-        else:
-            pass
     else:
         return obs, None
