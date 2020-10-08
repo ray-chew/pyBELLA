@@ -28,7 +28,8 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     Msq = ud.Msq
     Ginv = th.Gammainv
     coriolis = ud.coriolis_strength[0]
-    u0 = ud.wind_speed
+    u0 = ud.u_wind_speed
+    w0 = ud.w_wind_speed
 
     p2n = np.copy(mpv.p2_nodes)
     dp2n = np.zeros_like(p2n)
@@ -67,7 +68,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     dpdx = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[0], mode='valid') / dx
     dpdy = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[1], mode='valid') / dy if elem.iicy > 1 else 0.0
     if ndim == 3: dpdz = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[2], mode='valid') / dz
-    else: dpdz = 0
+    else: dpdz = 0.0
 
     igx, igy, igz, igs = elem.igx, elem.igy, elem.igz, elem.igs
 
@@ -91,12 +92,14 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     dchi = Sol.rhoX[i1] / Sol.rho[i1]
     dbuoy = -1. * Sol.rhoY[i1] * dchi
     drhou = Sol.rhou[i1] - u0 * Sol.rho[i1]
+    drhow = Sol.rhow[i1] - w0 * Sol.rho[i1]
 
     rhoY = Sol.rhoY**(th.gamm - 2.0)
     dpidP_kernel = np.ones([2]*ndim)
     dpidP = (th.gm1 / ud.Msq) * signal.fftconvolve(rhoY, dpidP_kernel, mode='valid') / dpidP_kernel.sum()
 
-    Sol.rhou[i1] = Sol.rhou[i1] + dt * ( -1. * rhoYovG * dpdx + coriolis * Sol.rhow[i1])
+    # Sol.rhou[i1] = Sol.rhou[i1] + dt * ( -1. * rhoYovG * dpdx + coriolis * Sol.rhow[i1])
+    Sol.rhou[i1] = Sol.rhou[i1] + dt * ( -1. * rhoYovG * dpdx + coriolis * drhow)
 
     Sol.rhov[i1] = Sol.rhov[i1] + dt * ( -1. * rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro * (1 - ud.is_ArakawaKonor)
 
@@ -125,7 +128,8 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
     time_offset = 3.0 - ud.acoustic_order
     coriolis = ud.coriolis_strength[0]
-    u0 = ud.wind_speed
+    u0 = ud.u_wind_speed
+    w0 = ud.w_wind_speed
     fsqsc = dt**2 * coriolis**2
     ooopfsqsc = 1.0 / (1.0 + fsqsc)
 
@@ -149,9 +153,12 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     rhov = (nonhydro * Sol.rhov + dt * (g/Msq) * dbuoy) / (nonhydro + Nsqsc)
 
     drhou = Sol.rhou - u0 * Sol.rho
+    drhow = Sol.rhow - w0 * Sol.rho
+    rhou0 = np.copy(Sol.rhou)
     Sol.rhou[...] = u0 * Sol.rho + ooopfsqsc * (drhou + dt * coriolis * Sol.rhow)
     Sol.rhov[...] = rhov
-    Sol.rhow[...] = ooopfsqsc * (Sol.rhow - dt * coriolis * drhou)
+    # Sol.rhow[...] = ooopfsqsc * (Sol.rhow - dt * coriolis * drhou)
+    Sol.rhow[...] = w0 * Sol.rho + ooopfsqsc * (drhow - dt * coriolis * rhou0)
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
