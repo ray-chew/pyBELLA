@@ -12,7 +12,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 0.0
+    omega = 10.0#2.0 * np.pi
 
     R_gas = 1.0
     R_vap = 461.0
@@ -85,7 +85,8 @@ class UserData(object):
         self.zmin = - 0.5 / self.h_ref
         self.zmax =   0.5 / self.h_ref
 
-        self.wind_speed = 0.0
+        self.u_wind_speed = 1.0
+        self.w_wind_speed = 1.0
         self.wind_shear = -0.0
         self.hill_shape = HillShapes.AGNESI
         self.hill_height = 0.0
@@ -116,8 +117,8 @@ class UserData(object):
         self.advec_time_integrator = TimeIntegrator.STRANG
         # self.CFL  = 0.
         self.CFL = 0.45
-        self.dtfixed0 = 1.0 / self.t_ref
-        self.dtfixed = 1.0 / self.t_ref
+        self.dtfixed0 = 0.005 / self.t_ref
+        self.dtfixed = 0.005 / self.t_ref
 
         self.inx = 64+1
         self.iny = 1+1
@@ -173,11 +174,11 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
-        aux = 'wdawloc_1.0_rhou_rhow_p0.5'
+        aux = 'wdawloc_1.0_rhou_rhow_p0.5_debug'
         # aux = 'comp_test_0'
-        # aux = 'noda_p0.5'
+        # aux = 'noda_p0.1'
         # aux = 'bld_test'
-        # aux = 'comp_1.0'
+        # aux = 'comp_1.0_corr_1.0'
         # aux = 'debug'
         self.output_suffix = "_%i_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1],aux)
 
@@ -197,9 +198,9 @@ class UserData(object):
         return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
 
 def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
-    u0 = 1.0 #* ud.wind_speed
+    u0 = ud.u_wind_speed#0.0 #* ud.wind_speed
     v0 = 0.0 #* ud.wind_speed
-    w0 = 1.0
+    w0 = ud.w_wind_speed#0.0
 
     rotdir = 1.0
 
