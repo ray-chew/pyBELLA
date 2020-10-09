@@ -1,5 +1,6 @@
 import numpy as np
 import h5py
+from scipy import stats # generate Gaussian localisation matrix
 
 class da_params(object):
 
@@ -10,7 +11,7 @@ class da_params(object):
         # self.da_times = np.arange(0.0,10.25,0.25)[1:]
         # self.da_times = np.arange(0.0,6.1,0.25)[1:]
         # self.da_times = np.arange(0.0,864000.0+1200.0,1200.0)[1:][::4]
-        self.da_times = np.arange(0.0,1.05,0.05)[1:]
+        self.da_times = np.arange(0.0,1.01,0.01)[1:]
         # self.da_times = []
         # self.obs_attributes = ['rho', 'rhou', 'rhow', 'rhoY', 'p2_nodes']
         self.obs_attributes = ['rhou', 'rhow']
@@ -18,7 +19,6 @@ class da_params(object):
         # self.obs_attributes = ['rho','rhou','rhov']
         # self.obs_attributes = ['rhou','p2_nodes']
         # self.obs_attributes = ['p2_nodes']
-
         # self.obs_attributes = ['rhoY']
         # self.obs_attributes = ['rho', 'rhou', 'rhov','rhoY','p2_nodes']
 
@@ -40,21 +40,13 @@ class da_params(object):
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)
 
-        # localisation matrix
-        # self.localisation_matrix = np.eye(N)
-        weights = [0.05719096,0.25464401,0.33333333,0.25464401,0.05719096,0.25464401,0.52859548,0.66666667,0.52859548,0.25464401,0.33333333,0.66666667,1.,0.66666667,0.33333333,0.25464401,0.52859548,0.66666667,0.52859548,0.25464401,0.05719096,0.25464401,0.33333333,0.25464401,0.05719096]
-        # weights = [0.01831564,0.082085,0.13533528,0.082085,0.01831564,0.082085,0.36787944,0.60653066,0.36787944,0.082085,0.13533528,0.60653066,1.,0.60653066,0.13533528,0.082085,0.36787944,0.60653066,0.36787944,0.082085,0.01831564,0.082085,0.13533528,0.082085,0.01831564]
+        da_len = len(self.da_times)
 
-        # weights3 = weights*len(self.obs_attributes)
-        # self.localisation_matrix = np.diag(weights)
-        # self.localisation_matrix += np.diag(np.ones_like(weights))
-        # self.localisation_matrix = np.diag(np.ones((len(weights3))))
-        # self.localisation_matrix = weights + 1.0
-        self.localisation_matrix = np.ones_like(weights) * 1.0 #+ weights
+        ############################################
+        # Parameters for sparse observations
+        ############################################
         self.sparse_obs = False
         self.sparse_obs_by_attr = False
-
-        da_len = len(self.da_times)
 
         if self.sparse_obs_by_attr:
             assert(0, "Not yet implemented.")
@@ -69,6 +61,9 @@ class da_params(object):
             self.sparse_obs_seeds = np.random.randint(10000,size=(da_len,da_depth)).squeeze()
 
 
+        ############################################
+        # Parameters for measurement noise
+        ############################################
         self.add_obs_noise = True
 
         self.obs_noise = {
@@ -82,8 +77,15 @@ class da_params(object):
         np.random.seed(888)
         self.obs_noise_seeds = np.random.randint(10000,size=(da_depth)).squeeze()
 
-        
-        self.aprior_error_covar = 0.0001
+
+        ############################################
+        # Parameters for LETKF subdomain size
+        ############################################
+        self.obs_X = 7
+        self.obs_Y = 5
+
+        self.localisation_matrix = self.get_loc_mat('gaussian')
+
         self.da_type = da_type
 
         # ensemble inflation factor for LETKF
@@ -106,6 +108,7 @@ class da_params(object):
             'rhoX' : 0,
             'p2_nodes' : 2,
         }
+
 
     def load_obs(self,obs_path,loc=0):
         if self.N > 1:
@@ -137,14 +140,38 @@ class da_params(object):
             obs_file.close()
         return obs
 
-    @staticmethod
-    def sampler_gaussian(var):
-        return lambda ic: np.random.normal(ic,var**0.5)
 
-    @staticmethod
-    def sampler_none():
-        return lambda ic: ic
+    def get_loc_mat(self, type, c=1.0):
+        x = (np.linspace(0,1,self.obs_X) - 0.5)
+        y = (np.linspace(0,1,self.obs_Y) - 0.5)
 
-    @staticmethod
-    def sampler_perturbator(max_shift):
-        return lambda ic: np.roll(np.roll(ic, np.random.randint(-max_shift,max_shift), axis=1), np.random.randint(-max_shift,max_shift), axis=0)
+        X,Y = np.meshgrid(x,y)
+        if type == 'constants':
+            Z = np.ones((self.obs_X, self.obs_Y))
+            return Z.flatten() * c
+        
+        elif type == 'linear':
+            Z = 1.0 - (np.sqrt(X**2 + Y**2))
+
+            return Z.flatten() * c
+
+        elif type == 'gaussian':
+            pos = np.array([X.flatten(),Y.flatten()]).T
+            norm = stats.multivariate_normal([0,0],[[0.05,0.0],[0.0,0.05]])
+            Z = norm.pdf(pos).reshape(X.shape[0],X.shape[1])
+            Z /= Z.max()
+
+            return Z.flatten() * c
+    
+
+    # @staticmethod
+    # def sampler_gaussian(var):
+    #     return lambda ic: np.random.normal(ic,var**0.5)
+
+    # @staticmethod
+    # def sampler_none():
+    #     return lambda ic: ic
+
+    # @staticmethod
+    # def sampler_perturbator(max_shift):
+    #     return lambda ic: np.roll(np.roll(ic, np.random.randint(-max_shift,max_shift), axis=1), np.random.randint(-max_shift,max_shift), axis=0)
