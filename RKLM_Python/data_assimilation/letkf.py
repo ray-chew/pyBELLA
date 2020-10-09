@@ -211,12 +211,27 @@ class prepare_rloc(object):
         self.cattr_len = len(self.ca)
         self.nattr_len = len(self.na)
 
-        # get size of the local counterpart. default = (5x5).
-        self.obs_X = obs_X
-        self.obs_Y = obs_Y
+        # get size of the local counterpart.
+        self.obs_X = dap.obs_X
+        self.obs_Y = dap.obs_Y
+
+        # make sure that subdomain is not larger than inner cellular grid
+        assert self.obs_X < elem.iicx
+        if elem.iicy == 1: # implying horizontal slice
+            assert self.obs_Y < elem.iicz
+        else:    
+            assert self.obs_Y < elem.iicy
+
+        # make sure that subdomain size is odd
+        assert self.obs_X % 2 == 1
+        assert self.obs_Y % 2 == 1
+
+        # if checks are passed, then get pad length based on subdomain / local counterpart size
+        self.pad_X = int((self.obs_X - 1) / 2)
+        self.pad_Y = int((self.obs_Y - 1) / 2)
 
         # get mask to handle BC. Periodic mask includes ghost cells/nodes and wall masks takes only the inner domain.
-        self.cmask, self.nmask = dau.boundary_mask(ud, elem, node)
+        self.cmask, self.nmask = dau.boundary_mask(ud, elem, node, self.pad_X, self.pad_Y)
 
         # get from da parameters the localisation matrix and inflation factor
         self.inf_fac = dap.inflation_factor
@@ -391,7 +406,8 @@ class prepare_rloc(object):
 
         x_pad = int((obs_X - 1) / 2)
         y_pad = int((obs_Y - 1) / 2)
-        obs = np.array([np.pad(obs_attr,(x_pad,y_pad),mode='wrap') for obs_attr in obs])
+        pads = [[x_pad, x_pad], [y_pad, y_pad]]
+        obs = np.array([np.pad(obs_attr,pads,mode='wrap') for obs_attr in obs])
 
         obs = np.array([dau.sliding_window_view(obs_attr, (obs_X,obs_Y), (1,1)) for obs_attr in obs])
 
@@ -422,7 +438,7 @@ class prepare_rloc(object):
 
     def get_bc_mask(self,type, Nx, Ny, obs_X, obs_Y):
         """
-        Mask handling the boundary condition for either cell or node grids.
+        Mask handling the boundary condition for cell or node grids in the local subdomains.
 
         """
         if type == 'cell' and self.iicy > 1:
@@ -434,7 +450,11 @@ class prepare_rloc(object):
         elif type == 'node' and self.iicyn == 2:
             bc_mask = np.ones((self.iicxn,self.iiczn))
 
-        bc_mask = np.pad(bc_mask, 2, mode='constant', constant_values=(1.0))
+        # bc_mask = np.pad(bc_mask, 2, mode='constant', constant_values=(1.0))
+
+        pads = ((self.pad_X,self.pad_X),(self.pad_Y,self.pad_Y))
+
+        bc_mask = np.pad(bc_mask, pads, mode='constant', constant_values=(1.0))
 
         if type == 'cell':
             bc_mask *= self.cmask
@@ -479,13 +499,15 @@ class prepare_rloc(object):
         Get ensemble representation of {rho, rhou...}.
 
         """
-        if inner == True:
-            slc = self.i2
-        else:
-            slc = self.i0
-
+        slc = self.i2
         loc = self.loc[quantity]
-        attribute_array = [getattr(results[:,loc,...][n],quantity)[slc] for n in range(self.N)]
+        pads = ((self.pad_X,self.pad_X),(self.pad_Y,self.pad_Y))
+
+        if inner:
+            attribute_array = [getattr(results[:,loc,...][n],quantity)[slc] for n in range(self.N)]
+        else:
+            attribute_array = [np.pad(getattr(results[:,loc,...][n],quantity)[slc],pads, mode='wrap') for n in range(self.N)]
+
         return np.array(attribute_array)
 
 
