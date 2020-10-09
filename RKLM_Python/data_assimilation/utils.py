@@ -93,14 +93,20 @@ def set_rhoY_cells(analysis,results,N,th,ud,loc_c=0,loc_n=2):
         rhoYc = (rhoYc0**th.gm1 + ud.Msq*p2c)**th.gm1inv
         setattr(results[n][loc_c], 'rhoYc', rhoYc)
         
-def boundary_mask(ud,elem,node):
+def boundary_mask(ud,elem,node,pad_X,pad_Y):
+    """
+    Returns a mask for the underlying cellular and nodal grids padded such that the size of the local subdomain has been accounted for. For ghost cells on wall boundaries, values are 0.0 and 1.0 for periodic. 
+    """
+
+    pads = [pad_X,pad_Y]
     if elem.iicy > 1:
         cmask = np.ones(elem.isc).squeeze()
         nmask = np.ones(node.isc).squeeze()
 
         for dim in range(elem.ndim):
             ghost_padding = [[0,0]] * elem.ndim
-            ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
+            # ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
+            ghost_padding[dim] = [pads[dim],pads[dim]]
 
             if ud.bdry_type[dim] == enum_bdry.BdryType.PERIODIC:
                 cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(1.0))
@@ -110,14 +116,15 @@ def boundary_mask(ud,elem,node):
                 cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(0.0))
                 nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(0.0))
     
-    elif elem.iicy == 1:
+    elif elem.iicy == 1: # implying horizontal slices
         cmask = np.ones(elem.isc).squeeze()
         nmask = np.ones(node.isc)[:,0,:]
 
         ndim = elem.ndim - 1
         for dim in range(ndim):
             ghost_padding = [[0,0]] * ndim
-            ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
+            # ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
+            ghost_padding[dim] = [pads[dim],pads[dim]]
 
             if ud.bdry_type[dim] == enum_bdry.BdryType.PERIODIC:
                 cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(1.0))
