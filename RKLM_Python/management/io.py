@@ -354,15 +354,22 @@ class io(object):
         if file.__bool__():
             file.close()
 
-
-    def jar(self, elem, node):
+    def check_jar(self):
         fn = self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + '.dat'
+        if os.path.exists(fn):
+            os.rename(fn, self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + '_old.dat')
 
-        file = open(fn,"wb")
+    def jar(self, content = None):
+        fn = self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + '.dat'
+        if os.path.exists(fn):
+            file = open(fn,"ab")
+        else:
+            file = open(fn,"wb")
+        
         # let's fill the pickle jar
-        pickle.dump(self.ud, file)
-        pickle.dump(elem, file)
-        pickle.dump(node, file)
+        if content is not None:
+            for each_pickle in content:
+                pickle.dump(each_pickle,file)
         file.close()
 
 
