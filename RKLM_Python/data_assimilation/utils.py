@@ -289,7 +289,11 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
         i2 = (slice(elem.igx,-elem.igx),slice(elem.igy,-elem.igy))
         i0 = (slice(None,),slice(None,))
 
-        Nx, Ny = elem.iicx, elem.iicy # get inner domain size
+        # get inner domain size
+        if elem.iicy == 1: # implying horizontal slice
+            Nx, Ny = elem.iicx, elem.iicz
+        else:
+            Nx, Ny = elem.iicx, elem.iicy
         N = Nx * Ny
         K *= N
         K = int(K)
