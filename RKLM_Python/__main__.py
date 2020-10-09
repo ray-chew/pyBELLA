@@ -35,6 +35,7 @@ from management.debug import find_nearest
 from time import time
 
 debug = False
+da_debug = True
 output_timesteps = False
 if debug == True: output_timesteps = True
 label_type = 'TIME'
@@ -114,8 +115,8 @@ ens = ensemble(sol_ens)
 # where are my observations?
 if N > 1:
     obs = dap.load_obs(dap.obs_path)
-    obs, obs_covar = obs_noiser(obs,dap)
-    obs, obs_mask = sparse_obs_selector(obs, elem, node, ud, dap)
+    obs_noisy, obs_covar = obs_noiser(obs,dap)
+    obs_noisy_interp, obs_mask = sparse_obs_selector(obs_noisy, elem, node, ud, dap)
 
 # add ensemble info to filename
 ud.output_suffix = '_ensemble=%i%s' %(N, ud.output_suffix)
@@ -146,7 +147,11 @@ if __name__ == '__main__':
             label = ('ensemble_mem=%i_%.3f' %(n,0.0))
         if not restart: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
-    writer.jar(elem, node)
+    writer.check_jar()
+    writer.jar([ud, elem, node])
+
+    if da_debug: writer.jar([obs,obs_noisy,obs_noisy_interp,obs_mask,obs_covar])
+    obs = obs_noisy_interp
 
     # initialise dask parallelisation and timer
     # client = Client(threads_per_worker=1, n_workers=1)
