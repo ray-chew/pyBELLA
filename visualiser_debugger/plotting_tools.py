@@ -10,7 +10,7 @@ class plotter(object):
         N = self.arr_lst.shape[0]
         
         if N > ncols:
-            self.nrows = int(int(N/ncols)+1)
+            self.nrows = int(np.ceil(int(N/ncols)))
             self.ncols = ncols
         if N <= ncols:
             self.nrows = 1
