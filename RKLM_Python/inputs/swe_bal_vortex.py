@@ -12,7 +12,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 10.0#2.0 * np.pi
+    omega = 0.0#2.0 * np.pi
 
     R_gas = 1.0
     R_vap = 461.0
@@ -55,7 +55,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+        self.is_compressible = 0
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -78,12 +78,13 @@ class UserData(object):
             if (self.coriolis_strength[i] > np.finfo(np.float).eps):
                 self.i_coriolis[i] = 1
 
-        self.xmin = - 0.5 / self.h_ref
-        self.xmax =   0.5 / self.h_ref
+        fac = 1E0
+        self.xmin = - 0.5 * fac#/ self.h_ref
+        self.xmax =   0.5 * fac#/ self.h_ref
         self.ymin = - 0.5
         self.ymax =   0.5
-        self.zmin = - 0.5 / self.h_ref
-        self.zmax =   0.5 / self.h_ref
+        self.zmin = - 0.5 * fac#/ self.h_ref
+        self.zmax =   0.5 * fac#/ self.h_ref
 
         self.u_wind_speed = 1.0
         self.w_wind_speed = 1.0
@@ -117,8 +118,8 @@ class UserData(object):
         self.advec_time_integrator = TimeIntegrator.STRANG
         # self.CFL  = 0.
         self.CFL = 0.45
-        self.dtfixed0 = 0.005 / self.t_ref
-        self.dtfixed = 0.005 / self.t_ref
+        self.dtfixed0 = 0.005 #/ self.t_ref
+        self.dtfixed = 0.005 #/ self.t_ref
 
         self.inx = 64+1
         self.iny = 1+1
@@ -179,7 +180,8 @@ class UserData(object):
         # aux = 'noda_p0.1'
         # aux = 'bld_test'
         # aux = 'comp_1.0_corr_1.0'
-        # aux = 'debug'
+        # aux = 'debug_vortparam_lake_tra_corr_2pi'
+        aux = 'debug_froude'
         self.output_suffix = "_%i_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
@@ -198,9 +200,11 @@ class UserData(object):
         return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
 
 def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
-    u0 = ud.u_wind_speed#0.0 #* ud.wind_speed
+    fac = 1E0
+
+    u0 = ud.u_wind_speed * fac#0.0 #* ud.wind_speed
     v0 = 0.0 #* ud.wind_speed
-    w0 = ud.w_wind_speed#0.0
+    w0 = ud.w_wind_speed * fac#0.0 *
 
     rotdir = 1.0
 
@@ -209,7 +213,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rho0 = a_rho * 0.0
     del_rho = a_rho * 0.5
     # R0 = 0.4
-    R0 = 0.4
+    R0 = 0.4 * fac
     fac = 1. * 1024.0
     xc = 0.0
     zc = 0.0
@@ -280,7 +284,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     coe[12] = +1.0/24
 
     rho = np.zeros_like(r)
-    Frsq = np.sqrt((u0**2 + w0**2))**2 / (g * H0)
+    # Frsq = np.sqrt((uth.max()**2 + uth.max()**2))**2 / (g * H0)
     Frsq = 1.0 / (g * 1.0)
 
     for i in range(12,24+1):
@@ -343,32 +347,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     pn = np.expand_dims(mpv.p2_nodes[:,igy,:], 1)
     mpv.p2_nodes[...] = np.repeat(pn[...], node.icy, axis=1)
 
-    ud.nonhydrostasy = float(ud.is_nonhydrostatic)
-    ud.compressibility = float(ud.is_compressible)
-
-    if ud.initial_projection == True:
-        is_compressible = np.copy(ud.is_compressible)
-        compressibility = np.copy(ud.compressibility)
-        ud.is_compressible = 0
-        ud.compressibility = 0.0
-
-        p2aux = np.copy(mpv.p2_nodes)
-
-        Sol.rhou -= u0 * Sol.rho
-        Sol.rhov -= v0 * Sol.rho
-        Sol.rhow -= w0 * Sol.rho
-
-        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5)
-
-        mpv.p2_nodes[...] = p2aux
-        mpv.dp2_nodes[...] = 0.0
-
-        Sol.rhou += u0 * Sol.rho
-        Sol.rhov += v0 * Sol.rho
-        Sol.rhow += w0 * Sol.rho
-
-        ud.is_compressible = is_compressible
-        ud.compressibility = compressibility
+    # ud.nonhydrostasy = float(ud.is_nonhydrostatic)
+    # ud.compressibility = float(ud.is_compressible)
 
     return Sol
 
