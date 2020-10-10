@@ -104,10 +104,10 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
     step = steps[1]
 
     while ((t < tout) and (step < ud.stepmax)):
+        swe_to_lake = False
         boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
         label = '%.3d' %step
-        dt, cfl, cfl_ac = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
 
         if bld is not None and window_step == 0:
             if (bld.bb or bld.cb) and ud.blending_conv is not None:
@@ -127,6 +127,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                     mpv.p2_nodes[:,1:,:] = (mpv.p2_nodes[:,1:,:] - ud.p2_min_val) #/ eps
 
                     # if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_swe_to_lake')
+                    swe_to_lake = True
 
                 else:
                     dp2n = mpv.p2_nodes
@@ -139,32 +140,35 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         else:
             c_init, c_trans = False, False
 
+        dt, cfl, cfl_ac = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
+
         if c_init and bld.cb and ud.blending_conv is not None:
             if ud.blending_conv == 'swe':
-                print("lake to swe conversion...")
+                None
+            #     print("lake to swe conversion...")
 
-                H10 = mpv.p2_nodes - mpv.p2_nodes.min()
-                H1 = H10[:,1,:] # project horizontal slice to 2D
+            #     H10 = mpv.p2_nodes - mpv.p2_nodes.min()
+            #     H1 = H10[:,1,:] # project horizontal slice to 2D
 
-                # define 2D kernel
-                kernel = np.ones((2,2))
-                kernel /= kernel.sum()
+            #     # define 2D kernel
+            #     kernel = np.ones((2,2))
+            #     kernel /= kernel.sum()
 
-                # do node-to-cell averaging
-                H1 = signal.convolve(H1, kernel, mode='valid')
+            #     # do node-to-cell averaging
+            #     H1 = signal.convolve(H1, kernel, mode='valid')
 
-                # project H1 back to horizontal slice with ghost cells
-                H1 = np.expand_dims(H1, 1)
-                H1 = np.repeat(H1, elem.icy, axis=1)
+            #     # project H1 back to horizontal slice with ghost cells
+            #     H1 = np.expand_dims(H1, 1)
+            #     H1 = np.repeat(H1, elem.icy, axis=1)
 
-                Sol.rho += H1 #+ ud.min_val
-                Sol.rhou = Sol.rhou / ud.min_val * Sol.rho
-                # Sol.rhov = Sol.rhov / ud.min_val * Sol.rho
-                Sol.rhow = Sol.rhow / ud.min_val * Sol.rho
-                Sol.rhoY = Sol.rhoY / ud.min_val * (ud.min_val+H1)#* Sol.rho
-                mpv.p2_nodes = H10 + ud.p2_min_val
+            #     Sol.rho += H1 #+ ud.min_val
+            #     Sol.rhou = Sol.rhou / ud.min_val * Sol.rho
+            #     # Sol.rhov = Sol.rhov / ud.min_val * Sol.rho
+            #     Sol.rhow = Sol.rhow / ud.min_val * Sol.rho
+            #     Sol.rhoY = Sol.rhoY / ud.min_val * (ud.min_val+H1)#* Sol.rho
+            #     mpv.p2_nodes = H10 + ud.p2_min_val
 
-                # if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_lake_to_swe')
+            #     # if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_lake_to_swe')
 
             else:
                 print("Blending... step = %i" %window_step)
@@ -288,6 +292,32 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
         euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0, writer=writer, label=str(label)+'_after_full_step')
+
+        if ud.blending_conv == 'swe' and swe_to_lake:
+            print("lake to swe conversion...")
+
+            H10 = mpv.p2_nodes - mpv.p2_nodes.min()
+            H1 = H10[:,1,:] # project horizontal slice to 2D
+
+            # define 2D kernel
+            kernel = np.ones((2,2))
+            kernel /= kernel.sum()
+
+            # do node-to-cell averaging
+            H1 = signal.convolve(H1, kernel, mode='valid')
+
+            # project H1 back to horizontal slice with ghost cells
+            H1 = np.expand_dims(H1, 1)
+            H1 = np.repeat(H1, elem.icy, axis=1)
+
+            Sol.rho += H1 #+ ud.min_val
+            Sol.rhou = Sol.rhou / ud.min_val * Sol.rho
+            # Sol.rhov = Sol.rhov / ud.min_val * Sol.rho
+            Sol.rhow = Sol.rhow / ud.min_val * Sol.rho
+            Sol.rhoY = Sol.rhoY / ud.min_val * (ud.min_val+H1)#* Sol.rho
+            mpv.p2_nodes = H10 + ud.p2_min_val
+
+            #     # if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_lake_to_swe')
 
         t += dt
         if writer != None:
