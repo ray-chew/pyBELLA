@@ -49,6 +49,7 @@ t = 0.0
 ##########################################################
 # get arguments for initial condition and ensemble size
 N, UserData, sol_init, restart, r_params = get_args()
+if N == 1: da_debug = False
 
 initial_data = vars(UserData())
 ud = UserDataInit(**initial_data)
@@ -150,8 +151,9 @@ if __name__ == '__main__':
     writer.check_jar()
     writer.jar([ud, elem, node])
 
-    if da_debug: writer.jar([obs,obs_noisy,obs_noisy_interp,obs_mask,obs_covar])
-    obs = obs_noisy_interp
+    if da_debug:
+        writer.jar([obs,obs_noisy,obs_noisy_interp,obs_mask,obs_covar])
+        obs = obs_noisy_interp
 
     # initialise dask parallelisation and timer
     # client = Client(threads_per_worker=1, n_workers=1)
