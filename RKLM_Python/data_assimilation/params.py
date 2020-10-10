@@ -2,6 +2,9 @@ import numpy as np
 import h5py
 from scipy import stats # generate Gaussian localisation matrix
 
+from scipy import signal
+from inputs.boundary import set_explicit_boundary_data, set_ghostnodes_p2 # for converter
+
 class da_params(object):
 
     def __init__(self,N,da_type='rloc'):
@@ -11,16 +14,17 @@ class da_params(object):
         # self.da_times = np.arange(0.0,10.25,0.25)[1:]
         # self.da_times = np.arange(0.0,6.1,0.25)[1:]
         # self.da_times = np.arange(0.0,864000.0+1200.0,1200.0)[1:][::4]
-        self.da_times = np.arange(0.0,1.01,0.01)[1:]
+        self.da_times = np.arange(0.0,1.05,0.05)[1:]
         # self.da_times = []
         # self.obs_attributes = ['rho', 'rhou', 'rhow', 'rhoY', 'p2_nodes']
-        self.obs_attributes = ['rhou', 'rhow']
+        self.obs_attributes = ['rho']
+        # self.obs_attributes = ['rhou', 'rhow']
         # self.obs_attributes = ['rho', 'rhov']
         # self.obs_attributes = ['rho','rhou','rhov']
         # self.obs_attributes = ['rhou','p2_nodes']
         # self.obs_attributes = ['p2_nodes']
         # self.obs_attributes = ['rhoY']
-        # self.obs_attributes = ['rho', 'rhou', 'rhov','rhoY','p2_nodes']
+        # self.obs_attributes = ['rho', 'rhou', 'rhow','rhoY','p2_nodes']
 
         # which attributes to inflate in ensemble inflation?
         self.attributes = ['rho', 'rhou', 'rhov']
@@ -35,23 +39,24 @@ class da_params(object):
         # self.obs_path = './output_swe/output_swe_ensemble=1_256_1_256_864000.0_truthgen.h5'
 
         # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0.h5'
-        self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0_corr_10.0_tra.h5'
+        self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0_tra_truth.h5'
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)
+        # self.converter = self.converter
 
         da_len = len(self.da_times)
 
         ############################################
         # Parameters for sparse observations
         ############################################
-        self.sparse_obs = False
+        self.sparse_obs = True
         self.sparse_obs_by_attr = False
 
         if self.sparse_obs_by_attr:
             assert(0, "Not yet implemented.")
 
-        self.obs_frac = 0.5 # fraction of the observations to pick.
+        self.obs_frac = 0.25 # fraction of the observations to pick.
         if self.sparse_obs_by_attr == True:
             da_depth = len(self.obs_attributes)
         else:
@@ -66,30 +71,36 @@ class da_params(object):
         ############################################
         self.add_obs_noise = True
 
+        # self.obs_noise = {
+        #     'rhou' : 0.05,
+        #     'rhow' : 0.05
+        # }
         self.obs_noise = {
-            'rhou' : 0.1,
-            'rhow' : 0.1
+            'rho' : 0.1,
         }
 
         da_depth = len(self.obs_attributes)
 
         # if self.add_obs_noise and da_len > 0:
         np.random.seed(888)
-        self.obs_noise_seeds = np.random.randint(10000,size=(da_depth)).squeeze()
+        if da_depth > 1:
+            self.obs_noise_seeds = np.random.randint(10000,size=(da_depth)).squeeze()
+        else:
+            self.obs_noise_seeds = [np.random.randint(10000)]
 
 
         ############################################
         # Parameters for LETKF subdomain size
         ############################################
-        self.obs_X = 7
-        self.obs_Y = 5
+        self.obs_X = 11
+        self.obs_Y = 11
 
         self.localisation_matrix = self.get_loc_mat('gaussian')
 
         self.da_type = da_type
 
         # ensemble inflation factor for LETKF
-        self.inflation_factor = 1.0
+        self.inflation_factor = 1.05
 
         # rejuvenation factor for ETPF
         self.rejuvenation_factor = 0.001
@@ -108,6 +119,38 @@ class da_params(object):
             'rhoX' : 0,
             'p2_nodes' : 2,
         }
+
+    @staticmethod
+    def converter(results, N, mpv, elem, node, th, ud):
+        '''
+        Do this after data assimilation for HS balanced vortex.
+
+        '''
+        print("Post DA conversion...")
+
+        g = 9.81
+        for n in range(N):
+            set_explicit_boundary_data(results[n][0],elem,ud,th,mpv)
+            results[n][0].rhoY[...] = g / 2.0 * results[n][0].rho**2
+
+            igy = elem.igy
+
+            kernel = np.ones((2,2))
+            kernel /= kernel.sum()
+
+            pn = signal.convolve(results[n][0].rhoY[:,igy,:], kernel, mode='valid')
+
+            set_explicit_boundary_data(results[n][0],elem,ud,th,mpv)
+            pn = np.expand_dims(pn, 1)
+            pn = np.repeat(pn, node.icy, axis=1)
+
+            results[n][2].p2_nodes[1:-1,:,1:-1] = pn
+            set_ghostnodes_p2(results[n][2].p2_nodes,node,ud)
+
+            pn = np.expand_dims(results[n][2].p2_nodes[:,igy,:], 1)
+            results[n][2].p2_nodes[...] = np.repeat(pn[...], node.icy, axis=1)
+
+        return results
 
 
     def load_obs(self,obs_path,loc=0):
