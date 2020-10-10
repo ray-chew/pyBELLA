@@ -283,7 +283,7 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
     else:
         sparse_obs_by_attr = dap.sparse_obs_by_attr
         seeds = dap.sparse_obs_seeds
-        K = dap.obs_frac
+        K = 1.0 - dap.obs_frac
 
         # define inner and outer domains in 2D
         i2 = (slice(elem.igx,-elem.igx),slice(elem.igy,-elem.igy))
@@ -294,6 +294,7 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
             Nx, Ny = elem.iicx, elem.iicz
         else:
             Nx, Ny = elem.iicx, elem.iicy
+
         N = Nx * Ny
         K *= N
         K = int(K)
@@ -309,16 +310,17 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
             Xn, Yn = node.x, node.y
             Xn, Yn = np.meshgrid(Xn, Yn)
 
-        mask_arr = np.copy(obs)
+        mask_arr = deepcopy(obs)
+        obs_noisy_interp = deepcopy(obs)
 
         # obs is a list of dictionaries, list length da_len, dictionary length attr_len.
         for tt,obs_t in enumerate(obs):
             attr_cnt = tt
             for key, value in obs_t.items():
                 if key == 'p2_nodes':
-                    grid_x, grid_y = Xn[i2], Yn[i2]
+                    grid_x, grid_y = Xn[i0], Yn[i0]
                 else:
-                    grid_x, grid_y = Xc[i2], Yc[i2]
+                    grid_x, grid_y = Xc[i0], Yc[i0]
                 grid_x, grid_y = grid_x.T, grid_y.T
                 np.random.seed(seeds[attr_cnt])
 
@@ -328,9 +330,10 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
                 # append mask array with new seed
                 mask = np.array([0] * K + [1] * (N-K))
                 np.random.shuffle(mask)
-                # mask = mask.reshape(Nx,Ny)
+                mask = mask.reshape(Nx,Ny)
+                mask = np.pad(mask,(2,2),mode='constant',constant_values=0.0)
 
-                values = np.ma.array(value[i2], mask=mask).compressed()
+                values = np.ma.array(value[i0], mask=mask).compressed()
                 X = np.ma.array(grid_x, mask=mask).compressed()
                 Y = np.ma.array(grid_y, mask=mask).compressed()
 
@@ -340,15 +343,15 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
 
                 values = griddata(points, values, (grid_x, grid_y), method='cubic')
 
-                obs[tt][key][...] = 0.0
+                obs_noisy_interp[tt][key][...] = 0.0
                 mask_arr[tt][key][...] = 0.0
-                obs[tt][key][i2] = values
-                mask_arr[tt][key][i2] = mask.reshape(Nx,Ny)
+                obs_noisy_interp[tt][key][i0] = values
+                mask_arr[tt][key][i2] = mask[i2].reshape(Nx,Ny)
                 
                 if sparse_obs_by_attr:
                     attr_cnt += 1
 
-        return obs, mask_arr
+        return obs_noisy_interp, mask_arr
 
 
 def obs_noiser(obs,dap):
@@ -357,6 +360,7 @@ def obs_noiser(obs,dap):
         assert len(dap.obs_noise) == len(dap.obs_attributes), "obs_noise length has to be equal to obs_attributes len"
 
         obs_covar = np.zeros((len(dap.da_times),len(dap.obs_attributes)))
+        obs_noisy = deepcopy(obs)
 
         for tt, obs_t in enumerate(obs):
             attr_cnt = 0
@@ -375,13 +379,13 @@ def obs_noiser(obs,dap):
                 noise = np.random.normal(0.0,std_dev, size=(shp))
 
                 # add noise onto observation
-                obs[tt][key][...] += noise
+                obs_noisy[tt][key][...] += noise
 
                 obs_covar[tt,attr_cnt] = var
                 attr_cnt += 1
                  
 
-        return obs, obs_covar
+        return obs_noisy, obs_covar
 
     else:
         return obs, None
