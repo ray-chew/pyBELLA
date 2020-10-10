@@ -12,7 +12,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 0.0#2.0 * np.pi
+    omega = 2.0 * np.pi #/ 100.0
 
     R_gas = 1.0
     R_vap = 461.0
@@ -55,7 +55,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 0
+        self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -78,13 +78,13 @@ class UserData(object):
             if (self.coriolis_strength[i] > np.finfo(np.float).eps):
                 self.i_coriolis[i] = 1
 
-        fac = 1E0
-        self.xmin = - 0.5 * fac#/ self.h_ref
-        self.xmax =   0.5 * fac#/ self.h_ref
+        self.fac = 1E3
+        self.xmin = - 0.5 * self.fac#/ self.h_ref
+        self.xmax =   0.5 * self.fac#/ self.h_ref
         self.ymin = - 0.5
         self.ymax =   0.5
-        self.zmin = - 0.5 * fac#/ self.h_ref
-        self.zmax =   0.5 * fac#/ self.h_ref
+        self.zmin = - 0.5 * self.fac#/ self.h_ref
+        self.zmax =   0.5 * self.fac#/ self.h_ref
 
         self.u_wind_speed = 1.0
         self.w_wind_speed = 1.0
@@ -121,6 +121,9 @@ class UserData(object):
         self.dtfixed0 = 0.005 #/ self.t_ref
         self.dtfixed = 0.005 #/ self.t_ref
 
+        self.dtfixed0 = 1.0 / self.t_ref
+        self.dtfixed = 1.0 / self.t_ref
+
         self.inx = 64+1
         self.iny = 1+1
         self.inz = 64+1
@@ -144,7 +147,7 @@ class UserData(object):
 
         self.initial_blending = False
 
-        self.continuous_blending = False
+        self.continuous_blending = True
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
@@ -159,7 +162,7 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        self.tout = np.arange(0, 1.0 + 0.01, 0.01)
+        self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
         # self.tout = [1E6]
 
         # self.tout = times.copy()
@@ -175,13 +178,14 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
-        aux = 'wdawloc_1.0_rhou_rhow_p0.5_debug'
+        aux = 'wdawloc_hp0.05_rho_tra'
         # aux = 'comp_test_0'
         # aux = 'noda_p0.1'
         # aux = 'bld_test'
         # aux = 'comp_1.0_corr_1.0'
         # aux = 'debug_vortparam_lake_tra_corr_2pi'
-        aux = 'debug_froude'
+        # aux = 'debug_H0'
+        # aux = 'comp_1.0_tra_truth'
         self.output_suffix = "_%i_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
@@ -200,21 +204,18 @@ class UserData(object):
         return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
 
 def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
-    fac = 1E0
+    scale = ud.fac
 
-    u0 = ud.u_wind_speed * fac#0.0 #* ud.wind_speed
+    u0 = ud.u_wind_speed * scale#0.0 #* ud.wind_speed
     v0 = 0.0 #* ud.wind_speed
-    w0 = ud.w_wind_speed * fac#0.0 *
+    w0 = ud.w_wind_speed * scale#0.0 *
 
     rotdir = 1.0
 
-    p0 = 1.0
-    a_rho = 1.0
-    rho0 = a_rho * 0.0
-    del_rho = a_rho * 0.5
     # R0 = 0.4
-    R0 = 0.4 * fac
+    R0 = 0.4 * scale
     fac = 1. * 1024.0
+    # fac = 1.0
     xc = 0.0
     zc = 0.0
 
@@ -225,11 +226,23 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     if seed != None:
         np.random.seed(seed)
-        # perturb = (np.random.random() - 0.5) / 10.0
-        # print(perturb)
-        xc += (np.random.random() - 0.5) / 2.0
-        zc += (np.random.random() - 0.5) / 2.0
-        print(seed, xc, zc)
+        H0 += (np.random.random() - 0.5) * 0.1
+        print(seed, H0)
+
+        # xc += (np.random.random() - 0.5) * scale / 5.0
+        # zc += (np.random.random() - 0.5) * scale / 5.0
+        # print(seed, xc, zc)
+
+    # used to generate truth
+
+    # np.random.seed(2234)
+    # H0 += (np.random.random() - 0.5) * 0.1
+    # print(seed, H0)
+    # ud.H0 = H0
+
+    # xc += (np.random.random() - 0.5) * scale / 5.0
+    # zc += (np.random.random() - 0.5) * scale / 5.0
+    # print(seed, xc, zc)
 
     xcm = xc - np.sign(xc) * (ud.xmax - ud.xmin)
     zcm = zc - np.sign(zc) * (ud.zmax - ud.zmin)
@@ -284,13 +297,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     coe[12] = +1.0/24
 
     rho = np.zeros_like(r)
-    # Frsq = np.sqrt((uth.max()**2 + uth.max()**2))**2 / (g * H0)
-    Frsq = 1.0 / (g * 1.0)
+    Frsq = (uth.max()**2 + uth.max()**2) / (g * H0)
+    # Frsq = 1.0 / (g * 1.0)
 
     for i in range(12,24+1):
         rho[...] += fac**2 * coe[i-12] * (r/R0)**i * (r < R0)
 
-    rho *= Frsq #* (r < R0)
+    rho *= Frsq * scale #* (r < R0) * scale
     rho = (rho - rho.max()) * (r < R0) #* H0
     rho += H0 #* (r < R0)
 
@@ -312,8 +325,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     else:
         min_val = H0
 
-        rho_diff = rho.max() - rho.min()
-        # rho_diff = H0 - rho.min()
+        # rho_diff = rho.max() - rho.min()
+        rho_diff = H0 - rho.min()
 
         H1 = (rho - min_val) / rho_diff
 
