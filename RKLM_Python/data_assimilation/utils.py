@@ -369,7 +369,8 @@ def obs_noiser(obs,dap):
                 np.random.seed(seed)
 
                 shp = value.shape
-                obs_max = value.max()
+                
+                obs_max = np.abs(value.max() - value.min())
 
                 # here, we take the fraction defined by obs_noise multiplied by the maximum value of the observation as the standard deviation of the measurement noise.
                 std_dev = (dap.obs_noise[key] * obs_max)
@@ -384,7 +385,8 @@ def obs_noiser(obs,dap):
                 obs_covar[tt,attr_cnt] = var
                 attr_cnt += 1
                  
-
+        obs_covar_mean = obs_covar.mean(axis=0)
+        obs_covar /= obs_covar_mean
         return obs_noisy, obs_covar
 
     else:
