@@ -282,6 +282,12 @@ def set_ghostnodes_p2(p,node,ud):
         else: # ud.bdry_type[dim] == BdryType.WALL:
             p[...] = np.pad(p[idx], ghost_padding, 'reflect')
 
+    # if periodic_plus_one 
+    if node.iicy == 2: # implying horizontal slices
+        pn = p[:,2,:]
+        pn = np.expand_dims(pn, axis=1)
+        p[...] = np.repeat(pn, node.icy, axis=1)
+
 
 def get_ghost_padding(ndim,dim,igs):
     """
