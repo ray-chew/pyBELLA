@@ -5,7 +5,7 @@ import numpy as np
 import os
 os.chdir('../')
 
-N = 1
+N = 10
 
 restart = False
 #########################################################
