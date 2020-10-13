@@ -212,7 +212,8 @@ class UserData(object):
         # aux = 'psinc_ref'
         # aux = 'wdawoloc'
         # aux = 'noda_noperturb'
-        aux = 'time_test'
+        # aux = 'time_test'
+        aux = 'debug_da_ext'
         self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
         # self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))

@@ -12,7 +12,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 2.0 * np.pi #/ 100.0
+    omega = 0.0#2.0 * np.pi #/ 100.0
 
     R_gas = 1.0
     R_vap = 461.0
@@ -78,7 +78,7 @@ class UserData(object):
             if (self.coriolis_strength[i] > np.finfo(np.float).eps):
                 self.i_coriolis[i] = 1
 
-        self.fac = 1E3
+        self.fac = 1E0
         self.xmin = - 0.5 * self.fac#/ self.h_ref
         self.xmax =   0.5 * self.fac#/ self.h_ref
         self.ymin = - 0.5
@@ -116,7 +116,7 @@ class UserData(object):
 
         self.time_integrator = TimeIntegrator.SI_MIDPT
         self.advec_time_integrator = TimeIntegrator.STRANG
-        # self.CFL  = 0.
+        # self.CFL  = 0.9
         self.CFL = 0.45
         self.dtfixed0 = 0.005 #/ self.t_ref
         self.dtfixed = 0.005 #/ self.t_ref
@@ -148,7 +148,7 @@ class UserData(object):
         self.initial_blending = False
 
         self.continuous_blending = True
-        self.no_of_pi_initial = 1
+        self.no_of_pi_initial = 2
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
@@ -163,6 +163,7 @@ class UserData(object):
         self.synchronize_weight = 0.0
 
         self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
+        # self.tout = [1.0]
         # self.tout = [1E6]
 
         # self.tout = times.copy()
@@ -178,14 +179,19 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
-        aux = 'wdawloc_hp0.05_rho_tra'
+        aux = 'wdawloc_pp_rhou_rhow_tra'
+        # aux = 'debug_psinc_1E3'
         # aux = 'comp_test_0'
-        # aux = 'noda_p0.1'
+        # aux = 'noda_pp'
         # aux = 'bld_test'
         # aux = 'comp_1.0_corr_1.0'
         # aux = 'debug_vortparam_lake_tra_corr_2pi'
         # aux = 'debug_H0'
         # aux = 'comp_1.0_tra_truth'
+        # aux = 'comp_1.0_pp_tra_truth'
+        # aux = 'get_initial_perturb'
+
+        self.aux = aux
         self.output_suffix = "_%i_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
@@ -212,10 +218,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     rotdir = 1.0
 
-    # R0 = 0.4
     R0 = 0.4 * scale
     fac = 1. * 1024.0
-    # fac = 1.0
     xc = 0.0
     zc = 0.0
 
@@ -226,23 +230,28 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     if seed != None:
         np.random.seed(seed)
-        H0 += (np.random.random() - 0.5) * 0.1
-        print(seed, H0)
+        # H0 += (np.random.random() - 0.5) * 0.1
+        # print(seed, H0)
 
-        # xc += (np.random.random() - 0.5) * scale / 5.0
-        # zc += (np.random.random() - 0.5) * scale / 5.0
-        # print(seed, xc, zc)
+        xc += (np.random.random() - 0.5) * scale / 5.0
+        zc += (np.random.random() - 0.5) * scale / 5.0
+        print(seed, xc, zc)
 
     # used to generate truth
 
-    # np.random.seed(2234)
-    # H0 += (np.random.random() - 0.5) * 0.1
-    # print(seed, H0)
-    # ud.H0 = H0
+    if 'truth' in ud.aux:
+        np.random.seed(2233)
+        # H0 += (np.random.random() - 0.5) * 0.1
+        # print(seed, H0)
+        # ud.H0 = H0
 
-    # xc += (np.random.random() - 0.5) * scale / 5.0
-    # zc += (np.random.random() - 0.5) * scale / 5.0
-    # print(seed, xc, zc)
+        xc += (np.random.random() - 0.5) * scale / 5.0
+        zc += (np.random.random() - 0.5) * scale / 5.0
+        print(seed, xc, zc)
+        ud.xc = xc
+        ud.zc = zc
+
+
 
     xcm = xc - np.sign(xc) * (ud.xmax - ud.xmin)
     zcm = zc - np.sign(zc) * (ud.zmax - ud.zmin)
@@ -298,7 +307,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     rho = np.zeros_like(r)
     Frsq = (uth.max()**2 + uth.max()**2) / (g * H0)
-    # Frsq = 1.0 / (g * 1.0)
+    Frsq = 1.0 / (g * 1.0)
+    # Frsq = 1.0 / (g * H0)
 
     for i in range(12,24+1):
         rho[...] += fac**2 * coe[i-12] * (r/R0)**i * (r < R0)
@@ -360,8 +370,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     pn = np.expand_dims(mpv.p2_nodes[:,igy,:], 1)
     mpv.p2_nodes[...] = np.repeat(pn[...], node.icy, axis=1)
 
-    # ud.nonhydrostasy = float(ud.is_nonhydrostatic)
-    # ud.compressibility = float(ud.is_compressible)
+    ud.nonhydrostasy = float(ud.is_nonhydrostatic)
+    ud.compressibility = float(ud.is_compressible)
 
     return Sol
 
