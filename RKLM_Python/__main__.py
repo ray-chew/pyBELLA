@@ -87,7 +87,7 @@ if dap.da_type == 'rloc':
 
 print("Generating initial ensemble...")
 sol_ens = np.zeros((N), dtype=object)
-np.random.seed(9999)
+np.random.seed(888)
 seeds = np.random.randint(10000,size=N) if N > 1 else None
 if seeds is not None and restart == False:
     print("Seeds used in generating initial ensemble spread = ", seeds)
@@ -241,8 +241,8 @@ if __name__ == '__main__':
                 results = HSprojector_3t2D(results, elem, dap, N)
                 results = rloc.analyse(results,obs,obs_covar,obs_mask,N,tout)
                 results = HSprojector_2t3D(results, elem, node, dap, N)
-                if hasattr(dap, 'converter'):
-                    results = dap.converter(results, N, mpv, elem, node, th, ud)
+                # if hasattr(dap, 'converter'):
+                    # results = dap.converter(results, N, mpv, elem, node, th, ud)
 
             ##################################################
             # ETPF
