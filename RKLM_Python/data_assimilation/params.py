@@ -17,8 +17,8 @@ class da_params(object):
         self.da_times = np.arange(0.0,1.05,0.05)[1:]
         # self.da_times = []
         # self.obs_attributes = ['rho', 'rhou', 'rhow', 'rhoY', 'p2_nodes']
-        self.obs_attributes = ['rho']
-        # self.obs_attributes = ['rhou', 'rhow']
+        # self.obs_attributes = ['rho']
+        self.obs_attributes = ['rhou', 'rhow']
         # self.obs_attributes = ['rho', 'rhov']
         # self.obs_attributes = ['rho','rhou','rhov']
         # self.obs_attributes = ['rhou','p2_nodes']
@@ -39,7 +39,8 @@ class da_params(object):
         # self.obs_path = './output_swe/output_swe_ensemble=1_256_1_256_864000.0_truthgen.h5'
 
         # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0.h5'
-        self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0_tra_truth.h5'
+        # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0_tra_truth.h5'
+        self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0_pp_tra_truth.h5'
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)
@@ -50,13 +51,13 @@ class da_params(object):
         ############################################
         # Parameters for sparse observations
         ############################################
-        self.sparse_obs = True
+        self.sparse_obs = False  
         self.sparse_obs_by_attr = False
 
         if self.sparse_obs_by_attr:
             assert(0, "Not yet implemented.")
 
-        self.obs_frac = 0.25 # fraction of the observations to pick.
+        self.obs_frac = 0.50 # fraction of the observations to pick.
         if self.sparse_obs_by_attr == True:
             da_depth = len(self.obs_attributes)
         else:
@@ -69,15 +70,15 @@ class da_params(object):
         ############################################
         # Parameters for measurement noise
         ############################################
-        self.add_obs_noise = True
+        self.add_obs_noise = False
 
-        # self.obs_noise = {
-        #     'rhou' : 0.05,
-        #     'rhow' : 0.05
-        # }
         self.obs_noise = {
-            'rho' : 0.1,
+            'rhou' : 0.05,
+            'rhow' : 0.05
         }
+        # self.obs_noise = {
+        #     'rho' : 0.1,
+        # }
 
         da_depth = len(self.obs_attributes)
 
@@ -95,12 +96,13 @@ class da_params(object):
         self.obs_X = 11
         self.obs_Y = 11
 
+        # constants, linear, gaussian
         self.localisation_matrix = self.get_loc_mat('gaussian')
 
         self.da_type = da_type
 
         # ensemble inflation factor for LETKF
-        self.inflation_factor = 1.05
+        self.inflation_factor = 1.00
 
         # rejuvenation factor for ETPF
         self.rejuvenation_factor = 0.001
@@ -194,7 +196,8 @@ class da_params(object):
             return Z.flatten() * c
         
         elif type == 'linear':
-            Z = 1.0 - (np.sqrt(X**2 + Y**2))
+            Z = (np.sqrt(X**2 + Y**2))
+            Z = Z.max() - Z
 
             return Z.flatten() * c
 
@@ -202,6 +205,7 @@ class da_params(object):
             pos = np.array([X.flatten(),Y.flatten()]).T
             norm = stats.multivariate_normal([0,0],[[0.05,0.0],[0.0,0.05]])
             Z = norm.pdf(pos).reshape(X.shape[0],X.shape[1])
+            Z = Z - Z.min()
             Z /= Z.max()
 
             return Z.flatten() * c
