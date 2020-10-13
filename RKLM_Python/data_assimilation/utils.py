@@ -2,7 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy
 from scipy import signal
+from scipy.interpolate import griddata
 from inputs import boundary, enum_bdry
+from copy import deepcopy
 
 class ensemble(object):
     def __init__(self, input_ensemble=None):
@@ -91,14 +93,20 @@ def set_rhoY_cells(analysis,results,N,th,ud,loc_c=0,loc_n=2):
         rhoYc = (rhoYc0**th.gm1 + ud.Msq*p2c)**th.gm1inv
         setattr(results[n][loc_c], 'rhoYc', rhoYc)
         
-def boundary_mask(ud,elem,node):
+def boundary_mask(ud,elem,node,pad_X,pad_Y):
+    """
+    Returns a mask for the underlying cellular and nodal grids padded such that the size of the local subdomain has been accounted for. For ghost cells on wall boundaries, values are 0.0 and 1.0 for periodic. 
+    """
+
+    pads = [pad_X,pad_Y]
     if elem.iicy > 1:
         cmask = np.ones(elem.isc).squeeze()
         nmask = np.ones(node.isc).squeeze()
 
         for dim in range(elem.ndim):
             ghost_padding = [[0,0]] * elem.ndim
-            ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
+            # ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
+            ghost_padding[dim] = [pads[dim],pads[dim]]
 
             if ud.bdry_type[dim] == enum_bdry.BdryType.PERIODIC:
                 cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(1.0))
@@ -108,14 +116,15 @@ def boundary_mask(ud,elem,node):
                 cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(0.0))
                 nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(0.0))
     
-    elif elem.iicy == 1:
+    elif elem.iicy == 1: # implying horizontal slices
         cmask = np.ones(elem.isc).squeeze()
         nmask = np.ones(node.isc)[:,0,:]
 
         ndim = elem.ndim - 1
         for dim in range(ndim):
             ghost_padding = [[0,0]] * ndim
-            ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
+            # ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
+            ghost_padding[dim] = [pads[dim],pads[dim]]
 
             if ud.bdry_type[dim] == enum_bdry.BdryType.PERIODIC:
                 cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(1.0))
@@ -260,3 +269,125 @@ def HSprojector_2t3D(results, elem, node, dap, N):
 
     return results
     
+
+def sparse_obs_selector(obs, elem, node, ud, dap):
+    sparse_obs = dap.sparse_obs
+
+    if not sparse_obs or len(dap.da_times) == 0:
+        mask = deepcopy(obs)
+        for tt,mask_t in enumerate(mask):
+            for key, _ in mask_t.items():
+                mask[tt][key][...] = 1.0
+        return obs, mask
+    
+    else:
+        sparse_obs_by_attr = dap.sparse_obs_by_attr
+        seeds = dap.sparse_obs_seeds
+        K = 1.0 - dap.obs_frac
+
+        # define inner and outer domains in 2D
+        i2 = (slice(elem.igx,-elem.igx),slice(elem.igy,-elem.igy))
+        i0 = (slice(None,),slice(None,))
+
+        # get inner domain size
+        if elem.iicy == 1: # implying horizontal slice
+            Nx, Ny = elem.iicx, elem.iicz
+        else:
+            Nx, Ny = elem.iicx, elem.iicy
+
+        N = Nx * Ny
+        K *= N
+        K = int(K)
+
+        if elem.iicy == 1: # implying horizontal slice
+            Xc, Yc = elem.x, elem.z
+            Xc, Yc = np.meshgrid(Xc, Yc)
+            Xn, Yn = node.x, node.z
+            Xn, Yn = np.meshgrid(Xn, Yn)
+        else: # implying vertical slice
+            Xc, Yc = elem.x, elem.y
+            Xc, Yc = np.meshgrid(Xc, Yc)
+            Xn, Yn = node.x, node.y
+            Xn, Yn = np.meshgrid(Xn, Yn)
+
+        mask_arr = deepcopy(obs)
+        obs_noisy_interp = deepcopy(obs)
+
+        # obs is a list of dictionaries, list length da_len, dictionary length attr_len.
+        for tt,obs_t in enumerate(obs):
+            attr_cnt = tt
+            for key, value in obs_t.items():
+                if key == 'p2_nodes':
+                    grid_x, grid_y = Xn[i0], Yn[i0]
+                else:
+                    grid_x, grid_y = Xc[i0], Yc[i0]
+                grid_x, grid_y = grid_x.T, grid_y.T
+                np.random.seed(seeds[attr_cnt])
+
+                # ref: method for generating random boolean array given a probability of 1's and 0's.
+                # https://stackoverflow.com/questions/19597473/binary-random-array-with-a-specific-proportion-of-ones/19597805
+
+                # append mask array with new seed
+                mask = np.array([0] * K + [1] * (N-K))
+                np.random.shuffle(mask)
+                mask = mask.reshape(Nx,Ny)
+                mask = np.pad(mask,(2,2),mode='constant',constant_values=0.0)
+
+                values = np.ma.array(value[i0], mask=mask).compressed()
+                X = np.ma.array(grid_x, mask=mask).compressed()
+                Y = np.ma.array(grid_y, mask=mask).compressed()
+
+                points = np.zeros((len(values),2))
+                points[:,0] = X[...].flatten()
+                points[:,1] = Y[...].flatten()
+
+                values = griddata(points, values, (grid_x, grid_y), method='cubic')
+
+                obs_noisy_interp[tt][key][...] = 0.0
+                mask_arr[tt][key][...] = 0.0
+                obs_noisy_interp[tt][key][i0] = values
+                mask_arr[tt][key][i2] = mask[i2].reshape(Nx,Ny)
+                
+                if sparse_obs_by_attr:
+                    attr_cnt += 1
+
+        return obs_noisy_interp, mask_arr
+
+
+def obs_noiser(obs,dap):
+    if dap.add_obs_noise:
+        assert isinstance(dap.obs_noise, dict), "obs_noise has to be dict"
+        assert len(dap.obs_noise) == len(dap.obs_attributes), "obs_noise length has to be equal to obs_attributes len"
+
+        obs_covar = np.zeros((len(dap.da_times),len(dap.obs_attributes)))
+        obs_noisy = deepcopy(obs)
+
+        for tt, obs_t in enumerate(obs):
+            attr_cnt = 0
+            for key, value in obs_t.items():
+                seed = dap.obs_noise_seeds[attr_cnt]
+                np.random.seed(seed)
+
+                shp = value.shape
+                
+                obs_max = np.abs(value.max() - value.min())
+
+                # here, we take the fraction defined by obs_noise multiplied by the maximum value of the observation as the standard deviation of the measurement noise.
+                std_dev = (dap.obs_noise[key] * obs_max)
+                var = std_dev**2
+
+                # generate gaussian noise for observations.
+                noise = np.random.normal(0.0,std_dev, size=(shp))
+
+                # add noise onto observation
+                obs_noisy[tt][key][...] += noise
+
+                obs_covar[tt,attr_cnt] = var
+                attr_cnt += 1
+                 
+        obs_covar_mean = obs_covar.mean(axis=0)
+        obs_covar /= obs_covar_mean
+        return obs_noisy, obs_covar
+
+    else:
+        return obs, None
