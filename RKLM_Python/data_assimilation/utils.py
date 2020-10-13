@@ -277,7 +277,7 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
         mask = deepcopy(obs)
         for tt,mask_t in enumerate(mask):
             for key, _ in mask_t.items():
-                mask[tt][key][...] = 1
+                mask[tt][key][...] = 1.0
         return obs, mask
     
     else:
