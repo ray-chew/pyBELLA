@@ -18,6 +18,8 @@ from copy import deepcopy
 from scipy import signal
 import h5py
 
+from termcolor import colored
+
 def data_init(ud):
     """
     Helper function to initialise the `elem` and `node` grids, corresponding to the cell and node grids, from a given user iniital data file.
@@ -109,25 +111,43 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         label = '%.3d' %step
 
+        dt, cfl, cfl_ac = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
+
         if bld is not None and window_step == 0:
             if (bld.bb or bld.cb) and ud.blending_conv is not None:
                 if ud.blending_conv == 'swe':
-                    print("swe to lake conversion...")
+                    print(colored("swe to lake conversion...",'blue'))
 
-                    setattr(ud,'min_val',Sol.rho.min()) # save the min value to Sol container
-                    # eps = Sol.rho.max() - Sol.rho.min()
-                    # setattr(ud,'min_val',1.0)
+                    H1 = deepcopy(Sol.rho[:,2,:])
+                    setattr(ud,'min_val',H1.min())
+                    setattr(ud,'rho_diff',H1.max() - ud.min_val)
+                    setattr(ud,'H0',Sol.rho.max())
+                    H1 = (H1 - ud.min_val) / ud.rho_diff
+                    H1 = 9.81 / 2.0 * H1**2
+                    H1 = H1**th.gamminv
+                    print(colored(ud.H0, 'red'))
+
+
+                    kernel = np.ones((2,2))
+                    kernel /= kernel.sum()
+                    pn = signal.convolve(H1, kernel, mode='valid')
+
                     Sol.rhou[...] = Sol.rhou / Sol.rho * ud.min_val
-                    # Sol.rhov[...] = Sol.rhov / Sol.rho * ud.min_val
+                    Sol.rhov[...] = Sol.rhov / Sol.rho * ud.min_val
                     Sol.rhow[...] = Sol.rhow / Sol.rho * ud.min_val
                     Sol.rhoY[...] = Sol.rhoY / Sol.rho * ud.min_val
                     Sol.rho[...] = ud.min_val
 
-                    setattr(ud,'p2_min_val',Sol.rhoY.min())
-                    # setattr(ud,'p2_min_val',np.sqrt(9.81/2.0))
-                    eps = mpv.p2_nodes.max() - ud.p2_min_val
-                    mpv.p2_nodes[:,1:,:] = (mpv.p2_nodes[:,1:,:] - ud.p2_min_val) #/ eps
-                    # mpv.p2_nodes[:,1:,:] -= mpv.p2_nodes[:,1:,:].mean(axis=(0,2),keepdims=True)
+                    # setattr(ud,'p2_min_val',mpv.p2_nodes.min())
+                    # eps = mpv.p2_nodes.max() - ud.p2_min_val
+                    # setattr(ud,'eps',eps)
+                    # mpv.p2_nodes[...] = (mpv.p2_nodes[...] - ud.p2_min_val) #/ eps
+
+                    pn = np.expand_dims(pn, axis=1)
+                    mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
+                    boundary.set_ghostnodes_p2(mpv.p2_nodes,node,ud)
+
+                    # mpv.p2_nodes -= mpv.p2_nodes.mean(axis=(0,2),keepdims=True)
 
                     if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_swe_to_lake')
                     swe_to_lake = True
@@ -142,8 +162,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             c_init, c_trans = bld.criterion_init(window_step), bld.criterion_trans(window_step)
         else:
             c_init, c_trans = False, False
-
-        dt, cfl, cfl_ac = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
 
         if c_init and bld.cb and ud.blending_conv is not None:
             if ud.blending_conv == 'swe':
@@ -174,7 +192,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                 # if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_lake_to_swe')
 
             else:
-                print("Blending... step = %i" %window_step)
+                print(colored("Blending... step = %i" %window_step,'blue'))
                 Sol_freeze = deepcopy(Sol)
                 mpv_freeze = deepcopy(mpv)
 
@@ -242,9 +260,9 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                 print("step = %i, window_step = %i" %(step,window_step))
             else:
                 print("step = %i, window_step = %f" %(step,window_step))
-        print("is_compressible = %i, is_nonhydrostatic = %i" %(ud.is_compressible, ud.is_nonhydrostatic))
-        print("compressibility = %.3f, nonhydrostasy = %.3f" %(ud.compressibility,ud.nonhydrostasy))
-        print("-------")
+            print("is_compressible = %i, is_nonhydrostatic = %i" %(ud.is_compressible, ud.is_nonhydrostatic))
+            print("compressibility = %.3f, nonhydrostasy = %.3f" %(ud.compressibility,ud.nonhydrostasy))
+            print("-------")
 
         if step == 0 and writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
@@ -277,8 +295,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True: writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY)
         if debug == True and elem.ndim == 3: writer.populate(str(label)+'_after_half_step','rhoYw',flux[2].rhoY)
 
-        mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
-        # mpv.p2_nodes[...] = mpv.p2_nodes0
+        # mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
+        mpv.p2_nodes[...] = mpv.p2_nodes0
 
         Sol = deepcopy(Sol0)
 
@@ -308,31 +326,37 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             lake_to_swe_init = bld.criterion_init(window_step+1)
 
         if ud.blending_conv == 'swe' and swe_to_lake and lake_to_swe_init:
-            print("lake to swe conversion...")
+            print(colored("lake to swe conversion...",'blue'))
 
-            H10 = mpv.p2_nodes - mpv.p2_nodes.min()
-            # H10 -= H10.mean(axis=(0,2),keepdims=True)
-            H1 = H10[:,1,:] # project horizontal slice to 2D
-            # H1 = H1.mean()
+            H10 = deepcopy(mpv.p2_nodes[:,2,:])
+            H10 *= ud.rho_diff
+            H10 *= np.sqrt(2.0 / 9.81)
+            H10 = H10.min() - H10
+            H10 = ud.H0 + H10
 
             # define 2D kernel
             kernel = np.ones((2,2))
             kernel /= kernel.sum()
 
             # do node-to-cell averaging
-            H1 = signal.convolve(H1, kernel, mode='valid')
+            H1 = signal.convolve(H10, kernel, mode='valid')
 
             # project H1 back to horizontal slice with ghost cells
-            H1 = np.expand_dims(H1, 1)
+            H1 = np.expand_dims(H1, axis=1)
             H1 = np.repeat(H1, elem.icy, axis=1)
 
-            Sol.rho += H1 #+ ud.min_val
-            Sol.rhou = Sol.rhou / ud.min_val * Sol.rho
-            # Sol.rhov = Sol.rhov / ud.min_val * Sol.rho
-            Sol.rhow = Sol.rhow / ud.min_val * Sol.rho
-            Sol.rhoY = Sol.rhoY / ud.min_val * (ud.min_val+H1)#* Sol.rho
-            mpv.p2_nodes = H10 + ud.p2_min_val
-            # mpv.p2_nodes -= mpv.p2_nodes.mean()
+            Sol.rho[...] = H1
+            Sol.rhou[...] = Sol.rhou / ud.min_val * Sol.rho
+            Sol.rhov[...] = Sol.rhov / ud.min_val * Sol.rho
+            Sol.rhow[...] = Sol.rhow / ud.min_val * Sol.rho
+            Sol.rhoY[...] = Sol.rhoY / ud.min_val * Sol.rho
+            
+            pn = signal.convolve(Sol.rhoY[:,2,:], kernel, mode='valid')
+            pn = np.expand_dims(pn, axis=1)
+            mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
+            boundary.set_ghostnodes_p2(mpv.p2_nodes,node,ud)
+            # mpv.p2_nodes = H10 + ud.p2_min_val
+            # mpv.p2_nodes -= mpv.p2_nodes.mean(axis=(0,2),keepdims=True)
 
             if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_lake_to_swe')
 
