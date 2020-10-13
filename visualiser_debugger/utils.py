@@ -117,8 +117,8 @@ class test_case(object):
     def spatially_averaged_rmse(self, arrs,refs,avg=False):
         diff = []
         for arr, ref in zip(arrs,refs):
-            arr = (arr[self.i2])
-            ref = (ref[self.i2])
+            #arr = (arr[self.i2])
+            #ref = (ref[self.i2])
             
             if avg==True:
                 arr -= arr.mean()

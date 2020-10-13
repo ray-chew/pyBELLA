@@ -12,7 +12,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 0.0
+    omega = 0.0#2.0 * np.pi #/ 100.0
 
     R_gas = 1.0
     R_vap = 461.0
@@ -78,14 +78,16 @@ class UserData(object):
             if (self.coriolis_strength[i] > np.finfo(np.float).eps):
                 self.i_coriolis[i] = 1
 
-        self.xmin = - 0.5 / self.h_ref
-        self.xmax =   0.5 / self.h_ref
+        self.fac = 1E0
+        self.xmin = - 0.5 * self.fac#/ self.h_ref
+        self.xmax =   0.5 * self.fac#/ self.h_ref
         self.ymin = - 0.5
         self.ymax =   0.5
-        self.zmin = - 0.5 / self.h_ref
-        self.zmax =   0.5 / self.h_ref
+        self.zmin = - 0.5 * self.fac#/ self.h_ref
+        self.zmax =   0.5 * self.fac#/ self.h_ref
 
-        self.wind_speed = 0.0
+        self.u_wind_speed = 1.0
+        self.w_wind_speed = 1.0
         self.wind_shear = -0.0
         self.hill_shape = HillShapes.AGNESI
         self.hill_height = 0.0
@@ -114,8 +116,11 @@ class UserData(object):
 
         self.time_integrator = TimeIntegrator.SI_MIDPT
         self.advec_time_integrator = TimeIntegrator.STRANG
-        # self.CFL  = 0.
+        # self.CFL  = 0.9
         self.CFL = 0.45
+        self.dtfixed0 = 0.005 #/ self.t_ref
+        self.dtfixed = 0.005 #/ self.t_ref
+
         self.dtfixed0 = 1.0 / self.t_ref
         self.dtfixed = 1.0 / self.t_ref
 
@@ -143,7 +148,7 @@ class UserData(object):
         self.initial_blending = False
 
         self.continuous_blending = False
-        self.no_of_pi_initial = 1
+        self.no_of_pi_initial = 0
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
@@ -157,7 +162,8 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        self.tout = np.arange(0, 1.0 + 0.01, 0.01)
+        self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
+        # self.tout = [1.0]
         # self.tout = [1E6]
 
         # self.tout = times.copy()
@@ -173,12 +179,19 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
-        aux = 'wdawloc_1.0_rhou_rhow_p0.5'
+        aux = 'wdawloc_pp_rhou_rhow_tra'
+        # aux = 'debug_psinc_1E3'
         # aux = 'comp_test_0'
-        # aux = 'noda_p0.5'
+        # aux = 'noda_pp'
         # aux = 'bld_test'
-        # aux = 'comp_1.0'
-        # aux = 'debug'
+        # aux = 'comp_1.0_corr_1.0'
+        # aux = 'debug_vortparam_lake_tra_corr_2pi'
+        # aux = 'debug_H0'
+        # aux = 'comp_1.0_tra_truth'
+        # aux = 'comp_1.0_pp_tra_truth'
+        # aux = 'get_initial_perturb'
+
+        self.aux = aux
         self.output_suffix = "_%i_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
@@ -197,18 +210,15 @@ class UserData(object):
         return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
 
 def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
-    u0 = 1.0 #* ud.wind_speed
+    scale = ud.fac
+
+    u0 = ud.u_wind_speed * scale#0.0 #* ud.wind_speed
     v0 = 0.0 #* ud.wind_speed
-    w0 = 1.0
+    w0 = ud.w_wind_speed * scale#0.0 *
 
     rotdir = 1.0
 
-    p0 = 1.0
-    a_rho = 1.0
-    rho0 = a_rho * 0.0
-    del_rho = a_rho * 0.5
-    # R0 = 0.4
-    R0 = 0.4
+    R0 = 0.4 * scale
     fac = 1. * 1024.0
     xc = 0.0
     zc = 0.0
@@ -220,11 +230,28 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     if seed != None:
         np.random.seed(seed)
-        # perturb = (np.random.random() - 0.5) / 10.0
-        # print(perturb)
-        xc += (np.random.random() - 0.5) / 2.0
-        zc += (np.random.random() - 0.5) / 2.0
+        # H0 += (np.random.random() - 0.5) * 0.1
+        # print(seed, H0)
+
+        xc += (np.random.random() - 0.5) * scale / 5.0
+        zc += (np.random.random() - 0.5) * scale / 5.0
         print(seed, xc, zc)
+
+    # used to generate truth
+
+    if 'truth' in ud.aux:
+        np.random.seed(2233)
+        # H0 += (np.random.random() - 0.5) * 0.1
+        # print(seed, H0)
+        # ud.H0 = H0
+
+        xc += (np.random.random() - 0.5) * scale / 5.0
+        zc += (np.random.random() - 0.5) * scale / 5.0
+        print(seed, xc, zc)
+        ud.xc = xc
+        ud.zc = zc
+
+
 
     xcm = xc - np.sign(xc) * (ud.xmax - ud.xmin)
     zcm = zc - np.sign(zc) * (ud.zmax - ud.zmin)
@@ -279,13 +306,14 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     coe[12] = +1.0/24
 
     rho = np.zeros_like(r)
-    Frsq = np.sqrt((u0**2 + w0**2))**2 / (g * H0)
+    Frsq = (uth.max()**2 + uth.max()**2) / (g * H0)
     Frsq = 1.0 / (g * 1.0)
+    # Frsq = 1.0 / (g * H0)
 
     for i in range(12,24+1):
         rho[...] += fac**2 * coe[i-12] * (r/R0)**i * (r < R0)
 
-    rho *= Frsq #* (r < R0)
+    rho *= Frsq * scale #* (r < R0) * scale
     rho = (rho - rho.max()) * (r < R0) #* H0
     rho += H0 #* (r < R0)
 
@@ -307,8 +335,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     else:
         min_val = H0
 
-        rho_diff = rho.max() - rho.min()
-        # rho_diff = H0 - rho.min()
+        # rho_diff = rho.max() - rho.min()
+        rho_diff = H0 - rho.min()
 
         H1 = (rho - min_val) / rho_diff
 
@@ -344,30 +372,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
     ud.compressibility = float(ud.is_compressible)
-
-    if ud.initial_projection == True:
-        is_compressible = np.copy(ud.is_compressible)
-        compressibility = np.copy(ud.compressibility)
-        ud.is_compressible = 0
-        ud.compressibility = 0.0
-
-        p2aux = np.copy(mpv.p2_nodes)
-
-        Sol.rhou -= u0 * Sol.rho
-        Sol.rhov -= v0 * Sol.rho
-        Sol.rhow -= w0 * Sol.rho
-
-        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5)
-
-        mpv.p2_nodes[...] = p2aux
-        mpv.dp2_nodes[...] = 0.0
-
-        Sol.rhou += u0 * Sol.rho
-        Sol.rhov += v0 * Sol.rho
-        Sol.rhow += w0 * Sol.rho
-
-        ud.is_compressible = is_compressible
-        ud.compressibility = compressibility
 
     return Sol
 

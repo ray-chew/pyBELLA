@@ -211,12 +211,27 @@ class prepare_rloc(object):
         self.cattr_len = len(self.ca)
         self.nattr_len = len(self.na)
 
-        # get size of the local counterpart. default = (5x5).
-        self.obs_X = obs_X
-        self.obs_Y = obs_Y
+        # get size of the local counterpart.
+        self.obs_X = dap.obs_X
+        self.obs_Y = dap.obs_Y
+
+        # make sure that subdomain is not larger than inner cellular grid
+        assert self.obs_X < elem.iicx
+        if elem.iicy == 1: # implying horizontal slice
+            assert self.obs_Y < elem.iicz
+        else:    
+            assert self.obs_Y < elem.iicy
+
+        # make sure that subdomain size is odd
+        assert self.obs_X % 2 == 1
+        assert self.obs_Y % 2 == 1
+
+        # if checks are passed, then get pad length based on subdomain / local counterpart size
+        self.pad_X = int((self.obs_X - 1) / 2)
+        self.pad_Y = int((self.obs_Y - 1) / 2)
 
         # get mask to handle BC. Periodic mask includes ghost cells/nodes and wall masks takes only the inner domain.
-        self.cmask, self.nmask = dau.boundary_mask(ud, elem, node)
+        self.cmask, self.nmask = dau.boundary_mask(ud, elem, node, self.pad_X, self.pad_Y)
 
         # get from da parameters the localisation matrix and inflation factor
         self.inf_fac = dap.inflation_factor
@@ -242,19 +257,19 @@ class prepare_rloc(object):
 
         return cell_attributes, node_attributes
 
-    def analyse(self,results,obs,N,tout):
+    def analyse(self,results,obs,covar,mask,N,tout):
         """
         Wrapper to do analysis by grid-type.
 
         """
 
         if self.cattr_len > 0:
-            results = self.analyse_by_grid_type(results,obs,N,tout,'cell')
+            results = self.analyse_by_grid_type(results,obs,covar,mask,N,tout,'cell')
         if self.nattr_len > 0:
-            results = self.analyse_by_grid_type(results,obs,N,tout,'node')
+            results = self.analyse_by_grid_type(results,obs,covar,mask,N,tout,'node')
         return results
 
-    def analyse_by_grid_type(self,results,obs,N,tout,grid_type):
+    def analyse_by_grid_type(self,results,obs,covar,mask,N,tout,grid_type):
         """
         Do analysis by grid-type. Wrapper of the LETKF analysis.
 
@@ -268,7 +283,9 @@ class prepare_rloc(object):
         obs_X, obs_Y = self.obs_X, self.obs_Y
 
         # get stacked state space and observation
-        state_p, obs_p = self.stack(results,obs,obs_attr,tout)
+        state_p, obs_p, mask_p = self.stack(results,obs,mask,obs_attr,tout)
+
+        mask_p = mask_p[0].flatten()
 
         # Here, the 2D arrays are split into local counterparts, say of (5x5) arrays. 
         X = self.get_state(state_p,Nx,Ny,attr_len)
@@ -279,28 +296,46 @@ class prepare_rloc(object):
 
         analysis_res = np.zeros_like(X)
 
+        if covar is None:
+            # use identity for observation covariance
+            obs_covar_current = sparse.eye(attr_len*obs_X*obs_Y,attr_len*obs_X*obs_Y, format='csr')
+        else:
+            # get covar at current time
+            covar = covar[list(self.da_times).index(tout)]
+            
+            # expand obs covar to size of the subdomain
+            covar = np.expand_dims(covar,axis=-1)
+            covar = np.repeat(covar, obs_X, axis=-1)
+
+            covar = np.expand_dims(covar,axis=-1)
+            covar = np.repeat(covar, obs_Y, axis=-1)
+
+            obs_covar_current = sparse.diags(covar.flatten(), format='csr')
+
         # loop through all grid-points
         for n in range(Nx * Ny):
-            # using identity for observation covariance
-            obs_covar_current = sparse.eye(attr_len*obs_X*obs_Y,attr_len*obs_X*obs_Y, format='csr')
+            if not mask_p[n]:
+                # if no observation is at grid location, analysis = forecast.
+                analysis_res[n] = X[n]
+            else:
 
-            # using forward operator as a projection of the state into observation space.
-            forward_operator = lambda ensemble : Y[n]
+                # using forward operator as a projection of the state into observation space.
+                forward_operator = lambda ensemble : Y[n]
 
-            # setup LETKF class with state vector
-            local_ens = analysis(X[n],self.inf_fac)
+                # setup LETKF class with state vector
+                local_ens = analysis(X[n],self.inf_fac)
 
-            # setup forward operator method in LETKF class
-            local_ens.forward(forward_operator)
-            
-            # get the localisation matrix with BC handling
-            # BC is handled by localisation matrix.
-            local_ens.localisation_matrix = np.diag(list(bc_mask[n].ravel()) * attr_len) * np.diag((list(self.loc_mat) * attr_len))
+                # setup forward operator method in LETKF class
+                local_ens.forward(forward_operator)
+                
+                # get the localisation matrix with BC handling
+                # BC is handled by localisation matrix.
+                local_ens.localisation_matrix = np.diag(list(bc_mask[n].ravel()) * attr_len) * np.diag((list(self.loc_mat) * attr_len))
 
-            # do analysis given observations and obs covar.
-            analysis_ens = local_ens.analyse(obs_p[n],obs_covar_current)
+                # do analysis given observations and obs covar.
+                analysis_ens = local_ens.analyse(obs_p[n],obs_covar_current)
 
-            analysis_res[n] = analysis_ens
+                analysis_res[n] = analysis_ens
 
         analysis_res = np.swapaxes(analysis_res,0,2)
 
@@ -319,7 +354,7 @@ class prepare_rloc(object):
         return results
 
 
-    def stack(self,results,obs,obs_attr,tout):
+    def stack(self,results,obs,mask,obs_attr,tout):
         """
         On each grid-point, stack all the quantities to be assimilated. This stacking is done separately for cells and nodes.
 
@@ -332,6 +367,9 @@ class prepare_rloc(object):
         obs_stack = np.array(obs[list(self.da_times).index(tout)][obs_attr[0]])[self.i2]
         obs_stack = obs_stack[np.newaxis,...]
 
+        mask_stack = np.array(mask[list(self.da_times).index(tout)][obs_attr[0]])[self.i2]
+        mask_stack = mask_stack[np.newaxis,...]
+
         for attr in obs_attr[1:]:
             next_attr = self.get_quantity(results,attr)[:,np.newaxis,...]
             state = np.hstack((state,next_attr))
@@ -341,7 +379,12 @@ class prepare_rloc(object):
 
             obs_stack = np.vstack((obs_stack,next_obs))
 
-        return state, obs_stack
+            next_mask = np.array(mask[list(self.da_times).index(tout)][attr])[self.i2]
+            next_mask = next_mask[np.newaxis,...]
+
+            mask_stack = np.vstack((mask_stack,next_mask))
+
+        return state, obs_stack, mask_stack
 
 
     def get_state(self,state,Nx,Ny,attr_len):
@@ -363,7 +406,8 @@ class prepare_rloc(object):
 
         x_pad = int((obs_X - 1) / 2)
         y_pad = int((obs_Y - 1) / 2)
-        obs = np.array([np.pad(obs_attr,(x_pad,y_pad),mode='wrap') for obs_attr in obs])
+        pads = [[x_pad, x_pad], [y_pad, y_pad]]
+        obs = np.array([np.pad(obs_attr,pads,mode='wrap') for obs_attr in obs])
 
         obs = np.array([dau.sliding_window_view(obs_attr, (obs_X,obs_Y), (1,1)) for obs_attr in obs])
 
@@ -394,7 +438,7 @@ class prepare_rloc(object):
 
     def get_bc_mask(self,type, Nx, Ny, obs_X, obs_Y):
         """
-        Mask handling the boundary condition for either cell or node grids.
+        Mask handling the boundary condition for cell or node grids in the local subdomains.
 
         """
         if type == 'cell' and self.iicy > 1:
@@ -406,7 +450,11 @@ class prepare_rloc(object):
         elif type == 'node' and self.iicyn == 2:
             bc_mask = np.ones((self.iicxn,self.iiczn))
 
-        bc_mask = np.pad(bc_mask, 2, mode='constant', constant_values=(1.0))
+        # bc_mask = np.pad(bc_mask, 2, mode='constant', constant_values=(1.0))
+
+        pads = ((self.pad_X,self.pad_X),(self.pad_Y,self.pad_Y))
+
+        bc_mask = np.pad(bc_mask, pads, mode='constant', constant_values=(1.0))
 
         if type == 'cell':
             bc_mask *= self.cmask
@@ -451,13 +499,15 @@ class prepare_rloc(object):
         Get ensemble representation of {rho, rhou...}.
 
         """
-        if inner == True:
-            slc = self.i2
-        else:
-            slc = self.i0
-
+        slc = self.i2
         loc = self.loc[quantity]
-        attribute_array = [getattr(results[:,loc,...][n],quantity)[slc] for n in range(self.N)]
+        pads = ((self.pad_X,self.pad_X),(self.pad_Y,self.pad_Y))
+
+        if inner:
+            attribute_array = [getattr(results[:,loc,...][n],quantity)[slc] for n in range(self.N)]
+        else:
+            attribute_array = [np.pad(getattr(results[:,loc,...][n],quantity)[slc],pads, mode='wrap') for n in range(self.N)]
+
         return np.array(attribute_array)
 
 

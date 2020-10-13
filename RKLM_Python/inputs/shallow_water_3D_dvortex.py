@@ -91,7 +91,8 @@ class UserData(object):
         self.zmin =   0.0
         self.zmax =   4330.0*1E3 / self.h_ref
 
-        self.wind_speed = 0.0
+        self.u_wind_speed = 0.0
+        self.w_wind_speed = 0.0
 
         self.bdry_type_min = np.empty((3), dtype=object)
         self.bdry_type_max = np.empty((3), dtype=object)

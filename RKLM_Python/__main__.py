@@ -16,7 +16,7 @@ from dask.distributed import Client, progress
 
 # dependencies of the data assimilation module
 from data_assimilation.params import da_params
-from data_assimilation.utils import ensemble, sliding_window_view, ensemble_inflation, set_p2_nodes, set_rhoY_cells, HSprojector_2t3D, HSprojector_3t2D
+from data_assimilation.utils import ensemble, sliding_window_view, ensemble_inflation, set_p2_nodes, set_rhoY_cells, HSprojector_2t3D, HSprojector_3t2D, sparse_obs_selector, obs_noiser
 from data_assimilation.letkf import da_interface, bin_func, prepare_rloc
 from data_assimilation.letkf import analysis as letkf_analysis
 from data_assimilation import etpf
@@ -35,6 +35,7 @@ from management.debug import find_nearest
 from time import time
 
 debug = False
+da_debug = True
 output_timesteps = False
 if debug == True: output_timesteps = True
 label_type = 'TIME'
@@ -48,6 +49,7 @@ t = 0.0
 ##########################################################
 # get arguments for initial condition and ensemble size
 N, UserData, sol_init, restart, r_params = get_args()
+if N == 1: da_debug = False
 
 initial_data = vars(UserData())
 ud = UserDataInit(**initial_data)
@@ -85,7 +87,7 @@ if dap.da_type == 'rloc':
 
 print("Generating initial ensemble...")
 sol_ens = np.zeros((N), dtype=object)
-np.random.seed(555)
+np.random.seed(888)
 seeds = np.random.randint(10000,size=N) if N > 1 else None
 if seeds is not None and restart == False:
     print("Seeds used in generating initial ensemble spread = ", seeds)
@@ -114,6 +116,8 @@ ens = ensemble(sol_ens)
 # where are my observations?
 if N > 1:
     obs = dap.load_obs(dap.obs_path)
+    obs_noisy, obs_covar = obs_noiser(obs,dap)
+    obs_noisy_interp, obs_mask = sparse_obs_selector(obs_noisy, elem, node, ud, dap)
 
 # add ensemble info to filename
 ud.output_suffix = '_ensemble=%i%s' %(N, ud.output_suffix)
@@ -144,7 +148,12 @@ if __name__ == '__main__':
             label = ('ensemble_mem=%i_%.3f' %(n,0.0))
         if not restart: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
-    writer.jar(elem, node)
+    writer.check_jar()
+    writer.jar([ud, elem, node])
+
+    if da_debug:
+        writer.jar([obs,obs_noisy,obs_noisy_interp,obs_mask,obs_covar])
+        obs = obs_noisy_interp
 
     # initialise dask parallelisation and timer
     # client = Client(threads_per_worker=1, n_workers=1)
@@ -230,8 +239,10 @@ if __name__ == '__main__':
             elif dap.da_type == 'rloc':
                 print("Starting analysis... for rloc algorithm")
                 results = HSprojector_3t2D(results, elem, dap, N)
-                results = rloc.analyse(results,obs,N,tout)
+                results = rloc.analyse(results,obs,obs_covar,obs_mask,N,tout)
                 results = HSprojector_2t3D(results, elem, node, dap, N)
+                # if hasattr(dap, 'converter'):
+                    # results = dap.converter(results, N, mpv, elem, node, th, ud)
 
             ##################################################
             # ETPF

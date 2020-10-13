@@ -24,8 +24,8 @@ class UserData(object):
     viscbt = 0.0
     cond = 0.0
 
-    h_ref = 10000
-    t_ref = 100
+    h_ref = 10000.0
+    t_ref = 100.0
     T_ref = 300.00
     p_ref = 1e+5
     u_ref = h_ref / t_ref
@@ -54,7 +54,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+        self.is_compressible = 0
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -84,7 +84,9 @@ class UserData(object):
         self.zmin = - 0.5
         self.zmax =   0.5
 
-        self.wind_speed = 0.0
+        # self.wind_speed = 0.0
+        self.u_wind_speed = 0.0
+        self.w_wind_speed = 0.0
         self.wind_shear = -0.0
         self.hill_shape = HillShapes.AGNESI
         self.hill_height = 0.0
@@ -106,15 +108,15 @@ class UserData(object):
         self.bdry_type_max = np.empty((3), dtype=object)
 
         self.bdry_type_min[0] = BdryType.PERIODIC
-        self.bdry_type_min[1] = BdryType.WALL
+        self.bdry_type_min[1] = BdryType.PERIODIC
         self.bdry_type_min[2] = BdryType.PERIODIC
         self.bdry_type_max[0] = BdryType.PERIODIC
-        self.bdry_type_max[1] = BdryType.WALL
+        self.bdry_type_max[1] = BdryType.PERIODIC
         self.bdry_type_max[2] = BdryType.PERIODIC
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.WALL
+        self.bdry_type[1] = BdryType.PERIODIC
         self.bdry_type[2] = BdryType.PERIODIC
 
         self.absorber = 0 # 0 == WRONG == FALSE 
@@ -125,13 +127,16 @@ class UserData(object):
 
         self.time_integrator = TimeIntegrator.SI_MIDPT
         self.advec_time_integrator = TimeIntegrator.STRANG
-        # self.CFL  = 0.9/2.0
-        self.CFL = 0.95
+        self.CFL  = 0.9/2.0
+        # self.CFL = 0.95
         self.dtfixed0 = 2.1 * 1.200930e-2
         self.dtfixed = 2.1 * 1.200930e-2
+        # self.dtfixed0 = 0.01
+        # self.dtfixed = 0.01
+
 
         self.inx = 64+1
-        self.iny = 2+1
+        self.iny = 1+1
         # self.iny = 1+1
         self.inz = 64+1
 
@@ -145,7 +150,7 @@ class UserData(object):
         self.kY = 0.0
         self.kZ = 0.0
 
-        self.tol = 1.e-6
+        self.tol = 1.e-8
         self.max_iterations = 6000
 
         self.perturb_type = 'pos_perturb'
@@ -158,6 +163,8 @@ class UserData(object):
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
+        self.initial_blending = False
+
         self.initial_projection = True
         self.initial_impl_Euler = False
 
@@ -165,7 +172,7 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        self.tout = np.arange(0.0,1.001,0.005)
+        self.tout = np.arange(0.0,1.01,0.01)
         # self.tout = [1.0]
 
         # self.stepmax = 10
@@ -181,7 +188,7 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
-        aux = '3D'
+        aux = '3D_psinc_sta'
         # aux = 'very_low_mach'
         # aux = 'advected'
         # aux = 'even' if self.no_of_pi_initial % 2 == 0 else 'odd'
@@ -217,9 +224,11 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     hi2[1] = slice(None,)
     i2, iy, hi2 = tuple(i2), tuple(iy), tuple(hi2)
 
-    u0 = 1.0 #* ud.wind_speed
+    # u0 = 1.0 #* ud.wind_speed
     v0 = 0.0 #* ud.wind_speed
-    w0 = 1.0 #* ud.wind_speed
+    # w0 = 1.0 #* ud.wind_speed
+    u0 = ud.u_wind_speed
+    w0 = ud.w_wind_speed
 
     rotdir = 1.0
 
@@ -315,9 +324,14 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         dp2c += (a_rho * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2) * (r/R0 < 1.0)
 
     p2c = np.copy(dp2c).squeeze()
+    p2c = p2c[:,np.newaxis,:]
 
     # rho, u, v = rho.squeeze(), u.squeeze(), v.squeeze()
     rho, u, w = rho.squeeze(), u.squeeze(), w.squeeze()
+
+    rho = rho[:,np.newaxis,:]
+    u = u[:,np.newaxis,:]
+    w = w[:,np.newaxis,:]
 
     Sol.rho[iy] = rho
     Sol.rhou[iy] = rho * u
@@ -327,13 +341,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     if (ud.is_compressible) :
         p = p0 + ud.Msq * fac**2 * dp2c
         p = p.squeeze()
+        p = p[:,np.newaxis,:]
         Sol.rhoY[iy] = p**th.gamminv
-        # Y = np.zeros_like(Sol.rhoY)
-        # Y[:,igy:-igy] = Sol.rhoY[:,igy:-igy] / Sol.rho[:,igy:-igy]
-        # Sol.rhoX[:,igy:-igy] = Sol.rho[:,igy:-igy] / Y[:,igy:-igy]
-        # Sol.rhoe[iy] = ud.rhoe(rho,u,v,w,p,ud,th)
     else:
-        # Sol.rhoe[iy] = ud.rhoe(rho,u,v,w,p_hydro,ud,th)
         for dim in range(0,elem.ndim,2):
             rhoY = np.expand_dims(rhoY, dim)
             rhoY = np.repeat(rhoY, elem.sc[dim], axis=dim)
@@ -390,15 +400,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     # mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[0,igyn:-igyn+1])
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
-    # ud.is_nonhydrostatic = 1
-    # ud.is_compressible = 0
     ud.compressibility = float(ud.is_compressible)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
     # set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
-    Sol.rhoY[...] = 1.0
-    mpv.p2_nodes[...] = 0.0
+    # Sol.rhoY[...] = 1.0
+    # mpv.p2_nodes[...] = 0.0
 
     # from scipy import signal
     # p2n = mpv.p2_nodes - mpv.p2_nodes.mean()

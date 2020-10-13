@@ -1,5 +1,9 @@
 import numpy as np
 import h5py
+from scipy import stats # generate Gaussian localisation matrix
+
+from scipy import signal
+from inputs.boundary import set_explicit_boundary_data, set_ghostnodes_p2 # for converter
 
 class da_params(object):
 
@@ -12,14 +16,15 @@ class da_params(object):
         # self.da_times = np.arange(0.0,864000.0+1200.0,1200.0)[1:][::4]
         self.da_times = np.arange(0.0,1.05,0.05)[1:]
         # self.da_times = []
+        # self.obs_attributes = ['rho', 'rhou', 'rhow', 'rhoY', 'p2_nodes']
+        # self.obs_attributes = ['rho']
         self.obs_attributes = ['rhou', 'rhow']
-        # self.obs_attributes = ['rhou', 'rhow']
+        # self.obs_attributes = ['rho', 'rhov']
         # self.obs_attributes = ['rho','rhou','rhov']
         # self.obs_attributes = ['rhou','p2_nodes']
         # self.obs_attributes = ['p2_nodes']
-
         # self.obs_attributes = ['rhoY']
-        # self.obs_attributes = ['rho', 'rhou', 'rhov','rhoY','p2_nodes']
+        # self.obs_attributes = ['rho', 'rhou', 'rhow','rhoY','p2_nodes']
 
         # which attributes to inflate in ensemble inflation?
         self.attributes = ['rho', 'rhou', 'rhov']
@@ -33,29 +38,71 @@ class da_params(object):
         # self.obs_path = './output_swe/output_swe_ensemble=1_256_1_256_864000.0_dvortex_3D_truthgen_flipped.h5'
         # self.obs_path = './output_swe/output_swe_ensemble=1_256_1_256_864000.0_truthgen.h5'
 
-        self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0.h5'
+        # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0.h5'
+        # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0_tra_truth.h5'
+        self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0_pp_tra_truth.h5'
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)
+        # self.converter = self.converter
 
-        # localisation matrix
-        # self.localisation_matrix = np.eye(N)
-        weights = [0.05719096,0.25464401,0.33333333,0.25464401,0.05719096,0.25464401,0.52859548,0.66666667,0.52859548,0.25464401,0.33333333,0.66666667,1.,0.66666667,0.33333333,0.25464401,0.52859548,0.66666667,0.52859548,0.25464401,0.05719096,0.25464401,0.33333333,0.25464401,0.05719096]
-        # weights = [0.01831564,0.082085,0.13533528,0.082085,0.01831564,0.082085,0.36787944,0.60653066,0.36787944,0.082085,0.13533528,0.60653066,1.,0.60653066,0.13533528,0.082085,0.36787944,0.60653066,0.36787944,0.082085,0.01831564,0.082085,0.13533528,0.082085,0.01831564]
+        da_len = len(self.da_times)
 
-        # weights3 = weights*len(self.obs_attributes)
-        # self.localisation_matrix = np.diag(weights)
-        # self.localisation_matrix += np.diag(np.ones_like(weights))
-        # self.localisation_matrix = np.diag(np.ones((len(weights3))))
-        # self.localisation_matrix = weights + 1.0
-        self.localisation_matrix = np.ones_like(weights) * 1.0 #+ weights
+        ############################################
+        # Parameters for sparse observations
+        ############################################
+        self.sparse_obs = False  
+        self.sparse_obs_by_attr = False
 
-        
-        self.aprior_error_covar = 0.0001
+        if self.sparse_obs_by_attr:
+            assert(0, "Not yet implemented.")
+
+        self.obs_frac = 0.50 # fraction of the observations to pick.
+        if self.sparse_obs_by_attr == True:
+            da_depth = len(self.obs_attributes)
+        else:
+            da_depth = 1
+        if self.sparse_obs == True and da_len > 0:
+            np.random.seed(777)
+            self.sparse_obs_seeds = np.random.randint(10000,size=(da_len,da_depth)).squeeze()
+
+
+        ############################################
+        # Parameters for measurement noise
+        ############################################
+        self.add_obs_noise = False
+
+        self.obs_noise = {
+            'rhou' : 0.05,
+            'rhow' : 0.05
+        }
+        # self.obs_noise = {
+        #     'rho' : 0.1,
+        # }
+
+        da_depth = len(self.obs_attributes)
+
+        # if self.add_obs_noise and da_len > 0:
+        np.random.seed(888)
+        if da_depth > 1:
+            self.obs_noise_seeds = np.random.randint(10000,size=(da_depth)).squeeze()
+        else:
+            self.obs_noise_seeds = [np.random.randint(10000)]
+
+
+        ############################################
+        # Parameters for LETKF subdomain size
+        ############################################
+        self.obs_X = 11
+        self.obs_Y = 11
+
+        # constants, linear, gaussian
+        self.localisation_matrix = self.get_loc_mat('gaussian')
+
         self.da_type = da_type
 
         # ensemble inflation factor for LETKF
-        self.inflation_factor = 1.0
+        self.inflation_factor = 1.00
 
         # rejuvenation factor for ETPF
         self.rejuvenation_factor = 0.001
@@ -74,6 +121,39 @@ class da_params(object):
             'rhoX' : 0,
             'p2_nodes' : 2,
         }
+
+    @staticmethod
+    def converter(results, N, mpv, elem, node, th, ud):
+        '''
+        Do this after data assimilation for HS balanced vortex.
+
+        '''
+        print("Post DA conversion...")
+
+        g = 9.81
+        for n in range(N):
+            set_explicit_boundary_data(results[n][0],elem,ud,th,mpv)
+            results[n][0].rhoY[...] = g / 2.0 * results[n][0].rho**2
+
+            igy = elem.igy
+
+            kernel = np.ones((2,2))
+            kernel /= kernel.sum()
+
+            pn = signal.convolve(results[n][0].rhoY[:,igy,:], kernel, mode='valid')
+
+            set_explicit_boundary_data(results[n][0],elem,ud,th,mpv)
+            pn = np.expand_dims(pn, 1)
+            pn = np.repeat(pn, node.icy, axis=1)
+
+            results[n][2].p2_nodes[1:-1,:,1:-1] = pn
+            set_ghostnodes_p2(results[n][2].p2_nodes,node,ud)
+
+            pn = np.expand_dims(results[n][2].p2_nodes[:,igy,:], 1)
+            results[n][2].p2_nodes[...] = np.repeat(pn[...], node.icy, axis=1)
+
+        return results
+
 
     def load_obs(self,obs_path,loc=0):
         if self.N > 1:
@@ -105,14 +185,40 @@ class da_params(object):
             obs_file.close()
         return obs
 
-    @staticmethod
-    def sampler_gaussian(var):
-        return lambda ic: np.random.normal(ic,var**0.5)
 
-    @staticmethod
-    def sampler_none():
-        return lambda ic: ic
+    def get_loc_mat(self, type, c=1.0):
+        x = (np.linspace(0,1,self.obs_X) - 0.5)
+        y = (np.linspace(0,1,self.obs_Y) - 0.5)
 
-    @staticmethod
-    def sampler_perturbator(max_shift):
-        return lambda ic: np.roll(np.roll(ic, np.random.randint(-max_shift,max_shift), axis=1), np.random.randint(-max_shift,max_shift), axis=0)
+        X,Y = np.meshgrid(x,y)
+        if type == 'constants':
+            Z = np.ones((self.obs_X, self.obs_Y))
+            return Z.flatten() * c
+        
+        elif type == 'linear':
+            Z = (np.sqrt(X**2 + Y**2))
+            Z = Z.max() - Z
+
+            return Z.flatten() * c
+
+        elif type == 'gaussian':
+            pos = np.array([X.flatten(),Y.flatten()]).T
+            norm = stats.multivariate_normal([0,0],[[0.05,0.0],[0.0,0.05]])
+            Z = norm.pdf(pos).reshape(X.shape[0],X.shape[1])
+            Z = Z - Z.min()
+            Z /= Z.max()
+
+            return Z.flatten() * c
+    
+
+    # @staticmethod
+    # def sampler_gaussian(var):
+    #     return lambda ic: np.random.normal(ic,var**0.5)
+
+    # @staticmethod
+    # def sampler_none():
+    #     return lambda ic: ic
+
+    # @staticmethod
+    # def sampler_perturbator(max_shift):
+    #     return lambda ic: np.roll(np.roll(ic, np.random.randint(-max_shift,max_shift), axis=1), np.random.randint(-max_shift,max_shift), axis=0)
