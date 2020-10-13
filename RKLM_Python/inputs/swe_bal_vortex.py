@@ -147,8 +147,8 @@ class UserData(object):
 
         self.initial_blending = False
 
-        self.continuous_blending = True
-        self.no_of_pi_initial = 2
+        self.continuous_blending = False
+        self.no_of_pi_initial = 0
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
