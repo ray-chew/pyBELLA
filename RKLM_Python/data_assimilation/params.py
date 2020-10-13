@@ -15,7 +15,7 @@ class da_params(object):
         # self.da_times = np.arange(0.0,6.1,0.25)[1:]
         # self.da_times = np.arange(0.0,864000.0+1200.0,1200.0)[1:][::4]
         self.da_times = np.arange(0.0,1.05,0.05)[1:]
-        # self.da_times = []
+        self.da_times = []
         # self.obs_attributes = ['rho', 'rhou', 'rhow', 'rhoY', 'p2_nodes']
         # self.obs_attributes = ['rho']
         self.obs_attributes = ['rhou', 'rhow']
@@ -51,7 +51,7 @@ class da_params(object):
         ############################################
         # Parameters for sparse observations
         ############################################
-        self.sparse_obs = False  
+        self.sparse_obs = True  
         self.sparse_obs_by_attr = False
 
         if self.sparse_obs_by_attr:
@@ -70,7 +70,7 @@ class da_params(object):
         ############################################
         # Parameters for measurement noise
         ############################################
-        self.add_obs_noise = False
+        self.add_obs_noise = True
 
         self.obs_noise = {
             'rhou' : 0.05,
