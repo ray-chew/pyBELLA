@@ -136,7 +136,7 @@ class UserData(object):
 
         self.perturb_type = 'pos_perturb'
         self.blending_mean = 'rhoY' # 1.0, rhoY
-        self.blending_conv = 'rho' #theta, rho
+        self.blending_conv = 'swe' #theta, rho
 
         self.continuous_blending = False
         self.no_of_pi_initial = 1
@@ -149,7 +149,7 @@ class UserData(object):
         self.initial_projection = True
         self.initial_impl_Euler = False
 
-        self.initial_blending = False
+        self.initial_blending = True
 
         self.column_preconditionr = False
         self.synchronize_nodal_pressure = False
@@ -159,7 +159,7 @@ class UserData(object):
         # self.tout = np.arange(0,1E6+10000,10000)[1:]
         stepsize = 86400.0/4
         stepsize = 1200.0 / self.t_ref
-        end = 86400.0*10.0 / self.t_ref
+        end = 86400.0*3.0 / self.t_ref
         self.tout = np.arange(0,end+stepsize, stepsize)[1:]
         self.stepmax = 2E6
 
@@ -171,7 +171,10 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        aux = 'dvortex_comp_geostrophic'
+        # aux = 'dvortex_comp_geostrophic'
+        aux = 'comp_debug'
+        aux = 'psinc_debug'
+        aux = 'comp_debug_ib'
         # aux += '_' + self.blending_conv + '_conv'
         # aux += '_' + self.blending_mean + '_mean'
         # aux = 'cb1_w=-6_debug'
@@ -217,7 +220,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     Hp = 75.0 / ud.h_ref
     H00 = 450.0 # semi-geostrophic
-    # H00 = 750.0 # quasi-geostrophic
+    H00 = 750.0 # quasi-geostrophic
     # H00 = 10000.0 # incompressible
     if seed is not None:
         H0 = H00 / ud.h_ref + 100.0 * 2.0 * (np.random.random() - 0.5) / ud.h_ref
@@ -225,6 +228,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         H0 = H00 / ud.h_ref
 
     g0 = 9.81 / (ud.u_ref / ud.t_ref)
+    ud.g0 = g0
 
     sigx, sigz = sigma(Lx), sigma(Lz)
     
@@ -251,6 +255,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     u[...] = - g0 * Hp / (f0 * sigz) * (zpp1 * exp1 + zpp2 * exp2).T
     w[...] = + g0 * Hp / (f0 * sigx) * (xpp1 * exp1 + xpp2 * exp2).T 
 
+    Frsq = (u.max()**2 + w.max()**2) / (g0 * rho.max())
+    Fr = np.sqrt(Frsq)
+    print(Frsq, Fr)
     u = np.expand_dims(u, 1)
     u = np.repeat(u, elem.icy-aa*igs[1], axis=1)
     w = np.expand_dims(w, 1)
@@ -265,24 +272,21 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         Sol.rhow[i2] = rho * w
         Sol.rhoY[i2] = p**th.gamminv
     else:
-        H0 = H00
-        min_val = H0
-        # H0 = rho.min()
-        # min_val = rho.min()
+        H0 = rho.min()
+        min_val = rho.min()
 
         rho_diff = rho.max() - min_val
 
-        H1 = (rho - min_val) / rho_diff
+        H1 = (rho - min_val)
 
         p = g0 / 2.0 * H0**2
-        H1 = g0 / 2.0 * (H1)**2
+        H1 = g0 / 2.0 * (H1)**2 
 
         Sol.rho[i2] = H0
         Sol.rhou[i2] = H0 * u
         Sol.rhov[i2] = H0 * v
         Sol.rhow[i2] = H0 * w
         Sol.rhoY[i2] = H1**th.gamminv
-        Sol.rhoY[i2] = p**th.gamminv
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
     kernel = np.ones((2,2))
@@ -291,6 +295,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         pn = signal.convolve(Sol.rhoY[:,igy,:], kernel, mode='valid')
     else:
         pn = signal.convolve((Sol.rhoY[:,igy,:]), kernel, mode='valid')
+        pn -= pn.mean()
         Sol.rhoY[i2] = p**th.gamminv
         set_explicit_boundary_data(Sol,elem,ud,th,mpv)
     
@@ -307,7 +312,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     ud.compressibility = float(ud.is_compressible)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
-
     return Sol
 
 def T_from_p_rho(p, rho):
