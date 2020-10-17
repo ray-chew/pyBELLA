@@ -123,8 +123,10 @@ class test_case(object):
             if avg==True:
                 arr -= arr.mean()
                 ref -= ref.mean()
+                
+            ref_ampl = ref.max() - ref.min()
 
-            diff.append(np.sqrt(((arr - ref)**2).mean()))
+            diff.append(np.sqrt(((arr - ref)**2).mean()) / ref_ampl)
         return np.array(diff)
 
     def probe_rmse(self, arrs, refs, probe_loc, avg=False, inner=False):
@@ -132,12 +134,16 @@ class test_case(object):
        
         for arr, ref in zip(arrs,refs):
             if avg == True:
-                arr -= arr.mean()
-                ref -= ref.mean()
+                arr = arr.mean(axis=0)
+                ref = ref.mean(axis=0)
+            
+            if arr.ndim == 3:
+                arr = arr[:,0,:]
+                ref = ref[:,0,:]
                
             if inner == True:
-                arr = arr[self.i2][probe_loc[0],probe_loc[1]]
-                ref = ref[self.i2][probe_loc[0],probe_loc[1]]
+                arr = arr[probe_loc[0],probe_loc[1]]
+                ref = ref[probe_loc[0],probe_loc[1]]
             else:
                 arr = arr[probe_loc[0],probe_loc[1]]
                 ref = ref[probe_loc[0],probe_loc[1]]
