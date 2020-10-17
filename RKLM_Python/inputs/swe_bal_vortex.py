@@ -147,8 +147,8 @@ class UserData(object):
 
         self.initial_blending = False
 
-        self.continuous_blending = False
-        self.no_of_pi_initial = 0
+        self.continuous_blending = True
+        self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
@@ -162,7 +162,9 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
+        # self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
+        self.tout = np.arange(0, 0.5 + 0.01, 0.01)[1:]
+        # self.tout = np.arange(0, 3.0 + 0.005, 0.005)[1:]
         # self.tout = [1.0]
         # self.tout = [1E6]
 
@@ -180,15 +182,15 @@ class UserData(object):
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
         aux = 'wdawloc_pp_rhou_rhow_tra'
-        # aux = 'debug_psinc_1E3'
+        # aux = 'debug'
         # aux = 'comp_test_0'
         # aux = 'noda_pp'
         # aux = 'bld_test'
         # aux = 'comp_1.0_corr_1.0'
         # aux = 'debug_vortparam_lake_tra_corr_2pi'
         # aux = 'debug_H0'
-        # aux = 'comp_1.0_tra_truth'
-        # aux = 'comp_1.0_pp_tra_truth'
+        # aux = 'comp_1.0_pp_tra_truth_ib'
+        # aux = 'psinc_1.0_pp_tra_debug'
         # aux = 'get_initial_perturb'
 
         self.aux = aux
@@ -224,6 +226,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     zc = 0.0
 
     g = 9.81
+    ud.g0 = g
     H0 = 1.0
     # ud.Msq = (th.gamm / g)**2.0
     # ud.Msq = 1.0/(g)
@@ -242,7 +245,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     if 'truth' in ud.aux:
         np.random.seed(2233)
         # H0 += (np.random.random() - 0.5) * 0.1
-        # print(seed, H0)
+        # print(seed, H0
         # ud.H0 = H0
 
         xc += (np.random.random() - 0.5) * scale / 5.0
@@ -250,8 +253,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         print(seed, xc, zc)
         ud.xc = xc
         ud.zc = zc
-
-
 
     xcm = xc - np.sign(xc) * (ud.xmax - ud.xmin)
     zcm = zc - np.sign(zc) * (ud.zmax - ud.zmin)
@@ -306,14 +307,11 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     coe[12] = +1.0/24
 
     rho = np.zeros_like(r)
-    Frsq = (uth.max()**2 + uth.max()**2) / (g * H0)
-    Frsq = 1.0 / (g * 1.0)
-    # Frsq = 1.0 / (g * H0)
 
     for i in range(12,24+1):
         rho[...] += fac**2 * coe[i-12] * (r/R0)**i * (r < R0)
 
-    rho *= Frsq * scale #* (r < R0) * scale
+    rho *= 1./g * scale #* (r < R0) * scale
     rho = (rho - rho.max()) * (r < R0) #* H0
     rho += H0 #* (r < R0)
 
@@ -333,12 +331,18 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         # Sol.rhow[i2] = rho * w
         # Sol.rhoY[i2] = p**th.gamminv
     else:
-        min_val = H0
+        min_val = rho.min()
+        # min_val = H0
+        H0 = rho.min()
+        # min_val = H0
+        rho_diff = rho.max() - rho.min()
+        # rho_diff = H0 - rho.min()
 
-        # rho_diff = rho.max() - rho.min()
-        rho_diff = H0 - rho.min()
-
-        H1 = (rho - min_val) / rho_diff
+        H1 = (rho - min_val) #/ rho_diff
+        # H1 = H1.max() - H1
+        # H1 = rho - rho.max()
+        # H1 *= np.sqrt(9.81/2.0)
+        # H1 -= H1.mean()
 
         p = g / 2.0 * H0**2
         H1 = g / 2.0 * (H1)**2
@@ -348,6 +352,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         Sol.rhov[:,igy:-igy,:] = H0 * v
         Sol.rhow[:,igy:-igy,:] = H0 * w
         Sol.rhoY[:,igy:-igy,:] = H1**th.gamminv
+        # Sol.rhoY[:,igy:-igy,:] = H1#**th.gamminv
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
@@ -356,19 +361,22 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     if (ud.is_compressible):
         pn = signal.convolve(Sol.rhoY[:,igy,:], kernel, mode='valid')
     else:
-        pn = signal.convolve((Sol.rhoY[:,igy,:]), kernel, mode='valid')
+        rhoY = Sol.rhoY[:,igy,:]
+        pn = signal.convolve(rhoY, kernel, mode='valid')
+        pn -= pn.mean()
         Sol.rhoY[:,igy:-igy,:] = p**th.gamminv
         set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
-    pn = np.expand_dims(pn, 1)
-    pn = np.repeat(pn, node.icy, axis=1)
+    # pn = np.expand_dims(pn, 1)
+    # pn = np.repeat(pn, node.icy, axis=1)
 
-    mpv.p2_nodes[1:-1,:,1:-1] = pn
+    # mpv.p2_nodes[1:-1,:,1:-1] = pn
+    
+    pn = np.expand_dims(pn, axis=1)
+    # pn = np.expand_dims(mpv.p2_nodes[:,igy,:], 1)
+    mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
-
-    pn = np.expand_dims(mpv.p2_nodes[:,igy,:], 1)
-    mpv.p2_nodes[...] = np.repeat(pn[...], node.icy, axis=1)
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
     ud.compressibility = float(ud.is_compressible)
