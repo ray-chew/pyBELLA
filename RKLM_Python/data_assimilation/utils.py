@@ -342,14 +342,20 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
                 points[:,1] = Y[...].flatten()
 
                 values = griddata(points, values, (grid_x, grid_y), method='cubic')
+                
+                if dap.obs_frac < 1.0:
+                    obs_noisy_interp[tt][key][...] = 0.0
+                    obs_noisy_interp[tt][key][i0] = values
 
-                obs_noisy_interp[tt][key][...] = 0.0
                 mask_arr[tt][key][...] = 0.0
-                obs_noisy_interp[tt][key][i0] = values
                 mask_arr[tt][key][i2] = mask[i2].reshape(Nx,Ny)
                 
                 if sparse_obs_by_attr:
                     attr_cnt += 1
+
+        for mask_at_t in mask_arr:
+            for _, mask in mask_at_t.items():
+                assert mask.sum() == (Nx*Ny*dap.obs_frac), "Mask sparsity does not match obs_frac defined"
 
         return obs_noisy_interp, mask_arr
 
@@ -382,11 +388,14 @@ def obs_noiser(obs,dap):
                 # add noise onto observation
                 obs_noisy[tt][key][...] += noise
 
+                if var == 0:
+                    var = -np.inf
                 obs_covar[tt,attr_cnt] = var
                 attr_cnt += 1
-                 
-        obs_covar_mean = obs_covar.mean(axis=0)
-        obs_covar /= obs_covar_mean
+        
+        # obs_covar_mean = obs_covar.mean(axis=0)
+        # obs_covar /= obs_covar_mean
+
         return obs_noisy, obs_covar
 
     else:
