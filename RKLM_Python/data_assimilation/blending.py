@@ -1,6 +1,9 @@
 import numpy as np
 from scipy import signal
 from inputs import boundary
+
+from termcolor import colored
+from copy import deepcopy
 class Blend(object):
     """
     Class that takes care of the blending interface.
@@ -84,3 +87,101 @@ class Blend(object):
 
     def update_p2n(self,Sol, mpv, node, th, ud):
         mpv.p2_nodes = self.dp2n
+
+
+def do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer):
+    print(colored("Converting COMP to PSINC",'blue'))
+    dp2n = mpv.p2_nodes
+    bld.convert_p2n(dp2n)
+    bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
+    bld.update_p2n(Sol,mpv,node,th,ud)
+
+
+def do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, time_update, step, window_step, t, dt):
+    print(colored("Blending... step = %i" %window_step,'blue'))
+    Sol_freeze = deepcopy(Sol)
+    mpv_freeze = deepcopy(mpv)
+
+    ret = time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, [0,step-1], th, bld=None, writer=None, debug=False)
+
+    fac_old = ud.blending_weight
+    fac_new = 1.0 - fac_old
+    dp2n = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
+
+    if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_start', mpv_freeze.p2_nodes)
+    if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_end', ret[2].p2_nodes)
+    Sol = Sol_freeze
+    mpv = mpv_freeze
+
+    if writer != None: writer.populate(str(label)+'_after_full_step', 'dp2n', dp2n)
+    print(colored("Converting PSINC to COMP",'blue'))
+    bld.convert_p2n(dp2n)
+    bld.update_Sol(Sol,elem,node,th,ud,mpv,'aft',label=label,writer=writer)
+    bld.update_p2n(Sol,mpv,node,th,ud)
+
+
+def do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
+    print(colored("swe to lake conversion...",'blue'))
+
+    H1 = deepcopy(Sol.rho[:,2,:])
+    setattr(ud,'min_val',H1.min())
+    setattr(ud,'rho_diff',H1.max() - ud.min_val)
+    setattr(ud,'H0',Sol.rho.max())
+    H1 = (H1 - ud.min_val) #/ ud.rho_diff
+    H1 = ud.g0 / 2.0 * H1**2
+    H1 = H1**th.gamminv
+    print(colored(ud.H0, 'red'))
+
+    kernel = np.ones((2,2))
+    kernel /= kernel.sum()
+    pn = signal.convolve(H1, kernel, mode='valid')
+
+    Sol.rhou[...] = Sol.rhou / Sol.rho * ud.min_val
+    Sol.rhov[...] = Sol.rhov / Sol.rho * ud.min_val
+    Sol.rhow[...] = Sol.rhow / Sol.rho * ud.min_val
+    Sol.rhoY[...] = Sol.rhoY / Sol.rho * ud.min_val
+    Sol.rho[...] = ud.min_val
+
+    pn = np.expand_dims(pn, axis=1)
+    mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
+    boundary.set_ghostnodes_p2(mpv.p2_nodes,node,ud)
+
+    if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_swe_to_lake')
+
+
+def do_lake_to_swe_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
+    if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_lake_time_step')
+    print(colored("lake to swe conversion...",'blue'))
+
+    H10 = deepcopy(mpv.p2_nodes[:,2,:])
+    H10 -= H10.mean()
+    fac = np.sqrt(ud.g0 / 2.0)
+    H10 /= fac
+
+    # define 2D kernel
+    kernel = np.ones((2,2))
+    kernel /= kernel.sum()
+
+    # do node-to-cell averaging
+    H1 = signal.convolve(H10, kernel, mode='valid')
+    H1 = 1.0 + H1
+    print(colored(H1.max(), 'red'))
+
+    # project H1 back to horizontal slice with ghost cells
+    H1 = np.expand_dims(H1, axis=1)
+    H1 = np.repeat(H1, elem.icy, axis=1)
+
+    Sol.rho[...] = H1
+    Sol.rhou[...] = Sol.rhou / ud.min_val * Sol.rho
+    Sol.rhov[...] = Sol.rhov / ud.min_val * Sol.rho
+    Sol.rhow[...] = Sol.rhow / ud.min_val * Sol.rho
+    Sol.rhoY[...] = Sol.rhoY / ud.min_val * Sol.rho
+    
+    pn = signal.convolve(Sol.rhoY[:,2,:], kernel, mode='valid')
+    pn = np.expand_dims(pn, axis=1)
+    mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
+    boundary.set_ghostnodes_p2(mpv.p2_nodes,node,ud)
+
+    if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_lake_to_swe')
+
+
