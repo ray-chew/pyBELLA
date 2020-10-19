@@ -145,6 +145,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                     swe_to_lake = True
 
                 else:
+                    print(colored("Converting COMP to PSINC",'blue'))
                     dp2n = mpv.p2_nodes
                     bld.convert_p2n(dp2n)
                     bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
@@ -201,6 +202,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                 mpv = mpv_freeze
 
                 if writer != None: writer.populate(str(label)+'_after_full_step', 'dp2n', dp2n)
+                print(colored("Converting PSINC to COMP",'blue'))
                 bld.convert_p2n(dp2n)
                 bld.update_Sol(Sol,elem,node,th,ud,mpv,'aft',label=label,writer=writer)
                 bld.update_p2n(Sol,mpv,node,th,ud)
