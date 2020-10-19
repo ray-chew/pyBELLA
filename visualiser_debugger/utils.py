@@ -121,12 +121,18 @@ class test_case(object):
             #ref = (ref[self.i2])
             
             if avg==True:
-                arr -= arr.mean()
+                for ens_mem in arr:
+                     ens_mem -= ens_mem.mean()
+#                 arr -= arr.mean()
                 ref -= ref.mean()
                 
             ref_ampl = ref.max() - ref.min()
+            #print(ref_ampl)
+            factor = ref_ampl
+#             factor = 1.0
+            #factor = ref.mean()
 
-            diff.append(np.sqrt(((arr - ref)**2).mean()) / ref_ampl)
+            diff.append(np.sqrt(((arr - ref)**2).mean()) / factor)
         return np.array(diff)
 
     def probe_rmse(self, arrs, refs, probe_loc, avg=False, inner=False):
