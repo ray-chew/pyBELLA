@@ -67,7 +67,7 @@ class UserData(object):
 
         self.is_ArakawaKonor = 0
         self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+        self.is_compressible = 0
         self.compressibility = 0.0
         self.acoustic_timestep = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
@@ -94,7 +94,8 @@ class UserData(object):
         self.zmin = - 1.0
         self.zmax =   1.0
 
-        self.wind_speed = 0.0
+        self.u_wind_speed = 0.0
+        self.w_wind_speed = 0.0
         self.wind_shear = -0.0
         self.hill_shape = HillShapes.AGNESI
         self.hill_height = 0.0 * 0.096447
@@ -124,8 +125,8 @@ class UserData(object):
 
         self.time_integrator = TimeIntegrator.SI_MIDPT
         self.advec_time_integrator = TimeIntegrator.STRANG
-        # self.CFL  = 0.5
-        self.CFL = 0.9
+        self.CFL  = 0.5
+        # self.CFL = 0.9
         self.dtfixed0 = 1.9 / self.t_ref
         self.dtfixed = 1.9 / self.t_ref
 
@@ -181,7 +182,7 @@ class UserData(object):
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'rho' #theta, rho
 
-        self.continuous_blending = True
+        self.continuous_blending = False
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
@@ -205,7 +206,8 @@ class UserData(object):
         # aux += '_' + self.blending_mean + '_mean'
 
         # aux = 'obs_truthgen_freezelt5_wdawloc_4.0_rhov_rhoY_inflation_0.95'
-        aux = 'obs_psinc_wdawloc_1.0_rho_rhov_inflation_1.2'
+        aux = 'obs_dpib_wdawloc_1.0_rho_rhov_11by11_nonorm_test'
+        # aux = 'obs_dpib_noda'
         # aux = 'ip_noconv_noreset'
         # aux = 'ip_ref'
         # aux = 'cold_wdawloc_4.0'
@@ -213,7 +215,10 @@ class UserData(object):
         # aux = 'wdawoloc'
         # aux = 'noda_noperturb'
         # aux = 'time_test'
-        aux = 'debug_da_ext'
+        # aux = 'comp_delth_perturb_ib_truth'
+        aux = 'psinc_delth_perturb_truth'
+        # aux = 'debug_da_ext'
+        self.aux = aux
         self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
         # self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))
@@ -232,9 +237,9 @@ class UserData(object):
         return (p * gm1inv + 0.5 * Msq * rho * (u*u + v*v + w*w))
 
 def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
-    u0 = ud.wind_speed
+    u0 = ud.u_wind_speed
     v0 = 0.0
-    w0 = 0.0
+    w0 = ud.w_wind_speed
     delth = 3.0
     
     y0 = 0.3
@@ -252,8 +257,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     if seed != None:
         np.random.seed(seed)
         # y0 += (np.random.random()-.5)/2.0
-        delth += 6.0*(np.random.random()-.5)
-        print(delth)
+        delth += 2.0*(np.random.random()-.5)
+        # print(delth)
+    
+    if 'truth' in ud.aux:
+        np.random.seed(1234)
+        delth += 2.0*(np.random.random()-.5)
+    print(delth)
     
     r = np.sqrt((x)**2 + (y-y0)**2) / r0
 
