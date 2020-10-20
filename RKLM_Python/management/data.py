@@ -252,7 +252,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         # Blending : Are we in the lake regime? And is this
         #            the window step where we go back to SWE?
         ######################################################
-        if bld is not None and swe_to_lake:
+        if bld is not None and swe_to_lake and step > 0:
             initialise_lake_to_swe_conv = bld.criterion_init(window_step+1)
 
         ######################################################
