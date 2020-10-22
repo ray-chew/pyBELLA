@@ -124,27 +124,26 @@ def do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
     print(colored("swe to lake conversion...",'blue'))
 
     H1 = deepcopy(Sol.rho[:,2,:])
-    setattr(ud,'min_val',H1.min())
-    setattr(ud,'rho_diff',H1.max() - ud.min_val)
-    setattr(ud,'H0',Sol.rho.max())
-    H1 = (H1 - ud.min_val) #/ ud.rho_diff
-    H1 = ud.g0 / 2.0 * H1**2
-    H1 = H1**th.gamminv
-    print(colored(ud.H0, 'red'))
+    setattr(ud,'mean_val',H1.mean())
+    H1 = (H1 - ud.mean_val)
 
-    kernel = np.ones((2,2))
-    kernel /= kernel.sum()
-    pn = signal.convolve(H1, kernel, mode='valid')
+    # pn = mpv.p2_nodes[1:-1,2,1:-1]
 
-    Sol.rhou[...] = Sol.rhou / Sol.rho * ud.min_val
-    Sol.rhov[...] = Sol.rhov / Sol.rho * ud.min_val
-    Sol.rhow[...] = Sol.rhow / Sol.rho * ud.min_val
-    Sol.rhoY[...] = Sol.rhoY / Sol.rho * ud.min_val
-    Sol.rho[...] = ud.min_val
+    # kernel = np.ones((2,2))
+    # kernel /= kernel.sum()
 
-    pn = np.expand_dims(pn, axis=1)
-    mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
-    boundary.set_ghostnodes_p2(mpv.p2_nodes,node,ud)
+    # do node-to-cell averaging
+    # pn = signal.convolve(H1, kernel, mode='valid')
+
+    Sol.rhou[...] = Sol.rhou / Sol.rho * ud.mean_val
+    Sol.rhov[...] = Sol.rhov / Sol.rho * ud.mean_val
+    Sol.rhow[...] = Sol.rhow / Sol.rho * ud.mean_val
+    Sol.rhoY[...] = Sol.rhoY / Sol.rho * ud.mean_val
+    Sol.rho[...] = ud.mean_val
+
+    # pn = np.expand_dims(pn, axis=1)
+    # mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
+    # boundary.set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
     if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_swe_to_lake')
 
@@ -155,8 +154,6 @@ def do_lake_to_swe_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
 
     H10 = deepcopy(mpv.p2_nodes[:,2,:])
     H10 -= H10.mean()
-    fac = np.sqrt(ud.g0 / 2.0)
-    H10 /= fac
 
     # define 2D kernel
     kernel = np.ones((2,2))
@@ -164,7 +161,7 @@ def do_lake_to_swe_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
 
     # do node-to-cell averaging
     H1 = signal.convolve(H10, kernel, mode='valid')
-    H1 = 1.0 + H1
+    H1 = ud.mean_val + ud.Msq*H1
     print(colored(H1.max(), 'red'))
 
     # project H1 back to horizontal slice with ghost cells
@@ -172,12 +169,12 @@ def do_lake_to_swe_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
     H1 = np.repeat(H1, elem.icy, axis=1)
 
     Sol.rho[...] = H1
-    Sol.rhou[...] = Sol.rhou / ud.min_val * Sol.rho
-    Sol.rhov[...] = Sol.rhov / ud.min_val * Sol.rho
-    Sol.rhow[...] = Sol.rhow / ud.min_val * Sol.rho
-    Sol.rhoY[...] = Sol.rhoY / ud.min_val * Sol.rho
+    Sol.rhou[...] = Sol.rhou / ud.mean_val * Sol.rho
+    Sol.rhov[...] = Sol.rhov / ud.mean_val * Sol.rho
+    Sol.rhow[...] = Sol.rhow / ud.mean_val * Sol.rho
+    Sol.rhoY[...] = Sol.rhoY / ud.mean_val * Sol.rho
     
-    pn = signal.convolve(Sol.rhoY[:,2,:], kernel, mode='valid')
+    pn = H10[1:-1,1:-1]
     pn = np.expand_dims(pn, axis=1)
     mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
     boundary.set_ghostnodes_p2(mpv.p2_nodes,node,ud)
