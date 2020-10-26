@@ -123,17 +123,9 @@ def do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer
 def do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
     print(colored("swe to lake conversion...",'blue'))
 
-    H1 = deepcopy(Sol.rho[:,2,:])
+    H1 = Sol.rho[:,2:-2:,]
     setattr(ud,'mean_val',H1.mean())
     H1 = (H1 - ud.mean_val)
-
-    # pn = mpv.p2_nodes[1:-1,2,1:-1]
-
-    # kernel = np.ones((2,2))
-    # kernel /= kernel.sum()
-
-    # do node-to-cell averaging
-    # pn = signal.convolve(H1, kernel, mode='valid')
 
     Sol.rhou[...] = Sol.rhou / Sol.rho * ud.mean_val
     Sol.rhov[...] = Sol.rhov / Sol.rho * ud.mean_val
@@ -141,8 +133,6 @@ def do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
     Sol.rhoY[...] = Sol.rhoY / Sol.rho * ud.mean_val
     Sol.rho[...] = ud.mean_val
 
-    # pn = np.expand_dims(pn, axis=1)
-    # mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
     # boundary.set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
     if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_swe_to_lake')
@@ -152,7 +142,7 @@ def do_lake_to_swe_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
     if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_lake_time_step')
     print(colored("lake to swe conversion...",'blue'))
 
-    H10 = deepcopy(mpv.p2_nodes[:,2,:])
+    H10 = mpv.p2_nodes[:,2:-2,:].mean(axis=1)
     H10 -= H10.mean()
 
     # define 2D kernel
@@ -161,7 +151,7 @@ def do_lake_to_swe_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
 
     # do node-to-cell averaging
     H1 = signal.convolve(H10, kernel, mode='valid')
-    H1 = ud.mean_val + ud.Msq*H1
+    H1 = ud.mean_val + ud.Msq * H1
     print(colored(H1.max(), 'red'))
 
     # project H1 back to horizontal slice with ghost cells
@@ -173,12 +163,5 @@ def do_lake_to_swe_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
     Sol.rhov[...] = Sol.rhov / ud.mean_val * Sol.rho
     Sol.rhow[...] = Sol.rhow / ud.mean_val * Sol.rho
     Sol.rhoY[...] = Sol.rhoY / ud.mean_val * Sol.rho
-    
-    pn = H10[1:-1,1:-1]
-    pn = np.expand_dims(pn, axis=1)
-    mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
-    boundary.set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
     if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_lake_to_swe')
-
-
