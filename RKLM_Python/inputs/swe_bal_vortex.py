@@ -27,9 +27,9 @@ class UserData(object):
     viscbt = 0.0
     cond = 0.0
 
-    h_ref = 1.0
-    d_ref = 1.0
-    t_ref = 1.0
+    h_ref = 1000.0
+    d_ref = 10.0
+    t_ref = 1000.0
     T_ref = 1.0 # can get rid.
     u_ref = h_ref / t_ref
     p_ref = 1.0
@@ -59,7 +59,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 0
+        self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -67,9 +67,6 @@ class UserData(object):
         self.acoustic_order = 0
         
         self.Msq = 2.0 * self.u_ref * self.u_ref / (self.d_ref * self.g0)
-        # self.Msq = 2.0 * self.h_ref**2 / (self.d_ref**2 * self.g0)
-        # self.Msq = 1.0 / self.Msq
-        # self.g0 = self.g0 / (self.u_ref**2 / self.d_ref)
         self.g0 = self.g0 / (self.d_ref / self.t_ref**2)
 
         self.gravity_strength = np.zeros((3))
@@ -125,11 +122,11 @@ class UserData(object):
 
         self.time_integrator = TimeIntegrator.SI_MIDPT
         self.advec_time_integrator = TimeIntegrator.STRANG
-        # self.CFL  = 0.9
+        # self.CFL  = 0.
         self.CFL = 0.45
 
-        self.dtfixed0 = 1.0 / self.t_ref
-        self.dtfixed = 1.0 / self.t_ref
+        self.dtfixed0 = 1.0 #/ self.t_ref
+        self.dtfixed = 1.0 #/ self.t_ref
 
         self.inx = 64+1
         self.iny = 1+1
@@ -171,7 +168,8 @@ class UserData(object):
 
         # self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
         self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
-        # self.tout = np.arange(0, 3.0 + 0.005, 0.005)[1:]
+        self.tout = [1.0]
+        # self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
         # self.tout = [1.0]
         # self.tout = [1E6]
 
@@ -188,15 +186,16 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
-        aux = 'wdawloc_pps_rhou_rhow_tra_nonorm'
-        aux = 'debug'
-        # aux = 'comp_test_0'
-        # aux = 'noda_pps'
+        aux = 'wdawloc_pp_rhou_rhow_tra_ib_0.25_nonorm'
+        # aux = 'psinc_debug'
+        aux = 'comp_debug_ib_16a'
+        # aux = 'debug'
+        # aux = 'noda_pp'
         # aux = 'bld_test'
         # aux = 'comp_1.0_corr_1.0'
         # aux = 'debug_vortparam_lake_tra_corr_2pi'
         # aux = 'debug_H0'
-        # aux = 'comp_1.0_pps_tra_truth'
+        # aux = 'comp_1.0_pp_tra_truth'
         # aux = 'psinc_1.0_pp_tra_debug'
         # aux = 'get_initial_perturb'
 
@@ -240,9 +239,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         np.random.seed(seed)
         # H0 += (np.random.random() - 0.5) * 0.1
         # print(seed, H0)
-
-        xc += (np.random.random() - 0.5) * scale / 50.0
-        zc += (np.random.random() - 0.5) * scale / 50.0
+        xc += (np.random.random() - 0.5) * scale / 5.0
+        zc += (np.random.random() - 0.5) * scale / 5.0
         print(seed, xc, zc)
 
     # used to generate truth
@@ -253,8 +251,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         # print(seed, H0
         # ud.H0 = H0
 
-        xc += (np.random.random() - 0.5) * scale / 50.0
-        zc += (np.random.random() - 0.5) * scale / 50.0
+        xc += (np.random.random() - 0.5) * scale / 5.0
+        zc += (np.random.random() - 0.5) * scale / 5.0
         print(seed, xc, zc)
         ud.xc = xc
         ud.zc = zc
@@ -347,7 +345,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         pn = (Sol.rhoY[:,igy,:] - H0) / ud.Msq
         pn = signal.convolve(pn, kernel, mode='valid')
     else:
-        rhoY = Sol.rhoY[:,igy,:]
+        rhoY = Sol.rhoY[:,igy,:] / ud.Msq
         pn = signal.convolve(rhoY, kernel, mode='valid')
         Sol.rhoY[:,igy:-igy,:] = H0
 
@@ -355,6 +353,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     
     pn = np.expand_dims(pn, axis=1)
     mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
+    mpv.p2_nodes[2:-2,2:-2,2:-2] -= mpv.p2_nodes[2:-2,2:-2,2:-2].mean(axis=(0,2),keepdims=True)
+    # mpv.p2_nodes[...] = 1.0
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
