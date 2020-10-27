@@ -147,7 +147,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if c_init and bld.cb and ud.blending_conv is not None:
             # distinguish between Euler and SWE blending
             if ud.blending_conv is not 'swe':
-                blending.do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, time_update, step, window_step, t, dt)
+                Sol, mpv = blending.do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt)
 
         
         ######################################################
@@ -162,6 +162,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                 ud.compressibility = 0.0
                 blending.do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer)
             else:
+                print("IB: SWE-TO_LAKE")
                 blending.do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug)
                 swe_to_lake = True
                 initialise_lake_to_swe_conv = True
@@ -171,8 +172,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         # Elif, is initial blending switch on and are we on the 1st time-step?
         elif ud.initial_blending == True and step == 1 and bld is not None:
             # Distinguish between SWE and Euler blendings
-            if ud.blending_conv is not 'swe': 
-                blending.do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, time_update, step, window_step, t, dt)
+            if ud.blending_conv is not 'swe':
+                Sol, mpv = blending.do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt)
                 ud.is_compressible = 1
                 ud.compressibility = 1.0
         else:
@@ -240,14 +241,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
         euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0, writer=writer, label=str(label)+'_after_full_step')
 
-        t += dt
-
-        if writer != None:
-            writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
-            print("###############################################################################################")
-            print("step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f" %(step, t, dt, cfl, cfl_ac))
-            print("###############################################################################################")
-
         ######################################################
         # Blending : Are we in the lake regime? And is this
         #            the window step where we go back to SWE?
@@ -259,10 +252,22 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         # Blending : If we are in the lake regime, is blending
         #            on? If yes, do lake-to-swe conversion.
         ######################################################
-        if ud.blending_conv == 'swe' and swe_to_lake and initialise_lake_to_swe_conv:
-            blending.do_lake_to_swe_conv(Sol, mpv, elem, node, ud, th, writer, label, debug)
+        if ud.blending_conv == 'swe' and swe_to_lake and initialise_lake_to_swe_conv and bld is not None:
+
+            # blending.do_lake_to_swe_conv(Sol, mpv, elem, node, ud, th, writer, label, debug)
+
+            Sol, mpv = blending.do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug, step, window_step, t, dt)
             ud.is_compressible = 1
             ud.compressibility = 1.0
+
+        t += dt
+        print(t)
+
+        if writer != None:
+            writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
+            print("###############################################################################################")
+            print("step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f" %(step, t, dt, cfl, cfl_ac))
+            print("###############################################################################################")
 
         step += 1
         window_step += 1
