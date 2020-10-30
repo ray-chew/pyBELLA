@@ -41,7 +41,7 @@ class io(object):
                 
         self.PATHS = [  'buoy',
                         # 'dp2_c',
-                        'dp2_nodes',
+                        # 'dp2_nodes',
                         # 'dpdim',
                         'drhoY',
                         'dT',
@@ -137,15 +137,15 @@ class io(object):
         # self.populate(name,'buoy',Sol.rhoX / Sol.rho)
 
         # dp2_nodes
-        self.populate(name,'dp2_nodes',mpv.dp2_nodes)
+        # self.populate(name,'dp2_nodes',mpv.dp2_nodes)
         # p2_nodes
         self.populate(name,'p2_nodes',mpv.p2_nodes)
         # p2_nodes0
         # self.populate(name,'p2_nodes0',mpv.p2_nodes0)
         # p2_cells
-        self.populate(name,'p2_cells',mpv.p2_cells)
+        # self.populate(name,'p2_cells',mpv.p2_cells)
         # dp2_cells
-        self.populate(name,'dp2_cells',mpv.dp2_cells)
+        # self.populate(name,'dp2_cells',mpv.dp2_cells)
 
         # pressure
         # self.populate(name,'p',Sol.rhoY**th.gamm)

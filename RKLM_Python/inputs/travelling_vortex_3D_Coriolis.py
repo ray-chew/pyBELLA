@@ -131,7 +131,7 @@ class UserData(object):
         self.kY = 0.0
         self.kZ = 0.0
 
-        self.tol = 1.e-6
+        self.tol = 1.e-10
         self.max_iterations = 6000
 
         self.continuous_blending = False

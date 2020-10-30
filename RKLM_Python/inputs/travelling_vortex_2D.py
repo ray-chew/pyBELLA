@@ -85,6 +85,9 @@ class UserData(object):
         self.zmax =   0.5
 
         self.wind_speed = 0.0
+        self.u_wind_speed = 1.0
+        self.v_wind_speed = 1.0
+        self.w_wind_speed = 0.0
         self.wind_shear = -0.0
         self.hill_shape = HillShapes.AGNESI
         self.hill_height = 0.0
@@ -127,8 +130,10 @@ class UserData(object):
         self.advec_time_integrator = TimeIntegrator.STRANG
         self.CFL  = 0.9/2.0
         # self.CFL = 0.95
-        self.dtfixed0 = 2.1 * 1.200930e-2
-        self.dtfixed = 2.1 * 1.200930e-2
+        # self.dtfixed0 = 2.1 * 1.200930e-2
+        # self.dtfixed = 2.1 * 1.200930e-2
+        self.dtfixed = 0.01
+        self.dtfixed0 = 0.01
 
         self.inx = 64+1
         self.iny = 64+1
@@ -157,7 +162,7 @@ class UserData(object):
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.blending_weight = 0./16
+        self.blending_weight = 10./16
 
         self.initial_blending = True
 
@@ -177,9 +182,9 @@ class UserData(object):
         # self.tout = [0.1]
         # self.tout[0] =  1.0
         # self.tout[1] = -1.0
-        # self.tout = np.arange(0.0,1.05,0.05)
+        self.tout = np.arange(0.0,3.01,0.01)[1:]
         # self.tout = np.arange(0.0,6.05,0.05)
-        self.tout = [1.0]
+        # self.tout = [1.0]
 
 
         # self.tout = times.copy()
@@ -195,13 +200,19 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        aux = 'ib-0'
-        # aux = 'ib_noconv_reset_remake'
-        # aux += '_' + self.blending_conv + '_conv'
-        # aux += '_' + self.blending_mean + '_mean'
-        # aux = 'cb1_w=-6_debug'
-        # self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))
-        # aux = 'psinc_bal_debug'
+        aux = 'ib_davg_noip'
+        aux = 'ib_half-8_full-8'
+        aux = 'ib-8_full-10'
+        aux = 'comp_bal_noib'
+        aux = 'comp_imbal_ib-16'
+        # aux = 'psinc_noib'
+        # aux = 'comp_1.0_pp_tra_truth'
+        aux = 'wdawloc_pp_all_tra_0.25_nonorm'
+        # aux = 'noda_pp'
+        # aux = 'comp_debug_ib'
+        self.aux = aux
+
+
         self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
@@ -220,8 +231,8 @@ class UserData(object):
         return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
 
 def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
-    u0 = 1.0 #* ud.wind_speed
-    v0 = 1.0 #* ud.wind_speed
+    u0 = ud.u_wind_speed
+    v0 = ud.v_wind_speed
     w0 = 0.0
 
     rotdir = 1.0
@@ -237,11 +248,20 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     if seed != None and ud.perturb_type == 'pos_perturb':
         np.random.seed(seed)
-        xc = (np.random.random() - 0.5)/10.
-        yc = (np.random.random() - 0.5)/10.
+        xc += (np.random.random() - 0.5) / 5.0
+        yc += (np.random.random() - 0.5) / 5.0
+        print(seed, xc, yc)
 
-    xcm = xc - (ud.xmax - ud.xmin)
-    ycm = yc - (ud.ymax - ud.ymin)
+    if 'truth' in ud.aux:
+        np.random.seed(2233)
+        xc += (np.random.random() - 0.5) / 5.0
+        yc += (np.random.random() - 0.5) / 5.0
+        print(seed, xc, yc)
+        ud.xc = xc
+        ud.yc = yc
+
+    xcm = xc - np.sign(xc) * (ud.xmax - ud.xmin)
+    ycm = yc - np.sign(yc) * (ud.ymax - ud.ymin)
 
     igs = elem.igs
     igy = igs[1]
@@ -370,8 +390,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
     # set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
-    Sol.rhoY[...] = 1.0
-    mpv.p2_nodes[...] = 0.0
+    # Sol.rhoY[...] = 1.0
+    # mpv.p2_nodes[...] = 0.0
 
     # from scipy import signal
     # p2n = mpv.p2_nodes - mpv.p2_nodes.mean()
