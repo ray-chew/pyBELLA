@@ -19,8 +19,8 @@ class da_params(object):
         self.da_times = np.around(self.da_times,3)
         # self.da_times = []
         # self.obs_attributes = ['rho', 'rhou', 'rhow', 'rhoY', 'p2_nodes']
-        # self.obs_attributes = ['rho']
-        self.obs_attributes = ['rho']
+        # self.obs_attributes = ['rhou', 'rhov']
+        self.obs_attributes = ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes']
         # self.obs_attributes = ['rho', 'rhov']
         # self.obs_attributes = ['rho','rhou','rhov']
         # self.obs_attributes = ['rhou','p2_nodes']
@@ -38,7 +38,7 @@ class da_params(object):
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_comp_delth_perturb_ib_truth.h5'
 
         # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pps_tra_truth.h5'
-        # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0_pp_tra_truth.h5'
+        # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pp_tra_truth.h5'
         self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_comp_1.0_pp_tra_truth.h5'
 
         # forward operator (projector from state space to observation space)
@@ -97,8 +97,8 @@ class da_params(object):
         ############################################
         # Parameters for LETKF subdomain size
         ############################################
-        self.obs_X = 5
-        self.obs_Y = 5
+        self.obs_X = 11
+        self.obs_Y = 11
 
         # constants, linear, gaussian
         self.localisation_matrix = self.get_loc_mat('gaussian')

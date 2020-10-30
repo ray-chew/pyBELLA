@@ -151,7 +151,7 @@ class UserData(object):
 
         self.initial_blending = True
 
-        self.continuous_blending = False
+        self.continuous_blending = True
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
@@ -168,7 +168,7 @@ class UserData(object):
 
         # self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
         self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
-        self.tout = [1.0]
+        # self.tout = [1.0]
         # self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
         # self.tout = [1.0]
         # self.tout = [1E6]
@@ -186,18 +186,10 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
-        aux = 'wdawloc_pp_rhou_rhow_tra_ib_0.25_nonorm'
-        # aux = 'psinc_debug'
-        aux = 'comp_debug_ib_16a'
-        # aux = 'debug'
-        # aux = 'noda_pp'
-        # aux = 'bld_test'
-        # aux = 'comp_1.0_corr_1.0'
-        # aux = 'debug_vortparam_lake_tra_corr_2pi'
-        # aux = 'debug_H0'
-        # aux = 'comp_1.0_pp_tra_truth'
-        # aux = 'psinc_1.0_pp_tra_debug'
-        # aux = 'get_initial_perturb'
+        aux = 'wdawloc_pp_rhou_rhow_tra_ib_0.25_nonorm_debug'
+        # aux = 'psinc_noib'
+        # aux = 'comp_imbal_ib-16'
+        # aux = 'comp_debug_noib_imbal'
 
         self.aux = aux
         self.output_suffix = "_%i_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1],aux)
@@ -354,7 +346,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     pn = np.expand_dims(pn, axis=1)
     mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
     mpv.p2_nodes[2:-2,2:-2,2:-2] -= mpv.p2_nodes[2:-2,2:-2,2:-2].mean(axis=(0,2),keepdims=True)
+
     # mpv.p2_nodes[...] = 1.0
+
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)

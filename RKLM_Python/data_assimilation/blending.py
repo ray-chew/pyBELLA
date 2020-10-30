@@ -100,7 +100,7 @@ def do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer):
 
 
 def do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt):
-    print(colored("Blending... step = %i" %window_step,'blue'))
+    print(colored("Blending... step = %i" %step,'blue'))
     Sol_freeze = deepcopy(Sol)
     mpv_freeze = deepcopy(mpv)
     # Sol_move = deepcopy(Sol)
