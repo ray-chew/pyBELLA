@@ -117,7 +117,7 @@ ens = ensemble(sol_ens)
 # where are my observations?
 if N > 1:
     obs = dap.load_obs(dap.obs_path)
-    obs_noisy, obs_covar = obs_noiser(obs,dap)
+    obs_noisy, obs_covar = obs_noiser(obs,dap,rloc)
     obs_noisy_interp, obs_mask = sparse_obs_selector(obs_noisy, elem, node, ud, dap)
 
 # add ensemble info to filename

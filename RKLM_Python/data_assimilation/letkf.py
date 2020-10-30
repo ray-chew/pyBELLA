@@ -264,9 +264,9 @@ class prepare_rloc(object):
         """
 
         if self.cattr_len > 0:
-            results = self.analyse_by_grid_type(results,obs,covar,mask,N,tout,'cell')
+            results = self.analyse_by_grid_type(results,obs,covar[0],mask,N,tout,'cell')
         if self.nattr_len > 0:
-            results = self.analyse_by_grid_type(results,obs,covar,mask,N,tout,'node')
+            results = self.analyse_by_grid_type(results,obs,covar[1],mask,N,tout,'node')
         return results
 
     def analyse_by_grid_type(self,results,obs,covar,mask,N,tout,grid_type):

@@ -291,13 +291,18 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
 
         # get inner domain size
         if elem.iicy == 1: # implying horizontal slice
-            Nx, Ny = elem.iicx, elem.iicz
+            Ncx, Ncy = elem.iicx, elem.iicz
+            Nnx, Nny = node.iicx, node.iicz
         else:
-            Nx, Ny = elem.iicx, elem.iicy
+            Ncx, Ncy = elem.iicx, elem.iicy
+            Nnx, Nny = node.iicx, node.iicy
 
-        N = Nx * Ny
-        K *= N
-        K = int(K)
+        Nc = Ncx * Ncy
+        Nn = Nnx * Nny
+        Kc = Nc * K
+        Kn = Nn * K
+        Kc = int(Kc)
+        Kn = int(Kn)
 
         if elem.iicy == 1: # implying horizontal slice
             Xc, Yc = elem.x, elem.z
@@ -319,8 +324,12 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
             for key, value in obs_t.items():
                 if key == 'p2_nodes':
                     grid_x, grid_y = Xn[i0], Yn[i0]
+                    K, N = Kn, Nn
+                    Nx, Ny = Nnx, Nny
                 else:
                     grid_x, grid_y = Xc[i0], Yc[i0]
+                    K, N = Kc, Nc
+                    Nx, Ny = Ncx, Ncy
                 grid_x, grid_y = grid_x.T, grid_y.T
                 np.random.seed(seeds[attr_cnt])
 
@@ -354,22 +363,27 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
                     attr_cnt += 1
 
         for mask_at_t in mask_arr:
-            for _, mask in mask_at_t.items():
-                assert mask.sum() == (Nx*Ny*dap.obs_frac), "Mask sparsity does not match obs_frac defined"
+            for key, mask in mask_at_t.items():
+                if key == 'p2_nodes':
+                    Nx, Ny = Nnx, Nny
+                else:
+                    Nx, Ny = Ncx, Ncy
+                assert mask.sum() == np.ceil(Nx*Ny*dap.obs_frac), "Mask sparsity does not match obs_frac defined"
 
         return obs_noisy_interp, mask_arr
 
 
-def obs_noiser(obs,dap):
+def obs_noiser(obs,dap,rloc):
     if dap.add_obs_noise:
         assert isinstance(dap.obs_noise, dict), "obs_noise has to be dict"
         assert len(dap.obs_noise) == len(dap.obs_attributes), "obs_noise length has to be equal to obs_attributes len"
 
-        obs_covar = np.zeros((len(dap.da_times),len(dap.obs_attributes)))
+        obs_covar_c = np.zeros((len(dap.da_times),rloc.cattr_len))
+        obs_covar_n = np.zeros((len(dap.da_times),rloc.nattr_len))
         obs_noisy = deepcopy(obs)
 
         for tt, obs_t in enumerate(obs):
-            attr_cnt = 0
+            ccnt, ncnt, attr_cnt = 0, 0, 0
             for key, value in obs_t.items():
                 seed = dap.obs_noise_seeds[attr_cnt]
                 np.random.seed(seed)
@@ -390,12 +404,17 @@ def obs_noiser(obs,dap):
 
                 if var == 0:
                     var = -np.inf
-                obs_covar[tt,attr_cnt] = var
+                if key in rloc.ca:
+                    obs_covar_c[tt,ccnt] = var
+                    ccnt += 1
+                else:
+                    obs_covar_n[tt,ncnt] = var
+                    ncnt += 1
                 attr_cnt += 1
         
         # obs_covar_mean = obs_covar.mean(axis=0)
         # obs_covar /= obs_covar_mean
-
+        obs_covar = [obs_covar_c, obs_covar_n]
         return obs_noisy, obs_covar
 
     else:
