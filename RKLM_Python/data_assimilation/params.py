@@ -20,7 +20,7 @@ class da_params(object):
         # self.da_times = []
         # self.obs_attributes = ['rho', 'rhou', 'rhow', 'rhoY', 'p2_nodes']
         # self.obs_attributes = ['rho']
-        self.obs_attributes = ['rhou', 'rhow']
+        self.obs_attributes = ['rho']
         # self.obs_attributes = ['rho', 'rhov']
         # self.obs_attributes = ['rho','rhou','rhov']
         # self.obs_attributes = ['rhou','p2_nodes']
@@ -37,9 +37,9 @@ class da_params(object):
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_comp_ref.h5'
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_comp_delth_perturb_ib_truth.h5'
 
-        # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0.h5'
-        self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pps_tra_truth.h5'
-        self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0_pp_tra_truth.h5'
+        # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pps_tra_truth.h5'
+        # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_1.0_comp_1.0_pp_tra_truth.h5'
+        self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_comp_1.0_pp_tra_truth.h5'
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)
@@ -72,13 +72,17 @@ class da_params(object):
         ############################################
         self.add_obs_noise = True
 
-        self.obs_noise = {
-            'rhou' : 0.05,
-            'rhow' : 0.05
-        }
         # self.obs_noise = {
-        #     'rho' : 0.1,
+        #     'rhou' : 0.05,
+        #     'rhov' : 0.05
         # }
+        self.obs_noise = {
+            'rho' : 0.05,
+            'rhoY' : 0.05
+        }
+        self.obs_noise = {}
+        for key in self.obs_attributes:
+            self.obs_noise[key] = 0.05
 
         da_depth = len(self.obs_attributes)
 
@@ -93,8 +97,8 @@ class da_params(object):
         ############################################
         # Parameters for LETKF subdomain size
         ############################################
-        self.obs_X = 11
-        self.obs_Y = 11
+        self.obs_X = 5
+        self.obs_Y = 5
 
         # constants, linear, gaussian
         self.localisation_matrix = self.get_loc_mat('gaussian')
