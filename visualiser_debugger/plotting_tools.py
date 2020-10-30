@@ -86,7 +86,7 @@ class plotter(object):
                 caxs.append(cax)
                 divider = make_axes_locatable(cax)
                 cax = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im, cax=cax)
+                plt.colorbar(im, cax=cax, format='%.4f')
                 
                 ims.append(im)
                 
@@ -189,7 +189,7 @@ class animator_2D(plotter):
 class plotter_1d(object):
     def __init__(self,ncols=3,nrows=2,figsize=(12,12),fontsize=16):
         plt.rcParams.update({'font.size': fontsize})
-        self.fig, self.ax = plt.subplots(ncols=ncols,nrows=nrows, sharex=False, figsize=figsize)
+        self.fig, self.ax = plt.subplots(ncols=ncols,nrows=nrows, sharex=False, sharey=False, figsize=figsize)
         self.nrows = nrows
         self.ncols = ncols
         
