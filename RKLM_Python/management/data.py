@@ -148,7 +148,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             # distinguish between Euler and SWE blending
             if ud.blending_conv is not 'swe':
                 Sol, mpv = blending.do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt)
-
         
         ######################################################
         # Initial Blending
@@ -208,11 +207,13 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_advect')
 
+        if writer is not None: writer.populate(str(label)+'_after_full_step','p2_nodes0',mpv.p2_nodes)
+
         mpv.p2_nodes0[...] = mpv.p2_nodes
 
         euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaexp')
-        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, label=str(label+'_after_ebnaimp'), writer=writer)
+        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, label=str(label+'_after_ebnaimp'), writer=None)
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaimp')
 
@@ -222,8 +223,11 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True: writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY)
         if debug == True and elem.ndim == 3: writer.populate(str(label)+'_after_half_step','rhoYw',flux[2].rhoY)
 
+        mpv.p2_nodes_half = deepcopy(mpv.p2_nodes) 
         mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
+        
         # mpv.p2_nodes[...] = mpv.p2_nodes0
+        
 
         Sol = deepcopy(Sol0)
 
@@ -239,7 +243,9 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
-        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0, writer=writer, label=str(label)+'_after_full_step')
+        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0, writer=None, label=str(label)+'_after_full_step')
+
+        if writer is not None: writer.populate(str(label)+'_after_full_step','p2_half',mpv.p2_nodes_half)
 
         ######################################################
         # Blending : Are we in the lake regime? And is this
@@ -261,7 +267,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             ud.compressibility = 1.0
 
         t += dt
-        print(t)
+        # print(t)
 
         if writer != None:
             writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
