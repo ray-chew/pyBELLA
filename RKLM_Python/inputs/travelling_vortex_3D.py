@@ -189,6 +189,7 @@ class UserData(object):
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
         aux = '3D_psinc_sta'
+        aux = 'comp_debug_ib_0'
         # aux = 'very_low_mach'
         # aux = 'advected'
         # aux = 'even' if self.no_of_pi_initial % 2 == 0 else 'odd'
