@@ -103,12 +103,19 @@ def do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer
     print(colored("Blending... step = %i" %window_step,'blue'))
     Sol_freeze = deepcopy(Sol)
     mpv_freeze = deepcopy(mpv)
+    # Sol_move = deepcopy(Sol)
+    # flux_move = deepcopy(flux)
+    # mpv_move = deepcopy(mpv)
 
     ret = data.time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, [0,step-1], th, bld=None, writer=None, debug=False)
 
     fac_old = ud.blending_weight
     fac_new = 1.0 - fac_old
-    dp2n = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
+    # dp2n_0 = (fac_new * ret[2].p2_nodes_half + fac_old * mpv_freeze.p2_nodes_half)
+    dp2n_1 = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
+
+    # dp2n = 0.5 * (dp2n_0 + dp2n_1)
+    dp2n = dp2n_1
 
     if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_start', mpv_freeze.p2_nodes)
     if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_end', ret[2].p2_nodes)
@@ -128,9 +135,24 @@ def do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer
 def do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
     print(colored("swe to lake conversion...",'blue'))
 
-    H1 = Sol.rho[:,2:-2:,]
-    setattr(ud,'mean_val',H1.mean())
-    H1 = (H1 - ud.mean_val)
+    H1 = Sol.rho[:,2:-2:,][:,0,:]
+    # setattr(ud,'mean_val',H1.mean())
+
+    H10 = mpv.p2_nodes[:,2:-2,:].mean(axis=1)
+    H10 -= H10.mean()
+
+    # define 2D kernel
+    kernel = np.ones((2,2))
+    kernel /= kernel.sum()
+
+    # do node-to-cell averaging
+    H10 = signal.convolve(H10, kernel, mode='valid')
+
+    # H1 = (H1 - ud.mean_val)
+    H1 = H1 - ud.Msq * H10
+    H1 = np.expand_dims(H1, axis=1)
+    H1 = np.repeat(H1, elem.icy, axis=1)
+    setattr(ud,'mean_val',H1)
 
     Sol.rhou[...] = Sol.rhou / Sol.rho * ud.mean_val
     Sol.rhov[...] = Sol.rhov / Sol.rho * ud.mean_val
@@ -153,7 +175,12 @@ def do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug
 
     fac_old = ud.blending_weight
     fac_new = 1.0 - fac_old
+    # dp2n = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
+
     dp2n = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
+    # dp2n_1 = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
+
+    # dp2n = 0.5 * (dp2n_0 + dp2n_1)
 
     Sol = deepcopy(Sol_freeze)
     mpv = deepcopy(mpv_freeze)
@@ -170,12 +197,13 @@ def do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug
 
     # do node-to-cell averaging
     H1 = signal.convolve(H10, kernel, mode='valid')
-    H1 = ud.mean_val + ud.Msq * H1
+    # H1 = ud.mean_val + ud.Msq * H1
     print(colored(H1.max(), 'red'))
 
     # project H1 back to horizontal slice with ghost cells
     H1 = np.expand_dims(H1, axis=1)
     H1 = np.repeat(H1, elem.icy, axis=1)
+    H1 = ud.mean_val + ud.Msq * H1
 
     Sol.rho[...] = H1
     Sol.rhou[...] = Sol.rhou / ud.mean_val * Sol.rho
