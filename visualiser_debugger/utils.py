@@ -114,17 +114,26 @@ class test_case(object):
         file.close()
         return np.array(array)
     
-    def spatially_averaged_rmse(self, arrs,refs,avg=False):
+    def spatially_averaged_rmse(self, arrs,refs,avg=False, grid_type='c'):
         diff = []
         for arr, ref in zip(arrs,refs):
             #arr = (arr[self.i2])
             #ref = (ref[self.i2])
-            
+            if grid_type == 'n':
+#                 print("arr before ie1 shape", arr.shape)
+                arr = self.get_ie1(arr)
+                ref = self.get_ie1(ref)
+#                 print(arr.shape)
             if avg==True:
-                arr -= arr.mean()
+                for ens_mem in arr:
+                     ens_mem -= ens_mem.mean()
+#                 arr -= arr.mean()
                 ref -= ref.mean()
+                
+            ref_ampl = ref.max() - ref.min()
+            factor = ref_ampl
 
-            diff.append(np.sqrt(((arr - ref)**2).mean()))
+            diff.append(np.sqrt(((arr - ref)**2).mean()) / factor)
         return np.array(diff)
 
     def probe_rmse(self, arrs, refs, probe_loc, avg=False, inner=False):
@@ -132,12 +141,16 @@ class test_case(object):
        
         for arr, ref in zip(arrs,refs):
             if avg == True:
-                arr -= arr.mean()
-                ref -= ref.mean()
+                arr = arr.mean(axis=0)
+                ref = ref.mean(axis=0)
+            
+            if arr.ndim == 3:
+                arr = arr[:,0,:]
+                ref = ref[:,0,:]
                
             if inner == True:
-                arr = arr[self.i2][probe_loc[0],probe_loc[1]]
-                ref = ref[self.i2][probe_loc[0],probe_loc[1]]
+                arr = arr[probe_loc[0],probe_loc[1]]
+                ref = ref[probe_loc[0],probe_loc[1]]
             else:
                 arr = arr[probe_loc[0],probe_loc[1]]
                 ref = ref[probe_loc[0],probe_loc[1]]
@@ -145,6 +158,26 @@ class test_case(object):
             #diff.append(np.sqrt(((arr - ref)**2).mean()))
             diff.append(np.linalg.norm(arr-ref))
         return np.array(diff)
+    
+    # the first and last node rows / columns are repeated in periodic bcs, when we take mean we want to avoid this.
+    @staticmethod
+    def get_ie1(arr):
+        arr = arr.squeeze()
+        ndim = arr.ndim
+        ie1 = tuple([slice(0,-1)]*ndim)
+        arr = arr[ie1]
+        return arr
+    
+    def get_mean(self, arrs, grid_type='c'):
+        arr_mean = []
+        
+        for arr in arrs:
+            if grid_type == 'n':
+                arr = self.get_ie1(arr)
+            arr_mean.append(arr.mean())
+        
+        return arr_mean
+    
 
     @staticmethod
     def get_probe_loc(arrs, probe_loc):
