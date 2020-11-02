@@ -33,6 +33,7 @@ import h5py
 from copy import deepcopy
 from management.debug import find_nearest
 from time import time
+from termcolor import colored
 
 debug = False
 da_debug = True
@@ -85,7 +86,7 @@ dap = da_params(N, da_type='rloc')
 if dap.da_type == 'rloc':
     rloc = prepare_rloc(ud, elem, node, dap, N)
 
-print("Generating initial ensemble...")
+print(colored("Generating initial ensemble...",'yellow'))
 sol_ens = np.zeros((N), dtype=object)
 np.random.seed(888)
 seeds = np.random.randint(10000,size=N) if N > 1 else None
@@ -116,7 +117,7 @@ ens = ensemble(sol_ens)
 # where are my observations?
 if N > 1:
     obs = dap.load_obs(dap.obs_path)
-    obs_noisy, obs_covar = obs_noiser(obs,dap)
+    obs_noisy, obs_covar = obs_noiser(obs,dap,rloc)
     obs_noisy_interp, obs_mask = sparse_obs_selector(obs_noisy, elem, node, ud, dap)
 
 # add ensemble info to filename
@@ -182,8 +183,8 @@ if __name__ == '__main__':
         # Forecast step
         ######################################################
         print('##############################################')
-        print('Next tout = %.3f' %tout)
-        print("Starting forecast...")
+        print(colored('Next tout = %.3f' %tout,'yellow'))
+        print(colored("Starting forecast...", 'green'))
         mem_cnt = 0
         for mem in ens.members(ens):
             # future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, None, False])
@@ -191,7 +192,7 @@ if __name__ == '__main__':
             # handling of DA window step counter
             if N > 1 : mem[3][0] = 0 if tout_old in dap.da_times else mem[3][0]
             if N == 1 : mem[3][0] = mem[3][1]
-            print("For ensemble member = %i..." %mem_cnt)
+            print(colored("For ensemble member = %i..." %mem_cnt,'yellow'))
             future = time_update(mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, blend, wrtr, debug)
 
             futures.append(future)
@@ -237,7 +238,7 @@ if __name__ == '__main__':
             # LETKF with grid-point localisation
             ##################################################
             elif dap.da_type == 'rloc':
-                print("Starting analysis... for rloc algorithm")
+                print(colored("Starting analysis... for rloc algorithm",'green'))
                 results = HSprojector_3t2D(results, elem, dap, N)
                 results = rloc.analyse(results,obs,obs_covar,obs_mask,N,tout)
                 results = HSprojector_2t3D(results, elem, node, dap, N)
@@ -277,7 +278,7 @@ if __name__ == '__main__':
         ######################################################
         # Write output at tout
         ######################################################
-        print("Starting output...")
+        print(colored("Starting output...",'yellow'))
         for n in range(N):
             Sol = ens.members(ens)[n][0]
             mpv = ens.members(ens)[n][2]
@@ -292,13 +293,13 @@ if __name__ == '__main__':
         # synchronise_variables(mpv, Sol, elem, node, ud, th)
         t = tout
         tout_old = np.copy(tout)
-        print('tout = %.3f' %tout)
+        print(colored('tout = %.3f' %tout,'yellow'))
 
         tout_cnt += 1
         outer_step += 1
         if outer_step > ud.stepmax: break
 
     toc = time()
-    print("Time taken = %.6f" %(toc-tic))
+    print(colored("Time taken = %.6f" %(toc-tic),'yellow'))
 
     writer.close_everything()

@@ -10,7 +10,7 @@ class plotter(object):
         N = self.arr_lst.shape[0]
         
         if N > ncols:
-            self.nrows = int(np.ceil(int(N/ncols)))
+            self.nrows = int(np.ceil(N/ncols))
             self.ncols = ncols
         if N <= ncols:
             self.nrows = 1
@@ -26,21 +26,35 @@ class plotter(object):
                 self.idx.append(pair)
         else:
             self.idx = cidx
-            
+         
         self.visualise = self.visualise
         self.fig, self.ax = plt.subplots(ncols=self.ncols,nrows=self.nrows,figsize=figsize,sharex=sharex,sharey=sharey)
         
         self.img = plt
             
-    def set_axes(self,x_locs=None,x_axs=None,y_locs=None,y_axs=None,x_label=None,y_label=None):
-        ## rewrite the above as *kwargs so that hasattr() checks will work as intended!!!
-       self.x_locs= x_locs
-       self.x_axs = x_axs
-       self.y_locs = y_locs
-       self.y_axs = y_axs
-       self.x_label = x_label
-       self.y_label = y_label
-       
+    def set_axes(self,**kwargs):
+        for key, value in kwargs.items():
+            setattr(self,key,value)
+        #self.x_locs= x_locs
+        #self.x_axs = x_axs
+        #self.y_locs = y_locs
+        #self.y_axs = y_axs
+        #self.x_label = x_label
+        #self.y_label = y_label
+        #self.axhline = axhline
+        #self.axvline = axvline
+        
+    def set_cax_axes(self,cax):
+        if hasattr(self, 'x_locs') : cax.set_xticks(self.x_locs)
+        if hasattr(self, 'x_axs') : cax.set_xticklabels(self.x_axs)
+        if hasattr(self, 'y_locs') : cax.set_yticks(self.y_locs)
+        if hasattr(self, 'y_axs') : cax.set_yticklabels(self.y_axs)
+        if hasattr(self, 'x_label') : cax.set_xlabel(self.x_label)
+        if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
+        if hasattr(self, 'axhline'): cax.axhline(self.axhline,c='k',lw=0.5)
+        if hasattr(self, 'axvline'): cax.axvline(self.axvline,c='k',lw=0.5)
+        
+        
     def plot(self,method='imshow',inner=False,suptitle="",rect=[0, 0.03, 1, 0.95],fontsize=14,aspect='auto',lvls=None):
         plt.rcParams.update({'font.size': fontsize})
         if method != 'imshow' or method != 'contour':
@@ -60,17 +74,19 @@ class plotter(object):
                 cax.set_title(title)
                 loc = cax.get_xticklabels()
                 
-                if hasattr(self, 'x_locs') : cax.set_xticks(self.x_locs)
-                if hasattr(self, 'x_axs') : cax.set_xticklabels(self.x_axs)
-                if hasattr(self, 'y_locs') : cax.set_yticks(self.y_locs)
-                if hasattr(self, 'y_axs') : cax.set_yticklabels(self.y_axs)
-                if hasattr(self, 'x_label') : cax.set_xlabel(self.x_label)
-                if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
-                
+#                 if hasattr(self, 'x_locs') : cax.set_xticks(self.x_locs)
+#                 if hasattr(self, 'x_axs') : cax.set_xticklabels(self.x_axs)
+#                 if hasattr(self, 'y_locs') : cax.set_yticks(self.y_locs)
+#                 if hasattr(self, 'y_axs') : cax.set_yticklabels(self.y_axs)
+#                 if hasattr(self, 'x_label') : cax.set_xlabel(self.x_label)
+#                 if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
+#                 if hasattr(self, 'axhline'): cax.axhline(self.axhline,c='k',lw=0.5)
+#                 if hasattr(self, 'axvline'): cax.axvline(self.axvline,c='k',lw=0.5)
+                self.set_cax_axes(cax)
                 caxs.append(cax)
                 divider = make_axes_locatable(cax)
                 cax = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im, cax=cax)
+                plt.colorbar(im, cax=cax, format='%.4f')
                 
                 ims.append(im)
                 
@@ -84,12 +100,17 @@ class plotter(object):
             cax = self.fig.gca()
             im = self.visualise(method,cax,arr,aspect,lvls)
             cax.set_title(title)
-            if hasattr(self, 'x_locs') : cax.set_xticks(self.x_locs)
-            if hasattr(self, 'x_axs') : cax.set_xticklabels(self.x_axs)
-            if hasattr(self, 'y_locs') : cax.set_yticks(self.y_locs)
-            if hasattr(self, 'y_axs') : cax.set_yticklabels(self.y_axs)
-            if hasattr(self, 'x_label') : cax.set_xlabel(self.x_label)
-            if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
+#             if hasattr(self, 'x_locs') : cax.set_xticks(self.x_locs)
+#             if hasattr(self, 'x_axs') : cax.set_xticklabels(self.x_axs)
+#             if hasattr(self, 'y_locs') : cax.set_yticks(self.y_locs)
+#             if hasattr(self, 'y_axs') : cax.set_yticklabels(self.y_axs)
+#             if hasattr(self, 'x_label') : cax.set_xlabel(self.x_label)
+#             if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
+#             if hasattr(self, 'axhline'):
+#                 cax.set_axhline(self.axhline,c='k',lw=0.5)
+#             if hasattr(self, 'axvline'):
+#                 cax.axvline(self.axvline,c='k',lw=0.5)
+            self.set_cax_axes(cax)
             divider = make_axes_locatable(cax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             plt.colorbar(im, cax=cax)
@@ -168,7 +189,7 @@ class animator_2D(plotter):
 class plotter_1d(object):
     def __init__(self,ncols=3,nrows=2,figsize=(12,12),fontsize=16):
         plt.rcParams.update({'font.size': fontsize})
-        self.fig, self.ax = plt.subplots(ncols=ncols,nrows=nrows, sharex=False, figsize=figsize)
+        self.fig, self.ax = plt.subplots(ncols=ncols,nrows=nrows, sharex=False, sharey=False, figsize=figsize)
         self.nrows = nrows
         self.ncols = ncols
         

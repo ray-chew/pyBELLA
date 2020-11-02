@@ -15,9 +15,11 @@ class UserData(object):
     omega = 0.0#2.0 * np.pi #/ 100.0
 
     R_gas = 1.0
-    R_vap = 461.0
-    Q_vap = 2.53e+06
+    R_vap = 1.0
+    Q_vap = 1.0
     gamma = 2.0
+    g0 = 9.81
+    # g0 = 2.0
 
     viscm = 0.0
     viscbm = 0.0
@@ -25,11 +27,12 @@ class UserData(object):
     viscbt = 0.0
     cond = 0.0
 
-    h_ref = 1.0
-    t_ref = 1.0
-    T_ref = 1.0
-    p_ref = 1e+5
+    h_ref = 1000.0
+    d_ref = 10.0
+    t_ref = 1000.0
+    T_ref = 1.0 # can get rid.
     u_ref = h_ref / t_ref
+    p_ref = 1.0
     rho_ref = p_ref / (R_gas * T_ref)
 
     Nsq_ref = 0.0
@@ -41,9 +44,9 @@ class UserData(object):
 
     def __init__(self):
         self.h_ref = self.h_ref
+        self.d_ref = self.d_ref
         self.t_ref = self.t_ref
         self.T_ref = self.T_ref
-        self.p_ref = self.p_ref
         self.rho_ref = self.rho_ref
         self.u_ref = self.u_ref
         self.Nsq_ref = self.Nsq_ref
@@ -51,6 +54,7 @@ class UserData(object):
         self.gamm = self.gamma
         self.Rg_over_Rv = self.R_gas / self.R_vap
         self.Q = self.Q_vap / (self.R_gas * self.T_ref)
+        self.g0 = self.g0
 
         self.nspec = self.NSPEC
 
@@ -61,7 +65,9 @@ class UserData(object):
         self.compressibility = 1.0
         self.acoustic_timestep = 0
         self.acoustic_order = 0
-        self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
+        
+        self.Msq = 2.0 * self.u_ref * self.u_ref / (self.d_ref * self.g0)
+        self.g0 = self.g0 / (self.d_ref / self.t_ref**2)
 
         self.gravity_strength = np.zeros((3))
         self.coriolis_strength = np.zeros((3))
@@ -79,12 +85,12 @@ class UserData(object):
                 self.i_coriolis[i] = 1
 
         self.fac = 1E0
-        self.xmin = - 0.5 * self.fac#/ self.h_ref
-        self.xmax =   0.5 * self.fac#/ self.h_ref
+        self.xmin = - 0.5 * self.fac
+        self.xmax =   0.5 * self.fac
         self.ymin = - 0.5
         self.ymax =   0.5
-        self.zmin = - 0.5 * self.fac#/ self.h_ref
-        self.zmax =   0.5 * self.fac#/ self.h_ref
+        self.zmin = - 0.5 * self.fac
+        self.zmax =   0.5 * self.fac
 
         self.u_wind_speed = 1.0
         self.w_wind_speed = 1.0
@@ -116,13 +122,11 @@ class UserData(object):
 
         self.time_integrator = TimeIntegrator.SI_MIDPT
         self.advec_time_integrator = TimeIntegrator.STRANG
-        # self.CFL  = 0.9
+        # self.CFL  = 0.
         self.CFL = 0.45
-        self.dtfixed0 = 0.005 #/ self.t_ref
-        self.dtfixed = 0.005 #/ self.t_ref
 
-        self.dtfixed0 = 1.0 / self.t_ref
-        self.dtfixed = 1.0 / self.t_ref
+        self.dtfixed0 = 1.0 #/ self.t_ref
+        self.dtfixed = 1.0 #/ self.t_ref
 
         self.inx = 64+1
         self.iny = 1+1
@@ -145,10 +149,10 @@ class UserData(object):
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'swe' #theta, rho, None
 
-        self.initial_blending = False
+        self.initial_blending = True
 
-        self.continuous_blending = False
-        self.no_of_pi_initial = 0
+        self.continuous_blending = True
+        self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
@@ -162,7 +166,10 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
+        # self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
         self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
+        # self.tout = [1.0]
+        # self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
         # self.tout = [1.0]
         # self.tout = [1E6]
 
@@ -179,17 +186,10 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
-        aux = 'wdawloc_pp_rhou_rhow_tra'
-        # aux = 'debug_psinc_1E3'
-        # aux = 'comp_test_0'
-        # aux = 'noda_pp'
-        # aux = 'bld_test'
-        # aux = 'comp_1.0_corr_1.0'
-        # aux = 'debug_vortparam_lake_tra_corr_2pi'
-        # aux = 'debug_H0'
-        # aux = 'comp_1.0_tra_truth'
-        # aux = 'comp_1.0_pp_tra_truth'
-        # aux = 'get_initial_perturb'
+        aux = 'wdawloc_pp_rhou_rhow_tra_ib_0.25_nonorm_debug'
+        # aux = 'psinc_noib'
+        # aux = 'comp_imbal_ib-16'
+        # aux = 'comp_debug_noib_imbal'
 
         self.aux = aux
         self.output_suffix = "_%i_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1],aux)
@@ -212,9 +212,9 @@ class UserData(object):
 def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     scale = ud.fac
 
-    u0 = ud.u_wind_speed * scale#0.0 #* ud.wind_speed
+    u0 = ud.u_wind_speed * scale
     v0 = 0.0 #* ud.wind_speed
-    w0 = ud.w_wind_speed * scale#0.0 *
+    w0 = ud.w_wind_speed * scale
 
     rotdir = 1.0
 
@@ -223,16 +223,14 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     xc = 0.0
     zc = 0.0
 
-    g = 9.81
+    g = ud.g0
+    # g = 9.81
     H0 = 1.0
-    # ud.Msq = (th.gamm / g)**2.0
-    # ud.Msq = 1.0/(g)
 
     if seed != None:
         np.random.seed(seed)
         # H0 += (np.random.random() - 0.5) * 0.1
         # print(seed, H0)
-
         xc += (np.random.random() - 0.5) * scale / 5.0
         zc += (np.random.random() - 0.5) * scale / 5.0
         print(seed, xc, zc)
@@ -242,7 +240,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     if 'truth' in ud.aux:
         np.random.seed(2233)
         # H0 += (np.random.random() - 0.5) * 0.1
-        # print(seed, H0)
+        # print(seed, H0
         # ud.H0 = H0
 
         xc += (np.random.random() - 0.5) * scale / 5.0
@@ -250,8 +248,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         print(seed, xc, zc)
         ud.xc = xc
         ud.zc = zc
-
-
 
     xcm = xc - np.sign(xc) * (ud.xmax - ud.xmin)
     zcm = zc - np.sign(zc) * (ud.zmax - ud.zmin)
@@ -306,69 +302,54 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     coe[12] = +1.0/24
 
     rho = np.zeros_like(r)
-    Frsq = (uth.max()**2 + uth.max()**2) / (g * H0)
-    Frsq = 1.0 / (g * 1.0)
-    # Frsq = 1.0 / (g * H0)
 
     for i in range(12,24+1):
         rho[...] += fac**2 * coe[i-12] * (r/R0)**i * (r < R0)
 
-    rho *= Frsq * scale #* (r < R0) * scale
-    rho = (rho - rho.max()) * (r < R0) #* H0
-    rho += H0 #* (r < R0)
+    p = np.copy(rho)
+    rho *= ud.Msq / 2.0
+    rho = (rho - rho.max()) * (r < R0)
+    rho += H0
 
     if (ud.is_compressible):
-        p = g / 2.0 * rho**2
-
-        Sol.rho[:,igy:-igy,:] = rho #* 1.2
+        Sol.rho[:,igy:-igy,:] = rho
         Sol.rhou[:,igy:-igy,:] = rho * u
         Sol.rhov[:,igy:-igy,:] = rho * v
         Sol.rhow[:,igy:-igy,:] = rho * w
-
-        Sol.rhoY[:,igy:-igy,:] = p**th.gamminv
-
-        # Sol.rho[i2] = rho
-        # Sol.rhou[i2] = rho * u
-        # Sol.rhov[i2] = rho * v
-        # Sol.rhow[i2] = rho * w
-        # Sol.rhoY[i2] = p**th.gamminv
+        Sol.rhoY[:,igy:-igy,:] = rho
     else:
-        min_val = H0
+        min_val = rho.mean()
+        H0 = rho.mean()
 
-        # rho_diff = rho.max() - rho.min()
-        rho_diff = H0 - rho.min()
-
-        H1 = (rho - min_val) / rho_diff
-
-        p = g / 2.0 * H0**2
-        H1 = g / 2.0 * (H1)**2
+        H1 = (rho - min_val)
 
         Sol.rho[:,igy:-igy,:] = H0
         Sol.rhou[:,igy:-igy,:] = H0 * u
         Sol.rhov[:,igy:-igy,:] = H0 * v
         Sol.rhow[:,igy:-igy,:] = H0 * w
-        Sol.rhoY[:,igy:-igy,:] = H1**th.gamminv
+        Sol.rhoY[:,igy:-igy,:] = H1
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
     kernel = np.ones((2,2))
     kernel /= kernel.sum()
     if (ud.is_compressible):
-        pn = signal.convolve(Sol.rhoY[:,igy,:], kernel, mode='valid')
+        pn = (Sol.rhoY[:,igy,:] - H0) / ud.Msq
+        pn = signal.convolve(pn, kernel, mode='valid')
     else:
-        pn = signal.convolve((Sol.rhoY[:,igy,:]), kernel, mode='valid')
-        Sol.rhoY[:,igy:-igy,:] = p**th.gamminv
-        set_explicit_boundary_data(Sol,elem,ud,th,mpv)
+        rhoY = Sol.rhoY[:,igy,:] / ud.Msq
+        pn = signal.convolve(rhoY, kernel, mode='valid')
+        Sol.rhoY[:,igy:-igy,:] = H0
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
-    pn = np.expand_dims(pn, 1)
-    pn = np.repeat(pn, node.icy, axis=1)
+    
+    pn = np.expand_dims(pn, axis=1)
+    mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
+    mpv.p2_nodes[2:-2,2:-2,2:-2] -= mpv.p2_nodes[2:-2,2:-2,2:-2].mean(axis=(0,2),keepdims=True)
 
-    mpv.p2_nodes[1:-1,:,1:-1] = pn
+    # mpv.p2_nodes[...] = 1.0
+
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
-
-    pn = np.expand_dims(mpv.p2_nodes[:,igy,:], 1)
-    mpv.p2_nodes[...] = np.repeat(pn[...], node.icy, axis=1)
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
     ud.compressibility = float(ud.is_compressible)
