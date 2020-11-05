@@ -15,7 +15,7 @@ class run_params(object):
         self.tc = self.tc
 
         self.ud = "None"
-        self.params = "None"
+        self.dap = "None"
         self.restart = False
 
     def single_run(self):
@@ -23,9 +23,9 @@ class run_params(object):
             subprocess.call([sys.executable, './RKLM_Python/__main__.py', '-ic', self.tc, '-N', '%i' %self.N])
 
     def queue_run(self):
-        if self.ud is None and self.params is None:
+        if self.ud is None and self.dap is None:
             assert 0, "ud or params must be defined"
-        subprocess.call([sys.executable, './RKLM_Python/__main__.py', '-ic', self.tc, '-N', '%i' %self.N, 'queue', '-w', self.ud, self.params])
+        subprocess.call([sys.executable, './RKLM_Python/__main__.py', '-ic', self.tc, '-N', '%i' %self.N, 'queue', '-w', self.ud, self.dap])
 
 if __name__ == '__main__':
     rp = run_params()

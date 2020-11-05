@@ -450,13 +450,13 @@ def get_args():
     if args.subcommand == 'queue':
         queue = True
         ud = args.rewrite[0]
-        params = args.rewrite[1]
+        dap = args.rewrite[1]
     else:
         ud = None
-        params = None
+        dap = None
 
 
-    return N, UserData, sol_init, rstrt, ud, params
+    return N, UserData, sol_init, rstrt, ud, dap, params
 
 
 
