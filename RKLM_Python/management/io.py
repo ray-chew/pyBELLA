@@ -35,10 +35,6 @@ class io(object):
 
         self.SUFFIX = self.ud.output_suffix
         if restart: self.OLD_SUFFIX = self.ud.old_suffix
-
-        if self.ud.continuous_blending == True:
-            self.SUFFIX += "_cont_blend"
-            self.SUFFIX += "_fs=%i_ts=%i" %(ud.no_of_pi_initial, ud.no_of_pi_transition)
                 
         self.PATHS = [  'buoy',
                         # 'dp2_c',
@@ -505,3 +501,34 @@ def sim_restart(path, name, elem, node, ud, Sol, mpv, restart_touts):
 
     file.close()
     return Sol, mpv, t
+
+
+def fn_gen(ud, dap, N):
+
+    suffix = ""
+    suffix += "_%i" %(ud.inx-1)
+    suffix += "_%i" %(ud.iny-1)
+    if ud.iny == 2:
+        suffix += "_%i" %(ud.inz-1)
+    suffix += "_%.1f" %ud.tout[-1]
+    suffix = '_ensemble=%i%s' %(N, suffix)
+
+    if ud.aux is not None:
+        suffix += '_' + ud.aux
+
+    if len(dap.da_times) > 0 and N >1:
+        suffix += '_wda'
+        if dap.da_type == 'rloc':
+            suffix += 'wloc'
+        for attr in dap.obs_attributes:
+            suffix += '_%s' %attr
+    
+    if ud.initial_blending:
+        bw = int(ud.blending_weight * 16)
+        suffix += '_ib-%i' %bw 
+
+    if ud.continuous_blending == True:
+        suffix += "_cont_blend"
+        suffix += "_fs=%i_ts=%i" %(ud.no_of_pi_initial, ud.no_of_pi_transition)
+
+    return suffix
