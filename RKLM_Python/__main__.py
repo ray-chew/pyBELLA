@@ -49,11 +49,12 @@ t = 0.0
 # Initialisation of data containers and helper classes
 ##########################################################
 # get arguments for initial condition and ensemble size
-N, UserData, sol_init, restart, r_params = get_args()
+N, UserData, sol_init, restart, ud_rewrite, r_params = get_args()
 if N == 1: da_debug = False
 
 initial_data = vars(UserData())
 ud = UserDataInit(**initial_data)
+if ud_rewrite is not None: ud.update_ud(ud_rewrite)
 
 elem, node = data_init(ud)
 
