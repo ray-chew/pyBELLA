@@ -26,7 +26,7 @@ from scipy import sparse
 
 # input file, uncomment to run
 from inputs.user_data import UserDataInit
-from management.io import io, get_args, sim_restart
+from management.io import io, get_args, sim_restart, fn_gen
 import h5py
 
 # some diagnostics
@@ -49,11 +49,12 @@ t = 0.0
 # Initialisation of data containers and helper classes
 ##########################################################
 # get arguments for initial condition and ensemble size
-N, UserData, sol_init, restart, r_params = get_args()
+N, UserData, sol_init, restart, ud_rewrite, dap_rewrite, r_params = get_args()
 if N == 1: da_debug = False
 
 initial_data = vars(UserData())
 ud = UserDataInit(**initial_data)
+if ud_rewrite is not None: ud.update_ud(ud_rewrite)
 
 elem, node = data_init(ud)
 
@@ -81,6 +82,7 @@ print("Input file is%s" %ud.output_base_name.replace('_',' '))
 # 2) rloc for LETKF with grid-point localisation
 # 3) etpf for the ETPF algorithm
 dap = da_params(N, da_type='rloc')
+if dap_rewrite is not None: dap.update_dap(dap_rewrite)
 
 # if elem.ndim == 2:
 if dap.da_type == 'rloc':
@@ -121,7 +123,8 @@ if N > 1:
     obs_noisy_interp, obs_mask = sparse_obs_selector(obs_noisy, elem, node, ud, dap)
 
 # add ensemble info to filename
-ud.output_suffix = '_ensemble=%i%s' %(N, ud.output_suffix)
+ud.output_suffix = fn_gen(ud, dap, N)
+# ud.output_suffix = '_ensemble=%i%s' %(N, ud.output_suffix)
 
 # ud.output_suffix = '%s_%s' %(ud.output_suffix, 'nr')
 

@@ -72,17 +72,10 @@ class da_params(object):
         ############################################
         self.add_obs_noise = True
 
-        # self.obs_noise = {
-        #     'rhou' : 0.05,
-        #     'rhov' : 0.05
-        # }
-        self.obs_noise = {
-            'rho' : 0.05,
-            'rhoY' : 0.05
-        }
+        self._noise_percentage = 0.05
         self.obs_noise = {}
         for key in self.obs_attributes:
-            self.obs_noise[key] = 0.05
+            self.obs_noise[key] = self._noise_percentage
 
         da_depth = len(self.obs_attributes)
 
@@ -213,8 +206,23 @@ class da_params(object):
             Z /= Z.max()
 
             return Z.flatten() * c
-    
 
+    def update_dap(self, params):
+        for key, value in params.items():
+            setattr(self, key, value)
+
+
+    @property
+    def noise_percentage(self):
+        return self._noise_percentage
+
+    @noise_percentage.setter
+    def noise_percentage(self, val):
+        self._noise_percentage = val
+        for key in self.obs_attributes:
+            self.obs_noise[key] = self.noise_percentage
+
+    
     # @staticmethod
     # def sampler_gaussian(var):
     #     return lambda ic: np.random.normal(ic,var**0.5)
