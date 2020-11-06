@@ -237,6 +237,24 @@ def labels_increment():
     labels_dict['p2_nodes'] = r'$\delta \pi$, nodal Exner pressure increment'
     return labels_dict
 
+def swe_labels():
+    labels_dict = {
+        'rho'       : r'$h$, water depth',
+        'rhou'      : r'$h u$, horizontal momentum',
+        'rhov'      : r'$h v$, vertical momentum',
+        'rhow'      : r'$h w$, horizontal momentum',
+        'buoy'      : r'buoyancy',
+        'rhoX'      : r'$h / \Theta$',
+        'rhoY'      : r'$h (\rho \Theta)$, water depth',
+        'p2_nodes'  : r'$h^\prime$, water depth perturbation'
+    }
+    return labels_dict
+
+def swe_labels_increment():
+    labels_dict = swe_labels()
+    labels_dict['p2_nodes'] = r'$\delta h^\prime$, water depth increment'
+    return labels_dict
+
 def short_labels():
     labels_dict = {
         'rho'       : r'$\rho$',
