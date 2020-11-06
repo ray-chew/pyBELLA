@@ -151,15 +151,15 @@ class UserData(object):
 
         self.initial_blending = True
 
-        self.continuous_blending = True
+        self.continuous_blending = False
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.blending_weight = 16./16
+        self.blending_weight = 12./16
 
-        self.initial_projection = False
+        self.initial_projection = True
         self.initial_impl_Euler = False
 
         self.column_preconditionr = False
@@ -167,10 +167,10 @@ class UserData(object):
         self.synchronize_weight = 0.0
 
         # self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
-        self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
+        # self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
         # self.tout = [1.0]
         # self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
-        # self.tout = [1.0]
+        self.tout = [1.0]
         # self.tout = [1E6]
 
         # self.tout = times.copy()
@@ -188,8 +188,9 @@ class UserData(object):
         
         aux = 'wdawloc_pp_rhou_rhow_tra_ib_0.25_nonorm_debug'
         # aux = 'psinc_noib'
-        # aux = 'comp_imbal_ib-16'
-        # aux = 'comp_debug_noib_imbal'
+        aux = 'comp_imbal_ib_full-12'
+        # aux ='comp_debug_noib_imbal'
+        # aux = 'debug_tra'
 
         self.aux = aux
         self.output_suffix = "_%i_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1],aux)
@@ -334,7 +335,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     kernel = np.ones((2,2))
     kernel /= kernel.sum()
     if (ud.is_compressible):
-        pn = (Sol.rhoY[:,igy,:] - H0) / ud.Msq
+        pn = (Sol.rhoY[:,igy,:] - H0) #/ ud.Msq
         pn = signal.convolve(pn, kernel, mode='valid')
     else:
         rhoY = Sol.rhoY[:,igy,:] / ud.Msq
@@ -347,12 +348,35 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
     mpv.p2_nodes[2:-2,2:-2,2:-2] -= mpv.p2_nodes[2:-2,2:-2,2:-2].mean(axis=(0,2),keepdims=True)
 
-    # mpv.p2_nodes[...] = 1.0
+    mpv.p2_nodes[...] = 1.0
 
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
     ud.compressibility = float(ud.is_compressible)
+
+    if ud.initial_projection == True:
+        is_compressible = np.copy(ud.is_compressible)
+        compressibility = np.copy(ud.compressibility)
+        ud.is_compressible = 0
+        ud.compressibility = 0.0
+
+        p2aux = np.copy(mpv.p2_nodes)
+
+        Sol.rhou -= u0 * Sol.rho
+        Sol.rhov -= v0 * Sol.rho
+
+        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5)
+        # euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, 2.5e-3, 0.5)
+
+        mpv.p2_nodes[...] = p2aux
+        mpv.dp2_nodes[...] = 0.0
+
+        Sol.rhou += u0 * Sol.rho
+        Sol.rhov += v0 * Sol.rho
+
+        ud.is_compressible = is_compressible
+        ud.compressibility = compressibility
 
     return Sol
 
