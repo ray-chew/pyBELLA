@@ -3,7 +3,8 @@ import h5py
 import os
 import numpy as np
 import shutil # for copying of simulation restart file
-import pickle
+import pickle # pickle jar to debug classes
+import yaml # for parsing of dict-style arguments
 
 from management.variable import Vars
 from physics.low_mach.mpv import MPV
@@ -34,10 +35,6 @@ class io(object):
 
         self.SUFFIX = self.ud.output_suffix
         if restart: self.OLD_SUFFIX = self.ud.old_suffix
-
-        if self.ud.continuous_blending == True:
-            self.SUFFIX += "_cont_blend"
-            self.SUFFIX += "_fs=%i_ts=%i" %(ud.no_of_pi_initial, ud.no_of_pi_transition)
                 
         self.PATHS = [  'buoy',
                         # 'dp2_c',
@@ -388,10 +385,18 @@ def get_args():
     # parser.add_argument('-r','--restart_sim',action='store',dest='rstrt',help='<Optional> Restart simulation?.',required=False,default=False,type=bool)
 
     subparsers = parser.add_subparsers(dest='subcommand')
+
     restart = subparsers.add_parser('restart')
     restart.add_argument('-p', '--path', action='store', dest='path', help='path to data for simulation restart.', required=True, type=str)
     restart.add_argument('-n', '--name', action='store', dest='name', help='name of datasets for simulation restart.', required=True, type=str)
     restart.add_argument('-t', '--time', nargs="*", help='time outputs for simulation restart in format [start,stop,interval). Use None for ud.tout settings.', type=float, required=False, default=None)
+
+
+    queue = subparsers.add_parser('queue')
+    queue.add_argument('-w', '--rewrite', nargs="*", help='', required=True, type=yaml.safe_load)
+    # queue.add_argument('-p', '--params', action='store', dest='queue_params', help='params dictionary to overwrite DA IC file attributes', required=False, type=dict)
+
+    # restart.add_argument('-t', '--time', nargs="*", help='time outputs for simulation restart in format [start,stop,interval). Use None for ud.tout settings.', type=float, required=False, default=None)
 
 
     args = parser.parse_args() # collect cmd line args
@@ -442,8 +447,16 @@ def get_args():
         rstrt = False
         params = None
 
+    if args.subcommand == 'queue':
+        queue = True
+        ud = args.rewrite[0]
+        dap = args.rewrite[1]
+    else:
+        ud = None
+        dap = None
 
-    return N, UserData, sol_init, rstrt, params
+
+    return N, UserData, sol_init, rstrt, ud, dap, params
 
 
 
@@ -488,3 +501,34 @@ def sim_restart(path, name, elem, node, ud, Sol, mpv, restart_touts):
 
     file.close()
     return Sol, mpv, t
+
+
+def fn_gen(ud, dap, N):
+
+    suffix = ""
+    suffix += "_%i" %(ud.inx-1)
+    suffix += "_%i" %(ud.iny-1)
+    if ud.iny == 2:
+        suffix += "_%i" %(ud.inz-1)
+    suffix += "_%.1f" %ud.tout[-1]
+    suffix = '_ensemble=%i%s' %(N, suffix)
+
+    if ud.aux is not None:
+        suffix += '_' + ud.aux
+
+    if len(dap.da_times) > 0 and N >1:
+        suffix += '_wda'
+        if dap.da_type == 'rloc':
+            suffix += 'wloc'
+        for attr in dap.obs_attributes:
+            suffix += '_%s' %attr
+    
+    if ud.initial_blending:
+        bw = int(ud.blending_weight * 16)
+        suffix += '_ib-%i' %bw 
+
+    if ud.continuous_blending == True:
+        suffix += "_cont_blend"
+        suffix += "_fs=%i_ts=%i" %(ud.no_of_pi_initial, ud.no_of_pi_transition)
+
+    return suffix

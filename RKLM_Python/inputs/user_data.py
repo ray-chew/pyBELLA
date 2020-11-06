@@ -14,3 +14,8 @@ class UserDataInit(object):
     def __init__(self,**kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
+
+
+    def update_ud(self, rewrite):
+        for key, value in rewrite.items():
+            setattr(self, key, value)

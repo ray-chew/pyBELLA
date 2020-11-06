@@ -3,7 +3,7 @@ from scipy import signal
 
 def get_B(data,g, ud):
     # equation 3
-    return 0.5*(data.u**2 + data.v**2) + g * (data.rho * ud.h_ref)
+    return 0.5*(data.u**2 + data.v**2) + g * (data.rho * ud.d_ref)
     
 def get_Pi(data,ud):
     # equation 4
@@ -12,13 +12,17 @@ def get_Pi(data,ud):
     kernel /= kernel.sum()
     vorty = signal.convolve(data.vorty, kernel, mode='valid')
     # get relative vorticity
-    vorty /= (data.rho * ud.h_ref)
+#     vorty /= (data.rho * ud.h_ref)
+    p2c = signal.convolve(data.p2_nodes, kernel, mode='valid')
+#     vorty /= data.rho
 #     vorty *= 86400.0 / ud.t_ref # vorticity in days^(-1)
-    vorty /= ud.t_ref # vorticity in s^(-1)
+#     vorty /= ud.t_ref # vorticity in s^(-1)
     
     f = ud.coriolis_strength[0] / ud.t_ref
+    #f = ud.coriolis_strength[0]
     
-    return (vorty + f) / (data.rho * ud.h_ref)
+    return (vorty + f) / (data.rho * ud.d_ref)
+    #return (vorty + f) / ud.d_ref #(data.rho)
     
 def grad(arr,dd,direction):
     # get partial derivatives
