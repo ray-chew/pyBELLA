@@ -162,11 +162,11 @@ class UserData(object):
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.blending_weight = 10./16
+        self.blending_weight = 4./16
 
         self.initial_blending = True
 
-        self.initial_projection = False
+        self.initial_projection = True
         self.initial_impl_Euler = False
 
         self.column_preconditionr = False
@@ -182,9 +182,9 @@ class UserData(object):
         # self.tout = [0.1]
         # self.tout[0] =  1.0
         # self.tout[1] = -1.0
-        self.tout = np.arange(0.0,3.01,0.01)[1:]
+        # self.tout = np.arange(0.0,1.01,0.01)[1:]
         # self.tout = np.arange(0.0,6.05,0.05)
-        # self.tout = [1.0]
+        self.tout = [1.0]
 
 
         # self.tout = times.copy()
@@ -204,10 +204,11 @@ class UserData(object):
         aux = 'ib_half-8_full-8'
         aux = 'ib-8_full-10'
         aux = 'comp_bal_noib'
-        aux = 'comp_imbal_ib-16'
+        aux = 'comp_imbal_half_ib-4'
+        aux = 'debug_infra_ext'
         # aux = 'psinc_noib'
         # aux = 'comp_1.0_pp_tra_truth'
-        aux = 'wdawloc_pp_all_tra_0.25_nonorm'
+        # aux = 'wdawloc_pp_all_tra_0.25_nonorm'
         # aux = 'noda_pp'
         # aux = 'comp_debug_ib'
         self.aux = aux
@@ -390,8 +391,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
     # set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
-    # Sol.rhoY[...] = 1.0
-    # mpv.p2_nodes[...] = 0.0
+    Sol.rhoY[...] = 1.0
+    mpv.p2_nodes[...] = 0.0
 
     # from scipy import signal
     # p2n = mpv.p2_nodes - mpv.p2_nodes.mean()
