@@ -4,7 +4,7 @@ from management.variable import States, Characters
 from management.enumerator import LimiterType
 from .eos import rhoe
 
-def recovery(Sol, flux, lmbda, ud, th, elem, split_step):
+def recovery(Sol, flux, lmbda, ud, th, elem, split_step, tag):
     gamm = th.gamm
     
     order_two = 1 # always 1
@@ -14,6 +14,9 @@ def recovery(Sol, flux, lmbda, ud, th, elem, split_step):
     # lefts_idx = (slice(None),slice(0,-1))
     # rights_idx = (slice(None),slice(1,None))
     # inner_idx = (slice(1,-1), slice(1,-1))
+
+    if tag == 'rk':
+        lmbda = 0.0
 
     ndim = elem.ndim
     lefts_idx, rights_idx, inner_idx = [slice(None,)] * ndim, [slice(None,)] * ndim, [slice(1,-1)] * ndim
