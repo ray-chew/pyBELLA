@@ -6,7 +6,7 @@ from management.variable import States, Vars
 from discretization import kgrid
 from physics.gas_dynamics.thermodynamic import ThemodynamicInit
 from physics.gas_dynamics.numerical_flux import recompute_advective_fluxes
-from physics.gas_dynamics.explicit import advect
+from physics.gas_dynamics.explicit import advect, advect_rk
 from physics.gas_dynamics.eos import nonhydrostasy, compressibility, synchronise_variables, is_compressible, is_nonhydrostatic
 from physics.gas_dynamics.gas_dynamics import dynamic_timestep
 from physics.low_mach.second_projection import euler_backward_non_advective_impl_part, euler_backward_non_advective_expl_part, euler_forward_non_advective
@@ -203,7 +203,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True and elem.ndim == 3: writer.populate(str(label)+'_before_advect','rhoYw',flux[2].rhoY)
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_advect')
 
-        advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, node, str(label)+'_half', writer)
+        # advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, node, str(label)+'_half', writer)
+        advect_rk(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, node, str(label)+'_half', writer)
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_advect')
 
@@ -238,6 +239,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_efna')
 
         advect(Sol, flux, dt, elem, step%2, ud, th, mpv, node, str(label)+'_full', writer)
+        # advect_rk(Sol, flux, dt, elem, step%2, ud, th, mpv, node, str(label)+'_full', writer)
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_advect')
 

@@ -54,7 +54,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+        self.is_compressible = 0
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -164,7 +164,7 @@ class UserData(object):
 
         self.blending_weight = 4./16
 
-        self.initial_blending = True
+        self.initial_blending = False
 
         self.initial_projection = True
         self.initial_impl_Euler = False
@@ -173,23 +173,9 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        # self.tout = np.arange(0,11,1)/10.
-        # self.tout = np.linspace(0,1.0,num=21)
-        # self.tout = np.linspace(0.0,10.0,101)
-        # self.tout = np.linspace(0.0,10.0,101*2-1)
-        # self.tout = [0.5]
-        # self.tout = [0.0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18,0.20]
-        # self.tout = [0.1]
-        # self.tout[0] =  1.0
-        # self.tout[1] = -1.0
-        # self.tout = np.arange(0.0,1.01,0.01)[1:]
-        # self.tout = np.arange(0.0,6.05,0.05)
+        self.tout = np.arange(0.0,1.01,0.01)[1:]
         self.tout = [1.0]
 
-
-        # self.tout = times.copy()
-
-        # self.stepmax = 10
         self.stepmax = 20000
 
         self.output_base_name = "_travelling_vortex"
@@ -204,11 +190,10 @@ class UserData(object):
         aux = 'ib_half-8_full-8'
         aux = 'ib-8_full-10'
         aux = 'comp_bal_noib'
-        aux = 'comp_imbal_half_ib-4'
-        aux = 'debug_infra_ext'
+        aux = 'comp_imbal_ib-16'
         # aux = 'psinc_noib'
         # aux = 'comp_1.0_pp_tra_truth'
-        # aux = 'wdawloc_pp_all_tra_0.25_nonorm'
+        aux = 'wdawloc_pp_all_tra_0.25_nonorm'
         # aux = 'noda_pp'
         # aux = 'comp_debug_ib'
         self.aux = aux
