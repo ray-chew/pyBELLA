@@ -154,7 +154,7 @@ class UserData(object):
         self.initial_projection = True
         self.initial_impl_Euler = False
 
-        self.initial_blending = False
+        self.initial_blending = True
 
         self.column_preconditionr = False
         self.synchronize_nodal_pressure = False
