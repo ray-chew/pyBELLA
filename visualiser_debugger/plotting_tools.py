@@ -119,7 +119,10 @@ class plotter(object):
         plt.suptitle(suptitle)
         plt.tight_layout(rect=rect)
         
-        return ims, caxs
+        if self.N > 1:
+            return ims, caxs
+        else:
+            return ims, cax
         
     def save_fig(self, fn, format='.pdf'):
         self.img.savefig(fn + format, bbox_inches = 'tight', pad_inches = 0)
