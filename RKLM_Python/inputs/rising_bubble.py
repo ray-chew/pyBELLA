@@ -13,7 +13,7 @@ class UserData(object):
     NSPEC = 1
     BOUY = 0
 
-    grav = 10.0
+    grav = 10.0             # [m/s^2]
     omega = 0.0 * 2.0 * np.pi * np.sin(0.25 * np.pi) / (24.0 * 3600.0)
 
     R_gas = 287.4
@@ -27,13 +27,13 @@ class UserData(object):
     viscbt = 0.0
     cond = 0.0
 
-    h_ref = 10000.0
-    t_ref = 100.0
-    T_ref = 300.00
-    p_ref = 8.61 * 1e4
+    h_ref = 10000.0         # [m]
+    t_ref = 100.0           # [s]
+    T_ref = 300.00          # [K]
+    p_ref = 8.61 * 1e4      # [N/m^2]
     u_ref = h_ref / t_ref
-    # rho_ref = p_ref / (R_gas * T_ref)
-    rho_ref = 1.0
+    rho_ref = p_ref / (R_gas * T_ref)
+    # rho_ref = 1.0
 
     Nsq_ref = grav * 1.3e-05
 
@@ -67,9 +67,10 @@ class UserData(object):
 
         self.is_ArakawaKonor = 0
         self.is_nonhydrostatic = 1
-        self.is_compressible = 0
+        self.is_compressible = 1
         self.compressibility = 0.0
         self.acoustic_timestep = 0
+        self.acoustic_order = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
 
         self.gravity_strength = np.zeros((3))
@@ -127,17 +128,19 @@ class UserData(object):
         self.advec_time_integrator = TimeIntegrator.STRANG
         self.CFL  = 0.5
         # self.CFL = 0.9
-        self.dtfixed0 = 1.9 / self.t_ref
-        self.dtfixed = 1.9 / self.t_ref
+        # self.dtfixed0 = 1.9 / self.t_ref
+        # self.dtfixed = 1.9 / self.t_ref
 
         # self.CFL = 1.0
         # self.dtfixed0 = 20.0 / self.t_ref
         # self.dtfixed = 20.0 / self.t_ref
         # self.dtfixed0 = 0.05
         # self.dtfixed = 0.05
+        self.dtfixed0 = 0.2
+        self.dtfixed = 0.2
 
-        self.inx = 100+1
-        self.iny = 50+1
+        self.inx = 160+1
+        self.iny = 80+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -159,7 +162,7 @@ class UserData(object):
         self.flux_correction_max_iterations = 6000
         self.second_projection_max_iterations = 6000
 
-        self.initial_projection = False
+        self.initial_projection = True
         self.initial_impl_Euler = False
 
         self.column_preconditionr = True
@@ -171,7 +174,8 @@ class UserData(object):
         # self.tout = [350 / self.t_ref]
         # self.tout = [10.0]
         # self.tout = np.arange(0.0,3.51,0.05)
-        self.tout = np.arange(0.0,10.05,0.05)[1:]
+        # self.tout = np.arange(0.0,10.05,0.05)[1:]
+        self.tout = [10.0]
         # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[1] = -1.0
 
@@ -188,7 +192,7 @@ class UserData(object):
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.initial_blending = False
+        self.initial_blending = True
 
         self.tol = 1.e-8
         self.max_iterations = 6000
@@ -240,12 +244,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     u0 = ud.u_wind_speed
     v0 = 0.0
     w0 = ud.w_wind_speed
-    delth = 3.0
+    delth = 2.0         # [K]
     
-    y0 = 0.3
+    y0 = 0.2
     r0 = 0.2
 
     g = ud.gravity_strength[1]
+    # print(ud.rho_ref)
 
     hydrostatic_state(mpv, elem, node, th, ud)
 
@@ -286,9 +291,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     Sol.rhoe[x_idx,y_idx] = ud.rhoe(rho, u ,v, w, p, ud, th)
     Sol.rhoY[x_idx,y_idx] = rhoY
 
-    # p = mpv.HydroState_n.p0[0]
-    # rhoY = mpv.HydroState_n.rhoY0[0]
-    # mpv.p2_nodes = (p - mpv.HydroState_n.p0[0]) / rhoY / ud.Msq
+    p = mpv.HydroState_n.p0[0]
+    rhoY = mpv.HydroState_n.rhoY0[0]
+    mpv.p2_nodes[...] = (p - mpv.HydroState_n.p0[0]) / rhoY / ud.Msq
 
     # mpv.p2_cells[x_idx,y_idx] = HySt.p20[x_idx,y_idx][c_idx]
     # mpv.p2_cells[x_idx,y_idx] -= mpv.HydroState.p20[0,y_idx]
@@ -300,10 +305,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     # hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th)
     # print(mpv.p2_nodes[103,:10])
-    ud.is_nonhydrostasy = 1.0
-    ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
+    # ud.is_nonhydrostasy = 1.0
+    # ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
     # ud.nonhydrostasy = float(ud.is_nonhydrostasy)
-    # ud.acoustic_order = 1.0
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
