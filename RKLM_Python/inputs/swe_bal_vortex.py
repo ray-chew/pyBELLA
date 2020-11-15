@@ -335,7 +335,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     kernel = np.ones((2,2))
     kernel /= kernel.sum()
     if (ud.is_compressible):
-        pn = (Sol.rhoY[:,igy,:] - H0) #/ ud.Msq
+        pn = (Sol.rhoY[:,igy,:] - H0) / ud.Msq
         pn = signal.convolve(pn, kernel, mode='valid')
     else:
         rhoY = Sol.rhoY[:,igy,:] / ud.Msq

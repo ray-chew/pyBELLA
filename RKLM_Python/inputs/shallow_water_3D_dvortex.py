@@ -14,6 +14,7 @@ class UserData(object):
     grav = 0.0
     omega = 6.147 * 1E-5 # 360 # (24.0 * 60.0**2)    # [rad/s]
     # omega = 0.0001
+    g0 = 9.81
 
     R_gas = 1.0
     R_vap = 461.0
@@ -27,6 +28,7 @@ class UserData(object):
     cond = 0.0
 
     h_ref = 1000.0        # [m]
+    d_ref = h_ref
     t_ref = 1200.0        # [day] -> [s]
     T_ref = 1.0
     p_ref = 1.0
@@ -46,6 +48,7 @@ class UserData(object):
 
     def __init__(self):
         self.h_ref = self.h_ref
+        self.d_ref = self.d_ref
         self.t_ref = self.t_ref
         self.T_ref = self.T_ref
         self.p_ref = self.p_ref
@@ -66,8 +69,10 @@ class UserData(object):
         self.compressibility = 1.0
         self.acoustic_timestep = 0
         self.acoustic_order = 0
-        self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
         self.R_gas = self.R_gas
+
+        self.Msq = 2.0 * self.u_ref * self.u_ref / (self.d_ref * self.g0)
+        self.g0 = self.g0 / (self.d_ref / self.t_ref**2)
 
         self.gravity_strength = np.zeros((3))
         self.coriolis_strength = np.zeros((3))
@@ -86,8 +91,8 @@ class UserData(object):
 
         self.xmin =   0.0
         self.xmax =   5000.0*1E3 / self.h_ref
-        self.ymin = - 0.5 * self.h_ref
-        self.ymax =   0.5 * self.h_ref
+        self.ymin = - 0.5 * self.d_ref
+        self.ymax =   0.5 * self.d_ref
         self.zmin =   0.0
         self.zmax =   4330.0*1E3 / self.h_ref
 
@@ -159,7 +164,7 @@ class UserData(object):
         # self.tout = np.arange(0,1E6+10000,10000)[1:]
         stepsize = 86400.0/4
         stepsize = 1200.0 / self.t_ref
-        end = 86400.0*3.0 / self.t_ref
+        end = 86400.0*10.0 / self.t_ref
         self.tout = np.arange(0,end+stepsize, stepsize)[1:]
         self.stepmax = 2E6
 
@@ -172,9 +177,9 @@ class UserData(object):
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
         # aux = 'dvortex_comp_geostrophic'
-        aux = 'comp_debug'
-        aux = 'psinc_debug'
-        aux = 'comp_debug_ib'
+        aux = 'debug'
+        # aux = 'psinc_debug'
+        # aux = 'comp_debug_ib'
         # aux += '_' + self.blending_conv + '_conv'
         # aux += '_' + self.blending_mean + '_mean'
         # aux = 'cb1_w=-6_debug'
@@ -213,22 +218,21 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     x, z = elem.x[igs[0]:-igs[0]], elem.z[igs[2]:-igs[2]]
     X, Z = np.meshgrid(x,z)
 
-    Lx = (elem.x[-1] - elem.x[0]) #/ ud.h_ref
-    Lz = (elem.z[-1] - elem.z[0]) #/ ud.h_ref
+    # Lx = (elem.x[-1] - elem.x[0]) #/ ud.h_ref
+    # Lz = (elem.z[-1] - elem.z[0]) #/ ud.h_ref
     Lx = 5000.0*1E3 / ud.h_ref #elem.x[-1] - elem.x[0]
     Lz = 4330.0*1E3 / ud.h_ref #elem.z[-1] - elem.z[0]
 
-    Hp = 75.0 / ud.h_ref
+    Hp = 75.0 / ud.d_ref
     H00 = 450.0 # semi-geostrophic
-    H00 = 750.0 # quasi-geostrophic
-    # H00 = 10000.0 # incompressible
+    # H00 = 750.0 # quasi-geostrophic
+    H00 = 10000.0 # incompressible
     if seed is not None:
-        H0 = H00 / ud.h_ref + 100.0 * 2.0 * (np.random.random() - 0.5) / ud.h_ref
+        H0 = H00 / ud.d_ref + 100.0 * 2.0 * (np.random.random() - 0.5) / ud.h_ref
     else:
-        H0 = H00 / ud.h_ref
+        H0 = H00 / ud.d_ref
 
-    g0 = 9.81 / (ud.u_ref / ud.t_ref)
-    ud.g0 = g0
+    g0 = ud.g0
 
     sigx, sigz = sigma(Lx), sigma(Lz)
     
@@ -255,6 +259,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     u[...] = - g0 * Hp / (f0 * sigz) * (zpp1 * exp1 + zpp2 * exp2).T
     w[...] = + g0 * Hp / (f0 * sigx) * (xpp1 * exp1 + xpp2 * exp2).T 
 
+
     Frsq = (u.max()**2 + w.max()**2) / (g0 * rho.max())
     Fr = np.sqrt(Frsq)
     print(Frsq, Fr)
@@ -263,40 +268,36 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     w = np.expand_dims(w, 1)
     w = np.repeat(w, elem.icy-aa*igs[1], axis=1)
 
-    if (ud.is_compressible) :
-        p = g0 / 2.0 * rho**2
-
+    if (ud.is_compressible):
         Sol.rho[i2] = rho
         Sol.rhou[i2] = rho * u
         Sol.rhov[i2] = rho * v
         Sol.rhow[i2] = rho * w
-        Sol.rhoY[i2] = p**th.gamminv
+        Sol.rhoY[i2] = rho
     else:
-        H0 = rho.min()
-        min_val = rho.min()
-
-        rho_diff = rho.max() - min_val
+        H0 = rho.mean()
+        min_val = rho.mean()
 
         H1 = (rho - min_val)
-
-        p = g0 / 2.0 * H0**2
-        H1 = g0 / 2.0 * (H1)**2 
 
         Sol.rho[i2] = H0
         Sol.rhou[i2] = H0 * u
         Sol.rhov[i2] = H0 * v
         Sol.rhow[i2] = H0 * w
-        Sol.rhoY[i2] = H1**th.gamminv
+        Sol.rhoY[i2] = H1
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
     kernel = np.ones((2,2))
     kernel /= kernel.sum()
     if (ud.is_compressible):
-        pn = signal.convolve(Sol.rhoY[:,igy,:], kernel, mode='valid')
+        pn = Sol.rhoY[:,igy,:] - H0
+        pn /= ud.Msq
+        pn = signal.convolve(pn, kernel, mode='valid')
     else:
-        pn = signal.convolve((Sol.rhoY[:,igy,:]), kernel, mode='valid')
+        pn = Sol.rhoY[:,igy,:]
+        pn = signal.convolve(pn, kernel, mode='valid')
         pn -= pn.mean()
-        Sol.rhoY[i2] = p**th.gamminv
+        Sol.rhoY[i2] = H0
         set_explicit_boundary_data(Sol,elem,ud,th,mpv)
     
     pn = np.expand_dims(pn, 1)
@@ -312,6 +313,32 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     ud.compressibility = float(ud.is_compressible)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
+
+    if ud.initial_projection == True:
+        is_compressible = ud.is_compressible
+        compressibility = ud.compressibility
+        ud.is_compressible = 0
+        ud.compressibility = 0.0
+
+        p2aux = np.copy(mpv.p2_nodes)
+
+        Sol.rhou -= u0 * Sol.rho
+        Sol.rhov -= v0 * Sol.rho
+        Sol.rhow -= w0 * Sol.rho
+
+        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5)
+
+        mpv.p2_nodes[...] = p2aux
+        mpv.dp2_nodes[...] = 0.0
+
+        Sol.rhou += u0 * Sol.rho
+        Sol.rhov += v0 * Sol.rho
+        Sol.rhow += w0 * Sol.rho
+
+        ud.is_compressible = is_compressible
+        ud.compressibility = compressibility
+
+
     return Sol
 
 def T_from_p_rho(p, rho):
