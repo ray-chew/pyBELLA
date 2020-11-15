@@ -239,6 +239,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_efna')
 
         advect(Sol, flux, dt, elem, step%2, ud, th, mpv, node, str(label)+'_full', writer)
+        # advect_rk(Sol, flux, dt, elem, step%2, ud, th, mpv, node, str(label)+'_full', writer)
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_advect')
 
