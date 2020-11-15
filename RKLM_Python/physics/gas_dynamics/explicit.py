@@ -111,7 +111,7 @@ def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None)
     ndim = elem.ndim
 
     # Sol0 = deepcopy(Sol)
-    # flux0 = deepcopy(flux)
+    # flux_tmp = deepcopy(flux)
 
     stage = 0
     # Get RK update
@@ -142,12 +142,12 @@ def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None)
 
     # stage = 1
     # for split in range(ndim):
-    #     lmbda = time_step / elem.dxyz[split]
+    #     lmbda = dt / elem.dxyz[split]
     #     Sol.flip_forward()
     #     if elem.isc[split] > 1: 
     #         flux[split] = explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, tag='rk')
 
-    # Sol = Sol0
+    # Sol = deepcopy(Sol0)
 
     # for dim in range(ndim):
     #     lmbda = dt / elem.dxyz[dim]
