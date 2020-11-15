@@ -4,11 +4,11 @@ import json
 rp = rp()
 
 rp.N = 1
-rp.tc = 'swe_dvortex'
+rp.tc = 'tv'
 ud = {
     # 'inx' : 64+1,
     # 'iny' : 128+1,
-    'aux' : 'debug_incompressible'
+    'aux' : 'debug_rkadv_psinc'
 }
 
 dap = {
