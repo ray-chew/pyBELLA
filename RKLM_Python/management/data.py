@@ -117,6 +117,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if step == 0 and writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
         dt, cfl, cfl_ac = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
+        # if step < 1 and writer != None: dt = 0.2169
 
         ######################################################
         # Blending : Do full regime to limit regime conversion
@@ -161,7 +162,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                 ud.compressibility = 0.0
                 blending.do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer)
             else:
-                print("IB: SWE-TO_LAKE")
                 blending.do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug)
                 swe_to_lake = True
                 initialise_lake_to_swe_conv = True
@@ -169,7 +169,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                 ud.compressibility = 0.0
 
         # Elif, is initial blending switch on and are we on the 1st time-step?
-        elif ud.initial_blending == True and step == 1 and bld is not None:
+        elif ud.initial_blending == True and step == ud.no_of_pi_initial and bld is not None:
             # Distinguish between SWE and Euler blendings
             if ud.blending_conv is not 'swe':
                 Sol, mpv = blending.do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt)
@@ -261,10 +261,13 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         #            on? If yes, do lake-to-swe conversion.
         ######################################################
         if ud.blending_conv == 'swe' and swe_to_lake and initialise_lake_to_swe_conv and bld is not None:
+        # if ud.blending_conv == 'swe' and swe_to_lake and step == ud.no_of_pi_initial and bld is not None:
 
             # blending.do_lake_to_swe_conv(Sol, mpv, elem, node, ud, th, writer, label, debug)
-
+            tmp_CFL = np.copy(ud.CFL)
+            ud.CFL = 0.8
             Sol, mpv = blending.do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug, step, window_step, t, dt)
+            ud.CFL = tmp_CFL
             ud.is_compressible = 1
             ud.compressibility = 1.0
 
@@ -272,10 +275,11 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         # print(t)
 
         if writer != None:
+            writer.time = t
             writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
-            print("###############################################################################################")
-            print("step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f" %(step, t, dt, cfl, cfl_ac))
-            print("###############################################################################################")
+        print("###############################################################################################")
+        print("step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f" %(step, t, dt, cfl, cfl_ac))
+        print("###############################################################################################")
 
         step += 1
         window_step += 1
