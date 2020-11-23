@@ -61,6 +61,7 @@ class io(object):
                     ]
  
         self.io_create_file(self.PATHS,restart)
+        self.time = 'None'
 
     def io_create_file(self,paths,restart):
         """
@@ -310,7 +311,12 @@ class io(object):
         file.create_dataset(str(path) + '/' + str(path) + '_' + str(name), data=data, chunks=True, compression='gzip', compression_opts=4, dtype=np.float32)
         # add attributes, i.e. the simulation parameters to each dataset.
         # for key in options:
-        #     file[str(path) + '/' + str(name)].attrs.create(key,options[key])
+            # file[str(path) + '/' + str(name)].attrs.create(key,options[key])
+        try:
+            file[str(path)][str(path) + '_' + str(name)].attrs.create('t',self.time)
+        except:
+            # file.attrs.create(key,repr(value),dtype='<S' + str(len(repr(value))))
+            file[str(path)][str(path) + '_' + str(name)].attrs.create('t',repr(self.time), dtype='<S' + str(len(repr(self.time))))
         # print("writing time = %.1f for arrays %s" %(name,path))
         file.close()
 
@@ -513,15 +519,18 @@ def fn_gen(ud, dap, N):
     suffix += "_%.1f" %ud.tout[-1]
     suffix = '_ensemble=%i%s' %(N, suffix)
 
-    if ud.aux is not None:
-        suffix += '_' + ud.aux
-
     if len(dap.da_times) > 0 and N >1:
         suffix += '_wda'
         if dap.da_type == 'rloc':
             suffix += 'wloc'
-        for attr in dap.obs_attributes:
-            suffix += '_%s' %attr
+        if len(dap.obs_attributes) < 5:
+            for attr in dap.obs_attributes:
+                suffix += '_%s' %attr
+        else:
+            suffix += '_all'
+
+    if ud.aux is not None:
+        suffix += '_' + ud.aux
     
     if ud.initial_blending:
         bw = int(ud.blending_weight * 16)
