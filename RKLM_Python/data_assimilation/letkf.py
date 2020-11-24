@@ -285,14 +285,16 @@ class prepare_rloc(object):
         # get stacked state space and observation
         state_p, obs_p, mask_p = self.stack(results,obs,mask,obs_attr,tout)
 
-        mask_p = mask_p[0].flatten()
+        # assuming that the mask is the same for all attributes
+        # mask_p = mask_p[0].flatten()
+        # mask_p = mask_p[0]#.flatten()
+
+        bc_mask,mask_n = self.get_bc_mask(mask_p, grid_type, Nx, Ny, obs_X, obs_Y,attr_len)
 
         # Here, the 2D arrays are split into local counterparts, say of (5x5) arrays. 
-        X = self.get_state(state_p,Nx,Ny,attr_len)
-        obs_p = self.get_obs(obs_p,obs_X,obs_Y,Nx,Ny,attr_len)
-        Y = self.get_state_in_obs_space(results,obs_attr,obs_X,obs_Y,Nx,Ny,attr_len)
-
-        bc_mask = self.get_bc_mask(grid_type, Nx, Ny, obs_X, obs_Y)
+        X = self.get_state(state_p,mask_p,Nx,Ny,attr_len) # R in ((Nx * Ny) x k x m)
+        obs_p = self.get_obs(obs_p,mask_p,obs_X,obs_Y,Nx,Ny,attr_len) # R in ((Nx * Ny) x l)
+        Y = self.get_state_in_obs_space(results,mask_p,obs_attr,obs_X,obs_Y,Nx,Ny,attr_len) # R in ((Nx * Ny) x k x l)
 
         analysis_res = np.zeros_like(X)
 
@@ -310,32 +312,47 @@ class prepare_rloc(object):
             covar = np.expand_dims(covar,axis=-1)
             covar = np.repeat(covar, obs_Y, axis=-1)
 
-            obs_covar_current = sparse.diags(covar.flatten(), format='csr')
+            # obs_covar_current = sparse.diags(covar.flatten(), format='csr')
 
         # loop through all grid-points
         for n in range(Nx * Ny):
-            if not mask_p[n]:
-                # if no observation is at grid location, analysis = forecast.
-                analysis_res[n] = X[n]
-            else:
+            # using forward operator as a projection of the state into observation space.
+            Yn = np.array([mem[~np.isnan(mem)] for mem in Y[n]])
+            forward_operator = lambda ensemble : Yn
 
-                # using forward operator as a projection of the state into observation space.
-                forward_operator = lambda ensemble : Y[n]
+            # setup LETKF class with state vector
+            local_ens = analysis(X[n],self.inf_fac)
 
-                # setup LETKF class with state vector
-                local_ens = analysis(X[n],self.inf_fac)
+            # setup forward operator method in LETKF class
+            local_ens.forward(forward_operator)
+            
+            # get the localisation matrix with BC handling
+            # BC is handled by localisation matrix.
+            # local_ens.localisation_matrix = np.diag(list(bc_mask[n].ravel()) * attr_len) * np.diag((list(self.loc_mat) * attr_len))
+            # loc_mat = np.ma.array(self.loc_mat,mask=bc_mask[n]).filled(fill_value=np.nan)
+            loc_mat = self.loc_mat * bc_mask[n]
 
-                # setup forward operator method in LETKF class
-                local_ens.forward(forward_operator)
-                
-                # get the localisation matrix with BC handling
-                # BC is handled by localisation matrix.
-                local_ens.localisation_matrix = np.diag(list(bc_mask[n].ravel()) * attr_len) * np.diag((list(self.loc_mat) * attr_len))
+            loc_mat = np.expand_dims(loc_mat,axis=0)
+            loc_mat = np.repeat(loc_mat, attr_len, axis=0)
 
-                # do analysis given observations and obs covar.
-                analysis_ens = local_ens.analyse(obs_p[n],obs_covar_current)
+            loc_mat = np.ma.array(loc_mat,mask=mask_n[n]).filled(fill_value=np.nan)
 
-                analysis_res[n] = analysis_ens
+            loc_mat = loc_mat[~np.isnan(loc_mat)]
+            loc_mat = np.diag(loc_mat.flatten())
+            local_ens.localisation_matrix = loc_mat
+
+            covar_current = np.ma.array(covar,mask=mask_n[n]).filled(fill_value=np.nan)
+            # covar = np.ma.array(covar,mask=bc_mask[n]).fill(fill_value=np.nan)
+            covar_current = covar_current[~np.isnan(covar_current)]
+
+            obs_covar_current = sparse.diags(covar_current.flatten(), format='csr')
+
+            obs_pn = obs_p[n][~np.isnan(obs_p[n])]
+
+            # do analysis given observations and obs covar.
+            analysis_ens = local_ens.analyse(obs_pn,obs_covar_current)
+
+            analysis_res[n] = analysis_ens
 
         analysis_res = np.swapaxes(analysis_res,0,2)
 
@@ -387,18 +404,17 @@ class prepare_rloc(object):
         return state, obs_stack, mask_stack
 
 
-    def get_state(self,state,Nx,Ny,attr_len):
+    def get_state(self,state,mask,Nx,Ny,attr_len):
         """
         Get state vector in grid-localised view.
 
         """
-
+        # state = [np.ma.array(mem, mask=mask).filled(fill_value=np.nan) for mem in state]
         X = np.array([dau.sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in state])
         X = np.swapaxes(X,0,1)
         return X
 
-
-    def get_obs(self,obs,obs_X,obs_Y,Nx,Ny,attr_len):
+    def get_obs(self,obs,mask,obs_X,obs_Y,Nx,Ny,attr_len):
         """
         Get observations vector in grid-localised view.
 
@@ -408,6 +424,9 @@ class prepare_rloc(object):
         y_pad = int((obs_Y - 1) / 2)
         pads = [[x_pad, x_pad], [y_pad, y_pad]]
         obs = np.array([np.pad(obs_attr,pads,mode='wrap') for obs_attr in obs])
+        mask = np.array([np.pad(mask_attr, pads, mode='wrap') for mask_attr in mask])
+
+        obs = np.ma.array(obs,mask=mask).filled(fill_value=np.nan)
 
         obs = np.array([dau.sliding_window_view(obs_attr, (obs_X,obs_Y), (1,1)) for obs_attr in obs])
 
@@ -418,17 +437,27 @@ class prepare_rloc(object):
         return obs
 
 
-    def get_state_in_obs_space(self,state,obs_attr,obs_X,obs_Y,Nx,Ny,attr_len):
+    def get_state_in_obs_space(self,state,mask,obs_attr,obs_X,obs_Y,Nx,Ny,attr_len):
         """
         Get state vector projected onto observation space, in grid-localised view.
 
         """
         sios = self.get_quantity(state,obs_attr[0],inner=False)
+        # sios = np.ma.array(sios,mask=mask).filled(fill_value=np.nan)
         sios = sios[:,np.newaxis,...]
 
         for attr in obs_attr[1:]:
-            next_attr = self.get_quantity(state,attr,inner=False)[:,np.newaxis,...]
+            next_attr = self.get_quantity(state,attr,inner=False)
+            # next_attr = np.ma.array(next_attr,mask=mask).filled(fill_value=np.nan)
+            next_attr = next_attr[:,np.newaxis,...]
             sios = np.hstack((sios,next_attr))
+
+        x_pad = int((obs_X - 1) / 2)
+        y_pad = int((obs_Y - 1) / 2)
+        pads = [[x_pad, x_pad], [y_pad, y_pad]]
+        mask = np.array([np.pad(mask_attr, pads, mode='wrap') for mask_attr in mask])
+
+        sios = [np.ma.array(mem,mask=mask).filled(fill_value=np.nan) for mem in sios]
 
         sios = np.array([dau.sliding_window_view(mem, (obs_X,obs_Y), (1,1)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in sios])
 
@@ -436,7 +465,7 @@ class prepare_rloc(object):
         return sios
 
 
-    def get_bc_mask(self,type, Nx, Ny, obs_X, obs_Y):
+    def get_bc_mask(self, mask, type, Nx, Ny, obs_X, obs_Y,attr_len):
         """
         Mask handling the boundary condition for cell or node grids in the local subdomains.
 
@@ -456,6 +485,8 @@ class prepare_rloc(object):
 
         bc_mask = np.pad(bc_mask, pads, mode='constant', constant_values=(1.0))
 
+        mask = np.array([np.pad(attr, pads, mode='wrap') for attr in mask])
+
         if type == 'cell':
             bc_mask *= self.cmask
         else:
@@ -463,7 +494,9 @@ class prepare_rloc(object):
 
         bc_mask = np.array(dau.sliding_window_view(bc_mask, (obs_X,obs_Y), (1,1))).reshape(Nx*Ny,obs_X,obs_Y)
 
-        return bc_mask
+        mask_n = np.array(dau.sliding_window_view(mask, (obs_X,obs_Y), (1,1))).reshape(Nx*Ny,attr_len,obs_X,obs_Y)
+
+        return bc_mask, mask_n
 
 
     def get_properties(self,type):
