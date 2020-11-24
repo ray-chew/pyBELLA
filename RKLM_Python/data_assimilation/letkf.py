@@ -285,10 +285,7 @@ class prepare_rloc(object):
         # get stacked state space and observation
         state_p, obs_p, mask_p = self.stack(results,obs,mask,obs_attr,tout)
 
-        # assuming that the mask is the same for all attributes
-        # mask_p = mask_p[0].flatten()
-        # mask_p = mask_p[0]#.flatten()
-
+        # get boundary mask
         bc_mask,mask_n = self.get_bc_mask(mask_p, grid_type, Nx, Ny, obs_X, obs_Y,attr_len)
 
         # Here, the 2D arrays are split into local counterparts, say of (5x5) arrays. 
@@ -298,6 +295,7 @@ class prepare_rloc(object):
 
         analysis_res = np.zeros_like(X)
 
+        # covariance handling
         if covar is None:
             # use identity for observation covariance
             obs_covar_current = sparse.eye(attr_len*obs_X*obs_Y,attr_len*obs_X*obs_Y, format='csr')
@@ -312,13 +310,10 @@ class prepare_rloc(object):
             covar = np.expand_dims(covar,axis=-1)
             covar = np.repeat(covar, obs_Y, axis=-1)
 
-            # obs_covar_current = sparse.diags(covar.flatten(), format='csr')
-
         # loop through all grid-points
         for n in range(Nx * Ny):
             # using forward operator as a projection of the state into observation space.
-            Yn = np.array([mem[~np.isnan(mem)] for mem in Y[n]])
-            forward_operator = lambda ensemble : Yn
+            forward_operator = lambda ensemble : np.array([mem[~np.isnan(mem)] for mem in Y[n]])
 
             # setup LETKF class with state vector
             local_ens = analysis(X[n],self.inf_fac)
@@ -328,25 +323,15 @@ class prepare_rloc(object):
             
             # get the localisation matrix with BC handling
             # BC is handled by localisation matrix.
-            # local_ens.localisation_matrix = np.diag(list(bc_mask[n].ravel()) * attr_len) * np.diag((list(self.loc_mat) * attr_len))
-            # loc_mat = np.ma.array(self.loc_mat,mask=bc_mask[n]).filled(fill_value=np.nan)
-            loc_mat = self.loc_mat * bc_mask[n]
-
-            loc_mat = np.expand_dims(loc_mat,axis=0)
-            loc_mat = np.repeat(loc_mat, attr_len, axis=0)
-
-            loc_mat = np.ma.array(loc_mat,mask=mask_n[n]).filled(fill_value=np.nan)
-
-            loc_mat = loc_mat[~np.isnan(loc_mat)]
-            loc_mat = np.diag(loc_mat.flatten())
+            loc_mat = self.get_loc_mat(bc_mask,mask_n,n,attr_len)
             local_ens.localisation_matrix = loc_mat
 
+            # get masked covariance in local domain
             covar_current = np.ma.array(covar,mask=mask_n[n]).filled(fill_value=np.nan)
-            # covar = np.ma.array(covar,mask=bc_mask[n]).fill(fill_value=np.nan)
             covar_current = covar_current[~np.isnan(covar_current)]
-
             obs_covar_current = sparse.diags(covar_current.flatten(), format='csr')
 
+            # get obs according to sparsity structure
             obs_pn = obs_p[n][~np.isnan(obs_p[n])]
 
             # do analysis given observations and obs covar.
@@ -543,6 +528,18 @@ class prepare_rloc(object):
 
         return np.array(attribute_array)
 
+
+    def get_loc_mat(self,bc_mask,mask_n,n,attr_len):
+        loc_mat = self.loc_mat * bc_mask[n]
+
+        loc_mat = np.expand_dims(loc_mat,axis=0)
+        loc_mat = np.repeat(loc_mat, attr_len, axis=0)
+
+        loc_mat = np.ma.array(loc_mat,mask=mask_n[n]).filled(fill_value=np.nan)
+
+        loc_mat = loc_mat[~np.isnan(loc_mat)]
+        loc_mat = np.diag(loc_mat.flatten())
+        return loc_mat
 
 
     
