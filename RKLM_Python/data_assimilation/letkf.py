@@ -91,7 +91,7 @@ class analysis(object):
 
     """
 
-    def __init__(self,ensemble, rho, identifier=None):
+    def __init__(self,ensemble, rho, X_mean, Y_mean, identifier=None):
         self.ensemble = np.array(ensemble)
         self.X = self.state_vector(ensemble)
         self.no_of_members = self.ensemble.shape[0]
@@ -105,6 +105,9 @@ class analysis(object):
         # initialise localisation matrix as None
         self.forward_operator = None
         self.localisation_matrix = None
+
+        self.X_mean = X_mean
+        self.Y_mean = Y_mean
 
     def forward(self,forward_operator):
         self.forward_operator = forward_operator
@@ -124,31 +127,39 @@ class analysis(object):
             print("Localisation matrix undefined. Using identity...")
             # assert(0, "not implemented.")
 
+        # get observations as vector, R in l
         obs = obs.reshape(-1)
 
         self.Y = self.forward_operator(self.X)
+        # get states in observation space as vector, R in (k x l)
         self.Y = self.state_vector(self.Y)
 
-        self.Y_mean = self.get_mean(self.Y) # R in l
-        self.Y -= self.Y_mean # R in (l x k)
+        # self.Y_mean = self.get_mean(self.Y) # R in l
+        # self.Y -= self.Y_mean # R in (l x k)
 
-        self.X_mean = self.get_mean(self.X) # R in m
-        self.X -= self.X_mean # R in (m x k)
+        # self.X_mean = self.get_mean(self.X) # R in m
+        # self.X -= self.X_mean # R in (m x k)
 
+        # This is step 4 of the algorithm in Hunt et. al., 2007.
         C = spsolve(obs_covar, self.Y.T).T # R in (k x l)
+        # This applies the localisation function to the local region.
         if self.localisation_matrix is not None:
             C[...] = ((np.array(self.localisation_matrix)) @ C.T).T
 
+        # The next three lines are step 5 of the algorithm.
         Pa = (self.no_of_members - 1.) * np.eye(self.no_of_members) / self.rho + (C @ self.Y.T)
 
         Lambda, P = linalg.eigh(Pa)
         Pa = P @ (np.diag(1./Lambda) @ P.T)
 
+        # This is step 6 of the algorithm.
         Wa = np.sqrt(self.no_of_members - 1.) * P @ (np.diag(np.sqrt(1./Lambda)) @ P.T)
-        wa = Pa @ (C @ (obs - self.Y_mean))
 
+        # The following two lines are step 7 of the algorithm.
+        wa = Pa @ (C @ (obs - self.Y_mean))
         Wa += wa
 
+        # This is step 8 of the algorithm.
         return (np.dot(self.X.T , Wa.T) + self.X_mean.reshape(-1,1)).T
 
 
@@ -273,6 +284,8 @@ class prepare_rloc(object):
         """
         Do analysis by grid-type. Wrapper of the LETKF analysis.
 
+        Note that k is the ensemble size, m is the size of the local state space, attr_len, and l is the size of the local observation space, obs_X*obs*Y*attr_len
+
         """
 
         print("Analysis grid type = %s" %grid_type)
@@ -283,15 +296,17 @@ class prepare_rloc(object):
         obs_X, obs_Y = self.obs_X, self.obs_Y
 
         # get stacked state space and observation
+        # this prepares X, and Y_obs
         state_p, obs_p, mask_p = self.stack(results,obs,mask,obs_attr,tout)
 
         # get boundary mask
+        # this does the BC handling
         bc_mask,mask_n = self.get_bc_mask(mask_p, grid_type, Nx, Ny, obs_X, obs_Y,attr_len)
 
         # Here, the 2D arrays are split into local counterparts, say of (5x5) arrays. 
-        X = self.get_state(state_p,mask_p,Nx,Ny,attr_len) # R in ((Nx * Ny) x k x m)
+        X, X_bar = self.get_state(state_p,mask_p,Nx,Ny,attr_len) # X in R in ((Nx * Ny) x k x m) and X_bar in ((Nx * Ny) * m)
         obs_p = self.get_obs(obs_p,mask_p,obs_X,obs_Y,Nx,Ny,attr_len) # R in ((Nx * Ny) x l)
-        Y = self.get_state_in_obs_space(results,mask_p,obs_attr,obs_X,obs_Y,Nx,Ny,attr_len) # R in ((Nx * Ny) x k x l)
+        Y, Y_bar = self.get_state_in_obs_space(results,mask_p,obs_attr,obs_X,obs_Y,Nx,Ny,attr_len) # Y in R in ((Nx * Ny) x k x l) and Y_bar in ((Nx * Ny) * l)
 
         analysis_res = np.zeros_like(X)
 
@@ -310,19 +325,23 @@ class prepare_rloc(object):
             covar = np.expand_dims(covar,axis=-1)
             covar = np.repeat(covar, obs_Y, axis=-1)
 
-        # loop through all grid-points
+        # loop through all grid-points, selecting either the grid-point or its corresponding local region
+        # This is step 3 of the LETKF algorithm in Hunt et. al. 2007. 
         for n in range(Nx * Ny):
+            # For each of the quantities in the local observation space, Y, Y_bar, Y_obs, covar and loc_mat, remove the NaNs corresponding to grid-points without observations.
+
             # using forward operator as a projection of the state into observation space.
             forward_operator = lambda ensemble : np.array([mem[~np.isnan(mem)] for mem in Y[n]])
+            Y_mean = Y_bar[n][~np.isnan(Y_bar[n])]
 
-            # setup LETKF class with state vector
-            local_ens = analysis(X[n],self.inf_fac)
+            # setup LETKF class with local state vector
+            local_ens = analysis(X[n],self.inf_fac,X_bar[n],Y_mean)
 
             # setup forward operator method in LETKF class
             local_ens.forward(forward_operator)
             
             # get the localisation matrix with BC handling
-            # BC is handled by localisation matrix.
+            # BC is handled by localisation matrix. Observations on wall ghost cells have zero influence.
             loc_mat = self.get_loc_mat(bc_mask,mask_n,n,attr_len)
             local_ens.localisation_matrix = loc_mat
 
@@ -337,6 +356,7 @@ class prepare_rloc(object):
             # do analysis given observations and obs covar.
             analysis_ens = local_ens.analyse(obs_pn,obs_covar_current)
 
+            # This is step 9 of the algorithm, where the grid-points are re-assembled.
             analysis_res[n] = analysis_ens
 
         analysis_res = np.swapaxes(analysis_res,0,2)
@@ -391,13 +411,23 @@ class prepare_rloc(object):
 
     def get_state(self,state,mask,Nx,Ny,attr_len):
         """
-        Get state vector in grid-localised view.
+        Get state vector in grid-localised view. This is step 1 of the LETKF algorithm in Hunt et. al. (2007). Prepares global X and \bar{X}.
 
         """
-        # state = [np.ma.array(mem, mask=mask).filled(fill_value=np.nan) for mem in state]
+
+        # Get bar{x[G]}, i.e. ensemble averages of the states.
+        X_bar = state.mean(axis=0, keepdims=True)
+
+        # Get anomaly for X[G]
+        state -= X_bar
+
+        # Decompose X[G] and bar{X[G]} into the local regions view
         X = np.array([dau.sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in state])
+        X_bar = np.array([dau.sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in X_bar]) 
+
+        # Make first index the local regions
         X = np.swapaxes(X,0,1)
-        return X
+        return X, X_bar[0]
 
     def get_obs(self,obs,mask,obs_X,obs_Y,Nx,Ny,attr_len):
         """
@@ -424,11 +454,14 @@ class prepare_rloc(object):
 
     def get_state_in_obs_space(self,state,mask,obs_attr,obs_X,obs_Y,Nx,Ny,attr_len):
         """
-        Get state vector projected onto observation space, in grid-localised view.
+        Get state vector projected onto observation space, in grid-localised view. This is step 1 of the LETKF algorithm in Hunt et. al., 2007.
 
         """
+
+        # Prepare data structure for Y[G] calculation
+        # stack grid by attributes 
         sios = self.get_quantity(state,obs_attr[0],inner=False)
-        # sios = np.ma.array(sios,mask=mask).filled(fill_value=np.nan)
+
         sios = sios[:,np.newaxis,...]
 
         for attr in obs_attr[1:]:
@@ -437,17 +470,33 @@ class prepare_rloc(object):
             next_attr = next_attr[:,np.newaxis,...]
             sios = np.hstack((sios,next_attr))
 
+        # prepare mask array
+        # grid-points where there are observations is 0
         x_pad = int((obs_X - 1) / 2)
         y_pad = int((obs_Y - 1) / 2)
         pads = [[x_pad, x_pad], [y_pad, y_pad]]
         mask = np.array([np.pad(mask_attr, pads, mode='wrap') for mask_attr in mask])
 
-        sios = [np.ma.array(mem,mask=mask).filled(fill_value=np.nan) for mem in sios]
+        # apply mask to get Y[G]. Now Y[G] is in observation space. 
+        sios = np.ma.array([np.ma.array(mem,mask=mask) for mem in sios])
 
+        # Get bar{y[G]}, i.e. ensemble averages of the states in obs space.
+        Y_bar = sios.mean(axis=0,keepdims=True)
+        # Get anomaly for Y[G]
+        sios -= Y_bar
+
+        # Replace masked values by NaNs for decomposition
+        sios = sios.filled(np.nan)
+        Y_bar = Y_bar.filled(np.nan)
+
+        # Decompose Y[G] and bar{y[G]} such that the local regions can be accessed easily
         sios = np.array([dau.sliding_window_view(mem, (obs_X,obs_Y), (1,1)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in sios])
 
+        Y_bar = np.array([dau.sliding_window_view(mem, (obs_X,obs_Y), (1,1)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in Y_bar])
+
+        # Make local region the first axis index
         sios = np.swapaxes(sios,0,1)
-        return sios
+        return sios, Y_bar[0]
 
 
     def get_bc_mask(self, mask, type, Nx, Ny, obs_X, obs_Y,attr_len):
