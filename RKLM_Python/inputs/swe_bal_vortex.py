@@ -12,7 +12,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 0.0#2.0 * np.pi #/ 100.0
+    omega = 1.0#2.0 * np.pi #/ 100.0
 
     R_gas = 1.0
     R_vap = 1.0
@@ -149,7 +149,7 @@ class UserData(object):
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'swe' #theta, rho, None
 
-        self.initial_blending = True
+        self.initial_blending = False
 
         self.continuous_blending = False
         self.no_of_pi_initial = 1
@@ -167,10 +167,10 @@ class UserData(object):
         self.synchronize_weight = 0.0
 
         # self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
-        # self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
+        self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
         # self.tout = [1.0]
         # self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
-        self.tout = [1.0]
+        # self.tout = [1.0]
         # self.tout = [1E6]
 
         # self.tout = times.copy()
@@ -348,7 +348,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
     mpv.p2_nodes[2:-2,2:-2,2:-2] -= mpv.p2_nodes[2:-2,2:-2,2:-2].mean(axis=(0,2),keepdims=True)
 
-    mpv.p2_nodes[...] = 1.0
+    # mpv.p2_nodes[...] = 1.0
 
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
@@ -365,6 +365,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
         Sol.rhou -= u0 * Sol.rho
         Sol.rhov -= v0 * Sol.rho
+        Sol.rhow -= w0 * Sol.rho
 
         euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5)
         # euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, 2.5e-3, 0.5)
@@ -374,6 +375,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
         Sol.rhou += u0 * Sol.rho
         Sol.rhov += v0 * Sol.rho
+        Sol.rhow += w0 * Sol.rho
 
         ud.is_compressible = is_compressible
         ud.compressibility = compressibility
