@@ -15,7 +15,7 @@ class da_params(object):
         # self.da_times = np.arange(0.0,6.1,0.25)[1:]
         # self.da_times = np.arange(0.0,864000.0+1200.0,1200.0)[1:][::4]
         self.da_times = np.arange(0.0,3.25,0.25)[1:]
-        # self.da_times = np.arange(0.0,1.05,0.05)[1:]
+        # self.da_times = np.arange(0.0,1.25,0.25)[1:]
         self.da_times = np.around(self.da_times,3)
         # self.da_times = []
         # self.obs_attributes = ['rho', 'rhou', 'rhow', 'rhoY', 'p2_nodes']
@@ -56,7 +56,7 @@ class da_params(object):
         if self.sparse_obs_by_attr:
             assert(0, "Not yet implemented.")
 
-        self.obs_frac = 0.50 # fraction of the observations to pick.
+        self.obs_frac = 0.10 # fraction of the observations to pick.
 
         if self.sparse_obs_by_attr == True:
             da_depth = len(self.obs_attributes)
@@ -205,13 +205,14 @@ class da_params(object):
             Z = Z - Z.min()
             Z /= Z.max()
 
-            return Z.flatten() * c
+            return Z * c
 
     def update_dap(self, params):
         for key, value in params.items():
             setattr(self, key, value)
 
 
+    # setter functions
     @property
     def noise_percentage(self):
         return self._noise_percentage
@@ -221,6 +222,17 @@ class da_params(object):
         self._noise_percentage = val
         for key in self.obs_attributes:
             self.obs_noise[key] = self.noise_percentage
+
+    @property
+    def obs_attrs(self):
+        return self.obs_attributes
+
+    @obs_attrs.setter
+    def obs_attrs(self, lst):
+        self.obs_attributes = lst
+        self.obs_noise = {}
+        self.noise_percentage = self._noise_percentage
+        # setattr(self,self.noise_percentage,self._noise_percentage)
 
     
     # @staticmethod
