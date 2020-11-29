@@ -133,15 +133,15 @@ class UserData(object):
         # self.dtfixed = 1.9 / self.t_ref
 
         # self.CFL = 1.0
-        # self.dtfixed0 = 20.0 / self.t_ref
-        # self.dtfixed = 20.0 / self.t_ref
+        self.dtfixed0 = 20.0 / self.t_ref
+        self.dtfixed = 20.0 / self.t_ref
         # self.dtfixed0 = 0.05
         # self.dtfixed = 0.05
-        self.dtfixed0 = 100.0
-        self.dtfixed = 100.0
+        # self.dtfixed0 = 100.0
+        # self.dtfixed = 100.0
 
-        self.inx = 160+1
-        self.iny = 80+1
+        self.inx = 100+1
+        self.iny = 50+1
         self.inz = 1
 
         self.recovery_order = RecoveryOrder.SECOND
@@ -175,8 +175,8 @@ class UserData(object):
         # self.tout = [350 / self.t_ref]
         # self.tout = [10.0]
         # self.tout = np.arange(0.0,3.51,0.05)
-        # self.tout = np.arange(0.0,10.05,0.05)[1:]
-        self.tout = [10.0]
+        self.tout = np.arange(0.0,10.25,0.25)[1:]
+        # self.tout = [10.0]
         # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
         # self.tout[1] = -1.0
 

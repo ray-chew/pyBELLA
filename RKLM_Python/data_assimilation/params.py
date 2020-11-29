@@ -19,8 +19,8 @@ class da_params(object):
         self.da_times = np.around(self.da_times,3)
         # self.da_times = []
         # self.obs_attributes = ['rho', 'rhou', 'rhow', 'rhoY', 'p2_nodes']
-        # self.obs_attributes = ['rhou', 'rhov']
-        self.obs_attributes = ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes']
+        self.obs_attributes = ['rhou', 'rhov']
+        # self.obs_attributes = ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes']
         # self.obs_attributes = ['rho', 'rhov']
         # self.obs_attributes = ['rho','rhou','rhov']
         # self.obs_attributes = ['rhou','p2_nodes']
