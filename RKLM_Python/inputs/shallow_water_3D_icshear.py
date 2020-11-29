@@ -154,7 +154,7 @@ class UserData(object):
 
         self.blending_weight = 16./16
 
-        self.initial_blending = True
+        self.initial_blending = False
 
         self.initial_projection = True
         self.initial_impl_Euler = False
