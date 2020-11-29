@@ -84,15 +84,18 @@ class test_case(object):
         return pyfile[str(py_dataset)][str(py_dataset)+time][:], pyfile[str(py_dataset)][str(py_dataset)+time].attrs.get('t')
 
 
-    def get_arr(self, path, time, N, attribute, label_type='TIME', tag='after_full_step', inner=False, avg=True):
+    def get_arr(self, path, time, N, attribute, label_type='TIME', tag='after_full_step', inner=False, avg=True, file=None):
         if inner == False:
             inner = self.i0
         else:
             inner = self.i2
             
-        file = h5py.File(path,'r')
+        if file is None:
+            file = h5py.File(path,'r')
         
         array = []
+        
+        if not hasattr(self,'t_arr'): self.t_arr = []
         t_arr = self.t_arr
         for n in range(N):
             if label_type == 'TIME':
@@ -114,7 +117,8 @@ class test_case(object):
         if avg == True:
             array = array.mean(axis=0)
 
-        file.close()
+        if file is None:
+            file.close()
         self.t_arr = t_arr
         return np.array(array)
     
@@ -136,7 +140,7 @@ class test_case(object):
                 
             ref_ampl = ref.max() - ref.min()
             factor = ref_ampl
-#             factor = 1.0
+            # factor = 1.0
 
             diff.append(np.sqrt(((arr - ref)**2).mean()) / factor)
         return np.array(diff)
@@ -200,17 +204,23 @@ class test_case(object):
         fn = self.get_filename(N,suffix)
         path = self.get_path(fn)
         
+        file = h5py.File(path,'r')
+        
+#         arr_lst = np.zeros((times.size+1),dtype=np.ndarray)
         arr_lst = []
-        arr = self.get_arr(path, 0, N, attribute, tag='ic', label_type=label_type, avg=avg, inner=inner)
+        arr = self.get_arr(path, 0, N, attribute, tag='ic', label_type=label_type, avg=avg, inner=inner, file=file)
+#         arr_lst[0] = arr
         arr_lst.append(arr)
-        for time in times:
-            arr = self.get_arr(path, time, N, attribute, tag=tag, label_type=label_type, avg=avg, inner=inner)
+        for tt, time in enumerate(times):
+            arr = self.get_arr(path, time, N, attribute, tag=tag, label_type=label_type, avg=avg, inner=inner, file=file)
+#             arr_lst[tt] = arr
             arr_lst.append(arr)
-            
+        
+        
         if diff == True:    
             arr_lst = get_diff(arr_lst)
             
-            
+        file.close()    
         self.t_arr[0] = 0.0
         return np.array(arr_lst)
     
