@@ -12,7 +12,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 0.0#2.0 * np.pi #/ 100.0
+    omega = 0.0
 
     R_gas = 1.0
     R_vap = 1.0
@@ -157,7 +157,7 @@ class UserData(object):
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.blending_weight = 12./16
+        self.blending_weight = 0./16
 
         self.initial_projection = True
         self.initial_impl_Euler = False
@@ -169,8 +169,8 @@ class UserData(object):
         # self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
         # self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
         # self.tout = [1.0]
-        # self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
-        self.tout = [1.0]
+        self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
+        # self.tout = [1.0]
         # self.tout = [1E6]
 
         # self.tout = times.copy()
@@ -186,14 +186,16 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
-        aux = 'wdawloc_pp_rhou_rhow_tra_ib_0.25_nonorm_debug'
+        # aux = 'wdawloc_pp_rhou_rhow_tra_ip_0.25_nonorm'
+        aux = 'pp_tra_ip_nonorm'
         # aux = 'psinc_noib'
-        aux = 'comp_imbal_ib_full-12'
+        # aux = 'comp_imbal_ib_full-12'
         # aux ='comp_debug_noib_imbal'
         # aux = 'debug_tra'
+        # aux = 'comp_1.0_pp_tra_truth_ip'
 
         self.aux = aux
-        self.output_suffix = "_%i_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1],aux)
+        # self.output_suffix = "_%i_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
@@ -225,6 +227,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     zc = 0.0
 
     g = ud.g0
+    f = ud.coriolis_strength[0]
     # g = 9.81
     H0 = 1.0
 
@@ -302,10 +305,22 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     coe[11] = -12.0/23
     coe[12] = +1.0/24
 
+    fcoe = np.zeros((7))
+    fcoe[0] = +1.0/7
+    fcoe[1] = -3.0/4
+    fcoe[2] = +5.0/3
+    fcoe[3] = -2.0
+    fcoe[4] = +15.0/11
+    fcoe[5] = -1.0/2
+    fcoe[6] = +1.0/13
+
     rho = np.zeros_like(r)
 
     for i in range(12,24+1):
         rho[...] += fac**2 * coe[i-12] * (r/R0)**i * (r < R0)
+
+    for i in range(7,13+1):
+        rho[...] += f * fac * fcoe[i-7] * (r/R0)**i * (r < R0)
 
     p = np.copy(rho)
     rho *= ud.Msq / 2.0
@@ -348,7 +363,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
     mpv.p2_nodes[2:-2,2:-2,2:-2] -= mpv.p2_nodes[2:-2,2:-2,2:-2].mean(axis=(0,2),keepdims=True)
 
-    mpv.p2_nodes[...] = 1.0
+    # mpv.p2_nodes[...] = 1.0
 
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
@@ -365,6 +380,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
         Sol.rhou -= u0 * Sol.rho
         Sol.rhov -= v0 * Sol.rho
+        Sol.rhow -= w0 * Sol.rho
 
         euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5)
         # euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, 2.5e-3, 0.5)
@@ -374,6 +390,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
         Sol.rhou += u0 * Sol.rho
         Sol.rhov += v0 * Sol.rho
+        Sol.rhow += w0 * Sol.rho
 
         ud.is_compressible = is_compressible
         ud.compressibility = compressibility
