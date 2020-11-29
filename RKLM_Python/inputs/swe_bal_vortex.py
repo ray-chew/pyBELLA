@@ -12,7 +12,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 0.0
+    omega = 1.0
 
     R_gas = 1.0
     R_vap = 1.0
@@ -149,7 +149,7 @@ class UserData(object):
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'swe' #theta, rho, None
 
-        self.initial_blending = True
+        self.initial_blending = False
 
         self.continuous_blending = False
         self.no_of_pi_initial = 1
@@ -167,9 +167,9 @@ class UserData(object):
         self.synchronize_weight = 0.0
 
         # self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
-        # self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
+        self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
         # self.tout = [1.0]
-        self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
+        # self.tout = np.arange(0, 3/.0 + 0.01, 0.01)[1:]
         # self.tout = [1.0]
         # self.tout = [1E6]
 
