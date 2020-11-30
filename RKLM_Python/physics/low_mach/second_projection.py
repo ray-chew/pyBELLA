@@ -155,6 +155,7 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     drhou = Sol.rhou - u0 * Sol.rho
     drhow = Sol.rhow - w0 * Sol.rho
     rhou0 = np.copy(Sol.rhou)
+    # Sol.rhou[...] = u0 * Sol.rho + ooopfsqsc * (drhou + dt * coriolis * Sol.rhow)
     Sol.rhou[...] = u0 * Sol.rho + ooopfsqsc * (drhou + dt * coriolis * drhow)
     Sol.rhov[...] = rhov
     # Sol.rhow[...] = ooopfsqsc * (Sol.rhow - dt * coriolis * drhou)

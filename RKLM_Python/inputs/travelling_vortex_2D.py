@@ -54,7 +54,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 0
+        self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -162,9 +162,9 @@ class UserData(object):
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.blending_weight = 4./16
+        self.blending_weight = 0./16
 
-        self.initial_blending = False
+        self.initial_blending = True
 
         self.initial_projection = True
         self.initial_impl_Euler = False
@@ -173,8 +173,8 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        self.tout = np.arange(0.0,1.01,0.01)[1:]
-        self.tout = [1.0]
+        self.tout = np.arange(0.0,3.01,0.01)[1:]
+        # self.tout = [1.0]
 
         self.stepmax = 20000
 
@@ -192,10 +192,11 @@ class UserData(object):
         aux = 'comp_bal_noib'
         aux = 'comp_imbal_ib-16'
         # aux = 'psinc_noib'
-        # aux = 'comp_1.0_pp_tra_truth'
-        aux = 'wdawloc_pp_all_tra_0.25_nonorm'
+        # aux = 'comp_1.0_pp_tra_truth_ip'
+        # aux = 'wdawloc_pp_all_tra_0.25_nonorm'
+        aux = 'pp_tra_ip_nonorm'
         # aux = 'noda_pp'
-        # aux = 'comp_debug_ib'
+        # aux = 'comp_debug'
         self.aux = aux
 
 
@@ -373,11 +374,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     # ud.is_compressible = 0
     ud.compressibility = float(ud.is_compressible)
 
+    # mpv.p2_nodes[igxn:-igxn,igyn:-igyn] *= r/R0 < 1.0
+
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
     # set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
-    Sol.rhoY[...] = 1.0
-    mpv.p2_nodes[...] = 0.0
+    # Sol.rhoY[...] = 1.0
+    # mpv.p2_nodes[...] = 0.0
 
     # from scipy import signal
     # p2n = mpv.p2_nodes - mpv.p2_nodes.mean()
