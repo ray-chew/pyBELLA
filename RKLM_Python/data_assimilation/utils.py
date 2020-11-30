@@ -134,7 +134,7 @@ def boundary_mask(ud,elem,node,pad_X,pad_Y):
                 cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(0.0))
                 nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(0.0))
         
-    return cmask, nmask
+    return cmask.astype('bool'), nmask.astype('bool')
 
 
 
@@ -277,13 +277,13 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
         mask = deepcopy(obs)
         for tt,mask_t in enumerate(mask):
             for key, _ in mask_t.items():
-                mask[tt][key][...] = 1.0
+                mask[tt][key][...] = 0.0
         return obs, mask
     
     else:
         sparse_obs_by_attr = dap.sparse_obs_by_attr
         seeds = dap.sparse_obs_seeds
-        K = 1.0 - dap.obs_frac
+        K = dap.obs_frac
 
         # define inner and outer domains in 2D
         i2 = (slice(elem.igx,-elem.igx),slice(elem.igy,-elem.igy))
@@ -301,8 +301,8 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
         Nn = Nnx * Nny
         Kc = Nc * K
         Kn = Nn * K
-        Kc = int(Kc)
-        Kn = int(Kn)
+        Kc = int(np.ceil(Kc))
+        Kn = int(np.ceil(Kn))
 
         if elem.iicy == 1: # implying horizontal slice
             Xc, Yc = elem.x, elem.z
@@ -316,7 +316,7 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
             Xn, Yn = np.meshgrid(Xn, Yn)
 
         mask_arr = deepcopy(obs)
-        obs_noisy_interp = deepcopy(obs)
+        # obs_noisy_interp = deepcopy(obs)
 
         # obs is a list of dictionaries, list length da_len, dictionary length attr_len.
         for tt,obs_t in enumerate(obs):
@@ -342,22 +342,22 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
                 mask = mask.reshape(Nx,Ny)
                 mask = np.pad(mask,(2,2),mode='constant',constant_values=0.0)
 
-                values = np.ma.array(value[i0], mask=mask).compressed()
-                X = np.ma.array(grid_x, mask=mask).compressed()
-                Y = np.ma.array(grid_y, mask=mask).compressed()
+                # values = np.ma.array(value[i0], mask=mask).compressed()
+                # X = np.ma.array(grid_x, mask=mask).compressed()
+                # Y = np.ma.array(grid_y, mask=mask).compressed()
 
-                points = np.zeros((len(values),2))
-                points[:,0] = X[...].flatten()
-                points[:,1] = Y[...].flatten()
+                # points = np.zeros((len(values),2))
+                # points[:,0] = X[...].flatten()
+                # points[:,1] = Y[...].flatten()
 
-                values = griddata(points, values, (grid_x, grid_y), method='cubic')
+                # values = griddata(points, values, (grid_x, grid_y), method='cubic')
                 
-                if dap.obs_frac < 1.0:
-                    obs_noisy_interp[tt][key][...] = 0.0
-                    obs_noisy_interp[tt][key][i0] = values
+                # if dap.obs_frac < 1.0:
+                    # obs_noisy_interp[tt][key][...] = 0.0
+                    # obs_noisy_interp[tt][key][i0] = values
 
-                mask_arr[tt][key][...] = 0.0
-                mask_arr[tt][key][i2] = mask[i2].reshape(Nx,Ny)
+                mask_arr[tt][key][...] = 1
+                mask_arr[tt][key][i2] = mask[i2]
                 
                 if sparse_obs_by_attr:
                     attr_cnt += 1
@@ -368,9 +368,10 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
                     Nx, Ny = Nnx, Nny
                 else:
                     Nx, Ny = Ncx, Ncy
-                assert mask.sum() == np.ceil(Nx*Ny*dap.obs_frac), "Mask sparsity does not match obs_frac defined"
+                assert (mask.shape[0] * mask.shape[1]) - mask.sum() == np.ceil(Nx*Ny*dap.obs_frac), "Mask sparsity does not match obs_frac defined"
 
-        return obs_noisy_interp, mask_arr
+        # return obs_noisy_interp, mask_arr
+        return mask_arr
 
 
 def obs_noiser(obs,dap,rloc):

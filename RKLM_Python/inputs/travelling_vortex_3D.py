@@ -11,7 +11,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 0.0
+    omega = 0.1
 
     R_gas = 287.4
     R_vap = 461.0
@@ -54,7 +54,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 0
+        self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -85,8 +85,8 @@ class UserData(object):
         self.zmax =   0.5
 
         # self.wind_speed = 0.0
-        self.u_wind_speed = 0.0
-        self.w_wind_speed = 0.0
+        self.u_wind_speed = 1.0
+        self.w_wind_speed = 1.0
         self.wind_shear = -0.0
         self.hill_shape = HillShapes.AGNESI
         self.hill_height = 0.0

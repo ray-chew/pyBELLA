@@ -111,11 +111,10 @@ def do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer
 
     fac_old = ud.blending_weight
     fac_new = 1.0 - fac_old
-    # dp2n_0 = (fac_new * ret[2].p2_nodes_half + fac_old * mpv_freeze.p2_nodes_half)
+    dp2n_0 = (fac_new * ret[2].p2_nodes_half + fac_old * mpv_freeze.p2_nodes_half)
     dp2n_1 = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
 
-    # dp2n = 0.5 * (dp2n_0 + dp2n_1)
-    dp2n = dp2n_1
+    dp2n = dp2n_0
 
     if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_start', mpv_freeze.p2_nodes)
     if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_end', ret[2].p2_nodes)
@@ -171,13 +170,14 @@ def do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug
     Sol_freeze = deepcopy(Sol)
     mpv_freeze = deepcopy(mpv)
 
+    print(colored("doing lake-to-swe time-update...",'blue'))
     ret = data.time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, [0,step], th, bld=None, writer=None, debug=False)
 
     fac_old = ud.blending_weight
     fac_new = 1.0 - fac_old
     # dp2n = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
 
-    dp2n = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
+    dp2n = (fac_new * ret[2].p2_nodes_half + fac_old * mpv_freeze.p2_nodes_half)
     # dp2n_1 = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
 
     # dp2n = 0.5 * (dp2n_0 + dp2n_1)

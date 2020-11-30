@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.animation as animation
+import matplotlib.patches as patches
 import numpy as np
 import itertools
 
@@ -86,7 +87,7 @@ class plotter(object):
                 caxs.append(cax)
                 divider = make_axes_locatable(cax)
                 cax = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im, cax=cax, format='%.4f')
+                plt.colorbar(im, cax=cax)#, format='%.3f')
                 
                 ims.append(im)
                 
@@ -99,6 +100,7 @@ class plotter(object):
                 arr = arr[2:-2,2:-2]
             cax = self.fig.gca()
             im = self.visualise(method,cax,arr,aspect,lvls)
+#             cax.plot(19,39,marker='x',c='r', ms=10)
             cax.set_title(title)
 #             if hasattr(self, 'x_locs') : cax.set_xticks(self.x_locs)
 #             if hasattr(self, 'x_axs') : cax.set_xticklabels(self.x_axs)
@@ -113,6 +115,7 @@ class plotter(object):
             self.set_cax_axes(cax)
             divider = make_axes_locatable(cax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
+#             plt.colorbar(im, cax=cax, format='%.3f')
             plt.colorbar(im, cax=cax)
             ims = [im]
             
@@ -132,6 +135,10 @@ class plotter(object):
     def visualise(method,cax,arr,aspect,lvls):
         if method == 'imshow':
             im = cax.imshow(arr,aspect=aspect,origin='lower')
+            rect0 = patches.Rectangle((25.5,25.5),1.1,1.1,linewidth=1,edgecolor='none',facecolor='red')
+            rect = patches.Rectangle((20.5,20.5),11,11,linewidth=1,edgecolor='r',facecolor='none')
+            cax.add_patch(rect0)
+            cax.add_patch(rect)
         elif method == 'contour':
             if lvls is None:
                 cax.set_aspect(aspect)
@@ -141,7 +148,7 @@ class plotter(object):
             else:
                 cax.set_aspect(aspect)
                 im = cax.contour(arr,linewidths=0.5,levels=lvls,colors='k')
-                im = cax.contourf(arr,levels=lvls,extend='both')
+                im = cax.contourf(arr,levels=lvls)
                 cax.set_aspect(aspect)
         return im
     

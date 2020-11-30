@@ -120,7 +120,9 @@ ens = ensemble(sol_ens)
 if N > 1:
     obs = dap.load_obs(dap.obs_path)
     obs_noisy, obs_covar = obs_noiser(obs,dap,rloc)
-    obs_noisy_interp, obs_mask = sparse_obs_selector(obs_noisy, elem, node, ud, dap)
+    # obs_noisy_interp, obs_mask = sparse_obs_selector(obs_noisy, elem, node, ud, dap)
+    # obs_mask, no calculations where entries are True
+    obs_mask = sparse_obs_selector(obs_noisy, elem, node, ud, dap)
 
 # add ensemble info to filename
 ud.output_suffix = fn_gen(ud, dap, N)
@@ -156,8 +158,9 @@ if __name__ == '__main__':
     writer.jar([ud, elem, node])
 
     if da_debug:
-        writer.jar([obs,obs_noisy,obs_noisy_interp,obs_mask,obs_covar])
-        obs = obs_noisy_interp
+        # writer.jar([obs,obs_noisy,obs_noisy_interp,obs_mask,obs_covar])
+        # obs = obs_noisy_interp
+        writer.jar([obs,obs_noisy,obs_mask,obs_covar])
 
     # initialise dask parallelisation and timer
     # client = Client(threads_per_worker=1, n_workers=1)
