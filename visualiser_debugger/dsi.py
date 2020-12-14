@@ -13,10 +13,10 @@ def get_Pi(data,ud):
     vorty = signal.convolve(data.vorty, kernel, mode='valid')
     # get relative vorticity
 #     vorty /= (data.rho * ud.h_ref)
-    p2c = signal.convolve(data.p2_nodes, kernel, mode='valid')
+#     p2c = signal.convolve(data.p2_nodes, kernel, mode='valid')
 #     vorty /= data.rho
 #     vorty *= 86400.0 / ud.t_ref # vorticity in days^(-1)
-#     vorty /= ud.t_ref # vorticity in s^(-1)
+    vorty /= ud.t_ref # vorticity in s^(-1)
     
     f = ud.coriolis_strength[0] / ud.t_ref
     #f = ud.coriolis_strength[0]
@@ -47,8 +47,8 @@ def get_DSI_SW(data, g, ud, elem):
     B = get_B(data,g, ud) # icx * icy
     Pi = get_Pi(data,ud) # icx * icy
     
-    dx = np.diff(elem.x)[0]
-    dy = np.diff(elem.z)[0]
+    dx = np.diff(elem.x)[0] * ud.h_ref
+    dy = np.diff(elem.z)[0] * ud.h_ref
     
-    Dsi =  1./data.rho * (grad(B,dx,'x') * grad(Pi,dy,'y') - grad(B,dy,'y') * grad(Pi,dx,'x')) # icx * icy
+    Dsi =  1./(data.rho * ud.d_ref) * (grad(B,dx,'x') * grad(Pi,dy,'y') - grad(B,dy,'y') * grad(Pi,dx,'x')) # icx * icy
     return Dsi, Pi
