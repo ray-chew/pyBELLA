@@ -164,7 +164,7 @@ class UserData(object):
 
         self.blending_weight = 0./16
 
-        self.initial_blending = True
+        self.initial_blending = False
 
         self.initial_projection = True
         self.initial_impl_Euler = False
@@ -173,7 +173,7 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        self.tout = np.arange(0.0,3.01,0.01)[1:]
+        self.tout = np.arange(0.0,1.01,0.01)[1:]
         # self.tout = [1.0]
 
         self.stepmax = 20000
