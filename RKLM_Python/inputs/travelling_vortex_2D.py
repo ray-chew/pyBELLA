@@ -186,17 +186,7 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        aux = 'ib_davg_noip'
-        aux = 'ib_half-8_full-8'
-        aux = 'ib-8_full-10'
-        aux = 'comp_bal_noib'
-        aux = 'comp_imbal_ib-16'
-        # aux = 'psinc_noib'
-        # aux = 'comp_1.0_pp_tra_truth_ip'
-        # aux = 'wdawloc_pp_all_tra_0.25_nonorm'
-        aux = 'pp_tra_ip_nonorm'
-        # aux = 'noda_pp'
-        # aux = 'comp_debug'
+        aux = 'neg_debug'
         self.aux = aux
 
 
@@ -308,6 +298,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rho = np.zeros_like(r)
     rho[...] += (rho0 + del_rho * (1. - (r/R0)**2)**6) * (r < R0)
     rho[...] += rho0 * (r > R0)
+
+    # rho[...] += (rho0 - del_rho * (1. - (r/R0)**2)**6) * (r < R0)
+    # rho[...] += rho0 * (r > R0)
+    # rho[...] = del_rho * ((r/R0)**2)**6 * (r < R0)
+    # rho[...] = (rho - rho.max()) * (r < R0)
+    # rho[...] += 1.0
 
     if seed != None and ud.perturb_type == 'fmp_perturb':
         np.random.seed(seed)
