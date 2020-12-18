@@ -12,7 +12,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 0.0#1.0/1000.0
+    omega = 0.0 #1.0/1000.0
 
     R_gas = 1.0
     R_vap = 1.0
@@ -92,8 +92,8 @@ class UserData(object):
         self.zmin = - 0.5 * self.fac
         self.zmax =   0.5 * self.fac
 
-        self.u_wind_speed = 1.0
-        self.w_wind_speed = 1.0
+        self.u_wind_speed = 0.0
+        self.w_wind_speed = 0.0
         self.wind_shear = -0.0
         self.hill_shape = HillShapes.AGNESI
         self.hill_height = 0.0
@@ -149,7 +149,7 @@ class UserData(object):
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'swe' #theta, rho, None
 
-        self.initial_blending = True
+        self.initial_blending = False
 
         self.continuous_blending = False
         self.no_of_pi_initial = 1
@@ -166,8 +166,8 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
-        # self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
+        # self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
+        self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
         # self.tout = [1.0]
         # self.tout = np.arange(0, 3/.0 + 0.01, 0.01)[1:]
         # self.tout = [1.0]
@@ -187,11 +187,12 @@ class UserData(object):
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
         # aux = 'wdawloc_pp_rhou_rhow_tra_ip_0.25_nonorm'
-        aux = 'pp_tra_ip_nonorm'
+        # aux = 'pp_tra_ip_nonorm'
         # aux = 'psinc_noib'
         # aux = 'comp_imbal_ib_full-12'
         # aux ='comp_debug_noib_imbal'
         # aux = 'debug_tra'
+        aux = 'f_debug2'
         # aux = 'comp_1.0_pp_tra_truth_ip'
 
         self.aux = aux
@@ -320,9 +321,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         rho[...] += fac**2 * coe[i-12] * (r/R0)**i * (r < R0)
 
     for i in range(7,13+1):
-        rho[...] += f * fac * fcoe[i-7] * (r/R0)**i * (r < R0)
+        rho[...] += f * fac * fcoe[i-7] * (r/R0)**i * (r < R0) * R0
 
-    p = np.copy(rho)
     rho *= ud.Msq / 2.0
     rho = (rho - rho.max()) * (r < R0)
     rho += H0
