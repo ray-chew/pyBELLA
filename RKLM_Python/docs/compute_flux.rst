@@ -9,7 +9,7 @@ First the values of :math:`\rho \theta \vec{u}` and :math:`\rho \theta \vec{v}` 
 
 Note that since the convolution uses cell-centered values to calculate values along cell-faces, the output array is one index value smaller than the input array.
 
-.. _fig_1:
+.. _fig_2:
 .. figure:: ./_static/compute_flux.svg
     :width: 80%
 
