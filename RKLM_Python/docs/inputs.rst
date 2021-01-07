@@ -13,7 +13,6 @@ inputs package
 ..    inputs.acoustic_wave_high
    inputs.acoustic_wave_low
    inputs.internal_long_wave
-   inputs.travelling_vortex_3D_48
 
 .. Module contents
 .. ---------------
