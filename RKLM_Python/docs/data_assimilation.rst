@@ -1,46 +1,20 @@
 data\_assimilation package
 ==========================
 
-Submodules
-----------
+.. Submodules
+.. ----------
 
-data\_assimilation.letkf module
--------------------------------
+.. toctree::
+   :hidden:
+   
+   data_assimilation.params
+   data_assimilation.letkf
+   data_assimilation.utils
 
-.. automodule:: data_assimilation.letkf
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-data\_assimilation.localisation module
---------------------------------------
-
-.. automodule:: data_assimilation.localisation
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-data\_assimilation.params module
---------------------------------
-
-.. automodule:: data_assimilation.params
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-data\_assimilation.utils module
--------------------------------
-
-.. automodule:: data_assimilation.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Module contents
----------------
+.. Module contents
+.. ---------------
 
 .. automodule:: data_assimilation
-   :members:
-   :undoc-members:
-   :show-inheritance:
+..    :members:
+..    :undoc-members:
+..    :show-inheritance:
