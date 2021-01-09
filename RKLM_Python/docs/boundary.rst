@@ -12,9 +12,9 @@ For ghost cells in direction with gravity, the update follows :numref:`figure %s
 
 .. _fig_1:
 .. figure:: ./_static/boundary_handling.svg
-    :width: 80%
+   :width: 100%
 
-    Boundary handling of gravity axis.
+   Boundary handling of gravity axis.
     
 
 Todos
