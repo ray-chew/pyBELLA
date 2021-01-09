@@ -171,6 +171,9 @@ def sliding_window_view(arr, window_shape, steps):
                                     steps=[Sx, (...), Sz])
         out[ix, (...), iz] = arr[..., ix*Sx:ix*Sx+Wx,  (...), iz*Sz:iz*Sz+Wz]
 
+    This function is taken from:
+    https://gist.github.com/meowklaski/4bda7c86c6168f3557657d5fb0b5395a
+
     Example
     --------
     >>> import numpy as np
