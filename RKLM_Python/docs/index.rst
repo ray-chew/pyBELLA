@@ -10,7 +10,8 @@ Documentation
 .. toctree::
    :hidden:
 
-   self
+   Home <self>
+   Quickstart <./quickstart.rst>
 
 .. toctree::
    :caption: Introduction
