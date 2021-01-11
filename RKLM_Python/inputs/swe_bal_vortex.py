@@ -12,7 +12,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 0.0 #1.0/1000.0
+    omega = 1.0/1000.0
 
     R_gas = 1.0
     R_vap = 1.0
@@ -59,7 +59,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+        self.is_compressible = 0
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -92,8 +92,8 @@ class UserData(object):
         self.zmin = - 0.5 * self.fac
         self.zmax =   0.5 * self.fac
 
-        self.u_wind_speed = 0.0
-        self.w_wind_speed = 0.0
+        self.u_wind_speed = 1.0
+        self.w_wind_speed = 1.0
         self.wind_shear = -0.0
         self.hill_shape = HillShapes.AGNESI
         self.hill_height = 0.0
@@ -192,7 +192,7 @@ class UserData(object):
         # aux = 'comp_imbal_ib_full-12'
         # aux ='comp_debug_noib_imbal'
         # aux = 'debug_tra'
-        aux = 'f_debug2'
+        aux = 'f_psinc_imbal'
         # aux = 'comp_1.0_pp_tra_truth_ip'
 
         self.aux = aux
@@ -229,7 +229,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     g = ud.g0
     f = ud.coriolis_strength[0]
-    # g = 9.81
     H0 = 1.0
 
     if seed != None:
@@ -363,7 +362,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
     mpv.p2_nodes[2:-2,2:-2,2:-2] -= mpv.p2_nodes[2:-2,2:-2,2:-2].mean(axis=(0,2),keepdims=True)
 
-    # mpv.p2_nodes[...] = 1.0
+    # Add imbalance?
+    mpv.p2_nodes[...] = 1.0
+    Sol.rho[...] = 1.0
+    Sol.rhoY[...] = 1.0
 
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
