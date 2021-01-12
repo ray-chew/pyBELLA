@@ -52,11 +52,11 @@ To run the code from the command line::
 
    python3 ./__main__.py -ic tv
    
-The argument `tv` runs the 2D Euler vortex experiment and outputs the results to the folder created above.
+The argument `-ic tv` runs the 2D Euler vortex experiment and outputs the results to the folder created above.
 
 With run.py
 ~~~~~~~~~~~
-`run.py` if a driver script used to run the program. Edit the attributes of the class `run_params` then run the file with::
+`run.py` is a driver script used to run the program. Edit the attributes of the class `run_params` then run the file with::
 
    python3 ./run.py
 
@@ -118,7 +118,7 @@ The attribute `N` in the driver files sets the ensemble size.
 
 Data assimilation
 ~~~~~~~~~~~~~~~~~
-Data assimilation only works for ensemble simulations, `N>1`. :py:class:`da_params` in :py:mod:`data_assimilation.params` defines the data assimilation parameters. To run an experiment with data assimilation, you will minimially need to specify the following attributes in :py:class:`da_params`, 
+Data assimilation only works for ensemble simulations, `N>1`. :py:class:`da_params` in :py:mod:`data_assimilation.params` defines the data assimilation parameters. To run an experiment with data assimilation, you will minimally need to specify the following attributes in :py:class:`da_params`, 
 
 1. :py:attr:`data_assimilation.params.da_params.da_times` - time points to do data assimilation
 2. :py:attr:`data_assimilation.params.da_params.obs_attributes` - the quantities to assimilate
