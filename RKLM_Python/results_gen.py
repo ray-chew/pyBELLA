@@ -40,7 +40,7 @@ rp = rp()
 # results.
 #
 ##########################################
-gen_6b1 = False
+gen_6b1 = True
 gen_6b2 = False
 gen_6c = False
 
@@ -57,7 +57,7 @@ if gen_6c:
     # No ensemble
     rp.N = 1 
     # Euler travelling vortex experiment
-    rp.tv = 'tv'
+    rp.tc = 'tv'
 
     # simulation parameters for the observation
     ud = {
@@ -93,7 +93,7 @@ if gen_6c:
 
 
     # shallow water vortex
-    rp.tv = 'swe_bal_vortex' 
+    rp.tc = 'swe_bal_vortex' 
 
     # simulation parameters for the observation
     ud = {
@@ -319,7 +319,7 @@ if gen_6b2:
     # No ensemble
     rp.N = 1 
     # Rising bubble experiment
-    rp.tv = 'rb'
+    rp.tc = 'rb'
 
     # simulation parameters for the pseudo-
     # incompressible rising bubble simulation
@@ -382,7 +382,14 @@ if gen_6b1:
     # No ensemble
     rp.N = 1 
     # Euler travelling vortex
-    rp.tv = 'tv'
+    rp.tc = 'tv'
+    # We run the simulation from t=0.0
+    # to t=1.0, t non-dimensional.
+    # Output at every 0.01 time units.
+    tout = np.arange(0.0,1.01,0.01)[1:]
+
+    # JSON dumping does not accept ndarrays.
+    tout = tout.tolist()
 
     # simulation parameters for the pseudo-
     # incompressible run
@@ -390,10 +397,7 @@ if gen_6b1:
         'aux' : 'psinc',
         # set pseudo-incompressible
         'is_compressible' : 0,
-        # We run the simulation from t=0.0
-        # to t=1.0, t non-dimensional.
-        # Output at every 0.01 time units.
-        'tout' : np.arange(0.0,3.01,0.01)[1:]
+        'tout' : tout
     }
 
     # No data assimilation.
@@ -413,7 +417,7 @@ if gen_6b1:
     # initial time-step
     ud = {
         'aux' : 'comp_imbal',
-        'tout' : np.arange(0.0,3.01,0.01)[1:]
+        'tout' : tout
     }
 
     # run simulation
@@ -429,7 +433,7 @@ if gen_6b1:
     ud = {
         'aux' : 'comp_bal',
         'initial_blending' : True,
-        'tout' : np.arange(0.0,3.01,0.01)[1:]
+        'tout' : tout
     }
 
     # run simulation
@@ -440,7 +444,7 @@ if gen_6b1:
     ##########################################
 
     # Shallow water travelling vortex
-    rp.tv = 'swe_bal_vortex'
+    rp.tc = 'swe_bal_vortex'
 
     # simulation parameters for the pseudo-
     # incompressible run
@@ -448,7 +452,7 @@ if gen_6b1:
         'aux' : 'psinc',
         # set pseudo-incompressible
         'is_compressible' : 0,
-        'tout' : np.arange(0.0,3.01,0.01)[1:]
+        'tout' : tout
     }
 
     # No data assimilation.
@@ -468,7 +472,7 @@ if gen_6b1:
     # initial time-step
     ud = {
         'aux' : 'comp_imbal',
-        'tout' : np.arange(0.0,3.01,0.01)[1:]
+        'tout' : tout
     }
 
     # run simulation
@@ -484,7 +488,7 @@ if gen_6b1:
     ud = {
         'aux' : 'comp_bal',
         'initial_blending' : True,
-        'tout' : np.arange(0.0,3.01,0.01)[1:]
+        'tout' : tout
     }
 
     # run simulation
