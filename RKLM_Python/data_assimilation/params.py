@@ -10,24 +10,11 @@ class da_params(object):
     def __init__(self,N,da_type='rloc'):
         # number of ensemble members
         self.N = N
-        # self.da_times = np.arange(0.0,3.75,0.25)[1:]
-        # self.da_times = np.arange(0.0,10.25,0.25)[1:]
-        # self.da_times = np.arange(0.0,6.1,0.25)[1:]
-        # self.da_times = np.arange(0.0,864000.0+1200.0,1200.0)[1:][::4]
-        #: da_times
+
         self.da_times = np.arange(0.0,3.25,0.25)[1:]
-        # self.da_times = np.arange(0.0,1.25,0.25)[1:]
         self.da_times = np.around(self.da_times,3)
-        # self.da_times = []
-        # self.obs_attributes = ['rho', 'rhou', 'rhow', 'rhoY', 'p2_nodes']
+        
         self.obs_attributes = ['rhou', 'rhov']
-        # self.obs_attributes = ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes']
-        # self.obs_attributes = ['rho', 'rhov']
-        # self.obs_attributes = ['rho','rhou','rhov']
-        # self.obs_attributes = ['rhou','p2_nodes']
-        # self.obs_attributes = ['p2_nodes']
-        # self.obs_attributes = ['rhoY']
-        # self.obs_attributes = ['rho', 'rhou', 'rhow','rhoY','p2_nodes']
 
         # which attributes to inflate in ensemble inflation?
         self.attributes = ['rho', 'rhou', 'rhov']
