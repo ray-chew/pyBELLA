@@ -142,64 +142,73 @@ def boundary_mask(ud,elem,node,pad_X,pad_Y):
 
 # ref: https://gist.github.com/meowklaski/4bda7c86c6168f3557657d5fb0b5395a
 def sliding_window_view(arr, window_shape, steps):
-    """ Produce a view from a sliding, striding window over `arr`.
-        The window is only placed in 'valid' positions - no overlapping
-        over the boundary.
-        Parameters
-        ----------
-        arr : numpy.ndarray, shape=(...,[x, (...), z])
-            The array to slide the window over.
-        window_shape : Sequence[int]
-            The shape of the window to raster: [Wx, (...), Wz],
-            determines the length of [x, (...), z]
-        steps : Sequence[int]
-            The step size used when applying the window
-            along the [x, (...), z] directions: [Sx, (...), Sz]
-        Returns
-        -------
-        view of `arr`, shape=([X, (...), Z], ..., [Wx, (...), Wz])
-            Where X = (x - Wx) // Sx + 1
-        Notes
-        -----
-        In general, given
-          `out` = sliding_window_view(arr,
-                                      window_shape=[Wx, (...), Wz],
-                                      steps=[Sx, (...), Sz])
-           out[ix, (...), iz] = arr[..., ix*Sx:ix*Sx+Wx,  (...), iz*Sz:iz*Sz+Wz]
-         Examples
-         --------
-         >>> import numpy as np
-         >>> x = np.arange(9).reshape(3,3)
-         >>> x
-         array([[0, 1, 2],
-                [3, 4, 5],
-                [6, 7, 8]])
-         >>> y = sliding_window_view(x, window_shape=(2, 2), steps=(1, 1))
-         >>> y
-         array([[[[0, 1],
-                  [3, 4]],
-                 [[1, 2],
-                  [4, 5]]],
-                [[[3, 4],
-                  [6, 7]],
-                 [[4, 5],
-                  [7, 8]]]])
-        >>> np.shares_memory(x, y)
-         True
-        # Performing a neural net style 2D conv (correlation)
-        # placing a 4x4 filter with stride-1
-        >>> data = np.random.rand(10, 3, 16, 16)  # (N, C, H, W)
-        >>> filters = np.random.rand(5, 3, 4, 4)  # (F, C, Hf, Wf)
-        >>> windowed_data = sliding_window_view(data,
-        ...                                     window_shape=(4, 4),
-        ...                                     steps=(1, 1))
-        >>> conv_out = np.tensordot(filters,
-        ...                         windowed_data,
-        ...                         axes=[[1,2,3], [3,4,5]])
-        # (F, H', W', N) -> (N, F, H', W')
-        >>> conv_out = conv_out.transpose([3,0,1,2])
-         """
-    import numpy as np
+    """ 
+    Produce a view from a sliding, striding window over `arr`.
+    The window is only placed in 'valid' positions - no overlapping
+    over the boundary.
+
+    Parameters
+    ----------
+    arr : numpy.ndarray, shape=(...,[x, (...), z])
+        The array to slide the window over.
+    window_shape : Sequence[int]
+        The shape of the window to raster: [Wx, (...), Wz],
+        determines the length of [x, (...), z]
+    steps : Sequence[int]
+        The step size used when applying the window
+        along the [x, (...), z] directions: [Sx, (...), Sz]
+
+    Returns
+    -------
+    view of `arr`, shape=([X, (...), Z], ..., [Wx, (...), Wz]), where X = (x - Wx) // Sx + 1
+
+    Note
+    -----
+    In general, given::
+
+        out = sliding_window_view(arr,
+                                    window_shape=[Wx, (...), Wz],
+                                    steps=[Sx, (...), Sz])
+        out[ix, (...), iz] = arr[..., ix*Sx:ix*Sx+Wx,  (...), iz*Sz:iz*Sz+Wz]
+
+    This function is taken from:
+    https://gist.github.com/meowklaski/4bda7c86c6168f3557657d5fb0b5395a
+
+    Example
+    --------
+    >>> import numpy as np
+    >>> x = np.arange(9).reshape(3,3)
+    >>> x
+    array([[0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8]])
+    >>> y = sliding_window_view(x, window_shape=(2, 2), steps=(1, 1))
+    >>> y
+    array([[[[0, 1],
+            [3, 4]],
+            [[1, 2],
+            [4, 5]]],
+        [[[3, 4],
+            [6, 7]],
+            [[4, 5],
+            [7, 8]]]])
+    >>> np.shares_memory(x, y)
+        True
+    # Performing a neural net style 2D conv (correlation)
+    # placing a 4x4 filter with stride-1
+    >>> data = np.random.rand(10, 3, 16, 16)  # (N, C, H, W)
+    >>> filters = np.random.rand(5, 3, 4, 4)  # (F, C, Hf, Wf)
+    >>> windowed_data = sliding_window_view(data,
+    ...                                     window_shape=(4, 4),
+    ...                                     steps=(1, 1))
+    >>> conv_out = np.tensordot(filters,
+    ...                         windowed_data,
+    ...                         axes=[[1,2,3], [3,4,5]])
+    # (F, H', W', N) -> (N, F, H', W')
+    >>> conv_out = conv_out.transpose([3,0,1,2])
+
+    """
+         
     from numpy.lib.stride_tricks import as_strided
     in_shape = np.array(arr.shape[-len(steps):])  # [x, (...), z]
     window_shape = np.array(window_shape)  # [Wx, (...), Wz]

@@ -14,6 +14,7 @@ class da_params(object):
         # self.da_times = np.arange(0.0,10.25,0.25)[1:]
         # self.da_times = np.arange(0.0,6.1,0.25)[1:]
         # self.da_times = np.arange(0.0,864000.0+1200.0,1200.0)[1:][::4]
+        #: da_times
         self.da_times = np.arange(0.0,3.25,0.25)[1:]
         # self.da_times = np.arange(0.0,1.25,0.25)[1:]
         self.da_times = np.around(self.da_times,3)
@@ -38,8 +39,9 @@ class da_params(object):
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_comp_delth_perturb_ib_truth.h5'
 
         # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pps_tra_truth.h5'
-        # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pp_tra_truth_ip.h5'
-        self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_comp_1.0_pp_tra_truth_ip_ib-0.h5'
+        # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_neg_comp_1.0_pp_tra_truth_ip.h5'
+        # self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_comp_1.0_pp_tra_truth_ip.h5'
+        self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_neg_comp_1.0_pp_tra_truth_ip.h5'
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)

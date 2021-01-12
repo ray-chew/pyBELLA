@@ -1,5 +1,4 @@
 import numpy as np
-import pyemd
 
 def da_interface(results, obs, obs_attributes, delta, times, tout, N, loc=0):
     ig = 2
@@ -61,6 +60,7 @@ def da_interface(results, obs, obs_attributes, delta, times, tout, N, loc=0):
     return results
 
 class analysis(object):
+    import pyemd
     def __init__(self,ensemble,delta,identifier=None):
         self.ensemble = np.array(ensemble)
         self.ensemble_shape = self.ensemble.shape

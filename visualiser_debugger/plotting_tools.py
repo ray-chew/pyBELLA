@@ -74,15 +74,6 @@ class plotter(object):
                 im = self.visualise(method,cax,arr,aspect,lvl)
                 cax.set_title(title)
                 loc = cax.get_xticklabels()
-                
-#                 if hasattr(self, 'x_locs') : cax.set_xticks(self.x_locs)
-#                 if hasattr(self, 'x_axs') : cax.set_xticklabels(self.x_axs)
-#                 if hasattr(self, 'y_locs') : cax.set_yticks(self.y_locs)
-#                 if hasattr(self, 'y_axs') : cax.set_yticklabels(self.y_axs)
-#                 if hasattr(self, 'x_label') : cax.set_xlabel(self.x_label)
-#                 if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
-#                 if hasattr(self, 'axhline'): cax.axhline(self.axhline,c='k',lw=0.5)
-#                 if hasattr(self, 'axvline'): cax.axvline(self.axvline,c='k',lw=0.5)
                 self.set_cax_axes(cax)
                 caxs.append(cax)
                 divider = make_axes_locatable(cax)
@@ -102,16 +93,6 @@ class plotter(object):
             im = self.visualise(method,cax,arr,aspect,lvls)
 #             cax.plot(19,39,marker='x',c='r', ms=10)
             cax.set_title(title)
-#             if hasattr(self, 'x_locs') : cax.set_xticks(self.x_locs)
-#             if hasattr(self, 'x_axs') : cax.set_xticklabels(self.x_axs)
-#             if hasattr(self, 'y_locs') : cax.set_yticks(self.y_locs)
-#             if hasattr(self, 'y_axs') : cax.set_yticklabels(self.y_axs)
-#             if hasattr(self, 'x_label') : cax.set_xlabel(self.x_label)
-#             if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
-#             if hasattr(self, 'axhline'):
-#                 cax.set_axhline(self.axhline,c='k',lw=0.5)
-#             if hasattr(self, 'axvline'):
-#                 cax.axvline(self.axvline,c='k',lw=0.5)
             self.set_cax_axes(cax)
             divider = make_axes_locatable(cax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -254,9 +235,24 @@ def swe_labels():
         'rhov'      : r'$h v$, vertical momentum',
         'rhow'      : r'$h w$, horizontal momentum',
         'buoy'      : r'buoyancy',
+        'vorty'     : r'vorticity',
         'rhoX'      : r'$h / \Theta$',
         'rhoY'      : r'$h (\rho \Theta)$, water depth',
         'p2_nodes'  : r'$h^\prime$, water depth perturbation'
+    }
+    return labels_dict
+
+def lake_labels():
+    labels_dict = {
+        'rho'       : r'$h^{(0)}$, leading-order' + '\n water depth',
+        'rhou'      : r'$h^{(0)} u^{(0)}$, leading-order horizontal momentum',
+        'rhov'      : r'$h^{(0)} v^{(0)}$, leading-order vertical momentum',
+        'rhow'      : r'$h^{(0)} w^{(0)}$, leading-order horizontal momentum',
+        'buoy'      : r'buoyancy',
+        'vorty'     : r'vorticity',
+        'rhoX'      : r'$h / \Theta$',
+        'rhoY'      : r'$h^{(0)} (\rho \Theta)$, leading-order' + '\n water depth',
+        'p2_nodes'  : r'$h^{(1)}$, next-to-leading' + '\n order water depth'
     }
     return labels_dict
 
