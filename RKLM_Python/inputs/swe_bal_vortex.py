@@ -12,7 +12,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 1.0/1000.0
+    omega = 0.0#1.0/1000.0
 
     R_gas = 1.0
     R_vap = 1.0
@@ -59,7 +59,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 0
+        self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -166,16 +166,8 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        # self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
-        self.tout = np.arange(0, 1.0 + 0.01, 0.01)[1:]
-        # self.tout = [1.0]
-        # self.tout = np.arange(0, 3/.0 + 0.01, 0.01)[1:]
-        # self.tout = [1.0]
-        # self.tout = [1E6]
+        self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
 
-        # self.tout = times.copy()
-
-        # self.stepmax = 10
         self.stepmax = 100001
 
         self.output_base_name = "_swe_vortex"
@@ -186,18 +178,9 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
-        # aux = 'wdawloc_pp_rhou_rhow_tra_ip_0.25_nonorm'
-        # aux = 'pp_tra_ip_nonorm'
-        # aux = 'psinc_noib'
-        # aux = 'comp_imbal_ib_full-12'
-        # aux ='comp_debug_noib_imbal'
-        # aux = 'debug_tra'
         aux = 'f_psinc_imbal'
-        # aux = 'comp_1.0_pp_tra_truth_ip'
-
+        
         self.aux = aux
-        # self.output_suffix = "_%i_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1],aux)
-
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
 
@@ -363,9 +346,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     mpv.p2_nodes[2:-2,2:-2,2:-2] -= mpv.p2_nodes[2:-2,2:-2,2:-2].mean(axis=(0,2),keepdims=True)
 
     # Add imbalance?
-    mpv.p2_nodes[...] = 1.0
-    Sol.rho[...] = 1.0
-    Sol.rhoY[...] = 1.0
+    # mpv.p2_nodes[...] = 1.0
+    # Sol.rho[...] = 1.0
+    # Sol.rhoY[...] = 1.0
 
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 

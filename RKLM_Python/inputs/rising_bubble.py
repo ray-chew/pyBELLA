@@ -193,7 +193,7 @@ class UserData(object):
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.initial_blending = True
+        self.initial_blending = False
 
         self.tol = 1.e-8
         self.max_iterations = 6000

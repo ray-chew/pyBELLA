@@ -84,7 +84,6 @@ class UserData(object):
         self.zmin = - 0.5
         self.zmax =   0.5
 
-        self.wind_speed = 0.0
         self.u_wind_speed = 1.0
         self.v_wind_speed = 1.0
         self.w_wind_speed = 0.0
@@ -173,8 +172,7 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        self.tout = np.arange(0.0,1.01,0.01)[1:]
-        # self.tout = [1.0]
+        self.tout = np.arange(0.0,3.01,0.01)[1:]
 
         self.stepmax = 20000
 
@@ -188,7 +186,6 @@ class UserData(object):
         
         aux = 'neg_debug'
         self.aux = aux
-
 
         self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
@@ -229,7 +226,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         yc += (np.random.random() - 0.5) / 5.0
         print(seed, xc, yc)
 
-    if 'truth' in ud.aux:
+    if 'truth' in ud.aux or 'obs' in ud.aux:
         np.random.seed(2233)
         xc += (np.random.random() - 0.5) / 5.0
         yc += (np.random.random() - 0.5) / 5.0

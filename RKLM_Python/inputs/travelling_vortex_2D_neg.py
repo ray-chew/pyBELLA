@@ -156,7 +156,7 @@ class UserData(object):
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'rho' #theta, rho
 
-        self.continuous_blending = True
+        self.continuous_blending = False
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
@@ -164,7 +164,7 @@ class UserData(object):
 
         self.blending_weight = 0./16
 
-        self.initial_blending = True
+        self.initial_blending = False
 
         self.initial_projection = True
         self.initial_impl_Euler = False
@@ -187,6 +187,7 @@ class UserData(object):
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
         aux = 'neg_comp_1.0_pp_tra_truth_ip'
+        aux = 'neg_debug'
         self.aux = aux
 
 
@@ -323,7 +324,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rho = np.zeros_like(r)
 
     rho[...] += (rho0 + del_rho * (1. - (r/R0)**2)**6) * (r < R0)
-    rho[...] += rho0 * (r >= R0)
+    rho[...] += rho0 * (r > R0)
 
     if seed != None and ud.perturb_type == 'fmp_perturb':
         np.random.seed(seed)
@@ -340,7 +341,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     dp2c = np.zeros_like((r))
     for ip in range(25):
-        dp2c += (coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2) * (r/R0 <= 1.0)
+        dp2c += (coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2) * (r/R0 < 1.0)
 
     p2c = np.copy(dp2c)
 
