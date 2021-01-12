@@ -84,6 +84,7 @@ class UserData(object):
         self.zmin = - 0.5
         self.zmax =   0.5
 
+        self.wind_speed = 0.0
         self.u_wind_speed = 1.0
         self.v_wind_speed = 1.0
         self.w_wind_speed = 0.0
@@ -173,6 +174,7 @@ class UserData(object):
         self.synchronize_weight = 0.0
 
         self.tout = np.arange(0.0,3.01,0.01)[1:]
+        # self.tout = [1.0]
 
         self.stepmax = 20000
 
@@ -184,8 +186,10 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
+        aux = 'neg_comp_1.0_pp_tra_truth_ip'
         aux = 'neg_debug'
         self.aux = aux
+
 
         self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
@@ -212,9 +216,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rotdir = 1.0
 
     p0 = 1.0
-    a_rho = 1.0
-    rho0 = a_rho * 0.5
-    del_rho = a_rho * 0.5
+    rho0 = 1.0
+    del_rho = -0.5
     R0 = 0.4
     fac = 1. * 1024.0
     xc = 0.0
@@ -226,7 +229,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         yc += (np.random.random() - 0.5) / 5.0
         print(seed, xc, yc)
 
-    if 'truth' in ud.aux or 'obs' in ud.aux:
+    if 'truth' in ud.aux:
         np.random.seed(2233)
         xc += (np.random.random() - 0.5) / 5.0
         yc += (np.random.random() - 0.5) / 5.0
@@ -246,31 +249,57 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     hydrostatic_state(mpv, elem, node, th, ud)
 
     coe = np.zeros((25))
-    coe[0]  =     1.0 / 12.0
-    coe[1]  = -  12.0 / 13.0
-    coe[2]  =     9.0 /  2.0
-    coe[3]  = - 184.0 / 15.0
-    coe[4]  =   609.0 / 32.0
-    coe[5]  = - 222.0 / 17.0
-    coe[6]  = -  38.0 /  9.0
-    coe[7]  =    54.0 / 19.0
-    coe[8]  =   783.0 / 20.0
-    coe[9]  = - 558.0 /  7.0
-    coe[10] =  1053.0 / 22.0
-    coe[11] =  1014.0 / 23.0
-    coe[12] = -1473.0 / 16.0
-    coe[13] =   204.0 /  5.0
-    coe[14] =   510.0 / 13.0
-    coe[15] = -1564.0 / 27.0
-    coe[16] =   153.0 /  8.0
-    coe[17] =   450.0 / 29.0
-    coe[18] = - 269.0 / 15.0
-    coe[19] =   174.0 / 31.0
-    coe[20] =    57.0 / 32.0
-    coe[21] = -  74.0 / 33.0
-    coe[22] =    15.0 / 17.0
-    coe[23] = -   6.0 / 35.0
-    coe[24] =     1.0 / 72.0
+    # coe[0]  =     1.0 / 12.0
+    # coe[1]  = -  12.0 / 13.0
+    # coe[2]  =     9.0 /  2.0
+    # coe[3]  = - 184.0 / 15.0
+    # coe[4]  =   609.0 / 32.0
+    # coe[5]  = - 222.0 / 17.0
+    # coe[6]  = -  38.0 /  9.0
+    # coe[7]  =    54.0 / 19.0
+    # coe[8]  =   783.0 / 20.0
+    # coe[9]  = - 558.0 /  7.0
+    # coe[10] =  1053.0 / 22.0
+    # coe[11] =  1014.0 / 23.0
+    # coe[12] = -1473.0 / 16.0
+    # coe[13] =   204.0 /  5.0
+    # coe[14] =   510.0 / 13.0
+    # coe[15] = -1564.0 / 27.0
+    # coe[16] =   153.0 /  8.0
+    # coe[17] =   450.0 / 29.0
+    # coe[18] = - 269.0 / 15.0
+    # coe[19] =   174.0 / 31.0
+    # coe[20] =    57.0 / 32.0
+    # coe[21] = -  74.0 / 33.0
+    # coe[22] =    15.0 / 17.0
+    # coe[23] = -   6.0 / 35.0
+    # coe[24] =     1.0 / 72.0
+
+    coe[0] =      1.0 / 24.0
+    coe[1] = -    6.0 / 13.0
+    coe[2] =     18.0 /  7.0
+    coe[3] = -  146.0 / 15.0
+    coe[4] =    219.0 /  8.0
+    coe[5] = -  966.0 / 17.0
+    coe[6] =    731.0 /  9.0
+    coe[7] = - 1242.0 / 19.0
+    coe[8] = -   81.0 / 40.0
+    coe[9] =     64.0 /  1.0
+    coe[10] = - 477.0 / 11.0
+    coe[11] = -1032.0 / 23.0
+    coe[12] = + 737.0 /  8.0
+    coe[13] = - 204.0 /  5.0
+    coe[14] = - 510.0 / 13.0
+    coe[15] = +1564.0 / 27.0
+    coe[16] = - 153.0 /  8.0
+    coe[17] = - 450.0 / 29.0
+    coe[18] =   269.0 / 15.0
+    coe[19] = - 174.0 / 31.0
+    coe[20] = -  57.0 / 32.0
+    coe[21] =    74.0 / 33.0
+    coe[22] = -  15.0 / 17.0
+    coe[23] =     6.0 / 35.0
+    coe[24] = -   1.0 / 72.0
 
     xs = elem.x.reshape(-1,1)
     ys = elem.y[igy:-igy].reshape(1,-1)
@@ -293,14 +322,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rhoY = mpv.HydroState.rhoY0[igy:-igy]
 
     rho = np.zeros_like(r)
+
     rho[...] += (rho0 + del_rho * (1. - (r/R0)**2)**6) * (r < R0)
     rho[...] += rho0 * (r > R0)
-
-    # rho[...] += (rho0 - del_rho * (1. - (r/R0)**2)**6) * (r < R0)
-    # rho[...] += rho0 * (r > R0)
-    # rho[...] = del_rho * ((r/R0)**2)**6 * (r < R0)
-    # rho[...] = (rho - rho.max()) * (r < R0)
-    # rho[...] += 1.0
 
     if seed != None and ud.perturb_type == 'fmp_perturb':
         np.random.seed(seed)
@@ -317,7 +341,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     dp2c = np.zeros_like((r))
     for ip in range(25):
-        dp2c += (a_rho * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2) * (r/R0 < 1.0)
+        dp2c += (coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2) * (r/R0 < 1.0)
 
     p2c = np.copy(dp2c)
 
@@ -326,7 +350,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     Sol.rhov[:,igy:-igy] = rho * v
     Sol.rhow[:,igy:-igy] = rho * w
 
-    if (ud.is_compressible) :
+    if (ud.is_compressible):
         p = p0 + ud.Msq * fac**2 * dp2c
         Sol.rhoY[:,igy:-igy] = p**th.gamminv
         Sol.rhoe[:,igy:-igy] = ud.rhoe(rho,u,v,w,p,ud,th)
@@ -334,9 +358,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         Sol.rhoe[:,igy:-igy] = ud.rhoe(rho,u,v,w,p_hydro,ud,th)
         Sol.rhoY[:,igy:-igy] = rhoY
 
-    # mpv.p2_cells[:,igy:-igy] = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy].T)
-
-    mpv.p2_cells[:,igy:-igy] = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy])    
+    mpv.p2_cells[:,igy:-igy] = th.Gamma * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy])
 
     set_ghostcells_p2(mpv.p2_cells, elem, ud)
 
@@ -354,11 +376,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
     
+    mpv.p2_nodes[...] = 0.0
     for ip in range(25):
-        mpv.p2_nodes[igxn:-igxn,igyn:-igyn] += coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
-    mpv.p2_nodes[igxn:-igxn,igyn:-igyn] *= r/R0 < 1.0
+        mpv.p2_nodes[igxn:-igxn,igyn:-igyn] += fac**2 * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2 * (r < R0)
 
-    mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[igyn:-igyn+1])
+    # mpv.p2_nodes[igxn:-igxn,igyn:-igyn] *= (r/R0) <= 1.0
+
+    mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[igyn:-igyn+1]) #+ mpv.HydroState.p20[igyn:-igyn+1]
     # mpv.p2_nodes -= mpv.p2_nodes.mean()
     # mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[0,igyn:-igyn+1])
 

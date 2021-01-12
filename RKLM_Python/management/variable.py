@@ -6,6 +6,7 @@ class Vars(object):
     The data container for the solution state variables, i.e. `Sol`.
 
     """
+
     def __init__(self,size,ud):
         """
         Parameters
@@ -88,8 +89,8 @@ class Vars(object):
 
     def flip(self):
         """
-        Flips the solution variables arrays for the advection routine. `rhou` and `rhov` are also flipped, i.e.
-        ::
+        Flips the solution variables arrays for the advection routine. `rhou` and `rhov` are also flipped, i.e.::
+
             self.rhou, self.rhov = self.rhov, self.rhou    
 
         """

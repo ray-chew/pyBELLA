@@ -4,7 +4,6 @@ from inputs import boundary
 
 from termcolor import colored
 from copy import deepcopy
-from management import data
 
 class Blend(object):
     """
@@ -100,6 +99,7 @@ def do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer):
 
 
 def do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt):
+    from management import data
     print(colored("Blending... step = %i" %step,'blue'))
     Sol_freeze = deepcopy(Sol)
     mpv_freeze = deepcopy(mpv)
@@ -165,6 +165,7 @@ def do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
 
 
 def do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug, step, window_step, t, dt):
+    from management import data
     if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_lake_time_step')
 
     Sol_freeze = deepcopy(Sol)
@@ -198,7 +199,7 @@ def do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug
     # do node-to-cell averaging
     H1 = signal.convolve(H10, kernel, mode='valid')
     # H1 = ud.mean_val + ud.Msq * H1
-    print(colored(H1.max(), 'red'))
+    # print(colored(H1.max(), 'red'))
 
     # project H1 back to horizontal slice with ghost cells
     H1 = np.expand_dims(H1, axis=1)

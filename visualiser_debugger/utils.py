@@ -140,7 +140,7 @@ class test_case(object):
                 
             ref_ampl = ref.max() - ref.min()
             factor = ref_ampl
-            # factor = 1.0
+            factor = 1.0
 
             diff.append(np.sqrt(((arr - ref)**2).mean()) / factor)
         return np.array(diff)

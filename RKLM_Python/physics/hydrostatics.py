@@ -110,8 +110,6 @@ def hydrostatic_state(mpv, elem, node, th, ud):
     # y_ms[igy:] = y_ps[igy:] + elem.dy
     
     # y_ms[igy+1:] = elem.y[igy:-1]
-    # print(y_ps)
-    # print(y_ms)
     # Get the inverse stratifcation at each point
     S_ps = 1.0 / ud.stratification(y_ps)
     S_ms = 1.0 / ud.stratification(y_ms)
@@ -157,8 +155,6 @@ def hydrostatic_state(mpv, elem, node, th, ud):
     yn_p = node.y[:igy] - node.dy
     yn_m = node.y[1:igy+1] - node.dy
 
-    # print("yn_p = ", yn_p)
-    # print("yn_m = ", yn_m)
     # Sn_integral_p[-1] = -node.dy * 1.0 / ud.stratification(elem.y[igy-1])
     Sn_integral_p[:] = -node.dy * 1.0 / ud.stratification(0.5*(yn_p + yn_m))
     Sn_integral_p = np.cumsum(Sn_integral_p[:igy][::-1])[::-1]
@@ -177,13 +173,7 @@ def hydrostatic_state(mpv, elem, node, th, ud):
 
     # Update the node solutions
     mpv.HydroState_n.rhoY0[:igy] = rhoY_hydro_n[:igy]
-    # print(y_ps)
-    # print(y_ms)
-    # print(elem.dy)
     mpv.HydroState_n.Y0[:igy+1] = ud.stratification(0.5 * (y_ps[:igy+1] + y_ps[:igy+1] - elem.dy))
-    # print(mpv.HydroState_n.Y0[0])
-    # print(y_ps[:igy])
-    # print(y_ms[:igy])
     mpv.HydroState_n.rho0[:igy] = rhoY_hydro_n[:igy] / mpv.HydroState_n.Y0[:igy]
     mpv.HydroState_n.S0[:igy] = 1.0 / mpv.HydroState_n.Y0[:igy]
     mpv.HydroState_n.p0[:igy] = rhoY_hydro_n[:igy]**th.gamm
@@ -219,7 +209,6 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
     height = node.y[-igy-1]
 
     Pc = Sol.rhoY[x_idx_c,y_idx]
-    # print(Pc.shape)
     Pm = Sol.rhoY[x_idx_m,y_idx]
     thc = Pc / Sol.rho[x_idx_c,y_idx]
     thm = Pm / Sol.rho[x_idx_m,y_idx]
@@ -313,9 +302,6 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
 def loop_over_array(igx,igy,icxn,icyn,p,dp):
     for j in range(igy,icyn-igy):
         for i in range(igx+1,icxn-igx):
-            # if i < 6 and j < 6:
-                # print("i=%i,j=%i, p[i,j]=%e, dp[i-1,j]=%e, p[i-1,j]=%e" %(i, j, p[i,j], dp[i-1,j] , p[i-1,j]))
-                # print(i, j, p[i,j], dp[i-1,j] , p[i-1,j])
             p[i,j] = 2.0 * dp[i-1,j] - p[i-1,j]
     return p
         

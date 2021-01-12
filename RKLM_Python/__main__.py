@@ -217,6 +217,37 @@ if __name__ == '__main__':
         if N > 1 and tout in dap.da_times:
             futures = []
 
+
+            ######################################################
+            # Update ensemble with forecast
+            ######################################################
+            for n in range(N):
+                Sol = results[n][dap.loc_c]
+                set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+                results[n][dap.loc_c] = Sol
+                p2_nodes = getattr(results[n][dap.loc_n],'p2_nodes')
+                set_ghostnodes_p2(p2_nodes, node, ud)
+                setattr(results[n][dap.loc_n], 'p2_nodes', p2_nodes)
+
+            ens.set_members(results, tout)
+
+
+            ######################################################
+            # Write output before assimilating data
+            ######################################################
+            print(colored("Starting output...",'yellow'))
+            for n in range(N):
+                Sol = ens.members(ens)[n][0]
+                mpv = ens.members(ens)[n][2]
+
+                if label_type == 'STEP':
+                    step = outer_step
+                    label = ('ensemble_mem=%i_%.3d' %(n,step))
+                else:
+                    label = ('ensemble_mem=%i_%.3f' %(n,tout))
+                writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_da')
+
+
             ##################################################
             # LETKF with batch observations
             ##################################################
