@@ -4,7 +4,7 @@ from discretization.kgrid import Grid, ElemSpaceDiscr, NodeSpaceDiscr
 import inputs.boundary as boundary
 from management.variable import States, Vars
 from discretization import kgrid
-from physics.gas_dynamics.thermodynamic import ThemodynamicInit
+from physics.gas_dynamics.thermodynamic import ThermodynamicInit
 from physics.gas_dynamics.numerical_flux import recompute_advective_fluxes
 from physics.gas_dynamics.explicit import advect, advect_rk
 from physics.gas_dynamics.eos import nonhydrostasy, compressibility, synchronise_variables, is_compressible, is_nonhydrostatic
@@ -83,7 +83,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         Nodes grid.
     step : int
         Current step.
-    th : :class:`physics.gas_dynamics.thermodynamic.ThemodynamicInit`
+    th : :class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
         Thermodynamic variables of the system
     bld : :class:`data_assimilation.blending.Blend()`
         Blending class used to initalise interface blending methods.

@@ -5,7 +5,7 @@ from management.data import data_init, time_update
 from inputs.boundary import set_explicit_boundary_data
 from inputs.boundary import set_ghostnodes_p2
 from management.variable import States, Vars
-from physics.gas_dynamics.thermodynamic import ThemodynamicInit
+from physics.gas_dynamics.thermodynamic import ThermodynamicInit
 from physics.gas_dynamics.eos import nonhydrostasy, compressibility, is_compressible, is_nonhydrostatic
 from physics.gas_dynamics.gas_dynamics import dynamic_timestep
 from physics.low_mach.mpv import MPV, acoustic_order
@@ -67,7 +67,7 @@ if elem.ndim > 1:
 if elem.ndim > 2:
     flux[2] = States(elem.sfz, ud)
 
-th = ThemodynamicInit(ud)
+th = ThermodynamicInit(ud)
 mpv = MPV(elem, node, ud)
 bld = blending.Blend(ud)
 
