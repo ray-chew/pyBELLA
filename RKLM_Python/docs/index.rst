@@ -21,7 +21,17 @@ Documentation
    Overview <./intro.rst>
    Boundary handling <./boundary.rst>
    Grid discretisation <./grid_discretisation.rst>
-   Time-stepping <./time_stepping.rst>
+..    Time-stepping <./time_stepping.rst>
+
+.. toctree::
+   :caption: Discretisation details
+   :maxdepth: 3
+   :hidden:
+   
+   Compute advective fluxes <./compute_flux.rst>
+   Advection routine <./advect.rst>
+   Explicit Euler step <./explicit_euler.rst>
+   Implicit Euler step <./implicit_euler.rst>
    
 .. toctree::
    :caption: Flow Solver
