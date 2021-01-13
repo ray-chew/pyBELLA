@@ -143,7 +143,7 @@ where $\mathcal{A}_{\text{full}}^{\Delta t}$ is the advection operator. Splittin
 .. math::
     \mathcal{U}^{**} = \mathcal{A}_{x}^{\Delta t/2} \mathcal{A}_{y}^{\Delta t/2} \mathcal{A}_{z}^{\Delta t/2} \mathcal{A}_{z}^{\Delta t/2} \mathcal{A}_{y}^{\Delta t/2} \mathcal{A}_{x}^{\Delta t/2} \mathcal{U}^*,
     
-recalling that the Strang splitting is a second-order operator splitting method. The Strang-splitting is computed in :py:meth:`physics.gas_dynamics.explicit.advect`.
+recalling that the Strang splitting is a second-order operator splitting method. The Strang-splitting is computed in :py:meth:`physics.gas_dynamics.explicit.advect` which calls :py:meth:`physics.gas_dynamics.explicit.explicit_step_and_flux` for each substep.
 
 More details on the methods discussed here can be found in [LeVeque]_. 
 
