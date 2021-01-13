@@ -113,7 +113,7 @@ class io(object):
             Cells grid
         node : :class:`discretization.kgrid.NodeSpaceDiscr`
             Nodes grid
-        th : :class:`physics.gas_dynamics.thermodynamic.ThemodynamicInit`
+        th : :class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
             Thermodynamic variables of the system
         name: str
             The time and additional suffix label for the dataset, e.g. "_10.0_after_full_step", where 10.0 is the time and "after_full_step" denotes when the output was made.

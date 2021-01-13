@@ -16,7 +16,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
         Cells grid
     ud : :class:`inputs.user_data.UserDataInit`
         Data container for the initial conditions
-    th : :class:`physics.gas_dynamics.thermodynamic.ThemodynamicInit`
+    th : :class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
         Thermodynamic variables of the system
     mpv : :class:`physics.low_mach.mpv.MPV`
         Variables relating to the elliptic solver
