@@ -40,12 +40,18 @@ rp = rp()
 # results.
 #
 ##########################################
-gen_6b1 = True
+gen_6b1 = False
 gen_6b2 = False
-gen_6c = False
+# generate obs and truth for section 6c
+gen_6c_obs_truth = False
+# generate ensemble simulation for section 6c
+gen_6c = True
 
+# specify where the output directories are
+path_to_obs = '/srv/public/ray/'
+# path_to_obs = './'
 
-if gen_6c:
+if gen_6c_obs_truth:
     ##########################################
     #
     # Generate observations and truths for the
@@ -120,6 +126,8 @@ if gen_6c:
     rp.queue_run()
 
 
+
+if gen_6c:
     ##########################################
     #
     # Run simulations for the shallow water
@@ -143,6 +151,8 @@ if gen_6c:
     # do not do DA at any time-point.
     dap = {
         'da_times' : [],
+        # Path to the generated observation
+        'obs_path' : path_to_obs + 'output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_obs.h5',
     }
 
     # run simulation
@@ -165,7 +175,7 @@ if gen_6c:
         # Assimilate the momentum fields
         'obs_attrs' : ['rhou', 'rhow'],
         # Path to the generated observation
-        'obs_path' : './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_obs.h5',
+        'obs_path' : path_to_obs + 'output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_obs.h5',
     }
 
     # run simulation
@@ -217,6 +227,8 @@ if gen_6c:
     # do not do DA at any time-point.
     dap = {
         'da_times' : [],
+        # Path to the generated observation
+        'obs_path' : './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5'
     }
 
     # run simulation
