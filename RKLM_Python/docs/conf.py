@@ -36,8 +36,18 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.napoleon',
     'sphinxcontrib.inkscapeconverter',
+    'sphinx_math_dollar',
+    'sphinx.ext.mathjax'
     #'sphinx_rtd_theme'
 ]
+
+# see details: https://www.sympy.org/sphinx-math-dollar/
+mathjax_config = {
+    'tex2jax': {
+        'inlineMath': [ ["\\(","\\)"] ],
+        'displayMath': [["\\[","\\]"] ],
+    },
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
