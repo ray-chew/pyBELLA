@@ -16,7 +16,7 @@ def recompute_advective_fluxes(flux, Sol, *args, **kwargs):
 
     Attention
     ---------
-    This function is a mess and require cleaning up.
+    This function is a mess and requires cleaning up.
 
     """
     ndim = Sol.rho.ndim
@@ -70,7 +70,7 @@ def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
     Returns
     -------
     :py:class:`management.variable.States`
-        Flux data container with the solution of the Riemann problem.
+        `flux` data container with the solution of the Riemann problem.
     """
     # flux: index 1 to end = Left[inner_idx]: index 0 to -1 = Right[inner_idx]: index 1 to end
     
