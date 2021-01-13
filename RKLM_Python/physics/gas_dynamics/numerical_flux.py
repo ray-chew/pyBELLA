@@ -5,12 +5,20 @@ from management.debug import find_nearest
 
 def recompute_advective_fluxes(flux, Sol, *args, **kwargs):
     """
-    Todo
-    ----
-    * 2D case for now - generalise in future
+    Recompute the advective fluxes at the cell interfaces, i.e. the faces. This function updates the `flux` container in-place.
+
+    Parameters
+    ----------
+    flux : :py:class:`management.variable.States`
+        Data container for the fluxes at the cell interfaces.
+    Sol : :py:class:`management.variable.States`
+        Data container for the Solution.
+
+    Attention
+    ---------
+    This function is a mess and require cleaning up.
 
     """
-
     ndim = Sol.rho.ndim
     inner_idx = tuple([slice(1,-1)] * ndim)
 
@@ -39,6 +47,31 @@ def recompute_advective_fluxes(flux, Sol, *args, **kwargs):
     # flux[1].rhoY[...,-1] = 0.
 
 def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
+    """
+    HLL solver for the Riemann problem. Chooses the advected quantities from `Lefts` or `Rights` based on the direction given by `flux`.
+
+    Parameters
+    ----------
+    flux : :py:class:`management.variable.States`
+        Data container for fluxes.
+    Lefts : :py:class:`management.variable.States`
+        Container for the quantities on the left of the cell interfaces.
+    Rights : :py:class:`management.variable.States`
+        Container for the quantities on the right of the cell interfaces.
+    Sol : :py:class:`management.variable.Vars`
+        Solution data container.
+    lmbda : float
+        :math:`\\frac{dt}{dx}`, where :math:`dx` is the grid-size in the direction of the substep.
+    ud : :py:class:`inputs.user_data.UserDataInit`
+        Class container for the initial condition.
+    th : :py:class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+        Class container for the thermodynamical constants.
+
+    Returns
+    -------
+    :py:class:`management.variable.States`
+        Flux data container with the solution of the Riemann problem.
+    """
     # flux: index 1 to end = Left[inner_idx]: index 0 to -1 = Right[inner_idx]: index 1 to end
     
     ndim = Sol.rho.ndim
