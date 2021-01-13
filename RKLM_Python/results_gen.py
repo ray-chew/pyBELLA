@@ -228,7 +228,7 @@ if gen_6c:
     dap = {
         'da_times' : [],
         # Path to the generated observation
-        'obs_path' : './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5'
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5'
     }
 
     # run simulation
@@ -251,7 +251,7 @@ if gen_6c:
         # Assimilate the momentum fields
         'obs_attrs' : ['rhou', 'rhov'],
         # Path to the generated observation
-        'obs_path' : './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5'
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5'
     }
 
     # run simulation
@@ -294,7 +294,7 @@ if gen_6c:
         # Assimilate all fields
         'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
         # Path to the generated observation
-        'obs_path' : './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5'
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5'
     }
 
     # run simulation
