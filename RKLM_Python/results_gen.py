@@ -44,12 +44,23 @@ gen_6b1 = False
 gen_6b2 = False
 # generate obs and truth for section 6c
 gen_6c_obs_truth = False
-# generate ensemble simulation for section 6c
-gen_6c = True
+# generate shallow water ensemble simulations
+# for section 6c
+gen_6c_swe = False
+# generate Euler ensemble simulations for
+# section 6c with assimilation of the
+# momenta fields
+gen_6c_euler_momenta = False
+# generate Euler ensemble simulations for
+# section 6c with assimilation of all
+# fields
+gen_6c_euler_full = True
 
 # specify where the output directories are
 path_to_obs = '/srv/public/ray/'
 # path_to_obs = './'
+
+
 
 if gen_6c_obs_truth:
     ##########################################
@@ -127,7 +138,7 @@ if gen_6c_obs_truth:
 
 
 
-if gen_6c:
+if gen_6c_swe:
     ##########################################
     #
     # Run simulations for the shallow water
@@ -204,6 +215,7 @@ if gen_6c:
     rp.queue_run()
 
 
+if gen_6c_euler_momenta:
     ##########################################
     #
     # Run simulations for the Euler vortex
@@ -279,10 +291,19 @@ if gen_6c:
     rp.dap = json.dumps(dap)
     rp.queue_run()
 
-    ##########################################
 
+if gen_6c_euler_full:
+    ##########################################
+    #
     # Repeat the previous two experiments, but
     # this time, assimilate all the quantities
+    #
+    ##########################################
+
+    # Set ensemble with 10 members
+    rp.N = 10
+    # Euler travelling vortex experiment
+    rp.tc = 'tv'
     ud = {
         'aux' : 'wda',
         # Do blending for initial time-step
