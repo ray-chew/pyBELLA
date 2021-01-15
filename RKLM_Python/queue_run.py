@@ -240,26 +240,33 @@ rp.queue_run()
 # rp.dap = json.dumps(dap)
 # rp.queue_run()
 
+# rp.N = 1
 # rp.tc = 'swe_bal_vortex'
-
 # ud = {
-#     'aux' : 'debug_letkf_s50p',
-#     'continuous_blending' : False
+#     'inx' : 128+1,
+#     'inz' : 128+1,
+#     'aux' : 'debug_dsi_da'
 # }
-
+# 
 # dap = {
-#     'obs_attrs' : ['rhou', 'rhow'],
-#     'obs_path' : './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pp_tra_truth_ip.h5',
-#     'obs_frac' : 0.50
+#     'noise_percentage' : 0.1,
+# 
 # }
-
 # rp.ud = json.dumps(ud)
 # rp.dap = json.dumps(dap)
 # rp.queue_run()
-
+# 
+# rp.N = 1
+# rp.tc = 'swe_bal_vortex'
 # ud = {
-#     'aux' : 'debug_letkf1_s10p',
-#     'continuous_blending' : True
+#     'inx' : 256+1,
+#     'inz' : 256+1,
+#     'aux' : 'debug_dsi_da'
+# }
+# 
+# dap = {
+#     'noise_percentage' : 0.1,
+# 
 # }
 
 # dap = {
