@@ -35,6 +35,7 @@ class da_params(object):
         # self.converter = self.converter
 
         da_len = len(self.da_times)
+        self.gen_obs_noise = self.gen_obs_noise
 
         ############################################
         # Parameters for sparse observations
@@ -63,18 +64,7 @@ class da_params(object):
 
         self._noise_percentage = 0.05
         self.obs_noise = {}
-        for key in self.obs_attributes:
-            self.obs_noise[key] = self._noise_percentage
-
-        da_depth = len(self.obs_attributes)
-
-        # if self.add_obs_noise and da_len > 0:
-        np.random.seed(888)
-        if da_depth > 1:
-            self.obs_noise_seeds = np.random.randint(10000,size=(da_depth)).squeeze()
-        else:
-            self.obs_noise_seeds = [np.random.randint(10000)]
-
+        self.gen_obs_noise()
 
         ############################################
         # Parameters for LETKF subdomain size
@@ -107,6 +97,19 @@ class da_params(object):
             'rhoX' : 0,
             'p2_nodes' : 2,
         }
+
+    def gen_obs_noise(self):
+        for key in self.obs_attributes:
+            self.obs_noise[key] = self._noise_percentage
+
+        da_depth = len(self.obs_attributes)
+
+        # if self.add_obs_noise and da_len > 0:
+        np.random.seed(888)
+        if da_depth > 1:
+            self.obs_noise_seeds = np.random.randint(10000,size=(da_depth)).squeeze()
+        else:
+            self.obs_noise_seeds = [np.random.randint(10000)]
 
     @staticmethod
     def converter(results, N, mpv, elem, node, th, ud):
@@ -221,6 +224,7 @@ class da_params(object):
         self.obs_attributes = lst
         self.obs_noise = {}
         self.noise_percentage = self._noise_percentage
+        self.gen_obs_noise()
         # setattr(self,self.noise_percentage,self._noise_percentage)
 
     
