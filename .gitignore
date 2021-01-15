@@ -24,7 +24,7 @@ low_Mach_gravity_psinc/*
 *.ipynb_checkpoints/*
 */.ipynb_checkpoints/*
 *RKLM_Reference/output*
-*.gitignore*
+*archive/*
 *RKLM_Python/build*
 *MatLab*
 *.xcodeproj*
