@@ -56,7 +56,7 @@ Reconstruction
 .. figure:: ./_static/slope_recovery.svg
     :width: 80%
     
-    Recovering the slope limiter for the $i$-th cell.
+    Recovering the limited slope (in red) in the $i$-th cell.
 
 Let's get the missing pieces, say $\Psi^{n+1/2}_{i+1/2}$. First, apply the slope limiter. :numref:`Figure %s <fig_slope_recovery>` shows a simple case where the slope in the $i$-th cell is the average of the slopes constructed from the cell averages (dotted-lines) of the adjacent cells. This is done in :py:meth:`physics.gas_dynamics.recovery.slopes` while :py:meth:`physics.gas_dynamics.recovery.limiters` is a switch for the limiter choice specified in the initial coonditions. The limited slope of the $i$-th cell is denoted $S_i$. Now,
 
@@ -145,7 +145,7 @@ where $\mathcal{A}_{\text{full}}^{\Delta t}$ is the advection operator. Splittin
     
 recalling that the Strang splitting is a second-order operator splitting method. The Strang-splitting is computed in :py:meth:`physics.gas_dynamics.explicit.advect` which calls :py:meth:`physics.gas_dynamics.explicit.explicit_step_and_flux` for each substep.
 
-More details on the methods discussed here can be found in [LeVeque]_. 
+More details on the methods discussed here can be found in [LeVeque92]_. 
 
     
     
@@ -155,4 +155,4 @@ References
 
 .. [BK19] Benacchio, T., and R. Klein, 2019: A semi-implicit compressible model for atmospheric flows with seamless access to soundproof and hydro-static dynamics. *Monthly Weather Review*, **147** (**11**), 4221–4240.
 
-.. [LeVeque] LeVeque, R.J., 1992: Numerical methods for conservation laws. Basel: Birkhäuser.
+.. [LeVeque92] LeVeque, R.J., 1992: Numerical methods for conservation laws. Basel: Birkhäuser.

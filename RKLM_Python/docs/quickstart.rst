@@ -46,8 +46,8 @@ This creates a directory to store the simulation outputs for the 2D Euler vortex
 
 Now, `cd` to the `RKLM_Python` directory. From here, there are three ways to start a simulation.
 
-From the command line
-~~~~~~~~~~~~~~~~~~~~~
+From command line
+~~~~~~~~~~~~~~~~~
 To run the code from the command line::
 
    $ python3 ./__main__.py -ic tv
@@ -128,7 +128,7 @@ The attribute `N` in the driver files sets the ensemble size.
 
 Data assimilation
 ~~~~~~~~~~~~~~~~~
-Data assimilation only works for ensemble simulations, `N>1`. :py:class:`da_params` in :py:mod:`data_assimilation.params` defines the data assimilation parameters. To run an experiment with data assimilation, you will minimally need to specify the following attributes in :py:class:`da_params`, 
+Data assimilation only works for ensemble simulations, `N>1`. The data assimilation algorithm is the local ensemble transform Kalman filter (LETKF) detailed in [HKS07]_. :py:class:`da_params` in :py:mod:`data_assimilation.params` defines the data assimilation parameters. To run an experiment with data assimilation, you will minimally need to specify the following attributes in :py:class:`da_params`, 
 
 1. :py:attr:`data_assimilation.params.da_params.da_times` - time points to do data assimilation
 2. :py:attr:`data_assimilation.params.da_params.obs_attributes` - the quantities to assimilate
@@ -228,3 +228,4 @@ References
 
 .. [BK19] Benacchio, T., and R. Klein, 2019: A semi-implicit compressible model for atmospheric flows with seamless access to soundproof and hydro-static dynamics. *Monthly Weather Review*, **147** (**11**), 4221–4240.
 
+.. [HKS07] Hunt, B. R., E. J. Kostelich, and I. Szunyogh, 2007: Efficient dataassimilation for spatiotemporal chaos: A local ensemble transformKalman filter.Physica D: Nonlinear Phenomena,230 (1-2), 112–126.
