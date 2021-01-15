@@ -40,7 +40,7 @@ rp = rp()
 # results.
 #
 ##########################################
-gen_6b1 = False
+gen_6b1 = True
 gen_6b2 = False
 # generate obs and truth for section 6c
 gen_6c_obs_truth = False
@@ -54,7 +54,7 @@ gen_6c_euler_momenta = False
 # generate Euler ensemble simulations for
 # section 6c with assimilation of all
 # fields
-gen_6c_euler_full = True
+gen_6c_euler_full = False
 
 # specify where the output directories are
 path_to_obs = '/srv/public/ray/'
@@ -464,7 +464,7 @@ if gen_6b1:
     # compressible run with blending in the
     # initial time-step
     ud = {
-        'aux' : 'comp_bal',
+        'aux' : 'comp_imbal',
         'initial_blending' : True,
         'tout' : tout
     }
@@ -519,7 +519,7 @@ if gen_6b1:
     # compressible run with blending in the
     # initial time-step
     ud = {
-        'aux' : 'comp_bal',
+        'aux' : 'comp_imbal',
         'initial_blending' : True,
         'tout' : tout
     }
@@ -528,3 +528,6 @@ if gen_6b1:
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
     rp.queue_run()
+
+
+print("results_gen.py completed")

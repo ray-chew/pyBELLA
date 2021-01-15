@@ -372,8 +372,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
     # set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
-    # Sol.rhoY[...] = 1.0
-    # mpv.p2_nodes[...] = 0.0
+    if 'imbal' in ud.aux:
+        Sol.rhoY[...] = 1.0
+        mpv.p2_nodes[...] = 0.0
 
     # from scipy import signal
     # p2n = mpv.p2_nodes - mpv.p2_nodes.mean()
