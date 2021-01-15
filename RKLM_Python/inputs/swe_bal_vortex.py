@@ -346,9 +346,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     mpv.p2_nodes[2:-2,2:-2,2:-2] -= mpv.p2_nodes[2:-2,2:-2,2:-2].mean(axis=(0,2),keepdims=True)
 
     # Add imbalance?
-    # mpv.p2_nodes[...] = 1.0
-    # Sol.rho[...] = 1.0
-    # Sol.rhoY[...] = 1.0
+    if 'imbal' in ud.aux:
+        mpv.p2_nodes[...] = 1.0
+        Sol.rho[...] = 1.0
+        Sol.rhoY[...] = 1.0
 
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
