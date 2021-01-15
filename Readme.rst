@@ -25,13 +25,13 @@ While RKLM-Py code has been tested to work with these package versions, other ve
 
 If you have Anaconda installed, you may setup a virtual enviroment::
 
-   conda create --name <env name> --file requirement.txt
+   $ conda create --name <env name> --file requirement.txt
     
 Getting RKLM-Py
 ---------------
 Having installed the required packages, clone the RKLM-Py repository. If you have SSH access::
 
-   git@git.imp.fu-berlin.de:raychew/RKLM_Reference.git
+   $ git clone git@git.imp.fu-berlin.de:raychew/RKLM_Reference.git
 
 Note that the latest stable branch is `develop`.
 
@@ -40,7 +40,7 @@ Running the flow solver
 -----------------------
 By default, the simulation outputs are saved to folders `./output_<test_case>`. Therefore, at the top directory of the cloned repository::
 
-    mkdir output_travelling_vortex
+    $ mkdir output_travelling_vortex
     
 This creates a directory to store the simulation outputs for the 2D Euler vortex experiment, which is used as an illustration in this documentation.
 
@@ -50,7 +50,7 @@ From the command line
 ~~~~~~~~~~~~~~~~~~~~~
 To run the code from the command line::
 
-   python3 ./__main__.py -ic tv
+   $ python3 ./__main__.py -ic tv
    
 The argument `-ic tv` runs the 2D Euler vortex experiment and outputs the results to the folder created above.
 
@@ -58,7 +58,7 @@ With run.py
 ~~~~~~~~~~~
 `run.py` is a driver script used to run the program. Edit the attributes of the class `run_params` then run the file with::
 
-   python3 ./run.py
+   $ python3 ./run.py
 
 With queue_run.py
 ~~~~~~~~~~~~~~~~~
@@ -92,13 +92,12 @@ With queue_run.py
 
 In this case, all initial parameters will remain the same between the two simulations, apart from `is_compressible` and `aux`. The former toggles compressibility and the latter specifies the tag used in generating the output filename. Running the script is then::
 
-   python3 ./queue_run.py
+   $ python3 ./queue_run.py
 
 
 Further examples
 ----------------
 Brief introduction to more specify use cases of RKLM-Py is in this section.
-
 
 Changing the initial conditions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -107,12 +106,23 @@ Input files specifying the initial conditions are in the `inputs` module. For th
 .. todo::
 
    Link to article on UserData.
+   
+Compiling the documentation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+RKLM-Py has an accompanying documentation detailing the mathematical background and discretisation details for the numerical scheme as well as APIs for the code. The documentation is created with `Sphinx <https://www.sphinx-doc.org/en/master/>`_. To compile the documentation from the top directory of the repository,::
+
+   $ cd ./RKLM_Python/docs/
+   $ make html
+
+.. attention::
+
+    The documentation is work in progress and is largely incomplete.
 
 Ensemble simulation
 ~~~~~~~~~~~~~~~~~~~
 The optional argument `[-N <ensemble size>]` toggles ensemble simulation. This command runs an ensemble simulation for the 2D Euler vortex experiment with an ensemble size of 10 members::
 
-   python3 ./__main__.py -ic tv -N 10
+   $ python3 ./__main__.py -ic tv -N 10
    
 The attribute `N` in the driver files sets the ensemble size.
 
