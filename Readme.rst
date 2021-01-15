@@ -1,6 +1,6 @@
 Quickstart
 ==========
-This is a brief introduction on how to use the RKLM-Py code. By the end of this document, you should
+This is a brief introduction on how to use the RKLM-Py code based on [BK19]_. By the end of this document, you should
 
 1. have installed the dependencies necessary to run RKLM-Py,
 2. have ran a test simulation, and
@@ -25,7 +25,7 @@ While RKLM-Py code has been tested to work with these package versions, other ve
 
 If you have Anaconda installed, you may setup a virtual enviroment::
 
-   $ conda create --name <env name> --file requirement.txt
+   $ conda create --name <env name> --file requirements.txt
     
 Getting RKLM-Py
 ---------------
@@ -97,7 +97,7 @@ In this case, all initial parameters will remain the same between the two simula
 
 Further examples
 ----------------
-Brief introduction to more specify use cases of RKLM-Py is in this section.
+Brief introduction to more specifc use cases of RKLM-Py is in this section.
 
 Changing the initial conditions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -222,3 +222,9 @@ RKLM-Py comes with some tools that aid in the visualisation and analysis of the 
 
     # save a pdf output
     pl.save_fig('first_results')
+    
+References
+----------
+
+.. [BK19] Benacchio, T., and R. Klein, 2019: A semi-implicit compressible model for atmospheric flows with seamless access to soundproof and hydro-static dynamics. *Monthly Weather Review*, **147** (**11**), 4221–4240.
+
