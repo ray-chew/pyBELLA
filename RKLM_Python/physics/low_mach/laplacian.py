@@ -200,12 +200,12 @@ def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_per
     return lap
 
 
-def stencil_27pt(elem,node,mpv,ud,diag_inv):
+def stencil_32pt(elem,node,mpv,ud,diag_inv,dt):
     oodxyz = node.dxyz
     oodxyz = 1./(oodxyz**2)
     oodx2, oody2, oodz2 = oodxyz[0], oodxyz[1], oodxyz[2]
+    odx, odz = 1./node.dx, 1./node.dz
 
-    # print(oodxyz)
     i0 = (slice(0,-1),slice(0,-1),slice(0,-1))
     i1 = (slice(1,-1),slice(1,-1),slice(1,-1))
     i2 = (slice(2,-2),slice(2,-2),slice(2,-2))
@@ -215,59 +215,26 @@ def stencil_27pt(elem,node,mpv,ud,diag_inv):
     for dim in range(ndim):
         periodicity[dim] = ud.bdry_type[dim] == BdryType.PERIODIC
 
-    # kernel_x = np.ones((1,2,2))
-    # kernel_y = np.ones((2,1,2))
-    # kernel_z = np.ones((2,2,1))
-
     hplusx = mpv.wplus[0][i0][i1]
     hplusy = mpv.wplus[1][i0][i1]
     hplusz = mpv.wplus[2][i0][i1]
 
-    # print(hplusx[:,0,:],hplusx[:,-1,:])
-
-    # hplusx = signal.fftconvolve(hplusx,kernel_x,mode='valid')
-    # hplusy = signal.fftconvolve(hplusy,kernel_y,mode='valid')
-    # hplusz = signal.fftconvolve(hplusz,kernel_z,mode='valid')
-
-    # generalise to support wall along any axis, and not just the y-axis.
-    # hplusx[:,0,:],hplusx[:,-1,:] = 0.0, 0.0
-    # hplusy[:,0,:],hplusy[:,-1,:] = 0.0, 0.0
-    # hplusz[:,0,:],hplusz[:,-1,:] = 0.0, 0.0
-
-    # print(hplusx.shape, hplusy.shape, hplusz.shape)
-
     hcenter = mpv.wcenter[i2]
     diag_inv = diag_inv[i1]
 
-    return lambda p : lap3D(p, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity, diag_inv)
-    # return lambda p : lap3D(p)
+    corrf = dt * ud.coriolis_strength[0]
 
-@nb.jit(nopython=True, cache=True)
-# def lap3D(p0):
-def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity, diag_inv):
-    # p = p0.reshape(shp[0],shp[1],shp[2])
-    # p = p0.reshape(hcenter.shape)
+    return lambda p : lap3D(p, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity, diag_inv, corrf, odx, odz)
+
+@nb.jit(nopython=True, cache=True, nogil=True)
+def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity, diag_inv, corrf, odx, odz):
     shx, shy, shz = hcenter.shape
-    # p = p0.reshape(shx+2,shy+2,shz+2)
     p = p0.reshape(shz+2,shy+2,shx+2)
-    # p = p0.reshape(66,34,66)
 
     coeff = 1./16
-    # hplusx, hplusy, hplusz = 1.0, 1.0, 1.0
-    # hcenter = 1.0
-    # oodx2, oody2, oodz2 = 1.0, 1.0, 1.0
     lap = np.zeros_like(p)
-
-    lefts = [(slice(0,-1),slice(0,None),slice(0,None)),
-             (slice(0,None,),slice(0,-1),slice(0,None)),
-             (slice(0,None,),slice(0,None),slice(0,-1))
-            ]
     
-    rights = [(slice(1,None),slice(0,None),slice(0,None)),
-              (slice(0,None),slice(1,None),slice(0,None)),
-              (slice(0,None),slice(0,None),slice(1,None))
-             ]
-    
+    # cut out four cubes from the 3d array corresponding to the nodes... in each axial direction.
     toplefts = [(slice(0,None),slice(0,-1),slice(0,-1)),
                 (slice(0,-1),slice(0,None),slice(0,-1)),
                 (slice(0,-1),slice(0,-1),slice(0,None))
@@ -286,7 +253,6 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
                  (slice(1,None),slice(1,None),slice(0,None))
                 ]
 
-    corners = [toplefts,toprights,botlefts,botrights]
     cnt = 0
     for bc in periodicity:
         if bc == True and cnt == 0:
@@ -295,27 +261,51 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
             p[-1,:,:] = p[2,:,:]
             p[1,:,:] = p[-2,:,:]
             p[-2,:,:] = tmp
-        elif bc == True and cnt == 2:
+        elif bc == False and cnt == 0:
+            hplusx[0,:,:] = 0.0
+            hplusx[-1,:,:] = 0.0
+            hplusy[0,:,:] = 0.0
+            hplusy[-1,:,:] = 0.0
+            hplusz[0,:,:] = 0.0
+            hplusz[-1,:,:] = 0.0
+        if bc == True and cnt == 1:
+            tmp = p[:,1,:]
+            p[:,0,:] = p[:,-3,:]
+            p[:,-1,:] = p[:,2,:]
+            p[:,1,:] = p[:,-2,:]
+            p[:,-2,:] = tmp
+        elif bc == False and cnt == 1:
+            hplusx[:,0,:] = 0.0
+            hplusx[:,-1,:] = 0.0
+            hplusy[:,0,:] = 0.0
+            hplusy[:,-1,:] = 0.0
+            hplusz[:,0,:] = 0.0
+            hplusz[:,-1,:] = 0.0
+        if bc == True and cnt == 2:
             tmp = p[:,:,1]
             p[:,:,0] = p[:,:,-3]
             p[:,:,-1] = p[:,:,2]
             p[:,:,1] = p[:,:,-2]
             p[:,:,-2] = tmp
+        elif bc == False and cnt ==2:
+            hplusx[:,:,0] = 0.0
+            hplusx[:,:,-1] = 0.0
+            hplusy[:,:,0] = 0.0
+            hplusy[:,:,-1] = 0.0
+            hplusz[:,:,0] = 0.0
+            hplusz[:,:,-1] = 0.0
         cnt += 1
-    
-    # pinner = p[1:-1,1:-1,:]
+
     leftz = p[:,:,:-1]
     rightz = p[:,:,1:]
     
     z_fluxes = (rightz - leftz)
 
-    # pinner = p[1:-1,:,1:-1]
     lefty = p[:,:-1,:]
     righty = p[:,1:,:]
 
     y_fluxes = (righty - lefty)
 
-    # pinner = p[:,1:-1,1:-1]
     leftx = p[:-1,:,:]
     rightx = p[1:,:,:]
 
@@ -324,6 +314,18 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
     x_flx = x_fluxes[toplefts[0]] + x_fluxes[toprights[0]] + x_fluxes[botlefts[0]] + x_fluxes[botrights[0]]
     y_flx = y_fluxes[toplefts[1]] + y_fluxes[toprights[1]] + y_fluxes[botlefts[1]] + y_fluxes[botrights[1]]
     z_flx = z_fluxes[toplefts[2]] + z_fluxes[toprights[2]] + z_fluxes[botlefts[2]] + z_fluxes[botrights[2]]
+
+    hxzp = hplusx * z_flx
+    hxzpm = hxzp[:-1,:,:]
+    hxzpm = hxzpm[toplefts[0]] + hxzpm[toprights[0]] + hxzpm[botlefts[0]] + hxzpm[botrights[0]]
+    hxzpp = hxzp[1:,:,:]
+    hxzpp = hxzpp[toplefts[0]] + hxzpp[toprights[0]] + hxzpp[botlefts[0]] + hxzpp[botrights[0]]
+
+    hzxp = hplusz * x_flx
+    hzxpm = hzxp[:,:,:-1]
+    hzxpm = hzxpm[toplefts[2]] + hzxpm[toprights[2]] + hzxpm[botlefts[2]] + hzxpm[botrights[2]]
+    hzxpp = hzxp[:,:,1:]
+    hzxpp = hzxpp[toplefts[2]] + hzxpp[toprights[2]] + hzxpp[botlefts[2]] + hzxpp[botrights[2]]
 
     x_flx = hplusx * x_flx
     x_flxm = x_flx[:-1,:,:]
@@ -346,16 +348,138 @@ def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity,
     lap[1:-1,1:-1,1:-1] = oodx2 * coeff * (-x_flxm + x_flxp) + \
                           oody2 * coeff * (-y_flxm + y_flxp) + \
                           oodz2 * coeff * (-z_flxm + z_flxp) + \
+                          +1.0 * odx * odz * coeff * corrf * (hxzpp - hxzpm) + \
+                          -1.0 * odx * odz * coeff * corrf * (hzxpp - hzxpm) + \
                           hcenter * p[1:-1,1:-1,1:-1]
-
-    # lap[1:-1,1:-1,1:-1] = oodx2 * coeff * (-(hplusx[:,:,:-1] * x_fluxes[:,:,:-1]) + (hplusx[:,:,1:] * x_fluxes[:,:,1:])) \
-    #     + oody2 * coeff * (-(hplusy[:,:-1,:] * y_fluxes[:,:-1,:]) + (hplusy[:,1:,:] * y_fluxes[:,1:,:])) \
-    #     + oodz2 * coeff * (-(hplusx[:-1,:,:] * z_fluxes[:-1,:,:]) + (hplusx[1:,:,:] * z_fluxes[1:,:,:])) \
-    #     + hcenter * p[1:-1,1:-1,1:-1]
 
     lap = lap * diag_inv
 
     return lap
+
+
+
+def stencil_hs(elem,node,mpv,ud,diag_inv,dt):
+    oodx2 = 1./node.dx**2
+    oodz2 = 1./node.dz**2
+    odx, odz = 1./node.dx, 1./node.dz
+    igy = elem.igs[1]
+
+    proj = (slice(None,),igy,slice(None,))
+    i0 = (slice(0,-1),slice(0,-1))
+    i1 = (slice(1,-1),slice(1,-1))
+    i2 = (slice(2,-2),slice(2,-2))
+
+    ndim = elem.ndim
+    periodicity = np.empty(ndim, dtype='int')
+    for dim in range(0,ndim,2):
+        periodicity[dim] = ud.bdry_type[dim] == BdryType.PERIODIC
+
+    hplusx = mpv.wplus[0][proj][i0][i1]
+    hplusz = mpv.wplus[2][proj][i0][i1]
+    hcenter = mpv.wcenter[proj][i2]
+    diag_inv = diag_inv[proj][i1]
+
+    corrf = dt * ud.coriolis_strength[0]
+
+    return lambda p : lapHS(p, hplusx, hplusz, hcenter, oodx2, oodz2, periodicity, diag_inv, corrf, odx, odz)
+
+
+@nb.jit(nopython=True, cache=True, nogil=True)
+def lapHS(p0, hplusx, hplusz, hcenter, oodx2, oodz2, periodicity, diag_inv, corrf, odx, odz):
+    shx, shz = hcenter.shape
+    p = p0.reshape(shx+2,shz+2)
+
+    coeff = 1./4
+    lap = np.zeros_like(p)
+    
+    cnt = 0
+    for bc in periodicity:
+        if bc == True and cnt == 0:
+            tmp = p[1,:]
+            p[0,:] = p[-3,:]
+            p[-1,:] = p[2,:]
+            p[1,:] = p[-2,:]
+            p[-2,:] = tmp
+
+            # p[0,:] = p[-4,:]
+            # p[-1,:] = p[3,:]
+            # p[1,:] = p[-3,:]
+            # p[-2,:] = p[2,:]
+        elif bc == False and cnt == 0:
+            hplusx[0,:] = 0.0
+            hplusx[-1,:] = 0.0
+            hplusz[0,:] = 0.0
+            hplusz[-1,:] = 0.0
+        if bc == True and cnt == 2:
+            tmp = p[:,1]
+            p[:,0] = p[:,-3]
+            p[:,-1] = p[:,2]
+            p[:,1] = p[:,-2]
+            p[:,-2] = tmp
+            # p[:,0] = p[:,-4]
+            # p[:,-1] = p[:,3]
+            # p[:,1] = p[:,-3]
+            # p[:,-2] = p[:,2]
+        elif bc == False and cnt == 2:
+            hplusx[:,0] = 0.0
+            hplusx[:,-1] = 0.0
+            hplusz[:,0] = 0.0
+            hplusz[:,-1] = 0.0
+        cnt += 1
+    
+    leftz = p[:,:-1]
+    rightz = p[:,1:]
+    
+    z_fluxes = (rightz - leftz)
+
+    leftx = p[:-1,:]
+    rightx = p[1:,:]
+
+    x_fluxes = (rightx - leftx)
+
+    x_flx = x_fluxes[:,:-1] + x_fluxes[:,1:]
+    z_flx = z_fluxes[:-1,:] + z_fluxes[1:,:]
+
+    hxzp = hplusx * z_flx
+    hxzpm = hxzp[:-1,:]
+    hxzpm = hxzpm[:,:-1] + hxzpm[:,1:]
+    # hxzpm = hxzpm[:-1,:] + hxzpm[1:,:]
+    hxzpp = hxzp[1:,:]
+    hxzpp = hxzpp[:,:-1] + hxzpp[:,1:]
+    # hxzpp = hxzpp[:-1,:] + hxzpp[1:,:]
+
+    hzxp = hplusz * x_flx
+    hzxpm = hzxp[:,:-1]
+    hzxpm = hzxpm[:-1,:] + hzxpm[1:,:]
+    # hzxpm = hzxpm[:,:-1] + hzxpm[:,1:]
+    hzxpp = hzxp[:,1:]
+    hzxpp = hzxpp[:-1,:] + hzxpp[1:,:]
+    # hzxpp = hzxpp[:,:-1] + hzxpp[:,1:]
+
+    x_flx = hplusx * x_flx
+    x_flxm = x_flx[:-1,:]
+    x_flxm = x_flxm[:,:-1] + x_flxm[:,1:]
+    x_flxp = x_flx[1:,:]
+    x_flxp = x_flxp[:,:-1] + x_flxp[:,1:]
+
+    z_flx = hplusz * z_flx
+    z_flxm = z_flx[:,:-1]
+    z_flxm = z_flxm[:-1,:] + z_flxm[1:,:]
+    z_flxp = z_flx[:,1:]
+    z_flxp = z_flxp[:-1,:] + z_flxp[1:,:]
+
+    lap[1:-1,1:-1] = oodx2 * coeff * (-x_flxm + x_flxp) + \
+                     oodz2 * coeff * (-z_flxm + z_flxp) + \
+                     +1.0 * odx * odz * coeff * corrf * (hxzpp - hxzpm) + \
+                     -1.0 * odx * odz * coeff * corrf * (hzxpp - hzxpm) + \
+                     hcenter * p[1:-1,1:-1]
+
+    lap = lap * diag_inv
+
+    return lap
+
+
+
 
 def precon_diag_prepare(mpv, elem, node, ud):
     dx, dy, dz = node.dx, node.dy, node.dz
@@ -412,6 +536,9 @@ def precon_diag_prepare(mpv, elem, node, ud):
     diag[idx_n] = 1.0 / diag[idx_n]
 
     return diag
+
+
+
 
 
 def stencil_3pt(elem,node,ud):

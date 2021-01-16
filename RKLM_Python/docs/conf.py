@@ -12,15 +12,17 @@
 #
 import os
 import sys
-sys.path.insert(0, '/home/ray/git-projects/RKLM_Reference/RKLM_Python/')
+#sys.path.insert(0, '/home/ray/git-projects/RKLM_Reference/RKLM_Python/')
+sys.path.insert(0, os.path.abspath('..'))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'RKLM_Python'
-copyright = '2019, Author'
+project = 'RKLM-Py'
+copyright = '2021, Author'
 author = 'Author'
 numfig = True
+master_doc = 'index'
 
 
 # -- General configuration ---------------------------------------------------
@@ -30,11 +32,22 @@ numfig = True
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    #'sphinx.ext.viewcode',
+    'sphinx.ext.viewcode',
     'sphinx.ext.todo',
     'sphinx.ext.napoleon',
-    'sphinx.ext.imgconverter'
+    'sphinxcontrib.inkscapeconverter',
+    'sphinx_math_dollar',
+    'sphinx.ext.mathjax'
+    #'sphinx_rtd_theme'
 ]
+
+# see details: https://www.sympy.org/sphinx-math-dollar/
+mathjax_config = {
+    'tex2jax': {
+        'inlineMath': [ ["\\(","\\)"] ],
+        'displayMath': [["\\[","\\]"] ],
+    },
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -51,23 +64,29 @@ language = 'en'
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
+default_role = 'code'
 
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-import wild_sphinx_theme
-html_theme = 'wild'
-html_theme_path = [wild_sphinx_theme.get_theme_dir()]
+html_title = "RKLM-Py documentation"
+html_short_title = "RKLM-Py"
+#import wild_sphinx_theme
+#html_theme = 'wild'
+#html_theme_path = [wild_sphinx_theme.get_theme_dir()]
 #import sphinx_rtd_theme
 #extensions = ["sphinx_rtd_theme"]
 #html_theme = "sphinx_rtd_theme"
+html_theme = "furo"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+html_css_files = ['css/overwrite.css']
+
 autoclass_content = 'both'
 
 

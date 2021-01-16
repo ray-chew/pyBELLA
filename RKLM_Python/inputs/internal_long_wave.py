@@ -1,8 +1,6 @@
 import numpy as np
 from inputs.enum_bdry import BdryType
 from management.enumerator import TimeIntegrator, MolecularTransport,HillShapes, BottomBC, LimiterType, RecoveryOrder
-# from discretization.time_discretization import SetTimeIntegratorParameters
-# from physics.gas_dynamics.explicit import TimeIntegratorParams
 from physics.hydrostatics import hydrostatic_state, hydrostatic_column, hydrostatic_initial_pressure
 from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
 from management.variable import States
@@ -35,7 +33,7 @@ class UserData(object):
     Nsq_ref = 1.0e-4
 
     # planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0;
-    scale_factor = 1.0
+    scale_factor = 160.0
     # scale_factor = 3.41333333333 # 1024
     # scale_factor = 4.01333333333
 
@@ -94,8 +92,6 @@ class UserData(object):
 
         self.xmin = -15.0 * self.scale_factor
         self.xmax =  15.0 * self.scale_factor
-        # self.xmin = -60.2
-        # self.xmax = 60.2
         self.ymin =   0.0
         self.ymax =   1.0
         self.zmin = - 1.0
@@ -157,23 +153,9 @@ class UserData(object):
         self.kY = 1.4
         self.kZ = 1.4
 
-        self.ncache = 154
-
-        tol = 1.e-11 if self.is_compressible == 0 else 1.e-11 * 0.01
-
-        self.flux_correction_precision = tol
-        self.flux_correction_local_precision = tol
-        self.second_projection_precision = tol
-        self.second_projection_local_precision = tol
-        self.flux_correction_max_iterations = 6000
-        self.second_projection_max_iterations = 6000
-
         self.initial_projection = False
-        self.initial_impl_Euler = False
-
         self.column_preconditionr = True
         self.synchronize_nodal_pressure = False
-        self.synchronize_weight = 1.0
 
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
@@ -192,17 +174,15 @@ class UserData(object):
         self.stepmax = 100000
         # self.stepmax = 10
 
-        self.continuous_blending = False
-        self.no_of_pi_initial = 0
+        self.blending_weight = 8./16
+        self.blending_mean = 'rhoY' # 1.0, rhoY
+        self.blending_conv = 'rho' #theta, rho
+
+        self.continuous_blending = True
+        self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
-
-        self.write_stdout = True
-        self.write_stdout_period = 1
-        self.write_file = True
-        self.write_file_period = 30
-        self.file_format = 'HDF'
 
         self.output_base_name = "_internal_long_wave"
         
@@ -226,6 +206,10 @@ class UserData(object):
             self.output_suffix = "_%i_%i_%.1f_planetary" %(self.inx-1,self.iny-1, self.tout[-1])
         else:
             assert(0, "scale factor unsupported")
+
+        self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))
+
+        # self.output_suffix += '_psinc_debug'
 
         self.stratification = self.stratification_function
         self.molly = self.molly_function
@@ -261,8 +245,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     a = ud.scale_factor * 5.0e+3 / ud.h_ref
 
     hydrostatic_state(mpv, elem, node, th, ud)
-    
-    # print(mpv.HydroState_n.p20[0][:10])
 
     HySt = States(node.sc,ud)
     HyStn = States(node.sc,ud)
@@ -271,17 +253,14 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     y = elem.y.reshape(1,-1)
 
     Y = ud.stratification(y) + delth * ud.molly(x) * np.sin(np.pi * y) / (1.0 + (x-xc)**2 / (a**2))
-    # Y = ud.stratification(y) + delth * np.sin(np.pi * y) / (1.0 + (x-xc)**2 / (a**2))
 
     xn = node.x[:-1].reshape(-1,1)
     yn = node.y[:-1].reshape(1,-1)
 
     Yn = ud.stratification(yn) + delth * ud.molly(xn) * np.sin(np.pi * yn) / (1.0 + (xn-xc)**2 / (a**2))
-    # Yn = ud.stratification(yn) + delth * np.sin(np.pi * yn) / (1.0 + (xn-xc)**2 / (a**2))
 
     hydrostatic_column(HySt, HyStn, Y, Yn, elem, node, th, ud)
-    # print('mpv.HydroState_n.Y0 = ', mpv.HydroState_n.Y0[0])
-    # print('HyStn = ', HyStn.Y0[0])
+
     x_idx = slice(None)
     y_idx = slice(elem.igy,-elem.igy+1)
     xc_idx = slice(0,-1)
@@ -293,8 +272,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         p = HySt.p0[:,y_idx][c_idx]
         rhoY = HySt.rhoY0[:,y_idx][c_idx]
     else:
-        p = mpv.HydroState.p0[0][y_idx]
-        rhoY = mpv.HydroState.rhoY0[0][y_idx]
+        p = mpv.HydroState.p0[y_idx]
+        rhoY = mpv.HydroState.rhoY0[y_idx]
 
     rho = rhoY / Y[:,y_idx]
     Sol.rho[x_idx,y_idx] = rho
@@ -305,20 +284,15 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Sol.rhoY[x_idx,y_idx] = rhoY
 
     mpv.p2_cells[x_idx,y_idx] = HySt.p20[x_idx,y_idx][c_idx]
-    # mpv.p2_cells[x_idx,y_idx] -= mpv.HydroState.p20[0,y_idx]
-    # print(mpv.p2_cells[x_idx,y_idx] - mpv.HydroState.p20[0,y_idx])
-    # print(mpv.p2_cells[0])
 
     Sol.rhoX[x_idx,y_idx] = Sol.rho[x_idx,y_idx] * (1.0 / Y[:, y_idx] - mpv.HydroState.S0[y_idx])
 
     mpv.p2_nodes[:,elem.igy:-elem.igy] = HyStn.p20[:,elem.igy:-elem.igy]
 
     hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th)
-    # print(mpv.p2_nodes[103,:10])
+
     ud.nonhydrostasy = 1.0 if ud.is_nonhydrostatic == 1 else 0.0
     ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
-    # ud.is_nonhydrostasy = 0.0
-    # ud.compressibility = 0.0
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 

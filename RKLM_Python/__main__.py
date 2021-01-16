@@ -1,52 +1,60 @@
 import numpy as np
-import sys
 
 # dependencies of the atmospheric flow solver
 from management.data import data_init, time_update
 from inputs.boundary import set_explicit_boundary_data
+from inputs.boundary import set_ghostnodes_p2
 from management.variable import States, Vars
-from physics.gas_dynamics.thermodynamic import ThemodynamicInit
+from physics.gas_dynamics.thermodynamic import ThermodynamicInit
 from physics.gas_dynamics.eos import nonhydrostasy, compressibility, is_compressible, is_nonhydrostatic
 from physics.gas_dynamics.gas_dynamics import dynamic_timestep
 from physics.low_mach.mpv import MPV, acoustic_order
+from physics.hydrostatics import hydrostatic_state
 
 # dependencies of the parallelisation by dask
 from dask.distributed import Client, progress
 
 # dependencies of the data assimilation module
 from data_assimilation.params import da_params
-from data_assimilation.utils import ensemble, sliding_window_view, ensemble_inflation
-from data_assimilation.letkf import da_interface, bin_func
+from data_assimilation.utils import ensemble, sliding_window_view, ensemble_inflation, set_p2_nodes, set_rhoY_cells, HSprojector_2t3D, HSprojector_3t2D, sparse_obs_selector, obs_noiser
+from data_assimilation.letkf import da_interface, bin_func, prepare_rloc
 from data_assimilation.letkf import analysis as letkf_analysis
 from data_assimilation import etpf
 from data_assimilation import blending
+from data_assimilation import post_processing
 from scipy import sparse
 
-# input file
-# from inputs.baroclinic_instability_periodic import UserData, sol_init
-from inputs.travelling_vortex_3D import UserData, sol_init
-# from inputs.acoustic_wave_high import UserData, sol_init
-# from inputs.internal_long_wave import UserData, sol_init
-# from inputs.rising_bubble import UserData, sol_init
+# input file, uncomment to run
 from inputs.user_data import UserDataInit
-from management.io import io
+from management.io import io, get_args, sim_restart, fn_gen
 import h5py
 
-# some diagnostics and 
+# some diagnostics
 from copy import deepcopy
 from management.debug import find_nearest
 from time import time
-
+from termcolor import colored
 
 debug = False
+da_debug = True
+output_timesteps = False
+if debug == True: output_timesteps = True
 label_type = 'TIME'
 np.set_printoptions(precision=18)
 
 step = 0
 t = 0.0
 
+##########################################################
+# Initialisation of data containers and helper classes
+##########################################################
+# get arguments for initial condition and ensemble size
+N, UserData, sol_init, restart, ud_rewrite, dap_rewrite, r_params = get_args()
+if N == 1: da_debug = False
+
 initial_data = vars(UserData())
 ud = UserDataInit(**initial_data)
+if ud_rewrite is not None: ud.update_ud(ud_rewrite)
 
 elem, node = data_init(ud)
 
@@ -59,302 +67,276 @@ if elem.ndim > 1:
 if elem.ndim > 2:
     flux[2] = States(elem.sfz, ud)
 
-th = ThemodynamicInit(ud)
-
+th = ThermodynamicInit(ud)
 mpv = MPV(elem, node, ud)
-
 bld = blending.Blend(ud)
 
-# dt_factor = 0.5 if ud.initial_impl_Euler == True else 1.0
-
-# Baroclinic IC test code snippet
-# Sol = sol_init(Sol, mpv, elem, node, th, ud)
-# writer = io(ud)
-# writer.write_all(Sol,mpv,elem,node,th,'000_ic')
+print("Input file is%s" %ud.output_base_name.replace('_',' '))
 
 ##########################################################
-# Data Assimilation part
-N = 1
-da_parameters = da_params(N,)
-da_type = da_parameters.da_type
-aprior_error_covar = da_parameters.aprior_error_covar
-localisation_matrix = da_parameters.localisation_matrix
-inflation_factor = da_parameters.inflation_factor
-rejuvenation_factor = da_parameters.rejuvenation_factor
-# attributes = ['rho', 'rhou', 'rhov','rhow','rhoY','rhoX']
-attributes = ['rho','rhou','rhov']
+# Initialisation of data assimilation module
+##########################################################
 
-sampler = da_parameters.sampler_none()
-if N > 1:
-    None
-    # sampler = da_parameters.sampler_perturbator(5)
-    # sampler = da_parameters.sampler_gaussian(aprior_error_covar)
+# possible da_types:
+# 1) batch_obs for the LETKF with batch observations
+# 2) rloc for LETKF with grid-point localisation
+# 3) etpf for the ETPF algorithm
+dap = da_params(N, da_type='rloc')
+if dap_rewrite is not None: dap.update_dap(dap_rewrite)
 
-print("Generating initial ensemble...")
+# if elem.ndim == 2:
+if dap.da_type == 'rloc':
+    rloc = prepare_rloc(ud, elem, node, dap, N)
+
+print(colored("Generating initial ensemble...",'yellow'))
 sol_ens = np.zeros((N), dtype=object)
-np.random.seed(555)
-seeds = np.random.randint(10000,size=N) if N > 1 else [None]
-if seeds[0] != None:
+np.random.seed(888)
+seeds = np.random.randint(10000,size=N) if N > 1 else None
+if seeds is not None and restart == False:
     print("Seeds used in generating initial ensemble spread = ", seeds)
     for n in range(N):
         Sol0 = deepcopy(Sol)
         mpv0 = deepcopy(mpv)
         Sol0 = sol_init(Sol0,mpv0,elem,node,th,ud, seed=seeds[n])
-        sol_ens[n] = [Sol0,deepcopy(flux),mpv0,step]
-else:
-    sol_ens = [[sol_init(Sol, mpv, elem, node, th, ud),flux,mpv,step]]
+        sol_ens[n] = [Sol0,deepcopy(flux),mpv0,[-np.inf,step]]
+elif restart == False:
+    sol_ens = [[sol_init(Sol, mpv, elem, node, th, ud),flux,mpv,[-np.inf,step]]]
+elif restart == True:
+    hydrostatic_state(mpv, elem, node, th, ud)
+    ud.old_suffix = np.copy(ud.output_suffix)
+    ud.old_suffix = '_ensemble=%i%s' %(N, ud.old_suffix)
+    Sol0, mpv0, touts = sim_restart(r_params[0], r_params[1], elem, node, ud, Sol, mpv, r_params[2])
+    sol_ens = [[Sol0,flux,mpv0,[-np.inf,step]]]
+    ud.tout = touts[1:]
+    t = touts[0]
+    
 ens = ensemble(sol_ens)
 
-# ens = ensemble()
-# ens.initialise_members([Sol,flux,mpv],N)
-# ens.ensemble_spreading(ens,sampler,attributes)
-
-# assert(0)
-
 ##########################################################
-# Load observations
+# Load data assimilation observations
+##########################################################
+
 # where are my observations?
 if N > 1:
-    # obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_256_256_10.0.h5'
-    obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_6.0_generated.h5'
-    obs_file = h5py.File(obs_path, 'r')
-    #### which attributes do I want to observe?
-    # obs_attributes = ['rho', 'rhou', 'rhov']
-    obs_attributes = da_parameters.obs_attributes
-    # obs_attributes = ['rho', 'rhou', 'rhov']
-    # obs_attributes = ['rhou', 'rhov']
-    # obs_attributes = ['rho']
-    # where in the "solutions" container are they located? 0: Sol, 1: flux, 2: mpv
-    loc = 0
-    #### when were these observations taken?
-    # times = [0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
-    # times = [0.20,0.25,0.30,0.35,0.40,0.45,0.50,0.55,0.60,0.65,0.70,0.75,0.80,0.85,0.90,0.95,1.0]
-    # times = np.linspace(0.2,10.0,99)
-    # times = np.linspace(0.2,10.0,99*2-1)
-    # times = [0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20]
-    # print(obs_file['rho'].keys())
-    # assert(0)
-    # steps = np.arange(0,321,8)
-    # times = steps / 32
-    # times = times[1:]
-    times = np.arange(0.0,6.1,0.25)
-    times = times[1:]
-    # times = [1.0,2.0,3.0,4.0,5.0]
+    obs = dap.load_obs(dap.obs_path)
+    obs_noisy, obs_covar = obs_noiser(obs,dap,rloc)
+    # obs_noisy_interp, obs_mask = sparse_obs_selector(obs_noisy, elem, node, ud, dap)
+    # obs_mask, no calculations where entries are True
+    obs_mask = sparse_obs_selector(obs_noisy, elem, node, ud, dap)
 
-    #### axis 0 stores time series
-    obs = np.empty(len(times), dtype=object)
-    t_cnt = 0
-    for t in times:
-        #### how were these dataset called?
-        label = '_ensemble_mem=0_%.2f_after_full_step' %t
-        #### axis 1 stores the attributes
-        obs[t_cnt] = {}
-        for attribute in obs_attributes:
-            dict_attr = {
-                attribute: obs_file[str(attribute)][str(attribute) + str(label)][:]
-            }
-            obs[t_cnt].update(dict_attr)
-        t_cnt += 1
-    obs = np.array(obs)
-    obs_file.close()
+# add ensemble info to filename
+ud.output_suffix = fn_gen(ud, dap, N)
+# ud.output_suffix = '_ensemble=%i%s' %(N, ud.output_suffix)
 
-# if elem.ndim == 2: 
-#     ud.output_name_comp = ("_ensemble=%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,ud.tout[-1]))
-# if elem.ndim == 3:
-#     ud.output_name_comp = ("_ensemble=%i_%i_%i_%i_%.1f" %(N,elem.icx-2*elem.igx,elem.icy-2*elem.igy,elem.icz-2*elem.igz,ud.tout[-1]))
-# if len(ud.output_suffix) > 0:
-#     ud.output_name_comp += '_' + ud.output_suffix
-ud.output_suffix = '_ensemble=%i%s' %(N, ud.output_suffix)
+# ud.output_suffix = '%s_%s' %(ud.output_suffix, 'nr')
+
 ##########################################################
-# steps = np.zeros((N))
-# assert(0)
-
-
+# Start main looping
+##########################################################
 if __name__ == '__main__':
-    writer = io(ud)
+
+    ######################################################
+    # Initialise writer class for I/O operations
+    ######################################################
+    writer = io(ud,restart)
     writer.write_attrs()
+    wrtr = None
     if N > 1:
-        writer.write_da_attrs(da_parameters)
-    for n in range(N):
+        writer.write_da_attrs(dap)
+    elif output_timesteps == True:
+        wrtr = writer
+    for n in range(N): # write initial ensemble
         Sol = ens.members(ens)[n][0]
         mpv = ens.members(ens)[n][2]
         if label_type == 'STEP':
             label = ('ensemble_mem=%i_%.3d' %(n,step))
         else:
-            label = ('ensemble_mem=%i_%.2f' %(n,0.0))
-        writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
+            label = ('ensemble_mem=%i_%.3f' %(n,0.0))
+        if not restart: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
-    client = Client(threads_per_worker=1, n_workers=1)
+    writer.check_jar()
+    writer.jar([ud, elem, node])
+
+    if da_debug:
+        # writer.jar([obs,obs_noisy,obs_noisy_interp,obs_mask,obs_covar])
+        # obs = obs_noisy_interp
+        writer.jar([obs,obs_noisy,obs_mask,obs_covar])
+
+    # initialise dask parallelisation and timer
+    # client = Client(threads_per_worker=1, n_workers=1)
     tic = time()
 
-    # assert(0)
-
-    #### main time looping
+    ######################################################
+    # Time looping over data assimilation windows
+    ######################################################
+    tout_old = -np.inf
     tout_cnt = 0
+    outer_step = 0
     for tout in ud.tout:
         futures = []
+
+        # In ensemble case, do blending for each DA window
+        if N > 1 :
+            blend = bld if tout_old in dap.da_times else None
+        else:
+            blend = bld
+
+        # initial blending?
+        if ud.initial_blending == True and outer_step == 0:
+            blend = bld
+
+        ######################################################
+        # Forecast step
+        ######################################################
         print('##############################################')
-        print('Next tout = %.3f' %tout)
-        # obs_current = obs[tout_cnt]
-        print("Starting forecast...")
+        print(colored('Next tout = %.3f' %tout,'yellow'))
+        print(colored("Starting forecast...", 'green'))
+        mem_cnt = 0
         for mem in ens.members(ens):
-            # future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, writer, debug])
-            future = time_update(mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, writer, debug)
+            # future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, None, False])
+
+            # handling of DA window step counter
+            if N > 1 : mem[3][0] = 0 if tout_old in dap.da_times else mem[3][0]
+            if N == 1 : mem[3][0] = mem[3][1]
+            print(colored("For ensemble member = %i..." %mem_cnt,'yellow'))
+            future = time_update(mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, blend, wrtr, debug)
 
             futures.append(future)
-        results = client.gather(futures)
+            mem_cnt += 1
+
+        # Dask commands, used only when parallelisation is
+        # enabled
+        # results = client.gather(futures)
+        results = np.copy(futures)
         results = np.array(results)
-        # print(results.flatten())
-        # assert(0)
-        # print(results[:,loc,...])
-        results_before = deepcopy(results)
+        # s_res = client.scatter(results)
 
-        #### if observations are available, do analysis...
-        # print(np.array(np.where(np.isclose(times,tout))[0]))
-        # print(np.isclose(times,tout))
-        # print(tout, times)
-        if N > 1:
-            if len(np.where(np.isclose(times,tout))[0]) > 0:
-                # print(np.where(times == tout)[0][0])
-                futures = []
-                # anals = []
-                if da_type == 'batch_obs':
-                    print("Starting analysis... for batch observations")
-                    for attr in obs_attributes:
-                        print("Assimilating %s..." %attr)
-                        obs_current = np.array(obs[np.where(np.isclose(times,tout))[0][0]][attr])
-                        future = client.submit(da_interface, *[results,obs_current,attr,N,ud])
-                        # analysis = da_interfaces(results,obs_current,attr,N,ud)
-                        # anals.append(analysis)
-                        futures.append(future)
+        ######################################################
+        # Analysis step
+        ######################################################
+        if N > 1 and tout in dap.da_times:
+            futures = []
 
-                    analysis = client.gather(futures)
-                    analysis = np.array(analysis)
 
-                    print("Writing analysis...")
-                    cnt = 0
-                    for attr in obs_attributes:
-                        current = analysis[cnt]
-                        for n in range(N):
-                            setattr(results[:,loc,...][n],attr,current[n])
-                        cnt += 1
+            ######################################################
+            # Update ensemble with forecast
+            ######################################################
+            for n in range(N):
+                Sol = results[n][dap.loc_c]
+                set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+                results[n][dap.loc_c] = Sol
+                p2_nodes = getattr(results[n][dap.loc_n],'p2_nodes')
+                set_ghostnodes_p2(p2_nodes, node, ud)
+                setattr(results[n][dap.loc_n], 'p2_nodes', p2_nodes)
 
-                elif da_type == 'rloc':
-                    print("Starting analysis... for R-localisation")
-                    inner = (slice(elem.igx,-elem.igx),slice(elem.igy,-elem.igy))
+            ens.set_members(results, tout)
 
-                    Nx = elem.icx - 2*elem.igx
-                    Ny = elem.icy - 2*elem.igy
-                    attr_len = len(obs_attributes)
 
-                    tmp = np.array([getattr(results[:,loc,...][n],obs_attributes[0])[inner] for n in range(N)])
-                    tmp = tmp[:,np.newaxis,...]
-                    obs_current = np.array(obs[np.where(np.isclose(times,tout))[0][0]][obs_attributes[0]])[inner]
-                    
-                    # obs_current = bin_func(obs_current,(Nx,Ny))
-                    obs_current = obs_current[np.newaxis,...]
-                    
-                    for attr in obs_attributes[1:]:
-                        tmp = np.hstack((tmp,np.array([getattr(results[:,loc,...][n],attr)[inner] for n in range(N)])[:,np.newaxis,...]))
-                        tmp01 = np.array(obs[np.where(np.isclose(times,tout))[0][0]][attr])[inner]
-                        # tmp01 = bin_func(tmp01,(Nx,Ny))
-                        # print(tmp01.shape)
-                        tmp01 = tmp01[np.newaxis,...]
-                        obs_current = np.vstack((obs_current,tmp01))
+            ######################################################
+            # Write output before assimilating data
+            ######################################################
+            print(colored("Starting output...",'yellow'))
+            for n in range(N):
+                Sol = ens.members(ens)[n][0]
+                mpv = ens.members(ens)[n][2]
 
-                    # print("obs_c (before win) = ", obs_current.shape)
-                    X = np.array([sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in tmp])
-                    X = np.swapaxes(X,0,1)
-
-                    # print(tmp.shape)
-                    # print(X.shape
-                    
-                    obs_X = 5
-                    obs_Y = 5
-                    #.reshape(Nx*Ny,attr_len)
-                    obs_current = np.array([np.pad(obs_current_attr,2,mode='wrap') for obs_current_attr in obs_current])
-                    obs_current = np.array([sliding_window_view(obs_current_attr, (obs_X,obs_Y), (1,1)) for obs_current_attr in obs_current])
-                    obs_current = np.swapaxes(obs_current,0,2)
-                    obs_current = np.swapaxes(obs_current,0,1)
-                    obs_current = obs_current.reshape(Nx*Ny,attr_len,obs_X,obs_Y)
-                    # print(obs_current.shape)
-                    # assert(0)
-                    
-                    # print("obs_c = ", obs_current.shape)
-
-                    tmp = np.array([getattr(results[:,loc,...][n],obs_attributes[0]) for n in range(N)])
-                    tmp = tmp[:,np.newaxis,...]
-                    for attr in obs_attributes[1:]:
-                        tmp = np.hstack((tmp,np.array([getattr(results[:,loc,...][n],attr) for n in range(N)])[:,np.newaxis,...]))
-                    Y = np.array([sliding_window_view(mem, (obs_X,obs_Y), (1,1)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in tmp])
-                    Y = np.swapaxes(Y,0,1)
-                    # print(Y.shape)
-
-                    obs_covar = sparse.eye(attr_len*obs_X**2,attr_len*obs_Y**2, format='csr')
-                    analysis = np.empty_like(X)
-                    for n in range(Nx*Ny):
-                        forward_operator = lambda ensemble : Y[n]
-                        local_ens = letkf_analysis(X[n],inflation_factor,n)
-                        local_ens.forward(forward_operator)
-                        local_ens.localisation_matrix = localisation_matrix
-                        analysis_ens = local_ens.analyse(obs_current[n],obs_covar)
-                        # print(X.shape)
-                        # local_ens.ensemble = np.array([np.pad(mem,2,mode='wrap') for mem in local_ens.ensemble])
-                        analysis[n] = analysis_ens
-
-                    # analysis = np.swapaxes(analysis,0,1)
-                    # analysis = np.array([np.pad()])
-
-                    analysis = np.swapaxes(analysis,0,2)
-                    # print(analysis.shape)
-                    cnt = 0
-                    for attr in obs_attributes:
-                        current = analysis[cnt]
-
-                        for n in range(N):
-                            data = current[n]
-                            data = data.reshape(Nx,Ny)
-                            data = np.pad(data,2,mode='wrap')
-                            # print("data shape = ", data.shape)
-                            
-                            setattr(results[:,loc,...][n],attr,data)
-                        cnt += 1
-
-                elif da_type == 'etpf':
-                    ensemble_inflation(results,attributes,inflation_factor,N)
-                    results = etpf.da_interface(results,obs,obs_attributes,rejuvenation_factor,times,tout,N)
-
+                if label_type == 'STEP':
+                    step = outer_step
+                    label = ('ensemble_mem=%i_%.3d' %(n,step))
                 else:
-                    assert 0, "DA type not implemented: use 'rloc' or 'batch_obs'."
+                    label = ('ensemble_mem=%i_%.3f' %(n,tout))
+                writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_da')
 
-        # print(results_before[:,loc,...][0].rho)
-        # print(results[:,loc,...][0].rho)
-            # assert(0,"Assimilation failed")
-        ens.set_members(results)
 
-        # if N > 1:
-        #     if np.allclose(ens.members(ens)[0].rho, results_before[:,loc,...][0].rho):
-        #         print("Assimilation check: Rho quantities unchanged, i.e. no assimilation took place in rho.")
+            ##################################################
+            # LETKF with batch observations
+            ##################################################
+            if dap.da_type == 'batch_obs':
+                print("Starting analysis... for batch observations")
+                for attr in dap.obs_attributes:
+                    print("Assimilating %s..." %attr)
+                    # future = client.submit(da_interface, *[s_res,obs_current,dap.inflation_factor,attr,N,ud,dap.loc[attr]])
+                    future = da_interface(results,dap,obs,attr,tout,N,ud)
+                    futures.append(future)
 
-        print("Starting output...")
+                # analysis = client.gather(futures)
+                analysis = futures
+                # analysis = np.array(analysis)
+
+                print("Writing analysis...")
+                cnt = 0
+                for attr in dap.obs_attributes:
+                    current = analysis[cnt]
+                    for n in range(N):
+                        setattr(results[:,dap.loc[attr],...][n],attr,current[n])
+                    cnt += 1
+
+            ##################################################
+            # LETKF with grid-point localisation
+            ##################################################
+            elif dap.da_type == 'rloc':
+                print(colored("Starting analysis... for rloc algorithm",'green'))
+                results = HSprojector_3t2D(results, elem, dap, N)
+                results = rloc.analyse(results,obs,obs_covar,obs_mask,N,tout)
+                results = HSprojector_2t3D(results, elem, node, dap, N)
+                # if hasattr(dap, 'converter'):
+                    # results = dap.converter(results, N, mpv, elem, node, th, ud)
+
+            ##################################################
+            # ETPF
+            ##################################################
+            elif dap.da_type == 'etpf':
+                ensemble_inflation(results,dap.attributes,dap.inflation_factor,N)
+                results = etpf.da_interface(results,obs,dap.obs_attributes,dap.rejuvenation_factor,dap.da_times,tout,N)
+
+            ##################################################
+            # Post-processing
+            ##################################################            
+            elif dap.da_type == 'pprocess':
+                results = post_processing.interface()
+
+            else:
+                assert 0, "DA type not implemented: use 'rloc', 'batch_obs' or 'etpf'."
+
+
+        ######################################################
+        # Update ensemble with analysis
+        ######################################################
+        for n in range(N):
+            Sol = results[n][dap.loc_c]
+            set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+            results[n][dap.loc_c] = Sol
+            p2_nodes = getattr(results[n][dap.loc_n],'p2_nodes')
+            set_ghostnodes_p2(p2_nodes, node, ud)
+            setattr(results[n][dap.loc_n], 'p2_nodes', p2_nodes)
+
+        ens.set_members(results, tout)
+
+        ######################################################
+        # Write output at tout
+        ######################################################
+        print(colored("Starting output...",'yellow'))
         for n in range(N):
             Sol = ens.members(ens)[n][0]
             mpv = ens.members(ens)[n][2]
-            set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+
             if label_type == 'STEP':
-                step = ens.members(ens)[0][3]
+                step = outer_step
                 label = ('ensemble_mem=%i_%.3d' %(n,step))
             else:
-                label = ('ensemble_mem=%i_%.2f' %(n,tout))
+                label = ('ensemble_mem=%i_%.3f' %(n,tout))
             writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
 
         # synchronise_variables(mpv, Sol, elem, node, ud, th)
         t = tout
-        print('tout = %.3f' %tout)
+        tout_old = np.copy(tout)
+        print(colored('tout = %.3f' %tout,'yellow'))
 
         tout_cnt += 1
+        outer_step += 1
+        if outer_step > ud.stepmax: break
 
     toc = time()
-    print("Time taken = %.6f" %(toc-tic))
+    print(colored("Time taken = %.6f" %(toc-tic),'yellow'))
 
     writer.close_everything()

@@ -1,15 +1,18 @@
-*pycache*
-*RKLM_Reference*
-*BI_half_step*
+# Ignore various cache files
 *.vscode*
+*pycache*
+**dask-worker-space*
 *.ipynb_checkpoints*
-*.hdf
+
+# Ignore various local subdirectories
+**Reference*
+**archive*
+**current*
+
+# Ignore various outputs
 *.h5
-*output*
-*.png*
-*dask-worker-space*
-*dask_parallel.ipynb*
-*RKLM_Python/docs/*
-*Untitled*
-*.out*
+*output_*
 *_old*
+# Sphinx html build
+**_build*
+

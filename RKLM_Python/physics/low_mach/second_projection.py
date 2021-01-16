@@ -1,6 +1,6 @@
 from inputs.enum_bdry import BdryType
 from inputs.boundary import set_explicit_boundary_data, set_ghostnodes_p2
-from physics.low_mach.laplacian import stencil_9pt, stencil_27pt, precon_diag_prepare
+from physics.low_mach.laplacian import stencil_9pt, stencil_32pt, stencil_hs, precon_diag_prepare
 from scipy import signal
 import numpy as np
 from itertools import product
@@ -19,9 +19,6 @@ class solver_counter(object):
     def __call__(self, rk=None):
         self.niter += 1
         self.rk = rk
-        # print(self.niter)
-        # self.rk = rk[0]
-
 
 def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     nonhydro = ud.nonhydrostasy
@@ -31,7 +28,8 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     Msq = ud.Msq
     Ginv = th.Gammainv
     coriolis = ud.coriolis_strength[0]
-    u0 = ud.wind_speed
+    u0 = ud.u_wind_speed
+    w0 = ud.w_wind_speed
 
     p2n = np.copy(mpv.p2_nodes)
     dp2n = np.zeros_like(p2n)
@@ -68,14 +66,14 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     # dpdy = -wp * 0.5 * signal.convolve2d(p2n, dpdy_kernel, mode='valid') / dy
 
     dpdx = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[0], mode='valid') / dx
-    dpdy = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[1], mode='valid') / dy
+    dpdy = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[1], mode='valid') / dy if elem.iicy > 1 else 0.0
     if ndim == 3: dpdz = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[2], mode='valid') / dz
-    else: dpdz = 0
+    else: dpdz = 0.0
 
     igx, igy, igz, igs = elem.igx, elem.igy, elem.igz, elem.igs
 
     dSdy = mpv.HydroState_n.S0[igy-1:-igy+1]
-    dSdy = signal.convolve(dSdy,[-1.,1.],mode='valid') / dy
+    dSdy = signal.convolve(dSdy,[1.,-1.],mode='valid') / dy
     # dSdy = np.repeat(dSdy,elem.icx-igx,axis=1).T / dy
 
     S0c = mpv.HydroState.S0[igy-1:-igy+1]
@@ -94,12 +92,14 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
     dchi = Sol.rhoX[i1] / Sol.rho[i1]
     dbuoy = -1. * Sol.rhoY[i1] * dchi
     drhou = Sol.rhou[i1] - u0 * Sol.rho[i1]
+    drhow = Sol.rhow[i1] - w0 * Sol.rho[i1]
 
     rhoY = Sol.rhoY**(th.gamm - 2.0)
     dpidP_kernel = np.ones([2]*ndim)
     dpidP = (th.gm1 / ud.Msq) * signal.fftconvolve(rhoY, dpidP_kernel, mode='valid') / dpidP_kernel.sum()
 
-    Sol.rhou[i1] = Sol.rhou[i1] + dt * ( -1. * rhoYovG * dpdx + coriolis * Sol.rhow[i1])
+    # Sol.rhou[i1] = Sol.rhou[i1] + dt * ( -1. * rhoYovG * dpdx + coriolis * Sol.rhow[i1])
+    Sol.rhou[i1] = Sol.rhou[i1] + dt * ( -1. * rhoYovG * dpdx + coriolis * drhow)
 
     Sol.rhov[i1] = Sol.rhov[i1] + dt * ( -1. * rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro * (1 - ud.is_ArakawaKonor)
 
@@ -127,12 +127,10 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
     time_offset = 3.0 - ud.acoustic_order
     coriolis = ud.coriolis_strength[0]
-    u0 = ud.wind_speed
+    u0 = ud.u_wind_speed
+    w0 = ud.w_wind_speed
     fsqsc = dt**2 * coriolis**2
     ooopfsqsc = 1.0 / (1.0 + fsqsc)
-
-    # first_nodes_row_right_idx = (slice(0,1), slice(1,None))
-    # first_nodes_row_left_idx = (slice(0,1),slice(0,-1))
 
     first_nodes_row_right_idx = (slice(1,None))
     first_nodes_row_left_idx = (slice(0,-1))
@@ -154,9 +152,13 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     rhov = (nonhydro * Sol.rhov + dt * (g/Msq) * dbuoy) / (nonhydro + Nsqsc)
 
     drhou = Sol.rhou - u0 * Sol.rho
-    Sol.rhou[...] = u0 * Sol.rho + ooopfsqsc * (drhou + dt * coriolis * Sol.rhow)
+    drhow = Sol.rhow - w0 * Sol.rho
+    rhou0 = np.copy(Sol.rhou)
+    # Sol.rhou[...] = u0 * Sol.rho + ooopfsqsc * (drhou + dt * coriolis * Sol.rhow)
+    Sol.rhou[...] = u0 * Sol.rho + ooopfsqsc * (drhou + dt * coriolis * drhow)
     Sol.rhov[...] = rhov
-    Sol.rhow[...] = ooopfsqsc * (Sol.rhow - dt * coriolis * drhou)
+    # Sol.rhow[...] = ooopfsqsc * (Sol.rhow - dt * coriolis * drhou)
+    Sol.rhow[...] = w0 * Sol.rho + ooopfsqsc * (drhow - dt * coriolis * drhou)
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
@@ -189,6 +191,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         writer.populate(str(label),'wplusx',mpv.wplus[0])
         writer.populate(str(label),'wplusy',mpv.wplus[1])
         if elem.ndim == 3: writer.populate(str(label),'wplusz',mpv.wplus[2])
+        else: writer.populate(str(label),'wplusz',np.zeros_like(mpv.wplus[0]))
 
     rhs[...], _ = divergence_nodes(rhs,elem,node,Sol,ud)
     rhs /= dt
@@ -215,15 +218,11 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     mpv.rhs = rhs
 
+    # if ud.is_compressible == 1:
     diag_inv = precon_diag_prepare(mpv, elem, node, ud)
     rhs *= diag_inv
-
-    # if y_wall:
-    #     rhs[:,2] *= 2.
-    #     rhs[:,-3] *= 2.
-    # if x_wall:
-    #     rhs[2,:] *= 2.
-    #     rhs[-3,:] *= 2.
+    # else:
+    #     diag_inv = np.ones_like(mpv.rhs)
 
     if elem.ndim == 2:
         lap = stencil_9pt(elem,node,mpv,ud,diag_inv)
@@ -231,10 +230,14 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         sh = (ud.inx)*(ud.iny)
 
         # lap = LinearOperator((sh,sh),lap)
-    elif elem.ndim == 3:
-        lap = stencil_27pt(elem,node,mpv,ud,diag_inv)
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
+        lap = stencil_32pt(elem,node,mpv,ud,diag_inv,dt)
         # p2 = mpv.p2_nodes[1:-1,1:-1,1:-1]
 
+        sh = p2.reshape(-1).shape[0]
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2: # horizonral slice hack
+        p2 = np.copy(mpv.p2_nodes[1:-1,elem.igs[1],1:-1])
+        lap = stencil_hs(elem,node,mpv,ud,diag_inv,dt)
         sh = p2.reshape(-1).shape[0]
     lap = LinearOperator((sh,sh),lap)
     
@@ -242,12 +245,14 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     if elem.ndim == 2:
         rhs_inner = rhs[node.igx:-node.igx,node.igy:-node.igy].ravel()
-    elif elem.ndim == 3:
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
         rhs_inner = rhs[1:-1,1:-1,1:-1].ravel()
         # rhs_inner = rhs.ravel()
         # p2 = mpv.p2_nodes[1:-1,1:-1,1:-1]
         # rhs_inner = rhs.ravel()
-    p2,info = bicgstab(lap,rhs_inner,tol=1e-8,maxiter=1000,callback=counter)
+    else:
+        rhs_inner = rhs[1:-1,elem.igs[1],1:-1].ravel()
+    p2,info = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
     # p2,info = bicgstab(lap,rhs.ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
 
@@ -260,38 +265,21 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     p2_full = np.zeros(nc).squeeze()
     if elem.ndim == 2:
         p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
-    elif elem.ndim == 3:
-         p2_full[1:-1,1:-1,1:-1] = p2.reshape(ud.inx+2,ud.iny+2,ud.inz+2)
-
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
+        p2_full[1:-1,1:-1,1:-1] = p2.reshape(ud.inx+2,ud.iny+2,ud.inz+2)
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2:
+        p2 = p2.reshape(ud.inx+2, ud.inz+2)
+        p2 = np.expand_dims(p2,1)
+        p2 = np.repeat(p2, node.icy, axis=1)
+        p2_full[1:-1,:,1:-1] = p2
     if writer != None:
         writer.populate(str(label),'p2_full',p2_full)
 
-    # mpv.dp2_nodes[...] = np.copy(p2_full)
-
     correction_nodes(Sol,elem,node,mpv,p2_full,dt,ud)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
-    # mpv.rhs = rhs
-    # set_ghostnodes_p2(mpv.dp2_nodes,node,ud)
-    
-    # if ud.is_ArakawaKonor:
-    #     if ud.is_compressible == 0:
-    #         dp2_rhs = exner_perturbation_constraint(Sol,elem,th,p2.reshape(ud.inx,ud.iny))
 
-    #         # lap2D_exner = stencil_3pt(elem,node,ud)
-    #         lap2D_exner = stencil_5pt(elem,node,ud)
-    #         sh = (ud.inx)*(ud.iny)
-
-    #         lap2D_exner = LinearOperator((sh,sh),lap2D_exner)
-
-    #         dp2,_ = bicgstab(lap2D_exner,dp2_rhs.ravel(),tol=1e-16,maxiter=6000)
-
-    #         mpv.dp2_nodes[node.igx:-node.igx,node.igy:-node.igy] = dp2.reshape(ud.inx,ud.iny)
-    
     mpv.p2_nodes[...] = p2_full
-    # mpv.dp2_nodes[...] = p2_full - mpv.p2_nodes 
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
-    # mpv.rhs = rhs
-    # set_ghostnodes_p2(mpv.dp2_nodes,node,ud)
 
 def exner_perturbation_constraint(Sol,elem,th,p2):
     # 2D function!
@@ -309,7 +297,6 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
     coriolis = ud.coriolis_strength[0]
     time_offset = 3.0 - ud.acoustic_order
 
-    # igx,igy,igz = node.igs[0],node.igs[1],node.igs[2]
     igs, igy = node.igs, node.igy
     oodxyz = 1.0 / node.dxyz
     oodx , oody ,oodz = oodxyz[0], oodxyz[1], oodxyz[2]
@@ -323,7 +310,6 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
     for dim in range(0,ndim,2):
         dSdy = np.expand_dims(dSdy, dim)
         dSdy = np.repeat(dSdy, elem.sc[dim]-2*igs[dim], axis=dim)
-    # print(dSdy.shape)
 
     n2e, i2 = np.empty(ndim, dtype='object'), np.empty(ndim, dtype='object')
     for dim in range(ndim):
@@ -376,7 +362,6 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
 
     coriolis = ud.coriolis_strength[0]
 
-    # ccenter = - (ud.compressibility * ud.Msq) * th.gm1inv / (dt**2) / time_offset
     ccenter = - ud.Msq * th.gm1inv / (dt**2) / time_offset
     cexp = 2.0 - th.gamm
 
@@ -402,21 +387,18 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
 
         innerdim1[dim] = slice(igs[dim]-1, (-igs[dim]+1))
  
-    # print(y_idx)
-    # print(y_idx1)
-    # print(dy)
     strat = 2.0 * (mpv.HydroState_n.Y0[y_idx1] - mpv.HydroState_n.Y0[y_idx]) / (mpv.HydroState_n.Y0[y_idx1] + mpv.HydroState_n.Y0[y_idx]) / dy
+    # strat = 2.0 * (np.diff(mpv.HydroState_n.Y0)[igs[1]:-igs[1]]) / np.diff(mpv.HydroState_n.Y0)[igs[1]:-igs[1]] / dy
 
-    # print(mpv.HydroState_n.Y0)
-    # print(strat)
     nindim = tuple(nindim)
     eindim = tuple(eindim)
     innerdim = tuple(innerdim)
     innerdim1 = tuple(innerdim1)
 
     for dim in range(0,elem.ndim,2):
+        is_periodic = ud.bdry_type[dim] != BdryType.PERIODIC
         strat = np.expand_dims(strat, dim)
-        strat = np.repeat(strat, elem.sc[dim]-igx, axis=dim)
+        strat = np.repeat(strat, elem.sc[dim]-int(2*is_periodic+igs[dim]), axis=dim)
 
     Y = Sol.rhoY[nindim] / Sol.rho[nindim]
     coeff = Gammainv * Sol.rhoY[nindim] * Y
@@ -433,17 +415,6 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
             mpv.wplus[dim][eindim] = coeff * fimp
 
     kernel = np.ones([2] * ndim)
-
-    # print(mpv.wcenter.shape)
-    # print(Sol.rhoY.shape)
-    # print(Sol.rhoY[innerdim1].shape)
-    # print(innerdim1)
-    # print(eindim)
-
-    # for iz in range(icz):
-    #     iz = slice(None,) if iz == 0 else iz
-
-    #     mpv.wcenter[iz][innerdim] = ccenter * signal.fftconvolve(Sol.rhoY[innerdim1]**cexp,kernel,mode='valid') / kernel.sum()
 
     mpv.wcenter[innerdim] = ccenter * signal.fftconvolve(Sol.rhoY[innerdim1]**cexp,kernel,mode='valid') / kernel.sum()
 

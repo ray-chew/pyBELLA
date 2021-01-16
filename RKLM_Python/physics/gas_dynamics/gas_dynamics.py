@@ -58,8 +58,12 @@ def dynamic_timestep(Sol, time, time_output, elem, ud, th, step):
         dt = min(dt_cfl, ud.dtfixed0 + min(step, 1.) * (ud.dtfixed - ud.dtfixed0))
         dt *= min(float(step+1), 1.0)
 
+        # f = open("log0.txt", "a")
+        # f.write(str(dt_cfl) + "\n")
+        # f.close()
+
         if (dt > (time_output - time)):
-            dt = (time_output - time) + machine_epsilon
+            dt = (time_output - time) #+ machine_epsilon
 
         cfl = CFL * dt / dt_cfl
         cfl_ac = max(dt * upc_max / elem.dx, dt * vpc_max / elem.dy, dt * wpc_max / elem.dz)

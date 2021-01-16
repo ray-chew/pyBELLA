@@ -1,5 +1,8 @@
-Backward explicit Euler step
-============================
+Implicit Euler step
+====================
 
-Backward implicit Euler step
-============================
+Explicit part
+-------------
+
+Implicit part
+-------------

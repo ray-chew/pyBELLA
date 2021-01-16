@@ -3,34 +3,57 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. Welcome to RKLM_Python's documentation!
-.. =======================================
-
+=============
 Documentation
 =============
 
 .. toctree::
-   :maxdepth: 2
+   :hidden:
 
-   Introduction <./intro.rst>
+   Home <self>
+   Quickstart <./quickstart.rst>
+
+.. toctree::
+   :caption: Introduction
+   :maxdepth: 2
+   :hidden:
+
+   Overview <./intro.rst>
    Boundary handling <./boundary.rst>
    Grid discretisation <./grid_discretisation.rst>
-   Time-stepping <./time_stepping.rst>
-   
-Modules
-=======
+..    Time-stepping <./time_stepping.rst>
+
 .. toctree::
+   :caption: Discretisation details
    :maxdepth: 3
+   :hidden:
    
-   inputs <./inputs.rst>
-   management <./management.rst>
-   discretization
-   physics
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   Compute advective fluxes <./compute_flux.rst>
+   Advection routine <./advect.rst>
+   Explicit Euler step <./explicit_euler.rst>
+   Implicit Euler step <./implicit_euler.rst>
+   
+.. toctree::
+   :caption: Flow Solver
+   :maxdepth: 3
+   :hidden:
+   
+   Inputs package <inputs.rst>
+   Management package <management.rst>
+   Discretization package <discretization.rst>
+   Physics package <physics.rst>
+    
+.. toctree::
+   :caption: Data Assimilation
+   :maxdepth: 3
+   :hidden:
+   
+   Blending module <data_assimilation.blending.rst>
+   Data assimilation package <data_assimilation.rst>
+   
+.. toctree::
+   :caption: Appendix
+   :maxdepth: 1
+   :hidden:
+   
+   genindex

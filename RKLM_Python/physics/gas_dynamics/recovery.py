@@ -4,7 +4,35 @@ from management.variable import States, Characters
 from management.enumerator import LimiterType
 from .eos import rhoe
 
-def recovery(Sol, flux, lmbda, ud, th, elem):
+def recovery(Sol, flux, lmbda, ud, th, elem, split_step, tag):
+    """
+    Reconstruct the limited slopes at the cell interfaces.
+
+    Parameters
+    ----------
+    Sol : :py:class:`management.variable.Vars`
+        Solution data container on cell centers.
+    flux : :py:class:`management.variable.States`
+        Flux data container on cell interfaces.
+    lmbda : float
+        :math:`\\frac{dt}{dx}`, where :math:`dx` is the grid-size in the direction of the substep.
+    ud : :py:class:`inputs.user_data.UserDataInit`
+        Class container for the initial condition.
+    th : :py:class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+        Class container for the thermodynamical constants.
+    elem : :py:class:`discretization.kgrid.ElemSpaceDiscr`
+        Class container for the cell-grid.
+    split_step : int
+        Tracks the substep in the Strang-splitting.
+    tag : `None` or `rk` 
+        Default is `None` which uses a second-order Strang-splitting. `rk` toggles a first-order Runge-Kutta update for the advection scheme.
+
+    Returns
+    -------
+    :py:class:`management.variable.States`, :py:class:`management.variable.States`
+        Lefts, Rights are containers for the advected quantities at to the left and the right of the cell interfaces.
+
+    """
     gamm = th.gamm
     
     order_two = 1 # always 1
@@ -15,8 +43,11 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
     # rights_idx = (slice(None),slice(1,None))
     # inner_idx = (slice(1,-1), slice(1,-1))
 
+    if tag == 'rk':
+        lmbda = 0.0
+
     ndim = elem.ndim
-    lefts_idx, rights_idx, inner_idx = [slice(None)] * ndim, [slice(None)] * ndim, [slice(1,-1)] * ndim
+    lefts_idx, rights_idx, inner_idx = [slice(None,)] * ndim, [slice(None,)] * ndim, [slice(1,-1)] * ndim
     lefts_idx[-1] = slice(0,-1)
     rights_idx[-1] = slice(1,None)
     lefts_idx, rights_idx, inner_idx = tuple(lefts_idx), tuple(rights_idx), tuple(inner_idx)
@@ -64,32 +95,49 @@ def recovery(Sol, flux, lmbda, ud, th, elem):
     Rights.X[...] = Sol.X + order_two * Ampls.X
     Rights.Y[...] = 1.0 / (1.0 / Sol.Y + order_two * Ampls.Y)
 
+    vel = [Sol.u,Sol.v,Sol.w]
+
+    # Lefts.rhoY[lefts_idx] = Rights.rhoY[rights_idx] = 0.5 * (Sol.rhoY[lefts_idx] + Sol.rhoY[rights_idx]) \
+    #     - order_two * 0.5 * lmbda * (Sol.u[rights_idx] * Sol.rhoY[rights_idx] - Sol.u[lefts_idx] * Sol.rhoY[lefts_idx])
     Lefts.rhoY[lefts_idx] = Rights.rhoY[rights_idx] = 0.5 * (Sol.rhoY[lefts_idx] + Sol.rhoY[rights_idx]) \
-        - order_two * 0.5 * lmbda * (Sol.u[rights_idx] * Sol.rhoY[rights_idx] - Sol.u[lefts_idx] * Sol.rhoY[lefts_idx])
+        - order_two * 0.5 * lmbda * (vel[split_step][rights_idx] * Sol.rhoY[rights_idx] - vel[split_step][lefts_idx] * Sol.rhoY[lefts_idx])
 
     Lefts.p0[lefts_idx] = Rights.p0[rights_idx] = Lefts.rhoY[lefts_idx]**gamm
 
     get_conservatives(Rights, ud, th)
     get_conservatives(Lefts, ud, th)
 
+    # return Lefts, Rights, u, Diffs, Ampls, Slopes
     return Lefts, Rights
 
 def slopes(Sol, Diffs, ud, elem):
+    """
+    Reconstruct the piecewise linear slopes in the cells from the piecewise constants in the cell and its neighbours.
+
+    Parameters
+    ----------
+    Sol : :py:class:`management.variable.Vars`
+        Solution data container
+    Diffs : :py:class:`management.variable.States`
+        Data container for the difference in the quantities between adjacent cells, (right - left).
+    ud : :py:class:`inputs.user_data.UserDataInit`
+        Data container for the initial conditions
+    elem : :py:class:`discretization.kgrid.ElemSpaceDiscr`
+        Data container for the cell grid.
+
+    Returns
+    -------
+    :py:class:`management.variable.Characters`
+        Reconstructed piecewise linear slopes in the cell.
+    """ 
     limiter_type_velocity = ud.limiter_type_velocity
     limiter_type_scalar = ud.limiter_type_scalars
 
-    # lefts_idx = (slice(None),slice(0,-1))
-    # rights_idx = (slice(None),slice(1,None))
     ndim = elem.ndim
     lefts_idx, rights_idx = [slice(None,)] * ndim, [slice(None,)] * ndim
     lefts_idx[-1] = slice(0,-1)
     rights_idx[-1] = slice(1,None)
     lefts_idx, rights_idx = tuple(lefts_idx), tuple(rights_idx)
-
-    # what are these?
-    kp = ud.kp
-    kz = ud.kz
-    kY = ud.kY
 
     # amplitudes of the state differences:
     # first lefts_idx removes the zero at the end
@@ -109,21 +157,54 @@ def slopes(Sol, Diffs, ud, elem):
 
     Slopes = Characters(Diffs.u.shape)
 
-    Slopes.u[...,1:-1] = limiters(limiter_type_velocity, aul, aur, kp)
-    Slopes.v[...,1:-1] = limiters(limiter_type_velocity, avl, avr, kz)
-    Slopes.w[...,1:-1] = limiters(limiter_type_velocity, awl, awr, kz)
-    Slopes.X[...,1:-1] = limiters(limiter_type_scalar, aXl, aXr, kz)
-    Slopes.Y[...,1:-1] = limiters(limiter_type_scalar, aYl, aYr, kY)
+    Slopes.u[...,1:-1] = limiters(limiter_type_velocity, aul, aur)
+    Slopes.v[...,1:-1] = limiters(limiter_type_velocity, avl, avr)
+    Slopes.w[...,1:-1] = limiters(limiter_type_velocity, awl, awr)
+    Slopes.X[...,1:-1] = limiters(limiter_type_scalar, aXl, aXr)
+    Slopes.Y[...,1:-1] = limiters(limiter_type_scalar, aYl, aYr)
 
     return Slopes
 
-def limiters(limiter_type, al, ar, kp):
+def limiters(limiter_type, al, ar):
+    """
+    Applies the limiter type specified in the initial conditions to recovery the slope.
+
+    Parameters
+    ----------
+    limiter_type : :py:class:`management.enumerator.LimiterType`
+        LimiterType list
+    al : :py:class:`management.variable.States`
+        Left indices of the `Diffs` array for the respective quantities.
+    ar : :py:class:`management.variable.States`
+        Right indices of the `Diffs` array for the respective quantities.
+
+    Returns
+    -------
+    :py:class:`management.variable.States`
+        The reconstructed slope in the cell
+
+    Attention
+    ---------
+    For now, only the limiter type `NONE` is supported. This takes $\\frac{(al + ar)}{2}$.
+    """
     # write switch for limiter types
     # for now, just use LimiterType == None
     if limiter_type == LimiterType.NONE:
         return 0.5 * (al + ar)
 
 def get_conservatives(U, ud, th):
+    """
+    Get advected (conservative) quantities at the left and right of the cell interfaces.
+
+    Parameters
+    ----------
+    U : :py:class:`management.variable.States`
+        `Lefts` and `Rights` corresponding to the values at the cell interfaces.
+    ud : :py:class:`inputs.user_data.UserDataInit`
+        Data container for the initial conditions
+    th : :py:class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+        Class container for the thermodynamical constants.
+    """
     U.rho = U.rhoY / U.Y
     U.rhou = U.u * U.rho
     U.rhov = U.v * U.rho

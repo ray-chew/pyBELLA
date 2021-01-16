@@ -11,7 +11,7 @@ class UserData(object):
     NSPEC = 1
 
     grav = 0.0
-    omega = 0.0
+    omega = 0.1
 
     R_gas = 287.4
     R_vap = 461.0
@@ -24,8 +24,8 @@ class UserData(object):
     viscbt = 0.0
     cond = 0.0
 
-    h_ref = 10000
-    t_ref = 100
+    h_ref = 10000.0
+    t_ref = 100.0
     T_ref = 300.00
     p_ref = 1e+5
     u_ref = h_ref / t_ref
@@ -84,7 +84,9 @@ class UserData(object):
         self.zmin = - 0.5
         self.zmax =   0.5
 
-        self.wind_speed = 1.0
+        # self.wind_speed = 0.0
+        self.u_wind_speed = 1.0
+        self.w_wind_speed = 1.0
         self.wind_shear = -0.0
         self.hill_shape = HillShapes.AGNESI
         self.hill_height = 0.0
@@ -107,15 +109,15 @@ class UserData(object):
 
         self.bdry_type_min[0] = BdryType.PERIODIC
         self.bdry_type_min[1] = BdryType.PERIODIC
-        self.bdry_type_min[2] = BdryType.WALL
+        self.bdry_type_min[2] = BdryType.PERIODIC
         self.bdry_type_max[0] = BdryType.PERIODIC
         self.bdry_type_max[1] = BdryType.PERIODIC
-        self.bdry_type_max[2] = BdryType.WALL
+        self.bdry_type_max[2] = BdryType.PERIODIC
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
         self.bdry_type[1] = BdryType.PERIODIC
-        self.bdry_type[2] = BdryType.WALL
+        self.bdry_type[2] = BdryType.PERIODIC
 
         self.absorber = 0 # 0 == WRONG == FALSE 
         self.bottom_theta_bc = BottomBC.BOTTOM_BC_DEFAULT
@@ -129,10 +131,14 @@ class UserData(object):
         # self.CFL = 0.95
         self.dtfixed0 = 2.1 * 1.200930e-2
         self.dtfixed = 2.1 * 1.200930e-2
+        # self.dtfixed0 = 0.01
+        # self.dtfixed = 0.01
+
 
         self.inx = 64+1
-        self.iny = 64+1
-        self.inz = 1
+        self.iny = 1+1
+        # self.iny = 1+1
+        self.inz = 64+1
 
         self.recovery_order = RecoveryOrder.SECOND
         self.limiter_type_scalars = LimiterType.NONE
@@ -144,14 +150,20 @@ class UserData(object):
         self.kY = 0.0
         self.kZ = 0.0
 
-        self.tol = 1.e-6
+        self.tol = 1.e-8
         self.max_iterations = 6000
+
+        self.perturb_type = 'pos_perturb'
+        self.blending_mean = 'rhoY' # 1.0, rhoY
+        self.blending_conv = 'rho' #theta, rho
 
         self.continuous_blending = False
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
+
+        self.initial_blending = False
 
         self.initial_projection = True
         self.initial_impl_Euler = False
@@ -160,39 +172,28 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        # self.tout = np.arange(0,11,1)/10.
-        # self.tout = np.linspace(0,1.0,num=21)
-        # self.tout = np.linspace(0.0,10.0,101)
-        # self.tout = np.linspace(0.0,10.0,101*2-1)
-        # self.tout = [0.5]
-        # self.tout = [0.0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18,0.20]
-        # self.tout = [0.1]
-        # self.tout[0] =  1.0
-        # self.tout[1] = -1.0
-        # self.tout = np.arange(0.0,6.1,0.25)
-        # self.tout = [1.0,2.0,3.0]
-        self.tout = [3.0]
+        self.tout = np.arange(0.0,1.01,0.01)
+        # self.tout = [1.0]
 
-        # self.tout = times.copy()
-
-        # self.stepmax = 3
+        # self.stepmax = 10
         self.stepmax = 20000
 
         self.output_base_name = "_travelling_vortex"
         self.output_name_psinc = "_low_mach_gravity_psinc"
         self.output_name_comp = "_low_mach_gravity_comp"
         if self.is_compressible == 1:
-            self.output_suffix = "_%i_%i_%.1f_comp" %(self.inx-1,self.iny-1,self.tout[-1])
+            self.output_suffix = "_%i_%i_%i_%.1f_comp" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         if self.is_compressible == 0:
-            self.output_suffix = "_%i_%i_%.1f_psinc" %(self.inx-1,self.iny-1,self.tout[-1])
+            self.output_suffix = "_%i_%i_%i_%.1f_psinc" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         if self.continuous_blending == True:
-            self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
+            self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
-        # aux = 'truth'
+        aux = '3D_psinc_sta'
+        aux = 'comp_debug_ib_0'
         # aux = 'very_low_mach'
-        # aux = 'theta_fixed'
+        # aux = 'advected'
         # aux = 'even' if self.no_of_pi_initial % 2 == 0 else 'odd'
-        # self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
+        self.output_suffix = "_%i_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1],aux)
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
@@ -210,9 +211,25 @@ class UserData(object):
         return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
 
 def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
-    u0 = 1.0 * ud.wind_speed
-    v0 = 1.0 * ud.wind_speed
-    w0 = 0.0
+    igs = elem.igs
+    igy = igs[1]
+
+    igxn = node.igx
+    igyn = node.igy
+
+    i2, iy = [slice(None,)] * elem.ndim, [slice(None,)] * elem.ndim
+    iy[1] = slice(igy,-igy)
+    for dim in range(elem.ndim):
+        i2[dim] = slice(igs[dim],-igs[dim])
+    hi2 = np.copy(i2)
+    hi2[1] = slice(None,)
+    i2, iy, hi2 = tuple(i2), tuple(iy), tuple(hi2)
+
+    # u0 = 1.0 #* ud.wind_speed
+    v0 = 0.0 #* ud.wind_speed
+    # w0 = 1.0 #* ud.wind_speed
+    u0 = ud.u_wind_speed
+    w0 = ud.w_wind_speed
 
     rotdir = 1.0
 
@@ -224,20 +241,18 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     fac = 1. * 1024.0
     xc = 0.0
     yc = 0.0
+    zc = 0.0
+    aa = 1.0
 
     if seed != None:
         np.random.seed(seed)
         xc = (np.random.random() - 0.5)/10.
         yc = (np.random.random() - 0.5)/10.
+        zc = (np.random.random() - 0.5)/10.
 
     xcm = xc - (ud.xmax - ud.xmin)
     ycm = yc - (ud.ymax - ud.ymin)
-
-    igs = elem.igs
-    igy = igs[1]
-
-    igxn = node.igx
-    igyn = node.igy
+    zcm = zc - (ud.zmax - ud.zmin)
 
     hydrostatic_state(mpv, elem, node, th, ud)
 
@@ -268,10 +283,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     coe[23] = -   6.0 / 35.0
     coe[24] =     1.0 / 72.0
 
-    xs = elem.x.reshape(-1,1)
-    ys = elem.y[igy:-igy].reshape(1,-1)
+    xs = elem.x.reshape(-1,1,1)
+    ys = elem.y[igy:-igy].reshape(1,-1,1)
+    zs = elem.z.reshape(1,1,-1)
     xccs = np.zeros_like(xs)
     yccs = np.zeros_like(ys)
+    zccs = np.zeros_like(zs)
 
     xccs[...] = xc * (np.abs(xs - xc) < np.abs(xs - xcm))
     xccs[...] += xcm * (np.abs(xs - xc) > np.abs(xs - xcm))
@@ -279,12 +296,23 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     yccs[...] = yc * (np.abs(ys - yc) < np.abs(ys - ycm))
     yccs[...] += ycm * (np.abs(ys - yc) > np.abs(ys - ycm))
 
-    r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
+    zccs[...] = zc * (np.abs(zs - zc) < np.abs(zs - zcm))
+    zccs[...] += zcm * (np.abs(zs - zc) > np.abs(zs - zcm))
+
+    # rs = [(xs-xccs)**2,(ys-yccs)**2,(zs-zccs)**2]
+    rs = [(xs-xccs)**2,(zs-zccs)**2]
+
+    rs = np.array(rs[:elem.ndim])
+    r = np.sqrt(rs.sum())
+    r = np.repeat(r,elem.icy,axis=1)[iy]
+
     uth = (rotdir * fac * (1.0 - r/R0)**6 * (r/R0)**6) * (r < R0)
 
-    u = u0 + uth * (-(ys-yccs)/r)
-    v = v0 + uth * (+(xs-xccs)/r)
-    w = w0
+    u = u0 + uth * (-(zs-zccs)/r)
+    # u = u0 + uth * (-(zs-zccs)/r)
+    v = v0 #+ uth * (+(ys-yccs)/r)
+    # w = w0 + uth * (+(xc-xccs)/r)
+    w = w0 + uth * (+(xs-xccs)/r)
     p_hydro = mpv.HydroState.p0[igy:-igy]
     rhoY = mpv.HydroState.rhoY0[igy:-igy]
 
@@ -296,32 +324,50 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     for ip in range(25):
         dp2c += (a_rho * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2) * (r/R0 < 1.0)
 
-    p2c = np.copy(dp2c)
+    p2c = np.copy(dp2c).squeeze()
+    p2c = p2c[:,np.newaxis,:]
 
-    Sol.rho[:,igy:-igy] = rho
-    Sol.rhou[:,igy:-igy] = rho * u
-    Sol.rhov[:,igy:-igy] = rho * v
-    Sol.rhow[:,igy:-igy] = rho * w
+    # rho, u, v = rho.squeeze(), u.squeeze(), v.squeeze()
+    rho, u, w = rho.squeeze(), u.squeeze(), w.squeeze()
+
+    rho = rho[:,np.newaxis,:]
+    u = u[:,np.newaxis,:]
+    w = w[:,np.newaxis,:]
+
+    Sol.rho[iy] = rho
+    Sol.rhou[iy] = rho * u
+    Sol.rhov[iy] = rho * v
+    Sol.rhow[iy] = rho * w
 
     if (ud.is_compressible) :
         p = p0 + ud.Msq * fac**2 * dp2c
-        Sol.rhoY[:,igy:-igy] = p**th.gamminv
-        Sol.rhoe[:,igy:-igy] = ud.rhoe(rho,u,v,w,p,ud,th)
+        p = p.squeeze()
+        p = p[:,np.newaxis,:]
+        Sol.rhoY[iy] = p**th.gamminv
     else:
-        Sol.rhoe[:,igy:-igy] = ud.rhoe(rho,u,v,w,p_hydro,ud,th)
-        Sol.rhoY[:,igy:-igy] = rhoY
+        for dim in range(0,elem.ndim,2):
+            rhoY = np.expand_dims(rhoY, dim)
+            rhoY = np.repeat(rhoY, elem.sc[dim], axis=dim)
+        Sol.rhoY[iy] = rhoY
 
     # mpv.p2_cells[:,igy:-igy] = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy].T)
+    rhoY0c = mpv.HydroState.rhoY0[igy:-igy]
 
-    mpv.p2_cells[:,igy:-igy] = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy])    
+    for dim in range(0,elem.ndim,2):
+        rhoY0c = np.expand_dims(rhoY0c, dim)
+        rhoY0c = np.repeat(rhoY0c, elem.sc[dim], axis=dim)
+
+    mpv.p2_cells[iy] = th.Gamma * fac**2 * np.divide(p2c, rhoY0c)
 
     set_ghostcells_p2(mpv.p2_cells, elem, ud)
 
-    xs = node.x[igxn:-igxn].reshape(-1,1)
-    ys = node.y[igyn:-igyn].reshape(1,-1)
-    # z = node.z
+    xs = node.x[igs[0]:-igs[0]].reshape(-1,1,1)
+    ys = node.y[igs[1]:-igs[1]].reshape(1,-1,1)
+    zs = node.z[igs[2]:-igs[2]].reshape(1,1,-1)
+
     xccs = np.zeros_like(xs)
     yccs = np.zeros_like(ys)
+    zccs = np.zeros_like(zs)
 
     yccs[np.where(np.abs(ys - yc) < np.abs(ys - ycm))] = yc
     yccs[np.where(np.abs(ys - yc) > np.abs(ys - ycm))] = ycm
@@ -329,19 +375,32 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     xccs[np.where(np.abs(xs - xc) < np.abs(xs - xcm))] = xc
     xccs[np.where(np.abs(xs - xc) > np.abs(xs - xcm))] = xcm
 
-    r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
+    zccs[np.where(np.abs(zs - zc) < np.abs(zs - zcm))] = zc
+    zccs[np.where(np.abs(zs - zc) > np.abs(zs - zcm))] = zcm
+
+    # r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
+    # rs = [(xs-xccs)**2,(ys-yccs)**2,(zs-zccs)**2]
+    rs = [(xs-xccs)**2,(zs-zccs)**2]
+
+    rs = np.array(rs[:elem.ndim])
+    r = np.sqrt(rs.sum())
+    r = np.repeat(r,node.icy,axis=1)[iy]
     
     for ip in range(25):
-        mpv.p2_nodes[igxn:-igxn,igyn:-igyn] += coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
-    mpv.p2_nodes[igxn:-igxn,igyn:-igyn] *= r/R0 < 1.0
+        mpv.p2_nodes[i2] += coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
+    mpv.p2_nodes[i2] *= r/R0 < 1.0
 
-    mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[igyn:-igyn+1])
+    rhoY0n = mpv.HydroState.rhoY0[igyn:-igyn+1]
+
+    for dim in range(0,node.ndim,2):
+        rhoY0n = np.expand_dims(rhoY0n, dim)
+        rhoY0n = np.repeat(rhoY0n, node.sc[dim], axis=dim)
+
+    mpv.p2_nodes[i2] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[i2] , rhoY0n[hi2])
     # mpv.p2_nodes -= mpv.p2_nodes.mean()
     # mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[0,igyn:-igyn+1])
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
-    # ud.is_nonhydrostatic = 1
-    # ud.is_compressible = 0
     ud.compressibility = float(ud.is_compressible)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
@@ -358,8 +417,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     # Sol.rhoY[...] = rhoY
 
     if ud.initial_projection == True:
-        is_compressible = np.copy(ud.is_compressible)
-        compressibility = np.copy(ud.compressibility)
+        is_compressible = ud.is_compressible
+        compressibility = ud.compressibility
         ud.is_compressible = 0
         ud.compressibility = 0.0
 
@@ -367,6 +426,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
         Sol.rhou -= u0 * Sol.rho
         Sol.rhov -= v0 * Sol.rho
+        Sol.rhow -= w0 * Sol.rho
 
         euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5)
 
@@ -375,6 +435,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
         Sol.rhou += u0 * Sol.rho
         Sol.rhov += v0 * Sol.rho
+        Sol.rhow += w0 * Sol.rho
 
         ud.is_compressible = is_compressible
         ud.compressibility = compressibility

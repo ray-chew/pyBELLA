@@ -1,5 +1,16 @@
-class ThemodynamicInit(object):
+class ThermodynamicInit(object):
+    """
+    Data container for thermodynamical quantities.
+
+    """
     def __init__(self, ud):
+        """
+        Parameters
+        ----------
+        ud : :class:`inputs.user_data.UserDataInit`
+            Data container for the initial conditions
+        """
+        
         g = ud.gamm
         self.gamm = g
         self.gamminv = 1.0 / g

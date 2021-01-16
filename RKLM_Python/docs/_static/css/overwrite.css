@@ -1,0 +1,11 @@
+/** css/overwrite.css **/
+
+/* This line is theme specific - it includes the base theme CSS */
+@import '../styles/furo.css';  
+
+article .align-center, article .figure.align-default, article .legend .align-default {
+    text-align: center;
+    margin-left: 0%;
+    transform: translate(0%);
+
+}

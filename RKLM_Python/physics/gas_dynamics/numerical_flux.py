@@ -1,67 +1,24 @@
 # -*- coding: utf-8 -*-
-"""Example NumPy style docstrings.
-
-This module demonstrates documentation as specified by the `NumPy
-Documentation HOWTO`_. Docstrings may extend over multiple lines. Sections
-are created with a section header followed by an underline of equal length.
-
-Example
--------
-Examples can be given using either the ``Example`` or ``Examples``
-sections. Sections support any reStructuredText formatting, including
-literal blocks::
-
-    $ python example_numpy.py
-
-Section breaks are created with two blank lines. Section breaks are also
-implicitly created anytime a new section starts. Section bodies *may* be
-indented:
-
-.. code-block::
-
-    rhoYv = Sol.rhoY * Sol.rhov / Sol.rho
-    kernel_v = np.array([[0.5,1.,0.5],[0.5,1.,0.5]]).T
-    flux[1].rhoY[1:-1,1:-1] = signal.convolve2d(rhoYv, kernel_v, mode='valid') /kernel_v.sum()
-    flux[1].rhoY[:,-2] *= 0.
-    ...
-
-Notes
------
-    This is an example of an indented section. It's like any other section,
-    but the body is indented to help it stand out from surrounding text.
-
-If a section is indented, then a section break is created by
-resuming unindented text.
-
-Attributes
-----------
-module_level_variable1 : int
-    Module level variables may be documented in either the ``Attributes``
-    section of the module docstring, or in an inline docstring immediately
-    following the variable.
-
-    Either form is acceptable, but the two should not be mixed. Choose
-    one convention to document module level variables and be consistent
-    with it.
-
-
-.. _NumPy Documentation HOWTO:
-   https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
-
-"""
-
 import numpy as np
 from scipy import signal
 from management.debug import find_nearest
 
 def recompute_advective_fluxes(flux, Sol, *args, **kwargs):
     """
-    Todo
-    ----
-    * 2D case for now - generalise in future
+    Recompute the advective fluxes at the cell interfaces, i.e. the faces. This function updates the `flux` container in-place.
+
+    Parameters
+    ----------
+    flux : :py:class:`management.variable.States`
+        Data container for the fluxes at the cell interfaces.
+    Sol : :py:class:`management.variable.States`
+        Data container for the Solution.
+
+    Attention
+    ---------
+    This function is a mess and requires cleaning up.
 
     """
-
     ndim = Sol.rho.ndim
     inner_idx = tuple([slice(1,-1)] * ndim)
 
@@ -90,6 +47,31 @@ def recompute_advective_fluxes(flux, Sol, *args, **kwargs):
     # flux[1].rhoY[...,-1] = 0.
 
 def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
+    """
+    HLL solver for the Riemann problem. Chooses the advected quantities from `Lefts` or `Rights` based on the direction given by `flux`.
+
+    Parameters
+    ----------
+    flux : :py:class:`management.variable.States`
+        Data container for fluxes.
+    Lefts : :py:class:`management.variable.States`
+        Container for the quantities on the left of the cell interfaces.
+    Rights : :py:class:`management.variable.States`
+        Container for the quantities on the right of the cell interfaces.
+    Sol : :py:class:`management.variable.Vars`
+        Solution data container.
+    lmbda : float
+        :math:`\\frac{dt}{dx}`, where :math:`dx` is the grid-size in the direction of the substep.
+    ud : :py:class:`inputs.user_data.UserDataInit`
+        Class container for the initial condition.
+    th : :py:class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+        Class container for the thermodynamical constants.
+
+    Returns
+    -------
+    :py:class:`management.variable.States`
+        `flux` data container with the solution of the Riemann problem.
+    """
     # flux: index 1 to end = Left[inner_idx]: index 0 to -1 = Right[inner_idx]: index 1 to end
     
     ndim = Sol.rho.ndim
@@ -118,3 +100,5 @@ def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
     flux.rhov[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (upl[left_idx] / Lefts.Y[left_idx] * Lefts.v[left_idx] + upr[right_idx] / Rights.Y[right_idx] * Rights.v[right_idx])
     flux.rhow[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (upl[left_idx] / Lefts.Y[left_idx] * Lefts.w[left_idx] + upr[right_idx] / Rights.Y[right_idx] * Rights.w[right_idx])
     flux.rhoX[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (upl[left_idx] / Lefts.Y[left_idx] * Lefts.X[left_idx] + upr[right_idx] / Rights.Y[right_idx] * Rights.X[right_idx])
+
+    return flux

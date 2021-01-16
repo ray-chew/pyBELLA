@@ -55,7 +55,7 @@ class Vars(object):
 
         Parameters
         ----------
-        th : :class:`physics.gas_dynamics.thermodynamic.ThemodynamicInit`
+        th : :class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
             Thermodynamic variables of the system
 
         Attributes
@@ -77,6 +77,8 @@ class Vars(object):
         self.X = np.zeros_like(self.rhoX)
         self.p = np.zeros_like(self.rhoY)
 
+        # the non-zero indices are used here for the case where Lefts and
+        # Rights in the HLLE Solver has one column that is zeros.
         self.u[nonzero_idx] = self.rhou[nonzero_idx] / self.rho[nonzero_idx]
         self.v[nonzero_idx] = self.rhov[nonzero_idx] / self.rho[nonzero_idx]
         self.w[nonzero_idx] = self.rhow[nonzero_idx] / self.rho[nonzero_idx]
@@ -86,8 +88,8 @@ class Vars(object):
 
     def flip(self):
         """
-        Flips the solution variables arrays for the advection routine. `rhou` and `rhov` are also flipped, i.e.
-        ::
+        Flips the solution variables arrays for the advection routine. `rhou` and `rhov` are also flipped, i.e.::
+
             self.rhou, self.rhov = self.rhov, self.rhou    
 
         """
@@ -104,8 +106,6 @@ class Vars(object):
         for key, value in vars(self).items():
             setattr(self,key,np.moveaxis(value,-1,0))
         
-
-
 class States(Vars):
     """
     Data container for `Lefts` and `Rights` for the Riemann solver. Inherits the solution class :class:`management.variable.Vars`.
@@ -122,7 +122,7 @@ class States(Vars):
 
         Notes
         -----
-        Many variables in this data container are unused and can be removed.
+        Many variables in this data container are no longer used and can be removed.
 
         """
         super().__init__(size,ud)
@@ -191,8 +191,3 @@ class Characters(object):
         """
         for key, value in vars(self).items():
             setattr(self, key, value.squeeze())
-
-    # def change_dir(self):
-    #     for key, value in vars(self).items():
-    #         setattr(self, key, -1. * value)
-        
