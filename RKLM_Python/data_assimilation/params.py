@@ -11,8 +11,8 @@ class da_params(object):
         # number of ensemble members
         self.N = N
 
-        self.da_times = np.arange(0.0,3.25,0.25)[1:]
-        self.da_times = np.around(self.da_times,3)
+        self._da_times = np.arange(0.0,3.25,0.25)[1:]
+        self._da_times = np.around(self.da_times,3)
         
         self.obs_attributes = ['rhou', 'rhov']
 
@@ -34,9 +34,6 @@ class da_params(object):
         self.forward_operator = np.eye(N)
         # self.converter = self.converter
 
-        da_len = len(self.da_times)
-        self.gen_obs_noise = self.gen_obs_noise
-
         ############################################
         # Parameters for sparse observations
         ############################################
@@ -47,15 +44,7 @@ class da_params(object):
             assert(0, "Not yet implemented.")
 
         self.obs_frac = 0.10 # fraction of the observations to pick.
-
-        if self.sparse_obs_by_attr == True:
-            da_depth = len(self.obs_attributes)
-        else:
-            da_depth = 1
-        if self.sparse_obs == True and da_len > 0:
-            np.random.seed(777)
-            self.sparse_obs_seeds = np.random.randint(10000,size=(da_len,da_depth)).squeeze()
-
+        self.gen_obs_sparse()
 
         ############################################
         # Parameters for measurement noise
@@ -97,6 +86,17 @@ class da_params(object):
             'rhoX' : 0,
             'p2_nodes' : 2,
         }
+
+    def gen_obs_sparse(self):
+        da_len = len(self.da_times)
+        if self.sparse_obs_by_attr == True:
+            da_depth = len(self.obs_attributes)
+        else:
+            da_depth = 1
+        if self.sparse_obs == True and da_len > 0:
+            np.random.seed(777)
+            self.sparse_obs_seeds = np.random.randint(10000,size=(da_len,da_depth)).squeeze()
+
 
     def gen_obs_noise(self):
         for key in self.obs_attributes:
@@ -224,10 +224,21 @@ class da_params(object):
         self.obs_attributes = lst
         self.obs_noise = {}
         self.noise_percentage = self._noise_percentage
-        self.gen_obs_noise()
+        if self.add_obs_noise:
+            self.gen_obs_noise()
         # setattr(self,self.noise_percentage,self._noise_percentage)
 
-    
+    @property
+    def da_times(self):
+        return self._da_times
+
+    @da_times.setter
+    def da_times(self, lst):
+        self._da_times = lst
+        self._da_times = np.around(self._da_times,3)
+        if self.sparse_obs:
+            self.gen_obs_sparse()
+
     # @staticmethod
     # def sampler_gaussian(var):
     #     return lambda ic: np.random.normal(ic,var**0.5)
