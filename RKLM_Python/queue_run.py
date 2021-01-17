@@ -1,295 +1,97 @@
 from run import run_params as rp
 import json
+import numpy as np
 
 rp = rp()
+path_to_obs = './'
 
 ##########################################
 #
-# TV queue, obs RMSEs
+# Rising bubble ensemble generation
 #
 ##########################################
 
-rp.N = 10
-rp.tc = 'tv_neg'
+# Generate obs and truth (which are the same here)
+# rp.N = 1
+rp.tc = 'rb'
+
 ud = {
-    'aux' : 'debug_neg_noda',
-    'continuous_blending' : False,
+    'aux' : 'truth_CFLfixed',
+    'initial_blending' : True
+}
+
+dap = {
+    'None' : None,
+}
+
+# run simulation
+rp.ud = json.dumps(ud)
+rp.dap = json.dumps(dap)
+rp.queue_run()
+
+##########################################
+
+# Generate ensemble simulations
+rp.N = 10
+
+ud = {
+    'aux' : 'noda_CFLfixed',
     'initial_blending' : True
 }
 
 dap = {
     'da_times' : [],
+    'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_10.0_truth_CFLfixed_ib-0.h5'
 }
+
+# run simulation
 rp.ud = json.dumps(ud)
 rp.dap = json.dumps(dap)
 rp.queue_run()
 
+##########################################
+
+# Generate ensemble with DA and without
+# blending
 ud = {
-    'aux' : '',
-    'continuous_blending' : False,
+    'aux' : 'wda_CFLfixed',
+    # Do blending for initial time-step
     'initial_blending' : True
 }
 
+da_times = np.arange(5.0,10.5,0.5)
+da_times = da_times.tolist()
+
+# Set the data assimilation parameters
 dap = {
-    'none' : None,
+    'da_times' : da_times,
+    # Assimilate the momentum fields
+    'obs_attrs' : ['rhou', 'rhov'],
+    # Path to the generated observation
+    'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_10.0_truth_CFLfixed_ib-0.h5'
 }
+
+# run simulation
 rp.ud = json.dumps(ud)
 rp.dap = json.dumps(dap)
 rp.queue_run()
 
+##########################################
+
+# Generate ensemble with DA and with
+# blending
 ud = {
-    'aux' : '',
-    'continuous_blending' : True,
-    'initial_blending' : True
+    'aux' : 'wda_CFLfixed',
+    # Do blending for initial time-step
+    'initial_blending' : True,
+    # Do blending after each assimilation
+    'continuous_blending' : True
 }
 
-dap = {
-    'none' : None,
-}
+# We do not have to change the DA parameters
+# so we use 'dap' dictionary from before.
 
+# run simulation
 rp.ud = json.dumps(ud)
 rp.dap = json.dumps(dap)
 rp.queue_run()
-
-
-##########################################
-#
-# TV queue, obs RMSEs
-#
-##########################################
-
-# rp.N = 10
-# rp.tc = 'tv'
-# ud = {
-#     'aux' : 'debug_pos_s10p_n15p',
-#     'continuous_blending' : False
-# }
-
-# dap = {
-#     'noise_percentage' : 0.15,
-# }
-
-# rp.ud = json.dumps(ud)
-# rp.dap = json.dumps(dap)
-# rp.queue_run()
-
-# ud = {
-#     'aux' : 'debug_pos_s10p_n20p',
-#     'continuous_blending' : False
-# }
-
-# dap = {
-#     'noise_percentage' : 0.20,
-# }
-
-# rp.ud = json.dumps(ud)
-# rp.dap = json.dumps(dap)
-# rp.queue_run()
-
-
-# ud = {
-#     'aux' : 'debug_pos_s10p_n30p',
-#     'continuous_blending' : False
-# }
-
-# dap = {
-#     'noise_percentage' : 0.30,
-# }
-
-# rp.ud = json.dumps(ud)
-# rp.dap = json.dumps(dap)
-# rp.queue_run()
-
-
-# ud = {
-#     'aux' : 'debug_pos_s10p_n35p',
-#     'continuous_blending' : False
-# }
-
-# dap = {
-#     'noise_percentage' : 0.35,
-# }
-
-# rp.ud = json.dumps(ud)
-# rp.dap = json.dumps(dap)
-# rp.queue_run()
-
-
-# ud = {
-#     'aux' : 'debug_pos_s10p_n40p',
-#     'continuous_blending' : False
-# }
-
-# dap = {
-#     'noise_percentage' : 0.40,
-# }
-
-# rp.ud = json.dumps(ud)
-# rp.dap = json.dumps(dap)
-# rp.queue_run()
-
-
-# ud = {
-#     'aux' : 'debug_pos_s10p_n45p',
-#     'continuous_blending' : False
-# }
-
-# dap = {
-#     'noise_percentage' : 0.45,
-# }
-
-# rp.ud = json.dumps(ud)
-# rp.dap = json.dumps(dap)
-# rp.queue_run()
-
-
-
-##########################################
-#
-# SWE Queue, DA params
-#
-##########################################
-
-# rp.N = 10
-# rp.tc = 'swe_bal_vortex'
-
-
-# ud = {
-#     'aux' : 'debug_letkf_s05p',
-#     'continuous_blending' : True
-# }
-
-# dap = {
-#     'obs_attrs' : ['rhou', 'rhow'],
-#     'obs_path' : './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pp_tra_truth_ip.h5',
-#     'obs_frac' : 0.05
-# }
-
-# rp.ud = json.dumps(ud)
-# rp.dap = json.dumps(dap)
-# rp.queue_run()
-
-# rp.tc = 'swe_bal_vortex'
-
-# ud = {
-#     'aux' : 'debug_letkf_s05p',
-#     'continuous_blending' : False
-# }
-
-# dap = {
-#     'obs_attrs' : ['rhou', 'rhow'],
-#     'obs_path' : './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pp_tra_truth_ip.h5',
-#     'obs_frac' : 0.05
-# }
-
-# rp.ud = json.dumps(ud)
-# rp.dap = json.dumps(dap)
-# rp.queue_run()
-
-# ud = {
-#     'aux' : 'debug_letkf1_s025p',
-#     'continuous_blending' : True
-# }
-
-# dap = {
-#     'obs_attrs' : ['rhou', 'rhow'],
-#     'obs_path' : './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pp_tra_truth_ip.h5',
-#     'obs_frac' : 0.025
-# }
-
-# rp.ud = json.dumps(ud)
-# rp.dap = json.dumps(dap)
-# rp.queue_run()
-
-# ud = {
-#     'aux' : 'debug_letkf1_s25p',
-#     'continuous_blending' : False
-# }
-
-# dap = {
-#     'obs_attrs' : ['rhou', 'rhow'],
-#     'obs_path' : './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pp_tra_truth_ip.h5',
-#     'obs_frac' : 0.025
-# }
-
-# rp.ud = json.dumps(ud)
-# rp.dap = json.dumps(dap)
-# rp.queue_run()
-
-
-##########################################
-#
-# SWE Queue, Coriolis
-#
-##########################################
-
-# rp.N = 1
-# rp.tc = 'swe_bal_vortex'
-
-
-# ud = {
-#     'aux' : 'corr_1.0',
-#     'continuous_blending' : False
-# }
-
-# dap = {
-#     'None' : None,
-# }
-
-# rp.ud = json.dumps(ud)
-# rp.dap = json.dumps(dap)
-# rp.queue_run()
-
-# rp.N = 1
-# rp.tc = 'swe_bal_vortex'
-# ud = {
-#     'inx' : 128+1,
-#     'inz' : 128+1,
-#     'aux' : 'debug_dsi_da'
-# }
-# 
-# dap = {
-#     'noise_percentage' : 0.1,
-# 
-# }
-# rp.ud = json.dumps(ud)
-# rp.dap = json.dumps(dap)
-# rp.queue_run()
-# 
-# rp.N = 1
-# rp.tc = 'swe_bal_vortex'
-# ud = {
-#     'inx' : 256+1,
-#     'inz' : 256+1,
-#     'aux' : 'debug_dsi_da'
-# }
-# 
-# dap = {
-#     'noise_percentage' : 0.1,
-# 
-# }
-
-# dap = {
-#     'obs_attrs' : ['rhou', 'rhow'],
-#     'obs_path' : './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pp_tra_truth_ip.h5',
-#     'obs_frac' : 0.10
-# }
-
-# rp.ud = json.dumps(ud)
-# rp.dap = json.dumps(dap)
-# rp.queue_run()
-
-# ud = {
-#     'aux' : 'debug_letkf1_s10p',
-#     'continuous_blending' : False
-# }
-
-# dap = {
-#     'obs_attrs' : ['rhou', 'rhow'],
-#     'obs_path' : './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pp_tra_truth_ip.h5',
-#     'obs_frac' : 0.10
-# }
-
-# rp.ud = json.dumps(ud)
-# rp.dap = json.dumps(dap)
-# rp.queue_run()
