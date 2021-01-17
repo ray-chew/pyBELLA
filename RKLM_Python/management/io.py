@@ -18,7 +18,7 @@ class io(object):
     """
     def __init__(self,ud,restart=False):
         """
-        Creates HDF5 file based on filename given in user input data.
+        Creates HDF5 file based on filename given attribute `OUTPUT_FILENAME`.
 
         Parameters
         ----------
@@ -256,10 +256,6 @@ class io(object):
         rhou = Sol.rhou[:,igs[1],:]
         rhov = Sol.rhow[:,igs[1],:]
 
-        # inner_domain_rho = rho[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
-        # inner_domain_rhou = rhou[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
-        # inner_domain_rhov = rhov[igs[0]-1:-igs[0], igs[1]-1:-igs[1]]
-
         inner_domain_rho = rho
         inner_domain_rhou = rhou
         inner_domain_rhov = rhov
@@ -269,7 +265,6 @@ class io(object):
         bottom_left_idx  = (slice(0,-1)    , slice(1, None))
         bottom_right_idx = (slice(1, None) , slice(1,None))
 
-        # print(inner_domain_rhov[bottom_right_idx])
         dvdx = 0.5 * ((inner_domain_rhov[bottom_right_idx] / inner_domain_rho[bottom_right_idx] - inner_domain_rhov[bottom_left_idx] / inner_domain_rho[bottom_left_idx]) + (inner_domain_rhov[top_right_idx] / inner_domain_rho[top_right_idx] - inner_domain_rhov[top_left_idx] / inner_domain_rho[top_left_idx])) / dx
 
         dudy = 0.5 * ((inner_domain_rhou[bottom_right_idx] / inner_domain_rho[bottom_right_idx] - inner_domain_rhou[top_right_idx] / inner_domain_rho[top_right_idx]) + (inner_domain_rhou[bottom_left_idx] / inner_domain_rho[bottom_left_idx] - inner_domain_rhou[top_left_idx] / inner_domain_rho[top_left_idx])) / dy
@@ -278,7 +273,6 @@ class io(object):
         tmp = np.expand_dims((dvdx - dudy) * 1.0, axis=1)
         tmp = np.repeat(tmp, node.icy, axis=1)
         vortz[1:-1, :, 1:-1] = tmp
-        # vortz = np.repeat(vortz[:,igs[1],:], node.icy, axis=1)
         return vortz
 
 
@@ -388,8 +382,6 @@ def get_args():
 
     parser.add_argument('-ic','--initial_conditions',action='store',dest='ic',help='<Required> Set initial conditions',required=True,choices={'aw','tv','tv_neg','tv_2d','tv_3d','tv_corr','rb', 'rbc', 'igw','swe','swe_bal_vortex','swe_icshear', 'swe_dvortex'})
 
-    # parser.add_argument('-r','--restart_sim',action='store',dest='rstrt',help='<Optional> Restart simulation?.',required=False,default=False,type=bool)
-
     subparsers = parser.add_subparsers(dest='subcommand')
 
     restart = subparsers.add_parser('restart')
@@ -400,10 +392,6 @@ def get_args():
 
     queue = subparsers.add_parser('queue')
     queue.add_argument('-w', '--rewrite', nargs="*", help='', required=True, type=yaml.safe_load)
-    # queue.add_argument('-p', '--params', action='store', dest='queue_params', help='params dictionary to overwrite DA IC file attributes', required=False, type=dict)
-
-    # restart.add_argument('-t', '--time', nargs="*", help='time outputs for simulation restart in format [start,stop,interval). Use None for ud.tout settings.', type=float, required=False, default=None)
-
 
     args = parser.parse_args() # collect cmd line args
     ic = args.ic

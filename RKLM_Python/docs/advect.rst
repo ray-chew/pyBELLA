@@ -1,3 +1,5 @@
+.. _advection_routine:
+
 Advection routine
 =================
 
