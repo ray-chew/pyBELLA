@@ -51,4 +51,4 @@ def get_DSI_SW(data, g, ud, elem):
     dy = np.diff(elem.z)[0] * ud.h_ref
     
     Dsi =  1./(data.rho * ud.d_ref) * (grad(B,dx,'x') * grad(Pi,dy,'y') - grad(B,dy,'y') * grad(Pi,dx,'x')) # icx * icy
-    return Dsi, Pi
+    return Dsi, Pi, B
