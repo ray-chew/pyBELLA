@@ -8,6 +8,7 @@
 **Reference*
 **archive*
 **current*
+**output*
 
 # Ignore various outputs
 *.h5
