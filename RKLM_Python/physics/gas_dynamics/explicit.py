@@ -6,6 +6,34 @@ from management.variable import Vars
 from copy import deepcopy
 
 def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
+    """
+    Function that runs the advection routine with Strang-splitting. This function updates the `Sol` solution container with the advected solution in-place.
+
+    Parameters
+    ----------
+    Sol : :py:class:`management.variable.Vars` 
+        Solution data container.
+    flux : :py:class:`management.variable.States`
+        Fluxes data container
+    dt : float
+        Time-step size.
+    elem : :py:class:`discretization.kgrid.ElemSpaceDiscr`
+        Container for cell-grid properties.
+    odd : int
+        Is current step odd or even?
+    ud : :py:class:`inputs.user_data.UserDataInit`
+        Class container for initial conditions
+    th : :py:class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+        Class container for thermodynamic quantities.
+    mpv : :py:class:`physics.low_mach.mpv.MPV`
+        Container for Exner pressure.
+    node : :py:class:`discretization.kgrid.NodeSpaceDiscr`
+        Container for node-grid properties.
+    label : string
+        Tag label for the output array
+    writer : :py:class:`management.io.io`, optional
+        Writer class for I/O operations, by default None
+    """
     # double strang sweep
     time_step = 0.5 * dt
     ndim = elem.ndim
@@ -42,7 +70,42 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
             
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
+
+
 def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mpv, writer=None, tag=None):
+    """
+    For each advection substep, solve the advection problem. For more details, see :ref:`advection_routine`. This function updates the solution `Sol` container in-place if a Strang-splitting is used, or returns the `flux` data container if a Runge-Kutta method is used.
+
+    Parameters
+    ----------
+    Sol : :py:class:`management.variable.Vars` 
+        Solution data container.
+    flux : :py:class:`management.variable.States`
+        Fluxes data container
+    lmbda : float
+        :math:`\\frac{dt}{dx}`, where :math:`dx` is the grid-size in the direction of the substep.
+    elem : :py:class:`discretization.kgrid.ElemSpaceDiscr`
+        Container for cell-grid properties.
+    split_step : int
+        Tracks the substep in the Strang-splitting.
+    stage : int
+        Tracks whether the substep order goes in x-y-z or z-y-x.
+    ud : :py:class:`inputs.user_data.UserDataInit`
+        Class container for initial conditions
+    th : :py:class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+        Class container for thermodynamic quantities.
+    mpv : :py:class:`physics.low_mach.mpv.MPV`
+        Container for Exner pressure.
+    writer : :py:class:`management.io.io`, optional
+        Writer class for I/O operations, by default None
+    tag : str, optional
+        If `rk` then the advection routine is solved by means of a first-order Runge-Kutta method, by default None
+
+    Returns
+    -------
+    :py:class:`management.variable.States`
+        `flux` data container.
+    """
     set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
 
     Lefts, Rights = recovery(Sol, flux, lmbda, ud, th, elem, split_step, tag)
@@ -81,7 +144,6 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
     # skipped check_flux_bcs for now; first debug other functions
     # check_flux_bcs(Lefts, Rights, elem, split_step, ud)
 
-    # will need it for the test cases long waves and acoustic
     flux = hll_solver(flux,Lefts,Rights,Sol, lmbda, ud, th)
 
     ndim = elem.ndim
@@ -106,12 +168,42 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
 
 
 def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
-    # Do 2-stages Runge-Kutta.
+    """
+    Function that runs the advection routine with a first-order Runge-Kutta update. This function updates the `Sol` solution container with the advected solution in-place.
+
+    Parameters
+    ----------
+    Sol : :py:class:`management.variable.Vars` 
+        Solution data container.
+    flux : :py:class:`management.variable.States`
+        Fluxes data container
+    dt : float
+        Time-step size.
+    elem : :py:class:`discretization.kgrid.ElemSpaceDiscr`
+        Container for cell-grid properties.
+    odd : int
+        Is current step odd or even?
+    ud : :py:class:`inputs.user_data.UserDataInit`
+        Class container for initial conditions
+    th : :py:class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+        Class container for thermodynamic quantities.
+    mpv : :py:class:`physics.low_mach.mpv.MPV`
+        Container for Exner pressure.
+    node : :py:class:`discretization.kgrid.NodeSpaceDiscr`
+        Container for node-grid properties.
+    label : string
+        Tag label for the output array
+    writer : :py:class:`management.io.io`, optional
+        Writer class for I/O operations, by default None
+
+    Attention
+    ---------
+    This function is not usually called unless commented out in the :py:meth:`management.data.time_update` routine.
+
+    """
+    # Do 1-stages Runge-Kutta.
     time_step = dt
     ndim = elem.ndim
-
-    # Sol0 = deepcopy(Sol)
-    # flux_tmp = deepcopy(flux)
 
     stage = 0
     # Get RK update
