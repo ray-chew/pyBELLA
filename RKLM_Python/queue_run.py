@@ -5,93 +5,106 @@ import numpy as np
 rp = rp()
 path_to_obs = './'
 
-##########################################
-#
-# Rising bubble ensemble generation
-#
-##########################################
-
-# Generate obs and truth (which are the same here)
-# rp.N = 1
-rp.tc = 'rb'
-
-ud = {
-    'aux' : 'truth_CFLfixed',
-    'initial_blending' : True
-}
+rp.N = 1
+rp.tc = 'swe_bal_vortex'
 
 dap = {
-    'None' : None,
+    'None': None
 }
 
-# run simulation
-rp.ud = json.dumps(ud)
 rp.dap = json.dumps(dap)
-rp.queue_run()
 
-##########################################
+### Travelling SWE Vortex
+tout = np.arange(0.0, 1.01, 0.01)[1:]
+tout = tout.tolist()
 
-# Generate ensemble simulations
-rp.N = 10
 
+## 64x64
 ud = {
-    'aux' : 'noda_CFLfixed',
-    'initial_blending' : True
-}
-
-dap = {
-    'da_times' : [],
-    'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_10.0_truth_CFLfixed_ib-0.h5'
+    'aux' : 'debug_dsi_tra',
+    'inx' : 64+1,
+    'inz' : 64+1,
+    'tout' : tout
 }
 
 # run simulation
 rp.ud = json.dumps(ud)
-rp.dap = json.dumps(dap)
 rp.queue_run()
 
-##########################################
 
-# Generate ensemble with DA and without
-# blending
+## 128x128
 ud = {
-    'aux' : 'wda_CFLfixed',
-    # Do blending for initial time-step
-    'initial_blending' : True
-}
-
-da_times = np.arange(5.0,10.5,0.5)
-da_times = da_times.tolist()
-
-# Set the data assimilation parameters
-dap = {
-    'da_times' : da_times,
-    # Assimilate the momentum fields
-    'obs_attrs' : ['rhou', 'rhov'],
-    # Path to the generated observation
-    'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_10.0_truth_CFLfixed_ib-0.h5'
+    'aux' : 'debug_dsi_tra',
+    'inx' : 128+1,
+    'inz' : 128+1,
+    'tout' : tout
 }
 
 # run simulation
 rp.ud = json.dumps(ud)
-rp.dap = json.dumps(dap)
 rp.queue_run()
 
-##########################################
 
-# Generate ensemble with DA and with
-# blending
+## 256x256
 ud = {
-    'aux' : 'wda_CFLfixed',
-    # Do blending for initial time-step
-    'initial_blending' : True,
-    # Do blending after each assimilation
-    'continuous_blending' : True
+    'aux' : 'debug_dsi_tra',
+    'inx' : 256+1,
+    'inz' : 256+1,
+    'tout' : tout
 }
-
-# We do not have to change the DA parameters
-# so we use 'dap' dictionary from before.
 
 # run simulation
 rp.ud = json.dumps(ud)
-rp.dap = json.dumps(dap)
 rp.queue_run()
+
+
+
+### Stationary SWE Vortex
+## 64x64
+ud = {
+    'aux' : 'debug_dsi_sta',
+    'inx' : 64+1,
+    'inz' : 64+1,
+    'tout' : tout,
+    'u_wind_speed' : 0.0,
+    'w_wind_speed' : 0.0
+}
+
+# run simulation
+rp.ud = json.dumps(ud)
+rp.queue_run()
+
+
+## 128x128
+ud = {
+    'aux' : 'debug_dsi_sta',
+    'inx' : 128+1,
+    'inz' : 128+1,
+    'tout' : tout,
+    'u_wind_speed' : 0.0,
+    'w_wind_speed' : 0.0
+}
+
+# run simulation
+rp.ud = json.dumps(ud)
+rp.queue_run()
+
+
+## 256x256
+ud = {
+    'aux' : 'debug_dsi_sta',
+    'inx' : 256+1,
+    'inz' : 256+1,
+    'tout' : tout,
+    'u_wind_speed' : 0.0,
+    'w_wind_speed' : 0.0
+}
+
+# run simulation
+rp.ud = json.dumps(ud)
+rp.queue_run()
+
+
+
+
+
