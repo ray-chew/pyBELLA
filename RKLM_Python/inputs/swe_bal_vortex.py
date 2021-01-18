@@ -27,7 +27,7 @@ class UserData(object):
     viscbt = 0.0
     cond = 0.0
 
-    h_ref = 10000.0
+    h_ref = 1000.0
     d_ref = 10.0
     t_ref = 1000.0
     T_ref = 1.0 # can get rid.
