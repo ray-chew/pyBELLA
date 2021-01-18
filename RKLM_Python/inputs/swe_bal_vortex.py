@@ -27,7 +27,7 @@ class UserData(object):
     viscbt = 0.0
     cond = 0.0
 
-    h_ref = 1000.0
+    h_ref = 10000.0
     d_ref = 10.0
     t_ref = 1000.0
     T_ref = 1.0 # can get rid.
@@ -167,6 +167,7 @@ class UserData(object):
         self.synchronize_weight = 0.0
 
         self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
+        # self.tout = np.arange(0, 0.5 + 0.01, 0.01)[1:]
 
         self.stepmax = 100001
 
@@ -224,7 +225,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     # used to generate truth
 
-    if 'truth' in ud.aux:
+    if 'truth' in ud.aux or 'obs' in ud.aux:
         np.random.seed(2233)
         # H0 += (np.random.random() - 0.5) * 0.1
         # print(seed, H0
@@ -347,7 +348,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     # Add imbalance?
     if 'imbal' in ud.aux:
-        mpv.p2_nodes[...] = 1.0
+        mpv.p2_nodes[...] = 0.0
         Sol.rho[...] = 1.0
         Sol.rhoY[...] = 1.0
 
