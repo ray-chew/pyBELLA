@@ -30,7 +30,7 @@ class io(object):
 
         self.FORMAT = ".h5"
         self.BASE_NAME = self.ud.output_base_name
-        self.OUTPUT_FILENAME = "/srv/public/ray/output" + self.BASE_NAME
+        self.OUTPUT_FILENAME = "./output" + self.BASE_NAME
         self.OUTPUT_FILENAME = self.OUTPUT_FILENAME + "/output"
 
         self.SUFFIX = self.ud.output_suffix
