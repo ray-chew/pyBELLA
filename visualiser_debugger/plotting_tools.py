@@ -118,8 +118,8 @@ class plotter(object):
             im = cax.imshow(arr,aspect=aspect,origin='lower')
             rect0 = patches.Rectangle((25.5,25.5),1.1,1.1,linewidth=1,edgecolor='none',facecolor='red')
             rect = patches.Rectangle((20.5,20.5),11,11,linewidth=1,edgecolor='r',facecolor='none')
-            cax.add_patch(rect0)
-            cax.add_patch(rect)
+#             cax.add_patch(rect0)
+#             cax.add_patch(rect)
         elif method == 'contour':
             if lvls is None:
                 cax.set_aspect(aspect)

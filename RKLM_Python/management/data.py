@@ -117,7 +117,9 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if step == 0 and writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
         dt, cfl, cfl_ac = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
-        # if step < 1 and writer != None: dt = 0.2169
+
+        if 'CFLfixed' in ud.aux:
+            if step < 2 : dt = 0.2169
 
         ######################################################
         # Blending : Do full regime to limit regime conversion
@@ -157,7 +159,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if ud.initial_blending == True and step < 1 and bld is not None:
             # Distinguish between SWE and Euler blendings
             if ud.blending_conv is not 'swe':
-                print("passed")
                 ud.is_compressible = 0
                 ud.compressibility = 0.0
                 blending.do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer)
