@@ -1,8 +1,6 @@
 import numpy as np
 from inputs.enum_bdry import BdryType
-from management.enumerator import TimeIntegrator, MolecularTransport,HillShapes, BottomBC, LimiterType, RecoveryOrder
-# from discretization.time_discretization import SetTimeIntegratorParameters
-# from physics.gas_dynamics.explicit import TimeIntegratorParams
+from management.enumerator import LimiterType
 from physics.hydrostatics import hydrostatic_state
 from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
 from physics.low_mach.second_projection import euler_backward_non_advective_impl_part
@@ -24,8 +22,8 @@ class UserData(object):
     viscbt = 0.0
     cond = 0.0
 
-    h_ref = 10000
-    t_ref = 100
+    h_ref = 10000.0
+    t_ref = 100.0
     T_ref = 300.00
     p_ref = 1e+5
     u_ref = h_ref / t_ref
@@ -87,46 +85,15 @@ class UserData(object):
         self.u_wind_speed = 1.0
         self.v_wind_speed = 1.0
         self.w_wind_speed = 0.0
-        self.wind_shear = -0.0
-        self.hill_shape = HillShapes.AGNESI
-        self.hill_height = 0.0
-        self.hill_length_scale = 99999.9
-
-        # self.xmin = - 5000. / self.h_ref
-        # self.xmax =   5000. / self.h_ref
-        # self.ymin = - 5000. / self.h_ref / 8.0
-        # self.ymax =   5000. / self.h_ref / 8.0
-        # self.zmin = - 5000. / self.h_ref
-        # self.zmax =   5000. / self.h_ref
-
-        # self.wind_speed = 1.0 * 10.0 / self.u_ref
-        # self.wind_shear = -0.0
-        # self.hill_height = 0.0
-        # self.hill_length_scale = 99999.9
-
-        self.bdry_type_min = np.empty((3), dtype=object)
-        self.bdry_type_max = np.empty((3), dtype=object)
-
-        self.bdry_type_min[0] = BdryType.PERIODIC
-        self.bdry_type_min[1] = BdryType.PERIODIC
-        self.bdry_type_min[2] = BdryType.WALL
-        self.bdry_type_max[0] = BdryType.PERIODIC
-        self.bdry_type_max[1] = BdryType.PERIODIC
-        self.bdry_type_max[2] = BdryType.WALL
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
         self.bdry_type[1] = BdryType.PERIODIC
         self.bdry_type[2] = BdryType.WALL
 
-        self.absorber = 0 # 0 == WRONG == FALSE 
-        self.bottom_theta_bc = BottomBC.BOTTOM_BC_DEFAULT
         ##########################################
         # NUMERICS
         ##########################################
-
-        self.time_integrator = TimeIntegrator.SI_MIDPT
-        self.advec_time_integrator = TimeIntegrator.STRANG
         self.CFL  = 0.9/2.0
         # self.CFL = 0.95
         # self.dtfixed0 = 2.1 * 1.200930e-2
@@ -138,15 +105,8 @@ class UserData(object):
         self.iny = 64+1
         self.inz = 1
 
-        self.recovery_order = RecoveryOrder.SECOND
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
-
-        self.kp = 0.0
-        self.kz = 0.0
-        self.km = 0.0
-        self.kY = 0.0
-        self.kZ = 0.0
 
         self.tol = 1.e-8
         self.max_iterations = 6000
@@ -168,12 +128,7 @@ class UserData(object):
         self.initial_projection = True
         self.initial_impl_Euler = False
 
-        self.column_preconditionr = False
-        self.synchronize_nodal_pressure = False
-        self.synchronize_weight = 0.0
-
         self.tout = np.arange(0.0,3.01,0.01)[1:]
-
         self.stepmax = 20000
 
         self.output_base_name = "_travelling_vortex"
@@ -334,15 +289,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         Sol.rhoe[:,igy:-igy] = ud.rhoe(rho,u,v,w,p_hydro,ud,th)
         Sol.rhoY[:,igy:-igy] = rhoY
 
-    # mpv.p2_cells[:,igy:-igy] = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy].T)
-
     mpv.p2_cells[:,igy:-igy] = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy])    
 
     set_ghostcells_p2(mpv.p2_cells, elem, ud)
 
     xs = node.x[igxn:-igxn].reshape(-1,1)
     ys = node.y[igyn:-igyn].reshape(1,-1)
-    # z = node.z
     xccs = np.zeros_like(xs)
     yccs = np.zeros_like(ys)
 
@@ -359,29 +311,15 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     mpv.p2_nodes[igxn:-igxn,igyn:-igyn] *= r/R0 < 1.0
 
     mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[igyn:-igyn+1])
-    # mpv.p2_nodes -= mpv.p2_nodes.mean()
-    # mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[0,igyn:-igyn+1])
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
-    # ud.is_nonhydrostatic = 1
-    # ud.is_compressible = 0
     ud.compressibility = float(ud.is_compressible)
 
-    # mpv.p2_nodes[igxn:-igxn,igyn:-igyn] *= r/R0 < 1.0
-
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
-    # set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
     if 'imbal' in ud.aux:
         Sol.rhoY[...] = 1.0
         mpv.p2_nodes[...] = 0.0
-
-    # from scipy import signal
-    # p2n = mpv.p2_nodes - mpv.p2_nodes.mean()
-    # p2n -= p2n.min()
-    # rhoY = (p2n + 1.0)**th.gm1inv - 1.0
-    # rhoY = signal.fftconvolve(rhoY,np.ones([2] * rhoY.ndim),mode='valid') * 0.25
-    # Sol.rhoY[...] = rhoY
 
     if ud.initial_projection == True:
         is_compressible = np.copy(ud.is_compressible)
@@ -395,7 +333,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         Sol.rhov -= v0 * Sol.rho
 
         euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5)
-        # euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, 2.5e-3, 0.5)
 
         mpv.p2_nodes[...] = p2aux
         mpv.dp2_nodes[...] = 0.0
