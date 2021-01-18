@@ -40,10 +40,10 @@ rp = rp()
 # results.
 #
 ##########################################
-gen_6b1 = True
+gen_6b1 = False
 gen_6b2 = False
 # generate obs and truth for section 6c
-gen_6c_obs_truth = False
+gen_6c_obs_truth = True
 # generate shallow water ensemble simulations
 # for section 6c
 gen_6c_swe = False

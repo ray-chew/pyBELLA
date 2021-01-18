@@ -182,7 +182,7 @@ if __name__ == '__main__':
             blend = bld
 
         # initial blending?
-        if ud.initial_blending == True and outer_step == 0:
+        if ud.initial_blending == True and (outer_step == 0 or outer_step == 1):
             blend = bld
 
         ######################################################

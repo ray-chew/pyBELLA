@@ -21,19 +21,12 @@ class UserData(object):
     Q_vap = 2.53e+06
     gamma = 1.4
 
-    viscm = 0.0
-    viscbm = 0.0
-    visct = 0.0
-    viscbt = 0.0
-    cond = 0.0
-
     h_ref = 10000.0         # [m]
     t_ref = 100.0           # [s]
     T_ref = 300.00          # [K]
     p_ref = 8.61 * 1e4      # [N/m^2]
     u_ref = h_ref / t_ref
     rho_ref = p_ref / (R_gas * T_ref)
-    # rho_ref = 1.0
 
     Nsq_ref = grav * 1.3e-05
 
@@ -59,11 +52,6 @@ class UserData(object):
         self.bouy = self.BOUY
 
         self.mol_trans = MolecularTransport.NO_MOLECULAR_TRANSPORT
-        self.viscm = self.viscm * self.t_ref / (self.h_ref * self.h_ref)
-        self.viscbm = self.viscbm * self.t_ref / (self.h_ref * self.h_ref)
-        self.visct = self.visct * self.t_ref / (self.h_ref * self.h_ref)
-        self.viscbt = self.viscbt * self.t_ref / (self.h_ref * self.h_ref)
-        self.cond = self.cond * self.t_ref / (self.h_ref * self.h_ref * self.R_gas)
 
         self.is_ArakawaKonor = 0
         self.is_nonhydrostatic = 1
@@ -98,89 +86,40 @@ class UserData(object):
 
         self.u_wind_speed = 0.0
         self.w_wind_speed = 0.0
-        self.wind_shear = -0.0
-        self.hill_shape = HillShapes.AGNESI
-        self.hill_height = 0.0 * 0.096447
-        self.hill_length_scale = 0.1535
-
-        self.bdry_type_min = np.empty((3), dtype=object)
-        self.bdry_type_max = np.empty((3), dtype=object)
-
-        self.bdry_type_min[0] = BdryType.PERIODIC
-        self.bdry_type_min[1] = BdryType.WALL
-        self.bdry_type_min[2] = BdryType.WALL
-        self.bdry_type_max[0] = BdryType.PERIODIC
-        self.bdry_type_max[1] = BdryType.WALL
-        self.bdry_type_max[2] = BdryType.WALL
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
         self.bdry_type[1] = BdryType.WALL
         self.bdry_type[2] = BdryType.WALL
 
-        self.absorber = False # 0 == WRONG == FALSE 
-        self.bottom_theta_bc = BottomBC.BOTTOM_BC_DEFAULT
-
         ##########################################
         # NUMERICS
         ##########################################
-
-        self.time_integrator = TimeIntegrator.SI_MIDPT
-        self.advec_time_integrator = TimeIntegrator.STRANG
         self.CFL  = 0.5
         # self.CFL = 0.9
         # self.dtfixed0 = 1.9 / self.t_ref
         # self.dtfixed = 1.9 / self.t_ref
 
         # self.CFL = 1.0
-        self.dtfixed0 = 20.0 / self.t_ref
-        self.dtfixed = 20.0 / self.t_ref
+        # self.dtfixed0 = 20.0 / self.t_ref
+        # self.dtfixed = 20.0 / self.t_ref
         # self.dtfixed0 = 0.05
         # self.dtfixed = 0.05
-        # self.dtfixed0 = 100.0
-        # self.dtfixed = 100.0
+        self.dtfixed0 = 100.0
+        self.dtfixed = 100.0
 
-        self.inx = 100+1
-        self.iny = 50+1
+        self.inx = 160+1
+        self.iny = 80+1
         self.inz = 1
 
-        self.recovery_order = RecoveryOrder.SECOND
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
 
-        self.kp = 1.4
-        self.kz = 1.4
-        self.km = 1.4
-        self.kY = 1.4
-        self.kZ = 1.4
-
-        tol = 1.e-11 if self.is_compressible == 0 else 1.e-11 * 0.01
-
-        self.flux_correction_precision = tol
-        self.flux_correction_local_precision = tol
-        self.second_projection_precision = tol
-        self.second_projection_local_precision = tol
-        self.flux_correction_max_iterations = 6000
-        self.second_projection_max_iterations = 6000
-
-        self.initial_projection = True
-        self.initial_impl_Euler = False
-
-        self.column_preconditionr = True
-        self.synchronize_nodal_pressure = False
-        self.synchronize_weight = 1.0
-
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
-        # self.tout = [350 / self.t_ref]
+        self.tout = np.arange(0.0,10.10,0.10)[10:]
         # self.tout = [10.0]
-        # self.tout = np.arange(0.0,3.51,0.05)
-        self.tout = np.arange(0.0,10.25,0.25)[1:]
-        # self.tout = [10.0]
-        # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
-        # self.tout[1] = -1.0
 
-        # self.stepmax = 80
         self.stepmax = 10000
 
         self.blending_weight = 0./16
@@ -206,23 +145,7 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        # aux = 'vertp_rloc_EnDAB'
-        # aux += '_' + self.blending_conv + '_conv'
-        # aux += '_' + self.blending_mean + '_mean'
-
-        # aux = 'obs_truthgen_freezelt5_wdawloc_4.0_rhov_rhoY_inflation_0.95'
-        aux = 'obs_dpib_wdawloc_1.0_rho_rhov_11by11_nonorm_test'
-        # aux = 'obs_dpib_noda'
-        # aux = 'ip_noconv_noreset'
-        # aux = 'ip_ref'
-        # aux = 'cold_wdawloc_4.0'
-        # aux = 'psinc_ref'
-        # aux = 'wdawoloc'
-        # aux = 'noda_noperturb'
-        # aux = 'time_test'
-        # aux = 'comp_delth_perturb_ib_truth'
-        aux = 'psinc_delth_perturb_truth'
-        # aux = 'debug_da_ext'
+        aux = 'debug'
         self.aux = aux
         self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
@@ -263,12 +186,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     if seed != None:
         np.random.seed(seed)
         # y0 += (np.random.random()-.5)/2.0
-        delth += 2.0*(np.random.random()-.5)
-        # print(delth)
+        # delth += 10.0*(np.random.random()-.5)
+        delth += 10.0*(np.random.random())
     
     if 'truth' in ud.aux:
         np.random.seed(1234)
-        delth += 2.0*(np.random.random()-.5)
+        # delth += 10.0*(np.random.random()-.5)
+        delth += 10.0*(np.random.random())
     print(delth)
     
     r = np.sqrt((x)**2 + (y-y0)**2) / r0
@@ -295,20 +219,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     p = mpv.HydroState_n.p0[0]
     rhoY = mpv.HydroState_n.rhoY0[0]
     mpv.p2_nodes[...] = (p - mpv.HydroState_n.p0[0]) / rhoY / ud.Msq
-
-    # mpv.p2_cells[x_idx,y_idx] = HySt.p20[x_idx,y_idx][c_idx]
-    # mpv.p2_cells[x_idx,y_idx] -= mpv.HydroState.p20[0,y_idx]
-    # print(mpv.p2_cells[x_idx,y_idx] - mpv.HydroState.p20[0,y_idx])
-    # print(mpv.p2_cells[0])
-    # Sol.rhoX[x_idx,y_idx] = Sol.rho[x_idx,y_idx] * (1.0 / Y[:, y_idx] - mpv.HydroState.S0[0, y_idx])
-
-    # mpv.p2_nodes[:,elem.igy:-elem.igy] = HyStn.p20[:,elem.igy:-elem.igy]
-
-    # hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th)
-    # print(mpv.p2_nodes[103,:10])
-    # ud.is_nonhydrostasy = 1.0
-    # ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
-    # ud.nonhydrostasy = float(ud.is_nonhydrostasy)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 

@@ -103,9 +103,6 @@ def do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer
     print(colored("Blending... step = %i" %step,'blue'))
     Sol_freeze = deepcopy(Sol)
     mpv_freeze = deepcopy(mpv)
-    # Sol_move = deepcopy(Sol)
-    # flux_move = deepcopy(flux)
-    # mpv_move = deepcopy(mpv)
 
     ret = data.time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, [0,step-1], th, bld=None, writer=None, debug=False)
 
