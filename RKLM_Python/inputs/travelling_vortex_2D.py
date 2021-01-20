@@ -167,9 +167,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rotdir = 1.0
 
     p0 = 1.0
-    a_rho = 1.0
-    rho0 = a_rho * 0.5
-    del_rho = a_rho * 0.5
+    alpha = 0.0
+    alpha_const = 2.0
+    rho0 = 1.0
+    del_rho = -0.0
     R0 = 0.4
     fac = 1. * 1024.0
     xc = 0.0
@@ -227,6 +228,23 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     coe[23] = -   6.0 / 35.0
     coe[24] =     1.0 / 72.0
 
+
+    const_coe = np.zeros((13))
+    const_coe[0] = 1.0 / 24
+    const_coe[1] = -6.0 / 13
+    const_coe[2] = 33.0 / 14
+    const_coe[3] = -22.0 / 3
+    const_coe[4] = 495.0 / 32
+    const_coe[5] = -396.0 / 17
+    const_coe[6] = +77.0 / 3
+    const_coe[7] = -396.0 / 19
+    const_coe[8] = 99.0 / 8
+    const_coe[9] = -110.0 / 21
+    const_coe[10] = +3.0 / 2
+    const_coe[11] = -6.0 / 23
+    const_coe[12] = +1.0 / 48
+
+
     xs = elem.x.reshape(-1,1)
     ys = elem.y[igy:-igy].reshape(1,-1)
     xccs = np.zeros_like(xs)
@@ -249,13 +267,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     rho = np.zeros_like(r)
     rho[...] += (rho0 + del_rho * (1. - (r/R0)**2)**6) * (r < R0)
-    rho[...] += rho0 * (r > R0)
-
-    # rho[...] += (rho0 - del_rho * (1. - (r/R0)**2)**6) * (r < R0)
-    # rho[...] += rho0 * (r > R0)
-    # rho[...] = del_rho * ((r/R0)**2)**6 * (r < R0)
-    # rho[...] = (rho - rho.max()) * (r < R0)
-    # rho[...] += 1.0
+    rho[...] += rho0 * (r >= R0)
+    # rho[...] += alpha_const * rho0
 
     if seed != None and ud.perturb_type == 'fmp_perturb':
         np.random.seed(seed)
@@ -271,10 +284,15 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         rho = np.fft.ifft2(rhop).real
 
     dp2c = np.zeros_like((r))
+    dp2c_const = np.zeros_like((r))
     for ip in range(25):
-        dp2c += (a_rho * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2) * (r/R0 < 1.0)
+        dp2c += (coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2) * (r/R0 < 1.0)
 
-    p2c = np.copy(dp2c)
+    for ip in range(13):
+        dp2c_const += (const_coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2) * (r/R0 < 1.0)
+
+    dp2c = alpha * dp2c + alpha_const * dp2c_const 
+    p2c = alpha * dp2c + alpha_const * dp2c_const
 
     Sol.rho[:,igy:-igy] = rho
     Sol.rhou[:,igy:-igy] = rho * u
@@ -307,7 +325,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
     
     for ip in range(25):
-        mpv.p2_nodes[igxn:-igxn,igyn:-igyn] += coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
+        mpv.p2_nodes[igxn:-igxn,igyn:-igyn] += alpha * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
+    for ip in range(13):
+        mpv.p2_nodes[igxn:-igxn,igyn:-igyn] += alpha_const * const_coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
+
     mpv.p2_nodes[igxn:-igxn,igyn:-igyn] *= r/R0 < 1.0
 
     mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[igyn:-igyn+1])
