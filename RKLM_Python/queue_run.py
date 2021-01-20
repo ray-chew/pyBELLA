@@ -6,102 +6,115 @@ rp = rp()
 path_to_obs = './'
 
 rp.N = 1
-rp.tc = 'swe_bal_vortex'
 
+# Euler travelling vortex experiment
+rp.tc = 'tv'
+
+# # simulation parameters for the observation
+ud = {
+    'aux' : 'obs_homen',
+}
+
+# # data assimilation parameters for the
+# # observation. No DA.
 dap = {
-    'None': None
+    'None' : None,
 }
 
+# # run simulation
+rp.ud = json.dumps(ud)
 rp.dap = json.dumps(dap)
-
-### Travelling SWE Vortex
-tout = np.arange(0.0, 1.01, 0.01)[1:]
-tout = tout.tolist()
-
-
-## 64x64
-ud = {
-    'aux' : 'debug_dsi_tra',
-    'inx' : 64+1,
-    'inz' : 64+1,
-    'tout' : tout
-}
-
-# run simulation
-rp.ud = json.dumps(ud)
 rp.queue_run()
 
+# ##########################################
 
-## 128x128
+# # simulation parameters for the truth
 ud = {
-    'aux' : 'debug_dsi_tra',
-    'inx' : 128+1,
-    'inz' : 128+1,
-    'tout' : tout
+    'aux' : 'truth_homen',
+    # Do blending for the initial time-step
+    'initial_blending' : True
 }
 
 # run simulation
 rp.ud = json.dumps(ud)
+rp.dap = json.dumps(dap)
 rp.queue_run()
 
+##########################################
 
-## 256x256
+##########################################
+#
+# Run simulations for the Euler vortex
+# ensembles.
+#
+##########################################
+
+# Set ensemble with 10 members
+rp.N = 10
+# Euler travelling vortex experiment
+rp.tc = 'tv'
+
+# Generate ensemble with no DA
 ud = {
-    'aux' : 'debug_dsi_tra',
-    'inx' : 256+1,
-    'inz' : 256+1,
-    'tout' : tout
+    'aux' : 'noda_homen',
+    # Do blending for initial time-step
+    'initial_blending' : True
+}
+
+# For the data assimilation parameters,
+# do not do DA at any time-point.
+dap = {
+    'da_times' : [],
+    # Path to the generated observation
+    'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs_homen.h5'
 }
 
 # run simulation
 rp.ud = json.dumps(ud)
+rp.dap = json.dumps(dap)
 rp.queue_run()
 
+##########################################
 
-
-### Stationary SWE Vortex
-## 64x64
+# Generate ensemble with DA and without
+# blending
 ud = {
-    'aux' : 'debug_dsi_sta',
-    'inx' : 64+1,
-    'inz' : 64+1,
-    'tout' : tout,
-    'u_wind_speed' : 0.0,
-    'w_wind_speed' : 0.0
+    'aux' : 'wda_homen',
+    # Do blending for initial time-step
+    'initial_blending' : True
+}
+
+# Set the data assimilation parameters
+dap = {
+    # Assimilate the momentum fields
+    'obs_attrs' : ['rhou', 'rhov'],
+    # Path to the generated observation
+    'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs_homen.h5'
 }
 
 # run simulation
 rp.ud = json.dumps(ud)
+rp.dap = json.dumps(dap)
 rp.queue_run()
 
+##########################################
 
-## 128x128
+# Generate ensemble with DA and with
+# blending
 ud = {
-    'aux' : 'debug_dsi_sta',
-    'inx' : 128+1,
-    'inz' : 128+1,
-    'tout' : tout,
-    'u_wind_speed' : 0.0,
-    'w_wind_speed' : 0.0
+    'aux' : 'wda_homen',
+    # Do blending for initial time-step
+    'initial_blending' : True,
+    # Do blending after each assimilation
+    'continuous_blending' : True
 }
+
+# We do not have to set the DA parameters
+# so we use 'dap' dictionary from before.
 
 # run simulation
 rp.ud = json.dumps(ud)
-rp.queue_run()
-
-
-## 256x256
-ud = {
-    'aux' : 'debug_dsi_sta',
-    'inx' : 256+1,
-    'inz' : 256+1,
-    'tout' : tout,
-    'u_wind_speed' : 0.0,
-    'w_wind_speed' : 0.0
-}
-
-# run simulation
-rp.ud = json.dumps(ud)
+rp.dap = json.dumps(dap)
 rp.queue_run()
 
 
