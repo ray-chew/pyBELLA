@@ -8,7 +8,7 @@ os.chdir('../')
 
 class run_params(object):
     N = 1
-    tc = 'swe_bal_vortex'
+    tc = 'tv'
 
     def __init__(self):
         self.N = self.N

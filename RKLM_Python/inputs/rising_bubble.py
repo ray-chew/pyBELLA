@@ -124,7 +124,7 @@ class UserData(object):
 
         self.blending_weight = 0./16
         self.blending_mean = 'rhoY' # 1.0, rhoY
-        self.blending_conv = 'rho' #theta, rho
+        self.blending_conv = 'rho' # theta, rho
 
         self.continuous_blending = False
         self.no_of_pi_initial = 1
