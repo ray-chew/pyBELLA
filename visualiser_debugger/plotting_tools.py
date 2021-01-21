@@ -36,14 +36,6 @@ class plotter(object):
     def set_axes(self,**kwargs):
         for key, value in kwargs.items():
             setattr(self,key,value)
-        #self.x_locs= x_locs
-        #self.x_axs = x_axs
-        #self.y_locs = y_locs
-        #self.y_axs = y_axs
-        #self.x_label = x_label
-        #self.y_label = y_label
-        #self.axhline = axhline
-        #self.axvline = axvline
         
     def set_cax_axes(self,cax):
         if hasattr(self, 'x_locs') : cax.set_xticks(self.x_locs)
@@ -89,11 +81,13 @@ class plotter(object):
             arr, title = self.arr_lst[0][0], self.arr_lst[0][1]
             if inner == True:
                 arr = arr[2:-2,2:-2]
-            cax = self.fig.gca()
+#             cax = self.fig.gca()
+            cax = self.ax
             im = self.visualise(method,cax,arr,aspect,lvls)
 #             cax.plot(19,39,marker='x',c='r', ms=10)
             cax.set_title(title)
             self.set_cax_axes(cax)
+            caxs = [cax]
             divider = make_axes_locatable(cax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
 #             plt.colorbar(im, cax=cax, format='%.3f')
@@ -106,7 +100,7 @@ class plotter(object):
         if self.N > 1:
             return ims, caxs
         else:
-            return ims, cax
+            return ims, caxs
         
     def save_fig(self, fn, format='.pdf'):
         self.img.savefig(fn + format, bbox_inches = 'tight', pad_inches = 0)
@@ -152,7 +146,6 @@ class animator_2D(plotter):
 
     @staticmethod
     def update_plot(frame_number, time_series, ims, caxs, img, title, method):
-        
         if method == 'imshow':
             for ii,im in enumerate(ims):
                 arr = time_series[frame_number][ii][0]
