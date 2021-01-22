@@ -55,6 +55,7 @@ if N == 1: da_debug = False
 initial_data = vars(UserData())
 ud = UserDataInit(**initial_data)
 if ud_rewrite is not None: ud.update_ud(ud_rewrite)
+if ud.output_timesteps: output_timesteps = True
 
 elem, node = data_init(ud)
 
