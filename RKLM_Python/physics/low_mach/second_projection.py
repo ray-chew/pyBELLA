@@ -59,12 +59,6 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
         kernel[tuple(slc)] *= -1.0
         kernels.append(kernel)
 
-    # dpdy_kernel = np.array([[-1.,1.],[-1.,1.]])
-    # dpdx_kernel = np.array([[-1.,-1.],[1.,1.]])
-
-    # dpdx = -wp * 0.5 * signal.convolve2d(p2n, dpdx_kernel, mode='valid') / dx
-    # dpdy = -wp * 0.5 * signal.convolve2d(p2n, dpdy_kernel, mode='valid') / dy
-
     dpdx = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[0], mode='valid') / dx
     dpdy = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[1], mode='valid') / dy if elem.iicy > 1 else 0.0
     if ndim == 3: dpdz = -wp * 0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[2], mode='valid') / dz
@@ -86,7 +80,6 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
 
     v = Sol.rhov / Sol.rho
     v = v[i1]
-    time_offset_expl = ud.acoustic_order - 1.0
 
     rhoYovG = Ginv * Sol.rhoY[i1]
     dchi = Sol.rhoX[i1] / Sol.rho[i1]
@@ -105,12 +98,12 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
 
     Sol.rhow[i1] = Sol.rhow[i1] + dt * ( -(ndim == 3) * rhoYovG * dpdz - coriolis * drhou)
 
-    Sol.rhoX[i1] = (Sol.rho[i1] * (Sol.rho[i1] / Sol.rhoY[i1] - S0c)) + time_offset_expl * dt * (-v * dSdy) * Sol.rho[i1]
+    Sol.rhoX[i1] = (Sol.rho[i1] * (Sol.rho[i1] / Sol.rhoY[i1] - S0c)) + dt * (-v * dSdy) * Sol.rho[i1]
 
     dp2n[i1] -= dt * dpidP * div[i1]
 
     # if (ud.is_compressible == 1):
-    weight = ud.compressibility * ud.acoustic_order - 1.0
+    weight = ud.compressibility #- 1.0
     mpv.p2_nodes += weight * dp2n
 
     set_ghostnodes_p2(mpv.p2_nodes,node, ud)
@@ -126,7 +119,6 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     Msq = ud.Msq
     dy = elem.dy
 
-    time_offset = 3.0 - ud.acoustic_order
     coriolis = ud.coriolis_strength[0]
     u0 = ud.u_wind_speed
     w0 = ud.w_wind_speed
@@ -147,18 +139,16 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
         s0 = np.repeat(s0, elem.sc[dim], axis=dim)
     strat /= dy
 
-    Nsqsc = time_offset * dt**2 * (g / Msq) * strat
+    Nsqsc = dt**2 * (g / Msq) * strat
 
     dbuoy = -Sol.rhoY * (Sol.rhoX / Sol.rho)
     rhov = (nonhydro * Sol.rhov + dt * (g/Msq) * dbuoy) / (nonhydro + Nsqsc)
 
     drhou = Sol.rhou - u0 * Sol.rho
     drhow = Sol.rhow - w0 * Sol.rho
-    rhou0 = np.copy(Sol.rhou)
-    # Sol.rhou[...] = u0 * Sol.rho + ooopfsqsc * (drhou + dt * coriolis * Sol.rhow)
+
     Sol.rhou[...] = u0 * Sol.rho + ooopfsqsc * (drhou + dt * coriolis * drhow)
     Sol.rhov[...] = rhov
-    # Sol.rhow[...] = ooopfsqsc * (Sol.rhow - dt * coriolis * drhou)
     Sol.rhow[...] = w0 * Sol.rho + ooopfsqsc * (drhow - dt * coriolis * drhou)
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
@@ -182,7 +172,6 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         writer.populate(str(label),'p2_initial',mpv.p2_nodes)
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
-
     operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt)
 
     i0 = node.ndim * [(slice(0,-1))]
@@ -297,7 +286,6 @@ def exner_perturbation_constraint(Sol,elem,th,p2):
 def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
     ndim = node.ndim
     coriolis = ud.coriolis_strength[0]
-    time_offset = 3.0 - ud.acoustic_order
 
     igs, igy = node.igs, node.igy
     oodxyz = 1.0 / node.dxyz
@@ -348,7 +336,7 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
     Sol.rhou[i2] += -dt * thinv * hplusx[n2e][i2] * (Dpx + dt * coriolis * Dpz)
     Sol.rhov[i2] += -dt * thinv * hplusy[n2e][i2] * Dpy
     if ndim == 3: Sol.rhow[i2] += -dt * thinv * hplusz[n2e][i2] * (Dpz - dt * coriolis * Dpx)
-    Sol.rhoX[i2] += -time_offset * dt * dSdy * Sol.rhov[i2]
+    Sol.rhoX[i2] += - dt * dSdy * Sol.rhov[i2]
 
 
 def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
@@ -360,11 +348,9 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     nonhydro = ud.nonhydrostasy
     dy = elem.dy
 
-    time_offset = 3.0 - ud.acoustic_order
-
     coriolis = ud.coriolis_strength[0]
 
-    ccenter = - ud.Msq * th.gm1inv / (dt**2) / time_offset
+    ccenter = - ud.Msq * th.gm1inv / (dt**2)
     cexp = 2.0 - th.gamm
 
     igs = elem.igs
@@ -406,7 +392,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     coeff = Gammainv * Sol.rhoY[nindim] * Y
     fsqsc = dt**2 * coriolis**2
     fimp = 1.0 / (1.0 + fsqsc)
-    Nsqsc = time_offset * dt**2 * (g / Msq) * strat
+    Nsqsc = dt**2 * (g / Msq) * strat
 
     gimp = 1.0 / (nonhydro + Nsqsc)
 

@@ -8,7 +8,7 @@ from management.variable import States, Vars
 from physics.gas_dynamics.thermodynamic import ThermodynamicInit
 from physics.gas_dynamics.eos import nonhydrostasy, compressibility, is_compressible, is_nonhydrostatic
 from physics.gas_dynamics.gas_dynamics import dynamic_timestep
-from physics.low_mach.mpv import MPV, acoustic_order
+from physics.low_mach.mpv import MPV
 from physics.hydrostatics import hydrostatic_state
 
 # dependencies of the parallelisation by dask
