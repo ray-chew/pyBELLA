@@ -27,9 +27,9 @@ class UserData(object):
     viscbt = 0.0
     cond = 0.0
 
-    h_ref = 1000.0
-    d_ref = 10.0
-    t_ref = 1000.0
+    h_ref = 100.0
+    d_ref = 1.0
+    t_ref = 100.0
     T_ref = 1.0 # can get rid.
     u_ref = h_ref / t_ref
     p_ref = 1.0
@@ -166,7 +166,7 @@ class UserData(object):
         self.synchronize_nodal_pressure = False
         self.synchronize_weight = 0.0
 
-        self.tout = np.arange(0, 3.0 + 0.01, 0.01)[1:]
+        self.tout = np.arange(0.0, 3.0 + 0.01, 0.01)[1:]
         # self.tout = np.arange(0, 0.5 + 0.01, 0.01)[1:]
 
         self.stepmax = 100001
@@ -179,7 +179,7 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
-        aux = 'f_psinc_imbal'
+        aux = 'avg_debug'
         
         self.aux = aux
         self.stratification = self.stratification_function
@@ -240,8 +240,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     xcm = xc - np.sign(xc) * (ud.xmax - ud.xmin)
     zcm = zc - np.sign(zc) * (ud.zmax - ud.zmin)
 
-    # xcm, zcm = 1.0, 1.0
-
     igs = elem.igs
     igy = igs[1]
 
@@ -255,8 +253,25 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     xs = elem.x.reshape(-1,1,1)
     zs = elem.z.reshape(1,1,-1)
 
-    # xs = np.linspace(-0.5,0.5,64).reshape(-1,1,1)
-    # zs = np.linspace(-0.5,0.5,64).reshape(1,1,-1)
+    xccs = np.zeros_like(xs)
+    zccs = np.zeros_like(zs)
+
+    xccs[...] = xc * (np.abs(xs - xc) < np.abs(xs - xcm))
+    xccs[...] += xcm * (np.abs(xs - xc) > np.abs(xs - xcm))
+
+    zccs[...] = zc * (np.abs(zs - zc) < np.abs(zs - zcm))
+    zccs[...] += zcm * (np.abs(zs - zc) > np.abs(zs - zcm))
+
+    r = np.sqrt((xs-xccs)**2 + (zs-zccs)**2)
+    # r[np.where(r==0)] = 1.0
+    uth = (rotdir * fac * (1.0 - r/R0)**6 * (r/R0)**6) * (r < R0)
+
+    u = u0 + uth * (-(zs-zccs)/r)
+    w = w0 + uth * (+(xs-xccs)/r)
+    v = v0
+
+    xs = node.x.reshape(-1,1,1)
+    zs = node.z.reshape(1,1,-1)
     
     xccs = np.zeros_like(xs)
     zccs = np.zeros_like(zs)
@@ -269,10 +284,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     r = np.sqrt((xs-xccs)**2 + (zs-zccs)**2)
     uth = (rotdir * fac * (1.0 - r/R0)**6 * (r/R0)**6) * (r < R0)
-
-    u = u0 + uth * (-(zs-zccs)/r)
-    w = w0 + uth * (+(xs-xccs)/r)
-    v = v0
 
     coe = np.zeros((13))
     coe[0] = +1.0/12
@@ -308,7 +319,18 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     rho *= ud.Msq / 2.0
     rho = (rho - rho.max()) * (r < R0)
+    pn = rho / ud.Msq
+
     rho += H0
+
+    kernel = np.ones((2,2))
+    kernel /= kernel.sum()
+    rho = signal.convolve(rho[:,0,:], kernel, mode='valid')
+    # u = signal.convolve(u[:,0,:], kernel, mode='valid')
+    # w = signal.convolve(w[:,0,:], kernel, mode='valid')
+    rho = np.expand_dims(rho, axis=1)
+    # u = np.expand_dims(u, axis=1)
+    # w = np.expand_dims(w, axis=1)
 
     if (ud.is_compressible):
         Sol.rho[:,igy:-igy,:] = rho
@@ -330,11 +352,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
-    kernel = np.ones((2,2))
-    kernel /= kernel.sum()
     if (ud.is_compressible):
-        pn = (Sol.rhoY[:,igy,:] - H0) / ud.Msq
-        pn = signal.convolve(pn, kernel, mode='valid')
+        # pn = (Sol.rhoY[:,igy,:] - H0) / ud.Msq
+        # pn = signal.convolve(pn, kernel, mode='valid')
+        None
     else:
         rhoY = Sol.rhoY[:,igy,:] / ud.Msq
         pn = signal.convolve(rhoY, kernel, mode='valid')
@@ -342,9 +363,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
     
-    pn = np.expand_dims(pn, axis=1)
-    mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
-    mpv.p2_nodes[2:-2,2:-2,2:-2] -= mpv.p2_nodes[2:-2,2:-2,2:-2].mean(axis=(0,2),keepdims=True)
+    pn = np.repeat(pn, 1, axis=1)
+    # mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
+    mpv.p2_nodes[:,igy:-igy,:] = pn
+    # mpv.p2_nodes[2:-2,2:-2,2:-2] -= mpv.p2_nodes[2:-2,2:-2,2:-2].mean(axis=(0,2),keepdims=True)
 
     # Add imbalance?
     if 'imbal' in ud.aux:
@@ -370,7 +392,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         Sol.rhow -= w0 * Sol.rho
 
         euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5)
-        # euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, 2.5e-3, 0.5)
 
         mpv.p2_nodes[...] = p2aux
         mpv.dp2_nodes[...] = 0.0
