@@ -110,7 +110,7 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
 
     Lefts, Rights = recovery(Sol, flux, lmbda, ud, th, elem, split_step, tag)
 
-    # Lefts, Rights, u, Diffs, Ampls, Slopes = recovery(Sol, flux, lmbda, ud, th, elem, split_step)
+    # Lefts, Rights, u, Diffs, Ampls, Slopes = recovery(Sol, flux, lmbda, ud, th, elem, split_step, tag)
 
     # if writer is not None:
     #     writer[0].write_all(Sol,mpv,elem,writer[1],th,str(writer[2])+'_split_%i' %split_step)
