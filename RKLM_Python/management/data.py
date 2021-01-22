@@ -11,7 +11,7 @@ from physics.gas_dynamics.eos import nonhydrostasy, compressibility, synchronise
 from physics.gas_dynamics.gas_dynamics import dynamic_timestep
 from physics.low_mach.second_projection import euler_backward_non_advective_impl_part, euler_backward_non_advective_expl_part, euler_forward_non_advective
 from inputs.enum_bdry import BdryType
-from physics.low_mach.mpv import MPV, acoustic_order
+from physics.low_mach.mpv import MPV
 
 # blending module
 from data_assimilation import blending
@@ -182,7 +182,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         ud.is_nonhydrostatic = is_nonhydrostatic(ud,window_step)
         ud.nonhydrostasy = nonhydrostasy(ud,t,window_step)
-        ud.acoustic_order = acoustic_order(ud,t, window_step)
 
         if ud.continuous_blending == True or ud.initial_blending == True:
             if window_step >= 0:
