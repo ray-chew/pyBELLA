@@ -21,16 +21,10 @@ class UserData(object):
     g0 = 9.81
     # g0 = 2.0
 
-    viscm = 0.0
-    viscbm = 0.0
-    visct = 0.0
-    viscbt = 0.0
-    cond = 0.0
-
     h_ref = 100.0
     d_ref = 1.0
     t_ref = 100.0
-    T_ref = 1.0 # can get rid.
+    T_ref = 1.0
     u_ref = h_ref / t_ref
     p_ref = 1.0
     rho_ref = p_ref / (R_gas * T_ref)
@@ -94,35 +88,15 @@ class UserData(object):
 
         self.u_wind_speed = 1.0
         self.w_wind_speed = 1.0
-        self.wind_shear = -0.0
-        self.hill_shape = HillShapes.AGNESI
-        self.hill_height = 0.0
-        self.hill_length_scale = 99999.9
-
-        self.bdry_type_min = np.empty((3), dtype=object)
-        self.bdry_type_max = np.empty((3), dtype=object)
-
-        self.bdry_type_min[0] = BdryType.PERIODIC
-        self.bdry_type_min[1] = BdryType.PERIODIC
-        self.bdry_type_min[2] = BdryType.PERIODIC
-        self.bdry_type_max[0] = BdryType.PERIODIC
-        self.bdry_type_max[1] = BdryType.PERIODIC
-        self.bdry_type_max[2] = BdryType.PERIODIC
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
         self.bdry_type[1] = BdryType.PERIODIC
         self.bdry_type[2] = BdryType.PERIODIC
 
-        self.absorber = 0 # 0 == WRONG == FALSE 
-        self.bottom_theta_bc = BottomBC.BOTTOM_BC_DEFAULT
         ##########################################
         # NUMERICS
         ##########################################
-
-        self.time_integrator = TimeIntegrator.SI_MIDPT
-        self.advec_time_integrator = TimeIntegrator.STRANG
-        # self.CFL  = 0.
         self.CFL = 0.45
 
         self.dtfixed0 = 1.0 #/ self.t_ref
@@ -132,15 +106,8 @@ class UserData(object):
         self.iny = 1+1
         self.inz = 64+1
 
-        self.recovery_order = RecoveryOrder.SECOND
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
-
-        self.kp = 0.0
-        self.kz = 0.0
-        self.km = 0.0
-        self.kY = 0.0
-        self.kZ = 0.0
 
         self.tol = 1.e-8
         self.max_iterations = 6000
@@ -162,12 +129,7 @@ class UserData(object):
         self.initial_projection = True
         self.initial_impl_Euler = False
 
-        self.column_preconditionr = False
-        self.synchronize_nodal_pressure = False
-        self.synchronize_weight = 0.0
-
         self.tout = np.arange(0.0, 3.0 + 0.01, 0.01)[1:]
-        # self.tout = np.arange(0, 0.5 + 0.01, 0.01)[1:]
 
         self.stepmax = 100001
 
@@ -179,7 +141,7 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.inz-1,self.tout[-1])
         
-        aux = 'avg_debug'
+        aux = 'debug'
         
         self.aux = aux
         self.stratification = self.stratification_function
@@ -215,21 +177,16 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     f = ud.coriolis_strength[0]
     H0 = 1.0
 
+    # used to generate ensemble spread
     if seed != None:
         np.random.seed(seed)
-        # H0 += (np.random.random() - 0.5) * 0.1
-        # print(seed, H0)
         xc += (np.random.random() - 0.5) * scale / 5.0
         zc += (np.random.random() - 0.5) * scale / 5.0
         print(seed, xc, zc)
 
-    # used to generate truth
-
+    # used to generate truth and observation
     if 'truth' in ud.aux or 'obs' in ud.aux:
         np.random.seed(2233)
-        # H0 += (np.random.random() - 0.5) * 0.1
-        # print(seed, H0
-        # ud.H0 = H0
 
         xc += (np.random.random() - 0.5) * scale / 5.0
         zc += (np.random.random() - 0.5) * scale / 5.0
@@ -242,11 +199,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     igs = elem.igs
     igy = igs[1]
-
-    igxn = node.igx
-    igzn = node.igz
-
-    i2 = (slice(igs[0],-igs[0]),slice(igs[1],-igs[1]),slice(igs[2],-igs[2]))
 
     hydrostatic_state(mpv, elem, node, th, ud)
 
@@ -326,12 +278,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     kernel = np.ones((2,2))
     kernel /= kernel.sum()
     rho = signal.convolve(rho[:,0,:], kernel, mode='valid')
-    # u = signal.convolve(u[:,0,:], kernel, mode='valid')
-    # w = signal.convolve(w[:,0,:], kernel, mode='valid')
     rho = np.expand_dims(rho, axis=1)
-    # u = np.expand_dims(u, axis=1)
-    # w = np.expand_dims(w, axis=1)
-
+    
     if (ud.is_compressible):
         Sol.rho[:,igy:-igy,:] = rho
         Sol.rhou[:,igy:-igy,:] = rho * u
@@ -348,23 +296,11 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         Sol.rhou[:,igy:-igy,:] = H0 * u
         Sol.rhov[:,igy:-igy,:] = H0 * v
         Sol.rhow[:,igy:-igy,:] = H0 * w
-        Sol.rhoY[:,igy:-igy,:] = H1
-
-    set_explicit_boundary_data(Sol,elem,ud,th,mpv)
-
-    if (ud.is_compressible):
-        # pn = (Sol.rhoY[:,igy,:] - H0) / ud.Msq
-        # pn = signal.convolve(pn, kernel, mode='valid')
-        None
-    else:
-        rhoY = Sol.rhoY[:,igy,:] / ud.Msq
-        pn = signal.convolve(rhoY, kernel, mode='valid')
         Sol.rhoY[:,igy:-igy,:] = H0
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
     
     pn = np.repeat(pn, 1, axis=1)
-    # mpv.p2_nodes[1:-1,:,1:-1] = np.repeat(pn[...], node.icy, axis=1)
     mpv.p2_nodes[:,igy:-igy,:] = pn
     # mpv.p2_nodes[2:-2,2:-2,2:-2] -= mpv.p2_nodes[2:-2,2:-2,2:-2].mean(axis=(0,2),keepdims=True)
 
