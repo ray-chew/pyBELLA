@@ -114,6 +114,7 @@ class UserData(object):
         self.perturb_type = 'pos_perturb'
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'rho' #theta, rho
+        self.blending_type = 'half' # half, full
 
         self.continuous_blending = False
         self.no_of_pi_initial = 1
@@ -146,6 +147,7 @@ class UserData(object):
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
+        self.debug = False
 
     def stratification_function(self, y):
         if type(y) == float:
