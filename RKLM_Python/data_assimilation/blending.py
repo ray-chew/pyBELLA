@@ -111,9 +111,9 @@ def do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer
     dp2n_0 = (fac_new * ret[2].p2_nodes_half + fac_old * mpv_freeze.p2_nodes_half)
     dp2n_1 = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
 
-    if ud.blending_type is 'half':
+    if ud.blending_type == 'half':
         dp2n = dp2n_0
-    elif ud.blending_type is 'full':
+    elif ud.blending_type == 'full':
         dp2n = dp2n_1
     else:
         assert 0, "incorrect ud.blending_type"
@@ -178,12 +178,16 @@ def do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug
 
     fac_old = ud.blending_weight
     fac_new = 1.0 - fac_old
-    # dp2n = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
 
-    dp2n = (fac_new * ret[2].p2_nodes_half + fac_old * mpv_freeze.p2_nodes_half)
-    # dp2n_1 = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
+    dp2n_0 = (fac_new * ret[2].p2_nodes_half + fac_old * mpv_freeze.p2_nodes_half)
+    dp2n_1 = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
 
-    # dp2n = 0.5 * (dp2n_0 + dp2n_1)
+    if ud.blending_type == 'half':
+        dp2n = dp2n_0
+    elif ud.blending_type == 'full':
+        dp2n = dp2n_1
+    else:
+        assert 0, "incorrect ud.blending_type"
 
     Sol = deepcopy(Sol_freeze)
     mpv = deepcopy(mpv_freeze)
