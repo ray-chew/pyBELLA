@@ -227,9 +227,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         mpv.p2_nodes_half = deepcopy(mpv.p2_nodes) 
         mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
         
-        # mpv.p2_nodes[...] = mpv.p2_nodes0
-        
-
         Sol = deepcopy(Sol0)
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_half_step')
