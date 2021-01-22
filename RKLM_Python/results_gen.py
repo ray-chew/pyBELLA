@@ -64,6 +64,315 @@ path_to_obs = './'
 
 
 
+
+if gen_6b1:
+    ##########################################
+    #
+    # Run simulations for the Euler and
+    # shallow water vortices (section 6b.1).
+    #
+    ##########################################
+
+    # No ensemble
+    rp.N = 1 
+    # Euler travelling vortex
+    rp.tc = 'tv'
+    # We run the simulation from t=0.0
+    # to t=1.0, t non-dimensional.
+    # Output at every 0.01 time units.
+    tout = np.arange(0.0,1.01,0.01)[1:]
+
+    # JSON dumping does not accept ndarrays.
+    tout = tout.tolist()
+
+    # simulation parameters for the pseudo-
+    # incompressible run
+    ud = {
+        'aux' : 'psinc_noib',
+        # set pseudo-incompressible
+        'is_compressible' : 0,
+        'tout' : tout,
+        'output_timesteps' : True
+        
+    }
+
+    # No data assimilation.
+    dap = {
+        'None' : None,
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ##########################################
+
+    # simulation parameters for the 
+    # compressible run without blending in the
+    # initial time-step
+    ud = {
+        'aux' : 'comp_imbal_noib',
+        'tout' : tout,
+        'output_timesteps' : True
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ##########################################
+
+    # simulation parameters for the 
+    # compressible run with blending in the
+    # initial time-step
+
+    # using pi-half
+    ud = {
+        'aux' : 'comp_imbal_half',
+        'initial_blending' : True,
+        'tout' : tout,
+        'output_timesteps' : True
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+
+    # using pi-full
+    ud = {
+        'aux' : 'comp_imbal_full',
+        'initial_blending' : True,
+        'tout' : tout,
+        'output_timesteps' : True,
+        'blending_weight' : 1.0,
+        'blending_type' : 'full'
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+
+    ##########################################
+
+    # Shallow water travelling vortex
+    rp.tc = 'swe_bal_vortex'
+
+    # simulation parameters for the pseudo-
+    # incompressible run
+    ud = {
+        'aux' : 'psinc',
+        # set pseudo-incompressible
+        'is_compressible' : 0,
+        'tout' : tout
+    }
+
+    # No data assimilation.
+    dap = {
+        'None' : None,
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ##########################################
+
+    # simulation parameters for the 
+    # compressible run without blending in the
+    # initial time-step
+    ud = {
+        'aux' : 'comp_imbal',
+        'tout' : tout
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ##########################################
+
+    # simulation parameters for the 
+    # compressible run with blending in the
+    # initial time-step
+    ud = {
+        'aux' : 'comp_imbal',
+        'initial_blending' : True,
+        'tout' : tout
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+
+
+
+if gen_6b2:
+    ##########################################
+    #
+    # Run simulations for the rising bubble
+    # experiment (section 6b.2).
+    #
+    ##########################################
+
+    # No ensemble
+    rp.N = 1 
+    # Rising bubble experiment
+    rp.tc = 'rb'
+
+    # simulation parameters for the pseudo-
+    # incompressible rising bubble simulation
+    ud = {
+        'aux' : 'psinc',
+        # set pseudo-incompressible simulation
+        'is_compressible' : 0
+    }
+
+    # No data assimilation.
+    dap = {
+        'None' : None,
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ##########################################
+
+    # simulation parameters for the 
+    # compressible rising bubble without
+    # blending in the initial time-step
+    ud = {
+        'aux' : 'comp_imbal',
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ##########################################
+
+    # simulation parameters for the 
+    # compressible rising bubble with
+    # blending in the initial time-step
+    ud = {
+        'aux' : 'comp_bal',
+        'initial_blending' : True
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+
+
+
+if rb:
+    ##########################################
+    #
+    # Rising bubble ensemble generation
+    #
+    ##########################################
+
+    # Generate obs and truth (which are the same here)
+    # rp.N = 1
+    rp.tc = 'rb'
+
+    ud = {
+        'aux' : 'truth_CFLfixed',
+        'initial_blending' : True
+    }
+
+    dap = {
+        'None' : None,
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ##########################################
+
+    # Generate ensemble simulations
+    rp.N = 10
+
+    ud = {
+        'aux' : 'noda_CFLfixed',
+        'initial_blending' : True
+    }
+
+    dap = {
+        'da_times' : [],
+        'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_10.0_truth_CFLfixed_ib-0.h5'
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ##########################################
+
+    # Generate ensemble with DA and without
+    # blending
+    ud = {
+        'aux' : 'wda_CFLfixed',
+        # Do blending for initial time-step
+        'initial_blending' : True
+    }
+
+    da_times = np.arange(5.0,10.5,0.5)
+    da_times = da_times.tolist()
+
+    # Set the data assimilation parameters
+    dap = {
+        'da_times' : da_times,
+        # Assimilate the momentum fields
+        'obs_attrs' : ['rhou', 'rhov'],
+        # Path to the generated observation
+        'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_10.0_truth_CFLfixed_ib-0.h5'
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ##########################################
+
+    # Generate ensemble with DA and with
+    # blending
+    ud = {
+        'aux' : 'wda_CFLfixed',
+        # Do blending for initial time-step
+        'initial_blending' : True,
+        # Do blending after each assimilation
+        'continuous_blending' : True
+    }
+
+    # We do not have to change the DA parameters
+    # so we use 'dap' dictionary from before.
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+
+
 if gen_6c_obs_truth:
     ##########################################
     #
@@ -340,288 +649,5 @@ if gen_6c_euler_full:
 
     ##########################################
 
-
-
-
-if gen_6b2:
-    ##########################################
-    #
-    # Run simulations for the rising bubble
-    # experiment (section 6b.2).
-    #
-    ##########################################
-
-    # No ensemble
-    rp.N = 1 
-    # Rising bubble experiment
-    rp.tc = 'rb'
-
-    # simulation parameters for the pseudo-
-    # incompressible rising bubble simulation
-    ud = {
-        'aux' : 'psinc',
-        # set pseudo-incompressible simulation
-        'is_compressible' : 0
-    }
-
-    # No data assimilation.
-    dap = {
-        'None' : None,
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # simulation parameters for the 
-    # compressible rising bubble without
-    # blending in the initial time-step
-    ud = {
-        'aux' : 'comp_imbal',
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # simulation parameters for the 
-    # compressible rising bubble with
-    # blending in the initial time-step
-    ud = {
-        'aux' : 'comp_bal',
-        'initial_blending' : True
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-
-
-
-if gen_6b1:
-    ##########################################
-    #
-    # Run simulations for the Euler and
-    # shallow water vortices (section 6b.1).
-    #
-    ##########################################
-
-    # No ensemble
-    rp.N = 1 
-    # Euler travelling vortex
-    rp.tc = 'tv'
-    # We run the simulation from t=0.0
-    # to t=1.0, t non-dimensional.
-    # Output at every 0.01 time units.
-    tout = np.arange(0.0,1.01,0.01)[1:]
-
-    # JSON dumping does not accept ndarrays.
-    tout = tout.tolist()
-
-    # simulation parameters for the pseudo-
-    # incompressible run
-    ud = {
-        'aux' : 'psinc',
-        # set pseudo-incompressible
-        'is_compressible' : 0,
-        'tout' : tout
-    }
-
-    # No data assimilation.
-    dap = {
-        'None' : None,
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # simulation parameters for the 
-    # compressible run without blending in the
-    # initial time-step
-    ud = {
-        'aux' : 'comp_imbal',
-        'tout' : tout
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # simulation parameters for the 
-    # compressible run with blending in the
-    # initial time-step
-    ud = {
-        'aux' : 'comp_imbal',
-        'initial_blending' : True,
-        'tout' : tout
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # Shallow water travelling vortex
-    rp.tc = 'swe_bal_vortex'
-
-    # simulation parameters for the pseudo-
-    # incompressible run
-    ud = {
-        'aux' : 'psinc',
-        # set pseudo-incompressible
-        'is_compressible' : 0,
-        'tout' : tout
-    }
-
-    # No data assimilation.
-    dap = {
-        'None' : None,
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # simulation parameters for the 
-    # compressible run without blending in the
-    # initial time-step
-    ud = {
-        'aux' : 'comp_imbal',
-        'tout' : tout
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # simulation parameters for the 
-    # compressible run with blending in the
-    # initial time-step
-    ud = {
-        'aux' : 'comp_imbal',
-        'initial_blending' : True,
-        'tout' : tout
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-
-if rb:
-    ##########################################
-    #
-    # Rising bubble ensemble generation
-    #
-    ##########################################
-
-    # Generate obs and truth (which are the same here)
-    # rp.N = 1
-    rp.tc = 'rb'
-
-    ud = {
-        'aux' : 'truth_CFLfixed',
-        'initial_blending' : True
-    }
-
-    dap = {
-        'None' : None,
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # Generate ensemble simulations
-    rp.N = 10
-
-    ud = {
-        'aux' : 'noda_CFLfixed',
-        'initial_blending' : True
-    }
-
-    dap = {
-        'da_times' : [],
-        'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_10.0_truth_CFLfixed_ib-0.h5'
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # Generate ensemble with DA and without
-    # blending
-    ud = {
-        'aux' : 'wda_CFLfixed',
-        # Do blending for initial time-step
-        'initial_blending' : True
-    }
-
-    da_times = np.arange(5.0,10.5,0.5)
-    da_times = da_times.tolist()
-
-    # Set the data assimilation parameters
-    dap = {
-        'da_times' : da_times,
-        # Assimilate the momentum fields
-        'obs_attrs' : ['rhou', 'rhov'],
-        # Path to the generated observation
-        'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_10.0_truth_CFLfixed_ib-0.h5'
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # Generate ensemble with DA and with
-    # blending
-    ud = {
-        'aux' : 'wda_CFLfixed',
-        # Do blending for initial time-step
-        'initial_blending' : True,
-        # Do blending after each assimilation
-        'continuous_blending' : True
-    }
-
-    # We do not have to change the DA parameters
-    # so we use 'dap' dictionary from before.
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
 
 print("results_gen.py completed")
