@@ -111,7 +111,12 @@ def do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer
     dp2n_0 = (fac_new * ret[2].p2_nodes_half + fac_old * mpv_freeze.p2_nodes_half)
     dp2n_1 = (fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes)
 
-    dp2n = dp2n_0
+    if ud.blending_type is 'half':
+        dp2n = dp2n_0
+    elif ud.blending_type is 'full':
+        dp2n = dp2n_1
+    else:
+        assert 0, "incorrect ud.blending_type"
 
     if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_start', mpv_freeze.p2_nodes)
     if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_end', ret[2].p2_nodes)
