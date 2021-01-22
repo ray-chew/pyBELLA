@@ -169,10 +169,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rotdir = 1.0
 
     p0 = 1.0
-    alpha = 0.0
-    alpha_const = 2.0
-    rho0 = 1.0
-    del_rho = -0.0
+    alpha = 1.0
+    alpha_const = 0.0
+    rho0 = 0.5
+    del_rho = 0.5
     R0 = 0.4
     fac = 1. * 1024.0
     xc = 0.0
@@ -270,7 +270,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rho = np.zeros_like(r)
     rho[...] += (rho0 + del_rho * (1. - (r/R0)**2)**6) * (r < R0)
     rho[...] += rho0 * (r >= R0)
-    # rho[...] += alpha_const * rho0
 
     if seed != None and ud.perturb_type == 'fmp_perturb':
         np.random.seed(seed)
