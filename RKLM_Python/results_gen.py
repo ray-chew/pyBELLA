@@ -41,10 +41,11 @@ rp = rp()
 #
 ##########################################
 gen_6b1_euler = False
-gen_6b1_swe = True
+gen_6b1_swe = False
 gen_6b2 = False
 # generate obs and truth for section 6c
-gen_6c_obs_truth = False
+gen_6c_obs_truth_euler = False
+gen_6c_obs_truth_swe = False
 # generate shallow water ensemble simulations
 # for section 6c
 gen_6c_swe = False
@@ -57,7 +58,10 @@ gen_6c_euler_momenta = False
 # fields
 gen_6c_euler_full = False
 
-rb = False
+rb_bal = False
+rb_bal_cfl = True
+rb_ens = False
+
 
 # specify where the output directories are
 path_to_obs = '/srv/public/ray/'
@@ -343,8 +347,167 @@ if gen_6b2:
 
 
 
+if rb_bal:
+    ##########################################
+    #
+    # Rising bubble balanced / imbalanced IC
+    #
+    ##########################################
+    rp.N = 1
+    rp.tc = 'rb'
 
-if rb:
+    tout = [10.0]
+
+    # simulation parameters for the pseudo-
+    # incompressible run
+    ud = {
+        'aux' : 'psinc_noib',
+        # set pseudo-incompressible
+        'is_compressible' : 0,
+        'tout' : tout,
+        'output_timesteps' : True,
+        'dtfixed0' : 1.9 / 100.0, # 100.0 is t_ref
+        'dtfixed' : 1.9 / 100.0
+        
+    }
+
+    # No data assimilation.
+    dap = {
+        'None' : None,
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ##########################################
+
+    # simulation parameters for the 
+    # compressible run without blending in the
+    # initial time-step
+    ud = {
+        'aux' : 'comp_imbal_noib',
+        'tout' : tout,
+        'output_timesteps' : True,
+        'dtfixed0' : 1.9 / 100.0, # 100.0 is t_ref
+        'dtfixed' : 1.9 / 100.0
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ##########################################
+
+    # simulation parameters for the 
+    # compressible run with blending in the
+    # initial time-step
+
+    # using pi-half
+    ud = {
+        'aux' : 'comp_imbal_half',
+        'initial_blending' : True,
+        'tout' : tout,
+        'output_timesteps' : True,
+        'dtfixed0' : 1.9 / 100.0, # 100.0 is t_ref
+        'dtfixed' : 1.9 / 100.0
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+
+    # using pi-full
+    ud = {
+        'aux' : 'comp_imbal_full',
+        'initial_blending' : True,
+        'tout' : tout,
+        'output_timesteps' : True,
+        'blending_weight' : 1.0,
+        'blending_type' : 'full',
+        'dtfixed0' : 1.9 / 100.0, # 100.0 is t_ref
+        'dtfixed' : 1.9 / 100.0
+    }
+
+    # run simulation
+    # rp.ud = json.dumps(ud)
+    # rp.dap = json.dumps(dap)
+    # rp.queue_run()
+
+
+if rb_bal_cfl:
+    ##########################################
+    #
+    # Rising bubble balanced / imbalanced IC
+    # with fixed CFL
+    #
+    ##########################################
+    rp.N = 1
+    rp.tc = 'rb'
+    tout = [10.0]
+    # No data assimilation.
+    dap = {
+        'None' : None,
+    }
+
+    # simulation parameters for the pseudo-
+    # incompressible run
+    ud = {
+        'aux' : 'psinc_noib_CFLfixed',
+        # set pseudo-incompressible
+        'is_compressible' : 0,
+        'tout' : tout,
+        'output_timesteps' : True,
+        
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ##########################################
+
+    # simulation parameters for the 
+    # compressible run without blending in the
+    # initial time-step
+    ud = {
+        'aux' : 'comp_imbal_noib_CFLfixed',
+        'tout' : tout,
+        'output_timesteps' : True,
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ##########################################
+
+    # simulation parameters for the 
+    # compressible run with blending in the
+    # initial time-step
+
+    # using pi-half
+    ud = {
+        'aux' : 'comp_imbal_half_CFLfixed',
+        'initial_blending' : True,
+        'tout' : tout,
+        'output_timesteps' : True,
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+
+
+if rb_ens:
     ##########################################
     #
     # Rising bubble ensemble generation
@@ -352,7 +515,7 @@ if rb:
     ##########################################
 
     # Generate obs and truth (which are the same here)
-    # rp.N = 1
+    rp.N = 1
     rp.tc = 'rb'
 
     ud = {
@@ -438,7 +601,7 @@ if rb:
 
 
 
-if gen_6c_obs_truth:
+if gen_6c_obs_truth_euler:
     ##########################################
     #
     # Generate observations and truths for the
@@ -450,12 +613,12 @@ if gen_6c_obs_truth:
     # No ensemble
     rp.N = 1 
     # Euler travelling vortex experiment
-    # rp.tc = 'tv'
+    rp.tc = 'tv'
 
     # # simulation parameters for the observation
-    # ud = {
-    #     'aux' : 'obs',
-    # }
+    ud = {
+        'aux' : 'obs',
+    }
 
     # # data assimilation parameters for the
     # # observation. No DA.
@@ -464,26 +627,28 @@ if gen_6c_obs_truth:
     }
 
     # # run simulation
-    # rp.ud = json.dumps(ud)
-    # rp.dap = json.dumps(dap)
-    # rp.queue_run()
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
 
     # ##########################################
 
     # # simulation parameters for the truth
-    # ud = {
-    #     'aux' : 'truth',
-    #     # Do blending for the initial time-step
-    #     'initial_blending' : True
-    # }
+    ud = {
+        'aux' : 'truth',
+        # Do blending for the initial time-step
+        'initial_blending' : True
+    }
 
     # # run simulation
-    # rp.ud = json.dumps(ud)
-    # rp.dap = json.dumps(dap)
-    # rp.queue_run()
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
 
+
+
+if gen_6c_obs_truth_swe:
     ##########################################
-
 
     # shallow water vortex
     rp.tc = 'swe_bal_vortex' 
