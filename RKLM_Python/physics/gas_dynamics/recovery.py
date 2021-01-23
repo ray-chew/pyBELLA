@@ -39,10 +39,6 @@ def recovery(Sol, flux, lmbda, ud, th, elem, split_step, tag):
 
     Sol.primitives(th)
 
-    # lefts_idx = (slice(None),slice(0,-1))
-    # rights_idx = (slice(None),slice(1,None))
-    # inner_idx = (slice(1,-1), slice(1,-1))
-
     if tag == 'rk':
         lmbda = 0.0
 

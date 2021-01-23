@@ -16,12 +16,6 @@ class UserData(object):
     Q_vap = 2.53e+06
     gamma = 1.4
 
-    viscm = 0.0
-    viscbm = 0.0
-    visct = 0.0
-    viscbt = 0.0
-    cond = 0.0
-
     h_ref = 10000.0
     t_ref = 100.0
     T_ref = 300.00
@@ -147,7 +141,7 @@ class UserData(object):
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
-        self.debug = False
+        self.output_timesteps = False
 
     def stratification_function(self, y):
         if type(y) == float:
