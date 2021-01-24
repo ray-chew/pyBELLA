@@ -687,6 +687,7 @@ if gen_6c_swe:
     #
     ##########################################
 
+
     # Set ensemble with 10 members
     rp.N = 10
     # Shallow water travelling vortex experiment
@@ -754,7 +755,6 @@ if gen_6c_swe:
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
     rp.queue_run()
-
 
 if gen_6c_euler_momenta:
     ##########################################
