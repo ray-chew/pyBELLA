@@ -60,7 +60,6 @@ def da_interface(results, obs, obs_attributes, delta, times, tout, N, loc=0):
     return results
 
 class analysis(object):
-    import pyemd
     def __init__(self,ensemble,delta,identifier=None):
         self.ensemble = np.array(ensemble)
         self.ensemble_shape = self.ensemble.shape
@@ -72,6 +71,7 @@ class analysis(object):
         self.delta = delta
 
     def analyse(self,obs_current,obs_covar,Hx,N):
+        import pyemd
         print("starting ETPF analysis...")
 
         r = (Hx - obs_current)**2
