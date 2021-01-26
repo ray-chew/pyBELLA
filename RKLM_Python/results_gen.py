@@ -40,9 +40,10 @@ rp = rp()
 # results.
 #
 ##########################################
+# generate initial blending for section 6b
 gen_6b1_euler = False
 gen_6b1_swe = False
-gen_6b2 = False
+gen_6b2_rb = False
 # generate obs and truth for section 6c
 gen_6c_obs_truth_euler = False
 gen_6c_obs_truth_swe = False
@@ -57,14 +58,15 @@ gen_6c_euler_momenta = False
 # section 6c with assimilation of all
 # fields
 gen_6c_euler_full = False
+# generate rising bubble ensemble
+# simulations for section 6c with
+# assimilation of the momenta fields
+# along with the truth / obs
+gen_6c_rb = False
 
-rb_bal = False
-rb_bal_cfl = True
-rb_ens = False
 
-
-# specify where the output directories are
-path_to_obs = '/srv/public/ray/'
+# specify path to the observation directories 
+# path_to_obs = '/srv/public/ray/'
 path_to_obs = './'
 
 
@@ -284,76 +286,16 @@ if gen_6b1_swe:
 
 
 
-
-if gen_6b2:
+if gen_6b2_rb:
     ##########################################
     #
     # Run simulations for the rising bubble
     # experiment (section 6b.2).
     #
     ##########################################
-
     # No ensemble
     rp.N = 1 
     # Rising bubble experiment
-    rp.tc = 'rb'
-
-    # simulation parameters for the pseudo-
-    # incompressible rising bubble simulation
-    ud = {
-        'aux' : 'psinc',
-        # set pseudo-incompressible simulation
-        'is_compressible' : 0
-    }
-
-    # No data assimilation.
-    dap = {
-        'None' : None,
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # simulation parameters for the 
-    # compressible rising bubble without
-    # blending in the initial time-step
-    ud = {
-        'aux' : 'comp_imbal',
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # simulation parameters for the 
-    # compressible rising bubble with
-    # blending in the initial time-step
-    ud = {
-        'aux' : 'comp_bal',
-        'initial_blending' : True
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-
-
-if rb_bal:
-    ##########################################
-    #
-    # Rising bubble balanced / imbalanced IC
-    #
-    ##########################################
-    rp.N = 1
     rp.tc = 'rb'
 
     tout = [10.0]
@@ -439,7 +381,6 @@ if rb_bal:
     # rp.queue_run()
 
 
-if rb_bal_cfl:
     ##########################################
     #
     # Rising bubble balanced / imbalanced IC
@@ -499,100 +440,6 @@ if rb_bal_cfl:
         'tout' : tout,
         'output_timesteps' : True,
     }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-
-
-if rb_ens:
-    ##########################################
-    #
-    # Rising bubble ensemble generation
-    #
-    ##########################################
-
-    # Generate obs and truth (which are the same here)
-    rp.N = 1
-    rp.tc = 'rb'
-
-    ud = {
-        'aux' : 'truth_CFLfixed',
-        'initial_blending' : True
-    }
-
-    dap = {
-        'None' : None,
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # Generate ensemble simulations
-    rp.N = 10
-
-    ud = {
-        'aux' : 'noda_CFLfixed',
-        'initial_blending' : True
-    }
-
-    dap = {
-        'da_times' : [],
-        'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_10.0_truth_CFLfixed_ib-0.h5'
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # Generate ensemble with DA and without
-    # blending
-    ud = {
-        'aux' : 'wda_CFLfixed',
-        # Do blending for initial time-step
-        'initial_blending' : True
-    }
-
-    da_times = np.arange(5.0,10.5,0.5)
-    da_times = da_times.tolist()
-
-    # Set the data assimilation parameters
-    dap = {
-        'da_times' : da_times,
-        # Assimilate the momentum fields
-        'obs_attrs' : ['rhou', 'rhov'],
-        # Path to the generated observation
-        'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_10.0_truth_CFLfixed_ib-0.h5'
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # Generate ensemble with DA and with
-    # blending
-    ud = {
-        'aux' : 'wda_CFLfixed',
-        # Do blending for initial time-step
-        'initial_blending' : True,
-        # Do blending after each assimilation
-        'continuous_blending' : True
-    }
-
-    # We do not have to change the DA parameters
-    # so we use 'dap' dictionary from before.
 
     # run simulation
     rp.ud = json.dumps(ud)
@@ -756,6 +603,8 @@ if gen_6c_swe:
     rp.dap = json.dumps(dap)
     rp.queue_run()
 
+
+
 if gen_6c_euler_momenta:
     ##########################################
     #
@@ -879,5 +728,98 @@ if gen_6c_euler_full:
 
     ##########################################
 
+
+
+if gen_6c_rb:
+    ##########################################
+    #
+    # Rising bubble ensemble generation
+    #
+    ##########################################
+
+    # Generate obs and truth (which are the same here)
+    rp.N = 1
+    rp.tc = 'rb'
+
+    ud = {
+        'aux' : 'truth_CFLfixed',
+        'initial_blending' : True
+    }
+
+    dap = {
+        'None' : None,
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ##########################################
+
+    # Generate ensemble simulations
+    rp.N = 10
+
+    ud = {
+        'aux' : 'noda_CFLfixed',
+        'initial_blending' : True
+    }
+
+    dap = {
+        'da_times' : [],
+        'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_10.0_truth_CFLfixed_ib-0.h5'
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ##########################################
+
+    # Generate ensemble with DA and without
+    # blending
+    ud = {
+        'aux' : 'wda_CFLfixed',
+        # Do blending for initial time-step
+        'initial_blending' : True
+    }
+
+    da_times = np.arange(5.0,10.5,0.5)
+    da_times = da_times.tolist()
+
+    # Set the data assimilation parameters
+    dap = {
+        'da_times' : da_times,
+        # Assimilate the momentum fields
+        'obs_attrs' : ['rhou', 'rhov'],
+        # Path to the generated observation
+        'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_10.0_truth_CFLfixed_ib-0.h5'
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ##########################################
+
+    # Generate ensemble with DA and with
+    # blending
+    ud = {
+        'aux' : 'wda_CFLfixed',
+        # Do blending for initial time-step
+        'initial_blending' : True,
+        # Do blending after each assimilation
+        'continuous_blending' : True
+    }
+
+    # We do not have to change the DA parameters
+    # so we use 'dap' dictionary from before.
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
 
 print("results_gen.py completed")
