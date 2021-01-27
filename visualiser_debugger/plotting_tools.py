@@ -47,6 +47,9 @@ class plotter(object):
         if hasattr(self, 'axhline'): cax.axhline(self.axhline,c='k',lw=0.5)
         if hasattr(self, 'axvline'): cax.axvline(self.axvline,c='k',lw=0.5)
         if hasattr(self, 'marker'): cax.plot(self.marker[0],self.marker[1],marker='x',c='r', ms=10)
+        if hasattr(self, 'rects'):
+            for rect in self.rects:
+                cax.add_patch(rect)
         
         
     def plot(self,method='imshow',inner=False,suptitle="",rect=[0, 0.03, 1, 0.95],fontsize=14,aspect='auto',lvls=None):
@@ -160,10 +163,10 @@ class animator_2D(plotter):
                 bax = baxs[ii]
                 for c in cax.collections:
                     cax.collections.remove(c)
-                for c in cax.collections:
-                    cax.collections.remove(c)
-                for c in cax.collections:
-                    cax.collections.remove(c)
+#                 for c in cax.collections:
+#                     cax.collections.remove(c)
+#                 for c in cax.collections:
+#                     cax.collections.remove(c)
                 im = cax.contour(arr,colors='k')
                 im = cax.contourf(arr)
                 plt.colorbar(im, cax=bax)
