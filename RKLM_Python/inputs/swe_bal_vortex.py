@@ -308,8 +308,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     # Add imbalance?
     if 'imbal' in ud.aux:
         mpv.p2_nodes[...] = 0.0
-        # Sol.rho[...] = 1.0
-        # Sol.rhoY[...] = 1.0
+        Sol.rho[...] = 1.0
+        Sol.rhoY[...] = 1.0
 
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
