@@ -218,7 +218,7 @@ def labels():
         'rhow'      : r'$\rho w$, horizontal momentum',
         'buoy'      : r'buoyancy',
         'rhoX'      : r'$\rho / \Theta$, mass-weighted inverse pot. temp.',
-        'rhoY'      : r'$\rho \Theta$, mass-weighted potential temperature',
+        'rhoY'      : r'$P$, mass-weighted potential temperature',
         'p2_nodes'  : r'$\pi$, nodal Exner pressure'
         }
     return labels_dict
