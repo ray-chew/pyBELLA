@@ -46,7 +46,7 @@ gen_6b1_swe = False
 gen_6b2_rb = False
 # generate obs and truth for section 6c
 gen_6c_obs_truth_euler = False
-gen_6c_obs_truth_swe = False
+gen_6c_obs_truth_swe = True
 # generate shallow water ensemble simulations
 # for section 6c
 gen_6c_swe = False
@@ -462,13 +462,13 @@ if gen_6c_obs_truth_euler:
     # Euler travelling vortex experiment
     rp.tc = 'tv'
 
-    # # simulation parameters for the observation
+    # simulation parameters for the observation
     ud = {
         'aux' : 'obs',
     }
 
-    # # data assimilation parameters for the
-    # # observation. No DA.
+    # data assimilation parameters for the
+    # observation. No DA.
     dap = {
         'None' : None,
     }
@@ -478,16 +478,16 @@ if gen_6c_obs_truth_euler:
     rp.dap = json.dumps(dap)
     rp.queue_run()
 
-    # ##########################################
+    ##########################################
 
-    # # simulation parameters for the truth
+    # simulation parameters for the truth
     ud = {
         'aux' : 'truth',
         # Do blending for the initial time-step
         'initial_blending' : True
     }
 
-    # # run simulation
+    # run simulation
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
     rp.queue_run()
@@ -503,6 +503,12 @@ if gen_6c_obs_truth_swe:
     # simulation parameters for the observation
     ud = {
         'aux' : 'obs',
+    }
+
+    # data assimilation parameters for the
+    # observation. No DA.
+    dap = {
+        'None' : None,
     }
 
     # run simulation
