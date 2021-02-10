@@ -31,6 +31,7 @@ class io(object):
         self.FORMAT = ".h5"
         self.BASE_NAME = self.ud.output_base_name
         self.OUTPUT_FILENAME = "./output" + self.BASE_NAME
+        self.OUTPUT_FOLDER = self.OUTPUT_FILENAME
         self.OUTPUT_FILENAME = self.OUTPUT_FILENAME + "/output"
 
         self.SUFFIX = self.ud.output_suffix
@@ -79,6 +80,10 @@ class io(object):
         Currently, if the filename of the HDF5 file already exists, this function will append the existing filename with '_old' and create an empty HDF5 file with the same filename in its place.
 
         """
+        # If directory does not exist, create it.
+        if not os.path.exists(self.OUTPUT_FOLDER):
+            os.mkdir(self.OUTPUT_FOLDER)
+
         # If file exists, rename it with old.
         if os.path.exists(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT):
             os.rename(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + '_old' + self.FORMAT)
