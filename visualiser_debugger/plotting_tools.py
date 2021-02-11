@@ -46,6 +46,10 @@ class plotter(object):
         if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
         if hasattr(self, 'axhline'): cax.axhline(self.axhline,c='k',lw=0.5)
         if hasattr(self, 'axvline'): cax.axvline(self.axvline,c='k',lw=0.5)
+        if hasattr(self, 'marker'): cax.plot(self.marker[0],self.marker[1],marker='x',c='r', ms=10)
+        if hasattr(self, 'rects'):
+            for rect in self.rects:
+                cax.add_patch(rect)
         
         
     def plot(self,method='imshow',inner=False,suptitle="",rect=[0, 0.03, 1, 0.95],fontsize=14,aspect='auto',lvls=None):
@@ -54,7 +58,7 @@ class plotter(object):
             assert(0, "Visualisation method not implemented!")
             
         if self.N > 1:
-            ims, caxs = [], []
+            ims, caxs, baxs = [], [], []
             for n, arr in enumerate(self.arr_lst):
                 arr, title = arr[0], arr[1]
                 if inner == True:
@@ -69,9 +73,9 @@ class plotter(object):
                 self.set_cax_axes(cax)
                 caxs.append(cax)
                 divider = make_axes_locatable(cax)
-                cax = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im, cax=cax)#, format='%.3f')
-                
+                bax = divider.append_axes("right", size="5%", pad=0.05)
+                plt.colorbar(im, cax=bax)#, format='%.3f')
+                baxs.append(bax)
                 ims.append(im)
                 
             for i in range(n+1,self.nrows*self.ncols):
@@ -89,18 +93,19 @@ class plotter(object):
             self.set_cax_axes(cax)
             caxs = [cax]
             divider = make_axes_locatable(cax)
-            cax = divider.append_axes("right", size="5%", pad=0.05)
+            bax = divider.append_axes("right", size="5%", pad=0.05)
 #             plt.colorbar(im, cax=cax, format='%.3f')
-            plt.colorbar(im, cax=cax)
+            plt.colorbar(im, cax=bax)
             ims = [im]
+            baxs = [bax]
             
         plt.suptitle(suptitle)
         plt.tight_layout(rect=rect)
         
         if self.N > 1:
-            return ims, caxs
+            return ims, caxs, baxs
         else:
-            return ims, caxs
+            return ims, caxs, baxs
         
     def save_fig(self, fn, format='.pdf'):
         self.img.savefig(fn + format, bbox_inches = 'tight', pad_inches = 0)
@@ -140,12 +145,12 @@ class animator_2D(plotter):
         self.method = None 
         
     def animate(self, interval=100, **kwargs):
-        self.ims, self.caxs = self.plot(**kwargs)
-        anim = animation.FuncAnimation(self.fig, self.update_plot, self.frns, fargs=(self.time_series, self.ims, self.caxs, self.fig, self.suptitle, self.method), interval=interval) 
+        self.ims, self.caxs, self.baxs = self.plot(**kwargs)
+        anim = animation.FuncAnimation(self.fig, self.update_plot, self.frns, fargs=(self.time_series, self.ims, self.caxs, self.baxs, self.fig, self.suptitle, self.method), interval=interval) 
         return anim
 
     @staticmethod
-    def update_plot(frame_number, time_series, ims, caxs, img, title, method):
+    def update_plot(frame_number, time_series, ims, caxs, baxs, img, title, method):
         if method == 'imshow':
             for ii,im in enumerate(ims):
                 arr = time_series[frame_number][ii][0]
@@ -155,14 +160,16 @@ class animator_2D(plotter):
             for ii, cax in enumerate(caxs):
                 arr = time_series[frame_number][ii][0]
                 im = ims[ii]
+                bax = baxs[ii]
                 for c in cax.collections:
                     cax.collections.remove(c)
-                for c in cax.collections:
-                    cax.collections.remove(c)
-                for c in cax.collections:
-                    cax.collections.remove(c)
-                im = cax.contourf(arr)
+#                 for c in cax.collections:
+#                     cax.collections.remove(c)
+#                 for c in cax.collections:
+#                     cax.collections.remove(c)
                 im = cax.contour(arr,colors='k')
+                im = cax.contourf(arr)
+                plt.colorbar(im, cax=bax)
         if title is not None:
             stt = title(frame_number)
             img.suptitle(stt)
@@ -211,7 +218,7 @@ def labels():
         'rhow'      : r'$\rho w$, horizontal momentum',
         'buoy'      : r'buoyancy',
         'rhoX'      : r'$\rho / \Theta$, mass-weighted inverse pot. temp.',
-        'rhoY'      : r'$\rho \Theta$, mass-weighted potential temperature',
+        'rhoY'      : r'$P$, mass-weighted potential temperature',
         'p2_nodes'  : r'$\pi$, nodal Exner pressure'
         }
     return labels_dict

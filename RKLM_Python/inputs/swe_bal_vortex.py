@@ -115,6 +115,8 @@ class UserData(object):
         self.perturb_type = 'pos_perturb'
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'swe' #theta, rho, None
+        self.blending_weight = 0./16
+        self.blending_type = 'half' # half, full
 
         self.initial_blending = False
 
@@ -123,8 +125,6 @@ class UserData(object):
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
-
-        self.blending_weight = 0./16
 
         self.initial_projection = True
         self.initial_impl_Euler = False
@@ -146,6 +146,7 @@ class UserData(object):
         self.aux = aux
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
+        self.output_timesteps = False
 
     def stratification_function(self, y):
         if type(y) == float:
@@ -302,7 +303,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     
     pn = np.repeat(pn, 1, axis=1)
     mpv.p2_nodes[:,igy:-igy,:] = pn
-    # mpv.p2_nodes[2:-2,2:-2,2:-2] -= mpv.p2_nodes[2:-2,2:-2,2:-2].mean(axis=(0,2),keepdims=True)
+    mpv.p2_nodes[2:-2,2:-2,2:-2] -= mpv.p2_nodes[2:-2,2:-2,2:-2].mean(axis=(0,2),keepdims=True)
 
     # Add imbalance?
     if 'imbal' in ud.aux:
