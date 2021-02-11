@@ -46,7 +46,7 @@ gen_6b1_swe = False
 gen_6b2_rb = False
 # generate obs and truth for section 6c
 gen_6c_obs_truth_euler = False
-gen_6c_obs_truth_swe = True
+gen_6c_obs_truth_swe = False
 # generate shallow water ensemble simulations
 # for section 6c
 gen_6c_swe = False
