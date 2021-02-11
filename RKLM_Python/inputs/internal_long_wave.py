@@ -17,12 +17,6 @@ class UserData(object):
     Q_vap = 2.53e+06
     gamma = 1.4
 
-    viscm = 0.0
-    viscbm = 0.0
-    visct = 0.0
-    viscbt = 0.0
-    cond = 0.0
-
     h_ref = 10000.0
     t_ref = 100.0
     T_ref = 300.00
@@ -33,9 +27,7 @@ class UserData(object):
     Nsq_ref = 1.0e-4
 
     # planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0;
-    scale_factor = 160.0
-    # scale_factor = 3.41333333333 # 1024
-    # scale_factor = 4.01333333333
+    scale_factor = 20.0
 
     i_gravity = np.zeros((3))
     i_coriolis = np.zeros((3))
@@ -58,14 +50,6 @@ class UserData(object):
         self.Q = self.Q_vap / (self.R_gas * self.T_ref)
 
         self.nspec = self.NSPEC
-        self.bouy = self.BOUY
-
-        self.mol_trans = MolecularTransport.NO_MOLECULAR_TRANSPORT
-        self.viscm = self.viscm * self.t_ref / (self.h_ref * self.h_ref)
-        self.viscbm = self.viscbm * self.t_ref / (self.h_ref * self.h_ref)
-        self.visct = self.visct * self.t_ref / (self.h_ref * self.h_ref)
-        self.viscbt = self.viscbt * self.t_ref / (self.h_ref * self.h_ref)
-        self.cond = self.cond * self.t_ref / (self.h_ref * self.h_ref * self.R_gas)
 
         self.is_nonhydrostatic = 1
         self.is_compressible = 1
@@ -97,36 +81,18 @@ class UserData(object):
         self.zmin = - 1.0
         self.zmax =   1.0
 
-        self.wind_speed = 1.0 * 20.0 / self.u_ref
-        self.wind_shear = -0.0
-        self.hill_shape = HillShapes.AGNESI
-        self.hill_height = 0.0 * 0.096447
-        self.hill_length_scale = 0.1535
-
-        self.bdry_type_min = np.empty((3), dtype=object)
-        self.bdry_type_max = np.empty((3), dtype=object)
-
-        self.bdry_type_min[0] = BdryType.PERIODIC
-        self.bdry_type_min[1] = BdryType.WALL
-        self.bdry_type_min[2] = BdryType.WALL
-        self.bdry_type_max[0] = BdryType.PERIODIC
-        self.bdry_type_max[1] = BdryType.WALL
-        self.bdry_type_max[2] = BdryType.WALL
+        self.u_wind_speed = 1.0 * 20.0 / self.u_ref
+        self.v_wind_speed = 0.0
+        self.w_wind_speed = 0.0
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
         self.bdry_type[1] = BdryType.WALL
         self.bdry_type[2] = BdryType.WALL
 
-        self.absorber = False # 0 == WRONG == FALSE 
-        self.bottom_theta_bc = BottomBC.BOTTOM_BC_DEFAULT
-
         ##########################################
         # NUMERICS
         ##########################################
-
-        self.time_integrator = TimeIntegrator.SI_MIDPT
-        self.advec_time_integrator = TimeIntegrator.STRANG
         self.CFL  = 0.9
 
         self.dtfixed0 = 10.0 * ( 12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
@@ -134,82 +100,51 @@ class UserData(object):
         # self.dtfixed0 = 5.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
         # self.dtfixed = 5.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
 
-        # self.tips = TimeIntegratorParams()
-        # SetTimeIntegratorParameters(self)
-
         self.inx = 301+1
         # self.inx = 1205+1
         self.iny = 10+1
         # self.iny = 40+1
         self.inz = 1
 
-        self.recovery_order = RecoveryOrder.SECOND
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
 
-        self.kp = 1.4
-        self.kz = 1.4
-        self.km = 1.4
-        self.kY = 1.4
-        self.kZ = 1.4
-
         self.initial_projection = False
-        self.column_preconditionr = True
-        self.synchronize_nodal_pressure = False
 
-        self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
-
-        # tout = 4800s
         self.tout =  [self.scale_factor * 1.0 * 3000.0 / self.t_ref]
-        # if self.scale_factor == 160.0:
-            # self.tout = np.arange(0,4801,100)
-        # self.tout = np.arange(0,601,6)
-        # self.tout = np.arange(0,301,3)/10.
-        # self.tout[0] =  self.scale_factor * 1.0 * 3000.0 / self.t_ref
-        # self.tout[1] = -1.0
-        # self.tout = [4800]
-        # self.tout = [30]
-        # self.tout = [120.4]
 
+        self.tol = 1.e-8
         self.stepmax = 100000
-        # self.stepmax = 10
+        self.max_iterations = 6000
 
-        self.blending_weight = 8./16
-        self.blending_mean = 'rhoY' # 1.0, rhoY
-        self.blending_conv = 'rho' #theta, rho
-
-        self.continuous_blending = True
+        self.continuous_blending = False
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
+        self.blending_weight = 0./16
+        self.blending_mean = 'rhoY' # 1.0, rhoY
+        self.blending_conv = 'rho' #theta, rho
+        self.blending_type = 'half' # half, full
+
+        self.initial_blending = False
+
         self.output_base_name = "_internal_long_wave"
-        
         if self.scale_factor < 10.0:
-            self.output_name_comp = "_low_mach_gravity_comp_standard"
-            self.output_name_ak = "_low_mach_gravity_ak_standard"
-            self.output_name_psinc = "_low_mach_gravity_psinc_standard"
-            self.output_name_hydro = "_low_mach_gravity_hydro_standard"
-            self.output_suffix = "_%i_%i_%.1f_standard" %(self.inx-1,self.iny-1, self.tout[-1])
+            self.scale_tag = "standard"
         elif self.scale_factor == 20.0:
-            self.output_name_comp = "_low_mach_gravity_comp_long"
-            self.output_name_ak = "_low_mach_gravity_ak_long"
-            self.output_name_psinc = "_low_mach_gravity_psinc_long"
-            self.output_name_hydro = "_low_mach_gravity_hydro_long"
-            self.output_suffix = "_%i_%i_%.1f_long" %(self.inx-1,self.iny-1, self.tout[-1])
+            self.scale_tag = "long"
         elif self.scale_factor == 160.0:
-            self.output_name_comp = "_low_mach_gravity_comp_planetary"
-            self.output_name_ak = "_low_mach_gravity_ak_planetary"
-            self.output_name_psinc = "_low_mach_gravity_psinc_planetary"
-            self.output_name_hydro = "_low_mach_gravity_hydro_planetary"
-            self.output_suffix = "_%i_%i_%.1f_planetary" %(self.inx-1,self.iny-1, self.tout[-1])
+            self.scale_tag = "planetary"
+
         else:
             assert(0, "scale factor unsupported")
 
-        self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))
+        aux = self.scale_tag + ""
+        self.aux = aux
 
-        # self.output_suffix += '_psinc_debug'
+        self.output_timesteps = False
 
         self.stratification = self.stratification_function
         self.molly = self.molly_function
@@ -237,9 +172,9 @@ class UserData(object):
         return (p * gm1inv + 0.5 * Msq * rho * (u*u + v*v + w*w))
 
 def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
-    u0 = ud.wind_speed
-    v0 = 0.0
-    w0 = 0.0
+    u0 = ud.u_wind_speed
+    v0 = ud.v_wind_speed
+    w0 = ud.w_wind_speed
     delth = 0.01 / ud.T_ref
     xc = -1.0 * ud.scale_factor * 50.0e+3 / ud.h_ref
     a = ud.scale_factor * 5.0e+3 / ud.h_ref
