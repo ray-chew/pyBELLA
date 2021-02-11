@@ -10,7 +10,7 @@ class UserData(object):
     BOUY = 0
 
     grav = 9.81
-    omega = 0.0*0.0001
+    omega = 1.0*0.0001
 
     R_gas = 287.4
     R_vap = 461.0
@@ -113,7 +113,7 @@ class UserData(object):
 
         self.tout =  [self.scale_factor * 1.0 * 3000.0 / self.t_ref]
 
-        self.tol = 1.e-8
+        self.tol = 1.e-13
         self.stepmax = 100000
         self.max_iterations = 6000
 
