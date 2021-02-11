@@ -86,7 +86,7 @@ dap = da_params(N, da_type='rloc')
 if dap_rewrite is not None: dap.update_dap(dap_rewrite)
 
 # if elem.ndim == 2:
-if dap.da_type == 'rloc':
+if dap.da_type == 'rloc' and N > 1:
     rloc = prepare_rloc(ud, elem, node, dap, N)
 
 print(colored("Generating initial ensemble...",'yellow'))
