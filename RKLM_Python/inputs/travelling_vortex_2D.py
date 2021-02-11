@@ -16,12 +16,6 @@ class UserData(object):
     Q_vap = 2.53e+06
     gamma = 1.4
 
-    viscm = 0.0
-    viscbm = 0.0
-    visct = 0.0
-    viscbt = 0.0
-    cond = 0.0
-
     h_ref = 10000.0
     t_ref = 100.0
     T_ref = 300.00
@@ -114,6 +108,7 @@ class UserData(object):
         self.perturb_type = 'pos_perturb'
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'rho' #theta, rho
+        self.blending_type = 'half' # half, full
 
         self.continuous_blending = False
         self.no_of_pi_initial = 1
@@ -146,6 +141,7 @@ class UserData(object):
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
+        self.output_timesteps = False
 
     def stratification_function(self, y):
         if type(y) == float:
@@ -167,10 +163,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rotdir = 1.0
 
     p0 = 1.0
-    alpha = 0.0
-    alpha_const = 2.0
-    rho0 = 1.0
-    del_rho = -0.0
+    alpha = 1.0
+    alpha_const = 0.0
+    rho0 = 0.5
+    del_rho = 0.5
     R0 = 0.4
     fac = 1. * 1024.0
     xc = 0.0
@@ -268,7 +264,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rho = np.zeros_like(r)
     rho[...] += (rho0 + del_rho * (1. - (r/R0)**2)**6) * (r < R0)
     rho[...] += rho0 * (r >= R0)
-    # rho[...] += alpha_const * rho0
 
     if seed != None and ud.perturb_type == 'fmp_perturb':
         np.random.seed(seed)
