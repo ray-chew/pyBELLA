@@ -10,7 +10,7 @@ class UserData(object):
     BOUY = 0
 
     grav = 9.81
-    omega = 1.0*0.0001
+    omega = 0.0*0.0001
 
     R_gas = 287.4
     R_vap = 461.0
@@ -27,7 +27,7 @@ class UserData(object):
     Nsq_ref = 1.0e-4
 
     # planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0;
-    scale_factor = 20.0
+    scale_factor = 160.0
 
     i_gravity = np.zeros((3))
     i_coriolis = np.zeros((3))
@@ -51,7 +51,7 @@ class UserData(object):
 
         self.nspec = self.NSPEC
 
-        self.is_nonhydrostatic = 1
+        self.is_nonhydrostatic = 0
         self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
@@ -113,7 +113,7 @@ class UserData(object):
 
         self.tout =  [self.scale_factor * 1.0 * 3000.0 / self.t_ref]
 
-        self.tol = 1.e-13
+        self.tol = 1.e-8
         self.stepmax = 100000
         self.max_iterations = 6000
 
@@ -137,11 +137,18 @@ class UserData(object):
             self.scale_tag = "long"
         elif self.scale_factor == 160.0:
             self.scale_tag = "planetary"
-
         else:
             assert(0, "scale factor unsupported")
 
-        aux = self.scale_tag + ""
+        if self.is_nonhydrostatic and self.is_compressible:
+            self.h_tag = 'nonhydro'
+        elif self.is_nonhydrostatic and not self.is_compressible:
+            self.h_tag = 'psinc'
+        elif not self.is_nonhydrostatic:
+            self.h_tag = 'hydro'
+
+        aux = ""
+        aux = self.scale_tag + "_" + self.h_tag
         self.aux = aux
 
         self.output_timesteps = False
