@@ -91,7 +91,8 @@ class UserData(object):
         ##########################################
         # NUMERICS
         ##########################################
-        self.CFL  = 0.9/2.0
+        self.CFL = 0.9/2.0
+        # self.CFL = 0.9
 
         self.inx = 301+1
         self.iny = 10+1
@@ -124,7 +125,8 @@ class UserData(object):
         self.initial_projection = True
         self.initial_impl_Euler = False
 
-        self.tout = np.arange(0.0,9000.0,1000.0)[1:]
+        # self.tout = np.arange(0.0,9000.0,1000.0)[1:]
+        self.tout = np.arange(0.0,200,5.0)[1:]
         self.stepmax = 20000
 
         self.output_base_name = "_lamb_wave"
@@ -150,11 +152,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     def bump(xi):
         # eqn (15)
-        # if np.abs(xi) < 1:
-        #     return np.exp(-1.0 / (1.0 - xi**2))
-        # else:
-        #     return 0.0
-        return 1.0
+        # tmp = np.zeros_like(xi)
+        # tmp[np.where(np.abs(xi) < 1)] = np.exp(-1.0 / (1.0 - xi[np.where(np.abs(xi) < 1)]**2))
+        # return tmp
+        return np.ones_like(xi)
 
     hydrostatic_state(mpv, elem, node, th, ud)
 
@@ -201,16 +202,17 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Sol.rhou[...] = rho * u
     Sol.rhov[...] = rho * v
     Sol.rhow[...] = rho * w
-    Sol.rhoe[...] = 1.0
+    Sol.rhoe[...] = 0.0
     Sol.rhoY[...] = rho * Y
-    Sol.rhoX[...] = Sol.rho / Y
+    Sol.rhoX[...] = rho / Y
+    mpv.p2_cells[...] = pi / Msq
 
     # initialise nodal pi
     xn = node.x.reshape(-1,1)
     yn = node.y.reshape(1,-1)
 
     An = A0 * bump(2.0 * yn / 4.0 * Hrho - 1.0)
-    pibar_n = mpv.HydroState_n.p20
+    pibar_n = mpv.HydroState_n.p20.reshape(1,-1)
     phi_n = waveno * xn - (pm + eps * (Cs * kGam / N) / (kstar**2 - 1.0)) * kstar * N * t
 
     pi_n = pibar_n * Msq + An * Cs * th.Gamma * np.cos(phi_n) * FF
