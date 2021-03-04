@@ -215,6 +215,7 @@ if __name__ == '__main__':
         ######################################################
         # Analysis step
         ######################################################
+        tout = np.around(tout,3)
         if N > 1 and tout in dap.da_times:
             futures = []
 
