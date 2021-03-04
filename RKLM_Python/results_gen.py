@@ -62,7 +62,7 @@ gen_6c_euler_full = False
 # simulations for section 6c with
 # assimilation of the momenta fields
 # along with the truth / obs
-gen_6c_rb = False
+gen_6c_rb = True
 
 
 # specify path to the observation directories 
@@ -298,7 +298,8 @@ if gen_6b2_rb:
     # Rising bubble experiment
     rp.tc = 'rb'
 
-    tout = [10.0]
+    tout = [1.0]
+    t_ref = 1000.0
 
     # simulation parameters for the pseudo-
     # incompressible run
@@ -308,8 +309,8 @@ if gen_6b2_rb:
         'is_compressible' : 0,
         'tout' : tout,
         'output_timesteps' : True,
-        'dtfixed0' : 1.9 / 100.0, # 100.0 is t_ref
-        'dtfixed' : 1.9 / 100.0
+        'dtfixed0' : 1.9 / t_ref,
+        'dtfixed' : 1.9 / t_ref
         
     }
 
@@ -332,8 +333,8 @@ if gen_6b2_rb:
         'aux' : 'comp_imbal_noib',
         'tout' : tout,
         'output_timesteps' : True,
-        'dtfixed0' : 1.9 / 100.0, # 100.0 is t_ref
-        'dtfixed' : 1.9 / 100.0
+        'dtfixed0' : 1.9 / t_ref,
+        'dtfixed' : 1.9 / t_ref
     }
 
     # run simulation
@@ -353,8 +354,8 @@ if gen_6b2_rb:
         'initial_blending' : True,
         'tout' : tout,
         'output_timesteps' : True,
-        'dtfixed0' : 1.9 / 100.0, # 100.0 is t_ref
-        'dtfixed' : 1.9 / 100.0
+        'dtfixed0' : 1.9 / t_ref,
+        'dtfixed' : 1.9 / t_ref
     }
 
     # run simulation
@@ -371,8 +372,8 @@ if gen_6b2_rb:
         'output_timesteps' : True,
         'blending_weight' : 1.0,
         'blending_type' : 'full',
-        'dtfixed0' : 1.9 / 100.0, # 100.0 is t_ref
-        'dtfixed' : 1.9 / 100.0
+        'dtfixed0' : 1.9 / t_ref,
+        'dtfixed' : 1.9 / t_ref
     }
 
     # run simulation
@@ -389,7 +390,7 @@ if gen_6b2_rb:
     ##########################################
     rp.N = 1
     rp.tc = 'rb'
-    tout = [10.0]
+    tout = [1.0]
     # No data assimilation.
     dap = {
         'None' : None,
@@ -773,7 +774,7 @@ if gen_6c_rb:
 
     dap = {
         'da_times' : [],
-        'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_10.0_truth_CFLfixed_ib-0.h5'
+        'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_1.0_truth_CFLfixed_ib-0.h5'
     }
 
     # run simulation
@@ -791,7 +792,7 @@ if gen_6c_rb:
         'initial_blending' : True
     }
 
-    da_times = np.arange(5.0,10.5,0.5)
+    da_times = np.arange(5.0,10.5,0.5)/10.0
     da_times = da_times.tolist()
 
     # Set the data assimilation parameters
@@ -800,7 +801,7 @@ if gen_6c_rb:
         # Assimilate the momentum fields
         'obs_attrs' : ['rhou', 'rhov'],
         # Path to the generated observation
-        'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_10.0_truth_CFLfixed_ib-0.h5'
+        'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_1.0_truth_CFLfixed_ib-0.h5'
     }
 
     # run simulation

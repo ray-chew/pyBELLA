@@ -46,7 +46,9 @@ class plotter(object):
         if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
         if hasattr(self, 'axhline'): cax.axhline(self.axhline,c='k',lw=0.5)
         if hasattr(self, 'axvline'): cax.axvline(self.axvline,c='k',lw=0.5)
-        if hasattr(self, 'marker'): cax.plot(self.marker[0],self.marker[1],marker='x',c='r', ms=10)
+        if hasattr(self, 'marker'):
+            for marker in self.marker:
+                cax.plot(marker[0],marker[1],marker='x',c=marker[2], ms=18, mew=5)
         if hasattr(self, 'rects'):
             for rect in self.rects:
                 cax.add_patch(rect)
@@ -74,7 +76,13 @@ class plotter(object):
                 caxs.append(cax)
                 divider = make_axes_locatable(cax)
                 bax = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(im, cax=bax)#, format='%.3f')
+                if method == 'imshow' and lvl is not None:
+#                     plt.colorbar(im, cax=bax, ticks=lvl)#, format='%.3f')
+                    plt.colorbar(im, cax=bax, ticks=lvl, extend='both', extendrect=True, extendfrac='auto')#, format='%.3f')
+                else:
+                    plt.colorbar(im, cax=bax, extend='both', extendrect=True, extendfrac='auto')#, format='%.3f')
+#                     plt.colorbar(im, cax=bax)
+#                     plt.colorbar(im, cax=bax, ticks=lvl)
                 baxs.append(bax)
                 ims.append(im)
                 
@@ -88,14 +96,19 @@ class plotter(object):
 #             cax = self.fig.gca()
             cax = self.ax
             im = self.visualise(method,cax,arr,aspect,lvls)
-#             cax.plot(19,39,marker='x',c='r', ms=10)
             cax.set_title(title)
             self.set_cax_axes(cax)
             caxs = [cax]
             divider = make_axes_locatable(cax)
             bax = divider.append_axes("right", size="5%", pad=0.05)
-#             plt.colorbar(im, cax=cax, format='%.3f')
-            plt.colorbar(im, cax=bax)
+            if method == 'imshow' and lvls is not None:
+#                 plt.colorbar(im, cax=bax, ticks=lvls)#, format='%.3f')
+                plt.colorbar(im, cax=bax, ticks=lvls, extend='both', extendrect=True, extendfrac='auto')#, format='%.3f')
+            else:
+                plt.colorbar(im, cax=bax, extend='both', extendrect=True, extendfrac='auto')
+#             plt.colorbar(im, cax=bax)
+            if aspect != 'auto' and aspect != 'equal':
+                bax.set_aspect(float(aspect)*10.0)
             ims = [im]
             baxs = [bax]
             
@@ -114,21 +127,30 @@ class plotter(object):
     @staticmethod
     def visualise(method,cax,arr,aspect,lvls):
         if method == 'imshow':
-            im = cax.imshow(arr,aspect=aspect,origin='lower')
+            if lvls is None:
+                im = cax.imshow(arr,aspect=aspect,origin='lower')
+            else:
+                im = cax.imshow(arr,aspect=aspect,origin='lower')
             rect0 = patches.Rectangle((25.5,25.5),1.1,1.1,linewidth=1,edgecolor='none',facecolor='red')
             rect = patches.Rectangle((20.5,20.5),11,11,linewidth=1,edgecolor='r',facecolor='none')
 #             cax.add_patch(rect0)
 #             cax.add_patch(rect)
         elif method == 'contour':
             if lvls is None:
-                cax.set_aspect(aspect)
                 im = cax.contour(arr,colors='k')
                 im = cax.contourf(arr)
                 cax.set_aspect(aspect)
             else:
                 cax.set_aspect(aspect)
-                im = cax.contour(arr,linewidths=0.5,levels=lvls,colors='k')
-                im = cax.contourf(arr,levels=lvls)
+#                 im = cax.contour(arr,linewidths=0.5,levels=lvls,colors='k',)
+#                 lvls = lvls[1:-1]
+#                 print(lvls)
+                im = cax.contour(arr,linewidths=1.0,colors='k',levels=lvls)
+#                 im = cax.contourf(arr,levels=lvls,extend='both')
+#                 lvls = lvls[1:-1]
+                im = cax.contourf(arr,levels=lvls,extend='both')
+                # im = cax.contour(arr,linewidths=0.5,levels=lvls[1:-1],colors='k',vmin=lvls[0],vmax=lvls[-1])
+                # im = cax.contourf(arr,levels=lvls[1:-1],extend='both',vmin=lvls[0],vmax=lvls[-1])
                 cax.set_aspect(aspect)
         return im
     
@@ -214,8 +236,8 @@ def labels():
     labels_dict = {
         'rho'       : r'$\rho$, density',
         'rhou'      : r'$\rho u$, horizontal momentum',
-        'rhov'      : r'$\rho v$, vertical momentum',
-        'rhow'      : r'$\rho w$, horizontal momentum',
+        'rhov'      : r'$\rho w$, vertical momentum',
+        'rhow'      : r'$\rho v$, horizontal momentum',
         'buoy'      : r'buoyancy',
         'rhoX'      : r'$\rho / \Theta$, mass-weighted inverse pot. temp.',
         'rhoY'      : r'$P$, mass-weighted potential temperature',
