@@ -21,8 +21,8 @@ class UserData(object):
     Q_vap = 2.53e+06
     gamma = 1.4
 
-    h_ref = 10000.0         # [m]
-    t_ref = 100.0           # [s]
+    h_ref = 10000.0          # [m]
+    t_ref = 1000.0           # [s]
     T_ref = 300.00          # [K]
     p_ref = 8.61 * 1e4      # [N/m^2]
     u_ref = h_ref / t_ref
@@ -117,7 +117,7 @@ class UserData(object):
 
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
-        self.tout = np.arange(0.0,10.10,0.10)[10:]
+        self.tout = np.arange(0.0,1.01,0.01)[10:]
         # self.tout = [10.0]
 
         self.stepmax = 10000
