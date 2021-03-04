@@ -196,7 +196,7 @@ class test_case(object):
         return time_series
     
     
-    def get_ensemble(self, times, N, attribute, suffix, cont_blend=False, ts=0, fs=0, label_type='TIME', tag='after_full_step', avg=False, diff=False, inner=True):
+    def get_ensemble(self, times, N, attribute, suffix, cont_blend=False, ts=0, fs=0, label_type='TIME', tag='after_full_step', avg=False, diff=False, inner=True, load_ic=True):
         self.t_arr = []
         if cont_blend == True:
             suffix += cb_suffix(fs,ts)
@@ -208,9 +208,9 @@ class test_case(object):
         
 #         arr_lst = np.zeros((times.size+1),dtype=np.ndarray)
         arr_lst = []
-        arr = self.get_arr(path, 0, N, attribute, tag='ic', label_type=label_type, avg=avg, inner=inner, file=file)
-#         arr_lst[0] = arr
-        arr_lst.append(arr)
+        if load_ic:
+            arr = self.get_arr(path, 0, N, attribute, tag='ic', label_type=label_type, avg=avg, inner=inner, file=file)
+            arr_lst.append(arr)
         for tt, time in enumerate(times):
             arr = self.get_arr(path, time, N, attribute, tag=tag, label_type=label_type, avg=avg, inner=inner, file=file)
 #             arr_lst[tt] = arr
@@ -221,7 +221,8 @@ class test_case(object):
             arr_lst = get_diff(arr_lst)
             
         file.close()    
-        self.t_arr[0] = 0.0
+        if load_ic:
+            self.t_arr[0] = 0.0
         return np.array(arr_lst)
     
     
