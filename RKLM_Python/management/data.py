@@ -119,7 +119,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         dt, cfl, cfl_ac = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
 
         if 'CFLfixed' in ud.aux:
-            if step < 2 : dt = 0.2169
+            if step < 2 : dt = 21.69 / ud.t_ref
 
         ######################################################
         # Blending : Do full regime to limit regime conversion
