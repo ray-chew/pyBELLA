@@ -35,7 +35,7 @@ from management.debug import find_nearest
 from time import time
 from termcolor import colored
 
-debug = True
+debug = False
 da_debug = True
 output_timesteps = False
 if debug == True: output_timesteps = True
@@ -156,7 +156,7 @@ if __name__ == '__main__':
         if not restart: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
 
     writer.check_jar()
-    writer.jar([ud, elem, node])
+    writer.jar([ud, mpv, dap, elem, node])
 
     if da_debug:
         # writer.jar([obs,obs_noisy,obs_noisy_interp,obs_mask,obs_covar])
