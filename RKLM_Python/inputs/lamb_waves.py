@@ -126,7 +126,8 @@ class UserData(object):
         self.initial_impl_Euler = False
 
         # self.tout = np.arange(0.0,9000.0,1000.0)[1:]
-        self.tout = np.arange(0.0,200,5.0)[1:]
+        # self.tout = np.arange(0.0,205.0,5.0)[1:]
+        self.tout = [8000.0]
         self.stepmax = 20000
 
         self.output_base_name = "_lamb_wave"
@@ -136,7 +137,7 @@ class UserData(object):
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
-        self.output_timesteps = False
+        self.output_timesteps = True
 
     def stratification_function(self, y):
         Nsq = self.Nsq_ref * self.t_ref**2
@@ -149,7 +150,6 @@ class UserData(object):
 
 
 def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
-
     def bump(xi):
         # eqn (15)
         # tmp = np.zeros_like(xi)
@@ -205,13 +205,14 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Sol.rhoe[...] = 0.0
     Sol.rhoY[...] = rho * Y
     Sol.rhoX[...] = rho / Y
+    mpv.HydroState.S0[...] *= 0.0
     mpv.p2_cells[...] = pi / Msq
 
     # initialise nodal pi
     xn = node.x.reshape(-1,1)
     yn = node.y.reshape(1,-1)
 
-    An = A0 * bump(2.0 * yn / 4.0 * Hrho - 1.0)
+    An = A0 * bump(2.0 * yn / (4.0 * Hrho) - 1.0)
     pibar_n = mpv.HydroState_n.p20.reshape(1,-1)
     phi_n = waveno * xn - (pm + eps * (Cs * kGam / N) / (kstar**2 - 1.0)) * kstar * N * t
 

@@ -39,6 +39,8 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
     ndim = elem.ndim
     stage = 0
 
+    # Sol.rhoX -= Sol.rho * mpv.HydroState.S0
+
     if (odd):
         for split in range(ndim):
             lmbda = time_step / elem.dxyz[split]
@@ -68,6 +70,8 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
             if elem.isc[split] > 1:
                 explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
             
+    # Sol.rhoX += Sol.rho * mpv.HydroState.S0
+
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 
