@@ -20,7 +20,7 @@ class solver_counter(object):
         self.niter += 1
         self.rk = rk
 
-def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
+def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None, label = None):
     nonhydro = ud.nonhydrostasy
     wp = 1. # with pressure
 
@@ -43,6 +43,9 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th):
 
     scale_wall_node_values(mpv.rhs, node, ud, 2.0)
     div = mpv.rhs
+
+    if writer != None:
+        writer.populate(str(label), 'rhs', div)
 
     i1 = np.empty(ndim, dtype='object')
     for dim in range(ndim):
@@ -437,20 +440,76 @@ def divergence_nodes(rhs,elem,node,Sol,ud):
     for dim in range(ndim):
         is_periodic = ud.bdry_type[dim] == BdryType.PERIODIC
         inner_idx[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic)
+    inner_idx_p1y = np.copy(inner_idx)
+    inner_idx_p1y[1] = slice(1,-1)
         
     indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat = ndim)]
     signs = [sgn for sgn in product([1,-1], repeat = ndim)]
     inner_idx = tuple(inner_idx)
+    inner_idx_p1y = tuple(inner_idx_p1y)
+
+    # hotfix test
+    top_idx = 0
+    bot_idx = -1
+
+    # get top factor
+    P_top = Sol.rhoY[inner_idx][:,top_idx]
+    rho_top = Sol.rho[inner_idx][:,top_idx]
+    Y_top = P_top / rho_top
+
+    P_top_p1 = Sol.rhoY[inner_idx_p1y][:,top_idx]
+    rho_top_p1 = Sol.rho[inner_idx_p1y][:,top_idx]
+    Y_top_p1 = P_top_p1 / rho_top_p1
+
+    PY_top = P_top * Y_top
+    PY_top_p1 = P_top_p1 * Y_top_p1
+    PY_top_edge = 0.5 * (PY_top + PY_top_p1)
+    PY_top_factor = PY_top_edge / PY_top
+
+    # get bottom factor
+    P_bot = Sol.rhoY[inner_idx][:,bot_idx]
+    rho_bot = Sol.rho[inner_idx][:,bot_idx]
+    Y_bot = P_bot / rho_bot
+
+    P_bot_m1 = Sol.rhoY[inner_idx_p1y][:,bot_idx]
+    rho_bot_m1 = Sol.rho[inner_idx_p1y][:,bot_idx]
+    Y_bot_m1 = P_bot_m1 / rho_bot_m1
+
+    PY_bot = P_bot * Y_bot
+    PY_bot_m1 = P_bot_m1 * Y_bot_m1
+    PY_bot_edge = 0.5 * (PY_bot + PY_bot_m1)
+    PY_bot_factor = PY_bot_edge / PY_bot
+
+    rhou = np.copy(Sol.rhou[inner_idx])
+    rhou[:,top_idx] *= PY_top_factor
+    rhou[:,bot_idx] *= PY_bot_factor
+
+    Sols1 = np.stack((rhou, Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
     Sols = np.stack((Sol.rhou[inner_idx], Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
 
     oodxyz = 1./dxyz
     Y = Sol.rhoY[inner_idx] / Sol.rho[inner_idx]
+
     tmp_fxyz = 0.5**(ndim-1) * oodxyz[:ndim] * Sols[...,:ndim] * Y[...,None]
 
     count = 0
     for index in indices:
         rhs[inner_idx][index] += np.inner(signs[count], tmp_fxyz)
         count += 1
+
+    tmp_fxyz1 = 0.5**(ndim-1) * oodxyz[:ndim] * Sols1[...,:ndim] * Y[...,None]
+
+    rhs1 = np.zeros_like(rhs)
+    count = 0
+    for index in indices:
+        rhs1[inner_idx][index] += np.inner(signs[count], tmp_fxyz1)
+        count += 1
+
+    top_idx = -3
+    bot_idx = 2
+    # rhs[...] = rhs
+    rhs[:, top_idx] = rhs1[:, top_idx]
+    rhs[:, bot_idx] = rhs1[:, bot_idx]
 
     rhs_max = np.max(rhs[inner_idx]) if np.max(rhs[inner_idx]) > 0 else 0
     return rhs, rhs_max
