@@ -152,12 +152,23 @@ def hydrostatic_state(mpv, elem, node, th, ud):
 
     # Get midpoint quadrature for the ghost cells below the bottom (minus!)
     Sn_integral_p = np.zeros((igy))
-    yn_p = node.y[:igy] - node.dy
-    yn_m = node.y[1:igy+1] - node.dy
+    yn_p = node.y[0:igy]
+    yn_m = yn_p - node.dy
 
     # Sn_integral_p[-1] = -node.dy * 1.0 / ud.stratification(elem.y[igy-1])
-    Sn_integral_p[:] = -node.dy * 1.0 / ud.stratification(0.5*(yn_p + yn_m))
+    Sn_integral_p[:] = -node.dy * 1.0 / ud.stratification(elem.y[:igy])
     Sn_integral_p = np.cumsum(Sn_integral_p[:igy][::-1])[::-1]
+
+    pi_hydro_n = pi0 - Gamma * g * Sn_integral_p
+    rhoY_hydro_n = pi_hydro_n**gm1_inv
+
+    # Update the node solutions below ground
+    mpv.HydroState_n.rhoY0[:igy] = rhoY_hydro_n[:igy]
+    mpv.HydroState_n.Y0[:igy+1] = ud.stratification(0.5 * (y_ps[:igy+1] + y_ps[:igy+1] - elem.dy))
+    mpv.HydroState_n.rho0[:igy] = rhoY_hydro_n[:igy] / mpv.HydroState_n.Y0[:igy]
+    mpv.HydroState_n.S0[:igy] = 1.0 / mpv.HydroState_n.Y0[:igy]
+    mpv.HydroState_n.p0[:igy] = rhoY_hydro_n[:igy]**th.gamm
+    mpv.HydroState_n.p20[:igy] = pi_hydro_n[:igy] / ud.Msq
 
     # Get midpoint quadrature for the bulk domain
     yn_p = node.y[igy+1:]
@@ -170,14 +181,6 @@ def hydrostatic_state(mpv, elem, node, th, ud):
     # Calculate Exner pressure and aux. pressure field
     pi_hydro_n = pi0 - Gamma * g * Sn_integral_p
     rhoY_hydro_n = pi_hydro_n**gm1_inv
-
-    # Update the node solutions
-    mpv.HydroState_n.rhoY0[:igy] = rhoY_hydro_n[:igy]
-    mpv.HydroState_n.Y0[:igy+1] = ud.stratification(0.5 * (y_ps[:igy+1] + y_ps[:igy+1] - elem.dy))
-    mpv.HydroState_n.rho0[:igy] = rhoY_hydro_n[:igy] / mpv.HydroState_n.Y0[:igy]
-    mpv.HydroState_n.S0[:igy] = 1.0 / mpv.HydroState_n.Y0[:igy]
-    mpv.HydroState_n.p0[:igy] = rhoY_hydro_n[:igy]**th.gamm
-    mpv.HydroState_n.p20[:igy] = pi_hydro_n[:igy] / ud.Msq
 
     mpv.HydroState_n.rhoY0[igy+1:] = rhoY_hydro_n[igy:]
     mpv.HydroState_n.Y0[igy+1:] = ud.stratification(0.5 * (y_ps[igy:] + y_ps[igy:] + elem.dy))
