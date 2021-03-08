@@ -24,8 +24,10 @@ class UserData(object):
     omega = 0.0 * N_ref
     Cs = np.sqrt(gamma * R_gas * T_ref)
 
-    h_ref = 20.0e3
-    t_ref = h_ref / Cs
+    # h_ref = 20.0e3
+    h_ref = 10.0e3
+    # t_ref = h_ref / Cs
+    t_ref = 100.0
     u_ref = h_ref / t_ref
 
     Hrho = R_gas * T_ref / grav
@@ -72,14 +74,19 @@ class UserData(object):
             if (self.coriolis_strength[i] > np.finfo(np.float).eps):
                 self.i_coriolis[i] = 1
 
-        self.xmin = - 20.0e6 / self.h_ref
-        self.xmax =   20.0e6 / self.h_ref
+        # self.xmin = - 20.0e6 / self.h_ref
+        # self.xmax =   20.0e6 / self.h_ref
+        # self.ymin = - 0.0
+        # self.ymax =   4.0 * self.Hrho / self.h_ref
+        self.xmin = - 24.0e6 / self.h_ref
+        self.xmax =   24.0e6 / self.h_ref
         self.ymin = - 0.0
-        self.ymax =   4.0 * self.Hrho / self.h_ref
+        # self.ymax =   4.0 * self.Hrho / self.h_ref
+        self.ymax =   1.0
         self.zmin = - 1.0
         self.zmax =   1.0
 
-        self.u_wind_speed = 0.0
+        self.u_wind_speed = 20.0 * self.u_ref
         self.v_wind_speed = 0.0
         self.w_wind_speed = 0.0
 
