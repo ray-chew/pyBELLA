@@ -5,6 +5,8 @@ from physics.hydrostatics import hydrostatic_state, hydrostatic_column, hydrosta
 from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
 from management.variable import States
 
+from copy import deepcopy
+
 class UserData(object):
     NSPEC = 1
     BOUY = 0
@@ -95,11 +97,6 @@ class UserData(object):
         ##########################################
         self.CFL  = 0.9 / 2.0
 
-        # self.dtfixed0 = 10.0 * ( 12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
-        # self.dtfixed = 10.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
-        # self.dtfixed0 = 5.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
-        # self.dtfixed = 5.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
-
         self.inx = 301+1
         # self.inx = 1205+1
         self.iny = 10+1
@@ -108,6 +105,11 @@ class UserData(object):
 
         self.dtfixed0 = 0.5 * ((self.xmax - self.xmin) / (self.inx-1)) / 1.0
         self.dtfixed = self.dtfixed0
+        # self.dtfixed0 = 10.0 * ( 12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
+        # self.dtfixed = 10.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
+        # self.dtfixed0 = 5.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
+        # self.dtfixed = 5.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
+
 
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
@@ -152,7 +154,7 @@ class UserData(object):
 
         aux = ""
         aux = self.scale_tag + "_" + self.h_tag
-        aux = 'debug_ic'
+        aux = 'debug_ic1'
         self.aux = aux
 
         self.output_timesteps = True
@@ -185,9 +187,11 @@ class UserData(object):
 
 
 def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
-    # hydrostatic_state(mpv, elem, node, th, ud)
-    Sol = lamb_init(Sol, mpv, elem, node, th, ud, seeds=None)
+    hydrostatic_state(mpv, elem, node, th, ud)
     Sol = igw_init(Sol, mpv, elem, node, th, ud, seeds=None)
+    Sol = lamb_init(Sol, mpv, elem, node, th, ud, seeds=None)
+
+    hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
     return Sol
@@ -206,9 +210,9 @@ def lamb_init(Sol, mpv, elem, node, th, ud, seeds=None):
         # return tmp
         return np.ones_like(xi)
 
-    hydrostatic_state(mpv, elem, node, th, ud)
+    # hydrostatic_state(mpv, elem, node, th, ud)
 
-    A0 = 1.0e-3                                         # eqn (16)
+    A0 = 1.0e-3                                # eqn (16)
     pino = np.pi
     # xmax - xmin = 2000, dimensionless
     waveno = 2.0 * 2 * pino / (0.5 * (ud.xmax - ud.xmin)) # approx 0.0126
@@ -226,9 +230,6 @@ def lamb_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     pm = 1.0                                            # plus 1
     t = 0.0                                             # initial time
-
-    x = elem.x.reshape(-1,1)
-    y = elem.y.reshape(1,-1)
 
     HySt = States(node.sc,ud)
     HyStn = States(node.sc,ud)
@@ -249,59 +250,52 @@ def lamb_init(Sol, mpv, elem, node, th, ud, seeds=None):
     hydrostatic_column(HySt, HyStn, Y, Yn, elem, node, th, ud)
 
     A = A0 * bump(2.0 * y / (4.0 * Hrho) - 1)           # eqn (16)
-    pibar = mpv.HydroState.p20.reshape(1,-1)            # background pi
+    # pibar = mpv.HydroState.p20.reshape(1,-1)            # background pi
+    pibar = HySt.p20[151,:-1].reshape(1,-1)
     Noverg = np.sqrt(th.Gamma)                          # N / g = sqrt(R/c_p), dimensionless
     phi = waveno * x - (pm - eps *(Cs*kGam / N) / (kstar**2 - 1.0)) * kstar * N * t                 # eqn (5)
-    # Ybar = HySt.Y0[0,1:]#.reshape(1,-1)
-    # mpv.HydroState.Y0 *= 1.25
     # Ybar = mpv.HydroState.Y0.reshape(1,-1)
     Ybar = HySt.Y0[151,:-1].reshape(1,-1)
-    pibar = HySt.p20[151,:-1].reshape(1,-1)
-    # Ybar *= 1.25
-    # Ybar = 1.0 / mpv.HydroState.S0.reshape(1,-1)
     # taken from Prof. Klein's IC:
     # exp(kGam*y)  / sqrt(rhobar) / Ybar = 1.0
-    # Ybar =  (1.0 + Ybar * mpv.HydroState.S0) / mpv.HydroState.S0
-    # Ybar =  Ybar / (1.0 + Ybar * mpv.HydroState.S0)
     Y = Ybar * (1.0 - pm * eps * A * Noverg * (1.0 / (kstar**2 - 1.0)) * Ybar * np.cos(phi))        # eqn (3)
     FF = 1.0
+
     pi = pibar * Msq + A * Cs * th.Gamma * np.cos(phi) * FF     # eqn (4)
+
     u = A * (pm + eps * (Cs * kGam / N) / (kstar**2 - 1.0)) * np.cos(phi) * Ybar                  # eqn (1)
     v = -A * eps * (kstar / (kstar**2 - 1.0)) * np.sin(phi) * Ybar
     w = 0.0               # eqn (2)
 
-    # p = pi**(th.Gamminv)
     rho = pi**th.gm1inv / Y
 
-    Sol.rho[...] = rho
-    Sol.rhou[...] = rho * u
-    Sol.rhov[...] = rho * v
-    Sol.rhow[...] = rho * w
-    Sol.rhoe[...] = 0.0
-    Sol.rhoY[...] = rho * Y
-    Sol.rhoX[...] = rho * (1.0 / Y - mpv.HydroState.S0)
-    # Sol.rhoX[...] = rho * (1.0 / Y)
-    # Sol.rhoX[...] *= 2.0
-    # mpv.HydroState.S0 *= 0.0
-    mpv.p2_cells[...] = pi / Msq
+    # Sol.rho[...] += rho
+    Sol.rhou[...] += rho * u
+    Sol.rhov[...] += rho * v
+    Sol.rhow[...] += rho * w
+    # Sol.rhoe[...] += 0.0
+    # Sol.rhoY[...] += rho * Y
+    # Sol.rhoX[...] += rho * (1.0 / Y - mpv.HydroState.S0)
+    # mpv.p2_cells[...] = pi / Msq
 
     # initialise nodal pi
     xn = node.x.reshape(-1,1)
     yn = node.y.reshape(1,-1)
 
     An = A0 * bump(2.0 * yn / (4.0 * Hrho) - 1.0)
-    pibar_n = mpv.HydroState_n.p20.reshape(1,-1)
+    # pibar_n = mpv.HydroState_n.p20.reshape(1,-1)
+    # pibar_n = HyStn.p20[151].reshape(1,-1)
 
-    pibar_n = HyStn.p20[151].reshape(1,-1)
-    phi_n = waveno * xn - (pm + eps * (Cs * kGam / N) / (kstar**2 - 1.0)) * kstar * N * t
+    # phi_n = waveno * xn - (pm + eps * (Cs * kGam / N) / (kstar**2 - 1.0)) * kstar * N * t
 
-    pi_n = pibar_n * Msq + An * Cs * th.Gamma * np.cos(phi_n) * FF
-    mpv.p2_nodes[...] = pi_n / Msq
+    # pi_n = pibar_n * Msq + An * Cs * th.Gamma * np.cos(phi_n) * FF
+    # pi_n = An * Cs * th.Gamma * np.cos(phi_n) * FF
 
-    hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th)
+    # mpv.p2_nodes[...] += pi_n / Msq
+
+    # hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th)
 
     return Sol
-
 
 
 def igw_init(Sol, mpv, elem, node, th, ud, seeds=None):
@@ -312,7 +306,7 @@ def igw_init(Sol, mpv, elem, node, th, ud, seeds=None):
     xc = -1.0 * ud.scale_factor * 50.0e+3 / ud.h_ref
     a = ud.scale_factor * 5.0e+3 / ud.h_ref
 
-    hydrostatic_state(mpv, elem, node, th, ud)
+    # hydrostatic_state(mpv, elem, node, th, ud)
 
     HySt = States(node.sc,ud)
     HyStn = States(node.sc,ud)
@@ -355,12 +349,9 @@ def igw_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     Sol.rhoX[x_idx,y_idx] += Sol.rho[x_idx,y_idx] * (1.0 / Y[:, y_idx] - mpv.HydroState.S0[y_idx])
 
-    # Sol.rhoX[x_idx,y_idx] += Sol.rho[x_idx,y_idx] * (1.0 / Y[:, y_idx])
-    # mpv.HydroState.S0[...] *= 0.0
-
     mpv.p2_nodes[:,elem.igy:-elem.igy] += HyStn.p20[:,elem.igy:-elem.igy]
 
-    hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th)
+    # hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th)
 
     ud.nonhydrostasy = 1.0 if ud.is_nonhydrostatic == 1 else 0.0
     ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
