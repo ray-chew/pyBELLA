@@ -62,7 +62,7 @@ gen_6c_euler_full = False
 # simulations for section 6c with
 # assimilation of the momenta fields
 # along with the truth / obs
-gen_6c_rb = True
+gen_6c_rb = False
 
 
 # specify path to the observation directories 
