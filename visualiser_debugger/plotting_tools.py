@@ -114,6 +114,9 @@ class plotter(object):
             caxs = [cax]
             divider = make_axes_locatable(cax)
             bax = divider.append_axes("right", size="5%", pad=0.05)
+            if hasattr(self, 'cbar_label'):
+                bax.set_xlabel(self.cbar_label)
+                bax.xaxis.set_label_position('top') 
             if method == 'imshow' and lvls is not None:
 #                 plt.colorbar(im, cax=bax, ticks=lvls)#, format='%.3f')
                 plt.colorbar(im, cax=bax, ticks=lvls, extend='both', extendrect=True, extendfrac='auto')#, format='%.3f')
@@ -134,7 +137,8 @@ class plotter(object):
             return ims, caxs, baxs
         
     def save_fig(self, fn, format='.pdf'):
-        self.img.savefig(fn + format, bbox_inches = 'tight', pad_inches = 0)
+        self.fig.tight_layout()
+        self.fig.savefig(fn + format, bbox_inches = 'tight', pad_inches = 0.1)
         
         
     @staticmethod
