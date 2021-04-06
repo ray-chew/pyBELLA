@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import signal
 from inputs import boundary
+from physics.gas_dynamics.eos import nonhydrostasy, compressibility, is_compressible, is_nonhydrostatic
 
 from termcolor import colored
 from copy import deepcopy
@@ -222,30 +223,84 @@ def do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug
     return Sol, mpv
 
 
-# def do_lake_to_swe_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
-#     if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_lake_time_step')
-#     print(colored("lake to swe conversion...",'blue'))
+def blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug):
+    ######################################################
+    # Blending : Do full regime to limit regime conversion
+    ######################################################
+    # these make sure that we are the correct window step
+    if bld is not None and window_step == 0: 
+        # these make sure that blending switches are on
+        if (bld.bb or bld.cb) and ud.blending_conv is not None:
+            # these distinguish between SWE and Euler blending
+            if ud.blending_conv == 'swe':
+                do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug)
+                swe_to_lake = True
+            else:
+                do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer)
 
-#     H10 = mpv.p2_nodes[:,2:-2,:].mean(axis=1)
-#     H10 -= H10.mean()
+    ######################################################
+    # Blending : Do full steps or transition steps?
+    ######################################################
+    if bld is not None:
+        c_init, c_trans = bld.criterion_init(window_step), bld.criterion_trans(window_step)
+    else:
+        c_init, c_trans = False, False
 
-#     # define 2D kernel
-#     kernel = np.ones((2,2))
-#     kernel /= kernel.sum()
+    ######################################################
+    # Blending : If full blending steps...
+    ######################################################
+    # check that blending switches are on
+    if c_init and bld.cb and ud.blending_conv is not None:
+        # distinguish between Euler and SWE blending
+        if ud.blending_conv is not 'swe':
+            Sol, mpv = do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt)
+    
+    ######################################################
+    # Initial Blending
+    ######################################################
+    # Is initial blending switch on, and if yes, are we in the 0th time-step?
+    if ud.initial_blending == True and step < 1 and bld is not None:
+        # Distinguish between SWE and Euler blendings
+        if ud.blending_conv is not 'swe':
+            ud.is_compressible = 0
+            ud.compressibility = 0.0
+            do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer)
+        else:
+            do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug)
+            swe_to_lake = True
+            ud.is_compressible = 0
+            ud.compressibility = 0.0
 
-#     # do node-to-cell averaging
-#     H1 = signal.convolve(H10, kernel, mode='valid')
-#     H1 = ud.mean_val + ud.Msq * H1
-#     print(colored(H1.max(), 'red'))
+    # Elif, is initial blending switch on and are we on the 1st time-step?
+    elif ud.initial_blending == True and step == ud.no_of_pi_initial and bld is not None:
+        # Distinguish between SWE and Euler blendings
+        if ud.blending_conv is not 'swe':
+            Sol, mpv = do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt)
+            ud.is_compressible = 1
+            ud.compressibility = 1.0
+    else:
+        ud.is_compressible = is_compressible(ud,window_step)
+        ud.compressibility = compressibility(ud,t,window_step)
 
-#     # project H1 back to horizontal slice with ghost cells
-#     H1 = np.expand_dims(H1, axis=1)
-#     H1 = np.repeat(H1, elem.icy, axis=1)
+    return swe_to_lake
 
-#     Sol.rho[...] = H1
-#     Sol.rhou[...] = Sol.rhou / ud.mean_val * Sol.rho
-#     Sol.rhov[...] = Sol.rhov / ud.mean_val * Sol.rho
-#     Sol.rhow[...] = Sol.rhow / ud.mean_val * Sol.rho
-#     Sol.rhoY[...] = Sol.rhoY / ud.mean_val * Sol.rho
 
-#     if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_lake_to_swe')
+def blending_after_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug):
+    ######################################################
+    # Blending : Are we in the lake regime? And is this
+    #            the window step where we go back to SWE?
+    ######################################################
+    if bld is not None and swe_to_lake and step > 0:
+        initialise_lake_to_swe_conv = bld.criterion_init(window_step+1)
+
+    ######################################################
+    # Blending : If we are in the lake regime, is blending
+    #            on? If yes, do lake-to-swe conversion.
+    ######################################################
+    if ud.blending_conv == 'swe' and swe_to_lake and initialise_lake_to_swe_conv and bld is not None:
+        tmp_CFL = np.copy(ud.CFL)
+        ud.CFL = 0.8
+        Sol, mpv = do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug, step, window_step, t, dt)
+        ud.CFL = tmp_CFL
+        ud.is_compressible = 1
+        ud.compressibility = 1.0
