@@ -121,7 +121,9 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if 'CFLfixed' in ud.aux:
             if step < 2 : dt = 21.69 / ud.t_ref
 
-        # Do blending before time-step
+        ######################################################
+        # Blending : Do blending before timestep
+        ######################################################
         swe_to_lake = blending.blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug)
 
         ud.is_nonhydrostatic = is_nonhydrostatic(ud,window_step)
@@ -190,7 +192,9 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         if writer is not None: writer.populate(str(label)+'_after_full_step','p2_half',mpv.p2_nodes_half)
 
-        ### Do blending after timestep
+        ######################################################
+        # Blending : Do blending after timestep
+        ######################################################
         blending.blending_after_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug)
 
         t += dt
