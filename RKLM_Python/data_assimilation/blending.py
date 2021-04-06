@@ -15,21 +15,22 @@ class Blend(object):
         self.bb = False
         self.cb = ud.continuous_blending
         self.psinc_init = ud.no_of_pi_initial
-        self.psinc_trans = ud.no_of_pi_transition
+        # self.psinc_trans = ud.no_of_pi_transition
+        self.hydro_init = ud.no_of_hy_initial
 
-        if self.psinc_init > 0 and self.psinc_trans == 0 and self.cb:
+        if self.psinc_init > 0 and self.cb:
             self.bb = True
 
         self.c_init = self.criterion_init
-        self.c_trans = self.criterion_trans
+        # self.c_trans = self.criterion_trans
 
         self.fac = ud.Msq
     
     def criterion_init(self, step):
         return step == (self.psinc_init) and self.cb and self.bb
 
-    def criterion_trans(self, step):
-        return step <= self.psinc_trans and self.cb and not self.bb
+    # def criterion_trans(self, step):
+    #     return step <= self.psinc_trans and self.cb and not self.bb
         
     def convert_p2n(self, p2n):
         ndim = p2n.ndim
@@ -91,6 +92,11 @@ class Blend(object):
         mpv.p2_nodes = self.dp2n
 
 
+
+######################################################
+# COMP - PSINC blending
+######################################################
+
 def do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer):
     print(colored("Converting COMP to PSINC",'blue'))
     dp2n = mpv.p2_nodes
@@ -133,6 +139,9 @@ def do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer
     return Sol, mpv 
 
 
+######################################################
+# SWE - Lake blending
+######################################################
 
 def do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
     print(colored("swe to lake conversion...",'blue'))
@@ -223,6 +232,20 @@ def do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug
     return Sol, mpv
 
 
+######################################################
+# Nonhydrostatic - Hydrostatic blending
+######################################################
+def do_nonhydro_to_hydro_conv():
+    print(colored("nonhydrostatic to hydrostatic conversion...", 'blue'))
+
+def do_hydro_to_nonhydro_conv(Sol,mpv):
+    print(colored("hydrostatic to nonhydrostatic conversion...", 'blue'))
+
+
+######################################################
+# Blending calls from data.py
+######################################################
+
 def blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug):
     ######################################################
     # Blending : Do full regime to limit regime conversion
@@ -242,9 +265,9 @@ def blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, wri
     # Blending : Do full steps or transition steps?
     ######################################################
     if bld is not None:
-        c_init, c_trans = bld.criterion_init(window_step), bld.criterion_trans(window_step)
+        c_init = bld.criterion_init(window_step)
     else:
-        c_init, c_trans = False, False
+        c_init = False
 
     ######################################################
     # Blending : If full blending steps...
@@ -262,9 +285,14 @@ def blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, wri
     if ud.initial_blending == True and step < 1 and bld is not None:
         # Distinguish between SWE and Euler blendings
         if ud.blending_conv is not 'swe':
-            ud.is_compressible = 0
-            ud.compressibility = 0.0
-            do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer)
+            if bld.psinc_init > 0:
+                ud.is_compressible = 0
+                ud.compressibility = 0.0
+                do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer)
+            elif bld.hydro_init > 0:
+                ud.is_nonhydrostatic = 0
+                ud.nonhydrostasy = 0.0
+                do_nonhydro_to_hydro_conv()
         else:
             do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug)
             swe_to_lake = True
@@ -272,15 +300,24 @@ def blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, wri
             ud.compressibility = 0.0
 
     # Elif, is initial blending switch on and are we on the 1st time-step?
+    # If we are on the first time-step, do we do comp-psinc blending?
     elif ud.initial_blending == True and step == ud.no_of_pi_initial and bld is not None:
         # Distinguish between SWE and Euler blendings
         if ud.blending_conv is not 'swe':
             Sol, mpv = do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt)
             ud.is_compressible = 1
             ud.compressibility = 1.0
+    # Else, do we do nonhydrostatic-hydrostatic blending?
+    elif ud.initial_blending == True and step == ud.no_of_hy_initial and bld is not None:
+        if ud.blending_conv is not 'swe':
+            do_hydro_to_nonhydro_conv(Sol,mpv)
+            ud.is_nonhydrostatic = 1
+            ud.nonhydrostasy = 1.0
     else:
         ud.is_compressible = is_compressible(ud,window_step)
         ud.compressibility = compressibility(ud,t,window_step)
+        ud.is_nonhydrostatic = is_nonhydrostatic(ud,window_step)
+        ud.nonhydrostasy = nonhydrostasy(ud,t,window_step)
 
     return swe_to_lake
 
