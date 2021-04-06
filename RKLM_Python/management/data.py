@@ -121,64 +121,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if 'CFLfixed' in ud.aux:
             if step < 2 : dt = 21.69 / ud.t_ref
 
-        ######################################################
-        # Blending : Do full regime to limit regime conversion
-        ######################################################
-        # these make sure that we are the correct window step
-        if bld is not None and window_step == 0: 
-            # these make sure that blending switches are on
-            if (bld.bb or bld.cb) and ud.blending_conv is not None:
-                # these distinguish between SWE and Euler blending
-                if ud.blending_conv == 'swe':
-                    blending.do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug)
-                    swe_to_lake = True
-                else:
-                    blending.do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer)
-
-        ######################################################
-        # Blending : Do full steps or transition steps?
-        ######################################################
-        if bld is not None:
-            c_init, c_trans = bld.criterion_init(window_step), bld.criterion_trans(window_step)
-        else:
-            c_init, c_trans = False, False
-
-        ######################################################
-        # Blending : If full blending steps...
-        ######################################################
-        # check that blending switches are on
-        if c_init and bld.cb and ud.blending_conv is not None:
-            # distinguish between Euler and SWE blending
-            if ud.blending_conv is not 'swe':
-                Sol, mpv = blending.do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt)
-        
-        ######################################################
-        # Initial Blending
-        ######################################################
-        # Is initial blending switch on, and if yes, are we in the 0th time-step?
-        if ud.initial_blending == True and step < 1 and bld is not None:
-            # Distinguish between SWE and Euler blendings
-            if ud.blending_conv is not 'swe':
-                ud.is_compressible = 0
-                ud.compressibility = 0.0
-                blending.do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer)
-            else:
-                blending.do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug)
-                swe_to_lake = True
-                initialise_lake_to_swe_conv = True
-                ud.is_compressible = 0
-                ud.compressibility = 0.0
-
-        # Elif, is initial blending switch on and are we on the 1st time-step?
-        elif ud.initial_blending == True and step == ud.no_of_pi_initial and bld is not None:
-            # Distinguish between SWE and Euler blendings
-            if ud.blending_conv is not 'swe':
-                Sol, mpv = blending.do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt)
-                ud.is_compressible = 1
-                ud.compressibility = 1.0
-        else:
-            ud.is_compressible = is_compressible(ud,window_step)
-            ud.compressibility = compressibility(ud,t,window_step)
+        # Do blending before time-step
+        swe_to_lake = blending.blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug)
 
         ud.is_nonhydrostatic = is_nonhydrostatic(ud,window_step)
         ud.nonhydrostasy = nonhydrostasy(ud,t,window_step)
@@ -246,30 +190,10 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         if writer is not None: writer.populate(str(label)+'_after_full_step','p2_half',mpv.p2_nodes_half)
 
-        ######################################################
-        # Blending : Are we in the lake regime? And is this
-        #            the window step where we go back to SWE?
-        ######################################################
-        if bld is not None and swe_to_lake and step > 0:
-            initialise_lake_to_swe_conv = bld.criterion_init(window_step+1)
-
-        ######################################################
-        # Blending : If we are in the lake regime, is blending
-        #            on? If yes, do lake-to-swe conversion.
-        ######################################################
-        if ud.blending_conv == 'swe' and swe_to_lake and initialise_lake_to_swe_conv and bld is not None:
-        # if ud.blending_conv == 'swe' and swe_to_lake and step == ud.no_of_pi_initial and bld is not None:
-
-            # blending.do_lake_to_swe_conv(Sol, mpv, elem, node, ud, th, writer, label, debug)
-            tmp_CFL = np.copy(ud.CFL)
-            ud.CFL = 0.8
-            Sol, mpv = blending.do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug, step, window_step, t, dt)
-            ud.CFL = tmp_CFL
-            ud.is_compressible = 1
-            ud.compressibility = 1.0
+        ### Do blending after timestep
+        blending.blending_after_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug)
 
         t += dt
-        # print(t)
 
         if writer != None:
             writer.time = t
