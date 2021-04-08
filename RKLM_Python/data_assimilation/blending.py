@@ -87,6 +87,7 @@ class Blend(object):
             assert(0, "ud.blending_conv undefined.")
 
         if writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_blending')
+        return Sol, mpv
 
     def update_p2n(self,Sol, mpv, node, th, ud):
         mpv.p2_nodes = self.dp2n
@@ -103,6 +104,8 @@ def do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer):
     bld.convert_p2n(dp2n)
     bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
     bld.update_p2n(Sol,mpv,node,th,ud)
+
+    return Sol, mpv
 
 
 def do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt):
@@ -235,17 +238,37 @@ def do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug
 ######################################################
 # Nonhydrostatic - Hydrostatic blending
 ######################################################
-def do_nonhydro_to_hydro_conv():
+def do_nonhydro_to_hydro_conv(Sol, mpv, bld, elem, node, th, ud, label, writer):
     print(colored("nonhydrostatic to hydrostatic conversion...", 'blue'))
+    # dp2n = mpv.p2_nodes
+    bld.convert_p2n(mpv.p2_nodes)
+    Sol, mpv = bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
+    return Sol, mpv
+    # bld.update_p2n(Sol,mpv,node,th,ud)
+    
 
-def do_hydro_to_nonhydro_conv(Sol,mpv):
+def do_hydro_to_nonhydro_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt):
+    from management import data
     print(colored("hydrostatic to nonhydrostatic conversion...", 'blue'))
+    print(colored("Blending... step = %i" %step,'blue'))
+    Sol_freeze = deepcopy(Sol)
+    mpv_freeze = deepcopy(mpv)
+
+    ret = data.time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, [0,step-1], th, bld=None, writer=None, debug=False)
+
+    Sol = Sol_freeze
+    mpv = mpv_freeze
+    # mpv.p2_nodes = ret[2].p2_nodes_half
+    Sol.rhov = ret[0].rhov_half
+
+    bld.convert_p2n(mpv.p2_nodes)
+    Sol, mpv = bld.update_Sol(Sol,elem,node,th,ud,mpv,'aft',label=label,writer=writer)
+    return Sol, mpv
 
 
 ######################################################
 # Blending calls from data.py
 ######################################################
-
 def blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug):
     ######################################################
     # Blending : Do full regime to limit regime conversion
@@ -259,7 +282,7 @@ def blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, wri
                 do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug)
                 swe_to_lake = True
             else:
-                do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer)
+                Sol, mpv = do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer)
 
     ######################################################
     # Blending : Do full steps or transition steps?
@@ -288,11 +311,11 @@ def blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, wri
             if bld.psinc_init > 0:
                 ud.is_compressible = 0
                 ud.compressibility = 0.0
-                do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer)
+                Sol, mpv = do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer)
             elif bld.hydro_init > 0:
                 ud.is_nonhydrostatic = 0
                 ud.nonhydrostasy = 0.0
-                do_nonhydro_to_hydro_conv()
+                Sol, mpv = do_nonhydro_to_hydro_conv(Sol, mpv, bld, elem, node, th, ud, label, writer)
         else:
             do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug)
             swe_to_lake = True
@@ -310,7 +333,7 @@ def blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, wri
     # Else, do we do nonhydrostatic-hydrostatic blending?
     elif ud.initial_blending == True and step == ud.no_of_hy_initial and bld is not None:
         if ud.blending_conv is not 'swe':
-            do_hydro_to_nonhydro_conv(Sol,mpv)
+            Sol, mpv = do_hydro_to_nonhydro_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt)
             ud.is_nonhydrostatic = 1
             ud.nonhydrostasy = 1.0
     else:
@@ -319,7 +342,7 @@ def blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, wri
         ud.is_nonhydrostatic = is_nonhydrostatic(ud,window_step)
         ud.nonhydrostasy = nonhydrostasy(ud,t,window_step)
 
-    return swe_to_lake
+    return swe_to_lake, Sol, mpv
 
 
 def blending_after_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug):
@@ -341,3 +364,5 @@ def blending_after_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writ
         ud.CFL = tmp_CFL
         ud.is_compressible = 1
         ud.compressibility = 1.0
+
+    return Sol, mpv
