@@ -27,7 +27,7 @@ class UserData(object):
     Nsq_ref = 1.0e-4
 
     # planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0;
-    scale_factor = 160.0
+    scale_factor = 20.0
 
     i_gravity = np.zeros((3))
     i_coriolis = np.zeros((3))
