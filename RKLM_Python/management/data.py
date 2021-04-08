@@ -124,7 +124,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         ######################################################
         # Blending : Do blending before timestep
         ######################################################
-        swe_to_lake = blending.blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug)
+        swe_to_lake, Sol, mpv = blending.blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug)
 
         ud.is_nonhydrostatic = is_nonhydrostatic(ud,window_step)
         ud.nonhydrostasy = nonhydrostasy(ud,t,window_step)
@@ -134,9 +134,9 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                 print("step = %i, window_step = %i" %(step,window_step))
             else:
                 print("step = %i, window_step = %f" %(step,window_step))
-            print("is_compressible = %i, is_nonhydrostatic = %i" %(ud.is_compressible, ud.is_nonhydrostatic))
-            print("compressibility = %.3f, nonhydrostasy = %.3f" %(ud.compressibility,ud.nonhydrostasy))
-            print("-------")
+        print("is_compressible = %i, is_nonhydrostatic = %i" %(ud.is_compressible, ud.is_nonhydrostatic))
+        print("compressibility = %.3f, nonhydrostasy = %.3f" %(ud.compressibility,ud.nonhydrostasy))
+        print("-------")
 
         Sol0 = deepcopy(Sol)
 
@@ -171,9 +171,23 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True and elem.ndim == 3: writer.populate(str(label)+'_after_half_step','rhoYw',flux[2].rhoY)
 
         mpv.p2_nodes_half = deepcopy(mpv.p2_nodes) 
-        mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
-        
-        Sol = deepcopy(Sol0)
+
+        # takes care of the non-hydrostatic, compressible case
+        if ud.is_compressible == 1 and ud.is_nonhydrostatic == 1:
+            mpv.p2_nodes[...] = mpv.p2_nodes0
+            Sol = deepcopy(Sol0)
+        # takes care of the hydrostatic case
+        elif ud.is_nonhydrostatic == 0:
+            mpv.p2_nodes[...] = mpv.p2_nodes0
+            rhov_half = np.copy(Sol.rhov)
+            Sol = deepcopy(Sol0)
+            Sol.rhov[...] = rhov_half
+            Sol.rhov_half = rhov_half
+        # takes care of the pseudo-incompressible case
+        elif ud.is_compressible == 0:
+            Sol = deepcopy(Sol0)
+
+        # mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_half_step')
 
@@ -195,7 +209,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         ######################################################
         # Blending : Do blending after timestep
         ######################################################
-        blending.blending_after_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug)
+        Sol, mpv = blending.blending_after_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug)
 
         t += dt
 
