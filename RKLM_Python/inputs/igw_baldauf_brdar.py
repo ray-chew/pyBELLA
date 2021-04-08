@@ -114,18 +114,15 @@ class UserData(object):
         self.stepmax = 1000000
         self.max_iterations = 6000
 
-        self.continuous_blending = False
-        self.no_of_pi_initial = 1
-        self.no_of_pi_transition = 0
-        self.no_of_hy_initial = 0
-        self.no_of_hy_transition = 0
+        self.initial_blending = True
+        self.no_of_pi_initial = 0
+        self.no_of_hy_initial = 1
 
+        self.continuous_blending = False
         self.blending_weight = 0./16
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'rho' #theta, rho
         self.blending_type = 'half' # half, full
-
-        self.initial_blending = False
 
         self.output_base_name = "_baldauf_brdar"
         if self.scale_factor < 10.0:
@@ -185,10 +182,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     H = ud.ymax - ud.ymin
 
     hydrostatic_state(mpv, elem, node, th, ud)
-
-    HySt = States(node.sc,ud)
-    HyStn = States(node.sc,ud)
-
+    
     x = elem.x.reshape(-1,1)
     y = elem.y.reshape(1,-1)
 
