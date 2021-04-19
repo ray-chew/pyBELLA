@@ -2,6 +2,9 @@ import numpy as np
 from scipy import signal
 from inputs import boundary
 from physics.gas_dynamics.eos import nonhydrostasy, compressibility, is_compressible, is_nonhydrostatic
+import physics.low_mach.laplacian as lap
+import physics.low_mach.second_projection as sp
+import scipy.sparse.linalg as la
 
 from termcolor import colored
 from copy import deepcopy
@@ -82,12 +85,12 @@ class Blend(object):
         ### keep rho, convert theta
             Yc = Y * alpha
             Sol.rhoY[...] = rho * Yc
-            Sol.rhoX[...] = rho / Yc
+            Sol.rhoX[...] = rho * (1.0/ Yc - mpv.HydroState.S0.reshape(1,-1))
         else:
             assert(0, "ud.blending_conv undefined.")
 
         if writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_blending')
-        return Sol, mpv
+
 
     def update_p2n(self,Sol, mpv, node, th, ud):
         mpv.p2_nodes = self.dp2n
@@ -240,29 +243,32 @@ def do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug
 ######################################################
 def do_nonhydro_to_hydro_conv(Sol, mpv, bld, elem, node, th, ud, label, writer):
     print(colored("nonhydrostatic to hydrostatic conversion...", 'blue'))
-    # dp2n = mpv.p2_nodes
-    bld.convert_p2n(mpv.p2_nodes)
-    Sol, mpv = bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
-    return Sol, mpv
-    # bld.update_p2n(Sol,mpv,node,th,ud)
+    # bld.convert_p2n(mpv.p2_nodes)
+    # bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
+    # Sol.rhov = Sol.rhov_half
+
+    # nonhydro to hydro blending incomplete.
     
 
 def do_hydro_to_nonhydro_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt):
     from management import data
     print(colored("hydrostatic to nonhydrostatic conversion...", 'blue'))
     print(colored("Blending... step = %i" %step,'blue'))
-    Sol_freeze = deepcopy(Sol)
-    mpv_freeze = deepcopy(mpv)
 
-    ret = data.time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, [0,step-1], th, bld=None, writer=None, debug=False)
+    Sol_tmp = deepcopy(Sol)
+    flux_tmp = deepcopy(flux)
+    mpv_tmp = deepcopy(mpv)
 
-    Sol = Sol_freeze
-    mpv = mpv_freeze
-    # mpv.p2_nodes = ret[2].p2_nodes_half
-    Sol.rhov = ret[0].rhov_half
+    ret = data.time_update(Sol_tmp,flux_tmp,mpv_tmp, t, t+dt, ud, elem, node, [0,step-1], th, bld=None, writer=None, debug=False)
 
-    bld.convert_p2n(mpv.p2_nodes)
-    Sol, mpv = bld.update_Sol(Sol,elem,node,th,ud,mpv,'aft',label=label,writer=writer)
+    retv_half = ret[0].rhov_half / ret[0].rho_half
+    retv_full = ret[0].rhov / ret[0].rho
+
+    solv_half = Sol.rhov_half / Sol.rho_half
+    solv_full = Sol.rhov / Sol.rho
+
+    Sol.rhov = Sol.rho * (0.5 * solv_full + 0.5 * retv_half)
+# 
     return Sol, mpv
 
 
@@ -315,7 +321,7 @@ def blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, wri
             elif bld.hydro_init > 0:
                 ud.is_nonhydrostatic = 0
                 ud.nonhydrostasy = 0.0
-                Sol, mpv = do_nonhydro_to_hydro_conv(Sol, mpv, bld, elem, node, th, ud, label, writer)
+                do_nonhydro_to_hydro_conv(Sol, mpv, bld, elem, node, th, ud, label, writer)
         else:
             do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug)
             swe_to_lake = True
