@@ -137,6 +137,13 @@ class io(object):
         self.populate(name,'rhov',Sol.rhov)
         self.populate(name,'rhow',Sol.rhow)
         self.populate(name,'rhoX',Sol.rhoX)
+
+        if hasattr(Sol,'rhov_half'):
+            self.populate(name,'rhov_half',Sol.rhov_half)
+        if hasattr(Sol,'rho_half'):
+            self.populate(name,'rho_half',Sol.rho_half)
+        if hasattr(mpv,'p2_nodes_half'):
+            self.populate(name,'p2_nodes_half',mpv.p2_nodes_half)
         # self.populate(name,'buoy',Sol.rhoX / Sol.rho)
 
         # dp2_nodes

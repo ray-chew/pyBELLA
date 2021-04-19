@@ -170,19 +170,25 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True: writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY)
         if debug == True and elem.ndim == 3: writer.populate(str(label)+'_after_half_step','rhoYw',flux[2].rhoY)
 
-        mpv.p2_nodes_half = deepcopy(mpv.p2_nodes) 
+        mpv.p2_nodes_half = deepcopy(mpv.p2_nodes)
 
         # takes care of the non-hydrostatic, compressible case
         if ud.is_compressible == 1 and ud.is_nonhydrostatic == 1:
             mpv.p2_nodes[...] = mpv.p2_nodes0
+            rhov_half = np.copy(Sol.rhov)
+            rho_half = np.copy(Sol.rho)
             Sol = deepcopy(Sol0)
+            Sol.rhov_half = rhov_half
+            Sol.rho_half = rho_half
         # takes care of the hydrostatic case
         elif ud.is_nonhydrostatic == 0:
             mpv.p2_nodes[...] = mpv.p2_nodes0
+            rho_half = np.copy(Sol.rho)
             rhov_half = np.copy(Sol.rhov)
             Sol = deepcopy(Sol0)
             Sol.rhov[...] = rhov_half
             Sol.rhov_half = rhov_half
+            Sol.rho_half = rho_half
         # takes care of the pseudo-incompressible case
         elif ud.is_compressible == 0:
             Sol = deepcopy(Sol0)
