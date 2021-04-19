@@ -42,14 +42,14 @@ rp = rp()
 ##########################################
 # generate initial blending for section 6b
 gen_6b1_euler = False
-gen_6b1_swe = False
+# gen_6b1_swe = False
 gen_6b2_rb = False
 # generate obs and truth for section 6c
 gen_6c_obs_truth_euler = False
-gen_6c_obs_truth_swe = False
+# gen_6c_obs_truth_swe = False
 # generate shallow water ensemble simulations
 # for section 6c
-gen_6c_swe = False
+# gen_6c_swe = False
 # generate Euler ensemble simulations for
 # section 6c with assimilation of the
 # momenta fields
@@ -760,7 +760,7 @@ if gen_6c_rb:
     # run simulation
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
-    # rp.queue_run()
+    rp.queue_run()
 
     ##########################################
 
@@ -780,7 +780,7 @@ if gen_6c_rb:
     # run simulation
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
-    # rp.queue_run()
+    rp.queue_run()
 
     ##########################################
 
