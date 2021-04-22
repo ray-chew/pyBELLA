@@ -40,29 +40,28 @@ rp = rp()
 # results.
 #
 ##########################################
-# generate initial blending for section 6b
-gen_6b1_euler = False
-gen_6b1_swe = False
-gen_6b2_rb = False
-# generate obs and truth for section 6c
-gen_6c_obs_truth_euler = False
-gen_6c_obs_truth_swe = False
-# generate shallow water ensemble simulations
-# for section 6c
-gen_6c_swe = False
+# generate initial blending for section 5a
+gen_5a1_euler = False
+gen_5a2_rb = False
+# generate obs and truth for section 5b
+gen_5b_obs_truth_euler = False
 # generate Euler ensemble simulations for
-# section 6c with assimilation of the
+# section 5c1 with assimilation of the
 # momenta fields
-gen_6c_euler_momenta = False
+gen_5c1_euler_momenta = False
 # generate Euler ensemble simulations for
-# section 6c with assimilation of all
+# section 5c1 with assimilation of all
 # fields
-gen_6c_euler_full = False
+gen_5c1_euler_full = False
 # generate rising bubble ensemble
-# simulations for section 6c with
+# simulations for section 5c2 with
 # assimilation of the momenta fields
 # along with the truth / obs
-gen_6c_rb = False
+gen_5b_5c2_rb = False
+
+# Otherwise, if gen_all = True, generate all
+# results
+gen_all = True
 
 
 # specify path to the observation directories 
@@ -71,8 +70,7 @@ path_to_obs = './'
 
 
 
-
-if gen_6b1_euler:
+if gen_5a1_euler or gen_all:
     ##########################################
     #
     # Run simulations for the Euler and
@@ -183,110 +181,7 @@ if gen_6b1_euler:
     rp.queue_run()
 
 
-if gen_6b1_swe:
-    ##########################################
-    #
-    # Shallow water travelling vortex
-    #
-    ##########################################
-    rp.N = 1
-    rp.tc = 'swe_bal_vortex'
-    # Do not output in between, but output
-    # after each timestep.
-    tout = [1.0]
-
-    # simulation parameters for the pseudo-
-    # incompressible run
-    ud = {
-        'aux' : 'psinc_noib',
-        # set pseudo-incompressible
-        'is_compressible' : 0,
-        'tout' : tout,
-        'output_timesteps' : True
-        
-    }
-
-    # No data assimilation.
-    dap = {
-        'None' : None,
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # simulation parameters for the 
-    # compressible run without blending in the
-    # initial time-step
-    ud = {
-        'aux' : 'comp_imbal_noib',
-        'tout' : tout,
-        'output_timesteps' : True
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # simulation parameters for the 
-    # compressible run with blending in the
-    # initial time-step
-
-    # using pi-half
-    ud = {
-        'aux' : 'comp_imbal_half',
-        'initial_blending' : True,
-        'tout' : tout,
-        'output_timesteps' : True
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-
-    # using pi-full
-    ud = {
-        'aux' : 'comp_imbal_full',
-        'initial_blending' : True,
-        'tout' : tout,
-        'output_timesteps' : True,
-        'blending_weight' : 1.0,
-        'blending_type' : 'full'
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-
-    ##########################################
-
-    # simulation parameters for the 
-    # compressible run without blending in the
-    # initial time-step but with balanced IC
-    ud = {
-        'aux' : 'comp_bal_noib',
-        'tout' : tout,
-        'output_timesteps' : True
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-
-
-if gen_6b2_rb:
+if gen_5a2_rb or gen_all:
     ##########################################
     #
     # Run simulations for the rising bubble
@@ -449,7 +344,7 @@ if gen_6b2_rb:
 
 
 
-if gen_6c_obs_truth_euler:
+if gen_5b_obs_truth_euler or gen_all:
     ##########################################
     #
     # Generate observations and truths for the
@@ -495,124 +390,7 @@ if gen_6c_obs_truth_euler:
 
 
 
-if gen_6c_obs_truth_swe:
-    ##########################################
-
-    # shallow water vortex
-    rp.tc = 'swe_bal_vortex' 
-
-    # simulation parameters for the observation
-    ud = {
-        'aux' : 'obs',
-    }
-
-    # data assimilation parameters for the
-    # observation. No DA.
-    dap = {
-        'None' : None,
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # simulation parameters for the truth
-    ud = {
-        'aux' : 'truth',
-        # Do blending for initial time-step
-        'initial_blending' : True
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-
-
-if gen_6c_swe:
-    ##########################################
-    #
-    # Run simulations for the shallow water
-    # vortex ensembles. (section 6c)
-    #
-    ##########################################
-
-
-    # Set ensemble with 10 members
-    rp.N = 10
-    # Shallow water travelling vortex experiment
-    rp.tc = 'swe_bal_vortex'
-
-    # Generate ensemble with no DA
-    ud = {
-        'aux' : 'noda',
-        # Do blending for initial time-step
-        'initial_blending' : True
-    }
-
-    # For the data assimilation parameters,
-    # do not do DA at any time-point.
-    dap = {
-        'da_times' : [],
-        # Path to the generated observation
-        'obs_path' : path_to_obs + 'output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_obs.h5',
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # Generate ensemble with DA and without
-    # blending
-    ud = {
-        'aux' : 'wda',
-        # Do blending for initial time-step
-        'initial_blending' : True
-    }
-
-    # Set the data assimilation parameters
-    dap = {
-        # Assimilate the momentum fields
-        'obs_attrs' : ['rhou', 'rhow'],
-        # Path to the generated observation
-        'obs_path' : path_to_obs + 'output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_obs.h5',
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    ##########################################
-
-    # Generate ensemble with DA and with
-    # blending
-    ud = {
-        'aux' : 'wda',
-        # Do blending for initial time-step
-        'initial_blending' : True,
-        # Do blending after each assimilation
-        'continuous_blending' : True
-    }
-
-    # We do not have to set the DA parameters
-    # so we use 'dap' dictionary from before.
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-
-
-if gen_6c_euler_momenta:
+if gen_5c1_euler_momenta or gen_all:
     ##########################################
     #
     # Run simulations for the Euler vortex
@@ -689,7 +467,7 @@ if gen_6c_euler_momenta:
     rp.queue_run()
 
 
-if gen_6c_euler_full:
+if gen_5c1_euler_full or gen_all:
     ##########################################
     #
     # Repeat the previous two experiments, but
@@ -737,7 +515,7 @@ if gen_6c_euler_full:
 
 
 
-if gen_6c_rb:
+if gen_5b_5c2_rb or gen_all:
     ##########################################
     #
     # Rising bubble ensemble generation
