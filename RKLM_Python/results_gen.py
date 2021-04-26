@@ -61,7 +61,7 @@ gen_5b_5c2_rb = False
 
 # Otherwise, if gen_all = True, generate all
 # results
-gen_all = True
+gen_all = False
 
 
 # specify path to the observation directories 
@@ -607,4 +607,14 @@ if gen_5b_5c2_rb or gen_all:
     rp.dap = json.dumps(dap)
     rp.queue_run()
 
-print("results_gen.py completed")
+
+if gen_5a1_euler == False and \
+gen_5a2_rb == False and \
+gen_5b_obs_truth_euler == False and \
+gen_5c1_euler_momenta == False and \
+gen_5c1_euler_full == False and \
+gen_5b_5c2_rb == False and \
+gen_all == False:
+    print("no results generated, all switches were set to False")
+else:
+    print("results_gen.py completed")
