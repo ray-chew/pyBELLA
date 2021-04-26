@@ -1492,7 +1492,7 @@ def figures_10to13(switches):
     for idx, arr in enumerate(arr_lst):
         if idx % 4 == 0:
             print("===========")
-            print("ensemble member index, minimum value, maximum value")
+            print("plot index, minimum value, maximum value")
         print(idx, arr[0].min(),arr[0].max())
 
     nnx, nnz = axs0-1,axs1-1
