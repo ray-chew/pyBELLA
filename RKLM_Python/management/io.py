@@ -140,6 +140,10 @@ class io(object):
 
         if hasattr(Sol,'rhov_half'):
             self.populate(name,'rhov_half',Sol.rhov_half)
+        if hasattr(Sol,'rhou_half'):
+            self.populate(name,'rhou_half',Sol.rhou_half)
+        if hasattr(Sol,'rhoX_half'):
+            self.populate(name,'rhoX_half',Sol.rhoX_half)
         if hasattr(Sol,'rho_half'):
             self.populate(name,'rho_half',Sol.rho_half)
         if hasattr(mpv,'p2_nodes_half'):
