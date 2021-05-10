@@ -124,7 +124,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         ######################################################
         # Blending : Do blending before timestep
         ######################################################
-        swe_to_lake, Sol, mpv = blending.blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug)
+        swe_to_lake, Sol, mpv, t = blending.blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug)
 
         ud.is_nonhydrostatic = is_nonhydrostatic(ud,window_step)
         ud.nonhydrostasy = nonhydrostasy(ud,t,window_step)
@@ -172,30 +172,34 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         mpv.p2_nodes_half = deepcopy(mpv.p2_nodes)
 
+        if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_half_step')
+
+        rhov_half = np.copy(Sol.rhov)
+        rho_half = np.copy(Sol.rho)
+        rhoX_half = np.copy(Sol.rhoX)
+        rhou_half = np.copy(Sol.rhou)
+
         # takes care of the non-hydrostatic, compressible case
         if ud.is_compressible == 1 and ud.is_nonhydrostatic == 1:
             mpv.p2_nodes[...] = mpv.p2_nodes0
-            rhov_half = np.copy(Sol.rhov)
-            rho_half = np.copy(Sol.rho)
             Sol = deepcopy(Sol0)
-            Sol.rhov_half = rhov_half
-            Sol.rho_half = rho_half
         # takes care of the hydrostatic case
         elif ud.is_nonhydrostatic == 0:
             mpv.p2_nodes[...] = mpv.p2_nodes0
-            rho_half = np.copy(Sol.rho)
-            rhov_half = np.copy(Sol.rhov)
             Sol = deepcopy(Sol0)
             Sol.rhov[...] = rhov_half
-            Sol.rhov_half = rhov_half
-            Sol.rho_half = rho_half
+            
         # takes care of the pseudo-incompressible case
         elif ud.is_compressible == 0:
             Sol = deepcopy(Sol0)
 
-        # mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
+        Sol.rhov0 = np.copy(Sol.rhov)
+        Sol.rhov_half = rhov_half
+        Sol.rho_half = rho_half
+        Sol.rhoX_half = rhoX_half
+        Sol.rhou_half = rhou_half
 
-        if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_half_step')
+        # mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
 
         euler_forward_non_advective(Sol, mpv, elem, node, 0.5*dt, ud, th, writer=writer, label=str(label)+'_after_efna')
 
@@ -209,6 +213,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
         euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0, writer=writer, label=str(label)+'_after_full_step')
+        # Sol.rhov[...] *= ud.is_nonhydrostatic
 
         if writer is not None: writer.populate(str(label)+'_after_full_step','p2_half',mpv.p2_nodes_half)
 
