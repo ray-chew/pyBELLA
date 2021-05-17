@@ -83,7 +83,10 @@ class plotter(object):
                 lvl = lvls[n] if lvls is not None else None
                 
                 im = self.visualise(method,cax,arr,aspect,lvl)
-                cax.set_title(title)
+                if type(title) == str:
+                    cax.set_title(title)
+                elif type(title) == np.ndarray or type(title) == list:
+                    cax.set_title(title[0], fontsize=title[1], fontweight=title[2])
                 loc = cax.get_xticklabels()
                 self.set_cax_axes(cax,n)
                 caxs.append(cax)
