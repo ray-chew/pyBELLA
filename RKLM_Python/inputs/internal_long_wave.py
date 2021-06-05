@@ -27,7 +27,7 @@ class UserData(object):
     Nsq_ref = 1.0e-4
 
     # planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0;
-    scale_factor = 20.0
+    scale_factor = 160.0
 
     i_gravity = np.zeros((3))
     i_coriolis = np.zeros((3))
@@ -51,7 +51,7 @@ class UserData(object):
 
         self.nspec = self.NSPEC
 
-        self.is_nonhydrostatic = 0
+        self.is_nonhydrostatic = 1
         self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
@@ -100,9 +100,9 @@ class UserData(object):
         # self.dtfixed0 = 5.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
         # self.dtfixed = 5.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
 
-        self.inx = 301+1
+        self.inx = 601+1
         # self.inx = 1205+1
-        self.iny = 10+1
+        self.iny = 80+1
         # self.iny = 40+1
         self.inz = 1
 
