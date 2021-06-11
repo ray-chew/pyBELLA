@@ -84,7 +84,7 @@ class test_case(object):
         return pyfile[str(py_dataset)][str(py_dataset)+time][:], pyfile[str(py_dataset)][str(py_dataset)+time].attrs.get('t')
 
 
-    def get_arr(self, path, time, N, attribute, label_type='TIME', tag='after_full_step', inner=False, avg=True, file=None):
+    def get_arr(self, path, time, N, attribute, label_type='TIME', tag='after_full_step', inner=False, avg=False, file=None):
         if inner == False:
             inner = self.i0
         else:
@@ -124,6 +124,9 @@ class test_case(object):
     
     def spatially_averaged_rmse(self, arrs,refs,avg=False, grid_type='c'):
         diff = []
+        refs = refs[:,np.newaxis,...]
+        refs = np.repeat(refs, arrs.shape[1], axis=1)
+#         print(arrs.shape, refs.shape)
         for arr, ref in zip(arrs,refs):
             #arr = (arr[self.i2])
             #ref = (ref[self.i2])
@@ -145,6 +148,28 @@ class test_case(object):
             diff.append(np.sqrt(((arr - ref)**2).mean()) / factor)
         return np.array(diff)
 
+    def ensemble_spread(self, arrs,avg=False, grid_type='c'):
+        diff = []
+        
+        refs = arrs.mean(axis=1)
+        refs = refs[:,np.newaxis,...]
+        refs = np.repeat(refs,arrs.shape[1],axis=1)
+#         print(arrs.shape, refs.shape)
+
+        for arr, ref in zip(arrs,refs):
+            if grid_type == 'n':
+                arr = self.get_ie1(arr)
+                ref = self.get_ie1(ref)
+            if avg==True:
+                for ens_mem in arr:
+                     ens_mem -= ens_mem.mean()
+#                 arr -= arr.mean()
+                ref -= ref.mean()
+                
+            diff.append(np.sqrt(((arr - ref)**2).mean()))
+        return np.array(diff)
+    
+    
     def probe_rmse(self, arrs, refs, probe_loc, avg=False, inner=False):
         diff = []
        
