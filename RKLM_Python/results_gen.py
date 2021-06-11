@@ -59,6 +59,9 @@ gen_5c1_euler_full = False
 # along with the truth / obs
 gen_5b_5c2_rb = False
 
+gen_loc_errors_tc = False
+gen_loc_errors_rb = True
+
 # Otherwise, if gen_all = True, generate all
 # results
 gen_all = False
@@ -490,7 +493,8 @@ if gen_5c1_euler_full or gen_all:
         # Assimilate all fields
         'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
         # Path to the generated observation
-        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5'
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5',
+        'loc_setter' : (11,11)
     }
 
     # run simulation
@@ -608,12 +612,307 @@ if gen_5b_5c2_rb or gen_all:
     rp.queue_run()
 
 
+
+
+
+if gen_loc_errors_tc or gen_all:
+    # Set ensemble with 10 members
+    rp.N = 10
+    # Euler travelling vortex experiment
+    rp.tc = 'tv'
+    ud = {
+        'aux' : 'wda_63',
+        # Do blending for initial time-step
+        'initial_blending' : True
+    }
+
+    # Set the data assimilation parameters
+    dap = {
+        # Assimilate all fields
+        'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
+        # Path to the generated observation
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5',
+        'loc_setter' : (63,63)
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    # rp.queue_run()
+
+    ud = {
+        'aux' : 'wda_63',
+        # Do blending for initial time-step
+        'initial_blending' : True,
+        'continuous_blending' : True
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    # rp.queue_run()
+
+    
+    ud = {
+        'aux' : 'wda_41',
+        # Do blending for initial time-step
+        'initial_blending' : True
+    }
+
+    # Set the data assimilation parameters
+    dap = {
+        # Assimilate all fields
+        'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
+        # Path to the generated observation
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5',
+        'loc_setter' : (41,41)
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ud = {
+        'aux' : 'wda_41',
+        # Do blending for initial time-step
+        'initial_blending' : True,
+        'continuous_blending' : True
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    
+    ud = {
+        'aux' : 'wda_21',
+        # Do blending for initial time-step
+        'initial_blending' : True
+    }
+
+    # Set the data assimilation parameters
+    dap = {
+        # Assimilate all fields
+        'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
+        # Path to the generated observation
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5',
+        'loc_setter' : (21,21)
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ud = {
+        'aux' : 'wda_21',
+        # Do blending for initial time-step
+        'initial_blending' : True,
+        'continuous_blending' : True
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ud = {
+        'aux' : 'wda_5',
+        # Do blending for initial time-step
+        'initial_blending' : True
+    }
+
+    # Set the data assimilation parameters
+    dap = {
+        # Assimilate all fields
+        'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
+        # Path to the generated observation
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5',
+        'loc_setter' : (5,5)
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ud = {
+        'aux' : 'wda_5',
+        # Do blending for initial time-step
+        'initial_blending' : True,
+        'continuous_blending' : True
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+
+
+
+
+if gen_loc_errors_rb or gen_all:
+    da_times = np.arange(5.0,10.5,0.5)/10.0
+    da_times = da_times.tolist()
+    # Set ensemble with 10 members
+    rp.N = 10
+    # Euler travelling vortex experiment
+    rp.tc = 'rb'
+    ud = {
+        'aux' : 'wda_CFLfixed_63',
+        # Do blending for initial time-step
+        'initial_blending' : True
+    }
+
+    # Set the data assimilation parameters
+    dap = {
+        # Assimilate all fields
+        'obs_attrs' : ['rhou', 'rhov'],
+        # Path to the generated observation
+        'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_1.0_truth_CFLfixed_ib-0.h5',
+        'loc_setter' : (63,63)
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    # rp.queue_run()
+
+    ud = {
+        'aux' : 'wda_CFLfixed_63',
+        # Do blending for initial time-step
+        'initial_blending' : True,
+        'continuous_blending' : True
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    # rp.queue_run()
+
+
+    ud = {
+        'aux' : 'wda_CFLfixed_31',
+        # Do blending for initial time-step
+        'initial_blending' : True
+    }
+
+
+    # Set the data assimilation parameters
+    dap = {
+        'da_times' : da_times,
+        # Assimilate the momentum fields
+        'obs_attrs' : ['rhou', 'rhov'],
+        # Path to the generated observation
+        'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_1.0_truth_CFLfixed_ib-0.h5',
+        'loc_setter' : (31,31)
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ud = {
+        'aux' : 'wda_CFLfixed_31',
+        # Do blending for initial time-step
+        'initial_blending' : True,
+        'continuous_blending' : True
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    
+    ud = {
+        'aux' : 'wda_CFLfixed_21',
+        # Do blending for initial time-step
+        'initial_blending' : True
+    }
+
+    # Set the data assimilation parameters
+    dap = {
+        'da_times' : da_times,
+        # Assimilate the momentum fields
+        'obs_attrs' : ['rhou', 'rhov'],
+        # Path to the generated observation
+        'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_1.0_truth_CFLfixed_ib-0.h5',
+        'loc_setter' : (21,21)
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ud = {
+        'aux' : 'wda_CFLfixed_21',
+        # Do blending for initial time-step
+        'initial_blending' : True,
+        'continuous_blending' : True
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ud = {
+        'aux' : 'wda_CFLfixed_5',
+        # Do blending for initial time-step
+        'initial_blending' : True
+    }
+
+    # Set the data assimilation parameters
+    dap = {
+        'da_times' : da_times,
+        # Assimilate the momentum fields
+        'obs_attrs' : ['rhou', 'rhov'],
+        # Path to the generated observation
+        'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_1.0_truth_CFLfixed_ib-0.h5',
+        'loc_setter' : (5,5)
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ud = {
+        'aux' : 'wda_CFLfixed_5',
+        # Do blending for initial time-step
+        'initial_blending' : True,
+        'continuous_blending' : True
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+
+
+
+
+
+
+
+
+
+
 if gen_5a1_euler == False and \
 gen_5a2_rb == False and \
 gen_5b_obs_truth_euler == False and \
 gen_5c1_euler_momenta == False and \
 gen_5c1_euler_full == False and \
 gen_5b_5c2_rb == False and \
+gen_loc_errors_tc == False and \
+gen_loc_errors_rb == False and \
 gen_all == False:
     print("no results generated, all switches were set to False")
 else:
