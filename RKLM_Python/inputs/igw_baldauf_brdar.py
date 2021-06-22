@@ -10,7 +10,7 @@ class UserData(object):
     BOUY = 0
 
     grav = 9.80665
-    omega = 1.0*0.000103126
+    omega = 0.0*0.000103126
 
     R_gas = 287.05
     R_vap = 461.0
@@ -51,7 +51,7 @@ class UserData(object):
 
         self.nspec = self.NSPEC
 
-        self.is_nonhydrostatic = 1
+        self.is_nonhydrostatic = 0
         self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
@@ -94,13 +94,15 @@ class UserData(object):
         # NUMERICS
         ##########################################
         self.CFL  = 0.9
-        self.dtfixed0 = 0.5 / self.t_ref * 1000.0
-        self.dtfixed = 0.5 / self.t_ref * 1000.0
+        self.dtfixed0 = 0.5 / self.t_ref * 50.0 * self.scale_factor
+        self.dtfixed = 0.5 / self.t_ref * 50.0 * self.scale_factor
+        # self.dtfixed0 = 0.5 / self.t_ref
+        # self.dtfixed = 0.5 / self.t_ref
 
         self.inx = 301+1
-        # self.inx = 1205+1
+        # self.inx = 1201+1
         self.iny = 20+1
-        # self.iny = 40+1
+        # self.iny = 80+1
         self.inz = 1
 
         self.limiter_type_scalars = LimiterType.NONE
@@ -108,13 +110,14 @@ class UserData(object):
 
         self.initial_projection = False
 
-        self.tout = [8.0 * 3600.0 / self.t_ref]           # 8 hrs
+        self.tout = [8 * 180.0 * self.scale_factor / self.t_ref]           # 8 hrs
+        # self.tout = np.arange(0,self.tout[0],900 / self.t_ref)[1:]
 
         self.tol = 1.e-8
         self.stepmax = 1000000
         self.max_iterations = 6000
 
-        self.initial_blending = True
+        self.initial_blending = False
         self.no_of_pi_initial = 0
         self.no_of_hy_initial = 1
 
@@ -141,8 +144,11 @@ class UserData(object):
         elif not self.is_nonhydrostatic:
             self.h_tag = 'hydro'
 
-        aux = ""
-        aux = self.scale_tag + "_" + self.h_tag
+        aux = 'imbal'
+        if len(aux) > 0:
+            aux = self.scale_tag + "_" + self.h_tag + "_" + aux
+        else:
+            aux = self.scale_tag + "_" + self.h_tag
         self.aux = aux
 
         self.output_timesteps = False
@@ -152,9 +158,10 @@ class UserData(object):
         self.rhoe = self.rhoe_method
         
     def stratification_function(self, y):
-        delta = self.Nsq_ref * self.h_ref / self.g_ref
+        Nsq = self.Nsq_ref * self.t_ref * self.t_ref
+        g = self.gravity_strength[1] / self.Msq
 
-        return np.exp(delta * y)
+        return np.exp(Nsq * y / g)
 
     def molly_function(self, x):
         del0 = 0.25
@@ -178,7 +185,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     delT = 0.01 / ud.T_ref
     xc = -0.0 * ud.scale_factor * 50.0e+3 / ud.h_ref
     a = ud.scale_factor * 5.0e+3 / ud.h_ref
-    delta = 1.0
     H = ud.ymax - ud.ymin
 
     hydrostatic_state(mpv, elem, node, th, ud)
@@ -187,14 +193,38 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     y = elem.y.reshape(1,-1)
 
     Tb = delT * ud.molly(x) * np.sin(np.pi * y / H) * np.exp(-(x-xc)**2/(a**2))
-    rhoprime = -np.exp(-0.5 * delta * y) * Tb
+    # rhoprime = -np.exp(-0.5 * delta * y) * Tb
+    xn = node.x[:-1].reshape(-1,1)
+    yn = node.y[:-1].reshape(1,-1)
 
-    p = mpv.HydroState.p0.reshape(1,-1)
-    rho = mpv.HydroState.rho0.reshape(1,-1) + rhoprime
-    rhoY = p**th.gamminv
+    Tbn = delT * ud.molly(xn) * np.sin(np.pi * yn / H) * np.exp(-(xn-xc)**2/(a**2))
+
+    HySt = States(node.sc,ud)
+    HyStn = States(node.sc,ud)
+
+    Y = ud.stratification(y) + Tb
+    Yn = ud.stratification(yn) + Tbn
+
+    hydrostatic_column(HySt, HyStn, Y, Yn, elem, node, th, ud)
+
+    # p = mpv.HydroState.p0.reshape(1,-1)
+    # rho = mpv.HydroState.rho0.reshape(1,-1) + rhoprime
+    # rhoY = p**th.gamminv
+
+    xc_idx = slice(0,-1)
+    yc_idx = slice(0,-1)
+    c_idx = (xc_idx, yc_idx)
+
+    if ud.is_compressible:
+        p = HySt.p0[c_idx]
+        rhoY = HySt.rhoY0[c_idx]
+    else:
+        p = mpv.HydroState.p0
+        rhoY = mpv.HydroState.rhoY0
 
     u, v, w = u0, v0, w0
 
+    rho = rhoY / Y
     Sol.rho[...] = rho
     Sol.rhou[...] = rho * u
     Sol.rhov[...] = rho * v
@@ -202,11 +232,18 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Sol.rhoe[...] = ud.rhoe(rho, u ,v, w, p, ud, th)
     Sol.rhoY[...] = rhoY
 
-    mpv.p2_cells[...] = 0.0
+    mpv.p2_cells[...] = HySt.p20[c_idx]
 
     Sol.rhoX[...] = Sol.rho * (Sol.rho / Sol.rhoY - mpv.HydroState.S0.reshape(1,-1))
 
-    mpv.p2_nodes[:,elem.igy:-elem.igy] = 0.0
+    mpv.p2_nodes[:,:] = HyStn.p20
+
+    hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th)
+
+    if 'imbal' in ud.aux:
+        mpv.p2_nodes[...] = 0.0
+
+    mpv.HyStn = HyStn
 
     ud.nonhydrostasy = 1.0 if ud.is_nonhydrostatic == 1 else 0.0
     ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
