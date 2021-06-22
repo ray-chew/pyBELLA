@@ -274,46 +274,46 @@ def do_hydro_to_nonhydro_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, wr
     print(colored("hydrostatic to nonhydrostatic conversion...", 'blue'))
     print(colored("Blending... step = %i" %step,'blue'))
 
-    Sol_tmp = deepcopy(Sol)
-    flux_tmp = deepcopy(flux)
-    mpv_tmp = deepcopy(mpv)
+    # Sol_tmp = deepcopy(Sol)
+    # flux_tmp = deepcopy(flux)
+    # mpv_tmp = deepcopy(mpv)
 
-    ret = data.time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, [0,step-1], th, bld=None, writer=None, debug=False)
+    # ret = data.time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, [0,step-1], th, bld=None, writer=None, debug=False)
 
-    Sol = Sol_tmp
-    flux = flux_tmp
-    mpv = mpv_tmp
+    # Sol = Sol_tmp
+    # flux = flux_tmp
+    # mpv = mpv_tmp
 
-    retv_half = ret[0].rhov_half / ret[0].rho_half
-    retv_full = ret[0].rhov / ret[0].rho
+    # retv_half = ret[0].rhov_half / ret[0].rho_half
+    # retv_full = ret[0].rhov / ret[0].rho
 
-    solv_half = Sol.rhov_half / Sol.rho_half
-    solv_full = Sol.rhov / Sol.rho
+    # solv_half = Sol.rhov_half / Sol.rho_half
+    # solv_full = Sol.rhov / Sol.rho
 
-    fac_full = 0.5
-    fac_half = 1.0 - fac_full
+    # fac_full = 0.5
+    # fac_half = 1.0 - fac_full
 
-    # print(np.sum(solv_full))
-    # print(np.sum(retv_half))
-    # print(np.sum((fac_full * solv_full + fac_half * retv_half)))
-    # print(np.sum(fac_half * retv_half))
+    # # print(np.sum(solv_full))
+    # # print(np.sum(retv_half))
+    # # print(np.sum((fac_full * solv_full + fac_half * retv_half)))
+    # # print(np.sum(fac_half * retv_half))
 
-    fac_full = 0.5
-    fac_half = 0.5
+    # fac_full = 0.5
+    # fac_half = 0.5
 
-    # print(np.sum(solv_full))
-    # print(np.sum(retv_half))
-    # print(np.sum((fac_full * solv_full + fac_half * retv_half)))
-    # print(np.sum(fac_half * retv_half))
+    # # print(np.sum(solv_full))
+    # # print(np.sum(retv_half))
+    # # print(np.sum((fac_full * solv_full + fac_half * retv_half)))
+    # # print(np.sum(fac_half * retv_half))
 
-    if writer != None: writer.populate(str(label)+'_after_full_step', 'ret_half', ret[0].rhov_half)
-    if writer != None: writer.populate(str(label)+'_after_full_step', 'ret_full', ret[0].rhov)
+    # if writer != None: writer.populate(str(label)+'_after_full_step', 'ret_half', ret[0].rhov_half)
+    # if writer != None: writer.populate(str(label)+'_after_full_step', 'ret_full', ret[0].rhov)
 
 
-    if writer != None: writer.populate(str(label)+'_after_full_step', 'solv_half', Sol.rhov_half)
-    if writer != None: writer.populate(str(label)+'_after_full_step', 'solv_full', Sol.rhov)
+    # if writer != None: writer.populate(str(label)+'_after_full_step', 'solv_half', Sol.rhov_half)
+    # if writer != None: writer.populate(str(label)+'_after_full_step', 'solv_full', Sol.rhov)
 
-    Sol.rhov = Sol.rho * (fac_full * solv_full + fac_half * retv_half)
+    # Sol.rhov = Sol.rho * (fac_full * solv_full + fac_half * retv_half)
     # if writer != None: writer.populate(str(label)+'_after_full_step', 'p2_end', ret[2].p2_nodes)
 
     # fac_mpv_half = 0.5
