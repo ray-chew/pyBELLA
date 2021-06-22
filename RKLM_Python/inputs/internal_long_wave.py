@@ -100,9 +100,9 @@ class UserData(object):
         # self.dtfixed0 = 5.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
         # self.dtfixed = 5.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
 
-        self.inx = 601+1
+        self.inx = 301+1
         # self.inx = 1205+1
-        self.iny = 80+1
+        self.iny = 10+1
         # self.iny = 40+1
         self.inz = 1
 

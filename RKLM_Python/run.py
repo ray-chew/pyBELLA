@@ -8,7 +8,7 @@ os.chdir('../')
 
 class run_params(object):
     N = 1
-    tc = 'igw'
+    tc = 'igw_bb'
 
     def __init__(self):
         self.N = self.N
