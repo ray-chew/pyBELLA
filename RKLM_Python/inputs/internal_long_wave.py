@@ -27,7 +27,7 @@ class UserData(object):
     Nsq_ref = 1.0e-4
 
     # planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0;
-    scale_factor = 160.0
+    scale_factor = 20.0
 
     i_gravity = np.zeros((3))
     i_coriolis = np.zeros((3))
@@ -118,9 +118,9 @@ class UserData(object):
         self.max_iterations = 6000
 
         self.continuous_blending = False
-        self.no_of_pi_initial = 1
+        self.no_of_pi_initial = 0
         self.no_of_pi_transition = 0
-        self.no_of_hy_initial = 0
+        self.no_of_hy_initial = 1
         self.no_of_hy_transition = 0
 
         self.blending_weight = 0./16
@@ -128,7 +128,7 @@ class UserData(object):
         self.blending_conv = 'rho' #theta, rho
         self.blending_type = 'half' # half, full
 
-        self.initial_blending = False
+        self.initial_blending = True
 
         self.output_base_name = "_internal_long_wave"
         if self.scale_factor < 10.0:
@@ -235,6 +235,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     ud.nonhydrostasy = 1.0 if ud.is_nonhydrostatic == 1 else 0.0
     ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
+
+    # mpv.p2_nodes[...] = 0.0
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 

@@ -51,7 +51,7 @@ class UserData(object):
 
         self.nspec = self.NSPEC
 
-        self.is_nonhydrostatic = 0
+        self.is_nonhydrostatic = 1
         self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
@@ -117,7 +117,7 @@ class UserData(object):
         self.stepmax = 1000000
         self.max_iterations = 6000
 
-        self.initial_blending = False
+        self.initial_blending = True
         self.no_of_pi_initial = 0
         self.no_of_hy_initial = 1
 
