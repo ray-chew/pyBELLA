@@ -10,7 +10,7 @@ class UserData(object):
     BOUY = 0
 
     grav = 9.80665
-    omega = 0.0*0.000103126
+    omega = 1.0*0.000103126
 
     R_gas = 287.05
     R_vap = 461.0
@@ -117,7 +117,7 @@ class UserData(object):
         self.stepmax = 1000000
         self.max_iterations = 6000
 
-        self.initial_blending = True
+        self.initial_blending = False
         self.no_of_pi_initial = 0
         self.no_of_hy_initial = 1
 
