@@ -37,8 +37,11 @@ class Blend(object):
         self.kernel = np.ones([2]*ndim)
         dp2c = signal.fftconvolve(dp2n,self.kernel, mode='valid') / self.kernel.sum()
 
-        self.dp2n = dp2n - dp2n.mean()
-        self.dp2c = dp2c - dp2c.mean()
+        # self.dp2n = dp2n - dp2n.mean()
+        # self.dp2c = dp2c - dp2c.mean()
+
+        self.dp2n = dp2n
+        self.dp2c = dp2c
 
         return dp2c
 

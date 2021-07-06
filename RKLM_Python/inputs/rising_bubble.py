@@ -118,7 +118,7 @@ class UserData(object):
         self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
         self.tout = np.arange(0.0,1.01,0.01)[10:]
-        # self.tout = [10.0]
+        # self.tout = [1.0]
 
         self.stepmax = 10000
 
@@ -146,7 +146,7 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        aux = 'debug'
+        aux = 'debug_CFLfixed'
         self.aux = aux
         self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 

@@ -5,8 +5,11 @@ import matplotlib.patches as patches
 import numpy as np
 import itertools
 
+cm = 1/2.54
+
 class plotter(object):
-    def __init__(self,arr_lst, ncols=4, figsize=(12,8), sharex=False, sharey=False):
+    def __init__(self,arr_lst, ncols=4, figsize=(12,8), fontsize=14, sharexlabel=False, shareylabel=False, sharex=False, sharey=False):
+        plt.rcParams.update({'font.size': fontsize})
         self.arr_lst = np.array(arr_lst)
         N = self.arr_lst.shape[0]
         
@@ -31,31 +34,41 @@ class plotter(object):
         self.visualise = self.visualise
         self.fig, self.ax = plt.subplots(ncols=self.ncols,nrows=self.nrows,figsize=figsize,sharex=sharex,sharey=sharey)
         
+        self.sharexlabel = sharexlabel
+        self.shareylabel = shareylabel
+        
         self.img = plt
             
     def set_axes(self,**kwargs):
         for key, value in kwargs.items():
             setattr(self,key,value)
         
-    def set_cax_axes(self,cax):
+    def set_cax_axes(self,cax,n):
         if hasattr(self, 'x_locs') : cax.set_xticks(self.x_locs)
         if hasattr(self, 'x_axs') : cax.set_xticklabels(self.x_axs)
         if hasattr(self, 'y_locs') : cax.set_yticks(self.y_locs)
         if hasattr(self, 'y_axs') : cax.set_yticklabels(self.y_axs)
-        if hasattr(self, 'x_label') : cax.set_xlabel(self.x_label)
-        if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
+        if self.sharexlabel:
+            if int(n // self.ncols) == self.nrows - 1:
+                if hasattr(self, 'x_label') : cax.set_xlabel(self.x_label)
+        else:
+            if hasattr(self, 'x_label') : cax.set_xlabel(self.x_label)
+        if self.shareylabel:
+            if n % self.ncols == 0:
+                if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
+        else:
+            if hasattr(self, 'y_label') : cax.set_ylabel(self.y_label)
         if hasattr(self, 'axhline'): cax.axhline(self.axhline,c='k',lw=0.5)
         if hasattr(self, 'axvline'): cax.axvline(self.axvline,c='k',lw=0.5)
         if hasattr(self, 'marker'):
             for marker in self.marker:
-                cax.plot(marker[0],marker[1],marker='x',c=marker[2], ms=18, mew=5)
+                cax.plot(marker[0],marker[1],marker='x',c=marker[2], ms=18, mew=2)
         if hasattr(self, 'rects'):
             for rect in self.rects:
                 cax.add_patch(rect)
         
         
-    def plot(self,method='imshow',inner=False,suptitle="",rect=[0, 0.03, 1, 0.95],fontsize=14,aspect='auto',lvls=None):
-        plt.rcParams.update({'font.size': fontsize})
+    def plot(self,method='imshow',inner=False,suptitle="",rect=[0, 0.03, 1, 0.95],aspect='auto',lvls=None):
         if method != 'imshow' or method != 'contour':
             assert(0, "Visualisation method not implemented!")
             
@@ -70,9 +83,12 @@ class plotter(object):
                 lvl = lvls[n] if lvls is not None else None
                 
                 im = self.visualise(method,cax,arr,aspect,lvl)
-                cax.set_title(title)
+                if type(title) == str:
+                    cax.set_title(title)
+                elif type(title) == np.ndarray or type(title) == list:
+                    cax.set_title(title[0], fontsize=title[1], fontweight=title[2])
                 loc = cax.get_xticklabels()
-                self.set_cax_axes(cax)
+                self.set_cax_axes(cax,n)
                 caxs.append(cax)
                 divider = make_axes_locatable(cax)
                 bax = divider.append_axes("right", size="5%", pad=0.05)
@@ -97,10 +113,13 @@ class plotter(object):
             cax = self.ax
             im = self.visualise(method,cax,arr,aspect,lvls)
             cax.set_title(title)
-            self.set_cax_axes(cax)
+            self.set_cax_axes(cax,0)
             caxs = [cax]
             divider = make_axes_locatable(cax)
             bax = divider.append_axes("right", size="5%", pad=0.05)
+            if hasattr(self, 'cbar_label'):
+                bax.set_xlabel(self.cbar_label)
+                bax.xaxis.set_label_position('top') 
             if method == 'imshow' and lvls is not None:
 #                 plt.colorbar(im, cax=bax, ticks=lvls)#, format='%.3f')
                 plt.colorbar(im, cax=bax, ticks=lvls, extend='both', extendrect=True, extendfrac='auto')#, format='%.3f')
@@ -121,7 +140,8 @@ class plotter(object):
             return ims, caxs, baxs
         
     def save_fig(self, fn, format='.pdf'):
-        self.img.savefig(fn + format, bbox_inches = 'tight', pad_inches = 0)
+        self.fig.tight_layout()
+        self.fig.savefig(fn + format, bbox_inches = 'tight', pad_inches = 0.1)
         
         
     @staticmethod

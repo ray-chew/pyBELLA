@@ -9,6 +9,8 @@ import dask.array as darr
 import numpy as np
 
 import data_assimilation.utils as dau
+from numpy.lib.stride_tricks import sliding_window_view
+from copy import deepcopy
 
 debug_cnt = 0
 
@@ -227,15 +229,15 @@ class prepare_rloc(object):
         self.obs_Y = dap.obs_Y
 
         # make sure that subdomain is not larger than inner cellular grid
-        assert self.obs_X < elem.iicx
+        assert self.obs_X < elem.iicx, "obs_X > iicx"
         if elem.iicy == 1: # implying horizontal slice
-            assert self.obs_Y < elem.iicz
+            assert self.obs_Y < elem.iicz, "obs_Y > iicz"
         else:    
-            assert self.obs_Y < elem.iicy
+            assert self.obs_Y < elem.iicy, "obs_Y > iicy"
 
         # make sure that subdomain size is odd
-        assert self.obs_X % 2 == 1
-        assert self.obs_Y % 2 == 1
+        assert self.obs_X % 2 == 1, "obs_X is even"
+        assert self.obs_Y % 2 == 1, "obs_Y is even"
 
         # if checks are passed, then get pad length based on subdomain / local counterpart size
         self.pad_X = int((self.obs_X - 1) / 2)
@@ -422,8 +424,14 @@ class prepare_rloc(object):
         state -= X_bar
 
         # Decompose X[G] and bar{X[G]} into the local regions view
-        X = np.array([dau.sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in state])
-        X_bar = np.array([dau.sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in X_bar]) 
+        # X = np.array([dau.sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in state])
+        # X_bar = np.array([dau.sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in X_bar]) 
+
+        X = np.array([sliding_window_view(mem, (1,1), axis=(1,2)).reshape(attr_len,Nx*Ny) for mem in state])
+        X_bar = np.array([sliding_window_view(mem, (1,1), axis=(1,2)).reshape(attr_len,Nx*Ny) for mem in X_bar]) 
+
+        X = np.swapaxes(X,1,2)
+        X_bar = np.swapaxes(X_bar,1,2)
 
         # Make first index the local regions
         X = np.swapaxes(X,0,1)
@@ -443,7 +451,8 @@ class prepare_rloc(object):
 
         obs = np.ma.array(obs,mask=mask).filled(fill_value=np.nan)
 
-        obs = np.array([dau.sliding_window_view(obs_attr, (obs_X,obs_Y), (1,1)) for obs_attr in obs])
+        # obs = np.array([dau.sliding_window_view(obs_attr, (obs_X,obs_Y), (1,1)) for obs_attr in obs])
+        obs = np.array([sliding_window_view(obs_attr, (obs_X,obs_Y)) for obs_attr in obs])
 
         obs = np.swapaxes(obs,0,2)
         obs = np.swapaxes(obs,0,1)
@@ -490,12 +499,70 @@ class prepare_rloc(object):
         Y_bar = Y_bar.filled(np.nan)
 
         # Decompose Y[G] and bar{y[G]} such that the local regions can be accessed easily
-        sios = np.array([dau.sliding_window_view(mem, (obs_X,obs_Y), (1,1)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in sios])
+        # sios = np.array([sliding_window_view(mem, (obs_X,obs_Y), axis=(1,2)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in sios])
+        # Y_bar = np.array([sliding_window_view(mem, (obs_X,obs_Y), axis=(1,2)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in Y_bar])
 
-        Y_bar = np.array([dau.sliding_window_view(mem, (obs_X,obs_Y), (1,1)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in Y_bar])
+        # sios = darr.from_array(sios)
+        sios = sliding_window_view(sios, (obs_X,obs_Y), axis=(2,3)).reshape(self.N,attr_len,Nx*Ny,obs_X,obs_Y)
+        Y_bar = np.array([sliding_window_view(mem, (obs_X,obs_Y), axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y) for mem in Y_bar])
+
+        ###############################
+
+        # from skimage.util import view_as_windows
+        # sios_tmp = np.zeros((10,attr_len,Nx*Ny,obs_X,obs_Y))
+        # Y_bar_tmp = np.zeros((1,attr_len,Nx*Ny,obs_X,obs_Y))
+        
+        # # sios_tmp = darr.from_array(sios_tmp)
+        # sios = darr.from_array(sios)
+
+        # hN = int(np.floor(self.N / 2))
+        # # print(hN)
+        # tmp0 = deepcopy(sios[:hN,...])
+        # tmp1 = deepcopy(sios[hN:self.N,...])
+
+        # for idx in range(0,self.N):
+        #     idx = (self.N - 1) - idx
+        #     print(idx)
+        #     sios_tmp[idx] = sliding_window_view(sios[idx], (obs_X,obs_Y),axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
+
+
+        # sios_tmp00 = np.zeros((5,attr_len,Nx*Ny,obs_X,obs_Y))
+
+        # for idx in range(0,self.N-hN):
+        #     print(idx+hN)
+        #     sios_tmp00[idx] = sliding_window_view(sios[idx+hN], (obs_X,obs_Y),axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
+        
+
+        ####################################
+
+        #     # sios_tmp[idx] = view_as_windows(mem, (attr_len,obs_X,obs_Y)).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
+        # Y_bar_tmp[0] = view_as_windows(Y_bar[0], (attr_len,obs_X,obs_Y)).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
+        # sios_tmp = view_as_windows(sios, (self.N,attr_len,obs_X,obs_Y)).reshape(self.N,Nx*Ny,attr_len,obs_X,obs_Y)
+
+        # Y_bar_tmp[0] = sliding_window_view(Y_bar[0], (obs_X,obs_Y),axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
+        
+        
+        # sios = np.array([sliding_window_view(mem, (obs_X,obs_Y), axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y) for mem in sios])
+        # Y_bar = np.array([sliding_window_view(mem, (obs_X,obs_Y), axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y) for mem in Y_bar])
+
+
+        # sios = np.array([view_as_windows(mem, (attr_len, obs_X,obs_Y)).reshape(attr_len,Nx*Ny,obs_X,obs_Y) for mem in sios])
+        # Y_bar = np.array([view_as_windows(mem, (attr_len, obs_X,obs_Y)).reshape(attr_len,Nx*Ny,obs_X,obs_Y) for mem in Y_bar])
+
+        # sios = sios_tmp
+        # Y_bar = Y_bar_tmp
+
+
+        # Y_bar = np.array([dau.sliding_window_view(mem, (obs_X,obs_Y), (1,1)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in Y_bar])
+
+        sios = np.swapaxes(sios,1,2)
+        Y_bar = np.swapaxes(Y_bar,1,2)
 
         # Make local region the first axis index
         sios = np.swapaxes(sios,0,1)
+
+        # sios = sios.rechunk(chunks=(self.N,100,attr_len,obs_X,obs_Y))
+        # print(sios.chunks)
         return sios, Y_bar[0]
 
 
@@ -526,9 +593,16 @@ class prepare_rloc(object):
         else:
             bc_mask *= self.nmask
 
-        bc_mask = np.array(dau.sliding_window_view(bc_mask, (obs_X,obs_Y), (1,1))).reshape(Nx*Ny,obs_X,obs_Y)
+        # bc_mask = np.array(dau.sliding_window_view(bc_mask, (obs_X,obs_Y), (1,1))).reshape(Nx*Ny,obs_X,obs_Y)
 
-        mask_n = np.array(dau.sliding_window_view(mask, (obs_X,obs_Y), (1,1))).reshape(Nx*Ny,attr_len,obs_X,obs_Y)
+        # mask_n = np.array(dau.sliding_window_view(mask, (obs_X,obs_Y), (1,1))).reshape(Nx*Ny,attr_len,obs_X,obs_Y)
+
+
+        bc_mask = np.array(sliding_window_view(bc_mask, (obs_X,obs_Y))).reshape(Nx*Ny,obs_X,obs_Y)
+
+        mask_n = np.array(sliding_window_view(mask, (obs_X,obs_Y), axis=(1,2))).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
+
+        mask_n = np.swapaxes(mask_n,0,1)
 
         return bc_mask, mask_n
 
