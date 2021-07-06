@@ -28,7 +28,7 @@ class da_params(object):
         # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pps_tra_truth.h5'
         # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_neg_comp_1.0_pp_tra_truth_ip.h5'
         # self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_comp_1.0_pp_tra_truth_ip.h5'
-        self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_neg_comp_1.0_pp_tra_truth_ip.h5'
+        self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5'
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)
@@ -238,6 +238,19 @@ class da_params(object):
         self._da_times = np.around(self._da_times,3)
         if self.sparse_obs:
             self.gen_obs_sparse()
+
+
+    @property
+    def loc_setter(self):
+        return self.loc_setter
+
+    @loc_setter.setter
+    def loc_setter(self, tpl):
+        self.obs_X = tpl[0]
+        self.obs_Y = tpl[1]
+        # constants, linear, gaussian
+        self.localisation_matrix = self.get_loc_mat('gaussian')
+
 
     # @staticmethod
     # def sampler_gaussian(var):
