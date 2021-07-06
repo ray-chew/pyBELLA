@@ -60,7 +60,7 @@ gen_5c1_euler_full = False
 gen_5b_5c2_rb = False
 
 gen_loc_errors_tc = False
-gen_loc_errors_rb = True
+gen_loc_errors_rb = False
 
 # Otherwise, if gen_all = True, generate all
 # results
