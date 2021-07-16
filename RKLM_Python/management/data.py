@@ -94,7 +94,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             1. before flux calculation 
             2. before advection routine 
             3. after advection routine 
-            4. after explicit solver 
+            4. after explicit solver
             5. after implicit solver
         
         during both the half-step for the prediction of advective flux and the full-step.
@@ -108,6 +108,10 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
     window_step = steps[0]
     step = steps[1]
     swe_to_lake = False
+    if 'best' not in ud.aux:
+        test_hydrob = True
+    else:
+        test_hydrob = False
 
     while ((t < tout) and (step < ud.stepmax)):
         boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
@@ -128,7 +132,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if c1 or c2:
             print(colored("nonhydrostatic to hydrostatic conversion...", 'blue'))
             ud.is_nonhydrostatic = 0
-            dt *= 0.5
+            if test_hydrob == False:
+                dt *= 0.5
 
         ######################################################
         # Blending : Do blending before timestep
@@ -173,6 +178,9 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaimp')
 
+        # if test_hydrob == True and writer is not None and step==0:
+        #     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
+
         flux_half_new = deepcopy(flux)
 
         recompute_advective_fluxes(flux, Sol)
@@ -192,6 +200,10 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         rhoX_half = np.copy(Sol.rhoX)
         rhoY_half = np.copy(Sol.rhoY)
         p2_nodes_half = np.copy(mpv.p2_nodes)
+
+        if test_hydrob == True and writer is not None and step==0:
+            writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
+        #     print(dt*0.5)
 
         # takes care of the non-hydrostatic, compressible case
         if ud.is_compressible == 1 and ud.is_nonhydrostatic == 1:
@@ -233,6 +245,14 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         Sol.rhoX_half = rhoX_half
         Sol.rhoY_half = rhoY_half
         mpv.p2_nodes_half = p2_nodes_half
+
+        # Sol.rho_half = Sol.rho
+        # Sol.rhou_half = Sol.rhou
+        # Sol.rhov_half = Sol.rhov
+        # Sol.rhow_half = Sol.rhow
+        # Sol.rhoX_half = Sol.rhoX
+        # Sol.rhoY_half = Sol.rhoY
+        # mpv.p2_nodes_half = mpv.p2_nodes
         Sol_half_old = deepcopy(Sol_half_new)
         flux_half_old = deepcopy(flux_half_new)
         mpv_half_old = deepcopy(mpv_half_new)
@@ -261,27 +281,58 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         if c1 or c2:
             print(colored("hydrostatic to nonhydrostatic conversion...", 'blue'))
-            ret = time_update(Sol_half_old,flux_half_old,mpv_half_old, dt-0.5*dt, dt+0.5*dt, ud, elem, node, [0,0], th, bld=None, writer=None, debug=False)
 
-            # Sol = deepcopy(ret[0])
-            # flux = deepcopy(ret[1])
-            # mpv = deepcopy(ret[2])
-            Sol_tu = deepcopy(ret[0])
+            writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half_full')
+
+            Sol = deepcopy(Sol_half_old)
+            mpv = deepcopy(mpv_half_old)
+            if test_hydrob == False:
+                print(colored("test_hydrob == False", 'red'))
+                writer.write_all(Sol,mpv,elem,node,th,str(label)+'_quarter')
+
+                print("quarter dt = %.8f" %(dt*0.5))
+
+                ret = time_update(Sol_half_old,flux_half_old,mpv_half_old, dt-0.5*dt, dt+0.5*dt, ud, elem, node, [0,0], th, bld=None, writer=None, debug=False)
+
+                Sol_tu = deepcopy(ret[0])
+                # mpv_tu = deepcopy(ret[2])
+                Sol.rho[...] = Sol_tu.rho_half
+                Sol.rhou[...] = Sol_tu.rhou_half
+                Sol.rhov[...] = Sol_tu.rhov_half
+                Sol.rhow[...] = Sol_tu.rhow_half
+                Sol.rhoX[...] = Sol_tu.rhoX_half
+                Sol.rhoY[...] = Sol_tu.rhoY_half
+
+                # mpv.p2_nodes[...] = mpv_tu.p2_nodes_half
+
+                writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
+
+                ret = time_update(Sol,flux,mpv, dt, 2.0*dt, ud, elem, node, [0,0], th, bld=None, writer=None, debug=False)
+
+                Sol = deepcopy(ret[0])
+                flux = deepcopy(ret[1])
+                mpv = deepcopy(ret[2])
+
+            if test_hydrob == True:
+                # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
+
+                print(colored("test_hydrob == True", 'red'))
+                ret = time_update(Sol_half_old,flux_half_old,mpv_half_old, dt-0.5*dt, dt, ud, elem, node, [0,0], th, bld=None, writer=None, debug=False)
+
+                Sol = deepcopy(ret[0])
+                flux = deepcopy(ret[1])
+                mpv = deepcopy(ret[2])
+
+            # Sol_tu = deepcopy(ret[0])
             # mpv_tu = deepcopy(ret[2])
-            Sol.rho[...] = Sol_tu.rho_half
-            Sol.rhou[...] = Sol_tu.rhou_half
-            Sol.rhov[...] = Sol_tu.rhov_half
-            Sol.rhow[...] = Sol_tu.rhow_half
-            Sol.rhoX[...] = Sol_tu.rhoX_half
-            Sol.rhoY[...] = Sol_tu.rhoY_half
+            # Sol.rho[...] = Sol_tu.rho_half
+            # Sol.rhou[...] = Sol_tu.rhou_half
+            # Sol.rhov[...] = Sol_tu.rhov_half
+            # Sol.rhow[...] = Sol_tu.rhow_half
+            # Sol.rhoX[...] = Sol_tu.rhoX_half
+            # Sol.rhoY[...] = Sol_tu.rhoY_half
 
-            # mpv.p2_nodes[...] = mpv_tu.p2_nodes_half
 
-            ret = time_update(Sol,flux,mpv, dt, 2.0*dt, ud, elem, node, [0,0], th, bld=None, writer=None, debug=False)
-
-            Sol = deepcopy(ret[0])
-            flux = deepcopy(ret[1])
-            mpv = deepcopy(ret[2])
             # Sol.rho[...] = Sol_tu.rho_half
             # Sol.rhou[...] = Sol_tu.rhou_half
             # Sol.rhov[...] = Sol_tu.rhov_half
@@ -291,7 +342,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
             # mpv.p2_nodes[...] = mpv_tu.p2_nodes_half
 
-            dt *= 2.0
+            if test_hydrob == False:
+                dt *= 2.0
             if c2: ud.is_nonhydrostatic = 1
 
         t += dt
