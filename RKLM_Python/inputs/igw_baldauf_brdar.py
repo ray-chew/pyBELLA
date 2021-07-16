@@ -51,7 +51,7 @@ class UserData(object):
 
         self.nspec = self.NSPEC
 
-        self.is_nonhydrostatic = 1
+        self.is_nonhydrostatic = 0
         self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
@@ -110,7 +110,9 @@ class UserData(object):
 
         self.initial_projection = False
 
-        self.tout = [8 * 180.0 * self.scale_factor / self.t_ref]           # 8 hrs
+        self.tout = np.array([8 * 180.0 * self.scale_factor / self.t_ref]) # 8 hrs
+        # self.tout = np.append(self.tout, 0.17081780*4.0)
+        # self.tout = np.sort(self.tout)
         # self.tout = np.arange(0,self.tout[0],900 / self.t_ref)[1:]
 
         self.tol = 1.e-8
@@ -144,7 +146,7 @@ class UserData(object):
         elif not self.is_nonhydrostatic:
             self.h_tag = 'hydro'
 
-        aux = 'imbal'
+        aux = ''
         if len(aux) > 0:
             aux = self.scale_tag + "_" + self.h_tag + "_" + aux
         else:
