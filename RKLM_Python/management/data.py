@@ -134,6 +134,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             ud.is_nonhydrostatic = 0
             if test_hydrob == False:
                 dt *= 0.5
+            # elif test_hydrob == True:
+                # dt *= 0.25
 
         ######################################################
         # Blending : Do blending before timestep
@@ -153,6 +155,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         print("-------")
 
         Sol0 = deepcopy(Sol)
+        flux0 = deepcopy(flux)
+        mpv0 = deepcopy(mpv)
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_flux')
         
@@ -163,8 +167,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True and elem.ndim == 3: writer.populate(str(label)+'_before_advect','rhoYw',flux[2].rhoY)
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_advect')
 
-        advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, node, str(label)+'_half', writer)
-        # advect_rk(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, node, str(label)+'_half', writer)
+        # advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, node, str(label)+'_half', writer)
+        advect_rk(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, node, str(label)+'_half', writer)
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_advect')
 
@@ -199,6 +203,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         rhow_half = np.copy(Sol.rhow)
         rhoX_half = np.copy(Sol.rhoX)
         rhoY_half = np.copy(Sol.rhoY)
+        pwchi = np.copy(Sol.pwchi)
         p2_nodes_half = np.copy(mpv.p2_nodes)
 
         if test_hydrob == True and writer is not None and step==0:
@@ -245,6 +250,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         Sol.rhoX_half = rhoX_half
         Sol.rhoY_half = rhoY_half
         mpv.p2_nodes_half = p2_nodes_half
+        Sol.pwchi = pwchi
 
         # Sol.rho_half = Sol.rho
         # Sol.rhou_half = Sol.rhou
@@ -283,12 +289,16 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             print(colored("hydrostatic to nonhydrostatic conversion...", 'blue'))
 
             writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half_full')
+            writer.populate(str(label)+'_ic', 'pwchi', Sol.pwchi)
 
-            Sol = deepcopy(Sol_half_old)
-            mpv = deepcopy(mpv_half_old)
             if test_hydrob == False:
+                Sol = deepcopy(Sol_half_old)
+                # mpv = deepcopy(mpv_half_old)
+
                 print(colored("test_hydrob == False", 'red'))
                 writer.write_all(Sol,mpv,elem,node,th,str(label)+'_quarter')
+
+                writer.populate(str(label)+'_quarter', 'pwchi', Sol.pwchi)
 
                 print("quarter dt = %.8f" %(dt*0.5))
 
@@ -302,10 +312,13 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                 Sol.rhow[...] = Sol_tu.rhow_half
                 Sol.rhoX[...] = Sol_tu.rhoX_half
                 Sol.rhoY[...] = Sol_tu.rhoY_half
+                Sol.pwchi[...] = Sol_tu.pwchi
 
                 # mpv.p2_nodes[...] = mpv_tu.p2_nodes_half
 
                 writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
+
+                writer.populate(str(label)+'_half', 'pwchi', Sol.pwchi)
 
                 ret = time_update(Sol,flux,mpv, dt, 2.0*dt, ud, elem, node, [0,0], th, bld=None, writer=None, debug=False)
 
@@ -314,33 +327,44 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                 mpv = deepcopy(ret[2])
 
             if test_hydrob == True:
+                Sol = deepcopy(Sol_half_old)
+                # mpv = deepcopy(mpv_half_old)
+
+                print(colored("test_hydrob == False", 'red'))
+                writer.write_all(Sol,mpv,elem,node,th,str(label)+'_quarter')
+
+                # writer.populate(str(label)+'_quarter', 'pwchi', Sol.pwchi)
+
+                print("quarter dt = %.8f" %(dt*0.5))
+
+                ret = time_update(Sol_half_old,flux_half_old,mpv_half_old, dt-0.5*dt, dt+0.5*dt, ud, elem, node, [0,0], th, bld=None, writer=None, debug=False)
+
+                Sol_tu = deepcopy(ret[0])
+                # mpv_tu = deepcopy(ret[2])
+                Sol.rho[...] = Sol_tu.rho_half
+                Sol.rhou[...] = Sol_tu.rhou_half
+                Sol.rhov[...] = Sol_tu.rhov_half
+                Sol.rhow[...] = Sol_tu.rhow_half
+                Sol.rhoX[...] = Sol_tu.rhoX_half
+                Sol.rhoY[...] = Sol_tu.rhoY_half
+                Sol.pwchi[...] = Sol_tu.pwchi
+
+                # mpv.p2_nodes[...] = mpv_tu.p2_nodes_half
+
                 # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
 
-                print(colored("test_hydrob == True", 'red'))
-                ret = time_update(Sol_half_old,flux_half_old,mpv_half_old, dt-0.5*dt, dt, ud, elem, node, [0,0], th, bld=None, writer=None, debug=False)
+                # writer.populate(str(label)+'_half', 'pwchi', Sol.pwchi)
+
+                ret = time_update(Sol,flux,mpv, dt, 2.0*dt, ud, elem, node, [0,0], th, bld=None, writer=None, debug=False)
 
                 Sol = deepcopy(ret[0])
                 flux = deepcopy(ret[1])
                 mpv = deepcopy(ret[2])
+                # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
+                # writer.populate(str(label)+'_half', 'pwchi', Sol.pwchi)
 
-            # Sol_tu = deepcopy(ret[0])
-            # mpv_tu = deepcopy(ret[2])
-            # Sol.rho[...] = Sol_tu.rho_half
-            # Sol.rhou[...] = Sol_tu.rhou_half
-            # Sol.rhov[...] = Sol_tu.rhov_half
-            # Sol.rhow[...] = Sol_tu.rhow_half
-            # Sol.rhoX[...] = Sol_tu.rhoX_half
-            # Sol.rhoY[...] = Sol_tu.rhoY_half
-
-
-            # Sol.rho[...] = Sol_tu.rho_half
-            # Sol.rhou[...] = Sol_tu.rhou_half
-            # Sol.rhov[...] = Sol_tu.rhov_half
-            # Sol.rhow[...] = Sol_tu.rhow_half
-            # Sol.rhoX[...] = Sol_tu.rhoX_half
-            # Sol.rhoY[...] = Sol_tu.rhoY_half
-
-            # mpv.p2_nodes[...] = mpv_tu.p2_nodes_half
+                print(colored("test_hydrob == True", 'red'))
+                
 
             if test_hydrob == False:
                 dt *= 2.0
@@ -351,6 +375,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if writer != None:
             writer.time = t
             writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
+            writer.populate(str(label)+'_after_full_step', 'pwchi', Sol.pwchi)
         print("###############################################################################################")
         print("step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f" %(step, t, dt, cfl, cfl_ac))
         print("###############################################################################################")
