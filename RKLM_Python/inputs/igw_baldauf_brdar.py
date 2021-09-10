@@ -82,7 +82,7 @@ class UserData(object):
         self.zmax =  1.0
 
         self.u_wind_speed = 0.0 * 20.0 / self.u_ref
-        self.v_wind_speed = 0.0
+        self.v_wind_speed = 0.0 * 20.0 / self.u_ref
         self.w_wind_speed = 0.0
 
         self.bdry_type = np.empty((3), dtype=object)
@@ -146,7 +146,7 @@ class UserData(object):
         elif not self.is_nonhydrostatic:
             self.h_tag = 'hydro'
 
-        aux = ''
+        aux = 'perturb'
         if len(aux) > 0:
             aux = self.scale_tag + "_" + self.h_tag + "_" + aux
         else:
@@ -180,12 +180,24 @@ class UserData(object):
         gm1inv = th.gm1inv
         return (p * gm1inv + 0.5 * Msq * rho * (u*u + v*v + w*w))
 
-def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
+def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     u0 = ud.u_wind_speed
     v0 = ud.v_wind_speed
     w0 = ud.w_wind_speed
     delT = 0.01 / ud.T_ref
-    xc = -0.0 * ud.scale_factor * 50.0e+3 / ud.h_ref
+
+    if 'perturb' in ud.aux:
+        x_perturb = 0.1
+
+    if seed != None:
+        np.random.random(seed)
+        x_perturb = (np.random.random() - 0.5) / 2.5
+
+    if 'truth' in ud.aux or 'obs' in ud.aux:
+        np.random(3456)
+        x_perturb = (np.random.random() - 0.5) / 2.5
+
+    xc = -x_perturb * ud.scale_factor * 50.0e+3 / ud.h_ref
     a = ud.scale_factor * 5.0e+3 / ud.h_ref
     H = ud.ymax - ud.ymin
 
