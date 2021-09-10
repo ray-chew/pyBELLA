@@ -199,7 +199,7 @@ def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None)
         Tag label for the output array
     writer : :py:class:`management.io.io`, optional
         Writer class for I/O operations, by default None
-
+        
     Attention
     ---------
     This function is not usually called unless commented out in the :py:meth:`management.data.time_update` routine.
@@ -233,6 +233,10 @@ def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None)
         Sol.rhoe += lmbda * (flux[dim].rhoe[left_idx] - flux[dim].rhoe[right_idx])
         Sol.rhoX += lmbda * (flux[dim].rhoX[left_idx] - flux[dim].rhoX[right_idx])
         Sol.rhoY += lmbda * (flux[dim].rhoY[left_idx] - flux[dim].rhoY[right_idx])
+
+        if dim == 1: # vertical axis
+            updt = lmbda * (flux[dim].rhoX[left_idx] - flux[dim].rhoX[right_idx])
+            setattr(Sol, 'pwchi', updt)
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
