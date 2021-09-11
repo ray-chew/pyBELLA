@@ -27,7 +27,9 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None,
     g = ud.gravity_strength[1]
     Msq = ud.Msq
     Ginv = th.Gammainv
-    coriolis = ud.coriolis_strength[0]
+    corr_0 = ud.coriolis_strength[0]
+    corr_1  = ud.coriolis_strength[1]
+    corr_2 = ud.coriolis_strength[2]
     u0 = ud.u_wind_speed
     w0 = ud.w_wind_speed
 
@@ -86,20 +88,21 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None,
 
     rhoYovG = Ginv * Sol.rhoY[i1]
     dchi = Sol.rhoX[i1] / Sol.rho[i1]
-    dbuoy = -1. * Sol.rhoY[i1] * dchi
+    dbuoy = Sol.rhoY[i1] * dchi
     drhou = Sol.rhou[i1] - u0 * Sol.rho[i1]
+    drhov = Sol.rhov[i1] - v0 * Sol.rho[i1]
     drhow = Sol.rhow[i1] - w0 * Sol.rho[i1]
 
     rhoY = Sol.rhoY**(th.gamm - 2.0)
     dpidP_kernel = np.ones([2]*ndim)
     dpidP = (th.gm1 / ud.Msq) * signal.fftconvolve(rhoY, dpidP_kernel, mode='valid') / dpidP_kernel.sum()
 
-    # Sol.rhou[i1] = Sol.rhou[i1] + dt * ( -1. * rhoYovG * dpdx + coriolis * Sol.rhow[i1])
-    Sol.rhou[i1] = Sol.rhou[i1] + dt * ( -1. * rhoYovG * dpdx + coriolis * drhow)
 
-    Sol.rhov[i1] = Sol.rhov[i1] + dt * ( -1. * rhoYovG * dpdy + (g/Msq) * dbuoy) * nonhydro * (1 - ud.is_ArakawaKonor)
+    Sol.rhou[i1] = Sol.rhou[i1] + dt * ( -1. * rhoYovG * dpdx + corr_1 * drhow - corr_2 * drhov)
 
-    Sol.rhow[i1] = Sol.rhow[i1] + dt * ( -(ndim == 3) * rhoYovG * dpdz - coriolis * drhou)
+    Sol.rhov[i1] = Sol.rhov[i1] + dt * ( -1. * rhoYovG * dpdy - (g/Msq) * dbuoy - corr_0 * drhow + corr_2 * drhou) * nonhydro * (1 - ud.is_ArakawaKonor)
+
+    Sol.rhow[i1] = Sol.rhow[i1] + dt * ( -(ndim == 3) * rhoYovG * dpdz - corr_1 * drhou  + corr_0 * drhov)
 
     Sol.rhoX[i1] = (Sol.rho[i1] * (Sol.rho[i1] / Sol.rhoY[i1] - S0c)) + dt * (-v * dSdy) * Sol.rho[i1]
 
@@ -122,37 +125,66 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     Msq = ud.Msq
     dy = elem.dy
 
-    coriolis = ud.coriolis_strength[0]
     u0 = ud.u_wind_speed
+    v0 = ud.v_wind_speed
     w0 = ud.w_wind_speed
-    fsqsc = dt**2 * coriolis**2
-    ooopfsqsc = 1.0 / (1.0 + fsqsc)
+
+    wh1, wv, wh2 = dt * ud.coriolis_strength
 
     first_nodes_row_right_idx = (slice(1,None))
     first_nodes_row_left_idx = (slice(0,-1))
 
     strat = 2.0 * (mpv.HydroState_n.Y0[first_nodes_row_right_idx] - mpv.HydroState_n.Y0[first_nodes_row_left_idx]) / (mpv.HydroState_n.Y0[first_nodes_row_right_idx] + mpv.HydroState_n.Y0[first_nodes_row_left_idx])
 
-    s0 = mpv.HydroState.S0
+    # s0 = mpv.HydroState.S0
 
     for dim in range(0,elem.ndim,2):
         strat = np.expand_dims(strat, dim)
         strat = np.repeat(strat, elem.sc[dim], axis=dim)
-        s0 = np.expand_dims(s0, dim)
-        s0 = np.repeat(s0, elem.sc[dim], axis=dim)
+        # s0 = np.expand_dims(s0, dim)
+        # s0 = np.repeat(s0, elem.sc[dim], axis=dim)
     strat /= dy
 
-    Nsqsc = dt**2 * (g / Msq) * strat
+    nu = -dt**2 * (g / Msq) * strat
+
+    denom = 1.0 / (wh1**2 + wh2**2 + (nu + nonhydro) * (wv**2 + 1))
 
     dbuoy = -Sol.rhoY * (Sol.rhoX / Sol.rho)
-    rhov = (nonhydro * Sol.rhov + dt * (g/Msq) * dbuoy) / (nonhydro + Nsqsc)
 
     drhou = Sol.rhou - u0 * Sol.rho
+    drhov = Sol.rhov - v0 * Sol.rho
     drhow = Sol.rhow - w0 * Sol.rho
 
-    Sol.rhou[...] = u0 * Sol.rho + ooopfsqsc * (drhou + dt * coriolis * drhow)
+    # get coefficients of the explicit terms
+    # U update
+    coeff_uu = (wh1**2 + nu + nonhydro)
+    coeff_uv = (wh1 * wh2 + (nu + nonhydro) * wv)
+    coeff_uw = nonhydro * (wh1 * wv - wh2)
+    coeff_uX = - dt * (g/Msq) * (wh1 * wv - wh2)
+
+    # V update
+    coeff_vu = (wh1 * wh2 - (nu + nonhydro) * wv)
+    coeff_vv = (nu + nonhydro + wv**2)
+    coeff_vw = nonhydro * (wh1 + wh2 * wv)
+    coeff_vX = - dt * (g/Msq) * (wh1 + wh2 * wv)
+
+    # W update
+    coeff_wu = (wh1 * wv + wh2)
+    coeff_wv = (wh2 * wv - wh1)
+    coeff_ww = nonhydro * (1 + wv**2)
+    coeff_wX = - dt * (g/Msq) * (1 + wv**2)
+
+    # Do the updates
+    rhou = u0 * Sol.rho + denom * (coeff_uu * drhou + coeff_uv * drhov + coeff_uw * drhow + coeff_uX * dbuoy)
+
+    rhov = v0 * Sol.rho + denom * (coeff_vu * drhou + coeff_vv * drhov + coeff_vw * drhow + coeff_vX * dbuoy)
+
+    rhow = w0 * Sol.rho + denom * (coeff_wu * drhou + coeff_wv * drhov + coeff_ww * drhow + coeff_wX * dbuoy)
+
+    # Set the quantities
+    Sol.rhou[...] = rhou
     Sol.rhov[...] = rhov
-    Sol.rhow[...] = w0 * Sol.rho + ooopfsqsc * (drhow - dt * coriolis * drhou)
+    Sol.rhow[...] = rhow
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
