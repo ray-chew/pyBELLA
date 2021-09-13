@@ -27,13 +27,7 @@ def stencil_9pt(elem,node,mpv,ud,diag_inv,dt):
 
     diag_inv = diag_inv[inner_domain].reshape(-1,)
 
-    wh1, wv, _ = dt * ud.coriolis_strength   
-
-    coeff_xx = (1.0 + mpv.nu_n + wh1**2)[inner_domain].reshape(-1,)
-    coeff_yy = (1.0 + wv**2)
-
-    coeff_xx = np.ones_like(coeff_xx)
-    coeff_yy = 1.0
+    wh1, wv, _ = dt * ud.coriolis_strength
 
     oodx2 = 0.5 / (dx**2)
     oody2 = 0.5 / (dy**2)
@@ -44,10 +38,10 @@ def stencil_9pt(elem,node,mpv,ud,diag_inv,dt):
     x_wall = ud.bdry_type[1] == BdryType.WALL
     y_wall = ud.bdry_type[0] == BdryType.WALL
 
-    return lambda p : lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv, coeff_xx, coeff_yy)
+    return lambda p : lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv)
 
 @jit(nopython=True, nogil=True, cache=True)
-def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv, coeff_xx, coeff_yy):
+def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv):
     ngnc = (iicxn) * (iicyn)
     lap = np.zeros((ngnc))
     cnt_x = 0
@@ -138,13 +132,13 @@ def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_per
         midright = p[midright_idx]
         botright = p[botright_idx]
 
-        hplusx_topleft = hplusx[ne_topleft] * coeff_xx[ne_topleft]
-        hplusx_botleft = hplusx[ne_botleft] * coeff_xx[ne_botleft]
+        hplusx_topleft = hplusx[ne_topleft]
+        hplusx_botleft = hplusx[ne_botleft]
         hplusy_topleft = hplusy[ne_topleft]
         hplusy_botleft = hplusy[ne_botleft]
 
-        hplusx_topright = hplusx[ne_topright] * coeff_xx[ne_topright]
-        hplusx_botright = hplusx[ne_botright] * coeff_xx[ne_botright]
+        hplusx_topright = hplusx[ne_topright]
+        hplusx_botright = hplusx[ne_botright]
         hplusy_topright = hplusy[ne_topright]
         hplusy_botright = hplusy[ne_botright]
 
@@ -177,17 +171,14 @@ def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_per
         dp2dxdy3 = ((botmid - botleft) - (midmid - midleft)) * nine_pt
         dp2dxdy4 = ((botright - botmid) - (midright - midmid)) * nine_pt
 
-        cdx2 = oodx2 #* coeff_xx[idx]
-        cdy2 = oody2 * coeff_yy
-
-        lap[idx] = - hplusx_topleft * cdx2 * ((midmid - midleft) - dp2dxdy1) \
-                -  hplusy_topleft * cdy2 * ((midmid - topmid) - dp2dxdy1) \
-                +  hplusx_topright * cdx2 * ((midright - midmid) - dp2dxdy2) \
-                -  hplusy_topright * cdy2 * ((midmid - topmid) + dp2dxdy2) \
-                -  hplusx_botleft * cdx2 * ((midmid - midleft) + dp2dxdy3) \
-                +  hplusy_botleft * cdy2 * ((botmid - midmid) - dp2dxdy3) \
-                +  hplusx_botright * cdx2 * ((midright - midmid) + dp2dxdy4) \
-                +  hplusy_botright * cdy2 * ((botmid - midmid) + dp2dxdy4) \
+        lap[idx] = - hplusx_topleft * oodx2 * ((midmid - midleft) - dp2dxdy1) \
+                -  hplusy_topleft * oody2 * ((midmid - topmid) - dp2dxdy1) \
+                +  hplusx_topright * oodx2 * ((midright - midmid) - dp2dxdy2) \
+                -  hplusy_topright * oody2 * ((midmid - topmid) + dp2dxdy2) \
+                -  hplusx_botleft * oodx2 * ((midmid - midleft) + dp2dxdy3) \
+                +  hplusy_botleft * oody2 * ((botmid - midmid) - dp2dxdy3) \
+                +  hplusx_botright * oodx2 * ((midright - midmid) + dp2dxdy4) \
+                +  hplusy_botright * oody2 * ((botmid - midmid) + dp2dxdy4) \
                 +  hcenter[idx] * p[idx]
 
         # if cnt_x == 0 and x_wall:
