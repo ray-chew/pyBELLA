@@ -31,6 +31,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None,
     corr_1  = ud.coriolis_strength[1]
     corr_2 = ud.coriolis_strength[2]
     u0 = ud.u_wind_speed
+    v0 = ud.v_wind_speed
     w0 = ud.w_wind_speed
 
     p2n = np.copy(mpv.p2_nodes)
@@ -158,20 +159,20 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     # get coefficients of the explicit terms
     # U update
     coeff_uu = (wh1**2 + nu + nonhydro)
-    coeff_uv = (wh1 * wh2 + (nu + nonhydro) * wv)
-    coeff_uw = nonhydro * (wh1 * wv - wh2)
+    coeff_uw = (wh1 * wh2 + (nu + nonhydro) * wv)
+    coeff_uv = nonhydro * (wh1 * wv - wh2)
     coeff_uX = - dt * (g/Msq) * (wh1 * wv - wh2)
 
     # V update
     coeff_vu = (wh1 * wh2 - (nu + nonhydro) * wv)
-    coeff_vv = (nu + nonhydro + wv**2)
-    coeff_vw = nonhydro * (wh1 + wh2 * wv)
+    coeff_vw = (nu + nonhydro + wv**2)
+    coeff_vv = nonhydro * (wh1 + wh2 * wv)
     coeff_vX = - dt * (g/Msq) * (wh1 + wh2 * wv)
 
     # W update
     coeff_wu = (wh1 * wv + wh2)
-    coeff_wv = (wh2 * wv - wh1)
-    coeff_ww = nonhydro * (1 + wv**2)
+    coeff_ww = (wh2 * wv - wh1)
+    coeff_wv = nonhydro * (1 + wv**2)
     coeff_wX = - dt * (g/Msq) * (1 + wv**2)
 
     # Do the updates
@@ -251,7 +252,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     #     diag_inv = np.ones_like(mpv.rhs)
 
     if elem.ndim == 2:
-        lap = stencil_9pt(elem,node,mpv,ud,diag_inv)
+        lap = stencil_9pt(elem,node,mpv,ud,diag_inv,dt)
 
         sh = (ud.inx)*(ud.iny)
 
@@ -320,7 +321,9 @@ def exner_perturbation_constraint(Sol,elem,th,p2):
 
 def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
     ndim = node.ndim
-    coriolis = ud.coriolis_strength[0]
+    wh1, wv, wh2 = dt * ud.coriolis_strength
+    nu = mpv.nu_c[1:-1,:]
+    nonhydro = ud.nonhydrostasy
 
     igs, igy = node.igs, node.igy
     oodxyz = 1.0 / node.dxyz
@@ -368,9 +371,29 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud):
 
     thinv = Sol.rho[i2] / Sol.rhoY[i2]
 
-    Sol.rhou[i2] += -dt * thinv * hplusx[n2e][i2] * (Dpx + dt * coriolis * Dpz)
-    Sol.rhov[i2] += -dt * thinv * hplusy[n2e][i2] * Dpy
-    if ndim == 3: Sol.rhow[i2] += -dt * thinv * hplusz[n2e][i2] * (Dpz - dt * coriolis * Dpx)
+    # get coefficients of the correction terms
+    # U update
+    coeff_uu = (wh1**2 + nu + nonhydro)
+    coeff_uw = (wh1 * wh2 + (nu + nonhydro) * wv)
+    coeff_uv = nonhydro * (wh1 * wv - wh2)
+
+    # V update
+    coeff_vu = (wh1 * wh2 - (nu + nonhydro) * wv)
+    coeff_vw = (nu + nonhydro + wv**2)
+    coeff_vv = nonhydro * (wh1 + wh2 * wv)
+
+    # W update
+    coeff_wu = (wh1 * wv + wh2)
+    coeff_ww = (wh2 * wv - wh1)
+    coeff_wv = nonhydro * (1 + wv**2)
+
+    # Sol.rhou[i2] += -dt * thinv * hplusx[n2e][i2] * (Dpx + dt * coriolis * Dpz)
+    # Sol.rhov[i2] += -dt * thinv * hplusy[n2e][i2] * Dpy
+    # if ndim == 3: Sol.rhow[i2] += -dt * thinv * hplusz[n2e][i2] * (Dpz - dt * coriolis * Dpx)
+
+    Sol.rhou[i2] += -dt * thinv * hplusx[n2e][i2] * (coeff_uu * Dpx + coeff_uv * Dpy + coeff_uw * Dpz)
+    Sol.rhov[i2] += -dt * thinv * hplusy[n2e][i2] * (coeff_vu * Dpx + coeff_vv * Dpy + coeff_vw * Dpz)
+    if ndim == 3: Sol.rhow[i2] += -dt * thinv * hplusz[n2e][i2] * (coeff_wu * Dpx + coeff_wv * Dpy + coeff_ww * Dpz)
     Sol.rhoX[i2] += - dt * dSdy * Sol.rhov[i2]
 
 
@@ -383,14 +406,14 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     nonhydro = ud.nonhydrostasy
     dy = elem.dy
 
-    coriolis = ud.coriolis_strength[0]
+    wh1, wv, wh2 = dt * ud.coriolis_strength
 
     ccenter = - ud.Msq * th.gm1inv / (dt**2)
     cexp = 2.0 - th.gamm
 
     igs = elem.igs
-    igx = igs[0]
-    igy = igs[1]
+    # igx = igs[0]
+    # igy = igs[1]
 
     nindim = np.empty((ndim),dtype='object')
     innerdim = np.copy(nindim)
@@ -411,6 +434,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
         innerdim1[dim] = slice(igs[dim]-1, (-igs[dim]+1))
  
     strat = 2.0 * (mpv.HydroState_n.Y0[y_idx1] - mpv.HydroState_n.Y0[y_idx]) / (mpv.HydroState_n.Y0[y_idx1] + mpv.HydroState_n.Y0[y_idx]) / dy
+    strat_n = 2.0 * (mpv.HydroState.Y0 - mpv.HydroState.Y0) / (mpv.HydroState.Y0 + mpv.HydroState.Y0) / dy
     # strat = 2.0 * (np.diff(mpv.HydroState_n.Y0)[igs[1]:-igs[1]]) / np.diff(mpv.HydroState_n.Y0)[igs[1]:-igs[1]] / dy
 
     nindim = tuple(nindim)
@@ -422,14 +446,23 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
         is_periodic = ud.bdry_type[dim] != BdryType.PERIODIC
         strat = np.expand_dims(strat, dim)
         strat = np.repeat(strat, elem.sc[dim]-int(2*is_periodic+igs[dim]), axis=dim)
+        strat_n = np.expand_dims(strat_n, dim)
+        strat_n = np.repeat(strat_n, node.sc[dim], axis=dim)
 
     Y = Sol.rhoY[nindim] / Sol.rho[nindim]
     coeff = Gammainv * Sol.rhoY[nindim] * Y
-    fsqsc = dt**2 * coriolis**2
-    fimp = 1.0 / (1.0 + fsqsc)
-    Nsqsc = dt**2 * (g / Msq) * strat
 
-    gimp = 1.0 / (nonhydro + Nsqsc)
+    nu = - dt**2 * (g / Msq) * strat
+    nu_n = np.zeros_like(mpv.wcenter)
+    nu_n[...,:-1] = - dt**2 * (g / Msq) * strat_n
+
+    setattr(mpv, 'nu_n', nu_n)
+    setattr(mpv, 'nu_c', nu)
+
+    denom = 1.0 / (wh1**2 + wh2**2 + (nu + nonhydro) * (wv**2 + 1))
+
+    fimp = denom
+    gimp = denom
 
     for dim in range(ndim):
         if dim == 1:
