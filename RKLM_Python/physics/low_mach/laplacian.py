@@ -4,7 +4,7 @@ from scipy import sparse, signal
 from numba import jit
 import numba as nb
 
-def stencil_9pt(elem,node,mpv,ud,diag_inv):
+def stencil_9pt(elem,node,mpv,ud,diag_inv,dt):
     igx = elem.igx
     igy = elem.igy
 
@@ -23,10 +23,14 @@ def stencil_9pt(elem,node,mpv,ud,diag_inv):
 
     hplusx = mpv.wplus[1][inner_domain].reshape(-1,)
     hplusy = mpv.wplus[0][inner_domain].reshape(-1,)
-
     hcenter = mpv.wcenter[inner_domain].reshape(-1,)
 
     diag_inv = diag_inv[inner_domain].reshape(-1,)
+
+    wh1, wv, _ = dt * ud.coriolis_strength   
+
+    coeff_xx = (1 + mpv.nu_n + wh1**2)[inner_domain].reshape(-1,)
+    coeff_yy = (1 + wv**2)
 
     oodx2 = 0.5 / (dx**2)
     oody2 = 0.5 / (dy**2)
@@ -37,10 +41,10 @@ def stencil_9pt(elem,node,mpv,ud,diag_inv):
     x_wall = ud.bdry_type[1] == BdryType.WALL
     y_wall = ud.bdry_type[0] == BdryType.WALL
 
-    return lambda p : lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv)
+    return lambda p : lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv, coeff_xx, coeff_yy)
 
 @jit(nopython=True, nogil=True, cache=True)
-def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv):
+def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv, coeff_xx, coeff_yy):
     ngnc = (iicxn) * (iicyn)
     lap = np.zeros((ngnc))
     cnt_x = 0
@@ -170,14 +174,17 @@ def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_per
         dp2dxdy3 = ((botmid - botleft) - (midmid - midleft)) * nine_pt
         dp2dxdy4 = ((botright - botmid) - (midright - midmid)) * nine_pt
 
-        lap[idx] = - hplusx_topleft * oodx2 * ((midmid - midleft) - dp2dxdy1) \
-                -  hplusy_topleft * oody2 * ((midmid - topmid) - dp2dxdy1) \
-                +  hplusx_topright * oodx2 * ((midright - midmid) - dp2dxdy2) \
-                -  hplusy_topright * oody2 * ((midmid - topmid) + dp2dxdy2) \
-                -  hplusx_botleft * oodx2 * ((midmid - midleft) + dp2dxdy3) \
-                +  hplusy_botleft * oody2 * ((botmid - midmid) - dp2dxdy3) \
-                +  hplusx_botright * oodx2 * ((midright - midmid) + dp2dxdy4) \
-                +  hplusy_botright * oody2 * ((botmid - midmid) + dp2dxdy4) \
+        cdx2 = oodx2 * coeff_xx[idx]
+        cdy2 = oody2 * coeff_yy
+
+        lap[idx] = - hplusx_topleft * cdx2 * ((midmid - midleft) - dp2dxdy1) \
+                -  hplusy_topleft * cdy2 * ((midmid - topmid) - dp2dxdy1) \
+                +  hplusx_topright * cdx2 * ((midright - midmid) - dp2dxdy2) \
+                -  hplusy_topright * cdy2 * ((midmid - topmid) + dp2dxdy2) \
+                -  hplusx_botleft * cdx2 * ((midmid - midleft) + dp2dxdy3) \
+                +  hplusy_botleft * cdy2 * ((botmid - midmid) - dp2dxdy3) \
+                +  hplusx_botright * cdx2 * ((midright - midmid) + dp2dxdy4) \
+                +  hplusy_botright * cdy2 * ((botmid - midmid) + dp2dxdy4) \
                 +  hcenter[idx] * p[idx]
 
         # if cnt_x == 0 and x_wall:
