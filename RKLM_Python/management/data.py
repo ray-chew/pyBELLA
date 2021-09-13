@@ -203,7 +203,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         rhow_half = np.copy(Sol.rhow)
         rhoX_half = np.copy(Sol.rhoX)
         rhoY_half = np.copy(Sol.rhoY)
-        pwchi = np.copy(Sol.pwchi)
+        # pwchi = np.copy(Sol.pwchi)
         p2_nodes_half = np.copy(mpv.p2_nodes)
 
         if test_hydrob == True and writer is not None and step==0:
@@ -250,7 +250,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         Sol.rhoX_half = rhoX_half
         Sol.rhoY_half = rhoY_half
         mpv.p2_nodes_half = p2_nodes_half
-        Sol.pwchi = pwchi
+        # Sol.pwchi = pwchi
 
         # Sol.rho_half = Sol.rho
         # Sol.rhou_half = Sol.rhou
@@ -375,7 +375,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if writer != None:
             writer.time = t
             writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
-            writer.populate(str(label)+'_after_full_step', 'pwchi', Sol.pwchi)
+            # writer.populate(str(label)+'_after_full_step', 'pwchi', Sol.pwchi)
         print("###############################################################################################")
         print("step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f" %(step, t, dt, cfl, cfl_ac))
         print("###############################################################################################")
