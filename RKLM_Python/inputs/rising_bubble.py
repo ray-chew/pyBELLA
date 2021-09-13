@@ -85,6 +85,7 @@ class UserData(object):
         self.zmax =   1.0
 
         self.u_wind_speed = 0.0
+        self.v_wind_speed = 0.0
         self.w_wind_speed = 0.0
 
         self.bdry_type = np.empty((3), dtype=object)
@@ -168,7 +169,7 @@ class UserData(object):
 
 def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     u0 = ud.u_wind_speed
-    v0 = 0.0
+    v0 = ud.v_wind_speed
     w0 = ud.w_wind_speed
     delth = 2.0         # [K]
     

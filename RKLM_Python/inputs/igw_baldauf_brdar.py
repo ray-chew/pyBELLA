@@ -51,7 +51,7 @@ class UserData(object):
 
         self.nspec = self.NSPEC
 
-        self.is_nonhydrostatic = 0
+        self.is_nonhydrostatic = 1
         self.is_compressible = 1
         self.is_ArakawaKonor = 0
 
@@ -63,8 +63,8 @@ class UserData(object):
         self.coriolis_strength = np.zeros((3))
 
         self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
-        self.coriolis_strength[0] = self.omega * self.t_ref
-        self.coriolis_strength[2] = self.omega * self.t_ref
+        # self.coriolis_strength[0] = self.omega * self.t_ref
+        self.coriolis_strength[1] = self.omega * self.t_ref
 
         for i in range(3):
             if (self.gravity_strength[i] > np.finfo(np.float).eps) or (i == 1):
@@ -146,7 +146,7 @@ class UserData(object):
         elif not self.is_nonhydrostatic:
             self.h_tag = 'hydro'
 
-        aux = 'perturb'
+        aux = 'debug_best'
         if len(aux) > 0:
             aux = self.scale_tag + "_" + self.h_tag + "_" + aux
         else:
@@ -188,6 +188,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     if 'perturb' in ud.aux:
         x_perturb = 0.1
+    else:
+        x_perturb = 0.0
 
     if seed != None:
         np.random.random(seed)
