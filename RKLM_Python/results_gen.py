@@ -52,7 +52,7 @@ gen_5c1_euler_momenta = False
 # generate Euler ensemble simulations for
 # section 5c1 with assimilation of all
 # fields
-gen_5c1_euler_full = False
+gen_5c1_euler_full = True
 # generate rising bubble ensemble
 # simulations for section 5c2 with
 # assimilation of the momenta fields
@@ -447,7 +447,7 @@ if gen_5c1_euler_momenta or gen_all:
     # run simulation
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
-    rp.queue_run()
+    # rp.queue_run()
 
     ##########################################
 
@@ -467,7 +467,7 @@ if gen_5c1_euler_momenta or gen_all:
     # run simulation
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
-    rp.queue_run()
+    # rp.queue_run()
 
 
 if gen_5c1_euler_full or gen_all:
@@ -477,6 +477,13 @@ if gen_5c1_euler_full or gen_all:
     # this time, assimilate all the quantities
     #
     ##########################################
+
+    # da_times = np.arange(5.0,10.5,0.5)/10.0
+    # da_times = np.array([0.25,10.0])
+    da_times = np.arange(0.0,10.25,0.25)[1:]
+    # da_times = np.arange(0.0,3.25,0.25)[1:]
+    da_times = np.around(da_times,3)
+    da_times = da_times.tolist()
 
     # Set ensemble with 10 members
     rp.N = 10
@@ -490,17 +497,18 @@ if gen_5c1_euler_full or gen_all:
 
     # Set the data assimilation parameters
     dap = {
+        'da_times' : da_times,
         # Assimilate all fields
         'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
         # Path to the generated observation
-        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5',
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_10.0_obs.h5',
         'loc_setter' : (11,11)
     }
 
     # run simulation
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
-    rp.queue_run()
+    # rp.queue_run()
 
     ud = {
         'aux' : 'wda',
