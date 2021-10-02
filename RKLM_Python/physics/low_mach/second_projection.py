@@ -1,6 +1,6 @@
 from inputs.enum_bdry import BdryType
 from inputs.boundary import set_explicit_boundary_data, set_ghostnodes_p2
-from physics.low_mach.laplacian import stencil_9pt, stencil_32pt, stencil_hs, precon_diag_prepare
+from physics.low_mach.laplacian import stencil_9pt, stencil_27pt, stencil_hs, precon_diag_prepare
 from scipy import signal
 import numpy as np
 from itertools import product
@@ -153,7 +153,7 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
     # get coefficients of the explicit terms
     # common denominator
-    denom = 1.0 / (wh1**2 + wh2**2 + (nu + nonhydro) * (wv**2 + 1))
+    denom = 1.0 / (wh1**2 + wh2**2 + (nu + nonhydro) * (wv**2 + 1.0))
 
     # U update
     coeff_uu = (wh1**2 + nu + nonhydro)
@@ -169,12 +169,12 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
     # W update
     coeff_wu = (wh1 * wh2 - (nu + nonhydro) * wv)
-    coeff_ww = (nu + nonhydro + wv**2)
+    coeff_ww = (nu + nonhydro + wh2**2)
     coeff_wv = nonhydro * (wh1 + wh2 * wv)
     coeff_wX = - dt * (g / Msq) * (wh1 + wh2 * wv)
 
     # Do the updates
-    rhou = u0 * Sol.rho + denom * (coeff_uu * drhou + coeff_uv * drhov + coeff_uw * drhow + coeff_uX * dbuoy)
+    rhou = u0 * Sol.rho - denom * (coeff_uu * drhou + coeff_uv * drhov + coeff_uw * drhow + coeff_uX * dbuoy)
 
     rhov = v0 * Sol.rho + denom * (coeff_vu * drhou + coeff_vv * drhov + coeff_vw * drhow + coeff_vX * dbuoy)
 
@@ -197,10 +197,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if elem.ndim == 2:
         p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy])
     elif elem.ndim == 3:
-        # p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy,node.igz:-node.igz])
         p2 = np.copy(mpv.p2_nodes[1:-1,1:-1,1:-1])
-
-        # p2 = np.copy(mpv.p2_nodes)
     
     if writer != None:
         writer.populate(str(label),'p2_initial',mpv.p2_nodes)
@@ -243,24 +240,21 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     mpv.rhs = rhs
 
-    # if ud.is_compressible == 1:
     diag_inv = precon_diag_prepare(mpv, elem, node, ud)
     rhs *= diag_inv
-    # else:
-    #     diag_inv = np.ones_like(mpv.rhs)
+    
+    # diag_inv = np.ones_like(mpv.rhs)
 
     if elem.ndim == 2:
         lap = stencil_9pt(elem,node,mpv,ud,diag_inv,dt)
 
         sh = (ud.inx)*(ud.iny)
 
-        # lap = LinearOperator((sh,sh),lap)
     elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
-        lap = stencil_32pt(elem,node,mpv,ud,diag_inv,dt)
-        # p2 = mpv.p2_nodes[1:-1,1:-1,1:-1]
+        lap = stencil_27pt(elem,node,mpv,ud,diag_inv,dt)
 
         sh = p2.reshape(-1).shape[0]
-    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2: # horizonral slice hack
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2: # horizontal slice hack
         p2 = np.copy(mpv.p2_nodes[1:-1,elem.igs[1],1:-1])
         lap = stencil_hs(elem,node,mpv,ud,diag_inv,dt)
         sh = p2.reshape(-1).shape[0]
@@ -272,9 +266,6 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         rhs_inner = rhs[node.igx:-node.igx,node.igy:-node.igy].ravel()
     elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
         rhs_inner = rhs[1:-1,1:-1,1:-1].ravel()
-        # rhs_inner = rhs.ravel()
-        # p2 = mpv.p2_nodes[1:-1,1:-1,1:-1]
-        # rhs_inner = rhs.ravel()
     else:
         rhs_inner = rhs[1:-1,elem.igs[1],1:-1].ravel()
     p2,info = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
@@ -372,7 +363,7 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud,th):
     nu = nu[n2e][i2]
 
     # get coefficients of the correction terms
-    denom = 1.0 / (wh1**2 + wh2**2 + (nu + nonhydro) * (wv**2 + 1))
+    denom = 1.0 / (wh1**2 + wh2**2 + (nu + nonhydro) * (wv**2 + 1.0))
     
     # U update
     coeff_uu = (wh1**2 + nu + nonhydro)
@@ -386,7 +377,7 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud,th):
 
     # W update
     coeff_wu = (wh1 * wh2 - (nu + nonhydro) * wv)
-    coeff_ww = (nu + nonhydro + wv**2)
+    coeff_ww = (nu + nonhydro + wh2**2)
     coeff_wv = nonhydro * (wh1 + wh2 * wv)
 
     Sol.rhou[i2] += -dt * thinv * coeff * denom * (coeff_uu * Dpx + coeff_uv * Dpy + coeff_uw * Dpz)
@@ -461,7 +452,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
         if dim == 1:
             mpv.wplus[dim][eindim] = coeff * gimp * (wv**2 + 1.0)
         else:
-            mpv.wplus[dim][eindim] = coeff * fimp * (wh1**2 + nu + 1.0)
+            mpv.wplus[dim][eindim] = coeff * fimp * (wh1**2 + nu + nonhydro)
 
     kernel = np.ones([2] * ndim)
 
