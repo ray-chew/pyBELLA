@@ -12,15 +12,8 @@ def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     icy = elem.icy
     igy = elem.igy
 
-    # c_idx = np.empty((elem.ndim), dtype='object')
-    # for dim in elem.ndim:
-    #     c_idx[dim] = slice(0,-1)
-    # c_idx = tuple(c_idx)
     xc_idx = slice(0,-1)
-    # if elem.ndim > 1:
     yc_idx = slice(0,-1)
-    # if elem.ndim > 2:
-    #     zc_idx = slice(0,-1)
 
     c_idx = (xc_idx,yc_idx)
 
