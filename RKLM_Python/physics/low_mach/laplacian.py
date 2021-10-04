@@ -27,8 +27,6 @@ def stencil_9pt(elem,node,mpv,ud,diag_inv,dt):
 
     diag_inv = diag_inv[inner_domain].reshape(-1,)
 
-    wh1, wv, _ = dt * ud.coriolis_strength
-
     oodx2 = 0.5 / (dx**2)
     oody2 = 0.5 / (dy**2)
 
@@ -40,7 +38,7 @@ def stencil_9pt(elem,node,mpv,ud,diag_inv,dt):
 
     return lambda p : lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv)
 
-@jit(nopython=True, nogil=True, cache=True)
+@jit(nopython=True, nogil=False, cache=True)
 def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv):
     ngnc = (iicxn) * (iicyn)
     lap = np.zeros((ngnc))
@@ -201,7 +199,7 @@ def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_per
     return lap
 
 
-def stencil_32pt(elem,node,mpv,ud,diag_inv,dt):
+def stencil_27pt(elem,node,mpv,ud,diag_inv,dt):
     oodxyz = node.dxyz
     oodxyz = 1./(oodxyz**2)
     oodx2, oody2, oodz2 = oodxyz[0], oodxyz[1], oodxyz[2]
@@ -227,7 +225,7 @@ def stencil_32pt(elem,node,mpv,ud,diag_inv,dt):
 
     return lambda p : lap3D(p, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity, diag_inv, corrf, odx, odz)
 
-@nb.jit(nopython=True, cache=True, nogil=True)
+@nb.jit(nopython=True, cache=True, nogil=False)
 def lap3D(p0, hplusx, hplusy, hplusz, hcenter, oodx2, oody2, oodz2, periodicity, diag_inv, corrf, odx, odz):
     shx, shy, shz = hcenter.shape
     p = p0.reshape(shz+2,shy+2,shx+2)
@@ -380,7 +378,7 @@ def stencil_hs(elem,node,mpv,ud,diag_inv,dt):
     hcenter = mpv.wcenter[proj][i2]
     diag_inv = diag_inv[proj][i1]
 
-    corrf = dt * ud.coriolis_strength[0]
+    corrf = dt * ud.coriolis_strength[1]
 
     return lambda p : lapHS(p, hplusx, hplusz, hcenter, oodx2, oodz2, periodicity, diag_inv, corrf, odx, odz)
 
@@ -479,6 +477,193 @@ def lapHS(p0, hplusx, hplusz, hcenter, oodx2, oodz2, periodicity, diag_inv, corr
 
     return lap
 
+
+
+
+
+def stencil_vs(elem,node,mpv,ud,diag_inv,dt):
+    igx = elem.igx
+    igy = elem.igy
+    igz = elem.igz
+
+    icxn = node.icx
+    icyn = node.icy
+
+    iicxn = icxn - (2 * igx)
+    iicyn = icyn - (2 * igy)
+
+    dx = node.dx
+    dy = node.dy
+
+    iicxn, iicyn = iicyn, iicxn
+
+    dx = node.dy
+    dy = node.dx
+
+    oodx2 = 0.5 / (dx**2)
+    oody2 = 0.5 / (dy**2)
+
+    xx, yy = 1, 0
+
+    proj = (slice(None,),slice(None,),igz)
+    i0 = (slice(0,-1),slice(0,-1))
+    # ip1 = (slice(1,None),slice(1,None))
+    i1 = (slice(1,-1),slice(1,-1))
+    i2 = (slice(igx,-igx),slice(igy,-igy))
+
+    HS = True
+
+    if not HS:
+        x_periodic = ud.bdry_type[xx] == BdryType.PERIODIC
+        y_periodic = ud.bdry_type[yy] == BdryType.PERIODIC
+
+        x_wall = ud.bdry_type[xx] == BdryType.WALL
+        y_wall = ud.bdry_type[yy] == BdryType.WALL
+
+        hplusx = mpv.wplus[xx][proj][i2].reshape(-1,)
+        hplusy = mpv.wplus[yy][proj][i2].reshape(-1,)
+        hcenter = mpv.wcenter[proj][i2].reshape(-1,)
+        diag_inv = diag_inv[proj][i2].reshape(-1,)
+
+        # hplusx = mpv.wplus[xx][proj][i0][i1].reshape(-1,)
+        # hplusy = mpv.wplus[yy][proj][i0][i1].reshape(-1,)
+        # hcenter = mpv.wcenter[proj][i2].reshape(-1,)
+        # diag_inv = diag_inv[proj][i1].reshape(-1,)
+
+        return lambda p : lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv)
+
+    if HS:
+        oodx2 = 1./node.dx**2
+        oody2 = 1./node.dy**2
+
+        ndim = elem.ndim
+        periodicity = np.zeros(ndim, dtype='int')
+        for dim in range(0,ndim,2):
+            periodicity[dim] = ud.bdry_type[dim] == BdryType.PERIODIC
+
+        hplusx = mpv.wplus[0][proj][i0][i1]
+        hplusy = mpv.wplus[1][proj][i0][i1]
+        hcenter = mpv.wcenter[proj][i2]
+        diag_inv = diag_inv[proj][i1]
+
+        return lambda p : lapVS(p, hplusx, hplusy, hcenter, oodx2, oody2, periodicity, diag_inv)
+
+
+@nb.jit(nopython=True, cache=True, nogil=False)
+def lapVS(p0, hplusx, hplusy, hcenter, oodx2, oody2, periodicity, diag_inv):
+    shx, shy = hcenter.shape
+    p = p0.reshape(shx+2,shy+2)
+
+    coeff = 1./4
+    lap = np.zeros_like(p)
+    
+    cnt = 0
+    for bc in periodicity:
+        if bc == True and cnt == 0:
+            # tmp = p[1,:]
+            # p[0,:] = p[-3,:]
+            # p[-1,:] = p[2,:]
+            # p[1,:] = p[-2,:]
+            # p[-2,:] = tmp
+
+            # p[0,:] = p[-4,:]
+            # p[-1,:] = p[3,:]
+            # p[1,:] = p[-3,:]
+            # p[-2,:] = p[2,:]
+
+            p[0,:] = p[-5,:]
+            p[-1,:] = p[4,:]
+            p[1,:] = p[-4,:]
+            p[-2,:] = p[3,:]
+        elif bc == False and cnt == 0:
+            hplusx[0,:] = 0.0
+            hplusx[-1,:] = 0.0
+            hplusy[0,:] = 0.0
+            hplusy[-1,:] = 0.0
+
+            # tmp = p[1,:]
+            # p[0,:] = p[2,:]
+            # p[-1,:] = p[-3,:]
+            # p[1,:] = p[3,:]
+            # p[-2,:] = p[-4,:]
+
+        if bc == True and cnt == 1:
+            # tmp = p[:,1]
+            # p[:,0] = p[:,-3]
+            # p[:,-1] = p[:,2]
+            # p[:,1] = p[:,-2]
+            # p[:,-2] = tmp
+
+            # p[:,0] = p[:,-4]
+            # p[:,-1] = p[:,3]
+            # p[:,1] = p[:,-3]
+            # p[:,-2] = p[:,2]
+            
+            p[:,0] = p[:,-5]
+            p[:,-1] = p[:,4]
+            p[:,1] = p[:,-4]
+            p[:,-2] = p[:,3]
+        elif bc == False and cnt == 1:
+            hplusx[:,0] = 0.0
+            hplusx[:,-1] = 0.0
+            hplusy[:,0] = 0.0
+            hplusy[:,-1] = 0.0
+
+            # tmp = p[:,1]
+            # p[:,0] = p[:,2]
+            # p[:,-1] = p[:,-3]
+            # p[:,1] = p[:,3]
+            # p[:,-2] = p[:,-4]
+        cnt += 1
+    
+    leftz = p[:,:-1]
+    rightz = p[:,1:]
+    
+    z_fluxes = (rightz - leftz)
+
+    leftx = p[:-1,:]
+    rightx = p[1:,:]
+
+    x_fluxes = (rightx - leftx)
+
+    x_flx = x_fluxes[:,:-1] + x_fluxes[:,1:]
+    z_flx = z_fluxes[:-1,:] + z_fluxes[1:,:]
+
+    hxzp = hplusx * z_flx
+    hxzpm = hxzp[:-1,:]
+    hxzpm = hxzpm[:,:-1] + hxzpm[:,1:]
+    # hxzpm = hxzpm[:-1,:] + hxzpm[1:,:]
+    hxzpp = hxzp[1:,:]
+    hxzpp = hxzpp[:,:-1] + hxzpp[:,1:]
+    # hxzpp = hxzpp[:-1,:] + hxzpp[1:,:]
+
+    hzxp = hplusy * x_flx
+    hzxpm = hzxp[:,:-1]
+    hzxpm = hzxpm[:-1,:] + hzxpm[1:,:]
+    # hzxpm = hzxpm[:,:-1] + hzxpm[:,1:]
+    hzxpp = hzxp[:,1:]
+    hzxpp = hzxpp[:-1,:] + hzxpp[1:,:]
+    # hzxpp = hzxpp[:,:-1] + hzxpp[:,1:]
+
+    x_flx = hplusx * x_flx
+    x_flxm = x_flx[:-1,:]
+    x_flxm = x_flxm[:,:-1] + x_flxm[:,1:]
+    x_flxp = x_flx[1:,:]
+    x_flxp = x_flxp[:,:-1] + x_flxp[:,1:]
+
+    z_flx = hplusy * z_flx
+    z_flxm = z_flx[:,:-1]
+    z_flxm = z_flxm[:-1,:] + z_flxm[1:,:]
+    z_flxp = z_flx[:,1:]
+    z_flxp = z_flxp[:-1,:] + z_flxp[1:,:]
+
+    lap[1:-1,1:-1] = oodx2 * coeff * (-x_flxm + x_flxp) + \
+                     oody2 * coeff * (-z_flxm + z_flxp) + \
+                     hcenter * p[1:-1,1:-1]
+                     
+    lap = lap * diag_inv
+
+    return lap
 
 
 
