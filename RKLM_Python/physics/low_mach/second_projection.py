@@ -132,7 +132,10 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
     wh1, wv, wh2 = dt * ud.coriolis_strength
 
-    strat = np.diff(mpv.HydroState_n.S0) / dy
+    first_nodes_row_right_idx = (slice(1,None))
+    first_nodes_row_left_idx = (slice(0,-1))
+
+    strat = (mpv.HydroState_n.S0[first_nodes_row_right_idx] - mpv.HydroState_n.S0[first_nodes_row_left_idx]) / dy
 
     for dim in range(0,elem.ndim,2):
         strat = np.expand_dims(strat, dim)
@@ -154,21 +157,21 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
     # U update
     coeff_uu = (wh1**2 + nu + nonhydro)
-    coeff_uw = (wh1 * wh2 + (nu + nonhydro) * wv)
-    coeff_uv = nonhydro * (wh1 * wv - wh2)
-    coeff_uX = - dt * (g / Msq) * (wh1 * wv - wh2)
+    coeff_uw = (wh1 * wh2 - (nu + nonhydro) * wv)
+    coeff_uv = nonhydro * (wh1 * wv + wh2)
+    coeff_uX = - dt * (g / Msq) * (wh1 * wv + wh2)
 
     # V update
-    coeff_vu = (wh1 * wv + wh2)
-    coeff_vw = (wh2 * wv - wh1)
+    coeff_vu = (wh1 * wv - wh2)
+    coeff_vw = (wh2 * wv + wh1)
     coeff_vv = nonhydro * (1 + wv**2)
     coeff_vX = - dt * (g / Msq) * (1 + wv**2)
 
     # W update
-    coeff_wu = (wh1 * wh2 - (nu + nonhydro) * wv)
+    coeff_wu = (wh1 * wh2 + (nu + nonhydro) * wv)
     coeff_ww = (nu + nonhydro + wh2**2)
-    coeff_wv = nonhydro * (wh2 * wv + wh1)
-    coeff_wX = - dt * (g / Msq) * (wh2 * wv + wh1)
+    coeff_wv = nonhydro * (wh2 * wv - wh1)
+    coeff_wX = - dt * (g / Msq) * (wh2 * wv - wh1)
 
     # Do the updates
     rhou = u0 * Sol.rho + denom * (coeff_uu * drhou + coeff_uv * drhov + coeff_uw * drhow + coeff_uX * dbuoy)
@@ -199,7 +202,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if writer != None:
         writer.populate(str(label),'p2_initial',mpv.p2_nodes)
 
-    # set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
     operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt)
 
     i0 = node.ndim * [(slice(0,-1))]
@@ -334,11 +337,15 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if writer != None:
         writer.populate(str(label),'p2_full',p2_full)
 
+    set_ghostnodes_p2(p2_full,node,ud)
     correction_nodes(Sol,elem,node,mpv,p2_full,dt,ud,th,1)
+
+    mpv.p2_nodes[...] += p2_full
+    set_ghostnodes_p2(mpv.p2_nodes,node,ud)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
-    mpv.p2_nodes[...] += p2_full 
-    set_ghostnodes_p2(mpv.p2_nodes,node,ud)
+ 
+    
 
 def exner_perturbation_constraint(Sol,elem,th,p2):
     # 2D function!
@@ -356,6 +363,8 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud,th,updt_chi):
     wh1, wv, wh2 = dt * ud.coriolis_strength
     nu = mpv.nu_c
     nonhydro = ud.nonhydrostasy
+    g = ud.gravity_strength[1]
+    Msq = ud.Msq
 
     Gammainv = th.Gammainv
 
@@ -402,6 +411,7 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud,th,updt_chi):
     thinv = Sol.rho[i2] / Sol.rhoY[i2]
     thinv = 1.0
     coeff = Gammainv * Sol.rhoY[i2] #* Y
+    Y = Sol.rhoY[i2] / Sol.rho[i2]
 
     nu = nu[n2e][i2]
 
@@ -410,18 +420,24 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud,th,updt_chi):
     
     # U update
     coeff_uu = (wh1**2 + nu + nonhydro)
-    coeff_uw = (wh1 * wh2 + (nu + nonhydro) * wv)
-    coeff_uv = nonhydro * (wh1 * wv - wh2)
+    coeff_uw = (wh1 * wh2 - (nu + nonhydro) * wv)
+    coeff_uv = nonhydro * (wh1 * wv + wh2)
+    # coeff_uX = - (1.0-updt_chi) * dt * (g / Msq) * (wh1 * wv - wh2)
 
     # V update
-    coeff_vu = (wh1 * wv + wh2)
-    coeff_vw = (wh2 * wv - wh1)
+    coeff_vu = (wh1 * wv - wh2)
+    coeff_vw = (wh2 * wv + wh1)
     coeff_vv = nonhydro * (1 + wv**2)
+    # coeff_vX = - (1.0-updt_chi) * dt * (g / Msq) * (1 + wv**2)
 
     # W update
-    coeff_wu = (wh1 * wh2 - (nu + nonhydro) * wv)
+    coeff_wu = (wh1 * wh2 + (nu + nonhydro) * wv)
     coeff_ww = (nu + nonhydro + wh2**2)
-    coeff_wv = nonhydro * (wh2 * wv + wh1)
+    coeff_wv = nonhydro * (wh2 * wv - wh1)
+    # coeff_wX = - (1.0-updt_chi) * dt * (g / Msq) * (wh2 * wv + wh1)
+
+    # Dpy += (1.0-updt_chi) * th.Gamma * nu / (-dt**2)
+    # Dpy += (1.0 - updt_chi) * th.Gamma * (g / Msq) * mpv.HydroState.S0[2:-2].reshape(1,-1)
 
     Sol.rhou[i2] += -dt * thinv * coeff * denom * (coeff_uu * Dpx + coeff_uv * Dpy + coeff_uw * Dpz)
     Sol.rhov[i2] += -dt * thinv * coeff * denom * (coeff_vu * Dpx + coeff_vv * Dpy + coeff_vw * Dpz)
@@ -500,6 +516,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     kernel = np.ones([2] * ndim)
 
     mpv.wcenter[innerdim] = ccenter * signal.fftconvolve(Sol.rhoY[innerdim1]**cexp,kernel,mode='valid') / kernel.sum()
+    # mpv.wcenter[innerdim] = 0.0
 
     scale_wall_node_values(mpv.wcenter, node, ud)
 
@@ -526,114 +543,115 @@ def scale_wall_node_values(rhs, node, ud, factor=.5):
 def divergence_nodes(rhs,elem,node,Sol,ud):
     ndim = elem.ndim
     igs = elem.igs
-    # dxyz = node.dxyz
+    dxyz = node.dxyz
     inner_idx = np.empty((ndim), dtype=object)
 
     for dim in range(ndim):
         is_periodic = ud.bdry_type[dim] == BdryType.PERIODIC
         inner_idx[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic)
-    # inner_idx_p1y = np.copy(inner_idx)
-    # inner_idx_p1y[1] = slice(1,-1)
+    inner_idx_p1y = np.copy(inner_idx)
+    inner_idx_p1y[1] = slice(1,-1)
         
-    # indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat = ndim)]
-    # signs = [sgn for sgn in product([1,-1], repeat = ndim)]
+    indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat = ndim)]
+    signs = [sgn for sgn in product([1,-1], repeat = ndim)]
     inner_idx = tuple(inner_idx)
-    # inner_idx_p1y = tuple(inner_idx_p1y)
+    inner_idx_p1y = tuple(inner_idx_p1y)
 
-    # # hotfix test
-    # top_idx = 0
-    # bot_idx = -1
+    # hotfix test
+    top_idx = 0
+    bot_idx = -1
 
-    # # get top factor
-    # P_top = Sol.rhoY[inner_idx][:,top_idx]
-    # rho_top = Sol.rho[inner_idx][:,top_idx]
-    # Y_top = P_top / rho_top
+    # get top factor
+    P_top = Sol.rhoY[inner_idx][:,top_idx]
+    rho_top = Sol.rho[inner_idx][:,top_idx]
+    Y_top = P_top / rho_top
 
-    # P_top_p1 = Sol.rhoY[inner_idx_p1y][:,top_idx]
-    # rho_top_p1 = Sol.rho[inner_idx_p1y][:,top_idx]
-    # Y_top_p1 = P_top_p1 / rho_top_p1
+    P_top_p1 = Sol.rhoY[inner_idx_p1y][:,top_idx]
+    rho_top_p1 = Sol.rho[inner_idx_p1y][:,top_idx]
+    Y_top_p1 = P_top_p1 / rho_top_p1
 
-    # PY_top = P_top * Y_top
-    # PY_top_p1 = P_top_p1 * Y_top_p1
-    # PY_top_edge = 0.5 * (PY_top + PY_top_p1)
-    # PY_top_factor = PY_top_edge / PY_top
+    PY_top = P_top * Y_top
+    PY_top_p1 = P_top_p1 * Y_top_p1
+    PY_top_edge = 0.5 * (PY_top + PY_top_p1)
+    PY_top_factor = PY_top_edge / PY_top
 
-    # # get bottom factor
-    # P_bot = Sol.rhoY[inner_idx][:,bot_idx]
-    # rho_bot = Sol.rho[inner_idx][:,bot_idx]
-    # Y_bot = P_bot / rho_bot
+    # get bottom factor
+    P_bot = Sol.rhoY[inner_idx][:,bot_idx]
+    rho_bot = Sol.rho[inner_idx][:,bot_idx]
+    Y_bot = P_bot / rho_bot
 
-    # P_bot_m1 = Sol.rhoY[inner_idx_p1y][:,bot_idx]
-    # rho_bot_m1 = Sol.rho[inner_idx_p1y][:,bot_idx]
-    # Y_bot_m1 = P_bot_m1 / rho_bot_m1
+    P_bot_m1 = Sol.rhoY[inner_idx_p1y][:,bot_idx]
+    rho_bot_m1 = Sol.rho[inner_idx_p1y][:,bot_idx]
+    Y_bot_m1 = P_bot_m1 / rho_bot_m1
 
-    # PY_bot = P_bot * Y_bot
-    # PY_bot_m1 = P_bot_m1 * Y_bot_m1
-    # PY_bot_edge = 0.5 * (PY_bot + PY_bot_m1)
-    # PY_bot_factor = PY_bot_edge / PY_bot
+    PY_bot = P_bot * Y_bot
+    PY_bot_m1 = P_bot_m1 * Y_bot_m1
+    PY_bot_edge = 0.5 * (PY_bot + PY_bot_m1)
+    PY_bot_factor = PY_bot_edge / PY_bot
 
-    # rhou = np.copy(Sol.rhou[inner_idx])
-    # rhou[:,top_idx] *= PY_top_factor
-    # rhou[:,bot_idx] *= PY_bot_factor
+    rhou = np.copy(Sol.rhou[inner_idx])
+    rhou[:,top_idx] *= PY_top_factor
+    rhou[:,bot_idx] *= PY_bot_factor
 
-    # Sols1 = np.stack((rhou, Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
-    # Sols = np.stack((Sol.rhou[inner_idx], Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
+    Sols1 = np.stack((rhou, Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
+    Sols = np.stack((Sol.rhou[inner_idx], Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
 
-    # oodxyz = 1./dxyz
-    # Y = Sol.rhoY[inner_idx] / Sol.rho[inner_idx]
+    oodxyz = 1./dxyz
+    Y = Sol.rhoY[inner_idx] / Sol.rho[inner_idx]
 
-    # tmp_fxyz = 0.5**(ndim-1) * oodxyz[:ndim] * Sols[...,:ndim] * Y[...,None]
+    tmp_fxyz = 0.5**(ndim-1) * oodxyz[:ndim] * Sols[...,:ndim] * Y[...,None]
 
-    # count = 0
-    # for index in indices:
-    #     rhs[inner_idx][index] += np.inner(signs[count], tmp_fxyz)
-    #     count += 1
+    count = 0
+    for index in indices:
+        rhs[inner_idx][index] += np.inner(signs[count], tmp_fxyz)
+        count += 1
 
-    # tmp_fxyz1 = 0.5**(ndim-1) * oodxyz[:ndim] * Sols1[...,:ndim] * Y[...,None]
+    tmp_fxyz1 = 0.5**(ndim-1) * oodxyz[:ndim] * Sols1[...,:ndim] * Y[...,None]
 
-    # rhs1 = np.zeros_like(rhs)
-    # count = 0
+    rhs1 = np.zeros_like(rhs)
+    count = 0
 
-    # # print(signs)
-    # for index in indices:
-    #     rhs1[inner_idx][index] += np.inner(signs[count], tmp_fxyz1)
-    #     count += 1
+    # print(signs)
+    for index in indices:
+        rhs1[inner_idx][index] += np.inner(signs[count], tmp_fxyz1)
+        count += 1
 
-    # top_idx = -3
-    # bot_idx = 2
+    top_idx = -3
+    bot_idx = 2
 
-    # rhs[...] = rhs
-    # rhs[:, top_idx] = rhs1[:, top_idx]
-    # rhs[:, bot_idx] = rhs1[:, bot_idx]
+    rhs[...] = rhs
+    rhs[:, top_idx] = rhs1[:, top_idx]
+    rhs[:, bot_idx] = rhs1[:, bot_idx]
 
-    Y = Sol.rhoY / Sol.rho
+    # if ud.bdry_type[1] == BdryType.WALL:
+    #     Sol.rhou[:,:2,...] = 0.0 
+    #     Sol.rhou[:,-2:,...] = 0.0
 
-    Sol.rhou[:,:2,:] = 0.0
-    Sol.rhou[:,-2:,:] = 0.0
+    #     Sol.rhov[:,:2,...] = 0.0 
+    #     Sol.rhov[:,-2:,...] = 0.0 
 
-    Sol.rhov[:,:2,:] = 0.0
-    Sol.rhov[:,-2:,:] = 0.0
+    #     Sol.rhow[:,:2,...] = 0.0
+    #     Sol.rhow[:,-2:,...] = 0.0
 
-    Sol.rhow[:,:2,:] = 0.0
-    Sol.rhow[:,-2:,:] = 0.0
+    # Y = Sol.rhoY / Sol.rho
 
-    Ux = np.diff(Sol.rhou * Y,axis=0) / elem.dx
-    Ux = 0.5 * (Ux[:,:-1,...] + Ux[:,1:,...])
+    # Ux = np.diff(Sol.rhou * Y,axis=0) / elem.dx
+    # Ux = 0.5 * (Ux[:,:-1,...] + Ux[:,1:,...])
 
-    Vy = np.diff(Sol.rhov * Y,axis=1) / elem.dy
-    Vy = 0.5 * (Vy[:-1,...] + Vy[1:,...])
+    # Vy = np.diff(Sol.rhov * Y,axis=1) / elem.dy
+    # Vy = 0.5 * (Vy[:-1,...] + Vy[1:,...])
 
-    if ndim == 3:
-        Ux = 0.5 * (Ux[...,:-1] + Ux[...,1:])
-        Vy = 0.5 * (Vy[...,:-1] + Vy[...,1:])
+    # if ndim == 3:
+    #     Ux = 0.5 * (Ux[...,:-1] + Ux[...,1:])
+    #     Vy = 0.5 * (Vy[...,:-1] + Vy[...,1:])
 
-        Wz = np.diff(Sol.rhow * Y,axis=2) / elem.dz
-        Wz = 0.5 * (Wz[:-1,...] + Wz[1:,...])
-        Wz = 0.5 * (Wz[:,:-1,...] + Wz[:,1:,...])
+    #     Wz = np.diff(Sol.rhow * Y,axis=2) / elem.dz
+    #     Wz = 0.5 * (Wz[:-1,...] + Wz[1:,...])
+    #     Wz = 0.5 * (Wz[:,:-1,...] + Wz[:,1:,...])
 
-        rhs[1:-1,1:-1,1:-1] = (Ux + Vy + Wz)
-    else:
-        rhs[1:-1,1:-1] = (Ux + Vy)
+    #     rhs[1:-1,1:-1,1:-1] = (Ux + Vy + Wz)
+    # else:
+    #     rhs[1:-1,1:-1] = (Ux + Vy)
 
     rhs_max = np.max(rhs[inner_idx]) if np.max(rhs[inner_idx]) > 0 else 0
     return rhs, rhs_max
@@ -652,5 +670,5 @@ def rhs_from_p_old(rhs,node,mpv):
     inner_idx = tuple(inner_idx)
     rhs_n = np.zeros_like(rhs)
     rhs_hh = mpv.wcenter[inner_idx] * mpv.p2_nodes[inner_idx]
-    rhs_n[inner_idx] = rhs[inner_idx] + rhs_hh
+    rhs_n[inner_idx] = rhs[inner_idx] + 0.0 * rhs_hh
     return rhs_n
