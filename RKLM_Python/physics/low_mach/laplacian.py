@@ -479,8 +479,6 @@ def lapHS(p0, hplusx, hplusz, hcenter, oodx2, oodz2, periodicity, diag_inv, corr
 
 
 
-
-
 def stencil_vs(elem,node,mpv,ud,diag_inv,dt):
     igx = elem.igx
     igy = elem.igy
@@ -491,9 +489,6 @@ def stencil_vs(elem,node,mpv,ud,diag_inv,dt):
 
     iicxn = icxn - (2 * igx)
     iicyn = icyn - (2 * igy)
-
-    dx = node.dx
-    dy = node.dy
 
     iicxn, iicyn = iicyn, iicxn
 
@@ -507,13 +502,12 @@ def stencil_vs(elem,node,mpv,ud,diag_inv,dt):
 
     proj = (slice(None,),slice(None,),igz)
     i0 = (slice(0,-1),slice(0,-1))
-    # ip1 = (slice(1,None),slice(1,None))
     i1 = (slice(1,-1),slice(1,-1))
     i2 = (slice(igx,-igx),slice(igy,-igy))
 
-    HS = True
+    VS = True
 
-    if not HS:
+    if not VS:
         x_periodic = ud.bdry_type[xx] == BdryType.PERIODIC
         y_periodic = ud.bdry_type[yy] == BdryType.PERIODIC
 
@@ -525,14 +519,9 @@ def stencil_vs(elem,node,mpv,ud,diag_inv,dt):
         hcenter = mpv.wcenter[proj][i2].reshape(-1,)
         diag_inv = diag_inv[proj][i2].reshape(-1,)
 
-        # hplusx = mpv.wplus[xx][proj][i0][i1].reshape(-1,)
-        # hplusy = mpv.wplus[yy][proj][i0][i1].reshape(-1,)
-        # hcenter = mpv.wcenter[proj][i2].reshape(-1,)
-        # diag_inv = diag_inv[proj][i1].reshape(-1,)
-
         return lambda p : lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv)
 
-    if HS:
+    if VS:
         oodx2 = 1./node.dx**2
         oody2 = 1./node.dy**2
 
@@ -560,66 +549,27 @@ def lapVS(p0, hplusx, hplusy, hcenter, oodx2, oody2, periodicity, diag_inv):
     cnt = 0
     for bc in periodicity:
         if bc == True and cnt == 0:
-            # tmp = p[1,:]
-            # p[0,:] = p[-3,:]
-            # p[-1,:] = p[2,:]
-            # p[1,:] = p[-2,:]
-            # p[-2,:] = tmp
+            p[0,:] = p[-3,:]
+            p[-1,:] = p[2,:]
 
-            # p[0,:] = p[-4,:]
-            # p[-1,:] = p[3,:]
-            # p[1,:] = p[-3,:]
-            # p[-2,:] = p[2,:]
-
-            p[0,:] = p[-5,:]
-            p[-1,:] = p[4,:]
-            p[1,:] = p[-4,:]
-            p[-2,:] = p[3,:]
         elif bc == False and cnt == 0:
-            hplusx[0,:] = 0.0
-            hplusx[-1,:] = 0.0
-            hplusy[0,:] = 0.0
-            hplusy[-1,:] = 0.0
-
-            # tmp = p[1,:]
-            # p[0,:] = p[2,:]
-            # p[-1,:] = p[-3,:]
-            # p[1,:] = p[3,:]
-            # p[-2,:] = p[-4,:]
+            p[0,:] = p[2,:]
+            p[-1,:] = p[-3,:]
 
         if bc == True and cnt == 1:
-            # tmp = p[:,1]
-            # p[:,0] = p[:,-3]
-            # p[:,-1] = p[:,2]
-            # p[:,1] = p[:,-2]
-            # p[:,-2] = tmp
+            p[:,0] = p[:,-3]
+            p[:,-1] = p[:,2]
 
-            # p[:,0] = p[:,-4]
-            # p[:,-1] = p[:,3]
-            # p[:,1] = p[:,-3]
-            # p[:,-2] = p[:,2]
-            
-            p[:,0] = p[:,-5]
-            p[:,-1] = p[:,4]
-            p[:,1] = p[:,-4]
-            p[:,-2] = p[:,3]
         elif bc == False and cnt == 1:
-            hplusx[:,0] = 0.0
-            hplusx[:,-1] = 0.0
-            hplusy[:,0] = 0.0
-            hplusy[:,-1] = 0.0
-
-            # tmp = p[:,1]
-            # p[:,0] = p[:,2]
-            # p[:,-1] = p[:,-3]
-            # p[:,1] = p[:,3]
-            # p[:,-2] = p[:,-4]
+            p[:,0] = p[:,2]
+            p[:,-1] = p[:,-3]
+            
         cnt += 1
     
-    leftz = p[:,:-1]
-    rightz = p[:,1:]
+    lefty = p[:,:-1]
+    righty = p[:,1:]
     
-    z_fluxes = (rightz - leftz)
+    y_fluxes = (righty - lefty)
 
     leftx = p[:-1,:]
     rightx = p[1:,:]
@@ -627,23 +577,7 @@ def lapVS(p0, hplusx, hplusy, hcenter, oodx2, oody2, periodicity, diag_inv):
     x_fluxes = (rightx - leftx)
 
     x_flx = x_fluxes[:,:-1] + x_fluxes[:,1:]
-    z_flx = z_fluxes[:-1,:] + z_fluxes[1:,:]
-
-    hxzp = hplusx * z_flx
-    hxzpm = hxzp[:-1,:]
-    hxzpm = hxzpm[:,:-1] + hxzpm[:,1:]
-    # hxzpm = hxzpm[:-1,:] + hxzpm[1:,:]
-    hxzpp = hxzp[1:,:]
-    hxzpp = hxzpp[:,:-1] + hxzpp[:,1:]
-    # hxzpp = hxzpp[:-1,:] + hxzpp[1:,:]
-
-    hzxp = hplusy * x_flx
-    hzxpm = hzxp[:,:-1]
-    hzxpm = hzxpm[:-1,:] + hzxpm[1:,:]
-    # hzxpm = hzxpm[:,:-1] + hzxpm[:,1:]
-    hzxpp = hzxp[:,1:]
-    hzxpp = hzxpp[:-1,:] + hzxpp[1:,:]
-    # hzxpp = hzxpp[:,:-1] + hzxpp[:,1:]
+    y_flx = y_fluxes[:-1,:] + y_fluxes[1:,:]
 
     x_flx = hplusx * x_flx
     x_flxm = x_flx[:-1,:]
@@ -651,14 +585,14 @@ def lapVS(p0, hplusx, hplusy, hcenter, oodx2, oody2, periodicity, diag_inv):
     x_flxp = x_flx[1:,:]
     x_flxp = x_flxp[:,:-1] + x_flxp[:,1:]
 
-    z_flx = hplusy * z_flx
-    z_flxm = z_flx[:,:-1]
-    z_flxm = z_flxm[:-1,:] + z_flxm[1:,:]
-    z_flxp = z_flx[:,1:]
-    z_flxp = z_flxp[:-1,:] + z_flxp[1:,:]
+    y_flx = hplusy * y_flx
+    y_flxm = y_flx[:,:-1]
+    y_flxm = y_flxm[:-1,:] + y_flxm[1:,:]
+    y_flxp = y_flx[:,1:]
+    y_flxp = y_flxp[:-1,:] + y_flxp[1:,:]
 
     lap[1:-1,1:-1] = oodx2 * coeff * (-x_flxm + x_flxp) + \
-                     oody2 * coeff * (-z_flxm + z_flxp) + \
+                     oody2 * coeff * (-y_flxm + y_flxp) + \
                      hcenter * p[1:-1,1:-1]
                      
     lap = lap * diag_inv
