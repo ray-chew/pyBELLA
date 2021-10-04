@@ -1,6 +1,6 @@
 from inputs.enum_bdry import BdryType
 from inputs.boundary import set_explicit_boundary_data, set_ghostnodes_p2
-from physics.low_mach.laplacian import stencil_9pt, stencil_27pt, stencil_hs, precon_diag_prepare
+from physics.low_mach.laplacian import stencil_9pt, stencil_27pt, stencil_hs, stencil_vs, precon_diag_prepare
 from scipy import signal
 import numpy as np
 from itertools import product
@@ -132,10 +132,7 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
     wh1, wv, wh2 = dt * ud.coriolis_strength
 
-    first_nodes_row_right_idx = (slice(1,None))
-    first_nodes_row_left_idx = (slice(0,-1))
-
-    strat = (mpv.HydroState_n.S0[first_nodes_row_right_idx] - mpv.HydroState_n.S0[first_nodes_row_left_idx]) / dy
+    strat = np.diff(mpv.HydroState_n.S0) / dy
 
     for dim in range(0,elem.ndim,2):
         strat = np.expand_dims(strat, dim)
@@ -170,11 +167,11 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     # W update
     coeff_wu = (wh1 * wh2 - (nu + nonhydro) * wv)
     coeff_ww = (nu + nonhydro + wh2**2)
-    coeff_wv = nonhydro * (wh1 + wh2 * wv)
-    coeff_wX = - dt * (g / Msq) * (wh1 + wh2 * wv)
+    coeff_wv = nonhydro * (wh2 * wv + wh1)
+    coeff_wX = - dt * (g / Msq) * (wh2 * wv + wh1)
 
     # Do the updates
-    rhou = u0 * Sol.rho - denom * (coeff_uu * drhou + coeff_uv * drhov + coeff_uw * drhow + coeff_uX * dbuoy)
+    rhou = u0 * Sol.rho + denom * (coeff_uu * drhou + coeff_uv * drhov + coeff_uw * drhow + coeff_uX * dbuoy)
 
     rhov = v0 * Sol.rho + denom * (coeff_vu * drhou + coeff_vv * drhov + coeff_vw * drhow + coeff_vX * dbuoy)
 
@@ -202,7 +199,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if writer != None:
         writer.populate(str(label),'p2_initial',mpv.p2_nodes)
 
-    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    # set_explicit_boundary_data(Sol, elem, ud, th, mpv)
     operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt)
 
     i0 = node.ndim * [(slice(0,-1))]
@@ -215,11 +212,16 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         if elem.ndim == 3: writer.populate(str(label),'wplusz',mpv.wplus[2])
         else: writer.populate(str(label),'wplusz',np.zeros_like(mpv.wplus[0]))
 
+    set_ghostnodes_p2(mpv.p2_nodes,node,ud)
+    correction_nodes(Sol,elem,node,mpv,mpv.p2_nodes,dt,ud,th,0)
+    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+
     rhs[...], _ = divergence_nodes(rhs,elem,node,Sol,ud)
-    rhs /= dt
 
     if writer != None:
         writer.populate(str(label),'rhs',rhs)
+
+    rhs /= dt
 
     if ud.is_compressible == 1:
         rhs = rhs_from_p_old(rhs,node,mpv)
@@ -245,30 +247,57 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     
     # diag_inv = np.ones_like(mpv.rhs)
 
+    VS = True
+
+    # prepare initial left-hand side and the laplacian stencil
     if elem.ndim == 2:
         lap = stencil_9pt(elem,node,mpv,ud,diag_inv,dt)
-
         sh = (ud.inx)*(ud.iny)
 
-    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
-        lap = stencil_27pt(elem,node,mpv,ud,diag_inv,dt)
-
-        sh = p2.reshape(-1).shape[0]
-    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2: # horizontal slice hack
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2: 
+        # horizontal slice hack
         p2 = np.copy(mpv.p2_nodes[1:-1,elem.igs[1],1:-1])
         lap = stencil_hs(elem,node,mpv,ud,diag_inv,dt)
         sh = p2.reshape(-1).shape[0]
+
+    elif elem.ndim == 3 and elem.iicy > 1 and elem.iicz == 1:
+        # vertical slice hack
+
+        if not VS:
+            p2 = np.copy(mpv.p2_nodes[...,elem.igz][node.igx:-node.igx,node.igy:-node.igy])
+            lap = stencil_vs(elem,node,mpv,ud,diag_inv,dt)
+            sh = (node.iicx)*(node.iicy)
+        if VS:
+            p2 = np.copy(mpv.p2_nodes[1:-1,1:-1,elem.igs[2]])
+            lap = stencil_vs(elem,node,mpv,ud,diag_inv,dt)
+            sh = p2.reshape(-1).shape[0]
+
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
+        lap = stencil_27pt(elem,node,mpv,ud,diag_inv,dt)
+        sh = p2.reshape(-1).shape[0]
+
+
     lap = LinearOperator((sh,sh),lap)
     
     counter = solver_counter()
 
+    # prepare right-hand side
     if elem.ndim == 2:
         rhs_inner = rhs[node.igx:-node.igx,node.igy:-node.igy].ravel()
+    elif elem.ndim == 3 and elem.iicy > 1 and elem.iicz == 1:
+
+        if not VS:
+            rhs_inner = rhs[...,elem.igs[2]][node.igx:-node.igx,node.igy:-node.igy].ravel()
+        if VS:
+            rhs_inner = rhs[1:-1,1:-1,elem.igs[2]].ravel()
+
     elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
         rhs_inner = rhs[1:-1,1:-1,1:-1].ravel()
     else:
         rhs_inner = rhs[1:-1,elem.igs[1],1:-1].ravel()
-    p2,info = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
+
+    p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
+    # p2, _ = gmres(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations)
     # p2,info = bicgstab(lap,rhs.ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
 
@@ -281,20 +310,34 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     p2_full = np.zeros(nc).squeeze()
     if elem.ndim == 2:
         p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
-    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
-        p2_full[1:-1,1:-1,1:-1] = p2.reshape(ud.inx+2,ud.iny+2,ud.inz+2)
     elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2:
+        # horizontal slice hack
         p2 = p2.reshape(ud.inx+2, ud.inz+2)
         p2 = np.expand_dims(p2,1)
         p2 = np.repeat(p2, node.icy, axis=1)
         p2_full[1:-1,:,1:-1] = p2
+    elif elem.ndim == 3 and elem.iicy > 1 and elem.iicz == 1:
+
+        if not VS:
+            p2 = p2.reshape(node.iicx,node.iicy)
+            p2 = np.repeat(p2[...,np.newaxis], node.icz, axis=2)
+            p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2
+        if VS:
+            p2 = p2.reshape(ud.inx+2, ud.iny+2)
+            p2 = np.expand_dims(p2,2)
+            p2 = np.repeat(p2, node.icz, axis=2)
+            p2_full[1:-1,1:-1,:] = p2
+
+
+    elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
+        p2_full[1:-1,1:-1,1:-1] = p2.reshape(ud.inx+2,ud.iny+2,ud.inz+2)
     if writer != None:
         writer.populate(str(label),'p2_full',p2_full)
 
-    correction_nodes(Sol,elem,node,mpv,p2_full,dt,ud,th)
+    correction_nodes(Sol,elem,node,mpv,p2_full,dt,ud,th,1)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
-    mpv.p2_nodes[...] = p2_full
+    mpv.p2_nodes[...] += p2_full 
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
 def exner_perturbation_constraint(Sol,elem,th,p2):
@@ -308,7 +351,7 @@ def exner_perturbation_constraint(Sol,elem,th,p2):
     return rhs[1:-1,1:-1]
 
 
-def correction_nodes(Sol,elem,node,mpv,p,dt,ud,th):
+def correction_nodes(Sol,elem,node,mpv,p,dt,ud,th,updt_chi):
     ndim = node.ndim
     wh1, wv, wh2 = dt * ud.coriolis_strength
     nu = mpv.nu_c
@@ -378,13 +421,13 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud,th):
     # W update
     coeff_wu = (wh1 * wh2 - (nu + nonhydro) * wv)
     coeff_ww = (nu + nonhydro + wh2**2)
-    coeff_wv = nonhydro * (wh1 + wh2 * wv)
+    coeff_wv = nonhydro * (wh2 * wv + wh1)
 
     Sol.rhou[i2] += -dt * thinv * coeff * denom * (coeff_uu * Dpx + coeff_uv * Dpy + coeff_uw * Dpz)
     Sol.rhov[i2] += -dt * thinv * coeff * denom * (coeff_vu * Dpx + coeff_vv * Dpy + coeff_vw * Dpz)
     if ndim == 3: Sol.rhow[i2] += -dt * thinv * coeff * denom * (coeff_wu * Dpx + coeff_wv * Dpy + coeff_ww * Dpz)
 
-    Sol.rhoX[i2] += - dt * dSdy * Sol.rhov[i2]
+    Sol.rhoX[i2] += - updt_chi * dt * dSdy * Sol.rhov[i2]
 
 
 def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
@@ -483,82 +526,114 @@ def scale_wall_node_values(rhs, node, ud, factor=.5):
 def divergence_nodes(rhs,elem,node,Sol,ud):
     ndim = elem.ndim
     igs = elem.igs
-    dxyz = node.dxyz
+    # dxyz = node.dxyz
     inner_idx = np.empty((ndim), dtype=object)
 
     for dim in range(ndim):
         is_periodic = ud.bdry_type[dim] == BdryType.PERIODIC
         inner_idx[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic)
-    inner_idx_p1y = np.copy(inner_idx)
-    inner_idx_p1y[1] = slice(1,-1)
+    # inner_idx_p1y = np.copy(inner_idx)
+    # inner_idx_p1y[1] = slice(1,-1)
         
-    indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat = ndim)]
-    signs = [sgn for sgn in product([1,-1], repeat = ndim)]
+    # indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat = ndim)]
+    # signs = [sgn for sgn in product([1,-1], repeat = ndim)]
     inner_idx = tuple(inner_idx)
-    inner_idx_p1y = tuple(inner_idx_p1y)
+    # inner_idx_p1y = tuple(inner_idx_p1y)
 
-    # hotfix test
-    top_idx = 0
-    bot_idx = -1
+    # # hotfix test
+    # top_idx = 0
+    # bot_idx = -1
 
-    # get top factor
-    P_top = Sol.rhoY[inner_idx][:,top_idx]
-    rho_top = Sol.rho[inner_idx][:,top_idx]
-    Y_top = P_top / rho_top
+    # # get top factor
+    # P_top = Sol.rhoY[inner_idx][:,top_idx]
+    # rho_top = Sol.rho[inner_idx][:,top_idx]
+    # Y_top = P_top / rho_top
 
-    P_top_p1 = Sol.rhoY[inner_idx_p1y][:,top_idx]
-    rho_top_p1 = Sol.rho[inner_idx_p1y][:,top_idx]
-    Y_top_p1 = P_top_p1 / rho_top_p1
+    # P_top_p1 = Sol.rhoY[inner_idx_p1y][:,top_idx]
+    # rho_top_p1 = Sol.rho[inner_idx_p1y][:,top_idx]
+    # Y_top_p1 = P_top_p1 / rho_top_p1
 
-    PY_top = P_top * Y_top
-    PY_top_p1 = P_top_p1 * Y_top_p1
-    PY_top_edge = 0.5 * (PY_top + PY_top_p1)
-    PY_top_factor = PY_top_edge / PY_top
+    # PY_top = P_top * Y_top
+    # PY_top_p1 = P_top_p1 * Y_top_p1
+    # PY_top_edge = 0.5 * (PY_top + PY_top_p1)
+    # PY_top_factor = PY_top_edge / PY_top
 
-    # get bottom factor
-    P_bot = Sol.rhoY[inner_idx][:,bot_idx]
-    rho_bot = Sol.rho[inner_idx][:,bot_idx]
-    Y_bot = P_bot / rho_bot
+    # # get bottom factor
+    # P_bot = Sol.rhoY[inner_idx][:,bot_idx]
+    # rho_bot = Sol.rho[inner_idx][:,bot_idx]
+    # Y_bot = P_bot / rho_bot
 
-    P_bot_m1 = Sol.rhoY[inner_idx_p1y][:,bot_idx]
-    rho_bot_m1 = Sol.rho[inner_idx_p1y][:,bot_idx]
-    Y_bot_m1 = P_bot_m1 / rho_bot_m1
+    # P_bot_m1 = Sol.rhoY[inner_idx_p1y][:,bot_idx]
+    # rho_bot_m1 = Sol.rho[inner_idx_p1y][:,bot_idx]
+    # Y_bot_m1 = P_bot_m1 / rho_bot_m1
 
-    PY_bot = P_bot * Y_bot
-    PY_bot_m1 = P_bot_m1 * Y_bot_m1
-    PY_bot_edge = 0.5 * (PY_bot + PY_bot_m1)
-    PY_bot_factor = PY_bot_edge / PY_bot
+    # PY_bot = P_bot * Y_bot
+    # PY_bot_m1 = P_bot_m1 * Y_bot_m1
+    # PY_bot_edge = 0.5 * (PY_bot + PY_bot_m1)
+    # PY_bot_factor = PY_bot_edge / PY_bot
 
-    rhou = np.copy(Sol.rhou[inner_idx])
-    rhou[:,top_idx] *= PY_top_factor
-    rhou[:,bot_idx] *= PY_bot_factor
+    # rhou = np.copy(Sol.rhou[inner_idx])
+    # rhou[:,top_idx] *= PY_top_factor
+    # rhou[:,bot_idx] *= PY_bot_factor
 
-    Sols1 = np.stack((rhou, Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
-    Sols = np.stack((Sol.rhou[inner_idx], Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
+    # Sols1 = np.stack((rhou, Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
+    # Sols = np.stack((Sol.rhou[inner_idx], Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
 
-    oodxyz = 1./dxyz
-    Y = Sol.rhoY[inner_idx] / Sol.rho[inner_idx]
+    # oodxyz = 1./dxyz
+    # Y = Sol.rhoY[inner_idx] / Sol.rho[inner_idx]
 
-    tmp_fxyz = 0.5**(ndim-1) * oodxyz[:ndim] * Sols[...,:ndim] * Y[...,None]
+    # tmp_fxyz = 0.5**(ndim-1) * oodxyz[:ndim] * Sols[...,:ndim] * Y[...,None]
 
-    count = 0
-    for index in indices:
-        rhs[inner_idx][index] += np.inner(signs[count], tmp_fxyz)
-        count += 1
+    # count = 0
+    # for index in indices:
+    #     rhs[inner_idx][index] += np.inner(signs[count], tmp_fxyz)
+    #     count += 1
 
-    tmp_fxyz1 = 0.5**(ndim-1) * oodxyz[:ndim] * Sols1[...,:ndim] * Y[...,None]
+    # tmp_fxyz1 = 0.5**(ndim-1) * oodxyz[:ndim] * Sols1[...,:ndim] * Y[...,None]
 
-    rhs1 = np.zeros_like(rhs)
-    count = 0
-    for index in indices:
-        rhs1[inner_idx][index] += np.inner(signs[count], tmp_fxyz1)
-        count += 1
+    # rhs1 = np.zeros_like(rhs)
+    # count = 0
 
-    top_idx = -3
-    bot_idx = 2
+    # # print(signs)
+    # for index in indices:
+    #     rhs1[inner_idx][index] += np.inner(signs[count], tmp_fxyz1)
+    #     count += 1
+
+    # top_idx = -3
+    # bot_idx = 2
+
     # rhs[...] = rhs
-    rhs[:, top_idx] = rhs1[:, top_idx]
-    rhs[:, bot_idx] = rhs1[:, bot_idx]
+    # rhs[:, top_idx] = rhs1[:, top_idx]
+    # rhs[:, bot_idx] = rhs1[:, bot_idx]
+
+    Y = Sol.rhoY / Sol.rho
+
+    Sol.rhou[:,:2,:] = 0.0
+    Sol.rhou[:,-2:,:] = 0.0
+
+    Sol.rhov[:,:2,:] = 0.0
+    Sol.rhov[:,-2:,:] = 0.0
+
+    Sol.rhow[:,:2,:] = 0.0
+    Sol.rhow[:,-2:,:] = 0.0
+
+    Ux = np.diff(Sol.rhou * Y,axis=0) / elem.dx
+    Ux = 0.5 * (Ux[:,:-1,...] + Ux[:,1:,...])
+
+    Vy = np.diff(Sol.rhov * Y,axis=1) / elem.dy
+    Vy = 0.5 * (Vy[:-1,...] + Vy[1:,...])
+
+    if ndim == 3:
+        Ux = 0.5 * (Ux[...,:-1] + Ux[...,1:])
+        Vy = 0.5 * (Vy[...,:-1] + Vy[...,1:])
+
+        Wz = np.diff(Sol.rhow * Y,axis=2) / elem.dz
+        Wz = 0.5 * (Wz[:-1,...] + Wz[1:,...])
+        Wz = 0.5 * (Wz[:,:-1,...] + Wz[:,1:,...])
+
+        rhs[1:-1,1:-1,1:-1] = (Ux + Vy + Wz)
+    else:
+        rhs[1:-1,1:-1] = (Ux + Vy)
 
     rhs_max = np.max(rhs[inner_idx]) if np.max(rhs[inner_idx]) > 0 else 0
     return rhs, rhs_max
