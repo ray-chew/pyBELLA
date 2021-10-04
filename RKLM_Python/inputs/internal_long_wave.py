@@ -10,7 +10,7 @@ class UserData(object):
     BOUY = 0
 
     grav = 9.81
-    omega = 0.0*0.0001
+    omega = -50.0*0.0001
 
     R_gas = 287.4
     R_vap = 461.0
@@ -27,7 +27,7 @@ class UserData(object):
     Nsq_ref = 1.0e-4
 
     # planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0;
-    scale_factor = 160.0
+    scale_factor = 20.0
 
     i_gravity = np.zeros((3))
     i_coriolis = np.zeros((3))
@@ -52,7 +52,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+        self.is_compressible = 0
         self.is_ArakawaKonor = 0
 
         self.compressibility = 0.0
@@ -63,8 +63,9 @@ class UserData(object):
         self.coriolis_strength = np.zeros((3))
 
         self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
-        self.coriolis_strength[0] = self.omega * self.t_ref
+        # self.coriolis_strength[0] = self.omega * self.t_ref
         self.coriolis_strength[2] = self.omega * self.t_ref
+        # self.coriolis_strength[1] = self.omega * self.t_ref
 
         for i in range(3):
             if (self.gravity_strength[i] > np.finfo(np.float).eps) or (i == 1):
@@ -81,14 +82,14 @@ class UserData(object):
         self.zmin = - 1.0
         self.zmax =   1.0
 
-        self.u_wind_speed = 1.0 * 20.0 / self.u_ref
+        self.u_wind_speed = 0.0 * 20.0 / self.u_ref
         self.v_wind_speed = 0.0
         self.w_wind_speed = 0.0
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
         self.bdry_type[1] = BdryType.WALL
-        self.bdry_type[2] = BdryType.WALL
+        self.bdry_type[2] = BdryType.PERIODIC
 
         ##########################################
         # NUMERICS
@@ -99,6 +100,9 @@ class UserData(object):
         self.dtfixed = 10.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
         # self.dtfixed0 = 5.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
         # self.dtfixed = 5.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
+
+        self.dtfixed0 = 10.0
+        self.dtfixed = 10.0
 
         self.inx = 301+1
         # self.inx = 1205+1
@@ -112,8 +116,9 @@ class UserData(object):
         self.initial_projection = False
 
         self.tout =  [self.scale_factor * 1.0 * 3000.0 / self.t_ref]
+        self.tout = np.arange(0,self.tout[0]+60.0,60.0)[1:]
 
-        self.tol = 1.e-8
+        self.tol = 1.e-12
         self.stepmax = 100000
         self.max_iterations = 6000
 
@@ -147,14 +152,14 @@ class UserData(object):
         elif not self.is_nonhydrostatic:
             self.h_tag = 'hydro'
 
-        aux = ''
+        aux = 'vcor'
         if len(aux) > 0:
             aux = self.scale_tag + "_" + self.h_tag + "_" + aux
         else:
             aux = self.scale_tag + "_" + self.h_tag
         self.aux = aux
 
-        self.output_timesteps = False
+        self.output_timesteps = True
 
         self.stratification = self.stratification_function
         self.molly = self.molly_function
@@ -187,6 +192,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     w0 = ud.w_wind_speed
     delth = 0.01 / ud.T_ref
     xc = -1.0 * ud.scale_factor * 50.0e+3 / ud.h_ref
+    xc = 0.0
     a = ud.scale_factor * 5.0e+3 / ud.h_ref
 
     hydrostatic_state(mpv, elem, node, th, ud)
