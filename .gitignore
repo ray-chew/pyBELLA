@@ -9,6 +9,8 @@
 **archive*
 **current*
 **output*
+**low_Mach*
+**SkamarockKlemp*
 
 # Ignore various outputs
 *.h5
