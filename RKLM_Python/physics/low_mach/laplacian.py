@@ -553,16 +553,26 @@ def lapVS(p0, hplusx, hplusy, hcenter, oodx2, oody2, periodicity, diag_inv):
             p[-1,:] = p[2,:]
 
         elif bc == False and cnt == 0:
-            p[0,:] = p[2,:]
-            p[-1,:] = p[-3,:]
+            hplusx[0,:] = 0.0
+            hplusx[-1,:] = 0.0
+            hplusy[0,:] = 0.0
+            hplusy[-1,:] = 0.0
+
+            # p[0,:] = p[2,:]
+            # p[-1,:] = p[-3,:]
 
         if bc == True and cnt == 1:
             p[:,0] = p[:,-3]
             p[:,-1] = p[:,2]
 
         elif bc == False and cnt == 1:
-            p[:,0] = p[:,2]
-            p[:,-1] = p[:,-3]
+            hplusx[:,0] = 0.0
+            hplusx[:,-1] = 0.0
+            hplusy[:,0] = 0.0
+            hplusy[:,-1] = 0.0
+
+            # p[:,0] = p[:,2]
+            # p[:,-1] = p[:,-3]
             
         cnt += 1
     
