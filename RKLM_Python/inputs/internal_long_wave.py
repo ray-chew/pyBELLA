@@ -10,7 +10,7 @@ class UserData(object):
     BOUY = 0
 
     grav = 9.81
-    omega = -50.0*0.0001
+    omega = +50.0*0.0001
 
     R_gas = 287.4
     R_vap = 461.0
@@ -101,8 +101,8 @@ class UserData(object):
         # self.dtfixed0 = 5.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
         # self.dtfixed = 5.0 * (12.5 / 15.0) * 0.5 * self.scale_factor * 30.0 / self.t_ref
 
-        self.dtfixed0 = 10.0
-        self.dtfixed = 10.0
+        self.dtfixed0 = 1.0
+        self.dtfixed = 1.0
 
         self.inx = 301+1
         # self.inx = 1205+1
@@ -191,7 +191,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     v0 = ud.v_wind_speed
     w0 = ud.w_wind_speed
     delth = 0.01 / ud.T_ref
-    xc = -1.0 * ud.scale_factor * 50.0e+3 / ud.h_ref
+    xc = -0.0 * ud.scale_factor * 50.0e+3 / ud.h_ref
     xc = 0.0
     a = ud.scale_factor * 5.0e+3 / ud.h_ref
 
