@@ -99,11 +99,11 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None,
     dpidP = (th.gm1 / ud.Msq) * signal.fftconvolve(rhoY, dpidP_kernel, mode='valid') / dpidP_kernel.sum()
 
 
-    Sol.rhou[i1] = Sol.rhou[i1] - dt * ( rhoYovG * dpdx + corr_h2 * drhov - corr_v * drhow)
+    Sol.rhou[i1] = Sol.rhou[i1] - dt * ( rhoYovG * dpdx - corr_h2 * drhov + corr_v * drhow)
 
-    Sol.rhov[i1] = Sol.rhov[i1] - dt * ( rhoYovG * dpdy + (g/Msq) * dbuoy + corr_h1 * drhow - corr_h2 * drhou) * nonhydro * (1 - ud.is_ArakawaKonor)
+    Sol.rhov[i1] = Sol.rhov[i1] - dt * ( rhoYovG * dpdy + (g/Msq) * dbuoy - corr_h1 * drhow + corr_h2 * drhou) * nonhydro * (1 - ud.is_ArakawaKonor)
 
-    Sol.rhow[i1] = Sol.rhow[i1] - dt * ( (ndim == 3) * rhoYovG * dpdz + corr_v * drhou  - corr_h1 * drhov)
+    Sol.rhow[i1] = Sol.rhow[i1] - dt * ( (ndim == 3) * rhoYovG * dpdz - corr_v * drhou + corr_h1 * drhov)
 
     Sol.rhoX[i1] = (Sol.rho[i1] * (Sol.rho[i1] / Sol.rhoY[i1] - S0c)) - dt * (v * dSdy) * Sol.rho[i1]
 
@@ -157,20 +157,20 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
     # U update
     coeff_uu = (wh1**2 + nu + nonhydro)
-    coeff_uw = (wh1 * wh2 - (nu + nonhydro) * wv)
     coeff_uv = nonhydro * (wh1 * wv + wh2)
+    coeff_uw = (wh1 * wh2 - (nu + nonhydro) * wv)
     coeff_uX = - dt * (g / Msq) * (wh1 * wv + wh2)
 
     # V update
     coeff_vu = (wh1 * wv - wh2)
-    coeff_vw = (wh2 * wv + wh1)
     coeff_vv = nonhydro * (1 + wv**2)
+    coeff_vw = (wh2 * wv + wh1)
     coeff_vX = - dt * (g / Msq) * (1 + wv**2)
 
     # W update
     coeff_wu = (wh1 * wh2 + (nu + nonhydro) * wv)
-    coeff_ww = (nu + nonhydro + wh2**2)
     coeff_wv = nonhydro * (wh2 * wv - wh1)
+    coeff_ww = (nu + nonhydro + wh2**2)
     coeff_wX = - dt * (g / Msq) * (wh2 * wv - wh1)
 
     # Do the updates
@@ -420,24 +420,18 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud,th,updt_chi):
     
     # U update
     coeff_uu = (wh1**2 + nu + nonhydro)
-    coeff_uw = (wh1 * wh2 - (nu + nonhydro) * wv)
     coeff_uv = nonhydro * (wh1 * wv + wh2)
-    # coeff_uX = - (1.0-updt_chi) * dt * (g / Msq) * (wh1 * wv - wh2)
+    coeff_uw = (wh1 * wh2 - (nu + nonhydro) * wv)
 
     # V update
     coeff_vu = (wh1 * wv - wh2)
-    coeff_vw = (wh2 * wv + wh1)
     coeff_vv = nonhydro * (1 + wv**2)
-    # coeff_vX = - (1.0-updt_chi) * dt * (g / Msq) * (1 + wv**2)
+    coeff_vw = (wh2 * wv + wh1)
 
     # W update
     coeff_wu = (wh1 * wh2 + (nu + nonhydro) * wv)
-    coeff_ww = (nu + nonhydro + wh2**2)
     coeff_wv = nonhydro * (wh2 * wv - wh1)
-    # coeff_wX = - (1.0-updt_chi) * dt * (g / Msq) * (wh2 * wv + wh1)
-
-    # Dpy += (1.0-updt_chi) * th.Gamma * nu / (-dt**2)
-    # Dpy += (1.0 - updt_chi) * th.Gamma * (g / Msq) * mpv.HydroState.S0[2:-2].reshape(1,-1)
+    coeff_ww = (nu + nonhydro + wh2**2)
 
     Sol.rhou[i2] += -dt * thinv * coeff * denom * (coeff_uu * Dpx + coeff_uv * Dpy + coeff_uw * Dpz)
     Sol.rhov[i2] += -dt * thinv * coeff * denom * (coeff_vu * Dpx + coeff_vv * Dpy + coeff_vw * Dpz)
@@ -516,7 +510,6 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     kernel = np.ones([2] * ndim)
 
     mpv.wcenter[innerdim] = ccenter * signal.fftconvolve(Sol.rhoY[innerdim1]**cexp,kernel,mode='valid') / kernel.sum()
-    # mpv.wcenter[innerdim] = 0.0
 
     scale_wall_node_values(mpv.wcenter, node, ud)
 
@@ -558,100 +551,100 @@ def divergence_nodes(rhs,elem,node,Sol,ud):
     inner_idx_p1y = tuple(inner_idx_p1y)
 
     # hotfix test
-    top_idx = 0
-    bot_idx = -1
+    # top_idx = 0
+    # bot_idx = -1
 
-    # get top factor
-    P_top = Sol.rhoY[inner_idx][:,top_idx]
-    rho_top = Sol.rho[inner_idx][:,top_idx]
-    Y_top = P_top / rho_top
+    # # get top factor
+    # P_top = Sol.rhoY[inner_idx][:,top_idx]
+    # rho_top = Sol.rho[inner_idx][:,top_idx]
+    # Y_top = P_top / rho_top
 
-    P_top_p1 = Sol.rhoY[inner_idx_p1y][:,top_idx]
-    rho_top_p1 = Sol.rho[inner_idx_p1y][:,top_idx]
-    Y_top_p1 = P_top_p1 / rho_top_p1
+    # P_top_p1 = Sol.rhoY[inner_idx_p1y][:,top_idx]
+    # rho_top_p1 = Sol.rho[inner_idx_p1y][:,top_idx]
+    # Y_top_p1 = P_top_p1 / rho_top_p1
 
-    PY_top = P_top * Y_top
-    PY_top_p1 = P_top_p1 * Y_top_p1
-    PY_top_edge = 0.5 * (PY_top + PY_top_p1)
-    PY_top_factor = PY_top_edge / PY_top
+    # PY_top = P_top * Y_top
+    # PY_top_p1 = P_top_p1 * Y_top_p1
+    # PY_top_edge = 0.5 * (PY_top + PY_top_p1)
+    # PY_top_factor = PY_top_edge / PY_top
 
-    # get bottom factor
-    P_bot = Sol.rhoY[inner_idx][:,bot_idx]
-    rho_bot = Sol.rho[inner_idx][:,bot_idx]
-    Y_bot = P_bot / rho_bot
+    # # get bottom factor
+    # P_bot = Sol.rhoY[inner_idx][:,bot_idx]
+    # rho_bot = Sol.rho[inner_idx][:,bot_idx]
+    # Y_bot = P_bot / rho_bot
 
-    P_bot_m1 = Sol.rhoY[inner_idx_p1y][:,bot_idx]
-    rho_bot_m1 = Sol.rho[inner_idx_p1y][:,bot_idx]
-    Y_bot_m1 = P_bot_m1 / rho_bot_m1
+    # P_bot_m1 = Sol.rhoY[inner_idx_p1y][:,bot_idx]
+    # rho_bot_m1 = Sol.rho[inner_idx_p1y][:,bot_idx]
+    # Y_bot_m1 = P_bot_m1 / rho_bot_m1
 
-    PY_bot = P_bot * Y_bot
-    PY_bot_m1 = P_bot_m1 * Y_bot_m1
-    PY_bot_edge = 0.5 * (PY_bot + PY_bot_m1)
-    PY_bot_factor = PY_bot_edge / PY_bot
+    # PY_bot = P_bot * Y_bot
+    # PY_bot_m1 = P_bot_m1 * Y_bot_m1
+    # PY_bot_edge = 0.5 * (PY_bot + PY_bot_m1)
+    # PY_bot_factor = PY_bot_edge / PY_bot
 
-    rhou = np.copy(Sol.rhou[inner_idx])
-    rhou[:,top_idx] *= PY_top_factor
-    rhou[:,bot_idx] *= PY_bot_factor
+    # rhou = np.copy(Sol.rhou[inner_idx])
+    # rhou[:,top_idx] *= PY_top_factor
+    # rhou[:,bot_idx] *= PY_bot_factor
 
-    Sols1 = np.stack((rhou, Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
-    Sols = np.stack((Sol.rhou[inner_idx], Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
+    # Sols1 = np.stack((rhou, Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
+    # Sols = np.stack((Sol.rhou[inner_idx], Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
 
-    oodxyz = 1./dxyz
-    Y = Sol.rhoY[inner_idx] / Sol.rho[inner_idx]
+    # oodxyz = 1./dxyz
+    # Y = Sol.rhoY[inner_idx] / Sol.rho[inner_idx]
 
-    tmp_fxyz = 0.5**(ndim-1) * oodxyz[:ndim] * Sols[...,:ndim] * Y[...,None]
+    # tmp_fxyz = 0.5**(ndim-1) * oodxyz[:ndim] * Sols[...,:ndim] * Y[...,None]
 
-    count = 0
-    for index in indices:
-        rhs[inner_idx][index] += np.inner(signs[count], tmp_fxyz)
-        count += 1
+    # count = 0
+    # for index in indices:
+    #     rhs[inner_idx][index] += np.inner(signs[count], tmp_fxyz)
+    #     count += 1
 
-    tmp_fxyz1 = 0.5**(ndim-1) * oodxyz[:ndim] * Sols1[...,:ndim] * Y[...,None]
+    # tmp_fxyz1 = 0.5**(ndim-1) * oodxyz[:ndim] * Sols1[...,:ndim] * Y[...,None]
 
-    rhs1 = np.zeros_like(rhs)
-    count = 0
+    # rhs1 = np.zeros_like(rhs)
+    # count = 0
 
-    # print(signs)
-    for index in indices:
-        rhs1[inner_idx][index] += np.inner(signs[count], tmp_fxyz1)
-        count += 1
+    # # print(signs)
+    # for index in indices:
+    #     rhs1[inner_idx][index] += np.inner(signs[count], tmp_fxyz1)
+    #     count += 1
 
-    top_idx = -3
-    bot_idx = 2
+    # top_idx = -3
+    # bot_idx = 2
 
-    rhs[...] = rhs
-    rhs[:, top_idx] = rhs1[:, top_idx]
-    rhs[:, bot_idx] = rhs1[:, bot_idx]
+    # rhs[...] = rhs
+    # rhs[:, top_idx] = rhs1[:, top_idx]
+    # rhs[:, bot_idx] = rhs1[:, bot_idx]
 
-    # if ud.bdry_type[1] == BdryType.WALL:
-    #     Sol.rhou[:,:2,...] = 0.0 
-    #     Sol.rhou[:,-2:,...] = 0.0
+    if ud.bdry_type[1] == BdryType.WALL:
+        Sol.rhou[:,:2,...] = 0.0 
+        Sol.rhou[:,-2:,...] = 0.0
 
-    #     Sol.rhov[:,:2,...] = 0.0 
-    #     Sol.rhov[:,-2:,...] = 0.0 
+        Sol.rhov[:,:2,...] = 0.0 
+        Sol.rhov[:,-2:,...] = 0.0 
 
-    #     Sol.rhow[:,:2,...] = 0.0
-    #     Sol.rhow[:,-2:,...] = 0.0
+        Sol.rhow[:,:2,...] = 0.0
+        Sol.rhow[:,-2:,...] = 0.0
 
-    # Y = Sol.rhoY / Sol.rho
+    Y = Sol.rhoY / Sol.rho
 
-    # Ux = np.diff(Sol.rhou * Y,axis=0) / elem.dx
-    # Ux = 0.5 * (Ux[:,:-1,...] + Ux[:,1:,...])
+    Ux = np.diff(Sol.rhou * Y,axis=0) / elem.dx
+    Ux = 0.5 * (Ux[:,:-1,...] + Ux[:,1:,...])
 
-    # Vy = np.diff(Sol.rhov * Y,axis=1) / elem.dy
-    # Vy = 0.5 * (Vy[:-1,...] + Vy[1:,...])
+    Vy = np.diff(Sol.rhov * Y,axis=1) / elem.dy
+    Vy = 0.5 * (Vy[:-1,...] + Vy[1:,...])
 
-    # if ndim == 3:
-    #     Ux = 0.5 * (Ux[...,:-1] + Ux[...,1:])
-    #     Vy = 0.5 * (Vy[...,:-1] + Vy[...,1:])
+    if ndim == 3:
+        Ux = -0.5 * (Ux[...,:-1] + Ux[...,1:])
+        Vy = 0.5 * (Vy[...,:-1] + Vy[...,1:])
 
-    #     Wz = np.diff(Sol.rhow * Y,axis=2) / elem.dz
-    #     Wz = 0.5 * (Wz[:-1,...] + Wz[1:,...])
-    #     Wz = 0.5 * (Wz[:,:-1,...] + Wz[:,1:,...])
+        Wz = np.diff(Sol.rhow * Y,axis=2) / elem.dz
+        Wz = 0.5 * (Wz[:-1,...] + Wz[1:,...])
+        Wz = 0.5 * (Wz[:,:-1,...] + Wz[:,1:,...])
 
-    #     rhs[1:-1,1:-1,1:-1] = (Ux + Vy + Wz)
-    # else:
-    #     rhs[1:-1,1:-1] = (Ux + Vy)
+        rhs[1:-1,1:-1,1:-1] = (Ux + Vy + Wz)
+    else:
+        rhs[1:-1,1:-1] = (Ux + Vy)
 
     rhs_max = np.max(rhs[inner_idx]) if np.max(rhs[inner_idx]) > 0 else 0
     return rhs, rhs_max
