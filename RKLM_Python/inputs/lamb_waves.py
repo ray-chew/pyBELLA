@@ -158,8 +158,8 @@ class UserData(object):
 def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     def bump(xi):
         # eqn (15)
-        # tmp = np.zeros_like(xi)
-        # tmp[np.where(np.abs(xi) < 1)] = np.exp(-1.0 / (1.0 - xi[np.where(np.abs(xi) < 1)]**2))
+        tmp = np.zeros_like(xi)
+        tmp[np.where(np.abs(xi) < 1)] = np.exp(-1.0 / (1.0 - xi[np.where(np.abs(xi) < 1)]**2))
         # return tmp
         return np.ones_like(xi)
 
@@ -176,7 +176,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Hrho = 0.25 * (ud.ymax - ud.ymin)                   # Hrho = R*bar{T}/g
     kGam = -(0.5 - kappa) / Hrho                        # eqn (10)
     Cs = np.sqrt(th.gamm / Msq)                        # eqn (7) / u_ref^2
-    eps = ud.coriolis_strength[0] / ud.gravity_strength[1] # eqn (8), dimensionlesss
+    eps = ud.coriolis_strength[1] / ud.gravity_strength[1] # eqn (8), dimensionlesss
     N = ud.t_ref * np.sqrt(ud.Nsq_ref)                  # eqn (6) * t_ref
     # kstar = k * Cs / N
     kstar = waveno * Cs / N                             # kstar = 0.9
@@ -196,13 +196,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     # exp(kGam*y)  / sqrt(rhobar) / Ybar = 1.0
     Y = Ybar * (1.0 - pm * eps * A * Noverg * (1.0 / (kstar**2 - 1.0)) * Ybar * np.cos(phi))        # eqn (3)
     FF = 1.0
-    pi = pibar * Msq + A * Cs * th.Gamma * np.cos(phi) * FF     # eqn (4)
+    pi = A * Cs * th.Gamma * np.cos(phi) * FF     # eqn (4)
     u = A * (pm + eps * (Cs * kGam / N) / (kstar**2 - 1.0)) * np.cos(phi) * Ybar                  # eqn (1)
     v = -A * eps * (kstar / (kstar**2 - 1.0)) * np.sin(phi) * Ybar
     w = 0.0               # eqn (2)
 
     # p = pi**(th.Gamminv)
-    rho = pi**th.gm1inv / Y
+    rho = (pi+pibar*Msq)**th.gm1inv / Y
 
     Sol.rho[...] = rho
     Sol.rhou[...] = rho * u
@@ -211,7 +211,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Sol.rhoe[...] = 0.0
     Sol.rhoY[...] = rho * Y
     Sol.rhoX[...] = rho / Y
-    mpv.HydroState.S0[...] *= 0.0
+    Sol.rhoX[...] = 0.0
+    # mpv.HydroState.S0[...] *= 0.0
     mpv.p2_cells[...] = pi / Msq
 
     # initialise nodal pi
@@ -222,7 +223,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     pibar_n = mpv.HydroState_n.p20.reshape(1,-1)
     phi_n = waveno * xn - (pm + eps * (Cs * kGam / N) / (kstar**2 - 1.0)) * kstar * N * t
 
-    pi_n = pibar_n * Msq + An * Cs * th.Gamma * np.cos(phi_n) * FF
+    pi_n = An * Cs * th.Gamma * np.cos(phi_n) * FF
     mpv.p2_nodes[...] = pi_n / Msq
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
