@@ -192,14 +192,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         rhobar = mpv.HydroState.rho0.reshape(1,-1)
         Ybar = mpv.HydroState.Y0.reshape(1,-1)
         pibar = mpv.HydroState.p20.reshape(1,-1)
-        div = 1.0
     else:
         # Use hydrostatic balance in Mark's notes
         Htheta = Hrho / kappa
         rhobar = np.exp(-y / Hrho) # eqn (7)
         Ybar = np.exp(y / Htheta)  # eqn (9)
         pibar = 1.0 / Ybar
-        div = Msq
 
     N = ud.t_ref * np.sqrt(ud.Nsq_ref)                  # eqn (5) dimensionless Brunt-Väisälä frequency
     Cs = np.sqrt(th.gamm / Msq)                         # eqn (6) dimensionless speed of sound
@@ -226,7 +224,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     w = w0 + wp
     Y = Ybar + Yp
 
-    rho = ((pibar * Msq / div + pi)**th.gm1inv) / Y
+    rho = ((pibar + Msq * pi)**th.gm1inv) / Y
 
     Sol.rho[...] = rho
     Sol.rhou[...] = rho * u
@@ -235,7 +233,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Sol.rhoe[...] = 0.0
     Sol.rhoY[...] = rho * Y
     Sol.rhoX[...] = 0.0
-    mpv.p2_cells[...] = pi / Msq
+    mpv.p2_cells[...] = pi #/ Msq
 
     ###################################################
     # initialise nodal pi
@@ -261,7 +259,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     pi_n = An * Cs * fac * np.sqrt(1.0 / rhobar_n) / Ybar_n * np.exp(-kGam_n * yn) * np.cos(N / Cs * waveno * xn)
 
-    mpv.p2_nodes[...] = pi_n / Msq
+    mpv.p2_nodes[...] = pi_n #/ Msq
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
