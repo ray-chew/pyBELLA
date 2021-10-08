@@ -202,7 +202,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     w = 0.0               # eqn (2)
 
     # p = pi**(th.Gamminv)
-    rho = (pi+pibar*Msq)**th.gm1inv / Y
+    rho = (pi*Msq+pibar)**th.gm1inv / Y
 
     Sol.rho[...] = rho
     Sol.rhou[...] = rho * u
@@ -213,7 +213,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Sol.rhoX[...] = rho / Y
     Sol.rhoX[...] = 0.0
     # mpv.HydroState.S0[...] *= 0.0
-    mpv.p2_cells[...] = pi / Msq
+    mpv.p2_cells[...] = pi #/ Msq
 
     # initialise nodal pi
     xn = node.x.reshape(-1,1)
@@ -224,7 +224,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     phi_n = waveno * xn - (pm + eps * (Cs * kGam / N) / (kstar**2 - 1.0)) * kstar * N * t
 
     pi_n = An * Cs * th.Gamma * np.cos(phi_n) * FF
-    mpv.p2_nodes[...] = pi_n / Msq
+    mpv.p2_nodes[...] = pi_n #/ Msq
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
