@@ -46,7 +46,7 @@ class UserData(object):
         self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+        self.is_compressible = 0
         self.is_ArakawaKonor = 0
 
         self.compressibility = 1.0
@@ -123,7 +123,7 @@ class UserData(object):
         self.initial_projection = True
         self.initial_impl_Euler = False
 
-        self.tout = np.arange(0.0,3.01,0.01)[1:]
+        self.tout = np.arange(0.0,10.1,0.1)[1:]
         self.stepmax = 20000
 
         self.output_base_name = "_travelling_vortex"
@@ -134,7 +134,7 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        aux = 'neg_debug'
+        aux = 'neg_debug_psinc'
         self.aux = aux
 
         self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
@@ -163,10 +163,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rotdir = 1.0
 
     p0 = 1.0
-    alpha = 1.0
-    alpha_const = 0.0
-    rho0 = 0.5
-    del_rho = 0.5
+    alpha = -1.0
+    alpha_const = 3.0
+    rho0 = 1.0
+    del_rho = -0.5
     R0 = 0.4
     fac = 1. * 1024.0
     xc = 0.0
