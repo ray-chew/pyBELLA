@@ -48,7 +48,7 @@ class ensemble(object):
 
     @staticmethod
     def members(ensemble):
-        return np.array(list(ensemble.__dict__.values()))
+        return np.array(list(ensemble.__dict__.values()),dtype='object')
 
     @staticmethod
     def debug_im(value, n, tout):
@@ -392,25 +392,45 @@ def obs_noiser(obs,dap,rloc):
         obs_covar_n = np.zeros((len(dap.da_times),rloc.nattr_len))
         obs_noisy = deepcopy(obs)
 
+        std_dev = np.zeros((obs.shape[0],len(dap.obs_noise_seeds)))
+
         for tt, obs_t in enumerate(obs):
-            ccnt, ncnt, attr_cnt = 0, 0, 0
+            attr_cnt = 0
             for key, value in obs_t.items():
                 seed = dap.obs_noise_seeds[attr_cnt]
                 np.random.seed(seed)
-
-                shp = value.shape
                 
-                obs_max = np.abs(value.max() - value.min())
+                if dap.noise_type == 'AmpCov':
+                    field_var = np.abs(value.max() - value.min())
+                elif dap.noise_type == 'VarCov':
+                    field_var = (((value - value.mean())**2).mean())**0.5
+                elif dap.noise_type == 'FixCov':
+                    field_var = 1.0
 
                 # here, we take the fraction defined by obs_noise multiplied by the maximum value of the observation as the standard deviation of the measurement noise.
-                std_dev = (dap.obs_noise[key] * obs_max)
-                var = std_dev**2
+                std_dev[tt,attr_cnt] = (dap.obs_noise[key] * field_var)
+
+                attr_cnt += 1
+
+                # var = std_dev**2
+
+        if dap.noise_type == 'VarCov':
+            sd = std_dev.mean(axis=0,keepdims=True)
+            std_dev[:,...] = sd
+
+        for tt, obs_t in enumerate(obs):
+            ccnt, ncnt, attr_cnt = 0, 0, 0
+            for key, value in obs_t.items():
+                shp = value.shape
+                sd = std_dev[tt,attr_cnt]
 
                 # generate gaussian noise for observations.
-                noise = np.random.normal(0.0,std_dev, size=(shp))
+                noise = np.random.normal(0.0, sd, size=(shp))
 
                 # add noise onto observation
                 obs_noisy[tt][key][...] += noise
+
+                var = sd**2
 
                 if var == 0:
                     var = -np.inf
@@ -422,8 +442,6 @@ def obs_noiser(obs,dap,rloc):
                     ncnt += 1
                 attr_cnt += 1
         
-        # obs_covar_mean = obs_covar.mean(axis=0)
-        # obs_covar /= obs_covar_mean
         obs_covar = [obs_covar_c, obs_covar_n]
         return obs_noisy, obs_covar
 
