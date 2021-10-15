@@ -6,11 +6,14 @@ from scipy.interpolate import interpn
 from inputs.enum_bdry import BdryType
 import matplotlib.pyplot as plt
 import dask.array as darr
+import dask
 import numpy as np
 
 import data_assimilation.utils as dau
 from numpy.lib.stride_tricks import sliding_window_view
 from copy import deepcopy
+
+from dask.diagnostics import ProgressBar
 
 debug_cnt = 0
 
@@ -327,9 +330,70 @@ class prepare_rloc(object):
             covar = np.expand_dims(covar,axis=-1)
             covar = np.repeat(covar, obs_Y, axis=-1)
 
-        # loop through all grid-points, selecting either the grid-point or its corresponding local region
-        # This is step 3 of the LETKF algorithm in Hunt et. al. 2007. 
-        for n in range(Nx * Ny):
+
+        # Note: I implemented the easiest and laziest way to make the LETKF work with large localisation regions.
+        # However, this link:
+        # https://github.com/dask/dask/issues/7589
+        # contains a more elegant (and memory efficient) solution using the dask map_overlap function.
+
+        # Calculate chunk size such that largest chunk takes 180mb of memory:
+        mem_size = 180
+        mb=Y.nbytes/1024/1024 # Y is our largest array
+        chunks = int(np.ceil(mb/mem_size))
+        chunk_size = int(np.ceil((Nx*Ny) / chunks))
+
+        print("\n===================")
+        print("To split DA problem into %i chunks at %s mb each" %(chunks,mem_size))
+        print("with analysis of %i grid points per chunk" %chunk_size)
+        print("")
+
+        # Now we chunkify our dask arrays:
+        bc_mask = darr.rechunk(bc_mask, chunks=chunk_size).to_delayed().ravel()
+        mask_n = darr.rechunk(mask_n, chunks=chunk_size).to_delayed().ravel()
+        obs_p = darr.rechunk(obs_p, chunks=chunk_size).to_delayed().ravel()
+        X = darr.rechunk(X, chunks=chunk_size).to_delayed().ravel()
+        X_bar = darr.rechunk(X_bar, chunks=chunk_size).to_delayed().ravel()
+        Y = darr.rechunk(Y, chunks=chunk_size).to_delayed().ravel()
+        Y_bar = darr.rechunk(Y_bar, chunks=chunk_size).to_delayed().ravel()
+
+        # Now for each chunk, we get the analysis:
+        analysis_by_chunk = []
+        for chunk in range(chunks):
+            analysis_by_chunk.append(darr.from_delayed(self.do_analysis(attr_len, covar, bc_mask[chunk], mask_n[chunk], obs_p[chunk], X[chunk], X_bar[chunk], Y[chunk], Y_bar[chunk]), shape=(attr_len,self.N,chunk_size), dtype=np.int64))
+
+        # Put the results of the chunks together
+        analysis_res = darr.concatenate(analysis_by_chunk, axis=2)
+
+        print("Progress of the DA procedure:")
+        # Do the computation of the delayed tasks
+        with ProgressBar():
+            analysis_res = analysis_res.compute()
+
+        print("===================\n")
+
+        # put analysis back into results container
+        for cnt, attr in enumerate(obs_attr):
+            current = analysis_res[cnt]
+
+            for n in range(N):
+                data = current[n]
+                data = data.reshape(Nx, Ny)
+                
+                data = np.pad(data,2,mode='constant')
+
+                setattr(results[:,loc,...][n],attr,data)
+
+        return results
+
+
+    # loop through all grid-points, selecting either the grid-point or its corresponding local region
+    # This is step 3 of the LETKF algorithm in Hunt et. al. 2007. 
+    @dask.delayed
+    def do_analysis(self, attr_len, covar, bc_mask, mask_n, obs_p, X, X_bar, Y, Y_bar):
+        analysis_res = np.zeros_like(X)
+        current_chunk_size = analysis_res.shape[0]
+
+        for n in range(current_chunk_size):
             # For each of the quantities in the local observation space, Y, Y_bar, Y_obs, covar and loc_mat, remove the NaNs corresponding to grid-points without observations.
 
             # using forward operator as a projection of the state into observation space.
@@ -362,21 +426,7 @@ class prepare_rloc(object):
             analysis_res[n] = analysis_ens
 
         analysis_res = np.swapaxes(analysis_res,0,2)
-
-        # put analysis back into results container
-        for cnt, attr in enumerate(obs_attr):
-            current = analysis_res[cnt]
-
-            for n in range(N):
-                data = current[n]
-                data = data.reshape(Nx, Ny)
-                
-                data = np.pad(data,2,mode='constant')
-
-                setattr(results[:,loc,...][n],attr,data)
-
-        return results
-
+        return analysis_res
 
     def stack(self,results,obs,mask,obs_attr,tout):
         """
@@ -427,8 +477,10 @@ class prepare_rloc(object):
         # X = np.array([dau.sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in state])
         # X_bar = np.array([dau.sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in X_bar]) 
 
-        X = np.array([sliding_window_view(mem, (1,1), axis=(1,2)).reshape(attr_len,Nx*Ny) for mem in state])
-        X_bar = np.array([sliding_window_view(mem, (1,1), axis=(1,2)).reshape(attr_len,Nx*Ny) for mem in X_bar]) 
+        state = darr.from_array(state)
+        X = sliding_window_view(state, (1,1), axis=(2,3)).reshape(self.N,attr_len,Nx*Ny)
+        X_bar = darr.from_array(X_bar)
+        X_bar = sliding_window_view(X_bar, (1,1), axis=(2,3)).reshape(1,attr_len,Nx*Ny)
 
         X = np.swapaxes(X,1,2)
         X_bar = np.swapaxes(X_bar,1,2)
@@ -452,7 +504,8 @@ class prepare_rloc(object):
         obs = np.ma.array(obs,mask=mask).filled(fill_value=np.nan)
 
         # obs = np.array([dau.sliding_window_view(obs_attr, (obs_X,obs_Y), (1,1)) for obs_attr in obs])
-        obs = np.array([sliding_window_view(obs_attr, (obs_X,obs_Y)) for obs_attr in obs])
+        obs = darr.from_array(obs)
+        obs = sliding_window_view(obs, (obs_X,obs_Y), axis=(1,2))
 
         obs = np.swapaxes(obs,0,2)
         obs = np.swapaxes(obs,0,1)
@@ -502,9 +555,10 @@ class prepare_rloc(object):
         # sios = np.array([sliding_window_view(mem, (obs_X,obs_Y), axis=(1,2)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in sios])
         # Y_bar = np.array([sliding_window_view(mem, (obs_X,obs_Y), axis=(1,2)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in Y_bar])
 
-        # sios = darr.from_array(sios)
+        sios = darr.from_array(sios)
         sios = sliding_window_view(sios, (obs_X,obs_Y), axis=(2,3)).reshape(self.N,attr_len,Nx*Ny,obs_X,obs_Y)
-        Y_bar = np.array([sliding_window_view(mem, (obs_X,obs_Y), axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y) for mem in Y_bar])
+        Y_bar = darr.from_array(Y_bar)
+        Y_bar = sliding_window_view(Y_bar, (obs_X,obs_Y), axis=(2,3)).reshape(1,attr_len,Nx*Ny,obs_X,obs_Y)
 
         ###############################
 
@@ -597,10 +651,11 @@ class prepare_rloc(object):
 
         # mask_n = np.array(dau.sliding_window_view(mask, (obs_X,obs_Y), (1,1))).reshape(Nx*Ny,attr_len,obs_X,obs_Y)
 
+        bc_mask = darr.from_array(bc_mask)
+        bc_mask = sliding_window_view(bc_mask, (obs_X,obs_Y)).reshape(Nx*Ny,obs_X,obs_Y)
 
-        bc_mask = np.array(sliding_window_view(bc_mask, (obs_X,obs_Y))).reshape(Nx*Ny,obs_X,obs_Y)
-
-        mask_n = np.array(sliding_window_view(mask, (obs_X,obs_Y), axis=(1,2))).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
+        mask = darr.from_array(mask)
+        mask_n = sliding_window_view(mask, (obs_X,obs_Y), axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
 
         mask_n = np.swapaxes(mask_n,0,1)
 
