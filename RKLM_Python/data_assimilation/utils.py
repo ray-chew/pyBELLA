@@ -383,7 +383,7 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
         return mask_arr
 
 
-def obs_noiser(obs,dap,rloc):
+def obs_noiser(obs,mask,dap,rloc,elem):
     if dap.add_obs_noise:
         assert isinstance(dap.obs_noise, dict), "obs_noise has to be dict"
         assert len(dap.obs_noise) == len(dap.obs_attributes), "obs_noise length has to be equal to obs_attributes len"
@@ -394,27 +394,40 @@ def obs_noiser(obs,dap,rloc):
 
         std_dev = np.zeros((obs.shape[0],len(dap.obs_noise_seeds)))
 
+        # define inner domain in 2D VS
+        i2 = (slice(elem.igx,-elem.igx),slice(elem.igy,-elem.igy))
+
         for tt, obs_t in enumerate(obs):
             attr_cnt = 0
             for key, value in obs_t.items():
+
+                # Get inner 2D domain of sparse obs field
+                value = value[i2]
+                mask_at_t = mask[tt][key][i2]
+                value = np.ma.array(value,mask=mask_at_t)
+
                 seed = dap.obs_noise_seeds[attr_cnt]
                 np.random.seed(seed)
                 
                 if dap.noise_type == 'AmpCov':
-                    field_var = np.abs(value.max() - value.min())
+                    field_var = (dap.obs_noise[key] * np.abs(value.max() - value.min()))
+                    field_sd = field_var**0.5
                 elif dap.noise_type == 'VarCov':
-                    field_var = (((value - value.mean())**2).mean())**0.5
+                    field_var = (dap.obs_noise[key] * ((value - value.mean())**2).mean())
+                    field_sd = field_var**0.5
+
                 elif dap.noise_type == 'FixCov':
-                    field_var = 1.0
+                    field_sd = 1.0 * dap.obs_noise[key]
 
                 # here, we take the fraction defined by obs_noise multiplied by the maximum value of the observation as the standard deviation of the measurement noise.
-                std_dev[tt,attr_cnt] = (dap.obs_noise[key] * field_var)
+                
+                std_dev[tt,attr_cnt] = field_sd
 
                 attr_cnt += 1
 
                 # var = std_dev**2
 
-        if dap.noise_type == 'VarCov':
+        if dap.noise_type == 'VarCov' or dap.noise_type == 'AmpCov':
             sd = std_dev.mean(axis=0,keepdims=True)
             std_dev[:,...] = sd
 
@@ -423,6 +436,8 @@ def obs_noiser(obs,dap,rloc):
             for key, value in obs_t.items():
                 shp = value.shape
                 sd = std_dev[tt,attr_cnt]
+                
+                # print(tt, key, sd**2, np.abs(value.max()-value.min()))
 
                 # generate gaussian noise for observations.
                 noise = np.random.normal(0.0, sd, size=(shp))
