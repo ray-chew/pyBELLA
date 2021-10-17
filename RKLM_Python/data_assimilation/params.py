@@ -11,7 +11,8 @@ class da_params(object):
         # number of ensemble members
         self.N = N
 
-        self._da_times = np.arange(0.0,3.05,0.05)[1:]
+        self._da_times = np.arange(0.0,3.25,0.25)[1:]
+        # self._da_times = np.arange(5.0,10.5,0.5)/10.0
         self._da_times = np.around(self.da_times,3)
         
         self.obs_attributes = ['rho','rhou', 'rhov', 'rhoY', 'p2_nodes']
@@ -24,7 +25,7 @@ class da_params(object):
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_psinc_ref.h5'
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_truthgen_freezelt5.h5'
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_comp_ref.h5'
-        # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_comp_delth_perturb_ib_truth.h5'
+        # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_160_80_1.0_truth_CFLfixed_ib-0.h5'
 
         # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pps_tra_truth.h5'
         # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_neg_comp_1.0_pp_tra_truth_ip.h5'
@@ -108,7 +109,7 @@ class da_params(object):
             if self.noise_type == 'FixCov':
                 assert self.std_dev is not None, "std_dev keyword argument must be a list equal in size to dap.obs_attributes"
                 assert len(self.std_dev) == len(self.obs_attributes), "std_dev keyword argument must be a list equal in size to dap.obs_attributes"
-                self.obs_noise[key] = self.std_dev[cnt]
+                self.obs_noise[key] = float(self.std_dev[cnt])
                 print(self.std_dev[cnt])
                 cnt += 1
             else:    
