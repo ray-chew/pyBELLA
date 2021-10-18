@@ -52,15 +52,15 @@ gen_5c1_euler_momenta = False
 # generate Euler ensemble simulations for
 # section 5c1 with assimilation of all
 # fields
-gen_5c1_euler_full = True
+gen_5c1_euler_full = False
 # generate rising bubble ensemble
 # simulations for section 5c2 with
 # assimilation of the momenta fields
 # along with the truth / obs
 gen_5b_5c2_rb = False
 
-gen_loc_errors_tc = False
-gen_loc_errors_rb = False
+gen_loc_errors_tv = False
+gen_loc_errors_rb = True
 
 # Otherwise, if gen_all = True, generate all
 # results
@@ -623,7 +623,7 @@ if gen_5b_5c2_rb or gen_all:
 
 
 
-if gen_loc_errors_tc or gen_all:
+if gen_loc_errors_tv or gen_all:
     # Set ensemble with 10 members
     rp.N = 10
     # Euler travelling vortex experiment
@@ -770,7 +770,7 @@ if gen_loc_errors_rb or gen_all:
     # Euler travelling vortex experiment
     rp.tc = 'rb'
     ud = {
-        'aux' : 'wda_CFLfixed_63',
+        'aux' : 'wda_CFLfixed_179_79',
         # Do blending for initial time-step
         'initial_blending' : True
     }
@@ -781,16 +781,16 @@ if gen_loc_errors_rb or gen_all:
         'obs_attrs' : ['rhou', 'rhov'],
         # Path to the generated observation
         'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_1.0_truth_CFLfixed_ib-0.h5',
-        'loc_setter' : (63,63)
+        'loc_setter' : (179,79)
     }
 
     # run simulation
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
-    # rp.queue_run()
+    rp.queue_run()
 
     ud = {
-        'aux' : 'wda_CFLfixed_63',
+        'aux' : 'wda_CFLfixed_179_79',
         # Do blending for initial time-step
         'initial_blending' : True,
         'continuous_blending' : True
@@ -799,11 +799,11 @@ if gen_loc_errors_rb or gen_all:
     # run simulation
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
-    # rp.queue_run()
+    rp.queue_run()
 
 
     ud = {
-        'aux' : 'wda_CFLfixed_31',
+        'aux' : 'wda_CFLfixed_79',
         # Do blending for initial time-step
         'initial_blending' : True
     }
@@ -816,7 +816,7 @@ if gen_loc_errors_rb or gen_all:
         'obs_attrs' : ['rhou', 'rhov'],
         # Path to the generated observation
         'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_1.0_truth_CFLfixed_ib-0.h5',
-        'loc_setter' : (31,31)
+        'loc_setter' : (79,79)
     }
 
     # run simulation
@@ -825,7 +825,7 @@ if gen_loc_errors_rb or gen_all:
     rp.queue_run()
 
     ud = {
-        'aux' : 'wda_CFLfixed_31',
+        'aux' : 'wda_CFLfixed_79',
         # Do blending for initial time-step
         'initial_blending' : True,
         'continuous_blending' : True
@@ -838,7 +838,7 @@ if gen_loc_errors_rb or gen_all:
 
     
     ud = {
-        'aux' : 'wda_CFLfixed_21',
+        'aux' : 'wda_CFLfixed_41',
         # Do blending for initial time-step
         'initial_blending' : True
     }
@@ -850,7 +850,7 @@ if gen_loc_errors_rb or gen_all:
         'obs_attrs' : ['rhou', 'rhov'],
         # Path to the generated observation
         'obs_path' : path_to_obs + 'output_rising_bubble/output_rising_bubble_ensemble=1_160_80_1.0_truth_CFLfixed_ib-0.h5',
-        'loc_setter' : (21,21)
+        'loc_setter' : (41,41)
     }
 
     # run simulation
@@ -859,7 +859,7 @@ if gen_loc_errors_rb or gen_all:
     rp.queue_run()
 
     ud = {
-        'aux' : 'wda_CFLfixed_21',
+        'aux' : 'wda_CFLfixed_41',
         # Do blending for initial time-step
         'initial_blending' : True,
         'continuous_blending' : True
@@ -919,7 +919,7 @@ gen_5b_obs_truth_euler == False and \
 gen_5c1_euler_momenta == False and \
 gen_5c1_euler_full == False and \
 gen_5b_5c2_rb == False and \
-gen_loc_errors_tc == False and \
+gen_loc_errors_tv == False and \
 gen_loc_errors_rb == False and \
 gen_all == False:
     print("no results generated, all switches were set to False")
