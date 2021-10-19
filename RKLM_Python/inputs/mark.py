@@ -77,12 +77,12 @@ class UserData(object):
         # self.xmin = - 24.0e6 / self.h_ref
         # self.xmax =   24.0e6 / self.h_ref
         j = 4.0
-        Lx = 1.0 * np.pi * self.Cs / self.N_ref * j
+        Lx = 1.0 * np.pi * self.Cs / self.N_ref * j * 100.0
         self.xmin = - Lx / self.h_ref
         self.xmax =   Lx / self.h_ref
         self.ymin = - 0.0
-        self.ymax =   4.0 * 1.0 / self.grav #/ self.h_ref
-        # self.ymax =   1.0
+        # self.ymax =   8.0 * 1.0 / self.grav #/ self.h_ref
+        self.ymax =   1.0
         self.zmin = - 1.0
         self.zmax =   1.0
 
@@ -105,7 +105,7 @@ class UserData(object):
         self.iny = 10+1
         self.inz = 1
 
-        self.dtfixed0 = 0.5 * 100.0 * ((self.xmax - self.xmin) / (self.inx-1)) / 1.0
+        self.dtfixed0 = 0.5 * 1.0 * ((self.xmax - self.xmin) / (self.inx-1)) / 1.0
         self.dtfixed = self.dtfixed0
 
         self.limiter_type_scalars = LimiterType.NONE
@@ -175,7 +175,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     kappa = th.Gamma
     Omega = ud.coriolis_strength[1]
 
-    waveno = 1.0
+    waveno = 0.01
 
     x = elem.x.reshape(-1,1)
     y = elem.y.reshape(1,-1)
@@ -191,7 +191,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         # Use hydrostatically balanaced background
         rhobar = mpv.HydroState.rho0.reshape(1,-1)
         Ybar = mpv.HydroState.Y0.reshape(1,-1)
-        pibar = Msq * mpv.HydroState.p20.reshape(1,-1)
+        pibar = mpv.HydroState.p20.reshape(1,-1)
     else:
         # Use hydrostatic balance in Mark's notes
         Htheta = Hrho / kappa
