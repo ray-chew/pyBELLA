@@ -13,10 +13,11 @@ class da_params(object):
 
         self._da_times = np.arange(0.0,3.25,0.25)[1:]
         # self._da_times = np.arange(5.0,10.5,0.5)/10.0
+        # self._da_times = [0.1]
         self._da_times = np.around(self.da_times,3)
         
         self.obs_attributes = ['rho','rhou', 'rhov', 'rhoY', 'p2_nodes']
-        # self.obs_attributes = ['rho']
+        # self.obs_attributes = ['rhou','rhov']
 
         # which attributes to inflate in ensemble inflation?
         self.attributes = ['rho', 'rhou', 'rhov']
@@ -45,7 +46,7 @@ class da_params(object):
         if self.sparse_obs_by_attr:
             assert(0, "Not yet implemented.")
 
-        self.obs_frac = 0.10 # fraction of the observations to pick.
+        self.obs_frac = 0.90 # fraction of the observations to pick.
         self.gen_obs_sparse()
 
         ############################################

@@ -46,9 +46,10 @@ gen_5b_obs_truth_euler = False
 # section 5c1 with assimilation of all
 # fields
 generate_noda = False
-gen_5c1_euler_full = False
+generate_oneda = False
+gen_5c1_euler_full = True
 gen_5c1_euler_momenta = False
-gen_loc_errors_tv = True
+gen_loc_errors_tv = False
 
 # Otherwise, if gen_all = True, generate all
 # results
@@ -58,7 +59,9 @@ gen_all = False
 # path_to_obs = '/srv/public/ray/'
 path_to_obs = './'
 
-enda_sfx = 'wda_varcov'
+enda_sfx = 'wda_obsconv'
+noda_sfx = ''
+ref_aux = '_truthgen'
 
 if gen_5b_obs_truth_euler or gen_all:
     ##########################################
@@ -76,7 +79,8 @@ if gen_5b_obs_truth_euler or gen_all:
 
     # simulation parameters for the observation
     ud = {
-        'aux' : 'obs',
+        'aux' : 'obs%s' %ref_aux,
+        'initial_blending' : False
     }
 
     # data assimilation parameters for the
@@ -94,7 +98,7 @@ if gen_5b_obs_truth_euler or gen_all:
 
     # simulation parameters for the truth
     ud = {
-        'aux' : 'truth',
+        'aux' : 'truth%s' %ref_aux,
         # Do blending for the initial time-step
         'initial_blending' : True
     }
@@ -113,8 +117,8 @@ if gen_5c1_euler_full or gen_all:
     #
     ##########################################
 
-    da_times = np.arange(0.0,10.25,0.25)[1:]
-    da_times = np.arange(0.0,3.25,0.25)[1:]
+    da_times = np.arange(0.0,10.05,0.05)[1:]
+    # da_times = np.arange(0.0,3.25,0.25)[1:]
     da_times = np.around(da_times,3)
     da_times = da_times.tolist()
 
@@ -125,7 +129,7 @@ if gen_5c1_euler_full or gen_all:
 
     # Generate ensemble with no DA
     ud = {
-        'aux' : 'noda',
+        'aux' : 'noda%s' %noda_sfx,
         # Do blending for initial time-step
         'initial_blending' : True
     }
@@ -137,7 +141,7 @@ if gen_5c1_euler_full or gen_all:
         'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
         'loc_setter' : (11, 11),
         # Path to the generated observation
-        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5'
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_10.0_obs%s.h5' %ref_aux
     }
 
     # run simulation
@@ -146,6 +150,32 @@ if gen_5c1_euler_full or gen_all:
     if generate_noda:
         rp.queue_run()
 
+
+    # Generate ensemble with one DA
+    ud = {
+        'aux' : 'oneda%s' %noda_sfx,
+        # Do blending for initial time-step
+        'initial_blending' : True
+    }
+
+    # For the data assimilation parameters,
+    # do not do DA at any time-point.
+    dap = {
+        'da_times' : [0.25],
+        'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
+        'loc_setter' : (11, 11),
+        # Path to the generated observation
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_10.0_obs%s.h5' %ref_aux
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    if generate_oneda:
+        rp.queue_run()
+
+
+    # Generate ensemble EnDA
     ud = {
         'aux' : '%s' %enda_sfx,
         # Do blending for initial time-step
@@ -162,15 +192,26 @@ if gen_5c1_euler_full or gen_all:
     pi = p**0.4
     v = 4.0 / u_ref
 
+
+    sd_rho = 0.025
+    sd_rhou = 0.0325
+    sd_rhov = 0.0325
+    sd_rhoY = 0.00025
+    sd_pi = 0.0004
+    sds = np.array([sd_rho, sd_rhou, sd_rhov, sd_rhoY, sd_pi])
+    sds *= 2.0 # let's make it 10%
+    sds = np.sqrt(sds)
     dap = {
         'da_times' : da_times,
         # Assimilate all fields
         'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
         # Path to the generated observation
-        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5',
-        'loc_setter' : (11, 11),
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_10.0_obs%s.h5' %ref_aux,
+        'loc_setter' : (21, 21),
         # using variance: 1K for temperature, 4ms^-1 for velocity, 50Pa for pressure
         # 'sd_setter' : [rho**0.5, (rho*v)**0.5, (rho*v)**0.5, p**0.5, pi**0.5],
+        # 'sd_setter' :  [0.05**2, 0.05**2, 0.05**2, 0.1, 0.0004],
+        # 'sd_setter' :  list(sds),
     }
 
     # run simulation
@@ -222,7 +263,7 @@ if gen_5c1_euler_momenta or gen_all:
         # Assimilate the momentum fields
         'obs_attrs' : ['rhou', 'rhov'],
         # Path to the generated observation
-        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5'
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs%s.h5' %ref_aux
     }
 
     # run simulation
@@ -382,7 +423,7 @@ if gen_loc_errors_tv or gen_all:
     # run simulation
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
-    # rp.queue_run()
+    rp.queue_run()
 
     ud = {
         'aux' : 'wda_7',
@@ -394,7 +435,7 @@ if gen_loc_errors_tv or gen_all:
     # run simulation
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
-    # rp.queue_run()
+    rp.queue_run()
 
 
 

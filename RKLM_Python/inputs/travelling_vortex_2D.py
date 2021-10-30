@@ -134,7 +134,8 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        aux = 'pos_debug'
+        aux = 'analytical_truth'
+        aux = 'debug_cov'
         self.aux = aux
 
         self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
@@ -166,11 +167,11 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     # gradient wind eqn:
     # p = Int[( alpha_const * 1/2 * rho0 + alpha * 1/2 * rho(r)) * u^2 / r, r]
-    # factors of 1/2 * rho(r)
+    # factors of 1/2 * rho(r) * u^2 / r
     alpha = -1.0
     # factors of 1/2 rho0 * u^2 / r
-    alpha_const = 3.0
-    rho0 = 1.5
+    alpha_const = 2.0
+    rho0 = 1.0
     del_rho = -0.5
     R0 = 0.4
     fac = 1. * 1024.0
@@ -181,13 +182,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         np.random.seed(seed)
         xc += (np.random.random() - 0.5) / 5.0
         yc += (np.random.random() - 0.5) / 5.0
-        print(seed, xc, yc)
+
 
     if 'truth' in ud.aux or 'obs' in ud.aux:
         np.random.seed(2233)
         xc += (np.random.random() - 0.5) / 5.0
         yc += (np.random.random() - 0.5) / 5.0
-        print(seed, xc, yc)
+
         ud.xc = xc
         ud.yc = yc
 
