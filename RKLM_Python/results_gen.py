@@ -42,7 +42,7 @@ rp = rp()
 ##########################################
 # generate initial blending for section 5a
 gen_5a1_euler = False
-gen_5a2_rb = False
+gen_5a2_rb = True
 # generate obs and truth for section 5b
 gen_5b_obs_truth_euler = False
 # generate Euler ensemble simulations for
@@ -60,7 +60,7 @@ gen_5c1_euler_full = False
 gen_5b_5c2_rb = False
 
 gen_loc_errors_tv = False
-gen_loc_errors_rb = True
+gen_loc_errors_rb = False
 
 # Otherwise, if gen_all = True, generate all
 # results
@@ -90,6 +90,8 @@ if gen_5a1_euler or gen_all:
     # Do not output in between, but output
     # after each timestep.
     tout = [1.0]
+    # tout = np.arange(0.0,1.005,0.005)[1:]
+    # tout = tout.tolist()
 
     # JSON dumping does not accept ndarrays.
     # tout = tout.tolist()
@@ -289,6 +291,8 @@ if gen_5a2_rb or gen_all:
     rp.N = 1
     rp.tc = 'rb'
     tout = [1.0]
+    # tout = np.arange(0.05,1.05,0.05)
+    # tout = list(tout)
     # No data assimilation.
     dap = {
         'None' : None,
@@ -447,7 +451,7 @@ if gen_5c1_euler_momenta or gen_all:
     # run simulation
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
-    # rp.queue_run()
+    rp.queue_run()
 
     ##########################################
 
@@ -467,7 +471,7 @@ if gen_5c1_euler_momenta or gen_all:
     # run simulation
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
-    # rp.queue_run()
+    rp.queue_run()
 
 
 if gen_5c1_euler_full or gen_all:
@@ -480,8 +484,8 @@ if gen_5c1_euler_full or gen_all:
 
     # da_times = np.arange(5.0,10.5,0.5)/10.0
     # da_times = np.array([0.25,10.0])
-    da_times = np.arange(0.0,10.25,0.25)[1:]
-    # da_times = np.arange(0.0,3.25,0.25)[1:]
+    # da_times = np.arange(0.0,10.25,0.25)[1:]
+    da_times = np.arange(0.0,3.25,0.25)[1:]
     da_times = np.around(da_times,3)
     da_times = da_times.tolist()
 
@@ -501,7 +505,7 @@ if gen_5c1_euler_full or gen_all:
         # Assimilate all fields
         'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
         # Path to the generated observation
-        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_10.0_obs.h5',
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5',
         'loc_setter' : (11,11)
     }
 
