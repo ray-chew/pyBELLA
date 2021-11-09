@@ -62,7 +62,7 @@ class plotter(object):
         if hasattr(self, 'axvline'): cax.axvline(self.axvline,c='k',lw=0.5)
         if hasattr(self, 'marker'):
             for marker in self.marker:
-                cax.plot(marker[0],marker[1],marker='x',c=marker[2], ms=18, mew=2)
+                cax.plot(marker[0],marker[1],marker='x',c=marker[2], ms=18, mew=4)
         if hasattr(self, 'rects'):
             for rect in self.rects:
                 cax.add_patch(rect)
@@ -133,6 +133,7 @@ class plotter(object):
             
         plt.suptitle(suptitle)
         plt.tight_layout(rect=rect)
+        plt.subplots_adjust(hspace = .000005)
         
         if self.N > 1:
             return ims, caxs, baxs
@@ -261,7 +262,7 @@ def labels():
         'buoy'      : r'buoyancy',
         'rhoX'      : r'$\rho / \Theta$, mass-weighted inverse pot. temp.',
         'rhoY'      : r'$P$, mass-weighted potential temperature',
-        'p2_nodes'  : r'$\pi$, nodal Exner pressure'
+        'p2_nodes'  : r'$\pi^\prime$, Exner pressure perturbation'
         }
     return labels_dict
 
