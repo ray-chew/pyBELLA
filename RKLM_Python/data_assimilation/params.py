@@ -46,7 +46,7 @@ class da_params(object):
         if self.sparse_obs_by_attr:
             assert(0, "Not yet implemented.")
 
-        self.obs_frac = 0.90 # fraction of the observations to pick.
+        self.obs_frac = 0.10 # fraction of the observations to pick.
         self.gen_obs_sparse()
 
         ############################################
