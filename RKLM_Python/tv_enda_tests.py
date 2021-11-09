@@ -47,7 +47,7 @@ gen_5b_obs_truth_euler = False
 # fields
 generate_noda = False
 generate_oneda = False
-gen_5c1_euler_full = True
+gen_5c1_euler_full = False
 gen_5c1_euler_momenta = False
 gen_loc_errors_tv = False
 
@@ -59,9 +59,10 @@ gen_all = False
 # path_to_obs = '/srv/public/ray/'
 path_to_obs = './'
 
-enda_sfx = 'wda_obsconv'
+enda_sfx = 'wda'
 noda_sfx = ''
 ref_aux = '_truthgen'
+ref_aux = ''
 
 if gen_5b_obs_truth_euler or gen_all:
     ##########################################
@@ -117,8 +118,8 @@ if gen_5c1_euler_full or gen_all:
     #
     ##########################################
 
-    da_times = np.arange(0.0,10.05,0.05)[1:]
-    # da_times = np.arange(0.0,3.25,0.25)[1:]
+    # da_times = np.arange(0.0,10.05,0.05)[1:]
+    da_times = np.arange(0.0,3.25,0.25)[1:]
     da_times = np.around(da_times,3)
     da_times = da_times.tolist()
 
@@ -193,25 +194,20 @@ if gen_5c1_euler_full or gen_all:
     v = 4.0 / u_ref
 
 
-    sd_rho = 0.025
-    sd_rhou = 0.0325
-    sd_rhov = 0.0325
-    sd_rhoY = 0.00025
-    sd_pi = 0.0004
-    sds = np.array([sd_rho, sd_rhou, sd_rhov, sd_rhoY, sd_pi])
-    sds *= 2.0 # let's make it 10%
-    sds = np.sqrt(sds)
+    EMP = np.array([0.05, 0.065, 0.065, 0.0005, 0.0008])**0.5
+    MID = np.array([0.004415880433163922, 0.005973692325521966, 0.005968249324550707, 3.1090995481007025e-06, 1.3780551512911225e-05])**0.5
+
     dap = {
         'da_times' : da_times,
         # Assimilate all fields
         'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
         # Path to the generated observation
-        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_10.0_obs%s.h5' %ref_aux,
-        'loc_setter' : (21, 21),
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs%s.h5' %ref_aux,
+        'loc_setter' : (11, 11),
         # using variance: 1K for temperature, 4ms^-1 for velocity, 50Pa for pressure
         # 'sd_setter' : [rho**0.5, (rho*v)**0.5, (rho*v)**0.5, p**0.5, pi**0.5],
         # 'sd_setter' :  [0.05**2, 0.05**2, 0.05**2, 0.1, 0.0004],
-        # 'sd_setter' :  list(sds),
+        # 'sd_setter' :  list(MID),
     }
 
     # run simulation
@@ -334,45 +330,11 @@ if gen_loc_errors_tv or gen_all:
     # run simulation
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
-    rp.queue_run()
-
-    
-    ud = {
-        'aux' : 'wda_31',
-        # Do blending for initial time-step
-        'initial_blending' : True
-    }
-
-    # Set the data assimilation parameters
-    dap = {
-        'da_times' : da_times,
-        # Assimilate all fields
-        'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
-        # Path to the generated observation
-        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5',
-        'loc_setter' : (31,31)
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    # rp.queue_run()
-
-    ud = {
-        'aux' : 'wda_31',
-        # Do blending for initial time-step
-        'initial_blending' : True,
-        'continuous_blending' : True
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
     # rp.queue_run()
 
     
     ud = {
-        'aux' : 'wda_15',
+        'aux' : 'wda_41',
         # Do blending for initial time-step
         'initial_blending' : True
     }
@@ -384,40 +346,7 @@ if gen_loc_errors_tv or gen_all:
         'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
         # Path to the generated observation
         'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5',
-        'loc_setter' : (15,15)
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    # rp.queue_run()
-
-    ud = {
-        'aux' : 'wda_15',
-        # Do blending for initial time-step
-        'initial_blending' : True,
-        'continuous_blending' : True
-    }
-
-    # run simulation
-    rp.ud = json.dumps(ud)
-    rp.dap = json.dumps(dap)
-    # rp.queue_run()
-
-    ud = {
-        'aux' : 'wda_7',
-        # Do blending for initial time-step
-        'initial_blending' : True
-    }
-
-    # Set the data assimilation parameters
-    dap = {
-        'da_times' : da_times,
-        # Assimilate all fields
-        'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
-        # Path to the generated observation
-        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5',
-        'loc_setter' : (7,7)
+        'loc_setter' : (41,41)
     }
 
     # run simulation
@@ -426,7 +355,74 @@ if gen_loc_errors_tv or gen_all:
     rp.queue_run()
 
     ud = {
-        'aux' : 'wda_7',
+        'aux' : 'wda_41',
+        # Do blending for initial time-step
+        'initial_blending' : True,
+        'continuous_blending' : True
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    
+    ud = {
+        'aux' : 'wda_21',
+        # Do blending for initial time-step
+        'initial_blending' : True
+    }
+
+    # Set the data assimilation parameters
+    dap = {
+        'da_times' : da_times,
+        # Assimilate all fields
+        'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
+        # Path to the generated observation
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5',
+        'loc_setter' : (21,21)
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ud = {
+        'aux' : 'wda_21',
+        # Do blending for initial time-step
+        'initial_blending' : True,
+        'continuous_blending' : True
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ud = {
+        'aux' : 'wda_5',
+        # Do blending for initial time-step
+        'initial_blending' : True
+    }
+
+    # Set the data assimilation parameters
+    dap = {
+        'da_times' : da_times,
+        # Assimilate all fields
+        'obs_attrs' : ['rho', 'rhou', 'rhov', 'rhoY', 'p2_nodes'],
+        # Path to the generated observation
+        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5',
+        'loc_setter' : (5,5)
+    }
+
+    # run simulation
+    rp.ud = json.dumps(ud)
+    rp.dap = json.dumps(dap)
+    rp.queue_run()
+
+    ud = {
+        'aux' : 'wda_5',
         # Do blending for initial time-step
         'initial_blending' : True,
         'continuous_blending' : True
