@@ -41,8 +41,8 @@ rp = rp()
 #
 ##########################################
 # generate initial blending for section 5a
-gen_5a1_euler = False
-gen_5a2_rb = True
+gen_5a1_euler = True
+gen_5a2_rb = False
 # generate obs and truth for section 5b
 gen_5b_obs_truth_euler = False
 # generate Euler ensemble simulations for
@@ -99,7 +99,7 @@ if gen_5a1_euler or gen_all:
     # simulation parameters for the pseudo-
     # incompressible run
     ud = {
-        'aux' : 'psinc_noib',
+        'aux' : 'psinc_imbal_noib',
         # set pseudo-incompressible
         'is_compressible' : 0,
         'tout' : tout,
