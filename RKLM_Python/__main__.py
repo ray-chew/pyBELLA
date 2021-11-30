@@ -37,7 +37,7 @@ from termcolor import colored
 
 debug = False
 da_debug = True
-output_timesteps = True
+output_timesteps = False
 if debug == True: output_timesteps = True
 label_type = 'TIME'
 np.set_printoptions(precision=18)

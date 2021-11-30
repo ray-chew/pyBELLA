@@ -11,7 +11,7 @@ class UserData(object):
 
     grav = 9.81                 # [m s^{-2}]
     omega = 7.292 * 1e-5        # [s^{-1}]
-    omega = 0.0
+    # omega = 0.0
 
     R_gas = 287.4
     R_vap = 461.0
@@ -64,7 +64,7 @@ class UserData(object):
         self.coriolis_strength = np.zeros((3))
 
         self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
-        self.coriolis_strength[1] = self.omega * self.t_ref
+        self.coriolis_strength[2] = self.omega * self.t_ref
 
         for i in range(3):
             if (self.gravity_strength[i] > np.finfo(np.float).eps) or (i == 1):
@@ -77,7 +77,7 @@ class UserData(object):
         # self.xmin = - 24.0e6 / self.h_ref
         # self.xmax =   24.0e6 / self.h_ref
         j = 4.0
-        Lx = 1.0 * np.pi * self.Cs / self.N_ref * j * 100.0
+        Lx = 1.0 * np.pi * self.Cs / self.N_ref * j #* 100.0
         self.xmin = - Lx / self.h_ref
         self.xmax =   Lx / self.h_ref
         self.ymin = - 0.0
@@ -101,11 +101,15 @@ class UserData(object):
         self.CFL = 0.9/2.0
         # self.CFL = 0.9
 
-        self.inx = 301+1
-        self.iny = 10+1
+        # self.inx = 301+1
+        # self.iny = 10+1
+        # self.inz = 1
+        self.inx = 601+1
+        self.iny = 20+1
         self.inz = 1
 
         self.dtfixed0 = 0.5 * 1.0 * ((self.xmax - self.xmin) / (self.inx-1)) / 1.0
+        # self.dtfixed0 = 80.0 / self.t_ref
         self.dtfixed = self.dtfixed0
 
         self.limiter_type_scalars = LimiterType.NONE
@@ -134,8 +138,10 @@ class UserData(object):
 
         # self.tout = np.arange(0.0,9000.0,1000.0)[1:]
         # self.tout = np.arange(0.0,205.0,5.0)[1:]
-        self.tout = [8000.0]
-        self.stepmax = 20000
+        # self.tout = [720.0]
+        hr = 3600/self.t_ref
+        self.tout = np.arange(0.0,20*hr+hr/60,hr/60)[1:]
+        self.stepmax = 100000
 
         self.output_base_name = "_mark_wave"
 
@@ -144,7 +150,7 @@ class UserData(object):
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
-        self.output_timesteps = True
+        self.output_timesteps = False
 
     def stratification_function(self, y):
         Nsq = self.Nsq_ref * self.t_ref**2
@@ -173,9 +179,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Msq = ud.Msq
     g = ud.gravity_strength[1]
     kappa = th.Gamma
-    Omega = ud.coriolis_strength[1]
+    Omega = ud.coriolis_strength[2]
 
-    waveno = 0.01
+    waveno = 1.0
 
     x = elem.x.reshape(-1,1)
     y = elem.y.reshape(1,-1)
@@ -185,7 +191,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     kGam = (1.0 - th.gamm / 2.0) / Hrho                 # eqn (8)
     A = A0 * bump(2.0 * y / (n * Hrho) - 1.0)             # eqn (12)
 
-    use_hydrostate = True
+    use_hydrostate = False
     
     if use_hydrostate:
         # Use hydrostatically balanaced background
@@ -198,6 +204,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         rhobar = np.exp(-y / Hrho) # eqn (7)
         Ybar = np.exp(y / Htheta)  # eqn (9)
         pibar = 1.0 / Ybar
+        # pibar = (rhobar * Ybar)**(th.gm1)
 
     N = ud.t_ref * np.sqrt(ud.Nsq_ref)                  # eqn (5) dimensionless Brunt-Väisälä frequency
     Cs = np.sqrt(th.gamm / Msq)                         # eqn (6) dimensionless speed of sound
@@ -214,9 +221,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     # set up perturbation quantities
     # exp(-kGam * y)  / sqrt(rhobar) / Ybar = 1.0
     up = A * Ybar * np.cos(N / Cs * waveno * x)
-    vp = -A * np.sqrt(Omega / (Cs * kGam)) * np.sqrt(1.0 / rhobar) * np.exp(-kGam * y) * np.sin(N / Cs * waveno * x)
+    vp = -A * np.sqrt(Omega / (Cs * kGam)) * Ybar * np.sin(N / Cs * waveno * x)
     wp = 0.0
-    Yp = A * np.sqrt(Omega / (Cs * kGam)) * N / g * Ybar * np.sqrt(1.0 / rhobar) * np.exp(-kGam * y) * np.sin(N / Cs * waveno * x)     # eqn (3)
+    Yp = A * np.sqrt(Omega / (Cs * kGam)) * N / g * Ybar**2 * np.sin(N / Cs * waveno * x)     # eqn (3)
     pi = A * Cs * fac * np.cos(N / Cs * waveno * x)     # eqn (4)
 
     u = u0 + up
