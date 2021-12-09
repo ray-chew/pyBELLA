@@ -11,7 +11,7 @@ class UserData(object):
 
     grav = 9.81                 # [m s^{-2}]
     omega = 7.292 * 1e-5        # [s^{-1}]
-    # omega = 0.0
+    omega = 0.0
 
     R_gas = 287.4
     R_vap = 461.0
@@ -82,7 +82,7 @@ class UserData(object):
         self.xmax =   Lx / self.h_ref
         self.ymin = - 0.0
         # self.ymax =   8.0 * 1.0 / self.grav #/ self.h_ref
-        self.ymax =   1.0
+        self.ymax =   4.0
         self.zmin = - 1.0
         self.zmax =   1.0
 
@@ -104,12 +104,12 @@ class UserData(object):
         # self.inx = 301+1
         # self.iny = 10+1
         # self.inz = 1
-        self.inx = 601+1
-        self.iny = 20+1
+        self.inx = 151+1
+        self.iny = 60+1
         self.inz = 1
 
-        self.dtfixed0 = 0.5 * 1.0 * ((self.xmax - self.xmin) / (self.inx-1)) / 1.0
-        # self.dtfixed0 = 80.0 / self.t_ref
+        # self.dtfixed0 = 0.5 * 100.0 * ((self.xmax - self.xmin) / (self.inx-1)) / 1.0
+        self.dtfixed0 = 1600.0 / self.t_ref
         self.dtfixed = self.dtfixed0
 
         self.limiter_type_scalars = LimiterType.NONE
@@ -138,19 +138,19 @@ class UserData(object):
 
         # self.tout = np.arange(0.0,9000.0,1000.0)[1:]
         # self.tout = np.arange(0.0,205.0,5.0)[1:]
-        # self.tout = [720.0]
-        hr = 3600/self.t_ref
-        self.tout = np.arange(0.0,20*hr+hr/60,hr/60)[1:]
-        self.stepmax = 100000
+        self.tout = [720.0]
+        # hr = 3600/self.t_ref
+        # self.tout = np.arange(0.0,20*hr+hr/60,hr/60)[1:]
+        self.stepmax = 800
 
         self.output_base_name = "_mark_wave"
 
-        aux = 'debug_ic'
+        aux = 'debug_ic_test'
         self.aux = aux
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
-        self.output_timesteps = False
+        self.output_timesteps = True
 
     def stratification_function(self, y):
         Nsq = self.Nsq_ref * self.t_ref**2
