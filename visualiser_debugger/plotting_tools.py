@@ -10,7 +10,7 @@ cm = 1/2.54
 class plotter(object):
     def __init__(self,arr_lst, ncols=4, figsize=(12,8), fontsize=14, sharexlabel=False, shareylabel=False, sharex=False, sharey=False):
         plt.rcParams.update({'font.size': fontsize})
-        self.arr_lst = np.array(arr_lst)
+        self.arr_lst = np.array(arr_lst, dtype='object')
         N = self.arr_lst.shape[0]
         
         if N > ncols:
@@ -96,7 +96,7 @@ class plotter(object):
 #                     plt.colorbar(im, cax=bax, ticks=lvl)#, format='%.3f')
                     plt.colorbar(im, cax=bax, ticks=lvl, extend='both', extendrect=True, extendfrac='auto')#, format='%.3f')
                 else:
-                    plt.colorbar(im, cax=bax, extend='both', extendrect=True, extendfrac='auto')#, format='%.3f')
+                    plt.colorbar(im, cax=bax, extend='both')#, format='%.3f')
 #                     plt.colorbar(im, cax=bax)
 #                     plt.colorbar(im, cax=bax, ticks=lvl)
                 baxs.append(bax)
@@ -124,7 +124,7 @@ class plotter(object):
 #                 plt.colorbar(im, cax=bax, ticks=lvls)#, format='%.3f')
                 plt.colorbar(im, cax=bax, ticks=lvls, extend='both', extendrect=True, extendfrac='auto')#, format='%.3f')
             else:
-                plt.colorbar(im, cax=bax, extend='both', extendrect=True, extendfrac='auto')
+                plt.colorbar(im, cax=bax, extendrect=True)
 #             plt.colorbar(im, cax=bax)
             if aspect != 'auto' and aspect != 'equal':
                 bax.set_aspect(float(aspect)*10.0)
