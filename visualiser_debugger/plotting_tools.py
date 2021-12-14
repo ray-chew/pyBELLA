@@ -275,8 +275,8 @@ def swe_labels():
     labels_dict = {
         'rho'       : r'$h$, water depth',
         'rhou'      : r'$h u$, horizontal momentum',
-        'rhov'      : r'$h v$, vertical momentum',
-        'rhow'      : r'$h w$, horizontal momentum',
+        'rhov'      : r'$h w$, vertical momentum',
+        'rhow'      : r'$h v$, horizontal momentum',
         'buoy'      : r'buoyancy',
         'vorty'     : r'vorticity',
         'rhoX'      : r'$h / \Theta$',
@@ -289,8 +289,8 @@ def lake_labels():
     labels_dict = {
         'rho'       : r'$h^{(0)}$, leading-order' + '\n water depth',
         'rhou'      : r'$h^{(0)} u^{(0)}$, leading-order horizontal momentum',
-        'rhov'      : r'$h^{(0)} v^{(0)}$, leading-order vertical momentum',
-        'rhow'      : r'$h^{(0)} w^{(0)}$, leading-order horizontal momentum',
+        'rhov'      : r'$h^{(0)} w^{(0)}$, leading-order vertical momentum',
+        'rhow'      : r'$h^{(0)} v^{(0)}$, leading-order horizontal momentum',
         'buoy'      : r'buoyancy',
         'vorty'     : r'vorticity',
         'rhoX'      : r'$h / \Theta$',
