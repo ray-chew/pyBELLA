@@ -37,9 +37,9 @@ rp = rp()
 #
 ##########################################
 # 
-gen_c6_swe_ic_half_full = True
+gen_c6_swe_ic_half_full = False
 gen_c6_swe_obs_truth = False
-gen_c6_swe_enda = False
+gen_c6_swe_enda = True
 
 # Otherwise, if gen_all = True, generate all
 # results
@@ -232,7 +232,7 @@ if gen_c6_swe_enda or gen_all:
     # run simulation
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
-    rp.queue_run()
+    # rp.queue_run()
 
     ##########################################
 
@@ -247,9 +247,9 @@ if gen_c6_swe_enda or gen_all:
     # Set the data assimilation parameters
     dap = {
         # Assimilate the momentum fields
-        'obs_attrs' : ['rhou', 'rhov'],
+        'obs_attrs' : ['rhou', 'rhow'],
         # Path to the generated observation
-        'obs_path' : path_to_obs + 'output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5'
+        'obs_path' : path_to_obs + 'output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_obs.h5'
     }
 
     # run simulation
@@ -275,7 +275,7 @@ if gen_c6_swe_enda or gen_all:
     # run simulation
     rp.ud = json.dumps(ud)
     rp.dap = json.dumps(dap)
-    rp.queue_run()
+    # rp.queue_run()
 
 
 # if gen_5c1_euler_full or gen_all:
