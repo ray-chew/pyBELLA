@@ -5,8 +5,6 @@ import matplotlib.patches as patches
 import numpy as np
 import itertools
 
-cm = 1/2.54
-
 class plotter(object):
     def __init__(self,arr_lst, ncols=4, figsize=(12,8), fontsize=14, sharexlabel=False, shareylabel=False, sharex=False, sharey=False):
         plt.rcParams.update({'font.size': fontsize})
@@ -94,7 +92,7 @@ class plotter(object):
                 bax = divider.append_axes("right", size="5%", pad=0.05)
                 if method == 'imshow' and lvl is not None:
 #                     plt.colorbar(im, cax=bax, ticks=lvl)#, format='%.3f')
-                    plt.colorbar(im, cax=bax, ticks=lvl, extend='both', extendrect=True, extendfrac='auto')#, format='%.3f')
+                    plt.colorbar(im, cax=bax, ticks=lvl, extend='both')#, format='%.3f')
                 else:
                     plt.colorbar(im, cax=bax, extend='both')#, format='%.3f')
 #                     plt.colorbar(im, cax=bax)
@@ -122,7 +120,7 @@ class plotter(object):
                 bax.xaxis.set_label_position('top') 
             if method == 'imshow' and lvls is not None:
 #                 plt.colorbar(im, cax=bax, ticks=lvls)#, format='%.3f')
-                plt.colorbar(im, cax=bax, ticks=lvls, extend='both', extendrect=True, extendfrac='auto')#, format='%.3f')
+                plt.colorbar(im, cax=bax, ticks=lvls)
             else:
                 plt.colorbar(im, cax=bax, extendrect=True)
 #             plt.colorbar(im, cax=bax)
@@ -151,11 +149,7 @@ class plotter(object):
             if lvls is None:
                 im = cax.imshow(arr,aspect=aspect,origin='lower')
             else:
-                im = cax.imshow(arr,aspect=aspect,origin='lower')
-            rect0 = patches.Rectangle((25.5,25.5),1.1,1.1,linewidth=1,edgecolor='none',facecolor='red')
-            rect = patches.Rectangle((20.5,20.5),11,11,linewidth=1,edgecolor='r',facecolor='none')
-#             cax.add_patch(rect0)
-#             cax.add_patch(rect)
+                im = cax.imshow(arr,aspect=aspect,origin='lower',interpolation='none')
         elif method == 'contour':
             if lvls is None:
                 im = cax.contour(arr,colors='k')
