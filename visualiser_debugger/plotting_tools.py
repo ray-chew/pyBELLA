@@ -94,10 +94,15 @@ class plotter(object):
 #                     plt.colorbar(im, cax=bax, ticks=lvl)#, format='%.3f')
                     plt.colorbar(im, cax=bax, ticks=lvl, extend='both')#, format='%.3f')
                 else:
-                    plt.colorbar(im, cax=bax, extend='both')#, format='%.3f')
-#                     plt.colorbar(im, cax=bax)
+                    # plt.colorbar(im, cax=bax, extend='both')#, format='%.3f')
+                    plt.colorbar(im, cax=bax, extendrect=True)
 #                     plt.colorbar(im, cax=bax, ticks=lvl)
                 baxs.append(bax)
+                if hasattr(self, 'cbar_label'):
+                    bax.set_xlabel(self.cbar_label)
+                    bax.xaxis.set_label_position('top') 
+                if hasattr(self, 'cbar_label_coords'):
+                    bax.xaxis.set_label_coords(self.cbar_label_coords[0],self.cbar_label_coords[1])
                 ims.append(im)
                 
             for i in range(n+1,self.nrows*self.ncols):
