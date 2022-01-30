@@ -145,7 +145,18 @@ class test_case(object):
             factor = ref_ampl
             factor = 1.0
 
-            diff.append(np.sqrt(((arr - ref)**2).mean()) / factor)
+            diff.append( np.sqrt(((arr - ref)**2).mean()) )
+#             diff.append(np.sqrt( ((arr - ref)**2).mean() / (ref[0]**2).mean() ) )
+#             diff.append(np.sqrt((((arr - ref) / ref)**2).mean()) )
+            # Method A
+            # err = [np.linalg.norm(mem - ref[0]) / np.linalg.norm(ref[0]) for mem in arr]
+            #err = np.array(err).mean()
+            # diff.append(err)
+            # Method B
+            # diff.append(np.linalg.norm(arr-ref) / np.linalg.norm(ref))
+            # Method C
+#             diff.append(np.linalg.norm((arr-ref).mean(axis=0)) / np.linalg.norm(ref[0]))
+            
         return np.array(diff)
 
     def ensemble_spread(self, arrs,avg=False, grid_type='c'):

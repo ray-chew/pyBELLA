@@ -161,9 +161,9 @@ class io(object):
         # self.populate(name,'w',Sol.rhow / Sol.rho)
 
         # vorticity in (x,z)
-        self.populate(name,'vortz', self.vortz(Sol,elem,node))
+        # self.populate(name,'vortz', self.vortz(Sol,elem,node))
         # self.vorty(Sol,elem,node)
-        # self.populate(name,'vorty', self.vorty(Sol,elem,node))
+        self.populate(name,'vorty', self.vorty(Sol,elem,node))
 
         # temperature
         # self.populate(name,'T', Sol.rhoY**th.gamm / Sol.rho)
