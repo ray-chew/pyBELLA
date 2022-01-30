@@ -93,11 +93,9 @@ class UserData(object):
         self.zmin = - 1.0
         self.zmax =   1.0
 
-        self.wind_speed = 1.0 / self.u_ref
-        self.wind_shear = -0.0
-        self.hill_shape = HillShapes.AGNESI
-        self.hill_height = 0.0 * 0.096447
-        self.hill_length_scale = 0.1535
+        self.u_wind_speed = 0.0 / self.u_ref
+        self.v_wind_speed = 0.0 / self.u_ref
+        self.w_wind_speed = 0.0 / self.u_ref
 
         # self.xmin = - 5000. / self.h_ref
         # self.xmax =   5000. / self.h_ref
@@ -126,22 +124,13 @@ class UserData(object):
         self.bdry_type[1] = BdryType.PERIODIC
         self.bdry_type[2] = BdryType.WALL
 
-        self.absorber = False # 0 == WRONG == FALSE 
-        self.bottom_theta_bc = BottomBC.BOTTOM_BC_DEFAULT
-
         ##########################################
         # NUMERICS
         ##########################################
-
-        self.time_integrator = TimeIntegrator.SI_MIDPT
-        self.advec_time_integrator = TimeIntegrator.STRANG
         # self.CFL  = 77.0
         self.CFL = 0.45
         self.dtfixed0 = 0.0000668205
         self.dtfixed = 0.0000668205
-
-        # self.tips = TimeIntegratorParams()
-        # SetTimeIntegratorParameters(self)
 
         # self.inx = 64+1
         # self.iny = 32+1
@@ -153,51 +142,33 @@ class UserData(object):
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
 
-        self.kp = 1.4
-        self.kz = 1.4
-        self.km = 1.4
-        self.kY = 1.4
-        self.kZ = 1.4
+        self.tol = 1.e-8
+        self.max_iterations = 1000
 
-        self.ncache = 175
 
-        tol = 1.e-8
-
+        self.blending_weight = 0./16
+        self.blending_mean = 'rhoY' # 1.0, rhoY
+        self.blending_conv = 'rho' # theta, rho
+        self.blending_type = 'half'
+        
         self.continuous_blending = False
-        self.no_of_pi_initial = 20
-        self.no_of_pi_transition = 20
+        self.initial_blending = False
+        self.no_of_pi_initial = 0
+        self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.flux_correction_precision = tol
-        self.flux_correction_local_precision = tol
-        self.second_projection_precision = tol
-        self.second_projection_local_precision = tol
-        self.flux_correction_max_iterations = 6000
-        self.second_projection_max_iterations = 6000
-
         self.initial_projection = False
-        self.initial_impl_Euler = False
-
-        self.column_preconditionr = True
-        self.synchronize_nodal_pressure = False
-        self.synchronize_weight = 0.0
-
-        self.eps_Machine = np.sqrt(np.finfo(np.float).eps)
 
         # self.tout[0] =  0.00267282
         # self.tout = [0.00267282]
         # self.tout = np.arange(0.0,0.00267282,2.5e-5)
-        self.tout = np.arange(0.0,0.002+2.5e-5,2.5e-5)
+        self.tout = np.arange(0.0,0.002+2.5e-5,2.5e-5)[1:]
         # self.tout[1] = -1.0
 
         self.stepmax = 999
 
-        self.write_stdout = True
-        self.write_stdout_period = 1
-        self.write_file = True
-        self.write_file_period = 40
-        self.file_format = 'HDF'
+        self.output_timesteps = False
 
         self.output_base_name = "_acoustic_wave"
         self.output_name_psinc = "_low_mach_gravity_psinc"
@@ -208,6 +179,8 @@ class UserData(object):
             self.output_suffix = "_%i_%i_%.5f_psinc" %(self.inx-1,self.iny-1,self.tout[-1])
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.5f" %(self.inx-1,self.iny-1,self.tout[-1])
+
+        self.aux = 'test'
         
         self.stratification = self.stratification_function
 
@@ -218,7 +191,7 @@ class UserData(object):
             return np.ones((y.shape))
 
 def sol_init(Sol, mpv, elem, node, th, ud):
-    u0 = ud.wind_speed
+    u0 = ud.u_wind_speed
     v0 = 0.0
     w0 = 0.0
     del0 = 0.05

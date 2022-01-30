@@ -176,13 +176,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         np.random.seed(seed)
         xc += (np.random.random() - 0.5) / 5.0
         yc += (np.random.random() - 0.5) / 5.0
-        print(seed, xc, yc)
+
 
     if 'truth' in ud.aux or 'obs' in ud.aux:
         np.random.seed(2233)
         xc += (np.random.random() - 0.5) / 5.0
         yc += (np.random.random() - 0.5) / 5.0
-        print(seed, xc, yc)
+
         ud.xc = xc
         ud.yc = yc
 
@@ -198,19 +198,19 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     hydrostatic_state(mpv, elem, node, th, ud)
 
     coe = np.zeros((25))
-    coe[0]  =     1.0 / 12.0
-    coe[1]  = -  12.0 / 13.0
-    coe[2]  =     9.0 /  2.0
-    coe[3]  = - 184.0 / 15.0
-    coe[4]  =   609.0 / 32.0
-    coe[5]  = - 222.0 / 17.0
-    coe[6]  = -  38.0 /  9.0
-    coe[7]  =    54.0 / 19.0
-    coe[8]  =   783.0 / 20.0
-    coe[9]  = - 558.0 /  7.0
-    coe[10] =  1053.0 / 22.0
-    coe[11] =  1014.0 / 23.0
-    coe[12] = -1473.0 / 16.0
+    coe[0]  =     1.0 / 24.0
+    coe[1]  = -   6.0 / 13.0
+    coe[2]  =    15.0 /  7.0
+    coe[3]  = -  74.0 / 15.0
+    coe[4]  =    57.0 / 16.0
+    coe[5]  =   174.0 / 17.0
+    coe[6]  = - 269.0 /  9.0
+    coe[7]  =   450.0 / 19.0
+    coe[8]  =  1071.0 / 40.0
+    coe[9]  = -1564.0 / 21.0
+    coe[10] =   510.0 / 11.0
+    coe[11] =  1020.0 / 23.0
+    coe[12] = -1105.0 / 12.0
     coe[13] =   204.0 /  5.0
     coe[14] =   510.0 / 13.0
     coe[15] = -1564.0 / 27.0
@@ -226,19 +226,19 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
 
     const_coe = np.zeros((13))
-    const_coe[0] = 1.0 / 24
-    const_coe[1] = -6.0 / 13
-    const_coe[2] = 33.0 / 14
-    const_coe[3] = -22.0 / 3
-    const_coe[4] = 495.0 / 32
+    const_coe[0] =    1.0 / 24
+    const_coe[1] = -  6.0 / 13
+    const_coe[2] =   33.0 / 14
+    const_coe[3] = - 22.0 / 3
+    const_coe[4] =  495.0 / 32
     const_coe[5] = -396.0 / 17
-    const_coe[6] = +77.0 / 3
+    const_coe[6] = + 77.0 / 3
     const_coe[7] = -396.0 / 19
-    const_coe[8] = 99.0 / 8
+    const_coe[8] =   99.0 / 8
     const_coe[9] = -110.0 / 21
-    const_coe[10] = +3.0 / 2
-    const_coe[11] = -6.0 / 23
-    const_coe[12] = +1.0 / 48
+    const_coe[10] = + 3.0 / 2
+    const_coe[11] = - 6.0 / 23
+    const_coe[12] = + 1.0 / 48
 
 
     xs = elem.x.reshape(-1,1)

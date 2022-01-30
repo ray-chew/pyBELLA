@@ -190,7 +190,7 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
 total_iter = 0
 total_calls = 0
-def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff, writer = None, label=None):
+def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff, Sol0 = None, writer = None, label=None):
     nc = node.sc
     rhs = np.zeros_like(mpv.p2_nodes)
 
@@ -202,8 +202,13 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if writer != None:
         writer.populate(str(label),'p2_initial',mpv.p2_nodes)
 
-    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
-    operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt)
+    if Sol0 is not None:
+        set_explicit_boundary_data(Sol0, elem, ud, th, mpv)
+        operator_coefficients_nodes(elem, node, Sol0, mpv, ud, th, dt)
+    else:
+        set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+        operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt)
+        
 
     i0 = node.ndim * [(slice(0,-1))]
     i0 = tuple(i0)

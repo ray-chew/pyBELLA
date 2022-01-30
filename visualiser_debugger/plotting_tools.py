@@ -5,12 +5,10 @@ import matplotlib.patches as patches
 import numpy as np
 import itertools
 
-cm = 1/2.54
-
 class plotter(object):
     def __init__(self,arr_lst, ncols=4, figsize=(12,8), fontsize=14, sharexlabel=False, shareylabel=False, sharex=False, sharey=False):
         plt.rcParams.update({'font.size': fontsize})
-        self.arr_lst = np.array(arr_lst)
+        self.arr_lst = np.array(arr_lst, dtype='object')
         N = self.arr_lst.shape[0]
         
         if N > ncols:
@@ -62,7 +60,7 @@ class plotter(object):
         if hasattr(self, 'axvline'): cax.axvline(self.axvline,c='k',lw=0.5)
         if hasattr(self, 'marker'):
             for marker in self.marker:
-                cax.plot(marker[0],marker[1],marker='x',c=marker[2], ms=18, mew=2)
+                cax.plot(marker[0],marker[1],marker='x',c=marker[2], ms=18, mew=4)
         if hasattr(self, 'rects'):
             for rect in self.rects:
                 cax.add_patch(rect)
@@ -94,12 +92,17 @@ class plotter(object):
                 bax = divider.append_axes("right", size="5%", pad=0.05)
                 if method == 'imshow' and lvl is not None:
 #                     plt.colorbar(im, cax=bax, ticks=lvl)#, format='%.3f')
-                    plt.colorbar(im, cax=bax, ticks=lvl, extend='both', extendrect=True, extendfrac='auto')#, format='%.3f')
+                    plt.colorbar(im, cax=bax, ticks=lvl, extend='both')#, format='%.3f')
                 else:
-                    plt.colorbar(im, cax=bax, extend='both', extendrect=True, extendfrac='auto')#, format='%.3f')
-#                     plt.colorbar(im, cax=bax)
+                    # plt.colorbar(im, cax=bax, extend='both')#, format='%.3f')
+                    plt.colorbar(im, cax=bax, extendrect=True)
 #                     plt.colorbar(im, cax=bax, ticks=lvl)
                 baxs.append(bax)
+                if hasattr(self, 'cbar_label'):
+                    bax.set_xlabel(self.cbar_label)
+                    bax.xaxis.set_label_position('top') 
+                if hasattr(self, 'cbar_label_coords'):
+                    bax.xaxis.set_label_coords(self.cbar_label_coords[0],self.cbar_label_coords[1])
                 ims.append(im)
                 
             for i in range(n+1,self.nrows*self.ncols):
@@ -122,9 +125,9 @@ class plotter(object):
                 bax.xaxis.set_label_position('top') 
             if method == 'imshow' and lvls is not None:
 #                 plt.colorbar(im, cax=bax, ticks=lvls)#, format='%.3f')
-                plt.colorbar(im, cax=bax, ticks=lvls, extend='both', extendrect=True, extendfrac='auto')#, format='%.3f')
+                plt.colorbar(im, cax=bax, ticks=lvls)
             else:
-                plt.colorbar(im, cax=bax, extend='both', extendrect=True, extendfrac='auto')
+                plt.colorbar(im, cax=bax, extendrect=True)
 #             plt.colorbar(im, cax=bax)
             if aspect != 'auto' and aspect != 'equal':
                 bax.set_aspect(float(aspect)*10.0)
@@ -133,6 +136,7 @@ class plotter(object):
             
         plt.suptitle(suptitle)
         plt.tight_layout(rect=rect)
+        plt.subplots_adjust(hspace = .000005)
         
         if self.N > 1:
             return ims, caxs, baxs
@@ -150,11 +154,7 @@ class plotter(object):
             if lvls is None:
                 im = cax.imshow(arr,aspect=aspect,origin='lower')
             else:
-                im = cax.imshow(arr,aspect=aspect,origin='lower')
-            rect0 = patches.Rectangle((25.5,25.5),1.1,1.1,linewidth=1,edgecolor='none',facecolor='red')
-            rect = patches.Rectangle((20.5,20.5),11,11,linewidth=1,edgecolor='r',facecolor='none')
-#             cax.add_patch(rect0)
-#             cax.add_patch(rect)
+                im = cax.imshow(arr,aspect=aspect,origin='lower',interpolation='none')
         elif method == 'contour':
             if lvls is None:
                 im = cax.contour(arr,colors='k')
@@ -261,7 +261,7 @@ def labels():
         'buoy'      : r'buoyancy',
         'rhoX'      : r'$\rho / \Theta$, mass-weighted inverse pot. temp.',
         'rhoY'      : r'$P$, mass-weighted potential temperature',
-        'p2_nodes'  : r'$\pi$, nodal Exner pressure'
+        'p2_nodes'  : r'$\pi^\prime$, Exner pressure perturbation'
         }
     return labels_dict
 
@@ -274,8 +274,8 @@ def swe_labels():
     labels_dict = {
         'rho'       : r'$h$, water depth',
         'rhou'      : r'$h u$, horizontal momentum',
-        'rhov'      : r'$h v$, vertical momentum',
-        'rhow'      : r'$h w$, horizontal momentum',
+        'rhov'      : r'$h w$, vertical momentum',
+        'rhow'      : r'$h v$, horizontal momentum',
         'buoy'      : r'buoyancy',
         'vorty'     : r'vorticity',
         'rhoX'      : r'$h / \Theta$',
@@ -288,8 +288,8 @@ def lake_labels():
     labels_dict = {
         'rho'       : r'$h^{(0)}$, leading-order' + '\n water depth',
         'rhou'      : r'$h^{(0)} u^{(0)}$, leading-order horizontal momentum',
-        'rhov'      : r'$h^{(0)} v^{(0)}$, leading-order vertical momentum',
-        'rhow'      : r'$h^{(0)} w^{(0)}$, leading-order horizontal momentum',
+        'rhov'      : r'$h^{(0)} w^{(0)}$, leading-order vertical momentum',
+        'rhow'      : r'$h^{(0)} v^{(0)}$, leading-order horizontal momentum',
         'buoy'      : r'buoyancy',
         'vorty'     : r'vorticity',
         'rhoX'      : r'$h / \Theta$',
