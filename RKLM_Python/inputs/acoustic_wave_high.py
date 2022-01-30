@@ -145,7 +145,6 @@ class UserData(object):
         self.tol = 1.e-8
         self.max_iterations = 1000
 
-
         self.blending_weight = 0./16
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'rho' # theta, rho

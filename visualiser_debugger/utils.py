@@ -68,9 +68,9 @@ class test_case(object):
 
     def get_filename(self,N,suffix,format='h5'):
         if self.ndim == 2:
-            fn = "%s_ensemble=%i_%i_%i_%.1f_%s.%s" %(self.base_fn,N,self.grid_x,self.grid_y,self.end_time,suffix,format)
+            fn = "%s_ensemble=%i_%i_%i_%.6f_%s.%s" %(self.base_fn,N,self.grid_x,self.grid_y,self.end_time,suffix,format)
         if self.ndim == 3 or self.grid_z is not None:
-            fn = "%s_ensemble=%i_%i_%i_%i_%.1f_%s.%s" %(self.base_fn,N,self.grid_x,self.grid_y,self.grid_z,self.end_time,suffix,format)
+            fn = "%s_ensemble=%i_%i_%i_%i_%.6f_%s.%s" %(self.base_fn,N,self.grid_x,self.grid_y,self.grid_z,self.end_time,suffix,format)
         return fn
 
 
