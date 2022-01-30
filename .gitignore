@@ -16,6 +16,15 @@
 *.h5
 *output_*
 *_old*
+*copy.py*
 # Sphinx html build
 **_build*
 
+# Ignore subdirectories used for debugging and presentations in /visualiser_debugger
+visualiser_debugger/low_Mach*
+visualiser_debugger/SkamarockKlemp*
+visualiser_debugger/old_ic*
+visualiser_debugger/*.npy
+visualiser_debugger/*.pdf
+visualiser_debugger/slides
+visualiser_debugger/review_localdab/slides

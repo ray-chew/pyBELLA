@@ -129,7 +129,7 @@ class UserData(object):
         self.initial_projection = True
         self.initial_impl_Euler = False
 
-        self.tout = np.arange(0.0, 3.0 + 0.01, 0.01)[1:]
+        self.tout = np.arange(0.0, 3.0 + 0.05, 0.05)[1:]
 
         self.stepmax = 100001
 

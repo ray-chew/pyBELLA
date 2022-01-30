@@ -12,9 +12,12 @@ class da_params(object):
         self.N = N
 
         self._da_times = np.arange(0.0,3.25,0.25)[1:]
+        # self._da_times = np.arange(5.0,10.5,0.5)/10.0
+        # self._da_times = [0.1]
         self._da_times = np.around(self.da_times,3)
         
-        self.obs_attributes = ['rhou', 'rhov']
+        self.obs_attributes = ['rho','rhou', 'rhov', 'rhoY', 'p2_nodes']
+        # self.obs_attributes = ['rhou','rhov']
 
         # which attributes to inflate in ensemble inflation?
         self.attributes = ['rho', 'rhou', 'rhov']
@@ -23,7 +26,7 @@ class da_params(object):
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_psinc_ref.h5'
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_truthgen_freezelt5.h5'
         # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_comp_ref.h5'
-        # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_comp_delth_perturb_ib_truth.h5'
+        # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_160_80_1.0_truth_CFLfixed_ib-0.h5'
 
         # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pps_tra_truth.h5'
         # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_neg_comp_1.0_pp_tra_truth_ip.h5'
@@ -50,9 +53,11 @@ class da_params(object):
         # Parameters for measurement noise
         ############################################
         self.add_obs_noise = True
+        self.noise_type = 'VarCov'
 
         self._noise_percentage = 0.05
         self.obs_noise = {}
+        self.std_dev = []
         self.gen_obs_noise()
 
         ############################################
@@ -95,16 +100,24 @@ class da_params(object):
             da_depth = 1
         if self.sparse_obs == True and da_len > 0:
             np.random.seed(777)
-            self.sparse_obs_seeds = np.random.randint(10000,size=(da_len,da_depth)).squeeze()
+            self.sparse_obs_seeds = np.random.randint(10000, size=(da_len, da_depth))
+            if len(self.sparse_obs_seeds) > 1:
+                self.sparse_obs_seeds = self.sparse_obs_seeds.squeeze()
 
 
     def gen_obs_noise(self):
-        for key in self.obs_attributes:
-            self.obs_noise[key] = self._noise_percentage
+        for cnt, key in enumerate(self.obs_attributes):
+            if self.noise_type == 'FixCov':
+                assert self.std_dev is not None, "std_dev keyword argument must be a list equal in size to dap.obs_attributes"
+                assert len(self.std_dev) == len(self.obs_attributes), "std_dev keyword argument must be a list equal in size to dap.obs_attributes"
+                self.obs_noise[key] = float(self.std_dev[cnt])
+                print(self.std_dev[cnt])
+                cnt += 1
+            else:    
+                self.obs_noise[key] = self._noise_percentage
 
         da_depth = len(self.obs_attributes)
 
-        # if self.add_obs_noise and da_len > 0:
         np.random.seed(888)
         if da_depth > 1:
             self.obs_noise_seeds = np.random.randint(10000,size=(da_depth)).squeeze()
@@ -251,6 +264,17 @@ class da_params(object):
         # constants, linear, gaussian
         self.localisation_matrix = self.get_loc_mat('gaussian')
 
+
+    @property
+    def sd_setter(self):
+        return self.sd_setter
+    
+    @sd_setter.setter
+    def sd_setter(self,lst):
+        self.std_dev = lst
+        self.noise_type = 'FixCov'
+        if self.add_obs_noise:
+            self.gen_obs_noise()
 
     # @staticmethod
     # def sampler_gaussian(var):

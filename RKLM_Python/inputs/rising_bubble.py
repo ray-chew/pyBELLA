@@ -8,6 +8,7 @@ from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_g
 from management.variable import States
 
 from physics.low_mach.second_projection import euler_backward_non_advective_impl_part
+from management import data
 
 class UserData(object):
     NSPEC = 1
@@ -102,8 +103,8 @@ class UserData(object):
         # self.dtfixed = 1.9 / self.t_ref
 
         # self.CFL = 1.0
-        # self.dtfixed0 = 20.0 / self.t_ref
-        # self.dtfixed = 20.0 / self.t_ref
+        # self.dtfixed0 = 21.69 / self.t_ref
+        # self.dtfixed = 21.69 / self.t_ref
         # self.dtfixed0 = 0.05
         # self.dtfixed = 0.05
         self.dtfixed0 = 100.0
@@ -147,7 +148,7 @@ class UserData(object):
         if self.continuous_blending == True:
             self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
         
-        aux = 'debug_CFLfixed'
+        aux = 'debug_imbal_CFLfixed'
         self.aux = aux
         self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
 
