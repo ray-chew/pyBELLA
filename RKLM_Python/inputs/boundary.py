@@ -350,6 +350,33 @@ def periodic_plus_one(vector, pad_width, iaxis, kwargs=None):
     return vector
 
 
+def get_tau_y(ud, elem, node, alpha):
+    tauc_y = np.zeros_like(elem.y)
+    taun_y = np.zeros_like(node.y)
+
+    c1c = elem.y <= ud.bcy
+    ccc = (elem.y - ud.bcy) / (elem.y[-1] - ud.bcy)
+    c2c = np.logical_and(ccc >= 0.0, ccc <= 0.5)
+    c3c = np.logical_and(ccc > 0.5, ccc <= 1.0)
+
+    c1n = node.y <= ud.bcy
+    ccn = (node.y - ud.bcy) / (node.y[-1] - ud.bcy)
+    c2n = np.logical_and(ccn >= 0.0, ccn <= 0.5)
+    c3n = np.logical_and(ccn > 0.5, ccn <= 1.0)
+
+    # ccc and ccn can be reused below
+
+    tauc_y[np.where(c1c)] = 0.0
+    tauc_y[np.where(c2c)] = - alpha / 2.0 * (1.0 - np.cos( (elem.y[np.where(c2c)] - ud.bcy) / (elem.y[-1] - ud.bcy) * np.pi ))
+    tauc_y[np.where(c3c)] = - alpha / 2.0 * (1.0 + ((elem.y[np.where(c3c)] - ud.bcy) / (elem.y[-1] - ud.bcy) - 0.5) * np.pi)
+
+    taun_y[np.where(c1n)] = 0.0
+    taun_y[np.where(c2n)] = - alpha / 2.0 * (1.0 - np.cos( (node.y[np.where(c2n)] - ud.bcy) / (node.y[-1] - ud.bcy) * np.pi ))
+    taun_y[np.where(c3n)] = - alpha / 2.0 * (1.0 + ((node.y[np.where(c3n)] - ud.bcy) / (node.y[-1] - ud.bcy) - 0.5) * np.pi)
+
+    return tauc_y, taun_y
+
+
 def check_flux_bcs(Lefts, Rights, elem, split_step, ud):
     igx = elem.igx
     igy = elem.igy
