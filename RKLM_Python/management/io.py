@@ -532,7 +532,7 @@ def fn_gen(ud, dap, N):
     suffix += "_%i" %(ud.iny-1)
     if ud.iny == 2:
         suffix += "_%i" %(ud.inz-1)
-    suffix += "_%.4f" %ud.tout[-1]
+    suffix += "_%.6f" %ud.tout[-1]
     suffix = '_ensemble=%i%s' %(N, suffix)
 
     if len(dap.da_times) > 0 and N >1:
