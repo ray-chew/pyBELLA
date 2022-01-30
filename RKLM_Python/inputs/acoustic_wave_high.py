@@ -161,14 +161,14 @@ class UserData(object):
         self.initial_projection = False
 
         # self.tout[0] =  0.00267282
-        # self.tout = [0.00267282]
+        self.tout = [0.00267282]
         # self.tout = np.arange(0.0,0.00267282,2.5e-5)
-        self.tout = np.arange(0.0,0.002+2.5e-5,2.5e-5)[1:]
+        # self.tout = np.arange(0.0,0.002+2.5e-5,2.5e-5)[1:]
         # self.tout[1] = -1.0
 
         self.stepmax = 999
 
-        self.output_timesteps = False
+        self.output_timesteps = True
 
         self.output_base_name = "_acoustic_wave"
         self.output_name_psinc = "_low_mach_gravity_psinc"
