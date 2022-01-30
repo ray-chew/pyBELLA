@@ -5,7 +5,7 @@ from management.enumerator import TimeIntegrator, MolecularTransport,HillShapes,
 # from physics.gas_dynamics.explicit import TimeIntegratorParams
 from physics.gas_dynamics.eos import rhoe
 from physics.hydrostatics import hydrostatic_state
-from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
+from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2, get_tau_y
 
 class UserData(object):
     NSPEC = 1
@@ -109,19 +109,9 @@ class UserData(object):
         # self.hill_height = 0.0
         # self.hill_length_scale = 99999.9
 
-        self.bdry_type_min = np.empty((3), dtype=object)
-        self.bdry_type_max = np.empty((3), dtype=object)
-
-        self.bdry_type_min[0] = BdryType.PERIODIC
-        self.bdry_type_min[1] = BdryType.PERIODIC
-        self.bdry_type_min[2] = BdryType.WALL
-        self.bdry_type_max[0] = BdryType.PERIODIC
-        self.bdry_type_max[1] = BdryType.PERIODIC
-        self.bdry_type_max[2] = BdryType.WALL
-
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.PERIODIC
+        self.bdry_type[1] = BdryType.RAYLEIGH
         self.bdry_type[2] = BdryType.WALL
 
         ##########################################
@@ -137,6 +127,14 @@ class UserData(object):
         self.inx = 64+1
         self.iny = 64+1
         self.inz = 1
+
+        if self.bdry_type[1].value == 'radiation':
+            self.inbcy = self.iny - 1
+            self.iny += self.inbcy
+
+            # tentative workaround
+            self.bcy = self.ymax
+            self.ymax *= 2.0        
 
         self.recovery_order = RecoveryOrder.SECOND
         self.limiter_type_scalars = LimiterType.NONE
@@ -200,6 +198,9 @@ def sol_init(Sol, mpv, elem, node, th, ud):
 
     hydrostatic_state(mpv, elem, node, th, ud)
 
+    if ud.bdry_type[1].value == 'radiation':
+        tcy, tcn = get_tau_y(ud, elem, node, 2.5)
+
     x_idx = slice(None)
     x = elem.x[x_idx].reshape(-1,1)
     y_idx = slice(elem.igy,-elem.igy+1)
@@ -238,7 +239,6 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     ud.is_nonhydrostasy = 1.0
     ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
 
-    # set_wall_rhoYflux(bdry,Sol,mpv,elem,ud)
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
     return Sol
