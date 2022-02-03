@@ -1,5 +1,4 @@
 import numpy as np
-from inputs.enum_bdry import BdryType
 
 class Grid(object):
     # def __init__(self, inx,iny,inz,x0,x1,y0,y1,z0,z1,left,right,bottom,top,back,front):
@@ -71,14 +70,6 @@ class Grid(object):
         # self.top = top
         # self.back = back
         # self.front = front
-
-        # if iny == 1:
-        #     self.bottom = BdryType.TUNIX
-        #     self.top = BdryType.TUNIX
-
-        # if inz == 1:
-        #     self.back = BdryType.TUNIX
-        #     self.front = BdryType.TUNIX
 
 big = 1.0
 class SpaceDiscr(object):
