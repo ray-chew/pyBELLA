@@ -325,7 +325,6 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         p2 = np.repeat(p2, node.icy, axis=1)
         p2_full[1:-1,:,1:-1] = p2
     elif elem.ndim == 3 and elem.iicy > 1 and elem.iicz == 1:
-
         if not VS:
             p2 = p2.reshape(node.iicx,node.iicy)
             p2 = np.repeat(p2[...,np.newaxis], node.icz, axis=2)
@@ -528,7 +527,7 @@ def scale_wall_node_values(rhs, node, ud, factor=.5):
         wall_idx[dim] = slice(igs[dim],-igs[dim])
 
     for dim in range(ndim):
-        is_wall = ud.bdry_type[dim] == BdryType.WALL
+        is_wall = ud.bdry_type[dim] == BdryType.WALL or ud.bdry_type[dim] == BdryType.RAYLEIGH
         if is_wall:
             for direction in [-1,1]:
                 wall_idx[dim] = (igs[dim]) * direction
@@ -621,7 +620,7 @@ def divergence_nodes(rhs,elem,node,Sol,ud):
     # rhs[:, top_idx] = rhs1[:, top_idx]
     # rhs[:, bot_idx] = rhs1[:, bot_idx]
 
-    if ud.bdry_type[1] == BdryType.WALL:
+    if ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH:
         Sol.rhou[:,:2,...] = 0.0 
         Sol.rhou[:,-2:,...] = 0.0
 
