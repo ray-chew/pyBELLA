@@ -33,8 +33,8 @@ def stencil_9pt(elem,node,mpv,ud,diag_inv,dt):
     x_periodic = ud.bdry_type[1] == BdryType.PERIODIC
     y_periodic = ud.bdry_type[0] == BdryType.PERIODIC
 
-    x_wall = ud.bdry_type[1] == BdryType.WALL
-    y_wall = ud.bdry_type[0] == BdryType.WALL
+    x_wall = ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH
+    y_wall = ud.bdry_type[0] == BdryType.WALL or ud.bdry_type[0] == BdryType.RAYLEIGH
 
     return lambda p : lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv)
 
