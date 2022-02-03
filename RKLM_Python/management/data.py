@@ -2,6 +2,7 @@ from discretization.kgrid import Grid, ElemSpaceDiscr, NodeSpaceDiscr
 
 # dependencies of the atmospheric flow solver
 import inputs.boundary as boundary
+from inputs.enum_bdry import BdryType
 from management.variable import States, Vars
 from discretization import kgrid
 from physics.gas_dynamics.thermodynamic import ThermodynamicInit
@@ -182,6 +183,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         else:
             euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, label=str(label+'_after_ebnaimp'), writer=writer)
 
+        if ud.bdry_type[1] == BdryType.RAYLEIGH: boundary.rayleigh_damping(Sol, Sol, ud, mpv, mpv, 0.5*dt, elem, node, th)
+
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaimp')
 
         # if test_hydrob == True and writer is not None and step==0:
@@ -281,6 +284,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
 
         euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0, writer=writer, label=str(label)+'_after_full_step')
+
+        if ud.bdry_type[1] == BdryType.RAYLEIGH: boundary.rayleigh_damping(Sol, Sol_half_old, ud, mpv, mpv_half_old, dt, elem, node, th)
 
         if writer is not None: writer.populate(str(label)+'_after_full_step','p2_half',mpv.p2_nodes_half)
 

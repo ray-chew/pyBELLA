@@ -3,6 +3,7 @@ For more details on this module, refer to the write-up :ref:`boundary_handling`.
 """
 from .enum_bdry import BdryType
 import numpy as np
+from scipy import signal
 
 def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
     """
@@ -46,8 +47,11 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
             if ud.bdry_type[current_step] == BdryType.PERIODIC:
                 set_boundary(Sol,ghost_padding,'wrap',idx,step=None)
             # Wall BC.
-            else:
+            elif ud.bdry_type[current_step] == BdryType.WALL:
                 set_boundary(Sol,ghost_padding,'symmetric',idx,step=None)
+            elif ud.bdry_type[current_step] == BdryType.RAYLEIGH:
+                set_boundary(Sol,((0,0),(0,2)),'constant',(slice(None,),slice(0,-2)),step=None)
+                set_boundary(Sol,((0,0),(2,0)),'symmetric',(slice(None,),slice(2,None)),step=None)
 
         else:
             # get current axis that has gravity.
@@ -149,6 +153,12 @@ def set_boundary(Sol,pads,btype,idx,step=None):
         Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
         Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,negative_symmetric)
         Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,negative_symmetric)
+    elif btype == 'constant':
+        Sol.rho[...] = np.pad(Sol.rho[idx],pads,'symmetric')
+        Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,'symmetric')
+        Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
+        Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,'symmetric')
+        btype = 'symmetric'
     else:
         Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
         Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
@@ -354,6 +364,8 @@ def get_tau_y(ud, elem, node, alpha):
     tauc_y = np.zeros_like(elem.y)
     taun_y = np.zeros_like(node.y)
 
+    ud.bcy = elem.y[-20]
+
     c1c = elem.y <= ud.bcy
     ccc = (elem.y - ud.bcy) / (elem.y[-1] - ud.bcy)
     c2c = np.logical_and(ccc >= 0.0, ccc <= 0.5)
@@ -374,7 +386,37 @@ def get_tau_y(ud, elem, node, alpha):
     taun_y[np.where(c2n)] = - alpha / 2.0 * (1.0 - np.cos( (node.y[np.where(c2n)] - ud.bcy) / (node.y[-1] - ud.bcy) * np.pi ))
     taun_y[np.where(c3n)] = - alpha / 2.0 * (1.0 + ((node.y[np.where(c3n)] - ud.bcy) / (node.y[-1] - ud.bcy) - 0.5) * np.pi)
 
-    return tauc_y, taun_y
+    dd = 1.0
+    return dd * tauc_y / np.abs(tauc_y).max(), dd *  taun_y / np.abs(taun_y).max()
+    # return tauc_y, taun_y
+
+def rayleigh_damping(Sol, Sol0, ud, mpv, mpv0, dt, elem, node, th):
+    u = Sol.rhou / Sol.rho
+    v = Sol.rhov / Sol.rho
+    Y = Sol.rhoY / Sol.rho
+    tcy, tny = ud.tcy, ud.tny
+
+    # assuming 2D vertical slice - not dimension agnostic
+    Sol.rho += tcy * (Sol.rho - mpv.HydroState.rho0)
+    u += tcy * (u - ud.u_wind_speed)
+    v += tcy * v
+    Sol.rhou[...] = Sol.rho * u
+    Sol.rhov[...] = Sol.rho * v
+
+    # rhoY0 = np.copy(Sol.rhoY)
+    # Yt = Y + tcy * (Y - mpv.HydroState.Y0)
+    # Sol.rhoY[...] = Sol.rho * Yt
+    Sol.rhoY += Sol.rho * tcy * (Y - mpv.HydroState.Y0)
+    Sol.rhoX += tcy * Sol.rhoX
+    # p2c = (Sol.rhoY - rhoY0)**th.gm1
+    # kernel = np.array([[1,1],[1,1]])
+    # p2n = signal.fftconvolve(p2c,kernel, mode='valid') / kernel.sum()
+    # mpv.p2_nodes[1:-1,1:-1] += p2n / ud.Msq
+
+    mpv.p2_nodes += tny * (mpv.p2_nodes) 
+
+    # a = 100
+
 
 
 def check_flux_bcs(Lefts, Rights, elem, split_step, ud):
