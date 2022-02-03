@@ -2,8 +2,6 @@ import numpy as np
 from inputs.boundary import set_explicit_boundary_data, check_flux_bcs
 from .recovery import recovery
 from .numerical_flux import hll_solver
-from management.variable import Vars
-from copy import deepcopy
 
 def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
     """

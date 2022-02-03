@@ -57,17 +57,10 @@ class UserData(object):
         self.nspec = self.NSPEC
         self.bouy = self.BOUY
 
-        self.mol_trans = MolecularTransport.NO_MOLECULAR_TRANSPORT
-        self.viscm = self.viscm * self.t_ref / (self.h_ref * self.h_ref)
-        self.viscbm = self.viscbm * self.t_ref / (self.h_ref * self.h_ref)
-        self.visct = self.visct * self.t_ref / (self.h_ref * self.h_ref)
-        self.viscbt = self.viscbt * self.t_ref / (self.h_ref * self.h_ref)
-        self.cond = self.cond * self.t_ref / (self.h_ref * self.h_ref * self.R_gas)
-
         self.is_nonhydrostatic = 1
         self.is_compressible = 1
         self.is_ArakawaKonor = 0
-        self.compressibility = 0.0
+        self.compressibility = 1.0
         self.acoustic_timestep = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
 
@@ -128,7 +121,7 @@ class UserData(object):
         self.iny = 64+1
         self.inz = 1
 
-        if self.bdry_type[1].value == 'radiation':
+        if self.bdry_type[1] == BdryType.RAYLEIGH:
             self.inbcy = self.iny - 1
             self.iny += self.inbcy
 
@@ -199,7 +192,7 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     hydrostatic_state(mpv, elem, node, th, ud)
 
     if ud.bdry_type[1].value == 'radiation':
-        tcy, tcn = get_tau_y(ud, elem, node, 2.5)
+        ud.tcy, ud.tny = get_tau_y(ud, elem, node, 2.5)
 
     x_idx = slice(None)
     x = elem.x[x_idx].reshape(-1,1)
