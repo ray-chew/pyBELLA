@@ -35,7 +35,7 @@ from management.debug import find_nearest
 from time import time
 from termcolor import colored
 
-debug = True
+debug = False
 da_debug = True
 output_timesteps = False
 if debug == True: output_timesteps = True

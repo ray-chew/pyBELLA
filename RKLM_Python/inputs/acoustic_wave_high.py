@@ -5,7 +5,7 @@ from management.enumerator import TimeIntegrator, MolecularTransport,HillShapes,
 # from physics.gas_dynamics.explicit import TimeIntegratorParams
 from physics.gas_dynamics.eos import rhoe
 from physics.hydrostatics import hydrostatic_state
-from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2, get_tau_y
+from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2, get_tau_y, rayleigh_damping
 
 class UserData(object):
     NSPEC = 1
@@ -127,7 +127,7 @@ class UserData(object):
 
             # tentative workaround
             self.bcy = self.ymax
-            self.ymax *= 2.0        
+            self.ymax *= 2.0
 
         self.recovery_order = RecoveryOrder.SECOND
         self.limiter_type_scalars = LimiterType.NONE
@@ -192,7 +192,7 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     hydrostatic_state(mpv, elem, node, th, ud)
 
     if ud.bdry_type[1].value == 'radiation':
-        ud.tcy, ud.tny = get_tau_y(ud, elem, node, 2.5)
+        ud.tcy, ud.tny = get_tau_y(ud, elem, node, 1.0)
 
     x_idx = slice(None)
     x = elem.x[x_idx].reshape(-1,1)
@@ -224,13 +224,13 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     p = mpv.HydroState_n.p0[y_idx] * (1.0 + del0 * np.sin(wn * x))**(2.0 * th.gamm * th.gm1inv)
     mpv.p2_nodes[:-1,y_idx] = (p**th.Gamma - 1.0) / ud.Msq
 
-    ud.initial_projection = False
-
     set_ghostcells_p2(mpv.p2_cells,elem,ud)
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
 
     ud.is_nonhydrostasy = 1.0
     ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
+
+    # rayleigh_damping(Sol, Sol, ud, mpv, mpv, 0.0, elem, node)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
