@@ -192,7 +192,7 @@ def sol_init(Sol, mpv, elem, node, th, ud):
     hydrostatic_state(mpv, elem, node, th, ud)
 
     if ud.bdry_type[1].value == 'radiation':
-        ud.tcy, ud.tny = get_tau_y(ud, elem, node, 1.0)
+        ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.01)
 
     x_idx = slice(None)
     x = elem.x[x_idx].reshape(-1,1)
