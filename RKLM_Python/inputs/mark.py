@@ -2,7 +2,7 @@ import numpy as np
 from inputs.enum_bdry import BdryType
 from management.enumerator import TimeIntegrator, MolecularTransport,HillShapes, BottomBC, LimiterType, RecoveryOrder
 from physics.hydrostatics import hydrostatic_state, hydrostatic_column, hydrostatic_initial_pressure
-from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
+from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2, get_tau_y, rayleigh_damping
 from management.variable import States
 
 
@@ -92,24 +92,32 @@ class UserData(object):
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.WALL
+        self.bdry_type[1] = BdryType.RAYLEIGH
         self.bdry_type[2] = BdryType.WALL
 
         ##########################################
         # NUMERICS
         ##########################################
-        self.CFL = 0.9/2.0
-        # self.CFL = 0.9
+        # self.CFL = 0.9/2.0
+        self.CFL = 0.9
 
         # self.inx = 301+1
         # self.iny = 10+1
         # self.inz = 1
-        self.inx = 151+1
+        self.inx = 301+1
         self.iny = 60+1
         self.inz = 1
 
+        if self.bdry_type[1] == BdryType.RAYLEIGH:
+            self.inbcy = self.iny - 1
+            self.iny += self.inbcy
+
+            # tentative workaround
+            self.bcy = self.ymax
+            self.ymax *= 2.0
+
         # self.dtfixed0 = 0.5 * 100.0 * ((self.xmax - self.xmin) / (self.inx-1)) / 1.0
-        self.dtfixed0 = 1600.0 / self.t_ref
+        self.dtfixed0 = 200.0 / self.t_ref
         self.dtfixed = self.dtfixed0
 
         self.limiter_type_scalars = LimiterType.NONE
@@ -141,11 +149,11 @@ class UserData(object):
         self.tout = [720.0]
         # hr = 3600/self.t_ref
         # self.tout = np.arange(0.0,20*hr+hr/60,hr/60)[1:]
-        self.stepmax = 800
+        self.stepmax = 31
 
         self.output_base_name = "_mark_wave"
 
-        aux = 'debug_ic_test'
+        aux = 'debug_ic_test_S200_noom_a005'
         self.aux = aux
 
         self.stratification = self.stratification_function
@@ -171,6 +179,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         return np.ones_like(xi)
 
     hydrostatic_state(mpv, elem, node, th, ud)
+
+    if ud.bdry_type[1].value == 'radiation':
+        ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.05)
+
     n = 4.0           # eqn (12)
     A0 = 1.0e-3     # eqn (12)
 
@@ -184,8 +196,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     waveno = 1.0
 
     x = elem.x.reshape(-1,1)
-    y = elem.y.reshape(1,-1)
-
+    y = elem.y.reshape(1,-1)#[:,:ud.inbcy]
 
     Hrho = 1.0 / g
     kGam = (1.0 - th.gamm / 2.0) / Hrho                 # eqn (8)
@@ -206,6 +217,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         pibar = 1.0 / Ybar
         # pibar = (rhobar * Ybar)**(th.gm1)
 
+        # mpv.HydroState.rho0[:ud.inbcy] = rhobar
+        # mpv.HydroState.Y0[:ud.inbcy] = Ybar
+        mpv.HydroState.rho0[...] = rhobar
+        mpv.HydroState.Y0[...] = Ybar
+
+
     N = ud.t_ref * np.sqrt(ud.Nsq_ref)                  # eqn (5) dimensionless Brunt-Väisälä frequency
     Cs = np.sqrt(th.gamm / Msq)                         # eqn (6) dimensionless speed of sound
 
@@ -221,9 +238,11 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     # set up perturbation quantities
     # exp(-kGam * y)  / sqrt(rhobar) / Ybar = 1.0
     up = A * Ybar * np.cos(N / Cs * waveno * x)
-    vp = -A * np.sqrt(Omega / (Cs * kGam)) * Ybar * np.sin(N / Cs * waveno * x)
+    # vp = -A * np.sqrt(Omega / (Cs * kGam)) * Ybar * np.sin(N / Cs * waveno * x)
+    vp = 0.0
     wp = 0.0
-    Yp = A * np.sqrt(Omega / (Cs * kGam)) * N / g * Ybar**2 * np.sin(N / Cs * waveno * x)     # eqn (3)
+    # Yp = A * np.sqrt(Omega / (Cs * kGam)) * N / g * Ybar**2 * np.sin(N / Cs * waveno * x)     # eqn (3)
+    Yp = 0.0
     pi = A * Cs * fac * np.cos(N / Cs * waveno * x)     # eqn (4)
 
     u = u0 + up
@@ -242,10 +261,20 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Sol.rhoX[...] = 0.0
     mpv.p2_cells[...] = pi
 
+
+    # Sol.rho[:,:ud.inbcy] = rho
+    # Sol.rhou[:,:ud.inbcy] = rho * u
+    # Sol.rhov[:,:ud.inbcy] = rho * v
+    # Sol.rhow[:,:ud.inbcy] = rho * w
+    # Sol.rhoe[:,:ud.inbcy] = 0.0
+    # Sol.rhoY[:,:ud.inbcy] = rho * Y
+    # Sol.rhoX[:,:ud.inbcy] = 0.0
+    # mpv.p2_cells[:,:ud.inbcy] = pi
+
     ###################################################
     # initialise nodal pi
     xn = node.x.reshape(-1,1)
-    yn = node.y.reshape(1,-1)
+    yn = node.y.reshape(1,-1)#[:,:ud.inbcy+1]
 
     # initialise nodal pressure
     Hrho_n = Hrho
@@ -262,6 +291,33 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     pi_n = An * Cs * fac * np.cos(N / Cs * waveno * xn)
 
     mpv.p2_nodes[...] = pi_n
+    # mpv.p2_nodes[:,:ud.inbcy+1] = pi_n
+
+    # rhobar_top = np.exp(-elem.y.reshape(1,-1)[:,ud.inbcy:] / Hrho)
+    # Ybar_top = np.exp(elem.y.reshape(1,-1)[:,ud.inbcy:] / Htheta)
+    # pibar_top = 1.0 / Ybar
+
+    # rho = ((pibar + Msq * pi)**th.gm1inv) / Y
+
+    # mpv.HydroState.rho0[ud.inbcy:] = rhobar_top
+    # mpv.HydroState.Y0[ud.inbcy:] = Ybar_top
+
+    # Sol.rho[:,ud.inbcy:] = Sol.rho[:,ud.inbcy-1].reshape(-1,1)
+    # Sol.rhou[:,ud.inbcy:] = Sol.rhou[:,ud.inbcy-1].reshape(-1,1)
+    # Sol.rhov[:,ud.inbcy:] = Sol.rhov[:,ud.inbcy-1].reshape(-1,1)
+    # Sol.rhow[:,ud.inbcy:] = Sol.rhow[:,ud.inbcy-1].reshape(-1,1)
+    # Sol.rhoY[:,ud.inbcy:] = Sol.rho[:,ud.inbcy:]*Ybar_top
+    # mpv.p2_nodes[:,ud.inbcy+1:] = mpv.p2_nodes[:,ud.inbcy].reshape(-1,1)
+
+    # cnst = 0.0
+    # Sol.rho[:,ud.inbcy:] = cnst
+    # Sol.rhou[:,ud.inbcy:] = cnst
+    # Sol.rhov[:,ud.inbcy:] = cnst
+    # Sol.rhow[:,ud.inbcy:] = cnst
+    # Sol.rhoY[:,ud.inbcy:] = cnst
+    # mpv.p2_nodes[:,ud.inbcy+1:] = cnst
+
+    # rayleigh_damping(Sol, Sol, ud, mpv, mpv, 0.0, elem, node, th)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
