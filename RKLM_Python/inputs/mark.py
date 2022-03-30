@@ -11,7 +11,7 @@ class UserData(object):
 
     grav = 9.81                 # [m s^{-2}]
     omega = 7.292 * 1e-5        # [s^{-1}]
-    omega = 0.0
+    # omega = 0.0
 
     R_gas = 287.4
     R_vap = 461.0
@@ -82,7 +82,7 @@ class UserData(object):
         self.xmax =   Lx / self.h_ref
         self.ymin = - 0.0
         # self.ymax =   8.0 * 1.0 / self.grav #/ self.h_ref
-        self.ymax =   4.0
+        self.ymax =   2.0
         self.zmin = - 1.0
         self.zmax =   1.0
 
@@ -105,16 +105,16 @@ class UserData(object):
         # self.iny = 10+1
         # self.inz = 1
         self.inx = 301+1
-        self.iny = 60+1
+        self.iny = 30+1
         self.inz = 1
 
         if self.bdry_type[1] == BdryType.RAYLEIGH:
             self.inbcy = self.iny - 1
-            self.iny += self.inbcy
+            self.iny += int(3*self.inbcy)
 
             # tentative workaround
             self.bcy = self.ymax
-            self.ymax *= 2.0
+            self.ymax += 3.0 * self.bcy
 
         # self.dtfixed0 = 0.5 * 100.0 * ((self.xmax - self.xmin) / (self.inx-1)) / 1.0
         self.dtfixed0 = 200.0 / self.t_ref
@@ -149,11 +149,11 @@ class UserData(object):
         self.tout = [720.0]
         # hr = 3600/self.t_ref
         # self.tout = np.arange(0.0,20*hr+hr/60,hr/60)[1:]
-        self.stepmax = 31
+        self.stepmax = 100
 
         self.output_base_name = "_mark_wave"
 
-        aux = 'debug_ic_test_S200_noom_a005'
+        aux = 'bdl_test_S200_a05'
         self.aux = aux
 
         self.stratification = self.stratification_function
@@ -181,7 +181,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     hydrostatic_state(mpv, elem, node, th, ud)
 
     if ud.bdry_type[1].value == 'radiation':
-        ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.05)
+        ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.5)
 
     n = 4.0           # eqn (12)
     A0 = 1.0e-3     # eqn (12)
