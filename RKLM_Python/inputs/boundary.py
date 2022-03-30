@@ -364,7 +364,7 @@ def get_tau_y(ud, elem, node, alpha):
     tauc_y = np.zeros_like(elem.y)
     taun_y = np.zeros_like(node.y)
 
-    ud.bcy = elem.y[-20]
+    ud.bcy = elem.y[-ud.inbcy]
 
     c1c = elem.y <= ud.bcy
     ccc = (elem.y - ud.bcy) / (elem.y[-1] - ud.bcy)
@@ -387,8 +387,8 @@ def get_tau_y(ud, elem, node, alpha):
     taun_y[np.where(c3n)] = - alpha / 2.0 * (1.0 + ((node.y[np.where(c3n)] - ud.bcy) / (node.y[-1] - ud.bcy) - 0.5) * np.pi)
 
     dd = 1.0
-    return dd * tauc_y / np.abs(tauc_y).max(), dd *  taun_y / np.abs(taun_y).max()
-    # return tauc_y, taun_y
+    # return dd * tauc_y / np.abs(tauc_y).max(), dd *  taun_y / np.abs(taun_y).max()
+    return tauc_y, taun_y
 
 def rayleigh_damping(Sol, Sol0, ud, mpv, mpv0, dt, elem, node, th):
     u = Sol.rhou / Sol.rho
@@ -406,14 +406,19 @@ def rayleigh_damping(Sol, Sol0, ud, mpv, mpv0, dt, elem, node, th):
     # rhoY0 = np.copy(Sol.rhoY)
     # Yt = Y + tcy * (Y - mpv.HydroState.Y0)
     # Sol.rhoY[...] = Sol.rho * Yt
+    # Sol.rhoY[...] = 
+
     Sol.rhoY += Sol.rho * tcy * (Y - mpv.HydroState.Y0)
-    Sol.rhoX += tcy * Sol.rhoX
+    # Sol.rhoY += tcy * Sol.rhoY
+    # Sol.rhoX += tcy * Sol.rhoX
+
+
     # p2c = (Sol.rhoY - rhoY0)**th.gm1
     # kernel = np.array([[1,1],[1,1]])
     # p2n = signal.fftconvolve(p2c,kernel, mode='valid') / kernel.sum()
     # mpv.p2_nodes[1:-1,1:-1] += p2n / ud.Msq
 
-    mpv.p2_nodes += tny * (mpv.p2_nodes) 
+    # mpv.p2_nodes += tny * (mpv.p2_nodes) 
 
     # a = 100
 
