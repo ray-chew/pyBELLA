@@ -64,7 +64,7 @@ class UserData(object):
         self.coriolis_strength = np.zeros((3))
 
         self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
-        self.coriolis_strength[2] = self.omega * self.t_ref
+        self.coriolis_strength[2] = 2.0 * self.omega * self.t_ref
 
         for i in range(3):
             if (self.gravity_strength[i] > np.finfo(np.float).eps) or (i == 1):
@@ -117,7 +117,7 @@ class UserData(object):
             self.ymax += 3.0 * self.bcy
 
         # self.dtfixed0 = 0.5 * 100.0 * ((self.xmax - self.xmin) / (self.inx-1)) / 1.0
-        self.dtfixed0 = 200.0 / self.t_ref
+        self.dtfixed0 = 1600.0 / self.t_ref
         self.dtfixed = self.dtfixed0
 
         self.limiter_type_scalars = LimiterType.NONE
@@ -149,11 +149,11 @@ class UserData(object):
         self.tout = [720.0]
         # hr = 3600/self.t_ref
         # self.tout = np.arange(0.0,20*hr+hr/60,hr/60)[1:]
-        self.stepmax = 100
+        self.stepmax = 50
 
         self.output_base_name = "_mark_wave"
 
-        aux = 'bdl_test_S200_a05'
+        aux = 'bdl_test_S1600_a05'
         self.aux = aux
 
         self.stratification = self.stratification_function
@@ -191,7 +191,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Msq = ud.Msq
     g = ud.gravity_strength[1]
     kappa = th.Gamma
-    Omega = ud.coriolis_strength[2]
+    Omega = ud.coriolis_strength[2] / 2.0
 
     waveno = 1.0
 
