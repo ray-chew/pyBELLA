@@ -143,6 +143,9 @@ if __name__ == '__main__':
     # Initialise writer class for I/O operations
     ######################################################
     writer = io(ud,restart)
+    writer.check_jar()
+    writer.jar([ud, mpv, dap, elem, node])
+    
     writer.write_attrs()
     wrtr = None
     if N > 1:
@@ -157,9 +160,6 @@ if __name__ == '__main__':
         else:
             label = ('ensemble_mem=%i_%.3f' %(n,0.0))
         if not restart: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
-
-    writer.check_jar()
-    writer.jar([ud, mpv, dap, elem, node])
 
     if da_debug:
         # writer.jar([obs,obs_noisy,obs_noisy_interp,obs_mask,obs_covar])
