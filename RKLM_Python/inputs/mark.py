@@ -108,13 +108,13 @@ class UserData(object):
         self.iny = 30+1
         self.inz = 1
 
-        if self.bdry_type[1] == BdryType.RAYLEIGH:
-            self.inbcy = self.iny - 1
-            self.iny += int(3*self.inbcy)
+        # if self.bdry_type[1] == BdryType.RAYLEIGH:
+        #     self.inbcy = self.iny - 1
+        #     self.iny += int(3*self.inbcy)
 
-            # tentative workaround
-            self.bcy = self.ymax
-            self.ymax += 3.0 * self.bcy
+        #     # tentative workaround
+        #     self.bcy = self.ymax
+        #     self.ymax += 3.0 * self.bcy
 
         # self.dtfixed0 = 0.5 * 100.0 * ((self.xmax - self.xmin) / (self.inx-1)) / 1.0
         self.dtfixed0 = 1600.0 / self.t_ref
@@ -158,7 +158,10 @@ class UserData(object):
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
+        self.rayleigh_bc = self.rayleigh_bc_function
         self.output_timesteps = True
+
+        # self.rayleigh_bc(self)
 
     def stratification_function(self, y):
         Nsq = self.Nsq_ref * self.t_ref**2
@@ -168,6 +171,32 @@ class UserData(object):
 
     def rhoe_function(self,rho,u,v,w,p,ud,th):
         pass
+
+    # @property
+    # def iny(self):
+    #     return self.iny
+
+    # @iny.setter
+    # def iny(self, val):
+    #     self.iny = val
+    #     if self.bdry_type[1] == BdryType.RAYLEIGH:
+    #         self.inbcy = self.iny - 1
+    #         self.iny += int(3*self.inbcy)
+
+    #         # tentative workaround
+    #         self.bcy = self.ymax
+    #         self.ymax += 3.0 * self.bcy
+
+    @staticmethod
+    def rayleigh_bc_function(ud):
+        if ud.bdry_type[1] == BdryType.RAYLEIGH:
+            ud.inbcy = ud.iny - 1
+            ud.iny0 = np.copy(ud.iny)
+            ud.iny = ud.iny0 + int(3*ud.inbcy)
+
+            # tentative workaround
+            ud.bcy = ud.ymax
+            ud.ymax += 3.0 * ud.bcy
 
 
 def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
