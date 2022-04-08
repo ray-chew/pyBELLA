@@ -364,7 +364,7 @@ def get_tau_y(ud, elem, node, alpha):
     tauc_y = np.zeros_like(elem.y)
     taun_y = np.zeros_like(node.y)
 
-    ud.bcy = elem.y[-ud.inbcy]
+    ud.bcy = elem.y[ud.inbcy+2]
 
     c1c = elem.y <= ud.bcy
     ccc = (elem.y - ud.bcy) / (elem.y[-1] - ud.bcy)
