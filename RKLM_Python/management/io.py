@@ -3,7 +3,7 @@ import h5py
 import os
 import numpy as np
 import shutil # for copying of simulation restart file
-import pickle # pickle jar to debug classes
+import dill as pickle # pickle jar to debug classes
 import yaml # for parsing of dict-style arguments
 
 from management.variable import Vars
