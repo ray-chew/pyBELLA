@@ -105,7 +105,7 @@ class UserData(object):
         # self.iny = 10+1
         # self.inz = 1
         self.inx = 301+1
-        self.iny = 30+1
+        self.iny = 120+1
         self.inz = 1
 
         # if self.bdry_type[1] == BdryType.RAYLEIGH:
@@ -215,8 +215,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     n = 4.0           # eqn (12)
     A0 = 1.0e-3     # eqn (12)
 
-    # ud.Msq = np.sqrt(ud.Msq)
-
     Msq = ud.Msq
     g = ud.gravity_strength[1]
     kappa = th.Gamma
@@ -228,7 +226,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     y = elem.y.reshape(1,-1)#[:,:ud.inbcy]
 
     Hrho = 1.0 / g
-    kGam = (1.0 - th.gamm / 2.0) / Hrho                 # eqn (8)
+    kGam = 1.0 / Hrho * (1.0 / th.gamm - 1.0 / 2.0)       # eqn (8)
     A = A0 * bump(2.0 * y / (n * Hrho) - 1.0)             # eqn (12)
 
     use_hydrostate = False
@@ -272,6 +270,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     wp = 0.0
     # Yp = A * np.sqrt(Omega / (Cs * kGam)) * N / g * Ybar**2 * np.sin(N / Cs * waveno * x)     # eqn (3)
     Yp = 0.0
+    # th.Gamma * ud.Msq == 1 / dimensionless(c_p)
     pi = A * Cs * fac * np.cos(N / Cs * waveno * x)     # eqn (4)
 
     u = u0 + up
