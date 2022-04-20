@@ -5,6 +5,7 @@ import matplotlib.patches as patches
 import numpy as np
 import itertools
 
+
 class plotter(object):
     def __init__(self,arr_lst, ncols=4, figsize=(12,8), fontsize=14, sharexlabel=False, shareylabel=False, sharex=False, sharey=False):
         plt.rcParams.update({'font.size': fontsize})
@@ -66,7 +67,7 @@ class plotter(object):
                 cax.add_patch(rect)
         
         
-    def plot(self,method='imshow',inner=False,suptitle="",rect=[0, 0.03, 1, 0.95],aspect='auto',lvls=None):
+    def plot(self,method='imshow',inner=False,suptitle="",rect=[0, 0.03, 1, 0.95],aspect='auto',lvls=None,cmaps=None):
         if method != 'imshow' or method != 'contour':
             assert(0, "Visualisation method not implemented!")
             
@@ -79,8 +80,9 @@ class plotter(object):
                 cax = self.ax[self.idx[n]]
                 
                 lvl = lvls[n] if lvls is not None else None
+                cmap = cmaps[n] if cmaps is not None else 'viridis'
                 
-                im = self.visualise(method,cax,arr,aspect,lvl)
+                im = self.visualise(method,cax,arr,aspect,lvl,cmap)
                 if type(title) == str:
                     cax.set_title(title)
                 elif type(title) == np.ndarray or type(title) == list:
@@ -114,7 +116,7 @@ class plotter(object):
                 arr = arr[2:-2,2:-2]
 #             cax = self.fig.gca()
             cax = self.ax
-            im = self.visualise(method,cax,arr,aspect,lvls)
+            im = self.visualise(method,cax,arr,aspect,lvls,cmap)
             cax.set_title(title)
             self.set_cax_axes(cax,0)
             caxs = [cax]
@@ -149,16 +151,26 @@ class plotter(object):
         
         
     @staticmethod
-    def visualise(method,cax,arr,aspect,lvls):
+    def visualise(method,cax,arr,aspect,lvls,cmap):
+        if cmap is None:
+            norm = None
+            cmap = 'viridis'
+        elif len(cmap) == 2:
+            norm = cmap[1]
+            cmap = cmap[0]
+        else:
+            norm = None
+            cmap = cmap
+            
         if method == 'imshow':
             if lvls is None:
-                im = cax.imshow(arr,aspect=aspect,origin='lower')
+                im = cax.imshow(arr,aspect=aspect,origin='lower',cmap=cmap, norm=norm)
             else:
-                im = cax.imshow(arr,aspect=aspect,origin='lower',interpolation='none')
+                im = cax.imshow(arr,aspect=aspect,origin='lower',interpolation='none',cmap=cmap, norm=norm)
         elif method == 'contour':
             if lvls is None:
                 im = cax.contour(arr,colors='k')
-                im = cax.contourf(arr)
+                im = cax.contourf(arr,cmap=cmap,norm=norm)
                 cax.set_aspect(aspect)
             else:
                 cax.set_aspect(aspect)
@@ -168,7 +180,7 @@ class plotter(object):
                 im = cax.contour(arr,linewidths=1.0,colors='k',levels=lvls)
 #                 im = cax.contourf(arr,levels=lvls,extend='both')
 #                 lvls = lvls[1:-1]
-                im = cax.contourf(arr,levels=lvls,extend='both')
+                im = cax.contourf(arr,levels=lvls,extend='both',cmap=cmap,norm=norm)
                 # im = cax.contour(arr,linewidths=0.5,levels=lvls[1:-1],colors='k',vmin=lvls[0],vmax=lvls[-1])
                 # im = cax.contourf(arr,levels=lvls[1:-1],extend='both',vmin=lvls[0],vmax=lvls[-1])
                 cax.set_aspect(aspect)
