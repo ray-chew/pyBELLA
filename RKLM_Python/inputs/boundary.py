@@ -349,7 +349,6 @@ def periodic_plus_one(vector, pad_width, iaxis, kwargs=None):
         The axis currently being calculated.
     kwargs : dict
         Any keyword arguments the function requires.
-
     References
     ----------
     https://docs.scipy.org/doc/numpy/reference/generated/numpy.pad.html
@@ -364,7 +363,7 @@ def get_tau_y(ud, elem, node, alpha):
     tauc_y = np.zeros_like(elem.y)
     taun_y = np.zeros_like(node.y)
 
-    ud.bcy = elem.y[ud.inbcy+2]
+    ud.bcy = elem.y[-ud.inbcy-2]
 
     c1c = elem.y <= ud.bcy
     ccc = (elem.y - ud.bcy) / (elem.y[-1] - ud.bcy)
