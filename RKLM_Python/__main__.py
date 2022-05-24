@@ -35,6 +35,8 @@ from management.debug import find_nearest
 from time import time
 from termcolor import colored
 
+import sys
+
 debug = False
 da_debug = True
 output_timesteps = False
@@ -145,7 +147,8 @@ if __name__ == '__main__':
     writer = io(ud,restart)
     writer.check_jar()
     writer.jar([ud, mpv, dap, elem, node])
-    
+    # sys.exit("Let's just dill the stuff and quit!")
+
     writer.write_attrs()
     wrtr = None
     if N > 1:
