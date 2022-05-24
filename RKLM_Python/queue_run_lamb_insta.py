@@ -11,10 +11,15 @@ rp.tc = 'mark'
 
 t_ref = 100.0
 omega = 7.292 * 1e-5
-resol_x = [151,301,601,1201]
-resol_y = [15,30,60,120]
-resol_t = [200,400,600,800,1000,1200]
+resol_x = [151,301,601]
+resol_y = [15,30,60]
+# resol_x = [301]
+# resol_y = [30]
+resol_t = [200,400,600,800,1000,1200,1400,1600]
+# resol_t = [200,400,600,800]
+# resol_t = [400,600]
 omegas = [0.0, 2.0 * omega * t_ref]
+# omegas = [2.0 * omega * t_ref]
 
 
 ud = {}
@@ -38,7 +43,7 @@ for x,y in zip(resol_x,resol_y):
                 ud['aux'] = 'bdl_run_S%i_noom_a05' %t
 
             print(ud)
-            # # run simulation
+            # run simulation
             rp.ud = json.dumps(ud)
             rp.dap = json.dumps(dap)
             rp.queue_run()

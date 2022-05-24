@@ -13,7 +13,7 @@ class UserData(object):
     omega = 7.292 * 1e-5        # [s^{-1}]
     # omega = 0.0
 
-    R_gas = 287.4
+    R_gas = 287.4               # [J kg^{-1} K^{-1}]
     R_vap = 461.0
     Q_vap = 2.53e+06
     gamma = 1.4
