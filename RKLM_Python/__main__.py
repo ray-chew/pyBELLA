@@ -146,8 +146,8 @@ if __name__ == '__main__':
     ######################################################
     writer = io(ud,restart)
     writer.check_jar()
-    writer.jar([ud, mpv, dap, elem, node])
-    # sys.exit("Let's just dill the stuff and quit!")
+    writer.jar([ud, mpv, elem, node, dap])
+    sys.exit("Let's just dill the stuff and quit!")
 
     writer.write_attrs()
     wrtr = None
