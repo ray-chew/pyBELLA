@@ -91,7 +91,7 @@ class io(object):
         # create a new output file for each rerun - old output will be overwritten.
         if restart:
             src = self.OUTPUT_FILENAME + self.BASE_NAME + self.OLD_SUFFIX + self.FORMAT
-            dest = self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT
+            dest = self.OUTPUT_FILENAME + self.BASE_NAME + self.OLD_SUFFIX + '_old' + self.FORMAT
             shutil.copy2(src, dest)
         else:
             file = h5py.File(self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + self.FORMAT, 'a')
@@ -452,7 +452,7 @@ def get_args():
 
 
     if UserData is None or sol_init is None:
-        assert(0, "Initial condition file is not well defined.")
+        assert 0, "Initial condition file is not well defined."
     if args.N is None:
         N = 1
     else:
@@ -503,18 +503,18 @@ def sim_restart(path, name, elem, node, ud, Sol, mpv, restart_touts):
         if hasattr(Sol,data):
             shp = getattr(Sol,data).shape
             setattr(Sol,data,value)
-            assert(getattr(Sol,data).shape == shp)
+            assert getattr(Sol,data).shape == shp
         else:
-            assert(0, "Sol attribute mismatch")
+            assert 0, "Sol attribute mismatch"
 
     for data in mpv_data:
         value = file[data][data+name][:]
         if hasattr(mpv,data):
             shp = getattr(mpv,data).shape
             setattr(mpv,data,value)
-            assert(getattr(mpv,data).shape == shp)
+            assert getattr(mpv,data).shape == shp
         else:
-            assert(0, "mpv attribute mismatch")
+            assert 0, "mpv attribute mismatch"
 
     t = restart_touts
 
