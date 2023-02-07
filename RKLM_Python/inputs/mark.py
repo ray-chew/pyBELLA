@@ -103,7 +103,7 @@ class UserData(object):
         # self.iny = 10+1
         # self.inz = 1
         self.inx = 301+1
-        self.iny = 120+1
+        self.iny = 30+1
         self.inz = 1
 
         # if self.bdry_type[1] == BdryType.RAYLEIGH:
@@ -115,7 +115,7 @@ class UserData(object):
         #     self.ymax += 3.0 * self.bcy
 
         # self.dtfixed0 = 0.5 * 100.0 * ((self.xmax - self.xmin) / (self.inx-1)) / 1.0
-        self.dtfixed0 = 1600.0 / self.t_ref
+        self.dtfixed0 = 600.0 / self.t_ref
         self.dtfixed = self.dtfixed0
 
         self.limiter_type_scalars = LimiterType.NONE
@@ -151,8 +151,9 @@ class UserData(object):
 
         self.output_base_name = "_mark_wave"
 
-        aux = 'bdl_test_S1600_a05'
+        aux = 'bdl_test_S600_a1'
         self.aux = aux
+        self.output_suffix = '_301_120_720.000000_rstrt_init_S600_a1'
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
