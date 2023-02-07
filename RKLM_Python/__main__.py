@@ -3,7 +3,7 @@ import numpy as np
 # dependencies of the atmospheric flow solver
 from management.data import data_init, time_update
 from inputs.boundary import set_explicit_boundary_data
-from inputs.boundary import set_ghostnodes_p2
+from inputs.boundary import set_ghostnodes_p2, get_tau_y
 from management.variable import States, Vars
 from physics.gas_dynamics.thermodynamic import ThermodynamicInit
 from physics.gas_dynamics.eos import nonhydrostasy, compressibility, is_compressible, is_nonhydrostatic
@@ -112,8 +112,12 @@ elif restart == True:
     ud.old_suffix = '_ensemble=%i%s' %(N, ud.old_suffix)
     Sol0, mpv0, touts = sim_restart(r_params[0], r_params[1], elem, node, ud, Sol, mpv, r_params[2])
     sol_ens = [[Sol0,flux,mpv0,[-np.inf,step]]]
-    ud.tout = touts[1:]
+    # ud.tout = touts[1:]
+    ud.tout = [touts[-1]]
     t = touts[0]
+
+    if ud.bdry_type[1].value == 'radiation':
+        ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.5)
     
 ens = ensemble(sol_ens)
 
@@ -147,7 +151,7 @@ if __name__ == '__main__':
     writer = io(ud,restart)
     writer.check_jar()
     writer.jar([ud, mpv, elem, node, dap])
-    sys.exit("Let's just dill the stuff and quit!")
+    # sys.exit("Let's just dill the stuff and quit!")
 
     writer.write_attrs()
     wrtr = None

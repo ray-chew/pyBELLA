@@ -19,13 +19,31 @@ class run_params(object):
         self.restart = False
 
     def single_run(self):
-        if self.restart == False:
-            subprocess.call([sys.executable, './RKLM_Python/__main__.py', '-ic', self.tc, '-N', '%i' %self.N])
+        subprocess.call([sys.executable, './RKLM_Python/__main__.py', '-ic', self.tc, '-N', '%i' %self.N])
 
     def queue_run(self):
         if self.ud is None and self.dap is None:
             assert 0, "ud or params must be defined"
         subprocess.call([sys.executable, './RKLM_Python/__main__.py', '-ic', self.tc, '-N', '%i' %self.N, 'queue', '-w', self.ud, self.dap])
+
+
+    def restart_set(self, path, fn, name, ts, te, ti):
+        path += fn
+        ts, te, ti = str(ts), str(te), str(ti)
+
+        self.path = path
+        self.fn = fn
+        self.name = name
+        self.time_start = ts
+        self.time_end = te
+        self.time_int = ti
+        self.restart = True
+
+    def restart_run(self):
+        if self.restart:
+            subprocess.call([sys.executable, './RKLM_Python/__main__.py', '-ic', self.tc, '-N', '%i' %self.N, 'restart', '-p', self.path, '-n', self.name, '-t', self.time_start, self.time_end, self.time_int])
+        else:
+            print("restart parameters not found.")
 
 
 if __name__ == '__main__':
