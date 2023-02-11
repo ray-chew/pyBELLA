@@ -154,7 +154,7 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
     left_idx[-1] = slice(0,-1)
     left_idx, right_idx = tuple(left_idx), tuple(right_idx)
 
-    if tag is not 'rk':
+    if tag != 'rk':
         Sol.rho += lmbda * (flux.rho[left_idx] - flux.rho[right_idx])
         Sol.rhou += lmbda * (flux.rhou[left_idx] - flux.rhou[right_idx])
         Sol.rhov += lmbda * (flux.rhov[left_idx] - flux.rhov[right_idx])
@@ -165,7 +165,7 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
     
     set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
 
-    if tag is 'rk':
+    if tag == 'rk':
         return flux
 
 
