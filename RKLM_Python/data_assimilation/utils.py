@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy
 from scipy import signal
-from scipy.interpolate import griddata
 from inputs import boundary, enum_bdry
 from copy import deepcopy
 
