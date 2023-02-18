@@ -363,53 +363,100 @@ def get_tau_y(ud, elem, node, alpha):
     tauc_y = np.zeros_like(elem.y)
     taun_y = np.zeros_like(node.y)
 
-    ud.bcy = elem.y[-ud.inbcy-2]
+    # ud.bcy = elem.y[-ud.inbcy-2]
+    ud.bny = node.y[-ud.inbcy-3]
+    # ud.bny = ud.bcy
 
-    c1c = elem.y <= ud.bcy
-    ccc = (elem.y - ud.bcy) / (elem.y[-1] - ud.bcy)
-    c2c = np.logical_and(ccc >= 0.0, ccc <= 0.5)
-    c3c = np.logical_and(ccc > 0.5, ccc <= 1.0)
+    # c1c = elem.y <= ud.bcy
+    # ccc = (elem.y[:-2] - ud.bcy) / (elem.y[:-2][-1] - ud.bcy)
+    # c2c = np.logical_and(ccc >= 0.0, ccc <= 0.5)
+    # c3c = np.logical_and(ccc > 0.5, ccc <= 1.0)
 
-    c1n = node.y <= ud.bcy
-    ccn = (node.y - ud.bcy) / (node.y[-1] - ud.bcy)
+    c1n = node.y <= ud.bny
+    ccn = (node.y[:-2] - ud.bny) / (node.y[:-2][-1] - ud.bny)
     c2n = np.logical_and(ccn >= 0.0, ccn <= 0.5)
     c3n = np.logical_and(ccn > 0.5, ccn <= 1.0)
 
     # ccc and ccn can be reused below
 
-    tauc_y[np.where(c1c)] = 0.0
-    tauc_y[np.where(c2c)] = - alpha / 2.0 * (1.0 - np.cos( (elem.y[np.where(c2c)] - ud.bcy) / (elem.y[-1] - ud.bcy) * np.pi ))
-    tauc_y[np.where(c3c)] = - alpha / 2.0 * (1.0 + ((elem.y[np.where(c3c)] - ud.bcy) / (elem.y[-1] - ud.bcy) - 0.5) * np.pi)
+    # tauc_y[np.where(c1c)] = 0.0
+    # tauc_y[np.where(c2c)] = - alpha / 2.0 * (1.0 - np.cos( (elem.y[np.where(c2c)] - ud.bcy) / (elem.y[-1] - ud.bcy) * np.pi ))
+    # tauc_y[np.where(c3c)] = - alpha / 2.0 * (1.0 + ((elem.y[np.where(c3c)] - ud.bcy) / (elem.y[-1] - ud.bcy) - 0.5) * np.pi)
 
     taun_y[np.where(c1n)] = 0.0
-    taun_y[np.where(c2n)] = - alpha / 2.0 * (1.0 - np.cos( (node.y[np.where(c2n)] - ud.bcy) / (node.y[-1] - ud.bcy) * np.pi ))
-    taun_y[np.where(c3n)] = - alpha / 2.0 * (1.0 + ((node.y[np.where(c3n)] - ud.bcy) / (node.y[-1] - ud.bcy) - 0.5) * np.pi)
+    taun_y[np.where(c2n)] = - alpha / 2.0 * (1.0 - np.cos( (node.y[np.where(c2n)] - ud.bny) / (node.y[-1] - ud.bny) * np.pi ))
+    taun_y[np.where(c3n)] = - alpha / 2.0 * (1.0 + ((node.y[np.where(c3n)] - ud.bny) / (node.y[-1] - ud.bny) - 0.5) * np.pi)
 
-    dd = 1.0
-    # return dd * tauc_y / np.abs(tauc_y).max(), dd *  taun_y / np.abs(taun_y).max()
+    taun_y[-2:] = -np.abs(taun_y).max()
+    tauc_y[...] = np.interp(elem.y, node.y, taun_y)
+    # dd = 1.0
+    # tauc_y = dd * tauc_y / np.abs(tauc_y).max()
+    # taun_y = dd * taun_y / np.abs(taun_y).max()
     return tauc_y, taun_y
 
-def rayleigh_damping(Sol, Sol0, ud, mpv, mpv0, dt, elem, node, th):
+
+def get_bottom_tau_y(ud, elem, node, alpha, cutoff=0.5):
+    tauc_y = np.zeros_like(elem.y)
+    taun_y = np.zeros_like(node.y)
+
+    assert ud.ymax > cutoff, "rayleigh forcing boundary below minimum domain extent"
+    idx = (np.abs(elem.y - (ud.ymax - cutoff))).argmin()
+
+    ud.forcing_bny = node.y[idx]
+
+    c1n = node.y <= ud.forcing_bny
+    ccn = (node.y[:-2] - ud.forcing_bny) / (node.y[:-2][-1] - ud.forcing_bny)
+    c2n = np.logical_and(ccn >= 0.0, ccn <= 0.5)
+    c3n = np.logical_and(ccn > 0.5, ccn <= 1.0)
+
+    taun_y[np.where(c1n)] = 0.0
+    taun_y[np.where(c2n)] = - alpha / 2.0 * (1.0 - np.cos( (node.y[np.where(c2n)] - ud.forcing_bny) / (node.y[-1] - ud.forcing_bny) * np.pi ))
+    taun_y[np.where(c3n)] = - alpha / 2.0 * (1.0 + ((node.y[np.where(c3n)] - ud.forcing_bny) / (node.y[-1] - ud.forcing_bny) - 0.5) * np.pi)
+
+    taun_y[-2:] = -np.abs(taun_y).max()
+    taun_y[...] = taun_y[::-1]
+    tauc_y = np.interp(elem.y, node.y, taun_y)
+
+    dd = 1.0
+    tauc_y = dd * tauc_y / np.abs(tauc_y).max()
+    taun_y = dd * taun_y / np.abs(taun_y).max()
+
+    return tauc_y, taun_y
+
+
+
+def rayleigh_damping(Sol, mpv, ud, tcy, elem, th, forcing=None):
     u = Sol.rhou / Sol.rho
     v = Sol.rhov / Sol.rho
     Y = Sol.rhoY / Sol.rho
-    tcy, tny = ud.tcy, ud.tny
+
+    if (forcing is not None):
+        Sol_f, mpv_f, tny = forcing
+        u_f = (Sol_f.rhou / Sol_f.rho) - ud.u_wind_speed
+        v_f = Sol_f.rhov / Sol_f.rho
+        Y_f = Sol_f.rhoY / Sol_f.rho
+
+        mpv.p2_nodes[...] += tny * (mpv.p2_nodes) + np.abs(tny) * mpv_f.p2_nodes
+        c_f = 1.0
+
+    else:
+        u_f, v_f, Y_f = 0.0, 0.0, 0.0
+        c_f = 0.0
 
     # assuming 2D vertical slice - not dimension agnostic
-    Sol.rho += tcy * (Sol.rho - mpv.HydroState.rho0)
-    u += tcy * (u - ud.u_wind_speed)
-    v += tcy * v
+    # Sol.rho[...] = mpv.HydroState.rho0 + tcy * (Sol.rho - mpv.HydroState.rho0)
+    u += tcy * (u - ud.u_wind_speed) + c_f * np.abs(tcy) * u_f
+    v += tcy * v + c_f * np.abs(tcy) * v_f    
     Sol.rhou[...] = Sol.rho * u
     Sol.rhov[...] = Sol.rho * v
 
-    # rhoY0 = np.copy(Sol.rhoY)
-    # Yt = Y + tcy * (Y - mpv.HydroState.Y0)
-    # Sol.rhoY[...] = Sol.rho * Yt
-    # Sol.rhoY[...] = 
+    Y += tcy * (Y - mpv.HydroState.Y0) + c_f * np.abs(tcy) * (Y_f - mpv.HydroState.Y0)
 
-    Sol.rhoY += Sol.rho * tcy * (Y - mpv.HydroState.Y0)
-    # Sol.rhoY += tcy * Sol.rhoY
-    # Sol.rhoX += tcy * Sol.rhoX
+    # Sol.rhoY[...] = Sol.rho * (mpv.HydroState.Y0 + tcy * (Y - mpv.HydroState.Y0))
+    Sol.rhoY[...] = Sol.rho * Y
+
+    if (forcing is not None):
+        set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 
     # p2c = (Sol.rhoY - rhoY0)**th.gm1
@@ -417,7 +464,7 @@ def rayleigh_damping(Sol, Sol0, ud, mpv, mpv0, dt, elem, node, th):
     # p2n = signal.fftconvolve(p2c,kernel, mode='valid') / kernel.sum()
     # mpv.p2_nodes[1:-1,1:-1] += p2n / ud.Msq
 
-    # mpv.p2_nodes += tny * (mpv.p2_nodes) 
+    # mpv.p2_nodes[...] += tny * (mpv.p2_nodes) 
 
     # a = 100
 
