@@ -6,8 +6,8 @@ from inputs.boundary import set_explicit_boundary_data
 from inputs.boundary import set_ghostnodes_p2, get_tau_y
 from management.variable import States, Vars
 from physics.gas_dynamics.thermodynamic import ThermodynamicInit
-from physics.gas_dynamics.eos import nonhydrostasy, compressibility, is_compressible, is_nonhydrostatic
-from physics.gas_dynamics.gas_dynamics import dynamic_timestep
+# from physics.gas_dynamics.eos import nonhydrostasy, compressibility, is_compressible, is_nonhydrostatic
+# from physics.gas_dynamics.gas_dynamics import dynamic_timestep
 from physics.low_mach.mpv import MPV
 from physics.hydrostatics import hydrostatic_state
 
@@ -16,18 +16,17 @@ from dask.distributed import Client, progress
 
 # dependencies of the data assimilation module
 from data_assimilation.params import da_params
-from data_assimilation.utils import ensemble, sliding_window_view, ensemble_inflation, set_p2_nodes, set_rhoY_cells, HSprojector_2t3D, HSprojector_3t2D, sparse_obs_selector, obs_noiser
-from data_assimilation.letkf import da_interface, bin_func, prepare_rloc
-from data_assimilation.letkf import analysis as letkf_analysis
+from data_assimilation.utils import ensemble, ensemble_inflation, HSprojector_2t3D, HSprojector_3t2D, sparse_obs_selector, obs_noiser
+from data_assimilation.letkf import da_interface, prepare_rloc
+# from data_assimilation.letkf import analysis as letkf_analysis
 from data_assimilation import etpf
 from data_assimilation import blending
 from data_assimilation import post_processing
-from scipy import sparse
 
 # input file, uncomment to run
 from inputs.user_data import UserDataInit
 from management.io import io, get_args, sim_restart, fn_gen
-import h5py
+import global_params as gparams
 
 # some diagnostics
 from copy import deepcopy
@@ -35,14 +34,12 @@ from management.debug import find_nearest
 from time import time
 from termcolor import colored
 
-import sys
-
-debug = False
-da_debug = True
+debug = gparams.debug
+da_debug = gparams.da_debug
 output_timesteps = False
 if debug == True: output_timesteps = True
 label_type = 'TIME'
-np.set_printoptions(precision=18)
+np.set_printoptions(precision=gparams.print_precision)
 
 step = 0
 t = 0.0
@@ -95,7 +92,10 @@ if dap.da_type == 'rloc' and N > 1:
 
 print(colored("Generating initial ensemble...",'yellow'))
 sol_ens = np.zeros((N), dtype=object)
-np.random.seed(888)
+
+# Set random seed for reproducibility
+np.random.seed(gparams.random_seed)
+
 seeds = np.random.randint(10000,size=N) if N > 1 else None
 if seeds is not None and restart == False:
     print("Seeds used in generating initial ensemble spread = ", seeds)
