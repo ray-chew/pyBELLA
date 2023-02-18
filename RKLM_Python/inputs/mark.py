@@ -2,7 +2,7 @@ import numpy as np
 from inputs.enum_bdry import BdryType
 from management.enumerator import LimiterType
 from physics.hydrostatics import hydrostatic_state
-from inputs.boundary import set_explicit_boundary_data, get_tau_y
+from inputs.boundary import set_explicit_boundary_data, get_tau_y, get_bottom_tau_y, rayleigh_damping
 
 class UserData(object):
     NSPEC = 1
@@ -23,9 +23,7 @@ class UserData(object):
     N_ref = grav / np.sqrt(cp_gas * T_ref)
     Cs = np.sqrt(gamma * R_gas * T_ref)
 
-    # h_ref = 20.0e3
     h_ref = 10.0e3              # [m]
-    # t_ref = h_ref / Cs
     t_ref = 100.0               # [s]
     u_ref = h_ref / t_ref
 
@@ -75,12 +73,11 @@ class UserData(object):
         # self.xmin = - 24.0e6 / self.h_ref
         # self.xmax =   24.0e6 / self.h_ref
         j = 4.0
-        Lx = 1.0 * np.pi * self.Cs / self.N_ref * j #* 100.0
+        Lx = 1.0 * np.pi * self.Cs / self.N_ref * j
         self.xmin = - Lx / self.h_ref
         self.xmax =   Lx / self.h_ref
         self.ymin = - 0.0
-        # self.ymax =   8.0 * 1.0 / self.grav #/ self.h_ref
-        self.ymax =   2.0
+        self.ymax =   2.5
         self.zmin = - 1.0
         self.zmax =   1.0
 
@@ -90,7 +87,7 @@ class UserData(object):
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.RAYLEIGH
+        self.bdry_type[1] = BdryType.WALL
         self.bdry_type[2] = BdryType.WALL
 
         ##########################################
@@ -122,7 +119,7 @@ class UserData(object):
         self.limiter_type_velocity = LimiterType.NONE
 
         self.tol = 1.e-16
-        self.max_iterations = 6000
+        self.max_iterations = 10000
 
         self.perturb_type = 'pos_perturb'
         self.blending_mean = 'rhoY' # 1.0, rhoY
@@ -136,18 +133,15 @@ class UserData(object):
         self.no_of_hy_transition = 0
 
         self.blending_weight = 0./16
-
         self.initial_blending = False
-
         self.initial_projection = True
-        self.initial_impl_Euler = False
 
         # self.tout = np.arange(0.0,9000.0,1000.0)[1:]
         # self.tout = np.arange(0.0,205.0,5.0)[1:]
         self.tout = [720.0]
         # hr = 3600/self.t_ref
         # self.tout = np.arange(0.0,20*hr+hr/60,hr/60)[1:]
-        self.stepmax = 50
+        self.stepmax = 31
 
         self.output_base_name = "_mark_wave"
 
@@ -158,6 +152,9 @@ class UserData(object):
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
         self.rayleigh_bc = self.rayleigh_bc_function
+        self.rayleigh_forcing = False
+        self.rayleigh_forcing_fn = 'output_mark_wave_ensemble=1_301_120_bottom_forcing_S400.h5'
+        self.rayleigh_forcing_path = './output_mark_wave'
         self.output_timesteps = True
 
         # self.rayleigh_bc(self)
@@ -206,10 +203,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         # return tmp
         return np.ones_like(xi)
 
-    hydrostatic_state(mpv, elem, node, th, ud)
 
     if ud.bdry_type[1].value == 'radiation':
         ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.5)
+
+        if hasattr(ud, 'rayleigh_forcing'):
+                if ud.rayleigh_forcing:
+                    ud.forcing_tcy, ud.forcing_tny = get_bottom_tau_y(ud, elem, node, 0.2, cutoff=0.1)
 
     n = 4.0           # eqn (12)
     A0 = 1.0e-3     # eqn (12)
@@ -232,53 +232,67 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     
     if use_hydrostate:
         # Use hydrostatically balanaced background
+        hydrostatic_state(mpv, elem, node, th, ud)
         rhobar = mpv.HydroState.rho0.reshape(1,-1)
         Ybar = mpv.HydroState.Y0.reshape(1,-1)
         pibar = mpv.HydroState.p20.reshape(1,-1)
     else:
         # Use hydrostatic balance in Mark's notes
-        Htheta = Hrho / kappa
-        rhobar = np.exp(-y / Hrho) # eqn (7)
-        Ybar = np.exp(y / Htheta)  # eqn (9)
+        Htheta = Hrho / kappa          
+        rhobar = np.exp(-y / Hrho) 
+        Ybar = np.exp(y / Htheta)  
         pibar = 1.0 / Ybar
+        mpv.HydroState.rho0[...] = rhobar
+        mpv.HydroState.Y0[...] = Ybar
+        mpv.HydroState.S0[...] = pibar
+
+        # pibar = (rhobar * Ybar * ud.Rg)**(th.gm1)
         # pibar = (rhobar * Ybar)**(th.gm1)
 
         # mpv.HydroState.rho0[:ud.inbcy] = rhobar
         # mpv.HydroState.Y0[:ud.inbcy] = Ybar
-        mpv.HydroState.rho0[...] = rhobar
-        mpv.HydroState.Y0[...] = Ybar
 
+    # dimensionless Brunt-Väisälä frequency
+    N = ud.t_ref * np.sqrt(ud.Nsq_ref) 
+    # dimensionless speed of sound
+    Cs = np.sqrt(th.gamm / Msq)  
 
-    N = ud.t_ref * np.sqrt(ud.Nsq_ref)                  # eqn (5) dimensionless Brunt-Väisälä frequency
-    Cs = np.sqrt(th.gamm / Msq)                         # eqn (6) dimensionless speed of sound
-
-    u0 = ud.u_wind_speed
-    v0 = ud.v_wind_speed
-    w0 = ud.w_wind_speed
+    ud.u_wind_speed = 0.0 #-Cs
 
     # 1.0 / c_p in the notes
     # fac = 1.0 / (ud.cp_gas / (ud.h_ref**2 / ud.t_ref**2 / ud.T_ref))
-    fac = th.Gamma
+    Gamma = 1.0 / Hrho * (1.0 / th.gamm - 0.5)
 
+    # time shift of the initial solution
+    ts = -0.5 / N * np.pi #/ ud.t_ref
+    # ts = 50.0
+    # ts = Cs * 200.0 / N 
+    ts = 0.0
 
     # set up perturbation quantities
     # exp(-kGam * y)  / sqrt(rhobar) / Ybar = 1.0
-    up = A * Ybar * np.cos(N / Cs * waveno * x)
-    # vp = -A * np.sqrt(Omega / (Cs * kGam)) * Ybar * np.sin(N / Cs * waveno * x)
+    up = A0 * Ybar * np.cos(N / Cs * (waveno * x + Cs * ts))
     vp = 0.0
     wp = 0.0
-    # Yp = A * np.sqrt(Omega / (Cs * kGam)) * N / g * Ybar**2 * np.sin(N / Cs * waveno * x)     # eqn (3)
     Yp = 0.0
     # th.Gamma * ud.Msq == 1 / dimensionless(c_p)
-    pi = A * Cs * fac * np.cos(N / Cs * waveno * x)     # eqn (4)
+    fac = th.Gamma
+    pi = A0 * Cs * fac * np.cos(N / Cs * (waveno * x + Cs * ts))
 
-    u = u0 + up
-    v = v0 + vp
-    w = w0 + wp
+    # up = A / rhobar**0.5 * np.exp(-Gamma * y) * np.cos(N / Cs * (waveno * x + Cs * ts))
+    # pi = A * Cs * fac / rhobar**0.5 / Ybar * np.exp(-Gamma * y) * np.cos(N / Cs * (waveno * x + Cs * ts))
+
+    # up = up[:,::-1]
+    # pi = pi[:,::-1]
+
+    u = ud.u_wind_speed + up
+    v = ud.v_wind_speed + vp
+    w = ud.w_wind_speed + wp
     Y = Ybar + Yp
 
-    rho = ((pibar + Msq * pi)**th.gm1inv) / Y
-
+    # eqn (2.3)
+    # rho = (((pibar + Msq * pi))**th.gm1inv) / Y# / ud.Rg
+    rho = rhobar
     Sol.rho[...] = rho
     Sol.rhou[...] = rho * u
     Sol.rhov[...] = rho * v
@@ -309,15 +323,20 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     if use_hydrostate:
         # Use hydrostatically balanced background
         Ybar_n = mpv.HydroState_n.Y0.reshape(1,-1)
+        rhobar_n = mpv.HydroState_n.rho0.reshape(1,-1)
     else:
         # Use hydrostatic balance from notes
         Ybar_n = np.exp(yn / Htheta)
+        rhobar_n = np.exp(-yn / Hrho_n)
+        mpv.HydroState_n.Y0[...] = Ybar_n
+        mpv.HydroState_n.S0[...] = 1.0 / Ybar_n
 
-    An = A0 * bump(2.0 * yn / (n * Hrho_n) - 1.0)
+    An = A0 #* bump(2.0 * yn / (n * Hrho_n) - 1.0)
 
-    pi_n = An * Cs * fac * np.cos(N / Cs * waveno * xn)
+    pi_n = An * Cs * fac * np.cos(N / Cs * (waveno * xn + Cs * ts))
+    # pi_n = An * Cs * fac / rhobar_n**0.5 / Ybar_n * np.exp(-Gamma * yn) * np.cos(N / Cs * (waveno * xn + Cs * ts))
 
-    mpv.p2_nodes[...] = pi_n
+    mpv.p2_nodes[...] = pi_n#[:,::-1]
     # mpv.p2_nodes[:,:ud.inbcy+1] = pi_n
 
     # rhobar_top = np.exp(-elem.y.reshape(1,-1)[:,ud.inbcy:] / Hrho)
@@ -344,7 +363,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     # Sol.rhoY[:,ud.inbcy:] = cnst
     # mpv.p2_nodes[:,ud.inbcy+1:] = cnst
 
-    # rayleigh_damping(Sol, Sol, ud, mpv, mpv, 0.0, elem, node, th)
+    if ud.bdry_type[1] == 'RAYLEIGH':
+        rayleigh_damping(Sol, mpv, ud, ud.tcy, elem, th)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
