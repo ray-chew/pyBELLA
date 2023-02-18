@@ -142,60 +142,26 @@ class io(object):
             self.populate(name,'rhov_half',Sol.rhov_half)
         if hasattr(Sol,'rhou_half'):
             self.populate(name,'rhou_half',Sol.rhou_half)
+        if hasattr(Sol,'rhow_half'):
+            self.populate(name,'rhow_half',Sol.rhow_half)
         if hasattr(Sol,'rhoX_half'):
             self.populate(name,'rhoX_half',Sol.rhoX_half)
+        if hasattr(Sol,'rhoY_half'):
+            self.populate(name,'rhoY_half',Sol.rhoY_half)
         if hasattr(Sol,'rho_half'):
             self.populate(name,'rho_half',Sol.rho_half)
         if hasattr(mpv,'p2_nodes_half'):
             self.populate(name,'p2_nodes_half',mpv.p2_nodes_half)
         # self.populate(name,'buoy',Sol.rhoX / Sol.rho)
 
-        # dp2_nodes
-        # self.populate(name,'dp2_nodes',mpv.dp2_nodes)
-        # p2_nodes
+
         self.populate(name,'p2_nodes',mpv.p2_nodes)
-        # p2_nodes0
-        # self.populate(name,'p2_nodes0',mpv.p2_nodes0)
-        # p2_cells
-        # self.populate(name,'p2_cells',mpv.p2_cells)
-        # dp2_cells
-        # self.populate(name,'dp2_cells',mpv.dp2_cells)
 
-        # pressure
-        # self.populate(name,'p',Sol.rhoY**th.gamm)
-        # pressure difference
-        # self.populate(name,'dpdim', self.dpress_dim(mpv,self.ud,th))
-
-        # velocity (u,v,w)
-        # self.populate(name,'u',Sol.rhou / Sol.rho)
-        # self.populate(name,'v',Sol.rhov / Sol.rho)
-        # self.populate(name,'w',Sol.rhow / Sol.rho)
 
         # vorticity in (x,z)
         # self.populate(name,'vortz', self.vortz(Sol,elem,node))
         # self.vorty(Sol,elem,node)
         self.populate(name,'vorty', self.vorty(Sol,elem,node))
-
-        # temperature
-        # self.populate(name,'T', Sol.rhoY**th.gamm / Sol.rho)
-        # temperature difference
-        # print(mpv.HydroState.p0[0,:])
-        # print(mpv.HydroState.rho0[0,:])
-        # self.populate(name,'dT', Sol.rhoY**th.gamm / Sol.rho - mpv.HydroState.p0[:] / mpv.HydroState.rho0[:])
-
-        # self.populate(name,'drhoY', Sol.rhoY - mpv.HydroState.rho0[:] * mpv.HydroState.Y0[:])
-
-        # species mass fraction(?)
-        # self.populate(name,'Y', Sol.rhoY / Sol.rho)
-        # species mass fraction perturbation
-        # self.populate(name,'dY', Sol.rhoY / Sol.rho - self.ud.stratification(elem.y))
-
-        # self.populate(name,'wplusx',mpv.wplus[0])
-        # self.populate(name,'wplusy',mpv.wplus[1])
-        # self.populate(name,'hcenter',mpv.wcenter)
-        # self.populate(name,'p2',mpv.dp2_nodes)
-        # self.populate(name,'rhs',mpv.rhs)
-        # self.populate(name,'X',Sol.rhoX/Sol.rho)
 
     def vortz(self,Sol,elem,node):
         """
@@ -367,6 +333,7 @@ class io(object):
         if file.__bool__():
             file.close()
 
+
     def check_jar(self):
         fn = self.OUTPUT_FILENAME + self.BASE_NAME + self.SUFFIX + '.dat'
         if os.path.exists(fn):
@@ -385,6 +352,31 @@ class io(object):
                 pickle.dump(each_pickle,file)
         file.close()
 
+
+class read_input(object):
+    
+    def __init__(self, fn, path):
+        self.fn = fn
+        self.path = path
+
+    def get_data(self, Sol, mpv, time_tag, half=False):
+        file = h5py.File(self.path + '/' + self.fn, 'r')
+
+        if half:
+            half_tag = '_half'
+        else:
+            half_tag = ''
+
+        Sol.rho[...] = file['rho' + half_tag]['rho' + half_tag + '_' + time_tag][:]
+        Sol.rhou[...] = file['rhou' + half_tag]['rhou' + half_tag + '_' + time_tag][:]
+        Sol.rhov[...] = file['rhov' + half_tag]['rhov' + half_tag + '_' + time_tag][:]
+        Sol.rhow[...] = file['rhow' + half_tag]['rhow' + half_tag + '_' + time_tag][:]
+        Sol.rhoY[...] = file['rhoY' + half_tag]['rhoY' + half_tag + '_' + time_tag][:]
+
+        mpv.p2_nodes[...] = file['p2_nodes' + half_tag]['p2_nodes' + half_tag + '_' + time_tag][:]
+
+        file.close()
+    
 
 def get_args():
     """
