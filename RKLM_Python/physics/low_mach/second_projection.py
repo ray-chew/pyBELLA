@@ -4,13 +4,9 @@ from physics.low_mach.laplacian import stencil_9pt, stencil_27pt, stencil_hs, st
 from scipy import signal
 import numpy as np
 from itertools import product
+from numba import jit
 
-from scipy.sparse.linalg import LinearOperator, spsolve, bicgstab, gmres
-from scipy.sparse import eye, diags
-import matplotlib.pyplot as plt
-
-from management.debug import find_nearest
-import h5py
+from scipy.sparse.linalg import LinearOperator, bicgstab
 
 # taken from https://stackoverflow.com/questions/33512081/getting-the-number-of-iterations-of-scipys-gmres-iterative-method
 class solver_counter(object):
@@ -39,7 +35,6 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None,
     S0c = mpv.HydroState.get_S0c(elem)
     dSdy = mpv.HydroState_n.get_dSdy(elem,node)
 
-    mpv.rhs[...] = 0.0
     mpv.rhs[...], _ = divergence_nodes(mpv.rhs,elem,node,Sol,ud)
     scale_wall_node_values(mpv.rhs, node, ud, 2.0)
     div = mpv.rhs
@@ -52,7 +47,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None,
 
     rhoYovG = Ginv * Sol.rhoY
     dbuoy = Sol.rhoY * (Sol.rhoX / Sol.rho)
-    dpdx, dpdy, dpdz = grad_nodes(p2n, elem, node)
+    dpdx, dpdy, dpdz = grad_nodes(p2n, elem.ndim, node.dxyz)
 
     drhou = Sol.rhou - u0 * Sol.rho
     drhov = Sol.rhov - v0 * Sol.rho
@@ -86,7 +81,7 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
     Sol.mod_bg_wind(ud, -1.0)
 
-    multiply_inverse_coriolis(Sol, mpv, ud, elem, elem, dt)
+    multiply_inverse_coriolis(Sol, Sol, mpv, ud, elem, elem, dt)
 
     Sol.mod_bg_wind(ud, +1.0)
 
@@ -122,8 +117,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         writer.populate(str(label),'hcenter',mpv.wcenter)
         writer.populate(str(label),'wplusx',mpv.wplus[0])
         writer.populate(str(label),'wplusy',mpv.wplus[1])
-        if elem.ndim == 3: writer.populate(str(label),'wplusz',mpv.wplus[2])
-        else: writer.populate(str(label),'wplusz',np.zeros_like(mpv.wplus[0]))
+        writer.populate(str(label),'wplusz',mpv.wplus[2]) if elem.ndim == 3 else writer.populate(str(label),'wplusz',np.zeros_like(mpv.wplus[0]))
 
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
     correction_nodes(Sol,elem,node,mpv,mpv.p2_nodes,dt,ud,th,0)
@@ -263,107 +257,30 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     set_ghostnodes_p2(mpv.p2_nodes,node,ud)
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
- 
-    
-
-def exner_perturbation_constraint(Sol,elem,th,p2):
-    # 2D function!
-    rhs = np.zeros_like(Sol.rhou)
-
-    gathering_kernel = np.array([[1.,1.],[1.,1.]])
-    gathering_kernel /= gathering_kernel.sum()
-    rhs = signal.convolve2d(rhs, gathering_kernel, mode='valid')
-
-    return rhs[1:-1,1:-1]
-
 
 def correction_nodes(Sol,elem,node,mpv,p,dt,ud,th,updt_chi):
     ndim = node.ndim
-    wh1, wv, wh2 = dt * ud.coriolis_strength
-    nu = mpv.nu_c
-    nonhydro = ud.nonhydrostasy
-    g = ud.gravity_strength[1]
-    Msq = ud.Msq
-
     Gammainv = th.Gammainv
 
-    igs, igy = node.igs, node.igy
-    oodxyz = 1.0 / node.dxyz
-    oodx , oody ,oodz = oodxyz[0], oodxyz[1], oodxyz[2]
+    dSdy = mpv.HydroState_n.get_dSdy(elem, node)
 
-    dSdy = (mpv.HydroState_n.S0[igy+1:-igy] - mpv.HydroState_n.S0[igy:-igy-1]) * oody
+    Dpx, Dpy, Dpz = grad_nodes(p, elem.ndim, node.dxyz)
 
-    for dim in range(0,ndim,2):
-        dSdy = np.expand_dims(dSdy, dim)
-        dSdy = np.repeat(dSdy, elem.sc[dim]-2*igs[dim], axis=dim)
+    thinv = Sol.rho / Sol.rhoY
 
-    n2e, i2 = np.empty(ndim, dtype='object'), np.empty(ndim, dtype='object')
-    for dim in range(ndim):
-        n2e[dim] = slice(0,-1)
-        i2[dim] = slice(igs[dim],-igs[dim])
-    n2e, i2 = tuple(n2e), tuple(i2)
-    
-    p = p[i2]
+    Y = Sol.rhoY / Sol.rho
+    coeff = Gammainv * Sol.rhoY * Y
 
-    indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat=ndim)]
-    if ndim == 2:
-        signs_x = (-1., -1., +1., +1.)
-        signs_y = (-1., +1., -1., +1.)
-        signs_z = ( 0.,  0.,  0.,  0.)
-    elif ndim == 3:
-        signs_x = (-1., -1., -1., -1., +1., +1., +1., +1.)
-        signs_y = (-1., -1., +1., +1., -1., -1., +1., +1.)
-        signs_z = (-1., +1., -1., +1., -1., +1., -1., +1.)
+    mpv.u[...] = -dt * coeff * Dpx
+    mpv.v[...] = -dt * coeff * Dpy
+    mpv.w[...] = -dt * coeff * Dpz
 
-    Dpx, Dpy, Dpz = 0., 0., 0.
-    cnt = 0
-    for index in indices:
-        Dpx += signs_x[cnt] * p[index]
-        Dpy += signs_y[cnt] * p[index]
-        Dpz += signs_z[cnt] * p[index]
-        cnt += 1
+    multiply_inverse_coriolis(mpv, Sol, mpv, ud, elem, elem, dt, attrs=['u', 'v', 'w'])
 
-    Dpx *= 0.5**(ndim-1) * oodx
-    Dpy *= 0.5**(ndim-1) * oody
-    Dpz *= 0.5**(ndim-1) * oodz
-
-    thinv = Sol.rho[i2] / Sol.rhoY[i2]
-    thinv = 1.0
-    coeff = Gammainv * Sol.rhoY[i2] #* Y
-    Y = Sol.rhoY[i2] / Sol.rho[i2]
-
-    nu = nu[n2e][i2]
-
-    # get coefficients of the correction terms
-    denom = 1.0 / (wh1**2 + wh2**2 + (nu + nonhydro) * (wv**2 + 1.0))
-    
-    # U update
-    coeff_uu = (wh1**2 + nu + nonhydro)
-    coeff_uv = nonhydro * (wh1 * wv + wh2)
-    coeff_uw = (wh1 * wh2 - (nu + nonhydro) * wv)
-
-    # V update
-    coeff_vu = (wh1 * wv - wh2)
-    coeff_vv = nonhydro * (1 + wv**2)
-    coeff_vw = (wh2 * wv + wh1)
-
-    # W update
-    coeff_wu = (wh1 * wh2 + (nu + nonhydro) * wv)
-    coeff_wv = nonhydro * (wh2 * wv - wh1)
-    coeff_ww = (nu + nonhydro + wh2**2)
-
-    Sol.rhou[i2] += -dt * thinv * coeff * denom * (coeff_uu * Dpx + coeff_uv * Dpy + coeff_uw * Dpz)
-    Sol.rhov[i2] += -dt * thinv * coeff * denom * (coeff_vu * Dpx + coeff_vv * Dpy + coeff_vw * Dpz)
-    if ndim == 3: Sol.rhow[i2] += -dt * thinv * coeff * denom * (coeff_wu * Dpx + coeff_wv * Dpy + coeff_ww * Dpz)
-
-    # Sol.rhou[i2] += -dt * thinv * coeff * Dpx
-    # Sol.rhov[i2] += -dt * thinv * coeff * Dpy
-    # if ndim == 3: Sol.rhow[i2] += -dt * thinv * coeff * Dpz
-
-    # Sol.rhou[...] = coeff_uu * 
-
-
-    Sol.rhoX[i2] += - updt_chi * dt * dSdy * Sol.rhov[i2]
+    Sol.rhou += thinv * mpv.u
+    Sol.rhov += thinv * mpv.v
+    Sol.rhow += thinv * mpv.w if ndim == 3 else 0.0
+    Sol.rhoX += - updt_chi * dt * dSdy * Sol.rhov
 
 
 def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
@@ -459,7 +376,7 @@ def scale_wall_node_values(rhs, node, ud, factor=.5):
                 rhs[wall_idx_tuple] *= factor
 
 
-def grad_nodes(p2n, elem, node):
+def grad_nodes_fft(p2n, elem, node):
     ndim = node.ndim
     dx, dy, dz = node.dx, node.dy, node.dz
 
@@ -476,6 +393,34 @@ def grad_nodes(p2n, elem, node):
     dpdz = -0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[2], mode='valid') / dz if (ndim == 3) else 0.0
 
     return dpdx, dpdy, dpdz
+
+# @jit(nopython=True, nogil=False, cache=True)
+def grad_nodes(p, ndim, dxy):
+    dx, dy, dz = dxy
+
+    indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat=ndim)]
+    if ndim == 2:
+        signs_x = (-1., -1., +1., +1.)
+        signs_y = (-1., +1., -1., +1.)
+        signs_z = ( 0.,  0.,  0.,  0.)
+    elif ndim == 3:
+        signs_x = (-1., -1., -1., -1., +1., +1., +1., +1.)
+        signs_y = (-1., -1., +1., +1., -1., -1., +1., +1.)
+        signs_z = (-1., +1., -1., +1., -1., +1., -1., +1.)
+
+    Dpx, Dpy, Dpz = 0., 0., 0.
+    cnt = 0
+    for index in indices:
+        Dpx += signs_x[cnt] * p[index]
+        Dpy += signs_y[cnt] * p[index]
+        Dpz += signs_z[cnt] * p[index]
+        cnt += 1
+
+    Dpx *= 0.5**(ndim-1) / dx
+    Dpy *= 0.5**(ndim-1) / dy
+    Dpz *= 0.5**(ndim-1) / dz
+
+    return Dpx, Dpy, Dpz
 
 
 
@@ -548,7 +493,7 @@ def rhs_from_p_old(rhs,node,mpv):
     return rhs_n
 
 
-def multiply_inverse_coriolis(Sol, mpv, ud, elem, node, dt):
+def multiply_inverse_coriolis(Vec, Sol, mpv, ud, elem, node, dt, attrs=('rhou', 'rhov', 'rhow')):
     nonhydro = ud.nonhydrostasy
     g = ud.gravity_strength[1]
     Msq = ud.Msq
@@ -579,13 +524,15 @@ def multiply_inverse_coriolis(Sol, mpv, ud, elem, node, dt):
     coeff_wv = nonhydro * (wh2 * wv - wh1)
     coeff_ww = (nu + nonhydro + wh2**2)
 
+    VecU = getattr(Vec, attrs[0])
+    VecV = getattr(Vec, attrs[1])
+    VecW = getattr(Vec, attrs[2])
+
     # Do the updates
-    rhou = denom * (coeff_uu * Sol.rhou + coeff_uv * Sol.rhov + coeff_uw * Sol.rhow)
+    U = denom * (coeff_uu * VecU + coeff_uv * VecV + coeff_uw * VecW)
+    V = denom * (coeff_vu * VecU + coeff_vv * VecV + coeff_vw * VecW)
+    W = denom * (coeff_wu * VecU + coeff_wv * VecV + coeff_ww * VecW)
 
-    rhov = denom * (coeff_vu * Sol.rhou + coeff_vv * Sol.rhov + coeff_vw * Sol.rhow)
-
-    rhow = denom * (coeff_wu * Sol.rhou + coeff_wv * Sol.rhov + coeff_ww * Sol.rhow)
-
-    Sol.rhou[...] = rhou
-    Sol.rhov[...] = rhov
-    Sol.rhow[...] = rhow
+    VecU[...] = U
+    VecV[...] = V
+    VecW[...] = W
