@@ -68,8 +68,8 @@ class plotter(object):
         
         
     def plot(self,method='imshow',inner=False,suptitle="",rect=[0, 0.03, 1, 0.95],aspect='auto',lvls=None,cmaps=None):
-        if method != 'imshow' or method != 'contour':
-            assert(0, "Visualisation method not implemented!")
+        if method != 'imshow' and method != 'contour':
+            assert 0, "Visualisation method not implemented!"
             
         if self.N > 1:
             ims, caxs, baxs = [], [], []
@@ -138,7 +138,7 @@ class plotter(object):
             
         plt.suptitle(suptitle)
         plt.tight_layout(rect=rect)
-        plt.subplots_adjust(hspace = .000005)
+        # plt.subplots_adjust(hspace = .000005)
         
         if self.N > 1:
             return ims, caxs, baxs
