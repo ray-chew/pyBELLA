@@ -105,6 +105,16 @@ class Vars(object):
     def flip_backward(self):
         for key, value in vars(self).items():
             setattr(self,key,np.moveaxis(value,-1,0))
+
+
+    def mod_bg_wind(self, ud, fac):
+        u0 = ud.u_wind_speed
+        v0 = ud.v_wind_speed
+        w0 = ud.w_wind_speed
+        
+        self.rhou = self.rhou + fac * u0 * self.rho
+        self.rhov = self.rhov + fac * v0 * self.rho
+        self.rhow = self.rhow + fac * w0 * self.rho
         
 class States(Vars):
     """
