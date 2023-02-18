@@ -46,21 +46,19 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None,
 
     if writer != None: writer.populate(str(label), 'rhs', div)
 
-    v = Sol.rhov / Sol.rho
-
-    rhoYovG = Ginv * Sol.rhoY
-    dchi = Sol.rhoX / Sol.rho
-    dbuoy = Sol.rhoY * dchi
-    drhou = Sol.rhou - u0 * Sol.rho
-    drhov = Sol.rhov - v0 * Sol.rho
-    drhow = Sol.rhow - w0 * Sol.rho
-
     rhoY = Sol.rhoY**(th.gamm - 2.0)
     dpidP_kernel = np.ones([2]*ndim)
     dpidP = (th.gm1 / ud.Msq) * signal.fftconvolve(rhoY, dpidP_kernel, mode='valid') / dpidP_kernel.sum()
 
+    rhoYovG = Ginv * Sol.rhoY
+    dbuoy = Sol.rhoY * (Sol.rhoX / Sol.rho)
     dpdx, dpdy, dpdz = grad_nodes(p2n, elem, node)
 
+    drhou = Sol.rhou - u0 * Sol.rho
+    drhov = Sol.rhov - v0 * Sol.rho
+    drhow = Sol.rhow - w0 * Sol.rho
+    v = Sol.rhov / Sol.rho
+    
     Sol.rhou = Sol.rhou - dt * ( rhoYovG * dpdx - corr_h2 * drhov + corr_v * drhow)
 
     Sol.rhov = Sol.rhov - dt * ( rhoYovG * dpdy + (g/Msq) * dbuoy * nonhydro - corr_h1 * drhow + corr_h2 * drhou) * (1 - ud.is_ArakawaKonor)
@@ -83,52 +81,14 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     g = ud.gravity_strength[1]
     Msq = ud.Msq
 
-    u0 = ud.u_wind_speed
-    v0 = ud.v_wind_speed
-    w0 = ud.w_wind_speed
+    dbuoy = Sol.rhoY * (Sol.rhoX / Sol.rho)
+    Sol.rhov = (nonhydro * Sol.rhov) - dt * (g/Msq) * dbuoy
 
-    wh1, wv, wh2 = dt * ud.coriolis_strength
+    Sol.mod_bg_wind(ud, -1.0)
 
-    strat = mpv.HydroState_n.get_dSdy(elem, elem)
+    multiply_inverse_coriolis(Sol, mpv, ud, elem, elem, dt)
 
-    Y = Sol.rhoY / Sol.rho
-    nu = -dt**2 * (g / Msq) * strat * Y
-    setattr(mpv,'nu',nu)
-
-    drhou = Sol.rhou - u0 * Sol.rho
-    drhov = Sol.rhov - v0 * Sol.rho
-    drhow = Sol.rhow - w0 * Sol.rho
-
-    # get coefficients of the explicit terms
-    # common denominator
-    denom = 1.0 / (wh1**2 + wh2**2 + (nu + nonhydro) * (wv**2 + 1.0))
-
-    # U update
-    coeff_uu = (wh1**2 + nu + nonhydro)
-    coeff_uv = nonhydro * (wh1 * wv + wh2)
-    coeff_uw = (wh1 * wh2 - (nu + nonhydro) * wv)
-
-    # V update
-    coeff_vu = (wh1 * wv - wh2)
-    coeff_vv = nonhydro * (1 + wv**2)
-    coeff_vw = (wh2 * wv + wh1)
-
-    # W update
-    coeff_wu = (wh1 * wh2 + (nu + nonhydro) * wv)
-    coeff_wv = nonhydro * (wh2 * wv - wh1)
-    coeff_ww = (nu + nonhydro + wh2**2)
-
-    # Do the updates
-    rhou = u0 * Sol.rho + denom * (coeff_uu * drhou + coeff_uv * drhov + coeff_uw * drhow)
-
-    rhov = v0 * Sol.rho + denom * (coeff_vu * drhou + coeff_vv * drhov + coeff_vw * drhow)
-
-    rhow = w0 * Sol.rho + denom * (coeff_wu * drhou + coeff_wv * drhov + coeff_ww * drhow)
-
-    # Set the quantities
-    Sol.rhou[...] = rhou
-    Sol.rhov[...] = rhov
-    Sol.rhow[...] = rhow
+    Sol.mod_bg_wind(ud, +1.0)
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
@@ -586,3 +546,46 @@ def rhs_from_p_old(rhs,node,mpv):
     rhs_hh = mpv.wcenter[inner_idx] * mpv.p2_nodes[inner_idx]
     rhs_n[inner_idx] = rhs[inner_idx] + 0.0 * rhs_hh
     return rhs_n
+
+
+def multiply_inverse_coriolis(Sol, mpv, ud, elem, node, dt):
+    nonhydro = ud.nonhydrostasy
+    g = ud.gravity_strength[1]
+    Msq = ud.Msq
+
+    wh1, wv, wh2 = dt * ud.coriolis_strength
+
+    strat = mpv.HydroState_n.get_dSdy(elem, node)
+
+    Y = Sol.rhoY / Sol.rho
+    nu = -dt**2 * (g / Msq) * strat * Y
+
+    # get coefficients of the explicit terms
+    # common denominator
+    denom = 1.0 / (wh1**2 + wh2**2 + (nu + nonhydro) * (wv**2 + 1.0))
+
+    # U update
+    coeff_uu = (wh1**2 + nu + nonhydro)
+    coeff_uv = nonhydro * (wh1 * wv + wh2)
+    coeff_uw = (wh1 * wh2 - (nu + nonhydro) * wv)
+
+    # V update
+    coeff_vu = (wh1 * wv - wh2)
+    coeff_vv = nonhydro * (1 + wv**2)
+    coeff_vw = (wh2 * wv + wh1)
+
+    # W update
+    coeff_wu = (wh1 * wh2 + (nu + nonhydro) * wv)
+    coeff_wv = nonhydro * (wh2 * wv - wh1)
+    coeff_ww = (nu + nonhydro + wh2**2)
+
+    # Do the updates
+    rhou = denom * (coeff_uu * Sol.rhou + coeff_uv * Sol.rhov + coeff_uw * Sol.rhow)
+
+    rhov = denom * (coeff_vu * Sol.rhou + coeff_vv * Sol.rhov + coeff_vw * Sol.rhow)
+
+    rhow = denom * (coeff_wu * Sol.rhou + coeff_wv * Sol.rhov + coeff_ww * Sol.rhow)
+
+    Sol.rhou[...] = rhou
+    Sol.rhov[...] = rhov
+    Sol.rhow[...] = rhow
