@@ -6,10 +6,8 @@ from inputs.boundary import set_explicit_boundary_data, get_tau_y, get_bottom_ta
 
 class UserData(object):
     NSPEC = 1
-
     grav = 9.81                 # [m s^{-2}]
     omega = 7.292 * 1e-5        # [s^{-1}]
-    # omega = 0.0
 
     R_gas = 287.4               # [J kg^{-1} K^{-1}]
     R_vap = 461.0
@@ -53,7 +51,6 @@ class UserData(object):
 
         self.compressibility = 1.0
         self.acoustic_timestep = 0
-        self.acoustic_order = 0
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
 
         self.gravity_strength = np.zeros((3))
@@ -70,8 +67,6 @@ class UserData(object):
             if (self.coriolis_strength[i] > np.finfo(np.float).eps):
                 self.i_coriolis[i] = 1
 
-        # self.xmin = - 24.0e6 / self.h_ref
-        # self.xmax =   24.0e6 / self.h_ref
         j = 4.0
         Lx = 1.0 * np.pi * self.Cs / self.N_ref * j
         self.xmin = - Lx / self.h_ref
@@ -93,25 +88,12 @@ class UserData(object):
         ##########################################
         # NUMERICS
         ##########################################
-        # self.CFL = 0.9/2.0
         self.CFL = 0.9
 
-        # self.inx = 301+1
-        # self.iny = 10+1
-        # self.inz = 1
         self.inx = 301+1
         self.iny = 30+1
         self.inz = 1
 
-        # if self.bdry_type[1] == BdryType.RAYLEIGH:
-        #     self.inbcy = self.iny - 1
-        #     self.iny += int(3*self.inbcy)
-
-        #     # tentative workaround
-        #     self.bcy = self.ymax
-        #     self.ymax += 3.0 * self.bcy
-
-        # self.dtfixed0 = 0.5 * 100.0 * ((self.xmax - self.xmin) / (self.inx-1)) / 1.0
         self.dtfixed0 = 600.0 / self.t_ref
         self.dtfixed = self.dtfixed0
 
@@ -121,6 +103,7 @@ class UserData(object):
         self.tol = 1.e-16
         self.max_iterations = 10000
 
+        # blending parameters
         self.perturb_type = 'pos_perturb'
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'rho' #theta, rho
@@ -136,26 +119,23 @@ class UserData(object):
         self.initial_blending = False
         self.initial_projection = True
 
-        # self.tout = np.arange(0.0,9000.0,1000.0)[1:]
-        # self.tout = np.arange(0.0,205.0,5.0)[1:]
+
         self.tout = [720.0]
-        # hr = 3600/self.t_ref
-        # self.tout = np.arange(0.0,20*hr+hr/60,hr/60)[1:]
         self.stepmax = 31
+        self.output_timesteps = True
 
         self.output_base_name = "_mark_wave"
-
         aux = 'bdl_test_S600_a1'
         self.aux = aux
         self.output_suffix = '_301_120_720.000000_rstrt_init_S600_a1'
 
         self.stratification = self.stratification_function
-        self.rhoe = self.rhoe_function
         self.rayleigh_bc = self.rayleigh_bc_function
+
         self.rayleigh_forcing = False
         self.rayleigh_forcing_fn = 'output_mark_wave_ensemble=1_301_120_bottom_forcing_S400.h5'
         self.rayleigh_forcing_path = './output_mark_wave'
-        self.output_timesteps = True
+        
 
         # self.rayleigh_bc(self)
 
@@ -297,7 +277,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Sol.rhou[...] = rho * u
     Sol.rhov[...] = rho * v
     Sol.rhow[...] = rho * w
-    Sol.rhoe[...] = 0.0
     Sol.rhoY[...] = rho * Y
     Sol.rhoX[...] = 0.0
     mpv.p2_cells[...] = pi

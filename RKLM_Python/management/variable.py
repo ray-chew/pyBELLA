@@ -27,7 +27,6 @@ class Vars(object):
 
         Notes
         -----
-        1. `rhoe` is currently unused.
         2. `rhoX` has to be extended by `ud.nspec` for moist process.
         
         """
@@ -35,7 +34,6 @@ class Vars(object):
         self.rhou = np.zeros((size))
         self.rhov = np.zeros((size))
         self.rhow = np.zeros((size))
-        self.rhoe = np.zeros((size))
         self.rhoY = np.zeros((size))
         self.rhoX = np.zeros(([ud.nspec] + list(size)))
         self.squeezer()

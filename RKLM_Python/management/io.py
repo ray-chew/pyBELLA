@@ -48,7 +48,6 @@ class io(object):
                         # 'p2_c',
                         'p2_nodes',
                         'rho',
-                        # 'rhoe',
                         'rhoY',
                         # 'S',
                         # 'T',
@@ -127,8 +126,6 @@ class io(object):
         print("writing hdf output..." + name)
         # rho
         self.populate(name,'rho',Sol.rho)
-        # rhoe
-        # self.populate(name,'rhoe',Sol.rhoe)
         # rhoY
         self.populate(name,'rhoY',Sol.rhoY)
 

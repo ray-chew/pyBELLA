@@ -2,7 +2,6 @@ import numpy as np
 
 from management.variable import States, Characters
 from management.enumerator import LimiterType
-from .eos import rhoe
 
 def recovery(Sol, flux, lmbda, ud, th, elem, split_step, tag):
     """
@@ -210,5 +209,3 @@ def get_conservatives(U, ud, th):
     
     sgn = np.sign(U.rhoY)
     p = sgn*np.abs(U.rhoY)**th.gamminv
-    
-    U.rhoe = rhoe(U.rho, U.u, U.v, U.w, p, ud, th)

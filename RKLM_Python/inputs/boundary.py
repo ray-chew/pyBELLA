@@ -201,7 +201,6 @@ def set_boundary(Sol,pads,btype,idx,step=None):
     #         Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
     #         Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
 
-    Sol.rhoe[...] = np.pad(Sol.rhoe[idx],pads,btype)
     Sol.rhoY[...] = np.pad(Sol.rhoY[idx],pads,btype)
     Sol.rhoX[...] = np.pad(Sol.rhoX[idx],pads,btype)
 
@@ -490,14 +489,12 @@ def check_flux_bcs(Lefts, Rights, elem, split_step, ud):
             Lefts.rho[left_ghost] = Rights.rho[left_inner]
             Lefts.rhov[left_ghost] = Rights.rhov[left_inner]
             Lefts.rhow[left_ghost] = Rights.rhow[left_inner]
-            Lefts.rhoe[left_ghost] = Rights.rhoe[left_inner]
             Lefts.rhoX[left_ghost] = Rights.rhoX[left_inner]
 
             Rights.rho[right_ghost] = Lefts.rho[right_inner]
             Rights.rhou[right_ghost] = -1. * Lefts.rhou[right_inner]
             Rights.rhov[right_ghost] = Lefts.rhov[right_inner]
             Rights.rhow[right_ghost] = Lefts.rhow[right_inner]
-            Rights.rhoe[right_ghost] = Lefts.rhoe[right_inner]
             Rights.rhoY[right_ghost] = Lefts.rhoY[right_inner]
 
     else:
@@ -508,7 +505,6 @@ def check_flux_bcs(Lefts, Rights, elem, split_step, ud):
             Lefts.rhou[left_inner] = -1. * Rights.rhou[:,igx-2]
             Lefts.rhov[left_inner] = Rights.rhov[:,igx-2]
             Lefts.rhow[left_inner] = Rights.rhow[:,igx-2]
-            Lefts.rhoe[left_inner] = Rights.rhoe[:,igx-2]
             Lefts.rhoY[left_inner] = Rights.rhoY[:,igx-2]
 
             # print("#################### TRUE ########################")
@@ -516,6 +512,5 @@ def check_flux_bcs(Lefts, Rights, elem, split_step, ud):
             Rights.rhou[right_ghost] = -1. * Lefts.rhou[:,-igx-2]
             Rights.rhov[right_ghost] = Lefts.rhov[:,-igx-2]
             Rights.rhow[right_ghost] = Lefts.rhow[:,-igx-2]
-            Rights.rhoe[right_ghost] = Lefts.rhoe[:,-igx-2]
             Rights.rhoY[right_ghost] = Lefts.rhoY[:,-igx-2]
             # print(Rights.rhoY[right_ghost])
