@@ -146,6 +146,11 @@ class SpaceDiscr(object):
         for dim in range(self.ndim):
             self.inner_domain[dim] = slice(self.igs[dim],-self.igs[dim])
         self.inner_domain = tuple(self.inner_domain)
+
+        i1 = np.empty(self.ndim, dtype='object')
+        for dim in range(self.ndim):
+            i1[dim] = slice(1,-1)
+        self.i1 = tuple(i1)
         
 
 class ElemSpaceDiscr(SpaceDiscr):

@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import signal
 
 # equivalent to States_new
 class Vars(object):
@@ -146,6 +147,40 @@ class States(Vars):
         self.Y0 = np.zeros((size))
 
         self.squeezer()
+        self.get_dSdy = self.get_dSdy
+        self.get_S0c = self.get_S0c
+
+    def get_dSdy(self, elem, node):
+        if hasattr(self, 'dSdy'):
+            return self.dSdy
+        else:
+            ndim = node.ndim
+            dy = node.dy
+
+            dSdy = self.S0
+            dSdy = signal.convolve(dSdy,[1.,-1.],mode='valid') / dy
+
+            for dim in range(0,ndim,2):
+                dSdy = np.expand_dims(dSdy, dim)
+                dSdy = np.repeat(dSdy, elem.sc[dim], axis=dim)
+
+            self.dSdy = dSdy
+            return dSdy
+
+    def get_S0c(self, elem):
+        if hasattr(self, 'S0c'):
+            return self.S0c
+        else:
+            ndim = elem.ndim
+            S0c = self.S0
+
+            for dim in range(0,ndim,2):
+                S0c = np.expand_dims(S0c, dim)
+                S0c = np.repeat(S0c, elem.sc[dim], axis=dim)
+
+            self.S0c = S0c
+            return S0c
+
 
 class Characters(object):
     """
