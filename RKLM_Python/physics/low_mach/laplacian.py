@@ -4,7 +4,7 @@ from scipy import sparse, signal
 from numba import jit
 import numba as nb
 
-def stencil_9pt(elem,node,mpv,ud,diag_inv,dt):
+def stencil_9pt(elem,node,mpv,Sol,ud,diag_inv,dt):
     igx = elem.igx
     igy = elem.igy
 
@@ -27,8 +27,8 @@ def stencil_9pt(elem,node,mpv,ud,diag_inv,dt):
 
     diag_inv = diag_inv[inner_domain].reshape(-1,)
 
-    oodx2 = 0.5 / (dx**2)
-    oody2 = 0.5 / (dy**2)
+    oodx = 1.0 / (dx)
+    oody = 1.0 / (dy)
 
     x_periodic = ud.bdry_type[1] == BdryType.PERIODIC
     y_periodic = ud.bdry_type[0] == BdryType.PERIODIC
@@ -36,7 +36,299 @@ def stencil_9pt(elem,node,mpv,ud,diag_inv,dt):
     x_wall = ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH
     y_wall = ud.bdry_type[0] == BdryType.WALL or ud.bdry_type[0] == BdryType.RAYLEIGH
 
-    return lambda p : lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv)
+
+    #### Compute Coriolis parameters:
+    nonhydro = ud.nonhydrostasy
+    g = ud.gravity_strength[1]
+    Msq = ud.Msq
+    dy = elem.dy
+
+    wh1, wv, wh2 = dt * ud.coriolis_strength
+
+    igs = elem.igs
+
+    ndim = node.ndim
+
+    nindim = np.empty((ndim),dtype='object')
+    innerdim = np.copy(nindim)
+    innerdim1 = np.copy(nindim)
+    eindim = np.empty((ndim),dtype='object')
+
+    for dim in range(ndim):
+        is_periodic = ud.bdry_type[dim] == BdryType.PERIODIC
+        nindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic)
+        innerdim[dim] = slice(igs[dim],-igs[dim])
+        eindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic-1)
+
+        if dim == 1:
+            y_idx = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic-1)
+            right_idx = None if -igs[dim]+is_periodic == 0 else -igs[dim]+is_periodic
+            y_idx1 = slice(igs[dim]-is_periodic+1, right_idx)
+
+        innerdim1[dim] = slice(igs[dim]-1, (-igs[dim]+1))
+ 
+    strat = (mpv.HydroState_n.S0[y_idx1] - mpv.HydroState_n.S0[y_idx]) / dy
+
+    nindim = tuple(nindim)
+    eindim = tuple(eindim)
+    innerdim = tuple(innerdim)
+    innerdim1 = tuple(innerdim1)
+
+    for dim in range(0,elem.ndim,2):
+        is_periodic = ud.bdry_type[dim] != BdryType.PERIODIC
+        strat = np.expand_dims(strat, dim)
+        strat = np.repeat(strat, elem.sc[dim]-int(2*is_periodic+igs[dim]), axis=dim)
+
+    Y = Sol.rhoY[nindim] / Sol.rho[nindim]
+
+    nu = np.zeros_like(mpv.wcenter)
+    nu[eindim] = -dt**2 * (g / Msq) * strat * Y
+
+    nu = nu[inner_domain].reshape(-1,)
+
+    denom = 1.0 / (wh1**2 + wh2**2 + (nu + nonhydro) * (wv**2 + 1))
+
+    coeff_uu = (wh1**2 + nu + nonhydro) * denom
+    coeff_uv = nonhydro * (wh1 * wv + wh2) * denom
+    coeff_vu = (wh1 * wv - wh2) * denom
+    coeff_vv = nonhydro * (1 + wv**2) * denom
+
+    coriolis_params = (coeff_vv, coeff_vu, coeff_uv, coeff_uu)
+    # coriolis_params = np.array(coriolis_params, dtype=np.float64)
+
+    return lambda p : lap2D_gather(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx, oody, x_periodic, y_periodic, x_wall, y_wall, diag_inv, coriolis_params)
+
+    # ndim = elem.ndim
+    # periodicity = np.zeros(ndim, dtype='int')
+    # for dim in range(0,ndim,2):
+    #     periodicity[dim] = ud.bdry_type[dim] == BdryType.PERIODIC
+
+    # # proj = (slice(None,),slice(None,),igz)
+    # i0 = (slice(0,-1),slice(0,-1))
+    # i1 = (slice(1,-1),slice(1,-1))
+    # i2 = (slice(igx,-igx),slice(igy,-igy))
+
+    # hplusx = mpv.wplus[0][i0][i1]
+    # hplusy = mpv.wplus[1][i0][i1]
+    # hcenter = mpv.wcenter[i2]
+    # diag_inv = diag_inv[i1]
+
+    # dxy = (dx, dy)
+
+    # #### Compute Coriolis parameters:
+    # nonhydro = ud.nonhydrostasy
+    # g = ud.gravity_strength[1]
+    # Msq = ud.Msq
+    # dy = elem.dy
+
+    # wh1, wv, wh2 = dt * ud.coriolis_strength
+
+    # first_nodes_row_right_idx = (slice(1,None))
+    # first_nodes_row_left_idx = (slice(0,-1))
+
+    # strat = (mpv.HydroState_n.S0[first_nodes_row_right_idx] - mpv.HydroState_n.S0[first_nodes_row_left_idx]) / dy
+
+    # for dim in range(0,elem.ndim,2):
+    #     strat = np.expand_dims(strat, dim)
+    #     strat = np.repeat(strat, elem.sc[dim], axis=dim)
+
+    # Y = Sol.rhoY / Sol.rho
+    # nu = -dt**2 * (g / Msq) * strat * Y
+
+    # coeff_uu = (wh1**2 + nu + nonhydro)
+    # coeff_uv = nonhydro * (wh1 * wv + wh2)
+    # coeff_vu = (wh1 * wv - wh2)
+    # coeff_vv = nonhydro * (1 + wv**2)
+
+    # coriolis_params = (coeff_uu[i1], coeff_uv, coeff_vu, coeff_vv)
+
+    # return lambda p : lap2Dc(p, hplusx, hplusy, hcenter, dxy, periodicity, diag_inv, coriolis_params)
+
+@jit(nopython=True, nogil=False, cache=True)
+def lap2D_gather(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx, oody, x_periodic, y_periodic, x_wall, y_wall, diag_inv, coriolis):
+    ngnc = (iicxn) * (iicyn)
+    lap = np.zeros((ngnc))
+    cnt_x = 0
+    cnt_y = 0
+
+    nine_pt = 0.25 * (2.0) * 1.0
+    cxx, cxy, cyx, cyy = coriolis
+    oodx2 = 0.5 * oodx**2
+    oody2 = 0.5 * oody**2
+
+    for idx in range(iicxn * iicyn):
+        ne_topleft = idx - iicxn - 1
+        ne_topright = idx - iicxn 
+        ne_botleft = idx - 1
+        ne_botright = idx
+
+        # get indices of the 9pt stencil
+        topleft_idx = idx - iicxn - 1
+        midleft_idx = idx - 1
+        botleft_idx = idx + iicxn - 1
+
+        topmid_idx = idx - iicxn
+        midmid_idx = idx
+        botmid_idx = idx + iicxn
+
+        topright_idx = idx - iicxn + 1
+        midright_idx = idx + 1
+        botright_idx = idx + iicxn + 1
+
+        if cnt_x == 0:
+            topleft_idx += iicxn - 1
+            midleft_idx += iicxn - 1
+            botleft_idx += iicxn - 1
+
+            ne_topleft += iicxn - 1
+            ne_botleft += iicxn - 1
+
+        if cnt_x == (iicxn - 1):
+            topright_idx -= iicxn - 1
+            midright_idx -= iicxn - 1
+            botright_idx -= iicxn - 1
+
+            ne_topright -= iicxn - 1
+            ne_botright -= iicxn - 1
+
+        if cnt_y == 0:
+            topleft_idx += ((iicxn) * (iicyn - 1)) 
+            topmid_idx += ((iicxn) * (iicyn - 1))
+            topright_idx += ((iicxn) * (iicyn - 1))
+
+            ne_topleft += ((iicxn) * (iicyn - 1))
+            ne_topright += ((iicxn) * (iicyn - 1))
+
+        if cnt_y == (iicyn - 1):
+            botleft_idx -= ((iicxn) * (iicyn - 1))
+            botmid_idx -= ((iicxn) * (iicyn - 1))
+            botright_idx -= ((iicxn) * (iicyn - 1))
+
+            ne_botleft -= ((iicxn) * (iicyn - 1))
+            ne_botright -= ((iicxn) * (iicyn - 1))
+
+        topleft = p[topleft_idx]
+        midleft = p[midleft_idx]
+        botleft = p[botleft_idx]
+
+        topmid = p[topmid_idx]
+        midmid = p[midmid_idx]
+        botmid = p[botmid_idx]
+
+        topright = p[topright_idx]
+        midright = p[midright_idx]
+        botright = p[botright_idx]
+
+        hplusx_topleft = hplusx[ne_topleft]
+        hplusx_botleft = hplusx[ne_botleft]
+        hplusy_topleft = hplusy[ne_topleft]
+        hplusy_botleft = hplusy[ne_botleft]
+
+        hplusx_topright = hplusx[ne_topright]
+        hplusx_botright = hplusx[ne_botright]
+        hplusy_topright = hplusy[ne_topright]
+        hplusy_botright = hplusy[ne_botright]
+
+        cxx_tl  = cxx[ne_topleft]
+        cxx_tr = cxx[ne_topright]
+        cxx_bl  = cxx[ne_botleft]
+        cxx_br = cxx[ne_botright]
+
+        cxy_tl  = cxy[ne_topleft]
+        cxy_tr  = cxy[ne_topright]
+        cxy_bl  = cxy[ne_botleft]
+        cxy_br  = cxy[ne_botright]
+
+        cyx_tl  = cyx[ne_topleft]
+        cyx_tr  = cyx[ne_topright]
+        cyx_bl  = cyx[ne_botleft]
+        cyx_br  = cyx[ne_botright]
+
+        cyy_tl  = cyy[ne_topleft]
+        cyy_tr  = cyy[ne_topright]
+        cyy_bl  = cyy[ne_botleft]
+        cyy_br  = cyy[ne_botright]
+        
+
+        if x_wall and (cnt_x == 0):
+            hplusx_topleft = 0.
+            hplusy_topleft = 0.
+            hplusx_botleft = 0.
+            hplusy_botleft = 0.
+
+        if x_wall and (cnt_x == (iicxn - 1)):
+            hplusx_topright = 0.
+            hplusy_topright = 0.
+            hplusx_botright = 0.
+            hplusy_botright = 0.
+
+        if y_wall and (cnt_y == 0):
+            hplusx_topleft = 0.
+            hplusy_topleft = 0. 
+            hplusx_topright = 0.
+            hplusy_topright = 0.
+            
+        if y_wall and (cnt_y == (iicyn - 1)):
+            hplusx_botleft = 0.
+            hplusy_botleft = 0.  
+            hplusx_botright = 0.
+            hplusy_botright = 0.
+                                
+        # dp2dxdy1 = ((midmid - midleft) - (topmid - topleft)) * nine_pt
+        # dp2dxdy2 = ((midright - midmid) - (topright - topmid)) * nine_pt
+        # dp2dxdy3 = ((botmid - botleft) - (midmid - midleft)) * nine_pt
+        # dp2dxdy4 = ((botright - botmid) - (midright - midmid)) * nine_pt
+
+        # lap[idx] = - hplusx_topleft * oodx2 * ((midmid - midleft) - dp2dxdy1) \
+        #         -  hplusy_topleft * oody2 * ((midmid - topmid) - dp2dxdy1) \
+        #         +  hplusx_topright * oodx2 * ((midright - midmid) - dp2dxdy2) \
+        #         -  hplusy_topright * oody2 * ((midmid - topmid) + dp2dxdy2) \
+        #         -  hplusx_botleft * oodx2 * ((midmid - midleft) + dp2dxdy3) \
+        #         +  hplusy_botleft * oody2 * ((botmid - midmid) - dp2dxdy3) \
+        #         +  hplusx_botright * oodx2 * ((midright - midmid) + dp2dxdy4) \
+        #         +  hplusy_botright * oody2 * ((botmid - midmid) + dp2dxdy4) \
+        #         +  hcenter[idx] * p[idx]
+
+        Dx_tl = 0.5 * (topmid   - topleft + midmid   - midleft) * hplusx_topleft
+        Dx_tr = 0.5 * (topright - topmid  + midright - midmid ) * hplusx_topright
+        Dx_bl = 0.5 * (botmid   - botleft + midmid   - midleft) * hplusx_botleft
+        Dx_br = 0.5 * (botright - botmid  + midright - midmid ) * hplusx_botright
+
+        Dy_tl = 0.5 * (midmid   - topmid   + midleft - topleft) * hplusy_topleft
+        Dy_tr = 0.5 * (midright - topright + midmid  - topmid ) * hplusy_topright
+        Dy_bl = 0.5 * (botmid   - midmid   + botleft - midleft) * hplusy_botleft
+        Dy_br = 0.5 * (botright - midright + botmid  - midmid ) * hplusy_botright
+
+        fac = 1.0
+        Dxx = 0.5 * (cxx_tr * Dx_tr - cxx_tl * Dx_tl + cxx_br * Dx_br - cxx_bl * Dx_bl) * oodx * oodx * fac
+        Dyy = 0.5 * (cyy_br * Dy_br - cyy_tr * Dy_tr + cyy_bl * Dy_bl - cyy_tl * Dy_tl) * oody * oody * fac
+        Dyx = 0.5 * (cyx_br * Dy_br - cyx_bl * Dy_bl + cyx_tr * Dy_tr - cyx_tl * Dy_tl) * oody * oodx * fac
+        Dxy = 0.5 * (cxy_br * Dx_br - cxy_tr * Dx_tr + cxy_bl * Dy_bl - cxy_tl * Dx_tl) * oodx * oody * fac
+        
+
+        lap[idx] = Dxx + Dyy + Dyx + Dxy + hcenter[idx] * p[idx]
+
+
+        # fac = 1.0
+        # lap[idx] = - fac * hplusx_topleft * oodx2 * ((midmid - midleft)) \
+        #         -  fac * hplusy_topleft * oody2 * ((midmid - topmid)) \
+        #         +  fac * hplusx_topright * oodx2 * ((midright - midmid)) \
+        #         -  fac * hplusy_topright * oody2 * ((midmid - topmid)) \
+        #         -  fac * hplusx_botleft * oodx2 * ((midmid - midleft)) \
+        #         +  fac * hplusy_botleft * oody2 * ((botmid - midmid)) \
+        #         +  fac * hplusx_botright * oodx2 * ((midright - midmid)) \
+        #         +  fac * hplusy_botright * oody2 * ((botmid - midmid)) \
+        #         +  hcenter[idx] * p[idx]
+
+        lap[idx] *= diag_inv[idx]
+
+        cnt_x += 1
+        if cnt_x % iicxn == 0:
+            cnt_y += 1
+            cnt_x = 0
+        
+    return lap
+
 
 @jit(nopython=True, nogil=False, cache=True)
 def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv):
@@ -46,6 +338,7 @@ def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_per
     cnt_y = 0
 
     nine_pt = 0.25 * (2.0) * 1.0
+
 
     for idx in range(iicxn * iicyn):
         ne_topleft = idx - iicxn - 1
@@ -197,6 +490,83 @@ def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_per
             cnt_x = 0
         
     return lap
+
+
+def stencil_9pt_numba_test(elem,node,mpv,Sol,ud,diag_inv,dt,th,shp):
+    igx = elem.igx
+    igy = elem.igy
+
+    icxn = node.icx
+    icyn = node.icy
+
+    iicxn = icxn - (2 * igx)
+    iicyn = icyn - (2 * igy)
+
+    iicxn, iicyn = iicxn, iicyn
+
+    dx = node.dx
+    dy = node.dy
+
+    dxy = (dx,dy)
+
+    hplusx = mpv.wplus[1][:-1,:-1][1:-1,2:-2]#.reshape(-1,)
+    hplusy = mpv.wplus[0][:-1,:-1][1:-1,2:-2]#.reshape(-1,)
+    hcenter = mpv.wcenter[1:-1,2:-2]#.reshape(-1,)
+
+    diag_inv = diag_inv[1:-1,2:-2]#.reshape(-1,)
+
+    coeffs = (hplusx, hplusy, hcenter)
+
+    #### Compute Coriolis parameters:
+    nonhydro = ud.nonhydrostasy
+    wh1, wv, wh2 = dt * ud.coriolis_strength
+
+    first_nodes_row_right_idx = (slice(1,None))
+    first_nodes_row_left_idx = (slice(0,-1))
+
+    strat = (mpv.HydroState_n.S0[first_nodes_row_right_idx] - mpv.HydroState_n.S0[first_nodes_row_left_idx]) / dy
+
+    for dim in range(0,elem.ndim,2):
+        strat = np.expand_dims(strat, dim)
+        strat = np.repeat(strat, elem.sc[dim], axis=dim)
+
+    Y = Sol.rhoY / Sol.rho
+    nu = -dt**2 * (g / Msq) * strat * Y
+    nu = nu[1:-1,2:-2]
+
+    denom = 1.0 / (wh1**2 + wh2**2 + (nu + nonhydro) * (wv**2 + 1))
+
+    coeff_uu = (wh1**2 + nu + nonhydro) * denom
+    coeff_uv = nonhydro * (wh1 * wv + wh2) * denom
+    coeff_vu = (wh1 * wv - wh2) * denom
+    coeff_vv = nonhydro * (1 + wv**2) * denom
+
+    coriolis_params = (coeff_uu, coeff_uv, coeff_vu, coeff_vv)
+
+    return lambda p : lap2D_numba_test(p, coeffs, dxy, diag_inv, coriolis_params, shp)
+
+@jit(nopython=True, nogil=False, cache=True)
+def lap2D_numba_test(p, coeffs, dxy, diag_inv, coriolis, shp):
+    p = p.reshape(shp)
+    lap = np.zeros_like(p)
+
+    cxx, cxy, cyx, cyy = coriolis
+    hx, hy, hc = coeffs
+    dx, dy = dxy
+
+    return kernel_9pt(p, cxx, cxy, cyx, cyy, hx, hy, hc, dx, dy)
+
+@nb.stencil
+def kernel_9pt(p, cxx, cxy, cyx, cyy, hx, hy, hc, dx, dy):
+    tl, tm, tr = p[-1,1] , p[0,1] , p[1,1]
+    ml, mm, mr = p[-1,0] , p[0,0] , p[1,0]
+    bl, bm, br = p[-1,-1], p[0,-1], p[1,-1]
+
+
+    
+    
+
+
 
 
 def stencil_27pt(elem,node,mpv,ud,diag_inv,dt):
@@ -648,7 +1018,7 @@ def precon_diag_prepare(mpv, elem, node, ud):
     elif ndim == 3:
         coeff = 0.0625
     else:
-        assert(0, "ndim = 1?")
+        assert 0, "ndim = 1?"
 
     wx = coeff / (dx**2)
     wy = coeff / (dy**2)

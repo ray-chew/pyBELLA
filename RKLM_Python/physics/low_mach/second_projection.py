@@ -1,6 +1,6 @@
 from inputs.enum_bdry import BdryType
 from inputs.boundary import set_explicit_boundary_data, set_ghostnodes_p2
-from physics.low_mach.laplacian import stencil_9pt, stencil_27pt, stencil_hs, stencil_vs, precon_diag_prepare
+from physics.low_mach.laplacian import stencil_9pt, stencil_27pt, stencil_hs, stencil_vs, stencil_9pt_numba_test, precon_diag_prepare
 from scipy import signal
 import numpy as np
 from itertools import product
@@ -101,7 +101,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None,
 
     Sol.rhou[i1] = Sol.rhou[i1] - dt * ( rhoYovG * dpdx - corr_h2 * drhov + corr_v * drhow)
 
-    Sol.rhov[i1] = Sol.rhov[i1] - dt * ( rhoYovG * dpdy + (g/Msq) * dbuoy - corr_h1 * drhow + corr_h2 * drhou) * nonhydro * (1 - ud.is_ArakawaKonor)
+    Sol.rhov[i1] = Sol.rhov[i1] - dt * ( rhoYovG * dpdy + (g/Msq) * dbuoy * nonhydro - corr_h1 * drhow + corr_h2 * drhou) * (1 - ud.is_ArakawaKonor)
 
     Sol.rhow[i1] = Sol.rhow[i1] - dt * ( (ndim == 3) * rhoYovG * dpdz - corr_v * drhou + corr_h1 * drhov)
 
@@ -159,26 +159,26 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
     coeff_uu = (wh1**2 + nu + nonhydro)
     coeff_uv = nonhydro * (wh1 * wv + wh2)
     coeff_uw = (wh1 * wh2 - (nu + nonhydro) * wv)
-    coeff_uX = - dt * (g / Msq) * (wh1 * wv + wh2)
+    # coeff_uX = - dt * (g / Msq) * (wh1 * wv + wh2)
 
     # V update
     coeff_vu = (wh1 * wv - wh2)
     coeff_vv = nonhydro * (1 + wv**2)
     coeff_vw = (wh2 * wv + wh1)
-    coeff_vX = - dt * (g / Msq) * (1 + wv**2)
+    # coeff_vX = - dt * (g / Msq) * (1 + wv**2)
 
     # W update
     coeff_wu = (wh1 * wh2 + (nu + nonhydro) * wv)
     coeff_wv = nonhydro * (wh2 * wv - wh1)
     coeff_ww = (nu + nonhydro + wh2**2)
-    coeff_wX = - dt * (g / Msq) * (wh2 * wv - wh1)
+    # coeff_wX = - dt * (g / Msq) * (wh2 * wv - wh1)
 
     # Do the updates
-    rhou = u0 * Sol.rho + denom * (coeff_uu * drhou + coeff_uv * drhov + coeff_uw * drhow + coeff_uX * dbuoy)
+    rhou = u0 * Sol.rho + denom * (coeff_uu * drhou + coeff_uv * drhov + coeff_uw * drhow)
 
-    rhov = v0 * Sol.rho + denom * (coeff_vu * drhou + coeff_vv * drhov + coeff_vw * drhow + coeff_vX * dbuoy)
+    rhov = v0 * Sol.rho + denom * (coeff_vu * drhou + coeff_vv * drhov + coeff_vw * drhow)
 
-    rhow = w0 * Sol.rho + denom * (coeff_wu * drhou + coeff_wv * drhov + coeff_ww * drhow + coeff_wX * dbuoy)
+    rhow = w0 * Sol.rho + denom * (coeff_wu * drhou + coeff_wv * drhov + coeff_ww * drhow)
 
     # Set the quantities
     Sol.rhou[...] = rhou
@@ -259,8 +259,14 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     # prepare initial left-hand side and the laplacian stencil
     if elem.ndim == 2:
-        lap = stencil_9pt(elem,node,mpv,ud,diag_inv,dt)
+        lap = stencil_9pt(elem,node,mpv,Sol,ud,diag_inv,dt)
+
+        # p2 = np.copy(mpv.p2_nodes[1:-1,2:-2])
+        # shp = p2.shape
+        # lap = stencil_9pt_numba_test(elem,node,mpv,Sol,ud,diag_inv,dt,th,shp)
         sh = (ud.inx)*(ud.iny)
+        # p2 = np.copy(mpv.p2_nodes[1:-1,1:-1])
+        # sh = p2.reshape(-1).shape[0]
 
     elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2: 
         # horizontal slice hack
@@ -286,12 +292,14 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
 
     lap = LinearOperator((sh,sh),lap)
+    # lap = LinearOperator(sh,lap)
     
     counter = solver_counter()
 
     # prepare right-hand side
     if elem.ndim == 2:
         rhs_inner = rhs[node.igx:-node.igx,node.igy:-node.igy].ravel()
+        # rhs_inner = rhs[1:-1,1:-1].ravel()
     elif elem.ndim == 3 and elem.iicy > 1 and elem.iicz == 1:
 
         if not VS:
@@ -318,6 +326,8 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     p2_full = np.zeros(nc).squeeze()
     if elem.ndim == 2:
         p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
+        # p2 = p2.reshape(ud.inx+2, ud.iny+2)
+        # p2_full[1:-1,1:-1] = p2
     elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2:
         # horizontal slice hack
         p2 = p2.reshape(ud.inx+2, ud.inz+2)
@@ -441,6 +451,13 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud,th,updt_chi):
     Sol.rhov[i2] += -dt * thinv * coeff * denom * (coeff_vu * Dpx + coeff_vv * Dpy + coeff_vw * Dpz)
     if ndim == 3: Sol.rhow[i2] += -dt * thinv * coeff * denom * (coeff_wu * Dpx + coeff_wv * Dpy + coeff_ww * Dpz)
 
+    # Sol.rhou[i2] += -dt * thinv * coeff * Dpx
+    # Sol.rhov[i2] += -dt * thinv * coeff * Dpy
+    # if ndim == 3: Sol.rhow[i2] += -dt * thinv * coeff * Dpz
+
+    # Sol.rhou[...] = coeff_uu * 
+
+
     Sol.rhoX[i2] += - updt_chi * dt * dSdy * Sol.rhov[i2]
 
 
@@ -507,9 +524,9 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     for dim in range(ndim):
         ## Assuming 2D vertical slice!
         if dim == 1:
-            mpv.wplus[dim][eindim] = coeff * gimp * (wv**2 + 1.0)
+            mpv.wplus[dim][eindim] = coeff #* gimp #* (wv**2 + 1.0)
         else:
-            mpv.wplus[dim][eindim] = coeff * fimp * (wh1**2 + nu + nonhydro)
+            mpv.wplus[dim][eindim] = coeff #* fimp #* (wh1**2 + nu + nonhydro)
 
     kernel = np.ones([2] * ndim)
 
