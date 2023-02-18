@@ -3,9 +3,10 @@ from discretization.kgrid import Grid, ElemSpaceDiscr, NodeSpaceDiscr
 # dependencies of the atmospheric flow solver
 import inputs.boundary as boundary
 from inputs.enum_bdry import BdryType
-from management.variable import States, Vars
-from discretization import kgrid
-from physics.gas_dynamics.thermodynamic import ThermodynamicInit
+from management.io import read_input
+# from management.variable import States, Vars
+# from discretization import kgrid
+# from physics.gas_dynamics.thermodynamic import ThermodynamicInit
 from physics.gas_dynamics.numerical_flux import recompute_advective_fluxes
 from physics.gas_dynamics.explicit import advect, advect_rk
 from physics.gas_dynamics.eos import nonhydrostasy, compressibility, synchronise_variables, is_compressible, is_nonhydrostatic
@@ -183,7 +184,26 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         else:
             euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, label=str(label+'_after_ebnaimp'), writer=writer)
 
-        if ud.bdry_type[1] == BdryType.RAYLEIGH: boundary.rayleigh_damping(Sol, Sol, ud, mpv, mpv, 0.5*dt, elem, node, th)
+        if ud.bdry_type[1] == BdryType.RAYLEIGH: 
+            # top rayleight damping
+            boundary.rayleigh_damping(Sol, mpv, ud, ud.tcy, elem, th)
+
+            # bottom rayleigh forcing
+            if hasattr(ud, 'rayleigh_forcing'):
+                if ud.rayleigh_forcing:
+                    reader = read_input(ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path)
+
+                    Sol_half_new = deepcopy(Sol)
+                    mpv_half_new = deepcopy(mpv)
+
+                    # misusing hydrostatic blending data containers
+                    time_tag = '%.3d_after_full_step' %step
+                    reader.get_data(Sol_half_new, mpv_half_new, time_tag, half=True)
+
+                    boundary.rayleigh_damping(Sol, mpv, ud, ud.forcing_tcy, elem, th, [Sol_half_new, mpv_half_new, ud.forcing_tny])
+
+
+
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaimp')
 
@@ -211,8 +231,8 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         # pwchi = np.copy(Sol.pwchi)
         p2_nodes_half = np.copy(mpv.p2_nodes)
 
-        if test_hydrob == True and writer is not None and step==0:
-            writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
+        # if test_hydrob == True and writer is not None and step==0:
+        #     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
         #     print(dt*0.5)
 
         # takes care of the non-hydrostatic, compressible case
@@ -247,7 +267,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         elif ud.is_compressible == 0:
             Sol = deepcopy(Sol0)
 
-        Sol.rhov0 = np.copy(Sol.rhov)
+        # Sol.rhov0 = np.copy(Sol.rhov)
         Sol.rho_half = rho_half
         Sol.rhou_half = rhou_half
         Sol.rhov_half = rhov_half
@@ -285,9 +305,22 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0, writer=writer, label=str(label)+'_after_full_step')
 
-        if ud.bdry_type[1] == BdryType.RAYLEIGH: boundary.rayleigh_damping(Sol, Sol_half_old, ud, mpv, mpv_half_old, dt, elem, node, th)
+        if ud.bdry_type[1] == BdryType.RAYLEIGH: 
+            # top rayleight damping
+            boundary.rayleigh_damping(Sol, mpv, ud, ud.tcy, elem, th)
 
-        if writer is not None: writer.populate(str(label)+'_after_full_step','p2_half',mpv.p2_nodes_half)
+            # bottom rayleigh forcing
+            if hasattr(ud, 'rayleigh_forcing'):
+                if ud.rayleigh_forcing:
+                    reader = read_input(ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path)
+
+                    # misusing hydrostatic blending data containers
+                    time_tag = '%.3d_after_full_step' %step
+                    reader.get_data(Sol_half_new, mpv_half_new, time_tag)
+
+                    boundary.rayleigh_damping(Sol, mpv, ud, ud.forcing_tcy, elem, th, [Sol_half_new, mpv_half_new, ud.forcing_tny])
+
+        # if writer is not None: writer.populate(str(label)+'_after_full_step','p2_half',mpv.p2_nodes_half)
 
         ######################################################
         # Blending : Do blending after timestep
