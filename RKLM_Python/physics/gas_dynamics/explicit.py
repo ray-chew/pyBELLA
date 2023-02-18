@@ -159,7 +159,6 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
         Sol.rhou += lmbda * (flux.rhou[left_idx] - flux.rhou[right_idx])
         Sol.rhov += lmbda * (flux.rhov[left_idx] - flux.rhov[right_idx])
         Sol.rhow += lmbda * (flux.rhow[left_idx] - flux.rhow[right_idx])
-        Sol.rhoe += lmbda * (flux.rhoe[left_idx] - flux.rhoe[right_idx])
         Sol.rhoX += lmbda * (flux.rhoX[left_idx] - flux.rhoX[right_idx])
         Sol.rhoY += lmbda * (flux.rhoY[left_idx] - flux.rhoY[right_idx])
     
@@ -228,7 +227,6 @@ def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None)
         Sol.rhou += lmbda * (flux[dim].rhou[left_idx] - flux[dim].rhou[right_idx])
         Sol.rhov += lmbda * (flux[dim].rhov[left_idx] - flux[dim].rhov[right_idx])
         Sol.rhow += lmbda * (flux[dim].rhow[left_idx] - flux[dim].rhow[right_idx])
-        Sol.rhoe += lmbda * (flux[dim].rhoe[left_idx] - flux[dim].rhoe[right_idx])
         Sol.rhoX += lmbda * (flux[dim].rhoX[left_idx] - flux[dim].rhoX[right_idx])
         Sol.rhoY += lmbda * (flux[dim].rhoY[left_idx] - flux[dim].rhoY[right_idx])
 
@@ -254,7 +252,6 @@ def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None)
     #     Sol.rhou += lmbda * (flux[dim].rhou[left_idx] - flux[dim].rhou[right_idx])
     #     Sol.rhov += lmbda * (flux[dim].rhov[left_idx] - flux[dim].rhov[right_idx])
     #     Sol.rhow += lmbda * (flux[dim].rhow[left_idx] - flux[dim].rhow[right_idx])
-    #     Sol.rhoe += lmbda * (flux[dim].rhoe[left_idx] - flux[dim].rhoe[right_idx])
     #     Sol.rhoX += lmbda * (flux[dim].rhoX[left_idx] - flux[dim].rhoX[right_idx])
     #     Sol.rhoY += lmbda * (flux[dim].rhoY[left_idx] - flux[dim].rhoY[right_idx])
             

@@ -288,7 +288,6 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
     Sol.rhou[inner_domain] *= Sol.rho[inner_domain] / rhoold
     Sol.rhov[inner_domain] *= Sol.rho[inner_domain] / rhoold
     Sol.rhow[inner_domain] *= Sol.rho[inner_domain] / rhoold
-    Sol.rhoe[inner_domain] *= Sol.rho[inner_domain] / rhoold
     Sol.rhoX[inner_domain] *= Sol.rho[inner_domain] / rhoold
 
 # need details:
