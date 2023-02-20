@@ -1,5 +1,5 @@
 from inputs.enum_bdry import BdryType
-from inputs.boundary import set_explicit_boundary_data, set_ghostnodes_p2
+from inputs.boundary import set_explicit_boundary_data, set_ghostnodes_p2, set_ghostcells_p2
 from physics.low_mach.laplacian import stencil_9pt, stencil_27pt, stencil_hs, stencil_vs, stencil_9pt_numba_test, precon_diag_prepare
 from scipy import signal
 import numpy as np
@@ -36,7 +36,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None,
     dSdy = mpv.HydroState_n.get_dSdy(elem,node)
 
     mpv.rhs[...], _ = divergence_nodes(mpv.rhs,elem,node,Sol,ud)
-    scale_wall_node_values(mpv.rhs, node, ud, 2.0)
+    # scale_wall_node_values(mpv.rhs, node, ud, 2.0)
     div = mpv.rhs
 
     if writer != None: writer.populate(str(label), 'rhs', div)
@@ -61,8 +61,9 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None,
     Sol.rhow = Sol.rhow - dt * ( rhoYovG * dpdz - corr_v * drhou + corr_h1 * drhov) * (ndim == 3)
 
     Sol.rhoX = (Sol.rho * (Sol.rho / Sol.rhoY - S0c)) - dt * (v * dSdy) * Sol.rho
+    Sol.rhoX[np.where(Sol.rhoX < 1e-16)] = 0.0
 
-    dp2n[node.i1] -= dt * dpidP * div[node.i1]
+    dp2n[node.i1] -= dt * dpidP * div#[node.i1]
 
     weight = ud.compressibility
     mpv.p2_nodes += weight * dp2n
@@ -93,11 +94,13 @@ total_calls = 0
 def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff, Sol0 = None, writer = None, label=None):
     nc = node.sc
     rhs = np.zeros_like(mpv.p2_nodes)
+    rhs = mpv.rhs
 
-    if elem.ndim == 2:
-        p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy])
-    elif elem.ndim == 3:
-        p2 = np.copy(mpv.p2_nodes[1:-1,1:-1,1:-1])
+    # if elem.ndim == 2:
+    #     # p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy])
+    #     p2 = mpv.p2_nodes[node.p_isc]
+    # elif elem.ndim == 3:
+    #     p2 = np.copy(mpv.p2_nodes[1:-1,1:-1,1:-1])
     
     if writer != None:
         writer.populate(str(label),'p2_initial',mpv.p2_nodes)
@@ -147,25 +150,34 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if writer != None:
         writer.populate(str(label),'rhs_nodes',rhs)
 
-    mpv.rhs = rhs
+    mpv.rhs[...] = rhs
+    # rhs[:,-1] = rhs[:,-2]
+    # rhs[:,0] = rhs[:,1]
+    # rhs[:,-1] = 0.0
+    # rhs[:,0] = 0.0
 
-    diag_inv = precon_diag_prepare(mpv, elem, node, ud)
-    rhs *= diag_inv
+    # diag_inv = precon_diag_prepare(mpv, elem, node, ud)
+    # rhs *= diag_inv
     
-    # diag_inv = np.ones_like(mpv.rhs)
+    diag_inv = np.ones_like(mpv.rhs)
 
     VS = True
 
     # prepare initial left-hand side and the laplacian stencil
     if elem.ndim == 2:
-        lap = stencil_9pt(elem,node,mpv,Sol,ud,diag_inv,dt)
+        Vec = mpv
+        coriolis_params = multiply_inverse_coriolis(Vec, Sol, mpv, ud, elem, node, dt, attrs=('u', 'v', 'w'), get_coeffs = True)
+        # lap = stencil_9pt(elem,node,mpv,Sol,ud,diag_inv,dt,coriolis_params)
+        # sh = (ud.inx)*(ud.iny)
 
-        # p2 = np.copy(mpv.p2_nodes[1:-1,2:-2])
-        # shp = p2.shape
-        # lap = stencil_9pt_numba_test(elem,node,mpv,Sol,ud,diag_inv,dt,th,shp)
-        sh = (ud.inx)*(ud.iny)
+        p2 = mpv.p2_nodes[node.i2].T
+        lap = stencil_9pt_numba_test(mpv,node,coriolis_params,diag_inv)
+        sh = p2.shape[0] * p2.shape[1]
+
         # p2 = np.copy(mpv.p2_nodes[1:-1,1:-1])
         # sh = p2.reshape(-1).shape[0]
+
+
 
     elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2: 
         # horizontal slice hack
@@ -197,8 +209,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     # prepare right-hand side
     if elem.ndim == 2:
-        rhs_inner = rhs[node.igx:-node.igx,node.igy:-node.igy].ravel()
+        # rhs_inner = rhs[node.igx:-node.igx,node.igy:-node.igy].ravel()
         # rhs_inner = rhs[1:-1,1:-1].ravel()
+        rhs_inner = rhs[1:-1,1:-1].T.ravel()
     elif elem.ndim == 3 and elem.iicy > 1 and elem.iicz == 1:
 
         if not VS:
@@ -211,6 +224,8 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     else:
         rhs_inner = rhs[1:-1,elem.igs[1],1:-1].ravel()
 
+    # p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
+
     p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
     # p2, _ = gmres(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations)
     # p2,info = bicgstab(lap,rhs.ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
@@ -219,12 +234,14 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     global total_calls, total_iter
     total_iter += counter.niter
     total_calls += 1
-    # print(counter.niter)
-    # print("Total calls to BiCGStab routine = %i, total iterations = %i" %(total_calls, total_iter))
+    print(counter.niter)
+    print("Total calls to BiCGStab routine = %i, total iterations = %i" %(total_calls, total_iter))
 
     p2_full = np.zeros(nc).squeeze()
     if elem.ndim == 2:
-        p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
+        # p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
+        # p2_full[node.i2] = p2.reshape(rhs[node.i1].shape[0],rhs[node.i1].shape[1])
+        p2_full[node.i2] = p2.reshape(rhs[node.i1].shape[1],rhs[node.i1].shape[0]).T
         # p2 = p2.reshape(ud.inx+2, ud.iny+2)
         # p2_full[1:-1,1:-1] = p2
     elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2:
@@ -299,81 +316,145 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
 
     igs = elem.igs
 
-    nindim = np.empty((ndim),dtype='object')
-    innerdim = np.copy(nindim)
-    innerdim1 = np.copy(nindim)
-    eindim = np.empty((ndim),dtype='object')
+    strat = mpv.HydroState_n.get_dSdy(elem, node)
 
-    for dim in range(ndim):
-        is_periodic = ud.bdry_type[dim] == BdryType.PERIODIC
-        nindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic)
-        innerdim[dim] = slice(igs[dim],-igs[dim])
-        eindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic-1)
-
-        if dim == 1:
-            y_idx = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic-1)
-            right_idx = None if -igs[dim]+is_periodic == 0 else -igs[dim]+is_periodic
-            y_idx1 = slice(igs[dim]-is_periodic+1, right_idx)
-
-        innerdim1[dim] = slice(igs[dim]-1, (-igs[dim]+1))
- 
-    strat = (mpv.HydroState_n.S0[y_idx1] - mpv.HydroState_n.S0[y_idx]) / dy
-
-    nindim = tuple(nindim)
-    eindim = tuple(eindim)
-    innerdim = tuple(innerdim)
-    innerdim1 = tuple(innerdim1)
-
-    for dim in range(0,elem.ndim,2):
-        is_periodic = ud.bdry_type[dim] != BdryType.PERIODIC
-        strat = np.expand_dims(strat, dim)
-        strat = np.repeat(strat, elem.sc[dim]-int(2*is_periodic+igs[dim]), axis=dim)
-
-    Y = Sol.rhoY[nindim] / Sol.rho[nindim]
-    coeff = Gammainv * Sol.rhoY[nindim] * Y
+    Y = Sol.rhoY / Sol.rho
+    coeff = Gammainv * Sol.rhoY * Y
 
     nu = np.zeros_like(mpv.wcenter)
-    nu[eindim] = -dt**2 * (g / Msq) * strat * Y
+    nu = -dt**2 * (g / Msq) * strat * Y
 
     setattr(mpv, 'nu_c', nu)
-    nu = nu[eindim]
+    nu = nu
 
-    denom = 1.0 / (wh1**2 + wh2**2 + (nu + nonhydro) * (wv**2 + 1))
-
-    fimp = denom
-    gimp = denom
+    coeff[:,:2] = coeff[:,2:4][::-1]
+    coeff[:,-2:] = coeff[:,-4:-2][::-1]
+    # coeff[:,:2] = coeff[:,-2:] = 0.0
+    # coeff[0,:] = coeff[-1,:] = 0.0
 
     for dim in range(ndim):
         ## Assuming 2D vertical slice!
         if dim == 1:
-            mpv.wplus[dim][eindim] = coeff #* gimp #* (wv**2 + 1.0)
+            mpv.wplus[dim][...] = coeff #* gimp #* (wv**2 + 1.0)
         else:
-            mpv.wplus[dim][eindim] = coeff #* fimp #* (wh1**2 + nu + nonhydro)
+            mpv.wplus[dim][...] = coeff #* fimp #* (wh1**2 + nu + nonhydro)
 
     kernel = np.ones([2] * ndim)
 
-    mpv.wcenter[innerdim] = ccenter * signal.fftconvolve(Sol.rhoY[innerdim1]**cexp,kernel,mode='valid') / kernel.sum()
+    mpv.wcenter[node.i1] = (ccenter * signal.fftconvolve(Sol.rhoY[elem.i1]**cexp,kernel,mode='valid') / kernel.sum())
+    set_ghostcells_p2(mpv.wplus[0], elem, ud)
+    set_ghostcells_p2(mpv.wplus[1], elem, ud)
+    set_ghostnodes_p2(mpv.wcenter, node, ud, igs=(1,1))
 
-    scale_wall_node_values(mpv.wcenter, node, ud)
+    # scale_wall_node_values(mpv.wcenter, node, ud)
 
 
-def scale_wall_node_values(rhs, node, ud, factor=.5):
-    ndim = node.ndim
-    igs = node.igs
+# def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
+#     g = ud.gravity_strength[1]
+#     Msq = ud.Msq
+#     Gammainv = th.Gammainv
 
-    wall_idx = np.empty((ndim), dtype=object)
-    for dim in range(ndim):
-        wall_idx[dim] = slice(igs[dim],-igs[dim])
+#     ndim = node.ndim
+#     nonhydro = ud.nonhydrostasy
+#     dy = elem.dy
 
-    for dim in range(ndim):
-        is_wall = ud.bdry_type[dim] == BdryType.WALL or ud.bdry_type[dim] == BdryType.RAYLEIGH
-        if is_wall:
-            for direction in [-1,1]:
-                wall_idx[dim] = (igs[dim]) * direction
-                if direction == -1:
-                    wall_idx[dim] -= 1
-                wall_idx_tuple = tuple(wall_idx)
-                rhs[wall_idx_tuple] *= factor
+#     wh1, wv, wh2 = dt * ud.coriolis_strength
+
+#     ccenter = - ud.Msq * th.gm1inv / (dt**2)
+#     cexp = 2.0 - th.gamm
+
+#     igs = elem.igs
+
+#     nindim = np.empty((ndim),dtype='object')
+#     innerdim = np.empty((ndim),dtype='object')
+#     innerdim1 = np.empty((ndim),dtype='object')
+#     eindim = np.empty((ndim),dtype='object')
+
+#     for dim in range(ndim):
+#         is_periodic = ud.bdry_type[dim] == BdryType.PERIODIC
+#         nindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic)
+#         innerdim[dim] = slice(igs[dim],-igs[dim])
+#         eindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic-1)
+
+#         if dim == 1:
+#             y_idx = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic-1)
+#             right_idx = None if -igs[dim]+is_periodic == 0 else -igs[dim]+is_periodic
+#             y_idx1 = slice(igs[dim]-is_periodic+1, right_idx)
+
+#         innerdim1[dim] = slice(igs[dim]-1, (-igs[dim]+1))
+ 
+#     strat = (mpv.HydroState_n.S0[y_idx1] - mpv.HydroState_n.S0[y_idx]) / dy
+
+#     nindim = tuple(nindim)
+#     eindim = tuple(eindim)
+#     innerdim = tuple(innerdim)
+#     innerdim1 = tuple(innerdim1)
+
+#     for dim in range(0,elem.ndim,2):
+#         is_periodic = ud.bdry_type[dim] != BdryType.PERIODIC
+#         strat = np.expand_dims(strat, dim)
+#         strat = np.repeat(strat, elem.sc[dim]-int(2*is_periodic+igs[dim]), axis=dim)
+
+#     Y = Sol.rhoY[nindim] / Sol.rho[nindim]
+#     coeff = Gammainv * Sol.rhoY[nindim] * Y
+
+#     nu = np.zeros_like(mpv.wcenter)
+#     nu[eindim] = -dt**2 * (g / Msq) * strat * Y
+
+#     setattr(mpv, 'nu_c', nu)
+#     nu = nu[eindim]
+
+#     denom = 1.0 / (wh1**2 + wh2**2 + (nu + nonhydro) * (wv**2 + 1))
+
+#     fimp = denom
+#     gimp = denom
+
+#     for dim in range(ndim):
+#         ## Assuming 2D vertical slice!
+#         if dim == 1:
+#             mpv.wplus[dim][eindim] = coeff #* gimp #* (wv**2 + 1.0)
+#         else:
+#             mpv.wplus[dim][eindim] = coeff #* fimp #* (wh1**2 + nu + nonhydro)
+
+#     kernel = np.ones([2] * ndim)
+
+#     mpv.wcenter[innerdim] = ccenter * signal.fftconvolve(Sol.rhoY[innerdim1]**cexp,kernel,mode='valid') / kernel.sum()
+
+#     scale_wall_node_values(mpv.wcenter, node, ud)
+
+
+def scale_wall_node_values(rhs, node, ud, factor=.25):
+    # if factor < 1.0:
+    # if factor < 1.0:
+    #     factor = 1.0
+    #     rhs[:,1] *= factor
+    #     rhs[:,-2] *= factor
+
+    #     # rhs[:,0] *=  1.0# factor
+    #     # rhs[:,-1] *= 1.0# factor
+    rhs[:,0] = rhs[:,2] * factor
+    rhs[:,-1] = rhs[:,-3] * factor
+    # else:
+    #     factor = 1.0
+    #     rhs[:,:2] *= factor
+    #     rhs[:,-2:] *= factor
+
+    # ndim = node.ndim
+    # igs = node.igs
+
+    # wall_idx = np.empty((ndim), dtype=object)
+    # for dim in range(ndim):
+    #     wall_idx[dim] = slice(igs[dim],-igs[dim])
+
+    # for dim in range(ndim):
+    #     is_wall = ud.bdry_type[dim] == BdryType.WALL or ud.bdry_type[dim] == BdryType.RAYLEIGH
+    #     if is_wall:
+    #         for direction in [-1,1]:
+    #             wall_idx[dim] = (igs[dim]) * direction
+    #             if direction == -1:
+    #                 wall_idx[dim] -= 1
+    #             wall_idx_tuple = tuple(wall_idx)
+    #             rhs[wall_idx_tuple] *= factor
 
 
 def grad_nodes_fft(p2n, elem, node):
@@ -442,15 +523,15 @@ def divergence_nodes(rhs,elem,node,Sol,ud):
     inner_idx_p1y = tuple(inner_idx_p1y)
 
 
-    if ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH:
-        Sol.rhou[:,:2,...] = 0.0 
-        Sol.rhou[:,-2:,...] = 0.0
+    # if ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH:
+        # Sol.rhou[:,:2,...] = 0.0 
+        # Sol.rhou[:,-2:,...] = 0.0
 
-        Sol.rhov[:,:2,...] = 0.0 
-        Sol.rhov[:,-2:,...] = 0.0 
+        # Sol.rhov[:,:2,...] = 0.0 
+        # Sol.rhov[:,-2:,...] = 0.0 
 
-        Sol.rhow[:,:2,...] = 0.0
-        Sol.rhow[:,-2:,...] = 0.0
+        # Sol.rhow[:,:2,...] = 0.0
+        # Sol.rhow[:,-2:,...] = 0.0
 
     Y = Sol.rhoY / Sol.rho
 
@@ -470,7 +551,8 @@ def divergence_nodes(rhs,elem,node,Sol,ud):
 
         rhs[1:-1,1:-1,1:-1] = (Ux + Vy + Wz)
     else:
-        rhs[1:-1,1:-1] = (Ux + Vy)
+        # rhs[1:-1,1:-1] = (Ux + Vy)
+        rhs = (Ux + Vy)#[node.i1]#[:,1:-1]
 
     rhs_max = np.max(rhs[inner_idx]) if np.max(rhs[inner_idx]) > 0 else 0
     return rhs, rhs_max
@@ -482,18 +564,27 @@ def rhs_from_p_old(rhs,node,mpv):
 
     assert ndim != 1, "Not implemented for 1D"
     
+    # inner_idx = np.empty((ndim), dtype=object)
+    # for dim in range(ndim):
+    #     inner_idx[dim] = slice(igs[dim],-igs[dim])
+    
+    # inner_idx = tuple(inner_idx)
+    # rhs_n = np.zeros_like(rhs)
+    # rhs_hh = mpv.wcenter[inner_idx] * mpv.p2_nodes[inner_idx]
+    # rhs_n[inner_idx] = rhs[inner_idx] + 0.0 * rhs_hh
+
     inner_idx = np.empty((ndim), dtype=object)
     for dim in range(ndim):
         inner_idx[dim] = slice(igs[dim],-igs[dim])
     
     inner_idx = tuple(inner_idx)
     rhs_n = np.zeros_like(rhs)
-    rhs_hh = mpv.wcenter[inner_idx] * mpv.p2_nodes[inner_idx]
-    rhs_n[inner_idx] = rhs[inner_idx] + 0.0 * rhs_hh
+    rhs_hh = mpv.wcenter * mpv.p2_nodes[node.i1]
+    rhs_n = rhs + 0.0 * rhs_hh
     return rhs_n
 
 
-def multiply_inverse_coriolis(Vec, Sol, mpv, ud, elem, node, dt, attrs=('rhou', 'rhov', 'rhow')):
+def multiply_inverse_coriolis(Vec, Sol, mpv, ud, elem, node, dt, attrs=('rhou', 'rhov', 'rhow'), get_coeffs = False):
     nonhydro = ud.nonhydrostasy
     g = ud.gravity_strength[1]
     Msq = ud.Msq
@@ -536,3 +627,9 @@ def multiply_inverse_coriolis(Vec, Sol, mpv, ud, elem, node, dt, attrs=('rhou', 
     VecU[...] = U
     VecV[...] = V
     VecW[...] = W
+
+    i1 = node.i1
+    if get_coeffs:
+        coriolis_parameters = ((coeff_uu * denom)[i1].reshape(-1,), (coeff_vv * denom)[i1].reshape(-1,), (coeff_uv * denom)[i1].reshape(-1,), (coeff_vu * denom)[i1].reshape(-1,))
+        # coriolis_parameters = ((coeff_uu * denom).T, (coeff_vv * denom).T, (coeff_uv * denom)[i1].T, (coeff_vu * denom)[i1].T)
+        return coriolis_parameters

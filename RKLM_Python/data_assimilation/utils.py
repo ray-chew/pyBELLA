@@ -99,8 +99,8 @@ def boundary_mask(ud,elem,node,pad_X,pad_Y):
 
     pads = [pad_X,pad_Y]
     if elem.iicy > 1:
-        cmask = np.ones(elem.isc).squeeze()
-        nmask = np.ones(node.isc).squeeze()
+        cmask = np.ones(elem.iisc).squeeze()
+        nmask = np.ones(node.iisc).squeeze()
 
         for dim in range(elem.ndim):
             ghost_padding = [[0,0]] * elem.ndim
@@ -116,8 +116,8 @@ def boundary_mask(ud,elem,node,pad_X,pad_Y):
                 nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(0.0))
     
     elif elem.iicy == 1: # implying horizontal slices
-        cmask = np.ones(elem.isc).squeeze()
-        nmask = np.ones(node.isc)[:,0,:]
+        cmask = np.ones(elem.iisc).squeeze()
+        nmask = np.ones(node.iisc)[:,0,:]
 
         ndim = elem.ndim - 1
         for dim in range(ndim):

@@ -1,4 +1,5 @@
 import numpy as np
+from inputs.enum_bdry import BdryType
 
 class Grid(object):
     # def __init__(self, inx,iny,inz,x0,x1,y0,y1,z0,z1,left,right,bottom,top,back,front):
@@ -112,8 +113,9 @@ class SpaceDiscr(object):
         self.iicz = self.ic[2] = g.inz - 1 if g.inz > 1 else 1
 
         self.nc = self.icx * self.icy * self.icz
+        self.iisc = (self.iicx, self.iicy, self.iicz)
+        self.isc = (self.iicx+self.igx, self.iicy+self.igy, self.iicz+self.igz)
         self.sc = (self.icx, self.icy, self.icz)
-        self.isc = (self.iicx, self.iicy, self.iicz)
         self.igs = [self.igx,self.igy,self.igz]
 
         self.ifx = self.icx + 1
@@ -141,17 +143,15 @@ class SpaceDiscr(object):
         assert self.dx > 0.0
         assert self.dy > 0.0
         assert self.dz > 0.0
-        
-        self.inner_domain = np.empty((self.ndim),dtype=object)
-        for dim in range(self.ndim):
-            self.inner_domain[dim] = slice(self.igs[dim],-self.igs[dim])
-        self.inner_domain = tuple(self.inner_domain)
+                   
 
         i1 = np.empty(self.ndim, dtype='object')
+        i2 = np.empty(self.ndim, dtype='object')
         for dim in range(self.ndim):
-            i1[dim] = slice(1,-1)
+            i1[dim] = slice(self.igs[dim]-1, (-self.igs[dim]+1))
+            i2[dim] = slice(self.igs[dim],-self.igs[dim])
         self.i1 = tuple(i1)
-        
+        self.i2 = tuple(i2)
 
 class ElemSpaceDiscr(SpaceDiscr):
     """
@@ -159,7 +159,7 @@ class ElemSpaceDiscr(SpaceDiscr):
 
     """
 
-    def __init__(self,g):
+    def __init__(self,g, ud):
         """
         Parameters
         ----------
@@ -176,18 +176,38 @@ class ElemSpaceDiscr(SpaceDiscr):
         self.y = y0 + self.dy * np.arange(self.icy)
         self.z = z0 + self.dz * np.arange(self.icz)
 
+        self.get_p_indim(ud)
+
     def flip(self):
         self.dx, self.dy = self.dy, self.dx
         self.icx, self.icy = self.icy, self.icx
         self.ifx, self.ify = self.ify, self.ifx
 
+    def get_p_indim(self, ud):
+        ndim = self.ndim
+        igs = self.igs
+        p_isc = []
+        pp1_isc = []
+
+        eindim = np.empty((ndim),dtype='object')
+        for dim in range(ndim):
+            is_periodic = ud.bdry_type[dim] == BdryType.PERIODIC
+            eindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic-1)
+
+            p_isc.append(self.isc[dim] + 2 * is_periodic)
+            pp1_isc.append(self.isc[dim] + 2 * is_periodic + 2)
+
+        self.periodic_indim = tuple(eindim)
+        self.p_isc = tuple(p_isc)
+        self.pp1_isc = tuple(pp1_isc)
+        
         
 class NodeSpaceDiscr(SpaceDiscr):
     """
     Inherits the class :class:`discretization.kgrid.SpaceDiscr`. For a given grid extent and number of grid-points, this class returns an equidistant discretised node-based grid.
 
     """
-    def __init__(self,g):
+    def __init__(self,g, ud):
         """
         Parameters
         ----------
@@ -212,10 +232,31 @@ class NodeSpaceDiscr(SpaceDiscr):
         self.y = y0 + self.dy * np.arange(self.icy)
         self.z = z0 + self.dz * np.arange(self.icz)
 
+        self.iisc = (self.iicx , self.iicy , self.iicz)
+        self.isc = (self.iicx+self.igx , self.iicy+self.igy , self.iicz+self.igz)
         self.sc = (self.icx , self.icy , self.icz)
-        self.isc = (self.iicx , self.iicy , self.iicz)
+
+        self.get_p_indim(ud)
 
     def flip(self):
         self.dx, self.dy = self.dy, self.dx
         self.icx, self.icy = self.icy, self.icx
         self.ifx, self.ify = self.ify, self.ifx
+
+    def get_p_indim(self, ud):
+        ndim = self.ndim
+        igs = self.igs
+        p_isc = []
+        pp1_isc = []
+
+        nindim = np.empty((ndim),dtype='object')
+        for dim in range(ndim):
+            is_periodic = ud.bdry_type[dim] == BdryType.PERIODIC
+            nindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic)
+            
+            p_isc.append(self.isc[dim] + 2 * is_periodic)
+            pp1_isc.append(self.isc[dim] + 2 * is_periodic + 2)
+
+        self.periodic_indim = tuple(nindim)
+        self.p_isc = tuple(p_isc)
+        self.pp1_isc = tuple(pp1_isc)

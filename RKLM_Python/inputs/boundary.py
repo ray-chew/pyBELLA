@@ -272,7 +272,7 @@ def get_gravity_padding(ndim,cur_idx,direction,offset,elem,y_axs=None):
 
 def set_ghostcells_p2(p,elem,ud):
     igs = elem.igs
-    # idx = elem.inner_domain
+    
     for dim in range(elem.ndim):
         ghost_padding, idx = get_ghost_padding(elem.ndim,dim,igs)
 
@@ -282,8 +282,8 @@ def set_ghostcells_p2(p,elem,ud):
             p[...] = np.pad(p[idx],ghost_padding,'symmetric')
 
 
-def set_ghostnodes_p2(p,node,ud):
-    igs = node.igs
+def set_ghostnodes_p2(p,node,ud, igs=None):
+    if igs is None: igs = node.igs
     for dim in range(node.ndim):
         ghost_padding, idx = get_ghost_padding(node.ndim,dim,igs)
 
