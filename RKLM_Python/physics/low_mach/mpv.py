@@ -19,9 +19,9 @@ class MPV(object):
         self.v = np.zeros((sc))
         self.w = np.zeros((sc))
 
-        self.rhs = np.zeros((sc))
-        self.wcenter = np.zeros((sn))
-        self.wplus = np.zeros(([elem.ndim]+list(sn)))
+        self.rhs = np.zeros((node.isc))
+        self.wcenter = np.zeros((node.isc))
+        self.wplus = np.zeros(([elem.ndim]+list(sc)))
 
         self.HydroState = States([sc[1]],ud)
         self.HydroState_n = States([sn[1]],ud)

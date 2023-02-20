@@ -101,7 +101,7 @@ class UserData(object):
         self.limiter_type_velocity = LimiterType.NONE
 
         self.tol = 1.e-16
-        self.max_iterations = 10000
+        self.max_iterations = 1000
 
         # blending parameters
         self.perturb_type = 'pos_perturb'
@@ -144,24 +144,6 @@ class UserData(object):
         g = self.gravity_strength[1] / self.Msq
 
         return np.exp(Nsq * y / g)
-
-    def rhoe_function(self,rho,u,v,w,p,ud,th):
-        pass
-
-    # @property
-    # def iny(self):
-    #     return self.iny
-
-    # @iny.setter
-    # def iny(self, val):
-    #     self.iny = val
-    #     if self.bdry_type[1] == BdryType.RAYLEIGH:
-    #         self.inbcy = self.iny - 1
-    #         self.iny += int(3*self.inbcy)
-
-    #         # tentative workaround
-    #         self.bcy = self.ymax
-    #         self.ymax += 3.0 * self.bcy
 
     @staticmethod
     def rayleigh_bc_function(ud):
@@ -209,7 +191,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     A = A0 * bump(2.0 * y / (n * Hrho) - 1.0)             # eqn (12)
 
     use_hydrostate = False
-    
+
     if use_hydrostate:
         # Use hydrostatically balanaced background
         hydrostatic_state(mpv, elem, node, th, ud)
@@ -224,7 +206,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         pibar = 1.0 / Ybar
         mpv.HydroState.rho0[...] = rhobar
         mpv.HydroState.Y0[...] = Ybar
-        mpv.HydroState.S0[...] = pibar
+        mpv.HydroState.S0[...] = 1.0 / Ybar #1.0 / ud.stratification(y)
 
         # pibar = (rhobar * Ybar * ud.Rg)**(th.gm1)
         # pibar = (rhobar * Ybar)**(th.gm1)
@@ -308,7 +290,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         Ybar_n = np.exp(yn / Htheta)
         rhobar_n = np.exp(-yn / Hrho_n)
         mpv.HydroState_n.Y0[...] = Ybar_n
-        mpv.HydroState_n.S0[...] = 1.0 / Ybar_n
+        mpv.HydroState_n.S0[...] = 1.0 / Ybar_n # 1.0 / ud.stratification(yn)
 
     An = A0 #* bump(2.0 * yn / (n * Hrho_n) - 1.0)
 

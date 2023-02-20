@@ -43,13 +43,13 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
         for split in range(ndim):
             lmbda = time_step / elem.dxyz[split]
             Sol.flip_forward()
-            if elem.isc[split] > 1: 
+            if elem.iisc[split] > 1: 
                 explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
     else:
         for i_split in range(ndim):
             split = elem.ndim - 1 - i_split
             lmbda = time_step / elem.dxyz[split]
-            if elem.isc[split] > 1:
+            if elem.iisc[split] > 1:
                 explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, [writer,node,label])
             Sol.flip_backward()
 
@@ -58,14 +58,14 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
         for i_split in range(ndim):
             split = elem.ndim - 1 - i_split
             lmbda = time_step / elem.dxyz[split]
-            if elem.isc[split] > 1:
+            if elem.iisc[split] > 1:
                 explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
             Sol.flip_backward()
     else:
         for split in range(ndim):
             lmbda = time_step / elem.dxyz[split]
             Sol.flip_forward()
-            if elem.isc[split] > 1:
+            if elem.iisc[split] > 1:
                 explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
             
     # Sol.rhoX += Sol.rho * mpv.HydroState.S0
@@ -211,7 +211,7 @@ def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None)
     for split in range(ndim):
         lmbda = time_step / elem.dxyz[split]
         Sol.flip_forward()
-        if elem.isc[split] > 1: 
+        if elem.iisc[split] > 1: 
             flux[split] = explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, tag='rk')
 
     ndim = elem.ndim
@@ -240,7 +240,7 @@ def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None)
     # for split in range(ndim):
     #     lmbda = dt / elem.dxyz[split]
     #     Sol.flip_forward()
-    #     if elem.isc[split] > 1: 
+    #     if elem.iisc[split] > 1: 
     #         flux[split] = explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, tag='rk')
 
     # Sol = deepcopy(Sol0)

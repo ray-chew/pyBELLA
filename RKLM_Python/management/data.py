@@ -19,8 +19,6 @@ from data_assimilation import blending
 
 import numpy as np
 from copy import deepcopy
-from scipy import signal
-import h5py
 
 from termcolor import colored
 
@@ -53,8 +51,8 @@ def data_init(ud):
 
     grid = Grid(inx,iny,inz,x0,x1,y0,y1,z0,z1)
 
-    elem = ElemSpaceDiscr(grid)
-    node = NodeSpaceDiscr(grid)
+    elem = ElemSpaceDiscr(grid, ud)
+    node = NodeSpaceDiscr(grid, ud)
 
     return elem, node
 
