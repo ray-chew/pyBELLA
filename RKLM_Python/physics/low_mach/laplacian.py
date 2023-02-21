@@ -504,11 +504,11 @@ def stencil_9pt_numba_test(mpv,node,coriolis,diag_inv):
     coeffs = (hplusx.T, hplusy.T, hcenter.T)
     shp = node.iisc
 
-    # dummy_p = np.zeros((node.isc[1],node.isc[0]))
+    dummy_p = np.zeros((node.isc[1],node.isc[0]))
 
-    # return lambda p : lap2D_numba_test(p, dummy_p, dx, dy, coeffs, diag_inv.T, coriolis, shp)
+    return lambda p : lap2D_numba_test(p, dummy_p, dx, dy, coeffs, diag_inv.T, coriolis, shp)
 
-# @jit(nopython=True, cache=False)
+@jit(nopython=True, cache=False)
 def lap2D_numba_test(p, dp, dx, dy, coeffs, diag_inv, coriolis, shp):
     p = p.reshape(shp[1],shp[0])
     dp[1:-1,1:-1] = p

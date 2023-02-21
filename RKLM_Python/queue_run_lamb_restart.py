@@ -19,8 +19,8 @@ resol_y = [120]
 # resol_t = [200,400,600,800]
 resol_t = [600]
 # omegas = [0.0, 2.0 * omega * t_ref]
-# omegas = [2.0 * omega * t_ref]
-omegas = [0.0]
+omegas = [2.0 * omega * t_ref]
+# omegas = [0.0]
 
 
 ud = {}
