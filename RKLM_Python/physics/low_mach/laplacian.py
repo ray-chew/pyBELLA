@@ -493,7 +493,7 @@ def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_per
     return lap
 
 
-def stencil_9pt_numba_test(mpv,node,coriolis,diag_inv):
+def stencil_9pt_numba_test(mpv,node,coriolis,diag_inv, ud):
     dx = node.dx
     dy = node.dy
 
@@ -502,18 +502,28 @@ def stencil_9pt_numba_test(mpv,node,coriolis,diag_inv):
     hcenter = mpv.wcenter
 
     coeffs = (hplusx.T, hplusy.T, hcenter.T)
+
     shp = node.iisc
 
     dummy_p = np.zeros((node.isc[1],node.isc[0]))
 
-    return lambda p : lap2D_numba_test(p, dummy_p, dx, dy, coeffs, diag_inv.T, coriolis, shp)
+    # return lambda p : lap2D_numba_test(p, dummy_p, dx, dy, coeffs, diag_inv.T, coriolis, shp)
+
+    ###################
+
+    x_wall = ud.bdry_type[0] == BdryType.WALL or ud.bdry_type[0] == BdryType.RAYLEIGH
+    y_wall = ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH
+
+    coeffs = (hplusx[node.i1][:-1,:-1].T.reshape(-1,), hplusy[node.i1][:-1,:-1].T.reshape(-1,), hcenter[1:-1,1:-1].T.reshape(-1,))
+    coriolis = (coriolis[0][node.i1][:-1,:-1].reshape(-1,),coriolis[1][node.i1][:-1,:-1].reshape(-1,),coriolis[2].reshape(-1,),coriolis[3].reshape(-1,))
+    return lambda p : lap2D_gather_new(p, node.iicx, node.iicy, coeffs, dx, dy, x_wall, y_wall, diag_inv.T.reshape(-1,), coriolis)
 
 @jit(nopython=True, cache=False)
 def lap2D_numba_test(p, dp, dx, dy, coeffs, diag_inv, coriolis, shp):
     p = p.reshape(shp[1],shp[0])
     dp[1:-1,1:-1] = p
 
-    dp = periodic(dp)
+    dp = periodic(dp, coeffs[0])
     dp = kernel_9pt(dp, dx, dy, coeffs, diag_inv, coriolis)
     p = dp[1:-1,1:-1]
 
@@ -521,13 +531,17 @@ def lap2D_numba_test(p, dp, dx, dy, coeffs, diag_inv, coriolis, shp):
 
 
 @jit(nopython=True, nogil=False, cache=True)
-def lap2D_gather_new(p, iicxn, iicyn, hplusx, hplusy, hcenter, oodx, oody, x_wall, y_wall, diag_inv, coriolis):
+def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, coriolis):
     ngnc = (iicxn) * (iicyn)
     lap = np.zeros((ngnc))
     cnt_x = 0
     cnt_y = 0
 
-    cyy, cxx, cyx, cxy = coriolis
+    oodx = 1.0 / dx
+    oody = 1.0 / dy
+    cxx, cyy, cxy, cyx = coriolis
+
+    hplusx, hplusy, hcenter = coeffs
 
     for idx in range(iicxn * iicyn):
         ne_topleft = idx - iicxn - 1
@@ -646,7 +660,7 @@ def lap2D_gather_new(p, iicxn, iicyn, hplusx, hplusy, hcenter, oodx, oody, x_wal
             hplusy_botleft = 0.  
             hplusx_botright = 0.
             hplusy_botright = 0.
-              
+
         Dx_tl = 0.5 * (topmid   - topleft + midmid   - midleft) * hplusx_topleft
         Dx_tr = 0.5 * (topright - topmid  + midright - midmid ) * hplusx_topright
         Dx_bl = 0.5 * (botmid   - botleft + midmid   - midleft) * hplusx_botleft
@@ -662,7 +676,6 @@ def lap2D_gather_new(p, iicxn, iicyn, hplusx, hplusy, hcenter, oodx, oody, x_wal
         Dyy = 0.5 * (cyy_br * Dy_br - cyy_tr * Dy_tr + cyy_bl * Dy_bl - cyy_tl * Dy_tl) * oody * oody * fac
         Dyx = 0.5 * (cyx_br * Dy_br - cyx_bl * Dy_bl + cyx_tr * Dy_tr - cyx_tl * Dy_tl) * oody * oodx * fac
         Dxy = 0.5 * (cxy_br * Dx_br - cxy_tr * Dx_tr + cxy_bl * Dy_bl - cxy_tl * Dx_tl) * oodx * oody * fac
-        
 
         lap[idx] = Dxx + Dyy + Dyx + Dxy + hcenter[idx] * p[idx]
 
@@ -730,30 +743,38 @@ def kernel_9pt(a, dx, dy, coeffs, diag_inv, coriolis):
     Dx_bl = 0.5 * (botmid   - botleft + midmid   - midleft) * hpx_bl
     Dx_br = 0.5 * (botright - botmid  + midright - midmid ) * hpx_br
 
-    Dy_tl = 0.5 * (midmid   - topmid   + midleft - topleft) * hpy_tl
-    Dy_tr = 0.5 * (midright - topright + midmid  - topmid ) * hpy_tr
-    Dy_bl = 0.5 * (botmid   - midmid   + botleft - midleft) * hpy_bl
-    Dy_br = 0.5 * (botright - midright + botmid  - midmid ) * hpy_br
+    Dy_tl = 0.5 * (topmid   - midmid   + topleft - midleft) * hpy_tl
+    Dy_tr = 0.5 * (topright - midright + topmid  - midmid ) * hpy_tr
+    Dy_bl = 0.5 * (midmid   - botmid   + midleft - botleft) * hpy_bl
+    Dy_br = 0.5 * (midright - botright + midmid  - botmid ) * hpy_br
     
     Dxx = 0.5 * (cxx_tr * Dx_tr - cxx_tl * Dx_tl + cxx_br * Dx_br - cxx_bl * Dx_bl) * oodx * oodx
-    Dyy = 0.5 * (cyy_br * Dy_br - cyy_tr * Dy_tr + cyy_bl * Dy_bl - cyy_tl * Dy_tl) * oody * oody
+    Dyy = 0.5 * (cyy_tr * Dy_tr - cyy_br * Dy_br + cyy_tl * Dy_tl - cyy_bl * Dy_bl) * oody * oody
     Dyx = 0.5 * (cyx_br * Dy_br - cyx_bl * Dy_bl + cyx_tr * Dy_tr - cyx_tl * Dy_tl) * oody * oodx
-    Dxy = 0.5 * (cxy_br * Dx_br - cxy_tr * Dx_tr + cxy_bl * Dy_bl - cxy_tl * Dx_tl) * oodx * oody
+    Dxy = 0.5 * (cxy_tr * Dx_tr - cxy_br * Dx_br + cxy_tl * Dx_tl - cxy_bl * Dx_bl) * oodx * oody
     
     return ((Dxx + Dyy + Dyx + Dxy) + hpc[0,0] * a[0,0]) * diag_inv[0,0]
 
 @nb.njit(cache=False)
-def periodic(arr):
+def periodic(arr, bgst):
+    # wall padding
+    # arr[0,:] = arr[1,:] + 0.5 * (arr[2,:] + arr[1,:])
+    # arr[-1,:] = arr[-2,:] - 0.5 * (arr[-3,:] + arr[-2,:])
+
+    # ratio_bot = bgst[0,5] / bgst[1,5]
+    # ratio_top = bgst[-1,5] / bgst[-2,5]
+
+    # arr[0,:] = arr[1,:] * ratio_bot
+    # arr[-1,:] = arr[-2,:] * ratio_top
+
     arr[0,:] = arr[2,:]
     arr[-1,:] = arr[-3,:]
+
+    # periodic padding
     arr[:,0] = arr[:,-3]
     arr[:,-1] = arr[:,2]
     
     return arr
-
-    
-    
-
 
 
 
