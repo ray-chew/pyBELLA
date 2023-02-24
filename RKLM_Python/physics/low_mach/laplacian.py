@@ -515,7 +515,7 @@ def stencil_9pt_numba_test(mpv,node,coriolis,diag_inv, ud):
     y_wall = ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH
 
     coeffs = (hplusx[node.i1][:-1,:-1].T.reshape(-1,), hplusy[node.i1][:-1,:-1].T.reshape(-1,), hcenter[1:-1,1:-1].T.reshape(-1,))
-    coriolis = (coriolis[0][node.i1][:-1,:-1].reshape(-1,),coriolis[1][node.i1][:-1,:-1].reshape(-1,),coriolis[2].reshape(-1,),coriolis[3].reshape(-1,))
+    coriolis = (coriolis[0][node.i1][:-1,:-1].reshape(-1,),coriolis[1][node.i1][:-1,:-1].reshape(-1,),coriolis[2][node.i1][:-1,:-1].reshape(-1,),coriolis[3][node.i1][:-1,:-1].reshape(-1,))
     return lambda p : lap2D_gather_new(p, node.iicx, node.iicy, coeffs, dx, dy, x_wall, y_wall, diag_inv.T.reshape(-1,), coriolis)
 
 @jit(nopython=True, cache=False)
@@ -675,7 +675,7 @@ def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, 
         Dxx = 0.5 * (cxx_tr * Dx_tr - cxx_tl * Dx_tl + cxx_br * Dx_br - cxx_bl * Dx_bl) * oodx * oodx * fac
         Dyy = 0.5 * (cyy_br * Dy_br - cyy_tr * Dy_tr + cyy_bl * Dy_bl - cyy_tl * Dy_tl) * oody * oody * fac
         Dyx = 0.5 * (cyx_br * Dy_br - cyx_bl * Dy_bl + cyx_tr * Dy_tr - cyx_tl * Dy_tl) * oody * oodx * fac
-        Dxy = 0.5 * (cxy_br * Dx_br - cxy_tr * Dx_tr + cxy_bl * Dy_bl - cxy_tl * Dx_tl) * oodx * oody * fac
+        Dxy = 0.5 * (cxy_br * Dx_br - cxy_tr * Dx_tr + cxy_bl * Dx_bl - cxy_tl * Dx_tl) * oodx * oody * fac
 
         lap[idx] = Dxx + Dyy + Dyx + Dxy + hcenter[idx] * p[idx]
 
