@@ -96,6 +96,10 @@ class UserData(object):
 
         self.dtfixed0 = 600.0 / self.t_ref
         self.dtfixed = self.dtfixed0
+        
+        self.CFL = 0.45
+        self.dtfixed0 = 0.5*((self.xmax-self.xmin)/(self.inx-1))/1.0
+        self.dtfixed = self.dtfixed0
 
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
@@ -253,8 +257,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Y = Ybar + Yp
 
     # eqn (2.3)
-    # rho = (((pibar + Msq * pi))**th.gm1inv) / Y# / ud.Rg
-    rho = rhobar
+    rho = (((pibar + Msq * pi))**th.gm1inv) / Y# / ud.Rg
+    # rho = rhobar
     Sol.rho[...] = rho
     Sol.rhou[...] = rho * u
     Sol.rhov[...] = rho * v

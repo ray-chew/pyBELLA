@@ -148,10 +148,11 @@ class SpaceDiscr(object):
         i1 = np.empty(self.ndim, dtype='object')
         i2 = np.empty(self.ndim, dtype='object')
         for dim in range(self.ndim):
-            i1[dim] = slice(self.igs[dim]-1, (-self.igs[dim]+1))
+            i1[dim] = slice(1,-1)
             i2[dim] = slice(self.igs[dim],-self.igs[dim])
         self.i1 = tuple(i1)
         self.i2 = tuple(i2)
+        
 
 class ElemSpaceDiscr(SpaceDiscr):
     """

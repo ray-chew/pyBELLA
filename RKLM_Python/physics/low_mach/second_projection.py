@@ -36,7 +36,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None,
     dSdy = mpv.HydroState_n.get_dSdy(elem,node)
 
     mpv.rhs[...] = divergence_nodes(mpv.rhs,elem,node,Sol,ud)
-    # scale_wall_node_values(mpv.rhs, node, ud, 2.0)
+    scale_wall_node_values(mpv.rhs, node, ud, 2.0)
     div = mpv.rhs
 
     if writer != None: writer.populate(str(label), 'rhs', div)
@@ -171,7 +171,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         # sh = (ud.inx)*(ud.iny)
 
         p2 = mpv.p2_nodes[node.i2].T
-        lap = stencil_9pt_numba_test(mpv,node,coriolis_params,diag_inv)
+        lap = stencil_9pt_numba_test(mpv,node,coriolis_params,diag_inv, ud)
         sh = p2.shape[0] * p2.shape[1]
 
         # p2 = np.copy(mpv.p2_nodes[1:-1,1:-1])
@@ -279,25 +279,27 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud,th,updt_chi):
     ndim = node.ndim
     Gammainv = th.Gammainv
 
-    dSdy = mpv.HydroState_n.get_dSdy(elem, node)
+    dSdy = mpv.HydroState_n.get_dSdy(elem, node)[elem.i2]
 
-    Dpx, Dpy, Dpz = grad_nodes(p, elem.ndim, node.dxyz)
+    Dpx, Dpy, Dpz = grad_nodes(p[node.i2], elem.ndim, node.dxyz)
 
-    thinv = Sol.rho / Sol.rhoY
+    thinv = (Sol.rho / Sol.rhoY)[elem.i2]
 
     Y = Sol.rhoY / Sol.rho
-    coeff = Gammainv * Sol.rhoY * Y
+    coeff = (Gammainv * Sol.rhoY * Y)[elem.i2]
 
-    mpv.u[...] = -dt * coeff * Dpx
-    mpv.v[...] = -dt * coeff * Dpy
-    mpv.w[...] = -dt * coeff * Dpz
+    mpv.u[elem.i2] = -dt * coeff * Dpx
+    mpv.v[elem.i2] = -dt * coeff * Dpy
+    mpv.w[elem.i2] = -dt * coeff * Dpz
 
     multiply_inverse_coriolis(mpv, Sol, mpv, ud, elem, elem, dt, attrs=['u', 'v', 'w'])
 
-    Sol.rhou += thinv * mpv.u
-    Sol.rhov += thinv * mpv.v
-    Sol.rhow += thinv * mpv.w if ndim == 3 else 0.0
-    Sol.rhoX += - updt_chi * dt * dSdy * Sol.rhov
+    Sol.rhou[elem.i2] += thinv * mpv.u[elem.i2]
+    Sol.rhov[elem.i2] += thinv * mpv.v[elem.i2]
+    Sol.rhow[elem.i2] += thinv * mpv.w[elem.i2] if ndim == 3 else 0.0
+    Sol.rhoX[elem.i2] += - updt_chi * dt * dSdy * Sol.rhov[elem.i2]
+
+    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 
 def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
@@ -327,8 +329,10 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     setattr(mpv, 'nu_c', nu)
     nu = nu
 
-    coeff[:,:2] = coeff[:,2:4][::-1]
-    coeff[:,-2:] = coeff[:,-4:-2][::-1]
+    # coeff[:,0] = coeff[:,2]
+    # coeff[:,1] = coeff[:,2]
+    # coeff[:,-1] = coeff[:,-3]
+    # coeff[:,-2] = coeff[:,-3]
     # coeff[:,:2] = coeff[:,-2:] = 0.0
     # coeff[0,:] = coeff[-1,:] = 0.0
 
@@ -341,12 +345,16 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
 
     kernel = np.ones([2] * ndim)
 
-    mpv.wcenter[node.i1] = (ccenter * signal.fftconvolve(Sol.rhoY[elem.i1]**cexp,kernel,mode='valid') / kernel.sum())
-    set_ghostcells_p2(mpv.wplus[0], elem, ud)
-    set_ghostcells_p2(mpv.wplus[1], elem, ud)
-    set_ghostnodes_p2(mpv.wcenter, node, ud, igs=(1,1))
+    mpv.wcenter = (ccenter * signal.fftconvolve(Sol.rhoY**cexp,kernel,mode='valid') / kernel.sum())
 
-    # scale_wall_node_values(mpv.wcenter, node, ud)
+    # set_ghostcells_p2(mpv.wplus[0], elem, ud)
+    # set_ghostcells_p2(mpv.wplus[1], elem, ud)
+    # set_ghostnodes_p2(mpv.wcenter, node, ud, igs=(1,1))
+    # mpv.wcenter[:,0] = mpv.wcenter[:,1]
+    # mpv.wcenter[:,-1] = mpv.wcenter[:,-2]
+    assert True
+
+    scale_wall_node_values(mpv.wcenter, node, ud)
 
 
 # def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
@@ -423,7 +431,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
 #     scale_wall_node_values(mpv.wcenter, node, ud)
 
 
-def scale_wall_node_values(rhs, node, ud, factor=.25):
+def scale_wall_node_values(rhs, node, ud, factor=.5):
     # if factor < 1.0:
     # if factor < 1.0:
     #     factor = 1.0
@@ -432,29 +440,29 @@ def scale_wall_node_values(rhs, node, ud, factor=.25):
 
     #     # rhs[:,0] *=  1.0# factor
     #     # rhs[:,-1] *= 1.0# factor
-    rhs[:,0] = rhs[:,2] * factor
-    rhs[:,-1] = rhs[:,-3] * factor
+    # rhs[:,0] = rhs[:,2] * factor
+    # rhs[:,-1] = rhs[:,-3] * factor
     # else:
     #     factor = 1.0
     #     rhs[:,:2] *= factor
     #     rhs[:,-2:] *= factor
 
-    # ndim = node.ndim
-    # igs = node.igs
+    ndim = node.ndim
+    igs = node.igs
 
-    # wall_idx = np.empty((ndim), dtype=object)
-    # for dim in range(ndim):
-    #     wall_idx[dim] = slice(igs[dim],-igs[dim])
+    wall_idx = np.empty((ndim), dtype=object)
+    for dim in range(ndim):
+        wall_idx[dim] = slice(igs[dim],-igs[dim])
 
-    # for dim in range(ndim):
-    #     is_wall = ud.bdry_type[dim] == BdryType.WALL or ud.bdry_type[dim] == BdryType.RAYLEIGH
-    #     if is_wall:
-    #         for direction in [-1,1]:
-    #             wall_idx[dim] = (igs[dim]) * direction
-    #             if direction == -1:
-    #                 wall_idx[dim] -= 1
-    #             wall_idx_tuple = tuple(wall_idx)
-    #             rhs[wall_idx_tuple] *= factor
+    for dim in range(ndim):
+        is_wall = ud.bdry_type[dim] == BdryType.WALL or ud.bdry_type[dim] == BdryType.RAYLEIGH
+        if is_wall:
+            for direction in [-1,1]:
+                wall_idx[dim] = (igs[dim]) * direction
+                if direction == -1:
+                    wall_idx[dim] -= 1
+                wall_idx_tuple = tuple(wall_idx)
+                rhs[wall_idx_tuple] *= factor
 
 
 def grad_nodes_fft(p2n, elem, node):
@@ -506,89 +514,6 @@ def grad_nodes(p, ndim, dxy):
 
 
 def divergence_nodes(rhs,elem,node,Sol,ud):
-    # ndim = elem.ndim
-    # igs = elem.igs
-    # dxyz = node.dxyz
-    # inner_idx = np.empty((ndim), dtype=object)
-
-    # for dim in range(ndim):
-    #     is_periodic = ud.bdry_type[dim] == BdryType.PERIODIC
-    #     inner_idx[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic)
-    # inner_idx_p1y = np.copy(inner_idx)
-    # inner_idx_p1y[1] = slice(1,-1)
-        
-    # indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat = ndim)]
-    # signs = [sgn for sgn in product([1,-1], repeat = ndim)]
-    # inner_idx = tuple(inner_idx)
-    # inner_idx_p1y = tuple(inner_idx_p1y)
-
-    # # hotfix test
-    # top_idx = 0
-    # bot_idx = -1
-
-    # # get top factor
-    # P_top = Sol.rhoY[inner_idx][:,top_idx]
-    # rho_top = Sol.rho[inner_idx][:,top_idx]
-    # Y_top = P_top / rho_top
-
-    # P_top_p1 = Sol.rhoY[inner_idx_p1y][:,top_idx]
-    # rho_top_p1 = Sol.rho[inner_idx_p1y][:,top_idx]
-    # Y_top_p1 = P_top_p1 / rho_top_p1
-
-    # PY_top = P_top * Y_top
-    # PY_top_p1 = P_top_p1 * Y_top_p1
-    # PY_top_edge = 0.5 * (PY_top + PY_top_p1)
-    # PY_top_factor = PY_top_edge / PY_top
-
-    # # get bottom factor
-    # P_bot = Sol.rhoY[inner_idx][:,bot_idx]
-    # rho_bot = Sol.rho[inner_idx][:,bot_idx]
-    # Y_bot = P_bot / rho_bot
-
-    # P_bot_m1 = Sol.rhoY[inner_idx_p1y][:,bot_idx]
-    # rho_bot_m1 = Sol.rho[inner_idx_p1y][:,bot_idx]
-    # Y_bot_m1 = P_bot_m1 / rho_bot_m1
-
-    # PY_bot = P_bot * Y_bot
-    # PY_bot_m1 = P_bot_m1 * Y_bot_m1
-    # PY_bot_edge = 0.5 * (PY_bot + PY_bot_m1)
-    # PY_bot_factor = PY_bot_edge / PY_bot
-
-    # rhou = np.copy(Sol.rhou[inner_idx])
-    # rhou[:,top_idx] *= PY_top_factor
-    # rhou[:,bot_idx] *= PY_bot_factor
-
-    # Sols1 = np.stack((rhou, Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
-    # Sols = np.stack((Sol.rhou[inner_idx], Sol.rhov[inner_idx], Sol.rhow[inner_idx]), axis=-1)
-
-    # oodxyz = 1./dxyz
-    # Y = Sol.rhoY[inner_idx] / Sol.rho[inner_idx]
-
-    # tmp_fxyz = 0.5**(ndim-1) * oodxyz[:ndim] * Sols[...,:ndim] * Y[...,None]
-
-    # count = 0
-    # for index in indices:
-    #     rhs[:,1:-1][index] += np.inner(signs[count], tmp_fxyz)
-    #     count += 1
-
-    # tmp_fxyz1 = 0.5**(ndim-1) * oodxyz[:ndim] * Sols1[...,:ndim] * Y[...,None]
-
-    # rhs1 = np.zeros_like(rhs)
-    # count = 0
-
-    # # print(signs)
-    # for index in indices:
-    #     rhs1[:,1:-1][index] += np.inner(signs[count], tmp_fxyz1)
-    #     count += 1
-
-    # top_idx = -3
-    # bot_idx = 2
-
-    # rhs[...] = rhs
-    # rhs[:, top_idx] = rhs1[:, top_idx]
-    # rhs[:, bot_idx] = rhs1[:, bot_idx]
-
-
     ndim = elem.ndim
     igs = elem.igs
     dxyz = node.dxyz
@@ -605,24 +530,24 @@ def divergence_nodes(rhs,elem,node,Sol,ud):
     inner_idx = tuple(inner_idx)
     inner_idx_p1y = tuple(inner_idx_p1y)
 
-
     if ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH:
-        # Sol.rhou[:,:2,...] = 0.0 
-        # Sol.rhou[:,-2:,...] = 0.0
+        Sol.rhou[:,:2,...] = 0.0 
+        Sol.rhou[:,-2:,...] = 0.0
 
-        # Sol.rhov[:,:2,...] = 0.0 
-        # Sol.rhov[:,-2:,...] = 0.0 
+        Sol.rhov[:,:2,...] = 0.0 
+        Sol.rhov[:,-2:,...] = 0.0 
 
-        # Sol.rhow[:,:2,...] = 0.0
-        # Sol.rhow[:,-2:,...] = 0.0
-        Sol.rhou[:,:2,...] = Sol.rhou[:,2:4][::-1]
-        Sol.rhou[:,-2:,...] = Sol.rhou[:,-4:-2][::-1]
+        Sol.rhow[:,:2,...] = 0.0
+        Sol.rhow[:,-2:,...] = 0.0
 
-        Sol.rhov[:,:2,...] = Sol.rhov[:,2:4][::-1]
-        Sol.rhov[:,-2:,...] = Sol.rhov[:,-4:-2][::-1]
+    #     Sol.rhou[:,:2,...] = Sol.rhou[:,2:4][::-1]
+    #     Sol.rhou[:,-2:,...] = Sol.rhou[:,-4:-2][::-1]
 
-        Sol.rhow[:,:2,...] = Sol.rhow[:,2:4][::-1]
-        Sol.rhow[:,-2:,...] = Sol.rhow[:,-4:-2][::-1]
+        # Sol.rhov[:,:2,...] = -Sol.rhov[:,2:4][::-1]
+        # Sol.rhov[:,-2:,...] = -Sol.rhov[:,-4:-2][::-1]
+
+    #     Sol.rhow[:,:2,...] = Sol.rhow[:,2:4][::-1]
+    #     Sol.rhow[:,-2:,...] = Sol.rhow[:,-4:-2][::-1]
 
     Y = Sol.rhoY / Sol.rho
 
@@ -642,9 +567,9 @@ def divergence_nodes(rhs,elem,node,Sol,ud):
 
         rhs[1:-1,1:-1,1:-1] = (Ux + Vy + Wz)
     else:
-        # rhs[1:-1,1:-1] = (Ux + Vy)
-        rhs = (Ux + Vy)#[node.i1]#[:,1:-1]
+        rhs = (Ux + Vy)
 
+    rhs_max = np.max(rhs[inner_idx]) if np.max(rhs[inner_idx]) > 0 else 0
     return rhs
 
 
@@ -721,5 +646,5 @@ def multiply_inverse_coriolis(Vec, Sol, mpv, ud, elem, node, dt, attrs=('rhou', 
     i1 = node.i1
     if get_coeffs:
         # coriolis_parameters = ((coeff_uu * denom)[i1].reshape(-1,), (coeff_vv * denom)[i1].reshape(-1,), (coeff_uv * denom)[i1].reshape(-1,), (coeff_vu * denom)[i1].reshape(-1,))
-        coriolis_parameters = ((coeff_uu * denom).T, (coeff_vv * denom).T, (coeff_uv * denom)[i1].T, (coeff_vu * denom)[i1].T)
+        coriolis_parameters = ((coeff_uu * denom).T, (coeff_vv * denom).T, (coeff_uv * denom).T, (coeff_vu * denom).T)
         return coriolis_parameters
