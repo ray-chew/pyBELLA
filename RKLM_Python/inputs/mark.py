@@ -97,15 +97,11 @@ class UserData(object):
         self.dtfixed0 = 600.0 / self.t_ref
         self.dtfixed = self.dtfixed0
         
-        self.CFL = 0.45
-        self.dtfixed0 = 0.5*((self.xmax-self.xmin)/(self.inx-1))/1.0
-        self.dtfixed = self.dtfixed0
-
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
 
-        self.tol = 1.e-16
-        self.max_iterations = 1000
+        self.tol = 1.e-12
+        self.max_iterations = 10000
 
         # blending parameters
         self.perturb_type = 'pos_perturb'
