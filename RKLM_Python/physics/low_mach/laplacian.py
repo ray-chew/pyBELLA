@@ -514,9 +514,12 @@ def stencil_9pt_numba_test(mpv,node,coriolis,diag_inv, ud):
     x_wall = ud.bdry_type[0] == BdryType.WALL or ud.bdry_type[0] == BdryType.RAYLEIGH
     y_wall = ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH
 
-    coeffs = (hplusx[node.i1][1:,1:].T.reshape(-1,), hplusy[node.i1][1:,1:].T.reshape(-1,), hcenter[node.i1].T.reshape(-1,))
-    coriolis = (coriolis[0][node.i1][1:,1:].reshape(-1,),coriolis[1][node.i1][:-1,:-1].reshape(-1,),coriolis[2][node.i1][:-1,:-1].reshape(-1,),coriolis[3][node.i1][1:,1:].reshape(-1,))
-    return lambda p : lap2D_gather_new(p, node.iicx, node.iicy, coeffs, dx, dy, x_wall, y_wall, diag_inv.T.reshape(-1,), coriolis)
+    cor_slc = (slice(0,-1), slice(0,-1))
+    coeff_slc = (slice(1,None), slice(1,None))
+
+    coeffs = (hplusx[node.i1][coeff_slc].T.reshape(-1,), hplusy[node.i1][coeff_slc].T.reshape(-1,), hcenter[node.i1].T.reshape(-1,))
+    coriolis = (coriolis[0][node.i1][cor_slc].reshape(-1,),coriolis[1][node.i1][cor_slc].reshape(-1,),coriolis[2][node.i1][cor_slc].reshape(-1,),coriolis[3][node.i1][cor_slc].reshape(-1,))
+    return lambda p : lap2D_gather_new(p, node.iicx, node.iicy, coeffs, dx, dy, x_wall, y_wall, diag_inv[node.i1].T.reshape(-1,), coriolis)
 
 @jit(nopython=True, cache=False)
 def lap2D_numba_test(p, dp, dx, dy, coeffs, diag_inv, coriolis, shp):

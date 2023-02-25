@@ -151,15 +151,11 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         writer.populate(str(label),'rhs_nodes',rhs)
 
     mpv.rhs[...] = rhs
-    # rhs[:,-1] = rhs[:,-2]
-    # rhs[:,0] = rhs[:,1]
-    # rhs[:,-1] = 0.0
-    # rhs[:,0] = 0.0
 
-    # diag_inv = precon_diag_prepare(mpv, elem, node, ud)
-    # rhs *= diag_inv
+    diag_inv = precon_diag_prepare(mpv, elem, node, ud)
+    rhs *= diag_inv
     
-    diag_inv = np.ones_like(mpv.rhs)
+    # diag_inv = np.ones_like(mpv.rhs)
 
     VS = True
 
@@ -455,7 +451,7 @@ def scale_wall_node_values(rhs, node, ud, factor=.5):
         wall_idx[dim] = slice(igs[dim],-igs[dim])
 
     for dim in range(ndim):
-        is_wall = ud.bdry_type[dim] == BdryType.WALL or ud.bdry_type[dim] == BdryType.RAYLEIGH
+        is_wall = ud.bdry_type[dim] == BdryType.WALL
         if is_wall:
             for direction in [-1,1]:
                 wall_idx[dim] = (igs[dim]-1) * direction
@@ -463,6 +459,16 @@ def scale_wall_node_values(rhs, node, ud, factor=.5):
                     wall_idx[dim] -= 1
                 wall_idx_tuple = tuple(wall_idx)
                 rhs[wall_idx_tuple] *= factor
+
+        is_rayleigh = ud.bdry_type[dim] == BdryType.RAYLEIGH
+        if is_rayleigh:
+            for direction in [1]:
+                wall_idx[dim] = (igs[dim]-1) * direction
+                # if direction == -1:
+                #     wall_idx[dim] -= 1
+                wall_idx_tuple = tuple(wall_idx)
+                rhs[wall_idx_tuple] *= factor
+
 
 
 def grad_nodes_fft(p2n, elem, node):
@@ -532,22 +538,13 @@ def divergence_nodes(rhs,elem,node,Sol,ud):
 
     if ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH:
         Sol.rhou[:,:2,...] = 0.0 
-        Sol.rhou[:,-2:,...] = 0.0
-
-        Sol.rhov[:,:2,...] = 0.0 
-        Sol.rhov[:,-2:,...] = 0.0 
-
+        Sol.rhov[:,:2,...] = 0.0  
         Sol.rhow[:,:2,...] = 0.0
+
+    if ud.bdry_type[1] == BdryType.WALL:
+        Sol.rhov[:,-2:,...] = 0.0
         Sol.rhow[:,-2:,...] = 0.0
-
-    #     Sol.rhou[:,:2,...] = Sol.rhou[:,2:4][::-1]
-    #     Sol.rhou[:,-2:,...] = Sol.rhou[:,-4:-2][::-1]
-
-        # Sol.rhov[:,:2,...] = -Sol.rhov[:,2:4][::-1]
-        # Sol.rhov[:,-2:,...] = -Sol.rhov[:,-4:-2][::-1]
-
-    #     Sol.rhow[:,:2,...] = Sol.rhow[:,2:4][::-1]
-    #     Sol.rhow[:,-2:,...] = Sol.rhow[:,-4:-2][::-1]
+        Sol.rhou[:,-2:,...] = 0.0
 
     Y = Sol.rhoY / Sol.rho
 
@@ -646,5 +643,5 @@ def multiply_inverse_coriolis(Vec, Sol, mpv, ud, elem, node, dt, attrs=('rhou', 
     i1 = node.i1
     if get_coeffs:
         # coriolis_parameters = ((coeff_uu * denom)[i1].reshape(-1,), (coeff_vv * denom)[i1].reshape(-1,), (coeff_uv * denom)[i1].reshape(-1,), (coeff_vu * denom)[i1].reshape(-1,))
-        coriolis_parameters = ((coeff_uu * denom).T, (coeff_vv * denom).T, (coeff_uv * denom).T, (coeff_vu * denom).T)
+        coriolis_parameters = ((coeff_uu * denom).T, (coeff_vv * denom).T, (coeff_vu * denom).T, (coeff_uv * denom).T)
         return coriolis_parameters

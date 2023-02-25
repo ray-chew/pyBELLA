@@ -35,7 +35,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
         dims = [ndim-1]
 
     for dim in dims:
-        if step != None:
+        if step is not None:
             current_step = step
         else:
             current_step = dim
@@ -105,8 +105,8 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
 
                     if np.sign(direction) == 1:
                         Sol.rhou[nimage] = Sol.rhou[nsource] * (Y_last * S)
-                        Sol.rhov[nimage] = Sol.rhov[nsource] * (Y_last * S)
-                        Sol.rhow[nimage] = Sol.rhow[nsource] * (Y_last * S)
+                        # Sol.rhov[nimage] = Sol.rhov[nsource] * (Y_last * S)
+                        # Sol.rhow[nimage] = Sol.rhow[nsource] * (Y_last * S)
                         Sol.rhov[nimage] = rho*v
                         Sol.rhou[nimage] = rho*u
                         # Sol.rhov[nimage] = rho*v
@@ -150,9 +150,11 @@ def set_boundary(Sol,pads,btype,idx,step=None):
     # Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
 
     if btype == 'symmetric':
-        Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
+        # Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
         Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,negative_symmetric)
-        Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,negative_symmetric)
+        # Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,negative_symmetric)
+        Sol.rho[...] = np.pad(Sol.rho[idx],pads,'symmetric')
+        Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,'symmetric')
     elif btype == 'constant':
         Sol.rho[...] = np.pad(Sol.rho[idx],pads,'symmetric')
         Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,'symmetric')
