@@ -458,7 +458,7 @@ def scale_wall_node_values(rhs, node, ud, factor=.5):
         is_wall = ud.bdry_type[dim] == BdryType.WALL or ud.bdry_type[dim] == BdryType.RAYLEIGH
         if is_wall:
             for direction in [-1,1]:
-                wall_idx[dim] = (igs[dim]) * direction
+                wall_idx[dim] = (igs[dim]-1) * direction
                 if direction == -1:
                     wall_idx[dim] -= 1
                 wall_idx_tuple = tuple(wall_idx)
