@@ -514,11 +514,12 @@ def stencil_9pt_numba_test(mpv,node,coriolis,diag_inv, ud):
     x_wall = ud.bdry_type[0] == BdryType.WALL or ud.bdry_type[0] == BdryType.RAYLEIGH
     y_wall = ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH
 
-    cor_slc = (slice(0,-1), slice(0,-1))
-    coeff_slc = (slice(1,None), slice(1,None))
+    cor_slc = (slice(0,-2), slice(0,-2))
+    coeff_slc = (slice(2,None), slice(2,None))
 
-    coeffs = (hplusx[node.i1][coeff_slc].T.reshape(-1,), hplusy[node.i1][coeff_slc].T.reshape(-1,), hcenter[node.i1].T.reshape(-1,))
-    coriolis = (coriolis[0][node.i1][cor_slc].reshape(-1,),coriolis[1][node.i1][cor_slc].reshape(-1,),coriolis[2][node.i1][cor_slc].reshape(-1,),coriolis[3][node.i1][cor_slc].reshape(-1,))
+    coeffs = (hplusx[coeff_slc].T.reshape(-1,), hplusy[coeff_slc].T.reshape(-1,), hcenter[node.i1].T.reshape(-1,))
+    coriolis = (coriolis[0][cor_slc].reshape(-1,),coriolis[1][cor_slc].reshape(-1,),coriolis[2][cor_slc].reshape(-1,),coriolis[3][cor_slc].reshape(-1,))
+
     return lambda p : lap2D_gather_new(p, node.iicx, node.iicy, coeffs, dx, dy, x_wall, y_wall, diag_inv[node.i1].T.reshape(-1,), coriolis)
 
 @jit(nopython=True, cache=False)
@@ -547,10 +548,22 @@ def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, 
     hplusx, hplusy, hcenter = coeffs
 
     for idx in range(iicxn * iicyn):
-        ne_topleft = idx - iicxn - 1
-        ne_topright = idx - iicxn 
-        ne_botleft = idx - 1
-        ne_botright = idx
+        # ne_topleft = idx - (iicxn - 1)
+        # ne_topright = idx - (iicxn)
+        # ne_botleft = idx - 1
+        # ne_botright = idx
+
+        nr_row = idx // iicxn
+        col_idx = idx - (nr_row * iicxn)
+
+        ne_row_idx = nr_row * (iicxn + 1)
+        ne_col_idx = col_idx
+        ne_idx = ne_row_idx + ne_col_idx
+
+        ne_topleft = ne_idx - (iicxn + 1) - 1
+        ne_topright = ne_idx - (iicxn + 1)
+        ne_botleft = ne_idx - 1
+        ne_botright = ne_idx
 
         # get indices of the 9pt stencil
         topleft_idx = idx - iicxn - 1
@@ -570,6 +583,9 @@ def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, 
             midleft_idx += iicxn - 1
             botleft_idx += iicxn - 1
 
+            # ne_topleft += iicxn - 1
+            # ne_botleft += iicxn - 1
+
             ne_topleft += iicxn - 1
             ne_botleft += iicxn - 1
 
@@ -577,6 +593,9 @@ def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, 
             topright_idx -= iicxn - 1
             midright_idx -= iicxn - 1
             botright_idx -= iicxn - 1
+
+            # ne_topright -= iicxn - 1
+            # ne_botright -= iicxn - 1
 
             ne_topright -= iicxn - 1
             ne_botright -= iicxn - 1
@@ -586,16 +605,22 @@ def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, 
             topmid_idx += ((iicxn) * (iicyn - 1))
             topright_idx += ((iicxn) * (iicyn - 1))
 
-            ne_topleft += ((iicxn) * (iicyn - 1))
-            ne_topright += ((iicxn) * (iicyn - 1))
+            ne_topleft += ((iicxn + 1) * (iicyn))
+            ne_topright += ((iicxn + 1) * (iicyn))
+
+            # ne_topleft += ((iicxn) * (iicyn - 1))
+            # ne_topright += ((iicxn) * (iicyn - 1))
 
         if cnt_y == (iicyn - 1):
             botleft_idx -= ((iicxn) * (iicyn - 1))
             botmid_idx -= ((iicxn) * (iicyn - 1))
             botright_idx -= ((iicxn) * (iicyn - 1))
 
-            ne_botleft -= ((iicxn) * (iicyn - 1))
-            ne_botright -= ((iicxn) * (iicyn - 1))
+            ne_botleft -= ((iicxn + 1) * (iicyn))
+            ne_botright -= ((iicxn + 1) * (iicyn))
+
+            # ne_botleft -= ((iicxn) * (iicyn - 1))
+            # ne_botright -= ((iicxn) * (iicyn - 1))
 
         topleft = p[topleft_idx]
         midleft = p[midleft_idx]
