@@ -82,7 +82,7 @@ class UserData(object):
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.WALL
+        self.bdry_type[1] = BdryType.RAYLEIGH
         self.bdry_type[2] = BdryType.WALL
 
         ##########################################
@@ -94,7 +94,7 @@ class UserData(object):
         self.iny = 30+1
         self.inz = 1
 
-        self.dtfixed0 = 600.0 / self.t_ref
+        self.dtfixed0 = 100.0 / self.t_ref
         self.dtfixed = self.dtfixed0
         
         self.limiter_type_scalars = LimiterType.NONE
@@ -190,14 +190,15 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     kGam = 1.0 / Hrho * (1.0 / th.gamm - 1.0 / 2.0)       # eqn (8)
     A = A0 * bump(2.0 * y / (n * Hrho) - 1.0)             # eqn (12)
 
-    use_hydrostate = False
+    use_hydrostate = True
 
+    hydrostatic_state(mpv, elem, node, th, ud)
     if use_hydrostate:
         # Use hydrostatically balanaced background
-        hydrostatic_state(mpv, elem, node, th, ud)
+        
         rhobar = mpv.HydroState.rho0.reshape(1,-1)
         Ybar = mpv.HydroState.Y0.reshape(1,-1)
-        pibar = mpv.HydroState.p20.reshape(1,-1)
+        pibar = mpv.HydroState.p20.reshape(1,-1) * ud.Msq
     else:
         # Use hydrostatic balance in Mark's notes
         Htheta = Hrho / kappa          
@@ -207,6 +208,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         mpv.HydroState.rho0[...] = rhobar
         mpv.HydroState.Y0[...] = Ybar
         mpv.HydroState.S0[...] = 1.0 / Ybar #1.0 / ud.stratification(y)
+        mpv.HydroState.rhoY0[...] = rhobar * Ybar
 
         # pibar = (rhobar * Ybar * ud.Rg)**(th.gm1)
         # pibar = (rhobar * Ybar)**(th.gm1)
@@ -219,7 +221,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     # dimensionless speed of sound
     Cs = np.sqrt(th.gamm / Msq)  
 
-    ud.u_wind_speed = 0.0 #-Cs
+    ud.u_wind_speed = 0.0#-Cs
 
     # 1.0 / c_p in the notes
     # fac = 1.0 / (ud.cp_gas / (ud.h_ref**2 / ud.t_ref**2 / ud.T_ref))
@@ -228,7 +230,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     # time shift of the initial solution
     ts = -0.5 / N * np.pi #/ ud.t_ref
     # ts = 50.0
-    # ts = Cs * 200.0 / N 
+    # ts = -Cs #* 200.0 / N 
     ts = 0.0
 
     # set up perturbation quantities
@@ -324,8 +326,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     # Sol.rhoY[:,ud.inbcy:] = cnst
     # mpv.p2_nodes[:,ud.inbcy+1:] = cnst
 
-    if ud.bdry_type[1] == 'RAYLEIGH':
-        rayleigh_damping(Sol, mpv, ud, ud.tcy, elem, th)
+    # if ud.bdry_type[1] == 'RAYLEIGH':
+    #     rayleigh_damping(Sol, mpv, ud, ud.tcy, elem, th)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 

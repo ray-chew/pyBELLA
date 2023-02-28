@@ -514,10 +514,12 @@ def stencil_9pt_numba_test(mpv,node,coriolis,diag_inv, ud):
     x_wall = ud.bdry_type[0] == BdryType.WALL or ud.bdry_type[0] == BdryType.RAYLEIGH
     y_wall = ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH
 
-    cor_slc = (slice(0,-2), slice(0,-2))
-    coeff_slc = (slice(2,None), slice(2,None))
+    cor_slc = (slice(1,-1), slice(1,-1))
+    # cor_slc = (slice(0,-2), slice(0,-2))
+    coeff_slc = (slice(1,-1), slice(1,-1))
 
     coeffs = (hplusx[coeff_slc].T.reshape(-1,), hplusy[coeff_slc].T.reshape(-1,), hcenter[node.i1].T.reshape(-1,))
+    
     coriolis = (coriolis[0][cor_slc].reshape(-1,),coriolis[1][cor_slc].reshape(-1,),coriolis[2][cor_slc].reshape(-1,),coriolis[3][cor_slc].reshape(-1,))
 
     return lambda p : lap2D_gather_new(p, node.iicx, node.iicy, coeffs, dx, dy, x_wall, y_wall, diag_inv[node.i1].T.reshape(-1,), coriolis)
@@ -560,10 +562,15 @@ def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, 
         ne_col_idx = col_idx
         ne_idx = ne_row_idx + ne_col_idx
 
-        ne_topleft = ne_idx - (iicxn + 1) - 1
-        ne_topright = ne_idx - (iicxn + 1)
-        ne_botleft = ne_idx - 1
-        ne_botright = ne_idx
+        # ne_topleft = ne_idx - (iicxn + 1) - 1
+        # ne_topright = ne_idx - (iicxn + 1)
+        # ne_botleft = ne_idx - 1
+        # ne_botright = ne_idx
+
+        ne_topleft = ne_idx
+        ne_topright = ne_idx + 1
+        ne_botleft = ne_idx + (iicxn + 1)
+        ne_botright = ne_idx + (iicxn + 1) + 1
 
         # get indices of the 9pt stencil
         topleft_idx = idx - iicxn - 1
@@ -586,8 +593,8 @@ def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, 
             # ne_topleft += iicxn - 1
             # ne_botleft += iicxn - 1
 
-            ne_topleft += iicxn - 1
-            ne_botleft += iicxn - 1
+            # ne_topleft += iicxn + 1
+            # ne_botleft += iicxn + 1
 
         if cnt_x == (iicxn - 1):
             topright_idx -= iicxn - 1
@@ -597,16 +604,16 @@ def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, 
             # ne_topright -= iicxn - 1
             # ne_botright -= iicxn - 1
 
-            ne_topright -= iicxn - 1
-            ne_botright -= iicxn - 1
+            # ne_topright -= iicxn + 1
+            # ne_botright -= iicxn + 1
 
         if cnt_y == 0:
             topleft_idx += ((iicxn) * (iicyn - 1)) 
             topmid_idx += ((iicxn) * (iicyn - 1))
             topright_idx += ((iicxn) * (iicyn - 1))
 
-            ne_topleft += ((iicxn + 1) * (iicyn))
-            ne_topright += ((iicxn + 1) * (iicyn))
+            # ne_topleft += ((iicxn + 1) * (iicyn))
+            # ne_topright += ((iicxn + 1) * (iicyn))
 
             # ne_topleft += ((iicxn) * (iicyn - 1))
             # ne_topright += ((iicxn) * (iicyn - 1))
@@ -616,8 +623,8 @@ def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, 
             botmid_idx -= ((iicxn) * (iicyn - 1))
             botright_idx -= ((iicxn) * (iicyn - 1))
 
-            ne_botleft -= ((iicxn + 1) * (iicyn))
-            ne_botright -= ((iicxn + 1) * (iicyn))
+            # ne_botleft -= ((iicxn + 1) * (iicyn))
+            # ne_botright -= ((iicxn + 1) * (iicyn))
 
             # ne_botleft -= ((iicxn) * (iicyn - 1))
             # ne_botright -= ((iicxn) * (iicyn - 1))
@@ -702,8 +709,8 @@ def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, 
         fac = 1.0
         Dxx = 0.5 * (cxx_tr * Dx_tr - cxx_tl * Dx_tl + cxx_br * Dx_br - cxx_bl * Dx_bl) * oodx * oodx * fac
         Dyy = 0.5 * (cyy_br * Dy_br - cyy_tr * Dy_tr + cyy_bl * Dy_bl - cyy_tl * Dy_tl) * oody * oody * fac
-        Dyx = 0.5 * (cyx_br * Dy_br - cyx_bl * Dy_bl + cyx_tr * Dy_tr - cyx_tl * Dy_tl) * oody * oodx * fac
-        Dxy = 0.5 * (cxy_br * Dx_br - cxy_tr * Dx_tr + cxy_bl * Dx_bl - cxy_tl * Dx_tl) * oodx * oody * fac
+        Dyx = 0.5 * (cxy_br * Dy_br - cxy_bl * Dy_bl + cxy_tr * Dy_tr - cxy_tl * Dy_tl) * oody * oodx * fac
+        Dxy = 0.5 * (cyx_br * Dx_br - cyx_tr * Dx_tr + cyx_bl * Dx_bl - cyx_tl * Dx_tl) * oodx * oody * fac
 
         lap[idx] = Dxx + Dyy + Dyx + Dxy + hcenter[idx] * p[idx]
 
@@ -1251,7 +1258,7 @@ def precon_diag_prepare(mpv, elem, node, ud):
 
     nine_pt = 0.25 * (2.0) * 1.0
     if ndim == 2:
-        coeff = 1.0 - nine_pt
+        coeff = 1.0 #- nine_pt
     elif ndim == 3:
         coeff = 0.0625
     else:
