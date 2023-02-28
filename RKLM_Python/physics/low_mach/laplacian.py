@@ -1,7 +1,7 @@
 import numpy as np
 from inputs.enum_bdry import BdryType
 from scipy import sparse, signal
-from numba import jit, njit
+from numba import jit, njit, prange
 import numba as nb
 
 def stencil_9pt(elem,node,mpv,Sol,ud,diag_inv,dt,coriolis_params):
@@ -536,7 +536,7 @@ def lap2D_numba_test(p, dp, dx, dy, coeffs, diag_inv, coriolis, shp):
     return p.ravel()
 
 
-@jit(nopython=True, nogil=False, cache=True)
+@njit(cache=True)
 def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, coriolis):
     ngnc = (iicxn) * (iicyn)
     lap = np.zeros((ngnc))
@@ -615,8 +615,8 @@ def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, 
             # ne_topleft += ((iicxn + 1) * (iicyn))
             # ne_topright += ((iicxn + 1) * (iicyn))
 
-            # ne_topleft += ((iicxn) * (iicyn - 1))
-            # ne_topright += ((iicxn) * (iicyn - 1))
+            # ne_topleft += ((iicxn + 2) * (iicyn + 1))
+            # ne_topright += ((iicxn + 2) * (iicyn + 1))
 
         if cnt_y == (iicyn - 1):
             botleft_idx -= ((iicxn) * (iicyn - 1))
@@ -626,8 +626,8 @@ def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, 
             # ne_botleft -= ((iicxn + 1) * (iicyn))
             # ne_botright -= ((iicxn + 1) * (iicyn))
 
-            # ne_botleft -= ((iicxn) * (iicyn - 1))
-            # ne_botright -= ((iicxn) * (iicyn - 1))
+            # ne_botleft -= ((iicxn + 2) * (iicyn + 1))
+            # ne_botright -= ((iicxn + 2) * (iicyn + 1))
 
         topleft = p[topleft_idx]
         midleft = p[midleft_idx]
@@ -1225,7 +1225,7 @@ def lapVS(p0, hplusx, hplusy, hcenter, oodx2, oody2, periodicity, diag_inv):
 
 
 
-def precon_diag_prepare(mpv, elem, node, ud):
+def precon_diag_prepare(mpv, elem, node, ud, coriolis):
     dx, dy, dz = node.dx, node.dy, node.dz
 
     x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
@@ -1252,21 +1252,28 @@ def precon_diag_prepare(mpv, elem, node, ud):
 
     # idx_n = (slice(igx,-igx), slice(igy,-igy))
 
-    hplusx = mpv.wplus[0]
-    hplusy = mpv.wplus[1]
+    hplusxx = mpv.wplus[0] #* (coriolis[0].T)
+    hplusyy = mpv.wplus[1] #* (coriolis[1].T)
+    hplusxy = mpv.wplus[0] #* (coriolis[3].T)
+    hplusyx = mpv.wplus[1] #* (coriolis[2].T)
+
     if ndim == 3: hplusz = mpv.wplus[2]
 
     nine_pt = 0.25 * (2.0) * 1.0
+    nine_pt = 0.5 * 0.5 
     if ndim == 2:
-        coeff = 1.0 #- nine_pt
+        coeff = 1.0 - nine_pt
     elif ndim == 3:
         coeff = 0.0625
     else:
         assert 0, "ndim = 1?"
 
-    wx = coeff / (dx**2)
-    wy = coeff / (dy**2)
-    wz = coeff / (dz**2)
+    wxx = coeff / (dx**2)
+    wyy = coeff / (dy**2)
+    wzz = coeff / (dz**2)
+
+    wxy = coeff / (dx * dy)
+    wyx = coeff / (dy * dx)
 
     diag_kernel = np.array(np.ones([2] * ndim))
 
@@ -1280,10 +1287,12 @@ def precon_diag_prepare(mpv, elem, node, ud):
     # diag[idx_n] = 1.0 / diag[idx_n]
 
     diag = np.zeros_like(mpv.wcenter)
-    diag[...] = -wx * signal.fftconvolve(hplusx,diag_kernel,mode='valid')
-    diag[...] -= wy * signal.fftconvolve(hplusy,diag_kernel,mode='valid')
+    diag[...] = -wxx * signal.fftconvolve(hplusxx,diag_kernel,mode='valid')
+    diag[...] -= wyy * signal.fftconvolve(hplusyy,diag_kernel,mode='valid')
+    diag[...] -= wxy * signal.fftconvolve(hplusxy,diag_kernel,mode='valid')
+    diag[...] -= wyx * signal.fftconvolve(hplusyx,diag_kernel,mode='valid')
     if ndim == 3:
-        diag[...] -= wz * signal.fftconvolve(hplusz,diag_kernel,mode='valid')
+        diag[...] -= wzz * signal.fftconvolve(hplusz,diag_kernel,mode='valid')
 
     diag[...] += mpv.wcenter
     diag[...] = 1.0 / diag
