@@ -50,8 +50,9 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
             elif ud.bdry_type[current_step] == BdryType.WALL:
                 set_boundary(Sol,ghost_padding,'symmetric',idx,step=None)
             elif ud.bdry_type[current_step] == BdryType.RAYLEIGH:
-                set_boundary(Sol,((0,0),(0,2)),'constant',(slice(None,),slice(0,-2)),step=None)
-                set_boundary(Sol,((0,0),(2,0)),'symmetric',(slice(None,),slice(2,None)),step=None)
+                assert 0, "Rayleigh boundary not defined on x-direction."
+                # set_boundary(Sol,((0,0),(0,2)),'constant',(slice(None,),slice(0,-2)),step=None)
+                # set_boundary(Sol,((0,0),(2,0)),'symmetric',(slice(None,),slice(2,None)),step=None)
 
         else:
             # get current axis that has gravity.
@@ -76,8 +77,10 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     nlast, nsource, nimage = get_gravity_padding(ndim,current_idx,direction,offset,elem,y_axs=y_axs)
 
                     Y_last = Sol.rhoY[nlast] / Sol.rho[nlast]
+
+
                     u = Sol.rhou[nsource] / Sol.rho[nsource]
-                    v = Sol.rhov[nsource] / Sol.rho[nsource]
+                    # v = Sol.rhov[nsource] / Sol.rho[nsource]
                     w = Sol.rhow[nsource] / Sol.rho[nsource]
                     X = Sol.rhoX[nsource] / Sol.rho[nsource]
 
@@ -92,31 +95,19 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     rho = rhoY * S
                     # p = rhoY**th.gamm
 
+                    # rhoY = mpv.HydroState.rhoY0[nimage[y_axs]]
+                    # Y = Sol.rhoY[nimage] / Sol.rho[nimage]
+                    # rho = mpv.HydroState.rho0[nimage[y_axs]]
+
                     # direction == 1 is the bottom
-                    if np.sign(direction) == 1:
-                        # v = rhoYv_image / rhoY
-                        # rhoYv_image = -Sol.rhov[nsource] * Sol.rhoY[nsource] / Sol.rho[nsource]
-                        v = rhoYv_image / rhoY
-                    else:
-                        v = rhoYv_image / rhoY
-                        # v = -Sol.rhov[nsource] / Sol.rho[nsource]
+                    # if np.sign(direction) == 1:
+                    # v = -Sol.rhov[nsource] / Sol.rho[nsource]
+                    v = rhoYv_image / rhoY
 
                     Sol.rho[nimage] = rho
-
-                    if np.sign(direction) == 1:
-                        Sol.rhou[nimage] = Sol.rhou[nsource] * (Y_last * S)
-                        # Sol.rhov[nimage] = Sol.rhov[nsource] * (Y_last * S)
-                        # Sol.rhow[nimage] = Sol.rhow[nsource] * (Y_last * S)
-                        Sol.rhov[nimage] = rho*v
-                        Sol.rhou[nimage] = rho*u
-                        # Sol.rhov[nimage] = rho*v
-                        # Sol.rhow[nimage] = rho*w
-                        
-                    else:
-                        Sol.rhou[nimage] = rho*u
-                        Sol.rhov[nimage] = rho*v
-                        Sol.rhow[nimage] = rho*w
-
+                    Sol.rhou[nimage] = rho*u
+                    Sol.rhov[nimage] = rho*v
+                    Sol.rhow[nimage] = rho*w
                     Sol.rhoY[nimage] = rhoY
                     Sol.rhoX[nimage] = rho * X
 

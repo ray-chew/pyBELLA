@@ -79,6 +79,7 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
     dbuoy = Sol.rhoY * (Sol.rhoX / Sol.rho)
     Sol.rhov = (nonhydro * Sol.rhov) - dt * (g/Msq) * dbuoy
+    Sol.rhov[np.where(Sol.rhov < 1e-15)] = 0.0
 
     Sol.mod_bg_wind(ud, -1.0)
 
@@ -222,7 +223,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     # p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
 
-    p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
+    p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter,x0=p2.ravel())
     # p2, _ = gmres(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations)
     # p2,info = bicgstab(lap,rhs.ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
@@ -275,28 +276,29 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud,th,updt_chi):
     ndim = node.ndim
     Gammainv = th.Gammainv
 
-    dSdy = mpv.HydroState_n.get_dSdy(elem, node)[elem.i2]
+    dSdy = mpv.HydroState_n.get_dSdy(elem, node)
 
-    Dpx, Dpy, Dpz = grad_nodes(p[node.i2], elem.ndim, node.dxyz)
+    Dpx, Dpy, Dpz = grad_nodes(p, elem.ndim, node.dxyz)
 
-    thinv = (Sol.rho / Sol.rhoY)[elem.i2]
+    thinv = (Sol.rho / Sol.rhoY)
 
     Y = Sol.rhoY / Sol.rho
-    coeff = (Gammainv * Sol.rhoY * Y)[elem.i2]
+    coeff = (Gammainv * Sol.rhoY * Y)
 
-    mpv.u[elem.i2] = -dt * coeff * Dpx
-    mpv.v[elem.i2] = -dt * coeff * Dpy
-    mpv.w[elem.i2] = -dt * coeff * Dpz
+    mpv.u = -dt * coeff * Dpx
+    mpv.v = -dt * coeff * Dpy
+    mpv.w = -dt * coeff * Dpz
 
     multiply_inverse_coriolis(mpv, Sol, mpv, ud, elem, elem, dt, attrs=['u', 'v', 'w'])
 
-    Sol.rhou[elem.i2] += thinv * mpv.u[elem.i2]
-    Sol.rhov[elem.i2] += thinv * mpv.v[elem.i2]
-    Sol.rhow[elem.i2] += thinv * mpv.w[elem.i2] if ndim == 3 else 0.0
-    Sol.rhoX[elem.i2] += - updt_chi * dt * dSdy * Sol.rhov[elem.i2]
+    Sol.rhou += thinv * mpv.u
+    Sol.rhov += thinv * mpv.v
+    Sol.rhow += thinv * mpv.w if ndim == 3 else 0.0
+    Sol.rhoX += - updt_chi * dt * dSdy * Sol.rhov
 
     set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
+    assert True
 
 def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     g = ud.gravity_strength[1]
@@ -348,8 +350,8 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     # set_ghostnodes_p2(mpv.wcenter, node, ud, igs=(1,1))
     # mpv.wcenter[:,0] = mpv.wcenter[:,1]
     # mpv.wcenter[:,-1] = mpv.wcenter[:,-2]
-    assert True
 
+    assert True
     scale_wall_node_values(mpv.wcenter, node, ud)
 
 
@@ -451,7 +453,7 @@ def scale_wall_node_values(rhs, node, ud, factor=.5):
         wall_idx[dim] = slice(igs[dim],-igs[dim])
 
     for dim in range(ndim):
-        is_wall = ud.bdry_type[dim] == BdryType.WALL
+        is_wall = ud.bdry_type[dim] == BdryType.WALL or ud.bdry_type[dim] == BdryType.RAYLEIGH
         if is_wall:
             for direction in [-1,1]:
                 wall_idx[dim] = (igs[dim]-1) * direction
@@ -460,14 +462,14 @@ def scale_wall_node_values(rhs, node, ud, factor=.5):
                 wall_idx_tuple = tuple(wall_idx)
                 rhs[wall_idx_tuple] *= factor
 
-        is_rayleigh = ud.bdry_type[dim] == BdryType.RAYLEIGH
-        if is_rayleigh:
-            for direction in [1]:
-                wall_idx[dim] = (igs[dim]-1) * direction
-                # if direction == -1:
-                #     wall_idx[dim] -= 1
-                wall_idx_tuple = tuple(wall_idx)
-                rhs[wall_idx_tuple] *= factor
+        # is_rayleigh = ud.bdry_type[dim] == BdryType.RAYLEIGH
+        # if is_rayleigh:
+        #     for direction in [1]:
+        #         wall_idx[dim] = (igs[dim]-1) * direction
+        #         # if direction == -1:
+        #         #     wall_idx[dim] -= 1
+        #         wall_idx_tuple = tuple(wall_idx)
+        #         rhs[wall_idx_tuple] *= factor
 
 
 
@@ -541,10 +543,20 @@ def divergence_nodes(rhs,elem,node,Sol,ud):
         Sol.rhov[:,:2,...] = 0.0  
         Sol.rhow[:,:2,...] = 0.0
 
-    if ud.bdry_type[1] == BdryType.WALL:
+    # if ud.bdry_type[1] == BdryType.WALL:
         Sol.rhov[:,-2:,...] = 0.0
         Sol.rhow[:,-2:,...] = 0.0
         Sol.rhou[:,-2:,...] = 0.0
+
+    # if ud.bdry_type[1] == BdryType.RAYLEIGH:
+    #     u_last = Sol.rhou[:,-3,...] / Sol.rho[:,-3,...]
+    #     v_last = Sol.rhov[:,-3,...] / Sol.rho[:,-3,...]
+
+    #     Sol.rhou[:,-2,...] = u_last * Sol.rho[:,-2,...]
+    #     Sol.rhov[:,-2,...] = -v_last * Sol.rho[:,-2,...]
+
+    #     Sol.rhou[:,-1,...] = u_last * Sol.rho[:,-1,...]
+    #     Sol.rhov[:,-1,...] = -(Sol.rhov[:,-4,...] / Sol.rho[:,-4,...]) * Sol.rho[:,-4,...]
 
     Y = Sol.rhoY / Sol.rho
 
@@ -643,5 +655,5 @@ def multiply_inverse_coriolis(Vec, Sol, mpv, ud, elem, node, dt, attrs=('rhou', 
     i1 = node.i1
     if get_coeffs:
         # coriolis_parameters = ((coeff_uu * denom)[i1].reshape(-1,), (coeff_vv * denom)[i1].reshape(-1,), (coeff_uv * denom)[i1].reshape(-1,), (coeff_vu * denom)[i1].reshape(-1,))
-        coriolis_parameters = ((coeff_uu * denom).T, (coeff_vv * denom).T, (coeff_vu * denom).T, (coeff_uv * denom).T)
+        coriolis_parameters = ((coeff_uu * denom).T, (coeff_vv * denom).T, (coeff_uv * denom).T, (coeff_vu * denom).T)
         return coriolis_parameters
