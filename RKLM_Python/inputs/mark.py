@@ -100,7 +100,7 @@ class UserData(object):
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
 
-        self.tol = 1.e-12
+        self.tol = 1.e-16
         self.max_iterations = 10000
 
         # blending parameters
