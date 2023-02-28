@@ -153,11 +153,6 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     mpv.rhs[...] = rhs
 
-    diag_inv = precon_diag_prepare(mpv, elem, node, ud)
-    rhs *= diag_inv
-    
-    # diag_inv = np.ones_like(mpv.rhs)
-
     VS = True
 
     # prepare initial left-hand side and the laplacian stencil
@@ -166,6 +161,11 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         coriolis_params = multiply_inverse_coriolis(Vec, Sol, mpv, ud, elem, node, dt, attrs=('u', 'v', 'w'), get_coeffs = True)
         # lap = stencil_9pt(elem,node,mpv,Sol,ud,diag_inv,dt,coriolis_params)
         # sh = (ud.inx)*(ud.iny)
+
+        diag_inv = precon_diag_prepare(mpv, elem, node, ud, coriolis_params)
+        rhs *= diag_inv
+
+        # diag_inv = np.ones_like(mpv.rhs)
 
         p2 = mpv.p2_nodes[node.i2].T
         lap = stencil_9pt_numba_test(mpv,node,coriolis_params,diag_inv, ud)
@@ -198,7 +198,6 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         lap = stencil_27pt(elem,node,mpv,ud,diag_inv,dt)
         sh = p2.reshape(-1).shape[0]
 
-
     lap = LinearOperator((sh,sh),lap)
     # lap = LinearOperator(sh,lap)
     
@@ -223,7 +222,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     # p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
 
-    p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter,x0=p2.ravel())
+    p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
     # p2, _ = gmres(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations)
     # p2,info = bicgstab(lap,rhs.ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
