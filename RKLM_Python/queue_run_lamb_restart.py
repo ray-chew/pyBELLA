@@ -7,7 +7,8 @@ path_to_obs = './'
 
 rp.N = 1
 
-rp.tc = 'mark'
+rp.tc = 'lw_p'
+# rp.tc = 'mark'
 
 t_ref = 100.0
 omega = 7.292 * 1e-5
@@ -19,8 +20,8 @@ resol_y = [10]
 # resol_t = [200,400,600,800]
 resol_t = [600]
 # omegas = [0.0, 2.0 * omega * t_ref]
-omegas = [2.0 * omega * t_ref]
-# omegas = [0.0]
+# omegas = [2.0 * omega * t_ref]
+omegas = [0.0]
 
 
 ud = {}
