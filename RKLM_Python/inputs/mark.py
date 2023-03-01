@@ -173,32 +173,26 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
                 if ud.rayleigh_forcing:
                     ud.forcing_tcy, ud.forcing_tny = get_bottom_tau_y(ud, elem, node, 0.2, cutoff=0.1)
 
-    n = 4.0           # eqn (12)
     A0 = 1.0e-3     # eqn (12)
 
     Msq = ud.Msq
     g = ud.gravity_strength[1]
     kappa = th.Gamma
-    Omega = ud.coriolis_strength[2] / 2.0
-
     waveno = 1.0
 
     x = elem.x.reshape(-1,1)
     y = elem.y.reshape(1,-1)#[:,:ud.inbcy]
 
     Hrho = 1.0 / g
-    kGam = 1.0 / Hrho * (1.0 / th.gamm - 1.0 / 2.0)       # eqn (8)
-    A = A0 * bump(2.0 * y / (n * Hrho) - 1.0)             # eqn (12)
-
     use_hydrostate = True
 
     hydrostatic_state(mpv, elem, node, th, ud)
     if use_hydrostate:
         # Use hydrostatically balanaced background
-        
         rhobar = mpv.HydroState.rho0.reshape(1,-1)
         Ybar = mpv.HydroState.Y0.reshape(1,-1)
         pibar = mpv.HydroState.p20.reshape(1,-1) * ud.Msq
+
     else:
         # Use hydrostatic balance in Mark's notes
         Htheta = Hrho / kappa          
@@ -210,11 +204,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         mpv.HydroState.S0[...] = 1.0 / Ybar #1.0 / ud.stratification(y)
         mpv.HydroState.rhoY0[...] = rhobar * Ybar
 
-        # pibar = (rhobar * Ybar * ud.Rg)**(th.gm1)
-        # pibar = (rhobar * Ybar)**(th.gm1)
-
-        # mpv.HydroState.rho0[:ud.inbcy] = rhobar
-        # mpv.HydroState.Y0[:ud.inbcy] = Ybar
 
     # dimensionless Brunt-Väisälä frequency
     N = ud.t_ref * np.sqrt(ud.Nsq_ref) 
@@ -223,14 +212,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     ud.u_wind_speed = 0.0#-Cs
 
-    # 1.0 / c_p in the notes
-    # fac = 1.0 / (ud.cp_gas / (ud.h_ref**2 / ud.t_ref**2 / ud.T_ref))
     Gamma = 1.0 / Hrho * (1.0 / th.gamm - 0.5)
 
     # time shift of the initial solution
-    ts = -0.5 / N * np.pi #/ ud.t_ref
-    # ts = 50.0
-    # ts = -Cs #* 200.0 / N 
+    ts = -0.5 / N * np.pi
     ts = 0.0
 
     # set up perturbation quantities
@@ -246,8 +231,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     # up = A / rhobar**0.5 * np.exp(-Gamma * y) * np.cos(N / Cs * (waveno * x + Cs * ts))
     # pi = A * Cs * fac / rhobar**0.5 / Ybar * np.exp(-Gamma * y) * np.cos(N / Cs * (waveno * x + Cs * ts))
 
-    # up = up[:,::-1]
-    # pi = pi[:,::-1]
 
     u = ud.u_wind_speed + up
     v = ud.v_wind_speed + vp
@@ -255,8 +238,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Y = Ybar + Yp
 
     # eqn (2.3)
-    rho = (((pibar + Msq * pi))**th.gm1inv) / Y# / ud.Rg
-    # rho = rhobar
+    rho = (((pibar + Msq * pi))**th.gm1inv) / Y
+
     Sol.rho[...] = rho
     Sol.rhou[...] = rho * u
     Sol.rhov[...] = rho * v
@@ -265,20 +248,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Sol.rhoX[...] = 0.0
     mpv.p2_cells[...] = pi
 
-
-    # Sol.rho[:,:ud.inbcy] = rho
-    # Sol.rhou[:,:ud.inbcy] = rho * u
-    # Sol.rhov[:,:ud.inbcy] = rho * v
-    # Sol.rhow[:,:ud.inbcy] = rho * w
-    # Sol.rhoe[:,:ud.inbcy] = 0.0
-    # Sol.rhoY[:,:ud.inbcy] = rho * Y
-    # Sol.rhoX[:,:ud.inbcy] = 0.0
-    # mpv.p2_cells[:,:ud.inbcy] = pi
-
     ###################################################
     # initialise nodal pi
     xn = node.x.reshape(-1,1)
-    yn = node.y.reshape(1,-1)#[:,:ud.inbcy+1]
+    yn = node.y.reshape(1,-1)
 
     # initialise nodal pressure
     Hrho_n = Hrho
@@ -292,39 +265,14 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         Ybar_n = np.exp(yn / Htheta)
         rhobar_n = np.exp(-yn / Hrho_n)
         mpv.HydroState_n.Y0[...] = Ybar_n
-        mpv.HydroState_n.S0[...] = 1.0 / Ybar_n # 1.0 / ud.stratification(yn)
+        mpv.HydroState_n.S0[...] = 1.0 / Ybar_n
 
-    An = A0 #* bump(2.0 * yn / (n * Hrho_n) - 1.0)
+    An = A0
 
     pi_n = An * Cs * fac * np.cos(N / Cs * (waveno * xn + Cs * ts))
     # pi_n = An * Cs * fac / rhobar_n**0.5 / Ybar_n * np.exp(-Gamma * yn) * np.cos(N / Cs * (waveno * xn + Cs * ts))
 
-    mpv.p2_nodes[...] = pi_n#[:,::-1]
-    # mpv.p2_nodes[:,:ud.inbcy+1] = pi_n
-
-    # rhobar_top = np.exp(-elem.y.reshape(1,-1)[:,ud.inbcy:] / Hrho)
-    # Ybar_top = np.exp(elem.y.reshape(1,-1)[:,ud.inbcy:] / Htheta)
-    # pibar_top = 1.0 / Ybar
-
-    # rho = ((pibar + Msq * pi)**th.gm1inv) / Y
-
-    # mpv.HydroState.rho0[ud.inbcy:] = rhobar_top
-    # mpv.HydroState.Y0[ud.inbcy:] = Ybar_top
-
-    # Sol.rho[:,ud.inbcy:] = Sol.rho[:,ud.inbcy-1].reshape(-1,1)
-    # Sol.rhou[:,ud.inbcy:] = Sol.rhou[:,ud.inbcy-1].reshape(-1,1)
-    # Sol.rhov[:,ud.inbcy:] = Sol.rhov[:,ud.inbcy-1].reshape(-1,1)
-    # Sol.rhow[:,ud.inbcy:] = Sol.rhow[:,ud.inbcy-1].reshape(-1,1)
-    # Sol.rhoY[:,ud.inbcy:] = Sol.rho[:,ud.inbcy:]*Ybar_top
-    # mpv.p2_nodes[:,ud.inbcy+1:] = mpv.p2_nodes[:,ud.inbcy].reshape(-1,1)
-
-    # cnst = 0.0
-    # Sol.rho[:,ud.inbcy:] = cnst
-    # Sol.rhou[:,ud.inbcy:] = cnst
-    # Sol.rhov[:,ud.inbcy:] = cnst
-    # Sol.rhow[:,ud.inbcy:] = cnst
-    # Sol.rhoY[:,ud.inbcy:] = cnst
-    # mpv.p2_nodes[:,ud.inbcy+1:] = cnst
+    mpv.p2_nodes[...] = pi_n
 
     # if ud.bdry_type[1] == 'RAYLEIGH':
     #     rayleigh_damping(Sol, mpv, ud, ud.tcy, elem, th)
