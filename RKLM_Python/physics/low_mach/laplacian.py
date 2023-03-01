@@ -514,6 +514,8 @@ def stencil_9pt_numba_test(mpv,node,coriolis,diag_inv, ud):
     x_wall = ud.bdry_type[0] == BdryType.WALL or ud.bdry_type[0] == BdryType.RAYLEIGH
     y_wall = ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH
 
+    y_rayleigh = ud.bdry_type[1] == BdryType.RAYLEIGH
+
     cor_slc = (slice(1,-1), slice(1,-1))
     # cor_slc = (slice(0,-2), slice(0,-2))
     coeff_slc = (slice(1,-1), slice(1,-1))
@@ -522,7 +524,7 @@ def stencil_9pt_numba_test(mpv,node,coriolis,diag_inv, ud):
     
     coriolis = (coriolis[0][cor_slc].reshape(-1,),coriolis[1][cor_slc].reshape(-1,),coriolis[2][cor_slc].reshape(-1,),coriolis[3][cor_slc].reshape(-1,))
 
-    return lambda p : lap2D_gather_new(p, node.iicx, node.iicy, coeffs, dx, dy, x_wall, y_wall, diag_inv[node.i1].T.reshape(-1,), coriolis)
+    return lambda p : lap2D_gather_new(p, node.iicx, node.iicy, coeffs, dx, dy, y_rayleigh, x_wall, y_wall, diag_inv[node.i1].T.reshape(-1,), coriolis)
 
 @jit(nopython=True, cache=False)
 def lap2D_numba_test(p, dp, dx, dy, coeffs, diag_inv, coriolis, shp):
@@ -537,7 +539,7 @@ def lap2D_numba_test(p, dp, dx, dy, coeffs, diag_inv, coriolis, shp):
 
 
 @njit(cache=True)
-def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, coriolis):
+def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, y_rayleigh, x_wall, y_wall, diag_inv, coriolis):
     ngnc = (iicxn) * (iicyn)
     lap = np.zeros((ngnc))
     cnt_x = 0
@@ -618,6 +620,7 @@ def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, 
             # ne_topleft += ((iicxn + 2) * (iicyn + 1))
             # ne_topright += ((iicxn + 2) * (iicyn + 1))
 
+        # if cnt_y == (iicyn - 1) and not y_rayleigh:
         if cnt_y == (iicyn - 1):
             botleft_idx -= ((iicxn) * (iicyn - 1))
             botmid_idx -= ((iicxn) * (iicyn - 1))
@@ -628,6 +631,14 @@ def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, 
 
             # ne_botleft -= ((iicxn + 2) * (iicyn + 1))
             # ne_botright -= ((iicxn + 2) * (iicyn + 1))
+
+        ############
+        # top BC handling for rayleigh
+        ############
+        # if cnt_y == (iicyn - 1) and y_rayleigh:
+        #     botleft_idx = topleft_idx
+        #     botmid_idx = topmid_idx
+        #     botright_idx = topright_idx
 
         topleft = p[topleft_idx]
         midleft = p[midleft_idx]
@@ -695,6 +706,12 @@ def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, x_wall, y_wall, diag_inv, 
             hplusy_botleft = 0.  
             hplusx_botright = 0.
             hplusy_botright = 0.
+
+        # if y_rayleigh and (cnt_y == 0):
+        #     hplusx_topleft = 0.
+        #     hplusy_topleft = 0. 
+        #     hplusx_topright = 0.
+        #     hplusy_topright = 0.
 
         Dx_tl = 0.5 * (topmid   - topleft + midmid   - midleft) * hplusx_topleft
         Dx_tr = 0.5 * (topright - topmid  + midright - midmid ) * hplusx_topright
