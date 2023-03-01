@@ -385,7 +385,7 @@ def get_args():
 
     parser.add_argument('-N',action='store',dest='N',help='<Optional> Set ensemble size, if none is given N=1 is used.',required=False,type=int)
 
-    parser.add_argument('-ic','--initial_conditions',action='store',dest='ic',help='<Required> Set initial conditions',required=True,choices={'aw','tv','tv_neg','tv_2d','tv_3d','tv_corr','rb', 'rbc', 'igw', 'igw_3d', 'lbw', 'skl', 'mark', 'igw_bb', 'swe','swe_bal_vortex','swe_icshear', 'swe_dvortex'})
+    parser.add_argument('-ic','--initial_conditions',action='store',dest='ic',help='<Required> Set initial conditions',required=True,choices={'aw','tv','tv_neg','tv_2d','tv_3d','tv_corr','rb', 'rbc', 'igw', 'igw_3d', 'lbw', 'skl', 'mark', 'lw_p', 'igw_bb', 'swe','swe_bal_vortex','swe_icshear', 'swe_dvortex'})
 
     subparsers = parser.add_subparsers(dest='subcommand')
 
@@ -423,6 +423,8 @@ def get_args():
         from inputs.sk_lamb_wave import UserData, sol_init
     elif ic == 'mark':
         from inputs.mark import UserData, sol_init
+    elif ic == 'lw_p':
+        from inputs.lamb_wave_perturb import UserData, sol_init
     elif ic == 'igw_bb':
         from inputs.igw_baldauf_brdar import UserData, sol_init
     elif ic == 'rb':
@@ -437,7 +439,6 @@ def get_args():
         from inputs.shallow_water_3D_icshear import UserData, sol_init
     elif ic == 'swe_dvortex':
         from inputs.shallow_water_3D_dvortex import UserData, sol_init
-
 
 
     if UserData is None or sol_init is None:
