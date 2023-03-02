@@ -82,7 +82,7 @@ class UserData(object):
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.RAYLEIGH
+        self.bdry_type[1] = BdryType.WALL
         self.bdry_type[2] = BdryType.WALL
 
         ##########################################
@@ -131,13 +131,13 @@ class UserData(object):
 
         self.stratification = self.stratification_function
         self.rayleigh_bc = self.rayleigh_bc_function
+        self.init_forcing = self.forcing
 
-        self.rayleigh_forcing = False
+        self.rayleigh_forcing = True
+        self.rayleigh_forcing_type = 'func' # func or file
         self.rayleigh_forcing_fn = 'output_mark_wave_ensemble=1_301_120_bottom_forcing_S400.h5'
         self.rayleigh_forcing_path = './output_mark_wave'
         
-
-        # self.rayleigh_bc(self)
 
     def stratification_function(self, y):
         Nsq = self.Nsq_ref * self.t_ref**2
@@ -157,6 +157,71 @@ class UserData(object):
             ud.ymax += 3.0 * ud.bcy
 
 
+    class forcing(object):
+        def __init__(self, k, mu, Cs, F, N, Gamma, ampl, g, rhobar, Ybar, rhobar_n, Ybar_n):
+            self.k = k
+            self.mu = mu
+            self.Cs = Cs
+            self.F = F
+            self.N = N
+            self.Gamma = Gamma
+
+            self.oorhobarsqrt = 1.0 / np.sqrt(rhobar.T)
+            self.Ybar = Ybar.T
+
+            self.oorhobarsqrt_n = 1.0 / np.sqrt(rhobar_n.T)
+            self.Ybar_n = Ybar_n.T
+
+            self.g = g
+            self.ampl = ampl
+
+        def get_T_matrix(self):
+        
+            # system matrix of linearized equations
+            matrix = np.array([[0, self.F, 0, 1j*self.Cs*self.k], 
+                            [-self.F, 0, -self.N, self.Cs*(self.mu+self.Gamma)], 
+                            [0, self.N, 0, 0], 
+                            [1j*self.Cs*self.k, self.Cs*(self.mu-self.Gamma), 0, 0]])
+        
+            self.T_matrix = matrix
+
+        def eigenfunction(self, x, z, t, s):
+            
+            # Compute eigenvalues and eigenvectors
+            eigval, eigvec = np.linalg.eig( self.T_matrix )
+
+            # Find index of eigenvalue 
+            # with greatest real part aka the insrtability growth rate
+            ind = np.argmax( np.real( eigval ) )
+
+            # construct solution according to eq. 2.27 and 2.19
+            exponentials = np.exp( 1j * self.k * x + self.mu * z 
+                                + ( eigval[ind] - 1j * self.Cs * self.k * s ) * t )
+            chi_u  = self.ampl * np.real( eigvec[0,ind] * exponentials )
+            chi_w  = self.ampl * np.real( eigvec[1,ind] * exponentials )
+            chi_th = self.ampl * np.real( eigvec[2,ind] * exponentials )
+            chi_pi = self.ampl * np.real( eigvec[3,ind] * exponentials )
+
+            self.arrs = ( chi_u, chi_w, chi_th, chi_pi )
+
+        def dehatter(self, grid='c'):
+            if grid == 'n':
+                Ybar = self.Ybar_n
+                oorhobarsqrt = self.oorhobarsqrt_n
+            elif grid == 'c':
+                Ybar = self.Ybar
+                oorhobarsqrt = self.oorhobarsqrt
+
+            chi_u, chi_v, chi_Y, chi_pi = self.arrs
+
+            up = oorhobarsqrt * chi_u
+            vp = oorhobarsqrt * chi_v
+            Yp = oorhobarsqrt * self.N / self.g * Ybar * chi_Y
+            pi_p = oorhobarsqrt * self.Cs / Ybar * chi_pi
+            
+            return up.T, vp.T, Yp.T, pi_p.T
+
+
 def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     if ud.bdry_type[1].value == 'radiation':
         ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.5)
@@ -172,16 +237,21 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     x = elem.x.reshape(-1,1)
     y = elem.y.reshape(1,-1)#[:,:ud.inbcy]
 
-    Hrho = 1.0 / g
+    xn = node.x.reshape(-1,1)
+    yn = node.y.reshape(1,-1)#[:,::-1]
 
-    hydrostatic_state(mpv, elem, node, th, ud)
-
+    ##################################################
     # Use hydrostatically balanaced background
+    hydrostatic_state(mpv, elem, node, th, ud)
+    
     rhobar = mpv.HydroState.rho0.reshape(1,-1)
     Ybar = mpv.HydroState.Y0.reshape(1,-1)
     pibar = mpv.HydroState.p20.reshape(1,-1) * ud.Msq
 
+    rhobar_n = mpv.HydroState_n.rho0.reshape(1,-1)
+    Ybar_n = mpv.HydroState_n.Y0.reshape(1,-1)
 
+    ##################################################
     # dimensionless Brunt-Väisälä frequency
     N = ud.t_ref * np.sqrt(ud.Nsq_ref) 
     # dimensionless speed of sound
@@ -193,6 +263,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Gamma = G * N / Cs
     k = N / Cs 
 
+    ud.rf_bot = ud.init_forcing(k, -Gamma, Cs, F, N, Gamma, A0, g, rhobar, Ybar, rhobar_n, Ybar_n)
+    ud.rf_bot.get_T_matrix()
+
     ud.u_wind_speed = 0.0#-Cs
 
     x = elem.x.reshape(-1,1)
@@ -200,9 +273,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     X, Y = np.meshgrid(x, y)
 
-    chi_vals = eigenfunction( X, Y, 0, A0, k, -Gamma, Cs, F, N, Gamma, 1 )
-    
-    up, vp, Yp, pi_p = dehatter(chi_vals, rhobar, Ybar, g, N, Cs, th.Gamma)
+    ud.rf_bot.eigenfunction( X, Y, 0, 1)
+    up, vp, Yp, pi_p = ud.rf_bot.dehatter()
 
     u = ud.u_wind_speed + up
     v = ud.v_wind_speed + vp
@@ -221,20 +293,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     ###################################################
     # initialise nodal pi
-    xn = node.x.reshape(-1,1)
-    yn = node.y.reshape(1,-1)#[:,::-1]
-
     Xn, Yn = np.meshgrid(xn, yn)
 
-    # Use hydrostatically balanaced background
-    rhobar_n = mpv.HydroState_n.rho0.reshape(1,-1)
-    Ybar_n = mpv.HydroState_n.Y0.reshape(1,-1)
+    ud.rf_bot.eigenfunction( Xn, Yn, 0, 1 )
+    _, _, _, pi_n = ud.rf_bot.dehatter(grid='n')
 
-    chi_vals_n = eigenfunction( Xn, Yn, 0, A0, k, -Gamma, Cs, F, N, Gamma, 1 )
-
-    _, _, _, pi_n = dehatter(chi_vals_n, rhobar_n, Ybar_n, g, N, Cs, th.Gamma)
-
-    mpv.p2_nodes[...] = pi_n * th.Gamma#* ud.Rg
+    mpv.p2_nodes[...] = pi_n * th.Gamma
 
     # if ud.bdry_type[1] == 'RAYLEIGH':
     #     rayleigh_damping(Sol, mpv, ud, ud.tcy, elem, th)
@@ -242,48 +306,3 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
     return Sol
-
-
-def T( k, mu, C, F, N, Gamma ):
-    
-    # system matrix of linearized equations
-    matrix = np.array([[0, F, 0, 1j*C*k], 
-                       [-F, 0, -N, C*(mu+Gamma)], 
-                       [0, N, 0, 0], 
-                       [1j*C*k, C*(mu-Gamma), 0, 0]])
-    
-    return( matrix )
-
-
-def eigenfunction( x, z, t, ampl, k, mu, C, F, N, Gamma, s):
-    
-    # Compute eigenvalues and eigenvectors
-    eigval, eigvec = np.linalg.eig( T( k, -Gamma, C, F, N, Gamma ) )
-
-    # Find index of eigenvalue 
-    # with greatest real part aka the insrtability growth rate
-    ind = np.argmax( np.real( eigval ) )
-
-    # construct solution according to eq. 2.27 and 2.19
-    exponentials = np.exp( 1j * k * x + mu * z 
-                          + ( eigval[ind] - 1j * C * k * s ) * t )
-    chi_u  = ampl * np.real( eigvec[0,ind] * exponentials )
-    chi_w  = ampl * np.real( eigvec[1,ind] * exponentials )
-    chi_th = ampl * np.real( eigvec[2,ind] * exponentials )
-    chi_pi = ampl * np.real( eigvec[3,ind] * exponentials )
-
-
-    return( chi_u, chi_w, chi_th, chi_pi )
-
-
-def dehatter(arrs, rhobar, Ybar, g, N, Cs, fac):
-    chi_u, chi_v, chi_Y, chi_pi = arrs
-    oorhobarsqrt = 1.0 / np.sqrt(rhobar.T)
-    Ybar = Ybar.T
-
-    up = oorhobarsqrt * chi_u
-    vp = oorhobarsqrt * chi_v
-    Yp = oorhobarsqrt * N / g * Ybar * chi_Y
-    pi_p = oorhobarsqrt * Cs / Ybar * chi_pi
-    
-    return up.T, vp.T, Yp.T, pi_p.T
