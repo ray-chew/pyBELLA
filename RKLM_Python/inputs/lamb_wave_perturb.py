@@ -82,7 +82,7 @@ class UserData(object):
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.WALL
+        self.bdry_type[1] = BdryType.RAYLEIGH
         self.bdry_type[2] = BdryType.WALL
 
         ##########################################
@@ -158,7 +158,7 @@ class UserData(object):
 
 
     class forcing(object):
-        def __init__(self, k, mu, Cs, F, N, Gamma, ampl, g, rhobar, Ybar, rhobar_n, Ybar_n):
+        def __init__(self, k, mu, Cs, F, N, Gamma, ampl, g, rhobar, Ybar, rhobar_n, Ybar_n, X, Y, Xn, Yn):
             self.k = k
             self.mu = mu
             self.Cs = Cs
@@ -175,6 +175,11 @@ class UserData(object):
             self.g = g
             self.ampl = ampl
 
+            self.X = X
+            self.Y = Y
+            self.Xn = Xn
+            self.Yn = Yn
+
         def get_T_matrix(self):
         
             # system matrix of linearized equations
@@ -185,7 +190,11 @@ class UserData(object):
         
             self.T_matrix = matrix
 
-        def eigenfunction(self, x, z, t, s):
+        def eigenfunction(self, t, s, grid='c'):
+            if grid == 'c':
+                x, z = self.X, self.Y
+            elif grid == 'n':
+                x, z, = self.Xn, self.Yn
             
             # Compute eigenvalues and eigenvectors
             eigval, eigvec = np.linalg.eig( self.T_matrix )
@@ -235,10 +244,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     g = ud.gravity_strength[1]
 
     x = elem.x.reshape(-1,1)
-    y = elem.y.reshape(1,-1)#[:,:ud.inbcy]
+    y = elem.y.reshape(1,-1)
+    X, Y = np.meshgrid(x, y)
 
     xn = node.x.reshape(-1,1)
-    yn = node.y.reshape(1,-1)#[:,::-1]
+    yn = node.y.reshape(1,-1)
+    Xn, Yn = np.meshgrid(xn, yn)
 
     ##################################################
     # Use hydrostatically balanaced background
@@ -263,17 +274,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Gamma = G * N / Cs
     k = N / Cs 
 
-    ud.rf_bot = ud.init_forcing(k, -Gamma, Cs, F, N, Gamma, A0, g, rhobar, Ybar, rhobar_n, Ybar_n)
+    ud.rf_bot = ud.init_forcing(k, -Gamma, Cs, F, N, Gamma, A0, g, rhobar, Ybar, rhobar_n, Ybar_n, X, Y, Xn, Yn)
     ud.rf_bot.get_T_matrix()
 
     ud.u_wind_speed = 0.0#-Cs
 
-    x = elem.x.reshape(-1,1)
-    y = elem.y.reshape(1,-1)#[:,::-1]
-
-    X, Y = np.meshgrid(x, y)
-
-    ud.rf_bot.eigenfunction( X, Y, 0, 1)
+    ud.rf_bot.eigenfunction(0, 1)
     up, vp, Yp, pi_p = ud.rf_bot.dehatter()
 
     u = ud.u_wind_speed + up
@@ -293,9 +299,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     ###################################################
     # initialise nodal pi
-    Xn, Yn = np.meshgrid(xn, yn)
-
-    ud.rf_bot.eigenfunction( Xn, Yn, 0, 1 )
+    ud.rf_bot.eigenfunction(0, 1, grid='n')
     _, _, _, pi_n = ud.rf_bot.dehatter(grid='n')
 
     mpv.p2_nodes[...] = pi_n * th.Gamma
