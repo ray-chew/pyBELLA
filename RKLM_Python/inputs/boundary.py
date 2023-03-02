@@ -417,18 +417,26 @@ def get_bottom_tau_y(ud, elem, node, alpha, cutoff=0.5):
 
 
 
-def rayleigh_damping(Sol, mpv, ud, tcy, elem, th, forcing=None):
+def rayleigh_damping(Sol, mpv, ud, forcing=None):
     u = Sol.rhou / Sol.rho
     v = Sol.rhov / Sol.rho
     Y = Sol.rhoY / Sol.rho
 
-    if (forcing is not None):
-        Sol_f, mpv_f, tny = forcing
-        u_f = (Sol_f.rhou / Sol_f.rho) - ud.u_wind_speed
-        v_f = Sol_f.rhov / Sol_f.rho
-        Y_f = Sol_f.rhoY / Sol_f.rho
+    tcy, tny = ud.tcy, ud.tny
 
-        mpv.p2_nodes[...] += tny * (mpv.p2_nodes) + np.abs(tny) * mpv_f.p2_nodes
+    if (forcing is not None):
+        if ud.rayleigh_forcing_type == 'func':
+            u_f, v_f, Y_f, pi_f = forcing
+
+            mpv.p2_nodes[...] += tny * (mpv.p2_nodes) + np.abs(tny) * pi_f
+        else:
+            Sol_f, mpv_f, tny = forcing
+            u_f = (Sol_f.rhou / Sol_f.rho) - ud.u_wind_speed
+            v_f = Sol_f.rhov / Sol_f.rho
+            Y_f = Sol_f.rhoY / Sol_f.rho
+
+            mpv.p2_nodes[...] += tny * (mpv.p2_nodes) + np.abs(tny) * mpv_f.p2_nodes
+
         c_f = 1.0
 
     else:
@@ -436,29 +444,14 @@ def rayleigh_damping(Sol, mpv, ud, tcy, elem, th, forcing=None):
         c_f = 0.0
 
     # assuming 2D vertical slice - not dimension agnostic
-    # Sol.rho[...] = mpv.HydroState.rho0 + tcy * (Sol.rho - mpv.HydroState.rho0)
     u += tcy * (u - ud.u_wind_speed) + c_f * np.abs(tcy) * u_f
-    v += tcy * v + c_f * np.abs(tcy) * v_f    
+    v += tcy * (v - ud.v_wind_speed) + c_f * np.abs(tcy) * v_f    
     Sol.rhou[...] = Sol.rho * u
     Sol.rhov[...] = Sol.rho * v
 
     Y += tcy * (Y - mpv.HydroState.Y0) + c_f * np.abs(tcy) * (Y_f - mpv.HydroState.Y0)
 
-    # Sol.rhoY[...] = Sol.rho * (mpv.HydroState.Y0 + tcy * (Y - mpv.HydroState.Y0))
     Sol.rhoY[...] = Sol.rho * Y
-
-    if (forcing is not None):
-        set_explicit_boundary_data(Sol, elem, ud, th, mpv)
-
-
-    # p2c = (Sol.rhoY - rhoY0)**th.gm1
-    # kernel = np.array([[1,1],[1,1]])
-    # p2n = signal.fftconvolve(p2c,kernel, mode='valid') / kernel.sum()
-    # mpv.p2_nodes[1:-1,1:-1] += p2n / ud.Msq
-
-    # mpv.p2_nodes[...] += tny * (mpv.p2_nodes) 
-
-    # a = 100
 
 
 
