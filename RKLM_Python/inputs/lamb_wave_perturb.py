@@ -72,7 +72,7 @@ class UserData(object):
         self.xmin = - Lx / self.h_ref
         self.xmax =   Lx / self.h_ref
         self.ymin = - 0.0
-        self.ymax =   2.5
+        self.ymax =   2.0
         self.zmin = - 1.0
         self.zmax =   1.0
 
@@ -100,7 +100,7 @@ class UserData(object):
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
 
-        self.tol = 1.e-16
+        self.tol = 1.e-18
         self.max_iterations = 10000
 
         # blending parameters
@@ -121,7 +121,7 @@ class UserData(object):
 
 
         self.tout = [720.0]
-        self.stepmax = 31
+        self.stepmax = 101
         self.output_timesteps = True
 
         self.output_base_name = "_mark_wave"
@@ -205,7 +205,7 @@ class UserData(object):
 
             # construct solution according to eq. 2.27 and 2.19
             exponentials = np.exp( 1j * self.k * x + self.mu * z 
-                                + ( eigval[ind] - 1j * self.Cs * self.k * s ) * t )
+                                + ( eigval[ind] ) * t )
             chi_u  = self.ampl * np.real( eigvec[0,ind] * exponentials )
             chi_w  = self.ampl * np.real( eigvec[1,ind] * exponentials )
             chi_th = self.ampl * np.real( eigvec[2,ind] * exponentials )
@@ -213,7 +213,7 @@ class UserData(object):
 
             self.arrs = ( chi_u, chi_w, chi_th, chi_pi )
 
-        def dehatter(self, grid='c'):
+        def dehatter(self, th, grid='c'):
             if grid == 'n':
                 Ybar = self.Ybar_n
                 oorhobarsqrt = self.oorhobarsqrt_n
@@ -226,14 +226,14 @@ class UserData(object):
             up = oorhobarsqrt * chi_u
             vp = oorhobarsqrt * chi_v
             Yp = oorhobarsqrt * self.N / self.g * Ybar * chi_Y
-            pi_p = oorhobarsqrt * self.Cs / Ybar * chi_pi
+            pi_p = oorhobarsqrt * self.Cs / Ybar / th.Gammainv * chi_pi
             
             return up.T, vp.T, Yp.T, pi_p.T
 
 
 def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     if ud.bdry_type[1].value == 'radiation':
-        ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.5)
+        ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.1)
 
         if hasattr(ud, 'rayleigh_forcing'):
                 if ud.rayleigh_forcing:
@@ -277,10 +277,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     ud.rf_bot = ud.init_forcing(k, -Gamma, Cs, F, N, Gamma, A0, g, rhobar, Ybar, rhobar_n, Ybar_n, X, Y, Xn, Yn)
     ud.rf_bot.get_T_matrix()
 
-    ud.u_wind_speed = 0.0#-Cs
+    ud.u_wind_speed = -Cs
 
     ud.rf_bot.eigenfunction(0, 1)
-    up, vp, Yp, pi_p = ud.rf_bot.dehatter()
+    up, vp, Yp, pi_p = ud.rf_bot.dehatter(th)
 
     u = ud.u_wind_speed + up
     v = ud.v_wind_speed + vp
@@ -300,9 +300,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     ###################################################
     # initialise nodal pi
     ud.rf_bot.eigenfunction(0, 1, grid='n')
-    _, _, _, pi_n = ud.rf_bot.dehatter(grid='n')
+    _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
 
-    mpv.p2_nodes[...] = pi_n * th.Gamma
+    mpv.p2_nodes[...] = pi_n #* th.Gamma
 
     # if ud.bdry_type[1] == 'RAYLEIGH':
     #     rayleigh_damping(Sol, mpv, ud, ud.tcy, elem, th)
