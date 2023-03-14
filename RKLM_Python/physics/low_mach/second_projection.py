@@ -79,7 +79,7 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
     dbuoy = Sol.rhoY * (Sol.rhoX / Sol.rho)
     Sol.rhov = (nonhydro * Sol.rhov) - dt * (g/Msq) * dbuoy
-    Sol.rhov[np.where(Sol.rhov < 1e-15)] = 0.0
+    # Sol.rhov[np.where(Sol.rhov < 1e-15)] = 0.0
 
     Sol.mod_bg_wind(ud, -1.0)
 

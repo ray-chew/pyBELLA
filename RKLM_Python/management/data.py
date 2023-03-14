@@ -204,12 +204,12 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
                     elif ud.rayleigh_forcing_type == 'func':
                         ud.rf_bot.eigenfunction(t+0.5*dt, 1)
-                        up, vp, Yp, _ = ud.rf_bot.dehatter()
+                        up, vp, Yp, _ = ud.rf_bot.dehatter(th)
 
                         ud.rf_bot.eigenfunction(t+0.5*dt, 1, grid='n')
-                        _, _, _, pi_n = ud.rf_bot.dehatter(grid='n')
+                        _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
 
-                        boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi_n * th.Gamma])
+                        boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi_n])
 
 
 
@@ -335,10 +335,10 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
                     elif ud.rayleigh_forcing_type == 'func':
                         ud.rf_bot.eigenfunction(t+dt, 1)
-                        up, vp, Yp, _ = ud.rf_bot.dehatter()
+                        up, vp, Yp, _ = ud.rf_bot.dehatter(th)
 
                         ud.rf_bot.eigenfunction(t+dt, 1, grid='n')
-                        _, _, _, pi_n = ud.rf_bot.dehatter(grid='n')
+                        _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
 
                         boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi_n])
 
