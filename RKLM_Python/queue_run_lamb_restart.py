@@ -7,8 +7,8 @@ path_to_obs = './'
 
 rp.N = 1
 
-# rp.tc = 'lw_p'
-rp.tc = 'mark'
+rp.tc = 'lw_p'
+# rp.tc = 'mark'
 
 t_ref = 100.0
 omega = 7.292 * 1e-5
