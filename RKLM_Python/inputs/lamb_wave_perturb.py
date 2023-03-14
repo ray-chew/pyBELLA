@@ -82,7 +82,7 @@ class UserData(object):
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.RAYLEIGH
+        self.bdry_type[1] = BdryType.WALL
         self.bdry_type[2] = BdryType.WALL
 
         ##########################################
@@ -97,6 +97,7 @@ class UserData(object):
         self.dtfixed0 = 100.0 / self.t_ref
         self.dtfixed = self.dtfixed0
         
+        self.do_advection = False
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
 
@@ -121,7 +122,7 @@ class UserData(object):
 
 
         self.tout = [720.0]
-        self.stepmax = 101
+        self.stepmax = 31
         self.output_timesteps = True
 
         self.output_base_name = "_mark_wave"
@@ -129,7 +130,7 @@ class UserData(object):
         self.aux = aux
         self.output_suffix = '_301_120_720.000000_rstrt_init_S600_a1'
 
-        self.stratification = self.stratification_function
+        self.stratification = self.stratification_wrapper
         self.rayleigh_bc = self.rayleigh_bc_function
         self.init_forcing = self.forcing
 
@@ -139,11 +140,25 @@ class UserData(object):
         self.rayleigh_forcing_path = './output_mark_wave'
         
 
-    def stratification_function(self, y):
-        Nsq = self.Nsq_ref * self.t_ref**2
-        g = self.gravity_strength[1] / self.Msq
+    def stratification_wrapper(self, dy):
+        return lambda y : self.stratification_function(y, dy)
 
-        return np.exp(Nsq * y / g)
+    def stratification_function(self, y, dy):
+        g = self.gravity_strength[1]
+
+        Gamma = (self.gamm - 1.0) / self.gamm
+        Hex = 1.0 / (Gamma * g)
+        pi_m = np.exp(-(y - 0.5 * dy) / Hex)
+        pi_p = np.exp(-(y + 0.5 * dy) / Hex)
+        
+        Theta = - (Gamma * g * dy) / (pi_p - pi_m)
+
+        return Theta
+
+        # Nsq = self.Nsq_ref * self.t_ref**2
+        # g = self.gravity_strength[1] / self.Msq
+
+        # return np.exp(Nsq * y / g)
 
     @staticmethod
     def rayleigh_bc_function(ud):
@@ -239,7 +254,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
                 if ud.rayleigh_forcing:
                     ud.forcing_tcy, ud.forcing_tny = get_bottom_tau_y(ud, elem, node, 0.2, cutoff=0.1)
 
-    A0 = 1.0e-3     
+    A0 = 1.0e-3
     Msq = ud.Msq
     g = ud.gravity_strength[1]
 
@@ -249,12 +264,43 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     xn = node.x.reshape(-1,1)
     yn = node.y.reshape(1,-1)
+
+    dy = np.diff(node.y)[0]
+
     Xn, Yn = np.meshgrid(xn, yn)
 
     ##################################################
-    # Use hydrostatically balanaced background
-    hydrostatic_state(mpv, elem, node, th, ud)
+    # Following Rupert's fix, reinitialise all background quantities
+    # as derived from one quantity.
+    ud.stratification = ud.stratification(dy)
+    # hydrostatic_state(mpv, elem, node, th, ud)
+
+    # Hrho = 1.0 / g
+    # Htheta = Hrho / th.Gamma
+    # rhobar_n = np.exp(- yn / Hrho)
+    # Ybar_n = np.exp(yn / Htheta)
+    # pibar_n = 1.0 / Ybar_n
+
+    # Ybar = - th.Gamma * g * dy / ((pibar_n[:,1:] - pibar_n[:,:-1]))
+    # pibar = ud.T_ref / Ybar
+    # rhoYbar = pibar**(th.gm1inv)
+    # rhobar = rhoYbar / Ybar
+
+    # mpv.HydroState_n.rho0[...] = rhobar_n.reshape(-1,)
+    # mpv.HydroState.rho0[...] = rhobar.reshape(-1,)
+
+    # mpv.HydroState_n.Y0[...] = Ybar_n.reshape(-1)
+    # mpv.HydroState.Y0[...] = Ybar.reshape(-1)
+
+    # mpv.HydroState_n.rhoY0[...] = Ybar_n.reshape(-1) * rhobar_n.reshape(-1)
+    # mpv.HydroState.rhoY0[...] = Ybar.reshape(-1) * rhobar.reshape(-1)
+
+    # mpv.HydroState_n.p20[...] = pibar_n.reshape(-1)
+    # mpv.HydroState.p20[...] = pibar.reshape(-1)
+
     
+    # Use hydrostatically balanced background
+    hydrostatic_state(mpv, elem, node, th, ud)
     rhobar = mpv.HydroState.rho0.reshape(1,-1)
     Ybar = mpv.HydroState.Y0.reshape(1,-1)
     pibar = mpv.HydroState.p20.reshape(1,-1) * ud.Msq
@@ -277,7 +323,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     ud.rf_bot = ud.init_forcing(k, -Gamma, Cs, F, N, Gamma, A0, g, rhobar, Ybar, rhobar_n, Ybar_n, X, Y, Xn, Yn)
     ud.rf_bot.get_T_matrix()
 
-    ud.u_wind_speed = -Cs
+    ud.u_wind_speed = 0.0
 
     ud.rf_bot.eigenfunction(0, 1)
     up, vp, Yp, pi_p = ud.rf_bot.dehatter(th)
@@ -287,7 +333,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     w = ud.w_wind_speed
     Y = Ybar + Yp
 
-    rho = (((pibar + Msq * pi_p))**th.gm1inv) / Y
+    # rho = (((pibar + Msq * pi_p))**th.gm1inv) / Y
+    rho = rhobar
 
     Sol.rho[...] = rho
     Sol.rhou[...] = rho * u
@@ -302,7 +349,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     ud.rf_bot.eigenfunction(0, 1, grid='n')
     _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
 
-    mpv.p2_nodes[...] = pi_n #* th.Gamma
+    mpv.p2_nodes[...] = pi_n
 
     # if ud.bdry_type[1] == 'RAYLEIGH':
     #     rayleigh_damping(Sol, mpv, ud, ud.tcy, elem, th)
