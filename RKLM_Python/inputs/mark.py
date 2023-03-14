@@ -72,7 +72,7 @@ class UserData(object):
         self.xmin = - Lx / self.h_ref
         self.xmax =   Lx / self.h_ref
         self.ymin = - 0.0
-        self.ymax =   2.5
+        self.ymax =   2.0
         self.zmin = - 1.0
         self.zmax =   1.0
 
@@ -82,7 +82,7 @@ class UserData(object):
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.RAYLEIGH
+        self.bdry_type[1] = BdryType.WALL
         self.bdry_type[2] = BdryType.WALL
 
         ##########################################
@@ -97,6 +97,7 @@ class UserData(object):
         self.dtfixed0 = 100.0 / self.t_ref
         self.dtfixed = self.dtfixed0
         
+        self.do_advection = False
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
 
@@ -129,7 +130,7 @@ class UserData(object):
         self.aux = aux
         self.output_suffix = '_301_120_720.000000_rstrt_init_S600_a1'
 
-        self.stratification = self.stratification_function
+        self.stratification = self.stratification_wrapper
         self.rayleigh_bc = self.rayleigh_bc_function
 
         self.rayleigh_forcing = False
@@ -139,11 +140,24 @@ class UserData(object):
 
         # self.rayleigh_bc(self)
 
-    def stratification_function(self, y):
-        Nsq = self.Nsq_ref * self.t_ref**2
-        g = self.gravity_strength[1] / self.Msq
+    def stratification_wrapper(self, dy):
+        return lambda y : self.stratification_function(y, dy)
 
-        return np.exp(Nsq * y / g)
+    def stratification_function(self, y, dy):
+        g = self.gravity_strength[1]
+
+        Gamma = (self.gamm - 1.0) / self.gamm
+        Hex = 1.0 / (Gamma * g)
+        pi_m = np.exp(-(y - 0.5 * dy) / Hex)
+        pi_p = np.exp(-(y + 0.5 * dy) / Hex)
+        
+        Theta = - (Gamma * g * dy) / (pi_p - pi_m)
+
+        return Theta
+        # Nsq = self.Nsq_ref * self.t_ref**2
+        # g = self.gravity_strength[1] / self.Msq
+
+        # return np.exp(Nsq * y / g)
 
     @staticmethod
     def rayleigh_bc_function(ud):
@@ -178,15 +192,17 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Msq = ud.Msq
     g = ud.gravity_strength[1]
     kappa = th.Gamma
-    waveno = 1.0
 
     x = elem.x.reshape(-1,1)
-    y = elem.y.reshape(1,-1)#[:,:ud.inbcy]
+    y = elem.y.reshape(1,-1)
+    dy = np.diff(node.y)[0]
 
     Hrho = 1.0 / g
     use_hydrostate = True
 
+    ud.stratification = ud.stratification(dy)
     hydrostatic_state(mpv, elem, node, th, ud)
+
     if use_hydrostate:
         # Use hydrostatically balanaced background
         rhobar = mpv.HydroState.rho0.reshape(1,-1)
@@ -209,6 +225,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     N = ud.t_ref * np.sqrt(ud.Nsq_ref) 
     # dimensionless speed of sound
     Cs = np.sqrt(th.gamm / Msq)  
+    waveno = N / Cs
 
     ud.u_wind_speed = 0.0#-Cs
 
@@ -220,13 +237,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     # set up perturbation quantities
     # exp(-kGam * y)  / sqrt(rhobar) / Ybar = 1.0
-    up = A0 * Ybar * np.cos(N / Cs * (waveno * x + Cs * ts))
+    up = A0 * Ybar * np.cos(waveno * x + Cs * ts)
     vp = 0.0
     wp = 0.0
     Yp = 0.0
     # th.Gamma * ud.Msq == 1 / dimensionless(c_p)
     fac = th.Gamma
-    pi = A0 * Cs * fac * np.cos(N / Cs * (waveno * x + Cs * ts))
+    pi = A0 * Cs * fac * np.cos(waveno * x + Cs * ts) * Msq
 
     # up = A / rhobar**0.5 * np.exp(-Gamma * y) * np.cos(N / Cs * (waveno * x + Cs * ts))
     # pi = A * Cs * fac / rhobar**0.5 / Ybar * np.exp(-Gamma * y) * np.cos(N / Cs * (waveno * x + Cs * ts))
@@ -235,16 +252,19 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     u = ud.u_wind_speed + up
     v = ud.v_wind_speed + vp
     w = ud.w_wind_speed + wp
-    Y = Ybar + Yp
+    # Y = Ybar + Yp
+    dPdpi = th.gm1inv * pibar**(th.gm1inv - 1.0)
+    rhoY = (rhobar * Ybar) + dPdpi * pi
 
     # eqn (2.3)
-    rho = (((pibar + Msq * pi))**th.gm1inv) / Y
+    # rho = (((pibar + pi))**th.gm1inv) / Y
+    rho = rhobar
 
     Sol.rho[...] = rho
     Sol.rhou[...] = rho * u
     Sol.rhov[...] = rho * v
     Sol.rhow[...] = rho * w
-    Sol.rhoY[...] = rho * Y
+    Sol.rhoY[...] = rhoY
     Sol.rhoX[...] = 0.0
     mpv.p2_cells[...] = pi
 
@@ -269,7 +289,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     An = A0
 
-    pi_n = An * Cs * fac * np.cos(N / Cs * (waveno * xn + Cs * ts))
+    pi_n = An * Cs * fac * np.cos(waveno * xn + Cs * ts)
     # pi_n = An * Cs * fac / rhobar_n**0.5 / Ybar_n * np.exp(-Gamma * yn) * np.cos(N / Cs * (waveno * xn + Cs * ts))
 
     mpv.p2_nodes[...] = pi_n
