@@ -72,7 +72,7 @@ class UserData(object):
         self.xmin = - Lx / self.h_ref
         self.xmax =   Lx / self.h_ref
         self.ymin = - 0.0
-        self.ymax =   2.0
+        self.ymax =   2.5
         self.zmin = - 1.0
         self.zmax =   1.0
 
@@ -84,6 +84,7 @@ class UserData(object):
         self.bdry_type[0] = BdryType.PERIODIC
         self.bdry_type[1] = BdryType.WALL
         self.bdry_type[2] = BdryType.WALL
+        # self.LAMB_BDRY = True
 
         ##########################################
         # NUMERICS
@@ -253,12 +254,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     v = ud.v_wind_speed + vp
     w = ud.w_wind_speed + wp
     # Y = Ybar + Yp
-    dPdpi = th.gm1inv * pibar**(th.gm1inv - 1.0)
-    rhoY = (rhobar * Ybar) + dPdpi * pi
+    # dPdpi = th.gm1inv * pibar**(th.gm1inv - 1.0)
+    Pbar = pibar**th.gm1inv
+    rhoY = Pbar #+ dPdpi * pi
 
     # eqn (2.3)
     # rho = (((pibar + pi))**th.gm1inv) / Y
-    rho = rhobar
+    rho = Pbar / Ybar
 
     Sol.rho[...] = rho
     Sol.rhou[...] = rho * u
@@ -266,7 +268,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Sol.rhow[...] = rho * w
     Sol.rhoY[...] = rhoY
     Sol.rhoX[...] = 0.0
-    mpv.p2_cells[...] = pi
+    mpv.p2_cells[...] = pi #/ Msq
 
     ###################################################
     # initialise nodal pi
@@ -296,6 +298,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     # if ud.bdry_type[1] == 'RAYLEIGH':
     #     rayleigh_damping(Sol, mpv, ud, ud.tcy, elem, th)
+
+    rhoY_tmp = np.copy(Sol.rhoY)
+    rho_tmp = np.copy(Sol.rho)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
