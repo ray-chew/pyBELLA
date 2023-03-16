@@ -36,7 +36,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None,
     dSdy = mpv.HydroState_n.get_dSdy(elem,node)
 
     mpv.rhs[...] = divergence_nodes(mpv.rhs,elem,node,Sol,ud)
-    scale_wall_node_values(mpv.rhs, node, ud, 2.0)
+    if not hasattr(ud, 'LAMB_BDRY'): scale_wall_node_values(mpv.rhs, node, ud, 2.0)
     div = mpv.rhs
 
     if writer != None: writer.populate(str(label), 'rhs', div)
@@ -61,7 +61,6 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None,
     Sol.rhow = Sol.rhow - dt * ( rhoYovG * dpdz - corr_v * drhou + corr_h1 * drhov) * (ndim == 3)
 
     Sol.rhoX = (Sol.rho * (Sol.rho / Sol.rhoY - S0c)) - dt * (v * dSdy) * Sol.rho
-    Sol.rhoX[np.where(Sol.rhoX < 1e-16)] = 0.0
 
     dp2n[node.i1] -= dt * dpidP * div#[node.i1]
 
@@ -208,6 +207,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         # rhs_inner = rhs[node.igx:-node.igx,node.igy:-node.igy].ravel()
         # rhs_inner = rhs[1:-1,1:-1].ravel()
         rhs_inner = rhs[1:-1,1:-1].T.ravel()
+        # rhs_inner = rhs.T.ravel()
     elif elem.ndim == 3 and elem.iicy > 1 and elem.iicz == 1:
 
         if not VS:
@@ -238,6 +238,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         # p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
         # p2_full[node.i2] = p2.reshape(rhs[node.i1].shape[0],rhs[node.i1].shape[1])
         p2_full[node.i2] = p2.reshape(rhs[node.i1].shape[1],rhs[node.i1].shape[0]).T
+        # p2_full[node.i1] = p2.reshape(rhs.shape[1],rhs.shape[0]).T
         # p2 = p2.reshape(ud.inx+2, ud.iny+2)
         # p2_full[1:-1,1:-1] = p2
     elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2:
@@ -344,6 +345,8 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
 
     mpv.wcenter = (ccenter * signal.fftconvolve(Sol.rhoY**cexp,kernel,mode='valid') / kernel.sum())
 
+    tmp_wplus = signal.fftconvolve(mpv.wplus[0],kernel,mode='valid') / kernel.sum()
+
     # set_ghostcells_p2(mpv.wplus[0], elem, ud)
     # set_ghostcells_p2(mpv.wplus[1], elem, ud)
     # set_ghostnodes_p2(mpv.wcenter, node, ud, igs=(1,1))
@@ -351,7 +354,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     # mpv.wcenter[:,-1] = mpv.wcenter[:,-2]
 
     assert True
-    scale_wall_node_values(mpv.wcenter, node, ud)
+    if not hasattr(ud, 'LAMB_BDRY'): scale_wall_node_values(mpv.wcenter, node, ud)
 
 
 # def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
@@ -537,15 +540,16 @@ def divergence_nodes(rhs,elem,node,Sol,ud):
     inner_idx = tuple(inner_idx)
     inner_idx_p1y = tuple(inner_idx_p1y)
 
-    if ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH:
-        Sol.rhou[:,:2,...] = 0.0 
-        Sol.rhov[:,:2,...] = 0.0  
-        Sol.rhow[:,:2,...] = 0.0
+    if not hasattr(ud, 'LAMB_BDRY'):
+        if ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH:
+            Sol.rhou[:,:2,...] = 0.0 
+            Sol.rhov[:,:2,...] = 0.0  
+            Sol.rhow[:,:2,...] = 0.0
 
-    # if ud.bdry_type[1] == BdryType.WALL:
-        Sol.rhov[:,-2:,...] = 0.0
-        Sol.rhow[:,-2:,...] = 0.0
-        Sol.rhou[:,-2:,...] = 0.0
+        # if ud.bdry_type[1] == BdryType.WALL:
+            Sol.rhou[:,-2:,...] = 0.0
+            Sol.rhov[:,-2:,...] = 0.0
+            Sol.rhow[:,-2:,...] = 0.0
 
     # if ud.bdry_type[1] == BdryType.RAYLEIGH:
     #     u_last = Sol.rhou[:,-3,...] / Sol.rho[:,-3,...]

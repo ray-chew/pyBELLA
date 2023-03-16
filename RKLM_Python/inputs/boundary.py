@@ -78,7 +78,6 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
 
                     Y_last = Sol.rhoY[nlast] / Sol.rho[nlast]
 
-
                     u = Sol.rhou[nsource] / Sol.rho[nsource]
                     # v = Sol.rhov[nsource] / Sol.rho[nsource]
                     w = Sol.rhow[nsource] / Sol.rho[nsource]
@@ -88,11 +87,24 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
 
                     S = 1. / ud.stratification(elem.y[nimage[y_axs]])
 
-                    dpi = direction*(th.Gamma*g) * 0.5 * elem.dy * (1.0 / Y_last + S)
+                    if hasattr(ud, 'LAMB_BDRY'):
+                        dpi = (mpv.HydroState.p20[nimage[y_axs]] - mpv.HydroState.p20[nlast[y_axs]]) * ud.Msq
+                    else:
+                        dpi = direction * (th.Gamma*g) * 0.5 * elem.dy * (1.0 / Y_last + S)
 
                     rhoY = ((Sol.rhoY[nlast]**th.gm1) + dpi)**th.gm1inv if ud.is_compressible == 1 else mpv.HydroState.rhoY0[nimage[y_axs]]
 
                     rho = rhoY * S
+
+                    if hasattr(ud, 'LAMB_BDRY'):
+                        v = 0.0
+                        # v = rhoYv_image / rhoY
+                        Th_slc = rhoY / rho / Y_last
+                    else:
+                        v = rhoYv_image / rhoY
+                        Th_slc = 1.0
+
+                    
                     # p = rhoY**th.gamm
 
                     # rhoY = mpv.HydroState.rhoY0[nimage[y_axs]]
@@ -102,12 +114,11 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     # direction == 1 is the bottom
                     # if np.sign(direction) == 1:
                     # v = -Sol.rhov[nsource] / Sol.rho[nsource]
-                    v = rhoYv_image / rhoY
 
                     Sol.rho[nimage] = rho
-                    Sol.rhou[nimage] = rho*u
+                    Sol.rhou[nimage] = rho*u * Th_slc
                     Sol.rhov[nimage] = rho*v
-                    Sol.rhow[nimage] = rho*w
+                    Sol.rhow[nimage] = rho*w * Th_slc
                     Sol.rhoY[nimage] = rhoY
                     Sol.rhoX[nimage] = rho * X
 

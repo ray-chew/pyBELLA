@@ -507,32 +507,46 @@ def stencil_9pt_numba_test(mpv,node,coriolis,diag_inv, ud):
 
     dummy_p = np.zeros((node.isc[1],node.isc[0]))
 
-    # return lambda p : lap2D_numba_test(p, dummy_p, dx, dy, coeffs, diag_inv.T, coriolis, shp)
+
+    # coeff_slc = (slice(0,None), slice(1,-1))
+    # coeffs = (hplusx[coeff_slc].T, hplusy[coeff_slc].T, hcenter.T)
+    # cor_slc = (slice(0,None), slice(1,-1))
+    # coriolis = (coriolis[0][cor_slc],coriolis[1][cor_slc],coriolis[2][cor_slc],coriolis[3][cor_slc])
+
+    if hasattr(ud, 'LAMB_BDRY'):
+        return lambda p : lap2D_numba_test(p, dummy_p, dx, dy, coeffs, diag_inv.T, coriolis, shp)
 
     ###################
+    else:
+        x_wall = ud.bdry_type[0] == BdryType.WALL or ud.bdry_type[0] == BdryType.RAYLEIGH
+        y_wall = ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH
 
-    x_wall = ud.bdry_type[0] == BdryType.WALL or ud.bdry_type[0] == BdryType.RAYLEIGH
-    y_wall = ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH
+        y_rayleigh = ud.bdry_type[1] == BdryType.RAYLEIGH
 
-    y_rayleigh = ud.bdry_type[1] == BdryType.RAYLEIGH
+        cor_slc = (slice(1,-1), slice(1,-1))
+        # cor_slc = (slice(0,-2), slice(0,-2))
+        coeff_slc = (slice(1,-1), slice(1,-1))
 
-    cor_slc = (slice(1,-1), slice(1,-1))
-    # cor_slc = (slice(0,-2), slice(0,-2))
-    coeff_slc = (slice(1,-1), slice(1,-1))
+        # cor_slc = (slice(None,), slice(None,))
+        # coeff_slc = (slice(None,), slice(None,))
 
-    coeffs = (hplusx[coeff_slc].T.reshape(-1,), hplusy[coeff_slc].T.reshape(-1,), hcenter[node.i1].T.reshape(-1,))
+        coeffs = (hplusx[coeff_slc].T.reshape(-1,), hplusy[coeff_slc].T.reshape(-1,), hcenter[node.i1].T.reshape(-1,))
+        
+        coriolis = (coriolis[0][cor_slc].reshape(-1,),coriolis[1][cor_slc].reshape(-1,),coriolis[2][cor_slc].reshape(-1,),coriolis[3][cor_slc].reshape(-1,))
+
+        return lambda p : lap2D_gather_new(p, node.iicx, node.iicy, coeffs, dx, dy, y_rayleigh, x_wall, y_wall, diag_inv[node.i1].T.reshape(-1,), coriolis)
     
-    coriolis = (coriolis[0][cor_slc].reshape(-1,),coriolis[1][cor_slc].reshape(-1,),coriolis[2][cor_slc].reshape(-1,),coriolis[3][cor_slc].reshape(-1,))
-
-    return lambda p : lap2D_gather_new(p, node.iicx, node.iicy, coeffs, dx, dy, y_rayleigh, x_wall, y_wall, diag_inv[node.i1].T.reshape(-1,), coriolis)
 
 @jit(nopython=True, cache=False)
 def lap2D_numba_test(p, dp, dx, dy, coeffs, diag_inv, coriolis, shp):
     p = p.reshape(shp[1],shp[0])
     dp[1:-1,1:-1] = p
 
-    dp = periodic(dp, coeffs[0])
+    # dp = p
+    dp = periodic(dp)
     dp = kernel_9pt(dp, dx, dy, coeffs, diag_inv, coriolis)
+    # p = dp
+    # dp = periodic(dp)
     p = dp[1:-1,1:-1]
 
     return p.ravel()
@@ -760,35 +774,75 @@ def kernel_9pt(a, dx, dy, coeffs, diag_inv, coriolis):
     botmid = a[-1,0]
     botright = a[-1,1]
 
-    hpx_bl = hpx[0,0]
-    hpx_br = hpx[0,1]
-    hpx_tl = hpx[1,0]
-    hpx_tr = hpx[1,1]
+    shft = 0
+    blr = 0 - shft
+    blc = 0 - shft
+    brr = 0 - shft
+    brc = 1 - shft
+    tlr = 1 - shft
+    tlc = 0 - shft
+    trr = 1 - shft
+    trc = 1 - shft
 
-    hpy_bl = hpy[0,0]
-    hpy_br = hpy[0,1]
-    hpy_tl = hpy[1,0]
-    hpy_tr = hpy[1,1]
+    hpx_bl = hpx[blr,blc]
+    hpx_br = hpx[brr,brc]
+    hpx_tl = hpx[tlr,tlc]
+    hpx_tr = hpx[trr,trc]
 
-    cxx_bl = cxx[0,0]
-    cxx_br = cxx[0,1]
-    cxx_tl = cxx[1,0]
-    cxx_tr = cxx[1,1]
+    hpy_bl = hpy[blr,blc]
+    hpy_br = hpy[brr,brc]
+    hpy_tl = hpy[tlr,tlc]
+    hpy_tr = hpy[trr,trc]
 
-    cyy_bl = cyy[0,0]
-    cyy_br = cyy[0,1]
-    cyy_tl = cyy[1,0]
-    cyy_tr = cyy[1,1]
+    cxx_bl = cxx[blr,blc]
+    cxx_br = cxx[brr,brc]
+    cxx_tl = cxx[tlr,tlc]
+    cxx_tr = cxx[trr,trc]
 
-    cxy_bl = cxy[0,0]
-    cxy_br = cxy[0,1]
-    cxy_tl = cxy[1,0]
-    cxy_tr = cxy[1,1]
+    cyy_bl = cyy[blr,blc]
+    cyy_br = cyy[brr,brc]
+    cyy_tl = cyy[tlr,tlc]
+    cyy_tr = cyy[trr,trc]
 
-    cyx_bl = cyx[0,0]
-    cyx_br = cyx[0,1]
-    cyx_tl = cyx[1,0]
-    cyx_tr = cyx[1,1]
+    cxy_bl = cxy[blr,blc]
+    cxy_br = cxy[brr,brc]
+    cxy_tl = cxy[tlr,tlc]
+    cxy_tr = cxy[trr,trc]
+
+    cyx_bl = cyx[blr,blc]
+    cyx_br = cyx[brr,brc]
+    cyx_tl = cyx[tlr,tlc]
+    cyx_tr = cyx[trr,trc]
+
+    # hpx_bl = hpx[0,0]
+    # hpx_br = hpx[0,1]
+    # hpx_tl = hpx[1,0]
+    # hpx_tr = hpx[1,1]
+
+    # hpy_bl = hpy[0,0]
+    # hpy_br = hpy[0,1]
+    # hpy_tl = hpy[1,0]
+    # hpy_tr = hpy[1,1]
+
+    # cxx_bl = cxx[0,0]
+    # cxx_br = cxx[0,1]
+    # cxx_tl = cxx[1,0]
+    # cxx_tr = cxx[1,1]
+
+    # cyy_bl = cyy[0,0]
+    # cyy_br = cyy[0,1]
+    # cyy_tl = cyy[1,0]
+    # cyy_tr = cyy[1,1]
+
+    # cxy_bl = cxy[0,0]
+    # cxy_br = cxy[0,1]
+    # cxy_tl = cxy[1,0]
+    # cxy_tr = cxy[1,1]
+
+    # cyx_bl = cyx[0,0]
+    # cyx_br = cyx[0,1]
+    # cyx_tl = cyx[1,0]
+    # cyx_tr = cyx[1,1]
     
     Dx_tl = 0.5 * (topmid   - topleft + midmid   - midleft) * hpx_tl
     Dx_tr = 0.5 * (topright - topmid  + midright - midmid ) * hpx_tr
@@ -802,23 +856,14 @@ def kernel_9pt(a, dx, dy, coeffs, diag_inv, coriolis):
     
     Dxx = 0.5 * (cxx_tr * Dx_tr - cxx_tl * Dx_tl + cxx_br * Dx_br - cxx_bl * Dx_bl) * oodx * oodx
     Dyy = 0.5 * (cyy_tr * Dy_tr - cyy_br * Dy_br + cyy_tl * Dy_tl - cyy_bl * Dy_bl) * oody * oody
-    Dyx = 0.5 * (cyx_br * Dy_br - cyx_bl * Dy_bl + cyx_tr * Dy_tr - cyx_tl * Dy_tl) * oody * oodx
-    Dxy = 0.5 * (cxy_tr * Dx_tr - cxy_br * Dx_br + cxy_tl * Dx_tl - cxy_bl * Dx_bl) * oodx * oody
+    Dyx = 0.5 * (cxy_br * Dy_br - cxy_bl * Dy_bl + cxy_tr * Dy_tr - cxy_tl * Dy_tl) * oody * oodx
+    Dxy = 0.5 * (cyx_tr * Dx_tr - cyx_br * Dx_br + cyx_tl * Dx_tl - cyx_bl * Dx_bl) * oodx * oody
     
     return ((Dxx + Dyy + Dyx + Dxy) + hpc[0,0] * a[0,0]) * diag_inv[0,0]
 
-@nb.njit(cache=False)
-def periodic(arr, bgst):
+@nb.njit(cache=True)
+def periodic(arr):
     # wall padding
-    # arr[0,:] = arr[1,:] + 0.5 * (arr[2,:] + arr[1,:])
-    # arr[-1,:] = arr[-2,:] - 0.5 * (arr[-3,:] + arr[-2,:])
-
-    # ratio_bot = bgst[0,5] / bgst[1,5]
-    # ratio_top = bgst[-1,5] / bgst[-2,5]
-
-    # arr[0,:] = arr[1,:] * ratio_bot
-    # arr[-1,:] = arr[-2,:] * ratio_top
-
     arr[0,:] = arr[2,:]
     arr[-1,:] = arr[-3,:]
 

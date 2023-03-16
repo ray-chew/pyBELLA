@@ -91,7 +91,7 @@ def hydrostatic_state(mpv, elem, node, th, ud):
     p_n = pi_n**th.Gammainv
     rho_n = P_n / Y_n
 
-    mpv.HydroState_n.p20[...] = pi_n
+    mpv.HydroState_n.p20[...] = pi_n / ud.Msq
     mpv.HydroState_n.p0[...] = p_n
     mpv.HydroState_n.rho0[...] = rho_n
     mpv.HydroState_n.rhoY0[...] = P_n
@@ -107,7 +107,7 @@ def hydrostatic_state(mpv, elem, node, th, ud):
     p_c = pi_c**th.Gammainv
     rho_c = P_c / Y_c
 
-    mpv.HydroState.p20[...] = pi_c
+    mpv.HydroState.p20[...] = pi_c / ud.Msq
     mpv.HydroState.p0[...] = p_c
     mpv.HydroState.rho0[...] = rho_c
     mpv.HydroState.rhoY0[...] = P_c
