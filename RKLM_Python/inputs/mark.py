@@ -84,7 +84,7 @@ class UserData(object):
         self.bdry_type[0] = BdryType.PERIODIC
         self.bdry_type[1] = BdryType.WALL
         self.bdry_type[2] = BdryType.WALL
-        # self.LAMB_BDRY = True
+        self.LAMB_BDRY = True
 
         ##########################################
         # NUMERICS
@@ -102,7 +102,7 @@ class UserData(object):
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
 
-        self.tol = 1.e-16
+        self.tol = 1.e-18
         self.max_iterations = 10000
 
         # blending parameters
@@ -253,22 +253,24 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     u = ud.u_wind_speed + up
     v = ud.v_wind_speed + vp
     w = ud.w_wind_speed + wp
-    # Y = Ybar + Yp
-    # dPdpi = th.gm1inv * pibar**(th.gm1inv - 1.0)
+    Y = Ybar + Yp
+    dPdpi = th.gm1inv * pibar**(th.gm1inv - 1.0)
     Pbar = pibar**th.gm1inv
     rhoY = Pbar #+ dPdpi * pi
 
     # eqn (2.3)
     # rho = (((pibar + pi))**th.gm1inv) / Y
-    rho = Pbar / Ybar
+    # rho = Pbar / Y
+    rhobar = Pbar / Ybar
+    rho = rhobar#rhoY / Ybar
 
-    Sol.rho[...] = rho
+    Sol.rho[...] = Pbar / Y
     Sol.rhou[...] = rho * u
     Sol.rhov[...] = rho * v
     Sol.rhow[...] = rho * w
     Sol.rhoY[...] = rhoY
     Sol.rhoX[...] = 0.0
-    mpv.p2_cells[...] = pi #/ Msq
+    mpv.p2_cells[...] = pi / Msq
 
     ###################################################
     # initialise nodal pi

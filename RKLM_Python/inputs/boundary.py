@@ -78,11 +78,6 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
 
                     Y_last = Sol.rhoY[nlast] / Sol.rho[nlast]
 
-                    u = Sol.rhou[nsource] / Sol.rho[nsource]
-                    # v = Sol.rhov[nsource] / Sol.rho[nsource]
-                    w = Sol.rhow[nsource] / Sol.rho[nsource]
-                    X = Sol.rhoX[nsource] / Sol.rho[nsource]
-
                     rhoYv_image = -Sol.rhov[nsource] * Sol.rhoY[nsource] / Sol.rho[nsource]
 
                     S = 1. / ud.stratification(elem.y[nimage[y_axs]])
@@ -97,10 +92,17 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     rho = rhoY * S
 
                     if hasattr(ud, 'LAMB_BDRY'):
+                        u = Sol.rhou[nlast] / Sol.rho[nlast]
+                        w = Sol.rhow[nlast] / Sol.rho[nlast]
+                        X = Sol.rhoX[nlast] / Sol.rho[nlast]
                         v = 0.0
                         # v = rhoYv_image / rhoY
                         Th_slc = rhoY / rho / Y_last
+                        # Th_slc = mpv.HydroState.Y0[nimage[y_axs]] / mpv.HydroState.Y0[nlast[y_axs]]
                     else:
+                        u = Sol.rhou[nsource] / Sol.rho[nsource]
+                        w = Sol.rhow[nsource] / Sol.rho[nsource]
+                        X = Sol.rhoX[nsource] / Sol.rho[nsource]
                         v = rhoYv_image / rhoY
                         Th_slc = 1.0
 
