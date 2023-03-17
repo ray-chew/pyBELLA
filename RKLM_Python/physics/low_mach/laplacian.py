@@ -507,10 +507,9 @@ def stencil_9pt_numba_test(mpv,node,coriolis,diag_inv, ud):
 
     dummy_p = np.zeros((node.isc[1],node.isc[0]))
 
-
-    # coeff_slc = (slice(0,None), slice(1,-1))
+    # coeff_slc = (slice(1,None), slice(1,None))
     # coeffs = (hplusx[coeff_slc].T, hplusy[coeff_slc].T, hcenter.T)
-    # cor_slc = (slice(0,None), slice(1,-1))
+    # cor_slc = (slice(1,None), slice(1,None))
     # coriolis = (coriolis[0][cor_slc],coriolis[1][cor_slc],coriolis[2][cor_slc],coriolis[3][cor_slc])
 
     if hasattr(ud, 'LAMB_BDRY'):
@@ -544,7 +543,7 @@ def lap2D_numba_test(p, dp, dx, dy, coeffs, diag_inv, coriolis, shp):
 
     # dp = p
     dp = periodic(dp)
-    dp = kernel_9pt(dp, dx, dy, coeffs, diag_inv, coriolis)
+    dp = kernel_9pt(dp, dx, dy, coeffs[0], coeffs[1], coeffs[2], diag_inv, coriolis[0], coriolis[1], coriolis[2], coriolis[3])
     # p = dp
     # dp = periodic(dp)
     p = dp[1:-1,1:-1]
@@ -756,9 +755,7 @@ def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, y_rayleigh, x_wall, y_wall
 
 
 @nb.stencil
-def kernel_9pt(a, dx, dy, coeffs, diag_inv, coriolis):
-    hpx, hpy, hpc = coeffs
-    cxx, cyy, cxy, cyx = coriolis
+def kernel_9pt(a, dx, dy, hpx, hpy, hpc, diag_inv, cxx, cyy, cxy, cyx):
     oodx = 1.0 / dx
     oody = 1.0 / dy
 
@@ -774,75 +771,76 @@ def kernel_9pt(a, dx, dy, coeffs, diag_inv, coriolis):
     botmid = a[-1,0]
     botright = a[-1,1]
 
-    shft = 0
-    blr = 0 - shft
-    blc = 0 - shft
-    brr = 0 - shft
-    brc = 1 - shft
-    tlr = 1 - shft
-    tlc = 0 - shft
-    trr = 1 - shft
-    trc = 1 - shft
+    # shftr = 1
+    # shftc = 0
+    # blr = 0 - shftr
+    # blc = 0 - shftc
+    # brr = 0 - shftr
+    # brc = 1 - shftc
+    # tlr = 1 - shftr
+    # tlc = 0 - shftc
+    # trr = 1 - shftr
+    # trc = 1 - shftc
 
-    hpx_bl = hpx[blr,blc]
-    hpx_br = hpx[brr,brc]
-    hpx_tl = hpx[tlr,tlc]
-    hpx_tr = hpx[trr,trc]
+    # hpx_bl = hpx[blr,blc]
+    # hpx_br = hpx[brr,brc]
+    # hpx_tl = hpx[tlr,tlc]
+    # hpx_tr = hpx[trr,trc]
 
-    hpy_bl = hpy[blr,blc]
-    hpy_br = hpy[brr,brc]
-    hpy_tl = hpy[tlr,tlc]
-    hpy_tr = hpy[trr,trc]
+    # hpy_bl = hpy[blr,blc]
+    # hpy_br = hpy[brr,brc]
+    # hpy_tl = hpy[tlr,tlc]
+    # hpy_tr = hpy[trr,trc]
 
-    cxx_bl = cxx[blr,blc]
-    cxx_br = cxx[brr,brc]
-    cxx_tl = cxx[tlr,tlc]
-    cxx_tr = cxx[trr,trc]
+    # cxx_bl = cxx[blr,blc]
+    # cxx_br = cxx[brr,brc]
+    # cxx_tl = cxx[tlr,tlc]
+    # cxx_tr = cxx[trr,trc]
 
-    cyy_bl = cyy[blr,blc]
-    cyy_br = cyy[brr,brc]
-    cyy_tl = cyy[tlr,tlc]
-    cyy_tr = cyy[trr,trc]
+    # cyy_bl = cyy[blr,blc]
+    # cyy_br = cyy[brr,brc]
+    # cyy_tl = cyy[tlr,tlc]
+    # cyy_tr = cyy[trr,trc]
 
-    cxy_bl = cxy[blr,blc]
-    cxy_br = cxy[brr,brc]
-    cxy_tl = cxy[tlr,tlc]
-    cxy_tr = cxy[trr,trc]
+    # cxy_bl = cxy[blr,blc]
+    # cxy_br = cxy[brr,brc]
+    # cxy_tl = cxy[tlr,tlc]
+    # cxy_tr = cxy[trr,trc]
 
-    cyx_bl = cyx[blr,blc]
-    cyx_br = cyx[brr,brc]
-    cyx_tl = cyx[tlr,tlc]
-    cyx_tr = cyx[trr,trc]
+    # cyx_bl = cyx[blr,blc]
+    # cyx_br = cyx[brr,brc]
+    # cyx_tl = cyx[tlr,tlc]
+    # cyx_tr = cyx[trr,trc]
 
-    # hpx_bl = hpx[0,0]
-    # hpx_br = hpx[0,1]
-    # hpx_tl = hpx[1,0]
-    # hpx_tr = hpx[1,1]
+    hpx_bl = hpx[0,0]
+    hpx_br = hpx[0,1]
+    hpx_tl = hpx[1,0]
+    hpx_tr = hpx[1,1]
 
-    # hpy_bl = hpy[0,0]
-    # hpy_br = hpy[0,1]
-    # hpy_tl = hpy[1,0]
-    # hpy_tr = hpy[1,1]
+    hpy_bl = hpy[0,0]
+    hpy_br = hpy[0,1]
+    hpy_tl = hpy[1,0]
+    hpy_tr = hpy[1,1]
 
-    # cxx_bl = cxx[0,0]
-    # cxx_br = cxx[0,1]
-    # cxx_tl = cxx[1,0]
-    # cxx_tr = cxx[1,1]
+    cxx_bl = cxx[0,0]
+    cxx_br = cxx[0,1]
+    cxx_tl = cxx[1,0]
+    cxx_tr = cxx[1,1]
 
-    # cyy_bl = cyy[0,0]
-    # cyy_br = cyy[0,1]
-    # cyy_tl = cyy[1,0]
-    # cyy_tr = cyy[1,1]
+    cyy_bl = cyy[0,0]
+    cyy_br = cyy[0,1]
+    cyy_tl = cyy[1,0]
+    cyy_tr = cyy[1,1]
 
-    # cxy_bl = cxy[0,0]
-    # cxy_br = cxy[0,1]
-    # cxy_tl = cxy[1,0]
-    # cxy_tr = cxy[1,1]
+    cxy_bl = cxy[0,0]
+    cxy_br = cxy[0,1]
+    cxy_tl = cxy[1,0]
+    cxy_tr = cxy[1,1]
 
-    # cyx_bl = cyx[0,0]
-    # cyx_br = cyx[0,1]
-    # cyx_tl = cyx[1,0]
-    # cyx_tr = cyx[1,1]
+    cyx_bl = cyx[0,0]
+    cyx_br = cyx[0,1]
+    cyx_tl = cyx[1,0]
+    cyx_tr = cyx[1,1]
     
     Dx_tl = 0.5 * (topmid   - topleft + midmid   - midleft) * hpx_tl
     Dx_tr = 0.5 * (topright - topmid  + midright - midmid ) * hpx_tr
@@ -853,6 +851,10 @@ def kernel_9pt(a, dx, dy, coeffs, diag_inv, coriolis):
     Dy_tr = 0.5 * (topright - midright + topmid  - midmid ) * hpy_tr
     Dy_bl = 0.5 * (midmid   - botmid   + midleft - botleft) * hpy_bl
     Dy_br = 0.5 * (midright - botright + midmid  - botmid ) * hpy_br
+
+    # print(hpx_tl, hpx_tr, hpx_bl, hpx_br)
+    # print(hpy_tl, hpy_tr, hpy_bl, hpy_br)
+    # print("")
     
     Dxx = 0.5 * (cxx_tr * Dx_tr - cxx_tl * Dx_tl + cxx_br * Dx_br - cxx_bl * Dx_bl) * oodx * oodx
     Dyy = 0.5 * (cyy_tr * Dy_tr - cyy_br * Dy_br + cyy_tl * Dy_tl - cyy_bl * Dy_bl) * oody * oody

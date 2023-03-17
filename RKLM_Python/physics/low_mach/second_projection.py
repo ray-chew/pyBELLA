@@ -161,10 +161,10 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         # lap = stencil_9pt(elem,node,mpv,Sol,ud,diag_inv,dt,coriolis_params)
         # sh = (ud.inx)*(ud.iny)
 
-        diag_inv = precon_diag_prepare(mpv, elem, node, ud, coriolis_params)
-        rhs *= diag_inv
+        # diag_inv = precon_diag_prepare(mpv, elem, node, ud, coriolis_params)
+        # rhs *= diag_inv
 
-        # diag_inv = np.ones_like(mpv.rhs)
+        diag_inv = np.ones_like(mpv.rhs)
 
         p2 = mpv.p2_nodes[node.i2].T
         lap = stencil_9pt_numba_test(mpv,node,coriolis_params,diag_inv, ud)
@@ -222,7 +222,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     # p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
 
-    p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
+    p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter, x0=p2.ravel())
     # p2, _ = gmres(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations)
     # p2,info = bicgstab(lap,rhs.ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
@@ -296,7 +296,7 @@ def correction_nodes(Sol,elem,node,mpv,p,dt,ud,th,updt_chi):
     Sol.rhow += thinv * mpv.w if ndim == 3 else 0.0
     Sol.rhoX += - updt_chi * dt * dSdy * Sol.rhov
 
-    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    # set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     assert True
 
@@ -326,13 +326,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
 
     setattr(mpv, 'nu_c', nu)
     nu = nu
-
-    # coeff[:,0] = coeff[:,2]
-    # coeff[:,1] = coeff[:,2]
-    # coeff[:,-1] = coeff[:,-3]
-    # coeff[:,-2] = coeff[:,-3]
-    # coeff[:,:2] = coeff[:,-2:] = 0.0
-    # coeff[0,:] = coeff[-1,:] = 0.0
+    
 
     for dim in range(ndim):
         ## Assuming 2D vertical slice!
