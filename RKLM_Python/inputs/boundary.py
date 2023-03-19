@@ -93,7 +93,6 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
 
                     Y_source = Sol.rhoY[nsource] / Sol.rho[nsource]
                     Y_image = rhoY / rho
-                    u = Sol.rhou[nsource] / Sol.rho[nsource]
 
                     if hasattr(ud, 'LAMB_BDRY'):
                         if direction > 0: # if bottom boundary
@@ -107,6 +106,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                         v = rhoYv_image / rhoY
                         Th_slc = 1.0
 
+                    u = Sol.rhou[nsource] / Sol.rho[nsource]
                     w = Sol.rhow[nsource] / Sol.rho[nsource]
                     X = Sol.rhoX[nsource] / Sol.rho[nsource]
 
@@ -439,20 +439,25 @@ def rayleigh_damping(Sol, mpv, ud, forcing=None):
     v = Sol.rhov / Sol.rho
     Y = Sol.rhoY / Sol.rho
 
-    tcy, tny = ud.tcy, ud.tny
+    if ud.bdry_type[1] == BdryType.RAYLEIGH:
+        tcy, tny = ud.tcy, ud.tny
+    else:
+        tcy, tny = 0.0, 0.0
 
     if (forcing is not None):
+        tcy_f, tny_f = ud.forcing_tcy, ud.forcing_tny
+
         if ud.rayleigh_forcing_type == 'func':
             u_f, v_f, Y_f, pi_f = forcing
 
-            mpv.p2_nodes[...] += tny * (mpv.p2_nodes) + np.abs(tny) * pi_f
+            mpv.p2_nodes[...] += tny_f * (mpv.p2_nodes) + np.abs(tny_f) * pi_f
         else:
             Sol_f, mpv_f, tny = forcing
             u_f = (Sol_f.rhou / Sol_f.rho) - ud.u_wind_speed
             v_f = Sol_f.rhov / Sol_f.rho
             Y_f = Sol_f.rhoY / Sol_f.rho - mpv.HydroState.Y0
 
-            mpv.p2_nodes[...] += tny * (mpv.p2_nodes) + np.abs(tny) * mpv_f.p2_nodes
+            mpv.p2_nodes[...] += tny_f * (mpv.p2_nodes) + np.abs(tny_f) * mpv_f.p2_nodes
 
         c_f = 1.0
 
@@ -461,13 +466,12 @@ def rayleigh_damping(Sol, mpv, ud, forcing=None):
         c_f = 0.0
 
     # assuming 2D vertical slice - not dimension agnostic
-    u += tcy * (u - ud.u_wind_speed) + c_f * np.abs(tcy) * u_f
-    v += tcy * (v - ud.v_wind_speed) + c_f * np.abs(tcy) * v_f    
+    u += tcy * (u - ud.u_wind_speed) + c_f * (tcy_f * (u - ud.u_wind_speed) + np.abs(tcy_f) * u_f)
+    v += tcy * (v - ud.v_wind_speed) + c_f * (tcy_f * (v - ud.v_wind_speed) + np.abs(tcy_f) * v_f)
+    Y += tcy * (Y - mpv.HydroState.Y0.reshape(1,-1)) + c_f * (tcy_f * (Y - mpv.HydroState.Y0.reshape(1,-1)) + np.abs(tcy_f) * Y_f)
+
     Sol.rhou[...] = Sol.rho * u
     Sol.rhov[...] = Sol.rho * v
-
-    Y += tcy * (Y - mpv.HydroState.Y0.reshape(1,-1)) + c_f * np.abs(tcy) * Y_f
-
     Sol.rhoY[...] = Sol.rho * Y
 
 
