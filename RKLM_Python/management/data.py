@@ -186,31 +186,32 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             # top rayleight damping
             boundary.rayleigh_damping(Sol, mpv, ud)
 
-            # bottom rayleigh forcing
-            if hasattr(ud, 'rayleigh_forcing'):
-                if ud.rayleigh_forcing:
+        # bottom rayleigh forcing
+        if hasattr(ud, 'rayleigh_forcing'):
+            if ud.rayleigh_forcing:
 
-                    if ud.rayleigh_forcing_type == 'file':
-                        reader = read_input(ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path)
+                if ud.rayleigh_forcing_type == 'file':
+                    reader = read_input(ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path)
 
-                        Sol_half_new = deepcopy(Sol)
-                        mpv_half_new = deepcopy(mpv)
+                    Sol_half_new = deepcopy(Sol)
+                    mpv_half_new = deepcopy(mpv)
 
-                        # misusing hydrostatic blending data containers
-                        time_tag = '%.3d_after_full_step' %step
-                        reader.get_data(Sol_half_new, mpv_half_new, time_tag, half=True)
+                    # misusing hydrostatic blending data containers
+                    time_tag = '%.3d_after_full_step' %step
+                    reader.get_data(Sol_half_new, mpv_half_new, time_tag, half=True)
 
-                        boundary.rayleigh_damping(Sol, mpv, ud, ud.forcing_tcy, elem, th, [Sol_half_new, mpv_half_new, ud.forcing_tny])
+                    boundary.rayleigh_damping(Sol, mpv, ud, ud.forcing_tcy, elem, th, [Sol_half_new, mpv_half_new, ud.forcing_tny])
 
-                    elif ud.rayleigh_forcing_type == 'func':
-                        ud.rf_bot.eigenfunction(t+0.5*dt, 1)
-                        up, vp, Yp, _ = ud.rf_bot.dehatter(th)
+                elif ud.rayleigh_forcing_type == 'func':
+                    boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+                    ud.rf_bot.eigenfunction(t+0.5*dt, 1)
+                    up, vp, Yp, _ = ud.rf_bot.dehatter(th)
 
-                        ud.rf_bot.eigenfunction(t+0.5*dt, 1, grid='n')
-                        _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
+                    ud.rf_bot.eigenfunction(t+0.5*dt, 1, grid='n')
+                    _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
 
-                        boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi_n])
-
+                    boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi_n])
+                boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 
 
@@ -319,28 +320,29 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             # top rayleight damping
             boundary.rayleigh_damping(Sol, mpv, ud)
 
-            # bottom rayleigh forcing
-            if hasattr(ud, 'rayleigh_forcing'):
-                if ud.rayleigh_forcing:
+        # bottom rayleigh forcing
+        if hasattr(ud, 'rayleigh_forcing'):
+            if ud.rayleigh_forcing:
 
-                    if ud.rayleigh_forcing_type == 'file':
+                if ud.rayleigh_forcing_type == 'file':
 
-                        reader = read_input(ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path)
+                    reader = read_input(ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path)
 
-                        # misusing hydrostatic blending data containers
-                        time_tag = '%.3d_after_full_step' %step
-                        reader.get_data(Sol_half_new, mpv_half_new, time_tag)
+                    # misusing hydrostatic blending data containers
+                    time_tag = '%.3d_after_full_step' %step
+                    reader.get_data(Sol_half_new, mpv_half_new, time_tag)
 
-                        boundary.rayleigh_damping(Sol, mpv, ud, ud.forcing_tcy, elem, th, [Sol_half_new, mpv_half_new, ud.forcing_tny])
+                    boundary.rayleigh_damping(Sol, mpv, ud, ud.forcing_tcy, elem, th, [Sol_half_new, mpv_half_new, ud.forcing_tny])
 
-                    elif ud.rayleigh_forcing_type == 'func':
-                        ud.rf_bot.eigenfunction(t+dt, 1)
-                        up, vp, Yp, _ = ud.rf_bot.dehatter(th)
+                elif ud.rayleigh_forcing_type == 'func':
+                    ud.rf_bot.eigenfunction(t+dt, 1)
+                    up, vp, Yp, _ = ud.rf_bot.dehatter(th)
 
-                        ud.rf_bot.eigenfunction(t+dt, 1, grid='n')
-                        _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
+                    ud.rf_bot.eigenfunction(t+dt, 1, grid='n')
+                    _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
 
-                        boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi_n])
+                    boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi_n])
+                boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 
         # if writer is not None: writer.populate(str(label)+'_after_full_step','p2_half',mpv.p2_nodes_half)
