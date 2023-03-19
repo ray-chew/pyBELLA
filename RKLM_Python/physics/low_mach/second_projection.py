@@ -161,10 +161,10 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         # lap = stencil_9pt(elem,node,mpv,Sol,ud,diag_inv,dt,coriolis_params)
         # sh = (ud.inx)*(ud.iny)
 
-        # diag_inv = precon_diag_prepare(mpv, elem, node, ud, coriolis_params)
-        # rhs *= diag_inv
+        diag_inv = precon_diag_prepare(mpv, elem, node, ud, coriolis_params)
+        rhs *= diag_inv
 
-        diag_inv = np.ones_like(mpv.rhs)
+        # diag_inv = np.ones_like(mpv.rhs)
 
         p2 = mpv.p2_nodes[node.i2].T
         lap = stencil_9pt_numba_test(mpv,node,coriolis_params,diag_inv, ud)
@@ -222,7 +222,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     # p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
 
-    p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter, x0=p2.ravel())
+    p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
     # p2, _ = gmres(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations)
     # p2,info = bicgstab(lap,rhs.ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
@@ -545,15 +545,6 @@ def divergence_nodes(rhs,elem,node,Sol,ud):
             Sol.rhov[:,-2:,...] = 0.0
             Sol.rhow[:,-2:,...] = 0.0
 
-    # if ud.bdry_type[1] == BdryType.RAYLEIGH:
-    #     u_last = Sol.rhou[:,-3,...] / Sol.rho[:,-3,...]
-    #     v_last = Sol.rhov[:,-3,...] / Sol.rho[:,-3,...]
-
-    #     Sol.rhou[:,-2,...] = u_last * Sol.rho[:,-2,...]
-    #     Sol.rhov[:,-2,...] = -v_last * Sol.rho[:,-2,...]
-
-    #     Sol.rhou[:,-1,...] = u_last * Sol.rho[:,-1,...]
-    #     Sol.rhov[:,-1,...] = -(Sol.rhov[:,-4,...] / Sol.rho[:,-4,...]) * Sol.rho[:,-4,...]
 
     Y = Sol.rhoY / Sol.rho
 

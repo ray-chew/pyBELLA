@@ -865,13 +865,13 @@ def kernel_9pt(a, dx, dy, hpx, hpy, hpc, diag_inv, cxx, cyy, cxy, cyx):
 
 @nb.njit(cache=True)
 def periodic(arr):
-    # wall padding
-    arr[0,:] = arr[2,:]
-    arr[-1,:] = arr[-3,:]
-
     # periodic padding
     arr[:,0] = arr[:,-3]
     arr[:,-1] = arr[:,2]
+
+    # wall padding
+    arr[0,:] = arr[2,:]
+    arr[-1,:] = arr[-3,:]
     
     return arr
 
