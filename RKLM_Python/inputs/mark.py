@@ -123,7 +123,7 @@ class UserData(object):
 
 
         self.tout = [720.0]
-        self.stepmax = 31
+        self.stepmax = 10001
         self.output_timesteps = True
 
         self.output_base_name = "_mark_wave"
