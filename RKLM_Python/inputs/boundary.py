@@ -91,22 +91,25 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
 
                     rho = rhoY * S
 
+                    Y_source = Sol.rhoY[nsource] / Sol.rho[nsource]
+                    Y_image = rhoY / rho
+                    u = Sol.rhou[nsource] / Sol.rho[nsource]
+
                     if hasattr(ud, 'LAMB_BDRY'):
-                        u = Sol.rhou[nlast] / Sol.rho[nlast]
-                        w = Sol.rhow[nlast] / Sol.rho[nlast]
-                        X = Sol.rhoX[nlast] / Sol.rho[nlast]
-                        v = 0.0
-                        # v = rhoYv_image / rhoY
+                        if direction > 0: # if bottom boundary
+                            v = Sol.rhov[nsource] * Y_source / Sol.rho[nsource] * rho
+                        else: # if top boundary
+                            v = Sol.rhov[nsource] * Y_source 
+
                         Th_slc = rhoY / rho / Y_last
-                        # Th_slc = mpv.HydroState.Y0[nimage[y_axs]] / mpv.HydroState.Y0[nlast[y_axs]]
+
                     else:
-                        u = Sol.rhou[nsource] / Sol.rho[nsource]
-                        w = Sol.rhow[nsource] / Sol.rho[nsource]
-                        X = Sol.rhoX[nsource] / Sol.rho[nsource]
                         v = rhoYv_image / rhoY
                         Th_slc = 1.0
 
-                    
+                    w = Sol.rhow[nsource] / Sol.rho[nsource]
+                    X = Sol.rhoX[nsource] / Sol.rho[nsource]
+
                     # p = rhoY**th.gamm
 
                     # rhoY = mpv.HydroState.rhoY0[nimage[y_axs]]
@@ -119,7 +122,8 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
 
                     Sol.rho[nimage] = rho
                     Sol.rhou[nimage] = rho*u * Th_slc
-                    Sol.rhov[nimage] = rho*v
+                    # Sol.rhov[nimage] = 0.0#rho*v
+                    Sol.rhov[nimage] = -v / Y_image
                     Sol.rhow[nimage] = rho*w * Th_slc
                     Sol.rhoY[nimage] = rhoY
                     Sol.rhoX[nimage] = rho * X
@@ -446,7 +450,7 @@ def rayleigh_damping(Sol, mpv, ud, forcing=None):
             Sol_f, mpv_f, tny = forcing
             u_f = (Sol_f.rhou / Sol_f.rho) - ud.u_wind_speed
             v_f = Sol_f.rhov / Sol_f.rho
-            Y_f = Sol_f.rhoY / Sol_f.rho
+            Y_f = Sol_f.rhoY / Sol_f.rho - mpv.HydroState.Y0
 
             mpv.p2_nodes[...] += tny * (mpv.p2_nodes) + np.abs(tny) * mpv_f.p2_nodes
 
@@ -462,7 +466,7 @@ def rayleigh_damping(Sol, mpv, ud, forcing=None):
     Sol.rhou[...] = Sol.rho * u
     Sol.rhov[...] = Sol.rho * v
 
-    Y += tcy * (Y - mpv.HydroState.Y0) + c_f * np.abs(tcy) * (Y_f - mpv.HydroState.Y0)
+    Y += tcy * (Y - mpv.HydroState.Y0.reshape(1,-1)) + c_f * np.abs(tcy) * Y_f
 
     Sol.rhoY[...] = Sol.rho * Y
 
