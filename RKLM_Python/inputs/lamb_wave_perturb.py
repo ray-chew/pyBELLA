@@ -84,7 +84,7 @@ class UserData(object):
         self.bdry_type[0] = BdryType.PERIODIC
         self.bdry_type[1] = BdryType.WALL
         self.bdry_type[2] = BdryType.WALL
-        self.LAMB_BDRY = False
+        self.LAMB_BDRY = True
 
         ##########################################
         # NUMERICS
@@ -123,7 +123,7 @@ class UserData(object):
 
 
         self.tout = [720.0]
-        self.stepmax = 31
+        self.stepmax = 10001
         self.output_timesteps = True
 
         self.output_base_name = "_mark_wave"
@@ -163,7 +163,7 @@ class UserData(object):
 
     @staticmethod
     def rayleigh_bc_function(ud):
-        if ud.bdry_type[1] == BdryType.RAYLEIGH:
+        if ud.bdry_type[1] == BdryType.RAYLEIGH or ud.rayleigh_forcing == True:
             ud.inbcy = ud.iny - 1
             ud.iny0 = np.copy(ud.iny)
             ud.iny = ud.iny0 + int(3*ud.inbcy)
@@ -221,7 +221,7 @@ class UserData(object):
 
             # construct solution according to eq. 2.27 and 2.19
             exponentials = np.exp( 1j * self.k * x + self.mu * z 
-                                + ( eigval[ind] ) * t )
+                                - ( eigval[ind] ) * t )
             chi_u  = self.ampl * np.real( eigvec[0,ind] * exponentials )
             chi_w  = self.ampl * np.real( eigvec[1,ind] * exponentials )
             chi_th = self.ampl * np.real( eigvec[2,ind] * exponentials )
@@ -251,9 +251,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     if ud.bdry_type[1].value == 'radiation':
         ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.1)
 
-        if hasattr(ud, 'rayleigh_forcing'):
-                if ud.rayleigh_forcing:
-                    ud.forcing_tcy, ud.forcing_tny = get_bottom_tau_y(ud, elem, node, 0.2, cutoff=0.1)
+    if ud.rayleigh_forcing:
+        ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.1)
+        
+        ud.forcing_tcy, ud.forcing_tny = get_bottom_tau_y(ud, elem, node, 0.2, cutoff=0.1)
 
     A0 = 1.0e-3
     Msq = ud.Msq
@@ -274,30 +275,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     # Following Rupert's fix, reinitialise all background quantities
     # as derived from one quantity.
     ud.stratification = ud.stratification(dy)
-    # hydrostatic_state(mpv, elem, node, th, ud)
 
-    # Hrho = 1.0 / g
-    # Htheta = Hrho / th.Gamma
-    # rhobar_n = np.exp(- yn / Hrho)
-    # Ybar_n = np.exp(yn / Htheta)
-    # pibar_n = 1.0 / Ybar_n
-
-    # Ybar = - th.Gamma * g * dy / ((pibar_n[:,1:] - pibar_n[:,:-1]))
-    # pibar = ud.T_ref / Ybar
-    # rhoYbar = pibar**(th.gm1inv)
-    # rhobar = rhoYbar / Ybar
-
-    # mpv.HydroState_n.rho0[...] = rhobar_n.reshape(-1,)
-    # mpv.HydroState.rho0[...] = rhobar.reshape(-1,)
-
-    # mpv.HydroState_n.Y0[...] = Ybar_n.reshape(-1)
-    # mpv.HydroState.Y0[...] = Ybar.reshape(-1)
-
-    # mpv.HydroState_n.rhoY0[...] = Ybar_n.reshape(-1) * rhobar_n.reshape(-1)
-    # mpv.HydroState.rhoY0[...] = Ybar.reshape(-1) * rhobar.reshape(-1)
-
-    # mpv.HydroState_n.p20[...] = pibar_n.reshape(-1)
-    # mpv.HydroState.p20[...] = pibar.reshape(-1)
 
     
     # Use hydrostatically balanced background
