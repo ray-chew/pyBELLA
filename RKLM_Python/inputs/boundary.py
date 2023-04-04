@@ -123,7 +123,10 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     Sol.rho[nimage] = rho
                     Sol.rhou[nimage] = rho*u * Th_slc
                     # Sol.rhov[nimage] = 0.0#rho*v
-                    Sol.rhov[nimage] = -v / Y_image
+                    if hasattr(ud, 'LAMB_BDRY'):
+                        Sol.rhov[nimage] = -v / Y_image
+                    else:
+                        Sol.rhov[nimage] = rho*v
                     Sol.rhow[nimage] = rho*w * Th_slc
                     Sol.rhoY[nimage] = rhoY
                     Sol.rhoX[nimage] = rho * X
@@ -451,19 +454,25 @@ def rayleigh_damping(Sol, mpv, ud, forcing=None):
             u_f, v_f, Y_f, pi_f = forcing
 
             mpv.p2_nodes[...] += tny_f * (mpv.p2_nodes) + np.abs(tny_f) * pi_f
-        else:
-            Sol_f, mpv_f, tny = forcing
-            u_f = (Sol_f.rhou / Sol_f.rho) - ud.u_wind_speed
-            v_f = Sol_f.rhov / Sol_f.rho
-            Y_f = Sol_f.rhoY / Sol_f.rho - mpv.HydroState.Y0
 
-            mpv.p2_nodes[...] += tny_f * (mpv.p2_nodes) + np.abs(tny_f) * mpv_f.p2_nodes
+            mpv.p2_nodes[...] = pi_f
+        else:
+            # # Sol_f, mpv_f, tny = forcing
+            # u_f = (Sol_f.rhou / Sol_f.rho) - ud.u_wind_speed
+            # v_f = Sol_f.rhov / Sol_f.rho
+            # Y_f = Sol_f.rhoY / Sol_f.rho - mpv.HydroState.Y0
+
+            # mpv.p2_nodes[...] += tny_f * (mpv.p2_nodes) + np.abs(tny_f) * mpv_f.p2_nodes
+            u_f, v_f, Y_f, pi_f = forcing
+
+            mpv.p2_nodes[...] += tny_f * (mpv.p2_nodes) + np.abs(tny_f) * pi_f
 
         c_f = 1.0
 
     else:
         u_f, v_f, Y_f = 0.0, 0.0, 0.0
         c_f = 0.0
+        tcy_f, tny_f = 0.0, 0.0
 
     # assuming 2D vertical slice - not dimension agnostic
     u += tcy * (u - ud.u_wind_speed) + c_f * (tcy_f * (u - ud.u_wind_speed) + np.abs(tcy_f) * u_f)
@@ -472,7 +481,7 @@ def rayleigh_damping(Sol, mpv, ud, forcing=None):
 
     Sol.rhou[...] = Sol.rho * u
     Sol.rhov[...] = Sol.rho * v
-    Sol.rhoY[...] = Sol.rho * Y
+    Sol.rhoY[...] = Sol.rho * Y#(mpv.HydroState.Y0.reshape(1,-1) + Y_f)
 
 
 

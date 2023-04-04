@@ -82,7 +82,7 @@ class UserData(object):
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.WALL
+        self.bdry_type[1] = BdryType.RAYLEIGH
         self.bdry_type[2] = BdryType.WALL
         self.LAMB_BDRY = True
 
@@ -98,11 +98,11 @@ class UserData(object):
         self.dtfixed0 = 100.0 / self.t_ref
         self.dtfixed = self.dtfixed0
         
-        self.do_advection = False
+        self.do_advection = True
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
 
-        self.tol = 1.e-18
+        self.tol = 1.e-30
         self.max_iterations = 10000
 
         # blending parameters
@@ -123,21 +123,23 @@ class UserData(object):
 
 
         self.tout = [720.0]
-        self.stepmax = 10001
+        # self.tout = np.arange(0,31) * 1e-3
+        # self.tout = np.append(self.tout, [720.0])
+        self.stepmax = 31
         self.output_timesteps = True
 
         self.output_base_name = "_mark_wave"
         aux = 'bdl_test_S600_a1'
         self.aux = aux
-        self.output_suffix = '_301_120_720.000000_rstrt_init_S600_a1'
+        self.output_suffix = '_301_40_720.000000_rstrt_init_S10_a05'
 
         self.stratification = self.stratification_wrapper
         self.rayleigh_bc = self.rayleigh_bc_function
         self.init_forcing = self.forcing
 
         self.rayleigh_forcing = True
-        self.rayleigh_forcing_type = 'func' # func or file
-        self.rayleigh_forcing_fn = 'output_mark_wave_ensemble=1_301_120_bottom_forcing_S400.h5'
+        self.rayleigh_forcing_type = 'file' # func or file
+        self.rayleigh_forcing_fn = 'output_mark_wave_ensemble=1_301_40_bottom_forcing_S1.h5'
         self.rayleigh_forcing_path = './output_mark_wave'
         
 
@@ -252,9 +254,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.1)
 
     if ud.rayleigh_forcing:
-        ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.1)
+        # ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.005)
         
-        ud.forcing_tcy, ud.forcing_tny = get_bottom_tau_y(ud, elem, node, 0.2, cutoff=0.1)
+        ud.forcing_tcy, ud.forcing_tny = get_bottom_tau_y(ud, elem, node, 0.2, cutoff=0.3)
 
     A0 = 1.0e-3
     Msq = ud.Msq
@@ -276,8 +278,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     # as derived from one quantity.
     ud.stratification = ud.stratification(dy)
 
-
-    
     # Use hydrostatically balanced background
     hydrostatic_state(mpv, elem, node, th, ud)
     rhobar = mpv.HydroState.rho0.reshape(1,-1)
