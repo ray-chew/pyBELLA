@@ -18,10 +18,10 @@ resol_x = [301]
 resol_y = [10]
 # resol_t = [200,400,600,800,1000,1200,1400,1600]
 # resol_t = [200,400,600,800]
-resol_t = [10.0]
+resol_t = [1.0]
 # omegas = [0.0, 2.0 * omega * t_ref]
-# omegas = [2.0 * omega * t_ref]
-omegas = [0.0]
+omegas = [2.0 * omega * t_ref]
+# omegas = [0.0]
 
 
 ud = {}

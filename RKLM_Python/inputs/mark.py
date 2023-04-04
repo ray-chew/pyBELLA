@@ -72,7 +72,7 @@ class UserData(object):
         self.xmin = - Lx / self.h_ref
         self.xmax =   Lx / self.h_ref
         self.ymin = - 0.0
-        self.ymax =   2.5
+        self.ymax =   2.0
         self.zmin = - 1.0
         self.zmax =   1.0
 
@@ -84,7 +84,7 @@ class UserData(object):
         self.bdry_type[0] = BdryType.PERIODIC
         self.bdry_type[1] = BdryType.WALL
         self.bdry_type[2] = BdryType.WALL
-        self.LAMB_BDRY = True
+        # self.LAMB_BDRY = True
 
         ##########################################
         # NUMERICS
@@ -98,7 +98,7 @@ class UserData(object):
         self.dtfixed0 = 100.0 / self.t_ref
         self.dtfixed = self.dtfixed0
         
-        self.do_advection = False
+        self.do_advection = True
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
 
@@ -145,20 +145,20 @@ class UserData(object):
         return lambda y : self.stratification_function(y, dy)
 
     def stratification_function(self, y, dy):
-        g = self.gravity_strength[1]
+        # g = self.gravity_strength[1]
 
-        Gamma = (self.gamm - 1.0) / self.gamm
-        Hex = 1.0 / (Gamma * g)
-        pi_m = np.exp(-(y - 0.5 * dy) / Hex)
-        pi_p = np.exp(-(y + 0.5 * dy) / Hex)
+        # Gamma = (self.gamm - 1.0) / self.gamm
+        # Hex = 1.0 / (Gamma * g)
+        # pi_m = np.exp(-(y - 0.5 * dy) / Hex)
+        # pi_p = np.exp(-(y + 0.5 * dy) / Hex)
         
-        Theta = - (Gamma * g * dy) / (pi_p - pi_m)
+        # Theta = - (Gamma * g * dy) / (pi_p - pi_m)
 
-        return Theta
-        # Nsq = self.Nsq_ref * self.t_ref**2
-        # g = self.gravity_strength[1] / self.Msq
+        # return Theta
+        Nsq = self.Nsq_ref * self.t_ref**2
+        g = self.gravity_strength[1] / self.Msq
 
-        # return np.exp(Nsq * y / g)
+        return np.exp(Nsq * y / g)
 
     @staticmethod
     def rayleigh_bc_function(ud):

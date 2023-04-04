@@ -200,15 +200,27 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                     time_tag = '%.3d_after_full_step' %step
                     reader.get_data(Sol_half_new, mpv_half_new, time_tag, half=True)
 
-                    boundary.rayleigh_damping(Sol, mpv, ud, ud.forcing_tcy, elem, th, [Sol_half_new, mpv_half_new, ud.forcing_tny])
+                    # assuming constant background state
+                    up = Sol_half_new.rhou / Sol_half_new.rho
+                    vp = Sol_half_new.rhov / Sol_half_new.rho
+                    Yp = Sol_half_new.rhoY / Sol_half_new.rho - mpv.HydroState.Y0.reshape(1,-1)
+                    # vp = 0.0
+                    # Yp = 0.0
+                    pi = mpv_half_new.p2_nodes
+
+                    boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi])
 
                 elif ud.rayleigh_forcing_type == 'func':
                     boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
                     ud.rf_bot.eigenfunction(t+0.5*dt, 1)
-                    up, vp, Yp, _ = ud.rf_bot.dehatter(th)
+                    up, vp, Yp, pi = ud.rf_bot.dehatter(th)
 
                     ud.rf_bot.eigenfunction(t+0.5*dt, 1, grid='n')
                     _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
+
+                    # kernel = np.ones([2]*mpv.p2_nodes.ndim)
+                    # pi_n = np.zeros_like(mpv.p2_nodes)
+                    # pi_n[node.i1] = signal.fftconvolve(pi, kernel, mode='valid') / kernel.sum()
 
                     boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi_n])
                 boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
@@ -332,14 +344,25 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                     time_tag = '%.3d_after_full_step' %step
                     reader.get_data(Sol_half_new, mpv_half_new, time_tag)
 
-                    boundary.rayleigh_damping(Sol, mpv, ud, ud.forcing_tcy, elem, th, [Sol_half_new, mpv_half_new, ud.forcing_tny])
+                    # assuming constant background state
+                    up = Sol_half_new.rhou / Sol_half_new.rho
+                    vp = Sol_half_new.rhov / Sol_half_new.rho
+                    Yp = Sol_half_new.rhoY / Sol_half_new.rho - mpv.HydroState.Y0.reshape(1,-1)
+                    # vp = 0.0
+                    # Yp = 0.0
+                    pi = mpv_half_new.p2_nodes
+
+                    boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi])
 
                 elif ud.rayleigh_forcing_type == 'func':
                     ud.rf_bot.eigenfunction(t+dt, 1)
-                    up, vp, Yp, _ = ud.rf_bot.dehatter(th)
+                    up, vp, Yp, pi = ud.rf_bot.dehatter(th)
 
                     ud.rf_bot.eigenfunction(t+dt, 1, grid='n')
                     _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
+                    # kernel = np.ones([2]*mpv.p2_nodes.ndim)
+                    # pi_n = np.zeros_like(mpv.p2_nodes)
+                    # pi_n[node.i1] = signal.fftconvolve(pi, kernel, mode='valid') / kernel.sum()
 
                     boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi_n])
                 boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
