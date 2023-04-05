@@ -125,7 +125,7 @@ class UserData(object):
         self.tout = [720.0]
         # self.tout = np.arange(0,31) * 1e-3
         # self.tout = np.append(self.tout, [720.0])
-        self.stepmax = 31
+        self.stepmax = 51
         self.output_timesteps = True
 
         self.output_base_name = "_mark_wave"
@@ -139,7 +139,7 @@ class UserData(object):
 
         self.rayleigh_forcing = True
         self.rayleigh_forcing_type = 'file' # func or file
-        self.rayleigh_forcing_fn = 'output_mark_wave_ensemble=1_301_40_bottom_forcing_S1.h5'
+        self.rayleigh_forcing_fn = 'output_mark_wave_ensemble=1_601_240_bottom_forcing_S16.h5'
         self.rayleigh_forcing_path = './output_mark_wave'
         
 
@@ -250,7 +250,7 @@ class UserData(object):
 
 
 def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
-    if ud.bdry_type[1].value == 'radiation':
+    if ud.bdry_type[1] == BdryType.RAYLEIGH:
         ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.1)
 
     if ud.rayleigh_forcing:
