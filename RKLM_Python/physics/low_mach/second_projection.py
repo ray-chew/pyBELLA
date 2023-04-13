@@ -16,7 +16,7 @@ class solver_counter(object):
         self.niter += 1
         self.rk = rk
 
-def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None, label = None):
+def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None, label = None, debug = False):
     nonhydro = ud.nonhydrostasy
     g = ud.gravity_strength[1]
     Msq = ud.Msq
@@ -39,7 +39,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None,
     if not hasattr(ud, 'LAMB_BDRY'): scale_wall_node_values(mpv.rhs, node, ud, 2.0)
     div = mpv.rhs
 
-    if writer != None: writer.populate(str(label), 'rhs', div)
+    if debug: writer.populate(str(label), 'rhs', div)
 
     rhoY = Sol.rhoY**(th.gamm - 2.0)
     dpidP_kernel = np.ones([2]*ndim)
@@ -91,7 +91,9 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
 total_iter = 0
 total_calls = 0
-def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff, Sol0 = None, writer = None, label=None):
+def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, alpha_diff, Sol0 = None, writer = None, label=None, debug=False):
+    if not debug:
+        writer = None
     nc = node.sc
     rhs = np.zeros_like(mpv.p2_nodes)
     rhs = mpv.rhs

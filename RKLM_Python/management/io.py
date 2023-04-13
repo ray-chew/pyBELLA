@@ -158,7 +158,7 @@ class io(object):
         # vorticity in (x,z)
         # self.populate(name,'vortz', self.vortz(Sol,elem,node))
         # self.vorty(Sol,elem,node)
-        self.populate(name,'vorty', self.vorty(Sol,elem,node))
+        # self.populate(name,'vorty', self.vorty(Sol,elem,node))
 
     def vortz(self,Sol,elem,node):
         """

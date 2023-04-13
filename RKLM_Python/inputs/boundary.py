@@ -450,22 +450,32 @@ def rayleigh_damping(Sol, mpv, ud, forcing=None):
     if (forcing is not None):
         tcy_f, tny_f = ud.forcing_tcy, ud.forcing_tny
 
-        if ud.rayleigh_forcing_type == 'func':
-            u_f, v_f, Y_f, pi_f = forcing
+        if ud.rayleigh_forcing_type == 'file':
+            # u_f, v_f, Y_f, pi_f, t = forcing
+            # mfac = np.exp(7.9 * 1e-4 * t * ud.t_ref)
+            mfac = np.exp(7.9 * 1e-4 * t * ud.t_ref)
 
-            mpv.p2_nodes[...] += tny_f * (mpv.p2_nodes) + np.abs(tny_f) * pi_f
+            # mpv.p2_nodes[...] += tny_f * (mpv.p2_nodes) + np.abs(tny_f) * mfac * pi_f
 
-            mpv.p2_nodes[...] = pi_f
+            # mpv.p2_nodes[...] = pi_f
         else:
+            mfac = 1.0
             # # Sol_f, mpv_f, tny = forcing
             # u_f = (Sol_f.rhou / Sol_f.rho) - ud.u_wind_speed
             # v_f = Sol_f.rhov / Sol_f.rho
             # Y_f = Sol_f.rhoY / Sol_f.rho - mpv.HydroState.Y0
 
             # mpv.p2_nodes[...] += tny_f * (mpv.p2_nodes) + np.abs(tny_f) * mpv_f.p2_nodes
-            u_f, v_f, Y_f, pi_f = forcing
 
-            mpv.p2_nodes[...] += tny_f * (mpv.p2_nodes) + np.abs(tny_f) * pi_f
+        u_f, v_f, Y_f, pi_f, t = forcing
+
+        # if np.all(ud.coriolis_strength) == 0.0:
+        #     mfac = 1.0
+        # else:
+            
+        #     mfac = 1.0
+
+        mpv.p2_nodes[...] += tny_f * (mpv.p2_nodes) + np.abs(tny_f) * mfac * pi_f
 
         c_f = 1.0
 
@@ -473,11 +483,12 @@ def rayleigh_damping(Sol, mpv, ud, forcing=None):
         u_f, v_f, Y_f = 0.0, 0.0, 0.0
         c_f = 0.0
         tcy_f, tny_f = 0.0, 0.0
+        mfac = 0.0
 
     # assuming 2D vertical slice - not dimension agnostic
-    u += tcy * (u - ud.u_wind_speed) + c_f * (tcy_f * (u - ud.u_wind_speed) + np.abs(tcy_f) * u_f)
-    v += tcy * (v - ud.v_wind_speed) + c_f * (tcy_f * (v - ud.v_wind_speed) + np.abs(tcy_f) * v_f)
-    Y += tcy * (Y - mpv.HydroState.Y0.reshape(1,-1)) + c_f * (tcy_f * (Y - mpv.HydroState.Y0.reshape(1,-1)) + np.abs(tcy_f) * Y_f)
+    u += tcy * (u - ud.u_wind_speed) + c_f * (tcy_f * (u - ud.u_wind_speed) + np.abs(tcy_f) * mfac * u_f)
+    v += tcy * (v - ud.v_wind_speed) + c_f * (tcy_f * (v - ud.v_wind_speed) + np.abs(tcy_f) * mfac * v_f)
+    Y += tcy * (Y - mpv.HydroState.Y0.reshape(1,-1)) + c_f * (tcy_f * (Y - mpv.HydroState.Y0.reshape(1,-1)) + np.abs(tcy_f) * mfac * Y_f)
 
     Sol.rhou[...] = Sol.rho * u
     Sol.rhov[...] = Sol.rho * v
