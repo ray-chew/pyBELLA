@@ -125,7 +125,7 @@ class UserData(object):
         self.tout = [720.0]
         # self.tout = np.arange(0,31) * 1e-3
         # self.tout = np.append(self.tout, [720.0])
-        self.stepmax = 51
+        self.stepmax = 31
         self.output_timesteps = True
 
         self.output_base_name = "_mark_wave"
@@ -138,7 +138,7 @@ class UserData(object):
         self.init_forcing = self.forcing
 
         self.rayleigh_forcing = True
-        self.rayleigh_forcing_type = 'file' # func or file
+        self.rayleigh_forcing_type = 'func' # func or file
         self.rayleigh_forcing_fn = 'output_mark_wave_ensemble=1_601_240_bottom_forcing_S16.h5'
         self.rayleigh_forcing_path = './output_mark_wave'
         
@@ -201,7 +201,7 @@ class UserData(object):
         def get_T_matrix(self):
         
             # system matrix of linearized equations
-            matrix = np.array([[0, self.F, 0, 1j*self.Cs*self.k], 
+            matrix = -np.array([[0, self.F, 0, 1j*self.Cs*self.k], 
                             [-self.F, 0, -self.N, self.Cs*(self.mu+self.Gamma)], 
                             [0, self.N, 0, 0], 
                             [1j*self.Cs*self.k, self.Cs*(self.mu-self.Gamma), 0, 0]])
@@ -223,7 +223,7 @@ class UserData(object):
 
             # construct solution according to eq. 2.27 and 2.19
             exponentials = np.exp( 1j * self.k * x + self.mu * z 
-                                - ( eigval[ind] ) * t )
+                                + ( eigval[ind] ) * t )
             chi_u  = self.ampl * np.real( eigvec[0,ind] * exponentials )
             chi_w  = self.ampl * np.real( eigvec[1,ind] * exponentials )
             chi_th = self.ampl * np.real( eigvec[2,ind] * exponentials )
@@ -251,7 +251,7 @@ class UserData(object):
 
 def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     if ud.bdry_type[1] == BdryType.RAYLEIGH:
-        ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.1)
+        ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.5)
 
     if ud.rayleigh_forcing:
         # ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.005)
@@ -293,7 +293,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     # dimensionless speed of sound
     Cs = np.sqrt(th.gamm / Msq)  
     # dimensionless Coriolis strength
-    F = ud.coriolis_strength[2]
+    F = ud.coriolis_strength[2] + 1e-15
 
     G =  np.sqrt( 9. / 40. )
     Gamma = G * N / Cs

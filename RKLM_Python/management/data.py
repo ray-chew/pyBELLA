@@ -171,7 +171,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_advect')
 
-        if writer is not None: writer.populate(str(label)+'_after_full_step','p2_nodes0',mpv.p2_nodes)
+        if debug: writer.populate(str(label)+'_after_full_step','p2_nodes0',mpv.p2_nodes)
 
         mpv.p2_nodes0[...] = mpv.p2_nodes
 
@@ -208,21 +208,21 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                     # Yp = 0.0
                     pi = mpv_half_new.p2_nodes
 
-                    boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi])
+                    boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi, t+0.5*dt])
 
                 elif ud.rayleigh_forcing_type == 'func':
                     boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
-                    ud.rf_bot.eigenfunction(t+0.5*dt, 1)
+                    ud.rf_bot.eigenfunction((t+0.5*dt), 1)
                     up, vp, Yp, pi = ud.rf_bot.dehatter(th)
 
-                    ud.rf_bot.eigenfunction(t+0.5*dt, 1, grid='n')
+                    ud.rf_bot.eigenfunction((t+0.5*dt), 1, grid='n')
                     _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
 
                     # kernel = np.ones([2]*mpv.p2_nodes.ndim)
                     # pi_n = np.zeros_like(mpv.p2_nodes)
                     # pi_n[node.i1] = signal.fftconvolve(pi, kernel, mode='valid') / kernel.sum()
 
-                    boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi_n])
+                    boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi_n, t+0.5*dt])
                 boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 
@@ -352,19 +352,19 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                     # Yp = 0.0
                     pi = mpv_half_new.p2_nodes
 
-                    boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi])
+                    boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi, t+dt])
 
                 elif ud.rayleigh_forcing_type == 'func':
-                    ud.rf_bot.eigenfunction(t+dt, 1)
+                    ud.rf_bot.eigenfunction((t+dt), 1)
                     up, vp, Yp, pi = ud.rf_bot.dehatter(th)
 
-                    ud.rf_bot.eigenfunction(t+dt, 1, grid='n')
+                    ud.rf_bot.eigenfunction((t+dt), 1, grid='n')
                     _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
                     # kernel = np.ones([2]*mpv.p2_nodes.ndim)
                     # pi_n = np.zeros_like(mpv.p2_nodes)
                     # pi_n[node.i1] = signal.fftconvolve(pi, kernel, mode='valid') / kernel.sum()
 
-                    boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi_n])
+                    boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi_n, t+dt])
                 boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 
