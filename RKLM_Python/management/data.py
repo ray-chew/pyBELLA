@@ -204,8 +204,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                     up = Sol_half_new.rhou / Sol_half_new.rho
                     vp = Sol_half_new.rhov / Sol_half_new.rho
                     Yp = Sol_half_new.rhoY / Sol_half_new.rho - mpv.HydroState.Y0.reshape(1,-1)
-                    # vp = 0.0
-                    # Yp = 0.0
+
                     pi = mpv_half_new.p2_nodes
 
                     boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi, t+0.5*dt])
@@ -217,10 +216,6 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
                     ud.rf_bot.eigenfunction((t+0.5*dt), 1, grid='n')
                     _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
-
-                    # kernel = np.ones([2]*mpv.p2_nodes.ndim)
-                    # pi_n = np.zeros_like(mpv.p2_nodes)
-                    # pi_n[node.i1] = signal.fftconvolve(pi, kernel, mode='valid') / kernel.sum()
 
                     boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi_n, t+0.5*dt])
                 boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
