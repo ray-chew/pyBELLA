@@ -84,7 +84,7 @@ class UserData(object):
         self.bdry_type[0] = BdryType.PERIODIC
         self.bdry_type[1] = BdryType.WALL
         self.bdry_type[2] = BdryType.WALL
-        # self.LAMB_BDRY = True
+        self.LAMB_BDRY = True
 
         ##########################################
         # NUMERICS
@@ -122,7 +122,7 @@ class UserData(object):
         self.initial_projection = True
 
 
-        self.tout = [720.0]
+        self.tout = [36.0]
         self.stepmax = 10001
         self.output_timesteps = True
 

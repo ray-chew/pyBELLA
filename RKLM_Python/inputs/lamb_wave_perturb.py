@@ -82,7 +82,7 @@ class UserData(object):
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.RAYLEIGH
+        self.bdry_type[1] = BdryType.WALL
         self.bdry_type[2] = BdryType.WALL
         self.LAMB_BDRY = True
 
@@ -122,10 +122,10 @@ class UserData(object):
         self.initial_projection = True
 
 
-        self.tout = [720.0]
-        # self.tout = np.arange(0,31) * 1e-3
+        self.tout = [36.0]
+        # self.tout = np.arange(0,36.1,0.1)
         # self.tout = np.append(self.tout, [720.0])
-        self.stepmax = 31
+        self.stepmax = 10000
         self.output_timesteps = True
 
         self.output_base_name = "_mark_wave"
@@ -138,7 +138,7 @@ class UserData(object):
         self.init_forcing = self.forcing
 
         self.rayleigh_forcing = True
-        self.rayleigh_forcing_type = 'func' # func or file
+        self.rayleigh_forcing_type = 'file' # func or file
         self.rayleigh_forcing_fn = 'output_mark_wave_ensemble=1_601_240_bottom_forcing_S16.h5'
         self.rayleigh_forcing_path = './output_mark_wave'
         
@@ -250,6 +250,10 @@ class UserData(object):
 
 
 def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
+
+    if hasattr(ud, 'rayleigh_bdry_switch'):
+        ud.bdry_type[1] = BdryType.RAYLEIGH
+
     if ud.bdry_type[1] == BdryType.RAYLEIGH:
         ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.5)
 
@@ -292,8 +296,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     N = ud.t_ref * np.sqrt(ud.Nsq_ref) 
     # dimensionless speed of sound
     Cs = np.sqrt(th.gamm / Msq)  
+    ud.Cs = Cs
+    ud.Ns = N
     # dimensionless Coriolis strength
-    F = ud.coriolis_strength[2] + 1e-15
+    F = ud.coriolis_strength[2] #+ 1e-30
 
     G =  np.sqrt( 9. / 40. )
     Gamma = G * N / Cs
@@ -334,5 +340,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     #     rayleigh_damping(Sol, mpv, ud, ud.tcy, elem, th)
 
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
+
+    if hasattr(ud, 'mixed_run'):
+        ud.coriolis_strength[2] = 2.0 * 7.292 * 1e-5 * ud.t_ref
 
     return Sol
