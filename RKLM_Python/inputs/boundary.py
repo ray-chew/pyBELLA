@@ -417,7 +417,7 @@ def get_bottom_tau_y(ud, elem, node, alpha, cutoff=0.5):
     ud.forcing_bny = node.y[idx]
 
     c1n = node.y <= ud.forcing_bny
-    ccn = (node.y[:-2] - ud.forcing_bny) / (node.y[:-2][-1] - ud.forcing_bny)
+    ccn = (node.y[:-3] - ud.forcing_bny) / (node.y[:-3][-1] - ud.forcing_bny)
     c2n = np.logical_and(ccn >= 0.0, ccn <= 0.5)
     c3n = np.logical_and(ccn > 0.5, ccn <= 1.0)
 
@@ -425,7 +425,7 @@ def get_bottom_tau_y(ud, elem, node, alpha, cutoff=0.5):
     taun_y[np.where(c2n)] = - alpha / 2.0 * (1.0 - np.cos( (node.y[np.where(c2n)] - ud.forcing_bny) / (node.y[-1] - ud.forcing_bny) * np.pi ))
     taun_y[np.where(c3n)] = - alpha / 2.0 * (1.0 + ((node.y[np.where(c3n)] - ud.forcing_bny) / (node.y[-1] - ud.forcing_bny) - 0.5) * np.pi)
 
-    taun_y[-2:] = -np.abs(taun_y).max()
+    taun_y[-3:] = -np.abs(taun_y).max()
     taun_y[...] = taun_y[::-1]
     tauc_y = np.interp(elem.y, node.y, taun_y)
 
@@ -449,34 +449,25 @@ def rayleigh_damping(Sol, mpv, ud, forcing=None):
 
     if (forcing is not None):
         tcy_f, tny_f = ud.forcing_tcy, ud.forcing_tny
-
-        if ud.rayleigh_forcing_type == 'file':
-            # u_f, v_f, Y_f, pi_f, t = forcing
-            # mfac = np.exp(7.9 * 1e-4 * t * ud.t_ref)
-            mfac = np.exp(7.9 * 1e-4 * t * ud.t_ref)
-
-            # mpv.p2_nodes[...] += tny_f * (mpv.p2_nodes) + np.abs(tny_f) * mfac * pi_f
-
-            # mpv.p2_nodes[...] = pi_f
-        else:
-            mfac = 1.0
-            # # Sol_f, mpv_f, tny = forcing
-            # u_f = (Sol_f.rhou / Sol_f.rho) - ud.u_wind_speed
-            # v_f = Sol_f.rhov / Sol_f.rho
-            # Y_f = Sol_f.rhoY / Sol_f.rho - mpv.HydroState.Y0
-
-            # mpv.p2_nodes[...] += tny_f * (mpv.p2_nodes) + np.abs(tny_f) * mpv_f.p2_nodes
+        tcy, tny = 0.0, 0.0
 
         u_f, v_f, Y_f, pi_f, t = forcing
 
-        # if np.all(ud.coriolis_strength) == 0.0:
-        #     mfac = 1.0
-        # else:
-            
-        #     mfac = 1.0
+        if ud.rayleigh_forcing_type == 'file':
+            G = np.sqrt( 9.0 / 40.0 )
+            N = np.sqrt(ud.Nsq_ref) 
+            C = ud.Cs * ud.u_ref
+            Gam = N * G / C
+            Om = ud.coriolis_strength[2] / 2.0 / ud.t_ref
+            growth_rate = np.sqrt(Om * C * Gam)
+            mfac = np.exp(growth_rate * t * ud.t_ref)
+
+            # if np.all(ud.coriolis_strength) == 0.0:
+            #     mfac = 1.0
+        else:
+            mfac = 1.0
 
         mpv.p2_nodes[...] += tny_f * (mpv.p2_nodes) + np.abs(tny_f) * mfac * pi_f
-
         c_f = 1.0
 
     else:
@@ -492,7 +483,7 @@ def rayleigh_damping(Sol, mpv, ud, forcing=None):
 
     Sol.rhou[...] = Sol.rho * u
     Sol.rhov[...] = Sol.rho * v
-    Sol.rhoY[...] = Sol.rho * Y#(mpv.HydroState.Y0.reshape(1,-1) + Y_f)
+    Sol.rhoY[...] = Sol.rho * Y
 
 
 
