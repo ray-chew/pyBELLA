@@ -1,6 +1,4 @@
 from run import run_params as rp
-from inputs.enum_bdry import BdryType
-
 import json
 import numpy as np
 
@@ -14,19 +12,24 @@ rp.tc = 'lw_p'
 
 t_ref = 100.0
 omega = 7.292 * 1e-5
-# resol_x = [301]
-# resol_y = [120]
+resol_x = [151,301,601]
+resol_y = [15,30,60]
+# resol_x = [601]
+# resol_y = [60]
 resol_x = [301]
-resol_y = [120]
-resol_t = [1,2,4,8,10,12,14,16]
-resol_t = [1]
-# resol_t = [10,12,14,16.0]
+resol_y = [30]
+# resol_t = [10,12,14,16]
+# resol_t = [200,400,600,800,1000,1200,1400,1600]
+resol_t = [1,2,4,8]
+# resol_t = [10.0]
 # omegas = [0.0, 2.0 * omega * t_ref]
-# omegas = [2.0 * omega * t_ref]
-omegas = [0.0]
+omegas = [2.0 * omega * t_ref]
+# omegas = [0.0]
 
-tsteps = [1800, 900, 450, 360, 300, 258, 225]
-tsteps = [3600, 300, 258, 225]
+
+# tsteps = [3600, 1800, 900, 450, 360, 300, 258, 225]
+tsteps = [3600, 1800, 900, 450]
+# tsteps = [361]
 
 ud = {}
 dap = {
@@ -36,23 +39,23 @@ dap = {
 for x,y in zip(resol_x,resol_y):
     ud['inx'] = x+1
     ud['iny'] = y+1
-
-    ud['ymax'] = 8.0
-    # ud['do_advection'] = False
-    ud['rayleigh_forcing'] = False
+    ud['rayleigh_bdry_switch'] = True
 
     for t_idx, t in enumerate(resol_t):
         ud['dtfixed0'] = t / t_ref
         ud['dtfixed']  = t / t_ref
 
         ud['stepmax'] = tsteps[t_idx] + 1
+        ud['rayleigh_forcing_fn'] = 'output_mark_wave_ensemble=1_%i_%i_36.000000_bottom_forcing_S%i.h5' %(x,int(4*y),t)
+
+        # ud['rayleigh_forcing_fn'] = 'output_mark_wave_ensemble=1_%i_%i_bottom_forcing_S%i.h5' %(x,int(4*y),t)
 
         for om in omegas:
             ud['coriolis_strength'] = [0.0, 0.0, om]
             if om > 0:
                 ud['aux'] = 'bdl_run_S%i_a05' %t
             else:
-                ud['aux'] = 'bottom_forcing_S%i' %t
+                ud['aux'] = 'bdl_run_S%i_noom_a05' %t
 
             print(ud)
             # run simulation
