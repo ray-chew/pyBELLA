@@ -433,14 +433,18 @@ def get_bottom_tau_y(ud, elem, node, alpha, cutoff=0.5):
     tauc_y = dd * tauc_y / np.abs(tauc_y).max()
     taun_y = dd * taun_y / np.abs(taun_y).max()
 
+    # tauc_y = tauc_y[2:-2]
+    # taun_y = taun_y[2:-2]
+
     return tauc_y, taun_y
 
 
 
-def rayleigh_damping(Sol, mpv, ud, forcing=None):
-    u = Sol.rhou / Sol.rho
-    v = Sol.rhov / Sol.rho
-    Y = Sol.rhoY / Sol.rho
+def rayleigh_damping(Sol, mpv, ud, elem, node, forcing=None):
+    u = (Sol.rhou / Sol.rho)#[elem.i2]
+    v = (Sol.rhov / Sol.rho)#[elem.i2]
+    Y = (Sol.rhoY / Sol.rho)#[elem.i2]
+    rho = Sol.rho#[elem.i2]
 
     if ud.bdry_type[1] == BdryType.RAYLEIGH:
         tcy, tny = ud.tcy, ud.tny
@@ -479,11 +483,13 @@ def rayleigh_damping(Sol, mpv, ud, forcing=None):
     # assuming 2D vertical slice - not dimension agnostic
     u += tcy * (u - ud.u_wind_speed) + c_f * (tcy_f * (u - ud.u_wind_speed) + np.abs(tcy_f) * mfac * u_f)
     v += tcy * (v - ud.v_wind_speed) + c_f * (tcy_f * (v - ud.v_wind_speed) + np.abs(tcy_f) * mfac * v_f)
-    Y += tcy * (Y - mpv.HydroState.Y0.reshape(1,-1)) + c_f * (tcy_f * (Y - mpv.HydroState.Y0.reshape(1,-1)) + np.abs(tcy_f) * mfac * Y_f)
 
-    Sol.rhou[...] = Sol.rho * u
-    Sol.rhov[...] = Sol.rho * v
-    Sol.rhoY[...] = Sol.rho * Y
+    Ybar = mpv.HydroState.Y0.reshape(1,-1)
+    Y += tcy * (Y - Ybar) + c_f * (tcy_f * (Y - Ybar) + np.abs(tcy_f) * mfac * Y_f)
+
+    Sol.rhou[...] = rho * u
+    Sol.rhov[...] = rho * v
+    Sol.rhoY[...] = rho * Y
 
 
 

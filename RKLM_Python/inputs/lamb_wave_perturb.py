@@ -123,9 +123,9 @@ class UserData(object):
 
 
         self.tout = [36.0]
-        # self.tout = np.arange(0,36.1,0.1)
+        # self.tout = np.arange(0,361,1.0)
         # self.tout = np.append(self.tout, [720.0])
-        self.stepmax = 10000
+        self.stepmax = 31
         self.output_timesteps = True
 
         self.output_base_name = "_mark_wave"
@@ -138,7 +138,7 @@ class UserData(object):
         self.init_forcing = self.forcing
 
         self.rayleigh_forcing = True
-        self.rayleigh_forcing_type = 'file' # func or file
+        self.rayleigh_forcing_type = 'func' # func or file
         self.rayleigh_forcing_fn = 'output_mark_wave_ensemble=1_601_240_bottom_forcing_S16.h5'
         self.rayleigh_forcing_path = './output_mark_wave'
         
@@ -218,12 +218,12 @@ class UserData(object):
             eigval, eigvec = np.linalg.eig( self.T_matrix )
 
             # Find index of eigenvalue 
-            # with greatest real part aka the insrtability growth rate
+            # with greatest real part aka the instability growth rate
             ind = np.argmax( np.real( eigval ) )
 
             # construct solution according to eq. 2.27 and 2.19
             exponentials = np.exp( 1j * self.k * x + self.mu * z 
-                                + ( eigval[ind] ) * t )
+                                + ( eigval[ind] ) * (t) + 1j * s * t )
             chi_u  = self.ampl * np.real( eigvec[0,ind] * exponentials )
             chi_w  = self.ampl * np.real( eigvec[1,ind] * exponentials )
             chi_th = self.ampl * np.real( eigvec[2,ind] * exponentials )
@@ -252,7 +252,8 @@ class UserData(object):
 def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     if hasattr(ud, 'rayleigh_bdry_switch'):
-        ud.bdry_type[1] = BdryType.RAYLEIGH
+        if ud.rayleigh_bdry_switch:
+            ud.bdry_type[1] = BdryType.RAYLEIGH
 
     if ud.bdry_type[1] == BdryType.RAYLEIGH:
         ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.5)
@@ -264,7 +265,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     A0 = 1.0e-3
     Msq = ud.Msq
-    g = ud.gravity_strength[1]
+    g = ud.gravity_strength[1] * ud.Rg
 
     x = elem.x.reshape(-1,1)
     y = elem.y.reshape(1,-1)
@@ -299,7 +300,11 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     ud.Cs = Cs
     ud.Ns = N
     # dimensionless Coriolis strength
-    F = ud.coriolis_strength[2] #+ 1e-30
+    if ud.coriolis_strength[2] == 0.0:
+        ud.coriolis_strength[2] += 1e-15
+    F = ud.coriolis_strength[2]
+    # if F == 0.0:
+    #     F += 1e-15
 
     G =  np.sqrt( 9. / 40. )
     Gamma = G * N / Cs
@@ -342,6 +347,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
     if hasattr(ud, 'mixed_run'):
-        ud.coriolis_strength[2] = 2.0 * 7.292 * 1e-5 * ud.t_ref
+        if ud.mixed_run:
+            ud.coriolis_strength[2] = 2.0 * 7.292 * 1e-5 * ud.t_ref
 
     return Sol

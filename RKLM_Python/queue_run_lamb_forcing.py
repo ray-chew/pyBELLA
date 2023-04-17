@@ -19,14 +19,15 @@ omega = 7.292 * 1e-5
 resol_x = [301]
 resol_y = [120]
 resol_t = [1,2,4,8,10,12,14,16]
-resol_t = [1]
+resol_t = [10.0]
 # resol_t = [10,12,14,16.0]
 # omegas = [0.0, 2.0 * omega * t_ref]
 # omegas = [2.0 * omega * t_ref]
 omegas = [0.0]
 
 tsteps = [1800, 900, 450, 360, 300, 258, 225]
-tsteps = [3600, 300, 258, 225]
+tsteps = [360, 300, 258, 225]
+# tsteps = [21]
 
 ud = {}
 dap = {

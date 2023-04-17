@@ -9,18 +9,18 @@ path_to_obs = './'
 
 rp.N = 1
 
-# rp.tc = 'lw_p'
-rp.tc = 'mark'
+rp.tc = 'lw_p'
+# rp.tc = 'mark'
 
 t_ref = 100.0
 omega = 7.292 * 1e-5
 # resol_x = [151,301,601,1201]
 # resol_y = [15,30,60,120]
-resol_x = [151]
-resol_y = [60]
+resol_x = [301]
+resol_y = [120]
 resol_t = [1,2,4,8,10,12,14,16]
 # resol_t = [200,400,600,800]
-resol_t = [1.0]
+resol_t = [10.0]
 # omegas = [0.0, 2.0 * omega * t_ref]
 # omegas = [2.0 * omega * t_ref]
 omegas = [0.0]
@@ -37,9 +37,9 @@ for x,y in zip(resol_x,resol_y):
 
     ud['ymax'] = 8.0
     ud['rayleigh_forcing'] = False
-    ud['mixed_run'] = False
-    ud['do_advection'] = False
-    # ud['output_timesteps'] = False
+    ud['mixed_run'] = True
+    # ud['do_advection'] = False
+    ud['output_timesteps'] = False
 
 
     for t in resol_t:
@@ -49,12 +49,12 @@ for x,y in zip(resol_x,resol_y):
         ud['rayleigh_forcing_fn'] = 'output_mark_wave_ensemble=1_%i_%i_36.000000_bottom_forcing_S%i.h5' %(x,int(4*y),t)
         ud['rayleigh_forcing_type'] = 'func'
 
-        for om in omegas:
+    for om in omegas:
             ud['coriolis_strength'] = [0.0, 0.0, om]
             if om > 0:
                 ud['aux'] = 'test_run_S%i_a05' %t
             else:
-                ud['aux'] = 'test_run_S%i' %t
+                ud['aux'] = 'test_run_S%i_mix' %t
 
             print(ud)
             # run simulation
