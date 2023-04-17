@@ -20,16 +20,16 @@ resol_x = [301]
 resol_y = [30]
 # resol_t = [10,12,14,16]
 # resol_t = [200,400,600,800,1000,1200,1400,1600]
-resol_t = [1,2,4,8]
-# resol_t = [10.0]
+# resol_t = [1,2,4,8]
+resol_t = [10.0]
 # omegas = [0.0, 2.0 * omega * t_ref]
 omegas = [2.0 * omega * t_ref]
 # omegas = [0.0]
 
 
 # tsteps = [3600, 1800, 900, 450, 360, 300, 258, 225]
-tsteps = [3600, 1800, 900, 450]
-# tsteps = [361]
+# tsteps = [3600, 1800, 900, 450]
+tsteps = [360]
 
 ud = {}
 dap = {
@@ -40,6 +40,8 @@ for x,y in zip(resol_x,resol_y):
     ud['inx'] = x+1
     ud['iny'] = y+1
     ud['rayleigh_bdry_switch'] = True
+    ud['rayleigh_forcing'] = True
+    ud['do_advection'] = True
 
     for t_idx, t in enumerate(resol_t):
         ud['dtfixed0'] = t / t_ref
