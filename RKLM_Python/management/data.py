@@ -207,7 +207,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
                     pi = mpv_half_new.p2_nodes
 
-                    boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi, t+0.5*dt])
+                    boundary.rayleigh_damping(Sol, mpv, ud, elem, node, [up, vp, Yp, pi, t+0.5*dt])
 
                 elif ud.rayleigh_forcing_type == 'func':
                     # boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
@@ -349,7 +349,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                     # Yp = 0.0
                     pi = mpv_half_new.p2_nodes
 
-                    boundary.rayleigh_damping(Sol, mpv, ud, [up, vp, Yp, pi, t+dt])
+                    boundary.rayleigh_damping(Sol, mpv, ud, elem, node, [up, vp, Yp, pi, t+dt])
 
                 elif ud.rayleigh_forcing_type == 'func':
 

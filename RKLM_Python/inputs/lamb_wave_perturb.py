@@ -40,6 +40,7 @@ class UserData(object):
         self.gamm = self.gamma
         self.Rg_over_Rv = self.R_gas / self.R_vap
         self.Q = self.Q_vap / (self.R_gas * self.T_ref)
+        self.R_gas = self.R_gas
         self.Rg = self.R_gas / (self.h_ref**2 / self.t_ref**2 / self.T_ref)
         self.cp_gas = self.cp_gas
 
@@ -263,7 +264,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         
         ud.forcing_tcy, ud.forcing_tny = get_bottom_tau_y(ud, elem, node, 0.2, cutoff=0.3)
 
-    A0 = 1.0e-3
+    A0 = 1.0e-1 / ud.u_ref
     Msq = ud.Msq
     g = ud.gravity_strength[1] * ud.Rg
 
@@ -349,5 +350,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     if hasattr(ud, 'mixed_run'):
         if ud.mixed_run:
             ud.coriolis_strength[2] = 2.0 * 7.292 * 1e-5 * ud.t_ref
+
+    if hasattr(ud, 'trad_forcing'):
+        if ud.trad_forcing:
+            ud.rf_bot.F = 0.0
+            ud.rf_bot.get_T_matrix()
 
     return Sol

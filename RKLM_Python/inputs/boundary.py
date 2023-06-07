@@ -463,11 +463,13 @@ def rayleigh_damping(Sol, mpv, ud, elem, node, forcing=None):
             C = ud.Cs * ud.u_ref
             Gam = N * G / C
             Om = ud.coriolis_strength[2] / 2.0 / ud.t_ref
+            # Om = 7.292 * 1e-5 / ud.t_ref
             growth_rate = np.sqrt(Om * C * Gam)
             mfac = np.exp(growth_rate * t * ud.t_ref)
 
             # if np.all(ud.coriolis_strength) == 0.0:
-            #     mfac = 1.0
+            # if ud.trad_forcing:
+                # mfac = 1.0
         else:
             mfac = 1.0
 
