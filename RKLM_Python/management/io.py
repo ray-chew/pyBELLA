@@ -37,13 +37,13 @@ class io(object):
         self.SUFFIX = self.ud.output_suffix
         if restart: self.OLD_SUFFIX = self.ud.old_suffix
                 
-        self.PATHS = [  'buoy',
+        self.PATHS = [  #'buoy',
                         # 'dp2_c',
                         # 'dp2_nodes',
                         # 'dpdim',
-                        'drhoY',
-                        'dT',
-                        'dY',
+                        # 'drhoY',
+                        # 'dT',
+                        # 'dY',
                         # 'p',
                         # 'p2_c',
                         'p2_nodes',
@@ -54,10 +54,10 @@ class io(object):
                         # 'u',
                         # 'v',
                         # 'w',
-                        'vortz',
+                        # 'vortz',
                         # 'vorty',
-                        'Y',
-                        'rhs'
+                        # 'Y',
+                        # 'rhs'
                     ]
  
         self.io_create_file(self.PATHS,restart)
@@ -135,20 +135,20 @@ class io(object):
         self.populate(name,'rhow',Sol.rhow)
         self.populate(name,'rhoX',Sol.rhoX)
 
-        if hasattr(Sol,'rhov_half'):
-            self.populate(name,'rhov_half',Sol.rhov_half)
-        if hasattr(Sol,'rhou_half'):
-            self.populate(name,'rhou_half',Sol.rhou_half)
-        if hasattr(Sol,'rhow_half'):
-            self.populate(name,'rhow_half',Sol.rhow_half)
-        if hasattr(Sol,'rhoX_half'):
-            self.populate(name,'rhoX_half',Sol.rhoX_half)
-        if hasattr(Sol,'rhoY_half'):
-            self.populate(name,'rhoY_half',Sol.rhoY_half)
-        if hasattr(Sol,'rho_half'):
-            self.populate(name,'rho_half',Sol.rho_half)
-        if hasattr(mpv,'p2_nodes_half'):
-            self.populate(name,'p2_nodes_half',mpv.p2_nodes_half)
+        # if hasattr(Sol,'rhov_half'):
+        #     self.populate(name,'rhov_half',Sol.rhov_half)
+        # if hasattr(Sol,'rhou_half'):
+        #     self.populate(name,'rhou_half',Sol.rhou_half)
+        # if hasattr(Sol,'rhow_half'):
+        #     self.populate(name,'rhow_half',Sol.rhow_half)
+        # if hasattr(Sol,'rhoX_half'):
+        #     self.populate(name,'rhoX_half',Sol.rhoX_half)
+        # if hasattr(Sol,'rhoY_half'):
+        #     self.populate(name,'rhoY_half',Sol.rhoY_half)
+        # if hasattr(Sol,'rho_half'):
+        #     self.populate(name,'rho_half',Sol.rho_half)
+        # if hasattr(mpv,'p2_nodes_half'):
+        #     self.populate(name,'p2_nodes_half',mpv.p2_nodes_half)
         # self.populate(name,'buoy',Sol.rhoX / Sol.rho)
 
 
