@@ -47,6 +47,7 @@ class plotter(object):
         if hasattr(self, 'x_axs') : cax.set_xticklabels(self.x_axs)
         if hasattr(self, 'y_locs') : cax.set_yticks(self.y_locs)
         if hasattr(self, 'y_axs') : cax.set_yticklabels(self.y_axs)
+        cax.tick_params(axis='x', pad=15)
         if self.sharexlabel:
             if int(n // self.ncols) == self.nrows - 1:
                 if hasattr(self, 'x_label') : cax.set_xlabel(self.x_label)
