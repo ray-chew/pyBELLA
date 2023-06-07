@@ -38,8 +38,9 @@ for x,y in zip(resol_x,resol_y):
     ud['ymax'] = 8.0
     ud['rayleigh_forcing'] = False
     ud['mixed_run'] = True
-    # ud['do_advection'] = False
+    ud['do_advection'] = True
     ud['output_timesteps'] = False
+    ud['stepmax'] = 10001
 
 
     for t in resol_t:
@@ -54,7 +55,10 @@ for x,y in zip(resol_x,resol_y):
             if om > 0:
                 ud['aux'] = 'test_run_S%i_a05' %t
             else:
-                ud['aux'] = 'test_run_S%i_mix' %t
+                if ud['mixed_run'] == True:
+                    ud['aux'] = 'test_run_S%i_mix' %t
+                else:
+                    ud['aux'] = 'test_run_S%i_adv' %t
 
             print(ud)
             # run simulation

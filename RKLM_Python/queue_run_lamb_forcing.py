@@ -16,16 +16,16 @@ t_ref = 100.0
 omega = 7.292 * 1e-5
 # resol_x = [301]
 # resol_y = [120]
-resol_x = [301]
-resol_y = [120]
+resol_x = [151]
+resol_y = [60]
 resol_t = [1,2,4,8,10,12,14,16]
-resol_t = [10.0]
+# resol_t = [10.0]
 # resol_t = [10,12,14,16.0]
 # omegas = [0.0, 2.0 * omega * t_ref]
 # omegas = [2.0 * omega * t_ref]
 omegas = [0.0]
 
-tsteps = [1800, 900, 450, 360, 300, 258, 225]
+tsteps = [3600, 1800, 900, 450, 360, 300, 258, 225]
 tsteps = [360, 300, 258, 225]
 # tsteps = [21]
 
@@ -39,7 +39,7 @@ for x,y in zip(resol_x,resol_y):
     ud['iny'] = y+1
 
     ud['ymax'] = 8.0
-    # ud['do_advection'] = False
+    ud['do_advection'] = True
     ud['rayleigh_forcing'] = False
 
     for t_idx, t in enumerate(resol_t):

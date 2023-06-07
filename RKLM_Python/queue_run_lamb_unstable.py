@@ -12,24 +12,25 @@ rp.tc = 'lw_p'
 
 t_ref = 100.0
 omega = 7.292 * 1e-5
-resol_x = [151,301,601]
-resol_y = [15,30,60]
+resol_x = [151,301]
+resol_y = [15,30]
 # resol_x = [601]
 # resol_y = [60]
 resol_x = [301]
 resol_y = [30]
 # resol_t = [10,12,14,16]
 # resol_t = [200,400,600,800,1000,1200,1400,1600]
-# resol_t = [1,2,4,8]
-resol_t = [10.0]
+resol_t = [1,2,4,8]
+# resol_t = [10.0]
 # omegas = [0.0, 2.0 * omega * t_ref]
 omegas = [2.0 * omega * t_ref]
 # omegas = [0.0]
 
 
 # tsteps = [3600, 1800, 900, 450, 360, 300, 258, 225]
-# tsteps = [3600, 1800, 900, 450]
-tsteps = [360]
+tsteps = [3600, 1800, 900, 450]
+# tsteps = [360, 300, 258, 225]
+# tsteps = [360]
 
 ud = {}
 dap = {
@@ -42,6 +43,7 @@ for x,y in zip(resol_x,resol_y):
     ud['rayleigh_bdry_switch'] = True
     ud['rayleigh_forcing'] = True
     ud['do_advection'] = True
+    ud['trad_forcing'] = False
 
     for t_idx, t in enumerate(resol_t):
         ud['dtfixed0'] = t / t_ref
@@ -55,9 +57,15 @@ for x,y in zip(resol_x,resol_y):
         for om in omegas:
             ud['coriolis_strength'] = [0.0, 0.0, om]
             if om > 0:
-                ud['aux'] = 'bdl_run_S%i_a05' %t
+                if ud['trad_forcing'] == True:
+                    ud['aux'] = 'bdl_run_S%i_a05_trad_forcing_file_test' %t    
+                else:
+                    ud['aux'] = 'bdl_run_S%i_a05' %t
             else:
-                ud['aux'] = 'bdl_run_S%i_noom_a05' %t
+                if ud['trad_forcing'] == True:
+                    ud['aux'] = 'bdl_run_S%i_noom_a05_trad_forcing_func' %t
+                else:
+                    ud['aux'] = 'bdl_run_S%i_noom_a05' %t
 
             print(ud)
             # run simulation
