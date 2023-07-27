@@ -507,11 +507,7 @@ def stencil_9pt_numba_test(mpv,node,coriolis,diag_inv, ud):
 
     dummy_p = np.zeros((node.isc[1],node.isc[0]))
 
-    # coeff_slc = (slice(1,None), slice(1,None))
-    # coeffs = (hplusx[coeff_slc].T, hplusy[coeff_slc].T, hcenter.T)
-    # cor_slc = (slice(1,None), slice(1,None))
-    # coriolis = (coriolis[0][cor_slc],coriolis[1][cor_slc],coriolis[2][cor_slc],coriolis[3][cor_slc])
-
+    ### Need to clean this up, but the Numba stencil is used in the Helmholtz solve for radiative BC!
     if hasattr(ud, 'LAMB_BDRY'):
         return lambda p : lap2D_numba_test(p, dummy_p, dx, dy, coeffs, diag_inv.T, coriolis, shp)
 
@@ -523,11 +519,7 @@ def stencil_9pt_numba_test(mpv,node,coriolis,diag_inv, ud):
         y_rayleigh = ud.bdry_type[1] == BdryType.RAYLEIGH
 
         cor_slc = (slice(1,-1), slice(1,-1))
-        # cor_slc = (slice(0,-2), slice(0,-2))
         coeff_slc = (slice(1,-1), slice(1,-1))
-
-        # cor_slc = (slice(None,), slice(None,))
-        # coeff_slc = (slice(None,), slice(None,))
 
         coeffs = (hplusx[coeff_slc].T.reshape(-1,), hplusy[coeff_slc].T.reshape(-1,), hcenter[node.i1].T.reshape(-1,))
         
