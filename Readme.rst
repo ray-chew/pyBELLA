@@ -226,6 +226,8 @@ RKLM-Py comes with some tools that aid in the visualisation and analysis of the 
 References
 ----------
 
+.. [CBHK22] Chew, R., T. Benacchio, G. Hastermann, and R. Klein, 2022: A One-Step Blended Soundproof-Compressible Model with Balanced Data Assimilation: Theory and Idealized Tests. *Monthly Weather Review*, **150** (**9**), 2231–2254.
+
 .. [BK19] Benacchio, T., and R. Klein, 2019: A semi-implicit compressible model for atmospheric flows with seamless access to soundproof and hydro-static dynamics. *Monthly Weather Review*, **147** (**11**), 4221–4240.
 
 .. [HKS07] Hunt, B. R., E. J. Kostelich, and I. Szunyogh, 2007: Efficient dataassimilation for spatiotemporal chaos: A local ensemble transformKalman filter.Physica D: Nonlinear Phenomena,230 (1-2), 112–126.
