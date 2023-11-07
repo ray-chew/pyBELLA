@@ -78,43 +78,59 @@ def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
 
 def hydrostatic_state(mpv, elem, node, th, ud):
     g = ud.gravity_strength[1]
-    Gamma = th.Gamma
-    Hex = 1.0 / (th.Gamma * g)
-    dy = elem.dy
 
-    pi_np = np.exp(-(node.y + 0.5 * dy) / Hex)
-    pi_nm = np.exp(-(node.y - 0.5 * dy) / Hex)
-    pi_n = np.exp(-(node.y) / Hex)
+    if g != 0.0:
+        Gamma = th.Gamma
+        Hex = 1.0 / (th.Gamma * g)
+        dy = elem.dy
 
-    Y_n = - Gamma * g * dy / (pi_np - pi_nm)
-    P_n = pi_n**th.gm1inv
-    p_n = pi_n**th.Gammainv
-    rho_n = P_n / Y_n
+        pi_np = np.exp(-(node.y + 0.5 * dy) / Hex)
+        pi_nm = np.exp(-(node.y - 0.5 * dy) / Hex)
+        pi_n = np.exp(-(node.y) / Hex)
 
-    mpv.HydroState_n.p20[...] = pi_n / ud.Msq
-    mpv.HydroState_n.p0[...] = p_n
-    mpv.HydroState_n.rho0[...] = rho_n
-    mpv.HydroState_n.rhoY0[...] = P_n
-    mpv.HydroState_n.Y0[...] = Y_n
-    mpv.HydroState_n.S0[...] = 1.0 / Y_n
+        Y_n = - Gamma * g * dy / (pi_np - pi_nm)
+        P_n = pi_n**th.gm1inv
+        p_n = pi_n**th.Gammainv
+        rho_n = P_n / Y_n
 
-    pi_cp = np.exp(-(elem.y + 0.5 * dy) / Hex)
-    pi_cm = np.exp(-(elem.y - 0.5 * dy) / Hex)
-    pi_c  = np.exp(-(elem.y) / Hex)
+        mpv.HydroState_n.p20[...] = pi_n / ud.Msq
+        mpv.HydroState_n.p0[...] = p_n
+        mpv.HydroState_n.rho0[...] = rho_n
+        mpv.HydroState_n.rhoY0[...] = P_n
+        mpv.HydroState_n.Y0[...] = Y_n
+        mpv.HydroState_n.S0[...] = 1.0 / Y_n
 
-    Y_c = - Gamma * g * dy / (pi_cp - pi_cm)
-    P_c = pi_c**th.gm1inv
-    p_c = pi_c**th.Gammainv
-    rho_c = P_c / Y_c
+        pi_cp = np.exp(-(elem.y + 0.5 * dy) / Hex)
+        pi_cm = np.exp(-(elem.y - 0.5 * dy) / Hex)
+        pi_c  = np.exp(-(elem.y) / Hex)
 
-    mpv.HydroState.p20[...] = pi_c / ud.Msq
-    mpv.HydroState.p0[...] = p_c
-    mpv.HydroState.rho0[...] = rho_c
-    mpv.HydroState.rhoY0[...] = P_c
-    mpv.HydroState.Y0[...] = Y_c
-    mpv.HydroState.S0[...] = 1.0 / Y_c
+        Y_c = - Gamma * g * dy / (pi_cp - pi_cm)
+        P_c = pi_c**th.gm1inv
+        p_c = pi_c**th.Gammainv
+        rho_c = P_c / Y_c
 
-    
+        mpv.HydroState.p20[...] = pi_c / ud.Msq
+        mpv.HydroState.p0[...] = p_c
+        mpv.HydroState.rho0[...] = rho_c
+        mpv.HydroState.rhoY0[...] = P_c
+        mpv.HydroState.Y0[...] = Y_c
+        mpv.HydroState.S0[...] = 1.0 / Y_c
+
+    else:
+        mpv.HydroState.p20[...] = 1.0
+        mpv.HydroState.p0[...] = 1.0
+        mpv.HydroState.rho0[...] = 1.0
+        mpv.HydroState.rhoY0[...] = 1.0
+        mpv.HydroState.Y0[...] = 1.0
+        mpv.HydroState.S0[...] = 1.0
+
+        mpv.HydroState_n.p20[...] = 1.0
+        mpv.HydroState_n.p0[...] = 1.0
+        mpv.HydroState_n.rho0[...] = 1.0
+        mpv.HydroState_n.rhoY0[...] = 1.0
+        mpv.HydroState_n.Y0[...] = 1.0
+        mpv.HydroState_n.S0[...] = 1.0
+
 
 def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
     Gammainv = th.Gammainv
