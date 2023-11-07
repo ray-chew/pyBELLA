@@ -116,6 +116,7 @@ class plotter(object):
             if inner == True:
                 arr = arr[2:-2,2:-2]
 #             cax = self.fig.gca()
+            cmap = cmaps if cmaps is not None else 'viridis'
             cax = self.ax
             im = self.visualise(method,cax,arr,aspect,lvls,cmap)
             cax.set_title(title)

@@ -264,7 +264,7 @@ class test_case(object):
     
     def get_time_series(self, times, N, attribute, suffix, probe_loc, tag='after_full_step', cont_blend=False, ts=0, fs=0, label_type='TIME', diff=False, slc=[None], avg=False):
         if self.ndim == 3 and slc[0] == None:
-            assert(0, "3D array has no 2D slice, define argument slc=(slice(...),slice(...),slice(...))")
+            assert 0, "3D array has no 2D slice, define argument slc=(slice(...),slice(...),slice(...))"
             
         probe_row = probe_loc[0]
         probe_col = probe_loc[1]
