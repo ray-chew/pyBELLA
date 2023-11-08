@@ -109,6 +109,8 @@ class UserData(object):
         self.blending_mean = 'rhoY' # 1.0, rhoY
         self.blending_conv = 'rho' #theta, rho
         self.blending_type = 'half' # half, full
+        
+        self.do_advection = True
 
         self.continuous_blending = False
         self.no_of_pi_initial = 1
@@ -299,9 +301,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     if (ud.is_compressible) :
         p = p0 + ud.Msq * fac**2 * dp2c
         Sol.rhoY[:,igy:-igy] = p**th.gamminv
-        Sol.rhoe[:,igy:-igy] = ud.rhoe(rho,u,v,w,p,ud,th)
+        # Sol.rhoe[:,igy:-igy] = ud.rhoe(rho,u,v,w,p,ud,th)
     else:
-        Sol.rhoe[:,igy:-igy] = ud.rhoe(rho,u,v,w,p_hydro,ud,th)
+        # Sol.rhoe[:,igy:-igy] = ud.rhoe(rho,u,v,w,p_hydro,ud,th)
         Sol.rhoY[:,igy:-igy] = rhoY
 
     mpv.p2_cells[:,igy:-igy] = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy])    
