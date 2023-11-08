@@ -176,7 +176,8 @@ class UserData(object):
         # self.tout = [1.0]
 
         # self.stepmax = 10
-        self.stepmax = 20000
+        #self.stepmax = 20000
+        self.stepmax = 2 
 
         self.output_base_name = "_travelling_vortex"
         self.output_name_psinc = "_low_mach_gravity_psinc"

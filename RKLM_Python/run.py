@@ -8,7 +8,8 @@ os.chdir('../')
 
 class run_params(object):
     N = 1
-    tc = 'mark'
+    #tc = 'mark'
+    tc = 'tv'
 
     def __init__(self):
         self.N = self.N
@@ -60,7 +61,7 @@ if __name__ == '__main__':
     name = '_ensemble_mem=0_86400.000_after_full_step'
     # time = np.arange(432000.0,864000.0+1200,1200)
     time_start = 86400.0
-    time_end = 86400.0*2.0+1200
+    time_end = 86400.0 * 2.0 + 1200
     time_int = 1200.0
 
     time_start, time_end, time_int = str(time_start), str(time_end), str(time_int)
