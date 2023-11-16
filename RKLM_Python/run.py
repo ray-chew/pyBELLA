@@ -5,7 +5,6 @@ import numpy as np
 import os
 os.chdir('../')
 
-
 class run_params(object):
     N = 1
     tc = 'tv'

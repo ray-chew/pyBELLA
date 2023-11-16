@@ -34,6 +34,29 @@ from management.debug import find_nearest
 from time import time
 from termcolor import colored
 
+import logging
+
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                    datefmt='%m-%d %H:%M',
+                    filename='./RKLM_Python/logs/output.log',
+                    filemode='w')
+# define a Handler which writes INFO messages or higher to the sys.stderr
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+# set a format which is simpler for console use
+formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+# tell the handler to use this format
+console.setFormatter(formatter)
+# add the handler to the root logger
+logging.getLogger().addHandler(console)
+
+
+#logger = logging.getLogger(__name__)
+
+logging.info('in main')
+
 debug = gparams.debug
 da_debug = gparams.da_debug
 output_timesteps = False
@@ -73,7 +96,7 @@ th = ThermodynamicInit(ud)
 mpv = MPV(elem, node, ud)
 bld = blending.Blend(ud)
 
-print("Input file is%s" %ud.output_base_name.replace('_',' '))
+logging.info("Input file is%s" %ud.output_base_name.replace('_',' '))
 
 ##########################################################
 # Initialisation of data assimilation module
@@ -90,7 +113,7 @@ if dap_rewrite is not None: dap.update_dap(dap_rewrite)
 if dap.da_type == 'rloc' and N > 1:
     rloc = prepare_rloc(ud, elem, node, dap, N)
 
-print(colored("Generating initial ensemble...",'yellow'))
+logging.info(colored("Generating initial ensemble...",'yellow'))
 sol_ens = np.zeros((N), dtype=object)
 
 # Set random seed for reproducibility
@@ -98,7 +121,7 @@ np.random.seed(gparams.random_seed)
 
 seeds = np.random.randint(10000,size=N) if N > 1 else None
 if seeds is not None and restart == False:
-    print("Seeds used in generating initial ensemble spread = ", seeds)
+    logging.info("Seeds used in generating initial ensemble spread = ", seeds)
     for n in range(N):
         Sol0 = deepcopy(Sol)
         mpv0 = deepcopy(mpv)
@@ -199,9 +222,9 @@ if __name__ == '__main__':
         ######################################################
         # Forecast step
         ######################################################
-        print('##############################################')
-        print(colored('Next tout = %.3f' %tout,'yellow'))
-        print(colored("Starting forecast...", 'green'))
+        logging.info('##############################################')
+        logging.info(colored('Next tout = %.3f' %tout,'yellow'))
+        logging.info(colored("Starting forecast...", 'green'))
         mem_cnt = 0
         for mem in ens.members(ens):
             # future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, None, False])
@@ -209,7 +232,7 @@ if __name__ == '__main__':
             # handling of DA window step counter
             if N > 1 : mem[3][0] = 0 if tout_old in dap.da_times else mem[3][0]
             if N == 1 : mem[3][0] = mem[3][1]
-            print(colored("For ensemble member = %i..." %mem_cnt,'yellow'))
+            logging.info(colored("For ensemble member = %i..." %mem_cnt,'yellow'))
             future = time_update(mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, blend, wrtr, debug)
 
             futures.append(future)
@@ -247,7 +270,7 @@ if __name__ == '__main__':
             ######################################################
             # Write output before assimilating data
             ######################################################
-            print(colored("Starting output...",'yellow'))
+            logging.info(colored("Starting output...",'yellow'))
             for n in range(N):
                 Sol = ens.members(ens)[n][0]
                 mpv = ens.members(ens)[n][2]
@@ -264,9 +287,9 @@ if __name__ == '__main__':
             # LETKF with batch observations
             ##################################################
             if dap.da_type == 'batch_obs':
-                print("Starting analysis... for batch observations")
+                logging.info("Starting analysis... for batch observations")
                 for attr in dap.obs_attributes:
-                    print("Assimilating %s..." %attr)
+                    logging.info("Assimilating %s..." %attr)
                     # future = client.submit(da_interface, *[s_res,obs_current,dap.inflation_factor,attr,N,ud,dap.loc[attr]])
                     future = da_interface(results,dap,obs,attr,tout,N,ud)
                     futures.append(future)
@@ -275,7 +298,7 @@ if __name__ == '__main__':
                 analysis = futures
                 # analysis = np.array(analysis)
 
-                print("Writing analysis...")
+                logging.info("Writing analysis...")
                 cnt = 0
                 for attr in dap.obs_attributes:
                     current = analysis[cnt]
@@ -287,7 +310,7 @@ if __name__ == '__main__':
             # LETKF with grid-point localisation
             ##################################################
             elif dap.da_type == 'rloc':
-                print(colored("Starting analysis... for rloc algorithm",'green'))
+                logging.info(colored("Starting analysis... for rloc algorithm",'green'))
                 results = HSprojector_3t2D(results, elem, dap, N)
                 results = rloc.analyse(results,obs,obs_covar,obs_mask,N,tout)
                 results = HSprojector_2t3D(results, elem, node, dap, N)
@@ -327,7 +350,7 @@ if __name__ == '__main__':
         ######################################################
         # Write output at tout
         ######################################################
-        print(colored("Starting output...",'yellow'))
+        logging.info(colored("Starting output...",'yellow'))
         for n in range(N):
             Sol = ens.members(ens)[n][0]
             mpv = ens.members(ens)[n][2]
@@ -342,13 +365,13 @@ if __name__ == '__main__':
         # synchronise_variables(mpv, Sol, elem, node, ud, th)
         t = tout
         tout_old = np.copy(tout)
-        print(colored('tout = %.3f' %tout,'yellow'))
+        logging.info(colored('tout = %.3f' %tout,'yellow'))
 
         tout_cnt += 1
         outer_step += 1
         if outer_step > ud.stepmax: break
 
     toc = time()
-    print(colored("Time taken = %.6f" %(toc-tic),'yellow'))
+    logging.info(colored("Time taken = %.6f" %(toc-tic),'yellow'))
 
     writer.close_everything()
