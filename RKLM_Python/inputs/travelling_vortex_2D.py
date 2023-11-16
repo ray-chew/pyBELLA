@@ -125,8 +125,8 @@ class UserData(object):
         self.initial_projection = True
         self.initial_impl_Euler = False
 
-        self.tout = np.arange(0.0,10.1,0.1)[1:]
-        self.stepmax = 20000
+        self.tout = np.arange(0.0,0.2,0.1)[1:]
+        self.stepmax = 2
 
         self.output_base_name = "_travelling_vortex"
         if self.is_compressible == 1:
