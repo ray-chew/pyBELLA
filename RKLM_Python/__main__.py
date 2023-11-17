@@ -52,11 +52,6 @@ console.setFormatter(formatter)
 # add the handler to the root logger
 logging.getLogger().addHandler(console)
 
-
-#logger = logging.getLogger(__name__)
-
-logging.info('in main')
-
 debug = gparams.debug
 da_debug = gparams.da_debug
 output_timesteps = False
