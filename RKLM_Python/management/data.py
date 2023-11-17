@@ -22,6 +22,8 @@ from copy import deepcopy
 
 from termcolor import colored
 
+import logging
+
 def data_init(ud):
     """
     Helper function to initialise the `elem` and `node` grids, corresponding to the cell and node grids, from a given user iniital data file.
@@ -129,7 +131,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         c2 = step == 0 and ud.is_nonhydrostatic == 1 and ud.initial_blending == True and bld is not None and 'imbal' in ud.aux
 
         if c1 or c2:
-            print(colored("nonhydrostatic to hydrostatic conversion...", 'blue'))
+            logging.info(colored("nonhydrostatic to hydrostatic conversion...", 'blue'))
             ud.is_nonhydrostatic = 0
             if test_hydrob == False:
                 dt *= 0.5
@@ -146,12 +148,12 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         if ud.continuous_blending == True or ud.initial_blending == True:
             if window_step >= 0:
-                print("step = %i, window_step = %i" %(step,window_step))
+                logging.info("step = %i, window_step = %i" %(step,window_step))
             else:
-                print("step = %i, window_step = %f" %(step,window_step))
-        print("is_compressible = %i, is_nonhydrostatic = %i" %(ud.is_compressible, ud.is_nonhydrostatic))
-        print("compressibility = %.3f, nonhydrostasy = %.3f" %(ud.compressibility,ud.nonhydrostasy))
-        print("-------")
+                logging.info("step = %i, window_step = %f" %(step,window_step))
+        logging.info("is_compressible = %i, is_nonhydrostatic = %i" %(ud.is_compressible, ud.is_nonhydrostatic))
+        logging.info("compressibility = %.3f, nonhydrostasy = %.3f" %(ud.compressibility,ud.nonhydrostasy))
+        logging.info("-------")
 
         Sol0 = deepcopy(Sol)
         flux0 = deepcopy(flux)
@@ -372,7 +374,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         Sol, mpv = blending.blending_after_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug)
 
         if c1 or c2:
-            print(colored("hydrostatic to nonhydrostatic conversion...", 'blue'))
+            logging.info(colored("hydrostatic to nonhydrostatic conversion...", 'blue'))
 
             writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half_full')
             writer.populate(str(label)+'_ic', 'pwchi', Sol.pwchi)
@@ -381,12 +383,12 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                 Sol = deepcopy(Sol_half_old)
                 # mpv = deepcopy(mpv_half_old)
 
-                print(colored("test_hydrob == False", 'red'))
+                logging.info(colored("test_hydrob == False", 'red'))
                 writer.write_all(Sol,mpv,elem,node,th,str(label)+'_quarter')
 
                 writer.populate(str(label)+'_quarter', 'pwchi', Sol.pwchi)
 
-                print("quarter dt = %.8f" %(dt*0.5))
+                logging.info("quarter dt = %.8f" %(dt*0.5))
 
                 ret = time_update(Sol_half_old,flux_half_old,mpv_half_old, dt-0.5*dt, dt+0.5*dt, ud, elem, node, [0,0], th, bld=None, writer=None, debug=False)
 
@@ -416,12 +418,12 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                 Sol = deepcopy(Sol_half_old)
                 # mpv = deepcopy(mpv_half_old)
 
-                print(colored("test_hydrob == False", 'red'))
+                logging.info(colored("test_hydrob == False", 'red'))
                 writer.write_all(Sol,mpv,elem,node,th,str(label)+'_quarter')
 
                 # writer.populate(str(label)+'_quarter', 'pwchi', Sol.pwchi)
 
-                print("quarter dt = %.8f" %(dt*0.5))
+                logging.info("quarter dt = %.8f" %(dt*0.5))
 
                 ret = time_update(Sol_half_old,flux_half_old,mpv_half_old, dt-0.5*dt, dt+0.5*dt, ud, elem, node, [0,0], th, bld=None, writer=None, debug=False)
 
@@ -449,7 +451,7 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                 # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
                 # writer.populate(str(label)+'_half', 'pwchi', Sol.pwchi)
 
-                print(colored("test_hydrob == True", 'red'))
+                logging.info(colored("test_hydrob == True", 'red'))
                 
 
             if test_hydrob == False:
@@ -462,9 +464,9 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
             writer.time = t
             writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
             # writer.populate(str(label)+'_after_full_step', 'pwchi', Sol.pwchi)
-        print("###############################################################################################")
-        print("step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f" %(step, t, dt, cfl, cfl_ac))
-        print("###############################################################################################")
+        logging.info("###############################################################################################")
+        logging.info("step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f" %(step, t, dt, cfl, cfl_ac))
+        logging.info("###############################################################################################")
 
         step += 1
         window_step += 1
