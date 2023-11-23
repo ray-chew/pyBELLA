@@ -1,7 +1,7 @@
 import numpy as np
 from inputs.enum_bdry import BdryType
 from management.enumerator import TimeIntegrator, MolecularTransport,HillShapes, BottomBC, LimiterType, RecoveryOrder
-from physics.hydrostatics import hydrostatic_state, hydrostatic_column, hydrostatic_initial_pressure
+from physics.hydrostatics import hydrostatic_state
 from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
 from management.variable import States
 
