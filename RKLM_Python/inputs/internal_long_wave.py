@@ -115,6 +115,8 @@ class UserData(object):
 
         self.initial_projection = False
 
+        self.do_advection = True
+
         self.tout =  [self.scale_factor * 1.0 * 3000.0 / self.t_ref]
         self.tout = np.arange(0,self.tout[0]+60.0,60.0)[1:]
 
@@ -143,7 +145,7 @@ class UserData(object):
         elif self.scale_factor == 160.0:
             self.scale_tag = "planetary"
         else:
-            assert(0, "scale factor unsupported")
+            assert 0, "scale factor unsupported"
 
         if self.is_nonhydrostatic and self.is_compressible:
             self.h_tag = 'nonhydro'
@@ -231,7 +233,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Sol.rhou[x_idx,y_idx] = rho * u
     Sol.rhov[x_idx,y_idx] = rho * v
     Sol.rhow[x_idx,y_idx] = rho * w
-    Sol.rhoe[x_idx,y_idx] = ud.rhoe(rho, u ,v, w, p, ud, th)
     Sol.rhoY[x_idx,y_idx] = rhoY
 
     mpv.p2_cells[x_idx,y_idx] = HySt.p20[x_idx,y_idx][c_idx]
