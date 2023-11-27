@@ -126,24 +126,23 @@ class UserData(object):
         self.initial_impl_Euler = False
 
         self.tout = [1.0]#np.arange(0.0,10.1,0.1)[1:]
-        self.stepmax = 100
+        self.stepmax = 101
+
+        self.autogen_fn = False
 
         self.output_base_name = "_travelling_vortex"
-        if self.is_compressible == 1:
-            self.output_suffix = "_%i_%i_%.1f_comp" %(self.inx-1,self.iny-1,self.tout[-1])
-        if self.is_compressible == 0:
-            self.output_suffix = "_%i_%i_%.1f_psinc" %(self.inx-1,self.iny-1,self.tout[-1])
-        if self.continuous_blending == True:
-            self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
-        
-        aux = 'test_suite'
-        self.aux = aux
 
-        self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
+        self.output_type = 'test'
+        self.aux = ''
+
+        self.output_suffix = "_%i_%i" %(self.inx-1,self.iny-1)
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
-        self.output_timesteps = False
+        self.output_timesteps = True
+
+        self.diag = True
+        self.diag_current_run = 'test_travelling_vortex'
 
     def stratification_function(self, y):
         if type(y) == float:

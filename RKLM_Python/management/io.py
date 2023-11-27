@@ -27,9 +27,9 @@ class io(object):
 
         self.FORMAT = ".h5"
         self.BASE_NAME = self.ud.output_base_name
-        self.OUTPUT_FILENAME = "./output" + self.BASE_NAME
+        self.OUTPUT_FILENAME = "./" + self.ud.output_type + self.BASE_NAME
         self.OUTPUT_FOLDER = self.OUTPUT_FILENAME
-        self.OUTPUT_FILENAME = self.OUTPUT_FILENAME + "/output"
+        self.OUTPUT_FILENAME = self.OUTPUT_FILENAME + "/" + self.ud.output_type
 
         self.SUFFIX = self.ud.output_suffix
         if restart: self.OLD_SUFFIX = self.ud.old_suffix
@@ -465,11 +465,11 @@ def get_args():
     elif ic == 'swe_dvortex':
         from inputs.shallow_water_3D_dvortex import UserData, sol_init
     elif ic == 'test_travelling_vortex':
-        from tests.travelling_vortex_2D import UserData, sol_init
+        from tests.test_travelling_vortex import UserData, sol_init
     elif ic == 'test_intertia_gravity_wave':
-        from tests.internal_long_wave import UserData, sol_init
+        from tests.test_internal_long_wave import UserData, sol_init
     elif ic == 'test_lamb_coriolis':
-        from tests.lamb_wave_perturb import UserData, sol_init
+        from tests.test_lamb_wave import UserData, sol_init
 
 
     if UserData is None or sol_init is None:
