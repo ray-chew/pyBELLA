@@ -30,7 +30,6 @@ import global_params as gparams
 
 # some diagnostics
 from copy import deepcopy
-from management.debug import find_nearest
 from time import time
 from termcolor import colored
 
@@ -135,7 +134,8 @@ if N > 1:
 
 
 # add ensemble info to filename
-ud.output_suffix = fn_gen(ud, dap, N)
+if ud.autogen_fn:
+    ud.output_suffix = fn_gen(ud, dap, N)
 # ud.output_suffix = '_ensemble=%i%s' %(N, ud.output_suffix)
 
 # ud.output_suffix = '%s_%s' %(ud.output_suffix, 'nr')
