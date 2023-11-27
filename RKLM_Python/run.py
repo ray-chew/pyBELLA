@@ -15,8 +15,8 @@ class run_params(object):
         self.N = self.N
         self.tc = self.tc
 
-        self.ud = "None"
-        self.dap = "None"
+        self.ud = "{}"
+        self.dap = "{}"
         self.restart = False
 
     def single_run(self):
