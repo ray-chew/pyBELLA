@@ -232,12 +232,15 @@ class test_case(object):
         return time_series
     
     
-    def get_ensemble(self, times, N, attribute, suffix, cont_blend=False, ts=0, fs=0, label_type='TIME', tag='after_full_step', avg=False, diff=False, inner=True, load_ic=True):
+    def get_ensemble(self, times, N, attribute, suffix, cont_blend=False, ts=0, fs=0, label_type='TIME', tag='after_full_step', avg=False, diff=False, inner=True, load_ic=True, get_fn=True, fn=""):
         self.t_arr = []
         if cont_blend == True:
             suffix += cb_suffix(fs,ts)
             
-        fn = self.get_filename(N,suffix)
+        if get_fn:
+            fn = self.get_filename(N,suffix)
+        else:
+            fn = fn
         path = self.get_path(fn)
         
         file = h5py.File(path,'r')
