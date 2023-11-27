@@ -6,9 +6,6 @@ import shutil # for copying of simulation restart file
 import dill as pickle # pickle jar to debug classes
 import yaml # for parsing of dict-style arguments
 
-from management.variable import Vars
-from physics.low_mach.mpv import MPV
-
 import argparse
 
 import logging
@@ -383,11 +380,39 @@ def get_args():
 
     """
 
-    parser = argparse.ArgumentParser(description='Python solver for unified numerical model based on (Benacchio and Klein, 2019) with data assimilation and blending. Written by Ray Chew and based on Prof. Rupert Klein\'s C code.')
+    parser = argparse.ArgumentParser(description='')
 
     parser.add_argument('-N',action='store',dest='N',help='<Optional> Set ensemble size, if none is given N=1 is used.',required=False,type=int)
 
-    parser.add_argument('-ic','--initial_conditions',action='store',dest='ic',help='<Required> Set initial conditions',required=True,choices={'aw','tv','tv_neg','tv_2d','tv_3d','tv_corr','rb', 'rbc', 'igw', 'igw_3d', 'lbw', 'skl', 'mark', 'lw_p', 'igw_bb', 'swe','swe_bal_vortex','swe_icshear', 'swe_dvortex'})
+    parser.add_argument('-ic', '--initial_conditions',
+                        action='store',
+                        dest='ic',
+                        help='<Required> Set initial conditions',
+                        required=True,
+                        choices={'aw',
+                                 'tv',
+                                 'tv_neg',
+                                 'tv_2d',
+                                 'tv_3d',
+                                 'tv_corr',
+                                 'rb',
+                                 'rbc',
+                                 'igw',
+                                 'igw_3d',
+                                 'lbw',
+                                 'skl',
+                                 'mark',
+                                 'lw_p',
+                                 'igw_bb',
+                                 'swe',
+                                 'swe_bal_vortex',
+                                 'swe_icshear',
+                                 'swe_dvortex',
+                                 'test_travelling_vortex',
+                                 'test_intertia_gravity_wave',
+                                 'test_lamb_coriolis'
+                                 }
+                        )
 
     subparsers = parser.add_subparsers(dest='subcommand')
 
@@ -441,6 +466,12 @@ def get_args():
         from inputs.shallow_water_3D_icshear import UserData, sol_init
     elif ic == 'swe_dvortex':
         from inputs.shallow_water_3D_dvortex import UserData, sol_init
+    elif ic == 'test_travelling_vortex':
+        from tests.travelling_vortex_2D import UserData, sol_init
+    elif ic == 'test_intertia_gravity_wave':
+        from tests.internal_long_wave import UserData, sol_init
+    elif ic == 'test_lamb_coriolis':
+        from tests.lamb_wave_perturb import UserData, sol_init
 
 
     if UserData is None or sol_init is None:
@@ -462,7 +493,6 @@ def get_args():
         params = None
 
     if args.subcommand == 'queue':
-        queue = True
         ud = args.rewrite[0]
         dap = args.rewrite[1]
     else:
