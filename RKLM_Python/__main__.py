@@ -6,8 +6,6 @@ from inputs.boundary import set_explicit_boundary_data
 from inputs.boundary import set_ghostnodes_p2, get_tau_y
 from management.variable import States, Vars
 from physics.gas_dynamics.thermodynamic import ThermodynamicInit
-# from physics.gas_dynamics.eos import nonhydrostasy, compressibility, is_compressible, is_nonhydrostatic
-# from physics.gas_dynamics.gas_dynamics import dynamic_timestep
 from physics.low_mach.mpv import MPV
 from physics.hydrostatics import hydrostatic_state
 
@@ -32,6 +30,9 @@ import global_params as gparams
 from copy import deepcopy
 from time import time
 from termcolor import colored
+
+# test module
+from tests import diagnostics as diag
 
 debug = gparams.debug
 da_debug = gparams.da_debug
@@ -73,6 +74,13 @@ mpv = MPV(elem, node, ud)
 bld = blending.Blend(ud)
 
 print("Input file is%s" %ud.output_base_name.replace('_',' '))
+
+##########################################################
+# Initialise test module
+##########################################################
+
+if ud.diag:
+    diag_comparison = diag.compare_sol(ud.diag_current_run)
 
 ##########################################################
 # Initialisation of data assimilation module
@@ -211,6 +219,9 @@ if __name__ == '__main__':
             if N == 1 : mem[3][0] = mem[3][1]
             print(colored("For ensemble member = %i..." %mem_cnt,'yellow'))
             future = time_update(mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, blend, wrtr, debug)
+
+            if ud.diag:
+                diag_comparison.do(future[0],future[2].p2_nodes, plot=ud.diag_plot_compare)
 
             futures.append(future)
             mem_cnt += 1
