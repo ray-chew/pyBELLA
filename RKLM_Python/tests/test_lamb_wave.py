@@ -92,8 +92,8 @@ class UserData(object):
         ##########################################
         self.CFL = 0.9
 
-        self.inx = 301+1
-        self.iny = 30+1
+        self.inx = 151+1
+        self.iny = 15+1
         self.inz = 1
 
         self.dtfixed0 = 100.0 / self.t_ref
@@ -129,10 +129,16 @@ class UserData(object):
         self.stepmax = 31
         self.output_timesteps = True
 
-        self.output_base_name = "_mark_wave"
-        aux = 'test_suite'
-        self.aux = aux
-        self.output_suffix = 'test_suite'
+        self.autogen_fn = False
+
+        self.output_base_name = "_lamb_wave"
+        self.output_type = 'test'
+        self.aux = ''
+        self.output_suffix = "_%i_%i" %(self.inx-1,self.iny-1)
+
+        self.diag = True
+        self.diag_current_run = 'test_lamb_wave'
+        self.diag_plot_compare = True
 
         self.stratification = self.stratification_wrapper
         self.rayleigh_bc = self.rayleigh_bc_function
