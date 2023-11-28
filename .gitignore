@@ -14,6 +14,7 @@
 
 # Ignore various outputs
 *.h5
+*.dat
 *output_*
 *_old*
 *copy.py*

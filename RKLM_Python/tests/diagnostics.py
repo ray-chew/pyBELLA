@@ -5,10 +5,7 @@ import sys
 sys.path.append("..") 
 sys.path.append(".")
 
-
-from visualiser_debugger import utils
-from visualiser_debugger import plotting_tools as pt
-# import plotting_tools as pt
+from visualiser_debugger import utils, plotting_tools as pt
 
 class compare_sol(object):
     def __init__(self, current_run):
@@ -16,11 +13,12 @@ class compare_sol(object):
         self.__init()
         self.__get_tc()
 
-    def update_target(self):
+
+    def update_targets(self):
         self.arr_dump = {}
 
-        for idx, tc in enumerate(self.tcs):
-            tp = self.tps[idx]
+        for tc_name, tc in self.tcs.items():
+            tp = self.tps[tc_name]
             self.arr_dump[tp.name] =  {}
 
             for attribute in tp.attributes:
@@ -57,17 +55,21 @@ class compare_sol(object):
 
         tv_2D = test_params('test_travelling_vortex', path, 'target_travelling_vortex', 64, 64, [100])
         igw   = test_params('test_internal_long_wave', path, 'target_internal_long_wave', 301, 10, [30])
-        lmbw  = test_params('test_lamb_wave', path, 'target_lamb_wave', 301, 120, [30])
+        lmbw  = test_params('test_lamb_wave', path, 'target_lamb_wave', 151, 15, [30])
 
-        # self.tps = [tv_2D, igw, lmbw]
-        self.tps = [tv_2D]
+        self.tps = {
+            'test_travelling_vortex'  : tv_2D, 
+            'test_internal_long_wave' : igw, 
+            'test_lamb_wave'          : lmbw
+            }
+        # self.tps = [tv_2D]
 
     def __get_tc(self):
-        self.tcs = []
-        for test_param in self.tps:
+        self.tcs = {}
+        for test_name, test_param in self.tps.items():
             tc = utils.test_case(test_param.fn, test_param.dir , test_param.Nx, test_param.Ny, '')
 
-            self.tcs.append(tc)
+            self.tcs[test_name] = tc
 
 
     def __read_yaml(self):
@@ -76,26 +78,27 @@ class compare_sol(object):
 
 
     def __plot_comparison(self, Sol, p2n):
-        for idx, tc in enumerate(self.tcs):
-            tp = self.tps[idx]
+        tc = self.tcs[self.current_run]
+        tp = self.tps[self.current_run]
 
-            for attribute in tp.attributes:
-                arr_plots = []
+        for attribute in tp.attributes:
+            arr_plots = []
 
-                ref_sol = self.__get_ens(tc, tp, attribute)
+            ref_sol = self.__get_ens(tc, tp, attribute).T
 
-                if attribute != 'p2_nodes':
-                    test_sol = getattr(Sol, attribute)
-                else:
-                    test_sol = p2n
+            if attribute != 'p2_nodes':
+                test_sol = getattr(Sol, attribute).T
+            else:
+                test_sol = p2n.T
 
-                arr_plots.append([ref_sol, "ref"])
-                arr_plots.append([test_sol, "test"])
-                arr_plots.append([ref_sol - test_sol, "diff"])
+            arr_plots.append([ref_sol, "ref"])
+            arr_plots.append([test_sol, "test"])
+            arr_plots.append([ref_sol - test_sol, "diff"])
 
-                pl = pt.plotter(arr_plots, ncols=3, figsize=(12,3),sharey=False)
-                _ = pl.plot(method='contour', lvls=None, suptitle=attribute)
-                pl.img.show()
+            pl = pt.plotter(arr_plots, ncols=3, figsize=(12,3),sharey=False)
+            _ = pl.plot(method='contour', lvls=None, suptitle=attribute)
+            pl.img.show()
+
 
     @staticmethod
     def __get_ens(tc, params, attribute, summed=False):
