@@ -409,8 +409,8 @@ def get_args():
                                  'swe_icshear',
                                  'swe_dvortex',
                                  'test_travelling_vortex',
-                                 'test_intertia_gravity_wave',
-                                 'test_lamb_coriolis'
+                                 'test_internal_long_wave',
+                                 'test_lamb_wave'
                                  }
                         )
 
@@ -468,9 +468,9 @@ def get_args():
         from inputs.shallow_water_3D_dvortex import UserData, sol_init
     elif ic == 'test_travelling_vortex':
         from tests.test_travelling_vortex import UserData, sol_init
-    elif ic == 'test_intertia_gravity_wave':
+    elif ic == 'test_internal_long_wave':
         from tests.test_internal_long_wave import UserData, sol_init
-    elif ic == 'test_lamb_coriolis':
+    elif ic == 'test_lamb_wave':
         from tests.test_lamb_wave import UserData, sol_init
 
 

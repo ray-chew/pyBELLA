@@ -118,7 +118,6 @@ class UserData(object):
         self.do_advection = True
 
         self.tout =  [self.scale_factor * 1.0 * 3000.0 / self.t_ref]
-        self.tout = np.arange(0,self.tout[0]+60.0,60.0)[1:]
 
         self.tol = 1.e-12
         self.stepmax = 31
@@ -137,35 +136,22 @@ class UserData(object):
 
         self.initial_blending = False
 
+        self.autogen_fn = False
+
         self.output_base_name = "_internal_long_wave"
-        if self.scale_factor < 10.0:
-            self.scale_tag = "standard"
-        elif self.scale_factor == 20.0:
-            self.scale_tag = "long"
-        elif self.scale_factor == 160.0:
-            self.scale_tag = "planetary"
-        else:
-            assert 0, "scale factor unsupported"
-
-        if self.is_nonhydrostatic and self.is_compressible:
-            self.h_tag = 'nonhydro'
-        elif self.is_nonhydrostatic and not self.is_compressible:
-            self.h_tag = 'psinc'
-        elif not self.is_nonhydrostatic:
-            self.h_tag = 'hydro'
-
-        aux = 'test_suite'
-        if len(aux) > 0:
-            aux = self.scale_tag + "_" + self.h_tag + "_" + aux
-        else:
-            aux = self.scale_tag + "_" + self.h_tag
-        self.aux = aux
+        self.output_type = 'test'
+        self.aux = ''
+        self.output_suffix = "_%i_%i" %(self.inx-1,self.iny-1)
 
         self.output_timesteps = True
 
         self.stratification = self.stratification_function
         self.molly = self.molly_function
         self.rhoe = self.rhoe_method
+
+        self.diag = True
+        self.diag_current_run = 'test_internal_long_wave'
+        self.diag_plot_compare = True
         
     def stratification_function(self, y):
         Nsq = self.Nsq_ref * self.t_ref * self.t_ref
