@@ -143,6 +143,7 @@ class UserData(object):
 
         self.diag = True
         self.diag_current_run = 'test_travelling_vortex'
+        self.diag_plot_compare = True
 
     def stratification_function(self, y):
         if type(y) == float:
