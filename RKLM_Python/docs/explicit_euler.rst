@@ -1,2 +1,0 @@
-Explicit Euler step
-===================

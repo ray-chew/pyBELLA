@@ -3,14 +3,11 @@
 *pycache*
 **dask-worker-space*
 *.ipynb_checkpoints*
+*.egg-info*
 
 # Ignore various local subdirectories
-**Reference*
-**archive*
-**current*
-**output*
-**low_Mach*
-**SkamarockKlemp*
+**outputs*
+**docs*
 
 # Ignore various outputs
 *.h5
