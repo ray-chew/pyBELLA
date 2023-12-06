@@ -1,7 +1,7 @@
 import numpy as np
 
 # dependencies of the atmospheric flow solver
-from dycore.utils.data import data_init
+from dycore.discretisation.grid import grid_init
 from dycore.discretisation.time_update import time_update
 from dycore.utils.boundary import set_explicit_boundary_data, set_ghostnodes_p2, get_tau_y
 from dycore.utils.variable import States, Vars
@@ -58,7 +58,7 @@ if hasattr(ud, 'rayleigh_bc'): ud.rayleigh_bc(ud)
 if ud.output_timesteps: output_timesteps = True
 ud.coriolis_strength = np.array(ud.coriolis_strength)
 
-elem, node = data_init(ud)
+elem, node = grid_init(ud)
 
 Sol = Vars(elem.sc, ud)
 
