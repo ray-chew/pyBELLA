@@ -1,4 +1,4 @@
-from dycore.utils.enum_bdry import BdryType
+from dycore.utils.options import BdryType
 from dycore.utils.boundary import set_explicit_boundary_data, set_ghostnodes_p2
 from dycore.physics.low_mach.laplacian import stencil_27pt, stencil_hs, stencil_vs, stencil_9pt_numba_test, precon_diag_prepare
 from scipy import signal

@@ -1,7 +1,7 @@
 """
 For more details on this module, refer to the write-up :ref:`boundary_handling`.
 """
-from dycore.utils.enum_bdry import BdryType
+from dycore.utils.options import BdryType
 import numpy as np
 
 def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):

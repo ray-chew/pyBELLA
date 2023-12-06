@@ -1,5 +1,5 @@
 import numpy as np
-from dycore.utils.enum_bdry import BdryType
+from dycore.utils.options import BdryType
 
 def grid_init(ud):
     """

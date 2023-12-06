@@ -3,7 +3,7 @@ from scipy.sparse.linalg import spsolve
 from scipy.ndimage import map_coordinates
 from scipy.signal import convolve2d
 from scipy.interpolate import interpn
-from dycore.utils.enum_bdry import BdryType
+from dycore.utils.options import BdryType
 import matplotlib.pyplot as plt
 import dask.array as darr
 import dask
