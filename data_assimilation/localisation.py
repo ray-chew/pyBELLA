@@ -1,7 +1,5 @@
 import numpy as np
-from dycore.utils.enum_bdry import BdryType
-from scipy import sparse, signal
-from numba import jit
+from dycore.utils.options import BdryType
 
 def rlocal_5pt(elem,node,ud):
     igx = elem.igx

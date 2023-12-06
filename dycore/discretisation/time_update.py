@@ -1,7 +1,7 @@
 # dependencies of the atmospheric flow solver
 from utils.io import read_input
 from dycore.utils import boundary
-from dycore.utils.enum_bdry import BdryType
+from dycore.utils.options import BdryType
 from dycore.physics.gas_dynamics.numerical_flux import recompute_advective_fluxes
 from dycore.physics.gas_dynamics.explicit import advect, advect_rk
 from dycore.physics.gas_dynamics.eos import nonhydrostasy, is_nonhydrostatic
