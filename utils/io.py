@@ -8,7 +8,7 @@ import yaml # for parsing of dict-style arguments
 
 import argparse
 
-from utils.params import output_path
+from utils.sim_params import output_path
 
 class io(object):
     """
