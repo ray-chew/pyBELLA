@@ -19,6 +19,3 @@ class ThermodynamicInit(object):
         self.Gamma = (g - 1.0) / g
         self.Gammainv = g / (g - 1.0)
 
-        self.Rg_over_Rv = ud.Rg_over_Rv
-        self.Q = ud.Q
-
