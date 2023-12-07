@@ -1,14 +1,9 @@
 import sys
 import subprocess
-import numpy as np
-
-# import os
-# os.chdir('../')
-
 
 class run_params(object):
     N = 1
-    tc = 'tv'
+    tc = 'rb'
 
     def __init__(self):
         self.N = self.N

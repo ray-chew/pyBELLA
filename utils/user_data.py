@@ -1,7 +1,7 @@
 import numpy as np
 
 from dycore.utils.options import BdryType, LimiterType
-from sim_params import global_constants
+from utils.sim_params import global_constants
 
 
 class UserDataInit(object):
@@ -15,7 +15,8 @@ class UserDataInit(object):
     """
 
     def __init__(self,**kwargs):
-        for key, value in global_constants.items():
+        gconsts = global_constants()
+        for key, value in vars(gconsts).items():
             setattr(self, key, value)
 
         if len(kwargs) > 0:
@@ -36,6 +37,7 @@ class UserDataInit(object):
         self.zmin = - 1.0
         self.zmax =   1.0
 
+
         ##########################################
         # BOUNDARY CONDITIONS
         ##########################################
@@ -43,6 +45,7 @@ class UserDataInit(object):
         self.bdry_type[0] = BdryType.PERIODIC
         self.bdry_type[1] = BdryType.WALL
         self.bdry_type[2] = BdryType.WALL
+
 
         ##########################################
         # TEMPORAL
@@ -56,6 +59,7 @@ class UserDataInit(object):
         self.tout = np.arange(0.0,1.01,0.01)[10:]
         self.stepmax = 10000
 
+
         ##########################################
         # MODEL REGIMES
         ##########################################
@@ -65,16 +69,23 @@ class UserDataInit(object):
 
         self.compressibility = 0.0
 
+
         ##########################################
-        # BACKGROUND WIND
+        # PHYSICS AND BACKGROUND WIND
         ##########################################
         self.u_wind_speed = 0.0
         self.v_wind_speed = 0.0
         self.w_wind_speed = 0.0
 
+        self.stratification = self.stratification_function
+
+
         ##########################################
         # NUMERICS
         ##########################################   
+        # Do we solve the left-hand side?
+        self.do_advection = True
+
         # Advection limiter types     
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
@@ -83,7 +94,6 @@ class UserDataInit(object):
         self.tol = 1.e-8
         self.max_iterations = 6000
 
-        self.stratification = self.stratification_function
 
         ##########################################
         # BLENDING
@@ -101,14 +111,36 @@ class UserDataInit(object):
 
         self.initial_blending = False
 
+
+        ##########################################
+        # DIAGNOSTICS
+        ##########################################
+        self.diag = False
+        self.diag_plot_compare = False
+
+
+        ##########################################
+        # OUTPUTS
+        ##########################################
+        self.autogen_fn = False
+        self.output_timesteps = False
+        self.output_type = 'output'
+        self.output_suffix = "_%i_%i" %(self.inx-1,self.iny-1)
+
+
     def compute_u_ref(self):
         self.u_ref = self.h_ref / self.t_ref
+        self.compute_Msq()
+
 
     def compute_Msq(self):
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
 
+
     def compute_gravity(self):
+        self.i_gravity = np.zeros((3))
         self.gravity_strength = np.zeros((3))
+
         self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
 
         for i in range(3):
@@ -116,29 +148,37 @@ class UserDataInit(object):
                 self.i_gravity[i] = 1
                 self.gravity_direction = i
 
+
     def compute_coriolis(self):
+        self.i_coriolis = np.zeros((3))
         self.coriolis_strength = np.zeros((3))
+
         self.coriolis_strength[0] = self.omega * self.t_ref
         self.coriolis_strength[2] = self.omega * self.t_ref
 
 
     def compute_cp_gas(self):
-        self.cp_gas = self.gamma * self.R_gas / (self.gamma-1.0)
-        self.compute_N_ref()
+        self.cp_gas = self.gamm * self.R_gas / (self.gamm-1.0)
+
+        if all(hasattr(self, attr) for attr in ["grav", "cp_gas", "T_ref"]):
+            self.compute_N_ref()
+
 
     def compute_rho_ref(self):
         self.rho_ref = self.p_ref / (self.R_gas * self.T_ref)
+
 
     def compute_N_ref(self):
         self.N_ref = self.grav / np.sqrt(self.cp_gas * self.T_ref)
         self.Nsq_ref = self.N_ref * self.N_ref
 
+
     def compute_Cs(self):
-        self.Cs = np.sqrt(self.gamma * self.R_gas * self.T_ref)
+        self.Cs = np.sqrt(self.gamm * self.R_gas * self.T_ref)
     
 
     @staticmethod
-    def stratification_function():
+    def stratification_function(y):
         return 1.0
 
 
@@ -150,16 +190,6 @@ class UserDataInit(object):
     # SETTER FUNCTIONS
     ##########################################
 
-    # Msq arguments
-    @property
-    def u_ref(self):
-        return self._u_ref
-    
-    @u_ref.setter
-    def u_ref(self, val):
-        self._u_ref = val
-        self.compute_gravity()
-
     # gravity and Msq arguments
     @property
     def R_gas(self):
@@ -168,12 +198,21 @@ class UserDataInit(object):
     @R_gas.setter
     def R_gas(self, val):
         self._R_gas = val
-        self.compute_gravity()
-        self.compute_Msq()
 
-        self.compute_cp_gas()
-        self.compute_rho_ref()
-        self.compute_Cs()
+        if all(hasattr(self, attr) for attr in ["grav", "h_ref", "R_gas", "T_ref"]):
+            self.compute_gravity()
+
+        if all(hasattr(self, attr) for attr in ["u_ref, R_gas", "T_ref"]):
+            self.compute_Msq()
+
+        if all(hasattr(self, attr) for attr in ["gamm", "R_gas"]):
+            self.compute_cp_gas()
+
+        if all(hasattr(self, attr) for attr in ["p_ref, R_gas", "T_ref"]):
+            self.compute_rho_ref()
+
+        if all(hasattr(self, attr) for attr in ["gamm", "R_gas", "T_ref"]):
+            self.compute_Cs()
 
     @property
     def T_ref(self):
@@ -182,22 +221,36 @@ class UserDataInit(object):
     @T_ref.setter
     def T_ref(self, val):
         self._T_ref = val
-        self.compute_gravity()
-        self.compute_Msq()
 
-        self.compute_rho_ref()
-        self.compute_N_ref()
-        self.compute_Cs()
+        if all(hasattr(self, attr) for attr in ["grav", "h_ref", "R_gas", "T_ref"]):
+            self.compute_gravity()
+
+        if all(hasattr(self, attr) for attr in ["u_ref, R_gas", "T_ref"]):
+            self.compute_Msq()
+
+        if all(hasattr(self, attr) for attr in ["p_ref, R_gas", "T_ref"]):
+            self.compute_rho_ref()
+
+        if all(hasattr(self, attr) for attr in ["grav", "cp_gas", "T_ref"]):
+            self.compute_N_ref()
+        
+        if all(hasattr(self, attr) for attr in ["gamm", "R_gas", "T_ref"]):
+            self.compute_Cs()
 
     # gravity arguments
+    @property
     def grav(self):
         return self._grav
     
     @grav.setter
     def grav(self, val):
         self._grav = val
-        self.compute_gravity()
-        self.compute_N_ref()
+
+        if all(hasattr(self, attr) for attr in ["grav", "h_ref", "R_gas", "T_ref"]):
+            self.compute_gravity()
+
+        if all(hasattr(self, attr) for attr in ["grav", "cp_gas", "T_ref"]):
+            self.compute_N_ref()
 
     @property
     def h_ref(self):
@@ -206,8 +259,12 @@ class UserDataInit(object):
     @h_ref.setter
     def h_ref(self, val):
         self._h_ref = val
-        self.compute_u_ref()
-        self.compute_gravity()
+
+        if all(hasattr(self, attr) for attr in ["h_ref", "t_ref"]):
+            self.compute_u_ref()
+        
+        if all(hasattr(self, attr) for attr in ["grav", "h_ref", "R_gas", "T_ref"]):
+            self.compute_gravity()
 
     # coriolis arguments
     @property
@@ -217,8 +274,12 @@ class UserDataInit(object):
     @t_ref.setter
     def t_ref(self, val):
         self._t_ref = val
-        self.compute_u_ref()
-        self.compute_coriolis()
+
+        if all(hasattr(self, attr) for attr in ["h_ref", "t_ref"]):
+            self.compute_u_ref()
+
+        if all(hasattr(self, attr) for attr in ["omega", "t_ref"]):
+            self.compute_coriolis()
 
     @property
     def omega(self):
@@ -227,26 +288,34 @@ class UserDataInit(object):
     @omega.setter
     def omega(self, val):
         self._omega = val
-        self.compute_coriolis()
+
+        if all(hasattr(self, attr) for attr in ["omega", "t_ref"]):
+            self.compute_coriolis()
 
 
     # Cs and cp_gas argument
     @property
-    def gamma(self):
-        return self._gamma
+    def gamm(self):
+        return self._gamm
     
-    @gamma.setter
-    def gamma(self, val):
-        self._gamma = val
-        self.compute_cp_gas()
-        self.compute_Cs()
+    @gamm.setter
+    def gamm(self, val):
+        self._gamm = val
+
+        if all(hasattr(self, attr) for attr in ["gamm", "R_gas"]):
+            self.compute_cp_gas()
+        
+        if all(hasattr(self, attr) for attr in ["gamm", "R_gas", "T_ref"]):
+            self.compute_Cs()
 
     # rho_ref argument
     @property
-    def rho_ref(self):
-        return self._rho_ref
+    def p_ref(self):
+        return self._p_ref
     
-    @rho_ref.setter
-    def rho_ref(self, val):
-        self._rho_ref = val
-        self.compute_rho_ref()
+    @p_ref.setter
+    def p_ref(self, val):
+        self._p_ref = val
+
+        if all(hasattr(self, attr) for attr in ["p_ref, R_gas", "T_ref"]):
+            self.compute_rho_ref()
