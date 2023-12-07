@@ -1,5 +1,5 @@
 import numpy as np
-from dycore.utils.enum_bdry import BdryType
+from dycore.utils.options import BdryType
 from dycore.utils.options import LimiterType
 from dycore.physics.hydrostatics import hydrostatic_state
 from dycore.utils.boundary import set_explicit_boundary_data, get_tau_y, get_bottom_tau_y

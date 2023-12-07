@@ -24,7 +24,7 @@ from data_assimilation import post_processing
 # input file
 from utils.user_data import UserDataInit
 from utils.io import io, get_args, sim_restart, fn_gen
-import utils.params as gparams
+import utils.sim_params as gparams
 
 # some diagnostics
 from copy import deepcopy

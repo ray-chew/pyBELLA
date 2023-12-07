@@ -1,5 +1,5 @@
 import numpy as np
-from dycore.utils.enum_bdry import BdryType
+from dycore.utils.options import BdryType
 from dycore.utils.options import TimeIntegrator, MolecularTransport,HillShapes, BottomBC, LimiterType, RecoveryOrder
 from dycore.physics.hydrostatics import hydrostatic_state, hydrostatic_column, hydrostatic_initial_pressure
 from dycore.utils.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
@@ -7,7 +7,7 @@ from dycore.utils.variable import States
 
 class UserData(object):
     NSPEC = 1
-    BOUY = 0
+    BUOY = 0
 
     grav = 9.81
     omega = 7.292 * 1e-5        # [s^{-1}]
