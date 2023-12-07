@@ -3,7 +3,8 @@ from scipy import signal
 from copy import deepcopy
 import matplotlib.pyplot as plt
 
-from dycore.utils import boundary, enum_bdry
+from dycore.utils import boundary
+from dycore.utils.options import BdryType
 
 class ensemble(object):
     def __init__(self, input_ensemble=None):
@@ -107,11 +108,11 @@ def boundary_mask(ud,elem,node,pad_X,pad_Y):
             # ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
             ghost_padding[dim] = [pads[dim],pads[dim]]
 
-            if ud.bdry_type[dim] == enum_bdry.BdryType.PERIODIC:
+            if ud.bdry_type[dim] == BdryType.PERIODIC:
                 cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(1.0))
                 nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(1.0))
 
-            elif ud.bdry_type[dim] == enum_bdry.BdryType.WALL:
+            elif ud.bdry_type[dim] == BdryType.WALL:
                 cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(0.0))
                 nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(0.0))
     
@@ -125,11 +126,11 @@ def boundary_mask(ud,elem,node,pad_X,pad_Y):
             # ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
             ghost_padding[dim] = [pads[dim],pads[dim]]
 
-            if ud.bdry_type[dim] == enum_bdry.BdryType.PERIODIC:
+            if ud.bdry_type[dim] == BdryType.PERIODIC:
                 cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(1.0))
                 nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(1.0))
 
-            elif ud.bdry_type[dim] == enum_bdry.BdryType.WALL:
+            elif ud.bdry_type[dim] == BdryType.WALL:
                 cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(0.0))
                 nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(0.0))
         
