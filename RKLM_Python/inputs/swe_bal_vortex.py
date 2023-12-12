@@ -8,6 +8,8 @@ from physics.low_mach.second_projection import euler_backward_non_advective_impl
 from scipy import signal
 from scipy.interpolate import griddata
 
+import logging
+
 class UserData(object):
     NSPEC = 1
 
@@ -183,7 +185,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         np.random.seed(seed)
         xc += (np.random.random() - 0.5) * scale / 5.0
         zc += (np.random.random() - 0.5) * scale / 5.0
-        print(seed, xc, zc)
+        logging.info(seed, xc, zc)
 
     # used to generate truth and observation
     if 'truth' in ud.aux or 'obs' in ud.aux:
@@ -191,7 +193,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
         xc += (np.random.random() - 0.5) * scale / 5.0
         zc += (np.random.random() - 0.5) * scale / 5.0
-        print(seed, xc, zc)
+        logging.info(seed, xc, zc)
         ud.xc = xc
         ud.zc = zc
 

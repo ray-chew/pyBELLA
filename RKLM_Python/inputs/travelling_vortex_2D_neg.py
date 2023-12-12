@@ -7,6 +7,8 @@ from physics.hydrostatics import hydrostatic_state
 from inputs.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
 from physics.low_mach.second_projection import euler_backward_non_advective_impl_part
 
+import logging
+
 class UserData(object):
     NSPEC = 1
 
@@ -227,13 +229,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         np.random.seed(seed)
         xc += (np.random.random() - 0.5) / 5.0
         yc += (np.random.random() - 0.5) / 5.0
-        print(seed, xc, yc)
+        logging.info(seed, xc, yc)
 
     if 'truth' in ud.aux:
         np.random.seed(2233)
         xc += (np.random.random() - 0.5) / 5.0
         yc += (np.random.random() - 0.5) / 5.0
-        print(seed, xc, yc)
+        logging.info(seed, xc, yc)
         ud.xc = xc
         ud.yc = yc
 

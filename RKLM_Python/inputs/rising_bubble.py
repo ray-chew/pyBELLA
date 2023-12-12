@@ -10,6 +10,8 @@ from management.variable import States
 from physics.low_mach.second_projection import euler_backward_non_advective_impl_part
 from management import data
 
+import logging
+
 class UserData(object):
     NSPEC = 1
     BOUY = 0
@@ -197,7 +199,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         np.random.seed(1234)
         # delth += 10.0*(np.random.random()-.5)
         delth += 10.0*(np.random.random())
-    print(delth)
+    logging.info(delth)
     
     r = np.sqrt((x)**2 + (y-y0)**2) / r0
 
