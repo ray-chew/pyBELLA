@@ -5,6 +5,7 @@ import numpy as np
 import os
 os.chdir('../')
 
+import logging
 
 class run_params(object):
     N = 1
@@ -43,7 +44,7 @@ class run_params(object):
         if self.restart:
             subprocess.call([sys.executable, './RKLM_Python/__main__.py', '-ic', self.tc, '-N', '%i' %self.N, 'restart', '-p', self.path, '-n', self.name, '-t', self.time_start, self.time_end, self.time_int])
         else:
-            print("restart parameters not found.")
+            logging.info("restart parameters not found.")
 
 
 if __name__ == '__main__':
