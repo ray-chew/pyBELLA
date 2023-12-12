@@ -115,7 +115,6 @@ if dap.da_type == 'rloc' and N > 1:
     rloc = prepare_rloc(ud, elem, node, dap, N)
 
 logging.info(colored("Generating initial ensemble...",'yellow'))
-logging.info(colored("Generating initial ensemble...",'yellow'))
 sol_ens = np.zeros((N), dtype=object)
 
 # Set random seed for reproducibility
@@ -123,7 +122,6 @@ np.random.seed(gparams.random_seed)
 
 seeds = np.random.randint(10000,size=N) if N > 1 else None
 if seeds is not None and restart == False:
-    logging.info("Seeds used in generating initial ensemble spread = ", seeds)
     logging.info("Seeds used in generating initial ensemble spread = ", seeds)
     for n in range(N):
         Sol0 = deepcopy(Sol)
@@ -229,9 +227,6 @@ if __name__ == '__main__':
         logging.info('##############################################')
         logging.info(colored('Next tout = %.3f' %tout,'yellow'))
         logging.info(colored("Starting forecast...", 'green'))
-        logging.info('##############################################')
-        logging.info(colored('Next tout = %.3f' %tout,'yellow'))
-        logging.info(colored("Starting forecast...", 'green'))
         mem_cnt = 0
         for mem in ens.members(ens):
             # future = client.submit(time_update, *[mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, bld, None, False])
@@ -239,7 +234,6 @@ if __name__ == '__main__':
             # handling of DA window step counter
             if N > 1 : mem[3][0] = 0 if tout_old in dap.da_times else mem[3][0]
             if N == 1 : mem[3][0] = mem[3][1]
-            logging.info(colored("For ensemble member = %i..." %mem_cnt,'yellow'))
             logging.info(colored("For ensemble member = %i..." %mem_cnt,'yellow'))
             future = time_update(mem[0],mem[1],mem[2], t, tout, ud, elem, node, mem[3], th, blend, wrtr, debug)
 
@@ -282,7 +276,6 @@ if __name__ == '__main__':
             # Write output before assimilating data
             ######################################################
             logging.info(colored("Starting output...",'yellow'))
-            logging.info(colored("Starting output...",'yellow'))
             for n in range(N):
                 Sol = ens.members(ens)[n][0]
                 mpv = ens.members(ens)[n][2]
@@ -300,7 +293,6 @@ if __name__ == '__main__':
             ##################################################
             if dap.da_type == 'batch_obs':
                 logging.info("Starting analysis... for batch observations")
-                logging.info("Starting analysis... for batch observations")
                 for attr in dap.obs_attributes:
                     logging.info("Assimilating %s..." %attr)
                     logging.info("Assimilating %s..." %attr)
@@ -313,7 +305,6 @@ if __name__ == '__main__':
                 # analysis = np.array(analysis)
 
                 logging.info("Writing analysis...")
-                logging.info("Writing analysis...")
                 cnt = 0
                 for attr in dap.obs_attributes:
                     current = analysis[cnt]
@@ -325,7 +316,6 @@ if __name__ == '__main__':
             # LETKF with grid-point localisation
             ##################################################
             elif dap.da_type == 'rloc':
-                logging.info(colored("Starting analysis... for rloc algorithm",'green'))
                 logging.info(colored("Starting analysis... for rloc algorithm",'green'))
                 results = HSprojector_3t2D(results, elem, dap, N)
                 results = rloc.analyse(results,obs,obs_covar,obs_mask,N,tout)
@@ -367,7 +357,6 @@ if __name__ == '__main__':
         # Write output at tout
         ######################################################
         logging.info(colored("Starting output...",'yellow'))
-        logging.info(colored("Starting output...",'yellow'))
         for n in range(N):
             Sol = ens.members(ens)[n][0]
             mpv = ens.members(ens)[n][2]
@@ -383,14 +372,12 @@ if __name__ == '__main__':
         t = tout
         tout_old = np.copy(tout)
         logging.info(colored('tout = %.3f' %tout,'yellow'))
-        logging.info(colored('tout = %.3f' %tout,'yellow'))
-
+        
         tout_cnt += 1
         outer_step += 1
         if outer_step > ud.stepmax: break
 
     toc = time()
     logging.info(colored("Time taken = %.6f" %(toc-tic),'yellow'))
-    logging.info(colored("Time taken = %.6f" %(toc-tic),'yellow'))
-
+    
     writer.close_everything()
