@@ -99,7 +99,7 @@ logging.info("Input file is%s" %ud.output_base_name.replace('_',' '))
 if ud.diag:
     diag_comparison = diag.compare_sol(ud.diag_current_run)
 
-#########################################################
+##########################################################
 # Initialisation of data assimilation module
 ##########################################################
 
