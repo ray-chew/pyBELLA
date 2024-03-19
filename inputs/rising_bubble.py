@@ -20,6 +20,8 @@ class UserData(object):
         self.iny = 80+1
         self.inz = 1
 
+        
+
         self.tout = np.arange(0.0,1.01,0.01)[10:]
         self.stepmax = 10000
 
