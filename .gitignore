@@ -22,3 +22,4 @@
 # Ignore visualisation scripts except example scripts
 vis/scripts/*
 !vis/scripts/example_*
+.VSCodeCounter/*
