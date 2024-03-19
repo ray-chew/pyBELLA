@@ -43,7 +43,8 @@ class compare_sol(object):
             else:
                 test = p2n.astype('float32').sum()
 
-            assert  ref == test , "test failed for attribute %s of %s with discrepancy:\n%.6f\n%.6f" %(key, self.current_run, ref, test)
+            ## use ty and except
+            assert  ref == test , "sum for attribute %s of %s changed with discrepancy:\n%.6f\n%.6f" %(key, self.current_run, ref, test)
 
 
     def __init(self):
