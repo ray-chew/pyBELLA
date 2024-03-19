@@ -11,15 +11,16 @@ Requirements
 
 These are the Python packages you have to install before RKLM-Py runs. The requirements can be found in `requirements.txt`::
    
-   python==3.7.3
-   numba==0.45.1
-   numpy==1.17.3
-   h5py==2.8.0
-   scipy==1.3.1
-   PyYAML==5.3.1
-   termcolor==1.1.0
-   dask==2.6.0
-   matplotlib==3.1.3
+   numba
+   numpy==1.22.1
+   h5py
+   scipy
+   PyYAML
+   termcolor
+   dask
+   dask[distributed]
+   matplotlib
+   dill
     
 While RKLM-Py code has been tested to work with these package versions, other versions may still work. 
 
