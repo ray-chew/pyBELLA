@@ -1,9 +1,14 @@
 import sys
 import subprocess
+import os
+import logging
+
+os.chdir("../")
+
 
 class run_params(object):
     N = 1
-    tc = 'rb'
+    tc = "rb"
 
     def __init__(self):
         self.N = self.N
@@ -14,13 +19,27 @@ class run_params(object):
         self.restart = False
 
     def single_run(self):
-        subprocess.call([sys.executable, '__main__.py', '-ic', self.tc, '-N', '%i' %self.N])
+        subprocess.call(
+            [sys.executable, "__main__.py", "-ic", self.tc, "-N", "%i" % self.N]
+        )
 
     def queue_run(self):
         if self.ud is None and self.dap is None:
             assert 0, "ud or params must be defined"
-        subprocess.call([sys.executable, '__main__.py', '-ic', self.tc, '-N', '%i' %self.N, 'queue', '-w', self.ud, self.dap])
-
+        subprocess.call(
+            [
+                sys.executable,
+                "__main__.py",
+                "-ic",
+                self.tc,
+                "-N",
+                "%i" % self.N,
+                "queue",
+                "-w",
+                self.ud,
+                self.dap,
+            ]
+        )
 
     def restart_set(self, path, fn, name, ts, te, ti):
         path += fn
@@ -36,12 +55,30 @@ class run_params(object):
 
     def restart_run(self):
         if self.restart:
-            subprocess.call([sys.executable, '__main__.py', '-ic', self.tc, '-N', '%i' %self.N, 'restart', '-p', self.path, '-n', self.name, '-t', self.time_start, self.time_end, self.time_int])
+            subprocess.call(
+                [
+                    sys.executable,
+                    "__main__.py",
+                    "-ic",
+                    self.tc,
+                    "-N",
+                    "%i" % self.N,
+                    "restart",
+                    "-p",
+                    self.path,
+                    "-n",
+                    self.name,
+                    "-t",
+                    self.time_start,
+                    self.time_end,
+                    self.time_int,
+                ]
+            )
         else:
-            print("restart parameters not found.")
+            logging.info("restart parameters not found.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     rp = run_params()
     rp.single_run()
 
@@ -49,13 +86,13 @@ if __name__ == '__main__':
     #########################################################
     # simulation restart parameters
     #########################################################
-    path = '/home/ray/git-projects/RKLM_Reference/output_swe/'
-    fn = 'output_swe_ensemble=1_64_1_64_86400.0_dvortex_3D.h5'
+    path = "/home/ray/git-projects/RKLM_Reference/output_swe/"
+    fn = "output_swe_ensemble=1_64_1_64_86400.0_dvortex_3D.h5"
     path += fn
-    name = '_ensemble_mem=0_86400.000_after_full_step'
+    name = "_ensemble_mem=0_86400.000_after_full_step"
     # time = np.arange(432000.0,864000.0+1200,1200)
     time_start = 86400.0
-    time_end = 86400.0*2.0+1200
+    time_end = 86400.0 * 2.0 + 1200
     time_int = 1200.0
 
     time_start, time_end, time_int = str(time_start), str(time_end), str(time_int)
