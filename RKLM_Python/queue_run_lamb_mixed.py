@@ -4,6 +4,8 @@ from inputs.enum_bdry import BdryType
 import json
 import numpy as np
 
+import logging
+
 rp = rp()
 path_to_obs = './'
 
@@ -60,7 +62,7 @@ for x,y in zip(resol_x,resol_y):
                 else:
                     ud['aux'] = 'test_run_S%i_adv' %t
 
-            print(ud)
+            logging.info(ud)
             # run simulation
             rp.ud = json.dumps(ud)
             rp.dap = json.dumps(dap)

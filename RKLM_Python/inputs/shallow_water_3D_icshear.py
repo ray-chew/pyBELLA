@@ -8,6 +8,8 @@ from physics.low_mach.second_projection import euler_backward_non_advective_impl
 from scipy.interpolate import RectBivariateSpline
 from scipy import signal
 
+import logging
+
 class UserData(object):
     NSPEC = 1
 
@@ -269,8 +271,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     w = np.repeat(w, elem.icy-aa*igs[1], axis=1)
 
     fr = ((u.max()*ud.u_ref)**2 + (w.max()*ud.u_ref)**2)**0.5 / (g0 * (ud.u_ref / ud.t_ref) * (rho.max() * (ud.h_ref)))**0.5
-    print("Froude number =", fr)
-    print("Fr2 = ", fr**2)
+    logging.info("Froude number =", fr)
+    logging.info("Fr2 = ", fr**2)
 
     if (ud.is_compressible):
         Sol.rho[i2] = rho

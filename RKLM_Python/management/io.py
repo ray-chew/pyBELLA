@@ -8,6 +8,8 @@ import yaml # for parsing of dict-style arguments
 
 import argparse
 
+import logging
+
 class io(object):
     """
     HDF5 writer class. Contains methods to create HDF5 file, create data sets and populate them with output variables.
@@ -120,7 +122,7 @@ class io(object):
             The time and additional suffix label for the dataset, e.g. "_10.0_after_full_step", where 10.0 is the time and "after_full_step" denotes when the output was made.
 
         """
-        print("writing hdf output..." + name)
+        logging.info("writing hdf output..." + name)
         # rho
         self.populate(name,'rho',Sol.rho)
         # rhoY

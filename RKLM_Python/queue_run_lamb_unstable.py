@@ -2,6 +2,8 @@ from run import run_params as rp
 import json
 import numpy as np
 
+import logging
+
 rp = rp()
 path_to_obs = './'
 
@@ -67,7 +69,7 @@ for x,y in zip(resol_x,resol_y):
                 else:
                     ud['aux'] = 'bdl_run_S%i_noom_a05' %t
 
-            print(ud)
+            logging.info(ud)
             # run simulation
             rp.ud = json.dumps(ud)
             rp.dap = json.dumps(dap)
