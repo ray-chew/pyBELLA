@@ -9,6 +9,8 @@ import dask.array as darr
 import dask
 import numpy as np
 
+import logging
+
 import data_assimilation.utils as dau
 from numpy.lib.stride_tricks import sliding_window_view
 from copy import deepcopy
@@ -126,10 +128,10 @@ class analysis(object):
 
         """
         if self.forward_operator is None:
-            print("Forward operator undefined. Using identity...")
+            logging.info("Forward operator undefined. Using identity...")
             assert(0, "not implemented.")
         if self.localisation_matrix is None:
-            print("Localisation matrix undefined. Using identity...")
+            logging.info("Localisation matrix undefined. Using identity...")
             # assert(0, "not implemented.")
 
         # get observations as vector, R in l
@@ -293,7 +295,7 @@ class prepare_rloc(object):
 
         """
 
-        print("Analysis grid type = %s" %grid_type)
+        logging.info("Analysis grid type = %s" %grid_type)
         # get properties from class attributes
         Nx, Ny, obs_attr, attr_len, loc = self.get_properties(grid_type)
 
@@ -342,10 +344,10 @@ class prepare_rloc(object):
         chunks = int(np.ceil(mb/mem_size))
         chunk_size = int(np.ceil((Nx*Ny) / chunks))
 
-        print("\n===================")
-        print("To split DA problem into %i chunks at %s mb each" %(chunks,mem_size))
-        print("with analysis of %i grid points per chunk" %chunk_size)
-        print("")
+        logging.info("\n===================")
+        logging.info("To split DA problem into %i chunks at %s mb each" %(chunks,mem_size))
+        logging.info("with analysis of %i grid points per chunk" %chunk_size)
+        logging.info("")
 
         # Now we chunkify our dask arrays:
         bc_mask = darr.rechunk(bc_mask, chunks=chunk_size).to_delayed().ravel()
@@ -364,12 +366,12 @@ class prepare_rloc(object):
         # Put the results of the chunks together
         analysis_res = darr.concatenate(analysis_by_chunk, axis=2)
 
-        print("Progress of the DA procedure:")
+        logging.info("Progress of the DA procedure:")
         # Do the computation of the delayed tasks
         with ProgressBar():
             analysis_res = analysis_res.compute()
 
-        print("===================\n")
+        logging.info("===================\n")
 
         # put analysis back into results container
         for cnt, attr in enumerate(obs_attr):

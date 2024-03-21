@@ -2,8 +2,16 @@ import numpy as np
 from dycore.utils.options import BdryType
 from dycore.utils.options import LimiterType
 from dycore.physics.hydrostatics import hydrostatic_state
-from dycore.utils.boundary import set_explicit_boundary_data, set_ghostcells_p2, set_ghostnodes_p2
-from dycore.physics.low_mach.second_projection import euler_backward_non_advective_impl_part
+from dycore.utils.boundary import (
+    set_explicit_boundary_data,
+    set_ghostcells_p2,
+)
+from dycore.physics.low_mach.second_projection import (
+    euler_backward_non_advective_impl_part,
+)
+
+import logging
+
 
 class UserData(object):
     NSPEC = 1
@@ -13,13 +21,13 @@ class UserData(object):
 
     R_gas = 287.4
     R_vap = 461.0
-    Q_vap = 2.53e+06
+    Q_vap = 2.53e06
     gamma = 1.4
 
     h_ref = 10000.0
     t_ref = 100.0
     T_ref = 300.00
-    p_ref = 1e+5
+    p_ref = 1e5
     u_ref = h_ref / t_ref
     rho_ref = p_ref / (R_gas * T_ref)
 
@@ -66,15 +74,15 @@ class UserData(object):
                 self.i_gravity[i] = 1
                 self.gravity_direction = 1
 
-            if (self.coriolis_strength[i] > np.finfo(np.float).eps):
+            if self.coriolis_strength[i] > np.finfo(np.float).eps:
                 self.i_coriolis[i] = 1
 
-        self.xmin = - 0.5
-        self.xmax =   0.5
-        self.ymin = - 0.5
-        self.ymax =   0.5
-        self.zmin = - 0.5
-        self.zmax =   0.5
+        self.xmin = -0.5
+        self.xmax = 0.5
+        self.ymin = -0.5
+        self.ymax = 0.5
+        self.zmin = -0.5
+        self.zmax = 0.5
 
         self.u_wind_speed = 1.0
         self.v_wind_speed = 1.0
@@ -88,28 +96,28 @@ class UserData(object):
         ##########################################
         # NUMERICS
         ##########################################
-        self.CFL  = 0.9/2.0
+        self.CFL = 0.9 / 2.0
         # self.CFL = 0.95
         # self.dtfixed0 = 2.1 * 1.200930e-2
         # self.dtfixed = 2.1 * 1.200930e-2
         self.dtfixed = 0.01
         self.dtfixed0 = 0.01
 
-        self.inx = 64+1
-        self.iny = 64+1
+        self.inx = 64 + 1
+        self.iny = 64 + 1
         self.inz = 1
 
         self.limiter_type_scalars = LimiterType.NONE
         self.limiter_type_velocity = LimiterType.NONE
 
-        self.tol = 1.e-8
+        self.tol = 1.0e-8
         self.max_iterations = 6000
 
-        self.perturb_type = 'pos_perturb'
-        self.blending_mean = 'rhoY' # 1.0, rhoY
-        self.blending_conv = 'rho' #theta, rho
-        self.blending_type = 'half' # half, full
-        
+        self.perturb_type = "pos_perturb"
+        self.blending_mean = "rhoY"  # 1.0, rhoY
+        self.blending_conv = "rho"  # theta, rho
+        self.blending_type = "half"  # half, full
+
         self.do_advection = True
 
         self.continuous_blending = False
@@ -118,31 +126,31 @@ class UserData(object):
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.blending_weight = 0./16
+        self.blending_weight = 0.0 / 16
 
         self.initial_blending = False
 
         self.initial_projection = True
         self.initial_impl_Euler = False
 
-        self.tout = [1.0]#np.arange(0.0,10.1,0.1)[1:]
+        self.tout = [1.0]  # np.arange(0.0,10.1,0.1)[1:]
         self.stepmax = 101
 
         self.autogen_fn = False
 
         self.output_base_name = "_travelling_vortex"
 
-        self.output_type = 'test'
-        self.aux = ''
+        self.output_type = "test"
+        self.aux = ""
 
-        self.output_suffix = "_%i_%i" %(self.inx-1,self.iny-1)
+        self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
         self.output_timesteps = True
 
         self.diag = True
-        self.diag_current_run = 'test_travelling_vortex'
+        self.diag_current_run = "test_travelling_vortex"
         self.diag_plot_compare = True
 
     def stratification_function(self, y):
@@ -151,11 +159,12 @@ class UserData(object):
         else:
             return np.ones((y.shape))
 
-    def rhoe_function(self,rho,u,v,w,p,ud,th):
+    def rhoe_function(self, rho, u, v, w, p, ud, th):
         Msq = ud.compressibility * ud.Msq
         gm1inv = th.gm1inv
 
         return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
+
 
 def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     u0 = ud.u_wind_speed
@@ -170,21 +179,21 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rho0 = 1.0
     del_rho = -0.5
     R0 = 0.4
-    fac = 1. * 1024.0
+    fac = 1.0 * 1024.0
     xc = 0.0
     yc = 0.0
 
-    if seed != None and ud.perturb_type == 'pos_perturb':
+    if seed != None and ud.perturb_type == "pos_perturb":
         np.random.seed(seed)
         xc += (np.random.random() - 0.5) / 5.0
         yc += (np.random.random() - 0.5) / 5.0
+        logging.info(seed, xc, yc)
 
-
-    if 'truth' in ud.aux or 'obs' in ud.aux:
+    if "truth" in ud.aux or "obs" in ud.aux:
         np.random.seed(2233)
         xc += (np.random.random() - 0.5) / 5.0
         yc += (np.random.random() - 0.5) / 5.0
-
+        logging.info(seed, xc, yc)
         ud.xc = xc
         ud.yc = yc
 
@@ -200,51 +209,49 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     hydrostatic_state(mpv, elem, node, th, ud)
 
     coe = np.zeros((25))
-    coe[0]  =     1.0 / 24.0
-    coe[1]  = -   6.0 / 13.0
-    coe[2]  =    15.0 /  7.0
-    coe[3]  = -  74.0 / 15.0
-    coe[4]  =    57.0 / 16.0
-    coe[5]  =   174.0 / 17.0
-    coe[6]  = - 269.0 /  9.0
-    coe[7]  =   450.0 / 19.0
-    coe[8]  =  1071.0 / 40.0
-    coe[9]  = -1564.0 / 21.0
-    coe[10] =   510.0 / 11.0
-    coe[11] =  1020.0 / 23.0
+    coe[0] = 1.0 / 24.0
+    coe[1] = -6.0 / 13.0
+    coe[2] = 15.0 / 7.0
+    coe[3] = -74.0 / 15.0
+    coe[4] = 57.0 / 16.0
+    coe[5] = 174.0 / 17.0
+    coe[6] = -269.0 / 9.0
+    coe[7] = 450.0 / 19.0
+    coe[8] = 1071.0 / 40.0
+    coe[9] = -1564.0 / 21.0
+    coe[10] = 510.0 / 11.0
+    coe[11] = 1020.0 / 23.0
     coe[12] = -1105.0 / 12.0
-    coe[13] =   204.0 /  5.0
-    coe[14] =   510.0 / 13.0
+    coe[13] = 204.0 / 5.0
+    coe[14] = 510.0 / 13.0
     coe[15] = -1564.0 / 27.0
-    coe[16] =   153.0 /  8.0
-    coe[17] =   450.0 / 29.0
-    coe[18] = - 269.0 / 15.0
-    coe[19] =   174.0 / 31.0
-    coe[20] =    57.0 / 32.0
-    coe[21] = -  74.0 / 33.0
-    coe[22] =    15.0 / 17.0
-    coe[23] = -   6.0 / 35.0
-    coe[24] =     1.0 / 72.0
-
+    coe[16] = 153.0 / 8.0
+    coe[17] = 450.0 / 29.0
+    coe[18] = -269.0 / 15.0
+    coe[19] = 174.0 / 31.0
+    coe[20] = 57.0 / 32.0
+    coe[21] = -74.0 / 33.0
+    coe[22] = 15.0 / 17.0
+    coe[23] = -6.0 / 35.0
+    coe[24] = 1.0 / 72.0
 
     const_coe = np.zeros((13))
-    const_coe[0] =    1.0 / 24
-    const_coe[1] = -  6.0 / 13
-    const_coe[2] =   33.0 / 14
-    const_coe[3] = - 22.0 / 3
-    const_coe[4] =  495.0 / 32
+    const_coe[0] = 1.0 / 24
+    const_coe[1] = -6.0 / 13
+    const_coe[2] = 33.0 / 14
+    const_coe[3] = -22.0 / 3
+    const_coe[4] = 495.0 / 32
     const_coe[5] = -396.0 / 17
-    const_coe[6] = + 77.0 / 3
+    const_coe[6] = +77.0 / 3
     const_coe[7] = -396.0 / 19
-    const_coe[8] =   99.0 / 8
+    const_coe[8] = 99.0 / 8
     const_coe[9] = -110.0 / 21
-    const_coe[10] = + 3.0 / 2
-    const_coe[11] = - 6.0 / 23
-    const_coe[12] = + 1.0 / 48
+    const_coe[10] = +3.0 / 2
+    const_coe[11] = -6.0 / 23
+    const_coe[12] = +1.0 / 48
 
-
-    xs = elem.x.reshape(-1,1)
-    ys = elem.y[igy:-igy].reshape(1,-1)
+    xs = elem.x.reshape(-1, 1)
+    ys = elem.y[igy:-igy].reshape(1, -1)
     xccs = np.zeros_like(xs)
     yccs = np.zeros_like(ys)
 
@@ -254,62 +261,69 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     yccs[...] = yc * (np.abs(ys - yc) < np.abs(ys - ycm))
     yccs[...] += ycm * (np.abs(ys - yc) > np.abs(ys - ycm))
 
-    r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
-    uth = (rotdir * fac * (1.0 - r/R0)**6 * (r/R0)**6) * (r < R0)
+    r = np.sqrt((xs - xccs) ** 2 + (ys - yccs) ** 2)
+    uth = (rotdir * fac * (1.0 - r / R0) ** 6 * (r / R0) ** 6) * (r < R0)
 
-    u = u0 + uth * (-(ys-yccs)/r)
-    v = v0 + uth * (+(xs-xccs)/r)
+    u = u0 + uth * (-(ys - yccs) / r)
+    v = v0 + uth * (+(xs - xccs) / r)
     w = w0
     p_hydro = mpv.HydroState.p0[igy:-igy]
     rhoY = mpv.HydroState.rhoY0[igy:-igy]
 
     rho = np.zeros_like(r)
-    rho[...] += (rho0 + del_rho * (1. - (r/R0)**2)**6) * (r < R0)
+    rho[...] += (rho0 + del_rho * (1.0 - (r / R0) ** 2) ** 6) * (r < R0)
     rho[...] += rho0 * (r >= R0)
 
-    if seed != None and ud.perturb_type == 'fmp_perturb':
+    if seed != None and ud.perturb_type == "fmp_perturb":
         np.random.seed(seed)
         rhop = np.fft.fft2(rho)
-        rhop00 = np.copy(rhop[0,0])
+        rhop00 = np.copy(rhop[0, 0])
 
         rhop = np.fft.fftshift(rhop)
-        slc = (slice(int(elem.icx/2-1),int(elem.icx/2+2)),slice(int(elem.icy/2-1),int(elem.icy/2+2)))
+        slc = (
+            slice(int(elem.icx / 2 - 1), int(elem.icx / 2 + 2)),
+            slice(int(elem.icy / 2 - 1), int(elem.icy / 2 + 2)),
+        )
 
         rhop[slc] += 30.0 * np.random.random(rhop[slc].shape)
         rhop = np.fft.ifftshift(rhop)
-        rhop[0,0] = rhop00
+        rhop[0, 0] = rhop00
         rho = np.fft.ifft2(rhop).real
 
     dp2c = np.zeros_like((r))
     dp2c_const = np.zeros_like((r))
     for ip in range(25):
-        dp2c += (coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2) * (r/R0 < 1.0)
+        dp2c += (coe[ip] * ((r / R0) ** (12 + ip) - 1.0) * rotdir**2) * (r / R0 < 1.0)
 
     for ip in range(13):
-        dp2c_const += (const_coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2) * (r/R0 < 1.0)
+        dp2c_const += (const_coe[ip] * ((r / R0) ** (12 + ip) - 1.0) * rotdir**2) * (
+            r / R0 < 1.0
+        )
 
-    dp2c = alpha * dp2c + alpha_const * dp2c_const 
+    dp2c = alpha * dp2c + alpha_const * dp2c_const
     p2c = alpha * dp2c + alpha_const * dp2c_const
 
-    Sol.rho[:,igy:-igy] = rho
-    Sol.rhou[:,igy:-igy] = rho * u
-    Sol.rhov[:,igy:-igy] = rho * v
-    Sol.rhow[:,igy:-igy] = rho * w
+    Sol.rho[:, igy:-igy] = rho
+    Sol.rhou[:, igy:-igy] = rho * u
+    Sol.rhov[:, igy:-igy] = rho * v
+    Sol.rhow[:, igy:-igy] = rho * w
 
-    if (ud.is_compressible) :
+    if ud.is_compressible:
         p = p0 + ud.Msq * fac**2 * dp2c
-        Sol.rhoY[:,igy:-igy] = p**th.gamminv
+        Sol.rhoY[:, igy:-igy] = p**th.gamminv
         # Sol.rhoe[:,igy:-igy] = ud.rhoe(rho,u,v,w,p,ud,th)
     else:
         # Sol.rhoe[:,igy:-igy] = ud.rhoe(rho,u,v,w,p_hydro,ud,th)
-        Sol.rhoY[:,igy:-igy] = rhoY
+        Sol.rhoY[:, igy:-igy] = rhoY
 
-    mpv.p2_cells[:,igy:-igy] = th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy])    
+    mpv.p2_cells[:, igy:-igy] = (
+        th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy])
+    )
 
     set_ghostcells_p2(mpv.p2_cells, elem, ud)
 
-    xs = node.x[igxn:-igxn].reshape(-1,1)
-    ys = node.y[igyn:-igyn].reshape(1,-1)
+    xs = node.x[igxn:-igxn].reshape(-1, 1)
+    ys = node.y[igyn:-igyn].reshape(1, -1)
     xccs = np.zeros_like(xs)
     yccs = np.zeros_like(ys)
 
@@ -319,23 +333,33 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     xccs[np.where(np.abs(xs - xc) < np.abs(xs - xcm))] = xc
     xccs[np.where(np.abs(xs - xc) > np.abs(xs - xcm))] = xcm
 
-    r = np.sqrt((xs-xccs)**2 + (ys-yccs)**2)
-    
+    r = np.sqrt((xs - xccs) ** 2 + (ys - yccs) ** 2)
+
     for ip in range(25):
-        mpv.p2_nodes[igxn:-igxn,igyn:-igyn] += alpha * coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
+        mpv.p2_nodes[igxn:-igxn, igyn:-igyn] += (
+            alpha * coe[ip] * ((r / R0) ** (12 + ip) - 1.0) * rotdir**2
+        )
     for ip in range(13):
-        mpv.p2_nodes[igxn:-igxn,igyn:-igyn] += alpha_const * const_coe[ip] * ((r/R0)**(12+ip) - 1.0) * rotdir**2
+        mpv.p2_nodes[igxn:-igxn, igyn:-igyn] += (
+            alpha_const * const_coe[ip] * ((r / R0) ** (12 + ip) - 1.0) * rotdir**2
+        )
 
-    mpv.p2_nodes[igxn:-igxn,igyn:-igyn] *= r/R0 < 1.0
+    mpv.p2_nodes[igxn:-igxn, igyn:-igyn] *= r / R0 < 1.0
 
-    mpv.p2_nodes[igxn:-igxn,igyn:-igyn] = th.Gamma * fac**2 * np.divide(mpv.p2_nodes[igxn:-igxn,igyn:-igyn] , mpv.HydroState.rhoY0[igyn:-igyn+1])
+    mpv.p2_nodes[igxn:-igxn, igyn:-igyn] = (
+        th.Gamma
+        * fac**2
+        * np.divide(
+            mpv.p2_nodes[igxn:-igxn, igyn:-igyn], mpv.HydroState.rhoY0[igyn : -igyn + 1]
+        )
+    )
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
     ud.compressibility = float(ud.is_compressible)
 
-    set_explicit_boundary_data(Sol,elem,ud,th,mpv)
+    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
-    if 'imbal' in ud.aux:
+    if "imbal" in ud.aux:
         Sol.rhoY[...] = 1.0
         mpv.p2_nodes[...] = 0.0
 
@@ -350,7 +374,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         Sol.rhou -= u0 * Sol.rho
         Sol.rhov -= v0 * Sol.rho
 
-        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5)
+        euler_backward_non_advective_impl_part(
+            Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5
+        )
 
         mpv.p2_nodes[...] = p2aux
         mpv.dp2_nodes[...] = 0.0
@@ -363,5 +389,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     return Sol
 
+
 def T_from_p_rho(p, rho):
-    return np.divide(p,rho)
+    return np.divide(p, rho)

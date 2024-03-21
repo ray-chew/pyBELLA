@@ -5,6 +5,8 @@ from scipy import stats # generate Gaussian localisation matrix
 from scipy import signal
 from dycore.utils.boundary import set_explicit_boundary_data, set_ghostnodes_p2 # for converter
 
+import logging
+
 class da_params(object):
 
     def __init__(self,N,da_type='rloc'):
@@ -111,7 +113,7 @@ class da_params(object):
                 assert self.std_dev is not None, "std_dev keyword argument must be a list equal in size to dap.obs_attributes"
                 assert len(self.std_dev) == len(self.obs_attributes), "std_dev keyword argument must be a list equal in size to dap.obs_attributes"
                 self.obs_noise[key] = float(self.std_dev[cnt])
-                print(self.std_dev[cnt])
+                logging.info(self.std_dev[cnt])
                 cnt += 1
             else:    
                 self.obs_noise[key] = self._noise_percentage
@@ -130,7 +132,7 @@ class da_params(object):
         Do this after data assimilation for HS balanced vortex.
 
         '''
-        print("Post DA conversion...")
+        logging.info("Post DA conversion...")
 
         g = ud.g0
         for n in range(N):
