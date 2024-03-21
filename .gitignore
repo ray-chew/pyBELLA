@@ -3,16 +3,26 @@
 *pycache*
 **dask-worker-space*
 *.ipynb_checkpoints*
+*.egg-info*
 
 # Ignore various local subdirectories
-**Reference*
-**archive*
-**current*
+**outputs*
+**docs*
+**build*
 
 # Ignore various outputs
 *.h5
+*.dat
 *output_*
 *_old*
+*copy.py*
+package*json
+*.log
+
 # Sphinx html build
 **_build*
 
+# Ignore visualisation scripts except example scripts
+vis/scripts/*
+!vis/scripts/example_*
+.VSCodeCounter/*
