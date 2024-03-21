@@ -8,6 +8,7 @@
 # Ignore various local subdirectories
 **outputs*
 **docs*
+**build*
 
 # Ignore various outputs
 *.h5
@@ -16,6 +17,7 @@
 *_old*
 *copy.py*
 package*json
+*.log
 
 # Sphinx html build
 **_build*
