@@ -1,16 +1,16 @@
 # %%
 from run import run_params as rp
-from tests.diagnostics import compare_sol
+from pybella.tests.diagnostics import compare_sol
 import json
 
 # The first run MUST have gen_targets = True
 # This is to generate the target outputs
 # so that a comparison can be made
-gen_targets = False
+gen_targets = True
 
 # Only set this to True if the diagnostic targets
-# are to be updated.
-updt_targets = False
+# are to be updated. Required for the first run.
+updt_targets = True
 
 # define run instance
 rp = rp()
@@ -58,3 +58,5 @@ rp.queue_run()
 rp.tc = "test_lamb_wave"
 rp.ud = json.dumps(ud)
 rp.queue_run()
+
+# %%

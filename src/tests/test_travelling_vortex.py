@@ -132,11 +132,9 @@ class UserData(object):
 
         self.initial_projection = True
         self.initial_impl_Euler = False
-
-        # self.tout = np.arange(0.0,10.1,0.1)[1:]
-        self.tout = np.arange(0.0, 0.02, 0.01)[1:]
-        # self.stepmax = 20000
-        self.stepmax = 1
+        
+        self.tout = [1.0]#np.arange(0.0,10.1,0.1)[1:]
+        self.stepmax = 101
 
         self.output_base_name = "_travelling_vortex"
 
@@ -152,6 +150,8 @@ class UserData(object):
         self.diag = True
         self.diag_current_run = "test_travelling_vortex"
         self.diag_plot_compare = True
+
+        self.autogen_fn = False
 
     def stratification_function(self, y):
         if type(y) == float:

@@ -1,13 +1,5 @@
 import numpy as np
-from dycore.utils.options import BdryType
-from dycore.utils.options import (
-    TimeIntegrator,
-    MolecularTransport,
-    HillShapes,
-    BottomBC,
-    LimiterType,
-    RecoveryOrder,
-)
+from dycore.utils.options import BdryType, LimiterType
 from dycore.physics.hydrostatics import (
     hydrostatic_state,
     hydrostatic_column,
@@ -15,8 +7,6 @@ from dycore.physics.hydrostatics import (
 )
 from dycore.utils.boundary import (
     set_explicit_boundary_data,
-    set_ghostcells_p2,
-    set_ghostnodes_p2,
 )
 from dycore.utils.variable import States
 

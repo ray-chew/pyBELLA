@@ -23,109 +23,110 @@ class UserDataInit(object):
             for key, value in kwargs.items():
                 setattr(self, key, value)
 
-        ##########################################
-        # SPATIAL GRID
-        ##########################################
-        self.inx = 64+1
-        self.iny = 64+1
-        self.inz = 1
+        else:
+            ##########################################
+            # SPATIAL GRID
+            ##########################################
+            self.inx = 64+1
+            self.iny = 64+1
+            self.inz = 1
 
-        self.xmin = - 1.0 
-        self.xmax =   1.0
-        self.ymin =   0.0
-        self.ymax =   1.0
-        self.zmin = - 1.0
-        self.zmax =   1.0
-
-
-        ##########################################
-        # BOUNDARY CONDITIONS
-        ##########################################
-        self.bdry_type = np.empty((3), dtype=object)
-        self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.WALL
-        self.bdry_type[2] = BdryType.WALL
+            self.xmin = - 1.0 
+            self.xmax =   1.0
+            self.ymin =   0.0
+            self.ymax =   1.0
+            self.zmin = - 1.0
+            self.zmax =   1.0
 
 
-        ##########################################
-        # TEMPORAL
-        ##########################################
-        self.CFL  = 0.5
-        self.dtfixed0 = 100.0
-        self.dtfixed = 100.0
-
-        self.acoustic_timestep = 0
-
-        self.tout = np.arange(0.0,1.01,0.01)[10:]
-        self.stepmax = 10000
+            ##########################################
+            # BOUNDARY CONDITIONS
+            ##########################################
+            self.bdry_type = np.empty((3), dtype=object)
+            self.bdry_type[0] = BdryType.PERIODIC
+            self.bdry_type[1] = BdryType.WALL
+            self.bdry_type[2] = BdryType.WALL
 
 
-        ##########################################
-        # MODEL REGIMES
-        ##########################################
-        self.is_ArakawaKonor = 0
-        self.is_nonhydrostatic = 1
-        self.is_compressible = 1
+            ##########################################
+            # TEMPORAL
+            ##########################################
+            self.CFL  = 0.5
+            self.dtfixed0 = 100.0
+            self.dtfixed = 100.0
 
-        self.compressibility = 0.0
+            self.acoustic_timestep = 0
 
-
-        ##########################################
-        # PHYSICS AND BACKGROUND WIND
-        ##########################################
-        self.u_wind_speed = 0.0
-        self.v_wind_speed = 0.0
-        self.w_wind_speed = 0.0
-
-        self.stratification = self.stratification_function
+            self.tout = np.arange(0.0,1.01,0.01)[10:]
+            self.stepmax = 10000
 
 
-        ##########################################
-        # NUMERICS
-        ##########################################   
-        # Do we solve the left-hand side?
-        self.do_advection = True
+            ##########################################
+            # MODEL REGIMES
+            ##########################################
+            self.is_ArakawaKonor = 0
+            self.is_nonhydrostatic = 1
+            self.is_compressible = 1
 
-        # Advection limiter types     
-        self.limiter_type_scalars = LimiterType.NONE
-        self.limiter_type_velocity = LimiterType.NONE
-
-        # Iterative solver
-        self.tol = 1.e-8
-        self.max_iterations = 6000
+            self.compressibility = 0.0
 
 
-        ##########################################
-        # BLENDING
-        ##########################################
-        self.blending_weight = 0./16
-        self.blending_mean = 'rhoY' # 1.0, rhoY
-        self.blending_conv = 'rho' # theta, rho
-        self.blending_type = 'half'
+            ##########################################
+            # PHYSICS AND BACKGROUND WIND
+            ##########################################
+            self.u_wind_speed = 0.0
+            self.v_wind_speed = 0.0
+            self.w_wind_speed = 0.0
 
-        self.continuous_blending = False
-        self.no_of_pi_initial = 1
-        self.no_of_pi_transition = 0
-        self.no_of_hy_initial = 0
-        self.no_of_hy_transition = 0
-
-        self.initial_blending = False
+            self.stratification = self.stratification_function
 
 
-        ##########################################
-        # DIAGNOSTICS
-        ##########################################
-        self.diag = False
-        self.diag_plot_compare = False
+            ##########################################
+            # NUMERICS
+            ##########################################   
+            # Do we solve the left-hand side?
+            self.do_advection = True
+
+            # Advection limiter types     
+            self.limiter_type_scalars = LimiterType.NONE
+            self.limiter_type_velocity = LimiterType.NONE
+
+            # Iterative solver
+            self.tol = 1.e-8
+            self.max_iterations = 6000
 
 
-        ##########################################
-        # OUTPUTS
-        ##########################################
-        self.autogen_fn = False
-        self.output_timesteps = False
-        self.output_type = 'output'
-        self.output_suffix = "_%i_%i" %(self.inx-1,self.iny-1)
+            ##########################################
+            # BLENDING
+            ##########################################
+            self.blending_weight = 0./16
+            self.blending_mean = 'rhoY' # 1.0, rhoY
+            self.blending_conv = 'rho' # theta, rho
+            self.blending_type = 'half'
+
+            self.continuous_blending = False
+            self.no_of_pi_initial = 1
+            self.no_of_pi_transition = 0
+            self.no_of_hy_initial = 0
+            self.no_of_hy_transition = 0
+
+            self.initial_blending = False
+
+
+            ##########################################
+            # DIAGNOSTICS
+            ##########################################
+            self.diag = False
+            self.diag_plot_compare = False
+
+
+            ##########################################
+            # OUTPUTS
+            ##########################################
+            self.autogen_fn = False
+            self.output_timesteps = False
+            self.output_type = 'output'
+            self.output_suffix = "_%i_%i" %(self.inx-1,self.iny-1)
 
 
     def compute_u_ref(self):

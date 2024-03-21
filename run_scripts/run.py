@@ -1,9 +1,6 @@
 import sys
 import subprocess
-import os
 import logging
-
-os.chdir("../")
 
 
 class run_params(object):
@@ -22,7 +19,7 @@ class run_params(object):
 
     def single_run(self):
         subprocess.call(
-            [sys.executable, "__main__.py", "-ic", self.tc, "-N", "%i" % self.N]
+            [sys.executable, "src/__main__.py", "-ic", self.tc, "-N", "%i" % self.N]
         )
 
     def queue_run(self):
@@ -31,7 +28,7 @@ class run_params(object):
         subprocess.call(
             [
                 sys.executable,
-                "__main__.py",
+                "src/__main__.py",
                 "-ic",
                 self.tc,
                 "-N",
@@ -60,7 +57,7 @@ class run_params(object):
             subprocess.call(
                 [
                     sys.executable,
-                    "__main__.py",
+                    "src/__main__.py",
                     "-ic",
                     self.tc,
                     "-N",

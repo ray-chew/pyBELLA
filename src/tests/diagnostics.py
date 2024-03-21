@@ -22,7 +22,7 @@ class compare_sol(object):
                     self.__get_ens(tc, tp, attribute, summed=True)
                 )
 
-        with open("./tests/targets.yml", "w") as outfile:
+        with open("./outputs/test_targets.yml", "w") as outfile:
             yaml.dump(self.arr_dump, outfile, default_flow_style=False)
 
     def do(self, Sol, p2n, plot=False):
@@ -81,7 +81,7 @@ class compare_sol(object):
             self.tcs[test_name] = tc
 
     def __read_yaml(self):
-        with open("./tests/targets.yml", "r") as infile:
+        with open("./outputs/test_targets.yml", "r") as infile:
             self.target = yaml.safe_load(infile)
 
     def __plot_comparison(self, Sol, p2n):
