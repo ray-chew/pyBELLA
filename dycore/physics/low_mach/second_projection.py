@@ -8,6 +8,8 @@ from numba import jit
 
 from scipy.sparse.linalg import LinearOperator, bicgstab
 
+import logging
+
 # taken from https://stackoverflow.com/questions/33512081/getting-the-number-of-iterations-of-scipys-gmres-iterative-method
 class solver_counter(object):
     def __init__(self, disp=True):
@@ -232,8 +234,8 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     global total_calls, total_iter
     total_iter += counter.niter
     total_calls += 1
-    print(counter.niter)
-    print("Total calls to BiCGStab routine = %i, total iterations = %i" %(total_calls, total_iter))
+    logging.info(counter.niter)
+    logging.info("Total calls to BiCGStab routine = %i, total iterations = %i" %(total_calls, total_iter))
 
     p2_full = np.zeros(nc).squeeze()
     if elem.ndim == 2:

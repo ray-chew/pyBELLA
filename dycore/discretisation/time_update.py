@@ -6,7 +6,12 @@ from dycore.physics.gas_dynamics.numerical_flux import recompute_advective_fluxe
 from dycore.physics.gas_dynamics.explicit import advect, advect_rk
 from dycore.physics.gas_dynamics.eos import nonhydrostasy, is_nonhydrostatic
 from dycore.physics.gas_dynamics.gas_dynamics import dynamic_timestep
-from dycore.physics.low_mach.second_projection import euler_backward_non_advective_impl_part, euler_backward_non_advective_expl_part, euler_forward_non_advective
+from dycore.physics.low_mach.second_projection import (
+    euler_backward_non_advective_impl_part,
+    euler_backward_non_advective_expl_part,
+    euler_forward_non_advective,
+)
+from dycore.discretisation.grid import Grid, ElemSpaceDiscr, NodeSpaceDiscr
 
 # blending module
 from data_assimilation import blending
@@ -16,7 +21,59 @@ from copy import deepcopy
 
 from termcolor import colored
 
-def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,debug=False):
+import logging
+
+
+def data_init(ud):
+    """
+    Helper function to initialise the `elem` and `node` grids, corresponding to the cell and node grids, from a given user iniital data file.
+
+    Parameters
+    ----------
+    ud : :class:`inputs.user_data.UserDataInit`
+        Data container for the initial conditions.
+
+    Returns
+    -------
+    elem : :class:`discretization.kgrid.ElemSpaceDiscr`
+        Cells grid.
+    node : :class:`discretization.kgrid.NodeSpaceDiscr`
+        Nodes grid.
+
+    """
+    inx = ud.inx
+    iny = ud.iny
+    inz = ud.inz
+    x0 = ud.xmin
+    x1 = ud.xmax
+    y0 = ud.ymin
+    y1 = ud.ymax
+    z0 = ud.zmin
+    z1 = ud.zmax
+
+    grid = Grid(inx, iny, inz, x0, x1, y0, y1, z0, z1)
+
+    elem = ElemSpaceDiscr(grid, ud)
+    node = NodeSpaceDiscr(grid, ud)
+
+    return elem, node
+
+
+def time_update(
+    Sol,
+    flux,
+    mpv,
+    t,
+    tout,
+    ud,
+    elem,
+    node,
+    steps,
+    th,
+    bld=None,
+    writer=None,
+    debug=False,
+):
     """
     For more details, refer to the write-up :ref:`time-stepping`.
 
@@ -47,15 +104,15 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
     bld : :class:`data_assimilation.blending.Blend()`
         Blending class used to initalise interface blending methods.
     writer : :class:`management.io.io`, optional
-        `default == None`. If given, output after each time-step will be written in the hdf5 format.  
+        `default == None`. If given, output after each time-step will be written in the hdf5 format.
     debug : boolean, optional
         `default == False`. If `True`, then writer will output `Sol`:
-            1. before flux calculation 
-            2. before advection routine 
-            3. after advection routine 
+            1. before flux calculation
+            2. before advection routine
+            3. after advection routine
             4. after explicit solver
             5. after implicit solver
-        
+
         during both the half-step for the prediction of advective flux and the full-step.
 
     Returns
@@ -67,125 +124,213 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
     window_step = steps[0]
     step = steps[1]
     swe_to_lake = False
-    if 'best' not in ud.aux:
+    if "best" not in ud.aux:
         test_hydrob = True
     else:
         test_hydrob = False
 
-    while ((t < tout) and (step < ud.stepmax)):
+    while (t < tout) and (step < ud.stepmax):
         boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
-        label = '%.3d' %step
+        label = "%.3d" % step
 
-        if step == 0 and writer != None: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_ic')
+        if step == 0 and writer != None:
+            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_ic")
 
-        dt, cfl, cfl_ac = dynamic_timestep(Sol,t,tout,elem,ud,th, step)
+        dt, cfl, cfl_ac = dynamic_timestep(Sol, t, tout, elem, ud, th, step)
 
-        if 'CFLfixed' in ud.aux:
-            if step < 2 : dt = 21.69 / ud.t_ref
+        if "CFLfixed" in ud.aux:
+            if step < 2:
+                dt = 21.69 / ud.t_ref
 
-
-        c1 = step == 0 and ud.is_nonhydrostatic == 0 and bld is not None and 'imbal' in ud.aux
-        c2 = step == 0 and ud.is_nonhydrostatic == 1 and ud.initial_blending == True and bld is not None and 'imbal' in ud.aux
+        c1 = (
+            step == 0
+            and ud.is_nonhydrostatic == 0
+            and bld is not None
+            and "imbal" in ud.aux
+        )
+        c2 = (
+            step == 0
+            and ud.is_nonhydrostatic == 1
+            and ud.initial_blending == True
+            and bld is not None
+            and "imbal" in ud.aux
+        )
 
         if c1 or c2:
-            print(colored("nonhydrostatic to hydrostatic conversion...", 'blue'))
+            logging.info(colored("nonhydrostatic to hydrostatic conversion...", "blue"))
             ud.is_nonhydrostatic = 0
             if test_hydrob == False:
                 dt *= 0.5
             # elif test_hydrob == True:
-                # dt *= 0.25
+            # dt *= 0.25
 
         ######################################################
         # Blending : Do blending before timestep
         ######################################################
-        swe_to_lake, Sol, mpv, t = blending.blending_before_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug)
+        swe_to_lake, Sol, mpv, t = blending.blending_before_timestep(
+            Sol,
+            flux,
+            mpv,
+            bld,
+            elem,
+            node,
+            th,
+            ud,
+            label,
+            writer,
+            step,
+            window_step,
+            t,
+            dt,
+            swe_to_lake,
+            debug,
+        )
 
-        ud.is_nonhydrostatic = is_nonhydrostatic(ud,window_step)
-        ud.nonhydrostasy = nonhydrostasy(ud,t,window_step)
+        ud.is_nonhydrostatic = is_nonhydrostatic(ud, window_step)
+        ud.nonhydrostasy = nonhydrostasy(ud, t, window_step)
 
         if ud.continuous_blending == True or ud.initial_blending == True:
             if window_step >= 0:
-                print("step = %i, window_step = %i" %(step,window_step))
+                logging.info("step = %i, window_step = %i" % (step, window_step))
             else:
-                print("step = %i, window_step = %f" %(step,window_step))
-        print("is_compressible = %i, is_nonhydrostatic = %i" %(ud.is_compressible, ud.is_nonhydrostatic))
-        print("compressibility = %.3f, nonhydrostasy = %.3f" %(ud.compressibility,ud.nonhydrostasy))
-        print("-------")
+                logging.info("step = %i, window_step = %f" % (step, window_step))
+        logging.info(
+            "is_compressible = %i, is_nonhydrostatic = %i"
+            % (ud.is_compressible, ud.is_nonhydrostatic)
+        )
+        logging.info(
+            "compressibility = %.3f, nonhydrostasy = %.3f"
+            % (ud.compressibility, ud.nonhydrostasy)
+        )
+        logging.info("-------")
 
         Sol0 = deepcopy(Sol)
         flux0 = deepcopy(flux)
         mpv0 = deepcopy(mpv)
 
-        if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_flux')
-        
+        if debug == True:
+            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_before_flux")
+
         recompute_advective_fluxes(flux, Sol)
 
-        if debug == True: writer.populate(str(label)+'_before_advect','rhoYu',flux[0].rhoY)
-        if debug == True: writer.populate(str(label)+'_before_advect','rhoYv',flux[1].rhoY)
-        if debug == True and elem.ndim == 3: writer.populate(str(label)+'_before_advect','rhoYw',flux[2].rhoY)
-        if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_before_advect')
+        if debug == True:
+            writer.populate(str(label) + "_before_advect", "rhoYu", flux[0].rhoY)
+        if debug == True:
+            writer.populate(str(label) + "_before_advect", "rhoYv", flux[1].rhoY)
+        if debug == True and elem.ndim == 3:
+            writer.populate(str(label) + "_before_advect", "rhoYw", flux[2].rhoY)
+        if debug == True:
+            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_before_advect")
 
         # advect(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, node, str(label)+'_half', writer)
-        if ud.do_advection: advect_rk(Sol, flux, 0.5*dt, elem, step%2, ud, th, mpv, node, str(label)+'_half', writer)
+        if ud.do_advection:
+            advect_rk(
+                Sol,
+                flux,
+                0.5 * dt,
+                elem,
+                step % 2,
+                ud,
+                th,
+                mpv,
+                node,
+                str(label) + "_half",
+                writer,
+            )
 
-        if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_advect')
+        if debug == True:
+            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_advect")
 
-        if debug: writer.populate(str(label)+'_after_full_step','p2_nodes0',mpv.p2_nodes)
+        if debug:
+            writer.populate(str(label) + "_after_full_step", "p2_nodes0", mpv.p2_nodes)
 
         mpv.p2_nodes0[...] = mpv.p2_nodes
 
-        euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
-        if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaexp')
-        if ud.is_compressible == 0:        
-            euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, Sol0 = Sol0, label=str(label+'_after_ebnaimp'), writer=writer)
+        euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5 * dt, ud, th)
+        if debug == True:
+            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_ebnaexp")
+        if ud.is_compressible == 0:
+            euler_backward_non_advective_impl_part(
+                Sol,
+                mpv,
+                elem,
+                node,
+                ud,
+                th,
+                t,
+                0.5 * dt,
+                1.0,
+                Sol0=Sol0,
+                label=str(label + "_after_ebnaimp"),
+                writer=writer,
+            )
         else:
-            euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 1.0, label=str(label+'_after_ebnaimp'), writer=writer)
+            euler_backward_non_advective_impl_part(
+                Sol,
+                mpv,
+                elem,
+                node,
+                ud,
+                th,
+                t,
+                0.5 * dt,
+                1.0,
+                label=str(label + "_after_ebnaimp"),
+                writer=writer,
+            )
 
-        if ud.bdry_type[1] == BdryType.RAYLEIGH: 
+        if ud.bdry_type[1] == BdryType.RAYLEIGH:
             # top rayleight damping
             boundary.rayleigh_damping(Sol, mpv, ud, elem, node)
 
         # bottom rayleigh forcing
-        if hasattr(ud, 'rayleigh_forcing'):
+        if hasattr(ud, "rayleigh_forcing"):
             if ud.rayleigh_forcing:
 
-                if ud.rayleigh_forcing_type == 'file':
-                    reader = read_input(ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path)
+                if ud.rayleigh_forcing_type == "file":
+                    reader = read_input(
+                        ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path
+                    )
 
                     Sol_half_new = deepcopy(Sol)
                     mpv_half_new = deepcopy(mpv)
 
                     # misusing hydrostatic blending data containers
-                    time_tag = '%.3d_after_full_step' %step
+                    time_tag = "%.3d_after_full_step" % step
                     reader.get_data(Sol_half_new, mpv_half_new, time_tag, half=True)
 
                     # assuming constant background state
                     up = Sol_half_new.rhou / Sol_half_new.rho
                     vp = Sol_half_new.rhov / Sol_half_new.rho
-                    Yp = Sol_half_new.rhoY / Sol_half_new.rho - mpv.HydroState.Y0.reshape(1,-1)
+                    Yp = (
+                        Sol_half_new.rhoY / Sol_half_new.rho
+                        - mpv.HydroState.Y0.reshape(1, -1)
+                    )
 
                     pi = mpv_half_new.p2_nodes
 
-                    boundary.rayleigh_damping(Sol, mpv, ud, elem, node, [up, vp, Yp, pi, t+0.5*dt])
+                    boundary.rayleigh_damping(
+                        Sol, mpv, ud, elem, node, [up, vp, Yp, pi, t + 0.5 * dt]
+                    )
 
-                elif ud.rayleigh_forcing_type == 'func':
+                elif ud.rayleigh_forcing_type == "func":
                     # boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
-                    
-                    s = 5.0e-3+1e-4+0e-5
-                    ud.rf_bot.eigenfunction((t+0.5*dt), s)
+
+                    s = 5.0e-3 + 1e-4 + 0e-5
+                    ud.rf_bot.eigenfunction((t + 0.5 * dt), s)
                     up, vp, Yp, pi = ud.rf_bot.dehatter(th)
 
-                    ud.rf_bot.eigenfunction((t+0.5*dt), s, grid='n')
-                    _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
+                    ud.rf_bot.eigenfunction((t + 0.5 * dt), s, grid="n")
+                    _, _, _, pi_n = ud.rf_bot.dehatter(th, grid="n")
 
-                    boundary.rayleigh_damping(Sol, mpv, ud, elem, node, [up, vp, Yp, pi_n, t+0.5*dt])
+                    boundary.rayleigh_damping(
+                        Sol, mpv, ud, elem, node, [up, vp, Yp, pi_n, t + 0.5 * dt]
+                    )
                 boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
-
-
-
-        if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_ebnaimp')
+        if debug == True:
+            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_ebnaimp")
 
         # if test_hydrob == True and writer is not None and step==0:
         #     writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
@@ -194,11 +339,15 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         recompute_advective_fluxes(flux, Sol)
 
-        if debug == True: writer.populate(str(label)+'_after_half_step','rhoYu',flux[0].rhoY)
-        if debug == True: writer.populate(str(label)+'_after_half_step','rhoYv',flux[1].rhoY)
-        if debug == True and elem.ndim == 3: writer.populate(str(label)+'_after_half_step','rhoYw',flux[2].rhoY)
+        if debug == True:
+            writer.populate(str(label) + "_after_half_step", "rhoYu", flux[0].rhoY)
+        if debug == True:
+            writer.populate(str(label) + "_after_half_step", "rhoYv", flux[1].rhoY)
+        if debug == True and elem.ndim == 3:
+            writer.populate(str(label) + "_after_half_step", "rhoYw", flux[2].rhoY)
 
-        if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_half_step')
+        if debug == True:
+            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_half_step")
 
         Sol_half_new = deepcopy(Sol)
         mpv_half_new = deepcopy(mpv)
@@ -222,27 +371,27 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
         # takes care of the hydrostatic case
         elif ud.is_nonhydrostatic == 0:
             # if step == 1 :
-                # Sol.rho = (Sol.rho_half + Sol.rho) * 0.5
-                # Sol.rhou = (Sol.rhou_half + Sol.rhou) * 0.5
-                # Sol.rhov = (Sol.rhov_half + Sol.rhov) * 0.5
-                # Sol.rhow = (Sol.rhow_half + Sol.rhow) * 0.5
-                # Sol.rhoX = (Sol.rhoX_half + Sol.rhoX) * 0.5
-                # Sol.rhoY = (Sol.rhoY_half + Sol.rhoY) * 0.5
-                # v = (Sol.rhov_half / Sol.rho_half + Sol.rhov / Sol.rho) * 0.5
-                # mpv.p2_nodes = (mpv.p2_nodes_half + mpv.p2_nodes) * 0.5
-                # v = rhov_half / rho_half
-                # Sol = deepcopy(Sol0)
-                # Sol.rhov = (Sol.rhov_half + rhov_half) * 0.5
-                # Sol.rhov = Sol.rho * v
-                # mpv.p2_nodes[...] = mpv.p2_nodes0
-                # None
-                # Sol = deepcopy(Sol_tu)
-                # mpv = deepcopy(mpv_tu)
-                # None
+            # Sol.rho = (Sol.rho_half + Sol.rho) * 0.5
+            # Sol.rhou = (Sol.rhou_half + Sol.rhou) * 0.5
+            # Sol.rhov = (Sol.rhov_half + Sol.rhov) * 0.5
+            # Sol.rhow = (Sol.rhow_half + Sol.rhow) * 0.5
+            # Sol.rhoX = (Sol.rhoX_half + Sol.rhoX) * 0.5
+            # Sol.rhoY = (Sol.rhoY_half + Sol.rhoY) * 0.5
+            # v = (Sol.rhov_half / Sol.rho_half + Sol.rhov / Sol.rho) * 0.5
+            # mpv.p2_nodes = (mpv.p2_nodes_half + mpv.p2_nodes) * 0.5
+            # v = rhov_half / rho_half
+            # Sol = deepcopy(Sol0)
+            # Sol.rhov = (Sol.rhov_half + rhov_half) * 0.5
+            # Sol.rhov = Sol.rho * v
+            # mpv.p2_nodes[...] = mpv.p2_nodes0
+            # None
+            # Sol = deepcopy(Sol_tu)
+            # mpv = deepcopy(mpv_tu)
+            # None
             # else:
             Sol = deepcopy(Sol0)
             mpv.p2_nodes[...] = mpv.p2_nodes0
-            
+
         # takes care of the pseudo-incompressible case
         elif ud.is_compressible == 0:
             Sol = deepcopy(Sol0)
@@ -270,85 +419,166 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
         # mpv.p2_nodes[...] = ud.compressibility * mpv.p2_nodes0 + (1.0-ud.compressibility) * mpv.p2_nodes
 
-        euler_forward_non_advective(Sol, mpv, elem, node, 0.5*dt, ud, th, writer=writer, label=str(label)+'_after_efna')
+        euler_forward_non_advective(
+            Sol,
+            mpv,
+            elem,
+            node,
+            0.5 * dt,
+            ud,
+            th,
+            writer=writer,
+            label=str(label) + "_after_efna",
+        )
 
-        if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_efna')
- 
-        if ud.do_advection: advect(Sol, flux, dt, elem, step%2, ud, th, mpv, node, str(label)+'_full', writer)
+        if debug == True:
+            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_efna")
+
+        if ud.do_advection:
+            advect(
+                Sol,
+                flux,
+                dt,
+                elem,
+                step % 2,
+                ud,
+                th,
+                mpv,
+                node,
+                str(label) + "_full",
+                writer,
+            )
         # advect_rk(Sol, flux, dt, elem, step%2, ud, th, mpv, node, str(label)+'_full', writer)
 
-        if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_advect')
+        if debug == True:
+            writer.write_all(
+                Sol, mpv, elem, node, th, str(label) + "_after_full_advect"
+            )
 
-        euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5*dt, ud, th)
+        euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5 * dt, ud, th)
 
-        if debug == True: writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_ebnaexp')
+        if debug == True:
+            writer.write_all(
+                Sol, mpv, elem, node, th, str(label) + "_after_full_ebnaexp"
+            )
 
-        euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, 0.5*dt, 2.0, writer=writer, label=str(label)+'_after_full_step')
+        euler_backward_non_advective_impl_part(
+            Sol,
+            mpv,
+            elem,
+            node,
+            ud,
+            th,
+            t,
+            0.5 * dt,
+            2.0,
+            writer=writer,
+            label=str(label) + "_after_full_step",
+        )
 
-        if ud.bdry_type[1] == BdryType.RAYLEIGH: 
+        if ud.bdry_type[1] == BdryType.RAYLEIGH:
             # top rayleight damping
             boundary.rayleigh_damping(Sol, mpv, ud, elem, node)
 
         # bottom rayleigh forcing
-        if hasattr(ud, 'rayleigh_forcing'):
+        if hasattr(ud, "rayleigh_forcing"):
             if ud.rayleigh_forcing:
 
-                if ud.rayleigh_forcing_type == 'file':
+                if ud.rayleigh_forcing_type == "file":
 
-                    reader = read_input(ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path)
+                    reader = read_input(
+                        ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path
+                    )
 
                     # misusing hydrostatic blending data containers
-                    time_tag = '%.3d_after_full_step' %step
+                    time_tag = "%.3d_after_full_step" % step
                     reader.get_data(Sol_half_new, mpv_half_new, time_tag)
 
                     # assuming constant background state
                     up = Sol_half_new.rhou / Sol_half_new.rho
                     vp = Sol_half_new.rhov / Sol_half_new.rho
-                    Yp = Sol_half_new.rhoY / Sol_half_new.rho - mpv.HydroState.Y0.reshape(1,-1)
+                    Yp = (
+                        Sol_half_new.rhoY / Sol_half_new.rho
+                        - mpv.HydroState.Y0.reshape(1, -1)
+                    )
                     # vp = 0.0
                     # Yp = 0.0
                     pi = mpv_half_new.p2_nodes
 
-                    boundary.rayleigh_damping(Sol, mpv, ud, elem, node, [up, vp, Yp, pi, t+dt])
+                    boundary.rayleigh_damping(
+                        Sol, mpv, ud, elem, node, [up, vp, Yp, pi, t + dt]
+                    )
 
-                elif ud.rayleigh_forcing_type == 'func':
+                elif ud.rayleigh_forcing_type == "func":
 
-                    s = 5.0e-3+1e-4+0e-5
-                    ud.rf_bot.eigenfunction((t+dt), s)
+                    s = 5.0e-3 + 1e-4 + 0e-5
+                    ud.rf_bot.eigenfunction((t + dt), s)
                     up, vp, Yp, pi = ud.rf_bot.dehatter(th)
 
-                    ud.rf_bot.eigenfunction((t+dt), s, grid='n')
-                    _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
+                    ud.rf_bot.eigenfunction((t + dt), s, grid="n")
+                    _, _, _, pi_n = ud.rf_bot.dehatter(th, grid="n")
 
-                    boundary.rayleigh_damping(Sol, mpv, ud, elem, node, [up, vp, Yp, pi_n, t+dt])
+                    boundary.rayleigh_damping(
+                        Sol, mpv, ud, elem, node, [up, vp, Yp, pi_n, t + dt]
+                    )
                 boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
-
 
         # if writer is not None: writer.populate(str(label)+'_after_full_step','p2_half',mpv.p2_nodes_half)
 
         ######################################################
         # Blending : Do blending after timestep
         ######################################################
-        Sol, mpv = blending.blending_after_timestep(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt, swe_to_lake, debug)
+        Sol, mpv = blending.blending_after_timestep(
+            Sol,
+            flux,
+            mpv,
+            bld,
+            elem,
+            node,
+            th,
+            ud,
+            label,
+            writer,
+            step,
+            window_step,
+            t,
+            dt,
+            swe_to_lake,
+            debug,
+        )
 
         if c1 or c2:
-            print(colored("hydrostatic to nonhydrostatic conversion...", 'blue'))
+            logging.info(colored("hydrostatic to nonhydrostatic conversion...", "blue"))
 
-            writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half_full')
-            writer.populate(str(label)+'_ic', 'pwchi', Sol.pwchi)
+            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_half_full")
+            writer.populate(str(label) + "_ic", "pwchi", Sol.pwchi)
 
             if test_hydrob == False:
                 Sol = deepcopy(Sol_half_old)
                 # mpv = deepcopy(mpv_half_old)
 
-                print(colored("test_hydrob == False", 'red'))
-                writer.write_all(Sol,mpv,elem,node,th,str(label)+'_quarter')
+                logging.info(colored("test_hydrob == False", "red"))
+                writer.write_all(Sol, mpv, elem, node, th, str(label) + "_quarter")
 
-                writer.populate(str(label)+'_quarter', 'pwchi', Sol.pwchi)
+                writer.populate(str(label) + "_quarter", "pwchi", Sol.pwchi)
 
-                print("quarter dt = %.8f" %(dt*0.5))
+                logging.info("quarter dt = %.8f" % (dt * 0.5))
 
-                ret = time_update(Sol_half_old,flux_half_old,mpv_half_old, dt-0.5*dt, dt+0.5*dt, ud, elem, node, [0,0], th, bld=None, writer=None, debug=False)
+                ret = time_update(
+                    Sol_half_old,
+                    flux_half_old,
+                    mpv_half_old,
+                    dt - 0.5 * dt,
+                    dt + 0.5 * dt,
+                    ud,
+                    elem,
+                    node,
+                    [0, 0],
+                    th,
+                    bld=None,
+                    writer=None,
+                    debug=False,
+                )
 
                 Sol_tu = deepcopy(ret[0])
                 # mpv_tu = deepcopy(ret[2])
@@ -362,11 +592,25 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
                 # mpv.p2_nodes[...] = mpv_tu.p2_nodes_half
 
-                writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
+                writer.write_all(Sol, mpv, elem, node, th, str(label) + "_half")
 
-                writer.populate(str(label)+'_half', 'pwchi', Sol.pwchi)
+                writer.populate(str(label) + "_half", "pwchi", Sol.pwchi)
 
-                ret = time_update(Sol,flux,mpv, dt, 2.0*dt, ud, elem, node, [0,0], th, bld=None, writer=None, debug=False)
+                ret = time_update(
+                    Sol,
+                    flux,
+                    mpv,
+                    dt,
+                    2.0 * dt,
+                    ud,
+                    elem,
+                    node,
+                    [0, 0],
+                    th,
+                    bld=None,
+                    writer=None,
+                    debug=False,
+                )
 
                 Sol = deepcopy(ret[0])
                 flux = deepcopy(ret[1])
@@ -376,14 +620,28 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                 Sol = deepcopy(Sol_half_old)
                 # mpv = deepcopy(mpv_half_old)
 
-                print(colored("test_hydrob == False", 'red'))
-                writer.write_all(Sol,mpv,elem,node,th,str(label)+'_quarter')
+                logging.info(colored("test_hydrob == False", "red"))
+                writer.write_all(Sol, mpv, elem, node, th, str(label) + "_quarter")
 
                 # writer.populate(str(label)+'_quarter', 'pwchi', Sol.pwchi)
 
-                print("quarter dt = %.8f" %(dt*0.5))
+                logging.info("quarter dt = %.8f" % (dt * 0.5))
 
-                ret = time_update(Sol_half_old,flux_half_old,mpv_half_old, dt-0.5*dt, dt+0.5*dt, ud, elem, node, [0,0], th, bld=None, writer=None, debug=False)
+                ret = time_update(
+                    Sol_half_old,
+                    flux_half_old,
+                    mpv_half_old,
+                    dt - 0.5 * dt,
+                    dt + 0.5 * dt,
+                    ud,
+                    elem,
+                    node,
+                    [0, 0],
+                    th,
+                    bld=None,
+                    writer=None,
+                    debug=False,
+                )
 
                 Sol_tu = deepcopy(ret[0])
                 # mpv_tu = deepcopy(ret[2])
@@ -401,7 +659,21 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
 
                 # writer.populate(str(label)+'_half', 'pwchi', Sol.pwchi)
 
-                ret = time_update(Sol,flux,mpv, dt, 2.0*dt, ud, elem, node, [0,0], th, bld=None, writer=None, debug=False)
+                ret = time_update(
+                    Sol,
+                    flux,
+                    mpv,
+                    dt,
+                    2.0 * dt,
+                    ud,
+                    elem,
+                    node,
+                    [0, 0],
+                    th,
+                    bld=None,
+                    writer=None,
+                    debug=False,
+                )
 
                 Sol = deepcopy(ret[0])
                 flux = deepcopy(ret[1])
@@ -409,25 +681,31 @@ def time_update(Sol,flux,mpv,t,tout,ud,elem,node,steps,th,bld=None,writer=None,d
                 # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
                 # writer.populate(str(label)+'_half', 'pwchi', Sol.pwchi)
 
-                print(colored("test_hydrob == True", 'red'))
-                
+                logging.info(colored("test_hydrob == True", "red"))
 
             if test_hydrob == False:
                 dt *= 2.0
-            if c2: ud.is_nonhydrostatic = 1
+            if c2:
+                ud.is_nonhydrostatic = 1
 
         t += dt
 
         if writer != None:
             writer.time = t
-            writer.write_all(Sol,mpv,elem,node,th,str(label)+'_after_full_step')
+            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_full_step")
             # writer.populate(str(label)+'_after_full_step', 'pwchi', Sol.pwchi)
-        print("###############################################################################################")
-        print("step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f" %(step, t, dt, cfl, cfl_ac))
-        print("###############################################################################################")
+        logging.info(
+            "###############################################################################################"
+        )
+        logging.info(
+            "step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f"
+            % (step, t, dt, cfl, cfl_ac)
+        )
+        logging.info(
+            "###############################################################################################"
+        )
 
         step += 1
         window_step += 1
 
-
-    return [Sol,flux,mpv,[window_step,step]]
+    return [Sol, flux, mpv, [window_step, step]]
