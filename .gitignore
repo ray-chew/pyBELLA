@@ -15,6 +15,7 @@
 *output_*
 *_old*
 *copy.py*
+package*json
 
 # Sphinx html build
 **_build*
