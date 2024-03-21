@@ -6,6 +6,8 @@ import physics.low_mach.laplacian as lap
 import physics.low_mach.second_projection as sp
 import scipy.sparse.linalg as la
 
+import logging
+
 from termcolor import colored
 from copy import deepcopy
 
@@ -105,7 +107,7 @@ class Blend(object):
 ######################################################
 
 def do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer):
-    print(colored("Converting COMP to PSINC",'blue'))
+    logging.info(colored("Converting COMP to PSINC",'blue'))
     dp2n = mpv.p2_nodes
     bld.convert_p2n(dp2n)
     bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
@@ -116,7 +118,7 @@ def do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer):
 
 def do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt):
     from management import data
-    print(colored("Blending... step = %i" %step,'blue'))
+    logging.info(colored("Blending... step = %i" %step,'blue'))
     Sol_freeze = deepcopy(Sol)
     mpv_freeze = deepcopy(mpv)
 
@@ -140,7 +142,7 @@ def do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer
     mpv = mpv_freeze
 
     if writer != None: writer.populate(str(label)+'_after_full_step', 'dp2n', dp2n)
-    print(colored("Converting PSINC to COMP",'blue'))
+    logging.info(colored("Converting PSINC to COMP",'blue'))
     bld.convert_p2n(dp2n)
     bld.update_Sol(Sol,elem,node,th,ud,mpv,'aft',label=label,writer=writer)
     bld.update_p2n(Sol,mpv,node,th,ud)
@@ -153,7 +155,7 @@ def do_psinc_to_comp_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer
 ######################################################
 
 def do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
-    print(colored("swe to lake conversion...",'blue'))
+    logging.info(colored("swe to lake conversion...",'blue'))
 
     H1 = Sol.rho[:,2:-2:,][:,0,:]
     # setattr(ud,'mean_val',H1.mean())
@@ -192,7 +194,7 @@ def do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug
     Sol_freeze = deepcopy(Sol)
     mpv_freeze = deepcopy(mpv)
 
-    print(colored("doing lake-to-swe time-update...",'blue'))
+    logging.info(colored("doing lake-to-swe time-update...",'blue'))
     ret = data.time_update(Sol,flux,mpv, t, t+dt, ud, elem, node, [0,step], th, bld=None, writer=None, debug=False)
 
     fac_old = ud.blending_weight
@@ -214,7 +216,7 @@ def do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug
     mpv.p2_nodes[...] = dp2n
 
     H10 = mpv.p2_nodes[:,2:-2,:].mean(axis=1)
-    print(colored("lake to swe conversion...",'blue'))
+    logging.info(colored("lake to swe conversion...",'blue'))
     H10 -= H10.mean()
 
     # define 2D kernel
@@ -224,7 +226,7 @@ def do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug
     # do node-to-cell averaging
     H1 = signal.convolve(H10, kernel, mode='valid')
     # H1 = ud.mean_val + ud.Msq * H1
-    # print(colored(H1.max(), 'red'))
+    # logging.info(colored(H1.max(), 'red'))
 
     # project H1 back to horizontal slice with ghost cells
     H1 = np.expand_dims(H1, axis=1)
@@ -246,7 +248,7 @@ def do_lake_to_swe_conv(Sol, flux, mpv, elem, node, ud, th, writer, label, debug
 ######################################################
 def do_nonhydro_to_hydro_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt):
     from management import data
-    print(colored("nonhydrostatic to hydrostatic conversion...", 'blue'))
+    logging.info(colored("nonhydrostatic to hydrostatic conversion...", 'blue'))
     # bld.convert_p2n(mpv.p2_nodes)
     # bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
     # Sol.rhov = Sol.rhov_half
@@ -274,8 +276,8 @@ def do_nonhydro_to_hydro_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, wr
 
 def do_hydro_to_nonhydro_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt):
     from management import data
-    print(colored("hydrostatic to nonhydrostatic conversion...", 'blue'))
-    print(colored("Blending... step = %i" %step,'blue'))
+    logging.info(colored("hydrostatic to nonhydrostatic conversion...", 'blue'))
+    logging.info(colored("Blending... step = %i" %step,'blue'))
 
     # Sol_tmp = deepcopy(Sol)
     # flux_tmp = deepcopy(flux)
@@ -296,18 +298,18 @@ def do_hydro_to_nonhydro_conv(Sol, flux, mpv, bld, elem, node, th, ud, label, wr
     # fac_full = 0.5
     # fac_half = 1.0 - fac_full
 
-    # # print(np.sum(solv_full))
-    # # print(np.sum(retv_half))
-    # # print(np.sum((fac_full * solv_full + fac_half * retv_half)))
-    # # print(np.sum(fac_half * retv_half))
+    # # logging.info(np.sum(solv_full))
+    # # logging.info(np.sum(retv_half))
+    # # logging.info(np.sum((fac_full * solv_full + fac_half * retv_half)))
+    # # logging.info(np.sum(fac_half * retv_half))
 
     # fac_full = 0.5
     # fac_half = 0.5
 
-    # # print(np.sum(solv_full))
-    # # print(np.sum(retv_half))
-    # # print(np.sum((fac_full * solv_full + fac_half * retv_half)))
-    # # print(np.sum(fac_half * retv_half))
+    # # logging.info(np.sum(solv_full))
+    # # logging.info(np.sum(retv_half))
+    # # logging.info(np.sum((fac_full * solv_full + fac_half * retv_half)))
+    # # logging.info(np.sum(fac_half * retv_half))
 
     # if writer != None: writer.populate(str(label)+'_after_full_step', 'ret_half', ret[0].rhov_half)
     # if writer != None: writer.populate(str(label)+'_after_full_step', 'ret_full', ret[0].rhov)

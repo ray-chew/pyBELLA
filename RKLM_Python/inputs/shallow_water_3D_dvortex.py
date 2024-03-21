@@ -8,6 +8,8 @@ from physics.low_mach.second_projection import euler_backward_non_advective_impl
 from scipy.interpolate import RectBivariateSpline
 from scipy import signal
 
+import logging
+
 class UserData(object):
     NSPEC = 1
 
@@ -262,7 +264,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     Frsq = (u.max()**2 + w.max()**2) / (g0 * rho.max())
     Fr = np.sqrt(Frsq)
-    print(Frsq, Fr)
+    logging.info(Frsq, Fr)
     u = np.expand_dims(u, 1)
     u = np.repeat(u, elem.icy-aa*igs[1], axis=1)
     w = np.expand_dims(w, 1)

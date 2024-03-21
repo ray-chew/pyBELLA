@@ -1,5 +1,7 @@
 import numpy as np
 
+import logging
+
 def da_interface(results, obs, obs_attributes, delta, times, tout, N, loc=0):
     ig = 2
     inner = (slice(ig,-ig),slice(ig,-ig))
@@ -72,7 +74,7 @@ class analysis(object):
 
     def analyse(self,obs_current,obs_covar,Hx,N):
         import pyemd
-        print("starting ETPF analysis...")
+        logging.info("starting ETPF analysis...")
 
         r = (Hx - obs_current)**2
         r = np.sum(r, axis=1)
