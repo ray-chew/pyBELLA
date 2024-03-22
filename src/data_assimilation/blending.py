@@ -97,7 +97,7 @@ class Blend(object):
             Sol.rhoY[...] = rho * Yc
             Sol.rhoX[...] = rho * (1.0 / Yc - mpv.HydroState.S0.reshape(1, -1))
         else:
-            assert (0, "ud.blending_conv undefined.")
+            assert 0, "ud.blending_conv undefined."
 
         if writer != None:
             writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_blending")
@@ -437,7 +437,7 @@ def blending_before_timestep(
     # check that blending switches are on
     if c_init and bld.cb and ud.blending_conv is not None:
         # distinguish between Euler and SWE blending
-        if ud.blending_conv is not "swe":
+        if ud.blending_conv != "swe":
             Sol, mpv = do_psinc_to_comp_conv(
                 Sol,
                 flux,
@@ -461,7 +461,7 @@ def blending_before_timestep(
     # Is initial blending switch on, and if yes, are we in the 0th time-step?
     if ud.initial_blending == True and step < 1 and bld is not None:
         # Distinguish between SWE and Euler blendings
-        if ud.blending_conv is not "swe":
+        if ud.blending_conv != "swe":
             if bld.psinc_init > 0:
                 ud.is_compressible = 0
                 ud.compressibility = 0.0
@@ -499,7 +499,7 @@ def blending_before_timestep(
         ud.initial_blending == True and step == ud.no_of_pi_initial and bld is not None
     ):
         # Distinguish between SWE and Euler blendings
-        if ud.blending_conv is not "swe":
+        if ud.blending_conv != "swe":
             Sol, mpv = do_psinc_to_comp_conv(
                 Sol,
                 flux,
@@ -522,7 +522,7 @@ def blending_before_timestep(
     elif (
         ud.initial_blending == True and step == ud.no_of_hy_initial and bld is not None
     ):
-        if ud.blending_conv is not "swe":
+        if ud.blending_conv != "swe":
             Sol, mpv = do_hydro_to_nonhydro_conv(
                 Sol,
                 flux,

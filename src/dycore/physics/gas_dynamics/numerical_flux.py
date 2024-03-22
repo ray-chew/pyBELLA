@@ -32,7 +32,7 @@ def recompute_advective_fluxes(flux, Sol, *args, **kwargs):
         rhoYw = Sol.rhoY * Sol.rhow / Sol.rho
         flux[2].rhoY[inner_idx] = signal.fftconvolve(rhoYw, kernel_w, mode='valid') / kernel_w.sum()
     else:
-        assert(0, "Unsupported dimension in recompute_advective_flux")
+        assert 0, "Unsupported dimension in recompute_advective_flux"
 
     rhoYu = kwargs.get('u',Sol.rhoY * Sol.rhou / Sol.rho)
 

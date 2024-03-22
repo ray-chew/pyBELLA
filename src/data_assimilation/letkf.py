@@ -128,7 +128,7 @@ class analysis(object):
         """
         if self.forward_operator is None:
             logging.info("Forward operator undefined. Using identity...")
-            assert(0, "not implemented.")
+            assert 0, "not implemented."
         if self.localisation_matrix is None:
             logging.info("Localisation matrix undefined. Using identity...")
             # assert(0, "not implemented.")
@@ -677,7 +677,7 @@ class prepare_rloc(object):
 
         """
         if type != 'cell' and type != 'node':
-            assert(0, "rloc: grid-type not supported")
+            assert 0, "rloc: grid-type not supported"
 
         Nx = self.iicx if type == 'cell' else self.iicxn
         if self.iicy > 1:
