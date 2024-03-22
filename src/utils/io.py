@@ -10,6 +10,8 @@ import argparse
 
 from utils.sim_params import output_path
 import logging
+import errno
+from datetime import datetime
 
 
 class io(object):
@@ -713,3 +715,48 @@ def fn_gen(ud, dap, N):
         suffix += "_fs=%i_ts=%i" % (ud.no_of_pi_initial, ud.no_of_pi_transition)
 
     return suffix
+
+
+def mkdir_p(path):
+    """http://stackoverflow.com/a/600612/190597 (tzot)"""
+    try:
+        os.makedirs(path, exist_ok=True)  # Python>3.2
+    except OSError as exc:
+            if exc.errno == errno.EEXIST and os.path.isdir(path):
+                pass
+            else: raise
+
+
+##########################################################
+# Initialise logger
+##########################################################
+            
+def init_logger(ud):
+    now = datetime.now()
+    date = now.strftime("%d%m%y")
+    time = now.strftime("%H%M%S")
+
+    input_filename = "%s%s" %(ud.output_type, ud.output_base_name)
+    logger_filename = "./logs/%s_%s_%s.log" %(input_filename, date, time)
+
+    mkdir_p(os.path.dirname(logger_filename))
+
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
+        datefmt="%m-%d %H:%M",
+        filename=logger_filename,
+        filemode="w",
+    )
+
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    # set a format which is simpler for console use
+    formatter = logging.Formatter("%(name)-12s: %(levelname)-8s %(message)s")
+    # tell the handler to use this format
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger().addHandler(console)
+
+    logging.info("Input file is %s" %input_filename)

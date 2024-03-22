@@ -35,7 +35,7 @@ from data_assimilation import post_processing
 
 # input file
 from utils.user_data import UserDataInit
-from utils.io import io, get_args, sim_restart, fn_gen
+from utils.io import io, get_args, sim_restart, fn_gen, init_logger
 import utils.sim_params as gparams
 
 # some diagnostics
@@ -47,24 +47,6 @@ from termcolor import colored
 from tests import diagnostics as diag
 
 import logging
-
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
-    datefmt="%m-%d %H:%M",
-    filename="./logs/output.log",
-    filemode="w",
-)
-# define a Handler which writes INFO messages or higher to the sys.stderr
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-# set a format which is simpler for console use
-formatter = logging.Formatter("%(name)-12s: %(levelname)-8s %(message)s")
-# tell the handler to use this format
-console.setFormatter(formatter)
-# add the handler to the root logger
-logging.getLogger().addHandler(console)
 
 debug = gparams.debug
 da_debug = gparams.da_debug
@@ -110,11 +92,12 @@ th = ThermodynamicInit(ud)
 mpv = MPV(elem, node, ud)
 bld = blending.Blend(ud)
 
-logging.info("Input file is%s" % ud.output_base_name.replace("_", " "))
+init_logger(ud)
+
+
 ##########################################################
 # Initialise test module
 ##########################################################
-
 if ud.diag:
     diag_comparison = diag.compare_sol(ud.diag_current_run)
 
