@@ -7,7 +7,6 @@
 
 # Ignore various local subdirectories
 **outputs*
-**docs*
 **build*
 
 # Ignore various outputs
