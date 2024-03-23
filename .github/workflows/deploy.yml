@@ -1,4 +1,4 @@
-name: docs
+name: deploy
 
 on: [push, pull_request, workflow_dispatch]
 
@@ -6,7 +6,7 @@ permissions:
   contents: write
 
 jobs:
-  docs:
+  prepare:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -23,6 +23,9 @@ jobs:
       - name: Sphinx build
         run: |
           sphinx-build docs/source _build
+  docs:
+    steps:
+      - uses: actions/checkout@v3
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -31,3 +34,11 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: _build/
           force_orphan: true
+  dycore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tests
+        run: |
+          pytest ./run_scripts/test_dycore.py --no-header -v
+    
