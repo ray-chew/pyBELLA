@@ -1,5 +1,8 @@
 # import numpy as np
 import yaml
+import termcolor
+import logging
+
 import pybella.vis.plotting_tools as vis_pt
 import pybella.vis.utils as vis_utils
 
@@ -22,7 +25,7 @@ class compare_sol(object):
                     self.__get_ens(tc, tp, attribute, summed=True)
                 )
 
-        with open("./tests/test_targets.yml", "w") as outfile:
+        with open("./src/tests/test_targets.yml", "w") as outfile:
             yaml.dump(self.arr_dump, outfile, default_flow_style=False)
 
     def do(self, Sol, p2n, plot=False):
@@ -54,6 +57,10 @@ class compare_sol(object):
                 test,
             )
 
+        logging.info(termcolor.colored("##########", "green"))
+        logging.info(termcolor.colored("Test passed for %s" %self.current_run, "green"))
+        logging.info(termcolor.colored("##########", "green"))
+
     def __init(self):
         path = "./outputs/"
 
@@ -81,7 +88,7 @@ class compare_sol(object):
             self.tcs[test_name] = tc
 
     def __read_yaml(self):
-        with open("./tests/test_targets.yml", "r") as infile:
+        with open("./src/tests/test_targets.yml", "r") as infile:
             self.target = yaml.safe_load(infile)
 
     def __plot_comparison(self, Sol, p2n):
