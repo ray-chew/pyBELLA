@@ -6,19 +6,8 @@ permissions:
   contents: write
 
 jobs:
-  get-runner:
-    name: get a runner to use for this workflow
-    if: ${{ always() }}
-    runs-on: custom-runner
-    outputs:
-     RUNNER: ${{ runner.name }}
-    steps:
-      - run: echo "selected runner = ${{ runner.name }}"
   prepare:
-    needs: get-runner
-    runs-on: ${{needs.get-runner.outputs.RUNNER}}
-    outputs:
-     RUNNER: ${{ runner.name }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: ConorMacBride/install-package@v1
@@ -33,7 +22,7 @@ jobs:
           pip install .
   docs:
     needs: prepare
-    runs-on: ${{needs.prepare.outputs.RUNNER}}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Sphinx build
@@ -50,7 +39,7 @@ jobs:
           force_orphan: true
   dycore:
     needs: prepare
-    runs-on: ${{needs.prepare.outputs.RUNNER}}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Run tests
