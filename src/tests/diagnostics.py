@@ -1,7 +1,7 @@
 # import numpy as np
 import yaml
-
-from pybella.vis import utils, plotting_tools as pt
+import pybella.vis.plotting_tools as vis_pt
+import pybella.vis.utils as vis_utils
 
 
 class compare_sol(object):
@@ -76,7 +76,7 @@ class compare_sol(object):
         self.tcs = {}
         for test_name, test_param in self.tps.items():
             fn = test_param.fn + ".h5"
-            tc = utils.test_case(fn, test_param.dir, test_param.Nx, test_param.Ny, "")
+            tc = vis_utils.test_case(fn, test_param.dir, test_param.Nx, test_param.Ny, "")
 
             self.tcs[test_name] = tc
 
@@ -102,7 +102,7 @@ class compare_sol(object):
             arr_plots.append([test_sol, "test"])
             arr_plots.append([ref_sol - test_sol, "diff"])
 
-            pl = pt.plotter(arr_plots, ncols=3, figsize=(12, 3), sharey=False)
+            pl = vis_pt.plotter(arr_plots, ncols=3, figsize=(12, 3), sharey=False)
             _ = pl.plot(method="contour", lvls=None, suptitle=attribute)
             pl.img.savefig(tp.dir + attribute + ".png")
 

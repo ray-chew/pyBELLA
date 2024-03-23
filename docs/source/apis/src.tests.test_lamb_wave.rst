@@ -13,10 +13,6 @@
 
    .. autosummary::
    
-      get_bottom_tau_y
-      get_tau_y
-      hydrostatic_state
-      set_explicit_boundary_data
       sol_init
    
    
@@ -27,8 +23,6 @@
 
    .. autosummary::
    
-      BdryType
-      LimiterType
       UserData
    
    

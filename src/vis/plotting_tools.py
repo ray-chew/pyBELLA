@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+import mpl_toolkits.axes_grid1 as axes_grid
 import matplotlib.animation as animation
 import numpy as np
 import itertools
@@ -90,7 +90,7 @@ class plotter(object):
                 loc = cax.get_xticklabels()
                 self.set_cax_axes(cax,n)
                 caxs.append(cax)
-                divider = make_axes_locatable(cax)
+                divider = axes_grid.make_axes_locatable(cax)
                 bax = divider.append_axes("right", size="5%", pad=0.05)
                 if method == 'imshow' and lvl is not None:
 #                     plt.colorbar(im, cax=bax, ticks=lvl)#, format='%.3f')
@@ -121,7 +121,7 @@ class plotter(object):
             cax.set_title(title)
             self.set_cax_axes(cax,0)
             caxs = [cax]
-            divider = make_axes_locatable(cax)
+            divider = axes_grid.make_axes_locatable(cax)
             bax = divider.append_axes("right", size="5%", pad=0.05)
             if hasattr(self, 'cbar_label'):
                 bax.set_xlabel(self.cbar_label)

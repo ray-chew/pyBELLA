@@ -14,10 +14,6 @@
    .. autosummary::
    
       T_from_p_rho
-      hydrostatic_column
-      hydrostatic_initial_pressure
-      hydrostatic_state
-      set_explicit_boundary_data
       sol_init
    
    
@@ -28,9 +24,6 @@
 
    .. autosummary::
    
-      BdryType
-      LimiterType
-      States
       UserData
    
    

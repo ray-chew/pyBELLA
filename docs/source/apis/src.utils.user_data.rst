@@ -17,10 +17,7 @@
 
    .. autosummary::
    
-      BdryType
-      LimiterType
       UserDataInit
-      global_constants
    
    
 

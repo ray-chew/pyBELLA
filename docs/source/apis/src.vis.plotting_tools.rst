@@ -16,7 +16,6 @@
       labels
       labels_increment
       lake_labels
-      make_axes_locatable
       short_labels
       swe_labels
       swe_labels_increment

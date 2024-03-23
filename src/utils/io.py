@@ -6,12 +6,13 @@ import shutil  # for copying of simulation restart file
 import dill as pickle  # pickle jar to debug classes
 import yaml  # for parsing of dict-style arguments
 
-import argparse
-
-from utils.sim_params import output_path
 import logging
 import errno
 from datetime import datetime
+
+import argparse
+
+import utils.sim_params as params
 
 
 class io(object):
@@ -35,7 +36,7 @@ class io(object):
         self.FORMAT = ".h5"
         self.BASE_NAME = self.ud.output_base_name
         self.OUTPUT_FILENAME = self.ud.output_type + self.BASE_NAME
-        self.OUTPUT_FOLDER = output_path + "/" + self.OUTPUT_FILENAME
+        self.OUTPUT_FOLDER = params.output_path + "/" + self.OUTPUT_FILENAME
         self.OUTPUT_FILENAME = self.OUTPUT_FOLDER + "/" + self.ud.output_type
 
         self.SUFFIX = self.ud.output_suffix

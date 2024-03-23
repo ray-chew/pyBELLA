@@ -1,5 +1,5 @@
 import numpy as np
-import dycore.physics.hydrostatics as hydro
+import dycore.physics.hydrostatics as hydrostatic
 import dycore.utils.boundary as bdry
 
 class UserData(object):
@@ -51,7 +51,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     g = ud.gravity_strength[1]
     # print(ud.rho_ref)
 
-    hydro.hydrostatic_state(mpv, elem, node, th, ud)
+    hydrostatic.state(mpv, elem, node, th, ud)
 
     x = elem.x
     y = elem.y

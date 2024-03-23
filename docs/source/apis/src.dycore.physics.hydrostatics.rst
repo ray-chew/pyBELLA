@@ -13,10 +13,9 @@
 
    .. autosummary::
    
-      hydrostatic_column
-      hydrostatic_initial_pressure
-      hydrostatic_state
-      loop_over_array
+      column
+      initial_pressure
+      state
    
    
 

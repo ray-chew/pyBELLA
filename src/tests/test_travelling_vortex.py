@@ -1,14 +1,8 @@
 import numpy as np
-from dycore.utils.options import BdryType
-from dycore.utils.options import LimiterType
-from dycore.physics.hydrostatics import hydrostatic_state
-from dycore.utils.boundary import (
-    set_explicit_boundary_data,
-    set_ghostcells_p2,
-)
-from dycore.physics.low_mach.second_projection import (
-    euler_backward_non_advective_impl_part,
-)
+import dycore.utils.options as opts
+import dycore.physics.hydrostatics as hydrostatic
+import dycore.utils.boundary as bdry
+import dycore.physics.low_mach.second_projection as lm_sp
 
 import logging
 
@@ -89,9 +83,9 @@ class UserData(object):
         self.w_wind_speed = 0.0
 
         self.bdry_type = np.empty((3), dtype=object)
-        self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.PERIODIC
-        self.bdry_type[2] = BdryType.WALL
+        self.bdry_type[0] = opts.BdryType.PERIODIC
+        self.bdry_type[1] = opts.BdryType.PERIODIC
+        self.bdry_type[2] = opts.BdryType.WALL
 
         ##########################################
         # NUMERICS
@@ -107,8 +101,8 @@ class UserData(object):
         self.iny = 64 + 1
         self.inz = 1
 
-        self.limiter_type_scalars = LimiterType.NONE
-        self.limiter_type_velocity = LimiterType.NONE
+        self.limiter_type_scalars = opts.LimiterType.NONE
+        self.limiter_type_velocity = opts.LimiterType.NONE
 
         self.tol = 1.0e-8
         self.max_iterations = 6000
@@ -132,7 +126,7 @@ class UserData(object):
 
         self.initial_projection = True
         self.initial_impl_Euler = False
-        
+
         self.tout = [1.0]#np.arange(0.0,10.1,0.1)[1:]
         self.stepmax = 101
 
@@ -206,7 +200,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     igxn = node.igx
     igyn = node.igy
 
-    hydrostatic_state(mpv, elem, node, th, ud)
+    hydrostatic.state(mpv, elem, node, th, ud)
 
     coe = np.zeros((25))
     coe[0] = 1.0 / 24.0
@@ -320,7 +314,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy])
     )
 
-    set_ghostcells_p2(mpv.p2_cells, elem, ud)
+    bdry.set_ghostcells_p2(mpv.p2_cells, elem, ud)
 
     xs = node.x[igxn:-igxn].reshape(-1, 1)
     ys = node.y[igyn:-igyn].reshape(1, -1)
@@ -357,7 +351,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
     ud.compressibility = float(ud.is_compressible)
 
-    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     if "imbal" in ud.aux:
         Sol.rhoY[...] = 1.0
@@ -374,7 +368,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         Sol.rhou -= u0 * Sol.rho
         Sol.rhov -= v0 * Sol.rho
 
-        euler_backward_non_advective_impl_part(
+        lm_sp.euler_backward_non_advective_impl_part(
             Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5
         )
 

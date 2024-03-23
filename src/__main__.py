@@ -2,7 +2,7 @@ import numpy as np
 
 # dependencies of the atmospheric flow solver
 from dycore.discretisation.grid import grid_init
-from dycore.discretisation.time_update import time_update
+from dycore.discretisation.time_update import do
 from dycore.utils.boundary import (
     set_explicit_boundary_data,
     set_ghostnodes_p2,
@@ -11,7 +11,7 @@ from dycore.utils.boundary import (
 from dycore.utils.variable import States, Vars
 from dycore.physics.gas_dynamics.thermodynamic import ThermodynamicInit
 from dycore.physics.low_mach.mpv import MPV
-from dycore.physics.hydrostatics import hydrostatic_state
+import dycore.physics.hydrostatics as hydrostatic
 
 # dependencies of the parallelisation by dask
 from dask.distributed import Client, progress
@@ -134,7 +134,7 @@ if seeds is not None and restart == False:
 elif restart == False:
     sol_ens = [[sol_init(Sol, mpv, elem, node, th, ud), flux, mpv, [-np.inf, step]]]
 elif restart == True:
-    hydrostatic_state(mpv, elem, node, th, ud)
+    hydrostatic.state(mpv, elem, node, th, ud)
     ud.old_suffix = np.copy(ud.output_suffix)
     ud.old_suffix = "_ensemble=%i%s" % (N, ud.old_suffix)
     Sol0, mpv0, touts = sim_restart(
@@ -243,7 +243,7 @@ if __name__ == "__main__":
             if N == 1:
                 mem[3][0] = mem[3][1]
             logging.info(colored("For ensemble member = %i..." % mem_cnt, "yellow"))
-            future = time_update(
+            future = do(
                 mem[0],
                 mem[1],
                 mem[2],
