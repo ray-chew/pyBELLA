@@ -6,8 +6,17 @@ permissions:
   contents: write
 
 jobs:
-  prepare:
+  get-runner:
+    name get a runner to use for this workflow
+    if: ${{ always() }}
     runs-on: ubuntu-latest
+    outputs:
+     RUNNER: ${{ runner.name }}
+    steps:
+      - run: echo "selected runner = ${{ runner.name }}"
+  prepare:
+    needs: get-runner
+    runs-on: ${{needs.get-runner.outputs.RUNNER}}
     steps:
       - uses: actions/checkout@v3
       - uses: ConorMacBride/install-package@v1
@@ -24,6 +33,8 @@ jobs:
         run: |
           sphinx-build docs/source _build
   docs:
+    needs: prepare
+    runs-on: ${{needs.get-runner.outputs.RUNNER}}
     steps:
       - uses: actions/checkout@v3
       - name: Deploy to GitHub Pages
@@ -35,7 +46,8 @@ jobs:
           publish_dir: _build/
           force_orphan: true
   dycore:
-    runs-on: ubuntu-latest
+    needs: prepare
+    runs-on: ${{needs.get-runner.outputs.RUNNER}
     steps:
       - uses: actions/checkout@v3
       - name: Run tests
