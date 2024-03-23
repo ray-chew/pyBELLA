@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import signal
 
-import dycore.physics.gas_dynamics as eos
+import dycore.physics.gas_dynamics.eos as gd_eos
 
 import logging
 import termcolor
@@ -536,10 +536,10 @@ def blending_before_timestep(
             ud.is_nonhydrostatic = 1
             ud.nonhydrostasy = 1.0
     else:
-        ud.is_compressible = eos.is_compressible(ud, window_step)
-        ud.compressibility = eos.compressibility(ud, t, window_step)
-        ud.is_nonhydrostatic = eos.is_nonhydrostatic(ud, window_step)
-        ud.nonhydrostasy = eos.nonhydrostasy(ud, t, window_step)
+        ud.is_compressible = gd_eos.is_compressible(ud, window_step)
+        ud.compressibility = gd_eos.compressibility(ud, t, window_step)
+        ud.is_nonhydrostatic = gd_eos.is_nonhydrostatic(ud, window_step)
+        ud.nonhydrostasy = gd_eos.nonhydrostasy(ud, t, window_step)
 
     return swe_to_lake, Sol, mpv, t
 
