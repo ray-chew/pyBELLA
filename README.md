@@ -23,11 +23,13 @@
 </p>
 
 
-The Blended sEamLess soLver for Atmospheric dynamics (pyBELLA) is a Python-based numerical flow solver for atmospheric dynamics. The current version features PyBELLA+ as it is coupled to an ensemble data assimillation engine based on the Local Ensemble Transform Kalman Filter.
+The Blended sEamLess soLver for Atmospheric dynamics (pyBELLA) is a Python-based numerical flow solver for atmospheric dynamics. The current version features PyBELLA+ as it is coupled to an ensemble data assimillation engine based on the [Local Ensemble Transform Kalman Filter](https://www.sciencedirect.com/science/article/abs/pii/S0167278906004647).
 
-The numerical scheme for pyBELLA was introduced by [Bennachio and Klein (2019)](https://journals.ametsoc.org/view/journals/mwre/147/11/mwr-d-19-0073.1.xml) and the seamless blending between model regimes within a simulation run was extended in [Chew et al. (2022)](https://journals.ametsoc.org/view/journals/mwre/150/9/MWR-D-21-0175.1.xml).
+The numerical scheme for pyBELLA was introduced by [Bennachio and Klein (2019)](https://journals.ametsoc.org/view/journals/mwre/147/11/mwr-d-19-0073.1.xml) and the seamless blending between model regimes within a simulation run was extended in [Chew et al. (2022)](https://journals.ametsoc.org/view/journals/mwre/150/9/MWR-D-21-0175.1.xml); see [`v0.3.0-localdab`](https://github.com/ray-chew/pyBELLA/releases/tag/archive%2Flocaldab) for the source code.
 
-This code was used to produce the results in [Chew (2022)](https://refubium.fu-berlin.de/bitstream/handle/fub188/37313/thesis_final.pdf?sequence=1&isAllowed=y) and [Chew et al. (2023)](https://tinyurl.com/2dc7hjqa).
+This code was also used to produce the results in
+* [Chew (2022)](https://refubium.fu-berlin.de/bitstream/handle/fub188/37313/thesis_final.pdf); [`v0.2.0-thesis`](https://github.com/ray-chew/pyBELLA/releases/tag/archive%2Fthesis)
+* [Chew et al. (2023)](https://tinyurl.com/2dc7hjqa); [`v0.4.0-coriolis`](https://github.com/ray-chew/pyBELLA/releases/tag/archive%2Ffull_coriolis)
 
 
 ---
@@ -38,9 +40,14 @@ This code was used to produce the results in [Chew (2022)](https://refubium.fu-b
 
 ## Requirements
 
-See [`requirements.txt`](https://github.com/ray-chew/pyBELLA/blob/main/requirements.txt)
+See [`requirements.txt`](https://github.com/ray-chew/pyBELLA/blob/develop/requirements.txt)
 
-**Note**:  The development dependencies can be found in [`dev-requirements.txt`](https://github.com/ray-chew/pyBELLA/blob/main/dev-requirements.txt).
+**Note**:  The development dependencies can be found in [`dev-requirements.txt`](https://github.com/ray-chew/pyBELLA/blob/develop/dev-requirements.txt).
+
+To install the requirements:
+```console
+pip install -r requirements.txt
+```
 
 
 ## Usage
@@ -57,14 +64,14 @@ pip install -e .
 
 ### Configuration
 
-The user-defined input parameters are in the [`inputs`](https://github.com/ray-chew/pyBELLA/tree/main/inputs) subpackage. These parameters are imported into the run scripts in [`run_scripts`](https://github.com/ray-chew/pyBELLA/tree/main/run_scripts). 
+The user-defined input parameters are in the [`inputs`](https://github.com/ray-chew/pyBELLA/tree/develop/inputs) subpackage. These parameters are imported into the run scripts in [`run_scripts`](https://github.com/ray-chew/pyBELLA/tree/main/run_scripts). 
 
 ### Execution
 
-A simple test can be found in [`run_scripts.test_suite`](https://github.com/ray-chew/pyBELLA/blob/main/ru_scripts/test_suite.py). To execute this run script from the pyBELLA parent directory:
+A simple test can be found in [`run_scripts.test_suite`](https://github.com/ray-chew/pyBELLA/blob/develop/run_scripts/test_dycore.py). To execute this run script from the pyBELLA parent directory:
 
 ```console
-python3 ./run_scripts/test_suite.py
+python3 ./run_scripts/test_dycore.py
 ```
 
 However, the codebase is structured such that the user can easily assemble a run script to define their own experiments. Refer to the documentation for the [available APIs](https://ray-chew.github.io/pyBELLA/apis.html).
