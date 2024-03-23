@@ -155,7 +155,7 @@ class UserData(object):
 
         self.diag = True
         self.diag_current_run = "test_internal_long_wave"
-        self.diag_plot_compare = True
+        self.diag_plot_compare = False
 
     def stratification_function(self, y):
         Nsq = self.Nsq_ref * self.t_ref * self.t_ref

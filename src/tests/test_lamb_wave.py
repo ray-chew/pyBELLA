@@ -137,7 +137,7 @@ class UserData(object):
 
         self.diag = True
         self.diag_current_run = 'test_lamb_wave'
-        self.diag_plot_compare = True
+        self.diag_plot_compare = False
 
         self.stratification = self.stratification_wrapper
         self.rayleigh_bc = self.rayleigh_bc_function

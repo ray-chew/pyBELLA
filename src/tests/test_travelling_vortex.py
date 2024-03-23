@@ -143,7 +143,7 @@ class UserData(object):
 
         self.diag = True
         self.diag_current_run = "test_travelling_vortex"
-        self.diag_plot_compare = True
+        self.diag_plot_compare = False
 
         self.autogen_fn = False
 
