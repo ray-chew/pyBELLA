@@ -13,19 +13,13 @@
 
    .. autosummary::
    
-      advect
-      advect_rk
       colored
       data_init
       deepcopy
       do
-      dynamic_timestep
       euler_backward_non_advective_expl_part
       euler_backward_non_advective_impl_part
       euler_forward_non_advective
-      is_nonhydrostatic
-      nonhydrostasy
-      recompute_advective_fluxes
    
    
 
@@ -35,7 +29,6 @@
 
    .. autosummary::
    
-      BdryType
       ElemSpaceDiscr
       Grid
       NodeSpaceDiscr

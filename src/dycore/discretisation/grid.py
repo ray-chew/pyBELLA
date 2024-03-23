@@ -1,5 +1,6 @@
 import numpy as np
-from dycore.utils.options import BdryType
+
+import dycore.utils.options as opts
 
 def grid_init(ud):
     """
@@ -226,7 +227,7 @@ class ElemSpaceDiscr(SpaceDiscr):
 
         eindim = np.empty((ndim),dtype='object')
         for dim in range(ndim):
-            is_periodic = ud.bdry_type[dim] == BdryType.PERIODIC
+            is_periodic = ud.bdry_type[dim] == opts.BdryType.PERIODIC
             eindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic-1)
 
             p_isc.append(self.isc[dim] + 2 * is_periodic)
@@ -286,7 +287,7 @@ class NodeSpaceDiscr(SpaceDiscr):
 
         nindim = np.empty((ndim),dtype='object')
         for dim in range(ndim):
-            is_periodic = ud.bdry_type[dim] == BdryType.PERIODIC
+            is_periodic = ud.bdry_type[dim] == opts.BdryType.PERIODIC
             nindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic)
             
             p_isc.append(self.isc[dim] + 2 * is_periodic)

@@ -23,7 +23,6 @@
 
    .. autosummary::
    
-      BdryType
       ElemSpaceDiscr
       Grid
       NodeSpaceDiscr
