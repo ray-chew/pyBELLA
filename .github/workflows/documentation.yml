@@ -18,8 +18,7 @@ jobs:
           python-version: '3.10.5' 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          pip install sphinx furo sphinx-changelog sphinx-math-dollar
+          pip install -r dev-requirements.txt
           pip install .
       - name: Sphinx build
         run: |
