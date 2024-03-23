@@ -26,7 +26,6 @@ package-dir = {"pybella" = "src"}
 
 # Change Log
 [tool.towncrier]
-package = "pyBELLA"
 directory = "changelog.d"
 filename = "CHANGELOG.rst"
 underlines = ["-", "^"]
