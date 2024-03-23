@@ -1,6 +1,6 @@
 import numpy as np
 import h5py
-from time import time
+import time
 
 class test_case(object):
     def __init__(self,base_fn,py_dir,Nx,Ny,end_time,Nz=None):
@@ -321,11 +321,11 @@ def spatially_averaged_rmse(arr,ref):
 class prt_time(object):
     # simple profiler for utils and plottting_tools
     def __init__(self, debug=True):
-        self.tic = time()
+        self.tic = time.time()
         self.debug = debug
         
     def prtt(self, label=""):
-        curr_time = time()
+        curr_time = time.time()
         if self.debug==True:
             print(label, curr_time - self.tic)
         self.tic = curr_time

@@ -1,8 +1,8 @@
-from dycore.utils.boundary import set_ghostcells_p2, set_ghostnodes_p2
+import dycore.utils.boundary as bdry
 import numpy as np
-import numba
+import numba as nb
 
-def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
+def column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     Gamma = th.gm1 / th.gamm
     gamm = th.gamm
     gm1 = th.gm1
@@ -76,7 +76,7 @@ def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     HydroState_n.p20[xc_idx,igy+1:] = pi_hydro_n[:,igy:] / ud.Msq
 
 
-def hydrostatic_state(mpv, elem, node, th, ud):
+def state(mpv, elem, node, th, ud):
     g = ud.gravity_strength[1]
 
     if g != 0.0:
@@ -132,7 +132,7 @@ def hydrostatic_state(mpv, elem, node, th, ud):
         mpv.HydroState_n.S0[...] = 1.0
 
 
-def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
+def initial_pressure(Sol,mpv,elem,node,ud,th):
     Gammainv = th.Gammainv
     igy = node.igy
     igx = node.igx
@@ -171,7 +171,7 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
     y_idx = slice(igy,-igy+1)
 
     mpv.p2_cells[x_idx,y_idx] += pibot[x_idx].reshape(-1,1) - 1.0 * mpv.HydroState.p20[y_idx].reshape(1,-1)
-    set_ghostcells_p2(mpv.p2_cells, elem, ud)
+    bdry.set_ghostcells_p2(mpv.p2_cells, elem, ud)
 
     icxn = node.icx
     icyn = node.icy
@@ -210,7 +210,7 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
     # guess initial node value (at left-most node)
     mpv.p2_nodes[igx,igy:-igy] = mpv.dp2_nodes[igx,igy:-igy]
 
-    mpv.p2_nodes[:,:] = loop_over_array(igx,igy,icxn,icyn,mpv.p2_nodes, mpv.dp2_nodes)
+    mpv.p2_nodes[:,:] = __loop_over_array(igx,igy,icxn,icyn,mpv.p2_nodes, mpv.dp2_nodes)
 
     assert ((node.icx+1)%2) == 1
     delp2 = 0.5 * (mpv.p2_nodes[-igx-1,igy:-igy] - mpv.p2_nodes[igx,igy:-igy])
@@ -220,7 +220,7 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
     sgn[1::2] *= -1
 
     mpv.p2_nodes[igx:-igx,igy:-igy] += sgn * delp2
-    set_ghostnodes_p2(mpv.p2_nodes, node, ud)
+    bdry.set_ghostnodes_p2(mpv.p2_nodes, node, ud)
 
     mpv.dp2_nodes[:,:] = 0.0
 
@@ -238,8 +238,8 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
 # need details:
 # populate the rest of the nodes recursively based on the left-most node.
 # recursive: use numba.
-@numba.jit(nopython=True)
-def loop_over_array(igx,igy,icxn,icyn,p,dp):
+@nb.jit(nopython=True)
+def __loop_over_array(igx,igy,icxn,icyn,p,dp):
     for j in range(igy,icyn-igy):
         for i in range(igx+1,icxn-igx):
             p[i,j] = 2.0 * dp[i-1,j] - p[i-1,j]

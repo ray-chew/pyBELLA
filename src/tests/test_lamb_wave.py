@@ -1,8 +1,7 @@
 import numpy as np
-from dycore.utils.options import BdryType
-from dycore.utils.options import LimiterType
-from dycore.physics.hydrostatics import hydrostatic_state
-from dycore.utils.boundary import set_explicit_boundary_data, get_tau_y, get_bottom_tau_y
+import dycore.utils.options as opts
+import dycore.utils.boundary as bdry
+import dycore.physics.hydrostatics as hydrostatic
 
 class UserData(object):
     NSPEC = 1
@@ -82,9 +81,9 @@ class UserData(object):
         self.w_wind_speed = 0.0
 
         self.bdry_type = np.empty((3), dtype=object)
-        self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.WALL
-        self.bdry_type[2] = BdryType.WALL
+        self.bdry_type[0] = opts.BdryType.PERIODIC
+        self.bdry_type[1] = opts.BdryType.WALL
+        self.bdry_type[2] = opts.BdryType.WALL
         self.LAMB_BDRY = False
 
         ##########################################
@@ -100,8 +99,8 @@ class UserData(object):
         self.dtfixed = self.dtfixed0
         
         self.do_advection = False
-        self.limiter_type_scalars = LimiterType.NONE
-        self.limiter_type_velocity = LimiterType.NONE
+        self.limiter_type_scalars = opts.LimiterType.NONE
+        self.limiter_type_velocity = opts.LimiterType.NONE
 
         self.tol = 1.e-30
         self.max_iterations = 10000
@@ -138,7 +137,7 @@ class UserData(object):
 
         self.diag = True
         self.diag_current_run = 'test_lamb_wave'
-        self.diag_plot_compare = True
+        self.diag_plot_compare = False
 
         self.stratification = self.stratification_wrapper
         self.rayleigh_bc = self.rayleigh_bc_function
@@ -172,7 +171,7 @@ class UserData(object):
 
     @staticmethod
     def rayleigh_bc_function(ud):
-        if ud.bdry_type[1] == BdryType.RAYLEIGH or ud.rayleigh_forcing == True:
+        if ud.bdry_type[1] == opts.BdryType.RAYLEIGH or ud.rayleigh_forcing == True:
             ud.inbcy = ud.iny - 1
             ud.iny0 = np.copy(ud.iny)
             ud.iny = ud.iny0 + int(3*ud.inbcy)
@@ -260,15 +259,15 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     if hasattr(ud, 'rayleigh_bdry_switch'):
         if ud.rayleigh_bdry_switch:
-            ud.bdry_type[1] = BdryType.RAYLEIGH
+            ud.bdry_type[1] = opts.BdryType.RAYLEIGH
 
-    if ud.bdry_type[1] == BdryType.RAYLEIGH:
-        ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.5)
+    if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
+        ud.tcy, ud.tny = bdry.get_tau_y(ud, elem, node, 0.5)
 
     if ud.rayleigh_forcing:
         # ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.005)
         
-        ud.forcing_tcy, ud.forcing_tny = get_bottom_tau_y(ud, elem, node, 0.2, cutoff=0.3)
+        ud.forcing_tcy, ud.forcing_tny = bdry.get_bottom_tau_y(ud, elem, node, 0.2, cutoff=0.3)
 
     A0 = 1.0e-1 / ud.u_ref
     Msq = ud.Msq
@@ -291,7 +290,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     ud.stratification = ud.stratification(dy)
 
     # Use hydrostatically balanced background
-    hydrostatic_state(mpv, elem, node, th, ud)
+    hydrostatic.state(mpv, elem, node, th, ud)
     rhobar = mpv.HydroState.rho0.reshape(1,-1)
     Ybar = mpv.HydroState.Y0.reshape(1,-1)
     pibar = mpv.HydroState.p20.reshape(1,-1) * ud.Msq
@@ -351,7 +350,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     # if ud.bdry_type[1] == 'RAYLEIGH':
     #     rayleigh_damping(Sol, mpv, ud, ud.tcy, elem, th)
 
-    set_explicit_boundary_data(Sol,elem,ud,th,mpv)
+    bdry.set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
     if hasattr(ud, 'mixed_run'):
         if ud.mixed_run:

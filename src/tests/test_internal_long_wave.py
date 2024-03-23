@@ -1,14 +1,8 @@
 import numpy as np
-from dycore.utils.options import BdryType, LimiterType
-from dycore.physics.hydrostatics import (
-    hydrostatic_state,
-    hydrostatic_column,
-    hydrostatic_initial_pressure,
-)
-from dycore.utils.boundary import (
-    set_explicit_boundary_data,
-)
-from dycore.utils.variable import States
+import dycore.utils.options as opts
+import dycore.utils.boundary as bdry
+import dycore.utils.variable as var
+import dycore.physics.hydrostatics as hydrostatic
 
 
 class UserData(object):
@@ -93,9 +87,9 @@ class UserData(object):
         self.w_wind_speed = 0.0
 
         self.bdry_type = np.empty((3), dtype=object)
-        self.bdry_type[0] = BdryType.PERIODIC
-        self.bdry_type[1] = BdryType.WALL
-        self.bdry_type[2] = BdryType.PERIODIC
+        self.bdry_type[0] = opts.BdryType.PERIODIC
+        self.bdry_type[1] = opts.BdryType.WALL
+        self.bdry_type[2] = opts.BdryType.PERIODIC
 
         ##########################################
         # NUMERICS
@@ -120,8 +114,8 @@ class UserData(object):
         # self.iny = 40+1
         self.inz = 1
 
-        self.limiter_type_scalars = LimiterType.NONE
-        self.limiter_type_velocity = LimiterType.NONE
+        self.limiter_type_scalars = opts.LimiterType.NONE
+        self.limiter_type_velocity = opts.LimiterType.NONE
 
         self.initial_projection = False
 
@@ -161,7 +155,7 @@ class UserData(object):
 
         self.diag = True
         self.diag_current_run = "test_internal_long_wave"
-        self.diag_plot_compare = True
+        self.diag_plot_compare = False
 
     def stratification_function(self, y):
         Nsq = self.Nsq_ref * self.t_ref * self.t_ref
@@ -194,10 +188,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     xc = 0.0
     a = ud.scale_factor * 5.0e3 / ud.h_ref
 
-    hydrostatic_state(mpv, elem, node, th, ud)
+    hydrostatic.state(mpv, elem, node, th, ud)
 
-    HySt = States(node.sc, ud)
-    HyStn = States(node.sc, ud)
+    HySt = var.States(node.sc, ud)
+    HyStn = var.States(node.sc, ud)
 
     x = elem.x.reshape(-1, 1)
     y = elem.y.reshape(1, -1)
@@ -213,7 +207,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         1.0 + (xn - xc) ** 2 / (a**2)
     )
 
-    hydrostatic_column(HySt, HyStn, Y, Yn, elem, node, th, ud)
+    hydrostatic.column(HySt, HyStn, Y, Yn, elem, node, th, ud)
 
     x_idx = slice(None)
     y_idx = slice(elem.igy, -elem.igy + 1)
@@ -244,7 +238,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     mpv.p2_nodes[:, elem.igy : -elem.igy] = HyStn.p20[:, elem.igy : -elem.igy]
 
-    hydrostatic_initial_pressure(Sol, mpv, elem, node, ud, th)
+    hydrostatic.initial_pressure(Sol, mpv, elem, node, ud, th)
 
     ud.nonhydrostasy = 1.0 if ud.is_nonhydrostatic == 1 else 0.0
     ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
@@ -252,7 +246,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     if "imbal" in ud.aux:
         mpv.p2_nodes[...] = 0.0
 
-    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     return Sol
 

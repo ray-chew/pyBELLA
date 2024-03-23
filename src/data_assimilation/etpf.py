@@ -1,5 +1,4 @@
 import numpy as np
-
 import logging
 
 def da_interface(results, obs, obs_attributes, delta, times, tout, N, loc=0):
@@ -11,7 +10,6 @@ def da_interface(results, obs, obs_attributes, delta, times, tout, N, loc=0):
     # local_ens = np.array([mem[inner] for mem in local_ens])
     # local_ens = analysis(local_ens,attr)
     # print(results[:,0,...][0].rho)
-
     attributes = ['rho','rhou','rhov','rhow','rhoY','rhoX']
     # attributes = ['rho', 'rhou', 'rhov']
     tmp = np.array([getattr(results[:,loc,...][n],obs_attributes[0])[inner] for n in range(N)])

@@ -1,6 +1,6 @@
 import numpy as np
 
-from dycore.utils.boundary import set_ghostcells_p2
+import dycore.utils.boundary as bdry
 
 def nonhydrostasy(ud,t,step):
     if step >= 0:
@@ -79,4 +79,4 @@ def synchronise_variables(mpv, Sol, elem, node, ud, th):
         p2bg = np.repeat(p2bg, elem.icx,axis=0)
         mpv.p2_cells = scale_factor * Sol.rhoY**th.gm1 - p2bg
 
-    set_ghostcells_p2(mpv.p2_cells, elem, ud)
+    bdry.set_ghostcells_p2(mpv.p2_cells, elem, ud)

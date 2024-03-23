@@ -1,6 +1,6 @@
 import numpy as np
-from dycore.physics.hydrostatics import hydrostatic_state
-from dycore.utils.boundary import set_explicit_boundary_data
+import dycore.physics.hydrostatics as hydrostatic
+import dycore.utils.boundary as bdry
 
 class UserData(object):
     # Nsq_ref = grav * 1.3e-05
@@ -51,7 +51,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     g = ud.gravity_strength[1]
     # print(ud.rho_ref)
 
-    hydrostatic_state(mpv, elem, node, th, ud)
+    hydrostatic.state(mpv, elem, node, th, ud)
 
     x = elem.x
     y = elem.y
@@ -94,6 +94,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     rhoY = mpv.HydroState_n.rhoY0[0]
     mpv.p2_nodes[...] = (p - mpv.HydroState_n.p0[0]) / rhoY / ud.Msq
 
-    set_explicit_boundary_data(Sol,elem,ud,th,mpv)
+    bdry.set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 
     return Sol

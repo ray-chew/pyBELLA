@@ -5,10 +5,10 @@
 *.ipynb_checkpoints*
 *.egg-info*
 
-# Ignore various local subdirectories
+# Ignore local development and output subdirectories
 **outputs*
-**docs*
 **build*
+**changelog.d*
 
 # Ignore various outputs
 *.h5

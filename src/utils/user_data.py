@@ -1,7 +1,7 @@
 import numpy as np
 
-from dycore.utils.options import BdryType, LimiterType
-from utils.sim_params import global_constants
+import dycore.utils.options as opts
+import utils.sim_params as params
 
 
 class UserDataInit(object):
@@ -10,12 +10,12 @@ class UserDataInit(object):
 
     Attributes
     ----------
-    **kwargs: class object
+    \*\*kwargs: class object
 
     """
 
     def __init__(self,**kwargs):
-        gconsts = global_constants()
+        gconsts = params.global_constants()
         for key, value in vars(gconsts).items():
             setattr(self, key, value)
 
@@ -43,9 +43,9 @@ class UserDataInit(object):
             # BOUNDARY CONDITIONS
             ##########################################
             self.bdry_type = np.empty((3), dtype=object)
-            self.bdry_type[0] = BdryType.PERIODIC
-            self.bdry_type[1] = BdryType.WALL
-            self.bdry_type[2] = BdryType.WALL
+            self.bdry_type[0] = opts.BdryType.PERIODIC
+            self.bdry_type[1] = opts.BdryType.WALL
+            self.bdry_type[2] = opts.BdryType.WALL
 
 
             ##########################################
@@ -88,8 +88,8 @@ class UserDataInit(object):
             self.do_advection = True
 
             # Advection limiter types     
-            self.limiter_type_scalars = LimiterType.NONE
-            self.limiter_type_velocity = LimiterType.NONE
+            self.limiter_type_scalars =  opts.LimiterType.NONE
+            self.limiter_type_velocity = opts.LimiterType.NONE
 
             # Iterative solver
             self.tol = 1.e-8

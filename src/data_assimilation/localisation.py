@@ -1,5 +1,5 @@
 import numpy as np
-from dycore.utils.options import BdryType
+import dycore.utils.options as opts
 
 def rlocal_5pt(elem,node,ud):
     igx = elem.igx
@@ -13,11 +13,11 @@ def rlocal_5pt(elem,node,ud):
 
     iicxn, iicyn = iicyn, iicxn
 
-    x_periodic = ud.bdry_type[1] == BdryType.PERIODIC
-    y_periodic = ud.bdry_type[0] == BdryType.PERIODIC
+    x_periodic = ud.bdry_type[1] == opts.BdryType.PERIODIC
+    y_periodic = ud.bdry_type[0] == opts.BdryType.PERIODIC
 
-    x_wall = ud.bdry_type[1] == BdryType.WALL
-    y_wall = ud.bdry_type[0] == BdryType.WALL
+    x_wall = ud.bdry_type[1] == opts.BdryType.WALL
+    y_wall = ud.bdry_type[0] == opts.BdryType.WALL
 
     return lambda covar : rlocal_5pt_stencil(covar, iicxn, iicyn, x_periodic, y_periodic, x_wall, y_wall)
 
