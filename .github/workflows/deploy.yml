@@ -47,7 +47,7 @@ jobs:
           force_orphan: true
   dycore:
     needs: prepare
-    runs-on: ${{needs.prepare.outputs.RUNNER}
+    runs-on: ${{needs.prepare.outputs.RUNNER}}
     steps:
       - uses: actions/checkout@v3
       - name: Run tests
