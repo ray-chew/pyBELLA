@@ -1,6 +1,7 @@
 Numerics
 --------
 .. toctree::
+    :maxdepth: 1
 
     content/boundary
     content/grid_discretisation

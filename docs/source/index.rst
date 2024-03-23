@@ -10,11 +10,18 @@ pyBELLA documentation
     :hidden:
     :maxdepth: 2
 
+    Home <self>
     quickstart
     numerics
     apis
+    changelog
     refs
 
+.. toctree::
+   :hidden:
+   :caption: Links
+
+   GitHub repo <https://github.com/ray-chew/pyBELLA>
 
 
 
