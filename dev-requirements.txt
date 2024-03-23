@@ -13,3 +13,4 @@ termcolor==2.4.0
 sphinx==7.2.6
 sphinx_changelog==1.5.0
 sphinx-math-dollar==1.2.1
+furo==2024.1.29
