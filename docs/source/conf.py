@@ -37,7 +37,11 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx_changelog',
     'sphinx.ext.doctest',
-    'sphinx.ext.graphviz'
+    'sphinx.ext.graphviz',
+    'sphinx.ext.imgconverter',
+    'sphinx.ext.todo',
+    'sphinx_math_dollar',
+    'sphinx.ext.mathjax'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -76,12 +80,25 @@ html_favicon = "_static/favicon.ico"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
-html_css_files = ['css/overwrite.css']
+# html_css_files = ['css/overwrite.css']
 
 # -- Extension configuration -------------------------------------------------
 numfig = True
+autosummary_generate = True
+autosummary_imported_members = True
+
+# see details: https://www.sympy.org/sphinx-math-dollar/
+mathjax3_config = {
+    'tex2jax': {
+        'inlineMath': [ ["\\(","\\)"] ],
+        'displayMath': [["\\[","\\]"] ],
+    },
+}
+
 
 # -- GraphViz configuration ----------------------------------
 graphviz_output_format = "svg"
-autosummary_generate = True
-autosummary_imported_members = True
+
+# -- Options for todo extension ----------------------------------------------
+# If true, `todo` and `todoList` produce output, else they produce nothing.
+todo_include_todos = True

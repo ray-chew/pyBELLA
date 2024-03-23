@@ -55,21 +55,27 @@ Reconstruction
 --------------
 
 .. _fig_slope_recovery:
-.. figure:: ./_static/slope_recovery.svg
+
+.. figure:: ../_static/slope_recovery.svg
+    :alt: fig_slope_recovery
+    :align: center
     :width: 80%
     
     Recovering the limited slope (in red) in the $i$-th cell.
 
-Let's get the missing pieces, say $\Psi^{n+1/2}_{i+1/2}$. First, apply the slope limiter. :numref:`Figure %s <fig_slope_recovery>` shows a simple case where the slope in the $i$-th cell is the average of the slopes constructed from the cell averages (dotted-lines) of the adjacent cells. This is done in :py:meth:`physics.gas_dynamics.recovery.slopes` while :py:meth:`physics.gas_dynamics.recovery.limiters` is a switch for the limiter choice specified in the initial coonditions. The limited slope of the $i$-th cell is denoted $S_i$. Now,
+Let's get the missing pieces, say $\Psi^{n+1/2}_{i+1/2}$. First, apply the slope limiter. :numref:`fig_slope_recovery` shows a simple case where the slope in the $i$-th cell is the average of the slopes constructed from the cell averages (dotted-lines) of the adjacent cells. This is done in :py:meth:`physics.gas_dynamics.recovery.slopes` while :py:meth:`physics.gas_dynamics.recovery.limiters` is a switch for the limiter choice specified in the initial coonditions. The limited slope of the $i$-th cell is denoted $S_i$. Now,
 
 .. math:: 
     \Psi(t^{n+1/2}, x_{i+1/2}) = \Psi(t^n, x_{i+1/2} - \frac{\Delta t}{2} u)
     :label: backward_characteristic
     
-by tracing the characteristic of $\Psi$ backwards in time. :numref:`Figure %s <fig_backward_tracing>` illustrates this.
+by tracing the characteristic of $\Psi$ backwards in time. :numref:`fig_backward_tracing` illustrates this.
 
 .. _fig_backward_tracing:
-.. figure:: ./_static/backward_tracing.svg
+
+.. figure:: ../_static/backward_tracing.svg
+    :alt: backward tracing
+    :align: center
     :width: 50%
     
     Backward tracing of the characteristic from $(t^{n+1/2}, x_{i+1/2})$.
@@ -95,13 +101,16 @@ Plugging :eq:`linear_interpolation` into :eq:`backward_characteristic`,
                                 &=: \Psi^-_{i+1/2},
     :label: left_solution
                                 
-where $x_{i+1/2} - x_{i} = \Delta x /2$ is used. $\Psi^-_{i+1/2}$ is the solution of $\Psi$ from the left for the cell interface at $i+1/2$. See :numref:`figure %s <fig_discontinuity_at_cell_interface>` for more details.
+where $x_{i+1/2} - x_{i} = \Delta x /2$ is used. $\Psi^-_{i+1/2}$ is the solution of $\Psi$ from the left for the cell interface at $i+1/2$. See :numref:`fig_discontinuity_at_cell_interface` for more details.
 
 The Riemann problem
 -------------------
 
 .. _fig_discontinuity_at_cell_interface:
-.. figure:: ./_static/discontinuity_at_cell_interface.svg
+
+.. figure:: ../_static/discontinuity_at_cell_interface.svg
+    :alt: fig_discontinuity_at_cell_interface
+    :align: center
     :width: 60%
     
     Discontinuity at the cell interface $i+1/2$ arising from the recovery of $\Psi_{i+1/2}^{n+1/2}$.
@@ -154,7 +163,5 @@ More details on the methods discussed here can be found in [LeVeque92]_.
 
 References
 ----------
-
-.. [BK19] Benacchio, T., and R. Klein, 2019: A semi-implicit compressible model for atmospheric flows with seamless access to soundproof and hydro-static dynamics. *Monthly Weather Review*, **147** (**11**), 4221–4240.
 
 .. [LeVeque92] LeVeque, R.J., 1992: Numerical methods for conservation laws. Basel: Birkhäuser.

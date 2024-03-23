@@ -1,6 +1,0 @@
-Introduction
-============
-
-Program overview
-****************
-Overview

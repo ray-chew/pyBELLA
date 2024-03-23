@@ -11,7 +11,7 @@ For ghost cells in directions without gravity, the ghost cells are padded by the
 For ghost cells in direction with gravity, the update follows :numref:`figure %s <fig_1>`, where the blue and red sets of `nlast`, `nimage`, and `nsource` are used together in an update step depending on the values of `offset` and `direction`.
 
 .. _fig_1:
-.. figure:: ./_static/boundary_handling.svg
+.. figure:: ../_static/boundary_handling.svg
    :width: 100%
 
    Boundary handling of gravity axis.
