@@ -1,4 +1,4 @@
-name: deploy
+name: docs
 
 on: [push, pull_request, workflow_dispatch]
 
@@ -6,7 +6,7 @@ permissions:
   contents: write
 
 jobs:
-  run:
+  docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -31,7 +31,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: _build/
           force_orphan: true
-      - name: Run tests
-        run: |
-          pytest ./run_scripts/test_dycore.py --no-header -v
-    
