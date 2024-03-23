@@ -54,7 +54,7 @@ class Vars(object):
 
         Parameters
         ----------
-        th : :class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+        th : :class:`physics.gas_dynamics.thermodynamic.init`
             Thermodynamic variables of the system
 
         Attributes

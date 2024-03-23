@@ -6,7 +6,7 @@ import dycore.utils.boundary as bdry
 
 import logging
 
-class da_params(object):
+class init(object):
 
     def __init__(self,N,da_type='rloc'):
         # number of ensemble members

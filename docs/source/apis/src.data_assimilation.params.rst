@@ -17,7 +17,7 @@
 
    .. autosummary::
    
-      da_params
+      init
    
    
 

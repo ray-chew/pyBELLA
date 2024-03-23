@@ -17,7 +17,7 @@ src.dycore.physics.gas\_dynamics.thermodynamic
 
    .. autosummary::
    
-      ThermodynamicInit
+      init
    
    
 

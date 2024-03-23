@@ -20,7 +20,7 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
         Is current step odd or even?
     ud : :py:class:`inputs.user_data.UserDataInit`
         Class container for initial conditions
-    th : :py:class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+    th : :py:class:`physics.gas_dynamics.thermodynamic.init`
         Class container for thermodynamic quantities.
     mpv : :py:class:`physics.low_mach.mpv.MPV`
         Container for Exner pressure.
@@ -93,7 +93,7 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
         Tracks whether the substep order goes in x-y-z or z-y-x.
     ud : :py:class:`inputs.user_data.UserDataInit`
         Class container for initial conditions
-    th : :py:class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+    th : :py:class:`physics.gas_dynamics.thermodynamic.init`
         Class container for thermodynamic quantities.
     mpv : :py:class:`physics.low_mach.mpv.MPV`
         Container for Exner pressure.
@@ -185,7 +185,7 @@ def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None)
         Is current step odd or even?
     ud : :py:class:`inputs.user_data.UserDataInit`
         Class container for initial conditions
-    th : :py:class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+    th : :py:class:`physics.gas_dynamics.thermodynamic.init`
         Class container for thermodynamic quantities.
     mpv : :py:class:`physics.low_mach.mpv.MPV`
         Container for Exner pressure.

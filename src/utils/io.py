@@ -15,7 +15,7 @@ import argparse
 import utils.sim_params as params
 
 
-class io(object):
+class init(object):
     """
     HDF5 writer class. Contains methods to create HDF5 file, create data sets and populate them with output variables.
 
@@ -139,7 +139,7 @@ class io(object):
             Cells grid
         node : :class:`discretization.kgrid.NodeSpaceDiscr`
             Nodes grid
-        th : :class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+        th : :class:`physics.gas_dynamics.thermodynamic.init`
             Thermodynamic variables of the system
         name: str
             The time and additional suffix label for the dataset, e.g. "_10.0_after_full_step", where 10.0 is the time and "after_full_step" denotes when the output was made.

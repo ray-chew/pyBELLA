@@ -28,7 +28,7 @@
    .. autosummary::
    
       datetime
-      io
+      init
       read_input
    
    

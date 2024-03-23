@@ -96,7 +96,7 @@ def do(
         Nodes grid.
     step : int
         Current step.
-    th : :class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+    th : :class:`physics.gas_dynamics.thermodynamic.init`
         Thermodynamic variables of the system
     bld : :class:`data_assimilation.blending.Blend()`
         Blending class used to initalise interface blending methods.

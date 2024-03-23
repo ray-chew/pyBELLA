@@ -63,7 +63,7 @@ def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
         :math:`\\frac{dt}{dx}`, where :math:`dx` is the grid-size in the direction of the substep.
     ud : :py:class:`inputs.user_data.UserDataInit`
         Class container for the initial condition.
-    th : :py:class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+    th : :py:class:`physics.gas_dynamics.thermodynamic.init`
         Class container for the thermodynamical constants.
 
     Returns

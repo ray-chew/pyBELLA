@@ -17,7 +17,7 @@ def do(Sol, flux, lmbda, ud, th, elem, split_step, tag):
         :math:`\\frac{dt}{dx}`, where :math:`dx` is the grid-size in the direction of the substep.
     ud : :py:class:`inputs.user_data.UserDataInit`
         Class container for the initial condition.
-    th : :py:class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+    th : :py:class:`physics.gas_dynamics.thermodynamic.init`
         Class container for the thermodynamical constants.
     elem : :py:class:`discretization.kgrid.ElemSpaceDiscr`
         Class container for the cell-grid.
@@ -197,7 +197,7 @@ def get_conservatives(U, ud, th):
         `Lefts` and `Rights` corresponding to the values at the cell interfaces.
     ud : :py:class:`inputs.user_data.UserDataInit`
         Data container for the initial conditions
-    th : :py:class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+    th : :py:class:`physics.gas_dynamics.thermodynamic.init`
         Class container for the thermodynamical constants.
     """
     U.rho = U.rhoY / U.Y
