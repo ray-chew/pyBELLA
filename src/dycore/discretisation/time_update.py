@@ -10,7 +10,7 @@ import dycore.physics.gas_dynamics.eos as gd_eos
 import dycore.physics.gas_dynamics.cfl as gd_cfl
 
 import dycore.physics.low_mach.second_projection as lm_sp
-import dycore.discretisation.grid as grid
+import dycore.discretisation.grid as dis_grid
 
 # for blending module
 import data_assimilation as da
@@ -48,10 +48,10 @@ def data_init(ud):
     z0 = ud.zmin
     z1 = ud.zmax
 
-    g = grid.Grid(inx, iny, inz, x0, x1, y0, y1, z0, z1)
+    grid = dis_grid.Grid(inx, iny, inz, x0, x1, y0, y1, z0, z1)
 
-    elem = grid.ElemSpaceDiscr(g, ud)
-    node = grid.NodeSpaceDiscr(g, ud)
+    elem = dis_grid.ElemSpaceDiscr(grid, ud)
+    node = dis_grid.NodeSpaceDiscr(grid, ud)
 
     return elem, node
 
