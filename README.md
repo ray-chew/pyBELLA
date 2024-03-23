@@ -40,7 +40,7 @@ This code was used to produce the results in [Chew (2022)](https://refubium.fu-b
 
 See [`requirements.txt`](https://github.com/ray-chew/pyBELLA/blob/main/requirements.txt)
 
-**Note**:  The development dependencies can be found in [`dev-requirements.py`](https://github.com/ray-chew/pyBELLA/blob/main/dev-requirements.txt).
+**Note**:  The development dependencies can be found in [`dev-requirements.txt`](https://github.com/ray-chew/pyBELLA/blob/main/dev-requirements.txt).
 
 
 ## Usage
@@ -75,7 +75,7 @@ However, the codebase is structured such that the user can easily assemble a run
 
 ## Contributions
 
-Refer to the [open issues](https://github.com/ray-chew/pyBELLA/issues) that require attention.
+Refer to the [open issues](https://github.com/ray-chew/pyBELLA/issues), in particular issues with the [`help wanted` label](https://github.com/ray-chew/pyBELLA/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22).
 
-Any changes, improvements, or bug fixes can be submitted to from your remote to upstream via a pull request.
+Any changes, improvements, or bug fixes can be submitted from your remote to upstream via a pull request.
 
