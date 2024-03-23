@@ -1,6 +1,6 @@
-from dycore.utils.boundary import set_ghostcells_p2, set_ghostnodes_p2
+import dycore.utils.boundary as bdry
 import numpy as np
-import numba
+import numba as nb
 
 def hydrostatic_column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     Gamma = th.gm1 / th.gamm
@@ -171,7 +171,7 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
     y_idx = slice(igy,-igy+1)
 
     mpv.p2_cells[x_idx,y_idx] += pibot[x_idx].reshape(-1,1) - 1.0 * mpv.HydroState.p20[y_idx].reshape(1,-1)
-    set_ghostcells_p2(mpv.p2_cells, elem, ud)
+    bdry.set_ghostcells_p2(mpv.p2_cells, elem, ud)
 
     icxn = node.icx
     icyn = node.icy
@@ -220,7 +220,7 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
     sgn[1::2] *= -1
 
     mpv.p2_nodes[igx:-igx,igy:-igy] += sgn * delp2
-    set_ghostnodes_p2(mpv.p2_nodes, node, ud)
+    bdry.set_ghostnodes_p2(mpv.p2_nodes, node, ud)
 
     mpv.dp2_nodes[:,:] = 0.0
 
@@ -238,7 +238,7 @@ def hydrostatic_initial_pressure(Sol,mpv,elem,node,ud,th):
 # need details:
 # populate the rest of the nodes recursively based on the left-most node.
 # recursive: use numba.
-@numba.jit(nopython=True)
+@nb.jit(nopython=True)
 def loop_over_array(igx,igy,icxn,icyn,p,dp):
     for j in range(igy,icyn-igy):
         for i in range(igx+1,icxn-igx):

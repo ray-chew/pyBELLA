@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-from scipy import signal
+import scipy as sp
 
 def recompute_advective_fluxes(flux, Sol, *args, **kwargs):
     """
@@ -30,19 +30,19 @@ def recompute_advective_fluxes(flux, Sol, *args, **kwargs):
         kernel_w = np.swapaxes(kernel_u,2,0)
 
         rhoYw = Sol.rhoY * Sol.rhow / Sol.rho
-        flux[2].rhoY[inner_idx] = signal.fftconvolve(rhoYw, kernel_w, mode='valid') / kernel_w.sum()
+        flux[2].rhoY[inner_idx] = sp.signal.fftconvolve(rhoYw, kernel_w, mode='valid') / kernel_w.sum()
     else:
         assert 0, "Unsupported dimension in recompute_advective_flux"
 
     rhoYu = kwargs.get('u',Sol.rhoY * Sol.rhou / Sol.rho)
 
-    flux[0].rhoY[inner_idx] = np.moveaxis(signal.fftconvolve(rhoYu, kernel_u, mode='valid') / kernel_u.sum(), 0, -1)
+    flux[0].rhoY[inner_idx] = np.moveaxis(sp.signal.fftconvolve(rhoYu, kernel_u, mode='valid') / kernel_u.sum(), 0, -1)
 
     rhoYv = kwargs.get('v',Sol.rhoY * Sol.rhov / Sol.rho)
     if ndim == 2:
-        flux[1].rhoY[inner_idx] = signal.fftconvolve(rhoYv, kernel_v, mode='valid') / kernel_v.sum()
+        flux[1].rhoY[inner_idx] = sp.signal.fftconvolve(rhoYv, kernel_v, mode='valid') / kernel_v.sum()
     elif ndim == 3:
-        flux[1].rhoY[inner_idx] = np.moveaxis(signal.fftconvolve(rhoYv, kernel_v, mode='valid') / kernel_v.sum(), -1,0)
+        flux[1].rhoY[inner_idx] = np.moveaxis(sp.signal.fftconvolve(rhoYv, kernel_v, mode='valid') / kernel_v.sum(), -1,0)
     # flux[1].rhoY[...,-1] = 0.
 
 def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):

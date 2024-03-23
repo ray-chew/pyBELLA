@@ -17,8 +17,6 @@
       hydrostatic_initial_pressure
       hydrostatic_state
       loop_over_array
-      set_ghostcells_p2
-      set_ghostnodes_p2
    
    
 

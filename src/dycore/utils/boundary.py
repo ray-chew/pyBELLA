@@ -1,8 +1,8 @@
 """
 For more details on this module, refer to the write-up :ref:`boundary_handling`.
 """
-from dycore.utils.options import BdryType
 import numpy as np
+import dycore.utils.options as opts
 
 def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
     """
@@ -43,12 +43,12 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
         if ud.gravity_strength[current_step] == 0.0:
             # Do this for the axes that do not have gravity.
             # Periodic BC.
-            if ud.bdry_type[current_step] == BdryType.PERIODIC:
+            if ud.bdry_type[current_step] == opts.BdryType.PERIODIC:
                 set_boundary(Sol,ghost_padding,'wrap',idx,step=None)
             # Wall BC.
-            elif ud.bdry_type[current_step] == BdryType.WALL:
+            elif ud.bdry_type[current_step] == opts.BdryType.WALL:
                 set_boundary(Sol,ghost_padding,'symmetric',idx,step=None)
-            elif ud.bdry_type[current_step] == BdryType.RAYLEIGH:
+            elif ud.bdry_type[current_step] == opts.BdryType.RAYLEIGH:
                 assert 0, "Rayleigh boundary not defined on x-direction."
                 # set_boundary(Sol,((0,0),(0,2)),'constant',(slice(None,),slice(0,-2)),step=None)
                 # set_boundary(Sol,((0,0),(2,0)),'symmetric',(slice(None,),slice(2,None)),step=None)
@@ -287,7 +287,7 @@ def set_ghostcells_p2(p,elem,ud):
     for dim in range(elem.ndim):
         ghost_padding, idx = get_ghost_padding(elem.ndim,dim,igs)
 
-        if ud.bdry_type[dim] == BdryType.PERIODIC:
+        if ud.bdry_type[dim] == opts.BdryType.PERIODIC:
             p[...] = np.pad(p[idx],ghost_padding,'wrap')
         else: # WALL
             p[...] = np.pad(p[idx],ghost_padding,'symmetric')
@@ -298,9 +298,9 @@ def set_ghostnodes_p2(p,node,ud, igs=None):
     for dim in range(node.ndim):
         ghost_padding, idx = get_ghost_padding(node.ndim,dim,igs)
 
-        if ud.bdry_type[dim] == BdryType.PERIODIC:
+        if ud.bdry_type[dim] == opts.BdryType.PERIODIC:
             p[...] = np.pad(p[idx], ghost_padding, periodic_plus_one)
-        else: # ud.bdry_type[dim] == BdryType.WALL:
+        else: # ud.bdry_type[dim] == opts.BdryType.WALL:
             p[...] = np.pad(p[idx], ghost_padding, 'reflect')
 
     # if periodic_plus_one 
@@ -444,7 +444,7 @@ def rayleigh_damping(Sol, mpv, ud, elem, node, forcing=None):
     Y = (Sol.rhoY / Sol.rho)#[elem.i2]
     rho = Sol.rho#[elem.i2]
 
-    if ud.bdry_type[1] == BdryType.RAYLEIGH:
+    if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
         tcy, tny = ud.tcy, ud.tny
     else:
         tcy, tny = 0.0, 0.0
@@ -498,7 +498,7 @@ def check_flux_bcs(Lefts, Rights, elem, split_step, ud):
     igy = elem.igy
 
     if split_step == 1:
-        if ud.bdry_type[split_step] == BdryType.WALL:
+        if ud.bdry_type[split_step] == opts.BdryType.WALL:
 
             left_inner = (slice(None),slice(igy,igy+1))
             left_ghost = (slice(None),slice(igy-1,igy))
@@ -522,7 +522,7 @@ def check_flux_bcs(Lefts, Rights, elem, split_step, ud):
             Rights.rhoY[right_ghost] = Lefts.rhoY[right_inner]
 
     else:
-        if ud.bdry_type[split_step] == BdryType.WALL:
+        if ud.bdry_type[split_step] == opts.BdryType.WALL:
 
             assert(0) # INCOMPLETE!!!
             Lefts.rho[left_inner] = Rights.rho[:,igx-2]

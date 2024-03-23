@@ -1,7 +1,6 @@
-import numpy as np
-from dycore.utils.boundary import set_explicit_boundary_data
-from dycore.physics.gas_dynamics.recovery import recovery
-from dycore.physics.gas_dynamics.numerical_flux import hll_solver
+import dycore.utils.boundary as bdry
+import dycore.physics.gas_dynamics.recovery as gd_recovery
+import dycore.physics.gas_dynamics.numerical_flux as gd_flux
 
 def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
     """
@@ -70,7 +69,7 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
             
     # Sol.rhoX += Sol.rho * mpv.HydroState.S0
 
-    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 
 
@@ -108,11 +107,11 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
     :py:class:`management.variable.States`
         `flux` data container.
     """
-    set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
 
-    Lefts, Rights = recovery(Sol, flux, lmbda, ud, th, elem, split_step, tag)
+    Lefts, Rights = gd_recovery.do(Sol, flux, lmbda, ud, th, elem, split_step, tag)
 
-    # Lefts, Rights, u, Diffs, Ampls, Slopes = recovery(Sol, flux, lmbda, ud, th, elem, split_step, tag)
+    # Lefts, Rights, u, Diffs, Ampls, Slopes = gd_recovery.do(Sol, flux, lmbda, ud, th, elem, split_step, tag)
 
     # if writer is not None:
     #     writer[0].write_all(Sol,mpv,elem,writer[1],th,str(writer[2])+'_split_%i' %split_step)
@@ -146,7 +145,7 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
     # skipped check_flux_bcs for now; first debug other functions
     # check_flux_bcs(Lefts, Rights, elem, split_step, ud)
 
-    flux = hll_solver(flux,Lefts,Rights,Sol, lmbda, ud, th)
+    flux = gd_flux.hll_solver(flux,Lefts,Rights,Sol, lmbda, ud, th)
 
     ndim = elem.ndim
     left_idx, right_idx = [slice(None)] * ndim, [slice(None)] * ndim
@@ -162,7 +161,7 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
         Sol.rhoX += lmbda * (flux.rhoX[left_idx] - flux.rhoX[right_idx])
         Sol.rhoY += lmbda * (flux.rhoY[left_idx] - flux.rhoY[right_idx])
     
-    set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
 
     if tag == 'rk':
         return flux
@@ -234,7 +233,7 @@ def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None)
             updt = lmbda * (flux[dim].rhoX[left_idx] - flux[dim].rhoX[right_idx])
             setattr(Sol, 'pwchi', updt)
 
-    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     # stage = 1
     # for split in range(ndim):

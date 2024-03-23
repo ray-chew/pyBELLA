@@ -1,4 +1,4 @@
-﻿src.dycore.physics.gas\_dynamics.recovery
+src.dycore.physics.gas\_dynamics.recovery
 =========================================
 
 .. automodule:: src.dycore.physics.gas_dynamics.recovery
@@ -13,22 +13,14 @@
 
    .. autosummary::
    
+      do
       get_conservatives
       limiters
-      recovery
       slopes
    
    
 
    
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      Characters
-      LimiterType
-      States
    
    
 

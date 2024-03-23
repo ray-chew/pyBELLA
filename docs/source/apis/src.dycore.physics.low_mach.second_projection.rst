@@ -13,7 +13,6 @@
 
    .. autosummary::
    
-      bicgstab
       correction_nodes
       divergence_nodes
       euler_backward_non_advective_expl_part
@@ -21,18 +20,10 @@
       euler_forward_non_advective
       grad_nodes
       grad_nodes_fft
-      jit
       multiply_inverse_coriolis
       operator_coefficients_nodes
-      precon_diag_prepare
       rhs_from_p_old
       scale_wall_node_values
-      set_explicit_boundary_data
-      set_ghostnodes_p2
-      stencil_27pt
-      stencil_9pt_numba_test
-      stencil_hs
-      stencil_vs
    
    
 
@@ -42,9 +33,6 @@
 
    .. autosummary::
    
-      BdryType
-      LinearOperator
-      product
       solver_counter
    
    

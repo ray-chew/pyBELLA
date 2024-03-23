@@ -13,7 +13,6 @@
 
    .. autosummary::
    
-      jit
       lap2D
       lap2D_5pt
       lap2D_exner
@@ -23,7 +22,6 @@
       lap3D
       lapHS
       lapVS
-      njit
       periodic
       precon_diag_prepare
       stencil_27pt
@@ -37,13 +35,6 @@
    
 
    
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      BdryType
-      prange
    
    
 

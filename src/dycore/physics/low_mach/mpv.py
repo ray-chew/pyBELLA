@@ -1,5 +1,5 @@
 import numpy as np
-from dycore.utils.variable import States
+import dycore.utils.variable as var
 
 class MPV(object):
     def __init__(self,elem,node,ud):
@@ -23,8 +23,8 @@ class MPV(object):
         self.wcenter = np.zeros((node.isc))
         self.wplus = np.zeros(([elem.ndim]+list(sc)))
 
-        self.HydroState = States([sc[1]],ud)
-        self.HydroState_n = States([sn[1]],ud)
+        self.HydroState = var.States([sc[1]],ud)
+        self.HydroState_n = var.States([sn[1]],ud)
 
         self.squeezer()
 

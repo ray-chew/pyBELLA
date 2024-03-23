@@ -1,4 +1,4 @@
-﻿src.dycore.physics.gas\_dynamics.eos
+src.dycore.physics.gas\_dynamics.eos
 ====================================
 
 .. automodule:: src.dycore.physics.gas_dynamics.eos
@@ -18,7 +18,6 @@
       is_nonhydrostatic
       nonhydrostasy
       rhoe
-      set_ghostcells_p2
       synchronise_variables
    
    
