@@ -9,13 +9,6 @@
 
    
    
-   .. rubric:: Functions
-
-   .. autosummary::
-   
-      set_explicit_boundary_data
-      set_ghostnodes_p2
-   
    
 
    

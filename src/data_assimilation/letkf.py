@@ -1,21 +1,17 @@
-from scipy import sparse, linalg
-from scipy.sparse.linalg import spsolve
-from scipy.ndimage import map_coordinates
-from scipy.signal import convolve2d
-from scipy.interpolate import interpn
-from dycore.utils.options import BdryType
-import matplotlib.pyplot as plt
+import numpy as np
+import numpy.lib.stride_tricks as st
+
+import scipy.sparse as sp
+import scipy.ndimage as ndimage
+
 import dask.array as darr
 import dask
-import numpy as np
 
+import matplotlib.pyplot as plt
 import logging
 
-import data_assimilation.utils as dau
-from numpy.lib.stride_tricks import sliding_window_view
-from copy import deepcopy
-
-from dask.diagnostics import ProgressBar
+import dycore.utils.options as opts
+import data_assimilation as da
 
 debug_cnt = 0
 
@@ -46,7 +42,7 @@ def da_interface(results,dap,obs,attr,tout,N,ud):
     local_ens.forward(forward_operator)
     # local_ens.localisation(localisation_matrix)
 
-    obs_covar = sparse.eye((x_obs*y_obs), (x_obs*y_obs), format='csr')
+    obs_covar = sp.sparse.eye((x_obs*y_obs), (x_obs*y_obs), format='csr')
 
     X = local_ens.analyse(obs_current.reshape(-1), obs_covar)
     local_ens.ensemble = local_ens.to_array(X)
@@ -60,7 +56,7 @@ def da_interface(results,dap,obs,attr,tout,N,ud):
 
 # let me ust put the forward operator here for now - will need to tidy stuff up....
 def interpolation_func(ensemble,x_obs,y_obs,ud):
-    if ud.bdry_type[0] == BdryType.WALL or ud.bdry_type[1] == BdryType.WALL:
+    if ud.bdry_type[0] == opts.BdryType.WALL or ud.bdry_type[1] == opts.BdryType.WALL:
         assert("WALL NOT IMPLEMENTED!")
     x_ens, y_ens = ensemble[0].shape
     x = np.linspace(0,x_ens,x_obs)
@@ -77,7 +73,7 @@ def interpolation_func(ensemble,x_obs,y_obs,ud):
     # ensemble = [interpn((x,y),mem,pts, method='splinef2d').reshape(x_obs,y_obs) for mem in ensemble]
 
     x,y = np.meshgrid(x,y)
-    ensemble = [map_coordinates(mem,[y,x],mode='wrap', order=3) for mem in ensemble]
+    ensemble = [ndimage.map_coordinates(mem,[y,x],mode='wrap', order=3) for mem in ensemble]
     return np.array(ensemble)
 
 
@@ -147,7 +143,7 @@ class analysis(object):
         # self.X -= self.X_mean # R in (m x k)
 
         # This is step 4 of the algorithm in Hunt et. al., 2007.
-        C = spsolve(obs_covar, self.Y.T).T # R in (k x l)
+        C = sp.spsolve(obs_covar, self.Y.T).T # R in (k x l)
         # This applies the localisation function to the local region.
         if self.localisation_matrix is not None:
             C[...] = ((np.array(self.localisation_matrix)) @ C.T).T
@@ -155,7 +151,7 @@ class analysis(object):
         # The next three lines are step 5 of the algorithm.
         Pa = (self.no_of_members - 1.) * np.eye(self.no_of_members) / self.rho + (C @ self.Y.T)
 
-        Lambda, P = linalg.eigh(Pa)
+        Lambda, P = sp.linalg.eigh(Pa)
         Pa = P @ (np.diag(1./Lambda) @ P.T)
 
         # This is step 6 of the algorithm.
@@ -248,7 +244,7 @@ class prepare_rloc(object):
         self.pad_Y = int((self.obs_Y - 1) / 2)
 
         # get mask to handle BC. Periodic mask includes ghost cells/nodes and wall masks takes only the inner domain.
-        self.cmask, self.nmask = dau.boundary_mask(ud, elem, node, self.pad_X, self.pad_Y)
+        self.cmask, self.nmask = da.utils.boundary_mask(ud, elem, node, self.pad_X, self.pad_Y)
 
         # get from da parameters the localisation matrix and inflation factor
         self.inf_fac = dap.inflation_factor
@@ -319,7 +315,7 @@ class prepare_rloc(object):
         # covariance handling
         if covar is None:
             # use identity for observation covariance
-            obs_covar_current = sparse.eye(attr_len*obs_X*obs_Y,attr_len*obs_X*obs_Y, format='csr')
+            obs_covar_current = sp.sparse.eye(attr_len*obs_X*obs_Y,attr_len*obs_X*obs_Y, format='csr')
         else:
             # get covar at current time
             covar = covar[list(self.da_times).index(tout)]
@@ -367,7 +363,7 @@ class prepare_rloc(object):
 
         logging.info("Progress of the DA procedure:")
         # Do the computation of the delayed tasks
-        with ProgressBar():
+        with dask.diagnostics.ProgressBar():
             analysis_res = analysis_res.compute()
 
         logging.info("===================\n")
@@ -415,7 +411,7 @@ class prepare_rloc(object):
             # get masked covariance in local domain
             covar_current = np.ma.array(covar,mask=mask_n[n]).filled(fill_value=np.nan)
             covar_current = covar_current[~np.isnan(covar_current)]
-            obs_covar_current = sparse.diags(covar_current.flatten(), format='csr')
+            obs_covar_current = sp.sparse.diags(covar_current.flatten(), format='csr')
 
             # get obs according to sparsity structure
             obs_pn = obs_p[n][~np.isnan(obs_p[n])]
@@ -475,13 +471,13 @@ class prepare_rloc(object):
         state -= X_bar
 
         # Decompose X[G] and bar{X[G]} into the local regions view
-        # X = np.array([dau.sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in state])
-        # X_bar = np.array([dau.sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in X_bar]) 
+        # X = np.array([dau.st.sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in state])
+        # X_bar = np.array([dau.st.sliding_window_view(mem, (1,1), (1,1)).reshape(Nx*Ny,attr_len) for mem in X_bar]) 
 
         state = darr.from_array(state)
-        X = sliding_window_view(state, (1,1), axis=(2,3)).reshape(self.N,attr_len,Nx*Ny)
+        X = st.sliding_window_view(state, (1,1), axis=(2,3)).reshape(self.N,attr_len,Nx*Ny)
         X_bar = darr.from_array(X_bar)
-        X_bar = sliding_window_view(X_bar, (1,1), axis=(2,3)).reshape(1,attr_len,Nx*Ny)
+        X_bar = st.sliding_window_view(X_bar, (1,1), axis=(2,3)).reshape(1,attr_len,Nx*Ny)
 
         X = np.swapaxes(X,1,2)
         X_bar = np.swapaxes(X_bar,1,2)
@@ -504,9 +500,9 @@ class prepare_rloc(object):
 
         obs = np.ma.array(obs,mask=mask).filled(fill_value=np.nan)
 
-        # obs = np.array([dau.sliding_window_view(obs_attr, (obs_X,obs_Y), (1,1)) for obs_attr in obs])
+        # obs = np.array([dau.st.sliding_window_view(obs_attr, (obs_X,obs_Y), (1,1)) for obs_attr in obs])
         obs = darr.from_array(obs)
-        obs = sliding_window_view(obs, (obs_X,obs_Y), axis=(1,2))
+        obs = st.sliding_window_view(obs, (obs_X,obs_Y), axis=(1,2))
 
         obs = np.swapaxes(obs,0,2)
         obs = np.swapaxes(obs,0,1)
@@ -553,13 +549,13 @@ class prepare_rloc(object):
         Y_bar = Y_bar.filled(np.nan)
 
         # Decompose Y[G] and bar{y[G]} such that the local regions can be accessed easily
-        # sios = np.array([sliding_window_view(mem, (obs_X,obs_Y), axis=(1,2)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in sios])
-        # Y_bar = np.array([sliding_window_view(mem, (obs_X,obs_Y), axis=(1,2)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in Y_bar])
+        # sios = np.array([st.sliding_window_view(mem, (obs_X,obs_Y), axis=(1,2)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in sios])
+        # Y_bar = np.array([st.sliding_window_view(mem, (obs_X,obs_Y), axis=(1,2)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in Y_bar])
 
         sios = darr.from_array(sios)
-        sios = sliding_window_view(sios, (obs_X,obs_Y), axis=(2,3)).reshape(self.N,attr_len,Nx*Ny,obs_X,obs_Y)
+        sios = st.sliding_window_view(sios, (obs_X,obs_Y), axis=(2,3)).reshape(self.N,attr_len,Nx*Ny,obs_X,obs_Y)
         Y_bar = darr.from_array(Y_bar)
-        Y_bar = sliding_window_view(Y_bar, (obs_X,obs_Y), axis=(2,3)).reshape(1,attr_len,Nx*Ny,obs_X,obs_Y)
+        Y_bar = st.sliding_window_view(Y_bar, (obs_X,obs_Y), axis=(2,3)).reshape(1,attr_len,Nx*Ny,obs_X,obs_Y)
 
         ###############################
 
@@ -578,14 +574,14 @@ class prepare_rloc(object):
         # for idx in range(0,self.N):
         #     idx = (self.N - 1) - idx
         #     print(idx)
-        #     sios_tmp[idx] = sliding_window_view(sios[idx], (obs_X,obs_Y),axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
+        #     sios_tmp[idx] = st.sliding_window_view(sios[idx], (obs_X,obs_Y),axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
 
 
         # sios_tmp00 = np.zeros((5,attr_len,Nx*Ny,obs_X,obs_Y))
 
         # for idx in range(0,self.N-hN):
         #     print(idx+hN)
-        #     sios_tmp00[idx] = sliding_window_view(sios[idx+hN], (obs_X,obs_Y),axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
+        #     sios_tmp00[idx] = st.sliding_window_view(sios[idx+hN], (obs_X,obs_Y),axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
         
 
         ####################################
@@ -594,11 +590,11 @@ class prepare_rloc(object):
         # Y_bar_tmp[0] = view_as_windows(Y_bar[0], (attr_len,obs_X,obs_Y)).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
         # sios_tmp = view_as_windows(sios, (self.N,attr_len,obs_X,obs_Y)).reshape(self.N,Nx*Ny,attr_len,obs_X,obs_Y)
 
-        # Y_bar_tmp[0] = sliding_window_view(Y_bar[0], (obs_X,obs_Y),axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
+        # Y_bar_tmp[0] = st.sliding_window_view(Y_bar[0], (obs_X,obs_Y),axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
         
         
-        # sios = np.array([sliding_window_view(mem, (obs_X,obs_Y), axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y) for mem in sios])
-        # Y_bar = np.array([sliding_window_view(mem, (obs_X,obs_Y), axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y) for mem in Y_bar])
+        # sios = np.array([st.sliding_window_view(mem, (obs_X,obs_Y), axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y) for mem in sios])
+        # Y_bar = np.array([st.sliding_window_view(mem, (obs_X,obs_Y), axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y) for mem in Y_bar])
 
 
         # sios = np.array([view_as_windows(mem, (attr_len, obs_X,obs_Y)).reshape(attr_len,Nx*Ny,obs_X,obs_Y) for mem in sios])
@@ -608,7 +604,7 @@ class prepare_rloc(object):
         # Y_bar = Y_bar_tmp
 
 
-        # Y_bar = np.array([dau.sliding_window_view(mem, (obs_X,obs_Y), (1,1)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in Y_bar])
+        # Y_bar = np.array([dau.st.sliding_window_view(mem, (obs_X,obs_Y), (1,1)).reshape(Nx*Ny,attr_len,obs_X,obs_Y) for mem in Y_bar])
 
         sios = np.swapaxes(sios,1,2)
         Y_bar = np.swapaxes(Y_bar,1,2)
@@ -648,15 +644,15 @@ class prepare_rloc(object):
         else:
             bc_mask *= self.nmask
 
-        # bc_mask = np.array(dau.sliding_window_view(bc_mask, (obs_X,obs_Y), (1,1))).reshape(Nx*Ny,obs_X,obs_Y)
+        # bc_mask = np.array(dau.st.sliding_window_view(bc_mask, (obs_X,obs_Y), (1,1))).reshape(Nx*Ny,obs_X,obs_Y)
 
-        # mask_n = np.array(dau.sliding_window_view(mask, (obs_X,obs_Y), (1,1))).reshape(Nx*Ny,attr_len,obs_X,obs_Y)
+        # mask_n = np.array(dau.st.sliding_window_view(mask, (obs_X,obs_Y), (1,1))).reshape(Nx*Ny,attr_len,obs_X,obs_Y)
 
         bc_mask = darr.from_array(bc_mask)
-        bc_mask = sliding_window_view(bc_mask, (obs_X,obs_Y)).reshape(Nx*Ny,obs_X,obs_Y)
+        bc_mask = st.sliding_window_view(bc_mask, (obs_X,obs_Y)).reshape(Nx*Ny,obs_X,obs_Y)
 
         mask = darr.from_array(mask)
-        mask_n = sliding_window_view(mask, (obs_X,obs_Y), axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
+        mask_n = st.sliding_window_view(mask, (obs_X,obs_Y), axis=(1,2)).reshape(attr_len,Nx*Ny,obs_X,obs_Y)
 
         mask_n = np.swapaxes(mask_n,0,1)
 

@@ -13,12 +13,6 @@
 
    
    
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      compare_sol
-   
    
 
    

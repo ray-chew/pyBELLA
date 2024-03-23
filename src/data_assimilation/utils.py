@@ -1,10 +1,11 @@
 import numpy as np
-from scipy import signal
-from copy import deepcopy
+import scipy as sp
+import copy
+
 import matplotlib.pyplot as plt
 
-from dycore.utils import boundary
-from dycore.utils.options import BdryType
+import dycore.utils.boundary as bdry
+import dycore.utils.options  as opts
 
 class ensemble(object):
     def __init__(self, input_ensemble=None):
@@ -20,7 +21,7 @@ class ensemble(object):
 
     def initialise_members(self,ic,N):
         for cnt in range(N):
-            mem = [deepcopy(arr) for arr in ic]
+            mem = [copy.deepcopy(arr) for arr in ic]
             # mem = sampler(mem)
             setattr(self,'mem_' + str(cnt),mem)
 
@@ -72,13 +73,13 @@ def set_p2_nodes(analysis,results,N,th,node,ud,loc_c=0,loc_n=2):
         p2_n = getattr(results[n][loc_n],'p2_nodes')
         rhoY_n = np.zeros_like(p2_n)
         kernel = np.array([[1.,1.],[1.,1.]])
-        rhoY_n[1:-1,1:-1] = signal.fftconvolve(rhoY,kernel,mode='valid') / kernel.sum()
-        boundary.set_ghostnodes_p2(rhoY_n,node,ud)
+        rhoY_n[1:-1,1:-1] = sp.signal.fftconvolve(rhoY,kernel,mode='valid') / kernel.sum()
+        bdry.set_ghostnodes_p2(rhoY_n,node,ud)
         p2_n = rhoY_n**th.gm1 - 1.0 + (p2_n - p2_n.mean())
         # p2_n = rhoY_n**th.gm1 - 1.0
         p2_n -= p2_n.mean()
         # p2_n = np.pad(p2_n,2,mode='wrap')
-        boundary.set_ghostnodes_p2(p2_n,node,ud)
+        bdry.set_ghostnodes_p2(p2_n,node,ud)
         setattr(results[n][loc_n],'p2_nodes',p2_n)
 
 def set_rhoY_cells(analysis,results,N,th,ud,loc_c=0,loc_n=2):
@@ -86,7 +87,7 @@ def set_rhoY_cells(analysis,results,N,th,ud,loc_c=0,loc_n=2):
         p2n = analysis[n]
         rhoYc0 = getattr(results[n][loc_c], 'rhoY')
         kernel = np.array([[1.,1.],[1.,1.]])
-        p2c = signal.fftconvolve(p2n,kernel,mode='valid') / kernel.sum()
+        p2c = sp.signal.fftconvolve(p2n,kernel,mode='valid') / kernel.sum()
         p2c -= p2c.mean()
 
         rhoYc = (rhoYc0**th.gm1 + ud.Msq*p2c)**th.gm1inv
@@ -107,11 +108,11 @@ def boundary_mask(ud,elem,node,pad_X,pad_Y):
             # ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
             ghost_padding[dim] = [pads[dim],pads[dim]]
 
-            if ud.bdry_type[dim] == BdryType.PERIODIC:
+            if ud.bdry_type[dim] == opts.BdryType.PERIODIC:
                 cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(1.0))
                 nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(1.0))
 
-            elif ud.bdry_type[dim] == BdryType.WALL:
+            elif ud.bdry_type[dim] == opts.BdryType.WALL:
                 cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(0.0))
                 nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(0.0))
     
@@ -125,11 +126,11 @@ def boundary_mask(ud,elem,node,pad_X,pad_Y):
             # ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
             ghost_padding[dim] = [pads[dim],pads[dim]]
 
-            if ud.bdry_type[dim] == BdryType.PERIODIC:
+            if ud.bdry_type[dim] == opts.BdryType.PERIODIC:
                 cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(1.0))
                 nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(1.0))
 
-            elif ud.bdry_type[dim] == BdryType.WALL:
+            elif ud.bdry_type[dim] == opts.BdryType.WALL:
                 cmask = np.pad(cmask, ghost_padding, mode='constant', constant_values=(0.0))
                 nmask = np.pad(nmask, ghost_padding, mode='constant', constant_values=(0.0))
         
@@ -236,6 +237,7 @@ def HSprojector_3t2D(results, elem, dap, N):
     results : nd.array
         An array of ensemble size k. Each ensemble member has [Sol,flux,mpv,[window_step,step]]. 
     dap : data assimilation input class
+        .
     N : int
         ensemble size.
 
@@ -282,7 +284,7 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
     sparse_obs = dap.sparse_obs
 
     if not sparse_obs or len(dap.da_times) == 0:
-        mask = deepcopy(obs)
+        mask = copy.deepcopy(obs)
         for tt,mask_t in enumerate(mask):
             for key, _ in mask_t.items():
                 mask[tt][key][...] = 0.0
@@ -323,7 +325,7 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
             Xn, Yn = node.x, node.y
             Xn, Yn = np.meshgrid(Xn, Yn)
 
-        mask_arr = deepcopy(obs)
+        mask_arr = copy.deepcopy(obs)
         # obs_noisy_interp = deepcopy(obs)
 
         # obs is a list of dictionaries, list length da_len, dictionary length attr_len.
@@ -389,7 +391,7 @@ def obs_noiser(obs,mask,dap,rloc,elem):
 
         obs_covar_c = np.zeros((len(dap.da_times),rloc.cattr_len))
         obs_covar_n = np.zeros((len(dap.da_times),rloc.nattr_len))
-        obs_noisy = deepcopy(obs)
+        obs_noisy = copy.deepcopy(obs)
 
         std_dev = np.zeros((obs.shape[0],len(dap.obs_noise_seeds)))
 

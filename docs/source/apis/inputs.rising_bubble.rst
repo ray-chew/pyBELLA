@@ -13,8 +13,6 @@
 
    .. autosummary::
    
-      hydrostatic_state
-      set_explicit_boundary_data
       sol_init
    
    

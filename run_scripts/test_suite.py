@@ -1,16 +1,16 @@
 # %%
 from run import run_params as rp
-from pybella.tests.diagnostics import compare_sol
+import pybella.tests.diagnostics as td
 import json
 
 # The first run MUST have gen_targets = True
 # This is to generate the target outputs
 # so that a comparison can be made
-gen_targets = True
+gen_targets = False
 
 # Only set this to True if the diagnostic targets
 # are to be updated. Required for the first run.
-updt_targets = True
+updt_targets = False
 
 # define run instance
 rp = rp()
@@ -39,7 +39,7 @@ if gen_targets:
     rp.queue_run()
 
 if updt_targets:
-    diag = compare_sol("gen_target")
+    diag = td.compare_sol("gen_target")
     diag.update_targets()
 
 

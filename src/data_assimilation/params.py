@@ -1,9 +1,8 @@
 import numpy as np
+import scipy as sp
 import h5py
-from scipy import stats # generate Gaussian localisation matrix
 
-from scipy import signal
-from dycore.utils.boundary import set_explicit_boundary_data, set_ghostnodes_p2 # for converter
+import dycore.utils.boundary as bdry
 
 import logging
 
@@ -136,7 +135,7 @@ class da_params(object):
 
         g = ud.g0
         for n in range(N):
-            set_explicit_boundary_data(results[n][0],elem,ud,th,mpv)
+            bdry.set_explicit_boundary_data(results[n][0],elem,ud,th,mpv)
             results[n][0].rhoY[...] = (g / 2.0 * results[n][0].rho**2)**th.gamminv
 
             igy = elem.igy
@@ -144,14 +143,14 @@ class da_params(object):
             kernel = np.ones((2,2))
             kernel /= kernel.sum()
 
-            pn = signal.convolve(results[n][0].rhoY[:,igy,:], kernel, mode='valid')
+            pn = sp.signal.convolve(results[n][0].rhoY[:,igy,:], kernel, mode='valid')
 
-            set_explicit_boundary_data(results[n][0],elem,ud,th,mpv)
+            bdry.set_explicit_boundary_data(results[n][0],elem,ud,th,mpv)
             pn = np.expand_dims(pn, 1)
             pn = np.repeat(pn, node.icy, axis=1)
 
             results[n][2].p2_nodes[1:-1,:,1:-1] = pn
-            set_ghostnodes_p2(results[n][2].p2_nodes,node,ud)
+            bdry.set_ghostnodes_p2(results[n][2].p2_nodes,node,ud)
 
             pn = np.expand_dims(results[n][2].p2_nodes[:,igy,:], 1)
             results[n][2].p2_nodes[...] = np.repeat(pn[...], node.icy, axis=1)
@@ -207,7 +206,7 @@ class da_params(object):
 
         elif type == 'gaussian':
             pos = np.array([X.flatten(),Y.flatten()]).T
-            norm = stats.multivariate_normal([0,0],[[0.05,0.0],[0.0,0.05]])
+            norm = sp.stats.multivariate_normal([0,0],[[0.05,0.0],[0.0,0.05]])
             Z = norm.pdf(pos).reshape(X.shape[0],X.shape[1])
             Z = Z - Z.min()
             Z /= Z.max()

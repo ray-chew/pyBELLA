@@ -16,7 +16,6 @@
       HSprojector_2t3D
       HSprojector_3t2D
       boundary_mask
-      deepcopy
       ensemble_inflation
       obs_noiser
       set_p2_nodes
@@ -32,7 +31,6 @@
 
    .. autosummary::
    
-      BdryType
       ensemble
    
    

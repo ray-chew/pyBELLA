@@ -20,12 +20,6 @@
 
    
    
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      BdryType
-   
    
 
    

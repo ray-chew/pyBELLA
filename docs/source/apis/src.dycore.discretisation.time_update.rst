@@ -18,6 +18,7 @@
       colored
       data_init
       deepcopy
+      do
       dynamic_timestep
       euler_backward_non_advective_expl_part
       euler_backward_non_advective_impl_part
@@ -25,7 +26,6 @@
       is_nonhydrostatic
       nonhydrostasy
       recompute_advective_fluxes
-      time_update
    
    
 

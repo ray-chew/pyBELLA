@@ -14,15 +14,9 @@
    .. autosummary::
    
       bin_func
-      convolve2d
       da_interface
-      deepcopy
-      interpn
       interpolation_func
-      map_coordinates
       none_func
-      sliding_window_view
-      spsolve
    
    
 
@@ -32,8 +26,6 @@
 
    .. autosummary::
    
-      BdryType
-      ProgressBar
       analysis
       prepare_rloc
    
