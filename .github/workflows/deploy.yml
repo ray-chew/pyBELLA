@@ -7,7 +7,9 @@ permissions:
 
 jobs:
   get-runner:
-    runs-on: ubuntu-latest
+    name: get a runner to use for this workflow
+    if: ${{ always() }}
+    runs-on: custom-runner
     outputs:
      RUNNER: ${{ runner.name }}
     steps:
@@ -33,6 +35,7 @@ jobs:
     needs: prepare
     runs-on: ${{needs.prepare.outputs.RUNNER}}
     steps:
+      - uses: actions/checkout@v3
       - name: Sphinx build
         run: |
           sphinx-build docs/source _build
