@@ -23,10 +23,14 @@
 
 .. rubric:: Modules
 
-.. autosummary::
-   :toctree:
-   :recursive:
+.. toctree::
 
    run_scripts.run
    run_scripts.test_suite
+.. .. autosummary::
+..    :toctree:
+..    :recursive:
+
+..    run_scripts.run
+..    run_scripts.test_suite
 
