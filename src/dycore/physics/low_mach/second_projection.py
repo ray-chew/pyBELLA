@@ -1,17 +1,18 @@
-from dycore.utils.options import BdryType
-from dycore.utils.boundary import set_explicit_boundary_data, set_ghostnodes_p2
-from dycore.physics.low_mach.laplacian import stencil_27pt, stencil_hs, stencil_vs, stencil_9pt_numba_test, precon_diag_prepare
-from scipy import signal
 import numpy as np
-from itertools import product
-from numba import jit
+import scipy as sp
+import itertools as it
 
-from scipy.sparse.linalg import LinearOperator, bicgstab
+import dycore.utils.options  as opts
+import dycore.utils.boundary as bdry
+import dycore.physics.low_mach.laplacian as lm_lp
 
 import logging
 
-# taken from https://stackoverflow.com/questions/33512081/getting-the-number-of-iterations-of-scipys-gmres-iterative-method
 class solver_counter(object):
+    """
+    taken from https://stackoverflow.com/questions/33512081/getting-the-number-of-iterations-of-scipys-gmres-iterative-method
+
+    """
     def __init__(self, disp=True):
         self.niter = 0
     def __call__(self, rk=None):
@@ -45,7 +46,7 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None,
 
     rhoY = Sol.rhoY**(th.gamm - 2.0)
     dpidP_kernel = np.ones([2]*ndim)
-    dpidP = (th.gm1 / ud.Msq) * signal.fftconvolve(rhoY, dpidP_kernel, mode='valid') / dpidP_kernel.sum()
+    dpidP = (th.gm1 / ud.Msq) * sp.signal.fftconvolve(rhoY, dpidP_kernel, mode='valid') / dpidP_kernel.sum()
 
     rhoYovG = Ginv * Sol.rhoY
     dbuoy = Sol.rhoY * (Sol.rhoX / Sol.rho)
@@ -69,8 +70,8 @@ def euler_forward_non_advective(Sol, mpv, elem, node, dt, ud, th, writer = None,
     weight = ud.compressibility
     mpv.p2_nodes += weight * dp2n
 
-    set_ghostnodes_p2(mpv.p2_nodes,node, ud)
-    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    bdry.set_ghostnodes_p2(mpv.p2_nodes,node, ud)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 
 def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
@@ -88,7 +89,7 @@ def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
 
     Sol.mod_bg_wind(ud, +1.0)
 
-    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 
 total_iter = 0
@@ -110,10 +111,10 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         writer.populate(str(label),'p2_initial',mpv.p2_nodes)
 
     if Sol0 is not None:
-        set_explicit_boundary_data(Sol0, elem, ud, th, mpv)
+        bdry.set_explicit_boundary_data(Sol0, elem, ud, th, mpv)
         operator_coefficients_nodes(elem, node, Sol0, mpv, ud, th, dt)
     else:
-        set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+        bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
         operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt)
         
 
@@ -126,9 +127,9 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         writer.populate(str(label),'wplusy',mpv.wplus[1])
         writer.populate(str(label),'wplusz',mpv.wplus[2]) if elem.ndim == 3 else writer.populate(str(label),'wplusz',np.zeros_like(mpv.wplus[0]))
 
-    set_ghostnodes_p2(mpv.p2_nodes,node,ud)
+    bdry.set_ghostnodes_p2(mpv.p2_nodes,node,ud)
     correction_nodes(Sol,elem,node,mpv,mpv.p2_nodes,dt,ud,th,0)
-    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     rhs[...] = divergence_nodes(rhs,elem,node,Sol,ud)
 
@@ -165,13 +166,13 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
         # lap = stencil_9pt(elem,node,mpv,Sol,ud,diag_inv,dt,coriolis_params)
         # sh = (ud.inx)*(ud.iny)
 
-        diag_inv = precon_diag_prepare(mpv, elem, node, ud, coriolis_params)
+        diag_inv = lm_lp.precon_diag_prepare(mpv, elem, node, ud, coriolis_params)
         rhs *= diag_inv
 
         # diag_inv = np.ones_like(mpv.rhs)
 
         p2 = mpv.p2_nodes[node.i2].T
-        lap = stencil_9pt_numba_test(mpv,node,coriolis_params,diag_inv, ud)
+        lap = lm_lp.stencil_9pt_numba_test(mpv,node,coriolis_params,diag_inv, ud)
         sh = p2.shape[0] * p2.shape[1]
 
         # p2 = np.copy(mpv.p2_nodes[1:-1,1:-1])
@@ -182,7 +183,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] <= 2: 
         # horizontal slice hack
         p2 = np.copy(mpv.p2_nodes[1:-1,elem.igs[1],1:-1])
-        lap = stencil_hs(elem,node,mpv,ud,diag_inv,dt)
+        lap = lm_lp.stencil_hs(elem,node,mpv,ud,diag_inv,dt)
         sh = p2.reshape(-1).shape[0]
 
     elif elem.ndim == 3 and elem.iicy > 1 and elem.iicz == 1:
@@ -190,18 +191,18 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
         if not VS:
             p2 = np.copy(mpv.p2_nodes[...,elem.igz][node.igx:-node.igx,node.igy:-node.igy])
-            lap = stencil_vs(elem,node,mpv,ud,diag_inv,dt)
+            lap = lm_lp.stencil_vs(elem,node,mpv,ud,diag_inv,dt)
             sh = (node.iicx)*(node.iicy)
         if VS:
             p2 = np.copy(mpv.p2_nodes[1:-1,1:-1,elem.igs[2]])
-            lap = stencil_vs(elem,node,mpv,ud,diag_inv,dt)
+            lap = lm_lp.stencil_vs(elem,node,mpv,ud,diag_inv,dt)
             sh = p2.reshape(-1).shape[0]
 
     elif elem.ndim == 3 and elem.icy - 2*elem.igs[1] > 2:
-        lap = stencil_27pt(elem,node,mpv,ud,diag_inv,dt)
+        lap = lm_lp.stencil_27pt(elem,node,mpv,ud,diag_inv,dt)
         sh = p2.reshape(-1).shape[0]
 
-    lap = LinearOperator((sh,sh),lap)
+    lap = sp.sparse.linalg.LinearOperator((sh,sh),lap)
     # lap = LinearOperator(sh,lap)
     
     counter = solver_counter()
@@ -226,7 +227,7 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
 
     # p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
 
-    p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
+    p2, _ = sp.sparse.linalg.bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
     # p2, _ = gmres(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations)
     # p2,info = bicgstab(lap,rhs.ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
@@ -268,12 +269,12 @@ def euler_backward_non_advective_impl_part(Sol, mpv, elem, node, ud, th, t, dt, 
     if writer != None:
         writer.populate(str(label),'p2_full',p2_full)
 
-    set_ghostnodes_p2(p2_full,node,ud)
+    bdry.set_ghostnodes_p2(p2_full,node,ud)
     correction_nodes(Sol,elem,node,mpv,p2_full,dt,ud,th,1)
 
     mpv.p2_nodes[...] += p2_full
-    set_ghostnodes_p2(mpv.p2_nodes,node,ud)
-    set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    bdry.set_ghostnodes_p2(mpv.p2_nodes,node,ud)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 
 def correction_nodes(Sol,elem,node,mpv,p,dt,ud,th,updt_chi):
@@ -341,9 +342,9 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
 
     kernel = np.ones([2] * ndim)
 
-    mpv.wcenter = (ccenter * signal.fftconvolve(Sol.rhoY**cexp,kernel,mode='valid') / kernel.sum())
+    mpv.wcenter = (ccenter * sp.signal.fftconvolve(Sol.rhoY**cexp,kernel,mode='valid') / kernel.sum())
 
-    tmp_wplus = signal.fftconvolve(mpv.wplus[0],kernel,mode='valid') / kernel.sum()
+    tmp_wplus = sp.signal.fftconvolve(mpv.wplus[0],kernel,mode='valid') / kernel.sum()
 
     # set_ghostcells_p2(mpv.wplus[0], elem, ud)
     # set_ghostcells_p2(mpv.wplus[1], elem, ud)
@@ -453,7 +454,7 @@ def scale_wall_node_values(rhs, node, ud, factor=.5):
         wall_idx[dim] = slice(igs[dim],-igs[dim])
 
     for dim in range(ndim):
-        is_wall = ud.bdry_type[dim] == BdryType.WALL or ud.bdry_type[dim] == BdryType.RAYLEIGH
+        is_wall = ud.bdry_type[dim] == opts.BdryType.WALL or ud.bdry_type[dim] == opts.BdryType.RAYLEIGH
         if is_wall:
             for direction in [-1,1]:
                 wall_idx[dim] = (igs[dim]-1) * direction
@@ -485,9 +486,9 @@ def grad_nodes_fft(p2n, elem, node):
         kernel[tuple(slc)] *= -1.0
         kernels.append(kernel)
 
-    dpdx = -0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[0], mode='valid') / dx
-    dpdy = -0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[1], mode='valid') / dy if elem.iicy > 1 else 0.0
-    dpdz = -0.5**(ndim-1) * signal.fftconvolve(p2n, kernels[2], mode='valid') / dz if (ndim == 3) else 0.0
+    dpdx = -0.5**(ndim-1) * sp.signal.fftconvolve(p2n, kernels[0], mode='valid') / dx
+    dpdy = -0.5**(ndim-1) * sp.signal.fftconvolve(p2n, kernels[1], mode='valid') / dy if elem.iicy > 1 else 0.0
+    dpdz = -0.5**(ndim-1) * sp.signal.fftconvolve(p2n, kernels[2], mode='valid') / dz if (ndim == 3) else 0.0
 
     return dpdx, dpdy, dpdz
 
@@ -495,7 +496,7 @@ def grad_nodes_fft(p2n, elem, node):
 def grad_nodes(p, ndim, dxy):
     dx, dy, dz = dxy
 
-    indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat=ndim)]
+    indices = [idx for idx in it.product([slice(0,-1),slice(1,None)], repeat=ndim)]
     if ndim == 2:
         signs_x = (-1., -1., +1., +1.)
         signs_y = (-1., +1., -1., +1.)
@@ -528,18 +529,18 @@ def divergence_nodes(rhs,elem,node,Sol,ud):
     inner_idx = np.empty((ndim), dtype=object)
 
     for dim in range(ndim):
-        is_periodic = ud.bdry_type[dim] == BdryType.PERIODIC
+        is_periodic = ud.bdry_type[dim] == opts.BdryType.PERIODIC
         inner_idx[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic)
     inner_idx_p1y = np.copy(inner_idx)
     inner_idx_p1y[1] = slice(1,-1)
         
-    indices = [idx for idx in product([slice(0,-1),slice(1,None)], repeat = ndim)]
-    signs = [sgn for sgn in product([1,-1], repeat = ndim)]
+    indices = [idx for idx in it.product([slice(0,-1),slice(1,None)], repeat = ndim)]
+    signs = [sgn for sgn in it.product([1,-1], repeat = ndim)]
     inner_idx = tuple(inner_idx)
     inner_idx_p1y = tuple(inner_idx_p1y)
 
     if not hasattr(ud, 'LAMB_BDRY'):
-        if ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH:
+        if ud.bdry_type[1] == opts.BdryType.WALL or ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
             Sol.rhou[:,:2,...] = 0.0 
             Sol.rhov[:,:2,...] = 0.0  
             Sol.rhow[:,:2,...] = 0.0

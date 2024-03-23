@@ -1,4 +1,4 @@
-class ThermodynamicInit(object):
+class init(object):
     """
     Data container for thermodynamical quantities.
 

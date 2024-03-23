@@ -1,17 +1,11 @@
 import numpy as np
 from scipy import signal
-import scipy.sparse.linalg as la
 
-from dycore.physics.gas_dynamics.eos import (
-    nonhydrostasy,
-    compressibility,
-    is_compressible,
-    is_nonhydrostatic,
-)
+import dycore.physics.gas_dynamics.eos as gd_eos
+
 import logging
-
-from termcolor import colored
-from copy import deepcopy
+import termcolor
+import copy
 
 
 class Blend(object):
@@ -97,7 +91,7 @@ class Blend(object):
             Sol.rhoY[...] = rho * Yc
             Sol.rhoX[...] = rho * (1.0 / Yc - mpv.HydroState.S0.reshape(1, -1))
         else:
-            assert (0, "ud.blending_conv undefined.")
+            assert 0, "ud.blending_conv undefined."
 
         if writer != None:
             writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_blending")
@@ -112,7 +106,7 @@ class Blend(object):
 
 
 def do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer):
-    logging.info(colored("Converting COMP to PSINC", "blue"))
+    logging.info(termcolor.colored("Converting COMP to PSINC", "blue"))
     dp2n = mpv.p2_nodes
     bld.convert_p2n(dp2n)
     bld.update_Sol(Sol, elem, node, th, ud, mpv, "bef", label=label, writer=writer)
@@ -126,9 +120,9 @@ def do_psinc_to_comp_conv(
 ):
     from dycore.discretisation import time_update
 
-    logging.info(colored("Blending... step = %i" % step, "blue"))
-    Sol_freeze = deepcopy(Sol)
-    mpv_freeze = deepcopy(mpv)
+    logging.info(termcolor.colored("Blending... step = %i" % step, "blue"))
+    Sol_freeze = copy.deepcopy(Sol)
+    mpv_freeze = copy.deepcopy(mpv)
 
     ret = time_update.time_update(
         Sol,
@@ -169,7 +163,7 @@ def do_psinc_to_comp_conv(
 
     if writer != None:
         writer.populate(str(label) + "_after_full_step", "dp2n", dp2n)
-    logging.info(colored("Converting PSINC to COMP", "blue"))
+    logging.info(termcolor.colored("Converting PSINC to COMP", "blue"))
     bld.convert_p2n(dp2n)
     bld.update_Sol(Sol, elem, node, th, ud, mpv, "aft", label=label, writer=writer)
     bld.update_p2n(Sol, mpv, node, th, ud)
@@ -183,7 +177,7 @@ def do_psinc_to_comp_conv(
 
 
 def do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
-    logging.info(colored("swe to lake conversion...", "blue"))
+    logging.info(termcolor.colored("swe to lake conversion...", "blue"))
 
     H1 = Sol.rho[
         :,
@@ -227,10 +221,10 @@ def do_lake_to_swe_conv(
     if debug == True:
         writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_lake_time_step")
 
-    Sol_freeze = deepcopy(Sol)
-    mpv_freeze = deepcopy(mpv)
+    Sol_freeze = copy.deepcopy(Sol)
+    mpv_freeze = copy.deepcopy(mpv)
 
-    logging.info(colored("doing lake-to-swe time-update...", "blue"))
+    logging.info(termcolor.colored("doing lake-to-swe time-update...", "blue"))
     ret = time_update.time_update(
         Sol,
         flux,
@@ -260,13 +254,13 @@ def do_lake_to_swe_conv(
     else:
         assert 0, "incorrect ud.blending_type"
 
-    Sol = deepcopy(Sol_freeze)
-    mpv = deepcopy(mpv_freeze)
+    Sol = copy.deepcopy(Sol_freeze)
+    mpv = copy.deepcopy(mpv_freeze)
 
     mpv.p2_nodes[...] = dp2n
 
     H10 = mpv.p2_nodes[:, 2:-2, :].mean(axis=1)
-    logging.info(colored("lake to swe conversion...", "blue"))
+    logging.info(termcolor.colored("lake to swe conversion...", "blue"))
     H10 -= H10.mean()
 
     # define 2D kernel
@@ -301,7 +295,7 @@ def do_nonhydro_to_hydro_conv(
     Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt
 ):
 
-    logging.info(colored("nonhydrostatic to hydrostatic conversion...", "blue"))
+    logging.info(termcolor.colored("nonhydrostatic to hydrostatic conversion...", "blue"))
     # bld.convert_p2n(mpv.p2_nodes)
     # bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
     # Sol.rhov = Sol.rhov_half
@@ -331,8 +325,8 @@ def do_hydro_to_nonhydro_conv(
     Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt
 ):
 
-    logging.info(colored("hydrostatic to nonhydrostatic conversion...", "blue"))
-    logging.info(colored("Blending... step = %i" % step, "blue"))
+    logging.info(termcolor.colored("hydrostatic to nonhydrostatic conversion...", "blue"))
+    logging.info(termcolor.colored("Blending... step = %i" % step, "blue"))
 
     # Sol_tmp = deepcopy(Sol)
     # flux_tmp = deepcopy(flux)
@@ -437,7 +431,7 @@ def blending_before_timestep(
     # check that blending switches are on
     if c_init and bld.cb and ud.blending_conv is not None:
         # distinguish between Euler and SWE blending
-        if ud.blending_conv is not "swe":
+        if ud.blending_conv != "swe":
             Sol, mpv = do_psinc_to_comp_conv(
                 Sol,
                 flux,
@@ -461,7 +455,7 @@ def blending_before_timestep(
     # Is initial blending switch on, and if yes, are we in the 0th time-step?
     if ud.initial_blending == True and step < 1 and bld is not None:
         # Distinguish between SWE and Euler blendings
-        if ud.blending_conv is not "swe":
+        if ud.blending_conv != "swe":
             if bld.psinc_init > 0:
                 ud.is_compressible = 0
                 ud.compressibility = 0.0
@@ -499,7 +493,7 @@ def blending_before_timestep(
         ud.initial_blending == True and step == ud.no_of_pi_initial and bld is not None
     ):
         # Distinguish between SWE and Euler blendings
-        if ud.blending_conv is not "swe":
+        if ud.blending_conv != "swe":
             Sol, mpv = do_psinc_to_comp_conv(
                 Sol,
                 flux,
@@ -522,7 +516,7 @@ def blending_before_timestep(
     elif (
         ud.initial_blending == True and step == ud.no_of_hy_initial and bld is not None
     ):
-        if ud.blending_conv is not "swe":
+        if ud.blending_conv != "swe":
             Sol, mpv = do_hydro_to_nonhydro_conv(
                 Sol,
                 flux,
@@ -542,10 +536,10 @@ def blending_before_timestep(
             ud.is_nonhydrostatic = 1
             ud.nonhydrostasy = 1.0
     else:
-        ud.is_compressible = is_compressible(ud, window_step)
-        ud.compressibility = compressibility(ud, t, window_step)
-        ud.is_nonhydrostatic = is_nonhydrostatic(ud, window_step)
-        ud.nonhydrostasy = nonhydrostasy(ud, t, window_step)
+        ud.is_compressible = gd_eos.is_compressible(ud, window_step)
+        ud.compressibility = gd_eos.compressibility(ud, t, window_step)
+        ud.is_nonhydrostatic = gd_eos.is_nonhydrostatic(ud, window_step)
+        ud.nonhydrostasy = gd_eos.nonhydrostasy(ud, t, window_step)
 
     return swe_to_lake, Sol, mpv, t
 

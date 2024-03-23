@@ -1,5 +1,5 @@
 import numpy as np
-from scipy import signal
+import scipy as sp
 
 # equivalent to States_new
 class Vars(object):
@@ -54,7 +54,7 @@ class Vars(object):
 
         Parameters
         ----------
-        th : :class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+        th : :class:`physics.gas_dynamics.thermodynamic.init`
             Thermodynamic variables of the system
 
         Attributes
@@ -167,7 +167,7 @@ class States(Vars):
             dy = node.dy
 
             dSdy = self.S0
-            dSdy = signal.convolve(dSdy,[1.,-1.],mode='valid') / dy
+            dSdy = sp.signal.convolve(dSdy,[1.,-1.],mode='valid') / dy
 
             for dim in range(0,ndim,2):
                 dSdy = np.expand_dims(dSdy, dim)

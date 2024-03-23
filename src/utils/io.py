@@ -6,13 +6,16 @@ import shutil  # for copying of simulation restart file
 import dill as pickle  # pickle jar to debug classes
 import yaml  # for parsing of dict-style arguments
 
+import logging
+import errno
+from datetime import datetime
+
 import argparse
 
-from utils.sim_params import output_path
-import logging
+import utils.sim_params as params
 
 
-class io(object):
+class init(object):
     """
     HDF5 writer class. Contains methods to create HDF5 file, create data sets and populate them with output variables.
 
@@ -33,7 +36,7 @@ class io(object):
         self.FORMAT = ".h5"
         self.BASE_NAME = self.ud.output_base_name
         self.OUTPUT_FILENAME = self.ud.output_type + self.BASE_NAME
-        self.OUTPUT_FOLDER = output_path + "/" + self.OUTPUT_FILENAME
+        self.OUTPUT_FOLDER = params.output_path + "/" + self.OUTPUT_FILENAME
         self.OUTPUT_FILENAME = self.OUTPUT_FOLDER + "/" + self.ud.output_type
 
         self.SUFFIX = self.ud.output_suffix
@@ -136,7 +139,7 @@ class io(object):
             Cells grid
         node : :class:`discretization.kgrid.NodeSpaceDiscr`
             Nodes grid
-        th : :class:`physics.gas_dynamics.thermodynamic.ThermodynamicInit`
+        th : :class:`physics.gas_dynamics.thermodynamic.init`
             Thermodynamic variables of the system
         name: str
             The time and additional suffix label for the dataset, e.g. "_10.0_after_full_step", where 10.0 is the time and "after_full_step" denotes when the output was made.
@@ -713,3 +716,48 @@ def fn_gen(ud, dap, N):
         suffix += "_fs=%i_ts=%i" % (ud.no_of_pi_initial, ud.no_of_pi_transition)
 
     return suffix
+
+
+def mkdir_p(path):
+    """http://stackoverflow.com/a/600612/190597 (tzot)"""
+    try:
+        os.makedirs(path, exist_ok=True)  # Python>3.2
+    except OSError as exc:
+            if exc.errno == errno.EEXIST and os.path.isdir(path):
+                pass
+            else: raise
+
+
+##########################################################
+# Initialise logger
+##########################################################
+            
+def init_logger(ud):
+    now = datetime.now()
+    date = now.strftime("%d%m%y")
+    time = now.strftime("%H%M%S")
+
+    input_filename = "%s%s" %(ud.output_type, ud.output_base_name)
+    logger_filename = "./logs/%s_%s_%s.log" %(input_filename, date, time)
+
+    mkdir_p(os.path.dirname(logger_filename))
+
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
+        datefmt="%m-%d %H:%M",
+        filename=logger_filename,
+        filemode="w",
+    )
+
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    # set a format which is simpler for console use
+    formatter = logging.Formatter("%(name)-12s: %(levelname)-8s %(message)s")
+    # tell the handler to use this format
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger().addHandler(console)
+
+    logging.info("Input file is %s" %input_filename)

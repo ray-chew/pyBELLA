@@ -1,8 +1,8 @@
 import numpy as np
-from dycore.utils.options import BdryType
-from scipy import sparse, signal
-from numba import jit, njit, prange
+import scipy as sp
 import numba as nb
+
+import dycore.utils.options as opts
 
 def stencil_9pt(elem,node,mpv,Sol,ud,diag_inv,dt,coriolis_params):
     igx = elem.igx
@@ -31,11 +31,11 @@ def stencil_9pt(elem,node,mpv,Sol,ud,diag_inv,dt,coriolis_params):
     oodx = 1.0 / (dx)
     oody = 1.0 / (dy)
 
-    x_periodic = ud.bdry_type[1] == BdryType.PERIODIC
-    y_periodic = ud.bdry_type[0] == BdryType.PERIODIC
+    x_periodic = ud.bdry_type[1] == opts.BdryType.PERIODIC
+    y_periodic = ud.bdry_type[0] == opts.BdryType.PERIODIC
 
-    x_wall = ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH
-    y_wall = ud.bdry_type[0] == BdryType.WALL or ud.bdry_type[0] == BdryType.RAYLEIGH
+    x_wall = ud.bdry_type[1] == opts.BdryType.WALL or ud.bdry_type[1] == opts.BdryType.RAYLEIGH
+    y_wall = ud.bdry_type[0] == opts.BdryType.WALL or ud.bdry_type[0] == opts.BdryType.RAYLEIGH
 
 
     #### Compute Coriolis parameters:
@@ -145,7 +145,7 @@ def stencil_9pt(elem,node,mpv,Sol,ud,diag_inv,dt,coriolis_params):
 
     # return lambda p : lap2Dc(p, hplusx, hplusy, hcenter, dxy, periodicity, diag_inv, coriolis_params)
 
-@jit(nopython=True, nogil=False, cache=True)
+@nb.jit(nopython=True, nogil=False, cache=True)
 def lap2D_gather(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx, oody, x_periodic, y_periodic, x_wall, y_wall, diag_inv, coriolis):
     ngnc = (iicxn) * (iicyn)
     lap = np.zeros((ngnc))
@@ -331,7 +331,7 @@ def lap2D_gather(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx, oody, 
     return lap
 
 
-@jit(nopython=True, nogil=False, cache=True)
+@nb.jit(nopython=True, nogil=False, cache=True)
 def lap2D(p, igx,igy, iicxn, iicyn, hplusx, hplusy, hcenter, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall, diag_inv):
     ngnc = (iicxn) * (iicyn)
     lap = np.zeros((ngnc))
@@ -513,10 +513,10 @@ def stencil_9pt_numba_test(mpv,node,coriolis,diag_inv, ud):
 
     ###################
     else:
-        x_wall = ud.bdry_type[0] == BdryType.WALL or ud.bdry_type[0] == BdryType.RAYLEIGH
-        y_wall = ud.bdry_type[1] == BdryType.WALL or ud.bdry_type[1] == BdryType.RAYLEIGH
+        x_wall = ud.bdry_type[0] == opts.BdryType.WALL or ud.bdry_type[0] == opts.BdryType.RAYLEIGH
+        y_wall = ud.bdry_type[1] == opts.BdryType.WALL or ud.bdry_type[1] == opts.BdryType.RAYLEIGH
 
-        y_rayleigh = ud.bdry_type[1] == BdryType.RAYLEIGH
+        y_rayleigh = ud.bdry_type[1] == opts.BdryType.RAYLEIGH
 
         cor_slc = (slice(1,-1), slice(1,-1))
         coeff_slc = (slice(1,-1), slice(1,-1))
@@ -528,7 +528,7 @@ def stencil_9pt_numba_test(mpv,node,coriolis,diag_inv, ud):
         return lambda p : lap2D_gather_new(p, node.iicx, node.iicy, coeffs, dx, dy, y_rayleigh, x_wall, y_wall, diag_inv[node.i1].T.reshape(-1,), coriolis)
     
 
-@jit(nopython=True, cache=False)
+@nb.jit(nopython=True, cache=False)
 def lap2D_numba_test(p, dp, dx, dy, coeffs, diag_inv, coriolis, shp):
     p = p.reshape(shp[1],shp[0])
     dp[1:-1,1:-1] = p
@@ -543,7 +543,7 @@ def lap2D_numba_test(p, dp, dx, dy, coeffs, diag_inv, coriolis, shp):
     return p.ravel()
 
 
-@njit(cache=True)
+@nb.njit(cache=True)
 def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, y_rayleigh, x_wall, y_wall, diag_inv, coriolis):
     ngnc = (iicxn) * (iicyn)
     lap = np.zeros((ngnc))
@@ -882,7 +882,7 @@ def stencil_27pt(elem,node,mpv,ud,diag_inv,dt):
     ndim = elem.ndim
     periodicity = np.empty(ndim, dtype='int')
     for dim in range(ndim):
-        periodicity[dim] = ud.bdry_type[dim] == BdryType.PERIODIC
+        periodicity[dim] = ud.bdry_type[dim] == opts.BdryType.PERIODIC
 
     hplusx = mpv.wplus[0][i0][i1]
     hplusy = mpv.wplus[1][i0][i1]
@@ -1041,7 +1041,7 @@ def stencil_hs(elem,node,mpv,ud,diag_inv,dt):
     ndim = elem.ndim
     periodicity = np.empty(ndim, dtype='int')
     for dim in range(0,ndim,2):
-        periodicity[dim] = ud.bdry_type[dim] == BdryType.PERIODIC
+        periodicity[dim] = ud.bdry_type[dim] == opts.BdryType.PERIODIC
 
     hplusx = mpv.wplus[0][proj][i0][i1]
     hplusz = mpv.wplus[2][proj][i0][i1]
@@ -1178,11 +1178,11 @@ def stencil_vs(elem,node,mpv,ud,diag_inv,dt):
     VS = True
 
     if not VS:
-        x_periodic = ud.bdry_type[xx] == BdryType.PERIODIC
-        y_periodic = ud.bdry_type[yy] == BdryType.PERIODIC
+        x_periodic = ud.bdry_type[xx] == opts.BdryType.PERIODIC
+        y_periodic = ud.bdry_type[yy] == opts.BdryType.PERIODIC
 
-        x_wall = ud.bdry_type[xx] == BdryType.WALL
-        y_wall = ud.bdry_type[yy] == BdryType.WALL
+        x_wall = ud.bdry_type[xx] == opts.BdryType.WALL
+        y_wall = ud.bdry_type[yy] == opts.BdryType.WALL
 
         hplusx = mpv.wplus[xx][proj][i2].reshape(-1,)
         hplusy = mpv.wplus[yy][proj][i2].reshape(-1,)
@@ -1198,7 +1198,7 @@ def stencil_vs(elem,node,mpv,ud,diag_inv,dt):
         ndim = elem.ndim
         periodicity = np.zeros(ndim, dtype='int')
         for dim in range(0,ndim,2):
-            periodicity[dim] = ud.bdry_type[dim] == BdryType.PERIODIC
+            periodicity[dim] = ud.bdry_type[dim] == opts.BdryType.PERIODIC
 
         hplusx = mpv.wplus[0][proj][i0][i1]
         hplusy = mpv.wplus[1][proj][i0][i1]
@@ -1284,9 +1284,9 @@ def lapVS(p0, hplusx, hplusy, hcenter, oodx2, oody2, periodicity, diag_inv):
 def precon_diag_prepare(mpv, elem, node, ud, coriolis):
     dx, dy, dz = node.dx, node.dy, node.dz
 
-    x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
-    y_periodic = ud.bdry_type[1] == BdryType.PERIODIC
-    z_periodic = ud.bdry_type[2] == BdryType.PERIODIC
+    x_periodic = ud.bdry_type[0] == opts.BdryType.PERIODIC
+    y_periodic = ud.bdry_type[1] == opts.BdryType.PERIODIC
+    z_periodic = ud.bdry_type[2] == opts.BdryType.PERIODIC
     periodicity = (x_periodic, y_periodic, z_periodic)
     # igx = node.igx
     # igy = node.igy
@@ -1298,7 +1298,7 @@ def precon_diag_prepare(mpv, elem, node, ud, coriolis):
     idx_n, idx_e = np.copy(idx_periodic), np.copy(idx_periodic)
 
     for dim in range(ndim):
-        if ud.bdry_type[dim] == BdryType.PERIODIC:
+        if ud.bdry_type[dim] == opts.BdryType.PERIODIC:
             idx_periodic[dim] = slice(1,-1)
 
         idx_e[dim] = slice(igs[dim] - periodicity[dim], -igs[dim] + periodicity[dim] - 1)
@@ -1343,12 +1343,12 @@ def precon_diag_prepare(mpv, elem, node, ud, coriolis):
     # diag[idx_n] = 1.0 / diag[idx_n]
 
     diag = np.zeros_like(mpv.wcenter)
-    diag[...] = -wxx * signal.fftconvolve(hplusxx,diag_kernel,mode='valid')
-    diag[...] -= wyy * signal.fftconvolve(hplusyy,diag_kernel,mode='valid')
-    diag[...] -= wxy * signal.fftconvolve(hplusxy,diag_kernel,mode='valid')
-    diag[...] -= wyx * signal.fftconvolve(hplusyx,diag_kernel,mode='valid')
+    diag[...] = -wxx * sp.signal.fftconvolve(hplusxx,diag_kernel,mode='valid')
+    diag[...] -= wyy * sp.signal.fftconvolve(hplusyy,diag_kernel,mode='valid')
+    diag[...] -= wxy * sp.signal.fftconvolve(hplusxy,diag_kernel,mode='valid')
+    diag[...] -= wyx * sp.signal.fftconvolve(hplusyx,diag_kernel,mode='valid')
     if ndim == 3:
-        diag[...] -= wzz * signal.fftconvolve(hplusz,diag_kernel,mode='valid')
+        diag[...] -= wzz * sp.signal.fftconvolve(hplusz,diag_kernel,mode='valid')
 
     diag[...] += mpv.wcenter
     diag[...] = 1.0 / diag
@@ -1378,12 +1378,12 @@ def stencil_3pt(elem,node,ud):
     oodx2 = 1. / (dx**2)
 
     # x_periodic = ud.bdry_type[1] == BdryType.PERIODIC
-    x_periodic = ud.bdry_type[0] == BdryType.PERIODIC
-    x_wall = ud.bdry_type[0] == BdryType.WALL
+    x_periodic = ud.bdry_type[0] == opts.BdryType.PERIODIC
+    x_wall = ud.bdry_type[0] == opts.BdryType.WALL
 
     return lambda p : lap2D_exner(p,iicxn, iicyn, oodx2, x_periodic, x_wall)
 
-@jit(nopython=True, nogil=True, cache=True)
+@nb.jit(nopython=True, nogil=True, cache=True)
 def lap2D_exner(p, iicxn, iicyn, oodx2, x_periodic, x_wall):
     ngnc = (iicxn) * (iicyn)
     lap = np.zeros((ngnc))
@@ -1456,15 +1456,15 @@ def stencil_5pt(elem,node,ud):
     # oodx2 = 1.0
     # oody2 = 1.0
 
-    x_periodic = ud.bdry_type[1] == BdryType.PERIODIC
-    y_periodic = ud.bdry_type[0] == BdryType.PERIODIC
+    x_periodic = ud.bdry_type[1] == opts.BdryType.PERIODIC
+    y_periodic = ud.bdry_type[0] == opts.BdryType.PERIODIC
 
-    x_wall = ud.bdry_type[1] == BdryType.WALL
-    y_wall = ud.bdry_type[0] == BdryType.WALL
+    x_wall = ud.bdry_type[1] == opts.BdryType.WALL
+    y_wall = ud.bdry_type[0] == opts.BdryType.WALL
 
     return lambda p : lap2D_5pt(p, iicxn, iicyn, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall)
 
-@jit(nopython=True, nogil=True, cache=True)
+@nb.jit(nopython=True, nogil=True, cache=True)
 def lap2D_5pt(p, iicxn, iicyn, oodx2, oody2, x_periodic, y_periodic, x_wall, y_wall):
     ngnc = (iicxn) * (iicyn)
     lap = np.zeros((ngnc))
