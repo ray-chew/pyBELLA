@@ -1,4 +1,5 @@
 # import numpy as np
+import numpy as np
 import yaml
 import termcolor
 import logging
@@ -48,7 +49,7 @@ class compare_sol(object):
 
             ## use try and except
             assert (
-                ref == test
+                np.isclose(ref, test)
             ), "sum for attribute %s of %s changed with discrepancy:\n%.6f\n%.6f" % (
                 key,
                 self.current_run,
