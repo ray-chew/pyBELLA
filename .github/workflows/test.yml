@@ -6,7 +6,7 @@ permissions:
   contents: write
 
 jobs:
-  docs:
+  dycore:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -19,4 +19,4 @@ jobs:
           pip install .
       - name: Run tests
         run: |
-          python3 ./run_scripts/test_dycore.py
+          pytest ./run_scripts/test_dycore.py --no-header -v
