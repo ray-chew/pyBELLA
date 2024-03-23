@@ -2,7 +2,6 @@
 import yaml
 import termcolor
 import logging
-
 import pybella.vis.plotting_tools as vis_pt
 import pybella.vis.utils as vis_utils
 
@@ -28,7 +27,7 @@ class compare_sol(object):
         with open("./src/tests/test_targets.yml", "w") as outfile:
             yaml.dump(self.arr_dump, outfile, default_flow_style=False)
 
-    def do(self, Sol, p2n, plot=False):
+    def test_do(self, Sol, p2n, plot=False):
         self.__read_yaml()
 
         try:
@@ -47,7 +46,7 @@ class compare_sol(object):
             else:
                 test = p2n.astype("float32").sum()
 
-            ## use ty and except
+            ## use try and except
             assert (
                 ref == test
             ), "sum for attribute %s of %s changed with discrepancy:\n%.6f\n%.6f" % (

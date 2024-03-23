@@ -6,6 +6,7 @@ matplotlib==3.5.1
 numba==0.56.4
 numpy==1.22.1
 pyemd==1.0.0
+pytest==8.1.1
 PyYAML==6.0
 scipy==1.7.3
 termcolor==2.4.0

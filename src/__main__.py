@@ -246,7 +246,7 @@ if __name__ == "__main__":
             )
 
             if ud.diag:
-                diag_comparison.do(
+                diag_comparison.test_do(
                     future[0], future[2].p2_nodes, plot=ud.diag_plot_compare
                 )
 
