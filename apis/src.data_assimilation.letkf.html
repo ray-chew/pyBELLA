@@ -1,0 +1,585 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="src.data_assimilation.localisation" href="src.data_assimilation.localisation.html" /><link rel="prev" title="src.data_assimilation.etpf" href="src.data_assimilation.etpf.html" />
+
+    <link rel="shortcut icon" href="../_static/favicon.ico"/><!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 -->
+        <title>src.data_assimilation.letkf - pyBELLA v0.50.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=36a5483c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">pyBELLA v0.50.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/logo.png" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">pyBELLA v0.50.1 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../numerics.html">Numerics</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Numerics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../content/boundary.html">Boundary handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../content/grid_discretisation.html">Grid discretisation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../content/advect.html">Advection routine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../content/compute_flux.html">Compute advecting flux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../content/explicit_euler.html">Explicit Euler step</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../content/implicit_euler.html">Implicit Euler step</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../apis.html">APIs</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of APIs</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="inputs.html">inputs</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of inputs</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="inputs.rising_bubble.html">inputs.rising_bubble</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="run_scripts.html">run_scripts</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of run_scripts</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="run_scripts.run.html">run_scripts.run</a></li>
+<li class="toctree-l3"><a class="reference internal" href="run_scripts.test_suite.html">run_scripts.test_suite</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current has-children"><a class="reference internal" href="src.html">src</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of src</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3 current has-children"><a class="reference internal" href="src.data_assimilation.html">src.data_assimilation</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of src.data_assimilation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="src.data_assimilation.blending.html">src.data_assimilation.blending</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.data_assimilation.etpf.html">src.data_assimilation.etpf</a></li>
+<li class="toctree-l4 current current-page"><a class="current reference internal" href="#">src.data_assimilation.letkf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.data_assimilation.localisation.html">src.data_assimilation.localisation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.data_assimilation.params.html">src.data_assimilation.params</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.data_assimilation.post_processing.html">src.data_assimilation.post_processing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.data_assimilation.utils.html">src.data_assimilation.utils</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="src.dycore.html">src.dycore</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of src.dycore</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="src.dycore.discretisation.html">src.dycore.discretisation</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of src.dycore.discretisation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="src.dycore.discretisation.grid.html">src.dycore.discretisation.grid</a></li>
+<li class="toctree-l5"><a class="reference internal" href="src.dycore.discretisation.time_update.html">src.dycore.discretisation.time_update</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="src.dycore.physics.html">src.dycore.physics</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of src.dycore.physics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l5 has-children"><a class="reference internal" href="src.dycore.physics.gas_dynamics.html">src.dycore.physics.gas_dynamics</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of src.dycore.physics.gas_dynamics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="src.dycore.physics.gas_dynamics.cfl.html">src.dycore.physics.gas_dynamics.cfl</a></li>
+<li class="toctree-l6"><a class="reference internal" href="src.dycore.physics.gas_dynamics.eos.html">src.dycore.physics.gas_dynamics.eos</a></li>
+<li class="toctree-l6"><a class="reference internal" href="src.dycore.physics.gas_dynamics.explicit.html">src.dycore.physics.gas_dynamics.explicit</a></li>
+<li class="toctree-l6"><a class="reference internal" href="src.dycore.physics.gas_dynamics.numerical_flux.html">src.dycore.physics.gas_dynamics.numerical_flux</a></li>
+<li class="toctree-l6"><a class="reference internal" href="src.dycore.physics.gas_dynamics.recovery.html">src.dycore.physics.gas_dynamics.recovery</a></li>
+<li class="toctree-l6"><a class="reference internal" href="src.dycore.physics.gas_dynamics.thermodynamic.html">src.dycore.physics.gas_dynamics.thermodynamic</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="src.dycore.physics.hydrostatics.html">src.dycore.physics.hydrostatics</a></li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="src.dycore.physics.low_mach.html">src.dycore.physics.low_mach</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of src.dycore.physics.low_mach</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="src.dycore.physics.low_mach.laplacian.html">src.dycore.physics.low_mach.laplacian</a></li>
+<li class="toctree-l6"><a class="reference internal" href="src.dycore.physics.low_mach.mpv.html">src.dycore.physics.low_mach.mpv</a></li>
+<li class="toctree-l6"><a class="reference internal" href="src.dycore.physics.low_mach.second_projection.html">src.dycore.physics.low_mach.second_projection</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="src.tests.html">src.tests</a><input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle navigation of src.tests</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.tests.diagnostics.html">src.tests.diagnostics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.tests.test_internal_long_wave.html">src.tests.test_internal_long_wave</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.tests.test_lamb_wave.html">src.tests.test_lamb_wave</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.tests.test_travelling_vortex.html">src.tests.test_travelling_vortex</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="src.utils.html">src.utils</a><input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><div class="visually-hidden">Toggle navigation of src.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.utils.io.html">src.utils.io</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.utils.sim_params.html">src.utils.sim_params</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.utils.user_data.html">src.utils.user_data</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="src.vis.html">src.vis</a><input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><div class="visually-hidden">Toggle navigation of src.vis</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="src.vis.plotting_tools.html">src.vis.plotting_tools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="src.vis.utils.html">src.vis.utils</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Change log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../refs.html">References</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/ray-chew/pyBELLA">GitHub repo</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="module-src.data_assimilation.letkf">
+<span id="src-data-assimilation-letkf"></span><h1>src.data_assimilation.letkf<a class="headerlink" href="#module-src.data_assimilation.letkf" title="Link to this heading">#</a></h1>
+<p class="rubric">Functions</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.data_assimilation.letkf.bin_func" title="src.data_assimilation.letkf.bin_func"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bin_func</span></code></a>(obs, ens_mem_shape)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.data_assimilation.letkf.da_interface" title="src.data_assimilation.letkf.da_interface"><code class="xref py py-obj docutils literal notranslate"><span class="pre">da_interface</span></code></a>(results, dap, obs, attr, tout, ...)</p></td>
+<td><p>Interface for batch-observations localisation with LETKF.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.data_assimilation.letkf.interpolation_func" title="src.data_assimilation.letkf.interpolation_func"><code class="xref py py-obj docutils literal notranslate"><span class="pre">interpolation_func</span></code></a>(ensemble, x_obs, y_obs, ud)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.data_assimilation.letkf.none_func" title="src.data_assimilation.letkf.none_func"><code class="xref py py-obj docutils literal notranslate"><span class="pre">none_func</span></code></a>(ensemble)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.data_assimilation.letkf.analysis" title="src.data_assimilation.letkf.analysis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">analysis</span></code></a>(ensemble, rho, X_mean, Y_mean[, ...])</p></td>
+<td><p>LETKF Analysis based on (Hunt et al., 2007).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.data_assimilation.letkf.prepare_rloc" title="src.data_assimilation.letkf.prepare_rloc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">prepare_rloc</span></code></a>(ud, elem, node, dap, N[, ...])</p></td>
+<td><p>Helper class to get grid-based localisation for LETKF.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py function">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.da_interface">
+<span class="sig-prename descclassname"><span class="pre">src.data_assimilation.letkf.</span></span><span class="sig-name descname"><span class="pre">da_interface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dap</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tout</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ud</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.da_interface" title="Link to this definition">#</a></dt>
+<dd><p>Interface for batch-observations localisation with LETKF.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.interpolation_func">
+<span class="sig-prename descclassname"><span class="pre">src.data_assimilation.letkf.</span></span><span class="sig-name descname"><span class="pre">interpolation_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ensemble</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ud</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.interpolation_func" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.bin_func">
+<span class="sig-prename descclassname"><span class="pre">src.data_assimilation.letkf.</span></span><span class="sig-name descname"><span class="pre">bin_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ens_mem_shape</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.bin_func" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.none_func">
+<span class="sig-prename descclassname"><span class="pre">src.data_assimilation.letkf.</span></span><span class="sig-name descname"><span class="pre">none_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ensemble</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.none_func" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.analysis">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.data_assimilation.letkf.</span></span><span class="sig-name descname"><span class="pre">analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ensemble</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Y_mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identifier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.analysis" title="Link to this definition">#</a></dt>
+<dd><p>LETKF Analysis based on (Hunt et al., 2007).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.analysis.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ensemble</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Y_mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identifier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.analysis.__init__" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.analysis.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forward_operator</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.analysis.forward" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.analysis.localisation">
+<span class="sig-name descname"><span class="pre">localisation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">localisation_matrix</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.analysis.localisation" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.analysis.analyse">
+<span class="sig-name descname"><span class="pre">analyse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_covar</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.analysis.analyse" title="Link to this definition">#</a></dt>
+<dd><p>Analysis method. ‘l’ is the observation space. ‘m’ the state space, ‘k’ the ensemble size.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.analysis.get_mean">
+<span class="sig-name descname"><span class="pre">get_mean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.analysis.get_mean" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.analysis.state_vector">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">state_vector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ensemble</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.analysis.state_vector" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.analysis.to_array">
+<span class="sig-name descname"><span class="pre">to_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.analysis.to_array" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.analysis.debug">
+<span class="sig-name descname"><span class="pre">debug</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_current</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.analysis.debug" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.prepare_rloc">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.data_assimilation.letkf.</span></span><span class="sig-name descname"><span class="pre">prepare_rloc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ud</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elem</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dap</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_X</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_Y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.prepare_rloc" title="Link to this definition">#</a></dt>
+<dd><p>Helper class to get grid-based localisation for LETKF. Used only when da_type==’rloc’ is True.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.prepare_rloc.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ud</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elem</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dap</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_X</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_Y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.prepare_rloc.__init__" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.prepare_rloc.sort_locs">
+<span class="sig-name descname"><span class="pre">sort_locs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.prepare_rloc.sort_locs" title="Link to this definition">#</a></dt>
+<dd><p>Given a dictionary of attributes and the index (locs) of its data container, return attributes that are cell-based and node-based.</p>
+<section id="note">
+<h2>Note<a class="headerlink" href="#note" title="Link to this heading">#</a></h2>
+<p>Face-based flux is not yet supported.</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.prepare_rloc.analyse">
+<span class="sig-name descname"><span class="pre">analyse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covar</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tout</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.prepare_rloc.analyse" title="Link to this definition">#</a></dt>
+<dd><p>Wrapper to do analysis by grid-type.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.prepare_rloc.analyse_by_grid_type">
+<span class="sig-name descname"><span class="pre">analyse_by_grid_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covar</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tout</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_type</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.prepare_rloc.analyse_by_grid_type" title="Link to this definition">#</a></dt>
+<dd><p>Do analysis by grid-type. Wrapper of the LETKF analysis.</p>
+<p>Note that k is the ensemble size, m is the size of the local state space, attr_len, and l is the size of the local observation space, obs_X*obs*Y*attr_len</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.prepare_rloc.do_analysis">
+<span class="sig-name descname"><span class="pre">do_analysis</span></span><a class="headerlink" href="#src.data_assimilation.letkf.prepare_rloc.do_analysis" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.prepare_rloc.stack">
+<span class="sig-name descname"><span class="pre">stack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_attr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tout</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.prepare_rloc.stack" title="Link to this definition">#</a></dt>
+<dd><p>On each grid-point, stack all the quantities to be assimilated. This stacking is done separately for cells and nodes.</p>
+<p>Quantities, e.g. {rho, rhou, …}.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.prepare_rloc.get_state">
+<span class="sig-name descname"><span class="pre">get_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Nx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Ny</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr_len</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.prepare_rloc.get_state" title="Link to this definition">#</a></dt>
+<dd><p>Get state vector in grid-localised view. This is step 1 of the LETKF algorithm in Hunt et. al. (2007). Prepares global X and ar{X}.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.prepare_rloc.get_obs">
+<span class="sig-name descname"><span class="pre">get_obs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_Y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Nx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Ny</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr_len</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.prepare_rloc.get_obs" title="Link to this definition">#</a></dt>
+<dd><p>Get observations vector in grid-localised view.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.prepare_rloc.get_state_in_obs_space">
+<span class="sig-name descname"><span class="pre">get_state_in_obs_space</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_attr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_Y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Nx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Ny</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr_len</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.prepare_rloc.get_state_in_obs_space" title="Link to this definition">#</a></dt>
+<dd><p>Get state vector projected onto observation space, in grid-localised view. This is step 1 of the LETKF algorithm in Hunt et. al., 2007.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.prepare_rloc.get_bc_mask">
+<span class="sig-name descname"><span class="pre">get_bc_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Nx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Ny</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_Y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr_len</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.prepare_rloc.get_bc_mask" title="Link to this definition">#</a></dt>
+<dd><p>Mask handling the boundary condition for cell or node grids in the local subdomains.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.prepare_rloc.get_properties">
+<span class="sig-name descname"><span class="pre">get_properties</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.prepare_rloc.get_properties" title="Link to this definition">#</a></dt>
+<dd><p>For a given grid-type (cell / node), return the 2D grid-size (Nx,Ny), the attributes {rho, rhou…} observed on this grid (obs_attr), the number of attributes (attr_len), and the index location of its data container.</p>
+<section id="returns">
+<h2>Returns<a class="headerlink" href="#returns" title="Link to this heading">#</a></h2>
+<p>Nx : int
+Ny : int
+obs_attr : list of str
+attr_len : int
+loc : int</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.prepare_rloc.get_quantity">
+<span class="sig-name descname"><span class="pre">get_quantity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">results</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.prepare_rloc.get_quantity" title="Link to this definition">#</a></dt>
+<dd><p>Get ensemble representation of {rho, rhou…}.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.data_assimilation.letkf.prepare_rloc.get_loc_mat">
+<span class="sig-name descname"><span class="pre">get_loc_mat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bc_mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr_len</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#src.data_assimilation.letkf.prepare_rloc.get_loc_mat" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="src.data_assimilation.localisation.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">src.data_assimilation.localisation</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="src.data_assimilation.etpf.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">src.data_assimilation.etpf</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, Ray Chew, Tommaso Benacchio, Rupert Klein
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">src.data_assimilation.letkf</a><ul>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.da_interface"><code class="docutils literal notranslate"><span class="pre">da_interface()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.interpolation_func"><code class="docutils literal notranslate"><span class="pre">interpolation_func()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.bin_func"><code class="docutils literal notranslate"><span class="pre">bin_func()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.none_func"><code class="docutils literal notranslate"><span class="pre">none_func()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.analysis"><code class="docutils literal notranslate"><span class="pre">analysis</span></code></a><ul>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.analysis.__init__"><code class="docutils literal notranslate"><span class="pre">analysis.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.analysis.forward"><code class="docutils literal notranslate"><span class="pre">analysis.forward()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.analysis.localisation"><code class="docutils literal notranslate"><span class="pre">analysis.localisation()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.analysis.analyse"><code class="docutils literal notranslate"><span class="pre">analysis.analyse()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.analysis.get_mean"><code class="docutils literal notranslate"><span class="pre">analysis.get_mean()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.analysis.state_vector"><code class="docutils literal notranslate"><span class="pre">analysis.state_vector()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.analysis.to_array"><code class="docutils literal notranslate"><span class="pre">analysis.to_array()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.analysis.debug"><code class="docutils literal notranslate"><span class="pre">analysis.debug()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.prepare_rloc"><code class="docutils literal notranslate"><span class="pre">prepare_rloc</span></code></a><ul>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.prepare_rloc.__init__"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.prepare_rloc.sort_locs"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.sort_locs()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.prepare_rloc.analyse"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.analyse()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.prepare_rloc.analyse_by_grid_type"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.analyse_by_grid_type()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.prepare_rloc.do_analysis"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.do_analysis</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.prepare_rloc.stack"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.stack()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.prepare_rloc.get_state"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.get_state()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.prepare_rloc.get_obs"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.get_obs()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.prepare_rloc.get_state_in_obs_space"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.get_state_in_obs_space()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.prepare_rloc.get_bc_mask"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.get_bc_mask()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.prepare_rloc.get_properties"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.get_properties()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.prepare_rloc.get_quantity"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.get_quantity()</span></code></a></li>
+<li><a class="reference internal" href="#src.data_assimilation.letkf.prepare_rloc.get_loc_mat"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.get_loc_mat()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=c62cd884"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=32e29ea5"></script>
+    </body>
+</html>

@@ -1,0 +1,1682 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="#" /><link rel="search" title="Search" href="search.html" />
+
+    <link rel="shortcut icon" href="_static/favicon.ico"/><!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 --><title>Index - pyBELLA v0.50.1 documentation</title>
+<link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=eafc0fe6" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">pyBELLA v0.50.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="_static/logo.png" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">pyBELLA v0.50.1 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="numerics.html">Numerics</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Numerics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="content/boundary.html">Boundary handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="content/grid_discretisation.html">Grid discretisation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="content/advect.html">Advection routine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="content/compute_flux.html">Compute advecting flux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="content/explicit_euler.html">Explicit Euler step</a></li>
+<li class="toctree-l2"><a class="reference internal" href="content/implicit_euler.html">Implicit Euler step</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="apis.html">APIs</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of APIs</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="apis/inputs.html">inputs</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of inputs</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="apis/inputs.rising_bubble.html">inputs.rising_bubble</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="apis/run_scripts.html">run_scripts</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of run_scripts</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="apis/run_scripts.run.html">run_scripts.run</a></li>
+<li class="toctree-l3"><a class="reference internal" href="apis/run_scripts.test_suite.html">run_scripts.test_suite</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="apis/src.html">src</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of src</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="apis/src.data_assimilation.html">src.data_assimilation</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of src.data_assimilation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.blending.html">src.data_assimilation.blending</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.etpf.html">src.data_assimilation.etpf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.letkf.html">src.data_assimilation.letkf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.localisation.html">src.data_assimilation.localisation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.params.html">src.data_assimilation.params</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.post_processing.html">src.data_assimilation.post_processing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.utils.html">src.data_assimilation.utils</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="apis/src.dycore.html">src.dycore</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of src.dycore</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="apis/src.dycore.discretisation.html">src.dycore.discretisation</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of src.dycore.discretisation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html">src.dycore.discretisation.grid</a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.discretisation.time_update.html">src.dycore.discretisation.time_update</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="apis/src.dycore.physics.html">src.dycore.physics</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of src.dycore.physics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l5 has-children"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.html">src.dycore.physics.gas_dynamics</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of src.dycore.physics.gas_dynamics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.cfl.html">src.dycore.physics.gas_dynamics.cfl</a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.eos.html">src.dycore.physics.gas_dynamics.eos</a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.explicit.html">src.dycore.physics.gas_dynamics.explicit</a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.numerical_flux.html">src.dycore.physics.gas_dynamics.numerical_flux</a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.recovery.html">src.dycore.physics.gas_dynamics.recovery</a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.thermodynamic.html">src.dycore.physics.gas_dynamics.thermodynamic</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.physics.hydrostatics.html">src.dycore.physics.hydrostatics</a></li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="apis/src.dycore.physics.low_mach.html">src.dycore.physics.low_mach</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of src.dycore.physics.low_mach</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html">src.dycore.physics.low_mach.laplacian</a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.mpv.html">src.dycore.physics.low_mach.mpv</a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.second_projection.html">src.dycore.physics.low_mach.second_projection</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="apis/src.tests.html">src.tests</a><input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle navigation of src.tests</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.diagnostics.html">src.tests.diagnostics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html">src.tests.test_internal_long_wave</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html">src.tests.test_lamb_wave</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html">src.tests.test_travelling_vortex</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="apis/src.utils.html">src.utils</a><input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><div class="visually-hidden">Toggle navigation of src.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.utils.io.html">src.utils.io</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.utils.sim_params.html">src.utils.sim_params</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.utils.user_data.html">src.utils.user_data</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="apis/src.vis.html">src.vis</a><input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><div class="visually-hidden">Toggle navigation of src.vis</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.plotting_tools.html">src.vis.plotting_tools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.utils.html">src.vis.utils</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Change log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="refs.html">References</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/ray-chew/pyBELLA">GitHub repo</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          
+<section class="genindex-section">
+  <h1 id="index">Index</h1>
+  <div class="genindex-jumpbox"><a href="#_"><strong>_</strong></a> | <a href="#A"><strong>A</strong></a> | <a href="#B"><strong>B</strong></a> | <a href="#C"><strong>C</strong></a> | <a href="#D"><strong>D</strong></a> | <a href="#E"><strong>E</strong></a> | <a href="#F"><strong>F</strong></a> | <a href="#G"><strong>G</strong></a> | <a href="#H"><strong>H</strong></a> | <a href="#I"><strong>I</strong></a> | <a href="#J"><strong>J</strong></a> | <a href="#L"><strong>L</strong></a> | <a href="#M"><strong>M</strong></a> | <a href="#N"><strong>N</strong></a> | <a href="#O"><strong>O</strong></a> | <a href="#P"><strong>P</strong></a> | <a href="#Q"><strong>Q</strong></a> | <a href="#R"><strong>R</strong></a> | <a href="#S"><strong>S</strong></a> | <a href="#T"><strong>T</strong></a> | <a href="#U"><strong>U</strong></a> | <a href="#V"><strong>V</strong></a> | <a href="#W"><strong>W</strong></a></div>
+</section>
+<section id="_" class="genindex-section">
+  <h2>_</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/inputs.rising_bubble.html#inputs.rising_bubble.UserData.__init__">__init__() (inputs.rising_bubble.UserData method)</a>
+
+        <ul>
+          <li><a href="apis/run_scripts.run.html#run_scripts.run.run_params.__init__">(run_scripts.run.run_params method)</a>
+</li>
+          <li><a href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.Blend.__init__">(src.data_assimilation.blending.Blend method)</a>
+</li>
+          <li><a href="apis/src.data_assimilation.etpf.html#src.data_assimilation.etpf.analysis.__init__">(src.data_assimilation.etpf.analysis method)</a>
+</li>
+          <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis.__init__">(src.data_assimilation.letkf.analysis method)</a>
+</li>
+          <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.__init__">(src.data_assimilation.letkf.prepare_rloc method)</a>
+</li>
+          <li><a href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.__init__">(src.data_assimilation.params.init method)</a>
+</li>
+          <li><a href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.ensemble.__init__">(src.data_assimilation.utils.ensemble method)</a>
+</li>
+          <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.ElemSpaceDiscr.__init__">(src.dycore.discretisation.grid.ElemSpaceDiscr method)</a>
+</li>
+          <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.Grid.__init__">(src.dycore.discretisation.grid.Grid method)</a>
+</li>
+          <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.NodeSpaceDiscr.__init__">(src.dycore.discretisation.grid.NodeSpaceDiscr method)</a>
+</li>
+          <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.SpaceDiscr.__init__">(src.dycore.discretisation.grid.SpaceDiscr method)</a>
+</li>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.thermodynamic.html#src.dycore.physics.gas_dynamics.thermodynamic.init.__init__">(src.dycore.physics.gas_dynamics.thermodynamic.init method)</a>
+</li>
+          <li><a href="apis/src.dycore.physics.low_mach.mpv.html#src.dycore.physics.low_mach.mpv.MPV.__init__">(src.dycore.physics.low_mach.mpv.MPV method)</a>
+</li>
+          <li><a href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.solver_counter.__init__">(src.dycore.physics.low_mach.second_projection.solver_counter method)</a>
+</li>
+          <li><a href="apis/src.tests.diagnostics.html#src.tests.diagnostics.compare_sol.__init__">(src.tests.diagnostics.compare_sol method)</a>
+</li>
+          <li><a href="apis/src.tests.diagnostics.html#src.tests.diagnostics.test_params.__init__">(src.tests.diagnostics.test_params method)</a>
+</li>
+          <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.__init__">(src.tests.test_internal_long_wave.UserData method)</a>
+</li>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.__init__">(src.tests.test_lamb_wave.UserData method)</a>
+</li>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.forcing.__init__">(src.tests.test_lamb_wave.UserData.forcing method)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.__init__">(src.tests.test_travelling_vortex.UserData method)</a>
+</li>
+          <li><a href="apis/src.utils.io.html#src.utils.io.init.__init__">(src.utils.io.init method)</a>
+</li>
+          <li><a href="apis/src.utils.io.html#src.utils.io.read_input.__init__">(src.utils.io.read_input method)</a>
+</li>
+          <li><a href="apis/src.utils.sim_params.html#src.utils.sim_params.global_constants.__init__">(src.utils.sim_params.global_constants method)</a>
+</li>
+          <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.__init__">(src.utils.user_data.UserDataInit method)</a>
+</li>
+          <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.animator_2D.__init__">(src.vis.plotting_tools.animator_2D method)</a>
+</li>
+          <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter.__init__">(src.vis.plotting_tools.plotter method)</a>
+</li>
+          <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter_1d.__init__">(src.vis.plotting_tools.plotter_1d method)</a>
+</li>
+          <li><a href="apis/src.vis.utils.html#src.vis.utils.prt_time.__init__">(src.vis.utils.prt_time method)</a>
+</li>
+          <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case.__init__">(src.vis.utils.test_case method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="A" class="genindex-section">
+  <h2>A</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.dycore.physics.gas_dynamics.explicit.html#src.dycore.physics.gas_dynamics.explicit.advect">advect() (in module src.dycore.physics.gas_dynamics.explicit)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.gas_dynamics.explicit.html#src.dycore.physics.gas_dynamics.explicit.advect_rk">advect_rk() (in module src.dycore.physics.gas_dynamics.explicit)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.etpf.html#src.data_assimilation.etpf.analysis.analyse">analyse() (src.data_assimilation.etpf.analysis method)</a>
+
+        <ul>
+          <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis.analyse">(src.data_assimilation.letkf.analysis method)</a>
+</li>
+          <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.analyse">(src.data_assimilation.letkf.prepare_rloc method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.analyse_by_grid_type">analyse_by_grid_type() (src.data_assimilation.letkf.prepare_rloc method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.etpf.html#src.data_assimilation.etpf.analysis">analysis (class in src.data_assimilation.etpf)</a>
+
+        <ul>
+          <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis">(class in src.data_assimilation.letkf)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.animator_2D.animate">animate() (src.vis.plotting_tools.animator_2D method)</a>
+</li>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.animator_2D">animator_2D (class in src.vis.plotting_tools)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="B" class="genindex-section">
+  <h2>B</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.bin_func">bin_func() (in module src.data_assimilation.letkf)</a>
+
+        <ul>
+          <li><a href="apis/src.vis.utils.html#src.vis.utils.bin_func">(in module src.vis.utils)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.Blend">Blend (class in src.data_assimilation.blending)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.blending_after_timestep">blending_after_timestep() (in module src.data_assimilation.blending)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.blending_before_timestep">blending_before_timestep() (in module src.data_assimilation.blending)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.boundary_mask">boundary_mask() (in module src.data_assimilation.utils)</a>
+</li>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.BUOY">BUOY (src.tests.test_internal_long_wave.UserData attribute)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="C" class="genindex-section">
+  <h2>C</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case.cb_suffix">cb_suffix() (src.vis.utils.test_case method)</a>
+</li>
+        <li><a href="apis/src.utils.io.html#src.utils.io.init.check_jar">check_jar() (src.utils.io.init method)</a>
+</li>
+        <li><a href="apis/src.utils.io.html#src.utils.io.init.close_everything">close_everything() (src.utils.io.init method)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.hydrostatics.html#src.dycore.physics.hydrostatics.column">column() (in module src.dycore.physics.hydrostatics)</a>
+</li>
+        <li><a href="apis/src.tests.diagnostics.html#src.tests.diagnostics.compare_sol">compare_sol (class in src.tests.diagnostics)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.gas_dynamics.eos.html#src.dycore.physics.gas_dynamics.eos.compressibility">compressibility() (in module src.dycore.physics.gas_dynamics.eos)</a>
+</li>
+        <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.compute_coriolis">compute_coriolis() (src.utils.user_data.UserDataInit method)</a>
+</li>
+        <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.compute_cp_gas">compute_cp_gas() (src.utils.user_data.UserDataInit method)</a>
+</li>
+        <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.compute_Cs">compute_Cs() (src.utils.user_data.UserDataInit method)</a>
+</li>
+        <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.compute_gravity">compute_gravity() (src.utils.user_data.UserDataInit method)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.compute_Msq">compute_Msq() (src.utils.user_data.UserDataInit method)</a>
+</li>
+        <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.compute_N_ref">compute_N_ref() (src.utils.user_data.UserDataInit method)</a>
+</li>
+        <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.compute_rho_ref">compute_rho_ref() (src.utils.user_data.UserDataInit method)</a>
+</li>
+        <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.compute_u_ref">compute_u_ref() (src.utils.user_data.UserDataInit method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.Blend.convert_p2n">convert_p2n() (src.data_assimilation.blending.Blend method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.converter">converter() (src.data_assimilation.params.init static method)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.correction_nodes">correction_nodes() (in module src.dycore.physics.low_mach.second_projection)</a>
+</li>
+        <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.cp_gas">cp_gas (src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.Blend.criterion_init">criterion_init() (src.data_assimilation.blending.Blend method)</a>
+</li>
+        <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.Cs">Cs (src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="D" class="genindex-section">
+  <h2>D</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.data_assimilation.etpf.html#src.data_assimilation.etpf.da_interface">da_interface() (in module src.data_assimilation.etpf)</a>
+
+        <ul>
+          <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.da_interface">(in module src.data_assimilation.letkf)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.da_times">da_times (src.data_assimilation.params.init property)</a>
+</li>
+        <li><a href="apis/src.dycore.discretisation.time_update.html#src.dycore.discretisation.time_update.data_init">data_init() (in module src.dycore.discretisation.time_update)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis.debug">debug() (src.data_assimilation.letkf.analysis method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.ensemble.debug_im">debug_im() (src.data_assimilation.utils.ensemble static method)</a>
+</li>
+        <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.forcing.dehatter">dehatter() (src.tests.test_lamb_wave.UserData.forcing method)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.divergence_nodes">divergence_nodes() (in module src.dycore.physics.low_mach.second_projection)</a>
+</li>
+        <li><a href="apis/src.dycore.discretisation.time_update.html#src.dycore.discretisation.time_update.do">do() (in module src.dycore.discretisation.time_update)</a>
+
+        <ul>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.recovery.html#src.dycore.physics.gas_dynamics.recovery.do">(in module src.dycore.physics.gas_dynamics.recovery)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.do_analysis">do_analysis (src.data_assimilation.letkf.prepare_rloc attribute)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.do_comp_to_psinc_conv">do_comp_to_psinc_conv() (in module src.data_assimilation.blending)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.do_hydro_to_nonhydro_conv">do_hydro_to_nonhydro_conv() (in module src.data_assimilation.blending)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.do_lake_to_swe_conv">do_lake_to_swe_conv() (in module src.data_assimilation.blending)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.do_nonhydro_to_hydro_conv">do_nonhydro_to_hydro_conv() (in module src.data_assimilation.blending)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.do_psinc_to_comp_conv">do_psinc_to_comp_conv() (in module src.data_assimilation.blending)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.do_swe_to_lake_conv">do_swe_to_lake_conv() (in module src.data_assimilation.blending)</a>
+</li>
+        <li><a href="apis/src.utils.io.html#src.utils.io.init.dpress_dim">dpress_dim() (src.utils.io.init method)</a>
+</li>
+        <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.SpaceDiscr.dxyz">dxyz (src.dycore.discretisation.grid.SpaceDiscr attribute)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.gas_dynamics.cfl.html#src.dycore.physics.gas_dynamics.cfl.dynamic_timestep">dynamic_timestep() (in module src.dycore.physics.gas_dynamics.cfl)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="E" class="genindex-section">
+  <h2>E</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.forcing.eigenfunction">eigenfunction() (src.tests.test_lamb_wave.UserData.forcing method)</a>
+</li>
+        <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.ElemSpaceDiscr">ElemSpaceDiscr (class in src.dycore.discretisation.grid)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.ensemble">ensemble (class in src.data_assimilation.utils)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.ensemble_inflation">ensemble_inflation() (in module src.data_assimilation.utils)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case.ensemble_spread">ensemble_spread() (src.vis.utils.test_case method)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.ensemble.ensemble_spreading">ensemble_spreading() (src.data_assimilation.utils.ensemble method)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.euler_backward_non_advective_expl_part">euler_backward_non_advective_expl_part() (in module src.dycore.physics.low_mach.second_projection)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.euler_backward_non_advective_impl_part">euler_backward_non_advective_impl_part() (in module src.dycore.physics.low_mach.second_projection)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.euler_forward_non_advective">euler_forward_non_advective() (in module src.dycore.physics.low_mach.second_projection)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.gas_dynamics.explicit.html#src.dycore.physics.gas_dynamics.explicit.explicit_step_and_flux">explicit_step_and_flux() (in module src.dycore.physics.gas_dynamics.explicit)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="F" class="genindex-section">
+  <h2>F</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.ElemSpaceDiscr.flip">flip() (src.dycore.discretisation.grid.ElemSpaceDiscr method)</a>
+
+        <ul>
+          <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.NodeSpaceDiscr.flip">(src.dycore.discretisation.grid.NodeSpaceDiscr method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.utils.io.html#src.utils.io.fn_gen">fn_gen() (in module src.utils.io)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis.forward">forward() (src.data_assimilation.letkf.analysis method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="G" class="genindex-section">
+  <h2>G</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.gamm">gamm (src.utils.user_data.UserDataInit property)</a>
+</li>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.gamma">gamma (src.tests.test_internal_long_wave.UserData attribute)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.gamma">(src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.gamma">(src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.gen_obs_noise">gen_obs_noise() (src.data_assimilation.params.init method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.gen_obs_sparse">gen_obs_sparse() (src.data_assimilation.params.init method)</a>
+</li>
+        <li><a href="apis/src.utils.io.html#src.utils.io.get_args">get_args() (in module src.utils.io)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case.get_arr">get_arr() (src.vis.utils.test_case method)</a>
+</li>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter_1d.get_ax">get_ax() (src.vis.plotting_tools.plotter_1d method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.get_bc_mask">get_bc_mask() (src.data_assimilation.letkf.prepare_rloc method)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.gas_dynamics.recovery.html#src.dycore.physics.gas_dynamics.recovery.get_conservatives">get_conservatives() (in module src.dycore.physics.gas_dynamics.recovery)</a>
+</li>
+        <li><a href="apis/src.utils.io.html#src.utils.io.read_input.get_data">get_data() (src.utils.io.read_input method)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case.get_debug_attrs">get_debug_attrs() (src.vis.utils.test_case static method)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.get_diff">get_diff() (in module src.vis.utils)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case.get_ensemble">get_ensemble() (src.vis.utils.test_case method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.etpf.html#src.data_assimilation.etpf.analysis.get_ensemble_from_X">get_ensemble_from_X() (src.data_assimilation.etpf.analysis method)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case.get_filename">get_filename() (src.vis.utils.test_case method)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case.get_ie1">get_ie1() (src.vis.utils.test_case static method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.get_loc_mat">get_loc_mat() (src.data_assimilation.letkf.prepare_rloc method)</a>
+
+        <ul>
+          <li><a href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.get_loc_mat">(src.data_assimilation.params.init method)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis.get_mean">get_mean() (src.data_assimilation.letkf.analysis method)</a>
+
+        <ul>
+          <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case.get_mean">(src.vis.utils.test_case method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.get_obs">get_obs() (src.data_assimilation.letkf.prepare_rloc method)</a>
+</li>
+        <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.ElemSpaceDiscr.get_p_indim">get_p_indim() (src.dycore.discretisation.grid.ElemSpaceDiscr method)</a>
+
+        <ul>
+          <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.NodeSpaceDiscr.get_p_indim">(src.dycore.discretisation.grid.NodeSpaceDiscr method)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case.get_path">get_path() (src.vis.utils.test_case method)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case.get_probe_loc">get_probe_loc() (src.vis.utils.test_case static method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.get_properties">get_properties() (src.data_assimilation.letkf.prepare_rloc method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.get_quantity">get_quantity() (src.data_assimilation.letkf.prepare_rloc method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.get_state">get_state() (src.data_assimilation.letkf.prepare_rloc method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.get_state_in_obs_space">get_state_in_obs_space() (src.data_assimilation.letkf.prepare_rloc method)</a>
+</li>
+        <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.forcing.get_T_matrix">get_T_matrix() (src.tests.test_lamb_wave.UserData.forcing method)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case.get_tag_dict">get_tag_dict() (src.vis.utils.test_case static method)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case.get_time_series">get_time_series() (src.vis.utils.test_case method)</a>
+</li>
+        <li><a href="apis/src.utils.sim_params.html#src.utils.sim_params.global_constants">global_constants (class in src.utils.sim_params)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.grad_nodes">grad_nodes() (in module src.dycore.physics.low_mach.second_projection)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.grad_nodes_fft">grad_nodes_fft() (in module src.dycore.physics.low_mach.second_projection)</a>
+</li>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.grav">grav (src.tests.test_internal_long_wave.UserData attribute)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.grav">(src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.grav">(src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.grav">(src.utils.user_data.UserDataInit property)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.Grid">Grid (class in src.dycore.discretisation.grid)</a>
+</li>
+        <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.grid_init">grid_init() (in module src.dycore.discretisation.grid)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="H" class="genindex-section">
+  <h2>H</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.h_ref">h_ref (src.tests.test_internal_long_wave.UserData attribute)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.h_ref">(src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.h_ref">(src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.h_ref">(src.utils.user_data.UserDataInit property)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.dycore.physics.gas_dynamics.numerical_flux.html#src.dycore.physics.gas_dynamics.numerical_flux.hll_solver">hll_solver() (in module src.dycore.physics.gas_dynamics.numerical_flux)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.HSprojector_2t3D">HSprojector_2t3D() (in module src.data_assimilation.utils)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.HSprojector_3t2D">HSprojector_3t2D() (in module src.data_assimilation.utils)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="I" class="genindex-section">
+  <h2>I</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.i_coriolis">i_coriolis (src.tests.test_internal_long_wave.UserData attribute)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.i_coriolis">(src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.i_coriolis">(src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.i_gravity">i_gravity (src.tests.test_internal_long_wave.UserData attribute)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.i_gravity">(src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.i_gravity">(src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.SpaceDiscr.ic">ic (src.dycore.discretisation.grid.SpaceDiscr attribute)</a>
+</li>
+        <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.SpaceDiscr.ig">ig (src.dycore.discretisation.grid.SpaceDiscr attribute)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init">init (class in src.data_assimilation.params)</a>
+
+        <ul>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.thermodynamic.html#src.dycore.physics.gas_dynamics.thermodynamic.init">(class in src.dycore.physics.gas_dynamics.thermodynamic)</a>
+</li>
+          <li><a href="apis/src.utils.io.html#src.utils.io.init">(class in src.utils.io)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.utils.io.html#src.utils.io.init_logger">init_logger() (in module src.utils.io)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.hydrostatics.html#src.dycore.physics.hydrostatics.initial_pressure">initial_pressure() (in module src.dycore.physics.hydrostatics)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.ensemble.initialise_members">initialise_members() (src.data_assimilation.utils.ensemble method)</a>
+</li>
+        <li>
+    inputs
+
+        <ul>
+          <li><a href="apis/inputs.html#module-inputs">module</a>
+</li>
+        </ul></li>
+        <li>
+    inputs.rising_bubble
+
+        <ul>
+          <li><a href="apis/inputs.rising_bubble.html#module-inputs.rising_bubble">module</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.data_assimilation.post_processing.html#src.data_assimilation.post_processing.interface">interface() (in module src.data_assimilation.post_processing)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.interpolation_func">interpolation_func() (in module src.data_assimilation.letkf)</a>
+</li>
+        <li><a href="apis/src.utils.io.html#src.utils.io.init.io_create_file">io_create_file() (src.utils.io.init method)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.gas_dynamics.eos.html#src.dycore.physics.gas_dynamics.eos.is_compressible">is_compressible() (in module src.dycore.physics.gas_dynamics.eos)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.gas_dynamics.eos.html#src.dycore.physics.gas_dynamics.eos.is_nonhydrostatic">is_nonhydrostatic() (in module src.dycore.physics.gas_dynamics.eos)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="J" class="genindex-section">
+  <h2>J</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.utils.io.html#src.utils.io.init.jar">jar() (src.utils.io.init method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="L" class="genindex-section">
+  <h2>L</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.labels">labels() (in module src.vis.plotting_tools)</a>
+</li>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.labels_increment">labels_increment() (in module src.vis.plotting_tools)</a>
+</li>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.lake_labels">lake_labels() (in module src.vis.plotting_tools)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lap2D">lap2D() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lap2D_5pt">lap2D_5pt() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lap2D_exner">lap2D_exner() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lap2D_gather">lap2D_gather() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lap2D_gather_new">lap2D_gather_new() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lap2D_numba_test">lap2D_numba_test() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lap3D">lap3D() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lapHS">lapHS() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lapVS">lapVS() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.gas_dynamics.recovery.html#src.dycore.physics.gas_dynamics.recovery.limiters">limiters() (in module src.dycore.physics.gas_dynamics.recovery)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.load_obs">load_obs() (src.data_assimilation.params.init method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.loc_setter">loc_setter (src.data_assimilation.params.init property)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis.localisation">localisation() (src.data_assimilation.letkf.analysis method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="M" class="genindex-section">
+  <h2>M</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.ensemble.members">members() (src.data_assimilation.utils.ensemble static method)</a>
+</li>
+        <li><a href="apis/src.utils.io.html#src.utils.io.mkdir_p">mkdir_p() (in module src.utils.io)</a>
+</li>
+        <li>
+    module
+
+        <ul>
+          <li><a href="apis/inputs.html#module-inputs">inputs</a>
+</li>
+          <li><a href="apis/inputs.rising_bubble.html#module-inputs.rising_bubble">inputs.rising_bubble</a>
+</li>
+          <li><a href="apis/run_scripts.html#module-run_scripts">run_scripts</a>
+</li>
+          <li><a href="apis/run_scripts.run.html#module-run_scripts.run">run_scripts.run</a>
+</li>
+          <li><a href="apis/run_scripts.test_suite.html#module-run_scripts.test_suite">run_scripts.test_suite</a>
+</li>
+          <li><a href="apis/src.html#module-src">src</a>
+</li>
+          <li><a href="apis/src.data_assimilation.html#module-src.data_assimilation">src.data_assimilation</a>
+</li>
+          <li><a href="apis/src.data_assimilation.blending.html#module-src.data_assimilation.blending">src.data_assimilation.blending</a>
+</li>
+          <li><a href="apis/src.data_assimilation.etpf.html#module-src.data_assimilation.etpf">src.data_assimilation.etpf</a>
+</li>
+          <li><a href="apis/src.data_assimilation.letkf.html#module-src.data_assimilation.letkf">src.data_assimilation.letkf</a>
+</li>
+          <li><a href="apis/src.data_assimilation.localisation.html#module-src.data_assimilation.localisation">src.data_assimilation.localisation</a>
+</li>
+          <li><a href="apis/src.data_assimilation.params.html#module-src.data_assimilation.params">src.data_assimilation.params</a>
+</li>
+          <li><a href="apis/src.data_assimilation.post_processing.html#module-src.data_assimilation.post_processing">src.data_assimilation.post_processing</a>
+</li>
+          <li><a href="apis/src.data_assimilation.utils.html#module-src.data_assimilation.utils">src.data_assimilation.utils</a>
+</li>
+          <li><a href="apis/src.dycore.html#module-src.dycore">src.dycore</a>
+</li>
+          <li><a href="apis/src.dycore.discretisation.html#module-src.dycore.discretisation">src.dycore.discretisation</a>
+</li>
+          <li><a href="apis/src.dycore.discretisation.grid.html#module-src.dycore.discretisation.grid">src.dycore.discretisation.grid</a>
+</li>
+          <li><a href="apis/src.dycore.discretisation.time_update.html#module-src.dycore.discretisation.time_update">src.dycore.discretisation.time_update</a>
+</li>
+          <li><a href="apis/src.dycore.physics.html#module-src.dycore.physics">src.dycore.physics</a>
+</li>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.html#module-src.dycore.physics.gas_dynamics">src.dycore.physics.gas_dynamics</a>
+</li>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.cfl.html#module-src.dycore.physics.gas_dynamics.cfl">src.dycore.physics.gas_dynamics.cfl</a>
+</li>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.eos.html#module-src.dycore.physics.gas_dynamics.eos">src.dycore.physics.gas_dynamics.eos</a>
+</li>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.explicit.html#module-src.dycore.physics.gas_dynamics.explicit">src.dycore.physics.gas_dynamics.explicit</a>
+</li>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.numerical_flux.html#module-src.dycore.physics.gas_dynamics.numerical_flux">src.dycore.physics.gas_dynamics.numerical_flux</a>
+</li>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.recovery.html#module-src.dycore.physics.gas_dynamics.recovery">src.dycore.physics.gas_dynamics.recovery</a>
+</li>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.thermodynamic.html#module-src.dycore.physics.gas_dynamics.thermodynamic">src.dycore.physics.gas_dynamics.thermodynamic</a>
+</li>
+          <li><a href="apis/src.dycore.physics.hydrostatics.html#module-src.dycore.physics.hydrostatics">src.dycore.physics.hydrostatics</a>
+</li>
+          <li><a href="apis/src.dycore.physics.low_mach.html#module-src.dycore.physics.low_mach">src.dycore.physics.low_mach</a>
+</li>
+          <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#module-src.dycore.physics.low_mach.laplacian">src.dycore.physics.low_mach.laplacian</a>
+</li>
+          <li><a href="apis/src.dycore.physics.low_mach.mpv.html#module-src.dycore.physics.low_mach.mpv">src.dycore.physics.low_mach.mpv</a>
+</li>
+          <li><a href="apis/src.dycore.physics.low_mach.second_projection.html#module-src.dycore.physics.low_mach.second_projection">src.dycore.physics.low_mach.second_projection</a>
+</li>
+          <li><a href="apis/src.tests.html#module-src.tests">src.tests</a>
+</li>
+          <li><a href="apis/src.tests.diagnostics.html#module-src.tests.diagnostics">src.tests.diagnostics</a>
+</li>
+          <li><a href="apis/src.tests.test_internal_long_wave.html#module-src.tests.test_internal_long_wave">src.tests.test_internal_long_wave</a>
+</li>
+          <li><a href="apis/src.tests.test_lamb_wave.html#module-src.tests.test_lamb_wave">src.tests.test_lamb_wave</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#module-src.tests.test_travelling_vortex">src.tests.test_travelling_vortex</a>
+</li>
+          <li><a href="apis/src.utils.html#module-src.utils">src.utils</a>
+</li>
+          <li><a href="apis/src.utils.io.html#module-src.utils.io">src.utils.io</a>
+</li>
+          <li><a href="apis/src.utils.sim_params.html#module-src.utils.sim_params">src.utils.sim_params</a>
+</li>
+          <li><a href="apis/src.utils.user_data.html#module-src.utils.user_data">src.utils.user_data</a>
+</li>
+          <li><a href="apis/src.vis.html#module-src.vis">src.vis</a>
+</li>
+          <li><a href="apis/src.vis.plotting_tools.html#module-src.vis.plotting_tools">src.vis.plotting_tools</a>
+</li>
+          <li><a href="apis/src.vis.utils.html#module-src.vis.utils">src.vis.utils</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.molly_function">molly_function() (src.tests.test_internal_long_wave.UserData method)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.mpv.html#src.dycore.physics.low_mach.mpv.MPV">MPV (class in src.dycore.physics.low_mach.mpv)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.multiply_inverse_coriolis">multiply_inverse_coriolis() (in module src.dycore.physics.low_mach.second_projection)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="N" class="genindex-section">
+  <h2>N</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/run_scripts.run.html#run_scripts.run.run_params.N">N (run_scripts.run.run_params attribute)</a>
+</li>
+        <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.N_ref">N_ref (src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+        <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.NodeSpaceDiscr">NodeSpaceDiscr (class in src.dycore.discretisation.grid)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.noise_percentage">noise_percentage (src.data_assimilation.params.init property)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.none_func">none_func() (in module src.data_assimilation.letkf)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.dycore.physics.gas_dynamics.eos.html#src.dycore.physics.gas_dynamics.eos.nonhydrostasy">nonhydrostasy() (in module src.dycore.physics.gas_dynamics.eos)</a>
+</li>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.NSPEC">NSPEC (src.tests.test_internal_long_wave.UserData attribute)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.NSPEC">(src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.NSPEC">(src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.Nsq_ref">Nsq_ref (src.tests.test_internal_long_wave.UserData attribute)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.Nsq_ref">(src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+        </ul></li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="O" class="genindex-section">
+  <h2>O</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.obs_attrs">obs_attrs (src.data_assimilation.params.init property)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.obs_noiser">obs_noiser() (in module src.data_assimilation.utils)</a>
+</li>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.omega">omega (src.tests.test_internal_long_wave.UserData attribute)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.omega">(src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.omega">(src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.omega">(src.utils.user_data.UserDataInit property)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.operator_coefficients_nodes">operator_coefficients_nodes() (in module src.dycore.physics.low_mach.second_projection)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="P" class="genindex-section">
+  <h2>P</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.p_ref">p_ref (src.tests.test_internal_long_wave.UserData attribute)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.p_ref">(src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.p_ref">(src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.p_ref">(src.utils.user_data.UserDataInit property)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.periodic">periodic() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter.plot">plot() (src.vis.plotting_tools.plotter method)</a>
+</li>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter">plotter (class in src.vis.plotting_tools)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter_1d">plotter_1d (class in src.vis.plotting_tools)</a>
+</li>
+        <li><a href="apis/src.utils.io.html#src.utils.io.init.populate">populate() (src.utils.io.init method)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.precon_diag_prepare">precon_diag_prepare() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc">prepare_rloc (class in src.data_assimilation.letkf)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case.probe_rmse">probe_rmse() (src.vis.utils.test_case method)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.prt_time">prt_time (class in src.vis.utils)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.prt_time.prtt">prtt() (src.vis.utils.prt_time method)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case.py_out">py_out() (src.vis.utils.test_case static method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="Q" class="genindex-section">
+  <h2>Q</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.Q_vap">Q_vap (src.tests.test_internal_long_wave.UserData attribute)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.Q_vap">(src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.Q_vap">(src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/run_scripts.run.html#run_scripts.run.run_params.queue_run">queue_run() (run_scripts.run.run_params method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="R" class="genindex-section">
+  <h2>R</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.R_gas">R_gas (src.tests.test_internal_long_wave.UserData attribute)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.R_gas">(src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.R_gas">(src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.R_gas">(src.utils.user_data.UserDataInit property)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.R_vap">R_vap (src.tests.test_internal_long_wave.UserData attribute)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.R_vap">(src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.R_vap">(src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.rayleigh_bc_function">rayleigh_bc_function() (src.tests.test_lamb_wave.UserData static method)</a>
+</li>
+        <li><a href="apis/src.utils.io.html#src.utils.io.read_input">read_input (class in src.utils.io)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.gas_dynamics.numerical_flux.html#src.dycore.physics.gas_dynamics.numerical_flux.recompute_advective_fluxes">recompute_advective_fluxes() (in module src.dycore.physics.gas_dynamics.numerical_flux)</a>
+</li>
+        <li><a href="apis/run_scripts.run.html#run_scripts.run.run_params.restart_run">restart_run() (run_scripts.run.run_params method)</a>
+</li>
+        <li><a href="apis/run_scripts.run.html#run_scripts.run.run_params.restart_set">restart_set() (run_scripts.run.run_params method)</a>
+</li>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.rho_ref">rho_ref (src.tests.test_internal_long_wave.UserData attribute)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.rho_ref">(src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.rho_ref">(src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.dycore.physics.gas_dynamics.eos.html#src.dycore.physics.gas_dynamics.eos.rhoe">rhoe() (in module src.dycore.physics.gas_dynamics.eos)</a>
+</li>
+        <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.rhoe_function">rhoe_function() (src.tests.test_travelling_vortex.UserData method)</a>
+</li>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.rhoe_method">rhoe_method() (src.tests.test_internal_long_wave.UserData static method)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.rhs_from_p_old">rhs_from_p_old() (in module src.dycore.physics.low_mach.second_projection)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.localisation.html#src.data_assimilation.localisation.rlocal_5pt">rlocal_5pt() (in module src.data_assimilation.localisation)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.localisation.html#src.data_assimilation.localisation.rlocal_5pt_stencil">rlocal_5pt_stencil() (in module src.data_assimilation.localisation)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.rmse">rmse() (in module src.vis.utils)</a>
+</li>
+        <li><a href="apis/run_scripts.run.html#run_scripts.run.run_params">run_params (class in run_scripts.run)</a>
+</li>
+        <li>
+    run_scripts
+
+        <ul>
+          <li><a href="apis/run_scripts.html#module-run_scripts">module</a>
+</li>
+        </ul></li>
+        <li>
+    run_scripts.run
+
+        <ul>
+          <li><a href="apis/run_scripts.run.html#module-run_scripts.run">module</a>
+</li>
+        </ul></li>
+        <li>
+    run_scripts.test_suite
+
+        <ul>
+          <li><a href="apis/run_scripts.test_suite.html#module-run_scripts.test_suite">module</a>
+</li>
+        </ul></li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="S" class="genindex-section">
+  <h2>S</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter.save_fig">save_fig() (src.vis.plotting_tools.plotter method)</a>
+
+        <ul>
+          <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter_1d.save_fig">(src.vis.plotting_tools.plotter_1d method)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.scale_factor">scale_factor (src.tests.test_internal_long_wave.UserData attribute)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.scale_wall_node_values">scale_wall_node_values() (in module src.dycore.physics.low_mach.second_projection)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.sd_setter">sd_setter (src.data_assimilation.params.init property)</a>
+</li>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter.set_axes">set_axes() (src.vis.plotting_tools.plotter method)</a>
+</li>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter.set_cax_axes">set_cax_axes() (src.vis.plotting_tools.plotter method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.ensemble.set_members">set_members() (src.data_assimilation.utils.ensemble method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.set_p2_nodes">set_p2_nodes() (in module src.data_assimilation.utils)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.set_rhoY_cells">set_rhoY_cells() (in module src.data_assimilation.utils)</a>
+</li>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter_1d.set_suptitle">set_suptitle() (src.vis.plotting_tools.plotter_1d method)</a>
+</li>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter_1d.set_x">set_x() (src.vis.plotting_tools.plotter_1d method)</a>
+</li>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.short_labels">short_labels() (in module src.vis.plotting_tools)</a>
+</li>
+        <li><a href="apis/src.utils.io.html#src.utils.io.sim_restart">sim_restart() (in module src.utils.io)</a>
+</li>
+        <li><a href="apis/run_scripts.run.html#run_scripts.run.run_params.single_run">single_run() (run_scripts.run.run_params method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.sliding_window_view">sliding_window_view() (in module src.data_assimilation.utils)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.gas_dynamics.recovery.html#src.dycore.physics.gas_dynamics.recovery.slopes">slopes() (in module src.dycore.physics.gas_dynamics.recovery)</a>
+</li>
+        <li><a href="apis/inputs.rising_bubble.html#inputs.rising_bubble.sol_init">sol_init() (in module inputs.rising_bubble)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.sol_init">(in module src.tests.test_internal_long_wave)</a>
+</li>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.sol_init">(in module src.tests.test_lamb_wave)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.sol_init">(in module src.tests.test_travelling_vortex)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.solver_counter">solver_counter (class in src.dycore.physics.low_mach.second_projection)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.sort_locs">sort_locs() (src.data_assimilation.letkf.prepare_rloc method)</a>
+</li>
+        <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.SpaceDiscr">SpaceDiscr (class in src.dycore.discretisation.grid)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.sparse_obs_selector">sparse_obs_selector() (in module src.data_assimilation.utils)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.spatially_averaged_rmse">spatially_averaged_rmse() (in module src.vis.utils)</a>
+
+        <ul>
+          <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case.spatially_averaged_rmse">(src.vis.utils.test_case method)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.dycore.physics.low_mach.mpv.html#src.dycore.physics.low_mach.mpv.MPV.squeezer">squeezer() (src.dycore.physics.low_mach.mpv.MPV method)</a>
+</li>
+        <li>
+    src
+
+        <ul>
+          <li><a href="apis/src.html#module-src">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.data_assimilation
+
+        <ul>
+          <li><a href="apis/src.data_assimilation.html#module-src.data_assimilation">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.data_assimilation.blending
+
+        <ul>
+          <li><a href="apis/src.data_assimilation.blending.html#module-src.data_assimilation.blending">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.data_assimilation.etpf
+
+        <ul>
+          <li><a href="apis/src.data_assimilation.etpf.html#module-src.data_assimilation.etpf">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.data_assimilation.letkf
+
+        <ul>
+          <li><a href="apis/src.data_assimilation.letkf.html#module-src.data_assimilation.letkf">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.data_assimilation.localisation
+
+        <ul>
+          <li><a href="apis/src.data_assimilation.localisation.html#module-src.data_assimilation.localisation">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.data_assimilation.params
+
+        <ul>
+          <li><a href="apis/src.data_assimilation.params.html#module-src.data_assimilation.params">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.data_assimilation.post_processing
+
+        <ul>
+          <li><a href="apis/src.data_assimilation.post_processing.html#module-src.data_assimilation.post_processing">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.data_assimilation.utils
+
+        <ul>
+          <li><a href="apis/src.data_assimilation.utils.html#module-src.data_assimilation.utils">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.dycore
+
+        <ul>
+          <li><a href="apis/src.dycore.html#module-src.dycore">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.dycore.discretisation
+
+        <ul>
+          <li><a href="apis/src.dycore.discretisation.html#module-src.dycore.discretisation">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.dycore.discretisation.grid
+
+        <ul>
+          <li><a href="apis/src.dycore.discretisation.grid.html#module-src.dycore.discretisation.grid">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.dycore.discretisation.time_update
+
+        <ul>
+          <li><a href="apis/src.dycore.discretisation.time_update.html#module-src.dycore.discretisation.time_update">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.dycore.physics
+
+        <ul>
+          <li><a href="apis/src.dycore.physics.html#module-src.dycore.physics">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.dycore.physics.gas_dynamics
+
+        <ul>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.html#module-src.dycore.physics.gas_dynamics">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.dycore.physics.gas_dynamics.cfl
+
+        <ul>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.cfl.html#module-src.dycore.physics.gas_dynamics.cfl">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.dycore.physics.gas_dynamics.eos
+
+        <ul>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.eos.html#module-src.dycore.physics.gas_dynamics.eos">module</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li>
+    src.dycore.physics.gas_dynamics.explicit
+
+        <ul>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.explicit.html#module-src.dycore.physics.gas_dynamics.explicit">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.dycore.physics.gas_dynamics.numerical_flux
+
+        <ul>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.numerical_flux.html#module-src.dycore.physics.gas_dynamics.numerical_flux">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.dycore.physics.gas_dynamics.recovery
+
+        <ul>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.recovery.html#module-src.dycore.physics.gas_dynamics.recovery">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.dycore.physics.gas_dynamics.thermodynamic
+
+        <ul>
+          <li><a href="apis/src.dycore.physics.gas_dynamics.thermodynamic.html#module-src.dycore.physics.gas_dynamics.thermodynamic">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.dycore.physics.hydrostatics
+
+        <ul>
+          <li><a href="apis/src.dycore.physics.hydrostatics.html#module-src.dycore.physics.hydrostatics">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.dycore.physics.low_mach
+
+        <ul>
+          <li><a href="apis/src.dycore.physics.low_mach.html#module-src.dycore.physics.low_mach">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.dycore.physics.low_mach.laplacian
+
+        <ul>
+          <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#module-src.dycore.physics.low_mach.laplacian">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.dycore.physics.low_mach.mpv
+
+        <ul>
+          <li><a href="apis/src.dycore.physics.low_mach.mpv.html#module-src.dycore.physics.low_mach.mpv">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.dycore.physics.low_mach.second_projection
+
+        <ul>
+          <li><a href="apis/src.dycore.physics.low_mach.second_projection.html#module-src.dycore.physics.low_mach.second_projection">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.tests
+
+        <ul>
+          <li><a href="apis/src.tests.html#module-src.tests">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.tests.diagnostics
+
+        <ul>
+          <li><a href="apis/src.tests.diagnostics.html#module-src.tests.diagnostics">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.tests.test_internal_long_wave
+
+        <ul>
+          <li><a href="apis/src.tests.test_internal_long_wave.html#module-src.tests.test_internal_long_wave">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.tests.test_lamb_wave
+
+        <ul>
+          <li><a href="apis/src.tests.test_lamb_wave.html#module-src.tests.test_lamb_wave">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.tests.test_travelling_vortex
+
+        <ul>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#module-src.tests.test_travelling_vortex">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.utils
+
+        <ul>
+          <li><a href="apis/src.utils.html#module-src.utils">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.utils.io
+
+        <ul>
+          <li><a href="apis/src.utils.io.html#module-src.utils.io">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.utils.sim_params
+
+        <ul>
+          <li><a href="apis/src.utils.sim_params.html#module-src.utils.sim_params">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.utils.user_data
+
+        <ul>
+          <li><a href="apis/src.utils.user_data.html#module-src.utils.user_data">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.vis
+
+        <ul>
+          <li><a href="apis/src.vis.html#module-src.vis">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.vis.plotting_tools
+
+        <ul>
+          <li><a href="apis/src.vis.plotting_tools.html#module-src.vis.plotting_tools">module</a>
+</li>
+        </ul></li>
+        <li>
+    src.vis.utils
+
+        <ul>
+          <li><a href="apis/src.vis.utils.html#module-src.vis.utils">module</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.stack">stack() (src.data_assimilation.letkf.prepare_rloc method)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.hydrostatics.html#src.dycore.physics.hydrostatics.state">state() (in module src.dycore.physics.hydrostatics)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.etpf.html#src.data_assimilation.etpf.analysis.state_vector">state_vector() (src.data_assimilation.etpf.analysis static method)</a>
+
+        <ul>
+          <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis.state_vector">(src.data_assimilation.letkf.analysis static method)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.stencil_27pt">stencil_27pt() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.stencil_3pt">stencil_3pt() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.stencil_5pt">stencil_5pt() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.stencil_9pt">stencil_9pt() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.stencil_9pt_numba_test">stencil_9pt_numba_test() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.stencil_hs">stencil_hs() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.stencil_vs">stencil_vs() (in module src.dycore.physics.low_mach.laplacian)</a>
+</li>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.stratification_function">stratification_function() (src.tests.test_internal_long_wave.UserData method)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.stratification_function">(src.tests.test_lamb_wave.UserData method)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.stratification_function">(src.tests.test_travelling_vortex.UserData method)</a>
+</li>
+          <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.stratification_function">(src.utils.user_data.UserDataInit static method)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.stratification_wrapper">stratification_wrapper() (src.tests.test_lamb_wave.UserData method)</a>
+</li>
+        <li><a href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.SpaceDiscr.stride">stride (src.dycore.discretisation.grid.SpaceDiscr attribute)</a>
+</li>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.swe_labels">swe_labels() (in module src.vis.plotting_tools)</a>
+</li>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.swe_labels_increment">swe_labels_increment() (in module src.vis.plotting_tools)</a>
+</li>
+        <li><a href="apis/src.dycore.physics.gas_dynamics.eos.html#src.dycore.physics.gas_dynamics.eos.synchronise_variables">synchronise_variables() (in module src.dycore.physics.gas_dynamics.eos)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="T" class="genindex-section">
+  <h2>T</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.T_from_p_rho">T_from_p_rho() (in module src.tests.test_internal_long_wave)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.T_from_p_rho">(in module src.tests.test_travelling_vortex)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.T_ref">T_ref (src.tests.test_internal_long_wave.UserData attribute)</a>
+</li>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.t_ref">t_ref (src.tests.test_internal_long_wave.UserData attribute)</a>
+</li>
+        <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.T_ref">T_ref (src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+        <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.t_ref">t_ref (src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+        <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.T_ref">T_ref (src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+        <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.t_ref">t_ref (src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.T_ref">T_ref (src.utils.user_data.UserDataInit property)</a>
+</li>
+        <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.t_ref">t_ref (src.utils.user_data.UserDataInit property)</a>
+</li>
+        <li><a href="apis/run_scripts.run.html#run_scripts.run.run_params.tc">tc (run_scripts.run.run_params attribute)</a>
+</li>
+        <li><a href="apis/src.vis.utils.html#src.vis.utils.test_case">test_case (class in src.vis.utils)</a>
+</li>
+        <li><a href="apis/src.tests.diagnostics.html#src.tests.diagnostics.compare_sol.test_do">test_do() (src.tests.diagnostics.compare_sol method)</a>
+</li>
+        <li><a href="apis/src.tests.diagnostics.html#src.tests.diagnostics.test_params">test_params (class in src.tests.diagnostics)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis.to_array">to_array() (src.data_assimilation.letkf.analysis method)</a>
+</li>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.tout">tout (src.tests.test_internal_long_wave.UserData attribute)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.tout">(src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+        </ul></li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="U" class="genindex-section">
+  <h2>U</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.u_ref">u_ref (src.tests.test_internal_long_wave.UserData attribute)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.u_ref">(src.tests.test_lamb_wave.UserData attribute)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.u_ref">(src.tests.test_travelling_vortex.UserData attribute)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.update_dap">update_dap() (src.data_assimilation.params.init method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.Blend.update_p2n">update_p2n() (src.data_assimilation.blending.Blend method)</a>
+</li>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.animator_2D.update_plot">update_plot() (src.vis.plotting_tools.animator_2D static method)</a>
+</li>
+        <li><a href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.Blend.update_Sol">update_Sol() (src.data_assimilation.blending.Blend method)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.tests.diagnostics.html#src.tests.diagnostics.compare_sol.update_targets">update_targets() (src.tests.diagnostics.compare_sol method)</a>
+</li>
+        <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.update_ud">update_ud() (src.utils.user_data.UserDataInit method)</a>
+</li>
+        <li><a href="apis/inputs.rising_bubble.html#inputs.rising_bubble.UserData">UserData (class in inputs.rising_bubble)</a>
+
+        <ul>
+          <li><a href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData">(class in src.tests.test_internal_long_wave)</a>
+</li>
+          <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData">(class in src.tests.test_lamb_wave)</a>
+</li>
+          <li><a href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData">(class in src.tests.test_travelling_vortex)</a>
+</li>
+        </ul></li>
+        <li><a href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.forcing">UserData.forcing (class in src.tests.test_lamb_wave)</a>
+</li>
+        <li><a href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit">UserDataInit (class in src.utils.user_data)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="V" class="genindex-section">
+  <h2>V</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter.visualise">visualise() (src.vis.plotting_tools.plotter static method)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.utils.io.html#src.utils.io.init.vorty">vorty() (src.utils.io.init method)</a>
+</li>
+        <li><a href="apis/src.utils.io.html#src.utils.io.init.vortz">vortz() (src.utils.io.init method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="W" class="genindex-section">
+  <h2>W</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.utils.io.html#src.utils.io.init.write_all">write_all() (src.utils.io.init method)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="apis/src.utils.io.html#src.utils.io.init.write_attrs">write_attrs() (src.utils.io.init method)</a>
+</li>
+        <li><a href="apis/src.utils.io.html#src.utils.io.init.write_da_attrs">write_da_attrs() (src.utils.io.init method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, Ray Chew, Tommaso Benacchio, Rupert Klein
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=c62cd884"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    </body>
+</html>

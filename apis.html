@@ -1,0 +1,870 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="inputs" href="apis/inputs.html" /><link rel="prev" title="Implicit Euler step" href="content/implicit_euler.html" />
+
+    <link rel="shortcut icon" href="_static/favicon.ico"/><!-- Generated with Sphinx 7.2.6 and Furo 2024.01.29 -->
+        <title>APIs - pyBELLA v0.50.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=135e06be" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=eafc0fe6" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">pyBELLA v0.50.1 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="_static/logo.png" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">pyBELLA v0.50.1 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="numerics.html">Numerics</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Numerics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="content/boundary.html">Boundary handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="content/grid_discretisation.html">Grid discretisation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="content/advect.html">Advection routine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="content/compute_flux.html">Compute advecting flux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="content/explicit_euler.html">Explicit Euler step</a></li>
+<li class="toctree-l2"><a class="reference internal" href="content/implicit_euler.html">Implicit Euler step</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children current-page"><a class="current reference internal" href="#">APIs</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of APIs</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="apis/inputs.html">inputs</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of inputs</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="apis/inputs.rising_bubble.html">inputs.rising_bubble</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="apis/run_scripts.html">run_scripts</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of run_scripts</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="apis/run_scripts.run.html">run_scripts.run</a></li>
+<li class="toctree-l3"><a class="reference internal" href="apis/run_scripts.test_suite.html">run_scripts.test_suite</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="apis/src.html">src</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of src</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="apis/src.data_assimilation.html">src.data_assimilation</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of src.data_assimilation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.blending.html">src.data_assimilation.blending</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.etpf.html">src.data_assimilation.etpf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.letkf.html">src.data_assimilation.letkf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.localisation.html">src.data_assimilation.localisation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.params.html">src.data_assimilation.params</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.post_processing.html">src.data_assimilation.post_processing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.utils.html">src.data_assimilation.utils</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="apis/src.dycore.html">src.dycore</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of src.dycore</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="apis/src.dycore.discretisation.html">src.dycore.discretisation</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of src.dycore.discretisation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html">src.dycore.discretisation.grid</a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.discretisation.time_update.html">src.dycore.discretisation.time_update</a></li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="apis/src.dycore.physics.html">src.dycore.physics</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of src.dycore.physics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l5 has-children"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.html">src.dycore.physics.gas_dynamics</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of src.dycore.physics.gas_dynamics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.cfl.html">src.dycore.physics.gas_dynamics.cfl</a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.eos.html">src.dycore.physics.gas_dynamics.eos</a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.explicit.html">src.dycore.physics.gas_dynamics.explicit</a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.numerical_flux.html">src.dycore.physics.gas_dynamics.numerical_flux</a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.recovery.html">src.dycore.physics.gas_dynamics.recovery</a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.thermodynamic.html">src.dycore.physics.gas_dynamics.thermodynamic</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.physics.hydrostatics.html">src.dycore.physics.hydrostatics</a></li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="apis/src.dycore.physics.low_mach.html">src.dycore.physics.low_mach</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of src.dycore.physics.low_mach</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html">src.dycore.physics.low_mach.laplacian</a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.mpv.html">src.dycore.physics.low_mach.mpv</a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.second_projection.html">src.dycore.physics.low_mach.second_projection</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="apis/src.tests.html">src.tests</a><input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle navigation of src.tests</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.diagnostics.html">src.tests.diagnostics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html">src.tests.test_internal_long_wave</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html">src.tests.test_lamb_wave</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html">src.tests.test_travelling_vortex</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="apis/src.utils.html">src.utils</a><input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><div class="visually-hidden">Toggle navigation of src.utils</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.utils.io.html">src.utils.io</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.utils.sim_params.html">src.utils.sim_params</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.utils.user_data.html">src.utils.user_data</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="apis/src.vis.html">src.vis</a><input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><div class="visually-hidden">Toggle navigation of src.vis</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.plotting_tools.html">src.vis.plotting_tools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.utils.html">src.vis.utils</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Change log</a></li>
+<li class="toctree-l1"><a class="reference internal" href="refs.html">References</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/ray-chew/pyBELLA">GitHub repo</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="apis">
+<h1>APIs<a class="headerlink" href="#apis" title="Link to this heading">#</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="apis/inputs.html">inputs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="apis/inputs.rising_bubble.html">inputs.rising_bubble</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="apis/inputs.rising_bubble.html#inputs.rising_bubble.UserData"><code class="docutils literal notranslate"><span class="pre">UserData</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/inputs.rising_bubble.html#inputs.rising_bubble.UserData.__init__"><code class="docutils literal notranslate"><span class="pre">UserData.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="apis/inputs.rising_bubble.html#inputs.rising_bubble.sol_init"><code class="docutils literal notranslate"><span class="pre">sol_init()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="apis/run_scripts.html">run_scripts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="apis/run_scripts.run.html">run_scripts.run</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="apis/run_scripts.run.html#run_scripts.run.run_params"><code class="docutils literal notranslate"><span class="pre">run_params</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/run_scripts.run.html#run_scripts.run.run_params.__init__"><code class="docutils literal notranslate"><span class="pre">run_params.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/run_scripts.run.html#run_scripts.run.run_params.N"><code class="docutils literal notranslate"><span class="pre">run_params.N</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/run_scripts.run.html#run_scripts.run.run_params.tc"><code class="docutils literal notranslate"><span class="pre">run_params.tc</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/run_scripts.run.html#run_scripts.run.run_params.single_run"><code class="docutils literal notranslate"><span class="pre">run_params.single_run()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/run_scripts.run.html#run_scripts.run.run_params.queue_run"><code class="docutils literal notranslate"><span class="pre">run_params.queue_run()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/run_scripts.run.html#run_scripts.run.run_params.restart_set"><code class="docutils literal notranslate"><span class="pre">run_params.restart_set()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/run_scripts.run.html#run_scripts.run.run_params.restart_run"><code class="docutils literal notranslate"><span class="pre">run_params.restart_run()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="apis/run_scripts.test_suite.html">run_scripts.test_suite</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="apis/src.html">src</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="apis/src.data_assimilation.html">src.data_assimilation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.data_assimilation.blending.html">src.data_assimilation.blending</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.Blend"><code class="docutils literal notranslate"><span class="pre">Blend</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.Blend.__init__"><code class="docutils literal notranslate"><span class="pre">Blend.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.Blend.criterion_init"><code class="docutils literal notranslate"><span class="pre">Blend.criterion_init()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.Blend.convert_p2n"><code class="docutils literal notranslate"><span class="pre">Blend.convert_p2n()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.Blend.update_Sol"><code class="docutils literal notranslate"><span class="pre">Blend.update_Sol()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.Blend.update_p2n"><code class="docutils literal notranslate"><span class="pre">Blend.update_p2n()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.do_comp_to_psinc_conv"><code class="docutils literal notranslate"><span class="pre">do_comp_to_psinc_conv()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.do_psinc_to_comp_conv"><code class="docutils literal notranslate"><span class="pre">do_psinc_to_comp_conv()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.do_swe_to_lake_conv"><code class="docutils literal notranslate"><span class="pre">do_swe_to_lake_conv()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.do_lake_to_swe_conv"><code class="docutils literal notranslate"><span class="pre">do_lake_to_swe_conv()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.do_nonhydro_to_hydro_conv"><code class="docutils literal notranslate"><span class="pre">do_nonhydro_to_hydro_conv()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.do_hydro_to_nonhydro_conv"><code class="docutils literal notranslate"><span class="pre">do_hydro_to_nonhydro_conv()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.blending_before_timestep"><code class="docutils literal notranslate"><span class="pre">blending_before_timestep()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.blending.html#src.data_assimilation.blending.blending_after_timestep"><code class="docutils literal notranslate"><span class="pre">blending_after_timestep()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.data_assimilation.etpf.html">src.data_assimilation.etpf</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.etpf.html#src.data_assimilation.etpf.da_interface"><code class="docutils literal notranslate"><span class="pre">da_interface()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.etpf.html#src.data_assimilation.etpf.analysis"><code class="docutils literal notranslate"><span class="pre">analysis</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.etpf.html#src.data_assimilation.etpf.analysis.__init__"><code class="docutils literal notranslate"><span class="pre">analysis.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.etpf.html#src.data_assimilation.etpf.analysis.analyse"><code class="docutils literal notranslate"><span class="pre">analysis.analyse()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.etpf.html#src.data_assimilation.etpf.analysis.state_vector"><code class="docutils literal notranslate"><span class="pre">analysis.state_vector()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.etpf.html#src.data_assimilation.etpf.analysis.get_ensemble_from_X"><code class="docutils literal notranslate"><span class="pre">analysis.get_ensemble_from_X()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.data_assimilation.letkf.html">src.data_assimilation.letkf</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.da_interface"><code class="docutils literal notranslate"><span class="pre">da_interface()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.interpolation_func"><code class="docutils literal notranslate"><span class="pre">interpolation_func()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.bin_func"><code class="docutils literal notranslate"><span class="pre">bin_func()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.none_func"><code class="docutils literal notranslate"><span class="pre">none_func()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis"><code class="docutils literal notranslate"><span class="pre">analysis</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis.__init__"><code class="docutils literal notranslate"><span class="pre">analysis.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis.forward"><code class="docutils literal notranslate"><span class="pre">analysis.forward()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis.localisation"><code class="docutils literal notranslate"><span class="pre">analysis.localisation()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis.analyse"><code class="docutils literal notranslate"><span class="pre">analysis.analyse()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis.get_mean"><code class="docutils literal notranslate"><span class="pre">analysis.get_mean()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis.state_vector"><code class="docutils literal notranslate"><span class="pre">analysis.state_vector()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis.to_array"><code class="docutils literal notranslate"><span class="pre">analysis.to_array()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.analysis.debug"><code class="docutils literal notranslate"><span class="pre">analysis.debug()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc"><code class="docutils literal notranslate"><span class="pre">prepare_rloc</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.__init__"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.sort_locs"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.sort_locs()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.analyse"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.analyse()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.analyse_by_grid_type"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.analyse_by_grid_type()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.do_analysis"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.do_analysis</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.stack"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.stack()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.get_state"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.get_state()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.get_obs"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.get_obs()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.get_state_in_obs_space"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.get_state_in_obs_space()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.get_bc_mask"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.get_bc_mask()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.get_properties"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.get_properties()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.get_quantity"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.get_quantity()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.letkf.html#src.data_assimilation.letkf.prepare_rloc.get_loc_mat"><code class="docutils literal notranslate"><span class="pre">prepare_rloc.get_loc_mat()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.data_assimilation.localisation.html">src.data_assimilation.localisation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.localisation.html#src.data_assimilation.localisation.rlocal_5pt"><code class="docutils literal notranslate"><span class="pre">rlocal_5pt()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.localisation.html#src.data_assimilation.localisation.rlocal_5pt_stencil"><code class="docutils literal notranslate"><span class="pre">rlocal_5pt_stencil()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.data_assimilation.params.html">src.data_assimilation.params</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init"><code class="docutils literal notranslate"><span class="pre">init</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.__init__"><code class="docutils literal notranslate"><span class="pre">init.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.gen_obs_sparse"><code class="docutils literal notranslate"><span class="pre">init.gen_obs_sparse()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.gen_obs_noise"><code class="docutils literal notranslate"><span class="pre">init.gen_obs_noise()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.converter"><code class="docutils literal notranslate"><span class="pre">init.converter()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.load_obs"><code class="docutils literal notranslate"><span class="pre">init.load_obs()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.get_loc_mat"><code class="docutils literal notranslate"><span class="pre">init.get_loc_mat()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.update_dap"><code class="docutils literal notranslate"><span class="pre">init.update_dap()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.noise_percentage"><code class="docutils literal notranslate"><span class="pre">init.noise_percentage</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.obs_attrs"><code class="docutils literal notranslate"><span class="pre">init.obs_attrs</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.da_times"><code class="docutils literal notranslate"><span class="pre">init.da_times</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.loc_setter"><code class="docutils literal notranslate"><span class="pre">init.loc_setter</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.params.html#src.data_assimilation.params.init.sd_setter"><code class="docutils literal notranslate"><span class="pre">init.sd_setter</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.data_assimilation.post_processing.html">src.data_assimilation.post_processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.post_processing.html#src.data_assimilation.post_processing.interface"><code class="docutils literal notranslate"><span class="pre">interface()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.data_assimilation.utils.html">src.data_assimilation.utils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.ensemble"><code class="docutils literal notranslate"><span class="pre">ensemble</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.ensemble.__init__"><code class="docutils literal notranslate"><span class="pre">ensemble.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.ensemble.initialise_members"><code class="docutils literal notranslate"><span class="pre">ensemble.initialise_members()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.ensemble.set_members"><code class="docutils literal notranslate"><span class="pre">ensemble.set_members()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.ensemble.ensemble_spreading"><code class="docutils literal notranslate"><span class="pre">ensemble.ensemble_spreading()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.ensemble.members"><code class="docutils literal notranslate"><span class="pre">ensemble.members()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.ensemble.debug_im"><code class="docutils literal notranslate"><span class="pre">ensemble.debug_im()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.ensemble_inflation"><code class="docutils literal notranslate"><span class="pre">ensemble_inflation()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.set_p2_nodes"><code class="docutils literal notranslate"><span class="pre">set_p2_nodes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.set_rhoY_cells"><code class="docutils literal notranslate"><span class="pre">set_rhoY_cells()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.boundary_mask"><code class="docutils literal notranslate"><span class="pre">boundary_mask()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.sliding_window_view"><code class="docutils literal notranslate"><span class="pre">sliding_window_view()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.HSprojector_3t2D"><code class="docutils literal notranslate"><span class="pre">HSprojector_3t2D()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.HSprojector_2t3D"><code class="docutils literal notranslate"><span class="pre">HSprojector_2t3D()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.sparse_obs_selector"><code class="docutils literal notranslate"><span class="pre">sparse_obs_selector()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.data_assimilation.utils.html#src.data_assimilation.utils.obs_noiser"><code class="docutils literal notranslate"><span class="pre">obs_noiser()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="apis/src.dycore.html">src.dycore</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.dycore.discretisation.html">src.dycore.discretisation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html">src.dycore.discretisation.grid</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.grid_init"><code class="docutils literal notranslate"><span class="pre">grid_init()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.Grid"><code class="docutils literal notranslate"><span class="pre">Grid</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.Grid.__init__"><code class="docutils literal notranslate"><span class="pre">Grid.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.SpaceDiscr"><code class="docutils literal notranslate"><span class="pre">SpaceDiscr</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.SpaceDiscr.ig"><code class="docutils literal notranslate"><span class="pre">SpaceDiscr.ig</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.SpaceDiscr.ic"><code class="docutils literal notranslate"><span class="pre">SpaceDiscr.ic</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.SpaceDiscr.stride"><code class="docutils literal notranslate"><span class="pre">SpaceDiscr.stride</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.SpaceDiscr.dxyz"><code class="docutils literal notranslate"><span class="pre">SpaceDiscr.dxyz</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.SpaceDiscr.__init__"><code class="docutils literal notranslate"><span class="pre">SpaceDiscr.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.ElemSpaceDiscr"><code class="docutils literal notranslate"><span class="pre">ElemSpaceDiscr</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.ElemSpaceDiscr.__init__"><code class="docutils literal notranslate"><span class="pre">ElemSpaceDiscr.__init__()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.ElemSpaceDiscr.flip"><code class="docutils literal notranslate"><span class="pre">ElemSpaceDiscr.flip()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.ElemSpaceDiscr.get_p_indim"><code class="docutils literal notranslate"><span class="pre">ElemSpaceDiscr.get_p_indim()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.NodeSpaceDiscr"><code class="docutils literal notranslate"><span class="pre">NodeSpaceDiscr</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.NodeSpaceDiscr.__init__"><code class="docutils literal notranslate"><span class="pre">NodeSpaceDiscr.__init__()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.NodeSpaceDiscr.flip"><code class="docutils literal notranslate"><span class="pre">NodeSpaceDiscr.flip()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.discretisation.grid.html#src.dycore.discretisation.grid.NodeSpaceDiscr.get_p_indim"><code class="docutils literal notranslate"><span class="pre">NodeSpaceDiscr.get_p_indim()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.dycore.discretisation.time_update.html">src.dycore.discretisation.time_update</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.discretisation.time_update.html#src.dycore.discretisation.time_update.data_init"><code class="docutils literal notranslate"><span class="pre">data_init()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.discretisation.time_update.html#src.dycore.discretisation.time_update.do"><code class="docutils literal notranslate"><span class="pre">do()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.dycore.physics.html">src.dycore.physics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.html">src.dycore.physics.gas_dynamics</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.cfl.html">src.dycore.physics.gas_dynamics.cfl</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.cfl.html#src.dycore.physics.gas_dynamics.cfl.dynamic_timestep"><code class="docutils literal notranslate"><span class="pre">dynamic_timestep()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.eos.html">src.dycore.physics.gas_dynamics.eos</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.eos.html#src.dycore.physics.gas_dynamics.eos.nonhydrostasy"><code class="docutils literal notranslate"><span class="pre">nonhydrostasy()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.eos.html#src.dycore.physics.gas_dynamics.eos.compressibility"><code class="docutils literal notranslate"><span class="pre">compressibility()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.eos.html#src.dycore.physics.gas_dynamics.eos.is_compressible"><code class="docutils literal notranslate"><span class="pre">is_compressible()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.eos.html#src.dycore.physics.gas_dynamics.eos.is_nonhydrostatic"><code class="docutils literal notranslate"><span class="pre">is_nonhydrostatic()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.eos.html#src.dycore.physics.gas_dynamics.eos.rhoe"><code class="docutils literal notranslate"><span class="pre">rhoe()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.eos.html#src.dycore.physics.gas_dynamics.eos.synchronise_variables"><code class="docutils literal notranslate"><span class="pre">synchronise_variables()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.explicit.html">src.dycore.physics.gas_dynamics.explicit</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.explicit.html#src.dycore.physics.gas_dynamics.explicit.advect"><code class="docutils literal notranslate"><span class="pre">advect()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.explicit.html#src.dycore.physics.gas_dynamics.explicit.explicit_step_and_flux"><code class="docutils literal notranslate"><span class="pre">explicit_step_and_flux()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.explicit.html#src.dycore.physics.gas_dynamics.explicit.advect_rk"><code class="docutils literal notranslate"><span class="pre">advect_rk()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.numerical_flux.html">src.dycore.physics.gas_dynamics.numerical_flux</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.numerical_flux.html#src.dycore.physics.gas_dynamics.numerical_flux.recompute_advective_fluxes"><code class="docutils literal notranslate"><span class="pre">recompute_advective_fluxes()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.numerical_flux.html#src.dycore.physics.gas_dynamics.numerical_flux.hll_solver"><code class="docutils literal notranslate"><span class="pre">hll_solver()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.recovery.html">src.dycore.physics.gas_dynamics.recovery</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.recovery.html#src.dycore.physics.gas_dynamics.recovery.do"><code class="docutils literal notranslate"><span class="pre">do()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.recovery.html#src.dycore.physics.gas_dynamics.recovery.slopes"><code class="docutils literal notranslate"><span class="pre">slopes()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.recovery.html#src.dycore.physics.gas_dynamics.recovery.limiters"><code class="docutils literal notranslate"><span class="pre">limiters()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.recovery.html#src.dycore.physics.gas_dynamics.recovery.get_conservatives"><code class="docutils literal notranslate"><span class="pre">get_conservatives()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.thermodynamic.html">src.dycore.physics.gas_dynamics.thermodynamic</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.thermodynamic.html#src.dycore.physics.gas_dynamics.thermodynamic.init"><code class="docutils literal notranslate"><span class="pre">init</span></code></a><ul>
+<li class="toctree-l7"><a class="reference internal" href="apis/src.dycore.physics.gas_dynamics.thermodynamic.html#src.dycore.physics.gas_dynamics.thermodynamic.init.__init__"><code class="docutils literal notranslate"><span class="pre">init.__init__()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.dycore.physics.hydrostatics.html">src.dycore.physics.hydrostatics</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.physics.hydrostatics.html#src.dycore.physics.hydrostatics.column"><code class="docutils literal notranslate"><span class="pre">column()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.physics.hydrostatics.html#src.dycore.physics.hydrostatics.state"><code class="docutils literal notranslate"><span class="pre">state()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.physics.hydrostatics.html#src.dycore.physics.hydrostatics.initial_pressure"><code class="docutils literal notranslate"><span class="pre">initial_pressure()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.dycore.physics.low_mach.html">src.dycore.physics.low_mach</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html">src.dycore.physics.low_mach.laplacian</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.stencil_9pt"><code class="docutils literal notranslate"><span class="pre">stencil_9pt()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lap2D_gather"><code class="docutils literal notranslate"><span class="pre">lap2D_gather()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lap2D"><code class="docutils literal notranslate"><span class="pre">lap2D()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.stencil_9pt_numba_test"><code class="docutils literal notranslate"><span class="pre">stencil_9pt_numba_test()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lap2D_numba_test"><code class="docutils literal notranslate"><span class="pre">lap2D_numba_test()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lap2D_gather_new"><code class="docutils literal notranslate"><span class="pre">lap2D_gather_new()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.periodic"><code class="docutils literal notranslate"><span class="pre">periodic()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.stencil_27pt"><code class="docutils literal notranslate"><span class="pre">stencil_27pt()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lap3D"><code class="docutils literal notranslate"><span class="pre">lap3D()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.stencil_hs"><code class="docutils literal notranslate"><span class="pre">stencil_hs()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lapHS"><code class="docutils literal notranslate"><span class="pre">lapHS()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.stencil_vs"><code class="docutils literal notranslate"><span class="pre">stencil_vs()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lapVS"><code class="docutils literal notranslate"><span class="pre">lapVS()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.precon_diag_prepare"><code class="docutils literal notranslate"><span class="pre">precon_diag_prepare()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.stencil_3pt"><code class="docutils literal notranslate"><span class="pre">stencil_3pt()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lap2D_exner"><code class="docutils literal notranslate"><span class="pre">lap2D_exner()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.stencil_5pt"><code class="docutils literal notranslate"><span class="pre">stencil_5pt()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.laplacian.html#src.dycore.physics.low_mach.laplacian.lap2D_5pt"><code class="docutils literal notranslate"><span class="pre">lap2D_5pt()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.physics.low_mach.mpv.html">src.dycore.physics.low_mach.mpv</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.mpv.html#src.dycore.physics.low_mach.mpv.MPV"><code class="docutils literal notranslate"><span class="pre">MPV</span></code></a><ul>
+<li class="toctree-l7"><a class="reference internal" href="apis/src.dycore.physics.low_mach.mpv.html#src.dycore.physics.low_mach.mpv.MPV.__init__"><code class="docutils literal notranslate"><span class="pre">MPV.__init__()</span></code></a></li>
+<li class="toctree-l7"><a class="reference internal" href="apis/src.dycore.physics.low_mach.mpv.html#src.dycore.physics.low_mach.mpv.MPV.squeezer"><code class="docutils literal notranslate"><span class="pre">MPV.squeezer()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.dycore.physics.low_mach.second_projection.html">src.dycore.physics.low_mach.second_projection</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.solver_counter"><code class="docutils literal notranslate"><span class="pre">solver_counter</span></code></a><ul>
+<li class="toctree-l7"><a class="reference internal" href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.solver_counter.__init__"><code class="docutils literal notranslate"><span class="pre">solver_counter.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.euler_forward_non_advective"><code class="docutils literal notranslate"><span class="pre">euler_forward_non_advective()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.euler_backward_non_advective_expl_part"><code class="docutils literal notranslate"><span class="pre">euler_backward_non_advective_expl_part()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.euler_backward_non_advective_impl_part"><code class="docutils literal notranslate"><span class="pre">euler_backward_non_advective_impl_part()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.correction_nodes"><code class="docutils literal notranslate"><span class="pre">correction_nodes()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.operator_coefficients_nodes"><code class="docutils literal notranslate"><span class="pre">operator_coefficients_nodes()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.scale_wall_node_values"><code class="docutils literal notranslate"><span class="pre">scale_wall_node_values()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.grad_nodes_fft"><code class="docutils literal notranslate"><span class="pre">grad_nodes_fft()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.grad_nodes"><code class="docutils literal notranslate"><span class="pre">grad_nodes()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.divergence_nodes"><code class="docutils literal notranslate"><span class="pre">divergence_nodes()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.rhs_from_p_old"><code class="docutils literal notranslate"><span class="pre">rhs_from_p_old()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.dycore.physics.low_mach.second_projection.html#src.dycore.physics.low_mach.second_projection.multiply_inverse_coriolis"><code class="docutils literal notranslate"><span class="pre">multiply_inverse_coriolis()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="apis/src.tests.html">src.tests</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.tests.diagnostics.html">src.tests.diagnostics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.diagnostics.html#src.tests.diagnostics.compare_sol"><code class="docutils literal notranslate"><span class="pre">compare_sol</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.diagnostics.html#src.tests.diagnostics.compare_sol.__init__"><code class="docutils literal notranslate"><span class="pre">compare_sol.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.diagnostics.html#src.tests.diagnostics.compare_sol.update_targets"><code class="docutils literal notranslate"><span class="pre">compare_sol.update_targets()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.diagnostics.html#src.tests.diagnostics.compare_sol.test_do"><code class="docutils literal notranslate"><span class="pre">compare_sol.test_do()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.diagnostics.html#src.tests.diagnostics.test_params"><code class="docutils literal notranslate"><span class="pre">test_params</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.diagnostics.html#src.tests.diagnostics.test_params.__init__"><code class="docutils literal notranslate"><span class="pre">test_params.__init__()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html">src.tests.test_internal_long_wave</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData"><code class="docutils literal notranslate"><span class="pre">UserData</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.NSPEC"><code class="docutils literal notranslate"><span class="pre">UserData.NSPEC</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.BUOY"><code class="docutils literal notranslate"><span class="pre">UserData.BUOY</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.grav"><code class="docutils literal notranslate"><span class="pre">UserData.grav</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.omega"><code class="docutils literal notranslate"><span class="pre">UserData.omega</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.R_gas"><code class="docutils literal notranslate"><span class="pre">UserData.R_gas</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.R_vap"><code class="docutils literal notranslate"><span class="pre">UserData.R_vap</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.Q_vap"><code class="docutils literal notranslate"><span class="pre">UserData.Q_vap</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.gamma"><code class="docutils literal notranslate"><span class="pre">UserData.gamma</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.i_gravity"><code class="docutils literal notranslate"><span class="pre">UserData.i_gravity</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.i_coriolis"><code class="docutils literal notranslate"><span class="pre">UserData.i_coriolis</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.__init__"><code class="docutils literal notranslate"><span class="pre">UserData.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.scale_factor"><code class="docutils literal notranslate"><span class="pre">UserData.scale_factor</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.h_ref"><code class="docutils literal notranslate"><span class="pre">UserData.h_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.t_ref"><code class="docutils literal notranslate"><span class="pre">UserData.t_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.T_ref"><code class="docutils literal notranslate"><span class="pre">UserData.T_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.p_ref"><code class="docutils literal notranslate"><span class="pre">UserData.p_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.rho_ref"><code class="docutils literal notranslate"><span class="pre">UserData.rho_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.u_ref"><code class="docutils literal notranslate"><span class="pre">UserData.u_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.Nsq_ref"><code class="docutils literal notranslate"><span class="pre">UserData.Nsq_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.tout"><code class="docutils literal notranslate"><span class="pre">UserData.tout</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.stratification_function"><code class="docutils literal notranslate"><span class="pre">UserData.stratification_function()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.molly_function"><code class="docutils literal notranslate"><span class="pre">UserData.molly_function()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.UserData.rhoe_method"><code class="docutils literal notranslate"><span class="pre">UserData.rhoe_method()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.sol_init"><code class="docutils literal notranslate"><span class="pre">sol_init()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.test_internal_long_wave.html#src.tests.test_internal_long_wave.T_from_p_rho"><code class="docutils literal notranslate"><span class="pre">T_from_p_rho()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html">src.tests.test_lamb_wave</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData"><code class="docutils literal notranslate"><span class="pre">UserData</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.NSPEC"><code class="docutils literal notranslate"><span class="pre">UserData.NSPEC</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.grav"><code class="docutils literal notranslate"><span class="pre">UserData.grav</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.omega"><code class="docutils literal notranslate"><span class="pre">UserData.omega</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.R_vap"><code class="docutils literal notranslate"><span class="pre">UserData.R_vap</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.Q_vap"><code class="docutils literal notranslate"><span class="pre">UserData.Q_vap</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.gamma"><code class="docutils literal notranslate"><span class="pre">UserData.gamma</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.N_ref"><code class="docutils literal notranslate"><span class="pre">UserData.N_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.Cs"><code class="docutils literal notranslate"><span class="pre">UserData.Cs</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.i_gravity"><code class="docutils literal notranslate"><span class="pre">UserData.i_gravity</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.i_coriolis"><code class="docutils literal notranslate"><span class="pre">UserData.i_coriolis</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.__init__"><code class="docutils literal notranslate"><span class="pre">UserData.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.h_ref"><code class="docutils literal notranslate"><span class="pre">UserData.h_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.t_ref"><code class="docutils literal notranslate"><span class="pre">UserData.t_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.T_ref"><code class="docutils literal notranslate"><span class="pre">UserData.T_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.p_ref"><code class="docutils literal notranslate"><span class="pre">UserData.p_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.rho_ref"><code class="docutils literal notranslate"><span class="pre">UserData.rho_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.u_ref"><code class="docutils literal notranslate"><span class="pre">UserData.u_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.R_gas"><code class="docutils literal notranslate"><span class="pre">UserData.R_gas</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.cp_gas"><code class="docutils literal notranslate"><span class="pre">UserData.cp_gas</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.stratification_wrapper"><code class="docutils literal notranslate"><span class="pre">UserData.stratification_wrapper()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.stratification_function"><code class="docutils literal notranslate"><span class="pre">UserData.stratification_function()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.rayleigh_bc_function"><code class="docutils literal notranslate"><span class="pre">UserData.rayleigh_bc_function()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.forcing"><code class="docutils literal notranslate"><span class="pre">UserData.forcing</span></code></a><ul>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.forcing.__init__"><code class="docutils literal notranslate"><span class="pre">UserData.forcing.__init__()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.forcing.get_T_matrix"><code class="docutils literal notranslate"><span class="pre">UserData.forcing.get_T_matrix()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.forcing.eigenfunction"><code class="docutils literal notranslate"><span class="pre">UserData.forcing.eigenfunction()</span></code></a></li>
+<li class="toctree-l6"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.UserData.forcing.dehatter"><code class="docutils literal notranslate"><span class="pre">UserData.forcing.dehatter()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.test_lamb_wave.html#src.tests.test_lamb_wave.sol_init"><code class="docutils literal notranslate"><span class="pre">sol_init()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html">src.tests.test_travelling_vortex</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData"><code class="docutils literal notranslate"><span class="pre">UserData</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.NSPEC"><code class="docutils literal notranslate"><span class="pre">UserData.NSPEC</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.grav"><code class="docutils literal notranslate"><span class="pre">UserData.grav</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.omega"><code class="docutils literal notranslate"><span class="pre">UserData.omega</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.R_gas"><code class="docutils literal notranslate"><span class="pre">UserData.R_gas</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.R_vap"><code class="docutils literal notranslate"><span class="pre">UserData.R_vap</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.Q_vap"><code class="docutils literal notranslate"><span class="pre">UserData.Q_vap</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.gamma"><code class="docutils literal notranslate"><span class="pre">UserData.gamma</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.i_gravity"><code class="docutils literal notranslate"><span class="pre">UserData.i_gravity</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.i_coriolis"><code class="docutils literal notranslate"><span class="pre">UserData.i_coriolis</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.__init__"><code class="docutils literal notranslate"><span class="pre">UserData.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.h_ref"><code class="docutils literal notranslate"><span class="pre">UserData.h_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.t_ref"><code class="docutils literal notranslate"><span class="pre">UserData.t_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.T_ref"><code class="docutils literal notranslate"><span class="pre">UserData.T_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.p_ref"><code class="docutils literal notranslate"><span class="pre">UserData.p_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.rho_ref"><code class="docutils literal notranslate"><span class="pre">UserData.rho_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.u_ref"><code class="docutils literal notranslate"><span class="pre">UserData.u_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.Nsq_ref"><code class="docutils literal notranslate"><span class="pre">UserData.Nsq_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.tout"><code class="docutils literal notranslate"><span class="pre">UserData.tout</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.stratification_function"><code class="docutils literal notranslate"><span class="pre">UserData.stratification_function()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.UserData.rhoe_function"><code class="docutils literal notranslate"><span class="pre">UserData.rhoe_function()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.sol_init"><code class="docutils literal notranslate"><span class="pre">sol_init()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.tests.test_travelling_vortex.html#src.tests.test_travelling_vortex.T_from_p_rho"><code class="docutils literal notranslate"><span class="pre">T_from_p_rho()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="apis/src.utils.html">src.utils</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.utils.io.html">src.utils.io</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.init"><code class="docutils literal notranslate"><span class="pre">init</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.init.__init__"><code class="docutils literal notranslate"><span class="pre">init.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.init.io_create_file"><code class="docutils literal notranslate"><span class="pre">init.io_create_file()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.init.write_all"><code class="docutils literal notranslate"><span class="pre">init.write_all()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.init.vortz"><code class="docutils literal notranslate"><span class="pre">init.vortz()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.init.vorty"><code class="docutils literal notranslate"><span class="pre">init.vorty()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.init.dpress_dim"><code class="docutils literal notranslate"><span class="pre">init.dpress_dim()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.init.populate"><code class="docutils literal notranslate"><span class="pre">init.populate()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.init.write_attrs"><code class="docutils literal notranslate"><span class="pre">init.write_attrs()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.init.write_da_attrs"><code class="docutils literal notranslate"><span class="pre">init.write_da_attrs()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.init.close_everything"><code class="docutils literal notranslate"><span class="pre">init.close_everything()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.init.check_jar"><code class="docutils literal notranslate"><span class="pre">init.check_jar()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.init.jar"><code class="docutils literal notranslate"><span class="pre">init.jar()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.read_input"><code class="docutils literal notranslate"><span class="pre">read_input</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.read_input.__init__"><code class="docutils literal notranslate"><span class="pre">read_input.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.read_input.get_data"><code class="docutils literal notranslate"><span class="pre">read_input.get_data()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.get_args"><code class="docutils literal notranslate"><span class="pre">get_args()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.sim_restart"><code class="docutils literal notranslate"><span class="pre">sim_restart()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.fn_gen"><code class="docutils literal notranslate"><span class="pre">fn_gen()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.mkdir_p"><code class="docutils literal notranslate"><span class="pre">mkdir_p()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.utils.io.html#src.utils.io.init_logger"><code class="docutils literal notranslate"><span class="pre">init_logger()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.utils.sim_params.html">src.utils.sim_params</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.utils.sim_params.html#src.utils.sim_params.global_constants"><code class="docutils literal notranslate"><span class="pre">global_constants</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.sim_params.html#src.utils.sim_params.global_constants.__init__"><code class="docutils literal notranslate"><span class="pre">global_constants.__init__()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.utils.user_data.html">src.utils.user_data</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit"><code class="docutils literal notranslate"><span class="pre">UserDataInit</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.__init__"><code class="docutils literal notranslate"><span class="pre">UserDataInit.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.compute_u_ref"><code class="docutils literal notranslate"><span class="pre">UserDataInit.compute_u_ref()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.compute_Msq"><code class="docutils literal notranslate"><span class="pre">UserDataInit.compute_Msq()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.compute_gravity"><code class="docutils literal notranslate"><span class="pre">UserDataInit.compute_gravity()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.compute_coriolis"><code class="docutils literal notranslate"><span class="pre">UserDataInit.compute_coriolis()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.compute_cp_gas"><code class="docutils literal notranslate"><span class="pre">UserDataInit.compute_cp_gas()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.compute_rho_ref"><code class="docutils literal notranslate"><span class="pre">UserDataInit.compute_rho_ref()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.compute_N_ref"><code class="docutils literal notranslate"><span class="pre">UserDataInit.compute_N_ref()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.compute_Cs"><code class="docutils literal notranslate"><span class="pre">UserDataInit.compute_Cs()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.stratification_function"><code class="docutils literal notranslate"><span class="pre">UserDataInit.stratification_function()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.update_ud"><code class="docutils literal notranslate"><span class="pre">UserDataInit.update_ud()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.R_gas"><code class="docutils literal notranslate"><span class="pre">UserDataInit.R_gas</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.T_ref"><code class="docutils literal notranslate"><span class="pre">UserDataInit.T_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.grav"><code class="docutils literal notranslate"><span class="pre">UserDataInit.grav</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.h_ref"><code class="docutils literal notranslate"><span class="pre">UserDataInit.h_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.t_ref"><code class="docutils literal notranslate"><span class="pre">UserDataInit.t_ref</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.omega"><code class="docutils literal notranslate"><span class="pre">UserDataInit.omega</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.gamm"><code class="docutils literal notranslate"><span class="pre">UserDataInit.gamm</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.utils.user_data.html#src.utils.user_data.UserDataInit.p_ref"><code class="docutils literal notranslate"><span class="pre">UserDataInit.p_ref</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="apis/src.vis.html">src.vis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.vis.plotting_tools.html">src.vis.plotting_tools</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter"><code class="docutils literal notranslate"><span class="pre">plotter</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter.__init__"><code class="docutils literal notranslate"><span class="pre">plotter.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter.set_axes"><code class="docutils literal notranslate"><span class="pre">plotter.set_axes()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter.set_cax_axes"><code class="docutils literal notranslate"><span class="pre">plotter.set_cax_axes()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter.plot"><code class="docutils literal notranslate"><span class="pre">plotter.plot()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter.save_fig"><code class="docutils literal notranslate"><span class="pre">plotter.save_fig()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter.visualise"><code class="docutils literal notranslate"><span class="pre">plotter.visualise()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.animator_2D"><code class="docutils literal notranslate"><span class="pre">animator_2D</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.animator_2D.__init__"><code class="docutils literal notranslate"><span class="pre">animator_2D.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.animator_2D.animate"><code class="docutils literal notranslate"><span class="pre">animator_2D.animate()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.animator_2D.update_plot"><code class="docutils literal notranslate"><span class="pre">animator_2D.update_plot()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter_1d"><code class="docutils literal notranslate"><span class="pre">plotter_1d</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter_1d.__init__"><code class="docutils literal notranslate"><span class="pre">plotter_1d.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter_1d.set_suptitle"><code class="docutils literal notranslate"><span class="pre">plotter_1d.set_suptitle()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter_1d.set_x"><code class="docutils literal notranslate"><span class="pre">plotter_1d.set_x()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter_1d.get_ax"><code class="docutils literal notranslate"><span class="pre">plotter_1d.get_ax()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.plotter_1d.save_fig"><code class="docutils literal notranslate"><span class="pre">plotter_1d.save_fig()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.labels"><code class="docutils literal notranslate"><span class="pre">labels()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.labels_increment"><code class="docutils literal notranslate"><span class="pre">labels_increment()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.swe_labels"><code class="docutils literal notranslate"><span class="pre">swe_labels()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.lake_labels"><code class="docutils literal notranslate"><span class="pre">lake_labels()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.swe_labels_increment"><code class="docutils literal notranslate"><span class="pre">swe_labels_increment()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.plotting_tools.html#src.vis.plotting_tools.short_labels"><code class="docutils literal notranslate"><span class="pre">short_labels()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="apis/src.vis.utils.html">src.vis.utils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case"><code class="docutils literal notranslate"><span class="pre">test_case</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case.__init__"><code class="docutils literal notranslate"><span class="pre">test_case.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case.cb_suffix"><code class="docutils literal notranslate"><span class="pre">test_case.cb_suffix()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case.get_tag_dict"><code class="docutils literal notranslate"><span class="pre">test_case.get_tag_dict()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case.get_debug_attrs"><code class="docutils literal notranslate"><span class="pre">test_case.get_debug_attrs()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case.get_filename"><code class="docutils literal notranslate"><span class="pre">test_case.get_filename()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case.get_path"><code class="docutils literal notranslate"><span class="pre">test_case.get_path()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case.py_out"><code class="docutils literal notranslate"><span class="pre">test_case.py_out()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case.get_arr"><code class="docutils literal notranslate"><span class="pre">test_case.get_arr()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case.spatially_averaged_rmse"><code class="docutils literal notranslate"><span class="pre">test_case.spatially_averaged_rmse()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case.ensemble_spread"><code class="docutils literal notranslate"><span class="pre">test_case.ensemble_spread()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case.probe_rmse"><code class="docutils literal notranslate"><span class="pre">test_case.probe_rmse()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case.get_ie1"><code class="docutils literal notranslate"><span class="pre">test_case.get_ie1()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case.get_mean"><code class="docutils literal notranslate"><span class="pre">test_case.get_mean()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case.get_probe_loc"><code class="docutils literal notranslate"><span class="pre">test_case.get_probe_loc()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case.get_ensemble"><code class="docutils literal notranslate"><span class="pre">test_case.get_ensemble()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.test_case.get_time_series"><code class="docutils literal notranslate"><span class="pre">test_case.get_time_series()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.bin_func"><code class="docutils literal notranslate"><span class="pre">bin_func()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.rmse"><code class="docutils literal notranslate"><span class="pre">rmse()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.get_diff"><code class="docutils literal notranslate"><span class="pre">get_diff()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.spatially_averaged_rmse"><code class="docutils literal notranslate"><span class="pre">spatially_averaged_rmse()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.prt_time"><code class="docutils literal notranslate"><span class="pre">prt_time</span></code></a><ul>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.prt_time.__init__"><code class="docutils literal notranslate"><span class="pre">prt_time.__init__()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="apis/src.vis.utils.html#src.vis.utils.prt_time.prtt"><code class="docutils literal notranslate"><span class="pre">prt_time.prtt()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="apis/inputs.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">inputs</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="content/implicit_euler.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Implicit Euler step</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, Ray Chew, Tommaso Benacchio, Rupert Klein
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=c62cd884"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    </body>
+</html>
