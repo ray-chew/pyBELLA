@@ -25,7 +25,7 @@
 
 The Blended sEamLess soLver for Atmospheric dynamics (pyBELLA) is a Python-based numerical flow solver. The current version features PyBELLA+ as it is coupled to an ensemble data assimillation engine based on the [Local Ensemble Transform Kalman Filter](https://www.sciencedirect.com/science/article/abs/pii/S0167278906004647).
 
-The numerical scheme for pyBELLA was introduced by [Bennachio and Klein (2019)](https://journals.ametsoc.org/view/journals/mwre/147/11/mwr-d-19-0073.1.xml), and the seamless blending between physical model regimes within a simulation run was extended in [Chew et al. (2022)](https://journals.ametsoc.org/view/journals/mwre/150/9/MWR-D-21-0175.1.xml); see [`v0.3.0-localdab`](https://github.com/ray-chew/pyBELLA/releases/tag/archive%2Flocaldab) for the source code.
+The numerical scheme for pyBELLA was introduced by [Benacchio and Klein (2019)](https://journals.ametsoc.org/view/journals/mwre/147/11/mwr-d-19-0073.1.xml), and the seamless blending between physical model regimes within a simulation run was extended in [Chew et al. (2022)](https://journals.ametsoc.org/view/journals/mwre/150/9/MWR-D-21-0175.1.xml); see [`v0.3.0-localdab`](https://github.com/ray-chew/pyBELLA/releases/tag/archive%2Flocaldab) for the source code.
 
 This code was also used to produce the results in
 * [Chew (2022)](https://refubium.fu-berlin.de/bitstream/handle/fub188/37313/thesis_final.pdf); [`v0.2.0-thesis`](https://github.com/ray-chew/pyBELLA/releases/tag/archive%2Fthesis)
@@ -34,7 +34,7 @@ This code was also used to produce the results in
 
 ---
 
-**[Read the (incomplete) documentation here](https://ray-chew.github.io/pyBELLA/index.html)**
+**[Read the documentation here](https://ray-chew.github.io/pyBELLA/index.html)**
 
 ---
 
