@@ -543,7 +543,7 @@ def lap2D_numba_test(p, dp, dx, dy, coeffs, diag_inv, coriolis, shp):
     return p.ravel()
 
 
-@nb.njit(cache=True)
+@nb.njit(nopython=True, cache=True)
 def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, y_rayleigh, x_wall, y_wall, diag_inv, coriolis):
     ngnc = (iicxn) * (iicyn)
     lap = np.zeros((ngnc))

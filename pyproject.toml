@@ -3,7 +3,7 @@ name = "pyBELLA"
 version = "0.50.1"
 
 dependencies = [
-    "dask==2022.7.0",
+    "dask==2023.6.0",
     "dill==0.3.6",
     "h5py==3.7.0",
     "matplotlib==3.5.1",

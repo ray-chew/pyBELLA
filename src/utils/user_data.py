@@ -19,11 +19,7 @@ class UserDataInit(object):
         for key, value in vars(gconsts).items():
             setattr(self, key, value)
 
-        if len(kwargs) > 0:
-            for key, value in kwargs.items():
-                setattr(self, key, value)
-
-        else:
+        # else:
             ##########################################
             # SPATIAL GRID
             ##########################################
@@ -129,6 +125,10 @@ class UserDataInit(object):
             self.output_suffix = "_%i_%i" %(self.inx-1,self.iny-1)
 
 
+        if len(kwargs) > 0:
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+
     def compute_u_ref(self):
         self.u_ref = self.h_ref / self.t_ref
         self.compute_Msq()
@@ -226,10 +226,10 @@ class UserDataInit(object):
         if all(hasattr(self, attr) for attr in ["grav", "h_ref", "R_gas", "T_ref"]):
             self.compute_gravity()
 
-        if all(hasattr(self, attr) for attr in ["u_ref, R_gas", "T_ref"]):
+        if all(hasattr(self, attr) for attr in ["u_ref", "R_gas", "T_ref"]):
             self.compute_Msq()
 
-        if all(hasattr(self, attr) for attr in ["p_ref, R_gas", "T_ref"]):
+        if all(hasattr(self, attr) for attr in ["p_ref", "R_gas", "T_ref"]):
             self.compute_rho_ref()
 
         if all(hasattr(self, attr) for attr in ["grav", "cp_gas", "T_ref"]):
