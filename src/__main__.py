@@ -9,7 +9,10 @@ import termcolor
 from .dycore.discretisation import time_update    as dis_time_update
 from .dycore.utils import boundary as bdry
 
-# dependencies of the data assimilation subpackag
+# dependencies of the interface subpackage
+from .interfaces.dynamics_blending import prepare as blending_prepare
+
+# dependencies of the data assimilation subpackage
 from .data_assimilation import (
     prepare as da_prepare,
     etpf as da_etpf,
@@ -28,6 +31,8 @@ from .utils import io as io
 ##########################################################
 def main():
     sim_state = prepare.initialise()
+
+    blending_prepare.initialise(sim_state)
     da_prepare.initialise(sim_state)
     writer, step_writer = io.initialise(sim_state)
 
@@ -42,15 +47,7 @@ def main():
     for tout in sim_state.ud.tout:
         futures = []
 
-        # In ensemble case, do blending for each DA window
-        if N > 1:
-            blend = bld if tout_old in dap.da_times else None
-        else:
-            blend = bld
-
-        # initial blending?
-        if ud.initial_blending == True and (outer_step == 0 or outer_step == 1):
-            blend = bld
+        blend = blending_prepare.init_da_window(sim_state, tout_old, outer_step)
 
         ######################################################
         # Forecast step

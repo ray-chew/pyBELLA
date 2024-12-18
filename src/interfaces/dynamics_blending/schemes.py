@@ -5,7 +5,7 @@ import termcolor
 import numpy as np
 from scipy import signal
 
-from ..dycore.physics.gas_dynamics import eos as gd_eos
+from ...dycore.physics.gas_dynamics import eos as gd_eos
 
 class Blend(object):
     """

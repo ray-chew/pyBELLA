@@ -12,8 +12,6 @@ from ..dycore.utils import boundary as bdry
 from ..dycore.physics.low_mach import mpv          as lm_var
 from ..dycore.physics.gas_dynamics import thermodynamic as gd_thermodynamics
 
-from ..blending import blending
-
 # test module
 from ..tests import diagnostics as diag
 
@@ -59,7 +57,7 @@ def initialise():
 
     th = gd_thermodynamics.init(ud)
     mpv = lm_var.MPV(elem, node, ud)
-    bld = blending.Blend(ud)
+    
 
     io.init_logger(ud)
 
@@ -87,7 +85,6 @@ def initialise():
         flux=flux,
         mpv=mpv,
         th=th,
-        bld=bld,
     )
 
     restart_params = data_structures.RestartParameters(
@@ -95,6 +92,8 @@ def initialise():
         dap_rewrite=dap_rewrite,
         r_params=r_params,
     )
+
+    interface_params = data_structures.InterfaceParameters()
 
     sim_st = data_structures.SimulationState(
         step=step,
@@ -108,7 +107,8 @@ def initialise():
         diag_comparison=diag_comparison,
 
         model_params=model_params,
-        restart_params=restart_params
+        restart_params=restart_params,
+        interface_params=interface_params
     )
 
     return sim_st

@@ -9,7 +9,10 @@ class ModelParameters:
     flux: Any
     mpv: Any
     th: Any
-    bld: Any
+
+@dataclass
+class InterfaceParameters:
+    bld: Optional[Any] = None
 
 @dataclass
 class DataAssimilationParameters:
@@ -45,6 +48,7 @@ class SimulationState:
 
     model_params: ModelParameters
     restart_params: RestartParameters
+    interface_params : Optional[InterfaceParameters] = None
     da_params: Optional[DataAssimilationParameters] = None
 
     diag_comparison: Optional[object] = None

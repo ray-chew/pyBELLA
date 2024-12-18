@@ -19,7 +19,7 @@ from ..physics.low_mach import second_projection as lm_sp
 from . import grid as dis_grid
 
 # for blending module
-from ...blending import blending
+from ...interfaces.dynamics_blending import schemes
 
 
 def data_init(ud):
@@ -166,7 +166,7 @@ def do(
         ######################################################
         # Blending : Do blending before timestep
         ######################################################
-        swe_to_lake, Sol, mpv, t = blending.blending_before_timestep(
+        swe_to_lake, Sol, mpv, t = schemes.blending_before_timestep(
             Sol,
             flux,
             mpv,
@@ -526,7 +526,7 @@ def do(
         ######################################################
         # Blending : Do blending after timestep
         ######################################################
-        Sol, mpv = blending.blending_after_timestep(
+        Sol, mpv = schemes.blending_after_timestep(
             Sol,
             flux,
             mpv,
