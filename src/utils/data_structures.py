@@ -13,10 +13,18 @@ class ModelParameters:
 
 @dataclass
 class DataAssimilationParameters:
+    # DA user-input parameters
     dap : Any
-    rloc: Any
+    # r-localisation function
+    rloc : Any
+    # solution ensemble
     sol_ens : Any
 
+    # observation related attributes
+    obs : Any
+    obs_noisy : Any
+    obs_mask : Any
+    obs_covar : Any
 
 @dataclass
 class RestartParameters:

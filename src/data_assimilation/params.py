@@ -1,10 +1,10 @@
+import logging
+
+import h5py
 import numpy as np
 import scipy as sp
-import h5py
 
-import dycore.utils.boundary as bdry
-
-import logging
+from ..dycore.utils import boundary as bdry
 
 class init(object):
 

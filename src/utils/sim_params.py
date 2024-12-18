@@ -12,8 +12,6 @@ print_precision = 18
 output_path = './outputs'
 
 
-
-
 # global constants
 class global_constants(object):
     def __init__(self):

@@ -10,10 +10,13 @@ from .dycore.discretisation import time_update    as dis_time_update
 from .dycore.utils import boundary as bdry
 
 # dependencies of the data assimilation subpackag
-from .data_assimilation import etpf              as da_etpf
-from .data_assimilation import post_processing   as da_post_processing
-from .data_assimilation import letkf             as da_letkf
-from .data_assimilation import utils             as da_utils
+from .data_assimilation import (
+    prepare as da_prepare,
+    etpf as da_etpf,
+    post_processing as da_post_processing,
+    letkf as da_letkf,
+    utils as da_utils
+)
 
 # input file
 from .utils.sim_params import debug
@@ -25,7 +28,7 @@ from .utils import io as io
 ##########################################################
 def main():
     sim_state = prepare.initialise()
-
+    da_prepare.initialise(sim_state)
     writer, step_writer = io.initialise(sim_state)
 
     tic = time.time()

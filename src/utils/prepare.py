@@ -8,6 +8,7 @@ from . import (
 
 from ..dycore.discretisation import grid           as dis_grid
 from ..dycore.utils import variable                as var
+from ..dycore.utils import boundary as bdry
 from ..dycore.physics.low_mach import mpv          as lm_var
 from ..dycore.physics.gas_dynamics import thermodynamic as gd_thermodynamics
 
@@ -61,6 +62,10 @@ def initialise():
     bld = blending.Blend(ud)
 
     io.init_logger(ud)
+
+    # handle radiative BC
+    if ud.bdry_type[1].value == "radiation":
+        ud.tcy, ud.tny = bdry.get_tau_y(ud, elem, node, 0.5)
 
     ##########################################################
     # Initialise test module

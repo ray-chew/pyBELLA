@@ -23,29 +23,29 @@ def initialise(sst):
     ######################################################
     writer = hdf5(sst.ud, sst.restart)
     writer.check_jar()
-    writer.jar([mp.ud, mp.mpv, mp.elem, mp.node, dp.dap])
+    writer.jar([sst.ud, mp.mpv, mp.elem, mp.node, dp.dap])
     # sys.exit("Let's just dill the stuff and quit!")
 
     writer.write_attrs()
     wrtr = None
-    if N > 1:
+    if sst.N > 1:
         writer.write_da_attrs(dp.dap)
     elif params.output_timesteps == True:
         wrtr = writer
-    for n in range(N):  # write initial ensemble
-        Sol = ens.members(ens)[n][0]
-        mpv = ens.members(ens)[n][2]
-        if label_type == "STEP":
-            label = "ensemble_mem=%i_%.3d" % (n, step)
+    for n in range(sst.N):  # write initial ensemble
+        Sol = dp.sol_ens.members(dp.sol_ens)[n][0]
+        mpv = dp.sol_ens.members(dp.sol_ens)[n][2]
+        if params.label_type == "STEP":
+            label = "ensemble_mem=%i_%.3d" % (n, sst.step)
         else:
             label = "ensemble_mem=%i_%.3f" % (n, 0.0)
-        if not restart:
-            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_ic")
+        if not sst.restart:
+            writer.write_all(Sol, mpv, mp.elem, mp.node, mp.th, str(label) + "_ic")
 
     if params.da_debug:
         # writer.jar([obs,obs_noisy,obs_noisy_interp,obs_mask,obs_covar])
         # obs = obs_noisy_interp
-        writer.jar([obs, obs_noisy, obs_mask, obs_covar])
+        writer.jar([dp.obs, dp.obs_noisy, dp.obs_mask, dp.obs_covar])
 
     return writer, wrtr
 
