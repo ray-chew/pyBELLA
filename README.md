@@ -71,10 +71,16 @@ The user-defined input parameters are in the [`inputs`](https://github.com/ray-c
 A simple test can be found in [`run_scripts.test_suite`](https://github.com/ray-chew/pyBELLA/blob/develop/run_scripts/test_dycore.py). To execute this run script from the pyBELLA parent directory:
 
 ```console
-python3 ./run_scripts/test_dycore.py
+pytest ./run_scripts/test_dycore.py
 ```
 
-However, the codebase is structured such that the user can easily assemble a run script to define their own experiments. Refer to the documentation for the [available APIs](https://ray-chew.github.io/pyBELLA/apis.html).
+To run a simulation:
+```console
+pybella -ic rb -N 1
+```
+Note that only the rising bubble initial condition is implemented for now with ensemble size of 1. 
+
+The codebase is structured such that the user can easily assemble a run script to define their own experiments. Refer to the documentation for the [available APIs](https://ray-chew.github.io/pyBELLA/apis.html).
 
 ## License
 
