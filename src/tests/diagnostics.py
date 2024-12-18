@@ -1,10 +1,12 @@
-# import numpy as np
+import logging
+
 import numpy as np
 import yaml
-import termcolor
-import logging
-import pybella.vis.plotting_tools as vis_pt
-import pybella.vis.utils as vis_utils
+
+from ..vis import (
+    utils as vis_utils,
+    plotting_tools as vis_pt
+)
 
 
 class compare_sol(object):
@@ -57,9 +59,11 @@ class compare_sol(object):
                 test,
             )
 
-        logging.info(termcolor.colored("##########", "green"))
-        logging.info(termcolor.colored("Test passed for %s" %self.current_run, "green"))
-        logging.info(termcolor.colored("##########", "green"))
+        logging.info(f"""
+        {'#' * 10}
+        Test passed for {self.current_run}
+        {'#' * 10}
+        """.strip())
 
     def __init(self):
         path = "./outputs/"
