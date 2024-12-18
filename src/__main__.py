@@ -24,7 +24,7 @@ from .data_assimilation import (
 # input file
 from .utils.sim_params import debug
 from .utils import prepare
-from .utils import io as io
+from .utils import io
 
 ##########################################################
 # Start main looping
@@ -45,6 +45,12 @@ def main():
     tout_cnt = 0
     outer_step = 0
     for tout in sim_state.ud.tout:
+
+        sst = sim_state
+        mp = sst.model_params
+        dp = sst.da_params
+        ens = dp.sol_ens
+
         futures = []
 
         blend = blending_prepare.init_da_window(sim_state, tout_old, outer_step)
@@ -59,30 +65,30 @@ def main():
         for mem in ens.members(ens):
 
             # handling of DA window step counter
-            if N > 1:
-                mem[3][0] = 0 if tout_old in dap.da_times else mem[3][0]
-            if N == 1:
+            if sst.N > 1:
+                mem[3][0] = 0 if tout_old in dp.dap.da_times else mem[3][0]
+            if sst.N == 1:
                 mem[3][0] = mem[3][1]
             logging.info("For ensemble member = %i..." % mem_cnt)
             future = dis_time_update.do(
                 mem[0],
                 mem[1],
                 mem[2],
-                t,
+                sst.t,
                 tout,
-                ud,
-                elem,
-                node,
+                sst.ud,
+                mp.elem,
+                mp.node,
                 mem[3],
-                th,
+                mp.th,
                 blend,
                 step_writer,
                 debug,
             )
 
-            if ud.diag:
-                diag_comparison.test_do(
-                    future[0], future[2].p2_nodes, plot=ud.diag_plot_compare
+            if sst.ud.diag:
+                sst.diag_comparison.test_do(
+                    future[0], future[2].p2_nodes, plot=sst.ud.diag_plot_compare
                 )
 
             futures.append(future)
@@ -207,7 +213,7 @@ def main():
         ######################################################
         # Write output at tout
         ######################################################
-        logging.info(termcolor.colored("Starting output...", "yellow"))
+        logging.info("Starting output...")
         for n in range(N):
             Sol = ens.members(ens)[n][0]
             mpv = ens.members(ens)[n][2]
@@ -222,7 +228,7 @@ def main():
         # synchronise_variables(mpv, Sol, elem, node, ud, th)
         t = tout
         tout_old = np.copy(tout)
-        logging.info(termcolor.colored("tout = %.3f" % tout, "yellow"))
+        logging.info("tout = %.3f" % tout)
 
         tout_cnt += 1
         outer_step += 1
@@ -230,7 +236,7 @@ def main():
             break
 
     toc = time.time()
-    logging.info(termcolor.colored("Time taken = %.6f" % (toc - tic), "yellow"))
+    logging.info("Time taken = %.6f" % (toc - tic))
 
     writer.close_everything()
 
