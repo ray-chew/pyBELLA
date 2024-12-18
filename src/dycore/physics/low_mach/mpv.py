@@ -1,5 +1,6 @@
 import numpy as np
-import dycore.utils.variable as var
+
+from ...utils import variable as var
 
 class MPV(object):
     def __init__(self,elem,node,ud):

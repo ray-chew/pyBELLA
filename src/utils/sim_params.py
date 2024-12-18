@@ -2,9 +2,16 @@
 debug = False
 da_debug = False
 
+output_timesteps = False
+if debug == True:
+    output_timesteps = True
+label_type = "TIME"
+
 random_seed = 888
 print_precision = 18
 output_path = './outputs'
+
+
 
 
 # global constants

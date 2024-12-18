@@ -3,15 +3,15 @@ name = "pyBELLA"
 version = "0.50.1"
 
 dependencies = [
-    "dask==2023.6.0",
-    "dill==0.3.6",
-    "h5py==3.7.0",
-    "matplotlib==3.5.1",
-    "numba==0.56.4",
-    "numpy==1.22.1",
-    "PyYAML==6.0",
-    "scipy==1.7.3",
-    "termcolor==2.4.0"
+    "dask",
+    "dill",
+    "h5py",
+    "matplotlib",
+    "numba",
+    "numpy",
+    "PyYAML",
+    "scipy",
+    "termcolor"
 ]
 
 
@@ -22,6 +22,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 package-dir = {"pybella" = "src"}
+
+[project.scripts]
+pybella = "pybella.__main__:main"
 
 
 # Change Log

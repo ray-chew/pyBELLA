@@ -1,6 +1,7 @@
-import dycore.utils.boundary as bdry
 import numpy as np
 import numba as nb
+
+from ..utils import boundary as bdry
 
 def column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     Gamma = th.gm1 / th.gamm

@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 import numba as nb
 
-import dycore.utils.options as opts
+from ...utils import options as opts
 
 def stencil_9pt(elem,node,mpv,Sol,ud,diag_inv,dt,coriolis_params):
     igx = elem.igx
@@ -543,7 +543,7 @@ def lap2D_numba_test(p, dp, dx, dy, coeffs, diag_inv, coriolis, shp):
     return p.ravel()
 
 
-@nb.njit(nopython=True, cache=True)
+@nb.njit(cache=True)
 def lap2D_gather_new(p, iicxn, iicyn, coeffs, dx, dy, y_rayleigh, x_wall, y_wall, diag_inv, coriolis):
     ngnc = (iicxn) * (iicyn)
     lap = np.zeros((ngnc))

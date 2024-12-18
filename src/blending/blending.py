@@ -1,12 +1,11 @@
+import logging
+import copy
+
+import termcolor
 import numpy as np
 from scipy import signal
 
-import dycore.physics.gas_dynamics.eos as gd_eos
-
-import logging
-import termcolor
-import copy
-
+from ..dycore.physics.gas_dynamics import eos as gd_eos
 
 class Blend(object):
     """

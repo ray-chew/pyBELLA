@@ -1,6 +1,6 @@
 import numpy as np
 
-import dycore.utils.options as opts
+from ..utils import options as opts
 
 def grid_init(ud):
     """

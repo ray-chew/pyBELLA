@@ -1,11 +1,11 @@
+import copy
+
 import numpy as np
 import scipy as sp
-import copy
 
 import matplotlib.pyplot as plt
 
-import dycore.utils.boundary as bdry
-import dycore.utils.options  as opts
+from ..dycore.utils import options as opts, boundary as bdry
 
 class ensemble(object):
     def __init__(self, input_ensemble=None):

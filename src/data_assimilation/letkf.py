@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import numpy.lib.stride_tricks as st
 
@@ -8,10 +10,9 @@ import dask.array as darr
 import dask
 
 import matplotlib.pyplot as plt
-import logging
 
-import dycore.utils.options as opts
-import data_assimilation as da
+from ..dycore.utils import options as opts
+from . import utils
 
 debug_cnt = 0
 
@@ -244,7 +245,7 @@ class prepare_rloc(object):
         self.pad_Y = int((self.obs_Y - 1) / 2)
 
         # get mask to handle BC. Periodic mask includes ghost cells/nodes and wall masks takes only the inner domain.
-        self.cmask, self.nmask = da.utils.boundary_mask(ud, elem, node, self.pad_X, self.pad_Y)
+        self.cmask, self.nmask = utils.boundary_mask(ud, elem, node, self.pad_X, self.pad_Y)
 
         # get from da parameters the localisation matrix and inflation factor
         self.inf_fac = dap.inflation_factor

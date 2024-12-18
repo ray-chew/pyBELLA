@@ -2,7 +2,7 @@
 For more details on this module, refer to the write-up :ref:`boundary_handling`.
 """
 import numpy as np
-import dycore.utils.options as opts
+from . import options as opts
 
 def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
     """

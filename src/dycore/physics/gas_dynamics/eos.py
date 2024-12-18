@@ -1,6 +1,6 @@
 import numpy as np
 
-import dycore.utils.boundary as bdry
+from ...utils import boundary as bdry
 
 def nonhydrostasy(ud,t,step):
     if step >= 0:

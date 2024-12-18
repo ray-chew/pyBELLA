@@ -1,8 +1,7 @@
 import numpy as np
 
-import dycore.utils.options as opts
-import utils.sim_params as params
-
+from ..dycore.utils import options as opts
+from . import sim_params as params
 
 class UserDataInit(object):
     """

@@ -1,24 +1,25 @@
-# dependencies of the atmospheric flow solver
-import utils.io as io
-
-import dycore.utils.boundary as bdry
-import dycore.utils.options  as opts
-
-import dycore.physics.gas_dynamics.numerical_flux as gd_flux
-import dycore.physics.gas_dynamics.explicit as gd_explicit
-import dycore.physics.gas_dynamics.eos as gd_eos
-import dycore.physics.gas_dynamics.cfl as gd_cfl
-
-import dycore.physics.low_mach.second_projection as lm_sp
-import dycore.discretisation.grid as dis_grid
-
-# for blending module
-import data_assimilation as da
+import copy
+import logging
 
 import numpy as np
-import copy
 import termcolor
-import logging
+
+# dependencies of the pyBELLA package
+from ...utils import io
+
+# dependencies of the flow solver subpackage
+from ..utils import boundary as bdry, options as opts
+from ..physics.gas_dynamics import (
+    numerical_flux as gd_flux,
+    eos as gd_eos,
+    cfl as gd_cfl
+)
+from ..physics.gas_dynamics import explicit as gd_explicit
+from ..physics.low_mach import second_projection as lm_sp
+from . import grid as dis_grid
+
+# for blending module
+from ...blending import blending
 
 
 def data_init(ud):
@@ -165,7 +166,7 @@ def do(
         ######################################################
         # Blending : Do blending before timestep
         ######################################################
-        swe_to_lake, Sol, mpv, t = da.blending.blending_before_timestep(
+        swe_to_lake, Sol, mpv, t = blending.blending_before_timestep(
             Sol,
             flux,
             mpv,
@@ -525,7 +526,7 @@ def do(
         ######################################################
         # Blending : Do blending after timestep
         ######################################################
-        Sol, mpv = da.blending.blending_after_timestep(
+        Sol, mpv = blending.blending_after_timestep(
             Sol,
             flux,
             mpv,

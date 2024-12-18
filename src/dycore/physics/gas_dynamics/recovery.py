@@ -1,7 +1,6 @@
 import numpy as np
 
-import dycore.utils.options as opts
-import dycore.utils.variable as var
+from ...utils import options as opts, variable as var
 
 def do(Sol, flux, lmbda, ud, th, elem, split_step, tag):
     """

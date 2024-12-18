@@ -1,12 +1,11 @@
+import itertools as it
+import logging
+
 import numpy as np
 import scipy as sp
-import itertools as it
 
-import dycore.utils.options  as opts
-import dycore.utils.boundary as bdry
-import dycore.physics.low_mach.laplacian as lm_lp
-
-import logging
+from ...utils import options  as opts, boundary as bdry
+from . import laplacian as lm_lp
 
 class solver_counter(object):
     """

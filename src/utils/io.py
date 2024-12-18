@@ -12,10 +12,46 @@ from datetime import datetime
 
 import argparse
 
-import utils.sim_params as params
+from . import sim_params as params
 
 
-class init(object):
+def initialise(sst):
+    mp = sst.model_params
+    dp = sst.da_params
+    ######################################################
+    # Initialise writer class for I/O operations
+    ######################################################
+    writer = hdf5(sst.ud, sst.restart)
+    writer.check_jar()
+    writer.jar([mp.ud, mp.mpv, mp.elem, mp.node, dp.dap])
+    # sys.exit("Let's just dill the stuff and quit!")
+
+    writer.write_attrs()
+    wrtr = None
+    if N > 1:
+        writer.write_da_attrs(dp.dap)
+    elif params.output_timesteps == True:
+        wrtr = writer
+    for n in range(N):  # write initial ensemble
+        Sol = ens.members(ens)[n][0]
+        mpv = ens.members(ens)[n][2]
+        if label_type == "STEP":
+            label = "ensemble_mem=%i_%.3d" % (n, step)
+        else:
+            label = "ensemble_mem=%i_%.3f" % (n, 0.0)
+        if not restart:
+            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_ic")
+
+    if params.da_debug:
+        # writer.jar([obs,obs_noisy,obs_noisy_interp,obs_mask,obs_covar])
+        # obs = obs_noisy_interp
+        writer.jar([obs, obs_noisy, obs_mask, obs_covar])
+
+    return writer, wrtr
+
+
+
+class hdf5(object):
     """
     HDF5 writer class. Contains methods to create HDF5 file, create data sets and populate them with output variables.
 
@@ -591,7 +627,7 @@ def get_args():
     elif ic == "igw_bb":
         from inputs.igw_baldauf_brdar import UserData, sol_init
     elif ic == "rb":
-        from inputs.rising_bubble import UserData, sol_init
+        from ..inputs.rising_bubble import UserData, sol_init
     elif ic == "rbc":
         from inputs.rising_bubble_cold import UserData, sol_init
     elif ic == "swe_bal_vortex":

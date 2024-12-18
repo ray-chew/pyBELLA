@@ -1,6 +1,6 @@
-import dycore.utils.boundary as bdry
-import dycore.physics.gas_dynamics.recovery as gd_recovery
-import dycore.physics.gas_dynamics.numerical_flux as gd_flux
+from ...utils import boundary as bdry
+from . import recovery as gd_recovery
+from . import numerical_flux as gd_flux
 
 def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
     """
