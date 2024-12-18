@@ -1,7 +1,11 @@
 import numpy as np
-import dycore.utils.options as opts
-import dycore.utils.boundary as bdry
-import dycore.physics.hydrostatics as hydrostatic
+
+from ..dycore.utils import (
+    options as opts,
+    boundary as bdry
+)
+
+from ..dycore.physics import hydrostatics
 
 class UserData(object):
     NSPEC = 1
@@ -290,7 +294,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     ud.stratification = ud.stratification(dy)
 
     # Use hydrostatically balanced background
-    hydrostatic.state(mpv, elem, node, th, ud)
+    hydrostatics.state(mpv, elem, node, th, ud)
     rhobar = mpv.HydroState.rho0.reshape(1,-1)
     Ybar = mpv.HydroState.Y0.reshape(1,-1)
     pibar = mpv.HydroState.p20.reshape(1,-1) * ud.Msq

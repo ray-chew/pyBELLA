@@ -1,8 +1,11 @@
 import numpy as np
-import dycore.utils.options as opts
-import dycore.utils.boundary as bdry
-import dycore.utils.variable as var
-import dycore.physics.hydrostatics as hydrostatic
+
+from ..dycore.utils import(
+    options as opts,
+    boundary as bdry,
+    variable as var
+)
+from ..dycore.physics import hydrostatics
 
 
 class UserData(object):
@@ -188,7 +191,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     xc = 0.0
     a = ud.scale_factor * 5.0e3 / ud.h_ref
 
-    hydrostatic.state(mpv, elem, node, th, ud)
+    hydrostatics.state(mpv, elem, node, th, ud)
 
     HySt = var.States(node.sc, ud)
     HyStn = var.States(node.sc, ud)
@@ -207,7 +210,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         1.0 + (xn - xc) ** 2 / (a**2)
     )
 
-    hydrostatic.column(HySt, HyStn, Y, Yn, elem, node, th, ud)
+    hydrostatics.column(HySt, HyStn, Y, Yn, elem, node, th, ud)
 
     x_idx = slice(None)
     y_idx = slice(elem.igy, -elem.igy + 1)
@@ -238,7 +241,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     mpv.p2_nodes[:, elem.igy : -elem.igy] = HyStn.p20[:, elem.igy : -elem.igy]
 
-    hydrostatic.initial_pressure(Sol, mpv, elem, node, ud, th)
+    hydrostatics.initial_pressure(Sol, mpv, elem, node, ud, th)
 
     ud.nonhydrostasy = 1.0 if ud.is_nonhydrostatic == 1 else 0.0
     ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0

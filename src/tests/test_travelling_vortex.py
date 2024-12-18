@@ -1,8 +1,10 @@
 import numpy as np
-import dycore.utils.options as opts
-import dycore.physics.hydrostatics as hydrostatic
-import dycore.utils.boundary as bdry
-import dycore.physics.low_mach.second_projection as lm_sp
+from  ..dycore.utils import (
+    options as opts,
+    boundary as bdry
+)
+from ..dycore.physics import hydrostatics
+from ..dycore.physics.low_mach import second_projection as lm_sp
 
 import logging
 
@@ -200,7 +202,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     igxn = node.igx
     igyn = node.igy
 
-    hydrostatic.state(mpv, elem, node, th, ud)
+    hydrostatics.state(mpv, elem, node, th, ud)
 
     coe = np.zeros((25))
     coe[0] = 1.0 / 24.0

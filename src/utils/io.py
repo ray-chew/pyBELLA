@@ -639,11 +639,11 @@ def get_args():
     elif ic == "swe_dvortex":
         from inputs.shallow_water_3D_dvortex import UserData, sol_init
     elif ic == "test_travelling_vortex":
-        from tests.test_travelling_vortex import UserData, sol_init
+        from ..tests.test_travelling_vortex import UserData, sol_init
     elif ic == "test_internal_long_wave":
-        from tests.test_internal_long_wave import UserData, sol_init
+        from ..tests.test_internal_long_wave import UserData, sol_init
     elif ic == "test_lamb_wave":
-        from tests.test_lamb_wave import UserData, sol_init
+        from ..tests.test_lamb_wave import UserData, sol_init
 
     if UserData is None or sol_init is None:
         assert 0, "Initial condition file is not well defined."
