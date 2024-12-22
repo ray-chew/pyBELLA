@@ -5,7 +5,7 @@ import scipy as sp
 
 import matplotlib.pyplot as plt
 
-from ..dycore.utils import options as opts, boundary as bdry
+from ..flow_solver.utils import options as opts, boundary as bdry
 
 class ensemble(object):
     def __init__(self, input_ensemble=None):

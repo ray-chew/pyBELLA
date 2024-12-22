@@ -6,11 +6,11 @@ from . import (
     data_structures
 )
 
-from ..dycore.discretisation import grid           as dis_grid
-from ..dycore.utils import variable                as var
-from ..dycore.utils import boundary as bdry
-from ..dycore.physics.low_mach import mpv          as lm_var
-from ..dycore.physics.gas_dynamics import thermodynamic as gd_thermodynamics
+from ..flow_solver.discretisation import grid           as dis_grid
+from ..flow_solver.utils import variable                as var
+from ..flow_solver.utils import boundary as bdry
+from ..flow_solver.physics.low_mach import mpv          as lm_var
+from ..flow_solver.physics.gas_dynamics import thermodynamic as gd_thermodynamics
 
 # test module
 from ..tests import diagnostics as diag

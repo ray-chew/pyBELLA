@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..dycore.utils import options as opts
+from ..flow_solver.utils import options as opts
 from . import sim_params as params
 
 class UserDataInit(object):

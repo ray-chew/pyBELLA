@@ -5,7 +5,7 @@ import logging
 import numpy as np
 
 # dependencies of the atmospheric flow solver
-from .dycore.discretisation import time_update    as dis_time_update
+from .flow_solver.discretisation import time_update    as dis_time_update
 
 # dependencies of the interface subpackage
 from .interfaces.dynamics_blending import prepare as blending_prepare

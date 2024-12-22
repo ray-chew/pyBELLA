@@ -9,7 +9,7 @@ from . import(
     utils as da_utils
 )
 
-from ..dycore.utils import boundary as bdry
+from ..flow_solver.utils import boundary as bdry
 
 from ..utils import sim_params as params
 

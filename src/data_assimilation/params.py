@@ -4,7 +4,7 @@ import h5py
 import numpy as np
 import scipy as sp
 
-from ..dycore.utils import boundary as bdry
+from ..flow_solver.utils import boundary as bdry
 
 class init(object):
 

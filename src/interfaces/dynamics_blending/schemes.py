@@ -5,7 +5,7 @@ import termcolor
 import numpy as np
 from scipy import signal
 
-from ...dycore.physics.gas_dynamics import eos as gd_eos
+from ...flow_solver.physics.gas_dynamics import eos as gd_eos
 
 class Blend(object):
     """
@@ -117,7 +117,7 @@ def do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer):
 def do_psinc_to_comp_conv(
     Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt
 ):
-    from dycore.discretisation import time_update
+    from flow_solver.discretisation import time_update
 
     logging.info(termcolor.colored("Blending... step = %i" % step, "blue"))
     Sol_freeze = copy.deepcopy(Sol)
@@ -215,7 +215,7 @@ def do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
 def do_lake_to_swe_conv(
     Sol, flux, mpv, elem, node, ud, th, writer, label, debug, step, window_step, t, dt
 ):
-    from dycore.discretisation import time_update
+    from flow_solver.discretisation import time_update
 
     if debug == True:
         writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_lake_time_step")

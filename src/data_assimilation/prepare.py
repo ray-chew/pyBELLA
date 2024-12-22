@@ -4,7 +4,7 @@ from copy import deepcopy
 
 import numpy as np
 
-from ..dycore.physics import hydrostatics
+from ..flow_solver.physics import hydrostatics
 from ..utils import sim_params as params
 from ..utils import io
 from ..utils import data_structures

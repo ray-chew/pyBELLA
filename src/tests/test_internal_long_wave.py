@@ -1,11 +1,11 @@
 import numpy as np
 
-from ..dycore.utils import(
+from ..flow_solver.utils import(
     options as opts,
     boundary as bdry,
     variable as var
 )
-from ..dycore.physics import hydrostatics
+from ..flow_solver.physics import hydrostatics
 
 
 class UserData(object):

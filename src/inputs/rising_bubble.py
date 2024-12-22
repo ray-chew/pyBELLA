@@ -1,6 +1,6 @@
 import numpy as np
-from ..dycore.physics import hydrostatics
-from ..dycore.utils import boundary as bdry
+from ..flow_solver.physics import hydrostatics
+from ..flow_solver.utils import boundary as bdry
 
 class UserData(object):
     # Nsq_ref = grav * 1.3e-05

@@ -1,5 +1,5 @@
 import numpy as np
-import dycore.utils.options as opts
+import flow_solver.utils.options as opts
 
 def rlocal_5pt(elem,node,ud):
     igx = elem.igx

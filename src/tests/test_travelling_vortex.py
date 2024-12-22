@@ -1,10 +1,10 @@
 import numpy as np
-from  ..dycore.utils import (
+from  ..flow_solver.utils import (
     options as opts,
     boundary as bdry
 )
-from ..dycore.physics import hydrostatics
-from ..dycore.physics.low_mach import second_projection as lm_sp
+from ..flow_solver.physics import hydrostatics
+from ..flow_solver.physics.low_mach import second_projection as lm_sp
 
 import logging
 
