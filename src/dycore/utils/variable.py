@@ -2,8 +2,6 @@ import numpy as np
 import scipy as sp
 
 
-
-# equivalent to States_new
 class Vars(object):
     """
     The data container for the solution state variables, i.e. `Sol`.

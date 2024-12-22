@@ -47,22 +47,16 @@ def is_compressible(ud,step):
         return ud.is_compressible
     
 
-def is_nonhydrostatic(ud,step):
-    # print("is_nonhydrostatic", ud.is_nonhydrostatic)
-    # print("no_of_nhy_initial:", ud.no_of_hy_initial)
-    # print("no_of_nhy_transition:", ud.no_of_hy_transition)
-    if step >= 0:
-        if ud.continuous_blending == True:
-            if step < ud.no_of_hy_initial:
-                return 0
-            elif step < (ud.no_of_hy_initial + ud.no_of_hy_transition):
-                return -1
-            else:
-                return 1
-        else:
-            return ud.is_nonhydrostatic
-    else:
+def is_nonhydrostatic(ud, step):
+    if step < 0 or not ud.continuous_blending:
         return ud.is_nonhydrostatic
+    
+    if step < ud.no_of_hy_initial:
+        return 0
+    elif step < (ud.no_of_hy_initial + ud.no_of_hy_transition):
+        return -1
+    else:
+        return 1
 
 
 def rhoe(rho,u,v,w,p,ud,th):
