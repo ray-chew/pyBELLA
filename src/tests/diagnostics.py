@@ -143,7 +143,7 @@ class compare_sol(object):
         if summed:
             return ens.sum()
         else:
-            return ens
+            return np.linalg.norm(ens)
 
 
 class test_params(object):
