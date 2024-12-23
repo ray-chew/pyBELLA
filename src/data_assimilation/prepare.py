@@ -15,7 +15,7 @@ from . import letkf as da_letkf
 
 
 def initialise(sst):
-    mp = sst.model_params
+    mp = sst.model_state
     rp = sst.restart_params
 
     ##########################################################
@@ -37,7 +37,7 @@ def initialise(sst):
         rloc = None
 
     logging.info("Generating initial ensemble...")
-    sol_ens = np.zeros((sst.N), dtype=object)
+    sol_ens = data_structures.EnsembleState()
 
     # Set random seed for reproducibility
     np.random.seed(params.random_seed)
@@ -49,9 +49,13 @@ def initialise(sst):
             Sol0 = deepcopy(sst.Sol)
             mpv0 = deepcopy(sst.mpv)
             Sol0 = sst.sol_init(Sol0, mpv0, mp.elem, mp.node, mp.th, mp.ud, seed=seeds[n])
-            sol_ens[n] = [Sol0, deepcopy(mp.flux), mpv0, [-np.inf, sst.step]]
+            # sol_ens[n] = [Sol0, deepcopy(mp.flux), mpv0, [-np.inf, mp.step]]
+            sol_ens.update_member(mp.elem, mp.node, Sol0, mpv0, deepcopy(mp.flux), mp.th)
     elif sst.restart == False:
-        sol_ens = [[sst.sol_init(mp.Sol, mp.mpv, mp.elem, mp.node, mp.th, sst.ud), mp.flux, mp.mpv, [-np.inf, sst.step]]]
+        # sol_ens = [[sst.sol_init(mp.Sol, mp.mpv, mp.elem, mp.node, mp.th, sst.ud), mp.flux, mp.mpv, [-np.inf, sst.step]]]
+        sol_ens.update_member(mp.elem, mp.node, sst.sol_init(mp.Sol, mp.mpv, mp.elem, mp.node, mp.th, sst.ud), mp.mpv, deepcopy(mp.flux), mp.th)
+        for n in range(sst.N):
+            sol_ens.get_member(n).time.t = -np.inf
     elif sst.restart == True:
         hydrostatics.state(mp.mpv, mp.elem, mp.node, mp.th, mp.ud)
         sst.ud.old_suffix = np.copy(sst.ud.output_suffix)
@@ -64,7 +68,8 @@ def initialise(sst):
         sst.ud.tout = [touts[-1]]
         sst.t = touts[0]
 
-    ens = da_utils.ensemble(sol_ens)
+    # ens = da_utils.ensemble(sol_ens)
+    ens = sol_ens
 
     ##########################################################
     # Load data assimilation observations
@@ -93,9 +98,11 @@ def initialise(sst):
     sst.da_params = data_structures.DataAssimilationParameters(
         dap=dap,
         rloc=rloc,
-        sol_ens=ens,
+        # sol_ens=ens,
         obs=obs,
         obs_noisy=obs_noisy,
         obs_mask=obs_mask,
         obs_covar=obs_covar
     )
+
+

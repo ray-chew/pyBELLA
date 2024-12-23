@@ -1,14 +1,29 @@
-from typing import Optional, Callable, Any
-from dataclasses import dataclass
+from typing import Optional, Callable, List, Any
+from dataclasses import dataclass, field
+
+from ..flow_solver.discretisation.grid import Grid
+from ..flow_solver.utils.variable import Vars
+from ..flow_solver.physics.low_mach.mpv import MPV
+from ..flow_solver.physics.gas_dynamics.thermodynamics import ThermodynamicalQuantities
 
 @dataclass
-class ModelParameters:
-    elem: Any
-    node: Any
-    Sol: Any
-    flux: Any
-    mpv: Any
-    th: Any
+class IntegrationTime:
+    step : int = 0
+    t : float = 0.0
+    window_step : int = 0
+
+@dataclass
+class ModelState:
+    elem: Grid
+    node: Grid
+    Sol: Vars
+    flux: List[Vars]
+    mpv: MPV
+    th: ThermodynamicalQuantities
+    time: IntegrationTime = field(init=False)
+
+    def __post_init__(self):
+        self.time = IntegrationTime(0,0)
 
 @dataclass
 class InterfaceParameters:
@@ -21,7 +36,7 @@ class DataAssimilationParameters:
     # r-localisation function
     rloc : Any
     # solution ensemble
-    sol_ens : Any
+    # sol_ens : Any
 
     # observation related attributes
     obs : Any
@@ -35,20 +50,33 @@ class RestartParameters:
     dap_rewrite: Optional[object] = None
     r_params: Optional[object] = None
 
+@dataclass
+class EnsembleState:
+    members: List[ModelState] = field(default_factory=list)
+
+    def update_member(self, elem: Grid, node: Grid, sol: Vars, mpv: MPV, flux: List[Vars], th: ThermodynamicalQuantities):
+        new_state = ModelState(elem, node, sol, flux, mpv, th)
+        self.members.append(new_state)
+
+    def get_member(self, index: int) -> ModelState:
+        return self.members[index]
+
+    def get_all_members(self) -> List[ModelState]:
+        return self.members
+
 
 @dataclass
 class SimulationState:
-    step: int
-    t: float
     N: int
     restart: bool
 
     ud: object
     sol_init: Callable
 
-    model_params: ModelParameters
+    ensemble_state: EnsembleState
     restart_params: RestartParameters
     interface_params : Optional[InterfaceParameters] = None
     da_params: Optional[DataAssimilationParameters] = None
 
     diag_comparison: Optional[object] = None
+

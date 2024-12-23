@@ -10,7 +10,7 @@ from ..flow_solver.discretisation import grid           as dis_grid
 from ..flow_solver.utils import variable                as var
 from ..flow_solver.utils import boundary as bdry
 from ..flow_solver.physics.low_mach import mpv          as lm_var
-from ..flow_solver.physics.gas_dynamics import thermodynamic as gd_thermodynamics
+from ..flow_solver.physics.gas_dynamics import thermodynamics as gd_thermodynamics
 
 # test module
 from ..tests import diagnostics as diag
@@ -22,9 +22,6 @@ def initialise():
     from . import sim_params as params
 
     np.set_printoptions(precision = params.print_precision)
-
-    step = 0
-    t = 0.0
 
     ##########################################################
     # Initialisation of data containers and helper classes
@@ -46,7 +43,7 @@ def initialise():
 
     elem, node = dis_grid.grid_init(ud)
 
-    Sol = var.Vars(elem.sc, ud)
+    sol = var.Vars(elem.sc, ud)
 
     flux = np.empty((3), dtype=object)
     flux[0] = var.States(elem.sfx, ud)
@@ -55,7 +52,7 @@ def initialise():
     if elem.ndim > 2:
         flux[2] = var.States(elem.sfz, ud)
 
-    th = gd_thermodynamics.init(ud)
+    th = gd_thermodynamics.ThermodynamicalQuantities(ud)
     mpv = lm_var.MPV(elem, node, ud)
     
 
@@ -78,14 +75,24 @@ def initialise():
     # Populate data structures
     ##########################################################
 
-    model_params = data_structures.ModelParameters(
-        elem=elem,
-        node=node,
-        Sol=Sol,
-        flux=flux,
-        mpv=mpv,
-        th=th,
-    )
+    # member_state = data_structures.MemberState(
+    #     elem=elem,
+    #     node=node,
+    #     Sol=Sol,
+    #     flux=flux,
+    #     mpv=mpv,
+    #     th=th,
+    # )
+
+    ensemble_state = data_structures.EnsembleState()
+    ensemble_state.update_member(
+                elem=elem,
+                node=node,
+                sol=sol,
+                flux=flux,
+                mpv=mpv,
+                th=th,
+                )
 
     restart_params = data_structures.RestartParameters(
         ud_rewrite=ud_rewrite,
@@ -96,17 +103,16 @@ def initialise():
     interface_params = data_structures.InterfaceParameters()
 
     sim_st = data_structures.SimulationState(
-        step=step,
-        t=t,
         N=N,
         restart=restart,
 
         ud=ud,
         sol_init=sol_init,
 
+        ensemble_state=ensemble_state,
+
         diag_comparison=diag_comparison,
 
-        model_params=model_params,
         restart_params=restart_params,
         interface_params=interface_params
     )
