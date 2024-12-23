@@ -1,7 +1,7 @@
-src.dycore.physics.gas\_dynamics.recovery
+src.flow_solver.physics.gas\_dynamics.recovery
 =========================================
 
-.. automodule:: src.dycore.physics.gas_dynamics.recovery
+.. automodule:: src.flow_solver.physics.gas_dynamics.recovery
 
    
    

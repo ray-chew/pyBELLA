@@ -1,7 +1,7 @@
-﻿src.dycore.physics.hydrostatics
+﻿src.flow_solver.physics.hydrostatics
 ===============================
 
-.. automodule:: src.dycore.physics.hydrostatics
+.. automodule:: src.flow_solver.physics.hydrostatics
 
    
    

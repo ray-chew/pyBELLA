@@ -1,7 +1,7 @@
-src.dycore.physics.gas\_dynamics.eos
+src.flow_solver.physics.gas\_dynamics.eos
 ====================================
 
-.. automodule:: src.dycore.physics.gas_dynamics.eos
+.. automodule:: src.flow_solver.physics.gas_dynamics.eos
 
    
    

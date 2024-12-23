@@ -1,7 +1,7 @@
-﻿src.dycore.discretisation.grid
+﻿src.flow_solver.discretisation.grid
 ==============================
 
-.. automodule:: src.dycore.discretisation.grid
+.. automodule:: src.flow_solver.discretisation.grid
 
    
    

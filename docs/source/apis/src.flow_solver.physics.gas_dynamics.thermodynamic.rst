@@ -1,7 +1,7 @@
-src.dycore.physics.gas\_dynamics.thermodynamic
+src.flow_solver.physics.gas\_dynamics.thermodynamic
 ==============================================
 
-.. automodule:: src.dycore.physics.gas_dynamics.thermodynamic
+.. automodule:: src.flow_solver.physics.gas_dynamics.thermodynamic
 
    
    

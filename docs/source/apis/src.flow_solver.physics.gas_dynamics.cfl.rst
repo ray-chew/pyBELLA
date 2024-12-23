@@ -1,7 +1,7 @@
-src.dycore.physics.gas\_dynamics.cfl
+src.flow_solver.physics.gas\_dynamics.cfl
 ====================================
 
-.. automodule:: src.dycore.physics.gas_dynamics.cfl
+.. automodule:: src.flow_solver.physics.gas_dynamics.cfl
 
    
    

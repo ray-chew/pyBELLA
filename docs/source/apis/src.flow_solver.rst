@@ -1,7 +1,7 @@
-src.dycore
+src.flow_solver
 ==========
 
-.. automodule:: src.dycore
+.. automodule:: src.flow_solver
 
    
    
@@ -27,6 +27,6 @@ src.dycore
    :toctree:
    :recursive:
 
-   src.dycore.discretisation
-   src.dycore.physics
+   src.flow_solver.discretisation
+   src.flow_solver.physics
 

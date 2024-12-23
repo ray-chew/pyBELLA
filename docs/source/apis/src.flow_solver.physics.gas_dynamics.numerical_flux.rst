@@ -1,7 +1,7 @@
-src.dycore.physics.gas\_dynamics.numerical\_flux
+src.flow_solver.physics.gas\_dynamics.numerical\_flux
 ================================================
 
-.. automodule:: src.dycore.physics.gas_dynamics.numerical_flux
+.. automodule:: src.flow_solver.physics.gas_dynamics.numerical_flux
 
    
    

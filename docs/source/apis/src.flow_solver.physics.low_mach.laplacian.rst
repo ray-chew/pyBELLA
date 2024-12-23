@@ -1,7 +1,7 @@
-﻿src.dycore.physics.low\_mach.laplacian
+﻿src.flow_solver.physics.low\_mach.laplacian
 ======================================
 
-.. automodule:: src.dycore.physics.low_mach.laplacian
+.. automodule:: src.flow_solver.physics.low_mach.laplacian
 
    
    

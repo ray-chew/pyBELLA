@@ -28,7 +28,7 @@
    :recursive:
 
    src.data_assimilation
-   src.dycore
+   src.flow_solver
    src.tests
    src.utils
    src.vis

@@ -1,7 +1,7 @@
-﻿src.dycore.discretisation.time\_update
+﻿src.flow_solver.discretisation.time\_update
 ======================================
 
-.. automodule:: src.dycore.discretisation.time_update
+.. automodule:: src.flow_solver.discretisation.time_update
 
    
    

@@ -1,7 +1,7 @@
-﻿src.dycore.physics.low\_mach.second\_projection
+﻿src.flow_solver.physics.low\_mach.second\_projection
 ===============================================
 
-.. automodule:: src.dycore.physics.low_mach.second_projection
+.. automodule:: src.flow_solver.physics.low_mach.second_projection
 
    
    
