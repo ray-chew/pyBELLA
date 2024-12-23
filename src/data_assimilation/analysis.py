@@ -14,9 +14,9 @@ from ..flow_solver.utils import boundary as bdry
 from ..utils import sim_params as params
 
 def do_for_window(tout, outer_step, results, sst, writer):
-    mp = sst.model_params
+    # mp = sst.model_params
     dp = sst.da_params
-    ens = dp.sol_ens
+    # ens = dp.sol_ens
 
     ######################################################
     # Analysis step
@@ -28,30 +28,26 @@ def do_for_window(tout, outer_step, results, sst, writer):
         ######################################################
         # Update ensemble with forecast
         ######################################################
-        for n in range(sst.N):
-            Sol = results[n][dp.dap.loc_c]
-            bdry.set_explicit_boundary_data(Sol, mp.elem, mp.ud, mp.th, mpv)
-            results[n][dp.dap.loc_c] = Sol
-            p2_nodes = getattr(results[n][dp.dap.loc_n], "p2_nodes")
-            bdry.set_ghostnodes_p2(p2_nodes, mp.node, sst.ud)
-            setattr(results[n][dp.dap.loc_n], "p2_nodes", p2_nodes)
+        for mem in results:
+            elem, node, sol, _, mpv, th, _ = mem
+            bdry.set_explicit_boundary_data(sol, elem, sst.ud, th, mpv)
+            bdry.set_ghostnodes_p2(mpv.p2_nodes,node, sst.ud)
 
-        ens.set_members(results, tout)
+        # ens.set_members(results, tout)
+        sst.ensemble_state.set_members(results)
 
         ######################################################
         # Write output before assimilating data
         ######################################################
         logging.info("Starting output...")
-        for n in range(sst.N):
-            Sol = ens.members(ens)[n][0]
-            mpv = ens.members(ens)[n][2]
-
+        for mem in sst.ensemble_state:
+            elem, node, sol, _, mpv, th, _ = mem
             if params.label_type == "STEP":
                 step = outer_step
                 label = "ensemble_mem=%i_%.3d" % (n, step)
             else:
                 label = "ensemble_mem=%i_%.3f" % (n, tout)
-            writer.write_all(Sol, mpv, mp.elem, mp.node, mp.th, str(label) + "_before_da")
+            writer.write_all(sol, mpv, elem, node, th, str(label) + "_before_da")
 
         ##################################################
         # LETKF with batch observations
@@ -84,9 +80,10 @@ def do_for_window(tout, outer_step, results, sst, writer):
             logging.info(
                 "Starting analysis... for rloc algorithm"
             )
-            results = da_utils.HSprojector_3t2D(results, mp.elem, dp.dap, sst.N)
+            elem, node = sst.ensemble_state.get_grid()
+            results = da_utils.HSprojector_3t2D(results, elem, dp.dap, sst.N)
             results = dp.rloc.analyse(results, dp.obs, dp.obs_covar, dp.obs_mask, sst.N, tout)
-            results = da_utils.HSprojector_2t3D(results, mp.elem, mp.node, mp.dap, sst.N)
+            results = da_utils.HSprojector_2t3D(results, elem, node, dp.dap, sst.N)
             # if hasattr(dap, 'converter'):
             # results = dap.converter(results, N, mpv, elem, node, th, ud)
 
@@ -117,12 +114,10 @@ def do_for_window(tout, outer_step, results, sst, writer):
     ######################################################
     # Update ensemble with analysis
     ######################################################
-    for n in range(sst.N):
-        Sol = results[n][dp.dap.loc_c]
-        bdry.set_explicit_boundary_data(Sol, mp.elem, sst.ud, mp.th, mp.mpv)
-        results[n][dp.dap.loc_c] = Sol
-        p2_nodes = getattr(results[n][dp.dap.loc_n], "p2_nodes")
-        bdry.set_ghostnodes_p2(p2_nodes, mp.node, sst.ud)
-        setattr(results[n][dp.dap.loc_n], "p2_nodes", p2_nodes)
+    for mem in results:
+        elem, node, Sol, _, mpv, th, _ = mem
+        bdry.set_explicit_boundary_data(Sol, elem, sst.ud, th, mpv)
+        p2_nodes = mpv.p2_nodes
+        bdry.set_ghostnodes_p2(p2_nodes, node, sst.ud)
 
-    ens.set_members(results, tout)
+    sst.ensemble_state.set_members(results)

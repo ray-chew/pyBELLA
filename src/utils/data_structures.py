@@ -1,8 +1,6 @@
 from typing import Optional, Callable, List, Any
 from dataclasses import dataclass, field, fields
 
-import numpy as np
-
 from ..flow_solver.discretisation.grid import Grid
 from ..flow_solver.utils.variable import Vars
 from ..flow_solver.physics.low_mach.mpv import MPV
@@ -11,14 +9,14 @@ from ..flow_solver.physics.gas_dynamics.thermodynamics import ThermodynamicalQua
 @dataclass
 class IntegrationTime:
     step : int = 0
-    t : float = -np.inf
+    t : float = 0.0
     window_step : int = 0
 
 @dataclass
 class ModelState:
     elem: Grid
     node: Grid
-    Sol: Vars
+    sol: Vars
     flux: List[Vars]
     mpv: MPV
     th: ThermodynamicalQuantities
@@ -63,11 +61,21 @@ class EnsembleState:
         new_state = ModelState(elem, node, sol, flux, mpv, th)
         self.members.append(new_state)
 
+    def set_members(self, members : List[ModelState]):
+        assert len(self.set_members == members)
+        self.members = members
+
     def get_member(self, index: int) -> ModelState:
         return self.members[index]
 
     def get_all_members(self) -> List[ModelState]:
         return self.members
+    
+    def get_grid(self) -> tuple[Grid, Grid]:
+        # Assuming identical underlying grid for all ensemble memebers
+        elem = self.memebers[0].elem
+        node = self.memebers[0].node
+        return elem, node
     
     def __getitem__(self, index):
         return self.members[index]

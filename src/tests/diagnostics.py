@@ -58,6 +58,7 @@ class compare_sol(object):
                 ref,
                 test,
             )
+            print(f"test passed for {key}")
 
         logging.info(f"""
         {'#' * 10}

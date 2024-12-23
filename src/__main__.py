@@ -96,16 +96,13 @@ def main():
         # Write output at tout
         ######################################################
         logging.info("Starting output...")
-        for n in range(sst.N):
-            Sol = ens.members(ens)[n][0]
-            mpv = ens.members(ens)[n][2]
-
+        for n, mem in enumerate(es):
             if params.label_type == "STEP":
                 step = outer_step
                 label = "ensemble_mem=%i_%.3d" % (n, step)
             else:
                 label = "ensemble_mem=%i_%.3f" % (n, tout)
-            writer.write_all(Sol, mpv, mp.elem, mp.node, mp.th, str(label) + "_after_full_step")
+            writer.write_all(mem, str(label) + "_after_full_step")
 
         # synchronise_variables(mpv, Sol, elem, node, ud, th)
         # sst.t = tout
