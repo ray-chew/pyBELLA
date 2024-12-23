@@ -128,7 +128,7 @@ def do(
         label = "%.3d" % step
 
         if step == 0 and writer != None:
-            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_ic")
+            writer.write_all(mem, str(label) + "_ic")
 
         dt, cfl, cfl_ac = gd_cfl.dynamic_timestep(Sol, t, tout, elem, ud, th, step)
 
@@ -193,9 +193,11 @@ def do(
                     """)
 
         Sol0 = copy.deepcopy(Sol)
+        flux0 = copy.deepcopy(flux)
+        mpv0 = copy.deepcopy(mpv)
 
         if debug == True:
-            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_before_flux")
+            writer.write_all(mem, str(label) + "_before_flux")
 
         gd_flux.recompute_advective_fluxes(flux, Sol)
 
@@ -204,7 +206,7 @@ def do(
             writer.populate(f"{label}_before_advect", "rhoYv", flux[1].rhoY)
             if elem.ndim == 3:
                 writer.populate(f"{label}_before_advect", "rhoYw", flux[2].rhoY)
-            writer.write_all(Sol, mpv, elem, node, th, f"{label}_before_advect")
+            writer.write_all(mem, f"{label}_before_advect")
 
 
         if ud.do_advection:
@@ -223,7 +225,7 @@ def do(
             )
 
         if debug:
-            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_advect")
+            writer.write_all(mem, str(label) + "_after_advect")
             writer.populate(str(label) + "_after_full_step", "p2_nodes0", mpv.p2_nodes)
 
         mpv.p2_nodes0[...] = mpv.p2_nodes
@@ -231,9 +233,9 @@ def do(
         lm_sp.euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5 * dt, ud, th)
 
         if debug == True:
-            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_ebnaexp")
+            writer.write_all(mem, str(label) + "_after_ebnaexp")
 
-        Sol0 = Sol0 if ud.is_compressible == 0 else None
+        Sol0_increment = Sol0 if ud.is_compressible == 0 else None
 
         lm_sp.euler_backward_non_advective_impl_part(
             Sol,
@@ -245,7 +247,7 @@ def do(
             t,
             0.5 * dt,
             1.0,
-            Sol0=Sol0,
+            Sol0=Sol0_increment,
             label=f"{label}_after_ebnaimp",
             writer=writer,
         )
@@ -299,7 +301,7 @@ def do(
                 bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
         if debug == True:
-            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_ebnaimp")
+            writer.write_all(mem, str(label) + "_after_ebnaimp")
 
 
         flux_half_new = copy.deepcopy(flux)
@@ -311,7 +313,7 @@ def do(
             writer.populate(f"{label}_after_half_step", "rhoYv", flux[1].rhoY)
             if elem.ndim == 3:
                 writer.populate(f"{label}_after_half_step", "rhoYw", flux[2].rhoY)
-            writer.write_all(Sol, mpv, elem, node, th, f"{label}_after_half_step")
+            writer.write_all(mem, f"{label}_after_half_step")
 
         Sol_half_new = copy.deepcopy(Sol)
         mpv_half_new = copy.deepcopy(mpv)
@@ -328,7 +330,7 @@ def do(
         if ud.is_nonhydrostatic == 0 or (ud.is_compressible == 1 and ud.is_nonhydrostatic == 1):
             mpv.p2_nodes[...] = mpv.p2_nodes0
 
-        # Sol = copy.deepcopy(Sol0)
+        Sol = copy.deepcopy(Sol0)
 
         # Sol.rhov0 = np.copy(Sol.rhov)
         Sol.rho_half = rho_half
@@ -366,7 +368,7 @@ def do(
         )
 
         if debug == True:
-            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_efna")
+            writer.write_all(mem, str(label) + "_after_efna")
 
         if ud.do_advection:
             gd_explicit.advect(
@@ -385,14 +387,14 @@ def do(
 
         if debug == True:
             writer.write_all(
-                Sol, mpv, elem, node, th, str(label) + "_after_full_advect"
+                mem, str(label) + "_after_full_advect"
             )
 
         lm_sp.euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5 * dt, ud, th)
 
         if debug == True:
             writer.write_all(
-                Sol, mpv, elem, node, th, str(label) + "_after_full_ebnaexp"
+                mem, str(label) + "_after_full_ebnaexp"
             )
 
         lm_sp.euler_backward_non_advective_impl_part(
@@ -483,7 +485,7 @@ def do(
         if c1 or c2:
             logging.info(termcolor.colored("hydrostatic to nonhydrostatic conversion...", "blue"))
 
-            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_half_full")
+            writer.write_all(mem, str(label) + "_half_full")
             writer.populate(str(label) + "_ic", "pwchi", Sol.pwchi)
 
             if test_hydrob == False:
@@ -491,7 +493,7 @@ def do(
                 # mpv = copy.deepcopy(mpv_half_old)
 
                 logging.info(termcolor.colored("test_hydrob == False", "red"))
-                writer.write_all(Sol, mpv, elem, node, th, str(label) + "_quarter")
+                writer.write_all(mem, str(label) + "_quarter")
 
                 writer.populate(str(label) + "_quarter", "pwchi", Sol.pwchi)
 
@@ -525,7 +527,7 @@ def do(
 
                 # mpv.p2_nodes[...] = mpv_tu.p2_nodes_half
 
-                writer.write_all(Sol, mpv, elem, node, th, str(label) + "_half")
+                writer.write_all(mem, str(label) + "_half")
 
                 writer.populate(str(label) + "_half", "pwchi", Sol.pwchi)
 
@@ -554,7 +556,7 @@ def do(
                 # mpv = copy.deepcopy(mpv_half_old)
 
                 logging.info(termcolor.colored("test_hydrob == False", "red"))
-                writer.write_all(Sol, mpv, elem, node, th, str(label) + "_quarter")
+                writer.write_all(mem, str(label) + "_quarter")
 
                 # writer.populate(str(label)+'_quarter', 'pwchi', Sol.pwchi)
 
@@ -625,7 +627,7 @@ def do(
 
         if writer != None:
             writer.time = t
-            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_full_step")
+            writer.write_all(mem, str(label) + "_after_full_step")
             # writer.populate(str(label)+'_after_full_step', 'pwchi', Sol.pwchi)
         logging.info(
             "###############################################################################################"
@@ -643,6 +645,10 @@ def do(
 
         time.step = step
         time.window_step = window_step
+
+    mem.sol = Sol
+    mem.flux = flux
+    mem.mpv = mpv
 
     return mem
     # return [Sol, flux, mpv, [window_step, step]]
