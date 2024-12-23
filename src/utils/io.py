@@ -16,14 +16,14 @@ from . import sim_params as params
 
 
 def initialise(sst):
-    mp = sst.model_params
+    es = sst.ensemble_state
     dp = sst.da_params
     ######################################################
     # Initialise writer class for I/O operations
     ######################################################
     writer = hdf5(sst.ud, sst.restart)
     writer.check_jar()
-    writer.jar([sst.ud, mp.mpv, mp.elem, mp.node, dp.dap])
+    writer.jar([sst.ud, es[0].elem, es[0].node, dp.dap])
     # sys.exit("Let's just dill the stuff and quit!")
 
     writer.write_attrs()
@@ -32,15 +32,14 @@ def initialise(sst):
         writer.write_da_attrs(dp.dap)
     elif params.output_timesteps == True:
         wrtr = writer
+
     for n in range(sst.N):  # write initial ensemble
-        Sol = dp.sol_ens.members(dp.sol_ens)[n][0]
-        mpv = dp.sol_ens.members(dp.sol_ens)[n][2]
         if params.label_type == "STEP":
             label = "ensemble_mem=%i_%.3d" % (n, sst.step)
         else:
             label = "ensemble_mem=%i_%.3f" % (n, 0.0)
         if not sst.restart:
-            writer.write_all(Sol, mpv, mp.elem, mp.node, mp.th, str(label) + "_ic")
+            writer.write_all(es[n], str(label) + "_ic")
 
     if params.da_debug:
         # writer.jar([obs,obs_noisy,obs_noisy_interp,obs_mask,obs_covar])
@@ -161,7 +160,7 @@ class hdf5(object):
 
             file.close()
 
-    def write_all(self, Sol, mpv, elem, node, th, name):
+    def write_all(self, model_state, name):
         """
         At a given time, write output from `Sol` and `mpv` to the HDF5 file.
 
@@ -181,6 +180,9 @@ class hdf5(object):
             The time and additional suffix label for the dataset, e.g. "_10.0_after_full_step", where 10.0 is the time and "after_full_step" denotes when the output was made.
 
         """
+
+        _, _, Sol, _, mpv, _, _ = model_state
+
         logging.info("writing hdf output..." + name)
         # rho
         self.populate(name, "rho", Sol.rho)

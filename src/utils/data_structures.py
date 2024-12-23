@@ -1,5 +1,7 @@
 from typing import Optional, Callable, List, Any
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
+
+import numpy as np
 
 from ..flow_solver.discretisation.grid import Grid
 from ..flow_solver.utils.variable import Vars
@@ -9,7 +11,7 @@ from ..flow_solver.physics.gas_dynamics.thermodynamics import ThermodynamicalQua
 @dataclass
 class IntegrationTime:
     step : int = 0
-    t : float = 0.0
+    t : float = -np.inf
     window_step : int = 0
 
 @dataclass
@@ -23,7 +25,10 @@ class ModelState:
     time: IntegrationTime = field(init=False)
 
     def __post_init__(self):
-        self.time = IntegrationTime(0,0)
+        self.time = IntegrationTime()
+
+    def __iter__(self):
+        return iter(getattr(self, field.name) for field in fields(self))
 
 @dataclass
 class InterfaceParameters:
@@ -63,6 +68,9 @@ class EnsembleState:
 
     def get_all_members(self) -> List[ModelState]:
         return self.members
+    
+    def __getitem__(self, index):
+        return self.members[index]
 
 
 @dataclass

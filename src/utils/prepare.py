@@ -9,6 +9,7 @@ from . import (
 from ..flow_solver.discretisation import grid           as dis_grid
 from ..flow_solver.utils import variable                as var
 from ..flow_solver.utils import boundary as bdry
+from ..flow_solver.physics import hydrostatics
 from ..flow_solver.physics.low_mach import mpv          as lm_var
 from ..flow_solver.physics.gas_dynamics import thermodynamics as gd_thermodynamics
 
@@ -85,6 +86,9 @@ def initialise():
     # )
 
     ensemble_state = data_structures.EnsembleState()
+
+    sol = sol_init(sol, mpv, elem, node, th, ud)
+
     ensemble_state.update_member(
                 elem=elem,
                 node=node,
@@ -118,3 +122,21 @@ def initialise():
     )
 
     return sim_st
+
+
+def overwrite_init_with_restart(sst):
+    es = sst.ensemble_state
+    rp = sst.restart_params
+
+    hydrostatics.state(es.mpv, es.elem, es.node, es.th, es.ud)
+    sst.ud.old_suffix = np.copy(sst.ud.output_suffix)
+    sst.ud.old_suffix = "_ensemble=%i%s" % (sst.N, sst.ud.old_suffix)
+    Sol0, mpv0, touts = io.sim_restart(
+        rp.r_params[0], rp.r_params[1], es.elem, es.node, es.ud, es.Sol, es.mpv, rp.r_params[2]
+    )
+    sol_ens = [[Sol0, es.flux, mpv0, [-np.inf, sst.step]]]
+    # ud.tout = touts[1:]
+    sst.ud.tout = [touts[-1]]
+    sst.t = touts[0]
+
+    sst.ensemble_state = sol_ens

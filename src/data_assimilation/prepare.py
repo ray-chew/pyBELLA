@@ -4,7 +4,6 @@ from copy import deepcopy
 
 import numpy as np
 
-from ..flow_solver.physics import hydrostatics
 from ..utils import sim_params as params
 from ..utils import io
 from ..utils import data_structures
@@ -15,7 +14,7 @@ from . import letkf as da_letkf
 
 
 def initialise(sst):
-    mp = sst.model_state
+    es = sst.ensemble_state
     rp = sst.restart_params
 
     ##########################################################
@@ -32,7 +31,7 @@ def initialise(sst):
 
     # if elem.ndim == 2:
     if dap.da_type == "rloc" and sst.N > 1:
-        rloc = da_letkf.prepare_rloc(mp.ud, mp.elem, mp.node, dap, sst.N)
+        rloc = da_letkf.prepare_rloc(es.ud, es.elem, es.node, dap, sst.N)
     else:
         rloc = None
 
@@ -43,33 +42,24 @@ def initialise(sst):
     np.random.seed(params.random_seed)
 
     seeds = np.random.randint(10000, size=sst.N) if sst.N > 1 else None
-    if seeds is not None and sst.restart == False:
+
+    if sst.N > 1:
         logging.info("Seeds used in generating initial ensemble spread = ", seeds)
         for n in range(sst.N):
             Sol0 = deepcopy(sst.Sol)
             mpv0 = deepcopy(sst.mpv)
-            Sol0 = sst.sol_init(Sol0, mpv0, mp.elem, mp.node, mp.th, mp.ud, seed=seeds[n])
-            # sol_ens[n] = [Sol0, deepcopy(mp.flux), mpv0, [-np.inf, mp.step]]
-            sol_ens.update_member(mp.elem, mp.node, Sol0, mpv0, deepcopy(mp.flux), mp.th)
-    elif sst.restart == False:
+            Sol0 = sst.sol_init(Sol0, mpv0, es.elem, es.node, es.th, es.ud, seed=seeds[n])
+            # sol_ens[n] = [Sol0, deepcopy(es.flux), mpv0, [-np.inf, es.step]]
+            sol_ens.update_member(es.elem, es.node, Sol0, mpv0, deepcopy(es.flux), es.th)
+
+            sst.ensembble_state = sol_ens
+    # elif sst.restart == False:
         # sol_ens = [[sst.sol_init(mp.Sol, mp.mpv, mp.elem, mp.node, mp.th, sst.ud), mp.flux, mp.mpv, [-np.inf, sst.step]]]
-        sol_ens.update_member(mp.elem, mp.node, sst.sol_init(mp.Sol, mp.mpv, mp.elem, mp.node, mp.th, sst.ud), mp.mpv, deepcopy(mp.flux), mp.th)
-        for n in range(sst.N):
-            sol_ens.get_member(n).time.t = -np.inf
-    elif sst.restart == True:
-        hydrostatics.state(mp.mpv, mp.elem, mp.node, mp.th, mp.ud)
-        sst.ud.old_suffix = np.copy(sst.ud.output_suffix)
-        sst.ud.old_suffix = "_ensemble=%i%s" % (sst.N, sst.ud.old_suffix)
-        Sol0, mpv0, touts = io.sim_restart(
-            rp.r_params[0], rp.r_params[1], mp.elem, mp.node, mp.ud, mp.Sol, mp.mpv, rp.r_params[2]
-        )
-        sol_ens = [[Sol0, mp.flux, mpv0, [-np.inf, sst.step]]]
-        # ud.tout = touts[1:]
-        sst.ud.tout = [touts[-1]]
-        sst.t = touts[0]
+        # sol_ens.update_member(mp.elem, mp.node, sst.sol_init(mp.Sol, mp.mpv, mp.elem, mp.node, mp.th, sst.ud), mp.mpv, deepcopy(mp.flux), mp.th)
+        # for n in range(sst.N):
+        #     sol_ens.get_member(n).time.t = -np.inf
 
     # ens = da_utils.ensemble(sol_ens)
-    ens = sol_ens
 
     ##########################################################
     # Load data assimilation observations
@@ -79,8 +69,8 @@ def initialise(sst):
     if sst.N > 1:
         obs = dap.load_obs(dap.obs_path)
         # obs_mask, no calculations where entries are True
-        obs_mask = da_utils.sparse_obs_selector(obs, mp.elem, mp.node, sst.ud, dap)
-        obs_noisy, obs_covar = da_utils.obs_noiser(obs, obs_mask, dap, rloc, mp.elem)
+        obs_mask = da_utils.sparse_obs_selector(obs, es.elem, es.node, sst.ud, dap)
+        obs_noisy, obs_covar = da_utils.obs_noiser(obs, obs_mask, dap, rloc, es.elem)
     else:
         obs, obs_noisy, obs_mask, obs_covar = None, None, None, None
 

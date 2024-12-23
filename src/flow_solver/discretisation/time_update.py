@@ -61,16 +61,9 @@ def data_init(ud):
 
 
 def do(
-    Sol,
-    flux,
-    mpv,
-    t,
+    sst,
+    mem,
     tout,
-    ud,
-    elem,
-    node,
-    steps,
-    th,
     bld=None,
     writer=None,
     debug=False,
@@ -121,9 +114,12 @@ def do(
     list
         A list of `[Sol,flux,mpv,[window_step,step]]` data containers at time `tout`.
     """
+    ud = sst.ud
+    elem, node, Sol, flux, mpv, th, time = mem
 
-    window_step = steps[0]
-    step = steps[1]
+    window_step = time.window_step
+    step = time.step
+    t = time.t
     swe_to_lake = False
 
     while (t < tout) and (step < ud.stepmax):
@@ -332,7 +328,7 @@ def do(
         if ud.is_nonhydrostatic == 0 or (ud.is_compressible == 1 and ud.is_nonhydrostatic == 1):
             mpv.p2_nodes[...] = mpv.p2_nodes0
 
-        Sol = copy.deepcopy(Sol0)
+        # Sol = copy.deepcopy(Sol0)
 
         # Sol.rhov0 = np.copy(Sol.rhov)
         Sol.rho_half = rho_half
@@ -645,4 +641,8 @@ def do(
         step += 1
         window_step += 1
 
-    return [Sol, flux, mpv, [window_step, step]]
+        time.step = step
+        time.window_step = window_step
+
+    return mem
+    # return [Sol, flux, mpv, [window_step, step]]

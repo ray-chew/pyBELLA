@@ -28,9 +28,12 @@ from .utils import (
 ##########################################################
 def main():
     sim_state = prepare.initialise()
-
     blending_prepare.initialise(sim_state)
     da_prepare.initialise(sim_state)
+
+    if sim_state.restart:
+        prepare.overwrite_init_with_restart(sim_state)
+
     writer, step_writer = io.initialise(sim_state)
 
     tic = time.time()
@@ -44,12 +47,12 @@ def main():
     for tout in sim_state.ud.tout:
 
         sst = sim_state
-        mp = sst.model_params
+        es = sst.ensemble_state
         dp = sst.da_params
-        ens = dp.sol_ens
 
         futures = []
 
+        # based on the initial blending parameter, define if we want to blend for this assimilation window or simulaiton run.
         blend = blending_prepare.init_da_window(sim_state, tout_old, outer_step)
 
         ######################################################
@@ -58,26 +61,19 @@ def main():
         logging.info("##############################################")
         logging.info("Next tout = %.3f" % tout)
         logging.info("Starting forecast...")
-        mem_cnt = 0
-        for mem in ens.members(ens):
-
+        for cnt, mem in enumerate(es):
             # handling of DA window step counter
             if sst.N > 1:
-                mem[3][0] = 0 if tout_old in dp.dap.da_times else mem[3][0]
+                if tout_old in dp.dap.da_times:
+                    mem.time.window_step = 0 
             if sst.N == 1:
-                mem[3][0] = mem[3][1]
-            logging.info("For ensemble member = %i..." % mem_cnt)
-            future = dis_time_update.do(
-                mem[0],
-                mem[1],
-                mem[2],
-                sst.t,
+                mem.time.window_step = mem.time.step
+
+            logging.info("For ensemble member = %i..." % cnt)
+            mem = dis_time_update.do(
+                sst,
+                mem,
                 tout,
-                sst.ud,
-                mp.elem,
-                mp.node,
-                mem[3],
-                mp.th,
                 blend,
                 step_writer,
                 params.debug,
@@ -85,18 +81,14 @@ def main():
 
             if sst.ud.diag:
                 sst.diag_comparison.test_do(
-                    future[0], future[2].p2_nodes, plot=sst.ud.diag_plot_compare
+                    mem.sol, mem.mpv.p2_nodes, plot=sst.ud.diag_plot_compare
                 )
 
-            futures.append(future)
-            mem_cnt += 1
+            futures.append(mem)
 
         # Dask commands, used only when parallelisation is
         # enabled
-        # results = client.gather(futures)
-        results = np.copy(futures)
-        results = np.array(results)
-        # s_res = client.scatter(results)
+        results = np.array(futures)
 
         da_analysis.do_for_window(tout, outer_step, results, sst, writer)
 
@@ -116,7 +108,7 @@ def main():
             writer.write_all(Sol, mpv, mp.elem, mp.node, mp.th, str(label) + "_after_full_step")
 
         # synchronise_variables(mpv, Sol, elem, node, ud, th)
-        t = tout
+        # sst.t = tout
         tout_old = np.copy(tout)
         logging.info("tout = %.3f" % tout)
 
