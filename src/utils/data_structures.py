@@ -94,6 +94,7 @@ class DiagnosticState:
     Ny: int
     steps: list
     path: str = "./outputs/"
+    plot_compare: bool = False
 
 
 @dataclass

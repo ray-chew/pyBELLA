@@ -81,7 +81,7 @@ def main():
 
             if sst.ud.diag:
                 sst.diag_comparison.test_do(
-                    mem.sol, mem.mpv.p2_nodes, plot=sst.ud.diag_plot_compare
+                    mem.sol, mem.mpv.p2_nodes, plot=sst.ud.diag_state.plot_compare
                 )
 
             futures.append(mem)

@@ -7,6 +7,8 @@ from ..flow_solver.utils import (
 
 from ..flow_solver.physics import hydrostatics
 
+from .. utils.data_structures import DiagnosticState
+
 class UserData(object):
     NSPEC = 1
     grav = 9.81                 # [m s^{-2}]
@@ -140,8 +142,14 @@ class UserData(object):
         self.output_suffix = "_%i_%i" %(self.inx-1,self.iny-1)
 
         self.diag = True
-        self.diag_current_run = 'test_lamb_wave'
-        self.diag_plot_compare = False
+        self.diag_state = DiagnosticState(
+            test_name="test_lamb_wave",
+            file_name="test_lamb_wave",
+            Nx=self.inx,
+            Ny=self.iny,
+            steps=[self.stepmax],
+        )
+
 
         self.stratification = self.stratification_wrapper
         self.rayleigh_bc = self.rayleigh_bc_function

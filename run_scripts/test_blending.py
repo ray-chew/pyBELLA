@@ -2,7 +2,7 @@ import pytest
 import subprocess
 
 @pytest.mark.parametrize("ic", 
-                        ["test_travelling_vortex",])
+                        ["test_blending_warm_bubble",])
 def test_single_run(ic):
     result = subprocess.run(
     ["pybella", "-ic", ic, "-N", "1"],

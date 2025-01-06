@@ -6,6 +6,8 @@ from  ..flow_solver.utils import (
 from ..flow_solver.physics import hydrostatics
 from ..flow_solver.physics.low_mach import second_projection as lm_sp
 
+from .. utils.data_structures import DiagnosticState
+
 import logging
 
 
@@ -144,8 +146,14 @@ class UserData(object):
         self.output_timesteps = True
 
         self.diag = True
-        self.diag_current_run = "test_travelling_vortex"
-        self.diag_plot_compare = False
+
+        self.diag_state = DiagnosticState(
+            test_name="test_travelling_vortex",
+            file_name="test_travelling_vortex",
+            Nx=self.inx,
+            Ny=self.iny,
+            steps=[self.stepmax],
+        )
 
         self.autogen_fn = False
 

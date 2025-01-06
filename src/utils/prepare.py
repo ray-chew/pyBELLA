@@ -67,7 +67,7 @@ def initialise():
     # Initialise test module
     ##########################################################
     if ud.diag:
-        diag_comparison = diag.compare_sol(ud.diag_current_run)
+        diag_comparison = diag.compare_sol(ud.diag_state)
     else:
         diag_comparison = None
 

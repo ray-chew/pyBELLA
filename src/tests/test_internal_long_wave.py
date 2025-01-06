@@ -7,6 +7,7 @@ from ..flow_solver.utils import(
 )
 from ..flow_solver.physics import hydrostatics
 
+from ..utils.data_structures import DiagnosticState
 
 class UserData(object):
     NSPEC = 1
@@ -157,8 +158,14 @@ class UserData(object):
         self.rhoe = self.rhoe_method
 
         self.diag = True
-        self.diag_current_run = "test_internal_long_wave"
-        self.diag_plot_compare = False
+
+        self.diag_state = DiagnosticState(
+            test_name="test_internal_long_wave",
+            file_name="test_internal_long_wave",
+            Nx=self.inx,
+            Ny=self.iny,
+            steps=[self.stepmax],
+        )
 
     def stratification_function(self, y):
         Nsq = self.Nsq_ref * self.t_ref * self.t_ref

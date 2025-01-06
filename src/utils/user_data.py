@@ -112,7 +112,7 @@ class UserDataInit(object):
             # DIAGNOSTICS
             ##########################################
             self.diag = False
-            self.diag_plot_compare = False
+            self.diag_state = None
 
 
             ##########################################
@@ -128,53 +128,53 @@ class UserDataInit(object):
             for key, value in kwargs.items():
                 setattr(self, key, value)
 
-    # def compute_u_ref(self):
-    #     self.u_ref = self.h_ref / self.t_ref
-    #     self.compute_Msq()
+    def compute_u_ref(self):
+        self.u_ref = self.h_ref / self.t_ref
+        self.compute_Msq()
 
 
-    # def compute_Msq(self):
-    #     self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
+    def compute_Msq(self):
+        self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
 
 
-    # def compute_gravity(self):
-    #     self.i_gravity = np.zeros((3))
-    #     self.gravity_strength = np.zeros((3))
+    def compute_gravity(self):
+        self.i_gravity = np.zeros((3))
+        self.gravity_strength = np.zeros((3))
 
-    #     self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
+        self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
 
-    #     for i in range(3):
-    #         if (self.gravity_strength[i] > 0.0) or (i == 1):
-    #             self.i_gravity[i] = 1
-    #             self.gravity_direction = i
-
-
-    # def compute_coriolis(self):
-    #     self.i_coriolis = np.zeros((3))
-    #     self.coriolis_strength = np.zeros((3))
-
-    #     self.coriolis_strength[0] = self.omega * self.t_ref
-    #     self.coriolis_strength[2] = self.omega * self.t_ref
+        for i in range(3):
+            if (self.gravity_strength[i] > 0.0) or (i == 1):
+                self.i_gravity[i] = 1
+                self.gravity_direction = i
 
 
-    # def compute_cp_gas(self):
-    #     self.cp_gas = self.gamm * self.R_gas / (self.gamm-1.0)
+    def compute_coriolis(self):
+        self.i_coriolis = np.zeros((3))
+        self.coriolis_strength = np.zeros((3))
 
-    #     if all(hasattr(self, attr) for attr in ["grav", "cp_gas", "T_ref"]):
-    #         self.compute_N_ref()
-
-
-    # def compute_rho_ref(self):
-    #     self.rho_ref = self.p_ref / (self.R_gas * self.T_ref)
+        self.coriolis_strength[0] = self.omega * self.t_ref
+        self.coriolis_strength[2] = self.omega * self.t_ref
 
 
-    # def compute_N_ref(self):
-    #     self.N_ref = self.grav / np.sqrt(self.cp_gas * self.T_ref)
-    #     self.Nsq_ref = self.N_ref * self.N_ref
+    def compute_cp_gas(self):
+        self.cp_gas = self.gamm * self.R_gas / (self.gamm-1.0)
+
+        if all(hasattr(self, attr) for attr in ["grav", "cp_gas", "T_ref"]):
+            self.compute_N_ref()
 
 
-    # def compute_Cs(self):
-    #     self.Cs = np.sqrt(self.gamm * self.R_gas * self.T_ref)
+    def compute_rho_ref(self):
+        self.rho_ref = self.p_ref / (self.R_gas * self.T_ref)
+
+
+    def compute_N_ref(self):
+        self.N_ref = self.grav / np.sqrt(self.cp_gas * self.T_ref)
+        self.Nsq_ref = self.N_ref * self.N_ref
+
+
+    def compute_Cs(self):
+        self.Cs = np.sqrt(self.gamm * self.R_gas * self.T_ref)
     
 
     @staticmethod
@@ -190,132 +190,132 @@ class UserDataInit(object):
     # # SETTER FUNCTIONS
     # ##########################################
 
-    # # gravity and Msq arguments
-    # @property
-    # def R_gas(self):
-    #     return self._R_gas
+    # gravity and Msq arguments
+    @property
+    def R_gas(self):
+        return self._R_gas
     
-    # @R_gas.setter
-    # def R_gas(self, val):
-    #     self._R_gas = val
+    @R_gas.setter
+    def R_gas(self, val):
+        self._R_gas = val
 
-    #     if all(hasattr(self, attr) for attr in ["grav", "h_ref", "R_gas", "T_ref"]):
-    #         self.compute_gravity()
+        if all(hasattr(self, attr) for attr in ["grav", "h_ref", "R_gas", "T_ref"]):
+            self.compute_gravity()
 
-    #     if all(hasattr(self, attr) for attr in ["u_ref, R_gas", "T_ref"]):
-    #         self.compute_Msq()
+        if all(hasattr(self, attr) for attr in ["u_ref, R_gas", "T_ref"]):
+            self.compute_Msq()
 
-    #     if all(hasattr(self, attr) for attr in ["gamm", "R_gas"]):
-    #         self.compute_cp_gas()
+        if all(hasattr(self, attr) for attr in ["gamm", "R_gas"]):
+            self.compute_cp_gas()
 
-    #     if all(hasattr(self, attr) for attr in ["p_ref, R_gas", "T_ref"]):
-    #         self.compute_rho_ref()
+        if all(hasattr(self, attr) for attr in ["p_ref, R_gas", "T_ref"]):
+            self.compute_rho_ref()
 
-    #     if all(hasattr(self, attr) for attr in ["gamm", "R_gas", "T_ref"]):
-    #         self.compute_Cs()
+        if all(hasattr(self, attr) for attr in ["gamm", "R_gas", "T_ref"]):
+            self.compute_Cs()
 
-    # @property
-    # def T_ref(self):
-    #     return self._T_ref
+    @property
+    def T_ref(self):
+        return self._T_ref
     
-    # @T_ref.setter
-    # def T_ref(self, val):
-    #     self._T_ref = val
+    @T_ref.setter
+    def T_ref(self, val):
+        self._T_ref = val
 
-    #     if all(hasattr(self, attr) for attr in ["grav", "h_ref", "R_gas", "T_ref"]):
-    #         self.compute_gravity()
+        if all(hasattr(self, attr) for attr in ["grav", "h_ref", "R_gas", "T_ref"]):
+            self.compute_gravity()
 
-    #     if all(hasattr(self, attr) for attr in ["u_ref", "R_gas", "T_ref"]):
-    #         self.compute_Msq()
+        if all(hasattr(self, attr) for attr in ["u_ref", "R_gas", "T_ref"]):
+            self.compute_Msq()
 
-    #     if all(hasattr(self, attr) for attr in ["p_ref", "R_gas", "T_ref"]):
-    #         self.compute_rho_ref()
+        if all(hasattr(self, attr) for attr in ["p_ref", "R_gas", "T_ref"]):
+            self.compute_rho_ref()
 
-    #     if all(hasattr(self, attr) for attr in ["grav", "cp_gas", "T_ref"]):
-    #         self.compute_N_ref()
+        if all(hasattr(self, attr) for attr in ["grav", "cp_gas", "T_ref"]):
+            self.compute_N_ref()
         
-    #     if all(hasattr(self, attr) for attr in ["gamm", "R_gas", "T_ref"]):
-    #         self.compute_Cs()
+        if all(hasattr(self, attr) for attr in ["gamm", "R_gas", "T_ref"]):
+            self.compute_Cs()
 
-    # # gravity arguments
-    # @property
-    # def grav(self):
-    #     return self._grav
+    # gravity arguments
+    @property
+    def grav(self):
+        return self._grav
     
-    # @grav.setter
-    # def grav(self, val):
-    #     self._grav = val
+    @grav.setter
+    def grav(self, val):
+        self._grav = val
 
-    #     if all(hasattr(self, attr) for attr in ["grav", "h_ref", "R_gas", "T_ref"]):
-    #         self.compute_gravity()
+        if all(hasattr(self, attr) for attr in ["grav", "h_ref", "R_gas", "T_ref"]):
+            self.compute_gravity()
 
-    #     if all(hasattr(self, attr) for attr in ["grav", "cp_gas", "T_ref"]):
-    #         self.compute_N_ref()
+        if all(hasattr(self, attr) for attr in ["grav", "cp_gas", "T_ref"]):
+            self.compute_N_ref()
 
-    # @property
-    # def h_ref(self):
-    #     return self._h_ref
+    @property
+    def h_ref(self):
+        return self._h_ref
     
-    # @h_ref.setter
-    # def h_ref(self, val):
-    #     self._h_ref = val
+    @h_ref.setter
+    def h_ref(self, val):
+        self._h_ref = val
 
-    #     if all(hasattr(self, attr) for attr in ["h_ref", "t_ref"]):
-    #         self.compute_u_ref()
+        if all(hasattr(self, attr) for attr in ["h_ref", "t_ref"]):
+            self.compute_u_ref()
         
-    #     if all(hasattr(self, attr) for attr in ["grav", "h_ref", "R_gas", "T_ref"]):
-    #         self.compute_gravity()
+        if all(hasattr(self, attr) for attr in ["grav", "h_ref", "R_gas", "T_ref"]):
+            self.compute_gravity()
 
-    # # coriolis arguments
-    # @property
-    # def t_ref(self):
-    #     return self._t_ref
+    # coriolis arguments
+    @property
+    def t_ref(self):
+        return self._t_ref
     
-    # @t_ref.setter
-    # def t_ref(self, val):
-    #     self._t_ref = val
+    @t_ref.setter
+    def t_ref(self, val):
+        self._t_ref = val
 
-    #     if all(hasattr(self, attr) for attr in ["h_ref", "t_ref"]):
-    #         self.compute_u_ref()
+        if all(hasattr(self, attr) for attr in ["h_ref", "t_ref"]):
+            self.compute_u_ref()
 
-    #     if all(hasattr(self, attr) for attr in ["omega", "t_ref"]):
-    #         self.compute_coriolis()
+        if all(hasattr(self, attr) for attr in ["omega", "t_ref"]):
+            self.compute_coriolis()
 
-    # @property
-    # def omega(self):
-    #     return self._omega
+    @property
+    def omega(self):
+        return self._omega
     
-    # @omega.setter
-    # def omega(self, val):
-    #     self._omega = val
+    @omega.setter
+    def omega(self, val):
+        self._omega = val
 
-    #     if all(hasattr(self, attr) for attr in ["omega", "t_ref"]):
-    #         self.compute_coriolis()
+        if all(hasattr(self, attr) for attr in ["omega", "t_ref"]):
+            self.compute_coriolis()
 
 
-    # # Cs and cp_gas argument
-    # @property
-    # def gamm(self):
-    #     return self._gamm
+    # Cs and cp_gas argument
+    @property
+    def gamm(self):
+        return self._gamm
     
-    # @gamm.setter
-    # def gamm(self, val):
-    #     self._gamm = val
+    @gamm.setter
+    def gamm(self, val):
+        self._gamm = val
 
-    #     if all(hasattr(self, attr) for attr in ["gamm", "R_gas"]):
-    #         self.compute_cp_gas()
+        if all(hasattr(self, attr) for attr in ["gamm", "R_gas"]):
+            self.compute_cp_gas()
         
-    #     if all(hasattr(self, attr) for attr in ["gamm", "R_gas", "T_ref"]):
-    #         self.compute_Cs()
+        if all(hasattr(self, attr) for attr in ["gamm", "R_gas", "T_ref"]):
+            self.compute_Cs()
 
-    # # rho_ref argument
-    # @property
-    # def p_ref(self):
-    #     return self._p_ref
+    # rho_ref argument
+    @property
+    def p_ref(self):
+        return self._p_ref
     
-    # @p_ref.setter
-    # def p_ref(self, val):
-    #     self._p_ref = val
+    @p_ref.setter
+    def p_ref(self, val):
+        self._p_ref = val
 
-    #     if all(hasattr(self, attr) for attr in ["p_ref, R_gas", "T_ref"]):
-    #         self.compute_rho_ref()
+        if all(hasattr(self, attr) for attr in ["p_ref, R_gas", "T_ref"]):
+            self.compute_rho_ref()

@@ -2,6 +2,8 @@ import numpy as np
 from ..flow_solver.physics import hydrostatics
 from ..flow_solver.utils import boundary as bdry
 
+from ..utils.data_structures import DiagnosticState
+
 class UserData(object):
     # Nsq_ref = grav * 1.3e-05
 
@@ -44,6 +46,15 @@ class UserData(object):
         # self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
         # self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))
 
+        self.diag = True
+
+        self.diag_state = DiagnosticState(
+            test_name="test_blending_warm_bubble",
+            file_name="test_blending_warm_bubble",
+            Nx=self.inx,
+            Ny=self.iny,
+            steps=[self.stepmax],
+        )
 
 def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     u0 = ud.u_wind_speed

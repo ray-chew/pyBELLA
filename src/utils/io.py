@@ -560,6 +560,7 @@ def get_args():
             "test_travelling_vortex",
             "test_internal_long_wave",
             "test_lamb_wave",
+            "test_blending_warm_bubble",
         },
     )
 

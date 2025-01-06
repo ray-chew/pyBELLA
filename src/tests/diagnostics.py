@@ -12,9 +12,10 @@ from ..vis import (
 
 
 class compare_sol(object):
-    def __init__(self, current_run):
-        self.current_run = current_run
-        self.__init()
+    def __init__(self, diag_state: DiagnosticState):
+        self.diag_state = diag_state
+        self.current_run = diag_state.test_name
+        self.__init(diag_state)
         self.__get_tc()
 
     def update_targets(self):
@@ -141,16 +142,16 @@ class compare_sol(object):
 
 
 class test_params(object):
-    def __init__(self, name, path, fn, Nx, Ny, times):
+    def __init__(self, ds: DiagnosticState):
 
-        self.name = name
-        self.dir = path + fn + "/"
-        self.fn = f"{fn}_{Nx}_{Ny}" 
+        self.name = ds.test_name
+        self.dir = ds.path + ds.file_name + "/"
+        self.fn = f"{ds.file_name}_{ds.Nx}_{ds.Ny}" 
 
-        self.Nx = Nx
-        self.Ny = Ny
+        self.Nx = ds.Nx
+        self.Ny = ds.Ny
 
-        self.times = times
+        self.times = ds.steps
         self.l_typ = "WINDOW_STEP"
 
         self.attributes = ["rho", "rhou", "rhov", "rhow", "rhoY", "rhoX", "p2_nodes"]
