@@ -79,6 +79,21 @@ class EnsembleState:
     
     def __getitem__(self, index):
         return self.members[index]
+    
+
+@dataclass
+class DiagnosticState:
+    """
+    Initialise diagnostic state for tests
+
+    Consider removing run-specific parameters, e.g., (Nx, Ny), in future.
+    """
+    test_name: str
+    file_name: str
+    Nx: int
+    Ny: int
+    steps: list
+    path: str = "./outputs/"
 
 
 @dataclass

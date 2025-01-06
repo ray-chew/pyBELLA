@@ -3,6 +3,8 @@ import logging
 import numpy as np
 import yaml
 
+from ..utils.data_structures import DiagnosticState
+
 from ..vis import (
     utils as vis_utils,
     plotting_tools as vis_pt
@@ -27,7 +29,7 @@ class compare_sol(object):
                     self.__get_ens(tc, tp, attribute, summed=True)
                 )
 
-        with open("./src/tests/test_targets.yml", "w") as outfile:
+        with open("./src/tests/test_targets.yml", "a") as outfile:
             yaml.dump(self.arr_dump, outfile, default_flow_style=False)
 
     def test_do(self, Sol, p2n, plot=False):
@@ -66,21 +68,13 @@ class compare_sol(object):
         {'#' * 10}
         """.strip())
 
-    def __init(self):
-        path = "./outputs/"
+    def __init(self, ds: DiagnosticState
+               ):
 
-        tv_2D = test_params(
-            "test_travelling_vortex", path, "target_travelling_vortex", 64, 64, [100]
-        )
-        igw = test_params(
-            "test_internal_long_wave", path, "target_internal_long_wave", 301, 10, [30]
-        )
-        lmbw = test_params("test_lamb_wave", path, "target_lamb_wave", 151, 15, [30])
+        tp = test_params(ds)
 
         self.tps = {
-            "test_travelling_vortex": tv_2D,
-            "test_internal_long_wave": igw,
-            "test_lamb_wave": lmbw,
+            ds.test_name: tp,
         }
         # self.tps = [tv_2D]
 
@@ -151,7 +145,7 @@ class test_params(object):
 
         self.name = name
         self.dir = path + fn + "/"
-        self.fn = "%s_%i_%i" % (fn, Nx, Ny)
+        self.fn = f"{fn}_{Nx}_{Ny}" 
 
         self.Nx = Nx
         self.Ny = Ny

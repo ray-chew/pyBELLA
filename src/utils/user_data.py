@@ -177,14 +177,14 @@ class UserDataInit(object):
     #     self.Cs = np.sqrt(self.gamm * self.R_gas * self.T_ref)
     
 
-    # @staticmethod
-    # def stratification_function(y):
-    #     return 1.0
+    @staticmethod
+    def stratification_function(y):
+        return 1.0
 
 
-    # def update_ud(self, obj):
-    #     for key, value in obj.items():
-    #         setattr(self, key, value)
+    def update_ud(self, obj):
+        for key, value in obj.items():
+            setattr(self, key, value)
 
     # ##########################################
     # # SETTER FUNCTIONS

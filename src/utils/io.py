@@ -646,6 +646,8 @@ def get_args():
         from ..tests.test_internal_long_wave import UserData, sol_init
     elif ic == "test_lamb_wave":
         from ..tests.test_lamb_wave import UserData, sol_init
+    elif ic == "test_blending_warm_bubble":
+        from ..tests.test_blending_warm_bubble import UserData, sol_init
 
     if UserData is None or sol_init is None:
         assert 0, "Initial condition file is not well defined."
