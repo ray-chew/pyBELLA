@@ -41,7 +41,7 @@ class UserData(object):
 
         self.initial_blending = True
         
-        aux = 'debug_imbal_CFLfixed'
+        aux = 'CFLfixed'
         self.aux = aux
         # self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
         # self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))

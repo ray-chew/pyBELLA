@@ -1,7 +1,6 @@
 import logging
 import copy
 
-import termcolor
 import numpy as np
 from scipy import signal
 
@@ -105,7 +104,7 @@ class Blend(object):
 
 
 def do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer):
-    logging.info(termcolor.colored("Converting COMP to PSINC", "blue"))
+    logging.info("Converting COMP to PSINC")
     dp2n = mpv.p2_nodes
     bld.convert_p2n(dp2n)
     bld.update_Sol(Sol, elem, node, th, ud, mpv, "bef", label=label, writer=writer)
@@ -117,13 +116,13 @@ def do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer):
 def do_psinc_to_comp_conv(
     Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt
 ):
-    from flow_solver.discretisation import time_update
+    from ...flow_solver.discretisation import time_update
 
-    logging.info(termcolor.colored("Blending... step = %i" % step, "blue"))
+    logging.info(f"Blending... step = {step}")
     Sol_freeze = copy.deepcopy(Sol)
     mpv_freeze = copy.deepcopy(mpv)
 
-    ret = time_update.time_update(
+    ret = time_update.do(
         Sol,
         flux,
         mpv,
@@ -162,7 +161,7 @@ def do_psinc_to_comp_conv(
 
     if writer != None:
         writer.populate(str(label) + "_after_full_step", "dp2n", dp2n)
-    logging.info(termcolor.colored("Converting PSINC to COMP", "blue"))
+    logging.info("Converting PSINC to COMP")
     bld.convert_p2n(dp2n)
     bld.update_Sol(Sol, elem, node, th, ud, mpv, "aft", label=label, writer=writer)
     bld.update_p2n(Sol, mpv, node, th, ud)
@@ -176,7 +175,7 @@ def do_psinc_to_comp_conv(
 
 
 def do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
-    logging.info(termcolor.colored("swe to lake conversion...", "blue"))
+    logging.info("swe to lake conversion...")
 
     H1 = Sol.rho[
         :,
@@ -215,7 +214,7 @@ def do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug):
 def do_lake_to_swe_conv(
     Sol, flux, mpv, elem, node, ud, th, writer, label, debug, step, window_step, t, dt
 ):
-    from flow_solver.discretisation import time_update
+    from ...flow_solver.discretisation import time_update
 
     if debug == True:
         writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_lake_time_step")
@@ -223,7 +222,7 @@ def do_lake_to_swe_conv(
     Sol_freeze = copy.deepcopy(Sol)
     mpv_freeze = copy.deepcopy(mpv)
 
-    logging.info(termcolor.colored("doing lake-to-swe time-update...", "blue"))
+    logging.info("doing lake-to-swe time-update...")
     ret = time_update.time_update(
         Sol,
         flux,
@@ -259,7 +258,7 @@ def do_lake_to_swe_conv(
     mpv.p2_nodes[...] = dp2n
 
     H10 = mpv.p2_nodes[:, 2:-2, :].mean(axis=1)
-    logging.info(termcolor.colored("lake to swe conversion...", "blue"))
+    logging.info("lake to swe conversion...")
     H10 -= H10.mean()
 
     # define 2D kernel
@@ -294,7 +293,7 @@ def do_nonhydro_to_hydro_conv(
     Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt
 ):
 
-    logging.info(termcolor.colored("nonhydrostatic to hydrostatic conversion...", "blue"))
+    logging.info("nonhydrostatic to hydrostatic conversion...")
     # bld.convert_p2n(mpv.p2_nodes)
     # bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
     # Sol.rhov = Sol.rhov_half
@@ -324,8 +323,8 @@ def do_hydro_to_nonhydro_conv(
     Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt
 ):
 
-    logging.info(termcolor.colored("hydrostatic to nonhydrostatic conversion...", "blue"))
-    logging.info(termcolor.colored("Blending... step = %i" % step, "blue"))
+    logging.info("hydrostatic to nonhydrostatic conversion...")
+    logging.info(f"Blending... step = {step}")
 
     # Sol_tmp = deepcopy(Sol)
     # flux_tmp = deepcopy(flux)
@@ -383,13 +382,8 @@ def do_hydro_to_nonhydro_conv(
 # Blending calls from data.py
 ######################################################
 def blending_before_timestep(
-    Sol,
-    flux,
-    mpv,
+    mem,
     bld,
-    elem,
-    node,
-    th,
     ud,
     label,
     writer,
@@ -403,6 +397,9 @@ def blending_before_timestep(
     ######################################################
     # Blending : Do full regime to limit regime conversion
     ######################################################
+    # do unpacking
+    elem, node, Sol, flux, mpv, th, time = mem
+
     # these make sure that we are the correct window step
     if bld is not None and window_step == 0:
         # these make sure that blending switches are on
