@@ -382,8 +382,14 @@ def do_hydro_to_nonhydro_conv(
 # Blending calls from data.py
 ######################################################
 def blending_before_timestep(
-    mem,
+    # Sol,
+    # flux,
+    # mpv,
     bld,
+    mem,
+    # elem,
+    # node,
+    # th,
     ud,
     label,
     writer,
