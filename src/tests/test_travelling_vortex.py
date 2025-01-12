@@ -146,13 +146,14 @@ class UserData(object):
         self.output_timesteps = True
 
         self.diag = True
+        self.diag_updt_targets = False
 
         self.diag_state = DiagnosticState(
             test_name="test_travelling_vortex",
             file_name="test_travelling_vortex",
-            Nx=self.inx,
-            Ny=self.iny,
-            steps=[self.stepmax],
+            Nx=self.inx-1,
+            Ny=self.iny-1,
+            steps=[self.stepmax-1],
         )
 
         self.autogen_fn = False

@@ -22,3 +22,11 @@ test_travelling_vortex:
   rhou: 4422.43359375
   rhov: 4408.03857421875
   rhow: 0.0
+test_blending_warm_bubble:
+  p2_nodes: -16146.2158203125
+  rho: 2415.7255859375
+  rhoX: 289.7033386230469
+  rhoY: 2416.049072265625
+  rhou: -9.5367431640625e-07
+  rhov: 554.5759887695312
+  rhow: 0.0

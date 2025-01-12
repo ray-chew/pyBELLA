@@ -58,7 +58,7 @@ class UserData(object):
             file_name="test_blending_warm_bubble",
             Nx=self.inx-1,
             Ny=self.iny-1,
-            steps=[self.stepmax],
+            steps=[self.stepmax-1],
             plot_compare=True
         )
 
