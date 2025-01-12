@@ -47,11 +47,15 @@ class Blend(object):
 
         return dp2c
 
-    def update_Sol(self, Sol, elem, node, th, ud, mpv, sgn, label=None, writer=None):
+    def update_sol(self, mem, ud, sgn, label=None, writer=None):
         if writer != None:
             writer.populate(str(label) + "_before_blending", "dp2n", self.dp2n)
         if writer != None:
-            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_before_blending")
+            writer.write_all(mem, str(label) + "_before_blending")
+
+        Sol = mem.sol
+        mpv = mem.mpv
+        th  = mem.th
 
         if sgn == "bef":
             sign = -1.0
@@ -92,9 +96,9 @@ class Blend(object):
             assert 0, "ud.blending_conv undefined."
 
         if writer != None:
-            writer.write_all(Sol, mpv, elem, node, th, str(label) + "_after_blending")
+            writer.write_all(mem, str(label) + "_after_blending")
 
-    def update_p2n(self, Sol, mpv, node, th, ud):
+    def update_p2n(self, mpv):
         mpv.p2_nodes = self.dp2n
 
 
@@ -103,14 +107,14 @@ class Blend(object):
 ######################################################
 
 
-def do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer):
+def do_comp_to_psinc_conv(mem, bld, ud, label, writer):
     logging.info("Converting COMP to PSINC")
-    dp2n = mpv.p2_nodes
+    dp2n = mem.mpv.p2_nodes
     bld.convert_p2n(dp2n)
-    bld.update_Sol(Sol, elem, node, th, ud, mpv, "bef", label=label, writer=writer)
-    bld.update_p2n(Sol, mpv, node, th, ud)
+    bld.update_sol(mem, ud, "bef", label=label, writer=writer)
+    bld.update_p2n(mem.mpv)
 
-    return Sol, mpv
+    return mem
 
 
 def do_psinc_to_comp_conv(
@@ -121,9 +125,6 @@ def do_psinc_to_comp_conv(
     logging.info(f"Blending... step = {step}")
     Sol_freeze = copy.deepcopy(mem.sol)
     mpv_freeze = copy.deepcopy(mem.mpv)
-
-    mem.time.step -= 1
-    mem.time.window_step = 0
 
     ret = time_update.do(
         sst,
@@ -153,20 +154,23 @@ def do_psinc_to_comp_conv(
             str(label) + "_after_full_step", "p2_start", mpv_freeze.p2_nodes
         )
     if writer != None:
-        writer.populate(str(label) + "_after_full_step", "p2_end", ret[2].p2_nodes)
-    Sol = Sol_freeze
-    mpv = mpv_freeze
+        writer.populate(str(label) + "_after_full_step", "p2_end", ret.mpv.p2_nodes)
+    mem.Sol = Sol_freeze
+    mem.mpv = mpv_freeze
 
-    elem, node, _, _, _, th, _ = mem
+    # elem, node, _, _, _, th, _ = mem
 
     if writer != None:
         writer.populate(str(label) + "_after_full_step", "dp2n", dp2n)
     logging.info("Converting PSINC to COMP")
     bld.convert_p2n(dp2n)
-    bld.update_Sol(Sol, elem, node, th, ud, mpv, "aft", label=label, writer=writer)
-    bld.update_p2n(Sol, mpv, node, th, ud)
+    bld.update_sol(mem, ud, "aft", label=label, writer=writer)
+    bld.update_p2n(mem.mpv)
 
-    return Sol, mpv
+    # mem.time.step -= 1
+    # mem.time.window_step -= 1
+
+    return mem
 
 
 ######################################################
@@ -410,13 +414,9 @@ def blending_before_timestep(
                 do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug)
                 swe_to_lake = True
             else:
-                Sol, mpv = do_comp_to_psinc_conv(
-                    Sol, mpv, bld, elem, node, th, ud, label, writer
+                mem = do_comp_to_psinc_conv(
+                    mem, bld, ud, label, writer
                 )
-
-
-            mem.Sol = Sol
-            mem.mpv = mpv
 
     ######################################################
     # Blending : Do full steps or transition steps?
@@ -454,8 +454,8 @@ def blending_before_timestep(
             if bld.psinc_init > 0:
                 ud.is_compressible = 0
                 ud.compressibility = 0.0
-                Sol, mpv = do_comp_to_psinc_conv(
-                    Sol, mpv, bld, elem, node, th, ud, label, writer
+                mem = do_comp_to_psinc_conv(
+                    mem, bld, ud, label, writer
                 )
             elif bld.hydro_init > 0:
                 Sol, mpv, t = do_nonhydro_to_hydro_conv(

@@ -638,8 +638,9 @@ def do(
         step += 1
         window_step += 1
 
-        time.step = step
-        time.window_step = window_step
+        mem.time.step = step
+        mem.time.window_step = window_step
+        mem.time.t = t
 
         mem.sol = Sol
         mem.flux = flux

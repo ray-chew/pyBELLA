@@ -158,6 +158,7 @@ class UserData(object):
         self.rhoe = self.rhoe_method
 
         self.diag = True
+        self.diag_updt_targets = False
 
         self.diag_state = DiagnosticState(
             test_name="test_internal_long_wave",

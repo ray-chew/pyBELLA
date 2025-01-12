@@ -11,7 +11,7 @@ from ..vis import (
 )
 
 
-class compare_sol(object):
+class CompareSol(object):
     def __init__(self, diag_state: DiagnosticState):
         self.diag_state = diag_state
         self.current_run = diag_state.test_name
@@ -52,16 +52,20 @@ class compare_sol(object):
             else:
                 test = p2n.astype("float32").sum()
 
-            ## use try and except
-            assert (
-                np.isclose(ref, test)
-            ), "sum for attribute %s of %s changed with discrepancy:\n%.6f\n%.6f" % (
-                key,
-                self.current_run,
-                ref,
-                test,
-            )
-            print(f"test passed for {key}")
+
+            try:
+                assert (
+                    np.isclose(ref, test)
+                ), "sum for attribute %s of %s changed with discrepancy:\n%.16f\n%.16f" % (
+                    key,
+                    self.current_run,
+                    ref,
+                    test,
+                )
+                logging.info(f"test passed for {key}")
+            except AssertionError as e:
+                logging.info(str(e))
+                raise
 
         logging.info(f"""
         {'#' * 10}
@@ -98,7 +102,7 @@ class compare_sol(object):
         for attribute in tp.attributes:
             arr_plots = []
 
-            ref_sol = self.__get_ens(tc, tp, attribute).T
+            ref_sol = self.__get_ens(tc, tp, attribute, summed=False).T
 
             if attribute != "p2_nodes":
                 test_sol = getattr(Sol, attribute).T
@@ -114,7 +118,7 @@ class compare_sol(object):
             pl.img.savefig(tp.dir + attribute + ".png")
 
     @staticmethod
-    def __get_ens(tc, params, attribute, summed=False):
+    def __get_ens(tc, params, attribute, summed=True, normed=False):
         times = params.times
         l_typ = params.l_typ
 
@@ -137,8 +141,10 @@ class compare_sol(object):
 
         if summed:
             return ens.sum()
-        else:
+        elif normed:
             return np.linalg.norm(ens)
+        else:
+            return ens
 
 
 class test_params(object):

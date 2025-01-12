@@ -14,18 +14,19 @@ class UserData(object):
         ##########################################
         # NUMERICS
         ##########################################
-        self.CFL  = 0.5
-        self.dtfixed0 = 100.0
-        self.dtfixed = 100.0
+        self.CFL  = 0.9
+        self.dtfixed0 = 0.01
+        self.dtfixed = 0.01
 
-        self.inx = 160+1
-        self.iny = 80+1
+        self.inx = 64+1
+        self.iny = 48+1
         self.inz = 1
 
-        self.tout = np.arange(0.0,1.01,0.01)[10:]
-        self.stepmax = 10000
+        self.tout = [100.0]
+        self.stepmax = 31
 
-        self.output_base_name = "_rising_bubble"
+        self.is_compressible = 1
+
         # if self.is_compressible == 1:
         #     self.output_suffix = "_%i_%i_%.1f_comp" %(self.inx-1,self.iny-1,self.tout[-1])
         # if self.is_compressible == 0:
@@ -34,27 +35,34 @@ class UserData(object):
         #     self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
 
         self.continuous_blending = False
-        self.no_of_pi_initial = 1
+        self.no_of_pi_initial = 0
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.initial_blending = True
+        self.initial_blending = False
         
-        aux = 'CFLfixed'
-        self.aux = aux
-        # self.output_suffix = "_%i_%i_%.1f_%s" %(self.inx-1,self.iny-1,self.tout[-1],aux)
-        # self.output_suffix += '_w=%i-%i' %(self.blending_weight*16.0,16.0-(self.blending_weight*16.0))
+        self.output_base_name = "_blending_warm_bubble"
+        self.output_type = "test"
+        self.aux = ''
+
+        self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
+
+        self.output_timesteps = True
 
         self.diag = True
+        self.diag_updt_targets = False
 
         self.diag_state = DiagnosticState(
             test_name="test_blending_warm_bubble",
             file_name="test_blending_warm_bubble",
-            Nx=self.inx,
-            Ny=self.iny,
+            Nx=self.inx-1,
+            Ny=self.iny-1,
             steps=[self.stepmax],
+            plot_compare=True
         )
+
+        self.autogen_fn = False
 
 def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     u0 = ud.u_wind_speed
@@ -65,27 +73,12 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     y0 = 0.2
     r0 = 0.2
 
-    g = ud.gravity_strength[1]
-    # print(ud.rho_ref)
-
     hydrostatics.state(mpv, elem, node, th, ud)
 
     x = elem.x
     y = elem.y
 
     x, y = np.meshgrid(x,y)
-
-    if seed != None:
-        np.random.seed(seed)
-        # y0 += (np.random.random()-.5)/2.0
-        # delth += 10.0*(np.random.random()-.5)
-        delth += 10.0*(np.random.random())
-    
-    if 'truth' in ud.aux:
-        np.random.seed(1234)
-        # delth += 10.0*(np.random.random()-.5)
-        delth += 10.0*(np.random.random())
-    print(delth)
     
     r = np.sqrt((x)**2 + (y-y0)**2) / r0
 
