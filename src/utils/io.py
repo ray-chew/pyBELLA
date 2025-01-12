@@ -181,7 +181,8 @@ class hdf5(object):
 
         """
 
-        _, _, Sol, _, mpv, _, _ = model_state
+        Sol = model_state.sol
+        mpv = model_state.mpv
 
         logging.info("writing hdf output..." + name)
         # rho
