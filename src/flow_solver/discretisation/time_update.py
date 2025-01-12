@@ -618,7 +618,9 @@ def do(
             if c2:
                 ud.is_nonhydrostatic = 1
 
-        t += dt
+        mem.sol = Sol
+        mem.flux = flux
+        mem.mpv = mpv
 
         if writer != None:
             writer.time = t
@@ -635,16 +637,13 @@ def do(
             "###############################################################################################"
         )
 
+        t += dt
         step += 1
         window_step += 1
 
-        mem.time.step = step
-        mem.time.window_step = window_step
-        mem.time.t = t
-
-        mem.sol = Sol
-        mem.flux = flux
-        mem.mpv = mpv
+    mem.time.t = t
+    mem.time.step = step
+    mem.time.window_step = window_step
 
     return mem
     # return [Sol, flux, mpv, [window_step, step]]
