@@ -114,34 +114,32 @@ def do_comp_to_psinc_conv(Sol, mpv, bld, elem, node, th, ud, label, writer):
 
 
 def do_psinc_to_comp_conv(
-    Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt
+    sst, mem, bld, label, writer, step, tout,
 ):
     from ...flow_solver.discretisation import time_update
 
     logging.info(f"Blending... step = {step}")
-    Sol_freeze = copy.deepcopy(Sol)
-    mpv_freeze = copy.deepcopy(mpv)
+    Sol_freeze = copy.deepcopy(mem.sol)
+    mpv_freeze = copy.deepcopy(mem.mpv)
+
+    mem.time.step -= 1
+    mem.time.window_step = 0
 
     ret = time_update.do(
-        Sol,
-        flux,
-        mpv,
-        t,
-        t + dt,
-        ud,
-        elem,
-        node,
-        [0, step - 1],
-        th,
+        sst,
+        mem,
+        tout,
         bld=None,
         writer=None,
         debug=False,
     )
 
+    ud = sst.ud
+
     fac_old = ud.blending_weight
     fac_new = 1.0 - fac_old
-    dp2n_0 = fac_new * ret[2].p2_nodes_half + fac_old * mpv_freeze.p2_nodes_half
-    dp2n_1 = fac_new * ret[2].p2_nodes + fac_old * mpv_freeze.p2_nodes
+    dp2n_0 = fac_new * ret.mpv.p2_nodes_half + fac_old * mpv_freeze.p2_nodes_half
+    dp2n_1 = fac_new * ret.mpv.p2_nodes + fac_old * mpv_freeze.p2_nodes
 
     if ud.blending_type == "half":
         dp2n = dp2n_0
@@ -158,6 +156,8 @@ def do_psinc_to_comp_conv(
         writer.populate(str(label) + "_after_full_step", "p2_end", ret[2].p2_nodes)
     Sol = Sol_freeze
     mpv = mpv_freeze
+
+    elem, node, _, _, _, th, _ = mem
 
     if writer != None:
         writer.populate(str(label) + "_after_full_step", "dp2n", dp2n)
@@ -382,15 +382,9 @@ def do_hydro_to_nonhydro_conv(
 # Blending calls from data.py
 ######################################################
 def blending_before_timestep(
-    # Sol,
-    # flux,
-    # mpv,
-    bld,
+    sst,
     mem,
-    # elem,
-    # node,
-    # th,
-    ud,
+    bld,
     label,
     writer,
     step,
@@ -404,7 +398,8 @@ def blending_before_timestep(
     # Blending : Do full regime to limit regime conversion
     ######################################################
     # do unpacking
-    elem, node, Sol, flux, mpv, th, time = mem
+    elem, node, Sol, flux, mpv, th, _ = mem
+    ud = sst.ud
 
     # these make sure that we are the correct window step
     if bld is not None and window_step == 0:
@@ -418,6 +413,10 @@ def blending_before_timestep(
                 Sol, mpv = do_comp_to_psinc_conv(
                     Sol, mpv, bld, elem, node, th, ud, label, writer
                 )
+
+
+            mem.Sol = Sol
+            mem.mpv = mpv
 
     ######################################################
     # Blending : Do full steps or transition steps?
@@ -434,21 +433,15 @@ def blending_before_timestep(
     if c_init and bld.cb and ud.blending_conv is not None:
         # distinguish between Euler and SWE blending
         if ud.blending_conv != "swe":
-            Sol, mpv = do_psinc_to_comp_conv(
-                Sol,
-                flux,
-                mpv,
+            do_psinc_to_comp_conv(
+                sst,
+                mem,
                 bld,
-                elem,
-                node,
-                th,
                 ud,
                 label,
                 writer,
                 step,
-                window_step,
-                t,
-                dt,
+                t + dt,
             )
 
     ######################################################
@@ -496,21 +489,14 @@ def blending_before_timestep(
     ):
         # Distinguish between SWE and Euler blendings
         if ud.blending_conv != "swe":
-            Sol, mpv = do_psinc_to_comp_conv(
-                Sol,
-                flux,
-                mpv,
+            do_psinc_to_comp_conv(
+                sst,
+                mem,
                 bld,
-                elem,
-                node,
-                th,
-                ud,
                 label,
                 writer,
                 step,
-                window_step,
-                t,
-                dt,
+                t + dt,
             )
             ud.is_compressible = 1
             ud.compressibility = 1.0

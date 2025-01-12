@@ -161,15 +161,9 @@ def do(
         # Blending : Do blending before timestep
         ######################################################
         swe_to_lake, Sol, mpv, t = schemes.blending_before_timestep(
-            # Sol,
-            # flux,
-            # mpv,
-            bld,
+            sst,
             mem,
-            # elem,
-            # node,
-            # th,
-            ud,
+            bld,
             label,
             writer,
             step,
