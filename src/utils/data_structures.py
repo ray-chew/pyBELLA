@@ -88,12 +88,17 @@ class DiagnosticState:
 
     Consider removing run-specific parameters, e.g., (Nx, Ny), in future.
     """
+    # the name to look up in test_targets.yml
     test_name: str
+    # filename of the reference (if updt_target = True or plot_compare = True)
     file_name: str
+    # details related to loading the reference fields
     Nx: int
     Ny: int
     steps: list
     path: str = "./outputs/"
+
+    # plot the comparison?
     plot_compare: bool = False
 
 
