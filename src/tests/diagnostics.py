@@ -1,9 +1,11 @@
 import logging
+import copy
 
 import numpy as np
 import yaml
 
 from ..utils.data_structures import DiagnosticState
+from ..flow_solver.utils.solver_diagnostics import get_p_from_pressure_related_fields
 
 from ..vis import (
     utils as vis_utils,
@@ -33,7 +35,10 @@ class CompareSol(object):
         with open("./src/tests/test_targets.yml", "a") as outfile:
             yaml.dump(self.arr_dump, outfile, default_flow_style=False)
 
-    def test_do(self, Sol, p2n, plot=False):
+    def test_do(self, mem, ud, plot=False):
+        Sol = mem.sol
+        mpv = mem.mpv
+
         self.__read_yaml()
 
         try:
@@ -42,7 +47,7 @@ class CompareSol(object):
             assert 0, "test %s has no target for comparison" % (self.current_run)
 
         if plot:
-            self.__plot_comparison(Sol, p2n)
+            self.__plot_comparison(mem, ud)
 
         for key, value in target_values.items():
             ref = value
@@ -50,7 +55,7 @@ class CompareSol(object):
             if key != "p2_nodes":
                 test = getattr(Sol, key).astype("float32").sum()
             else:
-                test = p2n.astype("float32").sum()
+                test = mpv.p2_nodes.astype("float32").sum()
 
 
             try:
@@ -95,19 +100,23 @@ class CompareSol(object):
         with open("./src/tests/test_targets.yml", "r") as infile:
             self.target = yaml.safe_load(infile)
 
-    def __plot_comparison(self, Sol, p2n):
+    def __plot_comparison(self, mem, ud):
         tc = self.tcs[self.current_run]
         tp = self.tps[self.current_run]
+
+        ref_mem = copy.deepcopy(mem)
+        for attribute in tp.attributes:
+
+            if attribute != "p2_nodes":
+                setattr(ref_mem.sol, attribute, self.__get_ens(tc, tp, attribute, summed=False))
+            else:
+                setattr(ref_mem.mpv, attribute, self.__get_ens(tc, tp, attribute, summed=False))
 
         for attribute in tp.attributes:
             arr_plots = []
 
-            ref_sol = self.__get_ens(tc, tp, attribute, summed=False).T
-
-            if attribute != "p2_nodes":
-                test_sol = getattr(Sol, attribute).T
-            else:
-                test_sol = p2n.T
+            test_sol = self.__get_sol_for_comparison(mem, ud, attribute)
+            ref_sol = self.__get_sol_for_comparison(ref_mem, ud, attribute)
 
             arr_plots.append([ref_sol, "ref"])
             arr_plots.append([test_sol, "test"])
@@ -115,7 +124,29 @@ class CompareSol(object):
 
             pl = vis_pt.plotter(arr_plots, ncols=3, figsize=(12, 3), sharey=False)
             _ = pl.plot(method="contour", lvls=None, suptitle=attribute)
-            pl.img.savefig(tp.dir + attribute + ".png")
+            pl.img.savefig(tp.dir.replace("target", "test") + attribute + ".png")
+
+        del ref_mem
+
+    @staticmethod
+    def __get_sol_for_comparison(mem, ud, attribute):
+        Sol = mem.sol
+        mpv = mem.mpv
+        if attribute != "p2_nodes":
+            test_sol = getattr(Sol, attribute).T
+            if attribute != 'rho':
+                rho = getattr(Sol, 'rho').T
+                test_sol /= rho
+
+                # if attribute == 'rhoY':
+                #     test_sol -= mpv.HydroState.Y0[:,np.newaxis]
+
+        else:
+            test_sol = mpv.p2_nodes.T * ud.Msq
+            test_sol -= mpv.HydroState_n.pi0[:,np.newaxis]
+            # test_sol = get_p_from_pressure_related_fields(mem, ud).T
+
+        return test_sol
 
     @staticmethod
     def __get_ens(tc, params, attribute, summed=True, normed=False):

@@ -15,8 +15,8 @@ class UserData(object):
         # NUMERICS
         ##########################################
         self.CFL  = 0.9
-        self.dtfixed0 = 0.01
-        self.dtfixed = 0.01
+        self.dtfixed0 = 1.0
+        self.dtfixed = 1.0
 
         self.inx = 64+1
         self.iny = 48+1
@@ -55,7 +55,7 @@ class UserData(object):
 
         self.diag_state = DiagnosticState(
             test_name="test_blending_warm_bubble",
-            file_name="test_blending_warm_bubble",
+            file_name="target_blending_warm_bubble",
             Nx=self.inx-1,
             Ny=self.iny-1,
             steps=[self.stepmax-1],
@@ -102,7 +102,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     p = mpv.HydroState_n.p0[0]
     rhoY = mpv.HydroState_n.rhoY0[0]
-    mpv.p2_nodes[...] = (p - mpv.HydroState_n.p0[0]) / rhoY / ud.Msq
+    mpv.p2_nodes[...] = 1.0 # (p - mpv.HydroState_n.p0[0]) / rhoY / ud.Msq
 
     bdry.set_explicit_boundary_data(Sol,elem,ud,th,mpv)
 

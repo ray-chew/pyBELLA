@@ -63,7 +63,7 @@ class UserDataInit(object):
             self.is_nonhydrostatic = 1
             self.is_compressible = 1
 
-            self.compressibility = 0.0
+            self.compressibility = 1.0
 
 
             ##########################################
