@@ -2,16 +2,17 @@ import logging
 
 import numpy as np
 
-from . import(
+from . import (
     etpf as da_etpf,
     post_processing as da_post_processing,
     letkf as da_letkf,
-    utils as da_utils
+    utils as da_utils,
 )
 
 from ..flow_solver.utils import boundary as bdry
 
 from ..utils import sim_params as params
+
 
 def do_for_window(tout, outer_step, results, sst, writer):
     # mp = sst.model_params
@@ -31,7 +32,7 @@ def do_for_window(tout, outer_step, results, sst, writer):
         for mem in results:
             elem, node, sol, _, mpv, th, _ = mem
             bdry.set_explicit_boundary_data(sol, elem, sst.ud, th, mpv)
-            bdry.set_ghostnodes_p2(mpv.p2_nodes,node, sst.ud)
+            bdry.set_ghostnodes_p2(mpv.p2_nodes, node, sst.ud)
 
         # ens.set_members(results, tout)
         sst.ensemble_state.set_members(results)
@@ -58,7 +59,9 @@ def do_for_window(tout, outer_step, results, sst, writer):
                 logging.info("Assimilating %s..." % attr)
                 logging.info("Assimilating %s..." % attr)
                 # future = client.submit(da_interface, *[s_res,obs_current,dap.inflation_factor,attr,N,ud,dap.loc[attr]])
-                future = da_letkf.da_interface(results, dp.dap, dp.obs, attr, tout, sst.N, sst.ud)
+                future = da_letkf.da_interface(
+                    results, dp.dap, dp.obs, attr, tout, sst.N, sst.ud
+                )
                 futures.append(future)
 
             # analysis = client.gather(futures)
@@ -77,12 +80,12 @@ def do_for_window(tout, outer_step, results, sst, writer):
         # LETKF with grid-point localisation
         ##################################################
         elif dp.dap.da_type == "rloc":
-            logging.info(
-                "Starting analysis... for rloc algorithm"
-            )
+            logging.info("Starting analysis... for rloc algorithm")
             elem, node = sst.ensemble_state.get_grid()
             results = da_utils.HSprojector_3t2D(results, elem, dp.dap, sst.N)
-            results = dp.rloc.analyse(results, dp.obs, dp.obs_covar, dp.obs_mask, sst.N, tout)
+            results = dp.rloc.analyse(
+                results, dp.obs, dp.obs_covar, dp.obs_mask, sst.N, tout
+            )
             results = da_utils.HSprojector_2t3D(results, elem, node, dp.dap, sst.N)
             # if hasattr(dap, 'converter'):
             # results = dap.converter(results, N, mpv, elem, node, th, ud)
@@ -91,7 +94,9 @@ def do_for_window(tout, outer_step, results, sst, writer):
         # ETPF
         ##################################################
         elif dp.dap.da_type == "etpf":
-            da_utils.ensemble_inflation(results, dp.dap.attributes, dp.dap.inflation_factor, sst.N)
+            da_utils.ensemble_inflation(
+                results, dp.dap.attributes, dp.dap.inflation_factor, sst.N
+            )
             results = da_etpf.da_interface(
                 results,
                 dp.obs,

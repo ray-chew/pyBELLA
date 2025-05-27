@@ -1,6 +1,7 @@
 import logging
+
 # to generate ensemble from one sol init instantiation
-from copy import deepcopy 
+from copy import deepcopy
 
 import numpy as np
 
@@ -48,16 +49,20 @@ def initialise(sst):
         for n in range(sst.N):
             Sol0 = deepcopy(sst.Sol)
             mpv0 = deepcopy(sst.mpv)
-            Sol0 = sst.sol_init(Sol0, mpv0, es.elem, es.node, es.th, es.ud, seed=seeds[n])
+            Sol0 = sst.sol_init(
+                Sol0, mpv0, es.elem, es.node, es.th, es.ud, seed=seeds[n]
+            )
             # sol_ens[n] = [Sol0, deepcopy(es.flux), mpv0, [-np.inf, es.step]]
-            sol_ens.update_member(es.elem, es.node, Sol0, mpv0, deepcopy(es.flux), es.th)
+            sol_ens.update_member(
+                es.elem, es.node, Sol0, mpv0, deepcopy(es.flux), es.th
+            )
 
             sst.ensembble_state = sol_ens
     # elif sst.restart == False:
-        # sol_ens = [[sst.sol_init(mp.Sol, mp.mpv, mp.elem, mp.node, mp.th, sst.ud), mp.flux, mp.mpv, [-np.inf, sst.step]]]
-        # sol_ens.update_member(mp.elem, mp.node, sst.sol_init(mp.Sol, mp.mpv, mp.elem, mp.node, mp.th, sst.ud), mp.mpv, deepcopy(mp.flux), mp.th)
-        # for n in range(sst.N):
-        #     sol_ens.get_member(n).time.t = -np.inf
+    # sol_ens = [[sst.sol_init(mp.Sol, mp.mpv, mp.elem, mp.node, mp.th, sst.ud), mp.flux, mp.mpv, [-np.inf, sst.step]]]
+    # sol_ens.update_member(mp.elem, mp.node, sst.sol_init(mp.Sol, mp.mpv, mp.elem, mp.node, mp.th, sst.ud), mp.mpv, deepcopy(mp.flux), mp.th)
+    # for n in range(sst.N):
+    #     sol_ens.get_member(n).time.t = -np.inf
 
     # ens = da_utils.ensemble(sol_ens)
 
@@ -73,7 +78,6 @@ def initialise(sst):
         obs_noisy, obs_covar = da_utils.obs_noiser(obs, obs_mask, dap, rloc, es.elem)
     else:
         obs, obs_noisy, obs_mask, obs_covar = None, None, None, None
-
 
     ##########################################################
     # Add ensemble info into filename
@@ -92,7 +96,5 @@ def initialise(sst):
         obs=obs,
         obs_noisy=obs_noisy,
         obs_mask=obs_mask,
-        obs_covar=obs_covar
+        obs_covar=obs_covar,
     )
-
-

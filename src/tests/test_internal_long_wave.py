@@ -1,13 +1,10 @@
 import numpy as np
 
-from ..flow_solver.utils import(
-    options as opts,
-    boundary as bdry,
-    variable as var
-)
+from ..flow_solver.utils import options as opts, boundary as bdry, variable as var
 from ..flow_solver.physics import hydrostatics
 
 from ..utils.data_structures import DiagnosticState
+
 
 class UserData(object):
     NSPEC = 1
@@ -163,9 +160,9 @@ class UserData(object):
         self.diag_state = DiagnosticState(
             test_name="test_internal_long_wave",
             file_name="test_internal_long_wave",
-            Nx=self.inx-1,
-            Ny=self.iny-1,
-            steps=[self.stepmax-1],
+            Nx=self.inx - 1,
+            Ny=self.iny - 1,
+            steps=[self.stepmax - 1],
         )
 
     def stratification_function(self, y):

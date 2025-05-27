@@ -7,10 +7,7 @@ import yaml
 from ..utils.data_structures import DiagnosticState
 from ..flow_solver.utils.solver_diagnostics import get_p_from_pressure_related_fields
 
-from ..vis import (
-    utils as vis_utils,
-    plotting_tools as vis_pt
-)
+from ..vis import utils as vis_utils, plotting_tools as vis_pt
 
 
 class CompareSol(object):
@@ -57,30 +54,30 @@ class CompareSol(object):
             else:
                 test = mpv.p2_nodes.astype("float32").sum()
 
-
             try:
-                assert (
-                    np.isclose(ref, test)
-                ), "sum for attribute %s of %s changed with discrepancy:\n%.16f\n%.16f" % (
-                    key,
-                    self.current_run,
-                    ref,
-                    test,
+                assert np.isclose(ref, test), (
+                    "sum for attribute %s of %s changed with discrepancy:\n%.16f\n%.16f"
+                    % (
+                        key,
+                        self.current_run,
+                        ref,
+                        test,
+                    )
                 )
                 logging.info(f"test passed for {key}")
             except AssertionError as e:
                 logging.info(str(e))
                 raise
 
-        logging.info(f"""
+        logging.info(
+            f"""
         {'#' * 10}
         Test passed for {self.current_run}
         {'#' * 10}
-        """.strip())
+        """.strip()
+        )
 
-    def __init(self, ds: DiagnosticState
-               ):
-
+    def __init(self, ds: DiagnosticState):
         tp = test_params(ds)
 
         self.tps = {
@@ -92,7 +89,9 @@ class CompareSol(object):
         self.tcs = {}
         for test_name, test_param in self.tps.items():
             fn = test_param.fn + ".h5"
-            tc = vis_utils.test_case(fn, test_param.dir, test_param.Nx, test_param.Ny, "")
+            tc = vis_utils.test_case(
+                fn, test_param.dir, test_param.Nx, test_param.Ny, ""
+            )
 
             self.tcs[test_name] = tc
 
@@ -106,11 +105,18 @@ class CompareSol(object):
 
         ref_mem = copy.deepcopy(mem)
         for attribute in tp.attributes:
-
             if attribute != "p2_nodes":
-                setattr(ref_mem.sol, attribute, self.__get_ens(tc, tp, attribute, summed=False))
+                setattr(
+                    ref_mem.sol,
+                    attribute,
+                    self.__get_ens(tc, tp, attribute, summed=False),
+                )
             else:
-                setattr(ref_mem.mpv, attribute, self.__get_ens(tc, tp, attribute, summed=False))
+                setattr(
+                    ref_mem.mpv,
+                    attribute,
+                    self.__get_ens(tc, tp, attribute, summed=False),
+                )
 
         for attribute in tp.attributes:
             arr_plots = []
@@ -133,18 +139,18 @@ class CompareSol(object):
         Sol = mem.sol
         mpv = mem.mpv
         if attribute != "p2_nodes":
-            test_sol = getattr(Sol, attribute).T
-            if attribute != 'rho':
-                rho = getattr(Sol, 'rho').T
+            test_sol = np.copy(getattr(Sol, attribute).T)
+            if attribute != "rho":
+                rho = getattr(Sol, "rho").T
                 test_sol /= rho
 
                 # if attribute == 'rhoY':
                 #     test_sol -= mpv.HydroState.Y0[:,np.newaxis]
 
         else:
-            test_sol = mpv.p2_nodes.T * ud.Msq
-            test_sol -= mpv.HydroState_n.pi0[:,np.newaxis]
-            # test_sol = get_p_from_pressure_related_fields(mem, ud).T
+            # test_sol = mpv.p2_nodes.T * ud.Msq
+            # test_sol -= mpv.HydroState_n.pi0[:,np.newaxis]
+            test_sol = get_p_from_pressure_related_fields(mem, ud).T
 
         return test_sol
 
@@ -180,10 +186,9 @@ class CompareSol(object):
 
 class test_params(object):
     def __init__(self, ds: DiagnosticState):
-
         self.name = ds.test_name
         self.dir = ds.path + ds.file_name + "/"
-        self.fn = f"{ds.file_name}_{ds.Nx}_{ds.Ny}" 
+        self.fn = f"{ds.file_name}_{ds.Nx}_{ds.Ny}"
 
         self.Nx = ds.Nx
         self.Ny = ds.Ny

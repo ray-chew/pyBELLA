@@ -4,25 +4,26 @@ from ..flow_solver.utils import boundary as bdry
 
 from ..utils.data_structures import DiagnosticState
 
+
 class UserData(object):
     # Nsq_ref = grav * 1.3e-05
 
     def __init__(self):
-        self.grav = 10.0             # [m/s^2]
-        self.t_ref = 1000.0           # [s]
+        self.grav = 10.0  # [m/s^2]
+        self.t_ref = 1000.0  # [s]
 
         ##########################################
         # NUMERICS
         ##########################################
-        self.CFL  = 0.9
-        self.dtfixed0 = 1.0
-        self.dtfixed = 1.0
+        self.CFL = 0.9
+        self.dtfixed0 = 100.0
+        self.dtfixed = 100.0
 
-        self.inx = 64+1
-        self.iny = 48+1
+        self.inx = 64 + 1
+        self.iny = 48 + 1
         self.inz = 1
 
-        self.tout = [100.0]
+        self.tout = [1000.0]
         self.stepmax = 31
 
         self.is_compressible = 1
@@ -41,10 +42,10 @@ class UserData(object):
         self.no_of_hy_transition = 0
 
         self.initial_blending = False
-        
+
         self.output_base_name = "_blending_warm_bubble"
         self.output_type = "test"
-        self.aux = ''
+        self.aux = "CFLfixed"
 
         self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
 
@@ -56,20 +57,21 @@ class UserData(object):
         self.diag_state = DiagnosticState(
             test_name="test_blending_warm_bubble",
             file_name="target_blending_warm_bubble",
-            Nx=self.inx-1,
-            Ny=self.iny-1,
-            steps=[self.stepmax-1],
-            plot_compare=True
+            Nx=self.inx - 1,
+            Ny=self.iny - 1,
+            steps=[self.stepmax - 1],
+            plot_compare=True,
         )
 
         self.autogen_fn = False
+
 
 def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     u0 = ud.u_wind_speed
     v0 = ud.v_wind_speed
     w0 = ud.w_wind_speed
-    delth = 2.0         # [K]
-    
+    delth = 2.0  # [K]
+
     y0 = 0.2
     r0 = 0.2
 
@@ -78,14 +80,16 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     x = elem.x
     y = elem.y
 
-    x, y = np.meshgrid(x,y)
-    
-    r = np.sqrt((x)**2 + (y-y0)**2) / r0
+    x, y = np.meshgrid(x, y)
 
-    p = np.repeat(mpv.HydroState.p0.reshape(1,-1),elem.icx,axis=0)
-    rhoY = np.repeat(mpv.HydroState.rhoY0.reshape(1,-1),elem.icx,axis=0)
+    r = np.sqrt((x) ** 2 + (y - y0) ** 2) / r0
 
-    perturbation = (delth/300.0) * (np.cos(0.5 * np.pi * r)**2)
+    p = np.repeat(mpv.HydroState.p0.reshape(1, -1), elem.icx, axis=0)
+    rhoY = mpv.HydroState.rhoY0[
+        np.newaxis, :
+    ]  # np.repeat(mpv.HydroState.rhoY0.reshape(1,-1),elem.icx,axis=0)
+
+    perturbation = (delth / 300.0) * (np.cos(0.5 * np.pi * r) ** 2)
     perturbation[np.where(r > 1.0)] = 0.0
     rho = rhoY / (ud.stratification(y) + perturbation.T)
 
@@ -94,16 +98,16 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     u, v, w = u0, v0, w0
 
-    Sol.rho[x_idx,y_idx] = rho
-    Sol.rhou[x_idx,y_idx] = rho * u
-    Sol.rhov[x_idx,y_idx] = rho * v
-    Sol.rhow[x_idx,y_idx] = rho * w
-    Sol.rhoY[x_idx,y_idx] = rhoY
+    Sol.rho[x_idx, y_idx] = rho
+    Sol.rhou[x_idx, y_idx] = rho * u
+    Sol.rhov[x_idx, y_idx] = rho * v
+    Sol.rhow[x_idx, y_idx] = rho * w
+    Sol.rhoY[x_idx, y_idx] = rhoY
 
-    p = mpv.HydroState_n.p0[0]
-    rhoY = mpv.HydroState_n.rhoY0[0]
-    mpv.p2_nodes[...] = 1.0 # (p - mpv.HydroState_n.p0[0]) / rhoY / ud.Msq
+    p = mpv.HydroState_n.p0
+    rhoY = mpv.HydroState_n.rhoY0
+    mpv.p2_nodes[...] = (p - mpv.HydroState_n.p0) / rhoY / ud.Msq
 
-    bdry.set_explicit_boundary_data(Sol,elem,ud,th,mpv)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     return Sol

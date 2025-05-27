@@ -6,6 +6,7 @@ from scipy import signal
 
 from ...flow_solver.physics.gas_dynamics import eos as gd_eos
 
+
 class Blend(object):
     """
     Class that takes care of the blending interface.
@@ -55,7 +56,7 @@ class Blend(object):
 
         Sol = mem.sol
         mpv = mem.mpv
-        th  = mem.th
+        th = mem.th
 
         if sgn == "bef":
             sign = -1.0
@@ -118,7 +119,13 @@ def do_comp_to_psinc_conv(mem, bld, ud, label, writer):
 
 
 def do_psinc_to_comp_conv(
-    sst, mem, bld, label, writer, step, tout,
+    sst,
+    mem,
+    bld,
+    label,
+    writer,
+    step,
+    tout,
 ):
     from ...flow_solver.discretisation import time_update
 
@@ -296,7 +303,6 @@ def do_lake_to_swe_conv(
 def do_nonhydro_to_hydro_conv(
     Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt
 ):
-
     logging.info("nonhydrostatic to hydrostatic conversion...")
     # bld.convert_p2n(mpv.p2_nodes)
     # bld.update_Sol(Sol,elem,node,th,ud,mpv,'bef',label=label,writer=writer)
@@ -326,7 +332,6 @@ def do_nonhydro_to_hydro_conv(
 def do_hydro_to_nonhydro_conv(
     Sol, flux, mpv, bld, elem, node, th, ud, label, writer, step, window_step, t, dt
 ):
-
     logging.info("hydrostatic to nonhydrostatic conversion...")
     logging.info(f"Blending... step = {step}")
 
@@ -414,9 +419,7 @@ def blending_before_timestep(
                 do_swe_to_lake_conv(Sol, mpv, elem, node, ud, th, writer, label, debug)
                 swe_to_lake = True
             else:
-                mem = do_comp_to_psinc_conv(
-                    mem, bld, ud, label, writer
-                )
+                mem = do_comp_to_psinc_conv(mem, bld, ud, label, writer)
 
     ######################################################
     # Blending : Do full steps or transition steps?
@@ -454,9 +457,7 @@ def blending_before_timestep(
             if bld.psinc_init > 0:
                 ud.is_compressible = 0
                 ud.compressibility = 0.0
-                mem = do_comp_to_psinc_conv(
-                    mem, bld, ud, label, writer
-                )
+                mem = do_comp_to_psinc_conv(mem, bld, ud, label, writer)
             elif bld.hydro_init > 0:
                 Sol, mpv, t = do_nonhydro_to_hydro_conv(
                     Sol,

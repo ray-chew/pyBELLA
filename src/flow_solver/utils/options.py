@@ -1,4 +1,4 @@
-from enum import Enum # ! Version > Python 3.4
+from enum import Enum  # ! Version > Python 3.4
 
 # class RecoveryOrder(Enum):
 #     FIRST = 0
@@ -27,6 +27,7 @@ from enum import Enum # ! Version > Python 3.4
 #     ZERO_ORDER_EXTRAPOL = 0
 #     BOTTOM_BC_DEFAULT = 1
 
+
 class LimiterType(Enum):
     NONE = 0
     # MINMOD = 1
@@ -39,11 +40,12 @@ class LimiterType(Enum):
     # NO_SLOPE = 8
     # NUMBER_OF_LIMITER = 9
 
+
 class BdryType(Enum):
     """
     An enumeration class that defines the accepted boundary condition types.
     """
-    
-    WALL = 'symmetric'
-    PERIODIC = 'wrap'
-    RAYLEIGH = 'radiation'
+
+    WALL = "symmetric"
+    PERIODIC = "wrap"
+    RAYLEIGH = "radiation"

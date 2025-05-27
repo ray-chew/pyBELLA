@@ -5,23 +5,17 @@ import logging
 import numpy as np
 
 # dependencies of the atmospheric flow solver
-from .flow_solver.discretisation import time_update    as dis_time_update
+from .flow_solver.discretisation import time_update as dis_time_update
 
 # dependencies of the interface subpackage
 from .interfaces.dynamics_blending import prepare as blending_prepare
 
 # dependencies of the data assimilation subpackage
-from .data_assimilation import (
-    prepare as da_prepare,
-    analysis as da_analysis
-)
+from .data_assimilation import prepare as da_prepare, analysis as da_analysis
 
 # package imports
-from .utils import (
-    prepare,
-    io,
-    sim_params as params
-)
+from .utils import prepare, io, sim_params as params
+
 
 ##########################################################
 # Start main looping
@@ -45,7 +39,6 @@ def main():
     tout_cnt = 0
     outer_step = 0
     for tout in sim_state.ud.tout:
-
         sst = sim_state
         es = sst.ensemble_state
         dp = sst.da_params
@@ -65,7 +58,7 @@ def main():
             # handling of DA window step counter
             if sst.N > 1:
                 if tout_old in dp.dap.da_times:
-                    mem.time.window_step = 0 
+                    mem.time.window_step = 0
             if sst.N == 1:
                 mem.time.window_step = mem.time.step
 
@@ -86,7 +79,7 @@ def main():
                     sst.diag_comparison.test_do(
                         mem, sst.ud, plot=sst.ud.diag_state.plot_compare
                     )
-            
+
             futures.append(mem)
 
         # Dask commands, used only when parallelisation is

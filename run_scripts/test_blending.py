@@ -1,13 +1,16 @@
 import pytest
 import subprocess
 
-@pytest.mark.parametrize("ic",
-                        ["test_blending_warm_bubble",])
+
+@pytest.mark.parametrize(
+    "ic",
+    [
+        "test_blending_warm_bubble",
+    ],
+)
 def test_single_run(ic):
     result = subprocess.run(
-    ["pybella", "-ic", ic, "-N", "1"],
-    capture_output=True,
-    text=True
+        ["pybella", "-ic", ic, "-N", "1"], capture_output=True, text=True
     )
 
     # result = subprocess.run(

@@ -49,7 +49,6 @@ def initialise(sst):
     return writer, wrtr
 
 
-
 class hdf5(object):
     """
     HDF5 writer class. Contains methods to create HDF5 file, create data sets and populate them with output variables.
@@ -488,7 +487,6 @@ class hdf5(object):
 
 
 class read_input(object):
-
     def __init__(self, fn, path):
         self.fn = fn
         self.path = path
@@ -727,7 +725,6 @@ def sim_restart(path, name, elem, node, ud, Sol, mpv, restart_touts):
 
 
 def fn_gen(ud, dap, N):
-
     suffix = ""
     suffix += "_%i" % (ud.inx - 1)
     suffix += "_%i" % (ud.iny - 1)
@@ -765,22 +762,24 @@ def mkdir_p(path):
     try:
         os.makedirs(path, exist_ok=True)  # Python>3.2
     except OSError as exc:
-            if exc.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else: raise
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
 
 
 ##########################################################
 # Initialise logger
 ##########################################################
-            
+
+
 def init_logger(ud):
     now = datetime.now()
     date = now.strftime("%d%m%y")
     time = now.strftime("%H%M%S")
 
-    input_filename = "%s%s" %(ud.output_type, ud.output_base_name)
-    logger_filename = "./logs/%s_%s_%s.log" %(input_filename, date, time)
+    input_filename = "%s%s" % (ud.output_type, ud.output_base_name)
+    logger_filename = "./logs/%s_%s_%s.log" % (input_filename, date, time)
 
     mkdir_p(os.path.dirname(logger_filename))
 
@@ -802,4 +801,4 @@ def init_logger(ud):
     # add the handler to the root logger
     logging.getLogger().addHandler(console)
 
-    logging.info("Input file is %s" %input_filename)
+    logging.info("Input file is %s" % input_filename)

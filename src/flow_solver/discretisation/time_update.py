@@ -9,14 +9,11 @@ from ...utils import io
 
 # dependencies of the flow solver subpackage
 from . import grid as dis_grid
-from ..utils import (
-    boundary as bdry, 
-    options as opts
-)
+from ..utils import boundary as bdry, options as opts
 from ..physics.gas_dynamics import (
     numerical_flux as gd_flux,
     eos as gd_eos,
-    cfl as gd_cfl
+    cfl as gd_cfl,
 )
 from ..physics.gas_dynamics import explicit as gd_explicit
 from ..physics.low_mach import second_projection as lm_sp
@@ -156,7 +153,6 @@ def do(
             # if test_hydrob == False:
             #     dt *= 0.5
 
-
         ######################################################
         # Blending : Do blending before timestep
         ######################################################
@@ -176,16 +172,18 @@ def do(
 
         ud.is_nonhydrostatic = gd_eos.is_nonhydrostatic(ud, window_step)
         ud.nonhydrostasy = gd_eos.nonhydrostasy(ud, t, window_step)
-        
+
         if ud.continuous_blending or ud.initial_blending:
             logging.info(f"step = {step}, window_step = {window_step}")
 
-        logging.info(f"""
+        logging.info(
+            f"""
                     -------
                     is_compressible = {ud.is_compressible}, is_nonhydrostatic = {ud.is_nonhydrostatic}
                     compressibility = {ud.compressibility:.3f}, nonhydrostasy = {ud.nonhydrostasy:.3f}
                     -------
-                    """)
+                    """
+        )
 
         Sol0 = copy.deepcopy(Sol)
         flux0 = copy.deepcopy(flux)
@@ -202,7 +200,6 @@ def do(
             if elem.ndim == 3:
                 writer.populate(f"{label}_before_advect", "rhoYw", flux[2].rhoY)
             writer.write_all(mem, f"{label}_before_advect")
-
 
         if ud.do_advection:
             gd_explicit.advect_rk(
@@ -254,7 +251,6 @@ def do(
         # bottom rayleigh forcing
         if hasattr(ud, "rayleigh_forcing"):
             if ud.rayleigh_forcing:
-
                 if ud.rayleigh_forcing_type == "file":
                     reader = io.read_input(
                         ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path
@@ -298,7 +294,6 @@ def do(
         if debug == True:
             writer.write_all(mem, str(label) + "_after_ebnaimp")
 
-
         flux_half_new = copy.deepcopy(flux)
 
         gd_flux.recompute_advective_fluxes(flux, Sol)
@@ -321,8 +316,9 @@ def do(
         # pwchi = np.copy(Sol.pwchi)
         p2_nodes_half = np.copy(mpv.p2_nodes)
 
-
-        if ud.is_nonhydrostatic == 0 or (ud.is_compressible == 1 and ud.is_nonhydrostatic == 1):
+        if ud.is_nonhydrostatic == 0 or (
+            ud.is_compressible == 1 and ud.is_nonhydrostatic == 1
+        ):
             mpv.p2_nodes[...] = mpv.p2_nodes0
 
         Sol = copy.deepcopy(Sol0)
@@ -381,16 +377,12 @@ def do(
             )
 
         if debug == True:
-            writer.write_all(
-                mem, str(label) + "_after_full_advect"
-            )
+            writer.write_all(mem, str(label) + "_after_full_advect")
 
         lm_sp.euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5 * dt, ud, th)
 
         if debug == True:
-            writer.write_all(
-                mem, str(label) + "_after_full_ebnaexp"
-            )
+            writer.write_all(mem, str(label) + "_after_full_ebnaexp")
 
         lm_sp.euler_backward_non_advective_impl_part(
             Sol,
@@ -413,9 +405,7 @@ def do(
         # bottom rayleigh forcing
         if hasattr(ud, "rayleigh_forcing"):
             if ud.rayleigh_forcing:
-
                 if ud.rayleigh_forcing_type == "file":
-
                     reader = io.read_input(
                         ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path
                     )
@@ -440,7 +430,6 @@ def do(
                     )
 
                 elif ud.rayleigh_forcing_type == "func":
-
                     s = 5.0e-3 + 1e-4 + 0e-5
                     ud.rf_bot.eigenfunction((t + dt), s)
                     up, vp, Yp, pi = ud.rf_bot.dehatter(th)
@@ -478,7 +467,9 @@ def do(
         )
 
         if c1 or c2:
-            logging.info(termcolor.colored("hydrostatic to nonhydrostatic conversion...", "blue"))
+            logging.info(
+                termcolor.colored("hydrostatic to nonhydrostatic conversion...", "blue")
+            )
 
             # writer.write_all(mem, str(label) + "_half_full")
             # writer.populate(str(label) + "_ic", "pwchi", Sol.pwchi)

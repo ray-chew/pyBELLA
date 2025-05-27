@@ -7,7 +7,8 @@ class Vars(object):
     The data container for the solution state variables, i.e. `Sol`.
 
     """
-    def __init__(self,size,ud):
+
+    def __init__(self, size, ud):
         """
         Parameters
         ----------
@@ -28,7 +29,7 @@ class Vars(object):
         Notes
         -----
         2. `rhoX` has to be extended by `ud.nspec` for moist process.
-        
+
         """
         self.rho = np.zeros((size))
         self.rhou = np.zeros((size))
@@ -45,10 +46,11 @@ class Vars(object):
 
         """
         for key, value in vars(self).items():
-            setattr(self,key,value.squeeze())
+            setattr(self, key, value.squeeze())
+
     # method written for 2D
 
-    def primitives(self,th):
+    def primitives(self, th):
         """
         Calculate the primitive quantities from the state variables and extend the data container to include these quantities.
 
@@ -65,7 +67,7 @@ class Vars(object):
         Y : ndarray(size_of_rhoY)
         X : ndarray(size_of_rhoX)
         p : ndarray(size_of_rhoY)
-     
+
         """
         nonzero_idx = np.nonzero(self.rho)
 
@@ -83,44 +85,45 @@ class Vars(object):
         self.w[nonzero_idx] = self.rhow[nonzero_idx] / self.rho[nonzero_idx]
         self.Y[nonzero_idx] = self.rhoY[nonzero_idx] / self.rho[nonzero_idx]
         self.X[nonzero_idx] = self.rhoX[nonzero_idx] / self.rho[nonzero_idx]
-        self.p[nonzero_idx] = self.rhoY[nonzero_idx]**th.gamm
+        self.p[nonzero_idx] = self.rhoY[nonzero_idx] ** th.gamm
 
     def flip(self):
         """
         Flips the solution variables arrays for the advection routine. `rhou` and `rhov` are also flipped, i.e.::
 
-            self.rhou, self.rhov = self.rhov, self.rhou    
+            self.rhou, self.rhov = self.rhov, self.rhou
 
         """
         for key, value in vars(self).items():
-            setattr(self,key,value.T)
+            setattr(self, key, value.T)
 
         self.rhou, self.rhov = self.rhov, self.rhou
 
     def flip_forward(self):
         for key, value in vars(self).items():
-            setattr(self,key,np.moveaxis(value,0,-1))
+            setattr(self, key, np.moveaxis(value, 0, -1))
 
     def flip_backward(self):
         for key, value in vars(self).items():
-            setattr(self,key,np.moveaxis(value,-1,0))
-
+            setattr(self, key, np.moveaxis(value, -1, 0))
 
     def mod_bg_wind(self, ud, fac):
         u0 = ud.u_wind_speed
         v0 = ud.v_wind_speed
         w0 = ud.w_wind_speed
-        
+
         self.rhou = self.rhou + fac * u0 * self.rho
         self.rhov = self.rhov + fac * v0 * self.rho
         self.rhow = self.rhow + fac * w0 * self.rho
-        
+
+
 class States(Vars):
     """
     Data container for `Lefts` and `Rights` for the Riemann solver. Inherits the solution class :class:`management.variable.Vars`.
 
     """
-    def __init__(self,size,ud):
+
+    def __init__(self, size, ud):
         """
         Parameters
         ----------
@@ -134,7 +137,7 @@ class States(Vars):
         Many variables in this data container are no longer used and can be removed.
 
         """
-        super().__init__(size,ud)
+        super().__init__(size, ud)
         self.u = np.zeros((size))
         self.v = np.zeros((size))
         self.w = np.zeros((size))
@@ -159,19 +162,17 @@ class States(Vars):
         self.get_dSdy = self.get_dSdy
         self.get_S0c = self.get_S0c
 
-
-
     def get_dSdy(self, elem, node):
-        if hasattr(self, 'dSdy'):
+        if hasattr(self, "dSdy"):
             return self.dSdy
         else:
             ndim = node.ndim
             dy = node.dy
 
             dSdy = self.S0
-            dSdy = sp.signal.convolve(dSdy,[1.,-1.],mode='valid') / dy
+            dSdy = sp.signal.convolve(dSdy, [1.0, -1.0], mode="valid") / dy
 
-            for dim in range(0,ndim,2):
+            for dim in range(0, ndim, 2):
                 dSdy = np.expand_dims(dSdy, dim)
                 dSdy = np.repeat(dSdy, elem.sc[dim], axis=dim)
 
@@ -179,13 +180,13 @@ class States(Vars):
             return dSdy
 
     def get_S0c(self, elem):
-        if hasattr(self, 'S0c'):
+        if hasattr(self, "S0c"):
             return self.S0c
         else:
             ndim = elem.ndim
             S0c = self.S0
 
-            for dim in range(0,ndim,2):
+            for dim in range(0, ndim, 2):
                 S0c = np.expand_dims(S0c, dim)
                 S0c = np.repeat(S0c, elem.sc[dim], axis=dim)
 
@@ -198,6 +199,7 @@ class Characters(object):
     Data container for the slope and amplitude of the interpolation to the faces for the Riemann solver.
 
     """
+
     def __init__(self, size):
         """
         Parameters

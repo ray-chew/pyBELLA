@@ -2,13 +2,14 @@ from ...utils import boundary as bdry
 from . import recovery as gd_recovery
 from . import numerical_flux as gd_flux
 
-def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
+
+def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer=None):
     """
     Function that runs the advection routine with Strang-splitting. This function updates the `Sol` solution container with the advected solution in-place.
 
     Parameters
     ----------
-    Sol : :py:class:`management.variable.Vars` 
+    Sol : :py:class:`management.variable.Vars`
         Solution data container.
     flux : :py:class:`management.variable.States`
         Fluxes data container
@@ -38,48 +39,66 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
 
     # Sol.rhoX -= Sol.rho * mpv.HydroState.S0
 
-    if (odd):
+    if odd:
         for split in range(ndim):
             lmbda = time_step / elem.dxyz[split]
             Sol.flip_forward()
-            if elem.iisc[split] > 1: 
-                explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
+            if elem.iisc[split] > 1:
+                explicit_step_and_flux(
+                    Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv
+                )
     else:
         for i_split in range(ndim):
             split = elem.ndim - 1 - i_split
             lmbda = time_step / elem.dxyz[split]
             if elem.iisc[split] > 1:
-                explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, [writer,node,label])
+                explicit_step_and_flux(
+                    Sol,
+                    flux[split],
+                    lmbda,
+                    elem,
+                    split,
+                    stage,
+                    ud,
+                    th,
+                    mpv,
+                    [writer, node, label],
+                )
             Sol.flip_backward()
 
     stage = 1
-    if (odd):
+    if odd:
         for i_split in range(ndim):
             split = elem.ndim - 1 - i_split
             lmbda = time_step / elem.dxyz[split]
             if elem.iisc[split] > 1:
-                explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
+                explicit_step_and_flux(
+                    Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv
+                )
             Sol.flip_backward()
     else:
         for split in range(ndim):
             lmbda = time_step / elem.dxyz[split]
             Sol.flip_forward()
             if elem.iisc[split] > 1:
-                explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv)
-            
+                explicit_step_and_flux(
+                    Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv
+                )
+
     # Sol.rhoX += Sol.rho * mpv.HydroState.S0
 
     bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 
-
-def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mpv, writer=None, tag=None):
+def explicit_step_and_flux(
+    Sol, flux, lmbda, elem, split_step, stage, ud, th, mpv, writer=None, tag=None
+):
     """
     For each advection substep, solve the advection problem. For more details, see :ref:`advection_routine`. This function updates the solution `Sol` container in-place if a Strang-splitting is used, or returns the `flux` data container if a Runge-Kutta method is used.
 
     Parameters
     ----------
-    Sol : :py:class:`management.variable.Vars` 
+    Sol : :py:class:`management.variable.Vars`
         Solution data container.
     flux : :py:class:`management.variable.States`
         Fluxes data container
@@ -145,35 +164,35 @@ def explicit_step_and_flux(Sol, flux, lmbda, elem, split_step, stage, ud, th, mp
     # skipped check_flux_bcs for now; first debug other functions
     # check_flux_bcs(Lefts, Rights, elem, split_step, ud)
 
-    flux = gd_flux.hll_solver(flux,Lefts,Rights,Sol, lmbda, ud, th)
+    flux = gd_flux.hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th)
 
     ndim = elem.ndim
     left_idx, right_idx = [slice(None)] * ndim, [slice(None)] * ndim
-    right_idx[-1] = slice(1,None)
-    left_idx[-1] = slice(0,-1)
+    right_idx[-1] = slice(1, None)
+    left_idx[-1] = slice(0, -1)
     left_idx, right_idx = tuple(left_idx), tuple(right_idx)
 
-    if tag != 'rk':
+    if tag != "rk":
         Sol.rho += lmbda * (flux.rho[left_idx] - flux.rho[right_idx])
         Sol.rhou += lmbda * (flux.rhou[left_idx] - flux.rhou[right_idx])
         Sol.rhov += lmbda * (flux.rhov[left_idx] - flux.rhov[right_idx])
         Sol.rhow += lmbda * (flux.rhow[left_idx] - flux.rhow[right_idx])
         Sol.rhoX += lmbda * (flux.rhoX[left_idx] - flux.rhoX[right_idx])
         Sol.rhoY += lmbda * (flux.rhoY[left_idx] - flux.rhoY[right_idx])
-    
+
     bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
 
-    if tag == 'rk':
+    if tag == "rk":
         return flux
 
 
-def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None):
+def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer=None):
     """
     Function that runs the advection routine with a first-order Runge-Kutta update. This function updates the `Sol` solution container with the advected solution in-place.
 
     Parameters
     ----------
-    Sol : :py:class:`management.variable.Vars` 
+    Sol : :py:class:`management.variable.Vars`
         Solution data container.
     flux : :py:class:`management.variable.States`
         Fluxes data container
@@ -195,7 +214,7 @@ def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None)
         Tag label for the output array
     writer : :py:class:`management.io.io`, optional
         Writer class for I/O operations, by default None
-        
+
     Attention
     ---------
     This function is not usually called unless commented out in the :py:meth:`management.data.time_update` routine.
@@ -210,13 +229,15 @@ def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None)
     for split in range(ndim):
         lmbda = time_step / elem.dxyz[split]
         Sol.flip_forward()
-        if elem.iisc[split] > 1: 
-            flux[split] = explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, tag='rk')
+        if elem.iisc[split] > 1:
+            flux[split] = explicit_step_and_flux(
+                Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, tag="rk"
+            )
 
     ndim = elem.ndim
     left_idx, right_idx = [slice(None)] * ndim, [slice(None)] * ndim
-    right_idx[-1] = slice(1,None)
-    left_idx[-1] = slice(0,-1)
+    right_idx[-1] = slice(1, None)
+    left_idx[-1] = slice(0, -1)
     left_idx, right_idx = tuple(left_idx), tuple(right_idx)
 
     for dim in range(ndim):
@@ -229,9 +250,9 @@ def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None)
         Sol.rhoX += lmbda * (flux[dim].rhoX[left_idx] - flux[dim].rhoX[right_idx])
         Sol.rhoY += lmbda * (flux[dim].rhoY[left_idx] - flux[dim].rhoY[right_idx])
 
-        if dim == 1: # vertical axis
+        if dim == 1:  # vertical axis
             updt = lmbda * (flux[dim].rhoX[left_idx] - flux[dim].rhoX[right_idx])
-            setattr(Sol, 'pwchi', updt)
+            setattr(Sol, "pwchi", updt)
 
     bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
@@ -239,7 +260,7 @@ def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None)
     # for split in range(ndim):
     #     lmbda = dt / elem.dxyz[split]
     #     Sol.flip_forward()
-    #     if elem.iisc[split] > 1: 
+    #     if elem.iisc[split] > 1:
     #         flux[split] = explicit_step_and_flux(Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, tag='rk')
 
     # Sol = deepcopy(Sol0)
@@ -253,5 +274,5 @@ def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer = None)
     #     Sol.rhow += lmbda * (flux[dim].rhow[left_idx] - flux[dim].rhow[right_idx])
     #     Sol.rhoX += lmbda * (flux[dim].rhoX[left_idx] - flux[dim].rhoX[right_idx])
     #     Sol.rhoY += lmbda * (flux[dim].rhoY[left_idx] - flux[dim].rhoY[right_idx])
-            
+
     # set_explicit_boundary_data(Sol, elem, ud, th, mpv)

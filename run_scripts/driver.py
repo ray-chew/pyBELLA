@@ -2,6 +2,7 @@ import sys
 import subprocess
 import logging
 
+
 class run_params(object):
     N = 1
     tc = "rb"
@@ -17,27 +18,24 @@ class run_params(object):
         self.restart = False
 
     def single_run(self):
-        subprocess.run(
-                ["pybella", "-ic", self.tc, "-N", "1"]
-                )
+        subprocess.run(["pybella", "-ic", self.tc, "-N", "1"])
 
     def queue_run(self):
         if self.ud is None and self.dap is None:
             assert 0, "ud or params must be defined"
         subprocess.run(
-                    [
-                    "pybella", 
-                    "-ic", 
-                    self.tc, 
-                    "-N", 
-                    f"{self.N}",
-                    "queue",
-                    "-w",
-                    self.ud,
-                    self.dap,
-                    ]
-                    )
-        
+            [
+                "pybella",
+                "-ic",
+                self.tc,
+                "-N",
+                f"{self.N}",
+                "queue",
+                "-w",
+                self.ud,
+                self.dap,
+            ]
+        )
 
     def restart_set(self, path, fn, name, ts, te, ti):
         path += fn

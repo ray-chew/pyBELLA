@@ -1,5 +1,5 @@
 # %%
-from run import run_params as rp
+from .driver import run_params as rp
 import pybella.tests.diagnostics as td
 import json
 

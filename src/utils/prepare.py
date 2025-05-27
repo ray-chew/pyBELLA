@@ -1,20 +1,17 @@
 import numpy as np
 
-from . import (
-    user_data,
-    io,
-    data_structures
-)
+from . import user_data, io, data_structures
 
-from ..flow_solver.discretisation import grid           as dis_grid
-from ..flow_solver.utils import variable                as var
+from ..flow_solver.discretisation import grid as dis_grid
+from ..flow_solver.utils import variable as var
 from ..flow_solver.utils import boundary as bdry
 from ..flow_solver.physics import hydrostatics
-from ..flow_solver.physics.low_mach import mpv          as lm_var
+from ..flow_solver.physics.low_mach import mpv as lm_var
 from ..flow_solver.physics.gas_dynamics import thermodynamics as gd_thermodynamics
 
 # test module
 from ..tests import diagnostics as diag
+
 
 def initialise():
     ####
@@ -22,7 +19,7 @@ def initialise():
     ####
     from . import sim_params as params
 
-    np.set_printoptions(precision = params.print_precision)
+    np.set_printoptions(precision=params.print_precision)
 
     ##########################################################
     # Initialisation of data containers and helper classes
@@ -55,7 +52,6 @@ def initialise():
 
     th = gd_thermodynamics.ThermodynamicalQuantities(ud)
     mpv = lm_var.MPV(elem, node, ud)
-    
 
     io.init_logger(ud)
 
@@ -70,7 +66,6 @@ def initialise():
         diag_comparison = diag.CompareSol(ud.diag_state)
     else:
         diag_comparison = None
-
 
     ##########################################################
     # Populate data structures
@@ -90,13 +85,13 @@ def initialise():
     sol = sol_init(sol, mpv, elem, node, th, ud)
 
     ensemble_state.update_member(
-                elem=elem,
-                node=node,
-                sol=sol,
-                flux=flux,
-                mpv=mpv,
-                th=th,
-                )
+        elem=elem,
+        node=node,
+        sol=sol,
+        flux=flux,
+        mpv=mpv,
+        th=th,
+    )
 
     restart_params = data_structures.RestartParameters(
         ud_rewrite=ud_rewrite,
@@ -109,16 +104,12 @@ def initialise():
     sim_st = data_structures.SimulationState(
         N=N,
         restart=restart,
-
         ud=ud,
         sol_init=sol_init,
-
         ensemble_state=ensemble_state,
-
         diag_comparison=diag_comparison,
-
         restart_params=restart_params,
-        interface_params=interface_params
+        interface_params=interface_params,
     )
 
     return sim_st
@@ -132,7 +123,14 @@ def overwrite_init_with_restart(sst):
     sst.ud.old_suffix = np.copy(sst.ud.output_suffix)
     sst.ud.old_suffix = "_ensemble=%i%s" % (sst.N, sst.ud.old_suffix)
     Sol0, mpv0, touts = io.sim_restart(
-        rp.r_params[0], rp.r_params[1], es.elem, es.node, es.ud, es.Sol, es.mpv, rp.r_params[2]
+        rp.r_params[0],
+        rp.r_params[1],
+        es.elem,
+        es.node,
+        es.ud,
+        es.Sol,
+        es.mpv,
+        rp.r_params[2],
     )
     sol_ens = [[Sol0, es.flux, mpv0, [-np.inf, sst.step]]]
     # ud.tout = touts[1:]

@@ -1,33 +1,31 @@
 import numpy as np
 
-from ..flow_solver.utils import (
-    options as opts,
-    boundary as bdry
-)
+from ..flow_solver.utils import options as opts, boundary as bdry
 
 from ..flow_solver.physics import hydrostatics
 
-from .. utils.data_structures import DiagnosticState
+from ..utils.data_structures import DiagnosticState
+
 
 class UserData(object):
     NSPEC = 1
-    grav = 9.81                 # [m s^{-2}]
-    omega = 7.292 * 1e-5        # [s^{-1}]
+    grav = 9.81  # [m s^{-2}]
+    omega = 7.292 * 1e-5  # [s^{-1}]
 
-    R_gas = 287.4               # [J kg^{-1} K^{-1}]
+    R_gas = 287.4  # [J kg^{-1} K^{-1}]
     R_vap = 461.0
-    Q_vap = 2.53e+06
+    Q_vap = 2.53e06
     gamma = 1.4
-    cp_gas = gamma * R_gas / (gamma-1.0)
+    cp_gas = gamma * R_gas / (gamma - 1.0)
 
-    p_ref = 1e+5
-    T_ref = 300.00              # [K]
+    p_ref = 1e5
+    T_ref = 300.00  # [K]
     rho_ref = p_ref / (R_gas * T_ref)
     N_ref = grav / np.sqrt(cp_gas * T_ref)
     Cs = np.sqrt(gamma * R_gas * T_ref)
 
-    h_ref = 10.0e3              # [m]
-    t_ref = 100.0               # [s]
+    h_ref = 10.0e3  # [m]
+    t_ref = 100.0  # [s]
     u_ref = h_ref / t_ref
 
     i_gravity = np.zeros((3))
@@ -70,17 +68,17 @@ class UserData(object):
                 self.i_gravity[i] = 1
                 self.gravity_direction = 1
 
-            if (self.coriolis_strength[i] > np.finfo(np.float).eps):
+            if self.coriolis_strength[i] > np.finfo(np.float).eps:
                 self.i_coriolis[i] = 1
 
         j = 4.0
         Lx = 1.0 * np.pi * self.Cs / self.N_ref * j
-        self.xmin = - Lx / self.h_ref
-        self.xmax =   Lx / self.h_ref
-        self.ymin = - 0.0
-        self.ymax =   2.0
-        self.zmin = - 1.0
-        self.zmax =   1.0
+        self.xmin = -Lx / self.h_ref
+        self.xmax = Lx / self.h_ref
+        self.ymin = -0.0
+        self.ymax = 2.0
+        self.zmin = -1.0
+        self.zmax = 1.0
 
         self.u_wind_speed = 0.0 * self.u_ref
         self.v_wind_speed = 0.0
@@ -97,25 +95,25 @@ class UserData(object):
         ##########################################
         self.CFL = 0.9
 
-        self.inx = 151+1
-        self.iny = 15+1
+        self.inx = 151 + 1
+        self.iny = 15 + 1
         self.inz = 1
 
         self.dtfixed0 = 100.0 / self.t_ref
         self.dtfixed = self.dtfixed0
-        
+
         self.do_advection = False
         self.limiter_type_scalars = opts.LimiterType.NONE
         self.limiter_type_velocity = opts.LimiterType.NONE
 
-        self.tol = 1.e-30
+        self.tol = 1.0e-30
         self.max_iterations = 10000
 
         # blending parameters
-        self.perturb_type = 'pos_perturb'
-        self.blending_mean = 'rhoY' # 1.0, rhoY
-        self.blending_conv = 'rho' #theta, rho
-        self.blending_type = 'half' # half, full
+        self.perturb_type = "pos_perturb"
+        self.blending_mean = "rhoY"  # 1.0, rhoY
+        self.blending_conv = "rho"  # theta, rho
+        self.blending_type = "half"  # half, full
 
         self.continuous_blending = False
         self.no_of_pi_initial = 1
@@ -123,10 +121,9 @@ class UserData(object):
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.blending_weight = 0./16
+        self.blending_weight = 0.0 / 16
         self.initial_blending = False
         self.initial_projection = True
-
 
         self.tout = [36.0]
         # self.tout = np.arange(0,361,1.0)
@@ -137,9 +134,9 @@ class UserData(object):
         self.autogen_fn = False
 
         self.output_base_name = "_lamb_wave"
-        self.output_type = 'test'
-        self.aux = ''
-        self.output_suffix = "_%i_%i" %(self.inx-1,self.iny-1)
+        self.output_type = "test"
+        self.aux = ""
+        self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
 
         self.diag = True
         self.diag_updt_targets = False
@@ -147,24 +144,24 @@ class UserData(object):
         self.diag_state = DiagnosticState(
             test_name="test_lamb_wave",
             file_name="test_lamb_wave",
-            Nx=self.inx-1,
-            Ny=self.iny-1,
-            steps=[self.stepmax-1],
+            Nx=self.inx - 1,
+            Ny=self.iny - 1,
+            steps=[self.stepmax - 1],
         )
-
 
         self.stratification = self.stratification_wrapper
         self.rayleigh_bc = self.rayleigh_bc_function
         self.init_forcing = self.forcing
 
         self.rayleigh_forcing = True
-        self.rayleigh_forcing_type = 'func' # func or file
-        self.rayleigh_forcing_fn = 'output_mark_wave_ensemble=1_601_240_bottom_forcing_S16.h5'
-        self.rayleigh_forcing_path = './output_mark_wave'
-        
+        self.rayleigh_forcing_type = "func"  # func or file
+        self.rayleigh_forcing_fn = (
+            "output_mark_wave_ensemble=1_601_240_bottom_forcing_S16.h5"
+        )
+        self.rayleigh_forcing_path = "./output_mark_wave"
 
     def stratification_wrapper(self, dy):
-        return lambda y : self.stratification_function(y, dy)
+        return lambda y: self.stratification_function(y, dy)
 
     def stratification_function(self, y, dy):
         g = self.gravity_strength[1]
@@ -173,8 +170,8 @@ class UserData(object):
         Hex = 1.0 / (Gamma * g)
         pi_m = np.exp(-(y - 0.5 * dy) / Hex)
         pi_p = np.exp(-(y + 0.5 * dy) / Hex)
-        
-        Theta = - (Gamma * g * dy) / (pi_p - pi_m)
+
+        Theta = -(Gamma * g * dy) / (pi_p - pi_m)
 
         return Theta
 
@@ -188,15 +185,32 @@ class UserData(object):
         if ud.bdry_type[1] == opts.BdryType.RAYLEIGH or ud.rayleigh_forcing == True:
             ud.inbcy = ud.iny - 1
             ud.iny0 = np.copy(ud.iny)
-            ud.iny = ud.iny0 + int(3*ud.inbcy)
+            ud.iny = ud.iny0 + int(3 * ud.inbcy)
 
             # tentative workaround
             ud.bcy = ud.ymax
             ud.ymax += 3.0 * ud.bcy
 
-
     class forcing(object):
-        def __init__(self, k, mu, Cs, F, N, Gamma, ampl, g, rhobar, Ybar, rhobar_n, Ybar_n, X, Y, Xn, Yn):
+        def __init__(
+            self,
+            k,
+            mu,
+            Cs,
+            F,
+            N,
+            Gamma,
+            ampl,
+            g,
+            rhobar,
+            Ybar,
+            rhobar_n,
+            Ybar_n,
+            X,
+            Y,
+            Xn,
+            Yn,
+        ):
             self.k = k
             self.mu = mu
             self.Cs = Cs
@@ -219,43 +233,53 @@ class UserData(object):
             self.Yn = Yn
 
         def get_T_matrix(self):
-        
             # system matrix of linearized equations
-            matrix = -np.array([[0, self.F, 0, 1j*self.Cs*self.k], 
-                            [-self.F, 0, -self.N, self.Cs*(self.mu+self.Gamma)], 
-                            [0, self.N, 0, 0], 
-                            [1j*self.Cs*self.k, self.Cs*(self.mu-self.Gamma), 0, 0]])
-        
+            matrix = -np.array(
+                [
+                    [0, self.F, 0, 1j * self.Cs * self.k],
+                    [-self.F, 0, -self.N, self.Cs * (self.mu + self.Gamma)],
+                    [0, self.N, 0, 0],
+                    [1j * self.Cs * self.k, self.Cs * (self.mu - self.Gamma), 0, 0],
+                ]
+            )
+
             self.T_matrix = matrix
 
-        def eigenfunction(self, t, s, grid='c'):
-            if grid == 'c':
+        def eigenfunction(self, t, s, grid="c"):
+            if grid == "c":
                 x, z = self.X, self.Y
-            elif grid == 'n':
-                x, z, = self.Xn, self.Yn
-            
-            # Compute eigenvalues and eigenvectors
-            eigval, eigvec = np.linalg.eig( self.T_matrix )
+            elif grid == "n":
+                (
+                    x,
+                    z,
+                ) = (
+                    self.Xn,
+                    self.Yn,
+                )
 
-            # Find index of eigenvalue 
+            # Compute eigenvalues and eigenvectors
+            eigval, eigvec = np.linalg.eig(self.T_matrix)
+
+            # Find index of eigenvalue
             # with greatest real part aka the instability growth rate
-            ind = np.argmax( np.real( eigval ) )
+            ind = np.argmax(np.real(eigval))
 
             # construct solution according to eq. 2.27 and 2.19
-            exponentials = np.exp( 1j * self.k * x + self.mu * z 
-                                + ( eigval[ind] ) * (t) + 1j * s * t )
-            chi_u  = self.ampl * np.real( eigvec[0,ind] * exponentials )
-            chi_w  = self.ampl * np.real( eigvec[1,ind] * exponentials )
-            chi_th = self.ampl * np.real( eigvec[2,ind] * exponentials )
-            chi_pi = self.ampl * np.real( eigvec[3,ind] * exponentials )
+            exponentials = np.exp(
+                1j * self.k * x + self.mu * z + (eigval[ind]) * (t) + 1j * s * t
+            )
+            chi_u = self.ampl * np.real(eigvec[0, ind] * exponentials)
+            chi_w = self.ampl * np.real(eigvec[1, ind] * exponentials)
+            chi_th = self.ampl * np.real(eigvec[2, ind] * exponentials)
+            chi_pi = self.ampl * np.real(eigvec[3, ind] * exponentials)
 
-            self.arrs = ( chi_u, chi_w, chi_th, chi_pi )
+            self.arrs = (chi_u, chi_w, chi_th, chi_pi)
 
-        def dehatter(self, th, grid='c'):
-            if grid == 'n':
+        def dehatter(self, th, grid="c"):
+            if grid == "n":
                 Ybar = self.Ybar_n
                 oorhobarsqrt = self.oorhobarsqrt_n
-            elif grid == 'c':
+            elif grid == "c":
                 Ybar = self.Ybar
                 oorhobarsqrt = self.oorhobarsqrt
 
@@ -265,13 +289,12 @@ class UserData(object):
             vp = oorhobarsqrt * chi_v
             Yp = oorhobarsqrt * self.N / self.g * Ybar * chi_Y
             pi_p = oorhobarsqrt * self.Cs / Ybar / th.Gammainv * chi_pi
-            
+
             return up.T, vp.T, Yp.T, pi_p.T
 
 
 def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
-
-    if hasattr(ud, 'rayleigh_bdry_switch'):
+    if hasattr(ud, "rayleigh_bdry_switch"):
         if ud.rayleigh_bdry_switch:
             ud.bdry_type[1] = opts.BdryType.RAYLEIGH
 
@@ -280,19 +303,21 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     if ud.rayleigh_forcing:
         # ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.005)
-        
-        ud.forcing_tcy, ud.forcing_tny = bdry.get_bottom_tau_y(ud, elem, node, 0.2, cutoff=0.3)
+
+        ud.forcing_tcy, ud.forcing_tny = bdry.get_bottom_tau_y(
+            ud, elem, node, 0.2, cutoff=0.3
+        )
 
     A0 = 1.0e-1 / ud.u_ref
     Msq = ud.Msq
     g = ud.gravity_strength[1] * ud.Rg
 
-    x = elem.x.reshape(-1,1)
-    y = elem.y.reshape(1,-1)
+    x = elem.x.reshape(-1, 1)
+    y = elem.y.reshape(1, -1)
     X, Y = np.meshgrid(x, y)
 
-    xn = node.x.reshape(-1,1)
-    yn = node.y.reshape(1,-1)
+    xn = node.x.reshape(-1, 1)
+    yn = node.y.reshape(1, -1)
 
     dy = np.diff(node.y)[0]
 
@@ -305,18 +330,18 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     # Use hydrostatically balanced background
     hydrostatics.state(mpv, elem, node, th, ud)
-    rhobar = mpv.HydroState.rho0.reshape(1,-1)
-    Ybar = mpv.HydroState.Y0.reshape(1,-1)
-    pibar = mpv.HydroState.p20.reshape(1,-1) * ud.Msq
+    rhobar = mpv.HydroState.rho0.reshape(1, -1)
+    Ybar = mpv.HydroState.Y0.reshape(1, -1)
+    pibar = mpv.HydroState.p20.reshape(1, -1) * ud.Msq
 
-    rhobar_n = mpv.HydroState_n.rho0.reshape(1,-1)
-    Ybar_n = mpv.HydroState_n.Y0.reshape(1,-1)
+    rhobar_n = mpv.HydroState_n.rho0.reshape(1, -1)
+    Ybar_n = mpv.HydroState_n.Y0.reshape(1, -1)
 
     ##################################################
     # dimensionless Brunt-Väisälä frequency
-    N = ud.t_ref * np.sqrt(ud.Nsq_ref) 
+    N = ud.t_ref * np.sqrt(ud.Nsq_ref)
     # dimensionless speed of sound
-    Cs = np.sqrt(th.gamm / Msq)  
+    Cs = np.sqrt(th.gamm / Msq)
     ud.Cs = Cs
     ud.Ns = N
     # dimensionless Coriolis strength
@@ -326,11 +351,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     # if F == 0.0:
     #     F += 1e-15
 
-    G =  np.sqrt( 9. / 40. )
+    G = np.sqrt(9.0 / 40.0)
     Gamma = G * N / Cs
-    k = N / Cs 
+    k = N / Cs
 
-    ud.rf_bot = ud.init_forcing(k, -Gamma, Cs, F, N, Gamma, A0, g, rhobar, Ybar, rhobar_n, Ybar_n, X, Y, Xn, Yn)
+    ud.rf_bot = ud.init_forcing(
+        k, -Gamma, Cs, F, N, Gamma, A0, g, rhobar, Ybar, rhobar_n, Ybar_n, X, Y, Xn, Yn
+    )
     ud.rf_bot.get_T_matrix()
 
     ud.u_wind_speed = 0.0
@@ -356,21 +383,21 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     ###################################################
     # initialise nodal pi
-    ud.rf_bot.eigenfunction(0, 1, grid='n')
-    _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
+    ud.rf_bot.eigenfunction(0, 1, grid="n")
+    _, _, _, pi_n = ud.rf_bot.dehatter(th, grid="n")
 
     mpv.p2_nodes[...] = pi_n
 
     # if ud.bdry_type[1] == 'RAYLEIGH':
     #     rayleigh_damping(Sol, mpv, ud, ud.tcy, elem, th)
 
-    bdry.set_explicit_boundary_data(Sol,elem,ud,th,mpv)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
-    if hasattr(ud, 'mixed_run'):
+    if hasattr(ud, "mixed_run"):
         if ud.mixed_run:
             ud.coriolis_strength[2] = 2.0 * 7.292 * 1e-5 * ud.t_ref
 
-    if hasattr(ud, 'trad_forcing'):
+    if hasattr(ud, "trad_forcing"):
         if ud.trad_forcing:
             ud.rf_bot.F = 0.0
             ud.rf_bot.get_T_matrix()

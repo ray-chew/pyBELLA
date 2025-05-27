@@ -1,5 +1,6 @@
 from . import schemes
 
+
 def initialise(sst):
     bld = schemes.Blend(sst.ud)
 
@@ -9,7 +10,9 @@ def initialise(sst):
 def init_da_window(sst, tout_old, outer_step):
     # In ensemble case, do blending for each DA window
     if sst.N > 1:
-        blend = sst.interface_params.bld if tout_old in sst.da_params.dap.da_times else None
+        blend = (
+            sst.interface_params.bld if tout_old in sst.da_params.dap.da_times else None
+        )
     else:
         blend = sst.interface_params.bld
 

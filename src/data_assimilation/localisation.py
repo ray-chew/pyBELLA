@@ -1,7 +1,8 @@
 import numpy as np
 import flow_solver.utils.options as opts
 
-def rlocal_5pt(elem,node,ud):
+
+def rlocal_5pt(elem, node, ud):
     igx = elem.igx
     igy = elem.igy
 
@@ -19,7 +20,10 @@ def rlocal_5pt(elem,node,ud):
     x_wall = ud.bdry_type[1] == opts.BdryType.WALL
     y_wall = ud.bdry_type[0] == opts.BdryType.WALL
 
-    return lambda covar : rlocal_5pt_stencil(covar, iicxn, iicyn, x_periodic, y_periodic, x_wall, y_wall)
+    return lambda covar: rlocal_5pt_stencil(
+        covar, iicxn, iicyn, x_periodic, y_periodic, x_wall, y_wall
+    )
+
 
 # @jit(nopython=True, nogil=True, cache=True)
 def rlocal_5pt_stencil(covar, iicxn, iicyn, x_periodic, y_periodic, x_wall, y_wall):
@@ -52,20 +56,20 @@ def rlocal_5pt_stencil(covar, iicxn, iicyn, x_periodic, y_periodic, x_wall, y_wa
                 botmid_idx -= iicxn - 1
 
         if cnt_y == 0:
-            topmid_idx += ((iicxn) * (iicyn - 1))
+            topmid_idx += (iicxn) * (iicyn - 1)
 
             if y_periodic:
-                midleft_idx += ((iicxn) * (iicyn - 1))
-                midmid_idx += ((iicxn) * (iicyn - 1))
-                midright_idx += ((iicxn) * (iicyn - 1))
+                midleft_idx += (iicxn) * (iicyn - 1)
+                midmid_idx += (iicxn) * (iicyn - 1)
+                midright_idx += (iicxn) * (iicyn - 1)
 
         if cnt_y == (iicyn - 1):
-            botmid_idx -= ((iicxn) * (iicyn - 1))
+            botmid_idx -= (iicxn) * (iicyn - 1)
 
             if y_periodic:
-                midleft_idx -= ((iicxn) * (iicyn - 1))
-                midmid_idx -= ((iicxn) * (iicyn - 1))
-                midright_idx -= ((iicxn) * (iicyn - 1))
+                midleft_idx -= (iicxn) * (iicyn - 1)
+                midmid_idx -= (iicxn) * (iicyn - 1)
+                midright_idx -= (iicxn) * (iicyn - 1)
 
         midleft = covar[midleft_idx]
         topmid = covar[topmid_idx]
@@ -81,15 +85,17 @@ def rlocal_5pt_stencil(covar, iicxn, iicyn, x_periodic, y_periodic, x_wall, y_wa
 
         # if y_wall and (cnt_y == 0):
         #     topmid = 0.0
-            
+
         # if y_wall and (cnt_y == (iicyn - 1)):
         #     botmid = 0.0
-                                
-        R[idx] = (0.5 * midleft + 1.0 * midmid + 0.5 * midright) + (0.5 * topmid + 1.0 * midmid + 0.5 * botmid)
+
+        R[idx] = (0.5 * midleft + 1.0 * midmid + 0.5 * midright) + (
+            0.5 * topmid + 1.0 * midmid + 0.5 * botmid
+        )
 
         cnt_x += 1
         if cnt_x % iicxn == 0:
             cnt_y += 1
             cnt_x = 0
-        
+
     return R

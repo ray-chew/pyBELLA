@@ -2,6 +2,7 @@ import numpy as np
 
 from ..utils import options as opts
 
+
 def grid_init(ud):
     """
     Helper function to initialise the `elem` and `node` grids, corresponding to the cell and node grids, from a given user iniital data file.
@@ -29,12 +30,13 @@ def grid_init(ud):
     z0 = ud.zmin
     z1 = ud.zmax
 
-    grid = Grid(inx,iny,inz,x0,x1,y0,y1,z0,z1)
+    grid = Grid(inx, iny, inz, x0, x1, y0, y1, z0, z1)
 
     elem = ElemSpaceDiscr(grid, ud)
     node = NodeSpaceDiscr(grid, ud)
 
     return elem, node
+
 
 class Grid(object):
     # def __init__(self, inx,iny,inz,x0,x1,y0,y1,z0,z1,left,right,bottom,top,back,front):
@@ -42,7 +44,8 @@ class Grid(object):
     Base grid class, defines the extent of grid and the grid spacing.
 
     """
-    def __init__(self, inx,iny,inz,x0,x1,y0,y1,z0,z1):
+
+    def __init__(self, inx, iny, inz, x0, x1, y0, y1, z0, z1):
         """
         Parameters
         ----------
@@ -63,8 +66,8 @@ class Grid(object):
         z0 : float
             Minimum extent in the z direction
         z1 : float
-            Maximum extent in the z direction   
-        
+            Maximum extent in the z direction
+
         """
         assert inx > 1
         assert iny >= 1
@@ -76,15 +79,15 @@ class Grid(object):
             self.ndim = 2
         else:
             self.ndim = 1
-        
+
         self.inx = inx
         self.iny = iny
         self.inz = inz
 
-        self.dx = (x1 - x0) / (inx - 1.) 
-        self.dy = (y1 - y0) / (iny - 1.) if iny > 1 else 0.0
-        self.dz = (z1 - z0) / (inz - 1.) if inz > 1 else 0.0
-        
+        self.dx = (x1 - x0) / (inx - 1.0)
+        self.dy = (y1 - y0) / (iny - 1.0) if iny > 1 else 0.0
+        self.dz = (z1 - z0) / (inz - 1.0) if inz > 1 else 0.0
+
         assert self.dx > 0.0
         assert self.dy >= 0.0
         assert self.dz >= 0.0
@@ -107,7 +110,10 @@ class Grid(object):
         # self.back = back
         # self.front = front
 
+
 big = 1.0
+
+
 class SpaceDiscr(object):
     """
     For a given grid extent and number of grid-points, this class returns an equidistant discretised grid.
@@ -119,7 +125,7 @@ class SpaceDiscr(object):
     stride = np.zeros((3))
     dxyz = np.zeros((3))
 
-    def __init__(self,g):
+    def __init__(self, g):
         """
         Parameters
         ----------
@@ -149,9 +155,9 @@ class SpaceDiscr(object):
 
         self.nc = self.icx * self.icy * self.icz
         self.iisc = (self.iicx, self.iicy, self.iicz)
-        self.isc = (self.iicx+self.igx, self.iicy+self.igy, self.iicz+self.igz)
+        self.isc = (self.iicx + self.igx, self.iicy + self.igy, self.iicz + self.igz)
         self.sc = (self.icx, self.icy, self.icz)
-        self.igs = [self.igx,self.igy,self.igz]
+        self.igs = [self.igx, self.igy, self.igz]
 
         self.ifx = self.icx + 1
         self.ify = self.icy + 1 if g.iny > 1 else 0
@@ -161,16 +167,16 @@ class SpaceDiscr(object):
         self.nfy = self.icx * self.ify * self.icz
         self.nfz = self.icx * self.icy * self.ifz
 
-        self.sfx = (self.icy , self.icz , self.ifx)
-        self.sfy = (self.icz , self.icx , self.ify)
-        self.sfz = (self.icx , self.icy , self.ifz)
+        self.sfx = (self.icy, self.icz, self.ifx)
+        self.sfy = (self.icz, self.icx, self.ify)
+        self.sfz = (self.icx, self.icy, self.ifz)
 
         self.nf = self.nfx + self.nfy + self.nfz
 
         self.dx = g.dx
         self.dy = g.dy if self.icy > 1 else big
         self.dz = g.dz if self.icz > 1 else big
-        
+
         self.dxyz[0] = self.dx
         self.dxyz[1] = self.dy
         self.dxyz[2] = self.dz
@@ -178,16 +184,15 @@ class SpaceDiscr(object):
         assert self.dx > 0.0
         assert self.dy > 0.0
         assert self.dz > 0.0
-                   
 
-        i1 = np.empty(self.ndim, dtype='object')
-        i2 = np.empty(self.ndim, dtype='object')
+        i1 = np.empty(self.ndim, dtype="object")
+        i2 = np.empty(self.ndim, dtype="object")
         for dim in range(self.ndim):
-            i1[dim] = slice(1,-1)
-            i2[dim] = slice(self.igs[dim],-self.igs[dim])
+            i1[dim] = slice(1, -1)
+            i2[dim] = slice(self.igs[dim], -self.igs[dim])
         self.i1 = tuple(i1)
         self.i2 = tuple(i2)
-        
+
 
 class ElemSpaceDiscr(SpaceDiscr):
     """
@@ -195,7 +200,7 @@ class ElemSpaceDiscr(SpaceDiscr):
 
     """
 
-    def __init__(self,g, ud):
+    def __init__(self, g, ud):
         """
         Parameters
         ----------
@@ -225,10 +230,10 @@ class ElemSpaceDiscr(SpaceDiscr):
         p_isc = []
         pp1_isc = []
 
-        eindim = np.empty((ndim),dtype='object')
+        eindim = np.empty((ndim), dtype="object")
         for dim in range(ndim):
             is_periodic = ud.bdry_type[dim] == opts.BdryType.PERIODIC
-            eindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic-1)
+            eindim[dim] = slice(igs[dim] - is_periodic, -igs[dim] + is_periodic - 1)
 
             p_isc.append(self.isc[dim] + 2 * is_periodic)
             pp1_isc.append(self.isc[dim] + 2 * is_periodic + 2)
@@ -236,14 +241,15 @@ class ElemSpaceDiscr(SpaceDiscr):
         self.periodic_indim = tuple(eindim)
         self.p_isc = tuple(p_isc)
         self.pp1_isc = tuple(pp1_isc)
-        
-        
+
+
 class NodeSpaceDiscr(SpaceDiscr):
     """
     Inherits the class :class:`discretization.kgrid.SpaceDiscr`. For a given grid extent and number of grid-points, this class returns an equidistant discretised node-based grid.
 
     """
-    def __init__(self,g, ud):
+
+    def __init__(self, g, ud):
         """
         Parameters
         ----------
@@ -268,9 +274,9 @@ class NodeSpaceDiscr(SpaceDiscr):
         self.y = y0 + self.dy * np.arange(self.icy)
         self.z = z0 + self.dz * np.arange(self.icz)
 
-        self.iisc = (self.iicx , self.iicy , self.iicz)
-        self.isc = (self.iicx+self.igx , self.iicy+self.igy , self.iicz+self.igz)
-        self.sc = (self.icx , self.icy , self.icz)
+        self.iisc = (self.iicx, self.iicy, self.iicz)
+        self.isc = (self.iicx + self.igx, self.iicy + self.igy, self.iicz + self.igz)
+        self.sc = (self.icx, self.icy, self.icz)
 
         self.get_p_indim(ud)
 
@@ -285,11 +291,11 @@ class NodeSpaceDiscr(SpaceDiscr):
         p_isc = []
         pp1_isc = []
 
-        nindim = np.empty((ndim),dtype='object')
+        nindim = np.empty((ndim), dtype="object")
         for dim in range(ndim):
             is_periodic = ud.bdry_type[dim] == opts.BdryType.PERIODIC
-            nindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic)
-            
+            nindim[dim] = slice(igs[dim] - is_periodic, -igs[dim] + is_periodic)
+
             p_isc.append(self.isc[dim] + 2 * is_periodic)
             pp1_isc.append(self.isc[dim] + 2 * is_periodic + 2)
 

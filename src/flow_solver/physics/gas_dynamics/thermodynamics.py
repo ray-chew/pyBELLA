@@ -3,6 +3,7 @@ class ThermodynamicalQuantities(object):
     Data container for thermodynamical quantities.
 
     """
+
     def __init__(self, ud):
         """
         Parameters
@@ -10,7 +11,7 @@ class ThermodynamicalQuantities(object):
         ud : :class:`inputs.user_data.UserDataInit`
             Data container for the initial conditions
         """
-        
+
         g = ud.gamm
         self.gamm = g
         self.gamminv = 1.0 / g
@@ -18,4 +19,3 @@ class ThermodynamicalQuantities(object):
         self.gm1inv = 1.0 / (g - 1.0)
         self.Gamma = (g - 1.0) / g
         self.Gammainv = g / (g - 1.0)
-

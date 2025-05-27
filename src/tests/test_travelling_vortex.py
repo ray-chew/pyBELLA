@@ -1,12 +1,9 @@
 import numpy as np
-from  ..flow_solver.utils import (
-    options as opts,
-    boundary as bdry
-)
+from ..flow_solver.utils import options as opts, boundary as bdry
 from ..flow_solver.physics import hydrostatics
 from ..flow_solver.physics.low_mach import second_projection as lm_sp
 
-from .. utils.data_structures import DiagnosticState
+from ..utils.data_structures import DiagnosticState
 
 import logging
 
@@ -131,7 +128,7 @@ class UserData(object):
         self.initial_projection = True
         self.initial_impl_Euler = False
 
-        self.tout = [1.0]#np.arange(0.0,10.1,0.1)[1:]
+        self.tout = [1.0]  # np.arange(0.0,10.1,0.1)[1:]
         self.stepmax = 101
 
         self.output_base_name = "_travelling_vortex"
@@ -151,9 +148,9 @@ class UserData(object):
         self.diag_state = DiagnosticState(
             test_name="test_travelling_vortex",
             file_name="test_travelling_vortex",
-            Nx=self.inx-1,
-            Ny=self.iny-1,
-            steps=[self.stepmax-1],
+            Nx=self.inx - 1,
+            Ny=self.iny - 1,
+            steps=[self.stepmax - 1],
         )
 
         self.autogen_fn = False

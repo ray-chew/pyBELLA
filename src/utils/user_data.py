@@ -3,6 +3,7 @@ import numpy as np
 from ..flow_solver.utils import options as opts
 from . import sim_params as params
 
+
 class UserDataInit(object):
     """
     Loads user defined initial conditions. Specifically, all attributes of the class object defined in the initial condition is overwritten.
@@ -13,26 +14,25 @@ class UserDataInit(object):
 
     """
 
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
         gconsts = params.global_constants()
         for key, value in vars(gconsts).items():
             setattr(self, key, value)
 
-        # else:
+            # else:
             ##########################################
             # SPATIAL GRID
             ##########################################
-            self.inx = 64+1
-            self.iny = 64+1
+            self.inx = 64 + 1
+            self.iny = 64 + 1
             self.inz = 1
 
-            self.xmin = - 1.0 
-            self.xmax =   1.0
-            self.ymin =   0.0
-            self.ymax =   1.0
-            self.zmin = - 1.0
-            self.zmax =   1.0
-
+            self.xmin = -1.0
+            self.xmax = 1.0
+            self.ymin = 0.0
+            self.ymax = 1.0
+            self.zmin = -1.0
+            self.zmax = 1.0
 
             ##########################################
             # BOUNDARY CONDITIONS
@@ -42,19 +42,17 @@ class UserDataInit(object):
             self.bdry_type[1] = opts.BdryType.WALL
             self.bdry_type[2] = opts.BdryType.WALL
 
-
             ##########################################
             # TEMPORAL
             ##########################################
-            self.CFL  = 0.5
+            self.CFL = 0.5
             self.dtfixed0 = 100.0
             self.dtfixed = 100.0
 
             self.acoustic_timestep = 0
 
-            self.tout = np.arange(0.0,1.01,0.01)[10:]
+            self.tout = np.arange(0.0, 1.01, 0.01)[10:]
             self.stepmax = 10000
-
 
             ##########################################
             # MODEL REGIMES
@@ -65,7 +63,6 @@ class UserDataInit(object):
 
             self.compressibility = 1.0
 
-
             ##########################################
             # PHYSICS AND BACKGROUND WIND
             ##########################################
@@ -75,29 +72,27 @@ class UserDataInit(object):
 
             self.stratification = self.stratification_function
 
-
             ##########################################
             # NUMERICS
-            ##########################################   
+            ##########################################
             # Do we solve the left-hand side?
             self.do_advection = True
 
-            # Advection limiter types     
-            self.limiter_type_scalars =  opts.LimiterType.NONE
+            # Advection limiter types
+            self.limiter_type_scalars = opts.LimiterType.NONE
             self.limiter_type_velocity = opts.LimiterType.NONE
 
             # Iterative solver
-            self.tol = 1.e-8
+            self.tol = 1.0e-8
             self.max_iterations = 6000
-
 
             ##########################################
             # BLENDING
             ##########################################
-            self.blending_weight = 0./16
-            self.blending_mean = 'rhoY' # 1.0, rhoY
-            self.blending_conv = 'rho' # theta, rho
-            self.blending_type = 'half'
+            self.blending_weight = 0.0 / 16
+            self.blending_mean = "rhoY"  # 1.0, rhoY
+            self.blending_conv = "rho"  # theta, rho
+            self.blending_type = "half"
 
             self.continuous_blending = False
             self.no_of_pi_initial = 1
@@ -107,22 +102,19 @@ class UserDataInit(object):
 
             self.initial_blending = False
 
-
             ##########################################
             # DIAGNOSTICS
             ##########################################
             self.diag = False
             self.diag_state = None
 
-
             ##########################################
             # OUTPUTS
             ##########################################
             self.autogen_fn = False
             self.output_timesteps = False
-            self.output_type = 'output'
-            self.output_suffix = "_%i_%i" %(self.inx-1,self.iny-1)
-
+            self.output_type = "output"
+            self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
 
         if len(kwargs) > 0:
             for key, value in kwargs.items():
@@ -132,10 +124,8 @@ class UserDataInit(object):
         self.u_ref = self.h_ref / self.t_ref
         self.compute_Msq()
 
-
     def compute_Msq(self):
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
-
 
     def compute_gravity(self):
         self.i_gravity = np.zeros((3))
@@ -148,7 +138,6 @@ class UserDataInit(object):
                 self.i_gravity[i] = 1
                 self.gravity_direction = i
 
-
     def compute_coriolis(self):
         self.i_coriolis = np.zeros((3))
         self.coriolis_strength = np.zeros((3))
@@ -156,31 +145,25 @@ class UserDataInit(object):
         self.coriolis_strength[0] = self.omega * self.t_ref
         self.coriolis_strength[2] = self.omega * self.t_ref
 
-
     def compute_cp_gas(self):
-        self.cp_gas = self.gamm * self.R_gas / (self.gamm-1.0)
+        self.cp_gas = self.gamm * self.R_gas / (self.gamm - 1.0)
 
         if all(hasattr(self, attr) for attr in ["grav", "cp_gas", "T_ref"]):
             self.compute_N_ref()
 
-
     def compute_rho_ref(self):
         self.rho_ref = self.p_ref / (self.R_gas * self.T_ref)
-
 
     def compute_N_ref(self):
         self.N_ref = self.grav / np.sqrt(self.cp_gas * self.T_ref)
         self.Nsq_ref = self.N_ref * self.N_ref
 
-
     def compute_Cs(self):
         self.Cs = np.sqrt(self.gamm * self.R_gas * self.T_ref)
-    
 
     @staticmethod
     def stratification_function(y):
         return 1.0
-
 
     def update_ud(self, obj):
         for key, value in obj.items():
@@ -194,7 +177,7 @@ class UserDataInit(object):
     @property
     def R_gas(self):
         return self._R_gas
-    
+
     @R_gas.setter
     def R_gas(self, val):
         self._R_gas = val
@@ -217,7 +200,7 @@ class UserDataInit(object):
     @property
     def T_ref(self):
         return self._T_ref
-    
+
     @T_ref.setter
     def T_ref(self, val):
         self._T_ref = val
@@ -233,7 +216,7 @@ class UserDataInit(object):
 
         if all(hasattr(self, attr) for attr in ["grav", "cp_gas", "T_ref"]):
             self.compute_N_ref()
-        
+
         if all(hasattr(self, attr) for attr in ["gamm", "R_gas", "T_ref"]):
             self.compute_Cs()
 
@@ -241,7 +224,7 @@ class UserDataInit(object):
     @property
     def grav(self):
         return self._grav
-    
+
     @grav.setter
     def grav(self, val):
         self._grav = val
@@ -255,14 +238,14 @@ class UserDataInit(object):
     @property
     def h_ref(self):
         return self._h_ref
-    
+
     @h_ref.setter
     def h_ref(self, val):
         self._h_ref = val
 
         if all(hasattr(self, attr) for attr in ["h_ref", "t_ref"]):
             self.compute_u_ref()
-        
+
         if all(hasattr(self, attr) for attr in ["grav", "h_ref", "R_gas", "T_ref"]):
             self.compute_gravity()
 
@@ -270,7 +253,7 @@ class UserDataInit(object):
     @property
     def t_ref(self):
         return self._t_ref
-    
+
     @t_ref.setter
     def t_ref(self, val):
         self._t_ref = val
@@ -284,7 +267,7 @@ class UserDataInit(object):
     @property
     def omega(self):
         return self._omega
-    
+
     @omega.setter
     def omega(self, val):
         self._omega = val
@@ -292,19 +275,18 @@ class UserDataInit(object):
         if all(hasattr(self, attr) for attr in ["omega", "t_ref"]):
             self.compute_coriolis()
 
-
     # Cs and cp_gas argument
     @property
     def gamm(self):
         return self._gamm
-    
+
     @gamm.setter
     def gamm(self, val):
         self._gamm = val
 
         if all(hasattr(self, attr) for attr in ["gamm", "R_gas"]):
             self.compute_cp_gas()
-        
+
         if all(hasattr(self, attr) for attr in ["gamm", "R_gas", "T_ref"]):
             self.compute_Cs()
 
@@ -312,7 +294,7 @@ class UserDataInit(object):
     @property
     def p_ref(self):
         return self._p_ref
-    
+
     @p_ref.setter
     def p_ref(self, val):
         self._p_ref = val
