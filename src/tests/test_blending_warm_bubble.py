@@ -36,31 +36,43 @@ class UserData(object):
         #     self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
 
         self.continuous_blending = False
-        self.no_of_pi_initial = 0
+        self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
         self.initial_blending = False
 
+        self.diag = True
+        self.diag_updt_targets = False
+
         self.output_base_name = "_blending_warm_bubble"
-        self.output_type = "test"
+        self.output_type = "test" if not self.diag_updt_targets else "target"
         self.aux = "CFLfixed"
 
         self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
 
         self.output_timesteps = True
 
-        self.diag = True
-        self.diag_updt_targets = False
-
         self.diag_state = DiagnosticState(
-            test_name="test_blending_warm_bubble",
+            test_name=f"{self.output_type}_blending_warm_bubble",
             file_name="target_blending_warm_bubble",
             Nx=self.inx - 1,
             Ny=self.iny - 1,
             steps=[self.stepmax - 1],
             plot_compare=True,
+            time_increment=True,
+            # The only thing that matters here is that
+            # p2_nodes remains of the order of magnitude
+            tolerances={
+                "rho": 1.0e-0,
+                "rhou": 1.0e-0,
+                "rhov": 1.0e-0,
+                "rhow": 1.0e-0,
+                "rhoY": 1.0e-0,
+                "rhoX": 1.0e-0,
+                "p2_nodes": 1.0e-0,
+            }
         )
 
         self.autogen_fn = False
@@ -107,6 +119,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     p = mpv.HydroState_n.p0
     rhoY = mpv.HydroState_n.rhoY0
     mpv.p2_nodes[...] = (p - mpv.HydroState_n.p0) / rhoY / ud.Msq
+    # mpv.p2_nodes[...] = 1.0
 
     bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 

@@ -162,8 +162,11 @@ class States(Vars):
         self.get_dSdy = self.get_dSdy
         self.get_S0c = self.get_S0c
 
+        self.init_dSdy = False
+        self.init_S0c  = False
+
     def get_dSdy(self, elem, node):
-        if hasattr(self, "dSdy"):
+        if self.init_dSdy:
             return self.dSdy
         else:
             ndim = node.ndim
@@ -177,10 +180,11 @@ class States(Vars):
                 dSdy = np.repeat(dSdy, elem.sc[dim], axis=dim)
 
             self.dSdy = dSdy
+            self.init_dSdy = True
             return dSdy
 
     def get_S0c(self, elem):
-        if hasattr(self, "S0c"):
+        if self.init_S0c:
             return self.S0c
         else:
             ndim = elem.ndim
@@ -191,6 +195,7 @@ class States(Vars):
                 S0c = np.repeat(S0c, elem.sc[dim], axis=dim)
 
             self.S0c = S0c
+            self.init_S0c = True
             return S0c
 
 
