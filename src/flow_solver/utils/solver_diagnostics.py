@@ -19,5 +19,4 @@ def get_p_from_pressure_related_fields(mem, ud, psinc=False):
         P0 = (rhoY ** (th.gamm - 1.0) - dp2c) ** (1.0 / (th.gamm - 1.0))
         p = rhoY ** (th.gamm) - P0 ** (th.gamm)
 
-    # non-dimensionalised p/p_ref
     return p

@@ -77,7 +77,7 @@ def main():
                     sst.diag_comparison.update_targets()
                 else:
                     sst.diag_comparison.test_do(
-                        mem, sst.ud, plot=sst.ud.diag_state.plot_compare
+                        mem, sst.ud
                     )
 
             futures.append(mem)

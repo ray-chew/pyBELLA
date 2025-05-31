@@ -14,6 +14,9 @@ class CompareSol(object):
     def __init__(self, diag_state: DiagnosticState):
         self.diag_state = diag_state
         self.current_run = diag_state.test_name
+        self.plot = diag_state.plot_compare
+        self.tolerances = diag_state.tolerances
+        self.time_increment = diag_state.time_increment
         self.__init(diag_state)
         self.__get_tc()
 
@@ -22,60 +25,94 @@ class CompareSol(object):
 
         for tc_name, tc in self.tcs.items():
             tp = self.tps[tc_name]
-            self.arr_dump[tp.name] = {}
+            dump_name = tp.name.replace("target","test")
+            self.arr_dump[dump_name] = {}
 
             for attribute in tp.attributes:
-                self.arr_dump[tp.name][attribute] = float(
-                    self.__get_ens(tc, tp, attribute, summed=True)
+                arr = self.__get_ens(tc, tp, attribute, time_increment=self.time_increment, summed=False)
+                self.arr_dump[dump_name][attribute] = float(
+                    arr.sum()
                 )
+
+                if self.plot:
+                    # vis_pt.plotter accepts a list of tuples with plot and panel title.
+                    pl = vis_pt.plotter([(arr.T, "ref"), ], ncols=1, figsize=(4, 3), sharey=False)
+                    _ = pl.plot(method="contour", lvls=None, suptitle=attribute)
+                    pl.img.savefig(tp.dir + attribute + ".png")
 
         with open("./src/tests/test_targets.yml", "a") as outfile:
             yaml.dump(self.arr_dump, outfile, default_flow_style=False)
 
-    def test_do(self, mem, ud, plot=False):
-        Sol = mem.sol
-        mpv = mem.mpv
+    def test_do(self, mem, ud):
+        tc = self.tcs[self.current_run]
+        tp = self.tps[self.current_run]
 
-        self.__read_yaml()
+        # populate reference arrays
+        ref_mem = copy.deepcopy(mem)
+        for attribute in tp.attributes:
+            try:
+                ref_data = self.__get_ens(tc, tp, attribute, time_increment=False, summed=False)
+                if attribute != "p2_nodes":
+                    setattr(ref_mem.sol, attribute, ref_data)
+                else:
+                    if self.time_increment:
+                        # in the case where we are interested in the time increment
+                        # of the pressure-related fields, we need to load the previous
+                        # time step from the output file.
+                        tc_test = copy.deepcopy(tc)
+                        tc_test.base_fn = tc_test.base_fn.replace("target", "test")
+                        tc_test.py_dir = tc_test.py_dir.replace("target", "test")
+                        data = self.__get_ens(tc_test, tp, attribute, time_increment=self.time_increment, summed=False)
+                        setattr(mem.mpv, attribute, data)
+                        ref_data = self.__get_ens(tc, tp, attribute, time_increment=self.time_increment, summed=False)
+                    setattr(ref_mem.mpv, attribute, ref_data)
+            except Exception as e:
+                raise AssertionError(f"test {self.current_run} has no target for comparison: {e}")
 
-        try:
-            target_values = self.target[self.current_run]
-        except:
-            assert 0, "test %s has no target for comparison" % (self.current_run)
+        if self.plot:
+            self.__plot_comparison(mem, ref_mem, ud)
 
-        if plot:
-            self.__plot_comparison(mem, ud)
+        for attribute in tp.attributes:
+            test = self.__get_sol_for_comparison(mem, ud, attribute)
+            ref = self.__get_sol_for_comparison(ref_mem, ud, attribute)
 
-        for key, value in target_values.items():
-            ref = value
+            l2_error = np.linalg.norm(test - ref)
+            ref_norm = np.linalg.norm(ref)
 
-            if key != "p2_nodes":
-                test = getattr(Sol, key).astype("float32").sum()
+            if ref_norm > 0.0:
+                rel_l2_error = l2_error / ref_norm
             else:
-                test = mpv.p2_nodes.astype("float32").sum()
+                rel_l2_error = np.inf if l2_error > self.tolerances[attribute] else 0.0
+            max_abs_error = np.max(np.abs(test - ref))
 
             try:
-                assert np.isclose(ref, test), (
-                    "sum for attribute %s of %s changed with discrepancy:\n%.16f\n%.16f"
+                assert rel_l2_error < self.tolerances[attribute], (
+                    "Relative L2 error for attribute %s of %s exceeds tolerance:\n"
+                    "L2 error: %.6e\nRelative L2 error: %.6e\nMax abs error: %.6e\nTolerance: %.6e"
                     % (
-                        key,
+                        attribute,
                         self.current_run,
-                        ref,
-                        test,
+                        l2_error,
+                        rel_l2_error,
+                        max_abs_error,
+                        self.tolerances[attribute],
                     )
                 )
-                logging.info(f"test passed for {key}")
+                logging.info(
+                    f"Test passed for {attribute} | "
+                    f"L2: {l2_error:.2e}, Rel L2: {rel_l2_error:.2e}, Max Abs: {max_abs_error:.2e}"
+                )
             except AssertionError as e:
                 logging.info(str(e))
                 raise
 
         logging.info(
             f"""
-        {'#' * 10}
-        Test passed for {self.current_run}
-        {'#' * 10}
-        """.strip()
-        )
+            {'#' * 10}
+            Test passed for {self.current_run}
+            {'#' * 10}
+            """.strip()
+                )
 
     def __init(self, ds: DiagnosticState):
         tp = test_params(ds)
@@ -99,24 +136,8 @@ class CompareSol(object):
         with open("./src/tests/test_targets.yml", "r") as infile:
             self.target = yaml.safe_load(infile)
 
-    def __plot_comparison(self, mem, ud):
-        tc = self.tcs[self.current_run]
+    def __plot_comparison(self, mem, ref_mem, ud):
         tp = self.tps[self.current_run]
-
-        ref_mem = copy.deepcopy(mem)
-        for attribute in tp.attributes:
-            if attribute != "p2_nodes":
-                setattr(
-                    ref_mem.sol,
-                    attribute,
-                    self.__get_ens(tc, tp, attribute, summed=False),
-                )
-            else:
-                setattr(
-                    ref_mem.mpv,
-                    attribute,
-                    self.__get_ens(tc, tp, attribute, summed=False),
-                )
 
         for attribute in tp.attributes:
             arr_plots = []
@@ -150,13 +171,17 @@ class CompareSol(object):
         else:
             # test_sol = mpv.p2_nodes.T * ud.Msq
             # test_sol -= mpv.HydroState_n.pi0[:,np.newaxis]
-            test_sol = get_p_from_pressure_related_fields(mem, ud).T
+            test_sol = get_p_from_pressure_related_fields(mem, ud, perturbation=True).T
+            # pass
 
         return test_sol
 
     @staticmethod
-    def __get_ens(tc, params, attribute, summed=True, normed=False):
-        times = params.times
+    def __get_ens(tc, params, attribute, time_increment=False, summed=True, normed=False):
+        if time_increment and attribute == "p2_nodes":
+            times = [params.times[0]-1, params.times[0]]
+        else:
+            times = params.times
         l_typ = params.l_typ
 
         tags = tc.get_tag_dict()
@@ -171,10 +196,16 @@ class CompareSol(object):
             tag=tag,
             inner=False,
             get_fn=False,
-            fn=params.fn + ".h5",
+            fn=tc.base_fn,
             load_ic=False,
-            avg=True,
-        )[0]
+            avg=False,
+        )
+
+        if time_increment and attribute == "p2_nodes":
+            ens = ens[1] - ens[0]
+        else:
+            ens = ens[0] # removes time axis
+        ens = ens[0] # removes ensemble axis
 
         if summed:
             return ens.sum()

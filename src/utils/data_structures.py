@@ -116,6 +116,17 @@ class DiagnosticState:
     # plot the comparison?
     plot_compare: bool = True
 
+    tolerances: dict[str, float] = field(default_factory=lambda: {
+        "rhou": 1e-5,
+        "rhov": 1e-5, 
+        "rhow": 1e-5,
+        "rhoY": 1e-5,
+        "rhoX": 1e-5,
+        "rho": 1e-5,
+        "p2_nodes": 1e-5
+    })
+    time_increment: bool = False
+
 
 @dataclass
 class SimulationState:

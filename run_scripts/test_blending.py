@@ -1,7 +1,6 @@
 import pytest
 import subprocess
 
-
 @pytest.mark.parametrize(
     "ic",
     [
@@ -12,10 +11,4 @@ def test_single_run(ic):
     result = subprocess.run(
         ["pybella", "-ic", ic, "-N", "1"], capture_output=True, text=True
     )
-
-    # result = subprocess.run(
-    #     ["python3", "-m", "pdb", "pybella", "-ic", ic, "-N", "1"],
-    #     capture_output=False,
-    #     text=True
-    # )
     assert result.returncode == 0, result.stderr.splitlines()[-3:]
