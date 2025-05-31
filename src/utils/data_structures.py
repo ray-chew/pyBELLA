@@ -117,6 +117,9 @@ class DiagnosticState:
     plot_compare: bool = True
 
     tolerances: dict[str, float] = field(default_factory=lambda: {
+    # for most tests, we want to ensure that the
+    # max absolute error is within singular precision
+    # limit.
         "rhou": 1e-5,
         "rhov": 1e-5, 
         "rhow": 1e-5,

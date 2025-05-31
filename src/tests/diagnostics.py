@@ -86,7 +86,7 @@ class CompareSol(object):
             max_abs_error = np.max(np.abs(test - ref))
 
             try:
-                assert rel_l2_error < self.tolerances[attribute], (
+                assert max_abs_error < self.tolerances[attribute], (
                     "Relative L2 error for attribute %s of %s exceeds tolerance:\n"
                     "L2 error: %.6e\nRelative L2 error: %.6e\nMax abs error: %.6e\nTolerance: %.6e"
                     % (
@@ -171,7 +171,7 @@ class CompareSol(object):
         else:
             # test_sol = mpv.p2_nodes.T * ud.Msq
             # test_sol -= mpv.HydroState_n.pi0[:,np.newaxis]
-            test_sol = get_p_from_pressure_related_fields(mem, ud, perturbation=True).T
+            test_sol = get_p_from_pressure_related_fields(mem, ud).T
             # pass
 
         return test_sol

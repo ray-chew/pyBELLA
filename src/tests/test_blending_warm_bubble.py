@@ -41,7 +41,7 @@ class UserData(object):
         self.no_of_hy_initial = 0
         self.no_of_hy_transition = 0
 
-        self.initial_blending = False
+        self.initial_blending = True
 
         self.diag = True
         self.diag_updt_targets = False
@@ -63,7 +63,7 @@ class UserData(object):
             plot_compare=True,
             time_increment=True,
             # The only thing that matters here is that
-            # p2_nodes remains of the order of magnitude
+            # p2_nodes remains small
             tolerances={
                 "rho": 1.0e-0,
                 "rhou": 1.0e-0,
@@ -71,7 +71,7 @@ class UserData(object):
                 "rhow": 1.0e-0,
                 "rhoY": 1.0e-0,
                 "rhoX": 1.0e-0,
-                "p2_nodes": 1.0e-0,
+                "p2_nodes": 1.0e-4,
             }
         )
 
