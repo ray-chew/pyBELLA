@@ -62,6 +62,8 @@ def main():
             if sst.N == 1:
                 mem.time.window_step = mem.time.step
 
+            debug_writer = io.create_debug_writer(params.debug, writer, mem)
+
             logging.info("For ensemble member = %i..." % cnt)
             mem = dis_time_update.do(
                 sst,
@@ -69,7 +71,7 @@ def main():
                 tout,
                 blend,
                 step_writer,
-                params.debug,
+                debug_writer
             )
 
             if sst.ud.diag:
