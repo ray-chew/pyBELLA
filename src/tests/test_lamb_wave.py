@@ -63,13 +63,13 @@ class UserData(object):
         self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
         self.coriolis_strength[2] = 2.0 * self.omega * self.t_ref
 
-        for i in range(3):
-            if (self.gravity_strength[i] > np.finfo(np.float).eps) or (i == 1):
-                self.i_gravity[i] = 1
-                self.gravity_direction = 1
+        gravity_mask = (self.gravity_strength > np.finfo(np.float64).eps) | (np.arange(3) == 1)
+        self.i_gravity = gravity_mask.astype(int)
+        if np.any(gravity_mask):
+            self.gravity_direction = np.where(gravity_mask)[0][-1]  # Use last matching index
 
-            if self.coriolis_strength[i] > np.finfo(np.float).eps:
-                self.i_coriolis[i] = 1
+        coriolis_mask = self.coriolis_strength > np.finfo(np.float64).eps
+        self.i_coriolis = coriolis_mask.astype(int)
 
         j = 4.0
         Lx = 1.0 * np.pi * self.Cs / self.N_ref * j

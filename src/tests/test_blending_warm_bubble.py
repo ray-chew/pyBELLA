@@ -28,13 +28,6 @@ class UserData(object):
 
         self.is_compressible = 1
 
-        # if self.is_compressible == 1:
-        #     self.output_suffix = "_%i_%i_%.1f_comp" %(self.inx-1,self.iny-1,self.tout[-1])
-        # if self.is_compressible == 0:
-        #     self.output_suffix = "_%i_%i_%.1f_psinc" %(self.inx-1,self.iny-1,self.tout[-1])
-        # if self.continuous_blending == True:
-        #     self.output_suffix = "_%i_%i_%.1f" %(self.inx-1,self.iny-1,self.tout[-1])
-
         self.continuous_blending = False
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
@@ -99,7 +92,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     p = np.repeat(mpv.HydroState.p0.reshape(1, -1), elem.icx, axis=0)
     rhoY = mpv.HydroState.rhoY0[
         np.newaxis, :
-    ]  # np.repeat(mpv.HydroState.rhoY0.reshape(1,-1),elem.icx,axis=0)
+    ]
 
     perturbation = (delth / 300.0) * (np.cos(0.5 * np.pi * r) ** 2)
     perturbation[np.where(r > 1.0)] = 0.0
@@ -119,7 +112,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     p = mpv.HydroState_n.p0
     rhoY = mpv.HydroState_n.rhoY0
     mpv.p2_nodes[...] = (p - mpv.HydroState_n.p0) / rhoY / ud.Msq
-    # mpv.p2_nodes[...] = 1.0
 
     bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 

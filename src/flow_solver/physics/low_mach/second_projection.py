@@ -268,7 +268,7 @@ def euler_backward_non_advective_impl_part(
     # p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
 
     p2, _ = sp.sparse.linalg.bicgstab(
-        lap, rhs_inner, tol=ud.tol, maxiter=ud.max_iterations, callback=counter
+        lap, rhs_inner, atol=ud.tol, maxiter=ud.max_iterations, callback=counter
     )
     # p2, _ = gmres(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations)
     # p2,info = bicgstab(lap,rhs.ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
