@@ -32,8 +32,7 @@ class UserData(object):
         self.coriolis_strength = np.zeros((3))
 
         self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
-        self.coriolis_strength[0] = self.omega * self.t_ref
-        self.coriolis_strength[2] = self.omega * self.t_ref
+        self.coriolis_strength[2] = 2.0 * self.omega * self.t_ref
 
         gravity_mask = (self.gravity_strength > np.finfo(np.float64).eps) | (np.arange(3) == 1)
         self.i_gravity = gravity_mask.astype(int)
