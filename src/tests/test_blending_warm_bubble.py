@@ -80,7 +80,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     y0 = 0.2
     r0 = 0.2
 
-    hydrostatics.state(mpv, elem, node, th, ud)
+    hydrostatics.integrated_state(mpv, elem, node, th, ud)
 
     x = elem.x
     y = elem.y
