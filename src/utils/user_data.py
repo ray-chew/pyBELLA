@@ -19,102 +19,102 @@ class UserDataInit(object):
         for key, value in vars(gconsts).items():
             setattr(self, key, value)
 
-            # else:
-            ##########################################
-            # SPATIAL GRID
-            ##########################################
-            self.inx = 64 + 1
-            self.iny = 64 + 1
-            self.inz = 1
+        # else:
+        ##########################################
+        # SPATIAL GRID
+        ##########################################
+        self.inx = 64 + 1
+        self.iny = 64 + 1
+        self.inz = 1
 
-            self.xmin = -1.0
-            self.xmax = 1.0
-            self.ymin = 0.0
-            self.ymax = 1.0
-            self.zmin = -1.0
-            self.zmax = 1.0
+        self.xmin = -1.0
+        self.xmax = 1.0
+        self.ymin = 0.0
+        self.ymax = 1.0
+        self.zmin = -1.0
+        self.zmax = 1.0
 
-            ##########################################
-            # BOUNDARY CONDITIONS
-            ##########################################
-            self.bdry_type = np.empty((3), dtype=object)
-            self.bdry_type[0] = opts.BdryType.PERIODIC
-            self.bdry_type[1] = opts.BdryType.WALL
-            self.bdry_type[2] = opts.BdryType.WALL
+        ##########################################
+        # BOUNDARY CONDITIONS
+        ##########################################
+        self.bdry_type = np.empty((3), dtype=object)
+        self.bdry_type[0] = opts.BdryType.PERIODIC
+        self.bdry_type[1] = opts.BdryType.WALL
+        self.bdry_type[2] = opts.BdryType.WALL
 
-            ##########################################
-            # TEMPORAL
-            ##########################################
-            self.CFL = 0.5
-            self.dtfixed0 = 100.0
-            self.dtfixed = 100.0
+        ##########################################
+        # TEMPORAL
+        ##########################################
+        self.CFL = 0.5
+        self.dtfixed0 = 100.0
+        self.dtfixed = 100.0
 
-            self.acoustic_timestep = 0
+        self.acoustic_timestep = 0
 
-            self.tout = np.arange(0.0, 1.01, 0.01)[10:]
-            self.stepmax = 10000
+        self.tout = np.arange(0.0, 1.01, 0.01)[10:]
+        self.stepmax = 10000
 
-            ##########################################
-            # MODEL REGIMES
-            ##########################################
-            self.is_ArakawaKonor = 0
-            self.is_nonhydrostatic = 1
-            self.is_compressible = 1
+        ##########################################
+        # MODEL REGIMES
+        ##########################################
+        self.is_ArakawaKonor = 0
+        self.is_nonhydrostatic = 1
+        self.is_compressible = 1
 
-            self.compressibility = 1.0
+        self.compressibility = 1.0
 
-            ##########################################
-            # PHYSICS AND BACKGROUND WIND
-            ##########################################
-            self.u_wind_speed = 0.0
-            self.v_wind_speed = 0.0
-            self.w_wind_speed = 0.0
+        ##########################################
+        # PHYSICS AND BACKGROUND WIND
+        ##########################################
+        self.u_wind_speed = 0.0
+        self.v_wind_speed = 0.0
+        self.w_wind_speed = 0.0
 
-            self.stratification = self.stratification_function
+        self.stratification = self.stratification_function
 
-            ##########################################
-            # NUMERICS
-            ##########################################
-            # Do we solve the left-hand side?
-            self.do_advection = True
+        ##########################################
+        # NUMERICS
+        ##########################################
+        # Do we solve the left-hand side?
+        self.do_advection = True
 
-            # Advection limiter types
-            self.limiter_type_scalars = opts.LimiterType.NONE
-            self.limiter_type_velocity = opts.LimiterType.NONE
+        # Advection limiter types
+        self.limiter_type_scalars = opts.LimiterType.NONE
+        self.limiter_type_velocity = opts.LimiterType.NONE
 
-            # Iterative solver
-            self.tol = 1.0e-8
-            self.max_iterations = 6000
+        # Iterative solver
+        self.tol = 1.0e-8
+        self.max_iterations = 6000
 
-            ##########################################
-            # BLENDING
-            ##########################################
-            self.blending_weight = 0.0 / 16
-            self.blending_mean = "rhoY"  # 1.0, rhoY
-            self.blending_conv = "rho"  # theta, rho
-            self.blending_type = "half"
+        ##########################################
+        # BLENDING
+        ##########################################
+        self.blending_weight = 0.0 / 16
+        self.blending_mean = "rhoY"  # 1.0, rhoY
+        self.blending_conv = "rho"  # theta, rho
+        self.blending_type = "half"
 
-            self.continuous_blending = False
-            self.no_of_pi_initial = 1
-            self.no_of_pi_transition = 0
-            self.no_of_hy_initial = 0
-            self.no_of_hy_transition = 0
+        self.continuous_blending = False
+        self.no_of_pi_initial = 1
+        self.no_of_pi_transition = 0
+        self.no_of_hy_initial = 0
+        self.no_of_hy_transition = 0
 
-            self.initial_blending = False
+        self.initial_blending = False
 
-            ##########################################
-            # DIAGNOSTICS
-            ##########################################
-            self.diag = False
-            self.diag_state = None
+        ##########################################
+        # DIAGNOSTICS
+        ##########################################
+        self.diag = False
+        self.diag_state = None
 
-            ##########################################
-            # OUTPUTS
-            ##########################################
-            self.autogen_fn = False
-            self.output_timesteps = False
-            self.output_type = "output"
-            self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
+        ##########################################
+        # OUTPUTS
+        ##########################################
+        self.autogen_fn = False
+        self.output_timesteps = False
+        self.output_type = "output"
+        self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
 
         if len(kwargs) > 0:
             for key, value in kwargs.items():
