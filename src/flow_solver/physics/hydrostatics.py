@@ -79,7 +79,7 @@ def column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     HydroState_n.p0[xc_idx, igy + 1 :] = rhoY_hydro_n[:, igy:] ** th.gamm
     HydroState_n.p20[xc_idx, igy + 1 :] = pi_hydro_n[:, igy:] / ud.Msq
 
-def state(mpv, elem, node, th, ud):
+def integrated_state(mpv, elem, node, th, ud):
     """
     Compute hydrostatic background state for atmospheric model.
     Handles arbitrary stratification profiles and proper numerical integration.
@@ -212,6 +212,46 @@ def state(mpv, elem, node, th, ud):
         mpv.HydroState_n.rhoY0[:] = 1.0
         mpv.HydroState_n.Y0[:] = 1.0
         mpv.HydroState_n.S0[:] = 1.0
+
+
+def analytical_state(mpv, elem, node, th, ud):
+    g = ud.gravity_strength[1]
+    Gamma = th.Gamma
+    Hex = 1.0 / (th.Gamma * g)
+    dy = elem.dy
+
+    pi_np = np.exp(-(node.y + 0.5 * dy) / Hex)
+    pi_nm = np.exp(-(node.y - 0.5 * dy) / Hex)
+    pi_n = np.exp(-(node.y) / Hex)
+
+    Y_n = - Gamma * g * dy / (pi_np - pi_nm)
+    P_n = pi_n**th.gm1inv
+    p_n = pi_n**th.Gammainv
+    rho_n = P_n / Y_n
+
+    mpv.HydroState_n.p20[...] = pi_n / ud.Msq
+    mpv.HydroState_n.p0[...] = p_n
+    mpv.HydroState_n.rho0[...] = rho_n
+    mpv.HydroState_n.rhoY0[...] = P_n
+    mpv.HydroState_n.Y0[...] = Y_n
+    mpv.HydroState_n.S0[...] = 1.0 / Y_n
+
+    pi_cp = np.exp(-(elem.y + 0.5 * dy) / Hex)
+    pi_cm = np.exp(-(elem.y - 0.5 * dy) / Hex)
+    pi_c  = np.exp(-(elem.y) / Hex)
+
+    Y_c = - Gamma * g * dy / (pi_cp - pi_cm)
+    P_c = pi_c**th.gm1inv
+    p_c = pi_c**th.Gammainv
+    rho_c = P_c / Y_c
+
+    mpv.HydroState.p20[...] = pi_c / ud.Msq
+    mpv.HydroState.p0[...] = p_c
+    mpv.HydroState.rho0[...] = rho_c
+    mpv.HydroState.rhoY0[...] = P_c
+    mpv.HydroState.Y0[...] = Y_c
+    mpv.HydroState.S0[...] = 1.0 / Y_c
+
 
 
 def initial_pressure(Sol, mpv, elem, node, ud, th):
