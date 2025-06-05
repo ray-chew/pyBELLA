@@ -4,7 +4,9 @@ import subprocess
 @pytest.mark.parametrize("ic", 
                         ["test_travelling_vortex",
                         "test_internal_long_wave",
-                        "test_lamb_wave"])
+                        "test_lamb_wave",
+                        "test_unstable_lamb",]
+                        )
 def test_single_run(ic):
     result = subprocess.run(
     ["pybella", "-ic", ic, "-N", "1"],

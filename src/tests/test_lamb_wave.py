@@ -10,7 +10,7 @@ from ..utils.data_structures import DiagnosticState
 class UserData(object):
     NSPEC = 1
     grav = 9.81  # [m s^{-2}]
-    omega = 7.292 * 1e-5  # [s^{-1}]
+    omega = 0.0 * 1e-5  # [s^{-1}]
 
     R_gas = 287.4  # [J kg^{-1} K^{-1}]
     R_vap = 461.0
@@ -76,7 +76,7 @@ class UserData(object):
         self.xmin = -Lx / self.h_ref
         self.xmax = Lx / self.h_ref
         self.ymin = -0.0
-        self.ymax = 2.0
+        self.ymax = 8.0
         self.zmin = -1.0
         self.zmax = 1.0
 
@@ -88,7 +88,8 @@ class UserData(object):
         self.bdry_type[0] = opts.BdryType.PERIODIC
         self.bdry_type[1] = opts.BdryType.WALL
         self.bdry_type[2] = opts.BdryType.WALL
-        self.ATMOSPHERIC_EXTENSION = False
+        self.ATMOSPHERIC_EXTENSION = True
+        self.rayleigh_bdry_switch = False
 
         ##########################################
         # NUMERICS
@@ -96,13 +97,13 @@ class UserData(object):
         self.CFL = 0.9
 
         self.inx = 151 + 1
-        self.iny = 15 + 1
+        self.iny = 60 + 1
         self.inz = 1
 
-        self.dtfixed0 = 100.0 / self.t_ref
+        self.dtfixed0 = 10.0 / self.t_ref
         self.dtfixed = self.dtfixed0
 
-        self.do_advection = False
+        self.do_advection = True
         self.limiter_type_scalars = opts.LimiterType.NONE
         self.limiter_type_velocity = opts.LimiterType.NONE
 
@@ -125,40 +126,38 @@ class UserData(object):
         self.initial_blending = False
         self.initial_projection = True
 
-        self.tout = [36.0]
+        self.tout = [360.0]
         # self.tout = np.arange(0,361,1.0)
         # self.tout = np.append(self.tout, [720.0])
-        self.stepmax = 31
+        self.stepmax = 801
         self.output_timesteps = True
 
         self.autogen_fn = False
 
-        self.output_base_name = "_lamb_wave"
-        self.output_type = "test"
-        self.aux = ""
-        self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
-
         self.diag = True
         self.diag_updt_targets = False
 
+        self.output_base_name = "_lamb_wave"
+        self.output_type = "test" if not self.diag_updt_targets else "target"
+        self.aux = ""
+        self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
+
         self.diag_state = DiagnosticState(
             test_name="test_lamb_wave",
-            file_name="test_lamb_wave",
+            file_name="target_lamb_wave",
             Nx=self.inx - 1,
             Ny=self.iny - 1,
             steps=[self.stepmax - 1],
         )
 
         self.stratification = self.stratification_wrapper
-        self.rayleigh_bc = self.rayleigh_bc_function
+        # self.rayleigh_bc = self.rayleigh_bc_function
         self.init_forcing = self.forcing
 
-        self.rayleigh_forcing = True
+        self.rayleigh_forcing = False
         self.rayleigh_forcing_type = "func"  # func or file
-        self.rayleigh_forcing_fn = (
-            "output_mark_wave_ensemble=1_601_240_bottom_forcing_S16.h5"
-        )
-        self.rayleigh_forcing_path = "./output_mark_wave"
+        self.rayleigh_forcing_fn = None
+        self.rayleigh_forcing_path = None
 
     def stratification_wrapper(self, dy):
         return lambda y: self.stratification_function(y, dy)
@@ -174,11 +173,6 @@ class UserData(object):
         Theta = -(Gamma * g * dy) / (pi_p - pi_m)
 
         return Theta
-
-        # Nsq = self.Nsq_ref * self.t_ref**2
-        # g = self.gravity_strength[1] / self.Msq
-
-        # return np.exp(Nsq * y / g)
 
     @staticmethod
     def rayleigh_bc_function(ud):
@@ -302,8 +296,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         ud.tcy, ud.tny = bdry.get_tau_y(ud, elem, node, 0.5)
 
     if ud.rayleigh_forcing:
-        # ud.tcy, ud.tny = get_tau_y(ud, elem, node, 0.005)
-
         ud.forcing_tcy, ud.forcing_tny = bdry.get_bottom_tau_y(
             ud, elem, node, 0.2, cutoff=0.3
         )
@@ -329,7 +321,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     ud.stratification = ud.stratification(dy)
 
     # Use hydrostatically balanced background
-    hydrostatics.state(mpv, elem, node, th, ud)
+    hydrostatics.analytical_state(mpv, elem, node, th, ud)
     rhobar = mpv.HydroState.rho0.reshape(1, -1)
     Ybar = mpv.HydroState.Y0.reshape(1, -1)
     pibar = mpv.HydroState.p20.reshape(1, -1) * ud.Msq
@@ -348,8 +340,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     if ud.coriolis_strength[2] == 0.0:
         ud.coriolis_strength[2] += 1e-15
     F = ud.coriolis_strength[2]
-    # if F == 0.0:
-    #     F += 1e-15
 
     G = np.sqrt(9.0 / 40.0)
     Gamma = G * N / Cs
@@ -370,7 +360,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     w = ud.w_wind_speed
     Y = Ybar + Yp
 
-    # rho = (((pibar + Msq * pi_p))**th.gm1inv) / Y
     rho = rhobar
 
     Sol.rho[...] = rho
@@ -387,9 +376,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     _, _, _, pi_n = ud.rf_bot.dehatter(th, grid="n")
 
     mpv.p2_nodes[...] = pi_n
-
-    # if ud.bdry_type[1] == 'RAYLEIGH':
-    #     rayleigh_damping(Sol, mpv, ud, ud.tcy, elem, th)
 
     bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 

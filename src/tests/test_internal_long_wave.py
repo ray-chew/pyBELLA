@@ -143,11 +143,6 @@ class UserData(object):
 
         self.autogen_fn = False
 
-        self.output_base_name = "_internal_long_wave"
-        self.output_type = "test"
-        self.aux = ""
-        self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
-
         self.output_timesteps = True
 
         self.stratification = self.stratification_function
@@ -156,6 +151,11 @@ class UserData(object):
 
         self.diag = True
         self.diag_updt_targets = False
+
+        self.output_base_name = "_internal_long_wave"
+        self.output_type = "test" if not self.diag_updt_targets else "target"
+        self.aux = ""
+        self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
 
         self.diag_state = DiagnosticState(
             test_name="test_internal_long_wave",
@@ -196,7 +196,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     xc = 0.0
     a = ud.scale_factor * 5.0e3 / ud.h_ref
 
-    hydrostatics.state(mpv, elem, node, th, ud)
+    hydrostatics.analytical_state(mpv, elem, node, th, ud)
 
     HySt = var.States(node.sc, ud)
     HyStn = var.States(node.sc, ud)

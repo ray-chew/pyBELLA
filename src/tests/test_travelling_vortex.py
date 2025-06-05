@@ -131,13 +131,6 @@ class UserData(object):
         self.tout = [1.0]  # np.arange(0.0,10.1,0.1)[1:]
         self.stepmax = 101
 
-        self.output_base_name = "_travelling_vortex"
-
-        self.output_type = "test"
-        self.aux = ""
-
-        self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
-
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
         self.output_timesteps = True
@@ -145,9 +138,14 @@ class UserData(object):
         self.diag = True
         self.diag_updt_targets = False
 
+        self.output_base_name = "_travelling_vortex"
+        self.output_type = "test" if not self.diag_updt_targets else "target"
+        self.aux = ""
+        self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
+
         self.diag_state = DiagnosticState(
             test_name="test_travelling_vortex",
-            file_name="test_travelling_vortex",
+            file_name="target_travelling_vortex",
             Nx=self.inx - 1,
             Ny=self.iny - 1,
             steps=[self.stepmax - 1],
@@ -208,7 +206,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     igxn = node.igx
     igyn = node.igy
 
-    hydrostatics.state(mpv, elem, node, th, ud)
+    hydrostatics.integrated_state(mpv, elem, node, th, ud)
 
     coe = np.zeros((25))
     coe[0] = 1.0 / 24.0
