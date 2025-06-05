@@ -13,6 +13,7 @@ from datetime import datetime
 import argparse
 
 from . import sim_params as params
+from ..interfaces.ic_config import IC_MODULES
 
 
 def initialise(sst):
@@ -520,31 +521,7 @@ def get_args():
         dest="ic",
         help="<Required> Set initial conditions",
         required=True,
-        choices={
-            "aw",
-            "tv",
-            "tv_neg",
-            "tv_2d",
-            "tv_3d",
-            "tv_corr",
-            "rb",
-            "rbc",
-            "igw",
-            "igw_3d",
-            "lbw",
-            "skl",
-            "mark",
-            "lw_p",
-            "igw_bb",
-            "swe",
-            "swe_bal_vortex",
-            "swe_icshear",
-            "swe_dvortex",
-            "test_travelling_vortex",
-            "test_internal_long_wave",
-            "test_lamb_wave",
-            "test_blending_warm_bubble",
-        },
+        choices=set(IC_MODULES.keys()),  # Use the keys from IC_MODULES
     )
 
     subparsers = parser.add_subparsers(dest="subcommand")
@@ -586,55 +563,21 @@ def get_args():
     args = parser.parse_args()  # collect cmd line args
     ic = args.ic
 
-    if ic == "bi":
-        from inputs.baroclinic_instability_periodic import UserData, sol_init
-    elif ic == "tv" or ic == "tv_2d":
-        from inputs.travelling_vortex_2D import UserData, sol_init
-    elif ic == "tv_neg":
-        from inputs.travelling_vortex_2D_neg import UserData, sol_init
-    elif ic == "tv_3d":
-        from inputs.travelling_vortex_3D import UserData, sol_init
-    elif ic == "tv_corr":
-        from inputs.travelling_vortex_3D_Coriolis import UserData, sol_init
-    elif ic == "aw":
-        from inputs.acoustic_wave_high import UserData, sol_init
-    elif ic == "igw":
-        from inputs.internal_long_wave import UserData, sol_init
-    elif ic == "igw_3d":
-        from inputs.internal_long_wave_3D import UserData, sol_init
-    elif ic == "lbw":
-        from inputs.lamb_waves import UserData, sol_init
-    elif ic == "skl":
-        from inputs.sk_lamb_wave import UserData, sol_init
-    elif ic == "mark":
-        from inputs.mark import UserData, sol_init
-    elif ic == "lw_p":
-        from inputs.lamb_wave_perturb import UserData, sol_init
-    elif ic == "igw_bb":
-        from inputs.igw_baldauf_brdar import UserData, sol_init
-    elif ic == "rb":
-        from ..inputs.rising_bubble import UserData, sol_init
-    elif ic == "rbc":
-        from inputs.rising_bubble_cold import UserData, sol_init
-    elif ic == "swe_bal_vortex":
-        from inputs.swe_bal_vortex import UserData, sol_init
-    elif ic == "swe":
-        from inputs.shallow_water_3D import UserData, sol_init
-    elif ic == "swe_icshear":
-        from inputs.shallow_water_3D_icshear import UserData, sol_init
-    elif ic == "swe_dvortex":
-        from inputs.shallow_water_3D_dvortex import UserData, sol_init
-    elif ic == "test_travelling_vortex":
-        from ..tests.test_travelling_vortex import UserData, sol_init
-    elif ic == "test_internal_long_wave":
-        from ..tests.test_internal_long_wave import UserData, sol_init
-    elif ic == "test_lamb_wave":
-        from ..tests.test_lamb_wave import UserData, sol_init
-    elif ic == "test_blending_warm_bubble":
-        from ..tests.test_blending_warm_bubble import UserData, sol_init
+    # Import the appropriate module
+    if ic in IC_MODULES:
+        module_name = IC_MODULES[ic]
+        try:
+            module = __import__(module_name, fromlist=['UserData', 'sol_init'])
+            UserData = getattr(module, 'UserData')
+            sol_init = getattr(module, 'sol_init')
+        except ImportError as e:
+            raise ImportError(f"Failed to import {module_name}: {e}")
+    else:
+        raise ValueError(f"Unknown initial condition: {ic}")
 
     if UserData is None or sol_init is None:
         assert 0, "Initial condition file is not well defined."
+
     if args.N is None:
         N = 1
     else:
@@ -785,9 +728,11 @@ def init_logger(ud):
     # add the handler to the root logger
     logging.getLogger().addHandler(console)
 
-    # Suppress matplotlib debug output
+    # Suppress library specific debug outputs
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
     logging.getLogger("matplotlib.font_manager").setLevel(logging.WARNING)
+    logging.getLogger("numba").setLevel(logging.WARNING)
+    logging.getLogger("numba.core").setLevel(logging.WARNING)
 
     logging.info("Input file is %s" % input_filename)
 
