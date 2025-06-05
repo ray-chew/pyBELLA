@@ -87,8 +87,8 @@ class EnsembleState:
 
     def get_grid(self) -> tuple[Grid, Grid]:
         # Assuming identical underlying grid for all ensemble memebers
-        elem = self.memebers[0].elem
-        node = self.memebers[0].node
+        elem = self.members[0].elem
+        node = self.members[0].node
         return elem, node
 
     def __getitem__(self, index):
