@@ -595,7 +595,7 @@ def stencil_9pt_numba_test(mpv, node, coriolis, diag_inv, ud):
     dummy_p = np.zeros((node.isc[1], node.isc[0]))
 
     ### Need to clean this up, but the Numba stencil is used in the Helmholtz solve for radiative BC!
-    if hasattr(ud, "LAMB_BDRY"):
+    if hasattr(ud, "ATMOSPHERIC_EXTENSION"):
         return lambda p: lap2D_numba_test(
             p, dummy_p, dx, dy, coeffs, diag_inv.T, coriolis, shp
         )

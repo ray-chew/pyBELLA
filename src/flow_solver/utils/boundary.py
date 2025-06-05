@@ -85,7 +85,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
 
                     S = 1.0 / ud.stratification(elem.y[nimage[y_axs]])
 
-                    if hasattr(ud, "LAMB_BDRY"):
+                    if hasattr(ud, "ATMOSPHERIC_EXTENSION"):
                         dpi = (
                             mpv.HydroState.p20[nimage[y_axs]]
                             - mpv.HydroState.p20[nlast[y_axs]]
@@ -110,7 +110,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     Y_source = Sol.rhoY[nsource] / Sol.rho[nsource]
                     Y_image = rhoY / rho
 
-                    if hasattr(ud, "LAMB_BDRY"):
+                    if hasattr(ud, "ATMOSPHERIC_EXTENSION"):
                         if direction > 0:  # if bottom boundary
                             v = Sol.rhov[nsource] * Y_source / Sol.rho[nsource] * rho
                         else:  # if top boundary
@@ -139,7 +139,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     Sol.rho[nimage] = rho
                     Sol.rhou[nimage] = rho * u * Th_slc
                     # Sol.rhov[nimage] = 0.0#rho*v
-                    if hasattr(ud, "LAMB_BDRY"):
+                    if hasattr(ud, "ATMOSPHERIC_EXTENSION"):
                         Sol.rhov[nimage] = -v / Y_image
                     else:
                         Sol.rhov[nimage] = rho * v

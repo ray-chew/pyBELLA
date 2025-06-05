@@ -44,7 +44,7 @@ def euler_forward_non_advective(
     dSdy = mpv.HydroState_n.get_dSdy(elem, node)
 
     mpv.rhs[...] = divergence_nodes(mpv.rhs, elem, node, Sol, ud)
-    if not hasattr(ud, "LAMB_BDRY"):
+    if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
         scale_wall_node_values(mpv.rhs, node, ud, 2.0)
     div = mpv.rhs
 
@@ -401,7 +401,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     # mpv.wcenter[:,-1] = mpv.wcenter[:,-2]
 
     assert True
-    if not hasattr(ud, "LAMB_BDRY"):
+    if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
         scale_wall_node_values(mpv.wcenter, node, ud)
 
 
@@ -604,7 +604,7 @@ def divergence_nodes(rhs, elem, node, Sol, ud):
     inner_idx = tuple(inner_idx)
     inner_idx_p1y = tuple(inner_idx_p1y)
 
-    if not hasattr(ud, "LAMB_BDRY"):
+    if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
         if (
             ud.bdry_type[1] == opts.BdryType.WALL
             or ud.bdry_type[1] == opts.BdryType.RAYLEIGH

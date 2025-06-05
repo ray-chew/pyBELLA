@@ -88,7 +88,7 @@ class UserData(object):
         self.bdry_type[0] = opts.BdryType.PERIODIC
         self.bdry_type[1] = opts.BdryType.WALL
         self.bdry_type[2] = opts.BdryType.WALL
-        self.LAMB_BDRY = False
+        self.ATMOSPHERIC_EXTENSION = False
 
         ##########################################
         # NUMERICS
