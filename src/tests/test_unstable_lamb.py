@@ -5,6 +5,7 @@ Unstable Lamb Wave integral test involving vertical Coriolis and Rayleigh BC.
 import numpy as np
 from ..flow_solver.physics import hydrostatics
 from ..flow_solver.utils import boundary as bdry
+from ..flow_solver.utils import options as opts
 
 from ..utils.data_structures import DiagnosticState
 
@@ -20,11 +21,27 @@ class UserData(object):
 
         self.T_ref = 300.00              # [K]
         self.R_gas = 287.4               # [J kg^{-1} K^{-1}]
+        self.Rg = self.R_gas / (self.h_ref**2 / self.t_ref**2 / self.T_ref)
         self.gamma = 1.4
         self.cp_gas = self.gamma * self.R_gas / (self.gamma-1.0)
 
         self.Nsq = (self.grav / np.sqrt(self.cp_gas * self.T_ref))**2
         self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
+
+        self.gravity_strength = np.zeros((3))
+        self.coriolis_strength = np.zeros((3))
+
+        self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
+        self.coriolis_strength[0] = self.omega * self.t_ref
+        self.coriolis_strength[2] = self.omega * self.t_ref
+
+        gravity_mask = (self.gravity_strength > np.finfo(np.float64).eps) | (np.arange(3) == 1)
+        self.i_gravity = gravity_mask.astype(int)
+        if np.any(gravity_mask):
+            self.gravity_direction = np.where(gravity_mask)[0][-1]  # Use last matching index
+
+        coriolis_mask = self.coriolis_strength > np.finfo(np.float64).eps
+        self.i_coriolis = coriolis_mask.astype(int)
 
         ##########################################
         # SPATIAL GRID
@@ -38,7 +55,6 @@ class UserData(object):
         ##########################################
         # BOUNDARY CONDITIONS
         ##########################################
-        from ..flow_solver.utils import options as opts
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = opts.BdryType.PERIODIC
@@ -54,7 +70,7 @@ class UserData(object):
         self.dtfixed = self.dtfixed0
 
         self.tout = [36.0]
-        self.stepmax = 101
+        self.stepmax = 51
 
         self.is_compressible = 1
         self.is_nonhydrostatic = 1
@@ -89,6 +105,7 @@ class UserData(object):
         # STRATIFICATION
         ##########################################
         self.stratification = self.stratification_wrapper
+        self.rayleigh_bc = self.rayleigh_bc_function
 
         ##########################################
         # DIAGNOSTICS
@@ -111,6 +128,9 @@ class UserData(object):
         self.rayleigh_forcing_type = "func"
         self.rayleigh_forcing_fn = None
         self.rayleigh_forcing_path = None
+
+        self.init_forcing = self.forcing
+        self.rayleigh_bdry_switch = True
 
         self.diag_state = DiagnosticState(
             test_name="test_unstable_lamb",
@@ -151,147 +171,197 @@ class UserData(object):
         return lambda y : self.stratification_function(y, dy)
 
     def stratification_function(self, y, dy):
+        g = self.gravity_strength[1]
+        Gamma = (self.gamma - 1.0) / self.gamma
+        Hex = 1.0 / (Gamma * g)
 
-        Nsq = self.Nsq * self.t_ref**2
-        g = self.grav / self.Msq
+        pi_p = np.exp(-(y + 0.5 * dy) / Hex)
+        pi_m = np.exp(-(y - 0.5 * dy) / Hex)
 
-        return np.exp(Nsq * y / g)
+        Theta = - (Gamma * g * dy) / (pi_p - pi_m)
+        return Theta
+    
+    @staticmethod
+    def rayleigh_bc_function(ud):
+        if ud.bdry_type[1] == opts.BdryType.RAYLEIGH or ud.rayleigh_forcing == True:
+            ud.inbcy = ud.iny - 1
+            ud.iny0 = np.copy(ud.iny)
+            ud.iny = ud.iny0 + int(3*ud.inbcy)
 
+            # tentative workaround
+            ud.bcy = ud.ymax
+            ud.ymax += 3.0 * ud.bcy
+
+    class forcing(object):
+        def __init__(self, k, mu, Cs, F, N, Gamma, ampl, g, rhobar, Ybar, rhobar_n, Ybar_n, X, Y, Xn, Yn):
+            self.k = k
+            self.mu = mu
+            self.Cs = Cs
+            self.F = F
+            self.N = N
+            self.Gamma = Gamma
+
+            self.oorhobarsqrt = 1.0 / np.sqrt(rhobar.T)
+            self.Ybar = Ybar.T
+
+            self.oorhobarsqrt_n = 1.0 / np.sqrt(rhobar_n.T)
+            self.Ybar_n = Ybar_n.T
+
+            self.g = g
+            self.ampl = ampl
+
+            self.X = X
+            self.Y = Y
+            self.Xn = Xn
+            self.Yn = Yn
+
+        def get_T_matrix(self):
+            # system matrix of linearized equations
+            matrix = -np.array([[0, self.F, 0, 1j*self.Cs*self.k], 
+                            [-self.F, 0, -self.N, self.Cs*(self.mu+self.Gamma)], 
+                            [0, self.N, 0, 0], 
+                            [1j*self.Cs*self.k, self.Cs*(self.mu-self.Gamma), 0, 0]])
+        
+            self.T_matrix = matrix
+
+        def eigenfunction(self, t, s, grid='c'):
+            if grid == 'c':
+                x, z = self.X, self.Y
+            elif grid == 'n':
+                x, z, = self.Xn, self.Yn
+            
+            # Compute eigenvalues and eigenvectors
+            eigval, eigvec = np.linalg.eig( self.T_matrix )
+
+            # Find index of eigenvalue 
+            # with greatest real part aka the instability growth rate
+            ind = np.argmax( np.real( eigval ) )
+
+            # construct solution according to eq. 2.27 and 2.19
+            exponentials = np.exp( 1j * self.k * x + self.mu * z 
+                                + ( eigval[ind] ) * (t) + 1j * s * t )
+            chi_u  = self.ampl * np.real( eigvec[0,ind] * exponentials )
+            chi_w  = self.ampl * np.real( eigvec[1,ind] * exponentials )
+            chi_th = self.ampl * np.real( eigvec[2,ind] * exponentials )
+            chi_pi = self.ampl * np.real( eigvec[3,ind] * exponentials )
+
+            self.arrs = ( chi_u, chi_w, chi_th, chi_pi )
+
+        def dehatter(self, th, grid='c'):
+            if grid == 'n':
+                Ybar = self.Ybar_n
+                oorhobarsqrt = self.oorhobarsqrt_n
+            elif grid == 'c':
+                Ybar = self.Ybar
+                oorhobarsqrt = self.oorhobarsqrt
+
+            chi_u, chi_v, chi_Y, chi_pi = self.arrs
+
+            up = oorhobarsqrt * chi_u
+            vp = oorhobarsqrt * chi_v
+            Yp = oorhobarsqrt * self.N / self.g * Ybar * chi_Y
+            pi_p = oorhobarsqrt * self.Cs / Ybar / th.Gammainv * chi_pi
+            
+            return up.T, vp.T, Yp.T, pi_p.T
 
 
 def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
-    def bump(xi):
-        # eqn (11)
-        tmp = np.zeros_like(xi)
-        tmp[np.where(np.abs(xi) < 1.0)] = np.exp(
-            -1.0 / (1.0 - xi[np.where(np.abs(xi) < 1.0)] ** 2)
-        )
-        # return tmp
-        return np.ones_like(xi)
+    if hasattr(ud, 'rayleigh_bdry_switch'):
+        if ud.rayleigh_bdry_switch:
+            ud.bdry_type[1] = opts.BdryType.RAYLEIGH
 
-    if ud.bdry_type[1].value == "radiation":
+    if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
         ud.tcy, ud.tny = bdry.get_tau_y(ud, elem, node, 0.5)
 
-        if hasattr(ud, "rayleigh_forcing"):
-            if ud.rayleigh_forcing:
-                ud.forcing_tcy, ud.forcing_tny = bdry.get_bottom_tau_y(
-                    ud, elem, node, 0.2, cutoff=0.1
-                )
+    if ud.rayleigh_forcing:
+        ud.forcing_tcy, ud.forcing_tny = bdry.get_bottom_tau_y(ud, elem, node, 0.2, cutoff=0.3)
 
-    A0 = 1.0e-3  # eqn (12)
 
+    A0 = 1.0e-1 / ud.u_ref
     Msq = ud.Msq
-    g = ud.gravity_strength[1]
-    kappa = th.Gamma
+    g = ud.gravity_strength[1] * ud.Rg
 
     x = elem.x.reshape(-1, 1)
     y = elem.y.reshape(1, -1)
-    dy = np.diff(node.y)[0]
+    X, Y = np.meshgrid(x, y)
 
-    Hrho = 1.0 / g
-    use_hydrostate = False
-
-    ud.stratification = ud.stratification(dy)
-    hydrostatics.state(mpv, elem, node, th, ud)
-
-    if use_hydrostate:
-        # Use hydrostatically balanaced background
-        rhobar = mpv.HydroState.rho0.reshape(1, -1)
-        Ybar = mpv.HydroState.Y0.reshape(1, -1)
-        pibar = mpv.HydroState.p20.reshape(1, -1) * ud.Msq
-
-    else:
-        # Use hydrostatic balance in Mark's notes
-        Htheta = Hrho / kappa
-        rhobar = np.exp(-y / Hrho)
-        Ybar = np.exp(y / Htheta)
-        pibar = 1.0 / Ybar
-        mpv.HydroState.rho0[...] = rhobar
-        mpv.HydroState.Y0[...] = Ybar
-        mpv.HydroState.S0[...] = 1.0 / Ybar  # 1.0 / ud.stratification(y)
-        mpv.HydroState.rhoY0[...] = rhobar * Ybar
-
-    # dimensionless Brunt-Väisälä frequency
-    N = ud.t_ref * np.sqrt(ud.Nsq_ref)
-    # dimensionless speed of sound
-    Cs = np.sqrt(th.gamm / Msq)
-    waveno = N / Cs
-
-    ud.u_wind_speed = 0.0  # -Cs
-
-    Gamma = 1.0 / Hrho * (1.0 / th.gamm - 0.5)
-
-    # time shift of the initial solution
-    ts = -0.5 / N * np.pi
-    ts = 0.0
-
-    # set up perturbation quantities
-    # exp(-kGam * y)  / sqrt(rhobar) / Ybar = 1.0
-    up = A0 * Ybar * np.cos(waveno * x + Cs * ts)
-    vp = 0.0
-    wp = 0.0
-    Yp = 0.0
-    # th.Gamma * ud.Msq == 1 / dimensionless(c_p)
-    fac = th.Gamma
-    pi = A0 * Cs * fac * np.cos(waveno * x + Cs * ts) * Msq
-
-    # up = A / rhobar**0.5 * np.exp(-Gamma * y) * np.cos(N / Cs * (waveno * x + Cs * ts))
-    # pi = A * Cs * fac / rhobar**0.5 / Ybar * np.exp(-Gamma * y) * np.cos(N / Cs * (waveno * x + Cs * ts))
-
-    u = ud.u_wind_speed + up
-    v = ud.v_wind_speed + vp
-    w = ud.w_wind_speed + wp
-    Y = Ybar + Yp
-    dPdpi = th.gm1inv * pibar ** (th.gm1inv - 1.0)
-    Pbar = pibar**th.gm1inv
-    rhoY = Pbar  # + dPdpi * pi
-
-    # eqn (2.3)
-    # rho = (((pibar + pi))**th.gm1inv) / Y
-    # rho = Pbar / Y
-    rhobar = Pbar / Ybar
-    rho = rhobar  # rhoY / Ybar
-
-    Sol.rho[...] = Pbar / Y
-    Sol.rhou[...] = rho * u
-    Sol.rhov[...] = rho * v
-    Sol.rhow[...] = rho * w
-    Sol.rhoY[...] = rhoY
-    Sol.rhoX[...] = 0.0
-    mpv.p2_cells[...] = pi / Msq
-
-    ###################################################
-    # initialise nodal pi
     xn = node.x.reshape(-1, 1)
     yn = node.y.reshape(1, -1)
 
-    # initialise nodal pressure
-    Hrho_n = Hrho
+    dy = np.diff(node.y)[0]
 
-    if use_hydrostate:
-        # Use hydrostatically balanced background
-        Ybar_n = mpv.HydroState_n.Y0.reshape(1, -1)
-        rhobar_n = mpv.HydroState_n.rho0.reshape(1, -1)
-    else:
-        # Use hydrostatic balance from notes
-        Ybar_n = np.exp(yn / Htheta)
-        rhobar_n = np.exp(-yn / Hrho_n)
-        mpv.HydroState_n.Y0[...] = Ybar_n
-        mpv.HydroState_n.S0[...] = 1.0 / Ybar_n
+    Xn, Yn = np.meshgrid(xn, yn)
 
-    An = A0
+    ##################################################
+    # Reinitialise all background quantities
+    # as derived from one quantity.
+    ud.stratification = ud.stratification(dy)
 
-    pi_n = An * Cs * fac * np.cos(waveno * xn + Cs * ts)
-    # pi_n = An * Cs * fac / rhobar_n**0.5 / Ybar_n * np.exp(-Gamma * yn) * np.cos(N / Cs * (waveno * xn + Cs * ts))
+    # Use hydrostatically balanced background
+    hydrostatics.analytical_state(mpv, elem, node, th, ud)
+    rhobar = mpv.HydroState.rho0.reshape(1, -1)
+    Ybar = mpv.HydroState.Y0.reshape(1, -1)
+    pibar = mpv.HydroState.p20.reshape(1, -1) * ud.Msq
+
+    rhobar_n = mpv.HydroState_n.rho0.reshape(1, -1)
+    Ybar_n = mpv.HydroState_n.Y0.reshape(1, -1)
+
+    ##################################################
+    # dimensionless Brunt-Väisälä frequency
+    N = ud.t_ref * np.sqrt(ud.Nsq)
+    # dimensionless speed of sound
+    Cs = np.sqrt(th.gamm / Msq)
+    ud.Cs = Cs
+    ud.Ns = N
+    # dimensionless Coriolis strength
+    if ud.coriolis_strength[2] == 0.0:
+        ud.coriolis_strength[2] += 1e-15
+    F = ud.coriolis_strength[2]
+
+    G = np.sqrt(9. / 40.)
+    Gamma = G * N / Cs
+    k = N / Cs
+
+    ud.rf_bot = ud.init_forcing(k, -Gamma, Cs, F, N, Gamma, A0, g, rhobar, Ybar, rhobar_n, Ybar_n, X, Y, Xn, Yn)
+    ud.rf_bot.get_T_matrix()
+
+    ud.u_wind_speed = 0.0
+
+    ud.rf_bot.eigenfunction(0, 1)
+    up, vp, Yp, pi_p = ud.rf_bot.dehatter(th)
+
+    u = ud.u_wind_speed + up
+    v = ud.v_wind_speed + vp
+    w = ud.w_wind_speed
+    Y = Ybar + Yp
+
+    # rho = (((pibar + Msq * pi_p))**th.gm1inv) / Y
+    rho = rhobar
+
+    Sol.rho[...] = rho
+    Sol.rhou[...] = rho * u
+    Sol.rhov[...] = rho * v
+    Sol.rhow[...] = rho * w
+    Sol.rhoY[...] = rho * Y
+    Sol.rhoX[...] = 0.0
+    mpv.p2_cells[...] = pi_p
+
+    ###################################################
+    # initialise nodal pi
+    ud.rf_bot.eigenfunction(0, 1, grid='n')
+    _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
 
     mpv.p2_nodes[...] = pi_n
 
-    # if ud.bdry_type[1] == 'RAYLEIGH':
-    #     rayleigh_damping(Sol, mpv, ud, ud.tcy, elem, th)
-
-    rhoY_tmp = np.copy(Sol.rhoY)
-    rho_tmp = np.copy(Sol.rho)
-
     bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+
+    if hasattr(ud, 'mixed_run'):
+        if ud.mixed_run:
+            ud.coriolis_strength[2] = 2.0 * 7.292 * 1e-5 * ud.t_ref
+
+    if hasattr(ud, 'trad_forcing'):
+        if ud.trad_forcing:
+            ud.rf_bot.F = 0.0
+            ud.rf_bot.get_T_matrix()
 
     return Sol
