@@ -1,8 +1,10 @@
 """
 For more details on this module, refer to the write-up :ref:`boundary_handling`.
 """
+import copy
 import numpy as np
 from . import options as opts
+from ...utils import io
 
 
 def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
@@ -496,6 +498,61 @@ def get_bottom_tau_y(ud, elem, node, alpha, cutoff=0.5):
 
     return tauc_y, taun_y
 
+def apply_rayleigh_forcing(
+    Sol,
+    mpv,
+    ud,
+    elem,
+    node,
+    t,
+    step,
+    dt,
+    th,
+    bdry,
+    half=True,
+    Sol_half_new=None,
+    mpv_half_new=None,
+):
+    """Apply Rayleigh forcing boundary condition (file or function based)."""
+    if not (hasattr(ud, "rayleigh_forcing") and ud.rayleigh_forcing):
+        return
+
+    t_offset = 0.5 * dt if half else dt
+
+    if ud.rayleigh_forcing_type == "file":
+        reader = io.read_input(
+            ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path
+        )
+
+        if Sol_half_new is None or mpv_half_new is None:
+            Sol_half_new = copy.deepcopy(Sol)
+            mpv_half_new = copy.deepcopy(mpv)
+
+        time_tag = "%.3d_after_full_step" % step
+        reader.get_data(Sol_half_new, mpv_half_new, time_tag, half=half)
+
+        up = Sol_half_new.rhou / Sol_half_new.rho
+        vp = Sol_half_new.rhov / Sol_half_new.rho
+        Yp = Sol_half_new.rhoY / Sol_half_new.rho - mpv.HydroState.Y0.reshape(1, -1)
+        pi = mpv_half_new.p2_nodes
+
+        bdry.rayleigh_damping(
+            Sol, mpv, ud, elem, node, [up, vp, Yp, pi, t + t_offset]
+        )
+
+    elif ud.rayleigh_forcing_type == "func":
+        s = 5.0e-3 + 1e-4 + 0e-5
+        ud.rf_bot.eigenfunction(t + t_offset, s)
+        up, vp, Yp, pi = ud.rf_bot.dehatter(th)
+
+        ud.rf_bot.eigenfunction(t + t_offset, s, grid="n")
+        _, _, _, pi_n = ud.rf_bot.dehatter(th, grid="n")
+
+        bdry.rayleigh_damping(
+            Sol, mpv, ud, elem, node, [up, vp, Yp, pi_n, t + t_offset]
+        )
+
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 def rayleigh_damping(Sol, mpv, ud, elem, node, forcing=None):
     u = Sol.rhou / Sol.rho  # [elem.i2]

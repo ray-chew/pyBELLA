@@ -217,48 +217,18 @@ def do(
             # top rayleight damping
             bdry.rayleigh_damping(Sol, mpv, ud, elem, node)
 
-        # bottom rayleigh forcing
-        if hasattr(ud, "rayleigh_forcing"):
-            if ud.rayleigh_forcing:
-                if ud.rayleigh_forcing_type == "file":
-                    reader = io.read_input(
-                        ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path
-                    )
-
-                    Sol_half_new = copy.deepcopy(Sol)
-                    mpv_half_new = copy.deepcopy(mpv)
-
-                    time_tag = "%.3d_after_full_step" % step
-                    reader.get_data(Sol_half_new, mpv_half_new, time_tag, half=True)
-
-                    # assuming constant background state
-                    up = Sol_half_new.rhou / Sol_half_new.rho
-                    vp = Sol_half_new.rhov / Sol_half_new.rho
-                    Yp = (
-                        Sol_half_new.rhoY / Sol_half_new.rho
-                        - mpv.HydroState.Y0.reshape(1, -1)
-                    )
-
-                    pi = mpv_half_new.p2_nodes
-
-                    bdry.rayleigh_damping(
-                        Sol, mpv, ud, elem, node, [up, vp, Yp, pi, t + 0.5 * dt]
-                    )
-
-                elif ud.rayleigh_forcing_type == "func":
-                    # boundary.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
-
-                    s = 5.0e-3 + 1e-4 + 0e-5
-                    ud.rf_bot.eigenfunction((t + 0.5 * dt), s)
-                    up, vp, Yp, pi = ud.rf_bot.dehatter(th)
-
-                    ud.rf_bot.eigenfunction((t + 0.5 * dt), s, grid="n")
-                    _, _, _, pi_n = ud.rf_bot.dehatter(th, grid="n")
-
-                    bdry.rayleigh_damping(
-                        Sol, mpv, ud, elem, node, [up, vp, Yp, pi_n, t + 0.5 * dt]
-                    )
-                bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+        bdry.apply_rayleigh_forcing(
+            Sol,
+            mpv,
+            ud,
+            elem,
+            node,
+            t,
+            step,
+            dt,
+            th,
+            bdry,
+        )
 
         debug_writer.write(f"{label}_after_ebnaimp")
 
@@ -332,44 +302,21 @@ def do(
             bdry.rayleigh_damping(Sol, mpv, ud, elem, node)
 
         # bottom rayleigh forcing
-        if hasattr(ud, "rayleigh_forcing"):
-            if ud.rayleigh_forcing:
-                if ud.rayleigh_forcing_type == "file":
-                    reader = io.read_input(
-                        ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path
-                    )
-
-                    # misusing hydrostatic blending data containers
-                    time_tag = "%.3d_after_full_step" % step
-                    reader.get_data(Sol_half_new, mpv_half_new, time_tag)
-
-                    # assuming constant background state
-                    up = Sol_half_new.rhou / Sol_half_new.rho
-                    vp = Sol_half_new.rhov / Sol_half_new.rho
-                    Yp = (
-                        Sol_half_new.rhoY / Sol_half_new.rho
-                        - mpv.HydroState.Y0.reshape(1, -1)
-                    )
-                    # vp = 0.0
-                    # Yp = 0.0
-                    pi = mpv_half_new.p2_nodes
-
-                    bdry.rayleigh_damping(
-                        Sol, mpv, ud, elem, node, [up, vp, Yp, pi, t + dt]
-                    )
-
-                elif ud.rayleigh_forcing_type == "func":
-                    s = 5.0e-3 + 1e-4 + 0e-5
-                    ud.rf_bot.eigenfunction((t + dt), s)
-                    up, vp, Yp, pi = ud.rf_bot.dehatter(th)
-
-                    ud.rf_bot.eigenfunction((t + dt), s, grid="n")
-                    _, _, _, pi_n = ud.rf_bot.dehatter(th, grid="n")
-
-                    bdry.rayleigh_damping(
-                        Sol, mpv, ud, elem, node, [up, vp, Yp, pi_n, t + dt]
-                    )
-                bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+        bdry.apply_rayleigh_forcing(
+            Sol,
+            mpv,
+            ud,
+            elem,
+            node,
+            t,
+            step,
+            dt,
+            th,
+            bdry,
+            half=False,
+            Sol_half_new=Sol_half_new,
+            mpv_half_new=mpv_half_new,
+        )
 
         ######################################################
         # Blending : Do blending after timestep
