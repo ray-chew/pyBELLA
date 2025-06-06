@@ -14,4 +14,8 @@ def test_single_run(ic):
     text=True
     )
 
-    assert result.returncode == 0, result.stderr.splitlines()[-3:]
+    assert result.returncode == 0, (
+        f"Command failed with return code {result.returncode}\n"
+        f"STDERR:\n{result.stderr.strip()}\n"
+        f"STDOUT:\n{result.stdout.strip()}"
+    )
