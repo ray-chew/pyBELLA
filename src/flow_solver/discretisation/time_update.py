@@ -3,9 +3,6 @@ import logging
 
 import numpy as np
 
-# dependencies of the pyBELLA package
-from ...utils import io
-
 # dependencies of the flow solver subpackage
 from . import grid as dis_grid
 from ..utils import boundary as bdry, options as opts
@@ -20,42 +17,6 @@ from ..physics.low_mach import second_projection as lm_sp
 # for blending module
 from ...interfaces.dynamics_blending import schemes
 from ...interfaces.time_stepper import prestep
-
-
-def data_init(ud):
-    """
-    Helper function to initialise the `elem` and `node` grids, corresponding to the cell and node grids, from a given user iniital data file.
-
-    Parameters
-    ----------
-    ud : :class:`inputs.user_data.UserDataInit`
-        Data container for the initial conditions.
-
-    Returns
-    -------
-    elem : :class:`discretization.kgrid.ElemSpaceDiscr`
-        Cells grid.
-    node : :class:`discretization.kgrid.NodeSpaceDiscr`
-        Nodes grid.
-
-    """
-    inx = ud.inx
-    iny = ud.iny
-    inz = ud.inz
-    x0 = ud.xmin
-    x1 = ud.xmax
-    y0 = ud.ymin
-    y1 = ud.ymax
-    z0 = ud.zmin
-    z1 = ud.zmax
-
-    grid = dis_grid.Grid(inx, iny, inz, x0, x1, y0, y1, z0, z1)
-
-    elem = dis_grid.ElemSpaceDiscr(grid, ud)
-    node = dis_grid.NodeSpaceDiscr(grid, ud)
-
-    return elem, node
-
 
 def do(
     sst,
