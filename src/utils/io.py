@@ -734,8 +734,9 @@ def init_logger(ud):
     logging.getLogger("numba").setLevel(logging.WARNING)
     logging.getLogger("numba.core").setLevel(logging.WARNING)
 
-    logging.info("Input file is %s" % input_filename)
+    logging.getLogger().setLevel(logging.WARNING)
 
+    logging.info("Input file is %s" % input_filename)
 
 class NullDebugWriter:
     """Null object that does nothing but implements the DebugWriter interface."""

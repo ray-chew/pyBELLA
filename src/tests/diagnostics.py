@@ -40,8 +40,8 @@ class CompareSol(object):
                     _ = pl.plot(method="contour", lvls=None, suptitle=attribute)
                     pl.img.savefig(tp.dir + attribute + ".png")
 
-        with open("./src/tests/test_targets.yml", "a") as outfile:
-            yaml.dump(self.arr_dump, outfile, default_flow_style=False)
+        # with open("./src/tests/test_targets.yml", "a") as outfile:
+        #     yaml.dump(self.arr_dump, outfile, default_flow_style=False)
 
     def test_do(self, mem, ud):
         tc = self.tcs[self.current_run]
@@ -219,7 +219,7 @@ class test_params(object):
     def __init__(self, ds: DiagnosticState):
         self.name = ds.test_name
         self.dir = ds.path + ds.file_name + "/"
-        self.fn = f"{ds.file_name}_{ds.Nx}_{ds.Ny}"
+        self.fn = f"{ds.file_name}_{ds.Nx}_{ds.Ny}_stripped"
 
         self.Nx = ds.Nx
         self.Ny = ds.Ny

@@ -17,7 +17,6 @@ from .data_assimilation import prepare as da_prepare, analysis as da_analysis
 
 # package imports
 from .utils import prepare, io, sim_params as params
-from .utils import debug_helpers as dbg
 
 
 ##########################################################
