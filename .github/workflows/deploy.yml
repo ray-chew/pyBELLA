@@ -31,18 +31,18 @@ jobs:
           pip install -r dev-requirements.txt
           pip install .
 
-      - name: Run tests with coverage
+      - name: Run tests without coverage
         run: |
           # pytest --cov=src --cov-report=xml --cov-report=html --cov-report=term
-          # pytest ./test_scripts/test_blending.py
+          pytest ./test_scripts/test_blending.py
           pytest ./test_scripts/test_flow_solver.py
 
-      - name: Upload coverage HTML report
-        if: ${{ !env.ACT }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-html
-          path: htmlcov/
+      # - name: Upload coverage HTML report
+      #   if: ${{ !env.ACT }}
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: coverage-html
+      #     path: htmlcov/
 
       - name: Upload test plots
         if: ${{ !env.ACT }}
