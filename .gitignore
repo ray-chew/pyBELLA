@@ -4,9 +4,17 @@
 **dask-worker-space*
 *.ipynb_checkpoints*
 *.egg-info*
+*.coverage*
+
+# Ignore everything under outputs/
+outputs/**
+
+# Do not ignore directories (so unignore rules can match their contents)
+!outputs/
+!outputs/**/
+!outputs/**/*_stripped.h5
 
 # Ignore local development and output subdirectories
-**outputs*
 **build*
 **changelog.d*
 
