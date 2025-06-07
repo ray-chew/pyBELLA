@@ -10,7 +10,7 @@ class UserDataInit(object):
 
     Attributes
     ----------
-    \*\*kwargs: class object
+    **kwargs: class object
 
     """
 
