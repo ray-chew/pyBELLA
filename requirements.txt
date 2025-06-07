@@ -6,4 +6,5 @@ numpy
 pytest
 scipy
 dask
-
+pytest
+pytest-cov
