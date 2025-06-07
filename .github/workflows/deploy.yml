@@ -44,15 +44,16 @@ jobs:
       #     name: coverage-html
       #     path: htmlcov/
 
-      - name: Upload test plots
+      - name: Upload test plots and logs
         if: ${{ !env.ACT }}
         uses: actions/upload-artifact@v4
         with:
-          name: test-plots
+          name: test-outputs
           path: |
             outputs/**/*.png
+            logs/**/*.log
             !outputs/**/*.dat
-            !outputs/**/*.h
+            !outputs/**/*.h5
 
   docs:
     runs-on: ubuntu-latest
