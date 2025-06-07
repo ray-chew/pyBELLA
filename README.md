@@ -92,3 +92,14 @@ Refer to the [open issues](https://github.com/ray-chew/pyBELLA/issues), in parti
 
 Any changes, improvements, or bug fixes can be submitted from your remote to upstream via a pull request.
 
+## To be tidied up
+
+### Profiler 
+```bash
+$ PYTHONPATH=src scalene -m pybella -ic test_lamb_wave -N 1
+```
+
+### Coverage
+```bash
+$ pytest --cov test_scripts/ --cov-report=html 
+```
