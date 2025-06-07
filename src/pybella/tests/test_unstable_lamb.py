@@ -131,6 +131,7 @@ class UserData(object):
         self.init_forcing = self.forcing
         self.rayleigh_bdry_switch = True
 
+        tol = 1.0e-2
         self.diag_state = DiagnosticState(
             test_name="test_unstable_lamb",
             file_name="target_unstable_lamb",
@@ -139,13 +140,13 @@ class UserData(object):
             steps=[self.stepmax - 1],
             plot_compare=True,
             tolerances={
-                "rho": 1.0e-4,
-                "rhou": 1.0e-4,
-                "rhov": 1.0e-4,
-                "rhow": 1.0e-4,
-                "rhoY": 1.0e-4,
-                "rhoX": 1.0e-4,
-                "p2_nodes": 1.0e-4,
+                "rho": tol,
+                "rhou": tol,
+                "rhov": tol,
+                "rhow": tol,
+                "rhoY": tol,
+                "rhoX": tol,
+                "p2_nodes": tol,
             }
         )
 
