@@ -1,5 +1,5 @@
 [project]
-name = "pyBELLA"
+name = "pybella"
 version = "0.50.1"
 
 dependencies = [
@@ -14,18 +14,16 @@ dependencies = [
     "termcolor"
 ]
 
-
-# Packaging
-[build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools]
-package-dir = {"pybella" = "src"}
-
 [project.scripts]
 pybella = "pybella.__main__:main"
 
+# Packaging
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "pybella" = "src" }
 
 # Change Log
 [tool.towncrier]
