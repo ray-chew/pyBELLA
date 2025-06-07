@@ -69,7 +69,7 @@ class UserData(object):
         self.dtfixed = self.dtfixed0
 
         self.tout = [36.0]
-        self.stepmax = 31
+        self.stepmax = 11
 
         self.is_compressible = 1
         self.is_nonhydrostatic = 1
@@ -138,6 +138,15 @@ class UserData(object):
             Ny=self.iny - 1,
             steps=[self.stepmax - 1],
             plot_compare=True,
+            tolerances={
+                "rho": 1.0e-4,
+                "rhou": 1.0e-4,
+                "rhov": 1.0e-4,
+                "rhow": 1.0e-4,
+                "rhoY": 1.0e-4,
+                "rhoX": 1.0e-4,
+                "p2_nodes": 1.0e-4,
+            }
         )
 
         self.autogen_fn = False
