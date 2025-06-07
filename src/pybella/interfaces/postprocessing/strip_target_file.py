@@ -1,7 +1,7 @@
 import h5py
 import re
 
-def do(h5path: str, ud, output_intervals: bool = False) -> None:
+def do(h5path: str, ud, output_intervals: bool = False, time_increment: bool = False) -> None:
     if ud.diag_updt_targets:
         stepmax = ud.stepmax
 
@@ -14,8 +14,13 @@ def do(h5path: str, ud, output_intervals: bool = False) -> None:
             else:
                 raise ValueError(f"stepmax {stepmax} > 1000 is too large as a diagnostic target.")
         else:
-            # Keep only the last step
             keep_steps = [stepmax - 1]
+
+        # If time_increment is True, add the step before each kept step
+        if time_increment:
+            additional_steps = [step - 1 for step in keep_steps if step > 0]
+            keep_steps.extend(additional_steps)
+            keep_steps = sorted(list(set(keep_steps)))
 
         output_path = h5path.replace(".h5", "_stripped.h5")
 

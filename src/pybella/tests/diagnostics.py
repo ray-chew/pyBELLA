@@ -61,6 +61,7 @@ class CompareSol(object):
                         # time step from the output file.
                         tc_test = copy.deepcopy(tc)
                         tc_test.base_fn = tc_test.base_fn.replace("target", "test")
+                        tc_test.base_fn = tc_test.base_fn.replace("_stripped.h5", ".h5")
                         tc_test.py_dir = tc_test.py_dir.replace("target", "test")
                         data = self.__get_ens(tc_test, tp, attribute, time_increment=self.time_increment, summed=False)
                         setattr(mem.mpv, attribute, data)
