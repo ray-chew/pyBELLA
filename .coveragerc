@@ -1,9 +1,9 @@
 [run]
 source = src
 omit = 
-    src/data_assimilation/*
-    src/inputs/*
-    src/utils/debug_helpers.py
+    src/pybella/data_assimilation/*
+    src/pybella/inputs/*
+    src/pybella/utils/debug_helpers.py
     */tests/*
     */test_*
     setup.py
