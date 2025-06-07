@@ -129,7 +129,7 @@ class UserData(object):
         self.tout = [360.0]
         # self.tout = np.arange(0,361,1.0)
         # self.tout = np.append(self.tout, [720.0])
-        self.stepmax = 801
+        self.stepmax = 301
         self.output_timesteps = True
 
         self.autogen_fn = False
@@ -151,7 +151,6 @@ class UserData(object):
         )
 
         self.stratification = self.stratification_wrapper
-        # self.rayleigh_bc = self.rayleigh_bc_function
         self.init_forcing = self.forcing
 
         self.rayleigh_forcing = False

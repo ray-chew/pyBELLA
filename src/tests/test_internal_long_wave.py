@@ -159,7 +159,7 @@ class UserData(object):
 
         self.diag_state = DiagnosticState(
             test_name="test_internal_long_wave",
-            file_name="test_internal_long_wave",
+            file_name="target_internal_long_wave",
             Nx=self.inx - 1,
             Ny=self.iny - 1,
             steps=[self.stepmax - 1],
