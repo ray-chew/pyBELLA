@@ -9,12 +9,15 @@ from .flow_solver.discretisation import time_update as dis_time_update
 
 # dependencies of the interface subpackage
 from .interfaces.dynamics_blending import prepare as blending_prepare
+from .interfaces.postprocessing import strip_target_file as strip_target
+
 
 # dependencies of the data assimilation subpackage
 from .data_assimilation import prepare as da_prepare, analysis as da_analysis
 
 # package imports
 from .utils import prepare, io, sim_params as params
+from .utils import debug_helpers as dbg
 
 
 ##########################################################
@@ -77,6 +80,7 @@ def main():
             if sst.ud.diag:
                 if sst.ud.diag_updt_targets:
                     sst.diag_comparison.update_targets()
+                    strip_target.do(step_writer.OUTPUT_FILENAME + step_writer.BASE_NAME + step_writer.SUFFIX + '.h5', sst.ud)
                 else:
                     sst.diag_comparison.test_do(
                         mem, sst.ud
