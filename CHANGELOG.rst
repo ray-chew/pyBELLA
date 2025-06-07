@@ -1,3 +1,21 @@
+0.60.0 (2024-12-23)
+-------------------
+
+Changed
+^^^^^^^
+
+- Restructured outermost looping in main() (23a7817db225fe2188bcf3045cfdc863435b6888)
+
+
+0.50.6 (2024-12-10)
+-------------------
+
+Changed
+^^^^^^^
+
+- Cleaned __main__ with restructuring of code (61e48c2c60e32aa8ac7699979a9836c8d17ded64)
+
+
 0.50.5 (2024-03-24)
 -------------------
 

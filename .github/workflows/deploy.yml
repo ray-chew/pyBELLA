@@ -1,0 +1,94 @@
+name: deploy
+
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: write
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Skip setup-python if running under act
+      - name: Set up Python (GitHub only)
+        if: ${{ !env.ACT }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # Show system Python version when running under act
+      - name: Use system Python (act)
+        if: ${{ env.ACT }}
+        run: |
+          echo "Using system Python"
+          which python
+          python --version
+
+      - name: Install dependencies
+        run: |
+          pip install -r dev-requirements.txt
+          pip install .
+
+      - name: Run tests without coverage
+        run: |
+          # pytest --cov=src --cov-report=xml --cov-report=html --cov-report=term
+          pytest ./test_scripts/test_blending.py
+          pytest ./test_scripts/test_flow_solver.py
+
+      # - name: Upload coverage HTML report
+      #   if: ${{ !env.ACT }}
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: coverage-html
+      #     path: htmlcov/
+
+      - name: Upload test plots and logs
+        if: ${{ !env.ACT }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-outputs
+          path: |
+            outputs/**/*.png
+            logs/**/*.log
+            !outputs/**/*.dat
+            !outputs/**/*.h5
+
+  # docs:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+
+  #     - uses: ConorMacBride/install-package@v1
+  #       with:
+  #         apt: graphviz
+
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: '3.10'
+
+  #     - uses: actions/cache@v4
+  #       with:
+  #         path: ~/.cache/pip
+  #         key: ${{ runner.os }}-pip-${{ hashFiles('**/dev-requirements.txt') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-pip-
+
+  #     - name: Install dependencies
+  #       run: |
+  #         pip install -r dev-requirements.txt
+  #         pip install .
+
+  #     - name: Sphinx build
+  #       run: |
+  #         sphinx-build docs/source _build
+
+  #     - name: Deploy to GitHub Pages
+  #       uses: peaceiris/actions-gh-pages@v4
+  #       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+  #       with:
+  #         publish_branch: gh-pages
+  #         github_token: ${{ secrets.GITHUB_TOKEN }}
+  #         publish_dir: _build/
+  #         force_orphan: true

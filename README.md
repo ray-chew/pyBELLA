@@ -74,7 +74,13 @@ A simple test can be found in [`run_scripts.test_dycore`](https://github.com/ray
 pytest ./run_scripts/test_dycore.py -v
 ```
 
-However, the codebase is structured such that the user can easily assemble a run script to define their own experiments. Refer to the documentation for the [available APIs](https://ray-chew.github.io/pyBELLA/apis.html).
+To run a simulation:
+```console
+pybella -ic rb -N 1
+```
+Note that only the rising bubble initial condition is implemented for now with ensemble size of 1. 
+
+The codebase is structured such that the user can easily assemble a run script to define their own experiments. Refer to the documentation for the [available APIs](https://ray-chew.github.io/pyBELLA/apis.html).
 
 ## License
 
@@ -86,3 +92,14 @@ Refer to the [open issues](https://github.com/ray-chew/pyBELLA/issues), in parti
 
 Any changes, improvements, or bug fixes can be submitted from your remote to upstream via a pull request.
 
+## To be tidied up
+
+### Profiler 
+```bash
+$ PYTHONPATH=src scalene -m pybella -ic test_lamb_wave -N 1
+```
+
+### Coverage
+```bash
+$ pytest --cov test_scripts/ --cov-report=html 
+```

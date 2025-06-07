@@ -1,7 +1,7 @@
-﻿src
-===
+src.flow_solver
+==========
 
-.. automodule:: src
+.. automodule:: src.flow_solver
 
    
    
@@ -27,9 +27,6 @@
    :toctree:
    :recursive:
 
-   src.data_assimilation
-   src.flow_solver
-   src.tests
-   src.utils
-   src.vis
+   src.flow_solver.discretisation
+   src.flow_solver.physics
 
