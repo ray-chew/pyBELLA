@@ -25,18 +25,25 @@ class CompareSol(object):
 
         for tc_name, tc in self.tcs.items():
             tp = self.tps[tc_name]
-            dump_name = tp.name.replace("target","test")
+            dump_name = tp.name.replace("target", "test")
             self.arr_dump[dump_name] = {}
 
             for attribute in tp.attributes:
-                arr = self.__get_ens(tc, tp, attribute, time_increment=self.time_increment, summed=False)
-                self.arr_dump[dump_name][attribute] = float(
-                    arr.sum()
+                arr = self.__get_ens(
+                    tc, tp, attribute, time_increment=self.time_increment, summed=False
                 )
+                self.arr_dump[dump_name][attribute] = float(arr.sum())
 
                 if self.plot:
                     # vis_pt.plotter accepts a list of tuples with plot and panel title.
-                    pl = vis_pt.plotter([(arr.T, "ref"), ], ncols=1, figsize=(4, 3), sharey=False)
+                    pl = vis_pt.plotter(
+                        [
+                            (arr.T, "ref"),
+                        ],
+                        ncols=1,
+                        figsize=(4, 3),
+                        sharey=False,
+                    )
                     _ = pl.plot(method="contour", lvls=None, suptitle=attribute)
                     pl.img.savefig(tp.dir + attribute + ".png")
 
@@ -51,7 +58,9 @@ class CompareSol(object):
         ref_mem = copy.deepcopy(mem)
         for attribute in tp.attributes:
             try:
-                ref_data = self.__get_ens(tc, tp, attribute, time_increment=False, summed=False)
+                ref_data = self.__get_ens(
+                    tc, tp, attribute, time_increment=False, summed=False
+                )
                 if attribute != "p2_nodes":
                     setattr(ref_mem.sol, attribute, ref_data)
                 else:
@@ -63,12 +72,26 @@ class CompareSol(object):
                         tc_test.base_fn = tc_test.base_fn.replace("target", "test")
                         tc_test.base_fn = tc_test.base_fn.replace("_stripped.h5", ".h5")
                         tc_test.py_dir = tc_test.py_dir.replace("target", "test")
-                        data = self.__get_ens(tc_test, tp, attribute, time_increment=self.time_increment, summed=False)
+                        data = self.__get_ens(
+                            tc_test,
+                            tp,
+                            attribute,
+                            time_increment=self.time_increment,
+                            summed=False,
+                        )
                         setattr(mem.mpv, attribute, data)
-                        ref_data = self.__get_ens(tc, tp, attribute, time_increment=self.time_increment, summed=False)
+                        ref_data = self.__get_ens(
+                            tc,
+                            tp,
+                            attribute,
+                            time_increment=self.time_increment,
+                            summed=False,
+                        )
                     setattr(ref_mem.mpv, attribute, ref_data)
             except Exception as e:
-                raise AssertionError(f"test {self.current_run} has no target for comparison: {e}")
+                raise AssertionError(
+                    f"test {self.current_run} has no target for comparison: {e}"
+                )
 
         if self.plot:
             self.__plot_comparison(mem, ref_mem, ud)
@@ -113,7 +136,7 @@ class CompareSol(object):
             Test passed for {self.current_run}
             {'#' * 10}
             """.strip()
-                )
+        )
 
     def __init(self, ds: DiagnosticState):
         tp = test_params(ds)
@@ -178,9 +201,11 @@ class CompareSol(object):
         return test_sol
 
     @staticmethod
-    def __get_ens(tc, params, attribute, time_increment=False, summed=True, normed=False):
+    def __get_ens(
+        tc, params, attribute, time_increment=False, summed=True, normed=False
+    ):
         if time_increment and attribute == "p2_nodes":
-            times = [params.times[0]-1, params.times[0]]
+            times = [params.times[0] - 1, params.times[0]]
         else:
             times = params.times
         l_typ = params.l_typ
@@ -205,8 +230,8 @@ class CompareSol(object):
         if time_increment and attribute == "p2_nodes":
             ens = ens[1] - ens[0]
         else:
-            ens = ens[0] # removes time axis
-        ens = ens[0] # removes ensemble axis
+            ens = ens[0]  # removes time axis
+        ens = ens[0]  # removes ensemble axis
 
         if summed:
             return ens.sum()

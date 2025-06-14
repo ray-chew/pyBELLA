@@ -153,17 +153,17 @@ def euler_backward_non_advective_impl_part(
         bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
         operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt)
 
-    i0 = node.ndim * [(slice(0, -1))]
+    i0 = node.ndim * [slice(0, -1)]
     i0 = tuple(i0)
 
     if writer != None:
         writer.populate(str(label), "hcenter", mpv.wcenter)
         writer.populate(str(label), "wplusx", mpv.wplus[0])
         writer.populate(str(label), "wplusy", mpv.wplus[1])
-        writer.populate(
-            str(label), "wplusz", mpv.wplus[2]
-        ) if elem.ndim == 3 else writer.populate(
-            str(label), "wplusz", np.zeros_like(mpv.wplus[0])
+        (
+            writer.populate(str(label), "wplusz", mpv.wplus[2])
+            if elem.ndim == 3
+            else writer.populate(str(label), "wplusz", np.zeros_like(mpv.wplus[0]))
         )
 
     bdry.set_ghostnodes_p2(mpv.p2_nodes, node, ud)

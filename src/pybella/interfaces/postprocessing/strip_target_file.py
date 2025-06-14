@@ -1,7 +1,10 @@
 import h5py
 import re
 
-def do(h5path: str, ud, output_intervals: bool = False, time_increment: bool = False) -> None:
+
+def do(
+    h5path: str, ud, output_intervals: bool = False, time_increment: bool = False
+) -> None:
     if ud.diag_updt_targets:
         stepmax = ud.stepmax
 
@@ -12,7 +15,9 @@ def do(h5path: str, ud, output_intervals: bool = False, time_increment: bool = F
             elif 101 < stepmax <= 1000:
                 keep_steps = list(range(100, stepmax, 100))
             else:
-                raise ValueError(f"stepmax {stepmax} > 1000 is too large as a diagnostic target.")
+                raise ValueError(
+                    f"stepmax {stepmax} > 1000 is too large as a diagnostic target."
+                )
         else:
             keep_steps = [stepmax - 1]
 
@@ -32,7 +37,7 @@ def do(h5path: str, ud, output_intervals: bool = False, time_increment: bool = F
 
                 for dset_name in src_group.keys():
                     # Identify timestep in dataset name, e.g. p2_nodes_010_after_full_step
-                    step_match = re.search(r'_(\d+)_after_full_step$', dset_name)
+                    step_match = re.search(r"_(\d+)_after_full_step$", dset_name)
                     if step_match:
                         step = int(step_match.group(1))
                         if step in keep_steps:

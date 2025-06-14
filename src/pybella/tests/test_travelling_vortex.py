@@ -13,13 +13,10 @@ import logging
 class UserData(object):
     grav = 0.0
 
-
     h_ref = 10000.0
     t_ref = 100.0
     T_ref = 300.00
     p_ref = 1e5
-
-
 
     def __init__(self):
         self.h_ref = self.h_ref
@@ -54,8 +51,6 @@ class UserData(object):
         self.inx = 64 + 1
         self.iny = 64 + 1
         self.inz = 1
-
-
 
         self.initial_projection = True
 

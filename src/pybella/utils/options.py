@@ -1,4 +1,6 @@
 from enum import Enum  # ! Version > Python 3.4
+
+
 class LimiterType(Enum):
     NONE = 0
     # MINMOD = 1
@@ -10,6 +12,8 @@ class LimiterType(Enum):
     # RUPE = 7
     # NO_SLOPE = 8
     # NUMBER_OF_LIMITER = 9
+
+
 class BdryType(Enum):
     """
     An enumeration class that defines the accepted boundary condition types.

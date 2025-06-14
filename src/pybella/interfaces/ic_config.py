@@ -19,7 +19,7 @@ IC_MODULES = {
     "swe": "inputs.shallow_water_3D",
     "swe_icshear": "inputs.shallow_water_3D_icshear",
     "swe_dvortex": "inputs.shallow_water_3D_dvortex",
-    "test_travelling_vortex": "pybella.tests.test_travelling_vortex",  
+    "test_travelling_vortex": "pybella.tests.test_travelling_vortex",
     "test_internal_long_wave": "pybella.tests.test_internal_long_wave",
     "test_lamb_wave": "pybella.tests.test_lamb_wave",
     "test_blending_warm_bubble": "pybella.tests.test_blending_warm_bubble",

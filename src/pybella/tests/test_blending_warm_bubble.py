@@ -65,7 +65,7 @@ class UserData(object):
                 "rhoY": 1.0e-0,
                 "rhoX": 1.0e-0,
                 "p2_nodes": 1.0e-4,
-            }
+            },
         )
 
         self.autogen_fn = False
@@ -90,9 +90,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     r = np.sqrt((x) ** 2 + (y - y0) ** 2) / r0
 
     p = np.repeat(mpv.HydroState.p0.reshape(1, -1), elem.icx, axis=0)
-    rhoY = mpv.HydroState.rhoY0[
-        np.newaxis, :
-    ]
+    rhoY = mpv.HydroState.rhoY0[np.newaxis, :]
 
     perturbation = (delth / 300.0) * (np.cos(0.5 * np.pi * r) ** 2)
     perturbation[np.where(r > 1.0)] = 0.0

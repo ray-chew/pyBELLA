@@ -20,6 +20,7 @@ from ..physics.low_mach import second_projection as lm_sp
 from ...interfaces.dynamics_blending import schemes
 from ...interfaces.time_stepper import prestep
 
+
 def do(
     sst,
     mem,
@@ -124,7 +125,7 @@ def do(
                     compressibility = {ud.compressibility:.3f}, nonhydrostasy = {ud.nonhydrostasy:.3f}
                     -------
                     """
-            )
+        )
 
         Sol0 = copy.deepcopy(Sol)
 

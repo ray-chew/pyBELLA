@@ -7,6 +7,7 @@ from scipy import signal
 from ...flow_solver.physics.gas_dynamics import eos as gd_eos
 from ...utils import io
 
+
 class Blend(object):
     """
     Class that takes care of the blending interface.
@@ -390,147 +391,147 @@ def do_hydro_to_nonhydro_conv(
     ###############################
 
     # if c1 or c2:
-        #     logging.info(
-        #         termcolor.colored("hydrostatic to nonhydrostatic conversion...", "blue")
-        #     )
+    #     logging.info(
+    #         termcolor.colored("hydrostatic to nonhydrostatic conversion...", "blue")
+    #     )
 
-            # writer.write_all(mem, str(label) + "_half_full")
-            # writer.populate(str(label) + "_ic", "pwchi", Sol.pwchi)
+    # writer.write_all(mem, str(label) + "_half_full")
+    # writer.populate(str(label) + "_ic", "pwchi", Sol.pwchi)
 
-            # if test_hydrob == False:
-            #     Sol = copy.deepcopy(Sol_half_old)
-            #     # mpv = copy.deepcopy(mpv_half_old)
+    # if test_hydrob == False:
+    #     Sol = copy.deepcopy(Sol_half_old)
+    #     # mpv = copy.deepcopy(mpv_half_old)
 
-            #     logging.info(termcolor.colored("test_hydrob == False", "red"))
-            #     writer.write_all(mem, str(label) + "_quarter")
+    #     logging.info(termcolor.colored("test_hydrob == False", "red"))
+    #     writer.write_all(mem, str(label) + "_quarter")
 
-            #     writer.populate(str(label) + "_quarter", "pwchi", Sol.pwchi)
+    #     writer.populate(str(label) + "_quarter", "pwchi", Sol.pwchi)
 
-            #     logging.info("quarter dt = %.8f" % (dt * 0.5))
+    #     logging.info("quarter dt = %.8f" % (dt * 0.5))
 
-            #     ret = do(
-            #         Sol_half_old,
-            #         flux_half_old,
-            #         mpv_half_old,
-            #         dt - 0.5 * dt,
-            #         dt + 0.5 * dt,
-            #         ud,
-            #         elem,
-            #         node,
-            #         [0, 0],
-            #         th,
-            #         bld=None,
-            #         writer=None,
-            #         debug=False,
-            #     )
+    #     ret = do(
+    #         Sol_half_old,
+    #         flux_half_old,
+    #         mpv_half_old,
+    #         dt - 0.5 * dt,
+    #         dt + 0.5 * dt,
+    #         ud,
+    #         elem,
+    #         node,
+    #         [0, 0],
+    #         th,
+    #         bld=None,
+    #         writer=None,
+    #         debug=False,
+    #     )
 
-            #     Sol_tu = copy.deepcopy(ret[0])
-            #     # mpv_tu = copy.deepcopy(ret[2])
-            #     Sol.rho[...] = Sol_tu.rho_half
-            #     Sol.rhou[...] = Sol_tu.rhou_half
-            #     Sol.rhov[...] = Sol_tu.rhov_half
-            #     Sol.rhow[...] = Sol_tu.rhow_half
-            #     Sol.rhoX[...] = Sol_tu.rhoX_half
-            #     Sol.rhoY[...] = Sol_tu.rhoY_half
-            #     Sol.pwchi[...] = Sol_tu.pwchi
+    #     Sol_tu = copy.deepcopy(ret[0])
+    #     # mpv_tu = copy.deepcopy(ret[2])
+    #     Sol.rho[...] = Sol_tu.rho_half
+    #     Sol.rhou[...] = Sol_tu.rhou_half
+    #     Sol.rhov[...] = Sol_tu.rhov_half
+    #     Sol.rhow[...] = Sol_tu.rhow_half
+    #     Sol.rhoX[...] = Sol_tu.rhoX_half
+    #     Sol.rhoY[...] = Sol_tu.rhoY_half
+    #     Sol.pwchi[...] = Sol_tu.pwchi
 
-            #     # mpv.p2_nodes[...] = mpv_tu.p2_nodes_half
+    #     # mpv.p2_nodes[...] = mpv_tu.p2_nodes_half
 
-            #     writer.write_all(mem, str(label) + "_half")
+    #     writer.write_all(mem, str(label) + "_half")
 
-            #     writer.populate(str(label) + "_half", "pwchi", Sol.pwchi)
+    #     writer.populate(str(label) + "_half", "pwchi", Sol.pwchi)
 
-            #     ret = do(
-            #         Sol,
-            #         flux,
-            #         mpv,
-            #         dt,
-            #         2.0 * dt,
-            #         ud,
-            #         elem,
-            #         node,
-            #         [0, 0],
-            #         th,
-            #         bld=None,
-            #         writer=None,
-            #         debug=False,
-            #     )
+    #     ret = do(
+    #         Sol,
+    #         flux,
+    #         mpv,
+    #         dt,
+    #         2.0 * dt,
+    #         ud,
+    #         elem,
+    #         node,
+    #         [0, 0],
+    #         th,
+    #         bld=None,
+    #         writer=None,
+    #         debug=False,
+    #     )
 
-            #     Sol = copy.deepcopy(ret[0])
-            #     flux = copy.deepcopy(ret[1])
-            #     mpv = copy.deepcopy(ret[2])
+    #     Sol = copy.deepcopy(ret[0])
+    #     flux = copy.deepcopy(ret[1])
+    #     mpv = copy.deepcopy(ret[2])
 
-            # if test_hydrob == True:
-            #     Sol = copy.deepcopy(Sol_half_old)
-            #     # mpv = copy.deepcopy(mpv_half_old)
+    # if test_hydrob == True:
+    #     Sol = copy.deepcopy(Sol_half_old)
+    #     # mpv = copy.deepcopy(mpv_half_old)
 
-            #     logging.info(termcolor.colored("test_hydrob == False", "red"))
-            #     writer.write_all(mem, str(label) + "_quarter")
+    #     logging.info(termcolor.colored("test_hydrob == False", "red"))
+    #     writer.write_all(mem, str(label) + "_quarter")
 
-            #     # writer.populate(str(label)+'_quarter', 'pwchi', Sol.pwchi)
+    #     # writer.populate(str(label)+'_quarter', 'pwchi', Sol.pwchi)
 
-            #     logging.info("quarter dt = %.8f" % (dt * 0.5))
+    #     logging.info("quarter dt = %.8f" % (dt * 0.5))
 
-            #     ret = do(
-            #         Sol_half_old,
-            #         flux_half_old,
-            #         mpv_half_old,
-            #         dt - 0.5 * dt,
-            #         dt + 0.5 * dt,
-            #         ud,
-            #         elem,
-            #         node,
-            #         [0, 0],
-            #         th,
-            #         bld=None,
-            #         writer=None,
-            #         debug=False,
-            #     )
+    #     ret = do(
+    #         Sol_half_old,
+    #         flux_half_old,
+    #         mpv_half_old,
+    #         dt - 0.5 * dt,
+    #         dt + 0.5 * dt,
+    #         ud,
+    #         elem,
+    #         node,
+    #         [0, 0],
+    #         th,
+    #         bld=None,
+    #         writer=None,
+    #         debug=False,
+    #     )
 
-            #     Sol_tu = copy.deepcopy(ret[0])
-            #     # mpv_tu = copy.deepcopy(ret[2])
-            #     Sol.rho[...] = Sol_tu.rho_half
-            #     Sol.rhou[...] = Sol_tu.rhou_half
-            #     Sol.rhov[...] = Sol_tu.rhov_half
-            #     Sol.rhow[...] = Sol_tu.rhow_half
-            #     Sol.rhoX[...] = Sol_tu.rhoX_half
-            #     Sol.rhoY[...] = Sol_tu.rhoY_half
-            #     Sol.pwchi[...] = Sol_tu.pwchi
+    #     Sol_tu = copy.deepcopy(ret[0])
+    #     # mpv_tu = copy.deepcopy(ret[2])
+    #     Sol.rho[...] = Sol_tu.rho_half
+    #     Sol.rhou[...] = Sol_tu.rhou_half
+    #     Sol.rhov[...] = Sol_tu.rhov_half
+    #     Sol.rhow[...] = Sol_tu.rhow_half
+    #     Sol.rhoX[...] = Sol_tu.rhoX_half
+    #     Sol.rhoY[...] = Sol_tu.rhoY_half
+    #     Sol.pwchi[...] = Sol_tu.pwchi
 
-            #     # mpv.p2_nodes[...] = mpv_tu.p2_nodes_half
+    #     # mpv.p2_nodes[...] = mpv_tu.p2_nodes_half
 
-            #     # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
+    #     # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
 
-            #     # writer.populate(str(label)+'_half', 'pwchi', Sol.pwchi)
+    #     # writer.populate(str(label)+'_half', 'pwchi', Sol.pwchi)
 
-            #     ret = do(
-            #         Sol,
-            #         flux,
-            #         mpv,
-            #         dt,
-            #         2.0 * dt,
-            #         ud,
-            #         elem,
-            #         node,
-            #         [0, 0],
-            #         th,
-            #         bld=None,
-            #         writer=None,
-            #         debug=False,
-            #     )
+    #     ret = do(
+    #         Sol,
+    #         flux,
+    #         mpv,
+    #         dt,
+    #         2.0 * dt,
+    #         ud,
+    #         elem,
+    #         node,
+    #         [0, 0],
+    #         th,
+    #         bld=None,
+    #         writer=None,
+    #         debug=False,
+    #     )
 
-            #     Sol = copy.deepcopy(ret[0])
-            #     flux = copy.deepcopy(ret[1])
-            #     mpv = copy.deepcopy(ret[2])
-            #     # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
-            #     # writer.populate(str(label)+'_half', 'pwchi', Sol.pwchi)
+    #     Sol = copy.deepcopy(ret[0])
+    #     flux = copy.deepcopy(ret[1])
+    #     mpv = copy.deepcopy(ret[2])
+    #     # writer.write_all(Sol,mpv,elem,node,th,str(label)+'_half')
+    #     # writer.populate(str(label)+'_half', 'pwchi', Sol.pwchi)
 
-            #     logging.info(termcolor.colored("test_hydrob == True", "red"))
+    #     logging.info(termcolor.colored("test_hydrob == True", "red"))
 
-            # if test_hydrob == False:
-            #     dt *= 2.0
-            # if c2:
-                # ud.is_nonhydrostatic = 1
+    # if test_hydrob == False:
+    #     dt *= 2.0
+    # if c2:
+    # ud.is_nonhydrostatic = 1
 
     return Sol, mpv
 
@@ -752,8 +753,8 @@ def prepare_blending(
     t,
     dt,
     swe_to_lake,
-    debug,   
-    ):
+    debug,
+):
 
     ud = sst.ud
     if check_and_apply_initial_hydrostatic_conversion(step, ud, bld):
@@ -779,22 +780,19 @@ def prepare_blending(
 def check_and_apply_initial_hydrostatic_conversion(step, ud, bld):
     """
     Check and apply initial blending conversion if needed.
-    
+
     Returns:
         bool: True if conversion was applied, False otherwise
     """
     if step != 0 or bld is None or "imbal" not in ud.aux:
         return False
-    
+
     hydrostatic_case = ud.is_nonhydrostatic == 0
-    nonhydrostatic_case = (
-        ud.is_nonhydrostatic == 1 and ud.initial_blending == True
-    )
-    
+    nonhydrostatic_case = ud.is_nonhydrostatic == 1 and ud.initial_blending == True
+
     if hydrostatic_case or nonhydrostatic_case:
         logging.info("nonhydrostatic to hydrostatic conversion...")
         ud.is_nonhydrostatic = 0
         return True
-    
-    return False
 
+    return False

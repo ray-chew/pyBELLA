@@ -163,7 +163,7 @@ class States(Vars):
         self.get_S0c = self.get_S0c
 
         self.init_dSdy = False
-        self.init_S0c  = False
+        self.init_S0c = False
 
     def get_dSdy(self, elem, node):
         if self.init_dSdy:
