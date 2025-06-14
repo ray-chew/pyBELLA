@@ -1,6 +1,8 @@
 import numpy as np
 
-from ..flow_solver.utils import options as opts, boundary as bdry
+from ..utils import options as opts
+
+from ..flow_solver.utils import boundary as bdry
 
 from ..flow_solver.physics import hydrostatics
 
@@ -8,46 +10,20 @@ from ..utils.data_structures import DiagnosticState
 
 
 class UserData(object):
-    NSPEC = 1
-    grav = 9.81  # [m s^{-2}]
-    omega = 0.0 * 1e-5  # [s^{-1}]
-
-    R_gas = 287.4  # [J kg^{-1} K^{-1}]
-    R_vap = 461.0
-    Q_vap = 2.53e06
-    gamma = 1.4
-    cp_gas = gamma * R_gas / (gamma - 1.0)
-
-    p_ref = 1e5
-    T_ref = 300.00  # [K]
-    rho_ref = p_ref / (R_gas * T_ref)
-    N_ref = grav / np.sqrt(cp_gas * T_ref)
-    Cs = np.sqrt(gamma * R_gas * T_ref)
-
-    h_ref = 10.0e3  # [m]
-    t_ref = 100.0  # [s]
-    u_ref = h_ref / t_ref
-
-    i_gravity = np.zeros((3))
-    i_coriolis = np.zeros((3))
 
     def __init__(self):
-        self.h_ref = self.h_ref
-        self.t_ref = self.t_ref
-        self.T_ref = self.T_ref
-        self.p_ref = self.p_ref
-        self.rho_ref = self.rho_ref
-        self.u_ref = self.u_ref
-        self.Nsq_ref = self.N_ref * self.N_ref
-        self.g_ref = self.grav
-        self.gamm = self.gamma
-        self.Rg_over_Rv = self.R_gas / self.R_vap
-        self.Q = self.Q_vap / (self.R_gas * self.T_ref)
-        self.R_gas = self.R_gas
+        self.grav= 9.81
+        self.h_ref = 10.0e3  # [m]
+        self.t_ref = 100.0  # [s]
+        self.T_ref = 300.00  # [K]
+        self.p_ref = 1e5
+        self.u_ref = self.h_ref / self.t_ref
+        self.R_gas = 287.4
+        self.gamm = 1.4
+        self.Cs = np.sqrt(self.gamm * self.R_gas * self.T_ref)
+        self.cp_gas = self.gamm * self.R_gas / (self.gamm - 1.0)
+        self.N_ref = self.grav / np.sqrt(self.cp_gas * self.T_ref)
         self.Rg = self.R_gas / (self.h_ref**2 / self.t_ref**2 / self.T_ref)
-        self.cp_gas = self.cp_gas
-
-        self.nspec = self.NSPEC
 
         self.is_nonhydrostatic = 1
         self.is_compressible = 1
@@ -61,15 +37,11 @@ class UserData(object):
         self.coriolis_strength = np.zeros((3))
 
         self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
-        self.coriolis_strength[2] = 2.0 * self.omega * self.t_ref
 
         gravity_mask = (self.gravity_strength > np.finfo(np.float64).eps) | (np.arange(3) == 1)
         self.i_gravity = gravity_mask.astype(int)
         if np.any(gravity_mask):
             self.gravity_direction = np.where(gravity_mask)[0][-1]  # Use last matching index
-
-        coriolis_mask = self.coriolis_strength > np.finfo(np.float64).eps
-        self.i_coriolis = coriolis_mask.astype(int)
 
         j = 4.0
         Lx = 1.0 * np.pi * self.Cs / self.N_ref * j
@@ -80,14 +52,6 @@ class UserData(object):
         self.zmin = -1.0
         self.zmax = 1.0
 
-        self.u_wind_speed = 0.0 * self.u_ref
-        self.v_wind_speed = 0.0
-        self.w_wind_speed = 0.0
-
-        self.bdry_type = np.empty((3), dtype=object)
-        self.bdry_type[0] = opts.BdryType.PERIODIC
-        self.bdry_type[1] = opts.BdryType.WALL
-        self.bdry_type[2] = opts.BdryType.WALL
         self.ATMOSPHERIC_EXTENSION = True
         self.rayleigh_bdry_switch = False
 
@@ -103,28 +67,8 @@ class UserData(object):
         self.dtfixed0 = 10.0 / self.t_ref
         self.dtfixed = self.dtfixed0
 
-        self.do_advection = True
-        self.limiter_type_scalars = opts.LimiterType.NONE
-        self.limiter_type_velocity = opts.LimiterType.NONE
-
         self.tol = 1.0e-30
         self.max_iterations = 10000
-
-        # blending parameters
-        self.perturb_type = "pos_perturb"
-        self.blending_mean = "rhoY"  # 1.0, rhoY
-        self.blending_conv = "rho"  # theta, rho
-        self.blending_type = "half"  # half, full
-
-        self.continuous_blending = False
-        self.no_of_pi_initial = 1
-        self.no_of_pi_transition = 0
-        self.no_of_hy_initial = 0
-        self.no_of_hy_transition = 0
-
-        self.blending_weight = 0.0 / 16
-        self.initial_blending = False
-        self.initial_projection = True
 
         self.tout = [360.0]
         # self.tout = np.arange(0,361,1.0)
@@ -152,11 +96,6 @@ class UserData(object):
 
         self.stratification = self.stratification_wrapper
         self.init_forcing = self.forcing
-
-        self.rayleigh_forcing = False
-        self.rayleigh_forcing_type = "func"  # func or file
-        self.rayleigh_forcing_fn = None
-        self.rayleigh_forcing_path = None
 
     def stratification_wrapper(self, dy):
         return lambda y: self.stratification_function(y, dy)
@@ -293,11 +232,6 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
         ud.tcy, ud.tny = bdry.get_tau_y(ud, elem, node, 0.5)
-
-    if ud.rayleigh_forcing:
-        ud.forcing_tcy, ud.forcing_tny = bdry.get_bottom_tau_y(
-            ud, elem, node, 0.2, cutoff=0.3
-        )
 
     A0 = 1.0e-1 / ud.u_ref
     Msq = ud.Msq

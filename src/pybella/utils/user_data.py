@@ -107,6 +107,8 @@ class UserDataInit:
         self.zmax = 1.0
 
         # Blending choices
+        self.initial_blending = False
+
         self.continuous_blending = False
         self.no_of_pi_initial = 1
         self.no_of_pi_transition = 0
@@ -134,9 +136,9 @@ class UserDataInit:
         self.stepmax = 10000
         
         # Model regimes
-        self.is_ArakawaKonor = 0
-        self.is_nonhydrostatic = 1
         self.is_compressible = 1
+        self.is_nonhydrostatic = 1
+        self.is_ArakawaKonor = 0
         self.compressibility = 1.0
         
         # Physics and background wind
