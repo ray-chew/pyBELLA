@@ -11,7 +11,7 @@ import dask
 
 import matplotlib.pyplot as plt
 
-from ..flow_solver.utils import options as opts
+from ..utils import options as opts
 from . import utils
 
 debug_cnt = 0

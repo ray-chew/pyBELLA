@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 import numba as nb
 
-from ...utils import options as opts
+from ....utils import options as opts
 
 
 def stencil_9pt(elem, node, mpv, Sol, ud, diag_inv, dt, coriolis_params):

@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..utils import options as opts
+from ...utils import options as opts
 
 
 def grid_init(ud):

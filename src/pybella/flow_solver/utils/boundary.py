@@ -3,7 +3,7 @@ For more details on this module, refer to the write-up :ref:`boundary_handling`.
 """
 import copy
 import numpy as np
-from . import options as opts
+from ...utils import options as opts
 from ...utils import io
 
 
