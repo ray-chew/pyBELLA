@@ -1,5 +1,7 @@
 import numpy as np
-from ..flow_solver.utils import options as opts, boundary as bdry
+
+from ..utils import options as opts
+from ..flow_solver.utils import boundary as bdry
 from ..flow_solver.physics import hydrostatics
 from ..flow_solver.physics.low_mach import second_projection as lm_sp
 
@@ -9,68 +11,22 @@ import logging
 
 
 class UserData(object):
-    NSPEC = 1
-
     grav = 0.0
-    omega = 0.0
 
-    R_gas = 287.4
-    R_vap = 461.0
-    Q_vap = 2.53e06
-    gamma = 1.4
 
     h_ref = 10000.0
     t_ref = 100.0
     T_ref = 300.00
     p_ref = 1e5
-    u_ref = h_ref / t_ref
-    rho_ref = p_ref / (R_gas * T_ref)
 
-    Nsq_ref = 0.0
 
-    i_gravity = np.zeros((3))
-    i_coriolis = np.zeros((3))
-
-    tout = np.zeros((2))
 
     def __init__(self):
         self.h_ref = self.h_ref
         self.t_ref = self.t_ref
         self.T_ref = self.T_ref
         self.p_ref = self.p_ref
-        self.rho_ref = self.rho_ref
-        self.u_ref = self.u_ref
-        self.Nsq_ref = self.Nsq_ref
-        self.g_ref = self.grav
-        self.gamm = self.gamma
-        self.Rg_over_Rv = self.R_gas / self.R_vap
-        self.Q = self.Q_vap / (self.R_gas * self.T_ref)
-
-        self.nspec = self.NSPEC
-
-        self.is_nonhydrostatic = 1
-        self.is_compressible = 1
-        self.is_ArakawaKonor = 0
-
-        self.compressibility = 1.0
-        self.acoustic_timestep = 0
-        self.acoustic_order = 0
-        self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
-
-        self.gravity_strength = np.zeros((3))
-        self.coriolis_strength = np.zeros((3))
-
-        self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
-        self.coriolis_strength[0] = self.omega * self.t_ref
-        self.coriolis_strength[2] = self.omega * self.t_ref
-
-        gravity_mask = (self.gravity_strength > np.finfo(np.float64).eps) | (np.arange(3) == 1)
-        self.i_gravity = gravity_mask.astype(int)
-        if np.any(gravity_mask):
-            self.gravity_direction = np.where(gravity_mask)[0][-1]  # Use last matching index
-
-        coriolis_mask = self.coriolis_strength > np.finfo(np.float64).eps
-        self.i_coriolis = coriolis_mask.astype(int)
+        self.grav = self.grav
 
         self.xmin = -0.5
         self.xmax = 0.5
@@ -92,9 +48,6 @@ class UserData(object):
         # NUMERICS
         ##########################################
         self.CFL = 0.9 / 2.0
-        # self.CFL = 0.95
-        # self.dtfixed0 = 2.1 * 1.200930e-2
-        # self.dtfixed = 2.1 * 1.200930e-2
         self.dtfixed = 0.01
         self.dtfixed0 = 0.01
 
@@ -102,31 +55,9 @@ class UserData(object):
         self.iny = 64 + 1
         self.inz = 1
 
-        self.limiter_type_scalars = opts.LimiterType.NONE
-        self.limiter_type_velocity = opts.LimiterType.NONE
 
-        self.tol = 1.0e-8
-        self.max_iterations = 6000
-
-        self.perturb_type = "pos_perturb"
-        self.blending_mean = "rhoY"  # 1.0, rhoY
-        self.blending_conv = "rho"  # theta, rho
-        self.blending_type = "half"  # half, full
-
-        self.do_advection = True
-
-        self.continuous_blending = False
-        self.no_of_pi_initial = 1
-        self.no_of_pi_transition = 0
-        self.no_of_hy_initial = 0
-        self.no_of_hy_transition = 0
-
-        self.blending_weight = 0.0 / 16
-
-        self.initial_blending = False
 
         self.initial_projection = True
-        self.initial_impl_Euler = False
 
         self.tout = [1.0]  # np.arange(0.0,10.1,0.1)[1:]
         self.stepmax = 101

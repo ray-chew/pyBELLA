@@ -1,80 +1,39 @@
 import numpy as np
 
-from ..flow_solver.utils import options as opts, boundary as bdry, variable as var
+from ..utils import options as opts
+
+from ..flow_solver.utils import boundary as bdry, variable as var
 from ..flow_solver.physics import hydrostatics
 
 from ..utils.data_structures import DiagnosticState
 
 
 class UserData(object):
-    NSPEC = 1
-    BUOY = 0
-
-    grav = 9.81
-    omega = 7.292 * 1e-5  # [s^{-1}]
-
-    R_gas = 287.4
-    R_vap = 461.0
-    Q_vap = 2.53e06
-    gamma = 1.4
-
-    h_ref = 10000.0
-    t_ref = 100.0
-    T_ref = 300.00
-    p_ref = 1e5
-    u_ref = h_ref / t_ref
-    rho_ref = p_ref / (R_gas * T_ref)
-
-    Nsq_ref = 1.0e-4
-
     # planetary -> 160.0;  long-wave -> 20.0;  standard -> 1.0;
     scale_factor = 20.0
-
-    i_gravity = np.zeros((3))
-    i_coriolis = np.zeros((3))
-
-    tout = np.zeros((2))
 
     def __init__(self):
         self.scale_factor = self.scale_factor
 
-        self.h_ref = self.h_ref
-        self.t_ref = self.t_ref
-        self.T_ref = self.T_ref
-        self.p_ref = self.p_ref
-        self.rho_ref = self.rho_ref
-        self.u_ref = self.u_ref
-        self.Nsq_ref = self.Nsq_ref
-        self.g_ref = self.grav
-        self.gamm = self.gamma
-        self.Rg_over_Rv = self.R_gas / self.R_vap
-        self.Q = self.Q_vap / (self.R_gas * self.T_ref)
-
-        self.nspec = self.NSPEC
-
-        self.is_nonhydrostatic = 1
-        self.is_compressible = 1
-        self.is_ArakawaKonor = 0
-
-        self.compressibility = 0.0
-        self.acoustic_timestep = 0
-        self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
+        self.h_ref = 10000.0 # [m]
+        self.t_ref = 100.0 # [s]
+        self.T_ref = 300.00 # [K]
+        self.p_ref = 1e5 # [Pa]
+        self.omega = 7.292 * 1e-5  # [s^{-1}]
+        self.grav = 9.81 # [m/s^2]
+        self.R_gas = 287.4 # [J kg^{-1} K^{-1}]
+        self.u_ref = self.h_ref / self.t_ref # [m/s]
+        self.Nsq_ref = 1.0e-4  # [s^{-2}]
+        self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref) # Mach number squared
 
         self.gravity_strength = np.zeros((3))
-        self.coriolis_strength = np.zeros((3))
 
         self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
-        self.coriolis_strength[0] = self.omega * self.t_ref
-        # self.coriolis_strength[2] = self.omega * self.t_ref
-        # self.coriolis_strength[1] = self.omega * self.t_ref
 
         gravity_mask = (self.gravity_strength > np.finfo(np.float64).eps) | (np.arange(3) == 1)
         self.i_gravity = gravity_mask.astype(int)
         if np.any(gravity_mask):
             self.gravity_direction = np.where(gravity_mask)[0][-1]  # Use last matching index
-
-        coriolis_mask = self.coriolis_strength > np.finfo(np.float64).eps
-        self.i_coriolis = coriolis_mask.astype(int)
 
         self.xmin = -15.0 * self.scale_factor
         self.xmax = 15.0 * self.scale_factor
@@ -83,9 +42,6 @@ class UserData(object):
         self.zmin = -1.0
         self.zmax = 1.0
 
-        self.u_wind_speed = 0.0 * 20.0 / self.u_ref
-        self.v_wind_speed = 0.0
-        self.w_wind_speed = 0.0
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = opts.BdryType.PERIODIC
@@ -110,17 +66,8 @@ class UserData(object):
         self.dtfixed = 1.0
 
         self.inx = 301 + 1
-        # self.inx = 1205+1
         self.iny = 10 + 1
-        # self.iny = 40+1
         self.inz = 1
-
-        self.limiter_type_scalars = opts.LimiterType.NONE
-        self.limiter_type_velocity = opts.LimiterType.NONE
-
-        self.initial_projection = False
-
-        self.do_advection = True
 
         self.tout = [self.scale_factor * 1.0 * 3000.0 / self.t_ref]
 
@@ -128,18 +75,6 @@ class UserData(object):
         self.stepmax = 31
         self.max_iterations = 6000
 
-        self.continuous_blending = False
-        self.no_of_pi_initial = 0
-        self.no_of_pi_transition = 0
-        self.no_of_hy_initial = 1
-        self.no_of_hy_transition = 0
-
-        self.blending_weight = 0.0 / 16
-        self.blending_mean = "rhoY"  # 1.0, rhoY
-        self.blending_conv = "rho"  # theta, rho
-        self.blending_type = "half"  # half, full
-
-        self.initial_blending = False
 
         self.autogen_fn = False
 

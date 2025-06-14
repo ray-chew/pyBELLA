@@ -5,7 +5,7 @@ Unstable Lamb Wave integral test involving vertical Coriolis and Rayleigh BC.
 import numpy as np
 from ..flow_solver.physics import hydrostatics
 from ..flow_solver.utils import boundary as bdry
-from ..flow_solver.utils import options as opts
+from ..utils import options as opts
 
 from ..utils.data_structures import DiagnosticState
 
@@ -13,34 +13,23 @@ from ..utils.data_structures import DiagnosticState
 class UserData(object):
     def __init__(self):
         self.grav = 9.81  # [m/s^2]
-        self.omega = 7.292 * 1e-5  # [s^{-1}]
-        self.t_ref = 100.0  # [s]
+        self.omega = 2.0 * 7.292 * 1e-5  # [s^{-1}]
 
         self.h_ref = 10.0e3              # [m]
-        self.u_ref = self.h_ref / self.t_ref
-
+        self.t_ref = 100.0  # [s]
         self.T_ref = 300.00              # [K]
         self.R_gas = 287.4               # [J kg^{-1} K^{-1}]
         self.Rg = self.R_gas / (self.h_ref**2 / self.t_ref**2 / self.T_ref)
         self.gamma = 1.4
-        self.cp_gas = self.gamma * self.R_gas / (self.gamma-1.0)
-
-        self.Nsq = (self.grav / np.sqrt(self.cp_gas * self.T_ref))**2
-        self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
 
         self.gravity_strength = np.zeros((3))
-        self.coriolis_strength = np.zeros((3))
 
         self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
-        self.coriolis_strength[2] = 2.0 * self.omega * self.t_ref
 
         gravity_mask = (self.gravity_strength > np.finfo(np.float64).eps) | (np.arange(3) == 1)
         self.i_gravity = gravity_mask.astype(int)
         if np.any(gravity_mask):
             self.gravity_direction = np.where(gravity_mask)[0][-1]  # Use last matching index
-
-        coriolis_mask = self.coriolis_strength > np.finfo(np.float64).eps
-        self.i_coriolis = coriolis_mask.astype(int)
 
         ##########################################
         # SPATIAL GRID
@@ -55,10 +44,6 @@ class UserData(object):
         # BOUNDARY CONDITIONS
         ##########################################
 
-        self.bdry_type = np.empty((3), dtype=object)
-        self.bdry_type[0] = opts.BdryType.PERIODIC
-        self.bdry_type[1] = opts.BdryType.WALL
-        self.bdry_type[2] = opts.BdryType.WALL
         self.ATMOSPHERIC_EXTENSION = True
 
         ##########################################
@@ -71,34 +56,8 @@ class UserData(object):
         self.tout = [36.0]
         self.stepmax = 11
 
-        self.is_compressible = 1
-        self.is_nonhydrostatic = 1
-        self.is_ArakawaKonor = 0
 
-        self.compressibility = 1.0
-        self.acoustic_timestep = 0
 
-        ##########################################
-        # PHYSICS AND BACKGROUND WIND
-        ##########################################
-        self.u_wind_speed = 0.0
-        self.v_wind_speed = 0.0
-        self.w_wind_speed = 0.0
-
-        ##########################################
-        # BLENDING
-        ##########################################
-        self.continuous_blending = False
-        self.no_of_pi_initial = 1
-        self.no_of_pi_transition = 0
-        self.no_of_hy_initial = 0
-        self.no_of_hy_transition = 0
-
-        self.blending_weight = 0.0 / 16
-        self.blending_mean = "rhoY"
-        self.blending_conv = "rho"
-        self.blending_type = "half"
-        self.initial_blending = False
 
         ##########################################
         # STRATIFICATION
@@ -317,7 +276,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     ##################################################
     # dimensionless Brunt-Väisälä frequency
-    N = ud.t_ref * np.sqrt(ud.Nsq)
+    N = ud.t_ref * np.sqrt(ud.Nsq_ref)
     # dimensionless speed of sound
     Cs = np.sqrt(th.gamm / Msq)
     ud.Cs = Cs
