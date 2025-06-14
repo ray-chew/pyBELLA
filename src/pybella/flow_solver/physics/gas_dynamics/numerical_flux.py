@@ -1,60 +1,30 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-import scipy as sp
 
+from ....utils.operators import create_convolution_kernels, apply_convolution_kernel, apply_u_kernel_convolution, apply_v_kernel_convolution_3d
+from ....utils.slices import get_inner_slice
 
-def recompute_advective_fluxes(flux, Sol, *args, **kwargs):
-    """
-    Recompute the advective fluxes at the cell interfaces, i.e. the faces. This function updates the `flux` container in-place.
-
-    Parameters
-    ----------
-    flux : :py:class:`management.variable.States`
-        Data container for the fluxes at the cell interfaces.
-    Sol : :py:class:`management.variable.States`
-        Data container for the Solution.
-
-    Attention
-    ---------
-    This function is a mess and requires cleaning up.
-
-    """
+def recompute_advective_fluxes(flux, Sol, **kwargs):
+    """Recompute the advective fluxes at the cell interfaces."""
     ndim = Sol.rho.ndim
-    inner_idx = tuple([slice(1, -1)] * ndim)
-
-    if ndim == 2:
-        kernel_u = np.array([[0.5, 1.0, 0.5], [0.5, 1.0, 0.5]])
-        kernel_v = kernel_u.T
-    elif ndim == 3:
-        kernel_u = np.array(
-            [[[1, 2, 1], [2, 4, 2], [1, 2, 1]], [[1, 2, 1], [2, 4, 2], [1, 2, 1]]]
-        )
-        kernel_v = np.swapaxes(kernel_u, 1, 0)
-        kernel_w = np.swapaxes(kernel_u, 2, 0)
-
+    inner_idx = get_inner_slice(ndim)
+    kernels = create_convolution_kernels(ndim)
+    
+    # Handle 3D w-component first
+    if ndim == 3:
         rhoYw = Sol.rhoY * Sol.rhow / Sol.rho
-        flux[2].rhoY[inner_idx] = (
-            sp.signal.fftconvolve(rhoYw, kernel_w, mode="valid") / kernel_w.sum()
-        )
-    else:
-        assert 0, "Unsupported dimension in recompute_advective_flux"
-
+        flux[2].rhoY[inner_idx] = apply_convolution_kernel(rhoYw, kernels['w'])
+    
+    # u-component (all dimensions)
     rhoYu = kwargs.get("u", Sol.rhoY * Sol.rhou / Sol.rho)
-
-    flux[0].rhoY[inner_idx] = np.moveaxis(
-        sp.signal.fftconvolve(rhoYu, kernel_u, mode="valid") / kernel_u.sum(), 0, -1
-    )
-
+    flux[0].rhoY[inner_idx] = apply_u_kernel_convolution(rhoYu, kernels['u'])
+    
+    # v-component (all dimensions)
     rhoYv = kwargs.get("v", Sol.rhoY * Sol.rhov / Sol.rho)
     if ndim == 2:
-        flux[1].rhoY[inner_idx] = (
-            sp.signal.fftconvolve(rhoYv, kernel_v, mode="valid") / kernel_v.sum()
-        )
+        flux[1].rhoY[inner_idx] = apply_convolution_kernel(rhoYv, kernels['v'])
     elif ndim == 3:
-        flux[1].rhoY[inner_idx] = np.moveaxis(
-            sp.signal.fftconvolve(rhoYv, kernel_v, mode="valid") / kernel_v.sum(), -1, 0
-        )
-    # flux[1].rhoY[...,-1] = 0.
+        flux[1].rhoY[inner_idx] = apply_v_kernel_convolution_3d(rhoYv, kernels['v'])
 
 
 def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
