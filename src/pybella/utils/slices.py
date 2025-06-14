@@ -14,6 +14,12 @@ def get_inner_slice(ndim):
     """Get slice tuple for inner cells (excluding outermost ghost cells)."""
     return tuple([slice(1, -1)] * ndim)
 
+def get_last_dim_inner_slice(ndim):
+    """Get slice for inner faces in the last dimension only."""
+    idx = [slice(None)] * ndim
+    idx[-1] = slice(1, -1)
+    return tuple(idx)
+
 
 def get_interface_indices(ndim):
     """
