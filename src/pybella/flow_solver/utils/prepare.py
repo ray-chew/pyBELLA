@@ -1,23 +1,23 @@
 import numpy as np
 
-from . import user_data, io, data_structures
+from ...utils import user_data, io, data_structures
 
-from ..flow_solver.discretisation import grid as dis_grid
-from ..flow_solver.utils import variable as var
-from ..flow_solver.utils import boundary as bdry
-from ..flow_solver.physics import hydrostatics
-from ..flow_solver.physics.low_mach import mpv as lm_var
-from ..flow_solver.physics.gas_dynamics import thermodynamics as gd_thermodynamics
+from ..discretisation import grid as dis_grid
+from . import variable as var
+from . import boundary as bdry
+from ..physics import hydrostatics
+from ..physics.low_mach import mpv as lm_var
+from ..physics.gas_dynamics import thermodynamics as gd_thermodynamics
 
 # test module
-from ..tests import diagnostics as diag
+from ...tests import diagnostics as diag
 
 
 def initialise():
     ####
     # Initialise simulation state
     ####
-    from . import sim_params as params
+    from ...utils import sim_params as params
 
     np.set_printoptions(precision=params.print_precision)
 
@@ -43,6 +43,7 @@ def initialise():
 
     sol = var.Vars(elem.sc, ud)
 
+    # Move these to the FlowSolverCache
     flux = np.empty((3), dtype=object)
     flux[0] = var.States(elem.sfx, ud)
     if elem.ndim > 1:
@@ -84,6 +85,10 @@ def initialise():
 
     sol = sol_init(sol, mpv, elem, node, th, ud)
 
+    # Initialise cache and add to simulation state
+    flow_cache = var.FlowSolverCache()
+
+
     ensemble_state.update_member(
         elem=elem,
         node=node,
@@ -91,6 +96,7 @@ def initialise():
         flux=flux,
         mpv=mpv,
         th=th,
+        cache=flow_cache
     )
 
     restart_params = data_structures.RestartParameters(
@@ -111,6 +117,8 @@ def initialise():
         restart_params=restart_params,
         interface_params=interface_params,
     )
+
+
 
     return sim_st
 

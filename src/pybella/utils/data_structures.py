@@ -2,7 +2,7 @@ from typing import Optional, Callable, List, Any
 from dataclasses import dataclass, field, fields
 
 from ..flow_solver.discretisation.grid import Grid
-from ..flow_solver.utils.variable import Vars
+from ..flow_solver.utils.variable import Vars, FlowSolverCache
 from ..flow_solver.physics.low_mach.mpv import MPV
 from ..flow_solver.physics.gas_dynamics.thermodynamics import ThermodynamicalQuantities
 
@@ -22,6 +22,7 @@ class ModelState:
     flux: List[Vars]
     mpv: MPV
     th: ThermodynamicalQuantities
+    cache: FlowSolverCache = field(default_factory=FlowSolverCache)
     time: IntegrationTime = field(init=False)
 
     def __post_init__(self):
@@ -71,8 +72,11 @@ class EnsembleState:
         mpv: MPV,
         flux: List[Vars],
         th: ThermodynamicalQuantities,
+        cache: Optional[FlowSolverCache] = None
     ):
-        new_state = ModelState(elem, node, sol, flux, mpv, th)
+        if cache is None:
+            cache = FlowSolverCache()
+        new_state = ModelState(elem, node, sol, flux, mpv, th, cache)
         self.members.append(new_state)
 
     def set_members(self, members: List[ModelState]):
