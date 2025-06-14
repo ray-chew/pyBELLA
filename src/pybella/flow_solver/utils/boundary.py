@@ -1,6 +1,7 @@
 """
 For more details on this module, refer to the write-up :ref:`boundary_handling`.
 """
+
 import copy
 import numpy as np
 from ...utils import options as opts
@@ -285,7 +286,7 @@ def get_gravity_padding(ndim, cur_idx, direction, offset, elem, y_axs=None):
     """
     cur_i = np.copy(cur_idx)
     cur_idx += offset * ((elem.icy - 1) - 2 * cur_idx)
-    gravity_padding = [(slice(None))] * ndim
+    gravity_padding = [slice(None)] * ndim
     if y_axs == None:
         # y_axs = ndim - 1
         y_axs = 1
@@ -498,6 +499,7 @@ def get_bottom_tau_y(ud, elem, node, alpha, cutoff=0.5):
 
     return tauc_y, taun_y
 
+
 def apply_rayleigh_forcing(
     Sol,
     mpv,
@@ -520,9 +522,7 @@ def apply_rayleigh_forcing(
     t_offset = 0.5 * dt if half else dt
 
     if ud.rayleigh_forcing_type == "file":
-        reader = io.read_input(
-            ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path
-        )
+        reader = io.read_input(ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path)
 
         if Sol_half_new is None or mpv_half_new is None:
             Sol_half_new = copy.deepcopy(Sol)
@@ -536,9 +536,7 @@ def apply_rayleigh_forcing(
         Yp = Sol_half_new.rhoY / Sol_half_new.rho - mpv.HydroState.Y0.reshape(1, -1)
         pi = mpv_half_new.p2_nodes
 
-        bdry.rayleigh_damping(
-            Sol, mpv, ud, elem, node, [up, vp, Yp, pi, t + t_offset]
-        )
+        bdry.rayleigh_damping(Sol, mpv, ud, elem, node, [up, vp, Yp, pi, t + t_offset])
 
     elif ud.rayleigh_forcing_type == "func":
         s = 5.0e-3 + 1e-4 + 0e-5
@@ -553,6 +551,7 @@ def apply_rayleigh_forcing(
         )
 
     bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+
 
 def rayleigh_damping(Sol, mpv, ud, elem, node, forcing=None):
     u = Sol.rhou / Sol.rho  # [elem.i2]

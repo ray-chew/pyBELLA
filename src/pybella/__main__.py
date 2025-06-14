@@ -67,23 +67,21 @@ def main():
             debug_writer = io.create_debug_writer(params.debug, writer, mem)
 
             logging.info("For ensemble member = %i..." % cnt)
-            mem = dis_time_update.do(
-                sst,
-                mem,
-                tout,
-                blend,
-                step_writer,
-                debug_writer
-            )
+            mem = dis_time_update.do(sst, mem, tout, blend, step_writer, debug_writer)
 
             if sst.ud.diag:
                 if sst.ud.diag_updt_targets:
-                    strip_target.do(step_writer.OUTPUT_FILENAME + step_writer.BASE_NAME + step_writer.SUFFIX + '.h5', sst.ud, time_increment=sst.diag_comparison.time_increment)
+                    strip_target.do(
+                        step_writer.OUTPUT_FILENAME
+                        + step_writer.BASE_NAME
+                        + step_writer.SUFFIX
+                        + ".h5",
+                        sst.ud,
+                        time_increment=sst.diag_comparison.time_increment,
+                    )
                     sst.diag_comparison.update_targets()
                 else:
-                    sst.diag_comparison.test_do(
-                        mem, sst.ud
-                    )
+                    sst.diag_comparison.test_do(mem, sst.ud)
 
             futures.append(mem)
 

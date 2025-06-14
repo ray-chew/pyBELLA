@@ -2,6 +2,7 @@
 Pre-step modifications for the time stepper.
 """
 
+
 def apply_modifcations(dt, ud, step):
     """Apply modifications to the timestep based on user-defined parameters."""
 

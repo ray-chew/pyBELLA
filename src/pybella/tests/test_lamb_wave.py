@@ -12,7 +12,7 @@ from ..utils.data_structures import DiagnosticState
 class UserData(object):
 
     def __init__(self):
-        self.grav= 9.81
+        self.grav = 9.81
         self.h_ref = 10.0e3  # [m]
         self.t_ref = 100.0  # [s]
         self.T_ref = 300.00  # [K]
@@ -38,10 +38,14 @@ class UserData(object):
 
         self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
 
-        gravity_mask = (self.gravity_strength > np.finfo(np.float64).eps) | (np.arange(3) == 1)
+        gravity_mask = (self.gravity_strength > np.finfo(np.float64).eps) | (
+            np.arange(3) == 1
+        )
         self.i_gravity = gravity_mask.astype(int)
         if np.any(gravity_mask):
-            self.gravity_direction = np.where(gravity_mask)[0][-1]  # Use last matching index
+            self.gravity_direction = np.where(gravity_mask)[0][
+                -1
+            ]  # Use last matching index
 
         j = 4.0
         Lx = 1.0 * np.pi * self.Cs / self.N_ref * j

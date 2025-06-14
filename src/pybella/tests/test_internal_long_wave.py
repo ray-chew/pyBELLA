@@ -15,25 +15,31 @@ class UserData(object):
     def __init__(self):
         self.scale_factor = self.scale_factor
 
-        self.h_ref = 10000.0 # [m]
-        self.t_ref = 100.0 # [s]
-        self.T_ref = 300.00 # [K]
-        self.p_ref = 1e5 # [Pa]
+        self.h_ref = 10000.0  # [m]
+        self.t_ref = 100.0  # [s]
+        self.T_ref = 300.00  # [K]
+        self.p_ref = 1e5  # [Pa]
         self.omega = 7.292 * 1e-5  # [s^{-1}]
-        self.grav = 9.81 # [m/s^2]
-        self.R_gas = 287.4 # [J kg^{-1} K^{-1}]
-        self.u_ref = self.h_ref / self.t_ref # [m/s]
+        self.grav = 9.81  # [m/s^2]
+        self.R_gas = 287.4  # [J kg^{-1} K^{-1}]
+        self.u_ref = self.h_ref / self.t_ref  # [m/s]
         self.Nsq_ref = 1.0e-4  # [s^{-2}]
-        self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref) # Mach number squared
+        self.Msq = (
+            self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
+        )  # Mach number squared
 
         self.gravity_strength = np.zeros((3))
 
         self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
 
-        gravity_mask = (self.gravity_strength > np.finfo(np.float64).eps) | (np.arange(3) == 1)
+        gravity_mask = (self.gravity_strength > np.finfo(np.float64).eps) | (
+            np.arange(3) == 1
+        )
         self.i_gravity = gravity_mask.astype(int)
         if np.any(gravity_mask):
-            self.gravity_direction = np.where(gravity_mask)[0][-1]  # Use last matching index
+            self.gravity_direction = np.where(gravity_mask)[0][
+                -1
+            ]  # Use last matching index
 
         self.xmin = -15.0 * self.scale_factor
         self.xmax = 15.0 * self.scale_factor
@@ -41,7 +47,6 @@ class UserData(object):
         self.ymax = 1.0
         self.zmin = -1.0
         self.zmax = 1.0
-
 
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = opts.BdryType.PERIODIC
@@ -74,7 +79,6 @@ class UserData(object):
         self.tol = 1.0e-12
         self.stepmax = 31
         self.max_iterations = 6000
-
 
         self.autogen_fn = False
 

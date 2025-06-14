@@ -43,7 +43,6 @@ if __name__ == "__main__":
         diag = td.compare_sol("gen_target")
         diag.update_targets()
 
-
     ud["output_type"] = "test"
     # Do diagnostics
     ud["diag"] = True

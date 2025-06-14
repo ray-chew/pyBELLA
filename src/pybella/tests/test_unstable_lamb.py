@@ -15,10 +15,10 @@ class UserData(object):
         self.grav = 9.81  # [m/s^2]
         self.omega = 2.0 * 7.292 * 1e-5  # [s^{-1}]
 
-        self.h_ref = 10.0e3              # [m]
+        self.h_ref = 10.0e3  # [m]
         self.t_ref = 100.0  # [s]
-        self.T_ref = 300.00              # [K]
-        self.R_gas = 287.4               # [J kg^{-1} K^{-1}]
+        self.T_ref = 300.00  # [K]
+        self.R_gas = 287.4  # [J kg^{-1} K^{-1}]
         self.Rg = self.R_gas / (self.h_ref**2 / self.t_ref**2 / self.T_ref)
         self.gamma = 1.4
 
@@ -26,10 +26,14 @@ class UserData(object):
 
         self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
 
-        gravity_mask = (self.gravity_strength > np.finfo(np.float64).eps) | (np.arange(3) == 1)
+        gravity_mask = (self.gravity_strength > np.finfo(np.float64).eps) | (
+            np.arange(3) == 1
+        )
         self.i_gravity = gravity_mask.astype(int)
         if np.any(gravity_mask):
-            self.gravity_direction = np.where(gravity_mask)[0][-1]  # Use last matching index
+            self.gravity_direction = np.where(gravity_mask)[0][
+                -1
+            ]  # Use last matching index
 
         ##########################################
         # SPATIAL GRID
@@ -55,9 +59,6 @@ class UserData(object):
 
         self.tout = [36.0]
         self.stepmax = 11
-
-
-
 
         ##########################################
         # STRATIFICATION
@@ -106,7 +107,7 @@ class UserData(object):
                 "rhoY": tol,
                 "rhoX": tol,
                 "p2_nodes": tol,
-            }
+            },
         )
 
         self.autogen_fn = False
@@ -136,7 +137,7 @@ class UserData(object):
         self.zmax = 1.0
 
     def stratification_wrapper(self, dy):
-        return lambda y : self.stratification_function(y, dy)
+        return lambda y: self.stratification_function(y, dy)
 
     def stratification_function(self, y, dy):
         g = self.gravity_strength[1]
@@ -146,22 +147,40 @@ class UserData(object):
         pi_p = np.exp(-(y + 0.5 * dy) / Hex)
         pi_m = np.exp(-(y - 0.5 * dy) / Hex)
 
-        Theta = - (Gamma * g * dy) / (pi_p - pi_m)
+        Theta = -(Gamma * g * dy) / (pi_p - pi_m)
         return Theta
-    
+
     @staticmethod
     def rayleigh_bc_function(ud):
         if ud.bdry_type[1] == opts.BdryType.RAYLEIGH or ud.rayleigh_forcing == True:
             ud.inbcy = ud.iny - 1
             ud.iny0 = np.copy(ud.iny)
-            ud.iny = ud.iny0 + int(3*ud.inbcy)
+            ud.iny = ud.iny0 + int(3 * ud.inbcy)
 
             # tentative workaround
             ud.bcy = ud.ymax
             ud.ymax += 3.0 * ud.bcy
 
     class forcing(object):
-        def __init__(self, k, mu, Cs, F, N, Gamma, ampl, g, rhobar, Ybar, rhobar_n, Ybar_n, X, Y, Xn, Yn):
+        def __init__(
+            self,
+            k,
+            mu,
+            Cs,
+            F,
+            N,
+            Gamma,
+            ampl,
+            g,
+            rhobar,
+            Ybar,
+            rhobar_n,
+            Ybar_n,
+            X,
+            Y,
+            Xn,
+            Yn,
+        ):
             self.k = k
             self.mu = mu
             self.Cs = Cs
@@ -185,41 +204,52 @@ class UserData(object):
 
         def get_T_matrix(self):
             # system matrix of linearized equations
-            matrix = -np.array([[0, self.F, 0, 1j*self.Cs*self.k], 
-                            [-self.F, 0, -self.N, self.Cs*(self.mu+self.Gamma)], 
-                            [0, self.N, 0, 0], 
-                            [1j*self.Cs*self.k, self.Cs*(self.mu-self.Gamma), 0, 0]])
-        
+            matrix = -np.array(
+                [
+                    [0, self.F, 0, 1j * self.Cs * self.k],
+                    [-self.F, 0, -self.N, self.Cs * (self.mu + self.Gamma)],
+                    [0, self.N, 0, 0],
+                    [1j * self.Cs * self.k, self.Cs * (self.mu - self.Gamma), 0, 0],
+                ]
+            )
+
             self.T_matrix = matrix
 
-        def eigenfunction(self, t, s, grid='c'):
-            if grid == 'c':
+        def eigenfunction(self, t, s, grid="c"):
+            if grid == "c":
                 x, z = self.X, self.Y
-            elif grid == 'n':
-                x, z, = self.Xn, self.Yn
-            
-            # Compute eigenvalues and eigenvectors
-            eigval, eigvec = np.linalg.eig( self.T_matrix )
+            elif grid == "n":
+                (
+                    x,
+                    z,
+                ) = (
+                    self.Xn,
+                    self.Yn,
+                )
 
-            # Find index of eigenvalue 
+            # Compute eigenvalues and eigenvectors
+            eigval, eigvec = np.linalg.eig(self.T_matrix)
+
+            # Find index of eigenvalue
             # with greatest real part aka the instability growth rate
-            ind = np.argmax( np.real( eigval ) )
+            ind = np.argmax(np.real(eigval))
 
             # construct solution according to eq. 2.27 and 2.19
-            exponentials = np.exp( 1j * self.k * x + self.mu * z 
-                                + ( eigval[ind] ) * (t) + 1j * s * t )
-            chi_u  = self.ampl * np.real( eigvec[0,ind] * exponentials )
-            chi_w  = self.ampl * np.real( eigvec[1,ind] * exponentials )
-            chi_th = self.ampl * np.real( eigvec[2,ind] * exponentials )
-            chi_pi = self.ampl * np.real( eigvec[3,ind] * exponentials )
+            exponentials = np.exp(
+                1j * self.k * x + self.mu * z + (eigval[ind]) * (t) + 1j * s * t
+            )
+            chi_u = self.ampl * np.real(eigvec[0, ind] * exponentials)
+            chi_w = self.ampl * np.real(eigvec[1, ind] * exponentials)
+            chi_th = self.ampl * np.real(eigvec[2, ind] * exponentials)
+            chi_pi = self.ampl * np.real(eigvec[3, ind] * exponentials)
 
-            self.arrs = ( chi_u, chi_w, chi_th, chi_pi )
+            self.arrs = (chi_u, chi_w, chi_th, chi_pi)
 
-        def dehatter(self, th, grid='c'):
-            if grid == 'n':
+        def dehatter(self, th, grid="c"):
+            if grid == "n":
                 Ybar = self.Ybar_n
                 oorhobarsqrt = self.oorhobarsqrt_n
-            elif grid == 'c':
+            elif grid == "c":
                 Ybar = self.Ybar
                 oorhobarsqrt = self.oorhobarsqrt
 
@@ -229,12 +259,12 @@ class UserData(object):
             vp = oorhobarsqrt * chi_v
             Yp = oorhobarsqrt * self.N / self.g * Ybar * chi_Y
             pi_p = oorhobarsqrt * self.Cs / Ybar / th.Gammainv * chi_pi
-            
+
             return up.T, vp.T, Yp.T, pi_p.T
 
 
 def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
-    if hasattr(ud, 'rayleigh_bdry_switch'):
+    if hasattr(ud, "rayleigh_bdry_switch"):
         if ud.rayleigh_bdry_switch:
             ud.bdry_type[1] = opts.BdryType.RAYLEIGH
 
@@ -242,8 +272,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         ud.tcy, ud.tny = bdry.get_tau_y(ud, elem, node, 0.5)
 
     if ud.rayleigh_forcing:
-        ud.forcing_tcy, ud.forcing_tny = bdry.get_bottom_tau_y(ud, elem, node, 0.2, cutoff=0.3)
-
+        ud.forcing_tcy, ud.forcing_tny = bdry.get_bottom_tau_y(
+            ud, elem, node, 0.2, cutoff=0.3
+        )
 
     A0 = 1.0e-1 / ud.u_ref
     Msq = ud.Msq
@@ -286,11 +317,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         ud.coriolis_strength[2] += 1e-15
     F = ud.coriolis_strength[2]
 
-    G = np.sqrt(9. / 40.)
+    G = np.sqrt(9.0 / 40.0)
     Gamma = G * N / Cs
     k = N / Cs
 
-    ud.rf_bot = ud.init_forcing(k, -Gamma, Cs, F, N, Gamma, A0, g, rhobar, Ybar, rhobar_n, Ybar_n, X, Y, Xn, Yn)
+    ud.rf_bot = ud.init_forcing(
+        k, -Gamma, Cs, F, N, Gamma, A0, g, rhobar, Ybar, rhobar_n, Ybar_n, X, Y, Xn, Yn
+    )
     ud.rf_bot.get_T_matrix()
 
     ud.u_wind_speed = 0.0
@@ -316,18 +349,18 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     ###################################################
     # initialise nodal pi
-    ud.rf_bot.eigenfunction(0, 1, grid='n')
-    _, _, _, pi_n = ud.rf_bot.dehatter(th, grid='n')
+    ud.rf_bot.eigenfunction(0, 1, grid="n")
+    _, _, _, pi_n = ud.rf_bot.dehatter(th, grid="n")
 
     mpv.p2_nodes[...] = pi_n
 
     bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
-    if hasattr(ud, 'mixed_run'):
+    if hasattr(ud, "mixed_run"):
         if ud.mixed_run:
             ud.coriolis_strength[2] = 2.0 * 7.292 * 1e-5 * ud.t_ref
 
-    if hasattr(ud, 'trad_forcing'):
+    if hasattr(ud, "trad_forcing"):
         if ud.trad_forcing:
             ud.rf_bot.F = 0.0
             ud.rf_bot.get_T_matrix()
