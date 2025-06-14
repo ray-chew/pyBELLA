@@ -120,8 +120,8 @@ def do_comp_to_psinc_conv(mem, bld, ud, label, writer):
 
 
 def do_psinc_to_comp_conv(
-    sst,
     mem,
+    ud,
     bld,
     label,
     writer,
@@ -135,15 +135,13 @@ def do_psinc_to_comp_conv(
     mpv_freeze = copy.deepcopy(mem.mpv)
 
     ret = time_update.do(
-        sst,
         mem,
+        ud,
         tout,
         bld=None,
         writer=None,
         debug_writer=io.NullDebugWriter(),
     )
-
-    ud = sst.ud
 
     fac_old = ud.blending_weight
     fac_new = 1.0 - fac_old
@@ -540,8 +538,8 @@ def do_hydro_to_nonhydro_conv(
 # Blending calls from data.py
 ######################################################
 def blending_before_timestep(
-    sst,
     mem,
+    ud,
     bld,
     label,
     writer,
@@ -556,8 +554,7 @@ def blending_before_timestep(
     # Blending : Do full regime to limit regime conversion
     ######################################################
     # do unpacking
-    elem, node, Sol, flux, mpv, th, _ = mem
-    ud = sst.ud
+    elem, node, Sol, flux, mpv, th, _, _ = mem
 
     # these make sure that we are the correct window step
     if bld is not None and window_step == 0:
@@ -586,8 +583,8 @@ def blending_before_timestep(
         # distinguish between Euler and SWE blending
         if ud.blending_conv != "swe":
             do_psinc_to_comp_conv(
-                sst,
                 mem,
+                ud,
                 bld,
                 ud,
                 label,
@@ -640,8 +637,8 @@ def blending_before_timestep(
         # Distinguish between SWE and Euler blendings
         if ud.blending_conv != "swe":
             do_psinc_to_comp_conv(
-                sst,
                 mem,
+                ud,
                 bld,
                 label,
                 writer,
@@ -743,8 +740,8 @@ def blending_after_timestep(
 
 
 def prepare_blending(
-    sst,
     mem,
+    ud,
     bld,
     label,
     writer,
@@ -756,13 +753,12 @@ def prepare_blending(
     debug,
 ):
 
-    ud = sst.ud
     if check_and_apply_initial_hydrostatic_conversion(step, ud, bld):
         ud.is_nonhydrostatic = 0
 
     swe_to_lake, Sol, mpv, t = blending_before_timestep(
-        sst,
         mem,
+        ud,
         bld,
         label,
         writer,
