@@ -4,7 +4,9 @@ import logging
 import numpy as np
 import scipy as sp
 
-from ...utils import options as opts, boundary as bdry
+from ....utils import options as opts
+
+from ...utils import boundary as bdry
 from . import laplacian as lm_lp
 
 

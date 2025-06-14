@@ -3,9 +3,11 @@ import logging
 
 import numpy as np
 
+from ...utils import options as opts
+
 # dependencies of the flow solver subpackage
 from . import grid as dis_grid
-from ..utils import boundary as bdry, options as opts
+from ..utils import boundary as bdry
 from ..physics.gas_dynamics import (
     numerical_flux as gd_flux,
     eos as gd_eos,

@@ -1,6 +1,8 @@
 import numpy as np
 
-from ...utils import options as opts, variable as var
+from ....utils import options as opts
+
+from ...utils import variable as var
 
 
 def do(Sol, flux, lmbda, ud, th, elem, split_step, tag):
