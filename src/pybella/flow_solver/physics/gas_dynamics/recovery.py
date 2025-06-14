@@ -1,106 +1,53 @@
 import numpy as np
+from numba import njit
 
 from ....utils import options as opts
-from ....utils.slices import get_neighbor_indices
+from ....utils.slices import get_neighbor_indices, get_interface_indices
 
 from ...utils import variable as var
 
-
-def do(mem, ud, lmbda, split_step, tag=None, use_cache=False):
+def do(mem, ud, lmbda, split_step, tag=None):
     """
     Reconstruct the limited slopes at the cell interfaces.
 
-    Parameters
-    ----------
-    Sol : :py:class:`management.variable.Vars`
-        Solution data container on cell centers.
-    flux : :py:class:`management.variable.States`
-        Flux data container on cell interfaces.
-    lmbda : float
-        :math:`\\frac{dt}{dx}`, where :math:`dx` is the grid-size in the direction of the substep.
-    ud : :py:class:`inputs.user_data.UserDataInit`
-        Class container for the initial condition.
-    th : :py:class:`physics.gas_dynamics.thermodynamic.init`
-        Class container for the thermodynamical constants.
-    elem : :py:class:`discretization.kgrid.ElemSpaceDiscr`
-        Class container for the cell-grid.
-    split_step : int
-        Tracks the substep in the Strang-splitting.
-    tag : `None` or `rk`
-        Default is `None` which uses a second-order Strang-splitting. `rk` toggles a first-order Runge-Kutta update for the advection scheme.
-
-    Returns
-    -------
-    :py:class:`management.variable.States`, :py:class:`management.variable.States`
-        Lefts, Rights are containers for the advected quantities at to the left and the right of the cell interfaces.
-
     """
-    elem, Sol, flux, th, cache = mem.elem, mem.sol, mem.flux, mem.th, mem.cache
-    flux = flux[split_step]
-    gamm = th.gamm
+    # elem, Sol, flux, th, cache = mem.elem, mem.sol, mem.flux, mem.th, mem.cache
+    flux = mem.flux[split_step]
+    gamm = mem.th.gamm
 
     order_two = 1  # always 1
 
-    Sol.primitives(th)
+    mem.sol.primitives(mem.th)
 
     if tag == "rk":
         lmbda = 0.0
 
-    ndim = elem.ndim
-    lefts_idx, rights_idx, inner_idx = (
-        [
-            slice(
-                None,
-            )
-        ]
-        * ndim,
-        [
-            slice(
-                None,
-            )
-        ]
-        * ndim,
-        [slice(1, -1)] * ndim,
-    )
-    lefts_idx[-1] = slice(0, -1)
-    rights_idx[-1] = slice(1, None)
-    lefts_idx, rights_idx, inner_idx = (
-        tuple(lefts_idx),
-        tuple(rights_idx),
-        tuple(inner_idx),
-    )
+    lefts_idx, rights_idx, inner_idx = get_interface_indices(mem.elem.ndim)
 
     # inner_idx here are where the interface fluxes are calculated with non-zero values.
     face_inner_idx = inner_idx
-    u = np.zeros_like(Sol.rhoY)
+    u = np.zeros_like(mem.sol.rhoY)
     u[inner_idx] = (
         0.5
         * (flux.rhoY[face_inner_idx][lefts_idx] + flux.rhoY[face_inner_idx][rights_idx])
-        / Sol.rhoY[inner_idx]
+        / mem.sol.rhoY[inner_idx]
     )
 
-    shape = Sol.u.shape
-    
-    if use_cache:
-        cache = cache.get_recovery_objects(shape, ud)
-        Diffs = cache['Diffs']
-        Ampls = cache['Ampls']
-        Lefts = cache['Lefts']
-        Rights = cache['Rights']
-    else:
-        # Fallback
-        Diffs = var.States(shape, ud)
-        Ampls = var.Characters(shape)
-        Lefts = var.States(shape, ud)
-        Rights = var.States(shape, ud)
+    shape = mem.sol.u.shape
 
-    Diffs.u[..., :-1] = Sol.u[rights_idx] - Sol.u[lefts_idx]
-    Diffs.v[..., :-1] = Sol.v[rights_idx] - Sol.v[lefts_idx]
-    Diffs.w[..., :-1] = Sol.w[rights_idx] - Sol.w[lefts_idx]
-    Diffs.X[..., :-1] = Sol.X[rights_idx] - Sol.X[lefts_idx]
-    Diffs.Y[..., :-1] = 1.0 / Sol.Y[rights_idx] - 1.0 / Sol.Y[lefts_idx]
+    cache = mem.cache.get_recovery_objects(shape, ud)
+    Diffs = cache['Diffs']
+    Ampls = cache['Ampls']
+    Lefts = cache['Lefts']
+    Rights = cache['Rights']
 
-    Slopes = slopes(Diffs, ud, elem)
+    Diffs.u[..., :-1] = mem.sol.u[rights_idx] - mem.sol.u[lefts_idx]
+    Diffs.v[..., :-1] = mem.sol.v[rights_idx] - mem.sol.v[lefts_idx]
+    Diffs.w[..., :-1] = mem.sol.w[rights_idx] - mem.sol.w[lefts_idx]
+    Diffs.X[..., :-1] = mem.sol.X[rights_idx] - mem.sol.X[lefts_idx]
+    Diffs.Y[..., :-1] = 1.0 / mem.sol.Y[rights_idx] - 1.0 / mem.sol.Y[lefts_idx]
+
+    Slopes = slopes(Diffs, ud, mem.elem)
 
     Ampls.u[...] = 0.5 * Slopes.u * (1.0 - lmbda * u)
     Ampls.v[...] = 0.5 * Slopes.v * (1.0 - lmbda * u)
@@ -108,11 +55,11 @@ def do(mem, ud, lmbda, split_step, tag=None, use_cache=False):
     Ampls.X[...] = 0.5 * Slopes.X * (1.0 - lmbda * u)
     Ampls.Y[...] = 0.5 * Slopes.Y * (1.0 - lmbda * u)
 
-    Lefts.u[...] = Sol.u + order_two * Ampls.u
-    Lefts.v[...] = Sol.v + order_two * Ampls.v
-    Lefts.w[...] = Sol.w + order_two * Ampls.w
-    Lefts.X[...] = Sol.X + order_two * Ampls.X
-    Lefts.Y[...] = 1.0 / (1.0 / Sol.Y + order_two * Ampls.Y)
+    Lefts.u[...] = mem.sol.u + order_two * Ampls.u
+    Lefts.v[...] = mem.sol.v + order_two * Ampls.v
+    Lefts.w[...] = mem.sol.w + order_two * Ampls.w
+    Lefts.X[...] = mem.sol.X + order_two * Ampls.X
+    Lefts.Y[...] = 1.0 / (1.0 / mem.sol.Y + order_two * Ampls.Y)
 
     Ampls.u[...] = -0.5 * Slopes.u * (1.0 + lmbda * u)
     Ampls.v[...] = -0.5 * Slopes.v * (1.0 + lmbda * u)
@@ -120,21 +67,21 @@ def do(mem, ud, lmbda, split_step, tag=None, use_cache=False):
     Ampls.X[...] = -0.5 * Slopes.X * (1.0 + lmbda * u)
     Ampls.Y[...] = -0.5 * Slopes.Y * (1.0 + lmbda * u)
 
-    Rights.u[...] = Sol.u + order_two * Ampls.u
-    Rights.v[...] = Sol.v + order_two * Ampls.v
-    Rights.w[...] = Sol.w + order_two * Ampls.w
-    Rights.X[...] = Sol.X + order_two * Ampls.X
-    Rights.Y[...] = 1.0 / (1.0 / Sol.Y + order_two * Ampls.Y)
+    Rights.u[...] = mem.sol.u + order_two * Ampls.u
+    Rights.v[...] = mem.sol.v + order_two * Ampls.v
+    Rights.w[...] = mem.sol.w + order_two * Ampls.w
+    Rights.X[...] = mem.sol.X + order_two * Ampls.X
+    Rights.Y[...] = 1.0 / (1.0 / mem.sol.Y + order_two * Ampls.Y)
 
-    vel = [Sol.u, Sol.v, Sol.w]
+    vel = [mem.sol.u, mem.sol.v, mem.sol.w]
 
-    # Lefts.rhoY[lefts_idx] = Rights.rhoY[rights_idx] = 0.5 * (Sol.rhoY[lefts_idx] + Sol.rhoY[rights_idx]) \
-    #     - order_two * 0.5 * lmbda * (Sol.u[rights_idx] * Sol.rhoY[rights_idx] - Sol.u[lefts_idx] * Sol.rhoY[lefts_idx])
+    # Lefts.rhoY[lefts_idx] = Rights.rhoY[rights_idx] = 0.5 * (mem.sol.rhoY[lefts_idx] + mem.sol.rhoY[rights_idx]) \
+    #     - order_two * 0.5 * lmbda * (mem.sol.u[rights_idx] * mem.sol.rhoY[rights_idx] - mem.sol.u[lefts_idx] * mem.sol.rhoY[lefts_idx])
     Lefts.rhoY[lefts_idx] = Rights.rhoY[rights_idx] = 0.5 * (
-        Sol.rhoY[lefts_idx] + Sol.rhoY[rights_idx]
+        mem.sol.rhoY[lefts_idx] + mem.sol.rhoY[rights_idx]
     ) - order_two * 0.5 * lmbda * (
-        vel[split_step][rights_idx] * Sol.rhoY[rights_idx]
-        - vel[split_step][lefts_idx] * Sol.rhoY[lefts_idx]
+        vel[split_step][rights_idx] * mem.sol.rhoY[rights_idx]
+        - vel[split_step][lefts_idx] * mem.sol.rhoY[lefts_idx]
     )
 
     Lefts.p0[lefts_idx] = Rights.p0[rights_idx] = Lefts.rhoY[lefts_idx] ** gamm
@@ -143,7 +90,6 @@ def do(mem, ud, lmbda, split_step, tag=None, use_cache=False):
     get_conservatives(Lefts)
 
     return Lefts, Rights
-
 
 def slopes(Diffs, ud, elem):
     """Reconstruct piecewise linear slopes in cells."""
@@ -176,6 +122,7 @@ def slopes(Diffs, ud, elem):
     
     return Slopes
 
+@njit
 def limiters(limiter_type, al, ar):
     """
     Applies the limiter type specified in the initial conditions to recovery the slope.
