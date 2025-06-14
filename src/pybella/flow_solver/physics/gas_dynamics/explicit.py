@@ -3,7 +3,7 @@ from . import recovery as gd_recovery
 from . import numerical_flux as gd_flux
 
 
-def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer=None):
+def advect(mem, ud, dt, odd, label, writer=None):
     """
     Function that runs the advection routine with Strang-splitting. This function updates the `Sol` solution container with the advected solution in-place.
 
@@ -32,12 +32,11 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer=None):
     writer : :py:class:`management.io.io`, optional
         Writer class for I/O operations, by default None
     """
+    elem, node, Sol, mpv, th = mem.elem, mem.node, mem.sol, mem.mpv, mem.th
+
     # double strang sweep
     time_step = 0.5 * dt
     ndim = elem.ndim
-    stage = 0
-
-    # Sol.rhoX -= Sol.rho * mpv.HydroState.S0
 
     if odd:
         for split in range(ndim):
@@ -45,7 +44,7 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer=None):
             Sol.flip_forward()
             if elem.iisc[split] > 1:
                 explicit_step_and_flux(
-                    Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv
+                    mem, ud, lmbda, split
                 )
     else:
         for i_split in range(ndim):
@@ -53,45 +52,40 @@ def advect(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer=None):
             lmbda = time_step / elem.dxyz[split]
             if elem.iisc[split] > 1:
                 explicit_step_and_flux(
-                    Sol,
-                    flux[split],
-                    lmbda,
-                    elem,
-                    split,
-                    stage,
+                    mem,
                     ud,
-                    th,
-                    mpv,
+                    lmbda,
+                    split,                    [writer, node, label],
+                )
+            Sol.flip_backward()
+
+    if odd:
+        for i_split in range(ndim):
+            split = elem.ndim - 1 - i_split
+            lmbda = time_step / elem.dxyz[split]
+            if elem.iisc[split] > 1:
+                explicit_step_and_flux(
+                    mem,
+                    ud,
+                    lmbda,
+                    split,
                     [writer, node, label],
                 )
             Sol.flip_backward()
-
-    stage = 1
-    if odd:
-        for i_split in range(ndim):
-            split = elem.ndim - 1 - i_split
-            lmbda = time_step / elem.dxyz[split]
-            if elem.iisc[split] > 1:
-                explicit_step_and_flux(
-                    Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv
-                )
-            Sol.flip_backward()
     else:
         for split in range(ndim):
             lmbda = time_step / elem.dxyz[split]
             Sol.flip_forward()
             if elem.iisc[split] > 1:
                 explicit_step_and_flux(
-                    Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv
+                    mem, ud, lmbda, split
                 )
-
-    # Sol.rhoX += Sol.rho * mpv.HydroState.S0
 
     bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 
 def explicit_step_and_flux(
-    Sol, flux, lmbda, elem, split_step, stage, ud, th, mpv, writer=None, tag=None
+    mem, ud, lmbda, split_step, tag=None
 ):
     """
     For each advection substep, solve the advection problem. For more details, see :ref:`advection_routine`. This function updates the solution `Sol` container in-place if a Strang-splitting is used, or returns the `flux` data container if a Runge-Kutta method is used.
@@ -126,43 +120,12 @@ def explicit_step_and_flux(
     :py:class:`management.variable.States`
         `flux` data container.
     """
+    elem, Sol, flux, mpv, th = mem.elem, mem.sol, mem.flux, mem.mpv, mem.th
+    flux = flux[split_step]
+
     bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=split_step)
 
-    Lefts, Rights = gd_recovery.do(Sol, flux, lmbda, ud, th, elem, split_step, tag)
-
-    # Lefts, Rights, u, Diffs, Ampls, Slopes = gd_recovery.do(Sol, flux, lmbda, ud, th, elem, split_step, tag)
-
-    # if writer is not None:
-    #     writer[0].write_all(Sol,mpv,elem,writer[1],th,str(writer[2])+'_split_%i' %split_step)
-
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'u',u)
-
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Leftsu',Lefts.u)
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Rightsu',Rights.u)
-
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Leftsv',Lefts.v)
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Rightsv',Rights.v)
-
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Leftsw',Lefts.w)
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Rightsw',Rights.w)
-
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'LeftsrhoY',Lefts.rhoY)
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'RightsrhoY',Rights.rhoY)
-
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Diffsu',Diffs.u)
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Diffsv',Diffs.v)
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Diffsw',Diffs.w)
-
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Amplsu',Ampls.u)
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Amplsv',Ampls.v)
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Amplsw',Ampls.w)
-
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Slopesu',Slopes.u)
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Slopesv',Slopes.v)
-    # if writer is not None: writer[0].populate(str(writer[2])+'_split_%i' %split_step,'Slopesw',Slopes.w)
-
-    # skipped check_flux_bcs for now; first debug other functions
-    # check_flux_bcs(Lefts, Rights, elem, split_step, ud)
+    Lefts, Rights = gd_recovery.do(mem, ud, lmbda, split_step, tag)
 
     flux = gd_flux.hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th)
 
@@ -186,7 +149,7 @@ def explicit_step_and_flux(
         return flux
 
 
-def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer=None):
+def advect_rk(mem, ud, dt):
     """
     Function that runs the advection routine with a first-order Runge-Kutta update. This function updates the `Sol` solution container with the advected solution in-place.
 
@@ -220,18 +183,19 @@ def advect_rk(Sol, flux, dt, elem, odd, ud, th, mpv, node, label, writer=None):
     This function is not usually called unless commented out in the :py:meth:`management.data.time_update` routine.
 
     """
-    # Do 1-stages Runge-Kutta.
+    elem, _, Sol, flux, mpv, th, cache, _ = mem.elem, mem.node, mem.sol, mem.flux, mem.mpv, mem.th, mem.cache, mem.time
+
+    # Do 1-stage Runge-Kutta.
     time_step = dt
     ndim = elem.ndim
 
-    stage = 0
     # Get RK update
     for split in range(ndim):
         lmbda = time_step / elem.dxyz[split]
         Sol.flip_forward()
         if elem.iisc[split] > 1:
             flux[split] = explicit_step_and_flux(
-                Sol, flux[split], lmbda, elem, split, stage, ud, th, mpv, tag="rk"
+                mem, ud, lmbda, split, tag="rk"
             )
 
     ndim = elem.ndim
