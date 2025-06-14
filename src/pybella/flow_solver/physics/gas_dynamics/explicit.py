@@ -100,7 +100,7 @@ def _compute_flux_and_recovery(mem, ud, lmbda, split_step, tag=None):
     
     Lefts, Rights = gd_recovery.do(mem, ud, lmbda, split_step, tag)
     
-    flux = gd_flux.hll_solver(flux, Lefts, Rights, mem.sol, lmbda, ud, mem.th)
+    flux = gd_flux.hll_solver(mem, flux, Lefts, Rights)
     
     return flux
 

@@ -3,7 +3,6 @@ import scipy as sp
 from numba import njit
 from functools import lru_cache
 
-
 @lru_cache(maxsize=2)
 def create_convolution_kernels(ndim):
     """Create convolution kernels for advective flux computation.
@@ -127,12 +126,49 @@ def apply_convolution_kernel(data, kernel, normalize=True, axis_swap=None, use_n
     return result
 
 
-# Convenience functions for specific operations
-def apply_u_kernel_convolution(data, kernel_u, normalize=True):
-    """Apply u-direction kernel with standard axis swap."""
-    return apply_convolution_kernel(data, kernel_u, normalize=normalize, axis_swap=(0, -1))
+# Configuration for directional convolutions
+DIRECTION_CONFIG = {
+    2: {
+        'u': {'axis_swap': (0, -1)},
+        'v': {'axis_swap': None}
+    },
+    3: {
+        'u': {'axis_swap': (0, -1)},
+        'v': {'axis_swap': (-1, 0)},
+        'w': {'axis_swap': None}
+    }
+}
 
-
-def apply_v_kernel_convolution_3d(data, kernel_v, normalize=True):
-    """Apply v-direction kernel for 3D with standard axis swap."""
-    return apply_convolution_kernel(data, kernel_v, normalize=normalize, axis_swap=(-1, 0))
+def apply_directional_convolution(data, kernel, direction, ndim, normalize=True, use_numba=True):
+    """Apply convolution kernel for a specific direction with appropriate axis swapping.
+    
+    Parameters
+    ----------
+    data : np.ndarray
+        Input data array
+    kernel : np.ndarray
+        Convolution kernel for the direction
+    direction : str
+        Direction ('u', 'v', or 'w')
+    ndim : int
+        Number of dimensions (2 or 3)
+    normalize : bool, default=True
+        Whether to normalize by kernel sum
+    use_numba : bool, default=True
+        Whether to use Numba-compiled convolution
+        
+    Returns
+    -------
+    np.ndarray
+        Convolved result with appropriate axis swapping
+    """
+    if direction not in DIRECTION_CONFIG[ndim]:
+        raise ValueError(f"Direction '{direction}' not supported for {ndim}D")
+    
+    config = DIRECTION_CONFIG[ndim][direction]
+    return apply_convolution_kernel(
+        data, kernel, 
+        normalize=normalize, 
+        axis_swap=config['axis_swap'], 
+        use_numba=use_numba
+    )

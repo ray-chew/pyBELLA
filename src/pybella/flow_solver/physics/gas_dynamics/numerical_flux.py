@@ -1,104 +1,83 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from ....utils.operators import create_convolution_kernels, apply_convolution_kernel, apply_u_kernel_convolution, apply_v_kernel_convolution_3d
-from ....utils.slices import get_inner_slice
+from ....utils.operators import create_convolution_kernels, apply_directional_convolution
+from ....utils.slices import get_inner_slice, get_interface_indices, get_last_dim_inner_slice
 
-def recompute_advective_fluxes(flux, Sol, **kwargs):
-    """Recompute the advective fluxes at the cell interfaces."""
-    ndim = Sol.rho.ndim
+def recompute_advective_fluxes(mem, **kwargs):
+    """Recompute the advective fluxes at the cell interfaces.
+    
+    Parameters
+    ----------
+    mem : object
+        Memory object containing sol and flux attributes
+    **kwargs
+        Optional pre-computed velocity components ('u', 'v', 'w')
+    """
+    ndim = mem.sol.rho.ndim
     inner_idx = get_inner_slice(ndim)
     kernels = create_convolution_kernels(ndim)
     
-    # Handle 3D w-component first
-    if ndim == 3:
-        rhoYw = Sol.rhoY * Sol.rhow / Sol.rho
-        flux[2].rhoY[inner_idx] = apply_convolution_kernel(rhoYw, kernels['w'])
+    # Define the component order and corresponding flux indices
+    components = ['u', 'v'] if ndim == 2 else ['u', 'v', 'w']
+    rho_components = ['rhou', 'rhov'] if ndim == 2 else ['rhou', 'rhov', 'rhow']
     
-    # u-component (all dimensions)
-    rhoYu = kwargs.get("u", Sol.rhoY * Sol.rhou / Sol.rho)
-    flux[0].rhoY[inner_idx] = apply_u_kernel_convolution(rhoYu, kernels['u'])
-    
-    # v-component (all dimensions)
-    rhoYv = kwargs.get("v", Sol.rhoY * Sol.rhov / Sol.rho)
-    if ndim == 2:
-        flux[1].rhoY[inner_idx] = apply_convolution_kernel(rhoYv, kernels['v'])
-    elif ndim == 3:
-        flux[1].rhoY[inner_idx] = apply_v_kernel_convolution_3d(rhoYv, kernels['v'])
+    for i, (comp, rho_comp) in enumerate(zip(components, rho_components)):
+        # Use provided velocity or compute from momentum
+        if comp in kwargs:
+            rhoY_vel = kwargs[comp]
+        else:
+            momentum = getattr(mem.sol, rho_comp)
+            rhoY_vel = mem.sol.rhoY * momentum / mem.sol.rho
+        
+        # Apply directional convolution
+        mem.flux[i].rhoY[inner_idx] = apply_directional_convolution(
+            rhoY_vel, kernels[comp], comp, ndim
+        )
 
-
-def hll_solver(flux, Lefts, Rights, Sol, lmbda, ud, th):
+def hll_solver(mem, flux, Lefts, Rights):
     """
     HLL solver for the Riemann problem. Chooses the advected quantities from `Lefts` or `Rights` based on the direction given by `flux`.
-
-    Parameters
-    ----------
-    flux : :py:class:`management.variable.States`
-        Data container for fluxes.
-    Lefts : :py:class:`management.variable.States`
-        Container for the quantities on the left of the cell interfaces.
-    Rights : :py:class:`management.variable.States`
-        Container for the quantities on the right of the cell interfaces.
-    Sol : :py:class:`management.variable.Vars`
-        Solution data container.
-    lmbda : float
-        :math:`\\frac{dt}{dx}`, where :math:`dx` is the grid-size in the direction of the substep.
-    ud : :py:class:`inputs.user_data.UserDataInit`
-        Class container for the initial condition.
-    th : :py:class:`physics.gas_dynamics.thermodynamic.init`
-        Class container for the thermodynamical constants.
 
     Returns
     -------
     :py:class:`management.variable.States`
         `flux` data container with the solution of the Riemann problem.
+    
     """
-    # flux: index 1 to end = Left[inner_idx]: index 0 to -1 = Right[inner_idx]: index 1 to end
+    def _compute_flux_component(flux_attr, state_attr=None, state_value=1.0):
+        """Helper function to compute a single flux component."""
+        left_weight = upl[left_idx] / Lefts.Y[left_idx]
+        right_weight = upr[right_idx] / Rights.Y[right_idx]
+        
+        if state_attr is not None:
+            left_val = getattr(Lefts, state_attr)[left_idx]
+            right_val = getattr(Rights, state_attr)[right_idx]
+        else:
+            left_val = right_val = state_value
+        
+        getattr(flux, flux_attr)[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (
+            left_weight * left_val + right_weight * right_val
+        )
 
-    ndim = Sol.rho.ndim
-    left_idx, right_idx, remove_cols_idx = (
-        [slice(None)] * ndim,
-        [slice(None)] * ndim,
-        [slice(None)] * ndim,
-    )
+    ndim = mem.sol.rho.ndim
+    left_idx, right_idx, _ = get_interface_indices(ndim)
+    remove_cols_idx = get_last_dim_inner_slice(ndim)
 
-    remove_cols_idx[-1] = slice(1, -1)
-    left_idx[-1] = slice(0, -1)
-    right_idx[-1] = slice(1, None)
+    # Compute primitive variables
+    Lefts.primitives(mem.th)
+    Rights.primitives(mem.th)
 
-    left_idx, right_idx, remove_cols_idx = (
-        tuple(left_idx),
-        tuple(right_idx),
-        tuple(remove_cols_idx),
-    )
-
-    Lefts.primitives(th)
-    Rights.primitives(th)
-
+    # Compute upwind weights
     upwind = 0.5 * (1.0 + np.sign(flux.rhoY))
     upl = upwind[right_idx]
     upr = 1.0 - upwind[left_idx]
 
-    flux.rhou[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (
-        upl[left_idx] / Lefts.Y[left_idx] * Lefts.u[left_idx]
-        + upr[right_idx] / Rights.Y[right_idx] * Rights.u[right_idx]
-    )
-    flux.rho[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (
-        upl[left_idx] / Lefts.Y[left_idx] * 1.0
-        + upr[right_idx] / Rights.Y[right_idx] * 1.0
-    )
-
-    flux.rhov[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (
-        upl[left_idx] / Lefts.Y[left_idx] * Lefts.v[left_idx]
-        + upr[right_idx] / Rights.Y[right_idx] * Rights.v[right_idx]
-    )
-    flux.rhow[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (
-        upl[left_idx] / Lefts.Y[left_idx] * Lefts.w[left_idx]
-        + upr[right_idx] / Rights.Y[right_idx] * Rights.w[right_idx]
-    )
-    flux.rhoX[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (
-        upl[left_idx] / Lefts.Y[left_idx] * Lefts.X[left_idx]
-        + upr[right_idx] / Rights.Y[right_idx] * Rights.X[right_idx]
-    )
+    # Compute all flux components
+    _compute_flux_component('rhou', 'u')
+    _compute_flux_component('rho')  # Uses default state_value=1.0
+    _compute_flux_component('rhov', 'v')
+    _compute_flux_component('rhow', 'w')
+    _compute_flux_component('rhoX', 'X')
 
     return flux

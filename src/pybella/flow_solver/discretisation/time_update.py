@@ -125,7 +125,7 @@ def do(
 
         debug_writer.write(f"{label}_before_flux")
 
-        gd_flux.recompute_advective_fluxes(mem.flux, mem.sol)
+        gd_flux.recompute_advective_fluxes(mem)
 
         debug_writer.populate_flux_components(f"{label}_before_advect", mem.flux, mem.elem)
         debug_writer.write(f"{label}_before_advect")
@@ -182,7 +182,7 @@ def do(
 
         debug_writer.write(f"{label}_after_ebnaimp")
 
-        gd_flux.recompute_advective_fluxes(mem.flux, mem.sol)
+        gd_flux.recompute_advective_fluxes(mem)
 
         debug_writer.populate_flux_components(f"{label}_after_half_step", mem.flux, mem.elem)
         debug_writer.write(f"{label}_after_half_step")
