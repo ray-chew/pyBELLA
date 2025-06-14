@@ -243,3 +243,31 @@ class Characters(object):
         """
         for key, value in vars(self).items():
             setattr(self, key, value.squeeze())
+
+
+class FlowSolverCache:
+    """Cache for flow solver specific computations."""
+    
+    def __init__(self):
+        self._recovery_cache = {}
+    
+    def get_recovery_objects(self, shape, ud):
+        """Get cached recovery objects or create new ones."""
+        
+        cache_key = (tuple(shape), id(ud))
+        
+        if cache_key not in self._recovery_cache:
+            self._recovery_cache[cache_key] = {
+                'Diffs': States(shape, ud),
+                'Ampls': Characters(shape),
+                'Lefts': States(shape, ud),
+                'Rights': States(shape, ud)
+            }
+        
+        # Reset objects if they have reset methods
+        cache_obj = self._recovery_cache[cache_key]
+        for obj in cache_obj.values():
+            if hasattr(obj, 'zero'):
+                obj.zero()
+        
+        return cache_obj

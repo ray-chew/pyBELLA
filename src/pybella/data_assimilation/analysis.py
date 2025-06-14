@@ -120,7 +120,7 @@ def do_for_window(tout, outer_step, results, sst, writer):
     # Update ensemble with analysis
     ######################################################
     for mem in results:
-        elem, node, Sol, _, mpv, th, _ = mem
+        elem, node, Sol, _, mpv, th, _, _ = mem
         bdry.set_explicit_boundary_data(Sol, elem, sst.ud, th, mpv)
         p2_nodes = mpv.p2_nodes
         bdry.set_ghostnodes_p2(p2_nodes, node, sst.ud)
