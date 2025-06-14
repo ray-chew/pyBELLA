@@ -22,8 +22,8 @@ from ...interfaces.time_stepper import prestep
 
 
 def do(
-    sst,
     mem,
+    ud,
     tout,
     bld=None,
     writer=None,
@@ -75,48 +75,42 @@ def do(
     list
         A list of `[Sol,flux,mpv,[window_step,step]]` data containers at time `tout`.
     """
-    ud = sst.ud
-    elem, node, Sol, flux, mpv, th, time = mem
-
-    window_step = time.window_step
-    step = time.step
-    t = time.t
     swe_to_lake = False
 
-    while (t < tout) and (step < ud.stepmax):
-        bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    while (mem.time.t < tout) and (mem.time.step < ud.stepmax):
+        bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.mpv)
 
-        label = "%.3d" % step
+        label = "%.3d" % mem.time.step
 
-        if step == 0 and writer != None:
+        if mem.time.step == 0 and writer != None:
             writer.write_all(mem, str(label) + "_ic")
 
-        dt, cfl, cfl_ac = gd_cfl.dynamic_timestep(Sol, t, tout, elem, ud, th, step)
+        dt, cfl, cfl_ac = gd_cfl.dynamic_timestep(mem.sol, mem.time.t, tout, mem.elem, ud, mem.th, mem.time.step)
 
-        dt = prestep.apply_modifcations(dt, ud, step)
+        dt = prestep.apply_modifcations(dt, ud, mem.time.step)
 
         ######################################################
         # Blending : Do blending before timestep
         ######################################################
-        swe_to_lake, Sol, mpv, t = schemes.prepare_blending(
-            sst,
+        swe_to_lake, mem.sol, mem.mpv, mem.time.t = schemes.prepare_blending(
             mem,
+            ud,
             bld,
             label,
             writer,
-            step,
-            window_step,
-            t,
+            mem.time.step,
+            mem.time.window_step,
+            mem.time.t,
             dt,
             swe_to_lake,
             debug_writer,
         )
 
-        ud.is_nonhydrostatic = gd_eos.is_nonhydrostatic(ud, window_step)
-        ud.nonhydrostasy = gd_eos.nonhydrostasy(ud, t, window_step)
+        ud.is_nonhydrostatic = gd_eos.is_nonhydrostatic(ud, mem.time.window_step)
+        ud.nonhydrostasy = gd_eos.nonhydrostasy(ud, mem.time.t, mem.time.window_step)
 
         if ud.continuous_blending or ud.initial_blending:
-            logging.info(f"step = {step}, window_step = {window_step}")
+            logging.info(f"step = {mem.time.step}, window_step = {mem.time.window_step}")
 
         logging.info(
             f"""
@@ -127,49 +121,41 @@ def do(
                     """
         )
 
-        Sol0 = copy.deepcopy(Sol)
+        Sol0 = copy.deepcopy(mem.sol)
 
         debug_writer.write(f"{label}_before_flux")
 
-        gd_flux.recompute_advective_fluxes(flux, Sol)
+        gd_flux.recompute_advective_fluxes(mem.flux, mem.sol)
 
-        debug_writer.populate_flux_components(f"{label}_before_advect", flux, elem)
+        debug_writer.populate_flux_components(f"{label}_before_advect", mem.flux, mem.elem)
         debug_writer.write(f"{label}_before_advect")
 
         if ud.do_advection:
             gd_explicit.advect_rk(
-                Sol,
-                flux,
-                0.5 * dt,
-                elem,
-                step % 2,
+                mem,
                 ud,
-                th,
-                mpv,
-                node,
-                str(label) + "_half",
-                writer,
+                0.5 * dt,
             )
 
         debug_writer.write(f"{label}_after_advect")
-        debug_writer.populate(f"{label}_after_full_step", "p2_nodes", mpv.p2_nodes)
+        debug_writer.populate(f"{label}_after_full_step", "p2_nodes", mem.mpv.p2_nodes)
 
-        mpv.p2_nodes0[...] = mpv.p2_nodes
+        mem.mpv.p2_nodes0[...] = mem.mpv.p2_nodes
 
-        lm_sp.euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5 * dt, ud, th)
+        lm_sp.euler_backward_non_advective_expl_part(mem.sol, mem.mpv, mem.elem, 0.5 * dt, ud, mem.th)
 
         debug_writer.write(f"{label}_after_ebnaexp")
 
         Sol0_increment = Sol0 if ud.is_compressible == 0 else None
 
         lm_sp.euler_backward_non_advective_impl_part(
-            Sol,
-            mpv,
-            elem,
-            node,
+            mem.sol,
+            mem.mpv,
+            mem.elem,
+            mem.node,
             ud,
-            th,
-            t,
+            mem.th,
+            mem.time.t,
             0.5 * dt,
             1.0,
             Sol0=Sol0_increment,
@@ -179,47 +165,47 @@ def do(
 
         if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
             # top rayleight damping
-            bdry.rayleigh_damping(Sol, mpv, ud, elem, node)
+            bdry.rayleigh_damping(mem.sol, mem.mpv, ud, mem.elem, mem.node)
 
         bdry.apply_rayleigh_forcing(
-            Sol,
-            mpv,
+            mem.sol,
+            mem.mpv,
             ud,
-            elem,
-            node,
-            t,
-            step,
+            mem.elem,
+            mem.node,
+            mem.time.t,
+            mem.time.step,
             dt,
-            th,
+            mem.th,
             bdry,
         )
 
         debug_writer.write(f"{label}_after_ebnaimp")
 
-        gd_flux.recompute_advective_fluxes(flux, Sol)
+        gd_flux.recompute_advective_fluxes(mem.flux, mem.sol)
 
-        debug_writer.populate_flux_components(f"{label}_after_half_step", flux, elem)
+        debug_writer.populate_flux_components(f"{label}_after_half_step", mem.flux, mem.elem)
         debug_writer.write(f"{label}_after_half_step")
 
-        Sol_half_new = copy.deepcopy(Sol)
-        mpv_half_new = copy.deepcopy(mpv)
-        mpv.p2_nodes_half = np.copy(mpv.p2_nodes)
+        Sol_half_new = copy.deepcopy(mem.sol)
+        mpv_half_new = copy.deepcopy(mem.mpv)
+        mem.mpv.p2_nodes_half = np.copy(mem.mpv.p2_nodes)
 
         if ud.is_nonhydrostatic == 0 or (
             ud.is_compressible == 1 and ud.is_nonhydrostatic == 1
         ):
-            mpv.p2_nodes[...] = mpv.p2_nodes0
+            mem.mpv.p2_nodes[...] = mem.mpv.p2_nodes0
 
-        Sol = copy.deepcopy(Sol0)
+        mem.sol = copy.deepcopy(Sol0)
 
         lm_sp.euler_forward_non_advective(
-            Sol,
-            mpv,
-            elem,
-            node,
+            mem.sol,
+            mem.mpv,
+            mem.elem,
+            mem.node,
             0.5 * dt,
             ud,
-            th,
+            mem.th,
             writer=writer,
             label=str(label) + "_after_efna",
         )
@@ -228,33 +214,28 @@ def do(
 
         if ud.do_advection:
             gd_explicit.advect(
-                Sol,
-                flux,
-                dt,
-                elem,
-                step % 2,
+                mem,
                 ud,
-                th,
-                mpv,
-                node,
+                dt,
+                mem.time.step % 2,
                 str(label) + "_full",
                 writer,
             )
 
         debug_writer.write(f"{label}_after_full_advect")
 
-        lm_sp.euler_backward_non_advective_expl_part(Sol, mpv, elem, 0.5 * dt, ud, th)
+        lm_sp.euler_backward_non_advective_expl_part(mem.sol, mem.mpv, mem.elem, 0.5 * dt, ud, mem.th)
 
         debug_writer.write(f"{label}_after_full_ebnaexp")
 
         lm_sp.euler_backward_non_advective_impl_part(
-            Sol,
-            mpv,
-            elem,
-            node,
+            mem.sol,
+            mem.mpv,
+            mem.elem,
+            mem.node,
             ud,
-            th,
-            t,
+            mem.th,
+            mem.time.t,
             0.5 * dt,
             2.0,
             writer=writer,
@@ -263,19 +244,19 @@ def do(
 
         if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
             # top rayleight damping
-            bdry.rayleigh_damping(Sol, mpv, ud, elem, node)
+            bdry.rayleigh_damping(mem.sol, mem.mpv, ud, mem.elem, mem.node)
 
         # bottom rayleigh forcing
         bdry.apply_rayleigh_forcing(
-            Sol,
-            mpv,
+            mem.sol,
+            mem.mpv,
             ud,
-            elem,
-            node,
-            t,
-            step,
+            mem.elem,
+            mem.node,
+            mem.time.t,
+            mem.time.step,
             dt,
-            th,
+            mem.th,
             bdry,
             half=False,
             Sol_half_new=Sol_half_new,
@@ -285,31 +266,27 @@ def do(
         ######################################################
         # Blending : Do blending after timestep
         ######################################################
-        Sol, mpv = schemes.blending_after_timestep(
-            Sol,
-            flux,
-            mpv,
+        mem.sol, mem.mpv = schemes.blending_after_timestep(
+            mem.sol,
+            mem.flux,
+            mem.mpv,
             bld,
-            elem,
-            node,
-            th,
+            mem.elem,
+            mem.node,
+            mem.th,
             ud,
             label,
             writer,
-            step,
-            window_step,
-            t,
+            mem.time.step,
+            mem.time.window_step,
+            mem.time.t,
             dt,
             swe_to_lake,
             debug_writer,
         )
 
-        mem.sol = Sol
-        mem.flux = flux
-        mem.mpv = mpv
-
         if writer != None:
-            writer.time = t
+            writer.time = mem.time.t
             writer.write_all(mem, str(label) + "_after_full_step")
 
         logging.info(
@@ -317,19 +294,14 @@ def do(
         )
         logging.info(
             "step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f"
-            % (step, t, dt, cfl, cfl_ac)
+            % (mem.time.step, mem.time.t, dt, cfl, cfl_ac)
         )
         logging.info(
             "###############################################################################################"
         )
 
-        t += dt
-        step += 1
-        window_step += 1
-
-    mem.time.t = t
-    mem.time.step = step
-    mem.time.window_step = window_step
+        mem.time.t += dt
+        mem.time.step += 1
+        mem.time.window_step += 1
 
     return mem
-    # return [Sol, flux, mpv, [window_step, step]]

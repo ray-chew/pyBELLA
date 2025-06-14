@@ -4,6 +4,8 @@ import logging
 
 import numpy as np
 
+from .flow_solver.utils import prepare
+
 # dependencies of the atmospheric flow solver
 from .flow_solver.discretisation import time_update as dis_time_update
 
@@ -16,7 +18,7 @@ from .interfaces.postprocessing import strip_target_file as strip_target
 from .data_assimilation import prepare as da_prepare, analysis as da_analysis
 
 # package imports
-from .utils import prepare, io, sim_params as params
+from .utils import io, sim_params as params
 
 
 ##########################################################
@@ -67,7 +69,7 @@ def main():
             debug_writer = io.create_debug_writer(params.debug, writer, mem)
 
             logging.info("For ensemble member = %i..." % cnt)
-            mem = dis_time_update.do(sst, mem, tout, blend, step_writer, debug_writer)
+            mem = dis_time_update.do(mem, sst.ud, tout, blend, step_writer, debug_writer)
 
             if sst.ud.diag:
                 if sst.ud.diag_updt_targets:
