@@ -8,8 +8,8 @@
 
 
 <p align="center">
-<a href="https://github.com/ray-chew/pyBELLA/actions/workflows/documentation.yml">
-<img alt="GitHub Actions: docs" src=https://img.shields.io/github/actions/workflow/status/ray-chew/pyBELLA/documentation.yml?logo=github&label=docs>
+<a href="https://github.com/ray-chew/pyBELLA/actions/workflows/deploy.yml">
+<img alt="GitHub Actions: docs" src=https://img.shields.io/github/actions/workflow/status/ray-chew/pyBELLA/deploy.yml?logo=github&label=docs>
 </a>
 <a href="https://github.com/ray-chew/pyBELLA/issues">
 <img alt="open issues" src=https://img.shields.io/github/issues/ray-chew/pyBELLA>
