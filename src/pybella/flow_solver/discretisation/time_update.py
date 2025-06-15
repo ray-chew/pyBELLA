@@ -6,7 +6,6 @@ import numpy as np
 from ...utils import options as opts
 
 # dependencies of the flow solver subpackage
-from . import grid as dis_grid
 from ..utils import boundary as bdry
 from ..physics.gas_dynamics import (
     numerical_flux as gd_flux,
@@ -32,48 +31,8 @@ def do(
     """
     For more details, refer to the write-up :ref:`time-stepping`.
 
-    Does a time-step for the atmospheric solver.
+    Does a time-step for the flow solver.
 
-    Parameters
-    ----------
-    Sol : :class:`management.variable.Vars`
-        Solution data container.
-    flux : :class:`management.variable.States`
-        Data container for the fluxes.
-    mpv : :class:`physics.low_mach.mpv.MPV`
-        Variables relating to the elliptic solver.
-    t : float
-        Current time
-    tout : float
-        Next output time
-    ud : :class:`inputs.user_data.UserDataInit`
-        Data container for the initial conditions
-    elem : :class:`discretization.kgrid.ElemSpaceDiscr`
-        Cells grid.
-    node : :class:`discretization.kgrid.NodeSpaceDiscr`
-        Nodes grid.
-    step : int
-        Current step.
-    th : :class:`physics.gas_dynamics.thermodynamic.init`
-        Thermodynamic variables of the system
-    bld : :class:`data_assimilation.blending.Blend()`
-        Blending class used to initalise interface blending methods.
-    writer : :class:`management.io.io`, optional
-        `default == None`. If given, output after each time-step will be written in the hdf5 format.
-    debug : boolean, optional
-        `default == False`. If `True`, then writer will output `Sol`:
-            1. before flux calculation
-            2. before advection routine
-            3. after advection routine
-            4. after explicit solver
-            5. after implicit solver
-
-        during both the half-step for the prediction of advective flux and the full-step.
-
-    Returns
-    -------
-    list
-        A list of `[Sol,flux,mpv,[window_step,step]]` data containers at time `tout`.
     """
     swe_to_lake = False
 
@@ -142,7 +101,7 @@ def do(
 
         mem.mpv.p2_nodes0[...] = mem.mpv.p2_nodes
 
-        lm_sp.euler_backward_non_advective_expl_part(mem.sol, mem.mpv, mem.elem, 0.5 * dt, ud, mem.th)
+        lm_sp.euler_backward_non_advective_expl_part(mem, ud, 0.5 * dt)
 
         debug_writer.write(f"{label}_after_ebnaexp")
 
@@ -157,7 +116,7 @@ def do(
             mem.th,
             mem.time.t,
             0.5 * dt,
-            1.0,
+            mem,
             Sol0=Sol0_increment,
             label=f"{label}_after_ebnaimp",
             writer=writer,
@@ -224,7 +183,7 @@ def do(
 
         debug_writer.write(f"{label}_after_full_advect")
 
-        lm_sp.euler_backward_non_advective_expl_part(mem.sol, mem.mpv, mem.elem, 0.5 * dt, ud, mem.th)
+        lm_sp.euler_backward_non_advective_expl_part(mem, ud, 0.5 * dt)
 
         debug_writer.write(f"{label}_after_full_ebnaexp")
 
@@ -237,7 +196,7 @@ def do(
             mem.th,
             mem.time.t,
             0.5 * dt,
-            2.0,
+            mem,
             writer=writer,
             label=str(label) + "_after_full_step",
         )
