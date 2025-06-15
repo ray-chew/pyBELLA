@@ -300,8 +300,18 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         Sol.rhou -= u0 * Sol.rho
         Sol.rhov -= v0 * Sol.rho
 
+        mem = obj()
+        mem.sol = Sol
+        mem.mpv = mpv
+        mem.elem = elem
+        mem.node = node
+        mem.th = th
+        mem.time = obj()
+        mem.time.t = ud.dtfixed
+        mem.time.step = 0
+
         lm_sp.euler_backward_non_advective_impl_part(
-            Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, 0.5
+            Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, mem
         )
 
         mpv.p2_nodes[...] = p2aux
@@ -318,3 +328,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
 def T_from_p_rho(p, rho):
     return np.divide(p, rho)
+
+
+class obj(object):
+    pass

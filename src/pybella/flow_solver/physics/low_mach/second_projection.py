@@ -3,6 +3,7 @@ import logging
 
 import numpy as np
 import scipy as sp
+from numba import njit
 
 from ....utils import options as opts
 
@@ -94,27 +95,21 @@ def euler_forward_non_advective(
     bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 
-def euler_backward_non_advective_expl_part(Sol, mpv, elem, dt, ud, th):
+def euler_backward_non_advective_expl_part(mem, ud, dt):
     nonhydro = ud.nonhydrostasy
     g = ud.gravity_strength[1]
     Msq = ud.Msq
 
-    dbuoy = Sol.rhoY * (Sol.rhoX / Sol.rho)
-    Sol.rhov = (nonhydro * Sol.rhov) - dt * (g / Msq) * dbuoy
-    # Sol.rhov[np.where(Sol.rhov < 1e-15)] = 0.0
+    dbuoy = mem.sol.rhoY * (mem.sol.rhoX / mem.sol.rho)
+    mem.sol.rhov = (nonhydro * mem.sol.rhov) - dt * (g / Msq) * dbuoy
 
-    Sol.mod_bg_wind(ud, -1.0)
+    mem.sol.mod_bg_wind(ud, -1.0)
 
-    multiply_inverse_coriolis(Sol, Sol, mpv, ud, elem, elem, dt)
+    multiply_inverse_coriolis(mem.sol, mem, ud, dt)
 
-    Sol.mod_bg_wind(ud, +1.0)
+    mem.sol.mod_bg_wind(ud, +1.0)
 
-    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
-
-
-total_iter = 0
-total_calls = 0
-
+    bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.mpv)
 
 def euler_backward_non_advective_impl_part(
     Sol,
@@ -125,7 +120,7 @@ def euler_backward_non_advective_impl_part(
     th,
     t,
     dt,
-    alpha_diff,
+    mem,
     Sol0=None,
     writer=None,
     label=None,
@@ -167,7 +162,7 @@ def euler_backward_non_advective_impl_part(
         )
 
     bdry.set_ghostnodes_p2(mpv.p2_nodes, node, ud)
-    correction_nodes(Sol, elem, node, mpv, mpv.p2_nodes, dt, ud, th, 0)
+    correction_nodes(mem, ud, dt, mem.mpv.p2_nodes, 0)
     bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
     rhs[...] = divergence_nodes(rhs, elem, node, Sol, ud)
@@ -202,7 +197,7 @@ def euler_backward_non_advective_impl_part(
     if elem.ndim == 2:
         Vec = mpv
         coriolis_params = multiply_inverse_coriolis(
-            Vec, Sol, mpv, ud, elem, node, dt, attrs=("u", "v", "w"), get_coeffs=True
+            Vec, mem, ud, dt, attrs=("u", "v", "w"), get_coeffs=True
         )
         # lap = stencil_9pt(elem,node,mpv,Sol,ud,diag_inv,dt,coriolis_params)
         # sh = (ud.inx)*(ud.iny)
@@ -276,14 +271,14 @@ def euler_backward_non_advective_impl_part(
     # p2,info = bicgstab(lap,rhs.ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
     # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
 
-    global total_calls, total_iter
-    total_iter += counter.niter
-    total_calls += 1
-    logging.info(counter.niter)
-    logging.info(
-        "Total calls to BiCGStab routine = %i, total iterations = %i"
-        % (total_calls, total_iter)
-    )
+    # global total_calls, total_iter
+    # total_iter += counter.niter
+    # total_calls += 1
+    # logging.info(counter.niter)
+    # logging.info(
+    #     "Total calls to BiCGStab routine = %i, total iterations = %i"
+    #     % (total_calls, total_iter)
+    # )
 
     p2_full = np.zeros(nc).squeeze()
     if elem.ndim == 2:
@@ -316,38 +311,36 @@ def euler_backward_non_advective_impl_part(
         writer.populate(str(label), "p2_full", p2_full)
 
     bdry.set_ghostnodes_p2(p2_full, node, ud)
-    correction_nodes(Sol, elem, node, mpv, p2_full, dt, ud, th, 1)
+    correction_nodes(mem, ud, dt, p2_full, 1)
 
     mpv.p2_nodes[...] += p2_full
     bdry.set_ghostnodes_p2(mpv.p2_nodes, node, ud)
     bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
 
 
-def correction_nodes(Sol, elem, node, mpv, p, dt, ud, th, updt_chi):
-    ndim = node.ndim
-    Gammainv = th.Gammainv
+def correction_nodes(mem, ud, dt, p, updt_chi):
+    ndim = mem.node.ndim
+    Gammainv = mem.th.Gammainv
 
-    dSdy = mpv.HydroState_n.get_dSdy(elem, node)
+    dSdy = mem.mpv.HydroState_n.get_dSdy(mem.elem, mem.node)
 
-    Dpx, Dpy, Dpz = grad_nodes(p, elem.ndim, node.dxyz)
+    Dpx, Dpy, Dpz = grad_nodes(p, mem.elem.ndim, mem.node.dxyz)
 
-    thinv = Sol.rho / Sol.rhoY
+    thinv = mem.sol.rho / mem.sol.rhoY
 
-    Y = Sol.rhoY / Sol.rho
-    coeff = Gammainv * Sol.rhoY * Y
+    Y = mem.sol.rhoY / mem.sol.rho
+    coeff = Gammainv * mem.sol.rhoY * Y
 
-    mpv.u = -dt * coeff * Dpx
-    mpv.v = -dt * coeff * Dpy
-    mpv.w = -dt * coeff * Dpz
+    mem.mpv.u = -dt * coeff * Dpx
+    mem.mpv.v = -dt * coeff * Dpy
+    mem.mpv.w = -dt * coeff * Dpz
 
-    multiply_inverse_coriolis(mpv, Sol, mpv, ud, elem, elem, dt, attrs=["u", "v", "w"])
+    multiply_inverse_coriolis(mem.mpv, mem, ud, dt, attrs=["u", "v", "w"])
 
-    Sol.rhou += thinv * mpv.u
-    Sol.rhov += thinv * mpv.v
-    Sol.rhow += thinv * mpv.w if ndim == 3 else 0.0
-    Sol.rhoX += -updt_chi * dt * dSdy * Sol.rhov
-
-    # set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    mem.sol.rhou += thinv * mem.mpv.u
+    mem.sol.rhov += thinv * mem.mpv.v
+    mem.sol.rhow += thinv * mem.mpv.w if ndim == 3 else 0.0
+    mem.sol.rhoX += -updt_chi * dt * dSdy * mem.sol.rhov
 
     assert True
 
@@ -671,7 +664,7 @@ def rhs_from_p_old(rhs, node, mpv):
 
 
 def multiply_inverse_coriolis(
-    Vec, Sol, mpv, ud, elem, node, dt, attrs=("rhou", "rhov", "rhow"), get_coeffs=False
+    Vec, mem, ud, dt, attrs=("rhou", "rhov", "rhow"), get_coeffs=False
 ):
     nonhydro = ud.nonhydrostasy
     g = ud.gravity_strength[1]
@@ -679,9 +672,9 @@ def multiply_inverse_coriolis(
 
     wh1, wv, wh2 = dt * ud.coriolis_strength
 
-    strat = mpv.HydroState_n.get_dSdy(elem, node)
+    strat = mem.mpv.HydroState_n.get_dSdy(mem.elem, mem.node)
 
-    Y = Sol.rhoY / Sol.rho
+    Y = mem.sol.rhoY / mem.sol.rho
     nu = -(dt**2) * (g / Msq) * strat * Y
 
     # get coefficients of the explicit terms
@@ -716,7 +709,7 @@ def multiply_inverse_coriolis(
     VecV[...] = V
     VecW[...] = W
 
-    i1 = node.i1
+    i1 = mem.node.i1
     if get_coeffs:
         # coriolis_parameters = ((coeff_uu * denom)[i1].reshape(-1,), (coeff_vv * denom)[i1].reshape(-1,), (coeff_uv * denom)[i1].reshape(-1,), (coeff_vu * denom)[i1].reshape(-1,))
         coriolis_parameters = (
