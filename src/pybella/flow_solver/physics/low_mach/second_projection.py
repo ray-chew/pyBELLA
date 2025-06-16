@@ -48,7 +48,7 @@ def euler_forward_non_advective(mem, ud, dt, writer=None, label=None, debug=Fals
     dSdy = mpv.HydroState_n.get_dSdy(elem, node)
 
     # Compute divergence
-    mpv.rhs[...] = divergence_nodes(mpv.rhs, elem, node, sol, ud)
+    mpv.rhs[...] = divergence_nodes(mpv.rhs, elem, sol, ud)
     if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
         bdry.scale_wall_node_values(mpv.rhs, node, ud, 2.0)
 
@@ -119,15 +119,9 @@ def euler_backward_non_advective_expl_part(mem, ud, dt):
 
 
 def euler_backward_non_advective_impl_part(
-    Sol,
-    mpv,
-    elem,
-    node,
-    ud,
-    th,
-    t,
-    dt,
     mem,
+    ud,
+    dt,
     Sol0=None,
     writer=None,
     label=None,
@@ -135,77 +129,70 @@ def euler_backward_non_advective_impl_part(
 ):
     if not debug:
         writer = None
-    nc = node.sc
-    rhs = mpv.rhs
+    nc = mem.node.sc
 
     if writer != None:
-        writer.populate(str(label), "p2_initial", mpv.p2_nodes)
+        writer.populate(str(label), "p2_initial", mem.mpv.p2_nodes)
 
     if Sol0 is not None:
-        bdry.set_explicit_boundary_data(Sol0, elem, ud, th, mpv)
+        bdry.set_explicit_boundary_data(Sol0, mem.elem, ud, mem.th, mem.mpv)
         operator_coefficients_nodes(mem, ud, dt)
     else:
-        bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+        bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.mpv)
         operator_coefficients_nodes(mem, ud, dt)
 
-    i0 = node.ndim * [slice(0, -1)]
-    i0 = tuple(i0)
-
     if writer != None:
-        writer.populate(str(label), "hcenter", mpv.wcenter)
-        writer.populate(str(label), "wplusx", mpv.wplus[0])
-        writer.populate(str(label), "wplusy", mpv.wplus[1])
+        writer.populate(str(label), "hcenter", mem.mpv.wcenter)
+        writer.populate(str(label), "wplusx", mem.mpv.wplus[0])
+        writer.populate(str(label), "wplusy", mem.mpv.wplus[1])
         (
-            writer.populate(str(label), "wplusz", mpv.wplus[2])
-            if elem.ndim == 3
-            else writer.populate(str(label), "wplusz", np.zeros_like(mpv.wplus[0]))
+            writer.populate(str(label), "wplusz", mem.mpv.wplus[2])
+            if mem.elem.ndim == 3
+            else writer.populate(str(label), "wplusz", np.zeros_like(mem.mpv.wplus[0]))
         )
 
-    bdry.set_ghostnodes_p2(mpv.p2_nodes, node, ud)
+    bdry.set_ghostnodes_p2(mem.mpv.p2_nodes, mem.node, ud)
     correction_nodes(mem, ud, dt, mem.mpv.p2_nodes, 0)
-    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.mpv)
 
-    rhs[...] = divergence_nodes(rhs, elem, node, Sol, ud)
+    mem.mpv.rhs[...] = divergence_nodes(mem.mpv.rhs, mem.elem, mem.sol, ud)
 
     if writer != None:
-        writer.populate(str(label), "rhs", rhs)
+        writer.populate(str(label), "rhs", mem.mpv.rhs)
 
-    rhs /= dt
+    mem.mpv.rhs /= dt
 
-    if ud.is_compressible == 1:
-        rhs = rhs
-    elif ud.is_compressible == 0:
+    if ud.is_compressible == 0:
         if ud.is_ArakawaKonor:
-            rhs -= mpv.wcenter * mpv.dp2_nodes
-            mpv.wcenter[...] = 0.0
+            mem.mpv.rhs -= mem.mpv.wcenter * mem.mpv.dp2_nodes
+            mem.mpv.wcenter[...] = 0.0
         else:
-            # rhs_new = rhs_from_p_old(rhs, node, mpv)
-            rhs = ud.compressibility * rhs + (1.0 - ud.compressibility) * rhs
-            mpv.wcenter[...] *= ud.compressibility
+            mem.mpv.rhs = ud.compressibility * mem.mpv.rhs + (1.0 - ud.compressibility) * mem.mpv.rhs
+            mem.mpv.wcenter[...] *= ud.compressibility
     else:
-        mpv.wcenter *= ud.compressibility
+        mem.mpv.wcenter *= ud.compressibility
 
     if writer != None:
-        writer.populate(str(label), "rhs_nodes", rhs)
+        writer.populate(str(label), "rhs_nodes", mem.mpv.rhs)
 
-    mpv.rhs[...] = rhs
+    mem.mpv.rhs[...] = mem.mpv.rhs
 
     # prepare initial left-hand side and the laplacian stencil
-    if elem.ndim == 2:
-        Vec = mpv
+    if mem.elem.ndim == 2:
+        Vec = mem.mpv
         coriolis_params = multiply_inverse_coriolis(
             Vec, mem, ud, dt, attrs=("u", "v", "w"), get_coeffs=True
         )
 
-        diag_inv = lm_lp.precon_diag_prepare(mpv, elem, node, ud, coriolis_params)
-        rhs *= diag_inv
+        diag_inv = lm_lp.precon_diag_prepare(mem.mpv, mem.elem, mem.node, ud, coriolis_params)
+        mem.mpv.rhs *= diag_inv
 
-        p2 = mpv.p2_nodes[node.i2].T
-        lap = lm_lp.stencil_9pt_numba_test(mpv, node, coriolis_params, diag_inv, ud)
+        p2 = mem.mpv.p2_nodes[mem.node.i2].T
+        lap = lm_lp.stencil_9pt_numba_test(mem.mpv, mem.node, coriolis_params, diag_inv, ud)
         sh = p2.shape[0] * p2.shape[1]
 
-    elif elem.ndim == 3:
-        lap = lm_lp.stencil_27pt(elem, node, mpv, ud, diag_inv, dt)
+    elif mem.elem.ndim == 3:
+        lap = lm_lp.stencil_27pt(mem.elem, mem.node, mem.mpv, ud, diag_inv, dt)
         sh = p2.reshape(-1).shape[0]
 
     lap = sp.sparse.linalg.LinearOperator((sh, sh), lap)
@@ -214,31 +201,30 @@ def euler_backward_non_advective_impl_part(
     counter = solver_counter()
 
     # prepare right-hand side
-    if elem.ndim == 2:
-        rhs_inner = rhs[1:-1, 1:-1].T.ravel()
-
+    if mem.elem.ndim == 2:
+        rhs_inner = mem.mpv.rhs[mem.node.i1].T.ravel()
     else:
-        rhs_inner = rhs[1:-1, elem.igs[1], 1:-1].ravel()
+        rhs_inner = mem.mpv.rhs[mem.node.i1].ravel()
 
     p2, _ = sp.sparse.linalg.bicgstab(
         lap, rhs_inner, atol=ud.tol, maxiter=ud.max_iterations, callback=counter
     )
 
     p2_full = np.zeros(nc).squeeze()
-    if elem.ndim == 2:
-        p2_full[node.i2] = p2.reshape(rhs[node.i1].shape[1], rhs[node.i1].shape[0]).T
-    elif elem.ndim == 3:
-        p2_full[1:-1, 1:-1, 1:-1] = p2.reshape(ud.inx + 2, ud.iny + 2, ud.inz + 2)
+    if mem.elem.ndim == 2:
+        p2_full[mem.node.i2] = p2.reshape(mem.mpv.rhs[mem.node.i1].T.shape).T
+    elif mem.elem.ndim == 3:
+        p2_full[mem.node.i1] = p2.reshape(ud.inx + 2, ud.iny + 2, ud.inz + 2)
 
     if writer != None:
         writer.populate(str(label), "p2_full", p2_full)
 
-    bdry.set_ghostnodes_p2(p2_full, node, ud)
+    bdry.set_ghostnodes_p2(p2_full, mem.node, ud)
     correction_nodes(mem, ud, dt, p2_full, 1)
 
-    mpv.p2_nodes[...] += p2_full
-    bdry.set_ghostnodes_p2(mpv.p2_nodes, node, ud)
-    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    mem.mpv.p2_nodes[...] += p2_full
+    bdry.set_ghostnodes_p2(mem.mpv.p2_nodes, mem.node, ud)
+    bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.mpv)
 
 
 def correction_nodes(mem, ud, dt, p, updt_chi):
@@ -380,7 +366,7 @@ def multiply_inverse_coriolis(
         return (h11.T, h22.T, h12.T, h21.T)
 
 
-def divergence_nodes(rhs, elem, node, Sol, ud):
+def divergence_nodes(rhs, elem, sol, ud):
     """Main divergence function - handles boundary conditions and calls JIT-compiled core."""
     ndim = elem.ndim
 
@@ -390,26 +376,26 @@ def divergence_nodes(rhs, elem, node, Sol, ud):
             ud.bdry_type[1] == opts.BdryType.WALL
             or ud.bdry_type[1] == opts.BdryType.RAYLEIGH
         ):
-            Sol.rhou[:, :2, ...] = 0.0
-            Sol.rhov[:, :2, ...] = 0.0
-            Sol.rhow[:, :2, ...] = 0.0
-            Sol.rhou[:, -2:, ...] = 0.0
-            Sol.rhov[:, -2:, ...] = 0.0
-            Sol.rhow[:, -2:, ...] = 0.0
+            sol.rhou[:, :2, ...] = 0.0
+            sol.rhov[:, :2, ...] = 0.0
+            sol.rhow[:, :2, ...] = 0.0
+            sol.rhou[:, -2:, ...] = 0.0
+            sol.rhov[:, -2:, ...] = 0.0
+            sol.rhow[:, -2:, ...] = 0.0
 
     # Call appropriate JIT-compiled function
     if ndim == 2:
         rhs[:] = _momentum_pot_temp_divergence_2d_jit(
-            Sol.rho, Sol.rhou, Sol.rhov, Sol.rhoY, elem.dx, elem.dy
+            sol.rho, sol.rhou, sol.rhov, sol.rhoY, elem.dx, elem.dy
         )
     else:
         _momentum_pot_temp_divergence_3d_jit(
             rhs,
-            Sol.rho,
-            Sol.rhou,
-            Sol.rhov,
-            Sol.rhow,
-            Sol.rhoY,
+            sol.rho,
+            sol.rhou,
+            sol.rhov,
+            sol.rhow,
+            sol.rhoY,
             elem.dx,
             elem.dy,
             elem.dz,

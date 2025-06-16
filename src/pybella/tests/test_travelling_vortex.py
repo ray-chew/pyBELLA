@@ -313,7 +313,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         mem.cache = var.FlowSolverCache()
 
         lm_sp.euler_backward_non_advective_impl_part(
-            Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, mem
+            mem, ud, ud.dtfixed, writer=None, label="initial_projection"
         )
 
         mpv.p2_nodes[...] = p2aux
