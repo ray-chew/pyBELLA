@@ -158,13 +158,9 @@ def do(
         mem.sol = copy.deepcopy(Sol0)
 
         lm_sp.euler_forward_non_advective(
-            mem.sol,
-            mem.mpv,
-            mem.elem,
-            mem.node,
-            0.5 * dt,
+            mem,
             ud,
-            mem.th,
+            0.5 * dt,
             writer=writer,
             label=str(label) + "_after_efna",
         )
