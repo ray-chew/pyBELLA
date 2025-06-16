@@ -172,3 +172,255 @@ def apply_directional_convolution(data, kernel, direction, ndim, normalize=True,
         axis_swap=config['axis_swap'], 
         use_numba=use_numba
     )
+
+
+@njit(cache=True)
+def compute_divergence_2d(u_field, v_field, dx, dy):
+    """
+    Compute 2D divergence: ∇·F = ∂u/∂x + ∂v/∂y
+    
+    Parameters
+    ----------
+    u_field : np.ndarray
+        Field component in x-direction
+    v_field : np.ndarray  
+        Field component in y-direction
+    dx : float
+        Grid spacing in x-direction
+    dy : float
+        Grid spacing in y-direction
+        
+    Returns
+    -------
+    np.ndarray
+        Divergence field averaged to cell centers
+    """
+    # X-direction: ∂u/∂x
+    div_x = finite_difference_1d(u_field, dx, axis=0)
+    # Average to y-cell centers
+    div_x = 0.5 * (div_x[:, :-1] + div_x[:, 1:])
+    
+    # Y-direction: ∂v/∂y  
+    div_y = finite_difference_1d(v_field, dy, axis=1)
+    # Average to x-cell centers
+    div_y = 0.5 * (div_y[:-1, :] + div_y[1:, :])
+    
+    return div_x + div_y
+
+
+@njit(cache=True)
+def compute_divergence_3d(u_field, v_field, w_field, dx, dy, dz):
+    """
+    Compute 3D divergence: ∇·F = ∂u/∂x + ∂v/∂y + ∂w/∂z
+    
+    Parameters
+    ----------
+    u_field : np.ndarray
+        Field component in x-direction
+    v_field : np.ndarray
+        Field component in y-direction  
+    w_field : np.ndarray
+        Field component in z-direction
+    dx : float
+        Grid spacing in x-direction
+    dy : float
+        Grid spacing in y-direction
+    dz : float
+        Grid spacing in z-direction
+        
+    Returns
+    -------
+    tuple
+        (div_x, div_y, div_z) - Individual divergence components
+    """
+    # X-direction: ∂u/∂x
+    div_x = finite_difference_1d(u_field, dx, axis=0)
+    # Average to y-cell centers, then to z-faces
+    div_x = 0.5 * (div_x[:, :-1, :] + div_x[:, 1:, :])
+    div_x = -0.5 * (div_x[:, :, :-1] + div_x[:, :, 1:])  # Note: negative from original
+    
+    # Y-direction: ∂v/∂y
+    div_y = finite_difference_1d(v_field, dy, axis=1)
+    # Average to x-cell centers, then to z-faces
+    div_y = 0.5 * (div_y[:-1, :, :] + div_y[1:, :, :])
+    div_y = 0.5 * (div_y[:, :, :-1] + div_y[:, :, 1:])
+    
+    # Z-direction: ∂w/∂z
+    div_z = finite_difference_1d(w_field, dz, axis=2)
+    # Average to cell centers
+    div_z = 0.5 * (div_z[:-1, :, :] + div_z[1:, :, :])
+    div_z = 0.5 * (div_z[:, :-1, :] + div_z[:, 1:, :])
+    
+    return div_x, div_y, div_z
+
+
+@njit(cache=True)
+def compute_divergence_3d_total(u_field, v_field, w_field, dx, dy, dz):
+    """
+    Compute total 3D divergence: ∇·F = ∂u/∂x + ∂v/∂y + ∂w/∂z
+    
+    Parameters
+    ----------
+    u_field : np.ndarray
+        Field component in x-direction
+    v_field : np.ndarray
+        Field component in y-direction  
+    w_field : np.ndarray
+        Field component in z-direction
+    dx : float
+        Grid spacing in x-direction
+    dy : float
+        Grid spacing in y-direction
+    dz : float
+        Grid spacing in z-direction
+        
+    Returns
+    -------
+    np.ndarray
+        Total divergence field
+    """
+    div_x, div_y, div_z = compute_divergence_3d(u_field, v_field, w_field, dx, dy, dz)
+    return div_x + div_y + div_z
+
+
+@njit(cache=True)
+def finite_difference_1d(field, spacing, axis=0):
+    """
+    Compute 1D finite difference along specified axis.
+    
+    Parameters
+    ----------
+    field : np.ndarray
+        Input field
+    spacing : float
+        Grid spacing
+    axis : int, default=0
+        Axis along which to compute difference
+        
+    Returns
+    -------
+    np.ndarray
+        Finite difference result
+    """
+    if field.ndim == 2:
+        if axis == 0:
+            return (field[1:, :] - field[:-1, :]) / spacing
+        elif axis == 1:
+            return (field[:, 1:] - field[:, :-1]) / spacing
+        else:
+            raise ValueError("axis must be 0 or 1 for 2D arrays")
+    elif field.ndim == 3:
+        if axis == 0:
+            return (field[1:, :, :] - field[:-1, :, :]) / spacing
+        elif axis == 1:
+            return (field[:, 1:, :] - field[:, :-1, :]) / spacing
+        elif axis == 2:
+            return (field[:, :, 1:] - field[:, :, :-1]) / spacing
+        else:
+            raise ValueError("axis must be 0, 1, or 2 for 3D arrays")
+    else:
+        raise ValueError("field must be 2D or 3D array")
+    
+# @njit
+def average_to_centers_2d(field, axis):
+    """
+    Average field values to cell centers along specified axis.
+    
+    Parameters
+    ----------
+    field : np.ndarray
+        Input field (2D)
+    axis : int
+        Axis along which to average (0 or 1)
+        
+    Returns
+    -------
+    np.ndarray
+        Averaged field
+    """
+    if axis == 0:
+        return 0.5 * (field[:-1, :] + field[1:, :])
+    elif axis == 1:
+        return 0.5 * (field[:, :-1] + field[:, 1:])
+    else:
+        raise ValueError("axis must be 0 or 1 for 2D arrays")
+
+
+# @njit
+def average_to_centers_3d(field, axis):
+    """
+    Average field values to cell centers along specified axis.
+    
+    Parameters
+    ----------
+    field : np.ndarray
+        Input field (3D)
+    axis : int
+        Axis along which to average (0, 1, or 2)
+        
+    Returns
+    -------
+    np.ndarray
+        Averaged field
+    """
+    if axis == 0:
+        return 0.5 * (field[:-1, :, :] + field[1:, :, :])
+    elif axis == 1:
+        return 0.5 * (field[:, :-1, :] + field[:, 1:, :])
+    elif axis == 2:
+        return 0.5 * (field[:, :, :-1] + field[:, :, 1:])
+    else:
+        raise ValueError("axis must be 0, 1, or 2 for 3D arrays")
+
+
+@njit(cache=True)
+def compute_gradient_2d(field, dx, dy):
+    """
+    Compute 2D gradient: ∇φ = (∂φ/∂x, ∂φ/∂y)
+    
+    Parameters
+    ----------
+    field : np.ndarray
+        Scalar field
+    dx : float
+        Grid spacing in x-direction
+    dy : float
+        Grid spacing in y-direction
+        
+    Returns
+    -------
+    tuple
+        (grad_x, grad_y) - Gradient components
+    """
+    grad_x = finite_difference_1d(field, dx, axis=0)
+    grad_y = finite_difference_1d(field, dy, axis=1)
+    
+    return grad_x, grad_y
+
+
+@njit(cache=True)
+def compute_gradient_3d(field, dx, dy, dz):
+    """
+    Compute 3D gradient: ∇φ = (∂φ/∂x, ∂φ/∂y, ∂φ/∂z)
+    
+    Parameters
+    ----------
+    field : np.ndarray
+        Scalar field
+    dx : float
+        Grid spacing in x-direction
+    dy : float
+        Grid spacing in y-direction
+    dz : float
+        Grid spacing in z-direction
+        
+    Returns
+    -------
+    tuple
+        (grad_x, grad_y, grad_z) - Gradient components
+    """
+    grad_x = finite_difference_1d(field, dx, axis=0)
+    grad_y = finite_difference_1d(field, dy, axis=1)
+    grad_z = finite_difference_1d(field, dz, axis=2)
+    
+    return grad_x, grad_y, grad_z
