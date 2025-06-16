@@ -663,59 +663,86 @@ def rhs_from_p_old(rhs, node, mpv):
     return rhs_n
 
 
+
+from numba import njit, prange
+
+@njit(cache=True)
+def _compute_coriolis_coefficients(wh1, wh2, wv, nu, nonhydro):
+    """Compute coefficients for the H^-1 matrix multiplication.
+    
+    This corresponds to equation (C11) in the mathematical formulation.
+    """
+    # Common terms
+    wh1_sq = wh1 * wh1
+    wh2_sq = wh2 * wh2
+    wv_sq = wv * wv
+    nu_nh = nu + nonhydro
+    
+    # Denominator (det(H))
+    denom = 1.0 / (wh1_sq + wh2_sq + nu_nh * (wv_sq + 1.0))
+    
+    # H^-1 matrix elements (row-major order)
+    # Row 1: U equation coefficients
+    h11 = (wh1_sq + nu_nh) * denom
+    h12 = nonhydro * (wh1 * wv + wh2) * denom
+    h13 = (wh1 * wh2 - nu_nh * wv) * denom
+    
+    # Row 2: V equation coefficients  
+    h21 = (wh1 * wv - wh2) * denom
+    h22 = nonhydro * (1.0 + wv_sq) * denom
+    h23 = (wh2 * wv + wh1) * denom
+    
+    # Row 3: W equation coefficients
+    h31 = (wh1 * wh2 + nu_nh * wv) * denom
+    h32 = nonhydro * (wh2 * wv - wh1) * denom
+    h33 = (nu_nh + wh2_sq) * denom
+    
+    return h11, h12, h13, h21, h22, h23, h31, h32, h33
+
+@njit(cache=True)
+def apply_coriolis_matrix_inplace(u_vec, v_vec, w_vec, U,V,W, wh1, wh2, wv, nu, nonhydro):
+    """Apply H^-1 matrix multiplication in-place.
+    
+    Corresponds to the equation: U^{n+1} = H^{-1}(U^{n*} - Δt_{cp}(Pθ)^* ∇π^{n+1})
+    """
+    # Get matrix coefficients
+    h11, h12, h13, h21, h22, h23, h31, h32, h33 = _compute_coriolis_coefficients(
+        wh1, wh2, wv, nu, nonhydro
+    )
+
+    U[...] = u_vec
+    V[...] = v_vec
+    W[...] = w_vec
+    
+    # Matrix multiplication: [U_new, V_new, W_new] = H^-1 @ [U_old, V_old, W_old]
+    u_vec[...] = h11 * U + h12 * V + h13 * W
+    v_vec[...] = h21 * U + h22 * V + h23 * W
+    w_vec[...] = h31 * U + h32 * V + h33 * W
+
+# Refactored main function
 def multiply_inverse_coriolis(
     Vec, mem, ud, dt, attrs=("rhou", "rhov", "rhow"), get_coeffs=False
 ):
+    """Coriolis matrix multiplication."""
     nonhydro = ud.nonhydrostasy
     g = ud.gravity_strength[1]
     Msq = ud.Msq
 
     wh1, wv, wh2 = dt * ud.coriolis_strength
-
     strat = mem.mpv.HydroState_n.get_dSdy(mem.elem, mem.node)
-
     Y = mem.sol.rhoY / mem.sol.rho
     nu = -(dt**2) * (g / Msq) * strat * Y
-
-    # get coefficients of the explicit terms
-    # common denominator
-    denom = 1.0 / (wh1**2 + wh2**2 + (nu + nonhydro) * (wv**2 + 1.0))
-
-    # U update
-    coeff_uu = wh1**2 + nu + nonhydro
-    coeff_uv = nonhydro * (wh1 * wv + wh2)
-    coeff_uw = wh1 * wh2 - (nu + nonhydro) * wv
-
-    # V update
-    coeff_vu = wh1 * wv - wh2
-    coeff_vv = nonhydro * (1 + wv**2)
-    coeff_vw = wh2 * wv + wh1
-
-    # W update
-    coeff_wu = wh1 * wh2 + (nu + nonhydro) * wv
-    coeff_wv = nonhydro * (wh2 * wv - wh1)
-    coeff_ww = nu + nonhydro + wh2**2
-
+    
+    # Get vector components
     VecU = getattr(Vec, attrs[0])
     VecV = getattr(Vec, attrs[1])
     VecW = getattr(Vec, attrs[2])
 
-    # Do the updates
-    U = denom * (coeff_uu * VecU + coeff_uv * VecV + coeff_uw * VecW)
-    V = denom * (coeff_vu * VecU + coeff_vv * VecV + coeff_vw * VecW)
-    W = denom * (coeff_wu * VecU + coeff_wv * VecV + coeff_ww * VecW)
-
-    VecU[...] = U
-    VecV[...] = V
-    VecW[...] = W
-
-    i1 = mem.node.i1
+    U,V,W = mem.cache.get_velocity_array_views(VecU.shape)
+    
+    apply_coriolis_matrix_inplace(VecU, VecV, VecW, U,V,W,wh1, wh2, wv, nu, nonhydro)
+    
+    # Return coefficients
     if get_coeffs:
-        # coriolis_parameters = ((coeff_uu * denom)[i1].reshape(-1,), (coeff_vv * denom)[i1].reshape(-1,), (coeff_uv * denom)[i1].reshape(-1,), (coeff_vu * denom)[i1].reshape(-1,))
-        coriolis_parameters = (
-            (coeff_uu * denom).T,
-            (coeff_vv * denom).T,
-            (coeff_uv * denom).T,
-            (coeff_vu * denom).T,
-        )
-        return coriolis_parameters
+        h11, h12, _, h21, h22, h23, h31, h32, h33 = _compute_coriolis_coefficients(wh1, wh2, wv, nu, nonhydro)
+        return (h11.T, h22.T, h12.T, h21.T)
