@@ -25,78 +25,79 @@ class solver_counter(object):
         self.rk = rk
 
 
-def euler_forward_non_advective(
-    mem, ud, dt, writer=None, label=None, debug=False
-):
+def euler_forward_non_advective(mem, ud, dt, writer=None, label=None, debug=False):
+    # Unpack frequently used variables
+    th, sol, mpv, node, elem = mem.th, mem.sol, mem.mpv, mem.node, mem.elem
+    ndim = elem.ndim
+
     nonhydro = ud.nonhydrostasy
-    g = ud.gravity_strength[1]
-    Msq = ud.Msq
-    Ginv = mem.th.Gammainv
-    corr_h1 = ud.coriolis_strength[0]
-    corr_v = ud.coriolis_strength[1]
-    corr_h2 = ud.coriolis_strength[2]
-    u0 = ud.u_wind_speed
-    v0 = ud.v_wind_speed
-    w0 = ud.w_wind_speed
+    g, Msq = ud.gravity_strength[1], ud.Msq
+    Ginv = th.Gammainv
+    corr_h1, corr_v, corr_h2 = ud.coriolis_strength
+    u0, v0, w0 = ud.u_wind_speed, ud.v_wind_speed, ud.w_wind_speed
 
-    p2n = mem.mpv.p2_nodes
+    # Reusable derived quantities
+    rho, rhoY, rhoX = sol.rho, sol.rhoY, sol.rhoX
+    rhou, rhov, rhow = sol.rhou, sol.rhov, sol.rhow
+
+    # Pressure and derivatives
+    p2n = mpv.p2_nodes
     dp2n = np.zeros_like(p2n)
-    ndim = mem.elem.ndim
 
-    # new allocations on the first call and cached view on subsequent calls
-    S0c = mem.mpv.HydroState.get_S0c(mem.elem)
-    dSdy = mem.mpv.HydroState_n.get_dSdy(mem.elem, mem.node)
+    S0c = mpv.HydroState.get_S0c(elem)
+    dSdy = mpv.HydroState_n.get_dSdy(elem, node)
 
-    mem.mpv.rhs[...] = divergence_nodes(mem.mpv.rhs, mem.elem, mem.node, mem.sol, ud)
+    # Compute divergence
+    mpv.rhs[...] = divergence_nodes(mpv.rhs, elem, node, sol, ud)
     if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
-        bdry.scale_wall_node_values(mem.mpv.rhs, mem.node, ud, 2.0)
-    div = mem.mpv.rhs
+        bdry.scale_wall_node_values(mpv.rhs, node, ud, 2.0)
 
     if debug:
-        writer.populate(str(label), "rhs", div)
+        writer.populate(str(label), "rhs", mpv.rhs)
 
+    # Compute compressibility kernel
     kernel = operators.get_averaging_kernel(ndim, width=2)
-    dpidP = (
-        (mem.th.gm1 / ud.Msq)
-        * operators.apply_convolution_kernel(
-            mem.sol.rhoY ** (mem.th.gamm - 2.0),
-            kernel=kernel,
-            normalize=True,
-            use_numba=True
-        )
-)
+    dpidP = (th.gm1 / Msq) * operators.apply_convolution_kernel(
+        rhoY ** (th.gamm - 2.0),
+        kernel=kernel,
+        normalize=True,
+        use_numba=True
+    )
 
-    rhoYovG = Ginv * mem.sol.rhoY
-    dbuoy = mem.sol.rhoY * (mem.sol.rhoX / mem.sol.rho)
-    dpdx, dpdy, dpdz = operators.compute_gradient_nodes(p2n, mem.elem.ndim, mem.node.dxyz)
+    rhoYovG = Ginv * rhoY
+    dbuoy = rhoY * (rhoX / rho)
 
-    drhou = mem.sol.rhou - u0 * mem.sol.rho
-    drhov = mem.sol.rhov - v0 * mem.sol.rho
-    drhow = mem.sol.rhow - w0 * mem.sol.rho
-    v = mem.sol.rhov / mem.sol.rho
+    # Pressure gradients
+    dpdx, dpdy, dpdz = operators.compute_gradient_nodes(p2n, ndim, node.dxyz)
 
-    mem.sol.rhou[...] = mem.sol.rhou - dt * (rhoYovG * dpdx - corr_h2 * drhov + corr_v * drhow)
+    # Wind perturbations
+    drhou = rhou - u0 * rho
+    drhov = rhov - v0 * rho
+    drhow = rhow - w0 * rho
+    v = rhov / rho
 
-    mem.sol.rhov[...] = mem.sol.rhov - dt * (
+    # Momentum update (u, v, w)
+    rhou -= dt * (rhoYovG * dpdx - corr_h2 * drhov + corr_v * drhow)
+    rhov -= dt * (
         rhoYovG * dpdy
         + (g / Msq) * dbuoy * nonhydro
         - corr_h1 * drhow
         + corr_h2 * drhou
     ) * (1 - ud.is_ArakawaKonor)
 
-    mem.sol.rhow[...] = mem.sol.rhow - dt * (rhoYovG * dpdz - corr_v * drhou + corr_h1 * drhov) * (
-        ndim == 3
-    )
+    if ndim == 3:
+        rhow -= dt * (rhoYovG * dpdz - corr_v * drhou + corr_h1 * drhov)
 
-    mem.sol.rhoX[...] = (mem.sol.rho * (mem.sol.rho / mem.sol.rhoY - S0c)) - dt * (v * dSdy) * mem.sol.rho
+    # Scalar update (rhoX)
+    sol.rhoX[...] = (rho * (rho / rhoY - S0c)) - dt * (v * dSdy) * rho
 
-    dp2n[mem.node.i1] -= dt * dpidP * div
+    # Compressibility correction to p2
+    dp2n[node.i1] -= dt * dpidP * mpv.rhs
+    mpv.p2_nodes += ud.compressibility * dp2n
 
-    weight = ud.compressibility
-    mem.mpv.p2_nodes += weight * dp2n
-
-    bdry.set_ghostnodes_p2(mem.mpv.p2_nodes, mem.node, ud)
-    bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.mpv)
+    # Boundary conditions
+    bdry.set_ghostnodes_p2(mpv.p2_nodes, node, ud)
+    bdry.set_explicit_boundary_data(sol, elem, ud, th, mpv)
 
 
 def euler_backward_non_advective_expl_part(mem, ud, dt):
