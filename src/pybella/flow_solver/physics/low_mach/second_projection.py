@@ -136,14 +136,7 @@ def euler_backward_non_advective_impl_part(
     if not debug:
         writer = None
     nc = node.sc
-    rhs = np.zeros_like(mpv.p2_nodes)
     rhs = mpv.rhs
-
-    # if elem.ndim == 2:
-    #     # p2 = np.copy(mpv.p2_nodes[node.igx:-node.igx,node.igy:-node.igy])
-    #     p2 = mpv.p2_nodes[node.p_isc]
-    # elif elem.ndim == 3:
-    #     p2 = np.copy(mpv.p2_nodes[1:-1,1:-1,1:-1])
 
     if writer != None:
         writer.populate(str(label), "p2_initial", mpv.p2_nodes)
@@ -180,9 +173,7 @@ def euler_backward_non_advective_impl_part(
     rhs /= dt
 
     if ud.is_compressible == 1:
-        # rhs = rhs_from_p_old(rhs, node, mpv)
         rhs = rhs
-    # if
     elif ud.is_compressible == 0:
         if ud.is_ArakawaKonor:
             rhs -= mpv.wcenter * mpv.dp2_nodes
@@ -199,50 +190,21 @@ def euler_backward_non_advective_impl_part(
 
     mpv.rhs[...] = rhs
 
-    VS = True
-
     # prepare initial left-hand side and the laplacian stencil
     if elem.ndim == 2:
         Vec = mpv
         coriolis_params = multiply_inverse_coriolis(
             Vec, mem, ud, dt, attrs=("u", "v", "w"), get_coeffs=True
         )
-        # lap = stencil_9pt(elem,node,mpv,Sol,ud,diag_inv,dt,coriolis_params)
-        # sh = (ud.inx)*(ud.iny)
 
         diag_inv = lm_lp.precon_diag_prepare(mpv, elem, node, ud, coriolis_params)
         rhs *= diag_inv
-
-        # diag_inv = np.ones_like(mpv.rhs)
 
         p2 = mpv.p2_nodes[node.i2].T
         lap = lm_lp.stencil_9pt_numba_test(mpv, node, coriolis_params, diag_inv, ud)
         sh = p2.shape[0] * p2.shape[1]
 
-        # p2 = np.copy(mpv.p2_nodes[1:-1,1:-1])
-        # sh = p2.reshape(-1).shape[0]
-
-    elif elem.ndim == 3 and elem.icy - 2 * elem.igs[1] <= 2:
-        # horizontal slice hack
-        p2 = np.copy(mpv.p2_nodes[1:-1, elem.igs[1], 1:-1])
-        lap = lm_lp.stencil_hs(elem, node, mpv, ud, diag_inv, dt)
-        sh = p2.reshape(-1).shape[0]
-
-    elif elem.ndim == 3 and elem.iicy > 1 and elem.iicz == 1:
-        # vertical slice hack
-
-        if not VS:
-            p2 = np.copy(
-                mpv.p2_nodes[..., elem.igz][node.igx : -node.igx, node.igy : -node.igy]
-            )
-            lap = lm_lp.stencil_vs(elem, node, mpv, ud, diag_inv, dt)
-            sh = (node.iicx) * (node.iicy)
-        if VS:
-            p2 = np.copy(mpv.p2_nodes[1:-1, 1:-1, elem.igs[2]])
-            lap = lm_lp.stencil_vs(elem, node, mpv, ud, diag_inv, dt)
-            sh = p2.reshape(-1).shape[0]
-
-    elif elem.ndim == 3 and elem.icy - 2 * elem.igs[1] > 2:
+    elif elem.ndim == 3:
         lap = lm_lp.stencil_27pt(elem, node, mpv, ud, diag_inv, dt)
         sh = p2.reshape(-1).shape[0]
 
@@ -253,68 +215,21 @@ def euler_backward_non_advective_impl_part(
 
     # prepare right-hand side
     if elem.ndim == 2:
-        # rhs_inner = rhs[node.igx:-node.igx,node.igy:-node.igy].ravel()
-        # rhs_inner = rhs[1:-1,1:-1].ravel()
         rhs_inner = rhs[1:-1, 1:-1].T.ravel()
-        # rhs_inner = rhs.T.ravel()
-    elif elem.ndim == 3 and elem.iicy > 1 and elem.iicz == 1:
-        if not VS:
-            rhs_inner = rhs[..., elem.igs[2]][
-                node.igx : -node.igx, node.igy : -node.igy
-            ].ravel()
-        if VS:
-            rhs_inner = rhs[1:-1, 1:-1, elem.igs[2]].ravel()
 
-    elif elem.ndim == 3 and elem.icy - 2 * elem.igs[1] > 2:
-        rhs_inner = rhs[1:-1, 1:-1, 1:-1].ravel()
     else:
         rhs_inner = rhs[1:-1, elem.igs[1], 1:-1].ravel()
-
-    # p2, _ = bicgstab(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations,callback=counter)
 
     p2, _ = sp.sparse.linalg.bicgstab(
         lap, rhs_inner, atol=ud.tol, maxiter=ud.max_iterations, callback=counter
     )
-    # p2, _ = gmres(lap,rhs_inner,tol=ud.tol,maxiter=ud.max_iterations)
-    # p2,info = bicgstab(lap,rhs.ravel(),x0=p2.ravel(),tol=1e-16,maxiter=6000,callback=counter)
-    # print("Convergence info = %i, no. of iterations = %i" %(info,counter.niter))
-
-    # global total_calls, total_iter
-    # total_iter += counter.niter
-    # total_calls += 1
-    # logging.info(counter.niter)
-    # logging.info(
-    #     "Total calls to BiCGStab routine = %i, total iterations = %i"
-    #     % (total_calls, total_iter)
-    # )
 
     p2_full = np.zeros(nc).squeeze()
     if elem.ndim == 2:
-        # p2_full[node.igx:-node.igx,node.igy:-node.igy] = p2.reshape(ud.inx,ud.iny)
-        # p2_full[node.i2] = p2.reshape(rhs[node.i1].shape[0],rhs[node.i1].shape[1])
         p2_full[node.i2] = p2.reshape(rhs[node.i1].shape[1], rhs[node.i1].shape[0]).T
-        # p2_full[node.i1] = p2.reshape(rhs.shape[1],rhs.shape[0]).T
-        # p2 = p2.reshape(ud.inx+2, ud.iny+2)
-        # p2_full[1:-1,1:-1] = p2
-    elif elem.ndim == 3 and elem.icy - 2 * elem.igs[1] <= 2:
-        # horizontal slice hack
-        p2 = p2.reshape(ud.inx + 2, ud.inz + 2)
-        p2 = np.expand_dims(p2, 1)
-        p2 = np.repeat(p2, node.icy, axis=1)
-        p2_full[1:-1, :, 1:-1] = p2
-    elif elem.ndim == 3 and elem.iicy > 1 and elem.iicz == 1:
-        if not VS:
-            p2 = p2.reshape(node.iicx, node.iicy)
-            p2 = np.repeat(p2[..., np.newaxis], node.icz, axis=2)
-            p2_full[node.igx : -node.igx, node.igy : -node.igy] = p2
-        if VS:
-            p2 = p2.reshape(ud.inx + 2, ud.iny + 2)
-            p2 = np.expand_dims(p2, 2)
-            p2 = np.repeat(p2, node.icz, axis=2)
-            p2_full[1:-1, 1:-1, :] = p2
-
-    elif elem.ndim == 3 and elem.icy - 2 * elem.igs[1] > 2:
+    elif elem.ndim == 3:
         p2_full[1:-1, 1:-1, 1:-1] = p2.reshape(ud.inx + 2, ud.iny + 2, ud.inz + 2)
+
     if writer != None:
         writer.populate(str(label), "p2_full", p2_full)
 
