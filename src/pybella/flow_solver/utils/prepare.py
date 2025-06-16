@@ -88,15 +88,8 @@ def initialise():
     # Initialise cache and add to simulation state
     flow_cache = var.FlowSolverCache()
 
-
     ensemble_state.update_member(
-        elem=elem,
-        node=node,
-        sol=sol,
-        flux=flux,
-        mpv=mpv,
-        th=th,
-        cache=flow_cache
+        elem=elem, node=node, sol=sol, flux=flux, mpv=mpv, th=th, cache=flow_cache
     )
 
     restart_params = data_structures.RestartParameters(
@@ -117,8 +110,6 @@ def initialise():
         restart_params=restart_params,
         interface_params=interface_params,
     )
-
-
 
     return sim_st
 

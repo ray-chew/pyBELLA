@@ -58,10 +58,7 @@ def euler_forward_non_advective(mem, ud, dt, writer=None, label=None, debug=Fals
     # Compute compressibility kernel
     kernel = operators.get_averaging_kernel(ndim, width=2)
     dpidP = (th.gm1 / Msq) * operators.apply_convolution_kernel(
-        rhoY ** (th.gamm - 2.0),
-        kernel=kernel,
-        normalize=True,
-        use_numba=True
+        rhoY ** (th.gamm - 2.0), kernel=kernel, normalize=True, use_numba=True
     )
 
     rhoYovG = Ginv * rhoY
@@ -78,12 +75,16 @@ def euler_forward_non_advective(mem, ud, dt, writer=None, label=None, debug=Fals
 
     # Momentum update (u, v, w)
     rhou -= dt * (rhoYovG * dpdx - corr_h2 * drhov + corr_v * drhow)
-    rhov -= dt * (
-        rhoYovG * dpdy
-        + (g / Msq) * dbuoy * nonhydro
-        - corr_h1 * drhow
-        + corr_h2 * drhou
-    ) * (1 - ud.is_ArakawaKonor)
+    rhov -= (
+        dt
+        * (
+            rhoYovG * dpdy
+            + (g / Msq) * dbuoy * nonhydro
+            - corr_h1 * drhow
+            + corr_h2 * drhou
+        )
+        * (1 - ud.is_ArakawaKonor)
+    )
 
     if ndim == 3:
         rhow -= dt * (rhoYovG * dpdz - corr_v * drhou + corr_h1 * drhov)
@@ -115,6 +116,7 @@ def euler_backward_non_advective_expl_part(mem, ud, dt):
     mem.sol.mod_bg_wind(ud, +1.0)
 
     bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.mpv)
+
 
 def euler_backward_non_advective_impl_part(
     Sol,
@@ -404,6 +406,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
         bdry.scale_wall_node_values(mpv.wcenter, node, ud)
 
+
 def rhs_from_p_old(rhs, node, mpv):
     igs = node.igs
     ndim = node.ndim
@@ -429,10 +432,11 @@ def rhs_from_p_old(rhs, node, mpv):
     rhs_n = rhs + 0.0 * rhs_hh
     return rhs_n
 
+
 @njit(cache=True)
 def _compute_coriolis_coefficients(wh1, wh2, wv, nu, nonhydro):
     """Compute coefficients for the H^-1 matrix multiplication.
-    
+
     This corresponds to equation (C11) in the mathematical formulation.
     """
     # Common terms
@@ -440,32 +444,35 @@ def _compute_coriolis_coefficients(wh1, wh2, wv, nu, nonhydro):
     wh2_sq = wh2 * wh2
     wv_sq = wv * wv
     nu_nh = nu + nonhydro
-    
+
     # Denominator (det(H))
     denom = 1.0 / (wh1_sq + wh2_sq + nu_nh * (wv_sq + 1.0))
-    
+
     # H^-1 matrix elements (row-major order)
     # Row 1: U equation coefficients
     h11 = (wh1_sq + nu_nh) * denom
     h12 = nonhydro * (wh1 * wv + wh2) * denom
     h13 = (wh1 * wh2 - nu_nh * wv) * denom
-    
-    # Row 2: V equation coefficients  
+
+    # Row 2: V equation coefficients
     h21 = (wh1 * wv - wh2) * denom
     h22 = nonhydro * (1.0 + wv_sq) * denom
     h23 = (wh2 * wv + wh1) * denom
-    
+
     # Row 3: W equation coefficients
     h31 = (wh1 * wh2 + nu_nh * wv) * denom
     h32 = nonhydro * (wh2 * wv - wh1) * denom
     h33 = (nu_nh + wh2_sq) * denom
-    
+
     return h11, h12, h13, h21, h22, h23, h31, h32, h33
 
+
 @njit(cache=True)
-def apply_coriolis_matrix_inplace(u_vec, v_vec, w_vec, U,V,W, wh1, wh2, wv, nu, nonhydro):
+def apply_coriolis_matrix_inplace(
+    u_vec, v_vec, w_vec, U, V, W, wh1, wh2, wv, nu, nonhydro
+):
     """Apply H^-1 matrix multiplication in-place.
-    
+
     Corresponds to the equation: U^{n+1} = H^{-1}(U^{n*} - Δt_{cp}(Pθ)^* ∇π^{n+1})
     """
     # Get matrix coefficients
@@ -476,11 +483,12 @@ def apply_coriolis_matrix_inplace(u_vec, v_vec, w_vec, U,V,W, wh1, wh2, wv, nu, 
     U[...] = u_vec
     V[...] = v_vec
     W[...] = w_vec
-    
+
     # Matrix multiplication: [U_new, V_new, W_new] = H^-1 @ [U_old, V_old, W_old]
     u_vec[...] = h11 * U + h12 * V + h13 * W
     v_vec[...] = h21 * U + h22 * V + h23 * W
     w_vec[...] = h31 * U + h32 * V + h33 * W
+
 
 # Refactored main function
 def multiply_inverse_coriolis(
@@ -495,49 +503,59 @@ def multiply_inverse_coriolis(
     strat = mem.mpv.HydroState_n.get_dSdy(mem.elem, mem.node)
     Y = mem.sol.rhoY / mem.sol.rho
     nu = -(dt**2) * (g / Msq) * strat * Y
-    
+
     # Get vector components
     VecU = getattr(Vec, attrs[0])
     VecV = getattr(Vec, attrs[1])
     VecW = getattr(Vec, attrs[2])
 
-    U,V,W = mem.cache.get_velocity_array_views(VecU.shape)
-    
-    apply_coriolis_matrix_inplace(VecU, VecV, VecW, U,V,W,wh1, wh2, wv, nu, nonhydro)
-    
+    U, V, W = mem.cache.get_velocity_array_views(VecU.shape)
+
+    apply_coriolis_matrix_inplace(VecU, VecV, VecW, U, V, W, wh1, wh2, wv, nu, nonhydro)
+
     # Return coefficients
     if get_coeffs:
-        h11, h12, _, h21, h22, h23, h31, h32, h33 = _compute_coriolis_coefficients(wh1, wh2, wv, nu, nonhydro)
+        h11, h12, _, h21, h22, h23, h31, h32, h33 = _compute_coriolis_coefficients(
+            wh1, wh2, wv, nu, nonhydro
+        )
         return (h11.T, h22.T, h12.T, h21.T)
-    
+
 
 def divergence_nodes(rhs, elem, node, Sol, ud):
     """Main divergence function - handles boundary conditions and calls JIT-compiled core."""
     ndim = elem.ndim
-    
+
     # Handle boundary conditions
     if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
-        if (ud.bdry_type[1] == opts.BdryType.WALL or 
-            ud.bdry_type[1] == opts.BdryType.RAYLEIGH):
+        if (
+            ud.bdry_type[1] == opts.BdryType.WALL
+            or ud.bdry_type[1] == opts.BdryType.RAYLEIGH
+        ):
             Sol.rhou[:, :2, ...] = 0.0
             Sol.rhov[:, :2, ...] = 0.0
             Sol.rhow[:, :2, ...] = 0.0
             Sol.rhou[:, -2:, ...] = 0.0
             Sol.rhov[:, -2:, ...] = 0.0
             Sol.rhow[:, -2:, ...] = 0.0
-    
+
     # Call appropriate JIT-compiled function
     if ndim == 2:
         rhs[:] = _momentum_pot_temp_divergence_2d_jit(
-            Sol.rho, Sol.rhou, Sol.rhov, Sol.rhoY,
-            elem.dx, elem.dy
+            Sol.rho, Sol.rhou, Sol.rhov, Sol.rhoY, elem.dx, elem.dy
         )
     else:
         _momentum_pot_temp_divergence_3d_jit(
-            rhs, Sol.rho, Sol.rhou, Sol.rhov, Sol.rhow, Sol.rhoY,
-            elem.dx, elem.dy, elem.dz
+            rhs,
+            Sol.rho,
+            Sol.rhou,
+            Sol.rhov,
+            Sol.rhow,
+            Sol.rhoY,
+            elem.dx,
+            elem.dy,
+            elem.dz,
         )
-    
+
     return rhs
 
 
@@ -553,7 +571,7 @@ def _momentum_pot_temp_divergence_2d_jit(rho, rhou, rhov, rhoY, dx, dy):
     # Compute momentum-potential temperature flux components
     rhou_theta = rhou * theta  # x-momentum flux weighted by potential temperature
     rhov_theta = rhov * theta  # y-momentum flux weighted by potential temperature
-    
+
     # Use generic divergence operator
     return operators.compute_divergence_2d(rhou_theta, rhov_theta, dx, dy)
 
@@ -573,8 +591,9 @@ def _momentum_pot_temp_divergence_3d_jit(rhs, rho, rhou, rhov, rhow, rhoY, dx, d
     rhow_theta = rhow * theta  # z-momentum flux weighted by potential temperature
 
     # Use generic total divergence operator
-    total_div = operators.compute_divergence_3d_total(rhou_theta, rhov_theta, rhow_theta, dx, dy, dz)
+    total_div = operators.compute_divergence_3d_total(
+        rhou_theta, rhov_theta, rhow_theta, dx, dy, dz
+    )
 
     # Assign to inner region
     rhs[1:-1, 1:-1, 1:-1] = total_div
-    

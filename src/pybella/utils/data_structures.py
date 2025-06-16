@@ -72,7 +72,7 @@ class EnsembleState:
         mpv: MPV,
         flux: List[Vars],
         th: ThermodynamicalQuantities,
-        cache: Optional[FlowSolverCache] = None
+        cache: Optional[FlowSolverCache] = None,
     ):
         if cache is None:
             cache = FlowSolverCache()

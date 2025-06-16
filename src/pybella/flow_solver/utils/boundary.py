@@ -662,22 +662,22 @@ def scale_wall_node_values(rhs, node, ud, factor=0.5):
     """Scale values at wall boundary nodes by a given factor."""
     ndim = node.ndim
     igs = node.igs
-    
+
     for dim in range(ndim):
         # Check if this dimension has wall boundaries
         is_wall = (
-            ud.bdry_type[dim] == opts.BdryType.WALL or 
-            ud.bdry_type[dim] == opts.BdryType.RAYLEIGH
+            ud.bdry_type[dim] == opts.BdryType.WALL
+            or ud.bdry_type[dim] == opts.BdryType.RAYLEIGH
         )
-        
+
         if is_wall:
             # Create index for all dimensions
             idx = [slice(igs[d], -igs[d]) for d in range(ndim)]
-            
+
             # Scale first and last interior nodes in this dimension
             for boundary_idx in [igs[dim], -igs[dim] - 1]:
                 idx[dim] = boundary_idx
                 rhs[tuple(idx)] *= factor
                 # rhs = rhs.at[tuple(idx)].multiply(factor)
-    
+
     return rhs

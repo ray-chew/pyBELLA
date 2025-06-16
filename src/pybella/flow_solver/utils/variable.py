@@ -2,6 +2,7 @@ import numpy as np
 import scipy as sp
 import logging
 
+
 class Vars(object):
     """
     The data container for the solution state variables, i.e. `Sol`.
@@ -75,7 +76,7 @@ class Vars(object):
         p : ndarray(size_of_rhoY)
 
         """
-        with np.errstate(divide='ignore', invalid='ignore'):
+        with np.errstate(divide="ignore", invalid="ignore"):
             # Direct division without nonzero indexing
             # We know that when this method is called in recovery, we always have one column of zeroes in self.rho.
             self.u[...] = self.rhou / self.rho
@@ -83,7 +84,7 @@ class Vars(object):
             self.w[...] = self.rhow / self.rho
             self.Y[...] = self.rhoY / self.rho
             self.X[...] = self.rhoX / self.rho
-            self.p[...] = self.rhoY ** th.gamm
+            self.p[...] = self.rhoY**th.gamm
 
     def flip(self):
         """
@@ -157,27 +158,27 @@ class States(Vars):
         if not self.init_dSdy:
             logging.info("Computing dSdy")
             self.dSdy = sp.signal.convolve(self.S0, [1.0, -1.0], mode="valid") / node.dy
-            
+
             for dim in range(0, node.ndim, 2):
                 self.dSdy = np.expand_dims(self.dSdy, dim)
                 self.dSdy = np.repeat(self.dSdy, elem.sc[dim], axis=dim)
-            
+
             self.init_dSdy = True
-        
+
         return self.dSdy
 
     def get_S0c(self, elem):
         if not self.init_S0c:
             logging.info("Computing S0c")
             S0c_result = self.S0
-            
+
             for dim in range(0, elem.ndim, 2):
                 S0c_result = np.expand_dims(S0c_result, dim)
                 S0c_result = np.repeat(S0c_result, elem.sc[dim], axis=dim)
-            
+
             self.S0c = S0c_result
             self.init_S0c = True
-        
+
         return self.S0c
 
 
@@ -225,65 +226,64 @@ class Characters(object):
 
 class FlowSolverCache:
     """Cache for flow solver specific computations."""
-    
+
     def __init__(self):
         self._recovery_cache = {}
         self._velocity_cache = {}
-    
+
     def get_recovery_objects(self, shape, ud):
         """Get cached recovery objects or create new ones."""
-        
+
         cache_key = (tuple(shape), id(ud))
         if cache_key not in self._recovery_cache:
             logging.info("Cache: Creating new recovery objects with shape %s", shape)
             self._recovery_cache[cache_key] = {
-                'Diffs': Characters(shape),
-                'Ampls': Characters(shape),
-                'Lefts': States(shape, ud),
-                'Rights': States(shape, ud),
-                'Slopes': Characters(shape),   
+                "Diffs": Characters(shape),
+                "Ampls": Characters(shape),
+                "Lefts": States(shape, ud),
+                "Rights": States(shape, ud),
+                "Slopes": Characters(shape),
             }
-        
+
         # Reset objects if they have reset methods
         cache_obj = self._recovery_cache[cache_key]
         # for obj in cache_obj.values():
         #     if hasattr(obj, 'zero'):
         #         obj.zero()
-        
+
         return cache_obj
-    
+
     def get_velocity_arrays(self, shape, dtype=np.float64):
         """Get cached velocity arrays (U, V, W) or create new ones."""
-        
+
         cache_key = (tuple(shape), dtype)
-        
+
         if cache_key not in self._velocity_cache:
             logging.info("Cache: Creating new velocity arrays with shape %s", shape)
             self._velocity_cache[cache_key] = {
-                'U': np.zeros(shape, dtype=dtype),
-                'V': np.zeros(shape, dtype=dtype),
-                'W': np.zeros(shape, dtype=dtype)
+                "U": np.zeros(shape, dtype=dtype),
+                "V": np.zeros(shape, dtype=dtype),
+                "W": np.zeros(shape, dtype=dtype),
             }
-        
+
         # Clear arrays for reuse
         cache_obj = self._velocity_cache[cache_key]
         # for arr in cache_obj.values():
         #     arr.fill(0.0)
-        
+
         return cache_obj
-    
+
     def get_velocity_array_views(self, shape, dtype=np.float64):
         """Get views of cached velocity arrays for in-place operations."""
         cache_obj = self.get_velocity_arrays(shape, dtype)
-        
-        return cache_obj['U'], cache_obj['V'], cache_obj['W']
-    
+
+        return cache_obj["U"], cache_obj["V"], cache_obj["W"]
+
     def clear_velocity_cache(self):
         """Clear velocity cache to free memory."""
         self._velocity_cache.clear()
-    
+
     def clear_all(self):
         """Clear all caches to free memory."""
         self._recovery_cache.clear()
         self._velocity_cache.clear()
-
