@@ -660,7 +660,7 @@ def stencil_9pt_numba_test(mpv, node, coriolis, diag_inv, ud):
         )
 
 
-@nb.jit(nopython=True, cache=False)
+@nb.jit(nopython=True, cache=True)
 def lap2D_numba_test(p, dp, dx, dy, coeffs, diag_inv, coriolis, shp):
     p = p.reshape(shp[1], shp[0])
     dp[1:-1, 1:-1] = p
@@ -1671,15 +1671,6 @@ def precon_diag_prepare(mpv, elem, node, ud, coriolis):
     wyx = coeff / (dy * dx)
 
     diag_kernel = np.array(np.ones([2] * ndim))
-
-    # diag = np.zeros((node.sc)).squeeze()
-    # diag[idx_n] = -wx * signal.fftconvolve(hplusx[idx_e],diag_kernel,mode='full')[idx_periodic]
-    # diag[idx_n] -= wy * signal.fftconvolve(hplusy[idx_e],diag_kernel,mode='full')[idx_periodic]
-    # if ndim == 3:
-    #     diag[idx_n] -= wz * signal.fftconvolve(hplusz[idx_e],diag_kernel,mode='full')[idx_periodic]
-
-    # diag[idx_n] += mpv.wcenter[idx_n]
-    # diag[idx_n] = 1.0 / diag[idx_n]
 
     diag = np.zeros_like(mpv.wcenter)
     diag[...] = -wxx * sp.signal.fftconvolve(hplusxx, diag_kernel, mode="valid")
