@@ -154,22 +154,17 @@ class States(Vars):
         self.init_S0c = False
 
     def get_dSdy(self, elem, node):
-        if self.init_dSdy:
-            return self.dSdy
-        else:
-            ndim = node.ndim
-            dy = node.dy
-
-            dSdy = self.S0
-            dSdy = sp.signal.convolve(dSdy, [1.0, -1.0], mode="valid") / dy
-
-            for dim in range(0, ndim, 2):
-                dSdy = np.expand_dims(dSdy, dim)
-                dSdy = np.repeat(dSdy, elem.sc[dim], axis=dim)
-
-            self.dSdy = dSdy
+        if not self.init_dSdy:
+            logging.info("Computing dSdy")
+            self.dSdy = sp.signal.convolve(self.S0, [1.0, -1.0], mode="valid") / node.dy
+            
+            for dim in range(0, node.ndim, 2):
+                self.dSdy = np.expand_dims(self.dSdy, dim)
+                self.dSdy = np.repeat(self.dSdy, elem.sc[dim], axis=dim)
+            
             self.init_dSdy = True
-            return dSdy
+        
+        return self.dSdy
 
     def get_S0c(self, elem):
         if self.init_S0c:
