@@ -150,10 +150,10 @@ def euler_backward_non_advective_impl_part(
 
     if Sol0 is not None:
         bdry.set_explicit_boundary_data(Sol0, elem, ud, th, mpv)
-        operator_coefficients_nodes(elem, node, Sol0, mpv, ud, th, dt)
+        operator_coefficients_nodes(mem, ud, dt)
     else:
         bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
-        operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt)
+        operator_coefficients_nodes(mem, ud, dt)
 
     i0 = node.ndim * [slice(0, -1)]
     i0 = tuple(i0)
@@ -339,9 +339,9 @@ def correction_nodes(mem, ud, dt, p, updt_chi):
     Y = mem.sol.rhoY / mem.sol.rho
     coeff = Gammainv * mem.sol.rhoY * Y
 
-    mem.mpv.u = -dt * coeff * Dpx
-    mem.mpv.v = -dt * coeff * Dpy
-    mem.mpv.w = -dt * coeff * Dpz
+    mem.mpv.u[...] = -dt * coeff * Dpx
+    mem.mpv.v[...] = -dt * coeff * Dpy
+    mem.mpv.w[...] = -dt * coeff * Dpz
 
     multiply_inverse_coriolis(mem.mpv, mem, ud, dt, attrs=["u", "v", "w"])
 
@@ -353,44 +353,28 @@ def correction_nodes(mem, ud, dt, p, updt_chi):
     assert True
 
 
-def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
-    g = ud.gravity_strength[1]
-    Msq = ud.Msq
-    Gammainv = th.Gammainv
+def operator_coefficients_nodes(mem, ud, dt):
+    Gammainv = mem.th.Gammainv
+    ndim = mem.node.ndim
 
-    ndim = node.ndim
+    ccenter = -ud.Msq * mem.th.gm1inv / (dt**2)
+    cexp = 2.0 - mem.th.gamm
 
-    ccenter = -ud.Msq * th.gm1inv / (dt**2)
-    cexp = 2.0 - th.gamm
-
-    strat = mpv.HydroState_n.get_dSdy(elem, node)
-
-    Y = Sol.rhoY / Sol.rho
-    coeff = Gammainv * Sol.rhoY * Y
-
-    nu = np.zeros_like(mpv.wcenter)
-    nu = -(dt**2) * (g / Msq) * strat * Y
-
-    setattr(mpv, "nu_c", nu)
-    nu = nu
+    Y = mem.sol.rhoY / mem.sol.rho
+    coeff = Gammainv * mem.sol.rhoY * Y
 
     for dim in range(ndim):
-        ## Assuming 2D vertical slice!
-        if dim == 1:
-            mpv.wplus[dim][...] = coeff  # * gimp #* (wv**2 + 1.0)
-        else:
-            mpv.wplus[dim][...] = coeff  # * fimp #* (wh1**2 + nu + nonhydro)
+        mem.mpv.wplus[dim][...] = coeff
 
-    kernel = np.ones([2] * ndim)
+    kernel = operators.get_averaging_kernel(ndim, width=2)
 
-    mpv.wcenter = (
-        ccenter
-        * sp.signal.fftconvolve(Sol.rhoY**cexp, kernel, mode="valid")
-        / kernel.sum()
+    mem.mpv.wcenter = ccenter * operators.apply_convolution_kernel(
+        mem.sol.rhoY**cexp,
+        kernel
     )
 
     if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
-        bdry.scale_wall_node_values(mpv.wcenter, node, ud)
+        bdry.scale_wall_node_values(mem.mpv.wcenter, mem.node, ud)
 
 
 @njit(cache=True)
