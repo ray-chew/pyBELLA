@@ -4,6 +4,7 @@ from ..utils import options as opts
 from ..flow_solver.utils import boundary as bdry
 from ..flow_solver.physics import hydrostatics
 from ..flow_solver.physics.low_mach import second_projection as lm_sp
+from ..flow_solver.utils import variable as var
 
 from ..utils.data_structures import DiagnosticState
 
@@ -309,6 +310,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         mem.time = obj()
         mem.time.t = ud.dtfixed
         mem.time.step = 0
+        mem.cache = var.FlowSolverCache()
 
         lm_sp.euler_backward_non_advective_impl_part(
             Sol, mpv, elem, node, ud, th, 0.0, ud.dtfixed, mem
