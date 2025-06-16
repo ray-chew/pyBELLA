@@ -4,7 +4,7 @@ from numba import njit
 from functools import lru_cache
 
 @lru_cache(maxsize=2)
-def create_convolution_kernels(ndim):
+def get_flux_convolution_kernels(ndim):
     """Create convolution kernels for advective flux computation.
     
     Parameters
@@ -41,7 +41,39 @@ def create_convolution_kernels(ndim):
         raise ValueError(f"Unsupported dimension: {ndim}")
 
 
-@njit
+@lru_cache(maxsize=4)
+def get_averaging_kernel(ndim, width=3, normalize=True):
+    """
+    Create a generic averaging kernel for arbitrary dimensions.
+
+    Parameters
+    ----------
+    ndim : int
+        Number of dimensions (e.g., 2 or 3)
+    width : int, default=3
+        Size of the kernel along each axis (can be even or odd)
+    normalize : bool, default=True
+        Whether to normalize the kernel to sum to 1
+
+    Returns
+    -------
+    np.ndarray
+        Averaging kernel of shape (width,) * ndim
+
+    Notes
+    -----
+    - Odd widths result in centered kernels.
+    - Even widths are useful for staggered/grid-face averaging.
+    """
+    shape = (width,) * ndim
+    kernel = np.ones(shape, dtype=np.float64)
+
+    if normalize:
+        kernel /= kernel.size
+
+    return kernel
+
+@njit(cache=True)
 def _numba_convolve_2d(data, kernel):
     """Numba-compiled 2D convolution for better performance."""
     data_h, data_w = data.shape
@@ -60,7 +92,7 @@ def _numba_convolve_2d(data, kernel):
     return result
 
 
-@njit
+@njit(cache=True)
 def _numba_convolve_3d(data, kernel):
     """Numba-compiled 3D convolution for better performance."""
     data_d, data_h, data_w = data.shape
