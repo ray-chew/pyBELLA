@@ -48,7 +48,7 @@ def euler_forward_non_advective(
 
     mem.mpv.rhs[...] = divergence_nodes(mem.mpv.rhs, mem.elem, mem.node, mem.sol, ud)
     if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
-        scale_wall_node_values(mem.mpv.rhs, mem.node, ud, 2.0)
+        bdry.scale_wall_node_values(mem.mpv.rhs, mem.node, ud, 2.0)
     div = mem.mpv.rhs
 
     if debug:
@@ -397,7 +397,7 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
 
     assert True
     if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
-        scale_wall_node_values(mpv.wcenter, node, ud)
+        bdry.scale_wall_node_values(mpv.wcenter, node, ud)
 
 
 # def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
@@ -474,50 +474,26 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
 #     scale_wall_node_values(mpv.wcenter, node, ud)
 
 
-def scale_wall_node_values(rhs, node, ud, factor=0.5):
-    # if factor < 1.0:
-    # if factor < 1.0:
-    #     factor = 1.0
-    #     rhs[:,1] *= factor
-    #     rhs[:,-2] *= factor
+# def scale_wall_node_values(rhs, node, ud, factor=0.5):
+#     ndim = node.ndim
+#     igs = node.igs
 
-    #     # rhs[:,0] *=  1.0# factor
-    #     # rhs[:,-1] *= 1.0# factor
-    # rhs[:,0] = rhs[:,2] * factor
-    # rhs[:,-1] = rhs[:,-3] * factor
-    # else:
-    #     factor = 1.0
-    #     rhs[:,:2] *= factor
-    #     rhs[:,-2:] *= factor
+#     wall_idx = np.empty((ndim), dtype=object)
+#     for dim in range(ndim):
+#         wall_idx[dim] = slice(igs[dim], -igs[dim])
 
-    ndim = node.ndim
-    igs = node.igs
-
-    wall_idx = np.empty((ndim), dtype=object)
-    for dim in range(ndim):
-        wall_idx[dim] = slice(igs[dim], -igs[dim])
-
-    for dim in range(ndim):
-        is_wall = (
-            ud.bdry_type[dim] == opts.BdryType.WALL
-            or ud.bdry_type[dim] == opts.BdryType.RAYLEIGH
-        )
-        if is_wall:
-            for direction in [-1, 1]:
-                wall_idx[dim] = (igs[dim] - 1) * direction
-                if direction == -1:
-                    wall_idx[dim] -= 1
-                wall_idx_tuple = tuple(wall_idx)
-                rhs[wall_idx_tuple] *= factor
-
-        # is_rayleigh = ud.bdry_type[dim] == BdryType.RAYLEIGH
-        # if is_rayleigh:
-        #     for direction in [1]:
-        #         wall_idx[dim] = (igs[dim]-1) * direction
-        #         # if direction == -1:
-        #         #     wall_idx[dim] -= 1
-        #         wall_idx_tuple = tuple(wall_idx)
-        #         rhs[wall_idx_tuple] *= factor
+#     for dim in range(ndim):
+#         is_wall = (
+#             ud.bdry_type[dim] == opts.BdryType.WALL
+#             or ud.bdry_type[dim] == opts.BdryType.RAYLEIGH
+#         )
+#         if is_wall:
+#             for direction in [-1, 1]:
+#                 wall_idx[dim] = (igs[dim] - 1) * direction
+#                 if direction == -1:
+#                     wall_idx[dim] -= 1
+#                 wall_idx_tuple = tuple(wall_idx)
+#                 rhs[wall_idx_tuple] *= factor
 
 
 def grad_nodes_fft(p2n, elem, node):
