@@ -167,19 +167,18 @@ class States(Vars):
         return self.dSdy
 
     def get_S0c(self, elem):
-        if self.init_S0c:
-            return self.S0c
-        else:
-            ndim = elem.ndim
-            S0c = self.S0
-
-            for dim in range(0, ndim, 2):
-                S0c = np.expand_dims(S0c, dim)
-                S0c = np.repeat(S0c, elem.sc[dim], axis=dim)
-
-            self.S0c = S0c
+        if not self.init_S0c:
+            logging.info("Computing S0c")
+            S0c_result = self.S0
+            
+            for dim in range(0, elem.ndim, 2):
+                S0c_result = np.expand_dims(S0c_result, dim)
+                S0c_result = np.repeat(S0c_result, elem.sc[dim], axis=dim)
+            
+            self.S0c = S0c_result
             self.init_S0c = True
-            return S0c
+        
+        return self.S0c
 
 
 class Characters(object):
