@@ -114,15 +114,9 @@ def do(
         Sol0_increment = Sol0 if ud.is_compressible == 0 else None
 
         lm_sp.euler_backward_non_advective_impl_part(
-            mem.sol,
-            mem.mpv,
-            mem.elem,
-            mem.node,
-            ud,
-            mem.th,
-            mem.time.t,
-            0.5 * dt,
             mem,
+            ud,
+            0.5 * dt,
             Sol0=Sol0_increment,
             label=f"{label}_after_ebnaimp",
             writer=writer,
@@ -192,15 +186,9 @@ def do(
         debug_writer.write(f"{label}_after_full_ebnaexp")
 
         lm_sp.euler_backward_non_advective_impl_part(
-            mem.sol,
-            mem.mpv,
-            mem.elem,
-            mem.node,
-            ud,
-            mem.th,
-            mem.time.t,
-            0.5 * dt,
             mem,
+            ud,
+            0.5 * dt,
             writer=writer,
             label=str(label) + "_after_full_step",
         )
