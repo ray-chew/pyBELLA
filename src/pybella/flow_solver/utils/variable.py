@@ -1,6 +1,6 @@
 import numpy as np
 import scipy as sp
-
+import logging
 
 class Vars(object):
     """
@@ -37,6 +37,14 @@ class Vars(object):
         self.rhow = np.zeros((size))
         self.rhoY = np.zeros((size))
         self.rhoX = np.zeros(([ud.nspec] + list(size)))
+
+        self.u = np.zeros((size))
+        self.v = np.zeros((size))
+        self.w = np.zeros((size))
+        self.Y = np.zeros((size))
+        self.X = np.zeros(([ud.nspec] + list(size)))
+        self.p = np.zeros((size))
+
         self.squeezer()
 
     # will be a better way of doing this
@@ -47,8 +55,6 @@ class Vars(object):
         """
         for key, value in vars(self).items():
             setattr(self, key, value.squeeze())
-
-    # method written for 2D
 
     def primitives(self, th):
         """
@@ -69,23 +75,15 @@ class Vars(object):
         p : ndarray(size_of_rhoY)
 
         """
-        nonzero_idx = np.nonzero(self.rho)
-
-        self.u = np.zeros_like(self.rhou)
-        self.v = np.zeros_like(self.rhov)
-        self.w = np.zeros_like(self.rhow)
-        self.Y = np.zeros_like(self.rhoY)
-        self.X = np.zeros_like(self.rhoX)
-        self.p = np.zeros_like(self.rhoY)
-
-        # the non-zero indices are used here for the case where Lefts and
-        # Rights in the HLLE Solver has one column that is zeros.
-        self.u[nonzero_idx] = self.rhou[nonzero_idx] / self.rho[nonzero_idx]
-        self.v[nonzero_idx] = self.rhov[nonzero_idx] / self.rho[nonzero_idx]
-        self.w[nonzero_idx] = self.rhow[nonzero_idx] / self.rho[nonzero_idx]
-        self.Y[nonzero_idx] = self.rhoY[nonzero_idx] / self.rho[nonzero_idx]
-        self.X[nonzero_idx] = self.rhoX[nonzero_idx] / self.rho[nonzero_idx]
-        self.p[nonzero_idx] = self.rhoY[nonzero_idx] ** th.gamm
+        with np.errstate(divide='ignore', invalid='ignore'):
+            # Direct division without nonzero indexing
+            # We know that when this method is called in recovery, we always have one column of zeroes in self.rho.
+            self.u[...] = self.rhou / self.rho
+            self.v[...] = self.rhov / self.rho
+            self.w[...] = self.rhow / self.rho
+            self.Y[...] = self.rhoY / self.rho
+            self.X[...] = self.rhoX / self.rho
+            self.p[...] = self.rhoY ** th.gamm
 
     def flip(self):
         """
@@ -112,9 +110,9 @@ class Vars(object):
         v0 = ud.v_wind_speed
         w0 = ud.w_wind_speed
 
-        self.rhou = self.rhou + fac * u0 * self.rho
-        self.rhov = self.rhov + fac * v0 * self.rho
-        self.rhow = self.rhow + fac * w0 * self.rho
+        self.rhou[...] = self.rhou + fac * u0 * self.rho
+        self.rhov[...] = self.rhov + fac * v0 * self.rho
+        self.rhow[...] = self.rhow + fac * w0 * self.rho
 
 
 class States(Vars):
@@ -138,16 +136,6 @@ class States(Vars):
 
         """
         super().__init__(size, ud)
-        self.u = np.zeros((size))
-        self.v = np.zeros((size))
-        self.w = np.zeros((size))
-        self.q = np.zeros((size))
-        self.p = np.zeros((size))
-        self.c = np.zeros((size))
-        self.entro = np.zeros((size))
-        self.H = np.zeros((size))
-        self.Y = np.zeros((size))
-        self.X = np.zeros(([ud.nspec] + list(size)))
 
         self.p0 = np.zeros((size))
         self.p20 = np.zeros((size))
@@ -230,10 +218,6 @@ class Characters(object):
         self.X = np.zeros((size))
         self.Y = np.zeros((size))
 
-        self.plus = np.zeros((size))
-        self.minus = np.zeros((size))
-        self.entro = np.zeros((size))
-
         self.squeezer()
 
     def squeezer(self):
@@ -250,15 +234,16 @@ class FlowSolverCache:
     
     def __init__(self):
         self._recovery_cache = {}
+        self._velocity_cache = {}
     
     def get_recovery_objects(self, shape, ud):
         """Get cached recovery objects or create new ones."""
         
         cache_key = (tuple(shape), id(ud))
-        
         if cache_key not in self._recovery_cache:
+            logging.info("Cache: Creating new recovery objects with shape %s", shape)
             self._recovery_cache[cache_key] = {
-                'Diffs': States(shape, ud),
+                'Diffs': Characters(shape),
                 'Ampls': Characters(shape),
                 'Lefts': States(shape, ud),
                 'Rights': States(shape, ud)
@@ -266,8 +251,44 @@ class FlowSolverCache:
         
         # Reset objects if they have reset methods
         cache_obj = self._recovery_cache[cache_key]
-        for obj in cache_obj.values():
-            if hasattr(obj, 'zero'):
-                obj.zero()
+        # for obj in cache_obj.values():
+        #     if hasattr(obj, 'zero'):
+        #         obj.zero()
         
         return cache_obj
+    
+    def get_velocity_arrays(self, shape, dtype=np.float64):
+        """Get cached velocity arrays (U, V, W) or create new ones."""
+        
+        cache_key = (tuple(shape), dtype)
+        
+        if cache_key not in self._velocity_cache:
+            logging.info("Cache: Creating new velocity arrays with shape %s", shape)
+            self._velocity_cache[cache_key] = {
+                'U': np.zeros(shape, dtype=dtype),
+                'V': np.zeros(shape, dtype=dtype),
+                'W': np.zeros(shape, dtype=dtype)
+            }
+        
+        # Clear arrays for reuse
+        cache_obj = self._velocity_cache[cache_key]
+        # for arr in cache_obj.values():
+        #     arr.fill(0.0)
+        
+        return cache_obj
+    
+    def get_velocity_array_views(self, shape, dtype=np.float64):
+        """Get views of cached velocity arrays for in-place operations."""
+        cache_obj = self.get_velocity_arrays(shape, dtype)
+        
+        return cache_obj['U'], cache_obj['V'], cache_obj['W']
+    
+    def clear_velocity_cache(self):
+        """Clear velocity cache to free memory."""
+        self._velocity_cache.clear()
+    
+    def clear_all(self):
+        """Clear all caches to free memory."""
+        self._recovery_cache.clear()
+        self._velocity_cache.clear()
+
