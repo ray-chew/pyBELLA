@@ -1,11 +1,11 @@
 import itertools as it
-import logging
 
 import numpy as np
 import scipy as sp
 from numba import njit
 
 from ....utils import options as opts
+from ....utils import operators
 
 from ...utils import boundary as bdry
 from . import laplacian as lm_lp
@@ -582,59 +582,6 @@ def grad_nodes(p, ndim, dxy):
     return Dpx, Dpy, Dpz
 
 
-def divergence_nodes(rhs, elem, node, Sol, ud):
-    ndim = elem.ndim
-    igs = elem.igs
-    dxyz = node.dxyz
-    inner_idx = np.empty((ndim), dtype=object)
-
-    for dim in range(ndim):
-        is_periodic = ud.bdry_type[dim] == opts.BdryType.PERIODIC
-        inner_idx[dim] = slice(igs[dim] - is_periodic, -igs[dim] + is_periodic)
-    inner_idx_p1y = np.copy(inner_idx)
-    inner_idx_p1y[1] = slice(1, -1)
-
-    indices = [idx for idx in it.product([slice(0, -1), slice(1, None)], repeat=ndim)]
-    signs = [sgn for sgn in it.product([1, -1], repeat=ndim)]
-    inner_idx = tuple(inner_idx)
-    inner_idx_p1y = tuple(inner_idx_p1y)
-
-    if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
-        if (
-            ud.bdry_type[1] == opts.BdryType.WALL
-            or ud.bdry_type[1] == opts.BdryType.RAYLEIGH
-        ):
-            Sol.rhou[:, :2, ...] = 0.0
-            Sol.rhov[:, :2, ...] = 0.0
-            Sol.rhow[:, :2, ...] = 0.0
-
-            # if ud.bdry_type[1] == BdryType.WALL:
-            Sol.rhou[:, -2:, ...] = 0.0
-            Sol.rhov[:, -2:, ...] = 0.0
-            Sol.rhow[:, -2:, ...] = 0.0
-
-    Y = Sol.rhoY / Sol.rho
-
-    Ux = np.diff(Sol.rhou * Y, axis=0) / elem.dx
-    Ux = 0.5 * (Ux[:, :-1, ...] + Ux[:, 1:, ...])
-
-    Vy = np.diff(Sol.rhov * Y, axis=1) / elem.dy
-    Vy = 0.5 * (Vy[:-1, ...] + Vy[1:, ...])
-
-    if ndim == 3:
-        Ux = -0.5 * (Ux[..., :-1] + Ux[..., 1:])
-        Vy = 0.5 * (Vy[..., :-1] + Vy[..., 1:])
-
-        Wz = np.diff(Sol.rhow * Y, axis=2) / elem.dz
-        Wz = 0.5 * (Wz[:-1, ...] + Wz[1:, ...])
-        Wz = 0.5 * (Wz[:, :-1, ...] + Wz[:, 1:, ...])
-
-        rhs[1:-1, 1:-1, 1:-1] = Ux + Vy + Wz
-    else:
-        rhs = Ux + Vy
-
-    rhs_max = np.max(rhs[inner_idx]) if np.max(rhs[inner_idx]) > 0 else 0
-    return rhs
 
 
 def rhs_from_p_old(rhs, node, mpv):
@@ -746,3 +693,72 @@ def multiply_inverse_coriolis(
     if get_coeffs:
         h11, h12, _, h21, h22, h23, h31, h32, h33 = _compute_coriolis_coefficients(wh1, wh2, wv, nu, nonhydro)
         return (h11.T, h22.T, h12.T, h21.T)
+    
+
+def divergence_nodes(rhs, elem, node, Sol, ud):
+    """Main divergence function - handles boundary conditions and calls JIT-compiled core."""
+    ndim = elem.ndim
+    
+    # Handle boundary conditions
+    if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
+        if (ud.bdry_type[1] == opts.BdryType.WALL or 
+            ud.bdry_type[1] == opts.BdryType.RAYLEIGH):
+            Sol.rhou[:, :2, ...] = 0.0
+            Sol.rhov[:, :2, ...] = 0.0
+            Sol.rhow[:, :2, ...] = 0.0
+            Sol.rhou[:, -2:, ...] = 0.0
+            Sol.rhov[:, -2:, ...] = 0.0
+            Sol.rhow[:, -2:, ...] = 0.0
+    
+    # Call appropriate JIT-compiled function
+    if ndim == 2:
+        rhs[:] = _momentum_pot_temp_divergence_2d_jit(
+            Sol.rho, Sol.rhou, Sol.rhov, Sol.rhoY,
+            elem.dx, elem.dy
+        )
+    else:
+        _momentum_pot_temp_divergence_3d_jit(
+            rhs, Sol.rho, Sol.rhou, Sol.rhov, Sol.rhow, Sol.rhoY,
+            elem.dx, elem.dy, elem.dz
+        )
+    
+    return rhs
+
+
+@njit(cache=True)
+def _momentum_pot_temp_divergence_2d_jit(rho, rhou, rhov, rhoY, dx, dy):
+    """
+    JIT-compiled 2D momentum-potential temperature divergence calculation.
+    Computes ∇·(ρu θ, ρv θ) where θ = ρY/ρ is the potential temperature.
+    """
+    # Calculate potential temperature θ = ρY / ρ
+    theta = rhoY / rho
+
+    # Compute momentum-potential temperature flux components
+    rhou_theta = rhou * theta  # x-momentum flux weighted by potential temperature
+    rhov_theta = rhov * theta  # y-momentum flux weighted by potential temperature
+    
+    # Use generic divergence operator
+    return operators.compute_divergence_2d(rhou_theta, rhov_theta, dx, dy)
+
+
+@njit(cache=True)
+def _momentum_pot_temp_divergence_3d_jit(rhs, rho, rhou, rhov, rhow, rhoY, dx, dy, dz):
+    """
+    JIT-compiled 3D momentum-potential temperature divergence calculation.
+    Computes ∇·(ρu θ, ρv θ, ρw θ) where θ = ρY/ρ is the potential temperature.
+    """
+    # Calculate potential temperature θ = ρY / ρ
+    theta = rhoY / rho
+
+    # Compute momentum-potential temperature flux components
+    rhou_theta = rhou * theta  # x-momentum flux weighted by potential temperature
+    rhov_theta = rhov * theta  # y-momentum flux weighted by potential temperature
+    rhow_theta = rhow * theta  # z-momentum flux weighted by potential temperature
+
+    # Use generic total divergence operator
+    total_div = operators.compute_divergence_3d_total(rhou_theta, rhov_theta, rhow_theta, dx, dy, dz)
+
+    # Assign to inner region
+    rhs[1:-1, 1:-1, 1:-1] = total_div
+    
