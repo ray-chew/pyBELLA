@@ -69,7 +69,9 @@ def main():
             debug_writer = io.create_debug_writer(params.debug, writer, mem)
 
             logging.info("For ensemble member = %i..." % cnt)
-            mem = dis_time_update.do(mem, sst.ud, tout, blend, step_writer, debug_writer)
+            mem = dis_time_update.do(
+                mem, sst.ud, tout, blend, step_writer, debug_writer
+            )
 
             if sst.ud.diag:
                 if sst.ud.diag_updt_targets:

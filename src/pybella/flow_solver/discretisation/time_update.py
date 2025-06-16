@@ -44,7 +44,9 @@ def do(
         if mem.time.step == 0 and writer != None:
             writer.write_all(mem, str(label) + "_ic")
 
-        dt, cfl, cfl_ac = gd_cfl.dynamic_timestep(mem.sol, mem.time.t, tout, mem.elem, ud, mem.th, mem.time.step)
+        dt, cfl, cfl_ac = gd_cfl.dynamic_timestep(
+            mem.sol, mem.time.t, tout, mem.elem, ud, mem.th, mem.time.step
+        )
 
         dt = prestep.apply_modifcations(dt, ud, mem.time.step)
 
@@ -69,7 +71,9 @@ def do(
         ud.nonhydrostasy = gd_eos.nonhydrostasy(ud, mem.time.t, mem.time.window_step)
 
         if ud.continuous_blending or ud.initial_blending:
-            logging.info(f"step = {mem.time.step}, window_step = {mem.time.window_step}")
+            logging.info(
+                f"step = {mem.time.step}, window_step = {mem.time.window_step}"
+            )
 
         logging.info(
             f"""
@@ -86,7 +90,9 @@ def do(
 
         gd_flux.recompute_advective_fluxes(mem)
 
-        debug_writer.populate_flux_components(f"{label}_before_advect", mem.flux, mem.elem)
+        debug_writer.populate_flux_components(
+            f"{label}_before_advect", mem.flux, mem.elem
+        )
         debug_writer.write(f"{label}_before_advect")
 
         if ud.do_advection:
@@ -143,7 +149,9 @@ def do(
 
         gd_flux.recompute_advective_fluxes(mem)
 
-        debug_writer.populate_flux_components(f"{label}_after_half_step", mem.flux, mem.elem)
+        debug_writer.populate_flux_components(
+            f"{label}_after_half_step", mem.flux, mem.elem
+        )
         debug_writer.write(f"{label}_after_half_step")
 
         Sol_half_new = copy.deepcopy(mem.sol)
