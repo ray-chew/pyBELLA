@@ -64,7 +64,7 @@ def euler_forward_non_advective(
 
     rhoYovG = Ginv * mem.sol.rhoY
     dbuoy = mem.sol.rhoY * (mem.sol.rhoX / mem.sol.rho)
-    dpdx, dpdy, dpdz = grad_nodes(p2n, mem.elem.ndim, mem.node.dxyz)
+    dpdx, dpdy, dpdz = operators.compute_gradient_nodes(p2n, mem.elem.ndim, mem.node.dxyz)
 
     drhou = mem.sol.rhou - u0 * mem.sol.rho
     drhov = mem.sol.rhov - v0 * mem.sol.rho
@@ -324,7 +324,7 @@ def correction_nodes(mem, ud, dt, p, updt_chi):
 
     dSdy = mem.mpv.HydroState_n.get_dSdy(mem.elem, mem.node)
 
-    Dpx, Dpy, Dpz = grad_nodes(p, mem.elem.ndim, mem.node.dxyz)
+    Dpx, Dpy, Dpz = operators.compute_gradient_nodes(p, mem.elem.ndim, mem.node.dxyz)
 
     thinv = mem.sol.rho / mem.sol.rhoY
 
@@ -399,167 +399,6 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
         bdry.scale_wall_node_values(mpv.wcenter, node, ud)
 
-
-# def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
-#     g = ud.gravity_strength[1]
-#     Msq = ud.Msq
-#     Gammainv = th.Gammainv
-
-#     ndim = node.ndim
-#     nonhydro = ud.nonhydrostasy
-#     dy = elem.dy
-
-#     wh1, wv, wh2 = dt * ud.coriolis_strength
-
-#     ccenter = - ud.Msq * th.gm1inv / (dt**2)
-#     cexp = 2.0 - th.gamm
-
-#     igs = elem.igs
-
-#     nindim = np.empty((ndim),dtype='object')
-#     innerdim = np.empty((ndim),dtype='object')
-#     innerdim1 = np.empty((ndim),dtype='object')
-#     eindim = np.empty((ndim),dtype='object')
-
-#     for dim in range(ndim):
-#         is_periodic = ud.bdry_type[dim] == BdryType.PERIODIC
-#         nindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic)
-#         innerdim[dim] = slice(igs[dim],-igs[dim])
-#         eindim[dim] = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic-1)
-
-#         if dim == 1:
-#             y_idx = slice(igs[dim]-is_periodic,-igs[dim]+is_periodic-1)
-#             right_idx = None if -igs[dim]+is_periodic == 0 else -igs[dim]+is_periodic
-#             y_idx1 = slice(igs[dim]-is_periodic+1, right_idx)
-
-#         innerdim1[dim] = slice(igs[dim]-1, (-igs[dim]+1))
-
-#     strat = (mpv.HydroState_n.S0[y_idx1] - mpv.HydroState_n.S0[y_idx]) / dy
-
-#     nindim = tuple(nindim)
-#     eindim = tuple(eindim)
-#     innerdim = tuple(innerdim)
-#     innerdim1 = tuple(innerdim1)
-
-#     for dim in range(0,elem.ndim,2):
-#         is_periodic = ud.bdry_type[dim] != BdryType.PERIODIC
-#         strat = np.expand_dims(strat, dim)
-#         strat = np.repeat(strat, elem.sc[dim]-int(2*is_periodic+igs[dim]), axis=dim)
-
-#     Y = Sol.rhoY[nindim] / Sol.rho[nindim]
-#     coeff = Gammainv * Sol.rhoY[nindim] * Y
-
-#     nu = np.zeros_like(mpv.wcenter)
-#     nu[eindim] = -dt**2 * (g / Msq) * strat * Y
-
-#     setattr(mpv, 'nu_c', nu)
-#     nu = nu[eindim]
-
-#     denom = 1.0 / (wh1**2 + wh2**2 + (nu + nonhydro) * (wv**2 + 1))
-
-#     fimp = denom
-#     gimp = denom
-
-#     for dim in range(ndim):
-#         ## Assuming 2D vertical slice!
-#         if dim == 1:
-#             mpv.wplus[dim][eindim] = coeff #* gimp #* (wv**2 + 1.0)
-#         else:
-#             mpv.wplus[dim][eindim] = coeff #* fimp #* (wh1**2 + nu + nonhydro)
-
-#     kernel = np.ones([2] * ndim)
-
-#     mpv.wcenter[innerdim] = ccenter * signal.fftconvolve(Sol.rhoY[innerdim1]**cexp,kernel,mode='valid') / kernel.sum()
-
-#     scale_wall_node_values(mpv.wcenter, node, ud)
-
-
-# def scale_wall_node_values(rhs, node, ud, factor=0.5):
-#     ndim = node.ndim
-#     igs = node.igs
-
-#     wall_idx = np.empty((ndim), dtype=object)
-#     for dim in range(ndim):
-#         wall_idx[dim] = slice(igs[dim], -igs[dim])
-
-#     for dim in range(ndim):
-#         is_wall = (
-#             ud.bdry_type[dim] == opts.BdryType.WALL
-#             or ud.bdry_type[dim] == opts.BdryType.RAYLEIGH
-#         )
-#         if is_wall:
-#             for direction in [-1, 1]:
-#                 wall_idx[dim] = (igs[dim] - 1) * direction
-#                 if direction == -1:
-#                     wall_idx[dim] -= 1
-#                 wall_idx_tuple = tuple(wall_idx)
-#                 rhs[wall_idx_tuple] *= factor
-
-
-def grad_nodes_fft(p2n, elem, node):
-    ndim = node.ndim
-    dx, dy, dz = node.dx, node.dy, node.dz
-
-    kernels = []
-    for dim in range(ndim):
-        kernel = np.ones([2] * ndim)
-        slc = [
-            slice(
-                None,
-            )
-        ] * ndim
-        slc[dim] = slice(0, 1)
-        kernel[tuple(slc)] *= -1.0
-        kernels.append(kernel)
-
-    dpdx = (
-        -(0.5 ** (ndim - 1)) * sp.signal.fftconvolve(p2n, kernels[0], mode="valid") / dx
-    )
-    dpdy = (
-        -(0.5 ** (ndim - 1)) * sp.signal.fftconvolve(p2n, kernels[1], mode="valid") / dy
-        if elem.iicy > 1
-        else 0.0
-    )
-    dpdz = (
-        -(0.5 ** (ndim - 1)) * sp.signal.fftconvolve(p2n, kernels[2], mode="valid") / dz
-        if (ndim == 3)
-        else 0.0
-    )
-
-    return dpdx, dpdy, dpdz
-
-
-# @jit(nopython=True, nogil=False, cache=True)
-def grad_nodes(p, ndim, dxy):
-    dx, dy, dz = dxy
-
-    indices = [idx for idx in it.product([slice(0, -1), slice(1, None)], repeat=ndim)]
-    if ndim == 2:
-        signs_x = (-1.0, -1.0, +1.0, +1.0)
-        signs_y = (-1.0, +1.0, -1.0, +1.0)
-        signs_z = (0.0, 0.0, 0.0, 0.0)
-    elif ndim == 3:
-        signs_x = (-1.0, -1.0, -1.0, -1.0, +1.0, +1.0, +1.0, +1.0)
-        signs_y = (-1.0, -1.0, +1.0, +1.0, -1.0, -1.0, +1.0, +1.0)
-        signs_z = (-1.0, +1.0, -1.0, +1.0, -1.0, +1.0, -1.0, +1.0)
-
-    Dpx, Dpy, Dpz = 0.0, 0.0, 0.0
-    cnt = 0
-    for index in indices:
-        Dpx += signs_x[cnt] * p[index]
-        Dpy += signs_y[cnt] * p[index]
-        Dpz += signs_z[cnt] * p[index]
-        cnt += 1
-
-    Dpx *= 0.5 ** (ndim - 1) / dx
-    Dpy *= 0.5 ** (ndim - 1) / dy
-    Dpz *= 0.5 ** (ndim - 1) / dz
-
-    return Dpx, Dpy, Dpz
-
-
-
-
 def rhs_from_p_old(rhs, node, mpv):
     igs = node.igs
     ndim = node.ndim
@@ -584,10 +423,6 @@ def rhs_from_p_old(rhs, node, mpv):
     rhs_hh = mpv.wcenter * mpv.p2_nodes[node.i1]
     rhs_n = rhs + 0.0 * rhs_hh
     return rhs_n
-
-
-
-from numba import njit, prange
 
 @njit(cache=True)
 def _compute_coriolis_coefficients(wh1, wh2, wv, nu, nonhydro):
