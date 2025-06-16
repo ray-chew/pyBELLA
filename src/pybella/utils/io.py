@@ -734,7 +734,7 @@ def init_logger(ud):
     logging.getLogger("numba").setLevel(logging.WARNING)
     logging.getLogger("numba.core").setLevel(logging.WARNING)
 
-    logging.getLogger().setLevel(logging.WARNING)
+    logging.getLogger().setLevel(logging.INFO)
 
     logging.info("Input file is %s" % input_filename)
 
