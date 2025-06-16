@@ -180,15 +180,16 @@ def euler_backward_non_advective_impl_part(
     rhs /= dt
 
     if ud.is_compressible == 1:
-        rhs = rhs_from_p_old(rhs, node, mpv)
+        # rhs = rhs_from_p_old(rhs, node, mpv)
+        rhs = rhs
     # if
     elif ud.is_compressible == 0:
         if ud.is_ArakawaKonor:
             rhs -= mpv.wcenter * mpv.dp2_nodes
             mpv.wcenter[...] = 0.0
         else:
-            rhs_new = rhs_from_p_old(rhs, node, mpv)
-            rhs = ud.compressibility * rhs_new + (1.0 - ud.compressibility) * rhs
+            # rhs_new = rhs_from_p_old(rhs, node, mpv)
+            rhs = ud.compressibility * rhs + (1.0 - ud.compressibility) * rhs
             mpv.wcenter[...] *= ud.compressibility
     else:
         mpv.wcenter *= ud.compressibility
@@ -358,15 +359,9 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
     Gammainv = th.Gammainv
 
     ndim = node.ndim
-    nonhydro = ud.nonhydrostasy
-    dy = elem.dy
-
-    wh1, wv, wh2 = dt * ud.coriolis_strength
 
     ccenter = -ud.Msq * th.gm1inv / (dt**2)
     cexp = 2.0 - th.gamm
-
-    igs = elem.igs
 
     strat = mpv.HydroState_n.get_dSdy(elem, node)
 
@@ -394,43 +389,8 @@ def operator_coefficients_nodes(elem, node, Sol, mpv, ud, th, dt):
         / kernel.sum()
     )
 
-    tmp_wplus = sp.signal.fftconvolve(mpv.wplus[0], kernel, mode="valid") / kernel.sum()
-
-    # set_ghostcells_p2(mpv.wplus[0], elem, ud)
-    # set_ghostcells_p2(mpv.wplus[1], elem, ud)
-    # set_ghostnodes_p2(mpv.wcenter, node, ud, igs=(1,1))
-    # mpv.wcenter[:,0] = mpv.wcenter[:,1]
-    # mpv.wcenter[:,-1] = mpv.wcenter[:,-2]
-
-    assert True
     if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
         bdry.scale_wall_node_values(mpv.wcenter, node, ud)
-
-
-def rhs_from_p_old(rhs, node, mpv):
-    igs = node.igs
-    ndim = node.ndim
-
-    assert ndim != 1, "Not implemented for 1D"
-
-    # inner_idx = np.empty((ndim), dtype=object)
-    # for dim in range(ndim):
-    #     inner_idx[dim] = slice(igs[dim],-igs[dim])
-
-    # inner_idx = tuple(inner_idx)
-    # rhs_n = np.zeros_like(rhs)
-    # rhs_hh = mpv.wcenter[inner_idx] * mpv.p2_nodes[inner_idx]
-    # rhs_n[inner_idx] = rhs[inner_idx] + 0.0 * rhs_hh
-
-    inner_idx = np.empty((ndim), dtype=object)
-    for dim in range(ndim):
-        inner_idx[dim] = slice(igs[dim], -igs[dim])
-
-    inner_idx = tuple(inner_idx)
-    rhs_n = np.zeros_like(rhs)
-    rhs_hh = mpv.wcenter * mpv.p2_nodes[node.i1]
-    rhs_n = rhs + 0.0 * rhs_hh
-    return rhs_n
 
 
 @njit(cache=True)
