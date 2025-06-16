@@ -43,6 +43,7 @@ def euler_forward_non_advective(
     dp2n = np.zeros_like(p2n)
     ndim = mem.elem.ndim
 
+    # new allocations on the first call and cached view on subsequent calls
     S0c = mem.mpv.HydroState.get_S0c(mem.elem)
     dSdy = mem.mpv.HydroState_n.get_dSdy(mem.elem, mem.node)
 
@@ -54,13 +55,16 @@ def euler_forward_non_advective(
     if debug:
         writer.populate(str(label), "rhs", div)
 
-    rhoY = mem.sol.rhoY ** (mem.th.gamm - 2.0)
-    dpidP_kernel = np.ones([2] * ndim)
+    kernel = operators.get_averaging_kernel(ndim, width=2)
     dpidP = (
         (mem.th.gm1 / ud.Msq)
-        * sp.signal.fftconvolve(rhoY, dpidP_kernel, mode="valid")
-        / dpidP_kernel.sum()
-    )
+        * operators.apply_convolution_kernel(
+            mem.sol.rhoY ** (mem.th.gamm - 2.0),
+            kernel=kernel,
+            normalize=True,
+            use_numba=True
+        )
+)
 
     rhoYovG = Ginv * mem.sol.rhoY
     dbuoy = mem.sol.rhoY * (mem.sol.rhoX / mem.sol.rho)
@@ -71,20 +75,20 @@ def euler_forward_non_advective(
     drhow = mem.sol.rhow - w0 * mem.sol.rho
     v = mem.sol.rhov / mem.sol.rho
 
-    mem.sol.rhou = mem.sol.rhou - dt * (rhoYovG * dpdx - corr_h2 * drhov + corr_v * drhow)
+    mem.sol.rhou[...] = mem.sol.rhou - dt * (rhoYovG * dpdx - corr_h2 * drhov + corr_v * drhow)
 
-    mem.sol.rhov = mem.sol.rhov - dt * (
+    mem.sol.rhov[...] = mem.sol.rhov - dt * (
         rhoYovG * dpdy
         + (g / Msq) * dbuoy * nonhydro
         - corr_h1 * drhow
         + corr_h2 * drhou
     ) * (1 - ud.is_ArakawaKonor)
 
-    mem.sol.rhow = mem.sol.rhow - dt * (rhoYovG * dpdz - corr_v * drhou + corr_h1 * drhov) * (
+    mem.sol.rhow[...] = mem.sol.rhow - dt * (rhoYovG * dpdz - corr_v * drhou + corr_h1 * drhov) * (
         ndim == 3
     )
 
-    mem.sol.rhoX = (mem.sol.rho * (mem.sol.rho / mem.sol.rhoY - S0c)) - dt * (v * dSdy) * mem.sol.rho
+    mem.sol.rhoX[...] = (mem.sol.rho * (mem.sol.rho / mem.sol.rhoY - S0c)) - dt * (v * dSdy) * mem.sol.rho
 
     dp2n[mem.node.i1] -= dt * dpidP * div
 

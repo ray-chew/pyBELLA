@@ -2,7 +2,7 @@
 import numpy as np
 from numba import njit
 
-from ....utils.operators import create_convolution_kernels, apply_directional_convolution
+from ....utils.operators import get_flux_convolution_kernels, apply_directional_convolution
 from ....utils.slices import get_inner_slice, get_interface_indices, get_last_dim_inner_slice
 
 def recompute_advective_fluxes(mem, **kwargs):
@@ -17,7 +17,7 @@ def recompute_advective_fluxes(mem, **kwargs):
     """
     ndim = mem.sol.rho.ndim
     inner_idx = get_inner_slice(ndim)
-    kernels = create_convolution_kernels(ndim)
+    kernels = get_flux_convolution_kernels(ndim)
     
     # Define the component order and corresponding flux indices
     components = ['u', 'v'] if ndim == 2 else ['u', 'v', 'w']
