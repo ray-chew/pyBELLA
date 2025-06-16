@@ -5,8 +5,12 @@
 *.ipynb_checkpoints*
 *.egg-info*
 *.coverage*
-profile.html
-profile.json
+profile*.html
+profile*.json
+profile*.out
+prof/*
+profiling/*
+chat*.json
 
 # Ignore everything under outputs/
 outputs/**
@@ -28,6 +32,7 @@ outputs/**
 *copy.py*
 package*json
 *.log
+*.swp
 
 # Sphinx html build
 **_build*
