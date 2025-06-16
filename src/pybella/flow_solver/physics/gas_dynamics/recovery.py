@@ -25,6 +25,7 @@ def do(mem, ud, lmbda, split_step, tag=None):
     lefts_idx, rights_idx, face_inner_idx = get_interface_indices(mem.elem.ndim)
 
     # inner_idx here are where the interface fluxes are calculated with non-zero values.
+    # TBD: Move to the cache
     u = np.zeros_like(mem.sol.rhoY)
     u[face_inner_idx] = (
         0.5
@@ -33,42 +34,36 @@ def do(mem, ud, lmbda, split_step, tag=None):
     )
 
     shape = mem.sol.u.shape
-
-    cache = mem.cache.get_recovery_objects(shape, ud)
-    Lefts = cache['Lefts']
-    Rights = cache['Rights']
-
-    shape = mem.sol.u.shape
     
     # Get cached objects
     cache = mem.cache.get_recovery_objects(shape, ud)
-    diffs, ampls, lefts, rights = cache['Diffs'], cache['Ampls'], cache['Lefts'], cache['Rights']
+    Diffs, Ampls, Lefts, Rights, Slopes = cache['Diffs'], cache['Ampls'], cache['Lefts'], cache['Rights'], cache['Slopes']
     
     # Compute differences
-    _compute_differences(mem.sol, rights_idx, lefts_idx, diffs)
+    _compute_differences(mem.sol, rights_idx, lefts_idx, Diffs)
     
     # Compute slopes
-    slopes_obj = _slopes(diffs, ud, mem.elem)
+    slopes_obj = _slopes(Diffs, Slopes, ud, mem.elem)
     
     # Compute left-side amplitudes and values
-    _compute_amplitudes(slopes_obj, lmbda, u, ampls, sign_factor=1.0, lambda_factor=-1.0)
-    _compute_reconstructed_values(mem.sol, ampls, order_two, lefts)
+    _compute_amplitudes(slopes_obj, lmbda, u, Ampls, sign_factor=1.0, lambda_factor=-1.0)
+    _compute_reconstructed_values(mem.sol, Ampls, order_two, Lefts)
     
     # Compute right-side amplitudes and values
-    _compute_amplitudes(slopes_obj, lmbda, u, ampls, sign_factor=-1.0, lambda_factor=1.0)
-    _compute_reconstructed_values(mem.sol, ampls, order_two, rights)
+    _compute_amplitudes(slopes_obj, lmbda, u, Ampls, sign_factor=-1.0, lambda_factor=1.0)
+    _compute_reconstructed_values(mem.sol, Ampls, order_two,Rights)
     
     # Return velocity components
     vel = [mem.sol.u, mem.sol.v, mem.sol.w]
 
     # Compute rhoY reconstruction
     reconstructed_rhoy = _compute_rhoy_reconstruction(
-        mem, lefts, rights, lefts_idx, rights_idx, vel, split_step, order_two, lmbda
+        mem, Lefts, Rights, lefts_idx, rights_idx, vel, split_step, order_two, lmbda
     )
     
     # Compute pressure reconstruction
     _compute_pressure_reconstruction(
-        lefts, rights, lefts_idx, rights_idx, reconstructed_rhoy, gamm
+        Lefts, Rights, lefts_idx, rights_idx, reconstructed_rhoy, gamm
     )
 
     _get_conservatives(Rights)
@@ -76,7 +71,7 @@ def do(mem, ud, lmbda, split_step, tag=None):
 
     return Lefts, Rights
 
-def _slopes(Diffs, ud, elem):
+def _slopes(Diffs, Slopes, ud, elem):
     """Reconstruct piecewise linear slopes in cells."""
     # Configuration
     variable_config = {
@@ -89,10 +84,6 @@ def _slopes(Diffs, ud, elem):
     
     # TBD: Consider moving indices to cache
     lefts_idx, rights_idx = get_neighbor_indices(elem.ndim)
-    
-    # Initialize slopes
-    # TBD: Consider moving to cache
-    Slopes = var.Characters(Diffs.u.shape)
     
     # Process each variable
     for var_name, limiter_type in variable_config.items():
@@ -168,21 +159,22 @@ def _compute_reconstructed_values(sol, ampls, order_two, result):
 def _compute_rhoy_reconstruction(mem, lefts, rights, lefts_idx, rights_idx, 
                                 vel, split_step, order_two, lmbda):
     """Compute rhoY reconstruction for both left and right sides."""
-    # Average of left and right rhoY values
-    avg_rhoy = 0.5 * (mem.sol.rhoY[lefts_idx] + mem.sol.rhoY[rights_idx])
+    # Use existing arrays for in-place operations
+    # First compute on lefts.rhoY, then copy to rights.rhoY
     
-    # Velocity-weighted correction term
-    vel_correction = order_two * 0.5 * lmbda * (
+    # Start with average in lefts array
+    lefts.rhoY[lefts_idx] = 0.5 * (mem.sol.rhoY[lefts_idx] + mem.sol.rhoY[rights_idx])
+    
+    # Subtract velocity correction in-place
+    lefts.rhoY[lefts_idx] -= order_two * 0.5 * lmbda * (
         vel[split_step][rights_idx] * mem.sol.rhoY[rights_idx] -
         vel[split_step][lefts_idx] * mem.sol.rhoY[lefts_idx]
     )
     
-    # Apply same value to both sides
-    reconstructed_rhoy = avg_rhoy - vel_correction
-    lefts.rhoY[lefts_idx] = reconstructed_rhoy
-    rights.rhoY[rights_idx] = reconstructed_rhoy
+    # Copy result to rights
+    rights.rhoY[rights_idx] = lefts.rhoY[lefts_idx]
     
-    return reconstructed_rhoy
+    return lefts.rhoY[lefts_idx]
 
 
 def _compute_pressure_reconstruction(lefts, rights, lefts_idx, rights_idx, 

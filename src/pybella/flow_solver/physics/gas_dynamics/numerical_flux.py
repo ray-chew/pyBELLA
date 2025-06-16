@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
+from numba import njit
 
 from ....utils.operators import create_convolution_kernels, apply_directional_convolution
 from ....utils.slices import get_inner_slice, get_interface_indices, get_last_dim_inner_slice
@@ -35,6 +36,14 @@ def recompute_advective_fluxes(mem, **kwargs):
             rhoY_vel, kernels[comp], comp, ndim
         )
 
+@njit(cache=True)
+def _compute_flux_component(flux_values, rhoY_values, left_weight, right_weight, 
+                                  left_val, right_val, remove_cols_idx):
+    """Numba-optimised flux component computation."""
+    flux_values[remove_cols_idx] = rhoY_values[remove_cols_idx] * (
+        left_weight * left_val + right_weight * right_val
+    )
+
 def hll_solver(mem, flux, Lefts, Rights):
     """
     HLL solver for the Riemann problem. Chooses the advected quantities from `Lefts` or `Rights` based on the direction given by `flux`.
@@ -45,21 +54,6 @@ def hll_solver(mem, flux, Lefts, Rights):
         `flux` data container with the solution of the Riemann problem.
     
     """
-    def _compute_flux_component(flux_attr, state_attr=None, state_value=1.0):
-        """Helper function to compute a single flux component."""
-        left_weight = upl[left_idx] / Lefts.Y[left_idx]
-        right_weight = upr[right_idx] / Rights.Y[right_idx]
-        
-        if state_attr is not None:
-            left_val = getattr(Lefts, state_attr)[left_idx]
-            right_val = getattr(Rights, state_attr)[right_idx]
-        else:
-            left_val = right_val = state_value
-        
-        getattr(flux, flux_attr)[remove_cols_idx] = flux.rhoY[remove_cols_idx] * (
-            left_weight * left_val + right_weight * right_val
-        )
-
     ndim = mem.sol.rho.ndim
     left_idx, right_idx, _ = get_interface_indices(ndim)
     remove_cols_idx = get_last_dim_inner_slice(ndim)
@@ -72,12 +66,41 @@ def hll_solver(mem, flux, Lefts, Rights):
     upwind = 0.5 * (1.0 + np.sign(flux.rhoY))
     upl = upwind[right_idx]
     upr = 1.0 - upwind[left_idx]
+    
+    # Pre-compute common weights
+    left_weight = upl[left_idx] / Lefts.Y[left_idx]
+    right_weight = upr[right_idx] / Rights.Y[right_idx]
 
+    # Define flux components to compute
+    flux_components = [
+        ('rhou', 'u'),
+        ('rho', None, 1.0),  # state_value=1.0
+        ('rhov', 'v'),
+        ('rhow', 'w'),
+        ('rhoX', 'X')
+    ]
+    
     # Compute all flux components
-    _compute_flux_component('rhou', 'u')
-    _compute_flux_component('rho')  # Uses default state_value=1.0
-    _compute_flux_component('rhov', 'v')
-    _compute_flux_component('rhow', 'w')
-    _compute_flux_component('rhoX', 'X')
+    for component in flux_components:
+        flux_attr = component[0]
+        state_attr = component[1] if len(component) > 1 else None
+        state_value = component[2] if len(component) > 2 else 1.0
+        
+        # Get state values
+        if state_attr is not None:
+            left_val = getattr(Lefts, state_attr)[left_idx]
+            right_val = getattr(Rights, state_attr)[right_idx]
+        else:
+            left_val = right_val = state_value
+        
+        _compute_flux_component(
+            getattr(flux, flux_attr),
+            flux.rhoY,
+            left_weight,
+            right_weight, 
+            left_val,
+            right_val,
+            remove_cols_idx
+        )
 
     return flux

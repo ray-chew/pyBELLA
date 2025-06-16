@@ -246,7 +246,8 @@ class FlowSolverCache:
                 'Diffs': Characters(shape),
                 'Ampls': Characters(shape),
                 'Lefts': States(shape, ud),
-                'Rights': States(shape, ud)
+                'Rights': States(shape, ud),
+                'Slopes': Characters(shape),   
             }
         
         # Reset objects if they have reset methods
