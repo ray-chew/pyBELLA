@@ -184,7 +184,7 @@ def euler_backward_non_advective_impl_part(
             Vec, mem, ud, dt, attrs=("u", "v", "w"), get_coeffs=True
         )
 
-        diag_inv = lm_lp.precon_diag_prepare(mem.mpv, mem.elem, mem.node, ud, coriolis_params)
+        diag_inv = lm_lp.precon_diag_prepare(mem.mpv, mem.node)
         mem.mpv.rhs *= diag_inv
 
         p2 = mem.mpv.p2_nodes[mem.node.i2].T
