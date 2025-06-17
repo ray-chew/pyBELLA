@@ -112,7 +112,7 @@ def _slopes(Diffs, Slopes, ud, elem):
     return Slopes
 
 
-@njit
+@njit(cache=True)
 def _limiters(limiter_type, al, ar):
     """
     Applies the limiter type specified in the initial conditions to recovery the slope.
