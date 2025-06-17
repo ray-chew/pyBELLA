@@ -3,6 +3,7 @@ import scipy as sp
 import numba as nb
 
 from ....utils import options as opts
+from ....utils import operators
 
 
 def stencil_9pt_numba_test(mpv, node, coriolis, diag_inv, ud):
@@ -640,71 +641,32 @@ def lap3D(
 
     return lap
 
-def precon_diag_prepare(mpv, elem, node, ud, coriolis):
+def precon_diag_prepare(mpv, node):
+    """Highly optimized version with minimal function calls."""
+    ndim = node.ndim
+    
+    coeff = 0.75 if ndim == 2 else 0.0625 if ndim == 3 else None
+    if coeff is None:
+        raise ValueError(f"Unsupported ndim: {ndim}")
+    
     dx, dy, dz = node.dx, node.dy, node.dz
+    inv_dx2, inv_dy2 = 1.0 / (dx**2), 1.0 / (dy**2)
+    
+    diag_kernel = operators.get_averaging_kernel(ndim, width=2)
 
-    x_periodic = ud.bdry_type[0] == opts.BdryType.PERIODIC
-    y_periodic = ud.bdry_type[1] == opts.BdryType.PERIODIC
-    z_periodic = ud.bdry_type[2] == opts.BdryType.PERIODIC
-    periodicity = (x_periodic, y_periodic, z_periodic)
-    # igx = node.igx
-    # igy = node.igy
-    igs = node.igs
-    ndim = elem.ndim
-
-    # idx_e = (slice(igx - x_periodic,-igx + x_periodic - 1),slice(igy - y_periodic, -igy + y_periodic - 1))
-    idx_periodic = [slice(None)] * elem.ndim
-    idx_n, idx_e = np.copy(idx_periodic), np.copy(idx_periodic)
-
-    for dim in range(ndim):
-        if ud.bdry_type[dim] == opts.BdryType.PERIODIC:
-            idx_periodic[dim] = slice(1, -1)
-
-        idx_e[dim] = slice(
-            igs[dim] - periodicity[dim], -igs[dim] + periodicity[dim] - 1
-        )
-        idx_n[dim] = slice(igs[dim], -igs[dim])
-
-    idx_periodic, idx_e, idx_n = tuple(idx_periodic), tuple(idx_e), tuple(idx_n)
-
-    # idx_n = (slice(igx,-igx), slice(igy,-igy))
-
-    hplusxx = mpv.wplus[0]  # * (coriolis[0].T)
-    hplusyy = mpv.wplus[1]  # * (coriolis[1].T)
-    hplusxy = mpv.wplus[0]  # * (coriolis[3].T)
-    hplusyx = mpv.wplus[1]  # * (coriolis[2].T)
-
-    if ndim == 3:
-        hplusz = mpv.wplus[2]
-
-    nine_pt = 0.25 * (2.0) * 1.0
-    nine_pt = 0.5 * 0.5
+    diag = mpv.wcenter.copy()
+    
+    # Main diagonal terms
+    diag -= coeff * inv_dx2 * operators.apply_convolution_kernel(mpv.wplus[0], diag_kernel)
+    diag -= coeff * inv_dy2 * operators.apply_convolution_kernel(mpv.wplus[1], diag_kernel)
+    
     if ndim == 2:
-        coeff = 1.0 - nine_pt
+        # Cross terms
+        inv_dxdy = 1.0 / (dx * dy)
+        diag -= coeff * inv_dxdy * operators.apply_convolution_kernel(mpv.wplus[0], diag_kernel)
+        diag -= coeff * inv_dxdy * operators.apply_convolution_kernel(mpv.wplus[1], diag_kernel)
     elif ndim == 3:
-        coeff = 0.0625
-    else:
-        assert 0, "ndim = 1?"
-
-    wxx = coeff / (dx**2)
-    wyy = coeff / (dy**2)
-    wzz = coeff / (dz**2)
-
-    wxy = coeff / (dx * dy)
-    wyx = coeff / (dy * dx)
-
-    diag_kernel = np.array(np.ones([2] * ndim))
-
-    diag = np.zeros_like(mpv.wcenter)
-    diag[...] = -wxx * sp.signal.fftconvolve(hplusxx, diag_kernel, mode="valid")
-    diag[...] -= wyy * sp.signal.fftconvolve(hplusyy, diag_kernel, mode="valid")
-    diag[...] -= wxy * sp.signal.fftconvolve(hplusxy, diag_kernel, mode="valid")
-    diag[...] -= wyx * sp.signal.fftconvolve(hplusyx, diag_kernel, mode="valid")
-    if ndim == 3:
-        diag[...] -= wzz * sp.signal.fftconvolve(hplusz, diag_kernel, mode="valid")
-
-    diag[...] += mpv.wcenter
-    diag[...] = 1.0 / diag
-
-    return diag
-
+        inv_dz2 = 1.0 / (dz**2)
+        diag -= coeff * inv_dz2 * operators.apply_convolution_kernel(mpv.wplus[2], diag_kernel)
+    
+    return 1.0 / diag
