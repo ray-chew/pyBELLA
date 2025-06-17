@@ -1,3 +1,6 @@
+import numpy as np
+from . import options as opts
+
 def get_neighbor_indices(ndim):
     """Create left and right neighbor indices for n-dimensional arrays."""
     lefts_idx = [slice(None)] * ndim
@@ -164,3 +167,53 @@ def get_face_center_averaging_indices(ndim):
         indices["xy_avg_right"] = (slice(1, None), slice(1, None), slice(None))
 
     return indices
+
+# ...existing code...
+
+def get_boundary_condition_slices(elem, node, ud):
+    """
+    Create slice indices for boundary conditions including periodic, element, and node slices.
+    
+    Parameters
+    ----------
+    elem : object
+        Element object with ndim attribute
+    node : object
+        Node object with igs attribute (number of ghost cells)
+    ud : object
+        User data object with bdry_type attribute
+    opts : module
+        Options module with BdryType enum
+        
+    Returns
+    -------
+    tuple
+        (idx_periodic, idx_e, idx_n, periodicity) where:
+        - idx_periodic: slice tuple for periodic regions
+        - idx_e: slice tuple for element regions
+        - idx_n: slice tuple for node regions  
+        - periodicity: boolean tuple for each dimension
+    """
+    x_periodic = ud.bdry_type[0] == opts.BdryType.PERIODIC
+    y_periodic = ud.bdry_type[1] == opts.BdryType.PERIODIC
+    z_periodic = ud.bdry_type[2] == opts.BdryType.PERIODIC
+    periodicity = (x_periodic, y_periodic, z_periodic)
+
+    igs = node.igs
+    ndim = elem.ndim
+
+    idx_periodic = [slice(None)] * elem.ndim
+    idx_n, idx_e = np.copy(idx_periodic), np.copy(idx_periodic)
+
+    for dim in range(ndim):
+        if ud.bdry_type[dim] == opts.BdryType.PERIODIC:
+            idx_periodic[dim] = slice(1, -1)
+
+        idx_e[dim] = slice(
+            igs[dim] - periodicity[dim], -igs[dim] + periodicity[dim] - 1
+        )
+        idx_n[dim] = slice(igs[dim], -igs[dim])
+
+    idx_periodic, idx_e, idx_n = tuple(idx_periodic), tuple(idx_e), tuple(idx_n)
+    
+    return idx_periodic, idx_e, idx_n, periodicity
