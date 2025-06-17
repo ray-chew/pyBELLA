@@ -188,7 +188,7 @@ def euler_backward_non_advective_impl_part(
         mem.mpv.rhs *= diag_inv
 
         p2 = mem.mpv.p2_nodes[mem.node.i2].T
-        lap = lm_lp.stencil_9pt_numba_test(mem.mpv, mem.node, coriolis_params, diag_inv, ud)
+        lap = lm_lp.get_lap2D_stencil(mem.mpv, mem.node, coriolis_params, diag_inv, ud)
         sh = p2.shape[0] * p2.shape[1]
 
     elif mem.elem.ndim == 3:
