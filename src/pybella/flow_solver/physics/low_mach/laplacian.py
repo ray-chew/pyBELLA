@@ -43,6 +43,7 @@ def get_lap2D_stencil(mpv, node, coriolis, diag_inv, ud):
         p, dummy_p, dx, dy, coeffs, diag_inv.T, coriolis, shp, boundary_handler
     )
 
+
 @nb.njit(cache=True)
 def lap2D_generic(p, dp, dx, dy, coeffs, diag_inv, coriolis, shp, boundary_handler):
     p = p.reshape(shp[1], shp[0])
@@ -78,6 +79,7 @@ def periodic_x_wall_y(arr):
 
     return arr
 
+
 @nb.njit(cache=True)
 def periodic(arr):
     """Apply periodic boundary conditions"""
@@ -87,6 +89,7 @@ def periodic(arr):
     arr[-1, :] = arr[2, :]
 
     return arr
+
 
 @nb.njit(cache=True)
 def apply_x_wall_boundary_coeffs(hpx, hpy):
@@ -116,6 +119,7 @@ def apply_y_wall_boundary_coeffs(hpx, hpy):
     hpy[-2, :] = 0.0
 
     return hpx, hpy
+
 
 @nb.stencil
 def kernel_9pt(a, dx, dy, hpx, hpy, hpc, diag_inv, cxx, cyy, cxy, cyx):
@@ -202,8 +206,6 @@ def kernel_9pt(a, dx, dy, hpx, hpy, hpc, diag_inv, cxx, cyy, cxy, cyx):
     return ((Dxx + Dyy + Dyx + Dxy) + hpc[0, 0] * a[0, 0]) * diag_inv[0, 0]
 
 
-
-
 def get_lap2D(mpv, node, coriolis, diag_inv, ud):
     dx = node.dx
     dy = node.dy
@@ -221,12 +223,8 @@ def get_lap2D(mpv, node, coriolis, diag_inv, ud):
         y_atmosphere = False
 
     ###################
-    x_wall = (
-        ud.bdry_type[0] == opts.BdryType.WALL
-    )
-    y_wall = (
-        ud.bdry_type[1] == opts.BdryType.WALL
-    )
+    x_wall = ud.bdry_type[0] == opts.BdryType.WALL
+    y_wall = ud.bdry_type[1] == opts.BdryType.WALL
 
     cor_slc = (slice(1, -1), slice(1, -1))
     coeff_slc = (slice(1, -1), slice(1, -1))
@@ -470,7 +468,6 @@ def lap2D_gather_new(
             cnt_x = 0
 
     return lap
-
 
 
 def stencil_27pt(elem, node, mpv, ud, diag_inv, dt):
@@ -729,32 +726,49 @@ def lap3D(
 
     return lap
 
+
 def precon_diag_prepare(mpv, node):
     """Highly optimized version with minimal function calls."""
     ndim = node.ndim
-    
+
     coeff = 0.75 if ndim == 2 else 0.0625 if ndim == 3 else None
     if coeff is None:
         raise ValueError(f"Unsupported ndim: {ndim}")
-    
+
     dx, dy, dz = node.dx, node.dy, node.dz
     inv_dx2, inv_dy2 = 1.0 / (dx**2), 1.0 / (dy**2)
-    
+
     diag_kernel = operators.get_averaging_kernel(ndim, width=2)
 
     diag = mpv.wcenter.copy()
-    
+
     # Main diagonal terms
-    diag -= coeff * inv_dx2 * operators.apply_convolution_kernel(mpv.wplus[0], diag_kernel)
-    diag -= coeff * inv_dy2 * operators.apply_convolution_kernel(mpv.wplus[1], diag_kernel)
-    
+    diag -= (
+        coeff * inv_dx2 * operators.apply_convolution_kernel(mpv.wplus[0], diag_kernel)
+    )
+    diag -= (
+        coeff * inv_dy2 * operators.apply_convolution_kernel(mpv.wplus[1], diag_kernel)
+    )
+
     if ndim == 2:
         # Cross terms
         inv_dxdy = 1.0 / (dx * dy)
-        diag -= coeff * inv_dxdy * operators.apply_convolution_kernel(mpv.wplus[0], diag_kernel)
-        diag -= coeff * inv_dxdy * operators.apply_convolution_kernel(mpv.wplus[1], diag_kernel)
+        diag -= (
+            coeff
+            * inv_dxdy
+            * operators.apply_convolution_kernel(mpv.wplus[0], diag_kernel)
+        )
+        diag -= (
+            coeff
+            * inv_dxdy
+            * operators.apply_convolution_kernel(mpv.wplus[1], diag_kernel)
+        )
     elif ndim == 3:
         inv_dz2 = 1.0 / (dz**2)
-        diag -= coeff * inv_dz2 * operators.apply_convolution_kernel(mpv.wplus[2], diag_kernel)
-    
+        diag -= (
+            coeff
+            * inv_dz2
+            * operators.apply_convolution_kernel(mpv.wplus[2], diag_kernel)
+        )
+
     return 1.0 / diag
