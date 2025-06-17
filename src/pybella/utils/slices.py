@@ -1,6 +1,7 @@
 import numpy as np
 from . import options as opts
 
+
 def get_neighbor_indices(ndim):
     """Create left and right neighbor indices for n-dimensional arrays."""
     lefts_idx = [slice(None)] * ndim
@@ -168,12 +169,14 @@ def get_face_center_averaging_indices(ndim):
 
     return indices
 
+
 # ...existing code...
+
 
 def get_boundary_condition_slices(elem, node, ud):
     """
     Create slice indices for boundary conditions including periodic, element, and node slices.
-    
+
     Parameters
     ----------
     elem : object
@@ -184,14 +187,14 @@ def get_boundary_condition_slices(elem, node, ud):
         User data object with bdry_type attribute
     opts : module
         Options module with BdryType enum
-        
+
     Returns
     -------
     tuple
         (idx_periodic, idx_e, idx_n, periodicity) where:
         - idx_periodic: slice tuple for periodic regions
         - idx_e: slice tuple for element regions
-        - idx_n: slice tuple for node regions  
+        - idx_n: slice tuple for node regions
         - periodicity: boolean tuple for each dimension
     """
     x_periodic = ud.bdry_type[0] == opts.BdryType.PERIODIC
@@ -215,5 +218,5 @@ def get_boundary_condition_slices(elem, node, ud):
         idx_n[dim] = slice(igs[dim], -igs[dim])
 
     idx_periodic, idx_e, idx_n = tuple(idx_periodic), tuple(idx_e), tuple(idx_n)
-    
+
     return idx_periodic, idx_e, idx_n, periodicity

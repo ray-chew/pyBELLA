@@ -167,7 +167,10 @@ def euler_backward_non_advective_impl_part(
             mem.mpv.rhs -= mem.mpv.wcenter * mem.mpv.dp2_nodes
             mem.mpv.wcenter[...] = 0.0
         else:
-            mem.mpv.rhs = ud.compressibility * mem.mpv.rhs + (1.0 - ud.compressibility) * mem.mpv.rhs
+            mem.mpv.rhs = (
+                ud.compressibility * mem.mpv.rhs
+                + (1.0 - ud.compressibility) * mem.mpv.rhs
+            )
             mem.mpv.wcenter[...] *= ud.compressibility
     else:
         mem.mpv.wcenter *= ud.compressibility
@@ -270,8 +273,7 @@ def operator_coefficients_nodes(mem, ud, dt):
     kernel = operators.get_averaging_kernel(ndim, width=2)
 
     mem.mpv.wcenter = ccenter * operators.apply_convolution_kernel(
-        mem.sol.rhoY**cexp,
-        kernel
+        mem.sol.rhoY**cexp, kernel
     )
 
     if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
