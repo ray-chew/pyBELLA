@@ -4,6 +4,7 @@ omit =
     src/pybella/data_assimilation/*
     src/pybella/inputs/*
     src/pybella/utils/debug_helpers.py
+    src/pybella/utils/slices.py
     */tests/*
     */test_*
     setup.py
