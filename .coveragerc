@@ -1,17 +1,20 @@
 [run]
 source = src
+parallel = True
+concurrency = multiprocessing
+sigterm = True
 omit = 
     src/pybella/data_assimilation/*
     src/pybella/inputs/*
     src/pybella/utils/debug_helpers.py
     src/pybella/utils/slices.py
-    */tests/*
-    */test_*
+    src/pybella/interfaces/postprocessing/strip_target_file.py
+    src/pybella/utils/operators/laplacian/lap3D.py
+    src/pybella/utils/operators/laplacian/lap2D_numba.py
     setup.py
 
 [report]
 exclude_lines =
-    pragma: no cover
     def __repr__
     raise AssertionError
     raise NotImplementedError
