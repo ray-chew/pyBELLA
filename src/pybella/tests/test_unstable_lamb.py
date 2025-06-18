@@ -354,7 +354,6 @@ def sol_init(Sol, npf, elem, node, th, ud, seeds=None):
 
     npf.p2_nodes[...] = pi_n
 
-
     if hasattr(ud, "mixed_run"):
         if ud.mixed_run:
             ud.coriolis_strength[2] = 2.0 * 7.292 * 1e-5 * ud.t_ref

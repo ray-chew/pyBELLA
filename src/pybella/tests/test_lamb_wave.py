@@ -4,7 +4,7 @@ from ..utils import options as opts
 from ..utils.data_structures import DiagnosticState
 
 from ..flow_solver.utils.boundary import rayleigh_boundary as bdry_r
-from ..flow_solver.physics import hydrostatics  
+from ..flow_solver.physics import hydrostatics
 
 
 class UserData(object):
@@ -309,7 +309,6 @@ def sol_init(Sol, npf, elem, node, th, ud, seeds=None):
     _, _, _, pi_n = ud.rf_bot.dehatter(th, grid="n")
 
     npf.p2_nodes[...] = pi_n
-
 
     if hasattr(ud, "mixed_run"):
         if ud.mixed_run:

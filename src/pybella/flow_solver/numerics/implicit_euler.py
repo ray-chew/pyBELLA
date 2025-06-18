@@ -38,7 +38,6 @@ def do_explicit_part(mem, ud, dt):
     mem.sol.mod_bg_wind(ud, +1.0)
 
 
-
 def do_implicit_part(
     mem,
     ud,

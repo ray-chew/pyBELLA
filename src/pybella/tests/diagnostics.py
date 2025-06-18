@@ -29,8 +29,8 @@ class CompareSol(object):
             self.arr_dump[dump_name] = {}
 
             rho = self.__get_ens(
-                    tc, tp, "rho", time_increment=self.time_increment, summed=False
-                )
+                tc, tp, "rho", time_increment=self.time_increment, summed=False
+            )
 
             for attribute in tp.attributes:
                 arr = self.__get_ens(

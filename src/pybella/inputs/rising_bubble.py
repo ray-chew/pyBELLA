@@ -1,6 +1,7 @@
 import numpy as np
 from ..flow_solver.physics import hydrostatics
 
+
 class UserData(object):
     # Nsq_ref = grav * 1.3e-05
 
@@ -90,6 +91,5 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     p = npf.HydroState_n.p0[0]
     rhoY = npf.HydroState_n.rhoY0[0]
     npf.p2_nodes[...] = (p - npf.HydroState_n.p0[0]) / rhoY / ud.Msq
-
 
     return Sol

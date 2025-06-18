@@ -117,9 +117,7 @@ def do(
             # top rayleight damping
             bdry_r.rayleigh_damping(mem.sol, mem.npf, ud)
 
-        bdry_r.apply_rayleigh_forcing(
-            mem, ud, dt
-        )
+        bdry_r.apply_rayleigh_forcing(mem, ud, dt)
 
         debug_writer.write(f"{label}_after_ebnaimp")
 
@@ -178,7 +176,9 @@ def do(
 
         # bottom rayleigh forcing
         bdry_r.apply_rayleigh_forcing(
-            mem, ud, dt,
+            mem,
+            ud,
+            dt,
             half=False,
             sol_half_new=sol_half_new,
             npf_half_new=npf_half_new,

@@ -78,9 +78,7 @@ def _explicit_step_and_flux(mem, ud, lmbda, split_step, tag=None):
     This function updates the solution `Sol` container in-place if a Strang-splitting is used,
     or returns the `flux` data container if a Runge-Kutta method is used.
     """
-    bdry_c.set_ghost_cells(
-        mem, ud, step=split_step
-    )
+    bdry_c.set_ghost_cells(mem, ud, step=split_step)
 
     flux = mem.cache.get_flux_containers(mem.elem)[split_step]
 
