@@ -3,6 +3,7 @@ import logging
 
 from . import fields
 
+
 class Characters(object):
     """
     Data container for the slope and amplitude of the interpolation to the faces for the Riemann solver.
@@ -51,6 +52,7 @@ class FlowSolverCache:
     def __init__(self):
         self._recovery_cache = {}
         self._velocity_cache = {}
+        self._coriolis_cache = {}
 
     def get_recovery_objects(self, shape, ud):
         """Get cached recovery objects or create new ones."""
@@ -66,11 +68,7 @@ class FlowSolverCache:
                 "Slopes": Characters(shape),
             }
 
-        # Reset objects if they have reset methods
         cache_obj = self._recovery_cache[cache_key]
-        # for obj in cache_obj.values():
-        #     if hasattr(obj, 'zero'):
-        #         obj.zero()
 
         return cache_obj
 
@@ -87,10 +85,7 @@ class FlowSolverCache:
                 "W": np.zeros(shape, dtype=dtype),
             }
 
-        # Clear arrays for reuse
         cache_obj = self._velocity_cache[cache_key]
-        # for arr in cache_obj.values():
-        #     arr.fill(0.0)
 
         return cache_obj
 
@@ -99,12 +94,41 @@ class FlowSolverCache:
         cache_obj = self.get_velocity_arrays(shape, dtype)
 
         return cache_obj["U"], cache_obj["V"], cache_obj["W"]
+    
+    def get_coriolis_arrays(self, shape, dtype=np.float64):
+        """Get cached Coriolis arrays (h11, h12, h13, h21, h22, h23, h31, h32, h33) or create new ones."""
 
-    def clear_velocity_cache(self):
-        """Clear velocity cache to free memory."""
-        self._velocity_cache.clear()
+        cache_key = (tuple(shape), dtype)
+
+        if cache_key not in self._coriolis_cache:
+            logging.info("Cache: Creating new Coriolis arrays with shape %s", shape)
+            self._coriolis_cache[cache_key] = {
+                "h11": np.zeros(shape, dtype=dtype),
+                "h12": np.zeros(shape, dtype=dtype),
+                "h13": np.zeros(shape, dtype=dtype),
+                "h21": np.zeros(shape, dtype=dtype),
+                "h22": np.zeros(shape, dtype=dtype),
+                "h23": np.zeros(shape, dtype=dtype),
+                "h31": np.zeros(shape, dtype=dtype),
+                "h32": np.zeros(shape, dtype=dtype),
+                "h33": np.zeros(shape, dtype=dtype),
+                "denom": np.zeros(shape, dtype=dtype),
+            }
+
+        cache_obj = self._coriolis_cache[cache_key]
+
+        return cache_obj
+
+    def get_coriolis_array_views(self, shape, dtype=np.float64):
+        """Get views of cached Coriolis arrays for in-place operations."""
+        cache_obj = self.get_coriolis_arrays(shape, dtype)
+
+        return cache_obj["h11"], cache_obj["h12"], cache_obj["h13"], cache_obj["h21"], cache_obj["h22"], cache_obj["h23"], cache_obj["h31"], cache_obj["h32"], cache_obj["h33"], cache_obj["denom"]
 
     def clear_all(self):
         """Clear all caches to free memory."""
         self._recovery_cache.clear()
         self._velocity_cache.clear()
+
+
+
