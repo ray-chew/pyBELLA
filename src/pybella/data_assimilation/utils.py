@@ -260,7 +260,7 @@ def HSprojector_3t2D(results, elem, dap, N):
     Parameters
     ----------
     results : nd.array
-        An array of ensemble size k. Each ensemble member has [Sol,flux,mpv,[window_step,step]].
+        An array of ensemble size k. Each ensemble member has [Sol,flux,npf,[window_step,step]].
     dap : data assimilation input class
         .
     N : int

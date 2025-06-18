@@ -162,13 +162,13 @@ class hdf5(object):
 
     def write_all(self, model_state, name):
         """
-        At a given time, write output from `Sol` and `mpv` to the HDF5 file.
+        At a given time, write output from `Sol` and `npf` to the HDF5 file.
 
         Parameters
         ----------
         Sol : :class:`management.variable.Vars`
             Solution data container
-        mpv : :class:`physics.low_mach.mpv.MPV`
+        npf : :class:`physics.low_mach.npf.MPV`
             Variables relating to the elliptic solver
         elem : :class:`discretization.kgrid.ElemSpaceDiscr`
             Cells grid
@@ -182,7 +182,7 @@ class hdf5(object):
         """
 
         Sol = model_state.sol
-        mpv = model_state.mpv
+        npf = model_state.npf
 
         logging.info("writing hdf output..." + name)
         # rho
@@ -196,7 +196,7 @@ class hdf5(object):
         self.populate(name, "rhow", Sol.rhow)
         self.populate(name, "rhoX", Sol.rhoX)
 
-        self.populate(name, "p2_nodes", mpv.p2_nodes)
+        self.populate(name, "p2_nodes", npf.p2_nodes)
 
         # vorticity in (x,z)
         # self.populate(name,'vortz', self.vortz(Sol,elem,node))
@@ -357,11 +357,11 @@ class hdf5(object):
         vortz[1:-1, :, 1:-1] = tmp
         return vortz
 
-    def dpress_dim(self, mpv, ud, th):
-        p0 = th.Gamma * ud.Msq * mpv.p2_cells
+    def dpress_dim(self, npf, ud, th):
+        p0 = th.Gamma * ud.Msq * npf.p2_cells
         p = np.power(p0, th.Gammainv, dtype=np.complex)
         p = p.real
-        return (p - mpv.HydroState.p0[0, :]) * self.ud.p_ref
+        return (p - npf.HydroState.p0[0, :]) * self.ud.p_ref
 
     def populate(self, name, path, data, options=None):
         """
@@ -476,7 +476,7 @@ class read_input(object):
         self.fn = fn
         self.path = path
 
-    def get_data(self, Sol, mpv, time_tag, half=False):
+    def get_data(self, Sol, npf, time_tag, half=False):
         file = h5py.File(self.path + "/" + self.fn, "r")
 
         if half:
@@ -490,7 +490,7 @@ class read_input(object):
         Sol.rhow[...] = file["rhow" + half_tag]["rhow" + half_tag + "_" + time_tag][:]
         Sol.rhoY[...] = file["rhoY" + half_tag]["rhoY" + half_tag + "_" + time_tag][:]
 
-        mpv.p2_nodes[...] = file["p2_nodes" + half_tag][
+        npf.p2_nodes[...] = file["p2_nodes" + half_tag][
             "p2_nodes" + half_tag + "_" + time_tag
         ][:]
 
@@ -603,7 +603,7 @@ def get_args():
     return N, UserData, sol_init, rstrt, ud, dap, params
 
 
-def sim_restart(path, name, elem, node, ud, Sol, mpv, restart_touts):
+def sim_restart(path, name, elem, node, ud, Sol, npf, restart_touts):
     """
     Function to restart simulation from a saved file. Dataset has to be structured in the same way as the output format of this file.
 
@@ -616,7 +616,7 @@ def sim_restart(path, name, elem, node, ud, Sol, mpv, restart_touts):
     file = h5py.File(str(path), "r")
 
     Sol_data = ["rho", "rhou", "rhov", "rhow", "rhoX", "rhoY"]
-    mpv_data = ["p2_nodes"]
+    npf_data = ["p2_nodes"]
 
     for data in Sol_data:
         value = file[data][data + name][:]
@@ -628,14 +628,14 @@ def sim_restart(path, name, elem, node, ud, Sol, mpv, restart_touts):
         else:
             assert 0, "Sol attribute mismatch"
 
-    for data in mpv_data:
+    for data in npf_data:
         value = file[data][data + name][:]
-        if hasattr(mpv, data):
-            shp = getattr(mpv, data).shape
-            setattr(mpv, data, value)
-            assert getattr(mpv, data).shape == shp
+        if hasattr(npf, data):
+            shp = getattr(npf, data).shape
+            setattr(npf, data, value)
+            assert getattr(npf, data).shape == shp
         else:
-            assert 0, "mpv attribute mismatch"
+            assert 0, "npf attribute mismatch"
 
     t = restart_touts
 
@@ -648,7 +648,7 @@ def sim_restart(path, name, elem, node, ud, Sol, mpv, restart_touts):
     )
 
     file.close()
-    return Sol, mpv, t
+    return Sol, npf, t
 
 
 def fn_gen(ud, dap, N):

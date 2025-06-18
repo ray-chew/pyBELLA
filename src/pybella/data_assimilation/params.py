@@ -129,7 +129,7 @@ class init(object):
             self.obs_noise_seeds = [np.random.randint(10000)]
 
     @staticmethod
-    def converter(results, N, mpv, elem, node, th, ud):
+    def converter(results, N, npf, elem, node, th, ud):
         """
         Do this after data assimilation for HS balanced vortex.
 
@@ -138,7 +138,7 @@ class init(object):
 
         g = ud.g0
         for n in range(N):
-            bdry.set_explicit_boundary_data(results[n][0], elem, ud, th, mpv)
+            bdry.set_explicit_boundary_data(results[n][0], elem, ud, th, npf)
             results[n][0].rhoY[...] = (g / 2.0 * results[n][0].rho ** 2) ** th.gamminv
 
             igy = elem.igy
@@ -148,7 +148,7 @@ class init(object):
 
             pn = sp.signal.convolve(results[n][0].rhoY[:, igy, :], kernel, mode="valid")
 
-            bdry.set_explicit_boundary_data(results[n][0], elem, ud, th, mpv)
+            bdry.set_explicit_boundary_data(results[n][0], elem, ud, th, npf)
             pn = np.expand_dims(pn, 1)
             pn = np.repeat(pn, node.icy, axis=1)
 

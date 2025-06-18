@@ -28,6 +28,6 @@ src.flow_solver.physics.low\_mach
    :recursive:
 
    src.flow_solver.physics.low_mach.laplacian
-   src.flow_solver.physics.low_mach.mpv
+   src.flow_solver.physics.low_mach.npf
    src.flow_solver.physics.low_mach.second_projection
 

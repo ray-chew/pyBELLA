@@ -9,14 +9,12 @@ class CellSolField(object):
 
     """
 
-    def __init__(self, size, ud):
+    def __init__(self, size):
         """
         Parameters
         ----------
         size : tuple
             Tuple containing the number of cells in the respective directions including ghost cells, e.g. `(48,48,10)` has 48 cells in the x and y-directions, and 10 cells in the z-directions
-        ud : :class:`inputs.user_data.UserDataInit`
-            Data container for the initial conditions
 
         Attributes
         ----------
@@ -32,18 +30,21 @@ class CellSolField(object):
         2. `rhoX` has to be extended by `ud.nspec` for moist process.
 
         """
+        # For eventual extension to support multiple species
+        nspec = 1
+
         self.rho = np.zeros((size))
         self.rhou = np.zeros((size))
         self.rhov = np.zeros((size))
         self.rhow = np.zeros((size))
         self.rhoY = np.zeros((size))
-        self.rhoX = np.zeros(([ud.nspec] + list(size)))
+        self.rhoX = np.zeros(([nspec] + list(size)))
 
         self.u = np.zeros((size))
         self.v = np.zeros((size))
         self.w = np.zeros((size))
         self.Y = np.zeros((size))
-        self.X = np.zeros(([ud.nspec] + list(size)))
+        self.X = np.zeros(([nspec] + list(size)))
         self.p = np.zeros((size))
 
         self.squeezer()
@@ -122,7 +123,7 @@ class States(CellSolField):
 
     """
 
-    def __init__(self, size, ud):
+    def __init__(self, size):
         """
         Parameters
         ----------
@@ -136,7 +137,6 @@ class States(CellSolField):
         Many variables in this data container are no longer used and can be removed.
 
         """
-        super().__init__(size, ud)
 
         self.p0 = np.zeros((size))
         self.p20 = np.zeros((size))
@@ -183,7 +183,7 @@ class States(CellSolField):
 
 
 class NodePressureField(object):
-    def __init__(self, elem, node, ud):
+    def __init__(self, elem, node):
         sc = elem.sc
         sn = node.sc
 
@@ -204,8 +204,8 @@ class NodePressureField(object):
         self.wcenter = np.zeros((node.isc))
         self.wplus = np.zeros(([elem.ndim] + list(sc)))
 
-        self.HydroState = States([sc[1]], ud)
-        self.HydroState_n = States([sn[1]], ud)
+        self.HydroState = States([sc[1]])
+        self.HydroState_n = States([sn[1]])
 
         self.squeezer()
 

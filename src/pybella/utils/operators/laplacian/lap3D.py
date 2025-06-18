@@ -1,7 +1,7 @@
 import numba as nb
 
 
-def get_linop(elem, node, mpv, ud, diag_inv, dt):
+def get_linop(elem, node, npf, ud, diag_inv, dt):
     oodxyz = node.dxyz
     oodxyz = 1.0 / (oodxyz**2)
     oodx2, oody2, oodz2 = oodxyz[0], oodxyz[1], oodxyz[2]
@@ -16,11 +16,11 @@ def get_linop(elem, node, mpv, ud, diag_inv, dt):
     for dim in range(ndim):
         periodicity[dim] = ud.bdry_type[dim] == opts.BdryType.PERIODIC
 
-    hplusx = mpv.wplus[0][i0][i1]
-    hplusy = mpv.wplus[1][i0][i1]
-    hplusz = mpv.wplus[2][i0][i1]
+    hplusx = npf.wplus[0][i0][i1]
+    hplusy = npf.wplus[1][i0][i1]
+    hplusz = npf.wplus[2][i0][i1]
 
-    hcenter = mpv.wcenter[i2]
+    hcenter = npf.wcenter[i2]
     diag_inv = diag_inv[i1]
 
     corrf = dt * ud.coriolis_strength[0]

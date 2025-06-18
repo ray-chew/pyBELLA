@@ -34,7 +34,7 @@ def do(
     swe_to_lake = False
 
     while (mem.time.t < tout) and (mem.time.step < ud.stepmax):
-        bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.mpv)
+        bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
 
         label = "%.3d" % mem.time.step
 
@@ -50,7 +50,7 @@ def do(
         ######################################################
         # Blending : Do blending before timestep
         ######################################################
-        swe_to_lake, mem.sol, mem.mpv, mem.time.t = schemes.prepare_blending(
+        swe_to_lake, mem.sol, mem.npf, mem.time.t = schemes.prepare_blending(
             mem,
             ud,
             bld,
@@ -87,9 +87,6 @@ def do(
 
         advective_flux.recompute(mem)
 
-        debug_writer.populate_flux_components(
-            f"{label}_before_advect", mem.flux, mem.elem
-        )
         debug_writer.write(f"{label}_before_advect")
 
         if ud.do_advection:
@@ -100,9 +97,9 @@ def do(
             )
 
         debug_writer.write(f"{label}_after_advect")
-        debug_writer.populate(f"{label}_after_full_step", "p2_nodes", mem.mpv.p2_nodes)
+        debug_writer.populate(f"{label}_after_full_step", "p2_nodes", mem.npf.p2_nodes)
 
-        mem.mpv.p2_nodes0[...] = mem.mpv.p2_nodes
+        mem.npf.p2_nodes0[...] = mem.npf.p2_nodes
 
         implicit_euler.do_explicit_part(mem, ud, 0.5 * dt)
 
@@ -121,11 +118,11 @@ def do(
 
         if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
             # top rayleight damping
-            bdry.rayleigh_damping(mem.sol, mem.mpv, ud, mem.elem, mem.node)
+            bdry.rayleigh_damping(mem.sol, mem.npf, ud, mem.elem, mem.node)
 
         bdry.apply_rayleigh_forcing(
             mem.sol,
-            mem.mpv,
+            mem.npf,
             ud,
             mem.elem,
             mem.node,
@@ -140,19 +137,16 @@ def do(
 
         advective_flux.recompute(mem)
 
-        debug_writer.populate_flux_components(
-            f"{label}_after_half_step", mem.flux, mem.elem
-        )
         debug_writer.write(f"{label}_after_half_step")
 
         Sol_half_new = copy.deepcopy(mem.sol)
-        mpv_half_new = copy.deepcopy(mem.mpv)
-        mem.mpv.p2_nodes_half = np.copy(mem.mpv.p2_nodes)
+        npf_half_new = copy.deepcopy(mem.npf)
+        mem.npf.p2_nodes_half = np.copy(mem.npf.p2_nodes)
 
         if ud.is_nonhydrostatic == 0 or (
             ud.is_compressible == 1 and ud.is_nonhydrostatic == 1
         ):
-            mem.mpv.p2_nodes[...] = mem.mpv.p2_nodes0
+            mem.npf.p2_nodes[...] = mem.npf.p2_nodes0
 
         mem.sol = copy.deepcopy(Sol0)
 
@@ -192,12 +186,12 @@ def do(
 
         if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
             # top rayleight damping
-            bdry.rayleigh_damping(mem.sol, mem.mpv, ud, mem.elem, mem.node)
+            bdry.rayleigh_damping(mem.sol, mem.npf, ud, mem.elem, mem.node)
 
         # bottom rayleigh forcing
         bdry.apply_rayleigh_forcing(
             mem.sol,
-            mem.mpv,
+            mem.npf,
             ud,
             mem.elem,
             mem.node,
@@ -208,16 +202,15 @@ def do(
             bdry,
             half=False,
             Sol_half_new=Sol_half_new,
-            mpv_half_new=mpv_half_new,
+            npf_half_new=npf_half_new,
         )
 
         ######################################################
         # Blending : Do blending after timestep
         ######################################################
-        mem.sol, mem.mpv = schemes.blending_after_timestep(
+        mem.sol, mem.npf = schemes.blending_after_timestep(
             mem.sol,
-            mem.flux,
-            mem.mpv,
+            mem.npf,
             bld,
             mem.elem,
             mem.node,

@@ -126,7 +126,7 @@ class UserData(object):
         return p * gm1inv + 0.5 * Msq * rho * (u * u + v * v + w * w)
 
 
-def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
+def sol_init(Sol, npf, elem, node, th, ud, seeds=None):
     u0 = ud.u_wind_speed
     v0 = ud.v_wind_speed
     w0 = ud.w_wind_speed
@@ -135,10 +135,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     xc = 0.0
     a = ud.scale_factor * 5.0e3 / ud.h_ref
 
-    hydrostatics.analytical_state(mpv, elem, node, th, ud)
+    hydrostatics.analytical_state(npf, elem, node, th, ud)
 
-    HySt = fields.States(node.sc, ud)
-    HyStn = fields.States(node.sc, ud)
+    HySt = fields.States(node.sc)
+    HyStn = fields.States(node.sc)
 
     x = elem.x.reshape(-1, 1)
     y = elem.y.reshape(1, -1)
@@ -167,8 +167,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
         p = HySt.p0[:, y_idx][c_idx]
         rhoY = HySt.rhoY0[:, y_idx][c_idx]
     else:
-        p = mpv.HydroState.p0[y_idx]
-        rhoY = mpv.HydroState.rhoY0[y_idx]
+        p = npf.HydroState.p0[y_idx]
+        rhoY = npf.HydroState.rhoY0[y_idx]
 
     rho = rhoY / Y[:, y_idx]
     Sol.rho[x_idx, y_idx] = rho
@@ -177,23 +177,23 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Sol.rhow[x_idx, y_idx] = rho * w
     Sol.rhoY[x_idx, y_idx] = rhoY
 
-    mpv.p2_cells[x_idx, y_idx] = HySt.p20[x_idx, y_idx][c_idx]
+    npf.p2_cells[x_idx, y_idx] = HySt.p20[x_idx, y_idx][c_idx]
 
     Sol.rhoX[x_idx, y_idx] = Sol.rho[x_idx, y_idx] * (
-        1.0 / Y[:, y_idx] - mpv.HydroState.S0[y_idx]
+        1.0 / Y[:, y_idx] - npf.HydroState.S0[y_idx]
     )
 
-    mpv.p2_nodes[:, elem.igy : -elem.igy] = HyStn.p20[:, elem.igy : -elem.igy]
+    npf.p2_nodes[:, elem.igy : -elem.igy] = HyStn.p20[:, elem.igy : -elem.igy]
 
-    hydrostatics.initial_pressure(Sol, mpv, elem, node, ud, th)
+    hydrostatics.initial_pressure(Sol, npf, elem, node, ud, th)
 
     ud.nonhydrostasy = 1.0 if ud.is_nonhydrostatic == 1 else 0.0
     ud.compressibility = 1.0 if ud.is_compressible == 1 else 0.0
 
     if "imbal" in ud.aux:
-        mpv.p2_nodes[...] = 0.0
+        npf.p2_nodes[...] = 0.0
 
-    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, npf)
 
     return Sol
 

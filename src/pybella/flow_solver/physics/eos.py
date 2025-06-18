@@ -73,12 +73,12 @@ def rhoe(rho, u, v, w, p, ud, th):
     return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
 
 
-def synchronise_variables(mpv, Sol, elem, node, ud, th):
+def synchronise_variables(npf, Sol, elem, node, ud, th):
     scale_factor = 1.0 / ud.Msq
 
     if ud.is_compressible:
-        p2bg = mpv.HydroState.p20[0, :].reshape(1, -1)
+        p2bg = npf.HydroState.p20[0, :].reshape(1, -1)
         p2bg = np.repeat(p2bg, elem.icx, axis=0)
-        mpv.p2_cells = scale_factor * Sol.rhoY**th.gm1 - p2bg
+        npf.p2_cells = scale_factor * Sol.rhoY**th.gm1 - p2bg
 
-    bdry.set_ghostcells_p2(mpv.p2_cells, elem, ud)
+    bdry.set_ghostcells_p2(npf.p2_cells, elem, ud)

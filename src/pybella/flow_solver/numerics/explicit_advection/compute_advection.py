@@ -23,7 +23,7 @@ def strange_splitting(mem, ud, dt, odd, label, writer=None):
             diagnostics=diagnostics if use_diagnostics else None,
         )
 
-    bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.mpv)
+    bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
 
 
 def first_order_runge_kutta(mem, ud, dt):
@@ -37,13 +37,14 @@ def first_order_runge_kutta(mem, ud, dt):
     """
     time_step = dt
     ndim = mem.elem.ndim
+    flux = mem.cache.get_flux_containers(mem.elem)
 
     # Compute fluxes for all dimensions
     for split in range(ndim):
         lmbda = time_step / mem.elem.dxyz[split]
         mem.sol.flip_forward()
         if mem.elem.iisc[split] > 1:
-            mem.flux[split] = _explicit_step_and_flux(mem, ud, lmbda, split, tag="rk")
+            flux[split] = _explicit_step_and_flux(mem, ud, lmbda, split, tag="rk")
 
     # Cache neighbor indices once
     left_idx, right_idx = get_neighbor_indices(mem.elem.ndim)
@@ -52,7 +53,7 @@ def first_order_runge_kutta(mem, ud, dt):
     for dim in range(ndim):
         _apply_dimensional_flux_update(mem, dim, time_step, left_idx, right_idx)
 
-    bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.mpv)
+    bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
 
 
 def _update_solution_variables(sol, flux, lmbda, left_idx, right_idx, variables=None):
@@ -84,7 +85,7 @@ def _explicit_step_and_flux(mem, ud, lmbda, split_step, tag=None):
         _update_solution_variables(mem.sol, flux, lmbda, left_idx, right_idx)
 
     bdry.set_explicit_boundary_data(
-        mem.sol, mem.elem, ud, mem.th, mem.mpv, step=split_step
+        mem.sol, mem.elem, ud, mem.th, mem.npf, step=split_step
     )
 
     if tag == "rk":
@@ -98,10 +99,10 @@ def _compute_flux_and_recovery(mem, ud, lmbda, split_step, tag=None):
     Returns:
         flux: Computed flux container
     """
-    flux = mem.flux[split_step]
+    flux = mem.cache.get_flux_containers(mem.elem)[split_step]
 
     bdry.set_explicit_boundary_data(
-        mem.sol, mem.elem, ud, mem.th, mem.mpv, step=split_step
+        mem.sol, mem.elem, ud, mem.th, mem.npf, step=split_step
     )
 
     Lefts, Rights = recovery.compute(mem, ud, lmbda, split_step, tag)
@@ -117,12 +118,13 @@ def _apply_dimensional_flux_update(mem, dim, time_step, left_idx, right_idx):
     """
     lmbda = time_step / mem.elem.dxyz[dim]
     mem.sol.flip_forward()
+    flux = mem.cache.get_flux_containers(mem.elem)[dim]
 
-    _update_solution_variables(mem.sol, mem.flux[dim], lmbda, left_idx, right_idx)
+    _update_solution_variables(mem.sol, flux, lmbda, left_idx, right_idx)
 
     # Handle special case for vertical axis
     if dim == 1:
-        updt = lmbda * (mem.flux[dim].rhoX[left_idx] - mem.flux[dim].rhoX[right_idx])
+        updt = lmbda * (flux.rhoX[left_idx] - flux.rhoX[right_idx])
         setattr(mem.sol, "pwchi", updt)
 
 

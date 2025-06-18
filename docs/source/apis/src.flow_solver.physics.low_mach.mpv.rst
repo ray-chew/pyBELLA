@@ -1,7 +1,7 @@
-﻿src.flow_solver.physics.low\_mach.mpv
+﻿src.flow_solver.physics.low\_mach.npf
 ================================
 
-.. automodule:: src.flow_solver.physics.low_mach.mpv
+.. automodule:: src.flow_solver.physics.low_mach.npf
 
    
    

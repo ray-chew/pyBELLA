@@ -227,7 +227,7 @@ class UserData(object):
             return up.T, vp.T, Yp.T, pi_p.T
 
 
-def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
+def sol_init(Sol, npf, elem, node, th, ud, seeds=None):
     if hasattr(ud, "rayleigh_bdry_switch"):
         if ud.rayleigh_bdry_switch:
             ud.bdry_type[1] = opts.BdryType.RAYLEIGH
@@ -256,13 +256,13 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     ud.stratification = ud.stratification(dy)
 
     # Use hydrostatically balanced background
-    hydrostatics.analytical_state(mpv, elem, node, th, ud)
-    rhobar = mpv.HydroState.rho0.reshape(1, -1)
-    Ybar = mpv.HydroState.Y0.reshape(1, -1)
-    pibar = mpv.HydroState.p20.reshape(1, -1) * ud.Msq
+    hydrostatics.analytical_state(npf, elem, node, th, ud)
+    rhobar = npf.HydroState.rho0.reshape(1, -1)
+    Ybar = npf.HydroState.Y0.reshape(1, -1)
+    pibar = npf.HydroState.p20.reshape(1, -1) * ud.Msq
 
-    rhobar_n = mpv.HydroState_n.rho0.reshape(1, -1)
-    Ybar_n = mpv.HydroState_n.Y0.reshape(1, -1)
+    rhobar_n = npf.HydroState_n.rho0.reshape(1, -1)
+    Ybar_n = npf.HydroState_n.Y0.reshape(1, -1)
 
     ##################################################
     # dimensionless Brunt-Väisälä frequency
@@ -303,16 +303,16 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
     Sol.rhow[...] = rho * w
     Sol.rhoY[...] = rho * Y
     Sol.rhoX[...] = 0.0
-    mpv.p2_cells[...] = pi_p
+    npf.p2_cells[...] = pi_p
 
     ###################################################
     # initialise nodal pi
     ud.rf_bot.eigenfunction(0, 1, grid="n")
     _, _, _, pi_n = ud.rf_bot.dehatter(th, grid="n")
 
-    mpv.p2_nodes[...] = pi_n
+    npf.p2_nodes[...] = pi_n
 
-    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, npf)
 
     if hasattr(ud, "mixed_run"):
         if ud.mixed_run:

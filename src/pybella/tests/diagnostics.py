@@ -79,7 +79,7 @@ class CompareSol(object):
                             time_increment=self.time_increment,
                             summed=False,
                         )
-                        setattr(mem.mpv, attribute, data)
+                        setattr(mem.npf, attribute, data)
                         ref_data = self.__get_ens(
                             tc,
                             tp,
@@ -87,7 +87,7 @@ class CompareSol(object):
                             time_increment=self.time_increment,
                             summed=False,
                         )
-                    setattr(ref_mem.mpv, attribute, ref_data)
+                    setattr(ref_mem.npf, attribute, ref_data)
             except Exception as e:
                 raise AssertionError(
                     f"test {self.current_run} has no target for comparison: {e}"
@@ -182,7 +182,7 @@ class CompareSol(object):
     @staticmethod
     def __get_sol_for_comparison(mem, ud, attribute):
         Sol = mem.sol
-        mpv = mem.mpv
+        npf = mem.npf
         if attribute != "p2_nodes":
             test_sol = np.copy(getattr(Sol, attribute).T)
             if attribute != "rho":
@@ -190,11 +190,11 @@ class CompareSol(object):
                 test_sol /= rho
 
                 # if attribute == 'rhoY':
-                #     test_sol -= mpv.HydroState.Y0[:,np.newaxis]
+                #     test_sol -= npf.HydroState.Y0[:,np.newaxis]
 
         else:
-            # test_sol = mpv.p2_nodes.T * ud.Msq
-            # test_sol -= mpv.HydroState_n.pi0[:,np.newaxis]
+            # test_sol = npf.p2_nodes.T * ud.Msq
+            # test_sol -= npf.HydroState_n.pi0[:,np.newaxis]
             test_sol = get_p_from_pressure_related_fields(mem, ud).T
             # pass
 
