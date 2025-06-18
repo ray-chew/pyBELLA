@@ -145,7 +145,7 @@ class init(object):
             pn = np.repeat(pn, node.icy, axis=1)
 
             results[n][2].p2_nodes[1:-1, :, 1:-1] = pn
-            bdry_n.set_ghostnodes_p2(results[n][2].p2_nodes, node, ud)
+            bdry_n.set_ghost_nodes(results[n][2].p2_nodes, node, ud)
 
             pn = np.expand_dims(results[n][2].p2_nodes[:, igy, :], 1)
             results[n][2].p2_nodes[...] = np.repeat(pn[...], node.icy, axis=1)

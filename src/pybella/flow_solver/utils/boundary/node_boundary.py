@@ -2,19 +2,7 @@ import numpy as np
 from ....utils import options as opts
 from .common import get_ghost_padding
 
-def set_ghostcells_p2(p, elem, ud):
-    igs = elem.igs
-
-    for dim in range(elem.ndim):
-        ghost_padding, idx = get_ghost_padding(elem.ndim, dim, igs)
-
-        if ud.bdry_type[dim] == opts.BdryType.PERIODIC:
-            p[...] = np.pad(p[idx], ghost_padding, "wrap")
-        else:  # WALL
-            p[...] = np.pad(p[idx], ghost_padding, "symmetric")
-
-
-def set_ghostnodes_p2(p, node, ud, igs=None):
+def set_ghost_nodes(p, node, ud, igs=None):
     if igs is None:
         igs = node.igs
     for dim in range(node.ndim):

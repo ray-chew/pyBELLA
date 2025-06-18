@@ -306,7 +306,6 @@ def initial_pressure(Sol, npf, elem, node, ud, th):
     npf.p2_cells[x_idx, y_idx] += pibot[x_idx].reshape(
         -1, 1
     ) - 1.0 * npf.HydroState.p20[y_idx].reshape(1, -1)
-    bdry_n.set_ghostcells_p2(npf.p2_cells, elem, ud)
 
     icxn = node.icx
     icyn = node.icy
@@ -364,7 +363,7 @@ def initial_pressure(Sol, npf, elem, node, ud, th):
     sgn[1::2] *= -1
 
     npf.p2_nodes[igx:-igx, igy:-igy] += sgn * delp2
-    bdry_n.set_ghostnodes_p2(npf.p2_nodes, node, ud)
+    bdry_n.set_ghost_nodes(npf.p2_nodes, node, ud)
 
     npf.dp2_nodes[:, :] = 0.0
 

@@ -248,7 +248,6 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
         th.Gamma * fac**2 * np.divide(p2c, npf.HydroState.rhoY0[igy:-igy])
     )
 
-    bdry_n.set_ghostcells_p2(npf.p2_cells, elem, ud)
 
     xs = node.x[igxn:-igxn].reshape(-1, 1)
     ys = node.y[igyn:-igyn].reshape(1, -1)
