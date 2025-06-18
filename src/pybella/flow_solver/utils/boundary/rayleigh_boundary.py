@@ -87,9 +87,6 @@ def get_bottom_tau_y(ud, elem, node, alpha, cutoff=0.5):
     tauc_y = dd * tauc_y / np.abs(tauc_y).max()
     taun_y = dd * taun_y / np.abs(taun_y).max()
 
-    # tauc_y = tauc_y[2:-2]
-    # taun_y = taun_y[2:-2]
-
     return tauc_y, taun_y
 
 
@@ -98,7 +95,7 @@ def apply_rayleigh_forcing(
     ud,
     dt,
     half=True,
-    Sol_half_new=None,
+    sol_half_new=None,
     npf_half_new=None,
 ):
     """Apply Rayleigh forcing boundary condition (file or function based)."""
@@ -110,19 +107,19 @@ def apply_rayleigh_forcing(
     if ud.rayleigh_forcing_type == "file":
         reader = io.read_input(ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path)
 
-        if Sol_half_new is None or npf_half_new is None:
-            Sol_half_new = copy.deepcopy(mem.sol)
+        if sol_half_new is None or npf_half_new is None:
+            sol_half_new = copy.deepcopy(mem.sol)
             npf_half_new = copy.deepcopy(mem.npf)
 
         time_tag = "%.3d_after_full_step" % mem.time.step
-        reader.get_data(Sol_half_new, npf_half_new, time_tag, half=half)
+        reader.get_data(sol_half_new, npf_half_new, time_tag, half=half)
 
-        up = Sol_half_new.rhou / Sol_half_new.rho
-        vp = Sol_half_new.rhov / Sol_half_new.rho
-        Yp = Sol_half_new.rhoY / Sol_half_new.rho - mem.npf.HydroState.Y0.reshape(1, -1)
+        up = sol_half_new.rhou / sol_half_new.rho
+        vp = sol_half_new.rhov / sol_half_new.rho
+        Yp = sol_half_new.rhoY / sol_half_new.rho - mem.npf.HydroState.Y0.reshape(1, -1)
         pi = npf_half_new.p2_nodes
 
-        rayleigh_damping(mem.sol, mem.npf, ud, mem.elem, mem.node, [up, vp, Yp, pi, mem.time.t + t_offset])
+        rayleigh_damping(mem.sol, mem.npf, ud, [up, vp, Yp, pi, mem.time.t + t_offset])
 
     elif ud.rayleigh_forcing_type == "func":
         s = 5.0e-3 + 1e-4 + 0e-5
@@ -133,16 +130,16 @@ def apply_rayleigh_forcing(
         _, _, _, pi_n = ud.rf_bot.dehatter(mem.th, grid="n")
 
         rayleigh_damping(
-            mem.sol, mem.npf, ud, mem.elem, mem.node, [up, vp, Yp, pi_n, mem.time.t + t_offset]
+            mem.sol, mem.npf, ud, [up, vp, Yp, pi_n, mem.time.t + t_offset]
         )
 
     bdry_c.set_ghost_cells(mem, ud)
 
-def rayleigh_damping(Sol, npf, ud, elem, node, forcing=None):
-    u = Sol.rhou / Sol.rho  # [elem.i2]
-    v = Sol.rhov / Sol.rho  # [elem.i2]
-    Y = Sol.rhoY / Sol.rho  # [elem.i2]
-    rho = Sol.rho  # [elem.i2]
+def rayleigh_damping(sol, npf, ud, forcing=None):
+    u = sol.rhou / sol.rho  # [elem.i2]
+    v = sol.rhov / sol.rho  # [elem.i2]
+    Y = sol.rhoY / sol.rho  # [elem.i2]
+    rho = sol.rho  # [elem.i2]
 
     if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
         tcy, tny = ud.tcy, ud.tny
@@ -161,13 +158,9 @@ def rayleigh_damping(Sol, npf, ud, elem, node, forcing=None):
             C = ud.Cs * ud.u_ref
             Gam = N * G / C
             Om = ud.coriolis_strength[2] / 2.0 / ud.t_ref
-            # Om = 7.292 * 1e-5 / ud.t_ref
             growth_rate = np.sqrt(Om * C * Gam)
             mfac = np.exp(growth_rate * t * ud.t_ref)
 
-            # if np.all(ud.coriolis_strength) == 0.0:
-            # if ud.trad_forcing:
-            # mfac = 1.0
         else:
             mfac = 1.0
 
@@ -191,7 +184,7 @@ def rayleigh_damping(Sol, npf, ud, elem, node, forcing=None):
     Ybar = npf.HydroState.Y0.reshape(1, -1)
     Y += tcy * (Y - Ybar) + c_f * (tcy_f * (Y - Ybar) + np.abs(tcy_f) * mfac * Y_f)
 
-    Sol.rhou[...] = rho * u
-    Sol.rhov[...] = rho * v
-    Sol.rhoY[...] = rho * Y
+    sol.rhou[...] = rho * u
+    sol.rhov[...] = rho * v
+    sol.rhoY[...] = rho * Y
 
