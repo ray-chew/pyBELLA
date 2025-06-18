@@ -25,10 +25,10 @@ def get_linop(mpv, node, coriolis, diag_inv, ud):
     hcenter = np.ravel(mpv.wcenter[node.i1], order="F")
 
     # Coriolis terms
-    cxx = np.ravel(coriolis[0][cor_slc], order="F")
-    cyy = np.ravel(coriolis[1][cor_slc], order="F")
-    cxy = np.ravel(coriolis[2][cor_slc], order="F")
-    cyx = np.ravel(coriolis[3][cor_slc], order="F")
+    cxx = np.ravel(coriolis[0][cor_slc], order="C")
+    cyy = np.ravel(coriolis[1][cor_slc], order="C")
+    cxy = np.ravel(coriolis[2][cor_slc], order="C")
+    cyx = np.ravel(coriolis[3][cor_slc], order="C")
 
     # Diagonal inverse
     dinv = np.ravel(diag_inv[node.i1], order="F")
