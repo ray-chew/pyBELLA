@@ -54,8 +54,6 @@ def set_explicit_boundary_data(Sol, elem, ud, th, npf, step=None):
                 set_boundary(Sol, ghost_padding, "symmetric", idx, step=None)
             elif ud.bdry_type[current_step] == opts.BdryType.RAYLEIGH:
                 assert 0, "Rayleigh boundary not defined on x-direction."
-                # set_boundary(Sol,((0,0),(0,2)),'constant',(slice(None,),slice(0,-2)),step=None)
-                # set_boundary(Sol,((0,0),(2,0)),'symmetric',(slice(None,),slice(2,None)),step=None)
 
         else:
             # get current axis that has gravity.
@@ -129,19 +127,8 @@ def set_explicit_boundary_data(Sol, elem, ud, th, npf, step=None):
                     w = Sol.rhow[nsource] / Sol.rho[nsource]
                     X = Sol.rhoX[nsource] / Sol.rho[nsource]
 
-                    # p = rhoY**th.gamm
-
-                    # rhoY = npf.HydroState.rhoY0[nimage[y_axs]]
-                    # Y = Sol.rhoY[nimage] / Sol.rho[nimage]
-                    # rho = npf.HydroState.rho0[nimage[y_axs]]
-
-                    # direction == 1 is the bottom
-                    # if np.sign(direction) == 1:
-                    # v = -Sol.rhov[nsource] / Sol.rho[nsource]
-
                     Sol.rho[nimage] = rho
                     Sol.rhou[nimage] = rho * u * Th_slc
-                    # Sol.rhov[nimage] = 0.0#rho*v
                     if hasattr(ud, "ATMOSPHERIC_EXTENSION"):
                         Sol.rhov[nimage] = -v / Y_image
                     else:
@@ -175,14 +162,9 @@ def set_boundary(Sol, pads, btype, idx, step=None):
 
     """
     Sol.rho[...] = np.pad(Sol.rho[idx], pads, btype)
-    # Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
-    # Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
-    # Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
 
     if btype == "symmetric":
-        # Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
         Sol.rhov[...] = np.pad(Sol.rhov[idx], pads, negative_symmetric)
-        # Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,negative_symmetric)
         Sol.rho[...] = np.pad(Sol.rho[idx], pads, "symmetric")
         Sol.rhou[...] = np.pad(Sol.rhou[idx], pads, "symmetric")
     elif btype == "constant":
@@ -195,43 +177,6 @@ def set_boundary(Sol, pads, btype, idx, step=None):
         Sol.rhou[...] = np.pad(Sol.rhou[idx], pads, btype)
         Sol.rhov[...] = np.pad(Sol.rhov[idx], pads, btype)
         Sol.rhow[...] = np.pad(Sol.rhow[idx], pads, btype)
-
-    # if step == 0:
-    #     Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
-    #     # Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
-    #     Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
-    #     if btype == 'symmetric':
-    #         # Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,negative_symmetric)
-    #         Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
-    #         # Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,negative_symmetric)
-    #     else:
-    #         Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
-    #         Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
-    #         Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
-
-    # if step == 1:
-    #     Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
-    #     Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
-    #     if btype == 'symmetric':
-    #         # Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
-    #         Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,negative_symmetric)
-    #         # Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,negative_symmetric)
-    #     else:
-    #         Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
-    #         Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
-    #         Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
-
-    # if step == 2:
-    #     Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
-    #     Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
-    #     if btype == 'symmetric':
-    #         # Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,negative_symmetric)
-    #         # Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,negative_symmetric)
-    #         Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,negative_symmetric)
-    #     else:
-    #         Sol.rhou[...] = np.pad(Sol.rhou[idx],pads,btype)
-    #         Sol.rhov[...] = np.pad(Sol.rhov[idx],pads,btype)
-    #         Sol.rhow[...] = np.pad(Sol.rhow[idx],pads,btype)
 
     Sol.rhoY[...] = np.pad(Sol.rhoY[idx], pads, btype)
     Sol.rhoX[...] = np.pad(Sol.rhoX[idx], pads, btype)
@@ -609,54 +554,6 @@ def rayleigh_damping(Sol, npf, ud, elem, node, forcing=None):
     Sol.rhou[...] = rho * u
     Sol.rhov[...] = rho * v
     Sol.rhoY[...] = rho * Y
-
-
-def check_flux_bcs(Lefts, Rights, elem, split_step, ud):
-    igx = elem.igx
-    igy = elem.igy
-
-    if split_step == 1:
-        if ud.bdry_type[split_step] == opts.BdryType.WALL:
-            left_inner = (slice(None), slice(igy, igy + 1))
-            left_ghost = (slice(None), slice(igy - 1, igy))
-
-            right_inner = (slice(None), slice(-igy - 1, -igy))
-            right_ghost = (slice(None), slice(-igy, -igy + 1))
-
-            rhou_wall = 0.0
-            # Lefts.rhou[left_ghost] = Rights.rhou[left_inner] = rhou_wall
-            Lefts.rhoY[left_ghost] = Rights.rhoY[left_inner] = Rights.rho[
-                left_inner
-            ] * ud.stratification(0.0)
-
-            Lefts.rho[left_ghost] = Rights.rho[left_inner]
-            Lefts.rhov[left_ghost] = Rights.rhov[left_inner]
-            Lefts.rhow[left_ghost] = Rights.rhow[left_inner]
-            Lefts.rhoX[left_ghost] = Rights.rhoX[left_inner]
-
-            Rights.rho[right_ghost] = Lefts.rho[right_inner]
-            Rights.rhou[right_ghost] = -1.0 * Lefts.rhou[right_inner]
-            Rights.rhov[right_ghost] = Lefts.rhov[right_inner]
-            Rights.rhow[right_ghost] = Lefts.rhow[right_inner]
-            Rights.rhoY[right_ghost] = Lefts.rhoY[right_inner]
-
-    else:
-        if ud.bdry_type[split_step] == opts.BdryType.WALL:
-            assert 0  # INCOMPLETE!!!
-            Lefts.rho[left_inner] = Rights.rho[:, igx - 2]
-            Lefts.rhou[left_inner] = -1.0 * Rights.rhou[:, igx - 2]
-            Lefts.rhov[left_inner] = Rights.rhov[:, igx - 2]
-            Lefts.rhow[left_inner] = Rights.rhow[:, igx - 2]
-            Lefts.rhoY[left_inner] = Rights.rhoY[:, igx - 2]
-
-            # print("#################### TRUE ########################")
-            Rights.rho[right_ghost] = Lefts.rho[:, -igx - 2]
-            Rights.rhou[right_ghost] = -1.0 * Lefts.rhou[:, -igx - 2]
-            Rights.rhov[right_ghost] = Lefts.rhov[:, -igx - 2]
-            Rights.rhow[right_ghost] = Lefts.rhow[:, -igx - 2]
-            Rights.rhoY[right_ghost] = Lefts.rhoY[:, -igx - 2]
-            # print(Rights.rhoY[right_ghost])
-
 
 def scale_wall_node_values(rhs, node, ud, factor=0.5):
     """Scale values at wall boundary nodes by a given factor."""
