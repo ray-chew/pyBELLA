@@ -4,10 +4,8 @@ from numba import njit
 from ....utils import options as opts
 from ....utils.slices import get_neighbor_indices, get_interface_indices
 
-from ...utils import variable as var
 
-
-def do(mem, ud, lmbda, split_step, tag=None):
+def compute(mem, ud, lmbda, split_step, tag=None):
     """
     Reconstruct the limited slopes at the cell interfaces.
 

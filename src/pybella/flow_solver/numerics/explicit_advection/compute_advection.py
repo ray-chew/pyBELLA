@@ -1,10 +1,9 @@
 from ....utils.slices import get_neighbor_indices
 from ...utils import boundary as bdry
-from . import recovery as gd_recovery
-from . import numerical_flux as gd_flux
+from . import recovery, riemann_solver
 
 
-def advect(mem, ud, dt, odd, label, writer=None):
+def strange_splitting(mem, ud, dt, odd, label, writer=None):
     """
     Concise implementation of Strang-splitting advection.
     This function updates the `Sol` solution container with the advected solution in-place.
@@ -26,30 +25,7 @@ def advect(mem, ud, dt, odd, label, writer=None):
 
     bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.mpv)
 
-
-def explicit_step_and_flux(mem, ud, lmbda, split_step, tag=None):
-    """
-    For each advection substep, solve the advection problem. For more details, see :ref:`advection_routine`.
-    This function updates the solution `Sol` container in-place if a Strang-splitting is used,
-    or returns the `flux` data container if a Runge-Kutta method is used.
-    """
-    flux = _compute_flux_and_recovery(mem, ud, lmbda, split_step, tag)
-
-    # Cache neighbor indices (consider moving this to initialization if called frequently)
-    left_idx, right_idx = get_neighbor_indices(mem.elem.ndim)
-
-    if tag != "rk":
-        _update_solution_variables(mem.sol, flux, lmbda, left_idx, right_idx)
-
-    bdry.set_explicit_boundary_data(
-        mem.sol, mem.elem, ud, mem.th, mem.mpv, step=split_step
-    )
-
-    if tag == "rk":
-        return flux
-
-
-def advect_rk(mem, ud, dt):
+def first_order_runge_kutta(mem, ud, dt):
     """
     Function that runs the advection routine with a first-order Runge-Kutta update.
     This function updates the `Sol` solution container with the advected solution in-place.
@@ -66,7 +42,7 @@ def advect_rk(mem, ud, dt):
         lmbda = time_step / mem.elem.dxyz[split]
         mem.sol.flip_forward()
         if mem.elem.iisc[split] > 1:
-            mem.flux[split] = explicit_step_and_flux(mem, ud, lmbda, split, tag="rk")
+            mem.flux[split] = _explicit_step_and_flux(mem, ud, lmbda, split, tag="rk")
 
     # Cache neighbor indices once
     left_idx, right_idx = get_neighbor_indices(mem.elem.ndim)
@@ -92,6 +68,28 @@ def _update_solution_variables(sol, flux, lmbda, left_idx, right_idx, variables=
         setattr(sol, var, current_val + lmbda * flux_diff)
 
 
+def _explicit_step_and_flux(mem, ud, lmbda, split_step, tag=None):
+    """
+    For each advection substep, solve the advection problem. For more details, see :ref:`advection_routine`.
+    This function updates the solution `Sol` container in-place if a Strang-splitting is used,
+    or returns the `flux` data container if a Runge-Kutta method is used.
+    """
+    flux = _compute_flux_and_recovery(mem, ud, lmbda, split_step, tag)
+
+    # Cache neighbor indices (consider moving this to initialization if called frequently)
+    left_idx, right_idx = get_neighbor_indices(mem.elem.ndim)
+
+    if tag != "rk":
+        _update_solution_variables(mem.sol, flux, lmbda, left_idx, right_idx)
+
+    bdry.set_explicit_boundary_data(
+        mem.sol, mem.elem, ud, mem.th, mem.mpv, step=split_step
+    )
+
+    if tag == "rk":
+        return flux
+
+
 def _compute_flux_and_recovery(mem, ud, lmbda, split_step, tag=None):
     """
     Helper function to compute flux using gradient recovery and HLL solver.
@@ -105,9 +103,9 @@ def _compute_flux_and_recovery(mem, ud, lmbda, split_step, tag=None):
         mem.sol, mem.elem, ud, mem.th, mem.mpv, step=split_step
     )
 
-    Lefts, Rights = gd_recovery.do(mem, ud, lmbda, split_step, tag)
+    Lefts, Rights = recovery.compute(mem, ud, lmbda, split_step, tag)
 
-    flux = gd_flux.hll_solver(mem, flux, Lefts, Rights)
+    flux = riemann_solver.hll(mem, flux, Lefts, Rights)
 
     return flux
 
@@ -144,9 +142,9 @@ def _perform_dimensional_sweep(mem, ud, time_step, reverse=False, diagnostics=No
         # Handle solution flipping based on sweep direction
         if reverse:
             if elem.iisc[split] > 1:
-                explicit_step_and_flux(mem, ud, lmbda, split, diagnostics)
+                _explicit_step_and_flux(mem, ud, lmbda, split, diagnostics)
             Sol.flip_backward()
         else:
             Sol.flip_forward()
             if elem.iisc[split] > 1:
-                explicit_step_and_flux(mem, ud, lmbda, split, diagnostics)
+                _explicit_step_and_flux(mem, ud, lmbda, split, diagnostics)

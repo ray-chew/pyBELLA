@@ -4,7 +4,7 @@ import copy
 import numpy as np
 from scipy import signal
 
-from ...flow_solver.physics.gas_dynamics import eos as gd_eos
+from ...flow_solver.physics import eos as gd_eos
 from ...utils import io
 
 

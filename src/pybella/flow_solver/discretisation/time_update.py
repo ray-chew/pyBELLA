@@ -3,17 +3,14 @@ import logging
 
 import numpy as np
 
+from ..physics import cfl, eos
+
 from ...utils import options as opts
 
 # dependencies of the flow solver subpackage
 from ..utils import boundary as bdry
-from ..physics.gas_dynamics import (
-    numerical_flux as gd_flux,
-    eos as gd_eos,
-    cfl as gd_cfl,
-)
-from ..physics.gas_dynamics import explicit as gd_explicit
-from ..physics.low_mach import second_projection as lm_sp
+from ..numerics.explicit_advection import advective_flux, compute_advection
+from ..numerics import explicit_euler, implicit_euler
 
 # for blending module
 from ...interfaces.dynamics_blending import schemes
@@ -44,7 +41,7 @@ def do(
         if mem.time.step == 0 and writer != None:
             writer.write_all(mem, str(label) + "_ic")
 
-        dt, cfl, cfl_ac = gd_cfl.dynamic_timestep(
+        dt, cfl_adv, cfl_acs = cfl.dynamic_timestep(
             mem.sol, mem.time.t, tout, mem.elem, ud, mem.th, mem.time.step
         )
 
@@ -67,8 +64,8 @@ def do(
             debug_writer,
         )
 
-        ud.is_nonhydrostatic = gd_eos.is_nonhydrostatic(ud, mem.time.window_step)
-        ud.nonhydrostasy = gd_eos.nonhydrostasy(ud, mem.time.t, mem.time.window_step)
+        ud.is_nonhydrostatic = eos.is_nonhydrostatic(ud, mem.time.window_step)
+        ud.nonhydrostasy = eos.nonhydrostasy(ud, mem.time.t, mem.time.window_step)
 
         if ud.continuous_blending or ud.initial_blending:
             logging.info(
@@ -88,7 +85,7 @@ def do(
 
         debug_writer.write(f"{label}_before_flux")
 
-        gd_flux.recompute_advective_fluxes(mem)
+        advective_flux.recompute(mem)
 
         debug_writer.populate_flux_components(
             f"{label}_before_advect", mem.flux, mem.elem
@@ -96,7 +93,7 @@ def do(
         debug_writer.write(f"{label}_before_advect")
 
         if ud.do_advection:
-            gd_explicit.advect_rk(
+            compute_advection.first_order_runge_kutta(
                 mem,
                 ud,
                 0.5 * dt,
@@ -107,13 +104,13 @@ def do(
 
         mem.mpv.p2_nodes0[...] = mem.mpv.p2_nodes
 
-        lm_sp.euler_backward_non_advective_expl_part(mem, ud, 0.5 * dt)
+        implicit_euler.do_explicit_part(mem, ud, 0.5 * dt)
 
         debug_writer.write(f"{label}_after_ebnaexp")
 
         Sol0_increment = Sol0 if ud.is_compressible == 0 else None
 
-        lm_sp.euler_backward_non_advective_impl_part(
+        implicit_euler.do_implicit_part(
             mem,
             ud,
             0.5 * dt,
@@ -141,7 +138,7 @@ def do(
 
         debug_writer.write(f"{label}_after_ebnaimp")
 
-        gd_flux.recompute_advective_fluxes(mem)
+        advective_flux.recompute(mem)
 
         debug_writer.populate_flux_components(
             f"{label}_after_half_step", mem.flux, mem.elem
@@ -159,7 +156,7 @@ def do(
 
         mem.sol = copy.deepcopy(Sol0)
 
-        lm_sp.euler_forward_non_advective(
+        explicit_euler.do_forward_step(
             mem,
             ud,
             0.5 * dt,
@@ -170,7 +167,7 @@ def do(
         debug_writer.write(f"{label}_after_efna")
 
         if ud.do_advection:
-            gd_explicit.advect(
+            compute_advection.strange_splitting(
                 mem,
                 ud,
                 dt,
@@ -181,11 +178,11 @@ def do(
 
         debug_writer.write(f"{label}_after_full_advect")
 
-        lm_sp.euler_backward_non_advective_expl_part(mem, ud, 0.5 * dt)
+        implicit_euler.do_explicit_part(mem, ud, 0.5 * dt)
 
         debug_writer.write(f"{label}_after_full_ebnaexp")
 
-        lm_sp.euler_backward_non_advective_impl_part(
+        implicit_euler.do_implicit_part(
             mem,
             ud,
             0.5 * dt,
@@ -245,7 +242,7 @@ def do(
         )
         logging.info(
             "step %i done, t = %.12f, dt = %.12f, CFL = %.8f, CFL_ac = %.8f"
-            % (mem.time.step, mem.time.t, dt, cfl, cfl_ac)
+            % (mem.time.step, mem.time.t, dt, cfl_adv, cfl_acs)
         )
         logging.info(
             "###############################################################################################"

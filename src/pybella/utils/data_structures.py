@@ -2,9 +2,9 @@ from typing import Optional, Callable, List, Any
 from dataclasses import dataclass, field, fields
 
 from ..flow_solver.discretisation.grid import Grid
-from ..flow_solver.utils.variable import Vars, FlowSolverCache
-from ..flow_solver.physics.low_mach.mpv import MPV
-from ..flow_solver.physics.gas_dynamics.thermodynamics import ThermodynamicalQuantities
+from ..flow_solver.utils.fields import CellSolField, NodePressureField, States
+from ..flow_solver.utils.cache import FlowSolverCache
+from ..flow_solver.physics.thermodynamics import ThermodynamicalQuantities
 
 
 @dataclass
@@ -18,9 +18,9 @@ class IntegrationTime:
 class ModelState:
     elem: Grid
     node: Grid
-    sol: Vars
-    flux: List[Vars]
-    mpv: MPV
+    sol: CellSolField
+    flux: List[States]
+    mpv: NodePressureField
     th: ThermodynamicalQuantities
     cache: FlowSolverCache = field(default_factory=FlowSolverCache)
     time: IntegrationTime = field(init=False)
@@ -68,9 +68,9 @@ class EnsembleState:
         self,
         elem: Grid,
         node: Grid,
-        sol: Vars,
-        mpv: MPV,
-        flux: List[Vars],
+        sol: CellSolField,
+        mpv: NodePressureField,
+        flux: List[CellSolField],
         th: ThermodynamicalQuantities,
         cache: Optional[FlowSolverCache] = None,
     ):

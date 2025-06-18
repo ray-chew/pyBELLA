@@ -2,7 +2,7 @@ import numpy as np
 
 from ..utils import options as opts
 
-from ..flow_solver.utils import boundary as bdry, variable as var
+from ..flow_solver.utils import boundary as bdry, fields
 from ..flow_solver.physics import hydrostatics
 
 from ..utils.data_structures import DiagnosticState
@@ -137,8 +137,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seeds=None):
 
     hydrostatics.analytical_state(mpv, elem, node, th, ud)
 
-    HySt = var.States(node.sc, ud)
-    HyStn = var.States(node.sc, ud)
+    HySt = fields.States(node.sc, ud)
+    HyStn = fields.States(node.sc, ud)
 
     x = elem.x.reshape(-1, 1)
     y = elem.y.reshape(1, -1)

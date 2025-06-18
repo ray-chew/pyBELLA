@@ -1,17 +1,13 @@
 import numpy as np
 
 from ...utils import user_data, io, data_structures
-
-from ..discretisation import grid as dis_grid
-from . import variable as var
-from . import boundary as bdry
 from ..physics import hydrostatics
-from ..physics.low_mach import mpv as lm_var
-from ..physics.gas_dynamics import thermodynamics as gd_thermodynamics
+from ..physics import thermodynamics as gd_thermodynamics
+from ..discretisation import grid as dis_grid
+from . import fields, cache, boundary as bdry
 
 # test module
 from ...tests import diagnostics as diag
-
 
 def initialise():
     ####
@@ -41,18 +37,18 @@ def initialise():
 
     elem, node = dis_grid.grid_init(ud)
 
-    sol = var.Vars(elem.sc, ud)
+    sol = fields.CellSolField(elem.sc, ud)
 
     # Move these to the FlowSolverCache
     flux = np.empty((3), dtype=object)
-    flux[0] = var.States(elem.sfx, ud)
+    flux[0] = fields.States(elem.sfx, ud)
     if elem.ndim > 1:
-        flux[1] = var.States(elem.sfy, ud)
+        flux[1] = fields.States(elem.sfy, ud)
     if elem.ndim > 2:
-        flux[2] = var.States(elem.sfz, ud)
+        flux[2] = fields.States(elem.sfz, ud)
 
     th = gd_thermodynamics.ThermodynamicalQuantities(ud)
-    mpv = lm_var.MPV(elem, node, ud)
+    mpv = fields.NodePressureField(elem, node, ud)
 
     io.init_logger(ud)
 
@@ -86,7 +82,7 @@ def initialise():
     sol = sol_init(sol, mpv, elem, node, th, ud)
 
     # Initialise cache and add to simulation state
-    flow_cache = var.FlowSolverCache()
+    flow_cache = cache.FlowSolverCache()
 
     ensemble_state.update_member(
         elem=elem, node=node, sol=sol, flux=flux, mpv=mpv, th=th, cache=flow_cache

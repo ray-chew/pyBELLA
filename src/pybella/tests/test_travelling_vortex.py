@@ -3,14 +3,13 @@ import numpy as np
 from ..utils import options as opts
 from ..flow_solver.utils import boundary as bdry
 from ..flow_solver.physics import hydrostatics
-from ..flow_solver.physics.low_mach import second_projection as lm_sp
-from ..flow_solver.utils import variable as var
+from ..flow_solver.numerics import implicit_euler 
+from ..flow_solver.utils import cache
+
 
 from ..utils.data_structures import DiagnosticState
 
 import logging
-
-
 class UserData(object):
     grav = 0.0
 
@@ -310,9 +309,9 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         mem.time = obj()
         mem.time.t = ud.dtfixed
         mem.time.step = 0
-        mem.cache = var.FlowSolverCache()
+        mem.cache = cache.FlowSolverCache()
 
-        lm_sp.euler_backward_non_advective_impl_part(
+        implicit_euler.do_implicit_part(
             mem, ud, ud.dtfixed, writer=None, label="initial_projection"
         )
 
