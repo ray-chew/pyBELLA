@@ -78,7 +78,7 @@ def do(
                     """
         )
 
-        Sol0 = copy.deepcopy(mem.sol)
+        sol0 = copy.deepcopy(mem.sol)
 
         debug_writer.write(f"{label}_before_flux")
 
@@ -102,20 +102,20 @@ def do(
 
         debug_writer.write(f"{label}_after_ebnaexp")
 
-        Sol0_increment = Sol0 if ud.is_compressible == 0 else None
+        sol0_increment = sol0 if ud.is_compressible == 0 else None
 
         implicit_euler.do_implicit_part(
             mem,
             ud,
             0.5 * dt,
-            Sol0=Sol0_increment,
+            sol0=sol0_increment,
             label=f"{label}_after_ebnaimp",
             writer=writer,
         )
 
         if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
             # top rayleight damping
-            bdry_r.rayleigh_damping(mem.sol, mem.npf, ud, mem.elem, mem.node)
+            bdry_r.rayleigh_damping(mem.sol, mem.npf, ud)
 
         bdry_r.apply_rayleigh_forcing(
             mem, ud, dt
@@ -127,7 +127,7 @@ def do(
 
         debug_writer.write(f"{label}_after_half_step")
 
-        Sol_half_new = copy.deepcopy(mem.sol)
+        sol_half_new = copy.deepcopy(mem.sol)
         npf_half_new = copy.deepcopy(mem.npf)
         mem.npf.p2_nodes_half = np.copy(mem.npf.p2_nodes)
 
@@ -136,7 +136,7 @@ def do(
         ):
             mem.npf.p2_nodes[...] = mem.npf.p2_nodes0
 
-        mem.sol = copy.deepcopy(Sol0)
+        mem.sol = copy.deepcopy(sol0)
 
         explicit_euler.do_forward_step(
             mem,
@@ -174,13 +174,13 @@ def do(
 
         if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
             # top rayleight damping
-            bdry_r.rayleigh_damping(mem.sol, mem.npf, ud, mem.elem, mem.node)
+            bdry_r.rayleigh_damping(mem.sol, mem.npf, ud)
 
         # bottom rayleigh forcing
         bdry_r.apply_rayleigh_forcing(
             mem, ud, dt,
             half=False,
-            Sol_half_new=Sol_half_new,
+            sol_half_new=sol_half_new,
             npf_half_new=npf_half_new,
         )
 
