@@ -1,3 +1,5 @@
+import numba as nb
+
 from ....utils.slices import get_neighbor_indices
 from ...utils import boundary as bdry
 from . import recovery, riemann_solver
@@ -76,36 +78,33 @@ def _explicit_step_and_flux(mem, ud, lmbda, split_step, tag=None):
     This function updates the solution `Sol` container in-place if a Strang-splitting is used,
     or returns the `flux` data container if a Runge-Kutta method is used.
     """
-    flux = _compute_flux_and_recovery(mem, ud, lmbda, split_step, tag)
+    bdry.set_explicit_boundary_data(
+        mem.sol, mem.elem, ud, mem.th, mem.npf, step=split_step
+    )
 
-    # Cache neighbor indices (consider moving this to initialization if called frequently)
+    flux = mem.cache.get_flux_containers(mem.elem)[split_step]
+
+    flux = _compute_flux_and_recovery(mem, flux, ud, lmbda, split_step, tag)
+
+    # Consider caching neighbor indices
     left_idx, right_idx = get_neighbor_indices(mem.elem.ndim)
 
     if tag != "rk":
         _update_solution_variables(mem.sol, flux, lmbda, left_idx, right_idx)
 
-    bdry.set_explicit_boundary_data(
-        mem.sol, mem.elem, ud, mem.th, mem.npf, step=split_step
-    )
-
     if tag == "rk":
         return flux
 
 
-def _compute_flux_and_recovery(mem, ud, lmbda, split_step, tag=None):
+def _compute_flux_and_recovery(mem, flux, ud, lmbda, split_step, tag=None):
     """
     Helper function to compute flux using gradient recovery and HLL solver.
 
     Returns:
         flux: Computed flux container
     """
-    flux = mem.cache.get_flux_containers(mem.elem)[split_step]
 
-    bdry.set_explicit_boundary_data(
-        mem.sol, mem.elem, ud, mem.th, mem.npf, step=split_step
-    )
-
-    Lefts, Rights = recovery.compute(mem, ud, lmbda, split_step, tag)
+    Lefts, Rights = recovery.compute(mem, flux, ud, lmbda, split_step, tag)
 
     flux = riemann_solver.hll(mem, flux, Lefts, Rights)
 
@@ -151,3 +150,39 @@ def _perform_dimensional_sweep(mem, ud, time_step, reverse=False, diagnostics=No
             Sol.flip_forward()
             if elem.iisc[split] > 1:
                 _explicit_step_and_flux(mem, ud, lmbda, split, diagnostics)
+
+
+# def _update_solution_variables(sol, flux, lmbda, left_idx, right_idx, variables=None):
+#     """
+#     Wrapper to update solution variables using JIT-compiled array math.
+#     """
+#     if variables is None:
+#         variables = ["rho", "rhou", "rhov", "rhow", "rhoX", "rhoY"]
+
+#     sol_arrays = [getattr(sol, var) for var in variables]
+#     flux_arrays = [getattr(flux, var) for var in variables]
+
+#     _update_solution_arrays_jit(sol_arrays, flux_arrays, lmbda, left_idx, right_idx)
+
+
+# @nb.njit(cache=True)
+# def _update_solution_arrays_jit(
+#     sol_vars, flux_vars, lmbda, left_idx, right_idx
+# ):
+#     """
+#     Vectorized update of solution variables using pre-extracted arrays.
+
+#     Parameters
+#     ----------
+#     sol_vars : List[np.ndarray]
+#         Solution arrays (e.g., sol.rho, sol.rhou, ...)
+#     flux_vars : List[np.ndarray]
+#         Corresponding flux arrays (e.g., flux.rho, flux.rhou, ...)
+#     lmbda : float
+#         CFL-like prefactor
+#     left_idx, right_idx : Tuple of index arrays
+#         Indices into inner cells (e.g., from `get_interface_indices`)
+#     """
+#     for i in range(len(sol_vars)):
+#         flux_diff = flux_vars[i][left_idx] - flux_vars[i][right_idx]
+#         sol_vars[i][...] += lmbda * flux_diff
