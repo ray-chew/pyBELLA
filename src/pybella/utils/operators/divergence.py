@@ -2,6 +2,7 @@ import numba as nb
 from .. import options as opts
 from . import finite_difference
 
+
 @nb.njit(cache=True)
 def compute_2d(u_field, v_field, dx, dy):
     """
@@ -181,9 +182,7 @@ def _momentum_pot_temp_divergence_3d_jit(rhs, rho, rhou, rhov, rhow, rhoY, dx, d
     rhow_theta = rhow * theta  # z-momentum flux weighted by potential temperature
 
     # Use generic total divergence operator
-    total_div = compute_3d_sum(
-        rhou_theta, rhov_theta, rhow_theta, dx, dy, dz
-    )
+    total_div = compute_3d_sum(rhou_theta, rhov_theta, rhow_theta, dx, dy, dz)
 
     # Assign to inner region
     rhs[1:-1, 1:-1, 1:-1] = total_div

@@ -3,13 +3,15 @@ import numpy as np
 from ..utils import options as opts
 from ..flow_solver.utils import boundary as bdry
 from ..flow_solver.physics import hydrostatics
-from ..flow_solver.numerics import implicit_euler 
+from ..flow_solver.numerics import implicit_euler
 from ..flow_solver.utils import cache
 
 
 from ..utils.data_structures import DiagnosticState
 
 import logging
+
+
 class UserData(object):
     grav = 0.0
 

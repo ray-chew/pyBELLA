@@ -64,6 +64,7 @@ def hll(mem, flux, Lefts, Rights):
 
     return flux
 
+
 @nb.njit(cache=True)
 def _compute_flux_component(
     flux_values,

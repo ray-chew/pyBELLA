@@ -94,7 +94,7 @@ class FlowSolverCache:
         cache_obj = self.get_velocity_arrays(shape, dtype)
 
         return cache_obj["U"], cache_obj["V"], cache_obj["W"]
-    
+
     def get_coriolis_arrays(self, shape, dtype=np.float64):
         """Get cached Coriolis arrays (h11, h12, h13, h21, h22, h23, h31, h32, h33) or create new ones."""
 
@@ -123,12 +123,20 @@ class FlowSolverCache:
         """Get views of cached Coriolis arrays for in-place operations."""
         cache_obj = self.get_coriolis_arrays(shape, dtype)
 
-        return cache_obj["h11"], cache_obj["h12"], cache_obj["h13"], cache_obj["h21"], cache_obj["h22"], cache_obj["h23"], cache_obj["h31"], cache_obj["h32"], cache_obj["h33"], cache_obj["denom"]
+        return (
+            cache_obj["h11"],
+            cache_obj["h12"],
+            cache_obj["h13"],
+            cache_obj["h21"],
+            cache_obj["h22"],
+            cache_obj["h23"],
+            cache_obj["h31"],
+            cache_obj["h32"],
+            cache_obj["h33"],
+            cache_obj["denom"],
+        )
 
     def clear_all(self):
         """Clear all caches to free memory."""
         self._recovery_cache.clear()
         self._velocity_cache.clear()
-
-
-

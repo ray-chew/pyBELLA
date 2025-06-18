@@ -2,6 +2,7 @@ import numpy as np
 import scipy as sp
 import logging
 
+
 class CellSolField(object):
     """
     The data container for the solution state variables, i.e. `Sol`.
@@ -179,6 +180,7 @@ class States(CellSolField):
             self.init_S0c = True
 
         return self.S0c
+
 
 class NodePressureField(object):
     def __init__(self, elem, node, ud):

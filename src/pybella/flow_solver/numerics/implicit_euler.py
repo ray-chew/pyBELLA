@@ -6,6 +6,7 @@ from ...utils.operators.laplacian import preconditioner, lap2D_manual, lap3D
 from ..utils import boundary as bdry
 from . import coriolis
 
+
 class solver_counter(object):
     """
     taken from https://stackoverflow.com/questions/33512081/getting-the-number-of-iterations-of-scipys-gmres-iterative-method
@@ -18,6 +19,7 @@ class solver_counter(object):
     def __call__(self, rk=None):
         self.niter += 1
         self.rk = rk
+
 
 def do_explicit_part(mem, ud, dt):
     nonhydro = ud.nonhydrostasy
@@ -51,69 +53,71 @@ def do_implicit_part(
     # Early return optimization - disable writer if not debugging
     if not debug:
         writer = None
-    
+
     nc = mem.node.sc
-    
+
     # Helper function to reduce writer boilerplate
     def write_debug_data(key, data):
         if writer is not None:
             writer.populate(str(label), key, data)
-    
+
     # Initial debug output
     write_debug_data("p2_initial", mem.mpv.p2_nodes)
-    
+
     # Set boundary data and compute operator coefficients (consolidated)
     sol_for_boundary = Sol0 if Sol0 is not None else mem.sol
     bdry.set_explicit_boundary_data(sol_for_boundary, mem.elem, ud, mem.th, mem.mpv)
     operator_coefficients_nodes(mem, ud, dt)
-    
+
     # Debug output for w components
     if writer is not None:
         write_debug_data("hcenter", mem.mpv.wcenter)
         write_debug_data("wplusx", mem.mpv.wplus[0])
         write_debug_data("wplusy", mem.mpv.wplus[1])
-        
+
         # Handle 3D case more cleanly
-        wplusz_data = (mem.mpv.wplus[2] if mem.elem.ndim == 3 
-                      else np.zeros_like(mem.mpv.wplus[0]))
+        wplusz_data = (
+            mem.mpv.wplus[2] if mem.elem.ndim == 3 else np.zeros_like(mem.mpv.wplus[0])
+        )
         write_debug_data("wplusz", wplusz_data)
-    
+
     # Boundary and correction operations
     # bdry.set_ghostnodes_p2(mem.mpv.p2_nodes, mem.node, ud)
     _correction_nodes(mem, ud, dt, mem.mpv.p2_nodes, 0)
     bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.mpv)
-    
+
     # Compute RHS
     mem.mpv.rhs[...] = divergence.compute_at_nodes(mem.mpv.rhs, mem.elem, mem.sol, ud)
     write_debug_data("rhs", mem.mpv.rhs)
-    
+
     mem.mpv.rhs /= dt
-    
+
     # Handle compressibility - simplified logic
     _apply_compressibility_correction(mem, ud)
-    
+
     write_debug_data("rhs_nodes", mem.mpv.rhs)
-    
+
     # Prepare and solve linear system
     lap, rhs_inner = _prepare_linear_system(mem, ud, dt)
-    
+
     # Solve using BiCGSTAB
     counter = solver_counter()
     p2, _ = sp.sparse.linalg.bicgstab(
         lap, rhs_inner, atol=ud.tol, maxiter=ud.max_iterations, callback=counter
     )
-    
+
     # Reshape solution and apply
     p2_full = _reshape_solution(p2, mem, ud, nc)
     write_debug_data("p2_full", p2_full)
-    
+
     # # Final boundary and correction operations
     # bdry.set_ghostnodes_p2(p2_full, mem.node, ud)
     _correction_nodes(mem, ud, dt, p2_full, 1)
-    
+
     mem.mpv.p2_nodes[...] += p2_full
     bdry.set_ghostnodes_p2(mem.mpv.p2_nodes, mem.node, ud)
     bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.mpv)
+
 
 def _correction_nodes(mem, ud, dt, p, updt_chi):
     ndim = mem.node.ndim
@@ -194,33 +198,33 @@ def _prepare_2d_system(mem, ud, dt):
     coriolis_params = coriolis.multiply_inverse_terms(
         Vec, mem, ud, dt, attrs=("u", "v", "w"), get_coeffs=True
     )
-    
+
     diag_inv = preconditioner.prepare_diag(mem.mpv, mem.node)
     mem.mpv.rhs *= diag_inv
-    
+
     p2 = mem.mpv.p2_nodes[mem.node.i2].T
     lap = lap2D_manual.get_linop(mem.mpv, mem.node, coriolis_params, diag_inv, ud)
     sh = p2.shape[0] * p2.shape[1]
-    
+
     lap = sp.sparse.linalg.LinearOperator((sh, sh), lap)
     rhs_inner = mem.mpv.rhs[mem.node.i1].T.ravel()
-    
+
     return lap, rhs_inner
 
 
 def _prepare_3d_system(mem, ud, dt):
-    """Prepare 3D linear system.""" 
+    """Prepare 3D linear system."""
     # Note: diag_inv appears to be used but not defined in 3D case
     # This might be a bug in the original code
     diag_inv = None  # TODO: Verify if this should be computed for 3D
-    
+
     lap = lap3D.get_linop(mem.elem, mem.node, mem.mpv, ud, diag_inv, dt)
     p2 = mem.mpv.p2_nodes  # Define p2 for 3D case
     sh = p2.reshape(-1).shape[0]
-    
+
     lap = sp.sparse.linalg.LinearOperator((sh, sh), lap)
     rhs_inner = mem.mpv.rhs[mem.node.i1].ravel()
-    
+
     return lap, rhs_inner, sh
 
 
@@ -229,11 +233,10 @@ def _reshape_solution(p2, mem, ud, nc):
     Reshape the solution vector back to the appropriate format.
     """
     p2_full = np.zeros(nc).squeeze()
-    
+
     if mem.elem.ndim == 2:
         p2_full[mem.node.i2] = p2.reshape(mem.mpv.rhs[mem.node.i1].T.shape).T
     else:  # 3D case
         p2_full[mem.node.i1] = p2.reshape(ud.inx + 2, ud.iny + 2, ud.inz + 2)
-    
-    return p2_full
 
+    return p2_full

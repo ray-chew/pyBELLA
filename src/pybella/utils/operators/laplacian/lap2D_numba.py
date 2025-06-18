@@ -2,6 +2,7 @@ import numpy as np
 import numba as nb
 from ... import options as opts
 
+
 def get_linop(mpv, node, coriolis, diag_inv, ud):
     dx = node.dx
     dy = node.dy
@@ -200,4 +201,3 @@ def kernel_9pt(a, dx, dy, hpx, hpy, hpc, diag_inv, cxx, cyy, cxy, cyx):
     )
 
     return ((Dxx + Dyy + Dyx + Dxy) + hpc[0, 0] * a[0, 0]) * diag_inv[0, 0]
-

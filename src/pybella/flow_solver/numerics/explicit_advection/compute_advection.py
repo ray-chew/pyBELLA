@@ -25,6 +25,7 @@ def strange_splitting(mem, ud, dt, odd, label, writer=None):
 
     bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.mpv)
 
+
 def first_order_runge_kutta(mem, ud, dt):
     """
     Function that runs the advection routine with a first-order Runge-Kutta update.
