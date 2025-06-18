@@ -55,7 +55,7 @@ def dynamic_timestep(Sol, time, time_output, elem, ud, th, step):
             machine_epsilon,
         )
     else:
-        return _calculate_convective_timestep(
+        return _calculate_advective_timestep(
             ud.CFL,
             elem,
             u_max,
@@ -96,7 +96,7 @@ def _calculate_acoustic_timestep(
     return dt
 
 
-def _calculate_convective_timestep(
+def _calculate_advective_timestep(
     CFL,
     elem,
     u_max,
