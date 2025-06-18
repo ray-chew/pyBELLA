@@ -13,6 +13,7 @@ DIRECTION_CONFIG = {
     },
 }
 
+
 @functools.lru_cache(maxsize=2)
 def get_flux_kernels(ndim):
     """Create convolution kernels for advective flux computation.

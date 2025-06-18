@@ -17,7 +17,9 @@ def multiply_inverse_terms(
     shp = nu.shape
 
     # initialise Coriolis cache is not already done
-    h11, h12, h13, h21, h22, h23, h31, h32, h33, denom = mem.cache.get_coriolis_array_views(shp)
+    h11, h12, h13, h21, h22, h23, h31, h32, h33, denom = (
+        mem.cache.get_coriolis_array_views(shp)
+    )
 
     # Get vector components by view
     VecU = getattr(Vec, attrs[0])
@@ -27,21 +29,40 @@ def multiply_inverse_terms(
     U, V, W = mem.cache.get_velocity_array_views(VecU.shape)
 
     _apply_coriolis_matrix_inplace(
-        h11, h12, h13, h21, h22, h23, h31, h32, h33, denom,
-        VecU, VecV, VecW, U, V, W, wh1, wh2, wv, nu, nonhydro
+        h11,
+        h12,
+        h13,
+        h21,
+        h22,
+        h23,
+        h31,
+        h32,
+        h33,
+        denom,
+        VecU,
+        VecV,
+        VecW,
+        U,
+        V,
+        W,
+        wh1,
+        wh2,
+        wv,
+        nu,
+        nonhydro,
     )
 
     # Return coefficients
     if get_coeffs:
         # For 2D only
-        h11, h12, _, h21, h22, _, _, _, _, _ = mem.cache.get_coriolis_array_views(
-            shp
-        )
+        h11, h12, _, h21, h22, _, _, _, _, _ = mem.cache.get_coriolis_array_views(shp)
         return (h11.T, h22.T, h12.T, h21.T)
 
 
 @nb.njit(cache=True)
-def _compute_coriolis_coefficients(h11, h12, h13, h21, h22, h23, h31, h32, h33, denom, wh1, wh2, wv, nu, nonhydro):
+def _compute_coriolis_coefficients(
+    h11, h12, h13, h21, h22, h23, h31, h32, h33, denom, wh1, wh2, wv, nu, nonhydro
+):
     """Compute coefficients for the H^-1 matrix multiplication.
 
     This corresponds to equation (C11) in the mathematical formulation.
@@ -76,8 +97,27 @@ def _compute_coriolis_coefficients(h11, h12, h13, h21, h22, h23, h31, h32, h33, 
 
 @nb.njit(cache=True)
 def _apply_coriolis_matrix_inplace(
-    h11, h12, h13, h21, h22, h23, h31, h32, h33, denom,
-    u_vec, v_vec, w_vec, U, V, W, wh1, wh2, wv, nu, nonhydro
+    h11,
+    h12,
+    h13,
+    h21,
+    h22,
+    h23,
+    h31,
+    h32,
+    h33,
+    denom,
+    u_vec,
+    v_vec,
+    w_vec,
+    U,
+    V,
+    W,
+    wh1,
+    wh2,
+    wv,
+    nu,
+    nonhydro,
 ):
     """Apply H^-1 matrix multiplication in-place.
 
@@ -85,8 +125,7 @@ def _apply_coriolis_matrix_inplace(
     """
     # Get matrix coefficients
     _compute_coriolis_coefficients(
-        h11, h12, h13, h21, h22, h23, h31, h32, h33,
-        denom, wh1, wh2, wv, nu, nonhydro
+        h11, h12, h13, h21, h22, h23, h31, h32, h33, denom, wh1, wh2, wv, nu, nonhydro
     )
 
     U[...] = u_vec

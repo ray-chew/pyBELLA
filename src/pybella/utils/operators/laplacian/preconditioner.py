@@ -1,5 +1,6 @@
 from .. import convolution
 
+
 def prepare_diag(mpv, node):
     """Highly optimized version with minimal function calls."""
     ndim = node.ndim
@@ -17,10 +18,14 @@ def prepare_diag(mpv, node):
 
     # Main diagonal terms
     diag -= (
-        coeff * inv_dx2 * convolution.apply_convolution_kernel(mpv.wplus[0], diag_kernel)
+        coeff
+        * inv_dx2
+        * convolution.apply_convolution_kernel(mpv.wplus[0], diag_kernel)
     )
     diag -= (
-        coeff * inv_dy2 * convolution.apply_convolution_kernel(mpv.wplus[1], diag_kernel)
+        coeff
+        * inv_dy2
+        * convolution.apply_convolution_kernel(mpv.wplus[1], diag_kernel)
     )
 
     if ndim == 2:

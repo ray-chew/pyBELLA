@@ -3,6 +3,7 @@ import numpy as np
 from ...utils.operators import convolution, divergence, gradient
 from ..utils import boundary as bdry
 
+
 def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
     # Unpack frequently used variables
     th, sol, mpv, node, elem = mem.th, mem.sol, mem.mpv, mem.node, mem.elem

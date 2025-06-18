@@ -9,6 +9,7 @@ from . import fields, cache, boundary as bdry
 # test module
 from ...tests import diagnostics as diag
 
+
 def initialise():
     ####
     # Initialise simulation state

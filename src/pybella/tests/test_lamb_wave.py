@@ -6,6 +6,7 @@ from ..utils.data_structures import DiagnosticState
 from ..flow_solver.utils import boundary as bdry
 from ..flow_solver.physics import hydrostatics
 
+
 class UserData(object):
 
     def __init__(self):
