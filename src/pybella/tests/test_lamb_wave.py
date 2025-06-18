@@ -3,7 +3,6 @@ import numpy as np
 from ..utils import options as opts
 from ..utils.data_structures import DiagnosticState
 
-from ..flow_solver.utils.boundary import cell_boundary as bdry_c
 from ..flow_solver.utils.boundary import rayleigh_boundary as bdry_r
 from ..flow_solver.physics import hydrostatics  
 
@@ -313,7 +312,6 @@ def sol_init(Sol, npf, elem, node, th, ud, seeds=None):
 
     npf.p2_nodes[...] = pi_n
 
-    bdry_c.set_explicit_boundary_data(Sol, elem, ud, th, npf)
 
     if hasattr(ud, "mixed_run"):
         if ud.mixed_run:

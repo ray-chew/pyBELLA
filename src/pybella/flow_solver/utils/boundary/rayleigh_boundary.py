@@ -94,15 +94,9 @@ def get_bottom_tau_y(ud, elem, node, alpha, cutoff=0.5):
 
 
 def apply_rayleigh_forcing(
-    Sol,
-    npf,
+    mem,
     ud,
-    elem,
-    node,
-    t,
-    step,
     dt,
-    th,
     half=True,
     Sol_half_new=None,
     npf_half_new=None,
@@ -117,32 +111,32 @@ def apply_rayleigh_forcing(
         reader = io.read_input(ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path)
 
         if Sol_half_new is None or npf_half_new is None:
-            Sol_half_new = copy.deepcopy(Sol)
-            npf_half_new = copy.deepcopy(npf)
+            Sol_half_new = copy.deepcopy(mem.sol)
+            npf_half_new = copy.deepcopy(mem.npf)
 
-        time_tag = "%.3d_after_full_step" % step
+        time_tag = "%.3d_after_full_step" % mem.time.step
         reader.get_data(Sol_half_new, npf_half_new, time_tag, half=half)
 
         up = Sol_half_new.rhou / Sol_half_new.rho
         vp = Sol_half_new.rhov / Sol_half_new.rho
-        Yp = Sol_half_new.rhoY / Sol_half_new.rho - npf.HydroState.Y0.reshape(1, -1)
+        Yp = Sol_half_new.rhoY / Sol_half_new.rho - mem.npf.HydroState.Y0.reshape(1, -1)
         pi = npf_half_new.p2_nodes
 
-        rayleigh_damping(Sol, npf, ud, elem, node, [up, vp, Yp, pi, t + t_offset])
+        rayleigh_damping(mem.sol, mem.npf, ud, mem.elem, mem.node, [up, vp, Yp, pi, mem.time.t + t_offset])
 
     elif ud.rayleigh_forcing_type == "func":
         s = 5.0e-3 + 1e-4 + 0e-5
-        ud.rf_bot.eigenfunction(t + t_offset, s)
-        up, vp, Yp, pi = ud.rf_bot.dehatter(th)
+        ud.rf_bot.eigenfunction(mem.time.t + t_offset, s)
+        up, vp, Yp, pi = ud.rf_bot.dehatter(mem.th)
 
-        ud.rf_bot.eigenfunction(t + t_offset, s, grid="n")
-        _, _, _, pi_n = ud.rf_bot.dehatter(th, grid="n")
+        ud.rf_bot.eigenfunction(mem.time.t + t_offset, s, grid="n")
+        _, _, _, pi_n = ud.rf_bot.dehatter(mem.th, grid="n")
 
         rayleigh_damping(
-            Sol, npf, ud, elem, node, [up, vp, Yp, pi_n, t + t_offset]
+            mem.sol, mem.npf, ud, mem.elem, mem.node, [up, vp, Yp, pi_n, mem.time.t + t_offset]
         )
 
-    bdry_c.set_explicit_boundary_data(Sol, elem, ud, th, npf)
+    bdry_c.set_ghost_cells(mem, ud)
 
 def rayleigh_damping(Sol, npf, ud, elem, node, forcing=None):
     u = Sol.rhou / Sol.rho  # [elem.i2]

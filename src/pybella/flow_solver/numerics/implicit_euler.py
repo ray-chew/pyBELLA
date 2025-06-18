@@ -37,7 +37,7 @@ def do_explicit_part(mem, ud, dt):
 
     mem.sol.mod_bg_wind(ud, +1.0)
 
-    bdry_c.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
+    bdry_c.set_ghost_cells(mem, ud)
 
 
 def do_implicit_part(
@@ -68,7 +68,7 @@ def do_implicit_part(
 
     # Set boundary data and compute operator coefficients (consolidated)
     sol_for_boundary = Sol0 if Sol0 is not None else mem.sol
-    bdry_c.set_explicit_boundary_data(sol_for_boundary, mem.elem, ud, mem.th, mem.npf)
+    bdry_c.set_ghost_cells(mem, ud, sol=sol_for_boundary)
     operator_coefficients_nodes(mem, ud, dt)
 
     # Debug output for w components
@@ -86,7 +86,7 @@ def do_implicit_part(
     # Boundary and correction operations
     # bdry.set_ghostnodes_p2(mem.npf.p2_nodes, mem.node, ud)
     _correction_nodes(mem, ud, dt, mem.npf.p2_nodes, 0)
-    bdry_c.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
+    bdry_c.set_ghost_cells(mem, ud)
 
     # Compute RHS
     mem.npf.rhs[...] = divergence.compute_at_nodes(mem.npf.rhs, mem.elem, mem.sol, ud)
@@ -118,7 +118,7 @@ def do_implicit_part(
 
     mem.npf.p2_nodes[...] += p2_full
     bdry_n.set_ghostnodes_p2(mem.npf.p2_nodes, mem.node, ud)
-    bdry_c.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
+    bdry_c.set_ghost_cells(mem, ud)
 
 
 def _correction_nodes(mem, ud, dt, p, updt_chi):
