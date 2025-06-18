@@ -28,10 +28,17 @@ class CompareSol(object):
             dump_name = tp.name.replace("target", "test")
             self.arr_dump[dump_name] = {}
 
+            rho = self.__get_ens(
+                    tc, tp, "rho", time_increment=self.time_increment, summed=False
+                )
+
             for attribute in tp.attributes:
                 arr = self.__get_ens(
                     tc, tp, attribute, time_increment=self.time_increment, summed=False
                 )
+
+                if attribute != "p2_nodes" and attribute != "rho":
+                    arr = arr / rho
                 self.arr_dump[dump_name][attribute] = float(arr.sum())
 
                 if self.plot:
