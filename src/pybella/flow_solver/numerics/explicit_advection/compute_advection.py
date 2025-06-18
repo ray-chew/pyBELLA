@@ -1,7 +1,7 @@
 import numba as nb
 
 from ....utils.slices import get_neighbor_indices
-from ...utils import boundary as bdry
+from ...utils.boundary import cell_boundary as bdry_c
 from . import recovery, riemann_solver
 
 
@@ -25,7 +25,7 @@ def strange_splitting(mem, ud, dt, odd, label, writer=None):
             diagnostics=diagnostics if use_diagnostics else None,
         )
 
-    bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
+    bdry_c.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
 
 
 def first_order_runge_kutta(mem, ud, dt):
@@ -55,7 +55,7 @@ def first_order_runge_kutta(mem, ud, dt):
     for dim in range(ndim):
         _apply_dimensional_flux_update(mem, dim, time_step, left_idx, right_idx)
 
-    bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
+    bdry_c.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
 
 
 def _update_solution_variables(sol, flux, lmbda, left_idx, right_idx, variables=None):
@@ -78,7 +78,7 @@ def _explicit_step_and_flux(mem, ud, lmbda, split_step, tag=None):
     This function updates the solution `Sol` container in-place if a Strang-splitting is used,
     or returns the `flux` data container if a Runge-Kutta method is used.
     """
-    bdry.set_explicit_boundary_data(
+    bdry_c.set_explicit_boundary_data(
         mem.sol, mem.elem, ud, mem.th, mem.npf, step=split_step
     )
 

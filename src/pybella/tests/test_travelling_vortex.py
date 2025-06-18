@@ -1,7 +1,7 @@
 import numpy as np
 
 from ..utils import options as opts
-from ..flow_solver.utils import boundary as bdry
+from ..flow_solver.utils.boundary import cell_boundary as bdry_c, node_boundary as bdry_n
 from ..flow_solver.physics import hydrostatics
 from ..flow_solver.numerics import implicit_euler
 from ..flow_solver.utils import cache
@@ -248,7 +248,7 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
         th.Gamma * fac**2 * np.divide(p2c, npf.HydroState.rhoY0[igy:-igy])
     )
 
-    bdry.set_ghostcells_p2(npf.p2_cells, elem, ud)
+    bdry_n.set_ghostcells_p2(npf.p2_cells, elem, ud)
 
     xs = node.x[igxn:-igxn].reshape(-1, 1)
     ys = node.y[igyn:-igyn].reshape(1, -1)
@@ -285,7 +285,7 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
     ud.compressibility = float(ud.is_compressible)
 
-    bdry.set_explicit_boundary_data(Sol, elem, ud, th, npf)
+    bdry_c.set_explicit_boundary_data(Sol, elem, ud, th, npf)
 
     if "imbal" in ud.aux:
         Sol.rhoY[...] = 1.0

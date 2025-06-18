@@ -1,14 +1,13 @@
 import copy
 import logging
-
 import numpy as np
 
-from ..physics import cfl, eos
-
+# dependencies from pybella common
 from ...utils import options as opts
 
 # dependencies of the flow solver subpackage
-from ..utils import boundary as bdry
+from ..utils.boundary import rayleigh_boundary as bdry_r
+from ..physics import cfl, eos
 from ..numerics.explicit_advection import advective_flux, compute_advection
 from ..numerics import explicit_euler, implicit_euler
 
@@ -34,7 +33,6 @@ def do(
     swe_to_lake = False
 
     while (mem.time.t < tout) and (mem.time.step < ud.stepmax):
-        bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
 
         label = "%.3d" % mem.time.step
 
@@ -118,9 +116,9 @@ def do(
 
         if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
             # top rayleight damping
-            bdry.rayleigh_damping(mem.sol, mem.npf, ud, mem.elem, mem.node)
+            bdry_r.rayleigh_damping(mem.sol, mem.npf, ud, mem.elem, mem.node)
 
-        bdry.apply_rayleigh_forcing(
+        bdry_r.apply_rayleigh_forcing(
             mem.sol,
             mem.npf,
             ud,
@@ -130,7 +128,6 @@ def do(
             mem.time.step,
             dt,
             mem.th,
-            bdry,
         )
 
         debug_writer.write(f"{label}_after_ebnaimp")
@@ -186,10 +183,10 @@ def do(
 
         if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
             # top rayleight damping
-            bdry.rayleigh_damping(mem.sol, mem.npf, ud, mem.elem, mem.node)
+            bdry_r.rayleigh_damping(mem.sol, mem.npf, ud, mem.elem, mem.node)
 
         # bottom rayleigh forcing
-        bdry.apply_rayleigh_forcing(
+        bdry_r.apply_rayleigh_forcing(
             mem.sol,
             mem.npf,
             ud,
@@ -199,7 +196,6 @@ def do(
             mem.time.step,
             dt,
             mem.th,
-            bdry,
             half=False,
             Sol_half_new=Sol_half_new,
             npf_half_new=npf_half_new,

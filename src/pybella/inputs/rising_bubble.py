@@ -1,6 +1,6 @@
 import numpy as np
 from ..flow_solver.physics import hydrostatics
-from ..flow_solver.utils import boundary as bdry
+from ..flow_solver.utils.boundary import cell_boundary as bdry_c
 
 
 class UserData(object):
@@ -93,6 +93,6 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     rhoY = npf.HydroState_n.rhoY0[0]
     npf.p2_nodes[...] = (p - npf.HydroState_n.p0[0]) / rhoY / ud.Msq
 
-    bdry.set_explicit_boundary_data(Sol, elem, ud, th, npf)
+    bdry_c.set_explicit_boundary_data(Sol, elem, ud, th, npf)
 
     return Sol

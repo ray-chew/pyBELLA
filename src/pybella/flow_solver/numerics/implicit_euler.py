@@ -3,7 +3,9 @@ import scipy as sp
 
 from ...utils.operators import convolution, divergence, gradient
 from ...utils.operators.laplacian import preconditioner, lap2D_manual, lap3D
-from ..utils import boundary as bdry
+from ..utils.boundary import cell_boundary as bdry_c
+from ..utils.boundary import node_boundary as bdry_n
+from ..utils.boundary import common as bdry
 from . import coriolis
 
 
@@ -35,7 +37,7 @@ def do_explicit_part(mem, ud, dt):
 
     mem.sol.mod_bg_wind(ud, +1.0)
 
-    bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
+    bdry_c.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
 
 
 def do_implicit_part(
@@ -66,7 +68,7 @@ def do_implicit_part(
 
     # Set boundary data and compute operator coefficients (consolidated)
     sol_for_boundary = Sol0 if Sol0 is not None else mem.sol
-    bdry.set_explicit_boundary_data(sol_for_boundary, mem.elem, ud, mem.th, mem.npf)
+    bdry_c.set_explicit_boundary_data(sol_for_boundary, mem.elem, ud, mem.th, mem.npf)
     operator_coefficients_nodes(mem, ud, dt)
 
     # Debug output for w components
@@ -84,7 +86,7 @@ def do_implicit_part(
     # Boundary and correction operations
     # bdry.set_ghostnodes_p2(mem.npf.p2_nodes, mem.node, ud)
     _correction_nodes(mem, ud, dt, mem.npf.p2_nodes, 0)
-    bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
+    bdry_c.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
 
     # Compute RHS
     mem.npf.rhs[...] = divergence.compute_at_nodes(mem.npf.rhs, mem.elem, mem.sol, ud)
@@ -115,8 +117,8 @@ def do_implicit_part(
     _correction_nodes(mem, ud, dt, p2_full, 1)
 
     mem.npf.p2_nodes[...] += p2_full
-    bdry.set_ghostnodes_p2(mem.npf.p2_nodes, mem.node, ud)
-    bdry.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
+    bdry_n.set_ghostnodes_p2(mem.npf.p2_nodes, mem.node, ud)
+    bdry_c.set_explicit_boundary_data(mem.sol, mem.elem, ud, mem.th, mem.npf)
 
 
 def _correction_nodes(mem, ud, dt, p, updt_chi):

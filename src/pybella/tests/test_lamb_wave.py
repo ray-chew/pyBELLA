@@ -3,8 +3,9 @@ import numpy as np
 from ..utils import options as opts
 from ..utils.data_structures import DiagnosticState
 
-from ..flow_solver.utils import boundary as bdry
-from ..flow_solver.physics import hydrostatics
+from ..flow_solver.utils.boundary import cell_boundary as bdry_c
+from ..flow_solver.utils.boundary import rayleigh_boundary as bdry_r
+from ..flow_solver.physics import hydrostatics  
 
 
 class UserData(object):
@@ -233,7 +234,7 @@ def sol_init(Sol, npf, elem, node, th, ud, seeds=None):
             ud.bdry_type[1] = opts.BdryType.RAYLEIGH
 
     if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
-        ud.tcy, ud.tny = bdry.get_tau_y(ud, elem, node, 0.5)
+        ud.tcy, ud.tny = bdry_r.get_tau_y(ud, elem, node, 0.5)
 
     A0 = 1.0e-1 / ud.u_ref
     Msq = ud.Msq
@@ -312,7 +313,7 @@ def sol_init(Sol, npf, elem, node, th, ud, seeds=None):
 
     npf.p2_nodes[...] = pi_n
 
-    bdry.set_explicit_boundary_data(Sol, elem, ud, th, npf)
+    bdry_c.set_explicit_boundary_data(Sol, elem, ud, th, npf)
 
     if hasattr(ud, "mixed_run"):
         if ud.mixed_run:
