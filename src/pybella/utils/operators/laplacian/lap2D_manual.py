@@ -2,17 +2,11 @@ import numpy as np
 import numba as nb
 from ... import options as opts
 
+
 def get_linop(mpv, node, coriolis, diag_inv, ud):
     dx = node.dx
     dy = node.dy
 
-    hplusx = mpv.wplus[0]
-    hplusy = mpv.wplus[1]
-    hcenter = mpv.wcenter
-
-    coeffs = (hplusx.T, hplusy.T, hcenter.T)
-
-    ### Need to clean this up, but the Numba stencil is used in the Helmholtz solve for radiative BC!
     if hasattr(ud, "ATMOSPHERIC_EXTENSION") and ud.ATMOSPHERIC_EXTENSION:
         y_atmosphere = True
     else:
@@ -25,32 +19,23 @@ def get_linop(mpv, node, coriolis, diag_inv, ud):
     cor_slc = (slice(1, -1), slice(1, -1))
     coeff_slc = (slice(1, -1), slice(1, -1))
 
-    coeffs = (
-        hplusx[coeff_slc].T.reshape(
-            -1,
-        ),
-        hplusy[coeff_slc].T.reshape(
-            -1,
-        ),
-        hcenter[node.i1].T.reshape(
-            -1,
-        ),
-    )
+    # Coefficient extraction
+    hplusx = np.ravel(mpv.wplus[0][coeff_slc], order="F")
+    hplusy = np.ravel(mpv.wplus[1][coeff_slc], order="F")
+    hcenter = np.ravel(mpv.wcenter[node.i1], order="F")
 
-    coriolis = (
-        coriolis[0][cor_slc].reshape(
-            -1,
-        ),
-        coriolis[1][cor_slc].reshape(
-            -1,
-        ),
-        coriolis[2][cor_slc].reshape(
-            -1,
-        ),
-        coriolis[3][cor_slc].reshape(
-            -1,
-        ),
-    )
+    # Coriolis terms
+    cxx = np.ravel(coriolis[0][cor_slc], order="F")
+    cyy = np.ravel(coriolis[1][cor_slc], order="F")
+    cxy = np.ravel(coriolis[2][cor_slc], order="F")
+    cyx = np.ravel(coriolis[3][cor_slc], order="F")
+
+    # Diagonal inverse
+    dinv = np.ravel(diag_inv[node.i1], order="F")
+
+    # Pack as tuples
+    coeffs = (hplusx, hplusy, hcenter)
+    coriolis = (cxx, cyy, cxy, cyx)
 
     return lambda p: lap2D_gather(
         p,
@@ -62,9 +47,7 @@ def get_linop(mpv, node, coriolis, diag_inv, ud):
         x_wall,
         y_wall,
         y_atmosphere,
-        diag_inv[node.i1].T.reshape(
-            -1,
-        ),
+        dinv,
         coriolis,
     )
 
