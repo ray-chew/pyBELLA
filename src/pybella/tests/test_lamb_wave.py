@@ -1,13 +1,10 @@
 import numpy as np
 
 from ..utils import options as opts
-
-from ..flow_solver.utils import boundary as bdry
-
-from ..flow_solver.physics import hydrostatics
-
 from ..utils.data_structures import DiagnosticState
 
+from ..flow_solver.utils import boundary as bdry
+from ..flow_solver.physics import hydrostatics
 
 class UserData(object):
 
