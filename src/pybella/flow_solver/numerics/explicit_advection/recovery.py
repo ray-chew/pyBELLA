@@ -5,12 +5,11 @@ from ....utils import options as opts
 from ....utils.slices import get_neighbor_indices, get_interface_indices
 
 
-def compute(mem, ud, lmbda, split_step, tag=None):
+def compute(mem, flux, ud, lmbda, split_step, tag=None):
     """
     Reconstruct the limited slopes at the cell interfaces.
 
     """
-    flux = mem.cache.get_flux_containers(mem.elem)[split_step]
     gamm = mem.th.gamm
 
     order_two = 1  # always 1
