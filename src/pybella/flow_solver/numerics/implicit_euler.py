@@ -44,7 +44,7 @@ def do_implicit_part(
     mem,
     ud,
     dt,
-    Sol0=None,
+    sol0=None,
     writer=None,
     label=None,
     debug=False,
@@ -67,7 +67,7 @@ def do_implicit_part(
     write_debug_data("p2_initial", mem.npf.p2_nodes)
 
     # Set boundary data and compute operator coefficients (consolidated)
-    sol_for_boundary = Sol0 if Sol0 is not None else mem.sol
+    sol_for_boundary = sol0 if sol0 is not None else mem.sol
     bdry_c.set_ghost_cells(mem, ud, sol=sol_for_boundary)
     operator_coefficients_nodes(mem, ud, dt)
 

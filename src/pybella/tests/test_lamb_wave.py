@@ -73,8 +73,6 @@ class UserData(object):
         self.max_iterations = 10000
 
         self.tout = [360.0]
-        # self.tout = np.arange(0,361,1.0)
-        # self.tout = np.append(self.tout, [720.0])
         self.stepmax = 301
         self.output_timesteps = True
 
