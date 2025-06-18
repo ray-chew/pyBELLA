@@ -4,6 +4,7 @@ from ....utils import io
 from ....utils import options as opts
 from . import cell_boundary as bdry_c
 
+
 def get_tau_y(ud, elem, node, alpha):
     tauc_y = np.zeros_like(elem.y)
     taun_y = np.zeros_like(node.y)
@@ -135,6 +136,7 @@ def apply_rayleigh_forcing(
 
     bdry_c.set_ghost_cells(mem, ud)
 
+
 def rayleigh_damping(sol, npf, ud, forcing=None):
     u = sol.rhou / sol.rho  # [elem.i2]
     v = sol.rhov / sol.rho  # [elem.i2]
@@ -187,4 +189,3 @@ def rayleigh_damping(sol, npf, ud, forcing=None):
     sol.rhou[...] = rho * u
     sol.rhov[...] = rho * v
     sol.rhoY[...] = rho * Y
-

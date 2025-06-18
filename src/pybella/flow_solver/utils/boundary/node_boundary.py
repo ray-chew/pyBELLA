@@ -2,6 +2,7 @@ import numpy as np
 from ....utils import options as opts
 from .common import get_ghost_padding
 
+
 def set_ghost_nodes(p, node, ud, igs=None):
     if igs is None:
         igs = node.igs
@@ -45,5 +46,3 @@ def periodic_plus_one(vector, pad_width, iaxis, kwargs=None):
             vector[pad_width[0] : pad_width[0] + pad_width[0] + 1].copy(),
         )
     return vector
-
-

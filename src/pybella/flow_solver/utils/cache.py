@@ -48,6 +48,7 @@ class Characters(object):
 
 class FlowSolverCache:
     """Cache for flow solver specific computations."""
+
     __slots__ = (
         "_recovery_cache",
         "_velocity_cache",
@@ -142,7 +143,7 @@ class FlowSolverCache:
             cache_obj["h33"],
             cache_obj["denom"],
         )
-    
+
     def get_flux_containers(self, elem, dtype=np.float64):
         """
         Get cached flux containers for each direction (States objects).
@@ -166,7 +167,11 @@ class FlowSolverCache:
         )
 
         if (ndim, shape_key) not in self._flux_cache:
-            logging.info("Cache: Creating new flux containers for ndim=%d, shape=%s", ndim, shape_key[0])
+            logging.info(
+                "Cache: Creating new flux containers for ndim=%d, shape=%s",
+                ndim,
+                shape_key[0],
+            )
             flux = [None] * ndim
             flux[0] = fields.CellSolField(elem.sfx)
             if ndim > 1:

@@ -193,7 +193,6 @@ def sol_init(Sol, npf, elem, node, th, ud, seeds=None):
     if "imbal" in ud.aux:
         npf.p2_nodes[...] = 0.0
 
-
     return Sol
 
 

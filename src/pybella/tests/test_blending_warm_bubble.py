@@ -110,5 +110,4 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     rhoY = npf.HydroState_n.rhoY0
     npf.p2_nodes[...] = (p - npf.HydroState_n.p0) / rhoY / ud.Msq
 
-
     return Sol

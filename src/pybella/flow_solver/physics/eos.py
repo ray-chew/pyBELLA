@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def nonhydrostasy(ud, t, step):
     if step >= 0:
         if ud.is_nonhydrostatic == 0:

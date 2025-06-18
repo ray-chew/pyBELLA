@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 
 from ..utils import options as opts
 from ..flow_solver.utils.boundary import node_boundary as bdry_n
+
+
 class ensemble(object):
     def __init__(self, input_ensemble=None):
         if input_ensemble is not None:

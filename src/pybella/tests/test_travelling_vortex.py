@@ -248,7 +248,6 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
         th.Gamma * fac**2 * np.divide(p2c, npf.HydroState.rhoY0[igy:-igy])
     )
 
-
     xs = node.x[igxn:-igxn].reshape(-1, 1)
     ys = node.y[igyn:-igyn].reshape(1, -1)
     xccs = np.zeros_like(xs)
@@ -283,7 +282,6 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
     ud.compressibility = float(ud.is_compressible)
-
 
     if "imbal" in ud.aux:
         Sol.rhoY[...] = 1.0
