@@ -71,7 +71,7 @@ class UserData(object):
         self.autogen_fn = False
 
 
-def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
+def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     u0 = ud.u_wind_speed
     v0 = ud.v_wind_speed
     w0 = ud.w_wind_speed
@@ -80,7 +80,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     y0 = 0.2
     r0 = 0.2
 
-    hydrostatics.integrated_state(mpv, elem, node, th, ud)
+    hydrostatics.integrated_state(npf, elem, node, th, ud)
 
     x = elem.x
     y = elem.y
@@ -89,8 +89,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
 
     r = np.sqrt((x) ** 2 + (y - y0) ** 2) / r0
 
-    p = np.repeat(mpv.HydroState.p0.reshape(1, -1), elem.icx, axis=0)
-    rhoY = mpv.HydroState.rhoY0[np.newaxis, :]
+    p = np.repeat(npf.HydroState.p0.reshape(1, -1), elem.icx, axis=0)
+    rhoY = npf.HydroState.rhoY0[np.newaxis, :]
 
     perturbation = (delth / 300.0) * (np.cos(0.5 * np.pi * r) ** 2)
     perturbation[np.where(r > 1.0)] = 0.0
@@ -107,10 +107,10 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     Sol.rhow[x_idx, y_idx] = rho * w
     Sol.rhoY[x_idx, y_idx] = rhoY
 
-    p = mpv.HydroState_n.p0
-    rhoY = mpv.HydroState_n.rhoY0
-    mpv.p2_nodes[...] = (p - mpv.HydroState_n.p0) / rhoY / ud.Msq
+    p = npf.HydroState_n.p0
+    rhoY = npf.HydroState_n.rhoY0
+    npf.p2_nodes[...] = (p - npf.HydroState_n.p0) / rhoY / ud.Msq
 
-    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, npf)
 
     return Sol

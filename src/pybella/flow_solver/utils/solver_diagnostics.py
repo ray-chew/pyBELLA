@@ -3,7 +3,7 @@ import scipy as sp
 
 
 def get_p_from_pressure_related_fields(mem, ud, psinc=False):
-    p2n = mem.mpv.p2_nodes
+    p2n = mem.npf.p2_nodes
     rhoY = mem.sol.rhoY
     dp2n = (p2n - p2n.mean()) * ud.Msq
 

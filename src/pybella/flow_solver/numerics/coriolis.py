@@ -11,7 +11,7 @@ def multiply_inverse_terms(
     Msq = ud.Msq
 
     wh1, wv, wh2 = dt * ud.coriolis_strength
-    strat = mem.mpv.HydroState_n.get_dSdy(mem.elem, mem.node)
+    strat = mem.npf.HydroState_n.get_dSdy(mem.elem, mem.node)
     Y = mem.sol.rhoY / mem.sol.rho
     nu = -(dt**2) * (g / Msq) * strat * Y
     shp = nu.shape

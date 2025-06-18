@@ -48,11 +48,18 @@ class Characters(object):
 
 class FlowSolverCache:
     """Cache for flow solver specific computations."""
+    __slots__ = (
+        "_recovery_cache",
+        "_velocity_cache",
+        "_coriolis_cache",
+        "_flux_cache",
+    )
 
     def __init__(self):
         self._recovery_cache = {}
         self._velocity_cache = {}
         self._coriolis_cache = {}
+        self._flux_cache = {}
 
     def get_recovery_objects(self, shape, ud):
         """Get cached recovery objects or create new ones."""
@@ -63,8 +70,8 @@ class FlowSolverCache:
             self._recovery_cache[cache_key] = {
                 "Diffs": Characters(shape),
                 "Ampls": Characters(shape),
-                "Lefts": fields.States(shape, ud),
-                "Rights": fields.States(shape, ud),
+                "Lefts": fields.CellSolField(shape),
+                "Rights": fields.CellSolField(shape),
                 "Slopes": Characters(shape),
             }
 
@@ -135,8 +142,44 @@ class FlowSolverCache:
             cache_obj["h33"],
             cache_obj["denom"],
         )
+    
+    def get_flux_containers(self, elem, dtype=np.float64):
+        """
+        Get cached flux containers for each direction (States objects).
+
+        Parameters
+        ----------
+        elem : Grid
+            Grid object with `ndim`, `sfx`, `sfy`, `sfz` attributes.
+        ud : UserDefinedSettings
+            Used for instantiating States; its ID is part of the cache key.
+
+        Returns
+        -------
+        List[States]
+            List of directional flux containers, one per spatial dimension.
+        """
+        ndim = elem.ndim
+        shape_key = (
+            tuple(elem.sfx),  # Use one representative shape
+            dtype,
+        )
+
+        if (ndim, shape_key) not in self._flux_cache:
+            logging.info("Cache: Creating new flux containers for ndim=%d, shape=%s", ndim, shape_key[0])
+            flux = [None] * ndim
+            flux[0] = fields.CellSolField(elem.sfx)
+            if ndim > 1:
+                flux[1] = fields.CellSolField(elem.sfy)
+            if ndim > 2:
+                flux[2] = fields.CellSolField(elem.sfz)
+            self._flux_cache[(ndim, shape_key)] = flux
+
+        return self._flux_cache[(ndim, shape_key)]
 
     def clear_all(self):
         """Clear all caches to free memory."""
         self._recovery_cache.clear()
         self._velocity_cache.clear()
+        self._coriolis_cache.clear()
+        self._flux_cache.clear()

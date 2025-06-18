@@ -3,7 +3,7 @@ import numba as nb
 from ... import options as opts
 
 
-def get_linop(mpv, node, coriolis, diag_inv, ud):
+def get_linop(npf, node, coriolis, diag_inv, ud):
     dx = node.dx
     dy = node.dy
 
@@ -20,9 +20,9 @@ def get_linop(mpv, node, coriolis, diag_inv, ud):
     coeff_slc = (slice(1, -1), slice(1, -1))
 
     # Coefficient extraction
-    hplusx = np.ravel(mpv.wplus[0][coeff_slc], order="F")
-    hplusy = np.ravel(mpv.wplus[1][coeff_slc], order="F")
-    hcenter = np.ravel(mpv.wcenter[node.i1], order="F")
+    hplusx = np.ravel(npf.wplus[0][coeff_slc], order="F")
+    hplusy = np.ravel(npf.wplus[1][coeff_slc], order="F")
+    hcenter = np.ravel(npf.wcenter[node.i1], order="F")
 
     # Coriolis terms
     cxx = np.ravel(coriolis[0][cor_slc], order="C")

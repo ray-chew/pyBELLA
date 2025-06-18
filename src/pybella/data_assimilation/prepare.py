@@ -48,19 +48,19 @@ def initialise(sst):
         logging.info("Seeds used in generating initial ensemble spread = ", seeds)
         for n in range(sst.N):
             Sol0 = deepcopy(sst.Sol)
-            mpv0 = deepcopy(sst.mpv)
+            npf0 = deepcopy(sst.npf)
             Sol0 = sst.sol_init(
-                Sol0, mpv0, es.elem, es.node, es.th, es.ud, seed=seeds[n]
+                Sol0, npf0, es.elem, es.node, es.th, es.ud, seed=seeds[n]
             )
-            # sol_ens[n] = [Sol0, deepcopy(es.flux), mpv0, [-np.inf, es.step]]
+            # sol_ens[n] = [Sol0, deepcopy(es.flux), npf0, [-np.inf, es.step]]
             sol_ens.update_member(
-                es.elem, es.node, Sol0, mpv0, deepcopy(es.flux), es.th
+                es.elem, es.node, Sol0, npf0, deepcopy(es.flux), es.th
             )
 
             sst.ensembble_state = sol_ens
     # elif sst.restart == False:
-    # sol_ens = [[sst.sol_init(mp.Sol, mp.mpv, mp.elem, mp.node, mp.th, sst.ud), mp.flux, mp.mpv, [-np.inf, sst.step]]]
-    # sol_ens.update_member(mp.elem, mp.node, sst.sol_init(mp.Sol, mp.mpv, mp.elem, mp.node, mp.th, sst.ud), mp.mpv, deepcopy(mp.flux), mp.th)
+    # sol_ens = [[sst.sol_init(mp.Sol, mp.npf, mp.elem, mp.node, mp.th, sst.ud), mp.flux, mp.npf, [-np.inf, sst.step]]]
+    # sol_ens.update_member(mp.elem, mp.node, sst.sol_init(mp.Sol, mp.npf, mp.elem, mp.node, mp.th, sst.ud), mp.npf, deepcopy(mp.flux), mp.th)
     # for n in range(sst.N):
     #     sol_ens.get_member(n).time.t = -np.inf
 

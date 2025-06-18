@@ -30,9 +30,9 @@ def do_for_window(tout, outer_step, results, sst, writer):
         # Update ensemble with forecast
         ######################################################
         for mem in results:
-            elem, node, sol, _, mpv, th, _ = mem
-            bdry.set_explicit_boundary_data(sol, elem, sst.ud, th, mpv)
-            bdry.set_ghostnodes_p2(mpv.p2_nodes, node, sst.ud)
+            elem, node, sol, _, npf, th, _ = mem
+            bdry.set_explicit_boundary_data(sol, elem, sst.ud, th, npf)
+            bdry.set_ghostnodes_p2(npf.p2_nodes, node, sst.ud)
 
         # ens.set_members(results, tout)
         sst.ensemble_state.set_members(results)
@@ -42,13 +42,13 @@ def do_for_window(tout, outer_step, results, sst, writer):
         ######################################################
         logging.info("Starting output...")
         for mem in sst.ensemble_state:
-            elem, node, sol, _, mpv, th, _ = mem
+            elem, node, sol, _, npf, th, _ = mem
             if params.label_type == "STEP":
                 step = outer_step
                 label = "ensemble_mem=%i_%.3d" % (n, step)
             else:
                 label = "ensemble_mem=%i_%.3f" % (n, tout)
-            writer.write_all(sol, mpv, elem, node, th, str(label) + "_before_da")
+            writer.write_all(sol, npf, elem, node, th, str(label) + "_before_da")
 
         ##################################################
         # LETKF with batch observations
@@ -88,7 +88,7 @@ def do_for_window(tout, outer_step, results, sst, writer):
             )
             results = da_utils.HSprojector_2t3D(results, elem, node, dp.dap, sst.N)
             # if hasattr(dap, 'converter'):
-            # results = dap.converter(results, N, mpv, elem, node, th, ud)
+            # results = dap.converter(results, N, npf, elem, node, th, ud)
 
         ##################################################
         # ETPF
@@ -120,9 +120,9 @@ def do_for_window(tout, outer_step, results, sst, writer):
     # Update ensemble with analysis
     ######################################################
     for mem in results:
-        elem, node, Sol, _, mpv, th, _, _ = mem
-        bdry.set_explicit_boundary_data(Sol, elem, sst.ud, th, mpv)
-        p2_nodes = mpv.p2_nodes
+        elem, node, sol, npf, th, _, _ = mem
+        bdry.set_explicit_boundary_data(sol, elem, sst.ud, th, npf)
+        p2_nodes = npf.p2_nodes
         bdry.set_ghostnodes_p2(p2_nodes, node, sst.ud)
 
     sst.ensemble_state.set_members(results)

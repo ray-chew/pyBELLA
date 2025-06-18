@@ -3,13 +3,13 @@ import numba as nb
 from ... import options as opts
 
 
-def get_linop(mpv, node, coriolis, diag_inv, ud):
+def get_linop(npf, node, coriolis, diag_inv, ud):
     dx = node.dx
     dy = node.dy
 
-    hplusx = mpv.wplus[0]
-    hplusy = mpv.wplus[1]
-    hcenter = mpv.wcenter
+    hplusx = npf.wplus[0]
+    hplusy = npf.wplus[1]
+    hcenter = npf.wcenter
 
     coeffs = [hplusx.T, hplusy.T, hcenter.T]
 

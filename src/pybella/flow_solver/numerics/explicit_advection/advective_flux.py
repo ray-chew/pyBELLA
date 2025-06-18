@@ -24,6 +24,8 @@ def recompute(mem, **kwargs):
     components = ["u", "v"] if ndim == 2 else ["u", "v", "w"]
     rho_components = ["rhou", "rhov"] if ndim == 2 else ["rhou", "rhov", "rhow"]
 
+    flux = mem.cache.get_flux_containers(mem.elem)
+
     for i, (comp, rho_comp) in enumerate(zip(components, rho_components)):
         # Use provided velocity or compute from momentum
         if comp in kwargs:
@@ -33,6 +35,6 @@ def recompute(mem, **kwargs):
             rhoY_vel = mem.sol.rhoY * momentum / mem.sol.rho
 
         # Apply directional convolution
-        mem.flux[i].rhoY[inner_idx] = convolution.apply_directional_convolution(
+        flux[i].rhoY[inner_idx] = convolution.apply_directional_convolution(
             rhoY_vel, kernels[comp], comp, ndim
         )

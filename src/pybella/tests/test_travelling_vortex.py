@@ -94,7 +94,7 @@ class UserData(object):
         return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
 
 
-def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
+def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     u0 = ud.u_wind_speed
     v0 = ud.v_wind_speed
     w0 = 0.0
@@ -134,7 +134,7 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     igxn = node.igx
     igyn = node.igy
 
-    hydrostatics.integrated_state(mpv, elem, node, th, ud)
+    hydrostatics.integrated_state(npf, elem, node, th, ud)
 
     coe = np.zeros((25))
     coe[0] = 1.0 / 24.0
@@ -195,8 +195,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     u = u0 + uth * (-(ys - yccs) / r)
     v = v0 + uth * (+(xs - xccs) / r)
     w = w0
-    p_hydro = mpv.HydroState.p0[igy:-igy]
-    rhoY = mpv.HydroState.rhoY0[igy:-igy]
+    p_hydro = npf.HydroState.p0[igy:-igy]
+    rhoY = npf.HydroState.rhoY0[igy:-igy]
 
     rho = np.zeros_like(r)
     rho[...] += (rho0 + del_rho * (1.0 - (r / R0) ** 2) ** 6) * (r < R0)
@@ -244,11 +244,11 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         # Sol.rhoe[:,igy:-igy] = ud.rhoe(rho,u,v,w,p_hydro,ud,th)
         Sol.rhoY[:, igy:-igy] = rhoY
 
-    mpv.p2_cells[:, igy:-igy] = (
-        th.Gamma * fac**2 * np.divide(p2c, mpv.HydroState.rhoY0[igy:-igy])
+    npf.p2_cells[:, igy:-igy] = (
+        th.Gamma * fac**2 * np.divide(p2c, npf.HydroState.rhoY0[igy:-igy])
     )
 
-    bdry.set_ghostcells_p2(mpv.p2_cells, elem, ud)
+    bdry.set_ghostcells_p2(npf.p2_cells, elem, ud)
 
     xs = node.x[igxn:-igxn].reshape(-1, 1)
     ys = node.y[igyn:-igyn].reshape(1, -1)
@@ -264,32 +264,32 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
     r = np.sqrt((xs - xccs) ** 2 + (ys - yccs) ** 2)
 
     for ip in range(25):
-        mpv.p2_nodes[igxn:-igxn, igyn:-igyn] += (
+        npf.p2_nodes[igxn:-igxn, igyn:-igyn] += (
             alpha * coe[ip] * ((r / R0) ** (12 + ip) - 1.0) * rotdir**2
         )
     for ip in range(13):
-        mpv.p2_nodes[igxn:-igxn, igyn:-igyn] += (
+        npf.p2_nodes[igxn:-igxn, igyn:-igyn] += (
             alpha_const * const_coe[ip] * ((r / R0) ** (12 + ip) - 1.0) * rotdir**2
         )
 
-    mpv.p2_nodes[igxn:-igxn, igyn:-igyn] *= r / R0 < 1.0
+    npf.p2_nodes[igxn:-igxn, igyn:-igyn] *= r / R0 < 1.0
 
-    mpv.p2_nodes[igxn:-igxn, igyn:-igyn] = (
+    npf.p2_nodes[igxn:-igxn, igyn:-igyn] = (
         th.Gamma
         * fac**2
         * np.divide(
-            mpv.p2_nodes[igxn:-igxn, igyn:-igyn], mpv.HydroState.rhoY0[igyn : -igyn + 1]
+            npf.p2_nodes[igxn:-igxn, igyn:-igyn], npf.HydroState.rhoY0[igyn : -igyn + 1]
         )
     )
 
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
     ud.compressibility = float(ud.is_compressible)
 
-    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, npf)
 
     if "imbal" in ud.aux:
         Sol.rhoY[...] = 1.0
-        mpv.p2_nodes[...] = 0.0
+        npf.p2_nodes[...] = 0.0
 
     if ud.initial_projection == True:
         is_compressible = np.copy(ud.is_compressible)
@@ -297,14 +297,14 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
         ud.is_compressible = 0
         ud.compressibility = 0.0
 
-        p2aux = np.copy(mpv.p2_nodes)
+        p2aux = np.copy(npf.p2_nodes)
 
         Sol.rhou -= u0 * Sol.rho
         Sol.rhov -= v0 * Sol.rho
 
         mem = obj()
         mem.sol = Sol
-        mem.mpv = mpv
+        mem.npf = npf
         mem.elem = elem
         mem.node = node
         mem.th = th
@@ -317,8 +317,8 @@ def sol_init(Sol, mpv, elem, node, th, ud, seed=None):
             mem, ud, ud.dtfixed, writer=None, label="initial_projection"
         )
 
-        mpv.p2_nodes[...] = p2aux
-        mpv.dp2_nodes[...] = 0.0
+        npf.p2_nodes[...] = p2aux
+        npf.dp2_nodes[...] = 0.0
 
         Sol.rhou += u0 * Sol.rho
         Sol.rhov += v0 * Sol.rho

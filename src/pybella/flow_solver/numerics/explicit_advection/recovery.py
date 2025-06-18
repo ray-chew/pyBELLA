@@ -10,7 +10,7 @@ def compute(mem, ud, lmbda, split_step, tag=None):
     Reconstruct the limited slopes at the cell interfaces.
 
     """
-    flux = mem.flux[split_step]
+    flux = mem.cache.get_flux_containers(mem.elem)[split_step]
     gamm = mem.th.gamm
 
     order_two = 1  # always 1
@@ -204,7 +204,7 @@ def _compute_pressure_reconstruction(
 ):
     """Compute pressure reconstruction using power law."""
     reconstructed_p0 = reconstructed_rhoy**gamm
-    lefts.p0[lefts_idx] = reconstructed_p0
-    rights.p0[rights_idx] = reconstructed_p0
+    lefts.p[lefts_idx] = reconstructed_p0
+    rights.p[rights_idx] = reconstructed_p0
 
     return reconstructed_p0

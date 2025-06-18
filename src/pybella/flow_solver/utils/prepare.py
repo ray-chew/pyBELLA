@@ -38,18 +38,10 @@ def initialise():
 
     elem, node = dis_grid.grid_init(ud)
 
-    sol = fields.CellSolField(elem.sc, ud)
-
-    # Move these to the FlowSolverCache
-    flux = np.empty((3), dtype=object)
-    flux[0] = fields.States(elem.sfx, ud)
-    if elem.ndim > 1:
-        flux[1] = fields.States(elem.sfy, ud)
-    if elem.ndim > 2:
-        flux[2] = fields.States(elem.sfz, ud)
+    sol = fields.CellSolField(elem.sc)
 
     th = gd_thermodynamics.ThermodynamicalQuantities(ud)
-    mpv = fields.NodePressureField(elem, node, ud)
+    npf = fields.NodePressureField(elem, node)
 
     io.init_logger(ud)
 
@@ -74,19 +66,19 @@ def initialise():
     #     node=node,
     #     Sol=Sol,
     #     flux=flux,
-    #     mpv=mpv,
+    #     npf=npf,
     #     th=th,
     # )
 
     ensemble_state = data_structures.EnsembleState()
 
-    sol = sol_init(sol, mpv, elem, node, th, ud)
+    sol = sol_init(sol, npf, elem, node, th, ud)
 
     # Initialise cache and add to simulation state
     flow_cache = cache.FlowSolverCache()
 
     ensemble_state.update_member(
-        elem=elem, node=node, sol=sol, flux=flux, mpv=mpv, th=th, cache=flow_cache
+        elem=elem, node=node, sol=sol, npf=npf, th=th, cache=flow_cache
     )
 
     restart_params = data_structures.RestartParameters(
@@ -115,20 +107,20 @@ def overwrite_init_with_restart(sst):
     es = sst.ensemble_state
     rp = sst.restart_params
 
-    hydrostatics.state(es.mpv, es.elem, es.node, es.th, es.ud)
+    hydrostatics.state(es.npf, es.elem, es.node, es.th, es.ud)
     sst.ud.old_suffix = np.copy(sst.ud.output_suffix)
     sst.ud.old_suffix = "_ensemble=%i%s" % (sst.N, sst.ud.old_suffix)
-    Sol0, mpv0, touts = io.sim_restart(
+    Sol0, npf0, touts = io.sim_restart(
         rp.r_params[0],
         rp.r_params[1],
         es.elem,
         es.node,
         es.ud,
         es.Sol,
-        es.mpv,
+        es.npf,
         rp.r_params[2],
     )
-    sol_ens = [[Sol0, es.flux, mpv0, [-np.inf, sst.step]]]
+    sol_ens = [[Sol0, es.flux, npf0, [-np.inf, sst.step]]]
     # ud.tout = touts[1:]
     sst.ud.tout = [touts[-1]]
     sst.t = touts[0]

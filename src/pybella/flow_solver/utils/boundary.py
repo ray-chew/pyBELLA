@@ -8,7 +8,7 @@ from ...utils import options as opts
 from ...utils import io
 
 
-def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
+def set_explicit_boundary_data(Sol, elem, ud, th, npf, step=None):
     """
     In-place update of the ghost cells in :class:`management.variable.Vars` given the boundary conditions specified by :class:`inputs.user_data.UserDataInit`.
 
@@ -22,7 +22,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
         Data container for the initial conditions
     th : :class:`physics.gas_dynamics.thermodynamic.init`
         Thermodynamic variables of the system
-    mpv : :class:`physics.low_mach.mpv.MPV`
+    npf : :class:`physics.low_mach.npf.MPV`
         Variables relating to the elliptic solver
     step : int, optional
         Current step
@@ -90,8 +90,8 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
 
                     if hasattr(ud, "ATMOSPHERIC_EXTENSION"):
                         dpi = (
-                            mpv.HydroState.p20[nimage[y_axs]]
-                            - mpv.HydroState.p20[nlast[y_axs]]
+                            npf.HydroState.p20[nimage[y_axs]]
+                            - npf.HydroState.p20[nlast[y_axs]]
                         ) * ud.Msq
                     else:
                         dpi = (
@@ -105,7 +105,7 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
                     rhoY = (
                         ((Sol.rhoY[nlast] ** th.gm1) + dpi) ** th.gm1inv
                         if ud.is_compressible == 1
-                        else mpv.HydroState.rhoY0[nimage[y_axs]]
+                        else npf.HydroState.rhoY0[nimage[y_axs]]
                     )
 
                     rho = rhoY * S
@@ -131,9 +131,9 @@ def set_explicit_boundary_data(Sol, elem, ud, th, mpv, step=None):
 
                     # p = rhoY**th.gamm
 
-                    # rhoY = mpv.HydroState.rhoY0[nimage[y_axs]]
+                    # rhoY = npf.HydroState.rhoY0[nimage[y_axs]]
                     # Y = Sol.rhoY[nimage] / Sol.rho[nimage]
-                    # rho = mpv.HydroState.rho0[nimage[y_axs]]
+                    # rho = npf.HydroState.rho0[nimage[y_axs]]
 
                     # direction == 1 is the bottom
                     # if np.sign(direction) == 1:
@@ -502,7 +502,7 @@ def get_bottom_tau_y(ud, elem, node, alpha, cutoff=0.5):
 
 def apply_rayleigh_forcing(
     Sol,
-    mpv,
+    npf,
     ud,
     elem,
     node,
@@ -513,7 +513,7 @@ def apply_rayleigh_forcing(
     bdry,
     half=True,
     Sol_half_new=None,
-    mpv_half_new=None,
+    npf_half_new=None,
 ):
     """Apply Rayleigh forcing boundary condition (file or function based)."""
     if not (hasattr(ud, "rayleigh_forcing") and ud.rayleigh_forcing):
@@ -524,19 +524,19 @@ def apply_rayleigh_forcing(
     if ud.rayleigh_forcing_type == "file":
         reader = io.read_input(ud.rayleigh_forcing_fn, ud.rayleigh_forcing_path)
 
-        if Sol_half_new is None or mpv_half_new is None:
+        if Sol_half_new is None or npf_half_new is None:
             Sol_half_new = copy.deepcopy(Sol)
-            mpv_half_new = copy.deepcopy(mpv)
+            npf_half_new = copy.deepcopy(npf)
 
         time_tag = "%.3d_after_full_step" % step
-        reader.get_data(Sol_half_new, mpv_half_new, time_tag, half=half)
+        reader.get_data(Sol_half_new, npf_half_new, time_tag, half=half)
 
         up = Sol_half_new.rhou / Sol_half_new.rho
         vp = Sol_half_new.rhov / Sol_half_new.rho
-        Yp = Sol_half_new.rhoY / Sol_half_new.rho - mpv.HydroState.Y0.reshape(1, -1)
-        pi = mpv_half_new.p2_nodes
+        Yp = Sol_half_new.rhoY / Sol_half_new.rho - npf.HydroState.Y0.reshape(1, -1)
+        pi = npf_half_new.p2_nodes
 
-        bdry.rayleigh_damping(Sol, mpv, ud, elem, node, [up, vp, Yp, pi, t + t_offset])
+        bdry.rayleigh_damping(Sol, npf, ud, elem, node, [up, vp, Yp, pi, t + t_offset])
 
     elif ud.rayleigh_forcing_type == "func":
         s = 5.0e-3 + 1e-4 + 0e-5
@@ -547,13 +547,13 @@ def apply_rayleigh_forcing(
         _, _, _, pi_n = ud.rf_bot.dehatter(th, grid="n")
 
         bdry.rayleigh_damping(
-            Sol, mpv, ud, elem, node, [up, vp, Yp, pi_n, t + t_offset]
+            Sol, npf, ud, elem, node, [up, vp, Yp, pi_n, t + t_offset]
         )
 
-    bdry.set_explicit_boundary_data(Sol, elem, ud, th, mpv)
+    bdry.set_explicit_boundary_data(Sol, elem, ud, th, npf)
 
 
-def rayleigh_damping(Sol, mpv, ud, elem, node, forcing=None):
+def rayleigh_damping(Sol, npf, ud, elem, node, forcing=None):
     u = Sol.rhou / Sol.rho  # [elem.i2]
     v = Sol.rhov / Sol.rho  # [elem.i2]
     Y = Sol.rhoY / Sol.rho  # [elem.i2]
@@ -586,7 +586,7 @@ def rayleigh_damping(Sol, mpv, ud, elem, node, forcing=None):
         else:
             mfac = 1.0
 
-        mpv.p2_nodes[...] += tny_f * (mpv.p2_nodes) + np.abs(tny_f) * mfac * pi_f
+        npf.p2_nodes[...] += tny_f * (npf.p2_nodes) + np.abs(tny_f) * mfac * pi_f
         c_f = 1.0
 
     else:
@@ -603,7 +603,7 @@ def rayleigh_damping(Sol, mpv, ud, elem, node, forcing=None):
         tcy_f * (v - ud.v_wind_speed) + np.abs(tcy_f) * mfac * v_f
     )
 
-    Ybar = mpv.HydroState.Y0.reshape(1, -1)
+    Ybar = npf.HydroState.Y0.reshape(1, -1)
     Y += tcy * (Y - Ybar) + c_f * (tcy_f * (Y - Ybar) + np.abs(tcy_f) * mfac * Y_f)
 
     Sol.rhou[...] = rho * u

@@ -19,8 +19,7 @@ class ModelState:
     elem: Grid
     node: Grid
     sol: CellSolField
-    flux: List[States]
-    mpv: NodePressureField
+    npf: NodePressureField
     th: ThermodynamicalQuantities
     cache: FlowSolverCache = field(default_factory=FlowSolverCache)
     time: IntegrationTime = field(init=False)
@@ -69,14 +68,13 @@ class EnsembleState:
         elem: Grid,
         node: Grid,
         sol: CellSolField,
-        mpv: NodePressureField,
-        flux: List[CellSolField],
+        npf: NodePressureField,
         th: ThermodynamicalQuantities,
         cache: Optional[FlowSolverCache] = None,
     ):
         if cache is None:
             cache = FlowSolverCache()
-        new_state = ModelState(elem, node, sol, flux, mpv, th, cache)
+        new_state = ModelState(elem, node, sol, npf, th, cache)
         self.members.append(new_state)
 
     def set_members(self, members: List[ModelState]):

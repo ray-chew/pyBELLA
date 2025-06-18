@@ -107,8 +107,6 @@ def main():
                 label = "ensemble_mem=%i_%.3f" % (n, tout)
             writer.write_all(mem, str(label) + "_after_full_step")
 
-        # synchronise_variables(mpv, Sol, elem, node, ud, th)
-        # sst.t = tout
         tout_old = np.copy(tout)
         logging.info("tout = %.3f" % tout)
 

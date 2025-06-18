@@ -80,7 +80,7 @@ def column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     HydroState_n.p20[xc_idx, igy + 1 :] = pi_hydro_n[:, igy:] / ud.Msq
 
 
-def integrated_state(mpv, elem, node, th, ud):
+def integrated_state(npf, elem, node, th, ud):
     """
     Compute hydrostatic background state for atmospheric model.
     Handles arbitrary stratification profiles and proper numerical integration.
@@ -138,25 +138,25 @@ def integrated_state(mpv, elem, node, th, ud):
         rhoY_hydro = pi_hydro**gm1_inv
 
         # Update cell solutions
-        mpv.HydroState.rhoY0[:] = rhoY_hydro
-        mpv.HydroState.rho0[:] = rhoY_hydro * S_ps
-        mpv.HydroState.p0[:] = p_hydro
-        mpv.HydroState.p20[:] = pi_hydro / ud.Msq
-        mpv.HydroState.S0[:] = S_ps
-        mpv.HydroState.S10[:] = 0.0
-        mpv.HydroState.Y0[:] = 1.0 / S_ps
+        npf.HydroState.rhoY0[:] = rhoY_hydro
+        npf.HydroState.rho0[:] = rhoY_hydro * S_ps
+        npf.HydroState.p0[:] = p_hydro
+        npf.HydroState.p20[:] = pi_hydro / ud.Msq
+        npf.HydroState.S0[:] = S_ps
+        npf.HydroState.S10[:] = 0.0
+        npf.HydroState.Y0[:] = 1.0 / S_ps
 
         ############################
         # Update node hydrostates
         ############################
 
         # Bottom reference node (y=0)
-        mpv.HydroState_n.Y0[igy] = ud.stratification(0.0)
-        mpv.HydroState_n.rhoY0[igy] = rhoY0
-        mpv.HydroState_n.rho0[igy] = rhoY0 / ud.stratification(0.0)
-        mpv.HydroState_n.S0[igy] = 1.0 / mpv.HydroState_n.Y0[igy]
-        mpv.HydroState_n.p0[igy] = p0
-        mpv.HydroState_n.p20[igy] = pi0 / ud.Msq
+        npf.HydroState_n.Y0[igy] = ud.stratification(0.0)
+        npf.HydroState_n.rhoY0[igy] = rhoY0
+        npf.HydroState_n.rho0[igy] = rhoY0 / ud.stratification(0.0)
+        npf.HydroState_n.S0[igy] = 1.0 / npf.HydroState_n.Y0[igy]
+        npf.HydroState_n.p0[igy] = p0
+        npf.HydroState_n.p20[igy] = pi0 / ud.Msq
 
         # Ghost cells below bottom (negative heights)
         Sn_integral_p = np.zeros(igy)
@@ -179,46 +179,46 @@ def integrated_state(mpv, elem, node, th, ud):
         rhoY_hydro_n = pi_hydro_n**gm1_inv
 
         # Update node solutions - below reference
-        mpv.HydroState_n.rhoY0[:igy] = rhoY_hydro_n[:igy]
-        mpv.HydroState_n.Y0[: igy + 1] = ud.stratification(
+        npf.HydroState_n.rhoY0[:igy] = rhoY_hydro_n[:igy]
+        npf.HydroState_n.Y0[: igy + 1] = ud.stratification(
             0.5 * (y_ps[: igy + 1] + y_ps[: igy + 1] - elem.dy)
         )
-        mpv.HydroState_n.rho0[:igy] = rhoY_hydro_n[:igy] / mpv.HydroState_n.Y0[:igy]
-        mpv.HydroState_n.S0[:igy] = 1.0 / mpv.HydroState_n.Y0[:igy]
-        mpv.HydroState_n.p0[:igy] = rhoY_hydro_n[:igy] ** th.gamm
-        mpv.HydroState_n.p20[:igy] = pi_hydro_n[:igy] / ud.Msq
+        npf.HydroState_n.rho0[:igy] = rhoY_hydro_n[:igy] / npf.HydroState_n.Y0[:igy]
+        npf.HydroState_n.S0[:igy] = 1.0 / npf.HydroState_n.Y0[:igy]
+        npf.HydroState_n.p0[:igy] = rhoY_hydro_n[:igy] ** th.gamm
+        npf.HydroState_n.p20[:igy] = pi_hydro_n[:igy] / ud.Msq
 
         # Update node solutions - above reference
-        mpv.HydroState_n.rhoY0[igy + 1 :] = rhoY_hydro_n[igy:]
-        mpv.HydroState_n.Y0[igy + 1 :] = ud.stratification(
+        npf.HydroState_n.rhoY0[igy + 1 :] = rhoY_hydro_n[igy:]
+        npf.HydroState_n.Y0[igy + 1 :] = ud.stratification(
             0.5 * (y_ps[igy:] + y_ps[igy:] + elem.dy)
         )
-        mpv.HydroState_n.rho0[igy + 1 :] = (
-            rhoY_hydro_n[igy:] / mpv.HydroState_n.Y0[igy + 1 :]
+        npf.HydroState_n.rho0[igy + 1 :] = (
+            rhoY_hydro_n[igy:] / npf.HydroState_n.Y0[igy + 1 :]
         )
-        mpv.HydroState_n.S0[igy + 1 :] = 1.0 / mpv.HydroState_n.Y0[igy + 1 :]
-        mpv.HydroState_n.p0[igy + 1 :] = rhoY_hydro_n[igy:] ** th.gamm
-        mpv.HydroState_n.p20[igy + 1 :] = pi_hydro_n[igy:] / ud.Msq
+        npf.HydroState_n.S0[igy + 1 :] = 1.0 / npf.HydroState_n.Y0[igy + 1 :]
+        npf.HydroState_n.p0[igy + 1 :] = rhoY_hydro_n[igy:] ** th.gamm
+        npf.HydroState_n.p20[igy + 1 :] = pi_hydro_n[igy:] / ud.Msq
 
     else:
         # No gravity case - uniform atmosphere
-        mpv.HydroState.p20[:] = 1.0
-        mpv.HydroState.p0[:] = 1.0
-        mpv.HydroState.rho0[:] = 1.0
-        mpv.HydroState.rhoY0[:] = 1.0
-        mpv.HydroState.Y0[:] = 1.0
-        mpv.HydroState.S0[:] = 1.0
-        mpv.HydroState.S10[:] = 0.0
+        npf.HydroState.p20[:] = 1.0
+        npf.HydroState.p0[:] = 1.0
+        npf.HydroState.rho0[:] = 1.0
+        npf.HydroState.rhoY0[:] = 1.0
+        npf.HydroState.Y0[:] = 1.0
+        npf.HydroState.S0[:] = 1.0
+        npf.HydroState.S10[:] = 0.0
 
-        mpv.HydroState_n.p20[:] = 1.0
-        mpv.HydroState_n.p0[:] = 1.0
-        mpv.HydroState_n.rho0[:] = 1.0
-        mpv.HydroState_n.rhoY0[:] = 1.0
-        mpv.HydroState_n.Y0[:] = 1.0
-        mpv.HydroState_n.S0[:] = 1.0
+        npf.HydroState_n.p20[:] = 1.0
+        npf.HydroState_n.p0[:] = 1.0
+        npf.HydroState_n.rho0[:] = 1.0
+        npf.HydroState_n.rhoY0[:] = 1.0
+        npf.HydroState_n.Y0[:] = 1.0
+        npf.HydroState_n.S0[:] = 1.0
 
 
-def analytical_state(mpv, elem, node, th, ud):
+def analytical_state(npf, elem, node, th, ud):
     g = ud.gravity_strength[1]
     Gamma = th.Gamma
     Hex = 1.0 / (th.Gamma * g)
@@ -233,12 +233,12 @@ def analytical_state(mpv, elem, node, th, ud):
     p_n = pi_n**th.Gammainv
     rho_n = P_n / Y_n
 
-    mpv.HydroState_n.p20[...] = pi_n / ud.Msq
-    mpv.HydroState_n.p0[...] = p_n
-    mpv.HydroState_n.rho0[...] = rho_n
-    mpv.HydroState_n.rhoY0[...] = P_n
-    mpv.HydroState_n.Y0[...] = Y_n
-    mpv.HydroState_n.S0[...] = 1.0 / Y_n
+    npf.HydroState_n.p20[...] = pi_n / ud.Msq
+    npf.HydroState_n.p0[...] = p_n
+    npf.HydroState_n.rho0[...] = rho_n
+    npf.HydroState_n.rhoY0[...] = P_n
+    npf.HydroState_n.Y0[...] = Y_n
+    npf.HydroState_n.S0[...] = 1.0 / Y_n
 
     pi_cp = np.exp(-(elem.y + 0.5 * dy) / Hex)
     pi_cm = np.exp(-(elem.y - 0.5 * dy) / Hex)
@@ -249,15 +249,15 @@ def analytical_state(mpv, elem, node, th, ud):
     p_c = pi_c**th.Gammainv
     rho_c = P_c / Y_c
 
-    mpv.HydroState.p20[...] = pi_c / ud.Msq
-    mpv.HydroState.p0[...] = p_c
-    mpv.HydroState.rho0[...] = rho_c
-    mpv.HydroState.rhoY0[...] = P_c
-    mpv.HydroState.Y0[...] = Y_c
-    mpv.HydroState.S0[...] = 1.0 / Y_c
+    npf.HydroState.p20[...] = pi_c / ud.Msq
+    npf.HydroState.p0[...] = p_c
+    npf.HydroState.rho0[...] = rho_c
+    npf.HydroState.rhoY0[...] = P_c
+    npf.HydroState.Y0[...] = Y_c
+    npf.HydroState.S0[...] = 1.0 / Y_c
 
 
-def initial_pressure(Sol, mpv, elem, node, ud, th):
+def initial_pressure(Sol, npf, elem, node, ud, th):
     Gammainv = th.Gammainv
     igy = node.igy
     igx = node.igx
@@ -282,7 +282,7 @@ def initial_pressure(Sol, mpv, elem, node, ud, th):
     bdpdx[xn_idx] = np.sum(
         0.5
         * (Pm * thm + Pc * thc)
-        * (mpv.p2_cells[x_idx_c, y_idx] - mpv.p2_cells[x_idx_m, y_idx])
+        * (npf.p2_cells[x_idx_c, y_idx] - npf.p2_cells[x_idx_m, y_idx])
         * dy,
         axis=1,
     )
@@ -303,10 +303,10 @@ def initial_pressure(Sol, mpv, elem, node, ud, th):
     x_idx = slice(igx, -igx + 1)
     y_idx = slice(igy, -igy + 1)
 
-    mpv.p2_cells[x_idx, y_idx] += pibot[x_idx].reshape(
+    npf.p2_cells[x_idx, y_idx] += pibot[x_idx].reshape(
         -1, 1
-    ) - 1.0 * mpv.HydroState.p20[y_idx].reshape(1, -1)
-    bdry.set_ghostcells_p2(mpv.p2_cells, elem, ud)
+    ) - 1.0 * npf.HydroState.p20[y_idx].reshape(1, -1)
+    bdry.set_ghostcells_p2(npf.p2_cells, elem, ud)
 
     icxn = node.icx
     icyn = node.icy
@@ -324,7 +324,7 @@ def initial_pressure(Sol, mpv, elem, node, ud, th):
     beta *= Gammainv / height
 
     bdpdx[1:] = np.sum(
-        Pc * thc * (mpv.p2_nodes[1:-1, igy:-igy] - mpv.p2_nodes[:-2, igy:-igy]) * dy,
+        Pc * thc * (npf.p2_nodes[1:-1, igy:-igy] - npf.p2_nodes[:-2, igy:-igy]) * dy,
         axis=1,
     )
     bdpdx *= Gammainv / height / dx
@@ -343,33 +343,33 @@ def initial_pressure(Sol, mpv, elem, node, ud, th):
 
     x_idx = slice(igx, -igx + 1)
     y_idx = slice(igy, -igy + 1)
-    mpv.p2_nodes[x_idx, y_idx] += pibot[x_idx].reshape(
+    npf.p2_nodes[x_idx, y_idx] += pibot[x_idx].reshape(
         -1, 1
-    ) - 1.0 * mpv.HydroState_n.p20[y_idx].reshape(1, -1)
+    ) - 1.0 * npf.HydroState_n.p20[y_idx].reshape(1, -1)
 
-    mpv.dp2_nodes[:, :] = mpv.p2_nodes
+    npf.dp2_nodes[:, :] = npf.p2_nodes
 
     # guess initial node value (at left-most node)
-    mpv.p2_nodes[igx, igy:-igy] = mpv.dp2_nodes[igx, igy:-igy]
+    npf.p2_nodes[igx, igy:-igy] = npf.dp2_nodes[igx, igy:-igy]
 
-    mpv.p2_nodes[:, :] = __loop_over_array(
-        igx, igy, icxn, icyn, mpv.p2_nodes, mpv.dp2_nodes
+    npf.p2_nodes[:, :] = __loop_over_array(
+        igx, igy, icxn, icyn, npf.p2_nodes, npf.dp2_nodes
     )
 
     assert ((node.icx + 1) % 2) == 1
-    delp2 = 0.5 * (mpv.p2_nodes[-igx - 1, igy:-igy] - mpv.p2_nodes[igx, igy:-igy])
+    delp2 = 0.5 * (npf.p2_nodes[-igx - 1, igy:-igy] - npf.p2_nodes[igx, igy:-igy])
     delp2 = delp2.reshape(1, -1)
-    sgn = np.ones_like(mpv.p2_nodes[:, 0][igy:-igy]).reshape(-1, 1)
+    sgn = np.ones_like(npf.p2_nodes[:, 0][igy:-igy]).reshape(-1, 1)
 
     sgn[1::2] *= -1
 
-    mpv.p2_nodes[igx:-igx, igy:-igy] += sgn * delp2
-    bdry.set_ghostnodes_p2(mpv.p2_nodes, node, ud)
+    npf.p2_nodes[igx:-igx, igy:-igy] += sgn * delp2
+    bdry.set_ghostnodes_p2(npf.p2_nodes, node, ud)
 
-    mpv.dp2_nodes[:, :] = 0.0
+    npf.dp2_nodes[:, :] = 0.0
 
     inner_domain = (slice(igx, -igx), slice(igy, -igy))
-    pi = ud.Msq * (mpv.p2_cells[inner_domain] + 1.0 * mpv.HydroState.p20[igy:-igy])
+    pi = ud.Msq * (npf.p2_cells[inner_domain] + 1.0 * npf.HydroState.p20[igy:-igy])
     Y = Sol.rhoY[inner_domain] / Sol.rho[inner_domain]
     rhoold = np.copy(Sol.rho[inner_domain])
     Sol.rhoY[inner_domain] = pi**th.gm1inv

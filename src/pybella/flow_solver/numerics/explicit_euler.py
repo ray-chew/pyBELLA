@@ -6,7 +6,7 @@ from ..utils import boundary as bdry
 
 def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
     # Unpack frequently used variables
-    th, sol, mpv, node, elem = mem.th, mem.sol, mem.mpv, mem.node, mem.elem
+    th, sol, npf, node, elem = mem.th, mem.sol, mem.npf, mem.node, mem.elem
     ndim = elem.ndim
 
     nonhydro = ud.nonhydrostasy
@@ -20,19 +20,19 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
     rhou, rhov, rhow = sol.rhou, sol.rhov, sol.rhow
 
     # Pressure and derivatives
-    p2n = mpv.p2_nodes
+    p2n = npf.p2_nodes
     dp2n = np.zeros_like(p2n)
 
-    S0c = mpv.HydroState.get_S0c(elem)
-    dSdy = mpv.HydroState_n.get_dSdy(elem, node)
+    S0c = npf.HydroState.get_S0c(elem)
+    dSdy = npf.HydroState_n.get_dSdy(elem, node)
 
     # Compute divergence
-    mpv.rhs[...] = divergence.compute_at_nodes(mpv.rhs, elem, sol, ud)
+    npf.rhs[...] = divergence.compute_at_nodes(npf.rhs, elem, sol, ud)
     if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
-        bdry.scale_wall_node_values(mpv.rhs, node, ud, 2.0)
+        bdry.scale_wall_node_values(npf.rhs, node, ud, 2.0)
 
     if debug:
-        writer.populate(str(label), "rhs", mpv.rhs)
+        writer.populate(str(label), "rhs", npf.rhs)
 
     # Compute compressibility kernel
     kernel = convolution.get_averaging_kernel(ndim, width=2)
@@ -72,9 +72,9 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
     sol.rhoX[...] = (rho * (rho / rhoY - S0c)) - dt * (v * dSdy) * rho
 
     # Compressibility correction to p2
-    dp2n[node.i1] -= dt * dpidP * mpv.rhs
-    mpv.p2_nodes += ud.compressibility * dp2n
+    dp2n[node.i1] -= dt * dpidP * npf.rhs
+    npf.p2_nodes += ud.compressibility * dp2n
 
     # Boundary conditions
-    bdry.set_ghostnodes_p2(mpv.p2_nodes, node, ud)
-    bdry.set_explicit_boundary_data(sol, elem, ud, th, mpv)
+    bdry.set_ghostnodes_p2(npf.p2_nodes, node, ud)
+    bdry.set_explicit_boundary_data(sol, elem, ud, th, npf)
