@@ -6,9 +6,146 @@ import numpy as np
 from ....utils import options as opts
 from .common import get_ghost_padding
 
+class BoundaryHandler:
+    """Handles different types of boundary conditions for ghost cells."""
+    
+    def __init__(self, mem, ud):
+        self.mem = mem
+        self.ud = ud
+        self.igs = mem.elem.igs
+        self.ndim = mem.elem.ndim
+    
+    def apply_no_gravity_boundary(self, sol, current_step, ghost_padding, idx):
+        """Apply boundary conditions for axes without gravity."""
+        bdry_type = self.ud.bdry_type[current_step]
+        
+        if bdry_type == opts.BdryType.PERIODIC:
+            _set_boundary(sol, ghost_padding, "wrap", idx)
+        elif bdry_type == opts.BdryType.WALL:
+            _set_boundary(sol, ghost_padding, "symmetric", idx)
+        elif bdry_type == opts.BdryType.RAYLEIGH:
+            raise AssertionError("Rayleigh boundary not defined on x-direction.")
+    
+    def apply_gravity_boundary(self, sol, dim, ghost_padding, step):
+        """Apply boundary conditions for axes with gravity."""
+        gravity_axis = dim
+        g = self.ud.gravity_strength[gravity_axis]
+        direction = -1.0
+        offset = 0
+        
+        for side in ghost_padding[gravity_axis]:
+            direction *= -1
+            self._process_ghost_cells_side(sol, side, dim, direction, offset, step, g)
+            offset += 1
+    
+    def _process_ghost_cells_side(self, sol, side, dim, direction, offset, step, g):
+        """Process ghost cells for one side of the boundary."""
+        y_axs = self.ndim - 1 if step is not None else 1
+        
+        for current_idx in np.arange(side)[::-1]:
+            indices = self._get_gravity_indices(current_idx, direction, offset, y_axs)
+            ghost_values = self._calculate_ghost_values(sol, indices, direction, g, y_axs)
+            self._assign_ghost_values(sol, indices['image'], ghost_values)
+    
+    def _get_gravity_indices(self, current_idx, direction, offset, y_axs):
+        """Get the indices for last, source, and image cells."""
+        nlast, nsource, nimage = _get_gravity_padding(
+            self.ndim, current_idx, direction, offset, self.mem.elem, y_axs=y_axs
+        )
+        return {
+            'last': nlast,
+            'source': nsource,
+            'image': nimage
+        }
+    
+    def _calculate_ghost_values(self, sol, indices, direction, g, y_axs):
+        """Calculate values for ghost cells with gravity."""
+        nlast, nsource, nimage = indices['last'], indices['source'], indices['image']
+        
+        # Calculate basic quantities
+        Y_last = sol.rhoY[nlast] / sol.rho[nlast]
+        Y_source = sol.rhoY[nsource] / sol.rho[nsource]
+        
+        rhoYv_image = -sol.rhov[nsource] * sol.rhoY[nsource] / sol.rho[nsource]
+        S = 1.0 / self.ud.stratification(self.mem.elem.y[nimage[y_axs]])
+        
+        # Calculate pressure difference
+        dpi = self._calculate_pressure_difference(nlast, nimage, direction, g, Y_last, S, y_axs)
+        
+        # Calculate density and mass fraction
+        rho, rhoY = self._calculate_density_and_mass_fraction(sol, nlast, nimage, dpi, S, y_axs)
+        Y_image = rhoY / rho
+        
+        # Calculate velocity components
+        velocities = self._calculate_velocities(sol, nsource, rhoYv_image, rhoY, Y_source, Y_image, direction)
+        
+        return {
+            'rho': rho,
+            'rhoY': rhoY,
+            'u': sol.rhou[nsource] / sol.rho[nsource],
+            'v': velocities['v'],
+            'w': sol.rhow[nsource] / sol.rho[nsource],
+            'X': sol.rhoX[nsource] / sol.rho[nsource],
+            'Th_slc': velocities.get('Th_slc', 1.0)
+        }
+    
+    def _calculate_pressure_difference(self, nlast, nimage, direction, g, Y_last, S, y_axs):
+        """Calculate pressure difference for ghost cells."""
+        if hasattr(self.ud, "ATMOSPHERIC_EXTENSION"):
+            return (
+                self.mem.npf.HydroState.p20[nimage[y_axs]]
+                - self.mem.npf.HydroState.p20[nlast[y_axs]]
+            ) * self.ud.Msq
+        else:
+            return (
+                direction * (self.mem.th.Gamma * g) * 0.5 * self.mem.elem.dy * (1.0 / Y_last + S)
+            )
+    
+    def _calculate_density_and_mass_fraction(self, sol, nlast, nimage, dpi, S, y_axs):
+        """Calculate density and mass fraction for ghost cells."""
+        if self.ud.is_compressible == 1:
+            rhoY = ((sol.rhoY[nlast] ** self.mem.th.gm1) + dpi) ** self.mem.th.gm1inv
+        else:
+            rhoY = self.mem.npf.HydroState.rhoY0[nimage[y_axs]]
+        
+        rho = rhoY * S
+        return rho, rhoY
+    
+    def _calculate_velocities(self, sol, nsource, rhoYv_image, rhoY, Y_source, Y_image, direction):
+        """Calculate velocity components for ghost cells."""
+        result = {}
+        
+        if hasattr(self.ud, "ATMOSPHERIC_EXTENSION"):
+            if direction > 0:  # bottom boundary
+                result['v'] = sol.rhov[nsource] * Y_source / sol.rho[nsource] * rhoY / Y_image
+            else:  # top boundary
+                result['v'] = sol.rhov[nsource] * Y_source
+            result['Th_slc'] = rhoY / (rhoY / Y_image) / (sol.rhoY[nsource] / sol.rho[nsource])
+        else:
+            result['v'] = rhoYv_image / rhoY
+            result['Th_slc'] = 1.0
+        
+        return result
+    
+    def _assign_ghost_values(self, sol, nimage, ghost_values):
+        """Assign calculated values to ghost cells."""
+        sol.rho[nimage] = ghost_values['rho']
+        sol.rhou[nimage] = ghost_values['rho'] * ghost_values['u'] * ghost_values['Th_slc']
+        sol.rhow[nimage] = ghost_values['rho'] * ghost_values['w'] * ghost_values['Th_slc']
+        sol.rhoY[nimage] = ghost_values['rhoY']
+        sol.rhoX[nimage] = ghost_values['rho'] * ghost_values['X']
+        
+        # Handle v-component differently for atmospheric extension
+        if hasattr(self.ud, "ATMOSPHERIC_EXTENSION"):
+            sol.rhov[nimage] = -ghost_values['v'] / (ghost_values['rhoY'] / ghost_values['rho'])
+        else:
+            sol.rhov[nimage] = ghost_values['rho'] * ghost_values['v']
+
+
 def set_ghost_cells(mem, ud, step=None, sol=None):
     """
-    In-place update of the ghost cells in :class:`management.variable.Vars` given the boundary conditions specified by :class:`inputs.user_data.UserDataInit`.
+    In-place update of the ghost cells in :class:`management.variable.Vars` 
+    given the boundary conditions specified by :class:`inputs.user_data.UserDataInit`.
 
     Parameters
     ----------
@@ -17,164 +154,71 @@ def set_ghost_cells(mem, ud, step=None, sol=None):
     ud : :class:`inputs.user_data.UserDataInit`
         Data container for the initial conditions
     step : int, optional
-        Current step
-
+        Current step for advection directional Strang-splitting
+    sol : object, optional
+        Solution object, defaults to mem.sol
     """
-    igs = mem.elem.igs
-    ndim = mem.elem.ndim
-
     if sol is None:
-        sol = mem.sol 
-
-    # if step parameter is not None, then we are in the advection directional Strang-splitting, where the array has already flipped, and we should only update the relevant boundaries, i.e. those in the direction of the current Strang-split-step.
-    if step == None:
-        dims = np.arange(ndim)
-    else:
-        dims = [ndim - 1]
-
+        sol = mem.sol
+    
+    handler = BoundaryHandler(mem, ud)
+    dims = _get_dimensions_to_process(handler.ndim, step)
+    
     for dim in dims:
-        if step is not None:
-            current_step = step
-        else:
-            current_step = dim
-        ghost_padding, idx = get_ghost_padding(ndim, dim, igs)
-
+        current_step = step if step is not None else dim
+        ghost_padding, idx = get_ghost_padding(handler.ndim, dim, handler.igs)
+        
         if ud.gravity_strength[current_step] == 0.0:
-            # Do this for the axes that do not have gravity.
-            # Periodic BC.
-            if ud.bdry_type[current_step] == opts.BdryType.PERIODIC:
-                _set_boundary(sol, ghost_padding, "wrap", idx)
-            # Wall BC.
-            elif ud.bdry_type[current_step] == opts.BdryType.WALL:
-                _set_boundary(sol, ghost_padding, "symmetric", idx)
-            elif ud.bdry_type[current_step] == opts.BdryType.RAYLEIGH:
-                assert 0, "Rayleigh boundary not defined on x-direction."
-
+            handler.apply_no_gravity_boundary(sol, current_step, ghost_padding, idx)
         else:
-            # get current axis that has gravity.
-            gravity_axis = dim
+            handler.apply_gravity_boundary(sol, dim, ghost_padding, step)
 
-            direction = -1.0
-            offset = 0
 
-            # get gravity strength specified in the user data file.
-            g = ud.gravity_strength[gravity_axis]
+def _get_dimensions_to_process(ndim, step):
+    """Determine which dimensions to process based on step parameter."""
+    if step is None:
+        return np.arange(ndim)
+    else:
+        return [ndim - 1]
 
-            # for the number of ghost cells in the gravity axis...
-            for side in ghost_padding[gravity_axis]:
-                direction *= -1
-                # loop through each of these ghost cells.
-                for current_idx in np.arange(side)[::-1]:
-                    if step != None:
-                        y_axs = ndim - 1
-                    else:
-                        y_axs = 1
-                    nlast, nsource, nimage = _get_gravity_padding(
-                        ndim, current_idx, direction, offset, mem.elem, y_axs=y_axs
-                    )
 
-                    Y_last = sol.rhoY[nlast] / sol.rho[nlast]
-
-                    rhoYv_image = (
-                        -sol.rhov[nsource] * sol.rhoY[nsource] / sol.rho[nsource]
-                    )
-
-                    S = 1.0 / ud.stratification(mem.elem.y[nimage[y_axs]])
-
-                    if hasattr(ud, "ATMOSPHERIC_EXTENSION"):
-                        dpi = (
-                            mem.npf.HydroState.p20[nimage[y_axs]]
-                            - mem.npf.HydroState.p20[nlast[y_axs]]
-                        ) * ud.Msq
-                    else:
-                        dpi = (
-                            direction
-                            * (mem.th.Gamma * g)
-                            * 0.5
-                            * mem.elem.dy
-                            * (1.0 / Y_last + S)
-                        )
-
-                    rhoY = (
-                        ((sol.rhoY[nlast] ** mem.th.gm1) + dpi) ** mem.th.gm1inv
-                        if ud.is_compressible == 1
-                        else mem.npf.HydroState.rhoY0[nimage[y_axs]]
-                    )
-
-                    rho = rhoY * S
-
-                    Y_source = sol.rhoY[nsource] / sol.rho[nsource]
-                    Y_image = rhoY / rho
-
-                    if hasattr(ud, "ATMOSPHERIC_EXTENSION"):
-                        if direction > 0:  # if bottom boundary
-                            v = sol.rhov[nsource] * Y_source / sol.rho[nsource] * rho
-                        else:  # if top boundary
-                            v = sol.rhov[nsource] * Y_source
-
-                        Th_slc = rhoY / rho / Y_last
-
-                    else:
-                        v = rhoYv_image / rhoY
-                        Th_slc = 1.0
-
-                    u = sol.rhou[nsource] / sol.rho[nsource]
-                    w = sol.rhow[nsource] / sol.rho[nsource]
-                    X = sol.rhoX[nsource] / sol.rho[nsource]
-
-                    sol.rho[nimage] = rho
-                    sol.rhou[nimage] = rho * u * Th_slc
-                    if hasattr(ud, "ATMOSPHERIC_EXTENSION"):
-                        sol.rhov[nimage] = -v / Y_image
-                    else:
-                        sol.rhov[nimage] = rho * v
-                    sol.rhow[nimage] = rho * w * Th_slc
-                    sol.rhoY[nimage] = rhoY
-                    sol.rhoX[nimage] = rho * X
-
-                offset += 1
-
+# Functional approach with helper functions
+def _pad_field(sol, field_name, idx, pads, mode):
+    """Helper function to pad a single field"""
+    if hasattr(sol, field_name):
+        field = getattr(sol, field_name)
+        if mode == 'negative_symmetric':
+            field[...] = np.pad(field[idx], pads, _negative_symmetric)
+        else:
+            field[...] = np.pad(field[idx], pads, mode)
 
 def _set_boundary(sol, pads, btype, idx):
     """
-    Called by the function :func:`inputs.boundary.set_data`. Pads in-place the ghost cells for a given boundary type.
-
-    Parameters
-    ----------
-    sol : :class:`management.variable.Vars`
-        solution data container.
-    pads : tuple
-        A tuple containing the number of ghost cells to pad at each end.
-    btype : string
-        The type of boundary condition to pad. Currently supports:
-            * `wrap` for periodic boundary conditions
-            * `symmetric` for wall boundary conditions
-            * `negative_symmetric` for wall boundary conditions, but with the signs flipped.
-    idx : tuple
-        A tuple containing the slice indices for the inner array, e.g. `(slice(2,-2),slice(2,-2))` for a 2D-array with 2 ghost cells for all edges.
-    step : int, optional
-        If we are in the advection routine with the flipped arrays according to the directional Strang-splitting, we want to pad the correct direction. `step=0`, pads the x-direction while `step=1` pads the y-direction.
-
+    Functional approach to setting the boundary.
     """
-    sol.rho[...] = np.pad(sol.rho[idx], pads, btype)
-
-    if btype == "symmetric":
-        sol.rhov[...] = np.pad(sol.rhov[idx], pads, _negative_symmetric)
-        sol.rho[...] = np.pad(sol.rho[idx], pads, "symmetric")
-        sol.rhou[...] = np.pad(sol.rhou[idx], pads, "symmetric")
-    elif btype == "constant":
-        sol.rho[...] = np.pad(sol.rho[idx], pads, "symmetric")
-        sol.rhou[...] = np.pad(sol.rhou[idx], pads, "symmetric")
-        sol.rhov[...] = np.pad(sol.rhov[idx], pads, btype)
-        sol.rhow[...] = np.pad(sol.rhow[idx], pads, "symmetric")
-        btype = "symmetric"
-    else:
-        sol.rhou[...] = np.pad(sol.rhou[idx], pads, btype)
-        sol.rhov[...] = np.pad(sol.rhov[idx], pads, btype)
-        sol.rhow[...] = np.pad(sol.rhow[idx], pads, btype)
-
-    sol.rhoY[...] = np.pad(sol.rhoY[idx], pads, btype)
-    sol.rhoX[...] = np.pad(sol.rhoX[idx], pads, btype)
+    
+    # Define field groupings for each boundary type
+    boundary_specs = {
+        'symmetric': [
+            (['rho', 'rhou', 'rhow', 'rhoY', 'rhoX'], 'symmetric'),
+            (['rhov'], 'negative_symmetric')
+        ],
+        'constant': [
+            (['rho', 'rhou', 'rhow', 'rhoY', 'rhoX'], 'symmetric'),
+            (['rhov'], 'constant')
+        ],
+        'wrap': [
+            (['rho', 'rhou', 'rhov', 'rhow', 'rhoY', 'rhoX'], 'wrap')
+        ]
+    }
+    
+    if btype not in boundary_specs:
+        raise ValueError(f"Unsupported boundary type: {btype}")
+    
+    # Apply padding to each group of fields
+    for field_names, padding_mode in boundary_specs[btype]:
+        for field_name in field_names:
+            _pad_field(sol, field_name, idx, pads, padding_mode)
 
 
 def _negative_symmetric(vector, pad_width, iaxis, kwargs=None):
