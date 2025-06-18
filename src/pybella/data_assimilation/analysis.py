@@ -1,6 +1,9 @@
 import logging
-
 import numpy as np
+
+from ..utils import sim_params as params
+from ..flow_solver.utils.boundary import cell_boundary as bdry_c
+from ..flow_solver.utils.boundary import node_boundary as bdry_n
 
 from . import (
     etpf as da_etpf,
@@ -8,10 +11,6 @@ from . import (
     letkf as da_letkf,
     utils as da_utils,
 )
-
-from ..flow_solver.utils import boundary as bdry
-
-from ..utils import sim_params as params
 
 
 def do_for_window(tout, outer_step, results, sst, writer):
@@ -31,8 +30,8 @@ def do_for_window(tout, outer_step, results, sst, writer):
         ######################################################
         for mem in results:
             elem, node, sol, _, npf, th, _ = mem
-            bdry.set_explicit_boundary_data(sol, elem, sst.ud, th, npf)
-            bdry.set_ghostnodes_p2(npf.p2_nodes, node, sst.ud)
+            bdry_c.set_explicit_boundary_data(sol, elem, sst.ud, th, npf)
+            bdry_n.set_ghostnodes_p2(npf.p2_nodes, node, sst.ud)
 
         # ens.set_members(results, tout)
         sst.ensemble_state.set_members(results)
@@ -121,8 +120,8 @@ def do_for_window(tout, outer_step, results, sst, writer):
     ######################################################
     for mem in results:
         elem, node, sol, npf, th, _, _ = mem
-        bdry.set_explicit_boundary_data(sol, elem, sst.ud, th, npf)
+        bdry_c.set_explicit_boundary_data(sol, elem, sst.ud, th, npf)
         p2_nodes = npf.p2_nodes
-        bdry.set_ghostnodes_p2(p2_nodes, node, sst.ud)
+        bdry_n.set_ghostnodes_p2(p2_nodes, node, sst.ud)
 
     sst.ensemble_state.set_members(results)

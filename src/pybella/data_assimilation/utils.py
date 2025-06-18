@@ -6,10 +6,7 @@ import scipy as sp
 import matplotlib.pyplot as plt
 
 from ..utils import options as opts
-
-from ..flow_solver.utils import boundary as bdry
-
-
+from ..flow_solver.utils.boundary import node_boundary as bdry_n
 class ensemble(object):
     def __init__(self, input_ensemble=None):
         if input_ensemble is not None:
@@ -83,12 +80,12 @@ def set_p2_nodes(analysis, results, N, th, node, ud, loc_c=0, loc_n=2):
         rhoY_n[1:-1, 1:-1] = (
             sp.signal.fftconvolve(rhoY, kernel, mode="valid") / kernel.sum()
         )
-        bdry.set_ghostnodes_p2(rhoY_n, node, ud)
+        bdry_n.set_ghostnodes_p2(rhoY_n, node, ud)
         p2_n = rhoY_n**th.gm1 - 1.0 + (p2_n - p2_n.mean())
         # p2_n = rhoY_n**th.gm1 - 1.0
         p2_n -= p2_n.mean()
         # p2_n = np.pad(p2_n,2,mode='wrap')
-        bdry.set_ghostnodes_p2(p2_n, node, ud)
+        bdry_n.set_ghostnodes_p2(p2_n, node, ud)
         setattr(results[n][loc_n], "p2_nodes", p2_n)
 
 

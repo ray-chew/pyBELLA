@@ -1,7 +1,9 @@
 import numpy as np
 
 from ...utils.operators import convolution, divergence, gradient
-from ..utils import boundary as bdry
+from ..utils.boundary import cell_boundary as bdry_c
+from ..utils.boundary import node_boundary as bdry_n
+from ..utils.boundary import common as bdry
 
 
 def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
@@ -76,5 +78,5 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
     npf.p2_nodes += ud.compressibility * dp2n
 
     # Boundary conditions
-    bdry.set_ghostnodes_p2(npf.p2_nodes, node, ud)
-    bdry.set_explicit_boundary_data(sol, elem, ud, th, npf)
+    bdry_n.set_ghostnodes_p2(npf.p2_nodes, node, ud)
+    bdry_c.set_explicit_boundary_data(sol, elem, ud, th, npf)

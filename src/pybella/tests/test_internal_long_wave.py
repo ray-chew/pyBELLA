@@ -2,7 +2,8 @@ import numpy as np
 
 from ..utils import options as opts
 
-from ..flow_solver.utils import boundary as bdry, fields
+from ..flow_solver.utils import fields
+from ..flow_solver.utils.boundary import cell_boundary as bdry_c
 from ..flow_solver.physics import hydrostatics
 
 from ..utils.data_structures import DiagnosticState
@@ -193,7 +194,7 @@ def sol_init(Sol, npf, elem, node, th, ud, seeds=None):
     if "imbal" in ud.aux:
         npf.p2_nodes[...] = 0.0
 
-    bdry.set_explicit_boundary_data(Sol, elem, ud, th, npf)
+    bdry_c.set_explicit_boundary_data(Sol, elem, ud, th, npf)
 
     return Sol
 

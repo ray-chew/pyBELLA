@@ -1,8 +1,5 @@
 import numpy as np
 
-from ..utils import boundary as bdry
-
-
 def nonhydrostasy(ud, t, step):
     if step >= 0:
         if ud.is_nonhydrostatic == 0:
@@ -71,14 +68,3 @@ def rhoe(rho, u, v, w, p, ud, th):
     gm1inv = th.gm1inv
 
     return p * gm1inv + 0.5 * Msq * rho * (u**2 + v**2 + w**2)
-
-
-def synchronise_variables(npf, Sol, elem, node, ud, th):
-    scale_factor = 1.0 / ud.Msq
-
-    if ud.is_compressible:
-        p2bg = npf.HydroState.p20[0, :].reshape(1, -1)
-        p2bg = np.repeat(p2bg, elem.icx, axis=0)
-        npf.p2_cells = scale_factor * Sol.rhoY**th.gm1 - p2bg
-
-    bdry.set_ghostcells_p2(npf.p2_cells, elem, ud)

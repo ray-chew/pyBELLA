@@ -4,7 +4,8 @@ import h5py
 import numpy as np
 import scipy as sp
 
-from ..flow_solver.utils import boundary as bdry
+from ..flow_solver.utils.boundary import cell_boundary as bdry_c
+from ..flow_solver.utils.boundary import node_boundary as bdry_n
 
 
 class init(object):
@@ -23,15 +24,6 @@ class init(object):
         # which attributes to inflate in ensemble inflation?
         self.attributes = ["rho", "rhou", "rhov"]
 
-        # self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_32_32_6.0_truthgen.h5'
-        # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_psinc_ref.h5'
-        # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_truthgen_freezelt5.h5'
-        # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_100_50_10.0_comp_ref.h5'
-        # self.obs_path = './output_rising_bubble/output_rising_bubble_ensemble=1_160_80_1.0_truth_CFLfixed_ib-0.h5'
-
-        # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_comp_1.0_pps_tra_truth.h5'
-        # self.obs_path = './output_swe_vortex/output_swe_vortex_ensemble=1_64_1_64_3.0_neg_comp_1.0_pp_tra_truth_ip.h5'
-        # self.obs_path = './output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_comp_1.0_pp_tra_truth_ip.h5'
         self.obs_path = "./output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5"
 
         # forward operator (projector from state space to observation space)
@@ -138,7 +130,7 @@ class init(object):
 
         g = ud.g0
         for n in range(N):
-            bdry.set_explicit_boundary_data(results[n][0], elem, ud, th, npf)
+            bdry_c.set_explicit_boundary_data(results[n][0], elem, ud, th, npf)
             results[n][0].rhoY[...] = (g / 2.0 * results[n][0].rho ** 2) ** th.gamminv
 
             igy = elem.igy
@@ -148,12 +140,12 @@ class init(object):
 
             pn = sp.signal.convolve(results[n][0].rhoY[:, igy, :], kernel, mode="valid")
 
-            bdry.set_explicit_boundary_data(results[n][0], elem, ud, th, npf)
+            bdry_c.set_explicit_boundary_data(results[n][0], elem, ud, th, npf)
             pn = np.expand_dims(pn, 1)
             pn = np.repeat(pn, node.icy, axis=1)
 
             results[n][2].p2_nodes[1:-1, :, 1:-1] = pn
-            bdry.set_ghostnodes_p2(results[n][2].p2_nodes, node, ud)
+            bdry_n.set_ghostnodes_p2(results[n][2].p2_nodes, node, ud)
 
             pn = np.expand_dims(results[n][2].p2_nodes[:, igy, :], 1)
             results[n][2].p2_nodes[...] = np.repeat(pn[...], node.icy, axis=1)
