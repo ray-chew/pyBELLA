@@ -78,5 +78,4 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
     npf.p2_nodes += ud.compressibility * dp2n
 
     # Boundary conditions
-    bdry_n.set_ghostnodes_p2(npf.p2_nodes, node, ud)
-    bdry_c.set_ghost_cells(mem, ud)
+    bdry_n.set_ghost_nodes(npf.p2_nodes, node, ud)

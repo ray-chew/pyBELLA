@@ -37,7 +37,6 @@ def do_explicit_part(mem, ud, dt):
 
     mem.sol.mod_bg_wind(ud, +1.0)
 
-    bdry_c.set_ghost_cells(mem, ud)
 
 
 def do_implicit_part(
@@ -84,7 +83,7 @@ def do_implicit_part(
         write_debug_data("wplusz", wplusz_data)
 
     # Boundary and correction operations
-    # bdry.set_ghostnodes_p2(mem.npf.p2_nodes, mem.node, ud)
+    # bdry.set_ghost_nodes(mem.npf.p2_nodes, mem.node, ud)
     _correction_nodes(mem, ud, dt, mem.npf.p2_nodes, 0)
     bdry_c.set_ghost_cells(mem, ud)
 
@@ -113,11 +112,11 @@ def do_implicit_part(
     write_debug_data("p2_full", p2_full)
 
     # # Final boundary and correction operations
-    # bdry.set_ghostnodes_p2(p2_full, mem.node, ud)
+    # bdry.set_ghost_nodes(p2_full, mem.node, ud)
     _correction_nodes(mem, ud, dt, p2_full, 1)
 
     mem.npf.p2_nodes[...] += p2_full
-    bdry_n.set_ghostnodes_p2(mem.npf.p2_nodes, mem.node, ud)
+    bdry_n.set_ghost_nodes(mem.npf.p2_nodes, mem.node, ud)
     bdry_c.set_ghost_cells(mem, ud)
 
 
