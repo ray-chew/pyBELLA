@@ -1,6 +1,5 @@
 import numpy as np
 from ..flow_solver.physics import hydrostatics
-from ..flow_solver.utils.boundary import cell_boundary as bdry_c
 
 from ..utils.data_structures import DiagnosticState
 
@@ -111,6 +110,5 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     rhoY = npf.HydroState_n.rhoY0
     npf.p2_nodes[...] = (p - npf.HydroState_n.p0) / rhoY / ud.Msq
 
-    bdry_c.set_explicit_boundary_data(Sol, elem, ud, th, npf)
 
     return Sol

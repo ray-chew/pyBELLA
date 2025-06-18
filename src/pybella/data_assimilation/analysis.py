@@ -30,7 +30,7 @@ def do_for_window(tout, outer_step, results, sst, writer):
         ######################################################
         for mem in results:
             elem, node, sol, _, npf, th, _ = mem
-            bdry_c.set_explicit_boundary_data(sol, elem, sst.ud, th, npf)
+            bdry_c.set_ghost_cells(mem, sst.ud)
             bdry_n.set_ghostnodes_p2(npf.p2_nodes, node, sst.ud)
 
         # ens.set_members(results, tout)
@@ -120,7 +120,7 @@ def do_for_window(tout, outer_step, results, sst, writer):
     ######################################################
     for mem in results:
         elem, node, sol, npf, th, _, _ = mem
-        bdry_c.set_explicit_boundary_data(sol, elem, sst.ud, th, npf)
+        bdry_c.set_ghost_cells(mem, sst.ud)
         p2_nodes = npf.p2_nodes
         bdry_n.set_ghostnodes_p2(p2_nodes, node, sst.ud)
 

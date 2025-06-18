@@ -33,7 +33,6 @@ def do(
     swe_to_lake = False
 
     while (mem.time.t < tout) and (mem.time.step < ud.stepmax):
-
         label = "%.3d" % mem.time.step
 
         if mem.time.step == 0 and writer != None:
@@ -119,15 +118,7 @@ def do(
             bdry_r.rayleigh_damping(mem.sol, mem.npf, ud, mem.elem, mem.node)
 
         bdry_r.apply_rayleigh_forcing(
-            mem.sol,
-            mem.npf,
-            ud,
-            mem.elem,
-            mem.node,
-            mem.time.t,
-            mem.time.step,
-            dt,
-            mem.th,
+            mem, ud, dt
         )
 
         debug_writer.write(f"{label}_after_ebnaimp")
@@ -187,15 +178,7 @@ def do(
 
         # bottom rayleigh forcing
         bdry_r.apply_rayleigh_forcing(
-            mem.sol,
-            mem.npf,
-            ud,
-            mem.elem,
-            mem.node,
-            mem.time.t,
-            mem.time.step,
-            dt,
-            mem.th,
+            mem, ud, dt,
             half=False,
             Sol_half_new=Sol_half_new,
             npf_half_new=npf_half_new,

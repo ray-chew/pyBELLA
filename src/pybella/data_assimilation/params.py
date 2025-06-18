@@ -130,7 +130,7 @@ class init(object):
 
         g = ud.g0
         for n in range(N):
-            bdry_c.set_explicit_boundary_data(results[n][0], elem, ud, th, npf)
+            bdry_c.set_ghost_cells(results[n][0], elem, ud, th, npf)
             results[n][0].rhoY[...] = (g / 2.0 * results[n][0].rho ** 2) ** th.gamminv
 
             igy = elem.igy
@@ -140,7 +140,7 @@ class init(object):
 
             pn = sp.signal.convolve(results[n][0].rhoY[:, igy, :], kernel, mode="valid")
 
-            bdry_c.set_explicit_boundary_data(results[n][0], elem, ud, th, npf)
+            bdry_c.set_ghost_cells(results[n][0], elem, ud, th, npf)
             pn = np.expand_dims(pn, 1)
             pn = np.repeat(pn, node.icy, axis=1)
 

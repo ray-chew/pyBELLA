@@ -6,29 +6,25 @@ import numpy as np
 from ....utils import options as opts
 from .common import get_ghost_padding
 
-
-def set_explicit_boundary_data(Sol, elem, ud, th, npf, step=None):
+def set_ghost_cells(mem, ud, step=None, sol=None):
     """
     In-place update of the ghost cells in :class:`management.variable.Vars` given the boundary conditions specified by :class:`inputs.user_data.UserDataInit`.
 
     Parameters
     ----------
-    Sol : :class:`management.variable.Vars`
-        Solution data container
-    elem : :class:`discretization.kgrid.ElemSpaceDiscr`
-        Cells grid
+    mem : object
+        Memory container with sol, elem, th, and npf attributes
     ud : :class:`inputs.user_data.UserDataInit`
         Data container for the initial conditions
-    th : :class:`physics.gas_dynamics.thermodynamic.init`
-        Thermodynamic variables of the system
-    npf : :class:`physics.low_mach.npf.MPV`
-        Variables relating to the elliptic solver
     step : int, optional
         Current step
 
     """
-    igs = elem.igs
-    ndim = elem.ndim
+    igs = mem.elem.igs
+    ndim = mem.elem.ndim
+
+    if sol is None:
+        sol = mem.sol 
 
     # if step parameter is not None, then we are in the advection directional Strang-splitting, where the array has already flipped, and we should only update the relevant boundaries, i.e. those in the direction of the current Strang-split-step.
     if step == None:
@@ -47,10 +43,10 @@ def set_explicit_boundary_data(Sol, elem, ud, th, npf, step=None):
             # Do this for the axes that do not have gravity.
             # Periodic BC.
             if ud.bdry_type[current_step] == opts.BdryType.PERIODIC:
-                set_boundary(Sol, ghost_padding, "wrap", idx, step=None)
+                _set_boundary(sol, ghost_padding, "wrap", idx)
             # Wall BC.
             elif ud.bdry_type[current_step] == opts.BdryType.WALL:
-                set_boundary(Sol, ghost_padding, "symmetric", idx, step=None)
+                _set_boundary(sol, ghost_padding, "symmetric", idx)
             elif ud.bdry_type[current_step] == opts.BdryType.RAYLEIGH:
                 assert 0, "Rayleigh boundary not defined on x-direction."
 
@@ -73,48 +69,48 @@ def set_explicit_boundary_data(Sol, elem, ud, th, npf, step=None):
                         y_axs = ndim - 1
                     else:
                         y_axs = 1
-                    nlast, nsource, nimage = get_gravity_padding(
-                        ndim, current_idx, direction, offset, elem, y_axs=y_axs
+                    nlast, nsource, nimage = _get_gravity_padding(
+                        ndim, current_idx, direction, offset, mem.elem, y_axs=y_axs
                     )
 
-                    Y_last = Sol.rhoY[nlast] / Sol.rho[nlast]
+                    Y_last = sol.rhoY[nlast] / sol.rho[nlast]
 
                     rhoYv_image = (
-                        -Sol.rhov[nsource] * Sol.rhoY[nsource] / Sol.rho[nsource]
+                        -sol.rhov[nsource] * sol.rhoY[nsource] / sol.rho[nsource]
                     )
 
-                    S = 1.0 / ud.stratification(elem.y[nimage[y_axs]])
+                    S = 1.0 / ud.stratification(mem.elem.y[nimage[y_axs]])
 
                     if hasattr(ud, "ATMOSPHERIC_EXTENSION"):
                         dpi = (
-                            npf.HydroState.p20[nimage[y_axs]]
-                            - npf.HydroState.p20[nlast[y_axs]]
+                            mem.npf.HydroState.p20[nimage[y_axs]]
+                            - mem.npf.HydroState.p20[nlast[y_axs]]
                         ) * ud.Msq
                     else:
                         dpi = (
                             direction
-                            * (th.Gamma * g)
+                            * (mem.th.Gamma * g)
                             * 0.5
-                            * elem.dy
+                            * mem.elem.dy
                             * (1.0 / Y_last + S)
                         )
 
                     rhoY = (
-                        ((Sol.rhoY[nlast] ** th.gm1) + dpi) ** th.gm1inv
+                        ((sol.rhoY[nlast] ** mem.th.gm1) + dpi) ** mem.th.gm1inv
                         if ud.is_compressible == 1
-                        else npf.HydroState.rhoY0[nimage[y_axs]]
+                        else mem.npf.HydroState.rhoY0[nimage[y_axs]]
                     )
 
                     rho = rhoY * S
 
-                    Y_source = Sol.rhoY[nsource] / Sol.rho[nsource]
+                    Y_source = sol.rhoY[nsource] / sol.rho[nsource]
                     Y_image = rhoY / rho
 
                     if hasattr(ud, "ATMOSPHERIC_EXTENSION"):
                         if direction > 0:  # if bottom boundary
-                            v = Sol.rhov[nsource] * Y_source / Sol.rho[nsource] * rho
+                            v = sol.rhov[nsource] * Y_source / sol.rho[nsource] * rho
                         else:  # if top boundary
-                            v = Sol.rhov[nsource] * Y_source
+                            v = sol.rhov[nsource] * Y_source
 
                         Th_slc = rhoY / rho / Y_last
 
@@ -122,31 +118,31 @@ def set_explicit_boundary_data(Sol, elem, ud, th, npf, step=None):
                         v = rhoYv_image / rhoY
                         Th_slc = 1.0
 
-                    u = Sol.rhou[nsource] / Sol.rho[nsource]
-                    w = Sol.rhow[nsource] / Sol.rho[nsource]
-                    X = Sol.rhoX[nsource] / Sol.rho[nsource]
+                    u = sol.rhou[nsource] / sol.rho[nsource]
+                    w = sol.rhow[nsource] / sol.rho[nsource]
+                    X = sol.rhoX[nsource] / sol.rho[nsource]
 
-                    Sol.rho[nimage] = rho
-                    Sol.rhou[nimage] = rho * u * Th_slc
+                    sol.rho[nimage] = rho
+                    sol.rhou[nimage] = rho * u * Th_slc
                     if hasattr(ud, "ATMOSPHERIC_EXTENSION"):
-                        Sol.rhov[nimage] = -v / Y_image
+                        sol.rhov[nimage] = -v / Y_image
                     else:
-                        Sol.rhov[nimage] = rho * v
-                    Sol.rhow[nimage] = rho * w * Th_slc
-                    Sol.rhoY[nimage] = rhoY
-                    Sol.rhoX[nimage] = rho * X
+                        sol.rhov[nimage] = rho * v
+                    sol.rhow[nimage] = rho * w * Th_slc
+                    sol.rhoY[nimage] = rhoY
+                    sol.rhoX[nimage] = rho * X
 
                 offset += 1
 
 
-def set_boundary(Sol, pads, btype, idx, step=None):
+def _set_boundary(sol, pads, btype, idx):
     """
-    Called by the function :func:`inputs.boundary.set_explicit_boundary_data`. Pads in-place the ghost cells for a given boundary type.
+    Called by the function :func:`inputs.boundary.set_data`. Pads in-place the ghost cells for a given boundary type.
 
     Parameters
     ----------
-    Sol : :class:`management.variable.Vars`
-        Solution data container.
+    sol : :class:`management.variable.Vars`
+        solution data container.
     pads : tuple
         A tuple containing the number of ghost cells to pad at each end.
     btype : string
@@ -160,28 +156,28 @@ def set_boundary(Sol, pads, btype, idx, step=None):
         If we are in the advection routine with the flipped arrays according to the directional Strang-splitting, we want to pad the correct direction. `step=0`, pads the x-direction while `step=1` pads the y-direction.
 
     """
-    Sol.rho[...] = np.pad(Sol.rho[idx], pads, btype)
+    sol.rho[...] = np.pad(sol.rho[idx], pads, btype)
 
     if btype == "symmetric":
-        Sol.rhov[...] = np.pad(Sol.rhov[idx], pads, negative_symmetric)
-        Sol.rho[...] = np.pad(Sol.rho[idx], pads, "symmetric")
-        Sol.rhou[...] = np.pad(Sol.rhou[idx], pads, "symmetric")
+        sol.rhov[...] = np.pad(sol.rhov[idx], pads, _negative_symmetric)
+        sol.rho[...] = np.pad(sol.rho[idx], pads, "symmetric")
+        sol.rhou[...] = np.pad(sol.rhou[idx], pads, "symmetric")
     elif btype == "constant":
-        Sol.rho[...] = np.pad(Sol.rho[idx], pads, "symmetric")
-        Sol.rhou[...] = np.pad(Sol.rhou[idx], pads, "symmetric")
-        Sol.rhov[...] = np.pad(Sol.rhov[idx], pads, btype)
-        Sol.rhow[...] = np.pad(Sol.rhow[idx], pads, "symmetric")
+        sol.rho[...] = np.pad(sol.rho[idx], pads, "symmetric")
+        sol.rhou[...] = np.pad(sol.rhou[idx], pads, "symmetric")
+        sol.rhov[...] = np.pad(sol.rhov[idx], pads, btype)
+        sol.rhow[...] = np.pad(sol.rhow[idx], pads, "symmetric")
         btype = "symmetric"
     else:
-        Sol.rhou[...] = np.pad(Sol.rhou[idx], pads, btype)
-        Sol.rhov[...] = np.pad(Sol.rhov[idx], pads, btype)
-        Sol.rhow[...] = np.pad(Sol.rhow[idx], pads, btype)
+        sol.rhou[...] = np.pad(sol.rhou[idx], pads, btype)
+        sol.rhov[...] = np.pad(sol.rhov[idx], pads, btype)
+        sol.rhow[...] = np.pad(sol.rhow[idx], pads, btype)
 
-    Sol.rhoY[...] = np.pad(Sol.rhoY[idx], pads, btype)
-    Sol.rhoX[...] = np.pad(Sol.rhoX[idx], pads, btype)
+    sol.rhoY[...] = np.pad(sol.rhoY[idx], pads, btype)
+    sol.rhoX[...] = np.pad(sol.rhoX[idx], pads, btype)
 
 
-def negative_symmetric(vector, pad_width, iaxis, kwargs=None):
+def _negative_symmetric(vector, pad_width, iaxis, kwargs=None):
     """
     Taken from the reference:
 
@@ -210,7 +206,7 @@ def negative_symmetric(vector, pad_width, iaxis, kwargs=None):
         return vector
 
 
-def get_gravity_padding(ndim, cur_idx, direction, offset, elem, y_axs=None):
+def _get_gravity_padding(ndim, cur_idx, direction, offset, elem, y_axs=None):
     """
     Parameters
     ----------
@@ -232,7 +228,6 @@ def get_gravity_padding(ndim, cur_idx, direction, offset, elem, y_axs=None):
     cur_idx += offset * ((elem.icy - 1) - 2 * cur_idx)
     gravity_padding = [slice(None)] * ndim
     if y_axs == None:
-        # y_axs = ndim - 1
         y_axs = 1
 
     nlast = np.copy(gravity_padding)

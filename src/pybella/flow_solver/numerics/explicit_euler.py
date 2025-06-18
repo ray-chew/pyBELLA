@@ -79,4 +79,4 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
 
     # Boundary conditions
     bdry_n.set_ghostnodes_p2(npf.p2_nodes, node, ud)
-    bdry_c.set_explicit_boundary_data(sol, elem, ud, th, npf)
+    bdry_c.set_ghost_cells(mem, ud)

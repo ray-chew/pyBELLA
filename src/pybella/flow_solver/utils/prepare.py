@@ -4,7 +4,8 @@ from ...utils import user_data, io, data_structures
 from ..physics import hydrostatics
 from ..physics import thermodynamics as gd_thermodynamics
 from ..discretisation import grid as dis_grid
-from . import fields, cache, boundary as bdry
+from . import fields, cache
+from .boundary import cell_boundary as bdry_c
 
 # test module
 from ...tests import diagnostics as diag
@@ -45,10 +46,6 @@ def initialise():
 
     io.init_logger(ud)
 
-    # handle radiative BC
-    if ud.bdry_type[1].value == "radiation":
-        ud.tcy, ud.tny = bdry.get_tau_y(ud, elem, node, 0.5)
-
     ##########################################################
     # Initialise test module
     ##########################################################
@@ -61,15 +58,6 @@ def initialise():
     # Populate data structures
     ##########################################################
 
-    # member_state = data_structures.MemberState(
-    #     elem=elem,
-    #     node=node,
-    #     Sol=Sol,
-    #     flux=flux,
-    #     npf=npf,
-    #     th=th,
-    # )
-
     ensemble_state = data_structures.EnsembleState()
 
     sol = sol_init(sol, npf, elem, node, th, ud)
@@ -80,6 +68,9 @@ def initialise():
     ensemble_state.update_member(
         elem=elem, node=node, sol=sol, npf=npf, th=th, cache=flow_cache
     )
+
+    for member in ensemble_state.members:
+        bdry_c.set_ghost_cells(member, ud)
 
     restart_params = data_structures.RestartParameters(
         ud_rewrite=ud_rewrite,

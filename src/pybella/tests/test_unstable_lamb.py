@@ -4,7 +4,6 @@ Unstable Lamb Wave integral test involving vertical Coriolis and Rayleigh BC.
 
 import numpy as np
 from ..flow_solver.physics import hydrostatics
-from ..flow_solver.utils.boundary import cell_boundary as bdry_c
 from ..flow_solver.utils.boundary import rayleigh_boundary as bdry_r
 from ..utils import options as opts
 
@@ -355,7 +354,6 @@ def sol_init(Sol, npf, elem, node, th, ud, seeds=None):
 
     npf.p2_nodes[...] = pi_n
 
-    bdry_c.set_explicit_boundary_data(Sol, elem, ud, th, npf)
 
     if hasattr(ud, "mixed_run"):
         if ud.mixed_run:
