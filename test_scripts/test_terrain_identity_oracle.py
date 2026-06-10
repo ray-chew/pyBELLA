@@ -57,7 +57,6 @@ def test_golden_master_cases_have_no_orography():
 
 # --- forced-flat operator comparisons (fleshed out per terrain phase) -------
 #
-# Phase 2: pressure gradients (A-map applied with J=1, G=0)
 # Phase 3: elliptic operator C_ij and wcenter
 # Phase 6: advective fluxes + CFL
 
@@ -80,14 +79,13 @@ class _StubSol:
     """Smooth, deterministic 3D fields (no randomness, reproducible)."""
 
     def __init__(self, elem):
-        x = elem.x.reshape(-1, 1, 1)
-        y = elem.y.reshape(1, -1, 1)
-        z = elem.z.reshape(1, 1, -1)
+        # x + y + z forces every field to the full (icx, icy, icz) shape
+        x, y, z = np.meshgrid(elem.x, elem.y, elem.z, indexing="ij")
         self.rho = 1.0 + 0.1 * np.sin(x) * np.cos(y) + 0.05 * z
         self.rhoY = self.rho * (1.0 + 0.02 * np.cos(x + y - z))
         self.rhou = np.sin(2 * x) + 0.3 * y * z
-        self.rhov = np.cos(y) * (1.0 + 0.2 * x)
-        self.rhow = 0.5 * np.sin(z + x)
+        self.rhov = np.cos(y) * (1.0 + 0.2 * x) + 0.0 * z
+        self.rhow = 0.5 * np.sin(z + x) + 0.0 * y
 
 
 def _rhs_for(ud_metric):
@@ -103,6 +101,48 @@ def test_divergence_flat_metric_matches_plain():
     rhs_plain = _rhs_for(_StubUD())
     rhs_flat = _rhs_for(_StubUD(orography=flat))
     assert np.max(np.abs(rhs_flat - rhs_plain)) <= 1e-13
+
+
+def test_gradient_map_flat_metric_is_exact_identity():
+    flat = lambda xi1, xi2: 0.0 * xi1 + 0.0 * xi2
+    elem, _ = dis_grid.grid_init(_StubUD(orography=flat))
+    from pybella.flow_solver.discretisation import terrain
+
+    sol = _StubSol(elem)
+    dp0 = [sol.rhou.copy(), sol.rhov.copy(), sol.rhow.copy()]
+    dp = terrain.apply_gradient_map(elem.metric, [d.copy() for d in dp0])
+    for a, b in zip(dp, dp0):
+        # J == 1, G == 0: multiplication by 1.0 and subtraction of 0.0 are
+        # exact in floating point — bit-identity, not approximation
+        assert np.array_equal(a, b)
+
+
+@pytest.mark.parametrize("v", [0, 1, 2])
+def test_gradient_map_constant_metric_algebra(v):
+    from pybella.utils import axes
+    from pybella.flow_solver.discretisation.terrain import (
+        MetricFields,
+        apply_gradient_map,
+    )
+
+    elem, _ = dis_grid.grid_init(_StubUD(v=v))
+    sol = _StubSol(elem)
+    dp0 = [sol.rhou.copy(), sol.rhov.copy(), sol.rhow.copy()]
+    a_h1, a_h2 = axes.horizontal_axes(v)
+    shape = dp0[0].shape
+    J0, g1, g2 = 2.0, 0.3, -0.7
+    metric = MetricFields(
+        J=np.full(shape, J0),
+        G1=np.full(shape, g1),
+        G2=np.full(shape, g2),
+        z=np.zeros(shape),
+        vaxis=v,
+        haxes=(a_h1, a_h2),
+    )
+    dp = apply_gradient_map(metric, [d.copy() for d in dp0])
+    assert np.allclose(dp[a_h1], dp0[a_h1] - (g1 / J0) * dp0[v], atol=1e-15)
+    assert np.allclose(dp[a_h2], dp0[a_h2] - (g2 / J0) * dp0[v], atol=1e-15)
+    assert np.allclose(dp[v], dp0[v] / J0, atol=1e-15)
 
 
 @pytest.mark.parametrize("v", [0, 1, 2])

@@ -2,6 +2,7 @@ import numpy as np
 
 from ...utils import axes
 from ...utils.operators import convolution, divergence, gradient
+from ..discretisation import terrain
 from ..utils.boundary import cell_boundary as bdry_c
 from ..utils.boundary import node_boundary as bdry_n
 from ..utils.boundary import common as bdry
@@ -52,8 +53,10 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
     rhoYovG = Ginv * rhoY
     dbuoy = rhoY * (rhoX / rho)
 
-    # Pressure gradients
+    # Pressure gradients (physical: terrain slope/Jacobian correction via A)
     dpdx, dpdy, dpdz = gradient.compute_at_nodes(p2n, ndim, node.dxyz)
+    if elem.metric is not None:
+        dpdx, dpdy, dpdz = terrain.apply_gradient_map(elem.metric, [dpdx, dpdy, dpdz])
 
     # Wind perturbations
     drhou = rhou - u0 * rho
@@ -95,8 +98,12 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
     # Scalar update (rhoX): stratification couples to the vertical velocity
     sol.rhoX[...] = (rho * (rho / rhoY - S0c)) - dt * (vel_v * dSdy) * rho
 
-    # Compressibility correction to p2
-    dp2n[node.i1] -= dt * dpidP * npf.rhs
+    # Compressibility correction to p2; with terrain npf.rhs carries J*div F,
+    # so the pointwise pi update needs the plain divergence back (1/J_n)
+    if node.metric is not None:
+        dp2n[node.i1] -= dt * dpidP * (npf.rhs * node.metric.ooJ[node.i1])
+    else:
+        dp2n[node.i1] -= dt * dpidP * npf.rhs
     npf.p2_nodes += ud.compressibility * dp2n
 
     # Boundary conditions
