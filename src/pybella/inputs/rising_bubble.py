@@ -1,4 +1,5 @@
 import numpy as np
+from ..utils import axes
 from ..flow_solver.physics import hydrostatics
 
 
@@ -46,7 +47,7 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     y0 = 0.2
     r0 = 0.2
 
-    g = ud.gravity_strength[1]
+    g = ud.gravity_strength[axes.vertical_axis(ud)]
     # print(ud.rho_ref)
 
     hydrostatics.state(npf, elem, node, th, ud)

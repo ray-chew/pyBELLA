@@ -1,5 +1,6 @@
 import numpy as np
 
+from ...utils import axes
 from ...utils.operators import convolution, divergence, gradient
 from ..utils.boundary import cell_boundary as bdry_c
 from ..utils.boundary import node_boundary as bdry_n
@@ -12,7 +13,7 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
     ndim = elem.ndim
 
     nonhydro = ud.nonhydrostasy
-    g, Msq = ud.gravity_strength[1], ud.Msq
+    g, Msq = ud.gravity_strength[axes.vertical_axis(ud)], ud.Msq
     Ginv = th.Gammainv
     corr_h1, corr_v, corr_h2 = ud.coriolis_strength
     u0, v0, w0 = ud.u_wind_speed, ud.v_wind_speed, ud.w_wind_speed

@@ -1,6 +1,7 @@
 import numpy as np
 import numba as nb
 
+from ...utils import axes
 from ..utils.boundary import node_boundary as bdry_n
 
 
@@ -21,7 +22,7 @@ def column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
 
     rhoY0 = 1.0
 
-    g = ud.gravity_strength[1]
+    g = ud.gravity_strength[axes.vertical_axis(ud)]
 
     p0 = rhoY0**gamm
     pi0 = rhoY0**gm1
@@ -98,7 +99,7 @@ def integrated_state(npf, elem, node, th, ud):
 
     # Reference state at y=0
     rhoY0 = 1.0
-    g = ud.gravity_strength[1]
+    g = ud.gravity_strength[axes.vertical_axis(ud)]
     p0 = rhoY0**gamm
     pi0 = rhoY0**gm1
 
@@ -219,7 +220,7 @@ def integrated_state(npf, elem, node, th, ud):
 
 
 def analytical_state(npf, elem, node, th, ud):
-    g = ud.gravity_strength[1]
+    g = ud.gravity_strength[axes.vertical_axis(ud)]
     Gamma = th.Gamma
     Hex = 1.0 / (th.Gamma * g)
     dy = elem.dy

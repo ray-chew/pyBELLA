@@ -1,6 +1,7 @@
 import numpy as np
 import scipy as sp
 
+from ...utils import axes
 from ...utils.operators import convolution, divergence, gradient
 from ...utils.operators.laplacian import preconditioner, lap2D_manual, lap3D
 from ..utils.boundary import cell_boundary as bdry_c
@@ -25,7 +26,7 @@ class solver_counter(object):
 
 def do_explicit_part(mem, ud, dt):
     nonhydro = ud.nonhydrostasy
-    g = ud.gravity_strength[1]
+    g = ud.gravity_strength[axes.vertical_axis(ud)]
     Msq = ud.Msq
 
     dbuoy = mem.sol.rhoY * (mem.sol.rhoX / mem.sol.rho)
