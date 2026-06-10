@@ -14,6 +14,7 @@ IC_MODULES = {
     "test_unstable_lamb": "pybella.tests.test_unstable_lamb",
     "test_swe_vortex": "pybella.tests.test_swe_vortex",
     "test_straka": "pybella.tests.test_straka",
+    "test_agnesi_hydrostatic": "pybella.tests.test_agnesi_hydrostatic",
     "smoke_zvert": "pybella.tests.smoke_zvert",
     "smoke_agnesi": "pybella.tests.smoke_agnesi",
 }
