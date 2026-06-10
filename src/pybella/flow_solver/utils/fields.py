@@ -58,7 +58,8 @@ class CellSolField(object):
 
         """
         for key, value in vars(self).items():
-            setattr(self, key, value.squeeze())
+            if type(value) == np.ndarray:
+                setattr(self, key, value.squeeze())
 
     def primitives(self, th):
         """
@@ -125,20 +126,23 @@ class States(CellSolField):
 
     """
 
-    def __init__(self, size):
+    def __init__(self, size, field_mode=False):
         """
         Parameters
         ----------
         size : tuple
             Tuple containing the number of cells in the respective directions including ghost cells.
-        ud : :class:`inputs.user_data.UserDataInit`
-            Data container for the initial conditions
+        field_mode : bool
+            False (default): 1D vertical profiles, broadcast horizontally on
+            demand. True (terrain-following runs): full grid-shaped fields —
+            hydrostates vary per column when the physical height does.
 
         Notes
         -----
         Many variables in this data container are no longer used and can be removed.
 
         """
+        self.field_mode = field_mode
 
         self.p0 = np.zeros((size))
         self.p20 = np.zeros((size))
@@ -162,11 +166,30 @@ class States(CellSolField):
     def get_dSdy(self, elem, node):
         if not self.init_dSdy:
             logging.info("Computing dSdy")
-            self.dSdy = (
-                sp.signal.convolve(self.S0, [1.0, -1.0], mode="valid")
-                / node.dxyz[self.vaxis]
-            )
-            self.dSdy = axes.expand_profile(self.dSdy, node.ndim, self.vaxis, elem.sc)
+            if self.field_mode:
+                # node-States field: difference S0 over the physical node
+                # heights along the vertical, then average to cell centres
+                # along the horizontal axes (the field generalisation of
+                # the 1D convolve-and-broadcast below)
+                zn = node.metric.z
+                dS = np.diff(self.S0, axis=self.vaxis) / np.diff(zn, axis=self.vaxis)
+                for dim in range(node.ndim):
+                    if dim == self.vaxis:
+                        continue
+                    lo = [slice(None)] * node.ndim
+                    hi = [slice(None)] * node.ndim
+                    lo[dim] = slice(None, -1)
+                    hi[dim] = slice(1, None)
+                    dS = 0.5 * (dS[tuple(lo)] + dS[tuple(hi)])
+                self.dSdy = dS
+            else:
+                self.dSdy = (
+                    sp.signal.convolve(self.S0, [1.0, -1.0], mode="valid")
+                    / node.dxyz[self.vaxis]
+                )
+                self.dSdy = axes.expand_profile(
+                    self.dSdy, node.ndim, self.vaxis, elem.sc
+                )
 
             self.init_dSdy = True
 
@@ -175,7 +198,10 @@ class States(CellSolField):
     def get_S0c(self, elem):
         if not self.init_S0c:
             logging.info("Computing S0c")
-            self.S0c = axes.expand_profile(self.S0, elem.ndim, self.vaxis, elem.sc)
+            if self.field_mode:
+                self.S0c = self.S0
+            else:
+                self.S0c = axes.expand_profile(self.S0, elem.ndim, self.vaxis, elem.sc)
             self.init_S0c = True
 
         return self.S0c
@@ -204,9 +230,14 @@ class NodePressureField(object):
         self.wcenter = np.zeros((node.isc))
         self.wplus = np.zeros(([elem.ndim] + list(sc)))
 
-        self.HydroState = States([sc[vaxis]])
+        if elem.metric is not None:
+            # terrain: hydrostates vary per column -> full fields
+            self.HydroState = States(sc, field_mode=True)
+            self.HydroState_n = States(sn, field_mode=True)
+        else:
+            self.HydroState = States([sc[vaxis]])
+            self.HydroState_n = States([sn[vaxis]])
         self.HydroState.vaxis = vaxis
-        self.HydroState_n = States([sn[vaxis]])
         self.HydroState_n.vaxis = vaxis
 
         self.squeezer()
