@@ -2,6 +2,8 @@ import numpy as np
 import scipy as sp
 import logging
 
+from ...utils import axes
+
 
 class CellSolField(object):
     """
@@ -151,17 +153,20 @@ class States(CellSolField):
         self.get_dSdy = self.get_dSdy
         self.get_S0c = self.get_S0c
 
+        # vertical axis of the 1D profiles; NodePressureField overrides
+        self.vaxis = axes.VERTICAL_DEFAULT
+
         self.init_dSdy = False
         self.init_S0c = False
 
     def get_dSdy(self, elem, node):
         if not self.init_dSdy:
             logging.info("Computing dSdy")
-            self.dSdy = sp.signal.convolve(self.S0, [1.0, -1.0], mode="valid") / node.dy
-
-            for dim in range(0, node.ndim, 2):
-                self.dSdy = np.expand_dims(self.dSdy, dim)
-                self.dSdy = np.repeat(self.dSdy, elem.sc[dim], axis=dim)
+            self.dSdy = (
+                sp.signal.convolve(self.S0, [1.0, -1.0], mode="valid")
+                / node.dxyz[self.vaxis]
+            )
+            self.dSdy = axes.expand_profile(self.dSdy, node.ndim, self.vaxis, elem.sc)
 
             self.init_dSdy = True
 
@@ -170,22 +175,17 @@ class States(CellSolField):
     def get_S0c(self, elem):
         if not self.init_S0c:
             logging.info("Computing S0c")
-            S0c_result = self.S0
-
-            for dim in range(0, elem.ndim, 2):
-                S0c_result = np.expand_dims(S0c_result, dim)
-                S0c_result = np.repeat(S0c_result, elem.sc[dim], axis=dim)
-
-            self.S0c = S0c_result
+            self.S0c = axes.expand_profile(self.S0, elem.ndim, self.vaxis, elem.sc)
             self.init_S0c = True
 
         return self.S0c
 
 
 class NodePressureField(object):
-    def __init__(self, elem, node):
+    def __init__(self, elem, node, ud=None):
         sc = elem.sc
         sn = node.sc
+        vaxis = axes.vertical_axis(ud) if ud is not None else axes.VERTICAL_DEFAULT
 
         self.p0 = 1.0
         self.p00 = 1.0
@@ -204,8 +204,10 @@ class NodePressureField(object):
         self.wcenter = np.zeros((node.isc))
         self.wplus = np.zeros(([elem.ndim] + list(sc)))
 
-        self.HydroState = States([sc[1]])
-        self.HydroState_n = States([sn[1]])
+        self.HydroState = States([sc[vaxis]])
+        self.HydroState.vaxis = vaxis
+        self.HydroState_n = States([sn[vaxis]])
+        self.HydroState_n.vaxis = vaxis
 
         self.squeezer()
 

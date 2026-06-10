@@ -3,6 +3,7 @@ For more details on this module, refer to the write-up :ref:`boundary_handling`.
 """
 
 import numpy as np
+from ....utils import axes
 from ....utils import options as opts
 from .common import get_ghost_padding
 
@@ -15,6 +16,10 @@ class CellBoundaryHandler:
         self.ud = ud
         self.igs = mem.elem.igs
         self.ndim = mem.elem.ndim
+        # physical vertical axis and the (axis-named) momentum components
+        self.v_phys = axes.vertical_axis(ud)
+        self.vert_mom = axes.MOMENTA[self.v_phys]
+        self.hor_moms = tuple(m for i, m in enumerate(axes.MOMENTA) if i != self.v_phys)
 
     def apply_no_gravity_boundary(self, sol, current_step, ghost_padding, idx):
         """Apply boundary conditions for axes without gravity."""
@@ -23,14 +28,26 @@ class CellBoundaryHandler:
         if bdry_type == opts.BdryType.PERIODIC:
             _set_boundary(sol, ghost_padding, "wrap", idx)
         elif bdry_type == opts.BdryType.WALL:
-            _set_boundary(sol, ghost_padding, "symmetric", idx)
+            # the wall-normal momentum is the component along the wall axis
+            _set_boundary(
+                sol,
+                ghost_padding,
+                "symmetric",
+                idx,
+                normal_mom=axes.MOMENTA[current_step],
+            )
         elif bdry_type == opts.BdryType.RAYLEIGH:
-            raise AssertionError("Rayleigh boundary not defined on x-direction.")
+            raise AssertionError("Rayleigh boundary only defined on the gravity axis.")
 
     def apply_gravity_boundary(self, sol, dim, ghost_padding, step):
-        """Apply boundary conditions for axes with gravity."""
+        """Apply boundary conditions for axes with gravity.
+
+        ``dim`` is the ARRAY axis of the boundary (during advection sweeps
+        the data is flipped, so it differs from the physical vertical);
+        gravity_strength is indexed by the PHYSICAL axis.
+        """
         gravity_axis = dim
-        g = self.ud.gravity_strength[gravity_axis]
+        g = self.ud.gravity_strength[self.v_phys]
         direction = -1.0
         offset = 0
 
@@ -41,7 +58,7 @@ class CellBoundaryHandler:
 
     def _process_ghost_cells_side(self, sol, side, dim, direction, offset, step, g):
         """Process ghost cells for one side of the boundary."""
-        y_axs = self.ndim - 1 if step is not None else 1
+        y_axs = self.ndim - 1 if step is not None else self.v_phys
 
         for current_idx in np.arange(side)[::-1]:
             indices = self._get_gravity_indices(current_idx, direction, offset, y_axs)
@@ -53,7 +70,13 @@ class CellBoundaryHandler:
     def _get_gravity_indices(self, current_idx, direction, offset, y_axs):
         """Get the indices for last, source, and image cells."""
         nlast, nsource, nimage = _get_gravity_padding(
-            self.ndim, current_idx, direction, offset, self.mem.elem, y_axs=y_axs
+            self.ndim,
+            current_idx,
+            direction,
+            offset,
+            self.mem.elem.sc[self.v_phys],
+            self.mem.elem.igs[self.v_phys],
+            y_axs=y_axs,
         )
         return {"last": nlast, "source": nsource, "image": nimage}
 
@@ -65,8 +88,10 @@ class CellBoundaryHandler:
         Y_last = sol.rhoY[nlast] / sol.rho[nlast]
         Y_source = sol.rhoY[nsource] / sol.rho[nsource]
 
-        rhoYv_image = -sol.rhov[nsource] * sol.rhoY[nsource] / sol.rho[nsource]
-        S = 1.0 / self.ud.stratification(self.mem.elem.y[nimage[y_axs]])
+        vert = getattr(sol, self.vert_mom)
+        rhoYv_image = -vert[nsource] * sol.rhoY[nsource] / sol.rho[nsource]
+        y_coords = axes.coords_along(self.mem.elem, self.v_phys)
+        S = 1.0 / self.ud.stratification(y_coords[nimage[y_axs]])
 
         # Calculate pressure difference
         dpi = self._calculate_pressure_difference(
@@ -87,9 +112,10 @@ class CellBoundaryHandler:
         return {
             "rho": rho,
             "rhoY": rhoY,
-            "u": sol.rhou[nsource] / sol.rho[nsource],
+            "hor": {
+                m: getattr(sol, m)[nsource] / sol.rho[nsource] for m in self.hor_moms
+            },
             "v": velocities["v"],
-            "w": sol.rhow[nsource] / sol.rho[nsource],
             "X": sol.rhoX[nsource] / sol.rho[nsource],
             "Th_slc": velocities.get("Th_slc", 1.0),
         }
@@ -108,7 +134,7 @@ class CellBoundaryHandler:
                 direction
                 * (self.mem.th.Gamma * g)
                 * 0.5
-                * self.mem.elem.dy
+                * self.mem.elem.dxyz[self.v_phys]
                 * (1.0 / Y_last + S)
             )
 
@@ -128,13 +154,14 @@ class CellBoundaryHandler:
         """Calculate velocity components for ghost cells."""
         result = {}
 
+        vert = getattr(sol, self.vert_mom)
         if hasattr(self.ud, "ATMOSPHERIC_EXTENSION"):
             if direction > 0:  # bottom boundary
                 result["v"] = (
-                    sol.rhov[nsource] * Y_source / sol.rho[nsource] * rhoY / Y_image
+                    vert[nsource] * Y_source / sol.rho[nsource] * rhoY / Y_image
                 )
             else:  # top boundary
-                result["v"] = sol.rhov[nsource] * Y_source
+                result["v"] = vert[nsource] * Y_source
             result["Th_slc"] = (
                 rhoY / (rhoY / Y_image) / (sol.rhoY[nsource] / sol.rho[nsource])
             )
@@ -147,22 +174,19 @@ class CellBoundaryHandler:
     def _assign_ghost_values(self, sol, nimage, ghost_values):
         """Assign calculated values to ghost cells."""
         sol.rho[nimage] = ghost_values["rho"]
-        sol.rhou[nimage] = (
-            ghost_values["rho"] * ghost_values["u"] * ghost_values["Th_slc"]
-        )
-        sol.rhow[nimage] = (
-            ghost_values["rho"] * ghost_values["w"] * ghost_values["Th_slc"]
-        )
+        for m, val in ghost_values["hor"].items():
+            getattr(sol, m)[nimage] = ghost_values["rho"] * val * ghost_values["Th_slc"]
         sol.rhoY[nimage] = ghost_values["rhoY"]
         sol.rhoX[nimage] = ghost_values["rho"] * ghost_values["X"]
 
-        # Handle v-component differently for atmospheric extension
+        # Handle the vertical component differently for atmospheric extension
+        vert = getattr(sol, self.vert_mom)
         if hasattr(self.ud, "ATMOSPHERIC_EXTENSION"):
-            sol.rhov[nimage] = -ghost_values["v"] / (
+            vert[nimage] = -ghost_values["v"] / (
                 ghost_values["rhoY"] / ghost_values["rho"]
             )
         else:
-            sol.rhov[nimage] = ghost_values["rho"] * ghost_values["v"]
+            vert[nimage] = ghost_values["rho"] * ghost_values["v"]
 
 
 def set_ghost_cells(mem, ud, step=None, sol=None):
@@ -217,20 +241,25 @@ def _pad_field(sol, field_name, idx, pads, mode):
             field[...] = np.pad(field[idx], pads, mode)
 
 
-def _set_boundary(sol, pads, btype, idx):
+def _set_boundary(sol, pads, btype, idx, normal_mom="rhov"):
     """
-    Functional approach to setting the boundary.
+    Functional approach to setting the boundary. ``normal_mom`` names the
+    wall-normal momentum component (mirrored with a sign flip); historically
+    this was hardcoded to rhov, which broke walls on non-vertical axes.
     """
+    tangential = ["rho", "rhoY", "rhoX"] + [
+        m for m in ("rhou", "rhov", "rhow") if m != normal_mom
+    ]
 
     # Define field groupings for each boundary type
     boundary_specs = {
         "symmetric": [
-            (["rho", "rhou", "rhow", "rhoY", "rhoX"], "symmetric"),
-            (["rhov"], "negative_symmetric"),
+            (tangential, "symmetric"),
+            ([normal_mom], "negative_symmetric"),
         ],
         "constant": [
-            (["rho", "rhou", "rhow", "rhoY", "rhoX"], "symmetric"),
-            (["rhov"], "constant"),
+            (tangential, "symmetric"),
+            ([normal_mom], "constant"),
         ],
         "wrap": [(["rho", "rhou", "rhov", "rhow", "rhoY", "rhoX"], "wrap")],
     }
@@ -273,7 +302,7 @@ def _negative_symmetric(vector, pad_width, iaxis, kwargs=None):
         return vector
 
 
-def _get_gravity_padding(ndim, cur_idx, direction, offset, elem, y_axs=None):
+def _get_gravity_padding(ndim, cur_idx, direction, offset, icv, igv, y_axs=None):
     """
     Parameters
     ----------
@@ -285,14 +314,14 @@ def _get_gravity_padding(ndim, cur_idx, direction, offset, elem, y_axs=None):
         Top of the domain, `direction=+1`, bottom of the domain, `direction=-1`.
     offset : int
         `offset=0`, index starts counting from 0,1.... `offset=1`, index starts counting from -1,-2,..., i.e. end-selection of the array.
-    elem : :class:`discretization.kgrid.ElemSpaceDiscr`
-        Cell grid.
+    icv, igv : int
+        Cell count (incl. ghosts) and ghost count along the gravity axis.
     y_axs : int, optional
         `Default == None`. Specifies the direction of the gravity axis. If `None`, then direction is the the y-axis.
 
     """
     cur_i = np.copy(cur_idx)
-    cur_idx += offset * ((elem.icy - 1) - 2 * cur_idx)
+    cur_idx += offset * ((icv - 1) - 2 * cur_idx)
     gravity_padding = [slice(None)] * ndim
     if y_axs == None:
         y_axs = 1
@@ -301,9 +330,7 @@ def _get_gravity_padding(ndim, cur_idx, direction, offset, elem, y_axs=None):
     nlast[y_axs] = int(cur_idx + direction)
 
     nsource = np.copy(gravity_padding)
-    nsource[y_axs] = int(
-        offset * (elem.icy) + direction * (2 * elem.igy - (1 - offset) - cur_i)
-    )
+    nsource[y_axs] = int(offset * (icv) + direction * (2 * igv - (1 - offset) - cur_i))
 
     nimage = np.copy(gravity_padding)
     nimage[y_axs] = int(cur_idx)

@@ -1,4 +1,5 @@
 import numba as nb
+from .. import axes
 from .. import options as opts
 from . import finite_difference
 
@@ -118,18 +119,19 @@ def compute_at_nodes(rhs, elem, sol, ud):
     """Main divergence function - handles boundary conditions and calls JIT-compiled core."""
     ndim = elem.ndim
 
-    # Handle boundary conditions
+    # Handle boundary conditions: zero the momenta in the two boundary
+    # slabs of every WALL/RAYLEIGH axis (historically vertical-only, which
+    # left the x-WALL elliptic path broken)
     if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
-        if (
-            ud.bdry_type[1] == opts.BdryType.WALL
-            or ud.bdry_type[1] == opts.BdryType.RAYLEIGH
-        ):
-            sol.rhou[:, :2, ...] = 0.0
-            sol.rhov[:, :2, ...] = 0.0
-            sol.rhow[:, :2, ...] = 0.0
-            sol.rhou[:, -2:, ...] = 0.0
-            sol.rhov[:, -2:, ...] = 0.0
-            sol.rhow[:, -2:, ...] = 0.0
+        for dim in range(ndim):
+            if (
+                ud.bdry_type[dim] == opts.BdryType.WALL
+                or ud.bdry_type[dim] == opts.BdryType.RAYLEIGH
+            ):
+                lo, hi = axes.wall_slabs(ndim, dim)
+                for field in (sol.rhou, sol.rhov, sol.rhow):
+                    field[lo] = 0.0
+                    field[hi] = 0.0
 
     # Call appropriate JIT-compiled function
     if ndim == 2:

@@ -104,7 +104,7 @@ def build_state(ud, plane):
     elem, node = dis_grid.grid_init(ud)
     sol = fields.CellSolField(elem.sc)
     th = gd_thermodynamics.ThermodynamicalQuantities(ud)
-    npf = fields.NodePressureField(elem, node)
+    npf = fields.NodePressureField(elem, node, ud)
     hydrostatics.integrated_state(npf, elem, node, th, ud)
 
     if plane == "xz":

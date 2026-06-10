@@ -1,5 +1,6 @@
 import copy
 import numpy as np
+from ....utils import axes
 from ....utils import io
 from ....utils import options as opts
 from . import cell_boundary as bdry_c
@@ -143,7 +144,7 @@ def rayleigh_damping(sol, npf, ud, forcing=None):
     Y = sol.rhoY / sol.rho  # [elem.i2]
     rho = sol.rho  # [elem.i2]
 
-    if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
+    if ud.bdry_type[axes.vertical_axis(ud)] == opts.BdryType.RAYLEIGH:
         tcy, tny = ud.tcy, ud.tny
     else:
         tcy, tny = 0.0, 0.0
@@ -175,7 +176,8 @@ def rayleigh_damping(sol, npf, ud, forcing=None):
         tcy_f, tny_f = 0.0, 0.0
         mfac = 0.0
 
-    # assuming 2D vertical slice - not dimension agnostic
+    # 2D x-y vertical slices only (RAYLEIGH forces vertical = 1);
+    # full axis-generality of the sponge is a documented limitation
     u += tcy * (u - ud.u_wind_speed) + c_f * (
         tcy_f * (u - ud.u_wind_speed) + np.abs(tcy_f) * mfac * u_f
     )
