@@ -47,23 +47,29 @@ def analytic_drag(params, rho0_surface):
     return 0.25 * np.pi * rho0_surface * params["N"] * params["U"] * params["h0"] ** 2
 
 
+def _inner_xy(arr, ndim):
+    """Inner-domain x-y slab; collapses the degenerate spanwise axis in 3D."""
+    if ndim == 2:
+        return arr[2:-2, 2:-2]
+    return arr[2:-2, 2:-2, 0]
+
+
 def sim_perturbations_SI(mem, ud):
-    """Extract (x, z, u', w, rho0) in SI from a quasi-2D run (y vertical).
+    """Extract (x, z, u', w, rho0) in SI (y vertical; quasi-2D 3D or native 2D).
 
     Returns inner-domain cell fields with the spanwise (z-array) axis
     collapsed; heights are the physical cell heights from the metric.
     """
-    i2 = (slice(2, -2), slice(2, -2), slice(None))
-    kslice = 0  # quasi-2D: spanwise direction is degenerate
+    ndim = mem.elem.ndim
 
-    rho = mem.sol.rho[i2][:, :, kslice]
-    u = (mem.sol.rhou[i2] / mem.sol.rho[i2])[:, :, kslice] * ud.u_ref
-    w = (mem.sol.rhov[i2] / mem.sol.rho[i2])[:, :, kslice] * ud.u_ref
+    rho = _inner_xy(mem.sol.rho, ndim)
+    u = _inner_xy(mem.sol.rhou, ndim) / rho * ud.u_ref
+    w = _inner_xy(mem.sol.rhov, ndim) / rho * ud.u_ref
 
     x = mem.elem.x[2:-2] * ud.h_ref
-    z = mem.elem.metric.z[i2][:, :, kslice] * ud.h_ref
+    z = _inner_xy(mem.elem.metric.z, ndim) * ud.h_ref
 
-    rho0 = mem.npf.HydroState.rho0[i2][:, :, kslice]
+    rho0 = _inner_xy(mem.npf.HydroState.rho0, ndim)
 
     up = u - ud.u_wind_speed * ud.u_ref
     # remove the anelastic 1/sqrt(rho0) amplitude growth for the
@@ -79,11 +85,10 @@ def momentum_flux_profile(mem, ud, dx_SI):
     the linear steady state M is height-constant and equals -D below the
     sponge.
     """
-    i2 = (slice(2, -2), slice(2, -2), slice(None))
-    kslice = 0
-    rho = mem.sol.rho[i2][:, :, kslice] * (ud.p_ref / (ud.R_gas * ud.T_ref))
-    u = (mem.sol.rhou[i2] / mem.sol.rho[i2])[:, :, kslice] * ud.u_ref
-    w = (mem.sol.rhov[i2] / mem.sol.rho[i2])[:, :, kslice] * ud.u_ref
+    ndim = mem.elem.ndim
+    rho = _inner_xy(mem.sol.rho, ndim) * (ud.p_ref / (ud.R_gas * ud.T_ref))
+    u = _inner_xy(mem.sol.rhou, ndim) / _inner_xy(mem.sol.rho, ndim) * ud.u_ref
+    w = _inner_xy(mem.sol.rhov, ndim) / _inner_xy(mem.sol.rho, ndim) * ud.u_ref
     up = u - ud.u_wind_speed * ud.u_ref
     return -np.sum(rho * up * w, axis=0) * dx_SI
 
