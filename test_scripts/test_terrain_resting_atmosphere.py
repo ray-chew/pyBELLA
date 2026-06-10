@@ -47,8 +47,8 @@ def _make_resting_mem(orography=True, steps=5):
     ud.u_wind_speed = 0.0
     ud.stepmax = steps
     ud.tout = [1e6]  # step-limited
-    if orography:
-        ud.orography = _agnesi(ud)
+    # smoke_agnesi carries its own hill; override per variant
+    ud.orography = _agnesi(ud) if orography else None
     elem, node = dis_grid.grid_init(ud)
     sol = fields.CellSolField(elem.sc)
     th = thermodynamics.ThermodynamicalQuantities(ud)
@@ -99,8 +99,8 @@ def test_uniform_flow_flat_metric_matches_plain():
         ud.coriolis_strength = np.array(ud.coriolis_strength)
         ud.stepmax = 3
         ud.tout = [1e6]
-        if orography:
-            ud.orography = lambda xi1, xi2: 0.0 * xi1 + 0.0 * xi2
+        # forced-flat metric vs true bypass (the case's own hill is overridden)
+        ud.orography = (lambda xi1, xi2: 0.0 * xi1 + 0.0 * xi2) if orography else None
         elem, node = dis_grid.grid_init(ud)
         sol = fields.CellSolField(elem.sc)
         th = thermodynamics.ThermodynamicalQuantities(ud)
@@ -120,12 +120,49 @@ def test_uniform_flow_flat_metric_matches_plain():
         assert err <= 1e-12, f"{attr}: rel {err:.2e}"
 
 
+def test_mountain_wave_smoke_conservation_and_response():
+    """First end-to-end terrain run: 10 m/s wind over the 400 m hill.
+
+    Gates: (i) J-weighted mass and P = rho*Y are conserved by the metric
+    advection (flux form, periodic x, no-flux walls), (ii) the hill
+    actually forces a vertical-velocity response of a sane magnitude
+    (linear estimate U * max|dh/dx| ~ 0.5 m/s for these parameters).
+    """
+    ud = user_data.UserDataInit(**vars(smoke_agnesi.UserData()))
+    ud.coriolis_strength = np.array(ud.coriolis_strength)
+    ud.stepmax = 5
+    ud.tout = [1e6]
+    elem, node = dis_grid.grid_init(ud)
+    sol = fields.CellSolField(elem.sc)
+    th = thermodynamics.ThermodynamicalQuantities(ud)
+    npf = fields.NodePressureField(elem, node, ud)
+    sol = smoke_agnesi.sol_init(sol, npf, elem, node, th, ud)
+    mem = ModelState(elem, node, sol, npf, th, cache.FlowSolverCache())
+    bdry_c.set_ghost_cells(mem, ud)
+
+    i2 = tuple(slice(2, -2) for _ in range(elem.ndim))
+    J = elem.metric.J
+    mass0 = np.sum((J * mem.sol.rho)[i2])
+    P0 = np.sum((J * mem.sol.rhoY)[i2])
+
+    mem = time_update.do(mem, ud, tout=ud.tout[0], debug_writer=_StubWriter())
+
+    mass1 = np.sum((J * mem.sol.rho)[i2])
+    P1 = np.sum((J * mem.sol.rhoY)[i2])
+    assert abs(mass1 - mass0) / mass0 < 1e-10, f"mass drift {(mass1-mass0)/mass0:.2e}"
+    assert abs(P1 - P0) / P0 < 1e-10, f"P drift {(P1-P0)/P0:.2e}"
+
+    w_ms = np.max(np.abs(mem.sol.rhov[i2] / mem.sol.rho[i2])) * ud.u_ref
+    assert 1e-3 < w_ms < 5.0, f"mountain-wave w response out of range: {w_ms:.3e} m/s"
+
+
 def test_field_mode_hydrostates_match_profiles_when_flat():
     flat = lambda xi1, xi2: 0.0 * xi1 + 0.0 * xi2
 
     def states_pair(builder):
         ud0 = user_data.UserDataInit(**vars(smoke_agnesi.UserData()))
         ud0.coriolis_strength = np.array(ud0.coriolis_strength)
+        ud0.orography = None
         elem0, node0 = dis_grid.grid_init(ud0)
         npf0 = fields.NodePressureField(elem0, node0, ud0)
         builder(npf0, elem0, node0, thermodynamics.ThermodynamicalQuantities(ud0), ud0)

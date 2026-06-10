@@ -46,8 +46,8 @@ def _agnesi_hill(ud, h0_m=300.0, a_m=5000.0):
 def _make_mem(orography=None):
     ud = user_data.UserDataInit(**vars(smoke_agnesi.UserData()))
     ud.coriolis_strength = np.array(ud.coriolis_strength)
-    if orography is not None:
-        ud.orography = orography(ud)
+    # smoke_agnesi carries its own hill; the oracle controls terrain itself
+    ud.orography = orography(ud) if orography is not None else None
     elem, node = dis_grid.grid_init(ud)
     sol = fields.CellSolField(elem.sc)
     th = thermodynamics.ThermodynamicalQuantities(ud)

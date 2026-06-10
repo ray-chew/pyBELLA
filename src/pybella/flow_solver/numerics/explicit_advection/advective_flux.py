@@ -26,13 +26,31 @@ def recompute(mem, **kwargs):
 
     flux = mem.cache.get_flux_containers(mem.elem)
 
+    # terrain metric; recompute is only called in the unflipped orientation
+    # (time_update, between sweeps), so component i matches array axis i
+    metric = mem.elem.metric
+
     for i, (comp, rho_comp) in enumerate(zip(components, rho_components)):
         # Use provided velocity or compute from momentum
         if comp in kwargs:
             rhoY_vel = kwargs[comp]
         else:
             momentum = getattr(mem.sol, rho_comp)
-            rhoY_vel = mem.sol.rhoY * momentum / mem.sol.rho
+            if metric is not None and i == metric.vaxis:
+                # contravariant vertical mass flux rhoY*(w - G.u_h)/rho
+                # (J * eta_dot — what actually crosses an eta-face)
+                a_h1, a_h2 = metric.haxes
+                momentum = momentum - metric.G1 * getattr(mem.sol, rho_components[a_h1])
+                if metric.G2 is not None:
+                    momentum = momentum - metric.G2 * getattr(
+                        mem.sol, rho_components[a_h2]
+                    )
+                rhoY_vel = mem.sol.rhoY * momentum / mem.sol.rho
+            elif metric is not None:
+                # horizontal mass fluxes carry the Jacobian (face-area weight)
+                rhoY_vel = metric.J * mem.sol.rhoY * momentum / mem.sol.rho
+            else:
+                rhoY_vel = mem.sol.rhoY * momentum / mem.sol.rho
 
         # Apply directional convolution
         flux[i].rhoY[inner_idx] = convolution.apply_directional_convolution(

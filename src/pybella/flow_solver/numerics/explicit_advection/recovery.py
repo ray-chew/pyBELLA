@@ -30,6 +30,11 @@ def compute(mem, flux, ud, lmbda, split_step, tag=None):
         * (flux.rhoY[face_inner_idx][lefts_idx] + flux.rhoY[face_inner_idx][rights_idx])
         / mem.sol.rhoY[face_inner_idx]
     )
+    if mem.elem.metric is not None:
+        # the metric mass fluxes carry J (horizontal) / J*eta_dot (vertical);
+        # the slope-transport Courant velocity is the coordinate velocity,
+        # so divide J back out (metric is sweep-oriented alongside sol)
+        u *= mem.elem.metric.ooJ
 
     shape = mem.sol.u.shape
 
