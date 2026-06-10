@@ -13,6 +13,7 @@ import subprocess
         "test_unstable_lamb",
         "test_swe_vortex",
         "test_straka",
+        "test_agnesi_hydrostatic",
     ],
 )
 def test_single_run(ic):
