@@ -121,7 +121,10 @@ def compute_at_nodes(rhs, elem, sol, ud):
 
     # Handle boundary conditions: zero the momenta in the two boundary
     # slabs of every WALL/RAYLEIGH axis (historically vertical-only, which
-    # left the x-WALL elliptic path broken)
+    # left the x-WALL elliptic path broken). The slabs are the ghost
+    # layers, so with terrain this also zeroes the ghost contravariant
+    # fluxes (they are formed from the momenta) — the same wall treatment
+    # as the uniform-Cartesian path.
     if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
         for dim in range(ndim):
             if (
@@ -135,8 +138,35 @@ def compute_at_nodes(rhs, elem, sol, ud):
 
     # Call appropriate JIT-compiled function
     if ndim == 2:
+        if elem.metric is not None:
+            raise NotImplementedError(
+                "terrain runs are quasi-2D 3D (lap3D path); native 2D metric "
+                "divergence belongs to the lap2D cross-term follow-up"
+            )
         rhs[:] = _momentum_pot_temp_divergence_2d_jit(
             sol.rho, sol.rhou, sol.rhov, sol.rhoY, elem.dx, elem.dy
+        )
+    elif elem.metric is not None:
+        # terrain: rhs = J grad.F with J-weighted horizontal fluxes and the
+        # contravariant vertical flux F_v - G1 F_h1 - G2 F_h2 (role space);
+        # the differencing stencils are unchanged
+        m = elem.metric
+        moms = (sol.rhou, sol.rhov, sol.rhow)
+        a_h1, a_h2 = m.haxes
+        f_h1, f_v, f_h2 = _metric_contravariant_fluxes_jit(
+            sol.rho,
+            sol.rhoY,
+            moms[a_h1],
+            moms[m.vaxis],
+            moms[a_h2],
+            m.J,
+            m.G1,
+            m.G2,
+        )
+        flux = [None, None, None]
+        flux[a_h1], flux[m.vaxis], flux[a_h2] = f_h1, f_v, f_h2
+        rhs[:, :, :] = compute_3d_sum(
+            flux[0], flux[1], flux[2], elem.dx, elem.dy, elem.dz
         )
     else:
         _momentum_pot_temp_divergence_3d_jit(
@@ -152,6 +182,25 @@ def compute_at_nodes(rhs, elem, sol, ud):
         )
 
     return rhs
+
+
+@nb.njit(cache=True)
+def _metric_contravariant_fluxes_jit(rho, rhoY, mom_h1, mom_v, mom_h2, J, G1, G2):
+    """Terrain-following flux components of the theta-weighted momentum.
+
+    Role-ordered inputs/outputs (h1, v, h2). Returns the J-weighted
+    horizontal fluxes and the contravariant vertical flux
+
+        f_v = theta * (mom_v - G1 mom_h1 - G2 mom_h2)
+
+    such that the plain divergence of (J f_h1, f_v, J f_h2) equals
+    J grad.F in physical space.
+    """
+    theta = rhoY / rho
+    f_h1 = mom_h1 * theta
+    f_h2 = mom_h2 * theta
+    f_v = mom_v * theta - G1 * f_h1 - G2 * f_h2
+    return J * f_h1, f_v, J * f_h2
 
 
 @nb.njit(cache=True)
