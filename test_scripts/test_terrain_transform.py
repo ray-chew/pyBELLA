@@ -139,9 +139,13 @@ def test_fd_slope_matches_analytic_grad():
     h, grad = _hill()
     ud_fd = _StubUD(orography=h)
     ud_an = _StubUD(orography=h, orography_grad=grad)
-    # resolve the hill (width 0.3) properly so the second-order FD converges
+    # resolve the hill (width 0.3) properly so the second-order FD converges;
+    # walls in x: the hill does not decay to zero at the domain edge, so the
+    # periodic coordinate wrap would (correctly) introduce a seam kink that
+    # FD smears but the analytic gradient does not — not what's tested here
     for ud in (ud_fd, ud_an):
         ud.inx = 129
+        ud.bdry_type = np.array([opts.BdryType.WALL] * 3)
     elem_fd, _ = dis_grid.grid_init(ud_fd)
     elem_an, _ = dis_grid.grid_init(ud_an)
     # ~4e-4 truncation at the steepest point on this grid; the test guards

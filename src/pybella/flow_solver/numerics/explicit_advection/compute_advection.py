@@ -73,16 +73,22 @@ def first_order_runge_kutta(mem, ud, dt):
     bdry_c.set_ghost_cells(mem, ud)
 
 
-def _update_solution_variables(sol, flux, lmbda, left_idx, right_idx, variables=None):
+def _update_solution_variables(
+    sol, flux, lmbda, left_idx, right_idx, variables=None, ooJ=None
+):
     """
     Helper function to update solution variables with flux differences.
 
+    ooJ: terrain inverse Jacobian (sweep-oriented); the finite-volume cell
+    measure is J * dxi, so metric flux differences are divided by J.
     """
     if variables is None:
         variables = ["rho", "rhou", "rhov", "rhow", "rhoX", "rhoY"]
 
     for var in variables:
         flux_diff = getattr(flux, var)[left_idx] - getattr(flux, var)[right_idx]
+        if ooJ is not None:
+            flux_diff = ooJ * flux_diff
         current_val = getattr(sol, var)
         setattr(sol, var, current_val + lmbda * flux_diff)
 
@@ -103,7 +109,8 @@ def _explicit_step_and_flux(mem, ud, lmbda, split_step, tag=None):
     left_idx, right_idx = get_neighbor_indices(mem.elem.ndim)
 
     if tag != "rk":
-        _update_solution_variables(mem.sol, flux, lmbda, left_idx, right_idx)
+        ooJ = mem.elem.metric.ooJ if mem.elem.metric is not None else None
+        _update_solution_variables(mem.sol, flux, lmbda, left_idx, right_idx, ooJ=ooJ)
 
     if tag == "rk":
         return flux
@@ -132,7 +139,8 @@ def _apply_dimensional_flux_update(mem, ud, dim, time_step, left_idx, right_idx)
     _flip_forward(mem)
     flux = mem.cache.get_flux_containers(mem.elem)[dim]
 
-    _update_solution_variables(mem.sol, flux, lmbda, left_idx, right_idx)
+    ooJ = mem.elem.metric.ooJ if mem.elem.metric is not None else None
+    _update_solution_variables(mem.sol, flux, lmbda, left_idx, right_idx, ooJ=ooJ)
 
     # Handle special case for the vertical axis
     if dim == axes.vertical_axis(ud):

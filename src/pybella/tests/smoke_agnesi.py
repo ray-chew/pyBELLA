@@ -3,14 +3,14 @@
 The Agnesi configuration *shape*: a vertical x-y slice run as quasi-2D 3D
 (``inz = 2``, z degenerate periodic) so the implicit solve goes through the
 full-tensor 27-point operator (``lap3D``) — the path terrain metric terms
-attach to. Isothermal hydrostatic background, uniform horizontal wind,
+attach to. Isothermal hydrostatic background, uniform horizontal wind over
+a 400 m witch-of-Agnesi hill (Gal-Chen terrain-following coordinates),
 periodic x, walls in y, a few steps. No target, no CompareSol: the pytest
-only asserts a clean run.
+asserts a clean run; the in-process terrain gates (conservation, bounded
+mountain-wave response) live in ``test_terrain_resting_atmosphere.py``.
 
-Phase 0 of the terrain work runs it flat (no ``orography``); the witch-of-
-Agnesi hill is switched on once the metric-aware operators land (Phase 6),
-making this the first end-to-end terrain run. The golden-master Agnesi
-regression case (``test_agnesi_hydrostatic``) is separate.
+The golden-master Agnesi regression case (``test_agnesi_hydrostatic``)
+with a proper top sponge and the Smith-1980 oracle is separate.
 """
 
 import numpy as np
@@ -77,6 +77,7 @@ class UserData(object):
         self.stepmax = 3
 
         self.stratification = self.stratification_function
+        self.orography = self.orography_function
         self.output_timesteps = False
 
         self.diag = False
@@ -85,6 +86,12 @@ class UserData(object):
         self.aux = ""
         self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
         self.autogen_fn = False
+
+    def orography_function(self, xi1, xi2):
+        # witch of Agnesi: 400 m peak, 5 km half-width
+        h0 = 400.0 / self.h_ref
+        a = 5000.0 / self.h_ref
+        return h0 * a**2 / (xi1**2 + a**2) + 0.0 * xi2
 
     def stratification_function(self, y):
         # isothermal: theta ~ exp(N^2 z / g) with N^2 = (gamma-1) g^2 / (gamma R T)

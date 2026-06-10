@@ -34,6 +34,7 @@ machinery works for any ``ud.gravity_direction`` in {0, 1, 2}.
 import numpy as np
 
 from ...utils import axes
+from ...utils import options as opts
 
 
 class VerticalTransform:
@@ -194,6 +195,28 @@ def vertical_extent(ud, v):
     return ((ud.xmin, ud.xmax), (ud.ymin, ud.ymax), (ud.zmin, ud.zmax))[v]
 
 
+def _coordinate_wrap(ud, axis):
+    """Identity, or periodic wrap into the domain for PERIODIC axes.
+
+    Ghost coordinates lie outside the domain; every other field sees its
+    periodic image there (ghost-cell wrap), so the orography must too —
+    otherwise the metric is discontinuous across the periodic seam and the
+    elliptic system becomes inconsistent at the duplicated nodes.
+    """
+    if axis is None or ud.bdry_type[axis] != opts.BdryType.PERIODIC:
+        return lambda c: c
+    lo, hi = vertical_extent(ud, axis)
+    length = hi - lo
+    return lambda c: lo + np.mod(c - lo, length)
+
+
+def _effective_orography(ud, a_h1, a_h2):
+    """ud.orography with periodic-wrapped arguments (h1, h2 role order)."""
+    wrap1 = _coordinate_wrap(ud, a_h1)
+    wrap2 = _coordinate_wrap(ud, a_h2)
+    return lambda xi1, xi2: ud.orography(wrap1(xi1), wrap2(xi2))
+
+
 def _coord_view(grid_obj, axis, ndim):
     """Coordinate array of `axis`, shaped to broadcast over an ndim field."""
     shape = [1] * ndim
@@ -201,15 +224,22 @@ def _coord_view(grid_obj, axis, ndim):
     return axes.coords_along(grid_obj, axis).reshape(shape)
 
 
-def _terrain_slope(ud, xi1, xi2, which, spacing):
-    """dh/dxi_which (role index 0 or 1): analytic if provided, else FD."""
+def _terrain_slope(ud, heff, a_h1, a_h2, xi1, xi2, which, spacing):
+    """dh/dxi_which (role index 0 or 1): analytic if provided, else FD.
+
+    Both paths wrap periodic coordinates: the analytic gradient is
+    evaluated at the wrapped points, the central difference differentiates
+    the wrapped (periodic) effective orography so the seam is consistent.
+    """
     grad = getattr(ud, "orography_grad", None)
     if grad is not None:
-        return grad[which](xi1, xi2)
+        wrap1 = _coordinate_wrap(ud, a_h1)
+        wrap2 = _coordinate_wrap(ud, a_h2)
+        return grad[which](wrap1(xi1), wrap2(xi2))
     d = spacing
     if which == 0:
-        return (ud.orography(xi1 + d, xi2) - ud.orography(xi1 - d, xi2)) / (2.0 * d)
-    return (ud.orography(xi1, xi2 + d) - ud.orography(xi1, xi2 - d)) / (2.0 * d)
+        return (heff(xi1 + d, xi2) - heff(xi1 - d, xi2)) / (2.0 * d)
+    return (heff(xi1, xi2 + d) - heff(xi1, xi2 - d)) / (2.0 * d)
 
 
 def build_metric_fields(grid_obj, ud):
@@ -239,7 +269,8 @@ def build_metric_fields(grid_obj, ud):
     xi1 = _coord_view(grid_obj, a_h1, ndim)
     xi2 = _coord_view(grid_obj, a_h2, ndim) if a_h2 is not None else 0.0
 
-    h = ud.orography(xi1, xi2)
+    heff = _effective_orography(ud, a_h1, a_h2)
+    h = heff(xi1, xi2)
 
     def full(expr):
         return np.ascontiguousarray(
@@ -255,10 +286,10 @@ def build_metric_fields(grid_obj, ud):
 
     z = full(transform.z(eta, h, eta0, etat))
 
-    dh1 = _terrain_slope(ud, xi1, xi2, 0, grid_obj.dxyz[a_h1])
+    dh1 = _terrain_slope(ud, heff, a_h1, a_h2, xi1, xi2, 0, grid_obj.dxyz[a_h1])
     G1 = full(transform.slope(eta, dh1, eta0, etat))
     if a_h2 is not None:
-        dh2 = _terrain_slope(ud, xi1, xi2, 1, grid_obj.dxyz[a_h2])
+        dh2 = _terrain_slope(ud, heff, a_h1, a_h2, xi1, xi2, 1, grid_obj.dxyz[a_h2])
         G2 = full(transform.slope(eta, dh2, eta0, etat))
     else:
         G2 = None
