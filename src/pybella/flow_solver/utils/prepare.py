@@ -1,6 +1,6 @@
 import numpy as np
 
-from ...utils import user_data, io, data_structures
+from ...utils import axes, user_data, io, data_structures
 from ..physics import hydrostatics
 from ..physics import thermodynamics as gd_thermodynamics
 from ..discretisation import grid as dis_grid
@@ -38,6 +38,7 @@ def initialise():
     ud.coriolis_strength = np.array(ud.coriolis_strength)
 
     elem, node = dis_grid.grid_init(ud)
+    axes.validate(ud, elem.ndim)
 
     sol = fields.CellSolField(elem.sc)
 

@@ -1,5 +1,7 @@
 import numba as nb
 
+from ...utils import axes
+
 
 # Refactored main function
 def multiply_inverse_terms(
@@ -7,7 +9,7 @@ def multiply_inverse_terms(
 ):
     """Coriolis matrix multiplication."""
     nonhydro = ud.nonhydrostasy
-    g = ud.gravity_strength[1]
+    g = ud.gravity_strength[axes.vertical_axis(ud)]
     Msq = ud.Msq
 
     wh1, wv, wh2 = dt * ud.coriolis_strength

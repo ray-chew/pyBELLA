@@ -13,9 +13,15 @@ class DependencyManager:
         self.dependency_graph = {
             "u_ref": ["h_ref", "t_ref"],
             "Msq": ["u_ref", "R_gas", "T_ref"],
-            "gravity_strength": ["grav", "h_ref", "R_gas", "T_ref"],
-            "i_gravity": ["grav", "h_ref", "R_gas", "T_ref"],
-            "coriolis_strength": ["omega", "t_ref"],
+            "gravity_strength": [
+                "grav",
+                "h_ref",
+                "R_gas",
+                "T_ref",
+                "gravity_direction",
+            ],
+            "i_gravity": ["grav", "h_ref", "R_gas", "T_ref", "gravity_direction"],
+            "coriolis_strength": ["omega", "t_ref", "gravity_direction"],
             "cp_gas": ["gamm", "R_gas"],
             "N_ref": ["grav", "cp_gas", "T_ref"],
             "Nsq_ref": ["grav", "cp_gas", "T_ref"],
@@ -123,6 +129,10 @@ class UserDataInit:
         self.blending_type = "half"  # half, full
         self.blending_weight = 0.0 / 16
 
+        # Vertical/gravity axis (array axis index; see utils/axes.py).
+        # 2D runs are x-y by convention and require 1.
+        self.gravity_direction = 1
+
         # Boundary conditions
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = opts.BdryType.PERIODIC
@@ -211,27 +221,29 @@ class UserDataInit:
             self.Msq = self.u_ref * self.u_ref / (self.R_gas * self.T_ref)
 
     def compute_gravity_strength(self):
-        """Compute gravity-related parameters."""
+        """Compute gravity-related parameters along the configured vertical axis."""
+        from . import axes
+
+        v = axes.vertical_axis(self)
         self.i_gravity = np.zeros(3)
         self.gravity_strength = np.zeros(3)
 
-        self.gravity_strength[1] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
-
-        for i in range(3):
-            if (self.gravity_strength[i] > 0.0) or (i == 1):
-                self.i_gravity[i] = 1
-                self.gravity_direction = i
+        self.gravity_strength[v] = self.grav * self.h_ref / (self.R_gas * self.T_ref)
+        self.i_gravity[v] = 1
 
     # Alias for backward compatibility
     compute_i_gravity = compute_gravity_strength
 
     def compute_coriolis_strength(self):
-        """Compute Coriolis parameters."""
+        """Compute Coriolis parameters on the two horizontal axes."""
+        from . import axes
+
+        h1, h2 = axes.horizontal_axes(axes.vertical_axis(self))
         self.i_coriolis = np.zeros(3)
         self.coriolis_strength = np.zeros(3)
 
-        self.coriolis_strength[0] = self.omega * self.t_ref
-        self.coriolis_strength[2] = self.omega * self.t_ref
+        self.coriolis_strength[h1] = self.omega * self.t_ref
+        self.coriolis_strength[h2] = self.omega * self.t_ref
 
     def compute_cp_gas(self):
         """Compute specific heat at constant pressure."""
