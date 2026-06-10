@@ -16,8 +16,12 @@ def get_linop(npf, node, coriolis, diag_inv, ud):
         y_atmosphere = False
 
     ###################
-    x_wall = ud.bdry_type[0] == opts.BdryType.WALL
-    y_wall = ud.bdry_type[1] == opts.BdryType.WALL
+    # RAYLEIGH is a sponged wall: lap3D, the divergence slab-zeroing and the
+    # node-value scaling all treat it as WALL — the 2D stencil must agree or
+    # a sponged top wraps periodically.
+    _wall = (opts.BdryType.WALL, opts.BdryType.RAYLEIGH)
+    x_wall = ud.bdry_type[0] in _wall
+    y_wall = ud.bdry_type[1] in _wall
 
     cor_slc = (slice(1, -1), slice(1, -1))
     coeff_slc = (slice(1, -1), slice(1, -1))
