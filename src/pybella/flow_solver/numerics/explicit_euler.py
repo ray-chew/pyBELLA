@@ -67,8 +67,12 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
         * (1 - ud.is_ArakawaKonor)
     )
 
-    if ndim == 3:
-        rhow -= dt * (rhoYovG * dpdz - corr_v * drhou + corr_h1 * drhov)
+    # the w-row applies in 2D too: dpdz is zero there, but the Coriolis terms
+    # are not. Restricting it to ndim == 3 gave 2D runs only the implicit
+    # half of the out-of-plane Coriolis rotation — found 2026-06-09 by the
+    # Baldauf-Brdar analytic oracle (w_out error pinned at ~0.44 rel-L2 with
+    # a sim/ref amplitude ratio ~0.6, independent of dt).
+    rhow -= dt * (rhoYovG * dpdz - corr_v * drhou + corr_h1 * drhov)
 
     # Scalar update (rhoX)
     sol.rhoX[...] = (rho * (rho / rhoY - S0c)) - dt * (v * dSdy) * rho

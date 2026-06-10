@@ -12,6 +12,7 @@ import subprocess
         "test_lamb_wave",
         "test_unstable_lamb",
         "test_swe_vortex",
+        "test_straka",
     ],
 )
 def test_single_run(ic):

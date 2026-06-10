@@ -149,6 +149,10 @@ class UserDataInit:
         self.w_wind_speed = 0.0
         self.stratification = self.stratification_function
 
+        # Explicit diffusion (off by default; see flow_solver/numerics/diffusion.py)
+        self.diffusion = False
+        self.diffusion_coeff = 0.0
+
         # Numerics
         self.do_advection = True
         self.limiter_type_scalars = opts.LimiterType.NONE

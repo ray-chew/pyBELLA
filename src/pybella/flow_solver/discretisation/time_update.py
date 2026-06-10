@@ -9,7 +9,7 @@ from ...utils import options as opts
 from ..utils.boundary import rayleigh_boundary as bdry_r
 from ..physics import cfl, eos
 from ..numerics.explicit_advection import advective_flux, compute_advection
-from ..numerics import explicit_euler, implicit_euler
+from ..numerics import diffusion, explicit_euler, implicit_euler
 
 # for blending module
 from ...interfaces.dynamics_blending import schemes
@@ -69,14 +69,12 @@ def do(
                 f"step = {mem.time.step}, window_step = {mem.time.window_step}"
             )
 
-        logging.info(
-            f"""
+        logging.info(f"""
                     -------
                     is_compressible = {ud.is_compressible}, is_nonhydrostatic = {ud.is_nonhydrostatic}
                     compressibility = {ud.compressibility:.3f}, nonhydrostasy = {ud.nonhydrostasy:.3f}
                     -------
-                    """
-        )
+                    """)
 
         sol0 = copy.deepcopy(mem.sol)
 
@@ -183,6 +181,9 @@ def do(
             sol_half_new=sol_half_new,
             npf_half_new=npf_half_new,
         )
+
+        if ud.diffusion:
+            diffusion.apply(mem, ud, dt)
 
         ######################################################
         # Blending : Do blending after timestep
