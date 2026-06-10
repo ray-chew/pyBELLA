@@ -3,18 +3,29 @@ import numba as nb
 from ... import options as opts
 
 
-def get_linop(elem, node, npf, ud, diag_inv, dt):
-    """Build the 27-point Laplacian matvec on the node.isc box.
+def get_linop(elem, node, npf, ud, diag_inv, dt, cij):
+    """Build the full-tensor 27-point operator matvec on the node.isc box.
+
+    Discretises  diag_inv * [ sum_ij (1/(d_i d_j)) (1/16) D_i(C_ij F_j p)
+    + hcenter p ]  where F_j is the cell-averaged j-derivative, D_i the
+    cell-to-node i-difference, and C_ij the (axis-indexed) coefficient
+    fields (Gamma^-1 P Theta) * H^-1 — the same H^-1 the momentum
+    correction applies, making the elliptic operator consistent with it.
+    The legacy operator used bare diagonal coefficients plus hand-coded
+    x-z `corrf` cross terms; with H^-1 = identity (no rotation, no
+    buoyancy) this operator reproduces it exactly.
 
     The solve vector is the C-order ravel of an array shaped node.isc
     (interior nodes plus one ghost layer per side, [x, y, z]). The outer
     ghost ring carries zero operator rows; ghost values are reconstructed
     from periodicity inside the kernel.
+
+    cij: 3x3 nested sequence of full cell-shaped coefficient fields.
     """
     oodxyz = node.dxyz
     oodxyz = 1.0 / (oodxyz**2)
     oodx2, oody2, oodz2 = oodxyz[0], oodxyz[1], oodxyz[2]
-    odx, odz = 1.0 / node.dx, 1.0 / node.dz
+    odx, ody, odz = 1.0 / node.dx, 1.0 / node.dy, 1.0 / node.dz
 
     i1 = (slice(1, -1), slice(1, -1), slice(1, -1))
 
@@ -23,55 +34,71 @@ def get_linop(elem, node, npf, ud, diag_inv, dt):
     for dim in range(ndim):
         periodicity[dim] = ud.bdry_type[dim] == opts.BdryType.PERIODIC
 
-    # cell-valued coefficients on the (isc - 1) cell box surrounding the
-    # node box; copied because the kernel zeroes wall slices in place
-    hplusx = np.ascontiguousarray(npf.wplus[0][i1])
-    hplusy = np.ascontiguousarray(npf.wplus[1][i1])
-    hplusz = np.ascontiguousarray(npf.wplus[2][i1])
+    # cell-valued coefficient boxes on the (isc - 1) cell box surrounding
+    # the node box; copied because the kernel zeroes wall slabs in place
+    C = [[np.ascontiguousarray(cij[i][j][i1]) for j in range(3)] for i in range(3)]
+
+    # cross blocks only enter when H^-1 has off-diagonal content
+    use_cross = bool(
+        max(np.max(np.abs(C[i][j])) for i in range(3) for j in range(3) if i != j) > 0.0
+    )
 
     # unknowns: interior nodes of the box
     hcenter = np.ascontiguousarray(npf.wcenter[i1])
     diag_inv = np.ascontiguousarray(diag_inv)
 
-    corrf = dt * ud.coriolis_strength[0]
-
+    # scipy's LinearOperator dtype probe passes an int8 vector; the cast is
+    # a no-copy view for the float64 vectors BiCGSTAB actually sends
     return lambda p: lap3D(
-        p,
-        hplusx,
-        hplusy,
-        hplusz,
+        np.asarray(p, dtype=np.float64),
+        C[0][0],
+        C[0][1],
+        C[0][2],
+        C[1][0],
+        C[1][1],
+        C[1][2],
+        C[2][0],
+        C[2][1],
+        C[2][2],
         hcenter,
         oodx2,
         oody2,
         oodz2,
+        odx,
+        ody,
+        odz,
         periodicity,
         diag_inv,
-        corrf,
-        odx,
-        odz,
+        use_cross,
     )
 
 
 @nb.jit(nopython=True, cache=False, nogil=False)
 def lap3D(
     p0,
-    hplusx,
-    hplusy,
-    hplusz,
+    c00,
+    c01,
+    c02,
+    c10,
+    c11,
+    c12,
+    c20,
+    c21,
+    c22,
     hcenter,
     oodx2,
     oody2,
     oodz2,
+    odx,
+    ody,
+    odz,
     periodicity,
     diag_inv,
-    corrf,
-    odx,
-    odz,
+    use_cross,
 ):
     shx, shy, shz = hcenter.shape
     # p0 is the C-order ravel of an [x, y, z] box: reshape must keep that
-    # axis order (the old (shz+2, shy+2, shx+2) was silently wrong for
-    # shx != shz). Copy so the periodic padding below never mutates the
+    # axis order. Copy so the periodic padding below never mutates the
     # caller's (scipy's) vector.
     p = p0.reshape((shx + 2, shy + 2, shz + 2)).copy()
 
@@ -110,12 +137,9 @@ def lap3D(
             p[1, :, :] = p[-2, :, :]
             p[-2, :, :] = tmp
         elif bc == False and cnt == 0:
-            hplusx[0, :, :] = 0.0
-            hplusx[-1, :, :] = 0.0
-            hplusy[0, :, :] = 0.0
-            hplusy[-1, :, :] = 0.0
-            hplusz[0, :, :] = 0.0
-            hplusz[-1, :, :] = 0.0
+            for c in (c00, c01, c02, c10, c11, c12, c20, c21, c22):
+                c[0, :, :] = 0.0
+                c[-1, :, :] = 0.0
         if bc == True and cnt == 1:
             tmp = p[:, 1, :]
             p[:, 0, :] = p[:, -3, :]
@@ -123,12 +147,9 @@ def lap3D(
             p[:, 1, :] = p[:, -2, :]
             p[:, -2, :] = tmp
         elif bc == False and cnt == 1:
-            hplusx[:, 0, :] = 0.0
-            hplusx[:, -1, :] = 0.0
-            hplusy[:, 0, :] = 0.0
-            hplusy[:, -1, :] = 0.0
-            hplusz[:, 0, :] = 0.0
-            hplusz[:, -1, :] = 0.0
+            for c in (c00, c01, c02, c10, c11, c12, c20, c21, c22):
+                c[:, 0, :] = 0.0
+                c[:, -1, :] = 0.0
         if bc == True and cnt == 2:
             tmp = p[:, :, 1]
             p[:, :, 0] = p[:, :, -3]
@@ -136,28 +157,15 @@ def lap3D(
             p[:, :, 1] = p[:, :, -2]
             p[:, :, -2] = tmp
         elif bc == False and cnt == 2:
-            hplusx[:, :, 0] = 0.0
-            hplusx[:, :, -1] = 0.0
-            hplusy[:, :, 0] = 0.0
-            hplusy[:, :, -1] = 0.0
-            hplusz[:, :, 0] = 0.0
-            hplusz[:, :, -1] = 0.0
+            for c in (c00, c01, c02, c10, c11, c12, c20, c21, c22):
+                c[:, :, 0] = 0.0
+                c[:, :, -1] = 0.0
         cnt += 1
 
-    leftz = p[:, :, :-1]
-    rightz = p[:, :, 1:]
-
-    z_fluxes = rightz - leftz
-
-    lefty = p[:, :-1, :]
-    righty = p[:, 1:, :]
-
-    y_fluxes = righty - lefty
-
-    leftx = p[:-1, :, :]
-    rightx = p[1:, :, :]
-
-    x_fluxes = rightx - leftx
+    # cell-averaged directional differences F_j(p) on the cell box
+    x_fluxes = p[1:, :, :] - p[:-1, :, :]
+    y_fluxes = p[:, 1:, :] - p[:, :-1, :]
+    z_fluxes = p[:, :, 1:] - p[:, :, :-1]
 
     x_flx = (
         x_fluxes[toplefts[0]]
@@ -178,94 +186,84 @@ def lap3D(
         + z_fluxes[botrights[2]]
     )
 
-    hxzp = hplusx * z_flx
-    hxzpm = hxzp[:-1, :, :]
-    hxzpm = (
-        hxzpm[toplefts[0]]
-        + hxzpm[toprights[0]]
-        + hxzpm[botlefts[0]]
-        + hxzpm[botrights[0]]
-    )
-    hxzpp = hxzp[1:, :, :]
-    hxzpp = (
-        hxzpp[toplefts[0]]
-        + hxzpp[toprights[0]]
-        + hxzpp[botlefts[0]]
-        + hxzpp[botrights[0]]
-    )
+    # diagonal blocks: D_i(C_ii F_i), exactly the legacy structure
+    q = c00 * x_flx
+    qm = q[:-1, :, :]
+    x_flxm = qm[toplefts[0]] + qm[toprights[0]] + qm[botlefts[0]] + qm[botrights[0]]
+    qp = q[1:, :, :]
+    x_flxp = qp[toplefts[0]] + qp[toprights[0]] + qp[botlefts[0]] + qp[botrights[0]]
 
-    hzxp = hplusz * x_flx
-    hzxpm = hzxp[:, :, :-1]
-    hzxpm = (
-        hzxpm[toplefts[2]]
-        + hzxpm[toprights[2]]
-        + hzxpm[botlefts[2]]
-        + hzxpm[botrights[2]]
-    )
-    hzxpp = hzxp[:, :, 1:]
-    hzxpp = (
-        hzxpp[toplefts[2]]
-        + hzxpp[toprights[2]]
-        + hzxpp[botlefts[2]]
-        + hzxpp[botrights[2]]
-    )
+    q = c11 * y_flx
+    qm = q[:, :-1, :]
+    y_flxm = qm[toplefts[1]] + qm[toprights[1]] + qm[botlefts[1]] + qm[botrights[1]]
+    qp = q[:, 1:, :]
+    y_flxp = qp[toplefts[1]] + qp[toprights[1]] + qp[botlefts[1]] + qp[botrights[1]]
 
-    x_flx = hplusx * x_flx
-    x_flxm = x_flx[:-1, :, :]
-    x_flxm = (
-        x_flxm[toplefts[0]]
-        + x_flxm[toprights[0]]
-        + x_flxm[botlefts[0]]
-        + x_flxm[botrights[0]]
-    )
-    x_flxp = x_flx[1:, :, :]
-    x_flxp = (
-        x_flxp[toplefts[0]]
-        + x_flxp[toprights[0]]
-        + x_flxp[botlefts[0]]
-        + x_flxp[botrights[0]]
-    )
-
-    y_flx = hplusy * y_flx
-    y_flxm = y_flx[:, :-1, :]
-    y_flxm = (
-        y_flxm[toplefts[1]]
-        + y_flxm[toprights[1]]
-        + y_flxm[botlefts[1]]
-        + y_flxm[botrights[1]]
-    )
-    y_flxp = y_flx[:, 1:, :]
-    y_flxp = (
-        y_flxp[toplefts[1]]
-        + y_flxp[toprights[1]]
-        + y_flxp[botlefts[1]]
-        + y_flxp[botrights[1]]
-    )
-
-    z_flx = hplusz * z_flx
-    z_flxm = z_flx[:, :, :-1]
-    z_flxm = (
-        z_flxm[toplefts[2]]
-        + z_flxm[toprights[2]]
-        + z_flxm[botlefts[2]]
-        + z_flxm[botrights[2]]
-    )
-    z_flxp = z_flx[:, :, 1:]
-    z_flxp = (
-        z_flxp[toplefts[2]]
-        + z_flxp[toprights[2]]
-        + z_flxp[botlefts[2]]
-        + z_flxp[botrights[2]]
-    )
+    q = c22 * z_flx
+    qm = q[:, :, :-1]
+    z_flxm = qm[toplefts[2]] + qm[toprights[2]] + qm[botlefts[2]] + qm[botrights[2]]
+    qp = q[:, :, 1:]
+    z_flxp = qp[toplefts[2]] + qp[toprights[2]] + qp[botlefts[2]] + qp[botrights[2]]
 
     lap[1:-1, 1:-1, 1:-1] = (
         oodx2 * coeff * (-x_flxm + x_flxp)
         + oody2 * coeff * (-y_flxm + y_flxp)
         + oodz2 * coeff * (-z_flxm + z_flxp)
-        + +1.0 * odx * odz * coeff * corrf * (hxzpp - hxzpm)
-        + -1.0 * odx * odz * coeff * corrf * (hzxpp - hzxpm)
         + hcenter * p[1:-1, 1:-1, 1:-1]
     )
+
+    if use_cross:
+        cross = np.zeros_like(x_flxm)
+
+        # (i=0, j=1): D_x(C_01 F_y)
+        q = c01 * y_flx
+        qm = q[:-1, :, :]
+        qms = qm[toplefts[0]] + qm[toprights[0]] + qm[botlefts[0]] + qm[botrights[0]]
+        qp = q[1:, :, :]
+        qps = qp[toplefts[0]] + qp[toprights[0]] + qp[botlefts[0]] + qp[botrights[0]]
+        cross += odx * ody * coeff * (qps - qms)
+
+        # (i=0, j=2): D_x(C_02 F_z)
+        q = c02 * z_flx
+        qm = q[:-1, :, :]
+        qms = qm[toplefts[0]] + qm[toprights[0]] + qm[botlefts[0]] + qm[botrights[0]]
+        qp = q[1:, :, :]
+        qps = qp[toplefts[0]] + qp[toprights[0]] + qp[botlefts[0]] + qp[botrights[0]]
+        cross += odx * odz * coeff * (qps - qms)
+
+        # (i=1, j=0): D_y(C_10 F_x)
+        q = c10 * x_flx
+        qm = q[:, :-1, :]
+        qms = qm[toplefts[1]] + qm[toprights[1]] + qm[botlefts[1]] + qm[botrights[1]]
+        qp = q[:, 1:, :]
+        qps = qp[toplefts[1]] + qp[toprights[1]] + qp[botlefts[1]] + qp[botrights[1]]
+        cross += ody * odx * coeff * (qps - qms)
+
+        # (i=1, j=2): D_y(C_12 F_z)
+        q = c12 * z_flx
+        qm = q[:, :-1, :]
+        qms = qm[toplefts[1]] + qm[toprights[1]] + qm[botlefts[1]] + qm[botrights[1]]
+        qp = q[:, 1:, :]
+        qps = qp[toplefts[1]] + qp[toprights[1]] + qp[botlefts[1]] + qp[botrights[1]]
+        cross += ody * odz * coeff * (qps - qms)
+
+        # (i=2, j=0): D_z(C_20 F_x)
+        q = c20 * x_flx
+        qm = q[:, :, :-1]
+        qms = qm[toplefts[2]] + qm[toprights[2]] + qm[botlefts[2]] + qm[botrights[2]]
+        qp = q[:, :, 1:]
+        qps = qp[toplefts[2]] + qp[toprights[2]] + qp[botlefts[2]] + qp[botrights[2]]
+        cross += odz * odx * coeff * (qps - qms)
+
+        # (i=2, j=1): D_z(C_21 F_y)
+        q = c21 * y_flx
+        qm = q[:, :, :-1]
+        qms = qm[toplefts[2]] + qm[toprights[2]] + qm[botlefts[2]] + qm[botrights[2]]
+        qp = q[:, :, 1:]
+        qps = qp[toplefts[2]] + qp[toprights[2]] + qp[botlefts[2]] + qp[botrights[2]]
+        cross += odz * ody * coeff * (qps - qms)
+
+        lap[1:-1, 1:-1, 1:-1] += cross
 
     lap = lap * diag_inv
 
