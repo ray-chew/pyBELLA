@@ -175,6 +175,12 @@ def operator_coefficients_nodes(mem, ud, dt):
         mem.sol.rhoY**cexp, kernel
     )
 
+    if mem.node.metric is not None:
+        # with terrain the solved equation is J * (Helmholtz): the rhs
+        # carries J*div F, the C_ij tensor carries J — the pointwise center
+        # term needs its J too (node-exact, not averaged)
+        mem.npf.wcenter *= mem.node.metric.J[mem.node.i1]
+
     if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
         bdry.scale_wall_node_values(mem.npf.wcenter, mem.node, ud)
 
@@ -240,6 +246,10 @@ def _prepare_3d_system(mem, ud, dt):
     """
     hv = coriolis.compute_inverse_coefficients(mem, ud, dt)
     h_role = ((hv[0], hv[1], hv[2]), (hv[3], hv[4], hv[5]), (hv[6], hv[7], hv[8]))
+    if mem.elem.metric is not None:
+        # terrain: the operator tensor is J A^T H^-1 A — the metric map A of
+        # the momentum correction composed with the J-weighted divergence
+        h_role = terrain.elliptic_tensor(mem.elem.metric, h_role)
     rho_of = axes.role_of_axis(axes.vertical_axis(ud))
     cij = [
         [mem.npf.wplus[i] * h_role[rho_of[i]][rho_of[j]] for j in range(3)]

@@ -146,6 +146,40 @@ def apply_gradient_map(metric, dp):
     return dp
 
 
+def elliptic_tensor(metric, h_role):
+    """Fold the terrain metric into the role-indexed H^-1 tensor.
+
+    Returns M = J A^T H^-1 A (role order h1, v, h2), the coefficient
+    tensor of the elliptic operator: the rhs divergence measures
+    D_i((J A^T F)_i) and the momentum correction applies H^-1 A grad p,
+    so their composition carries exactly this tensor. With H^-1 == I it
+    is the classic terrain-following tensor
+
+        [[J, -G1, 0], [-G1, (1 + G1^2 + G2^2)/J, -G2], [0, -G2, J]]
+
+    and with h == 0 (J == 1, G == 0) it reduces bit-exactly to ``h_role``.
+    """
+    J, ooJ, G1, G2 = metric.J, metric.ooJ, metric.G1, metric.G2
+    h = h_role
+    M00 = J * h[0][0]
+    M02 = J * h[0][2]
+    M20 = J * h[2][0]
+    M22 = J * h[2][2]
+    M01 = -G1 * h[0][0] + h[0][1] - G2 * h[0][2]
+    M10 = -G1 * h[0][0] + h[1][0] - G2 * h[2][0]
+    M12 = -G1 * h[0][2] + h[1][2] - G2 * h[2][2]
+    M21 = -G1 * h[2][0] + h[2][1] - G2 * h[2][2]
+    M11 = ooJ * (
+        G1 * G1 * h[0][0]
+        - G1 * (h[0][1] + h[1][0])
+        + G1 * G2 * (h[0][2] + h[2][0])
+        + h[1][1]
+        - G2 * (h[1][2] + h[2][1])
+        + G2 * G2 * h[2][2]
+    )
+    return ((M00, M01, M02), (M10, M11, M12), (M20, M21, M22))
+
+
 def terrain_is_active(ud):
     return getattr(ud, "orography", None) is not None
 
