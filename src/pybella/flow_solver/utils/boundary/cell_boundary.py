@@ -20,6 +20,21 @@ class CellBoundaryHandler:
         self.v_phys = axes.vertical_axis(ud)
         self.vert_mom = axes.MOMENTA[self.v_phys]
         self.hor_moms = tuple(m for i, m in enumerate(axes.MOMENTA) if i != self.v_phys)
+        # terrain metric (None on uniform-Cartesian runs); during advection
+        # sweeps it is flipped alongside the solution arrays
+        self.metric = mem.elem.metric
+        if self.metric is not None:
+            a_h1, a_h2 = axes.horizontal_axes(self.v_phys)
+            # physical-component momentum names matching G1/G2
+            self.slope_moms = (axes.MOMENTA[a_h1], axes.MOMENTA[a_h2])
+
+    def _slope_terms(self, sol, idx):
+        """G1*mom_h1 + G2*mom_h2 at the given index (terrain only)."""
+        m = self.metric
+        out = m.G1[idx] * getattr(sol, self.slope_moms[0])[idx]
+        if m.G2 is not None:
+            out = out + m.G2[idx] * getattr(sol, self.slope_moms[1])[idx]
+        return out
 
     def apply_no_gravity_boundary(self, sol, current_step, ghost_padding, idx):
         """Apply boundary conditions for axes without gravity."""
@@ -89,9 +104,20 @@ class CellBoundaryHandler:
         Y_source = sol.rhoY[nsource] / sol.rho[nsource]
 
         vert = getattr(sol, self.vert_mom)
-        rhoYv_image = -vert[nsource] * sol.rhoY[nsource] / sol.rho[nsource]
-        y_coords = axes.coords_along(self.mem.elem, self.v_phys)
-        S = 1.0 / self.ud.stratification(y_coords[nimage[y_axs]])
+        if self.metric is not None:
+            # the metric must be oriented like the (possibly sweep-flipped)
+            # solution arrays — compute_advection flips them together
+            assert self.metric.vaxis == y_axs, "metric not sweep-oriented"
+            # free slip through the terrain surface: reflect the
+            # CONTRAVARIANT momentum (mom_v - G.mom_h), not the Cartesian one
+            contra_source = vert[nsource] - self._slope_terms(sol, nsource)
+            rhoYv_image = -contra_source * sol.rhoY[nsource] / sol.rho[nsource]
+            # stratification at the PHYSICAL height of the image cell
+            S = 1.0 / self.ud.stratification(self.metric.z[nimage])
+        else:
+            rhoYv_image = -vert[nsource] * sol.rhoY[nsource] / sol.rho[nsource]
+            y_coords = axes.coords_along(self.mem.elem, self.v_phys)
+            S = 1.0 / self.ud.stratification(y_coords[nimage[y_axs]])
 
         # Calculate pressure difference
         dpi = self._calculate_pressure_difference(
@@ -130,13 +156,14 @@ class CellBoundaryHandler:
                 - self.mem.npf.HydroState.p20[nlast[y_axs]]
             ) * self.ud.Msq
         else:
-            return (
-                direction
-                * (self.mem.th.Gamma * g)
-                * 0.5
-                * self.mem.elem.dxyz[self.v_phys]
-                * (1.0 / Y_last + S)
-            )
+            deta = self.mem.elem.dxyz[self.v_phys]
+            if self.metric is not None:
+                # local vertical cell extent dz = J * deta across the
+                # last -> image interval
+                dz = 0.5 * (self.metric.J[nimage] + self.metric.J[nlast]) * deta
+            else:
+                dz = deta
+            return direction * (self.mem.th.Gamma * g) * 0.5 * dz * (1.0 / Y_last + S)
 
     def _calculate_density_and_mass_fraction(self, sol, nlast, nimage, dpi, S, y_axs):
         """Calculate density and mass fraction for ghost cells."""
@@ -184,6 +211,13 @@ class CellBoundaryHandler:
         if hasattr(self.ud, "ATMOSPHERIC_EXTENSION"):
             vert[nimage] = -ghost_values["v"] / (
                 ghost_values["rhoY"] / ghost_values["rho"]
+            )
+        elif self.metric is not None:
+            # rho*v carries the reflected CONTRAVARIANT momentum; rebuild the
+            # Cartesian vertical momentum with the ghost cell's slope terms
+            # (the horizontal momenta were assigned just above)
+            vert[nimage] = ghost_values["rho"] * ghost_values["v"] + self._slope_terms(
+                sol, nimage
             )
         else:
             vert[nimage] = ghost_values["rho"] * ghost_values["v"]
