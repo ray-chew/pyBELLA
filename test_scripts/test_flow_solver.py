@@ -14,6 +14,7 @@ import subprocess
         "test_swe_vortex",
         "test_straka",
         "test_agnesi_hydrostatic",
+        "test_schaer_ridge",
     ],
 )
 def test_single_run(ic):

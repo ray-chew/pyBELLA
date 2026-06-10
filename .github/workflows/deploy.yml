@@ -50,6 +50,8 @@ jobs:
           pytest ./test_scripts/test_agnesi_smoke.py
           pytest ./test_scripts/test_agnesi_analytic.py
           pytest ./test_scripts/test_agnesi_2d_equivalence.py
+          pytest ./test_scripts/test_schaer_smoke.py
+          pytest ./test_scripts/test_schaer_analytic.py
 
       # - name: Upload coverage HTML report
       #   if: ${{ !env.ACT }}
