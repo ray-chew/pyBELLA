@@ -213,19 +213,24 @@ def _prepare_2d_system(mem, ud, dt):
 
 
 def _prepare_3d_system(mem, ud, dt):
-    """Prepare 3D linear system."""
-    # Note: diag_inv appears to be used but not defined in 3D case
-    # This might be a bug in the original code
-    diag_inv = None  # TODO: Verify if this should be computed for 3D
+    """Prepare 3D linear system.
+
+    The solve vector is the full node.isc box (interior nodes plus one
+    ghost layer per side) in C order. The ghost ring carries zero operator
+    rows and zero rhs entries, so it stays exactly zero through BiCGSTAB.
+    """
+    diag_inv = preconditioner.prepare_diag(mem.npf, mem.node)
+    mem.npf.rhs *= diag_inv
 
     lap = lap3D.get_linop(mem.elem, mem.node, mem.npf, ud, diag_inv, dt)
-    p2 = mem.npf.p2_nodes  # Define p2 for 3D case
-    sh = p2.reshape(-1).shape[0]
+    sh = mem.npf.rhs.size
 
     lap = sp.sparse.linalg.LinearOperator((sh, sh), lap)
-    rhs_inner = mem.npf.rhs[mem.node.i1].ravel()
 
-    return lap, rhs_inner, sh
+    rhs_inner = np.zeros_like(mem.npf.rhs)
+    rhs_inner[mem.node.i1] = mem.npf.rhs[mem.node.i1]
+
+    return lap, rhs_inner.ravel()
 
 
 def _reshape_solution(p2, mem, ud, nc):
@@ -236,7 +241,7 @@ def _reshape_solution(p2, mem, ud, nc):
 
     if mem.elem.ndim == 2:
         p2_full[mem.node.i2] = p2.reshape(mem.npf.rhs[mem.node.i1].T.shape).T
-    else:  # 3D case
-        p2_full[mem.node.i1] = p2.reshape(ud.inx + 2, ud.iny + 2, ud.inz + 2)
+    else:  # 3D case: solution vector is the C-ordered node.isc box
+        p2_full[mem.node.i1] = p2.reshape(mem.npf.rhs.shape)
 
     return p2_full

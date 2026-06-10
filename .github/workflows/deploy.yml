@@ -36,6 +36,7 @@ jobs:
           # pytest --cov=src --cov-report=xml --cov-report=html --cov-report=term
           pytest ./test_scripts/test_blending.py
           pytest ./test_scripts/test_flow_solver.py
+          pytest ./test_scripts/test_3d_elliptic_oracle.py
 
       # - name: Upload coverage HTML report
       #   if: ${{ !env.ACT }}

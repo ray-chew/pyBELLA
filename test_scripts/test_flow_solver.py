@@ -6,6 +6,7 @@ import subprocess
     "ic",
     [
         "test_travelling_vortex",
+        "test_travelling_vortex_3d_coriolis",
         "test_internal_long_wave",
         "test_igw_baldauf_brdar",
         "test_lamb_wave",

@@ -17,15 +17,10 @@ case changes:
 - rho0 = del_rho = 0.5, no background wind, pseudo-incompressible regime,
   periodic boundaries in all three directions.
 
-.. warning::
-    Currently NOT runnable: the 3D (``inz > 1``) implicit/elliptic solver path
-    is broken since the package restructure (shape bug in
-    ``utils/operators/divergence.py``, unpacking bug and missing 3D
-    preconditioner in ``numerics/implicit_euler.py``, missing imports in
-    ``utils/operators/laplacian/lap3D.py``). The IC itself is verified
-    standalone; no regression target exists yet and the case is deliberately
-    not in the CI parametrize lists. Fix the 3D solve, then generate the
-    target via the ``diag_updt_targets`` workflow.
+This case exercises the full-3D (``inz > 1``) implicit/elliptic solver path
+(27-point Laplacian, ``utils/operators/laplacian/lap3D.py``) on a quasi-2D
+grid; being y-uniform, its elliptic solve is validated against the 2D solver
+to ~1e-10.
 """
 
 import numpy as np
@@ -79,7 +74,7 @@ class UserData(object):
         ##########################################
         self.CFL = 0.95
         # legacy file used dtfixed = 2.1 * 1.200930e-2; a round 0.01 keeps the
-        # regression run at exactly 100 steps to tout = 1.0 (as in the 2D case)
+        # regression run at exactly 100 steps (000..099) to tout = 1.0
         self.dtfixed = 0.01
         self.dtfixed0 = 0.01
 
@@ -90,7 +85,7 @@ class UserData(object):
         self.initial_projection = True
 
         self.tout = [1.0]
-        self.stepmax = 101
+        self.stepmax = 100
 
         self.stratification = self.stratification_function
         self.rhoe = self.rhoe_function
