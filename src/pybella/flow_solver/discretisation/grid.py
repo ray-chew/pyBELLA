@@ -138,6 +138,14 @@ class SpaceDiscr(object):
         assert g.iny >= 1
         assert g.inz >= 1
 
+        # per-instance arrays: the class-level definitions above are shared
+        # buffers, and two grids coexisting in one process (e.g. a 2D
+        # reference and its 3D permutation twin) would corrupt each other
+        self.ig = np.zeros((3))
+        self.ic = np.zeros((3))
+        self.stride = np.zeros((3))
+        self.dxyz = np.zeros((3))
+
         self.ndim = g.ndim
         self.normal = big
 
