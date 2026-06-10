@@ -126,6 +126,26 @@ class MetricFields:
         return shift(self.vaxis), tuple(shift(a) for a in self.haxes)
 
 
+def apply_gradient_map(metric, dp):
+    """Physical gradients from computational ones: dp <- A @ dp (in place).
+
+    ``dp`` is the axis-indexed list of the three cell-gradient arrays. The
+    chain rule for z = z(xi, eta) gives, in role order (h1, v, h2),
+
+        d/dx_h|z = d/dxi_h - (G_h / J) d/deta,   d/dz = (1/J) d/deta
+
+    i.e. the matrix A = [[1, -G1/J, 0], [0, 1/J, 0], [0, -G2/J, 1]]. The
+    horizontal rows are corrected before the vertical row is scaled.
+    """
+    a_h1, a_h2 = metric.haxes
+    dp_v = dp[metric.vaxis]
+    dp[a_h1] = dp[a_h1] - metric.G1 * metric.ooJ * dp_v
+    if a_h2 is not None:
+        dp[a_h2] = dp[a_h2] - metric.G2 * metric.ooJ * dp_v
+    dp[metric.vaxis] = dp_v * metric.ooJ
+    return dp
+
+
 def terrain_is_active(ud):
     return getattr(ud, "orography", None) is not None
 

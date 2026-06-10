@@ -4,6 +4,7 @@ import scipy as sp
 from ...utils import axes
 from ...utils.operators import convolution, divergence, gradient
 from ...utils.operators.laplacian import preconditioner, lap2D_manual, lap3D
+from ..discretisation import terrain
 from ..utils.boundary import cell_boundary as bdry_c
 from ..utils.boundary import node_boundary as bdry_n
 from ..utils.boundary import common as bdry
@@ -127,6 +128,11 @@ def _correction_nodes(mem, ud, dt, p, updt_chi):
     dSdy = mem.npf.HydroState_n.get_dSdy(mem.elem, mem.node)
 
     Dpx, Dpy, Dpz = gradient.compute_at_nodes(p, mem.elem.ndim, mem.node.dxyz)
+    if mem.elem.metric is not None:
+        # physical gradients via the terrain map A — the same correction the
+        # elliptic operator's C_ij coefficients encode, so the projection
+        # annihilates exactly the divergence it measures
+        Dpx, Dpy, Dpz = terrain.apply_gradient_map(mem.elem.metric, [Dpx, Dpy, Dpz])
 
     thinv = mem.sol.rho / mem.sol.rhoY
 
