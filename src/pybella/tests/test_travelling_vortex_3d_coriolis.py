@@ -105,8 +105,8 @@ class UserData(object):
             Nx=self.inx - 1,
             Ny=self.iny - 1,
             steps=[self.stepmax - 1],
-            # 3D fields cannot be contour-plotted by the comparison plotter
-            plot_compare=False,
+            # 3D fields are contour-plotted as the transverse (y) mid-slice
+            plot_compare=True,
         )
 
         self.autogen_fn = False

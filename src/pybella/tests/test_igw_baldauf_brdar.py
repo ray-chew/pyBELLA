@@ -133,6 +133,18 @@ class UserData(object):
             Nx=self.inx - 1,
             Ny=self.iny - 1,
             steps=[self.stepmax - 1],
+            # tolerance audit 2026-06-09 (3 reps): momenta/rhoX reproduce to
+            # ~1e-10 or better here, so hold them 3 orders tighter than the
+            # 1e-5 default (>=500x margin over observed run-to-run scatter)
+            tolerances={
+                "rho": 1e-5,
+                "rhou": 1e-8,
+                "rhov": 1e-8,
+                "rhow": 1e-8,
+                "rhoY": 1e-5,
+                "rhoX": 1e-8,
+                "p2_nodes": 1e-5,
+            },
         )
 
     def stratification_function(self, y):

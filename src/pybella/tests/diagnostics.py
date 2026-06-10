@@ -42,10 +42,13 @@ class CompareSol(object):
                 self.arr_dump[dump_name][attribute] = float(arr.sum())
 
                 if self.plot:
+                    pl_arr = arr.T
+                    if pl_arr.ndim == 3:  # 3D target: plot transverse mid-slice
+                        pl_arr = pl_arr[:, pl_arr.shape[1] // 2, :]
                     # vis_pt.plotter accepts a list of tuples with plot and panel title.
                     pl = vis_pt.plotter(
                         [
-                            (arr.T, "ref"),
+                            (pl_arr, "ref"),
                         ],
                         ncols=1,
                         figsize=(4, 3),
@@ -137,13 +140,11 @@ class CompareSol(object):
                 logging.info(str(e))
                 raise
 
-        logging.info(
-            f"""
+        logging.info(f"""
             {'#' * 10}
             Test passed for {self.current_run}
             {'#' * 10}
-            """.strip()
-        )
+            """.strip())
 
     def __init(self, ds: DiagnosticState):
         tp = test_params(ds)
@@ -175,6 +176,13 @@ class CompareSol(object):
 
             test_sol = self.__get_sol_for_comparison(mem, ud, attribute)
             ref_sol = self.__get_sol_for_comparison(ref_mem, ud, attribute)
+
+            # 3D fields: contour-plot the interior mid-slice along the
+            # transverse (y) axis; the comparison itself stays full-3D
+            if test_sol.ndim == 3:
+                jmid = test_sol.shape[1] // 2
+                test_sol = test_sol[:, jmid, :]
+                ref_sol = ref_sol[:, jmid, :]
 
             arr_plots.append([ref_sol, "ref"])
             arr_plots.append([test_sol, "test"])
