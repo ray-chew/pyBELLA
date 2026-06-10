@@ -86,6 +86,40 @@ def test_resting_atmosphere_flat_stays_still():
     assert vmax < 1e-8, f"flat resting atmosphere drifted: {vmax:.3e} m/s"
 
 
+def test_uniform_flow_flat_metric_matches_plain():
+    """Full time loop, wind on: forced-flat metric == plain to roundoff.
+
+    Exercises every metric-aware branch (divergence, gradients, elliptic,
+    ghost cells, sweep-oriented metric flips) with J == 1, G == 0 against
+    the untouched uniform-Cartesian path.
+    """
+
+    def run(orography):
+        ud = user_data.UserDataInit(**vars(smoke_agnesi.UserData()))
+        ud.coriolis_strength = np.array(ud.coriolis_strength)
+        ud.stepmax = 3
+        ud.tout = [1e6]
+        if orography:
+            ud.orography = lambda xi1, xi2: 0.0 * xi1 + 0.0 * xi2
+        elem, node = dis_grid.grid_init(ud)
+        sol = fields.CellSolField(elem.sc)
+        th = thermodynamics.ThermodynamicalQuantities(ud)
+        npf = fields.NodePressureField(elem, node, ud)
+        sol = smoke_agnesi.sol_init(sol, npf, elem, node, th, ud)
+        mem = ModelState(elem, node, sol, npf, th, cache.FlowSolverCache())
+        bdry_c.set_ghost_cells(mem, ud)
+        return time_update.do(mem, ud, tout=ud.tout[0], debug_writer=_StubWriter())
+
+    plain = run(False)
+    flat = run(True)
+    for attr in ("rho", "rhou", "rhov", "rhow", "rhoY"):
+        a = getattr(plain.sol, attr)
+        b = getattr(flat.sol, attr)
+        scale = max(np.max(np.abs(a)), 1.0)
+        err = np.max(np.abs(a - b)) / scale
+        assert err <= 1e-12, f"{attr}: rel {err:.2e}"
+
+
 def test_field_mode_hydrostates_match_profiles_when_flat():
     flat = lambda xi1, xi2: 0.0 * xi1 + 0.0 * xi2
 

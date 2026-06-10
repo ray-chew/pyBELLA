@@ -6,6 +6,20 @@ from ...utils.boundary import cell_boundary as bdry_c
 from . import recovery, riemann_solver
 
 
+def _flip_forward(mem):
+    """Flip the solution AND the terrain metric so ghost-cell fills and
+    flux kernels inside a sweep see consistently oriented arrays."""
+    mem.sol.flip_forward()
+    if mem.elem.metric is not None:
+        mem.elem.metric.flip_forward()
+
+
+def _flip_backward(mem):
+    mem.sol.flip_backward()
+    if mem.elem.metric is not None:
+        mem.elem.metric.flip_backward()
+
+
 def strange_splitting(mem, ud, dt, odd, label, writer=None):
     """
     Concise implementation of Strang-splitting advection.
@@ -45,7 +59,7 @@ def first_order_runge_kutta(mem, ud, dt):
     # Compute fluxes for all dimensions
     for split in range(ndim):
         lmbda = time_step / mem.elem.dxyz[split]
-        mem.sol.flip_forward()
+        _flip_forward(mem)
         if mem.elem.iisc[split] > 1:
             flux[split] = _explicit_step_and_flux(mem, ud, lmbda, split, tag="rk")
 
@@ -115,7 +129,7 @@ def _apply_dimensional_flux_update(mem, ud, dim, time_step, left_idx, right_idx)
     Apply flux update for a specific dimension.
     """
     lmbda = time_step / mem.elem.dxyz[dim]
-    mem.sol.flip_forward()
+    _flip_forward(mem)
     flux = mem.cache.get_flux_containers(mem.elem)[dim]
 
     _update_solution_variables(mem.sol, flux, lmbda, left_idx, right_idx)
@@ -144,9 +158,9 @@ def _perform_dimensional_sweep(mem, ud, time_step, reverse=False, diagnostics=No
         if reverse:
             if elem.iisc[split] > 1:
                 _explicit_step_and_flux(mem, ud, lmbda, split, diagnostics)
-            Sol.flip_backward()
+            _flip_backward(mem)
         else:
-            Sol.flip_forward()
+            _flip_forward(mem)
             if elem.iisc[split] > 1:
                 _explicit_step_and_flux(mem, ud, lmbda, split, diagnostics)
 
