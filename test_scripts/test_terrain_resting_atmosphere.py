@@ -14,6 +14,7 @@ the integrated state).
 """
 
 import numpy as np
+import pytest
 
 from pybella.flow_solver.discretisation import grid as dis_grid
 from pybella.flow_solver.discretisation import time_update
@@ -41,11 +42,12 @@ def _agnesi(ud, h0_m=400.0, a_m=5000.0):
     return lambda xi1, xi2: h0 * a**2 / (xi1**2 + a**2) + 0.0 * xi2
 
 
-def _make_resting_mem(orography=True, steps=5):
+def _make_resting_mem(orography=True, steps=5, inz=2):
     ud = user_data.UserDataInit(**vars(smoke_agnesi.UserData()))
     ud.coriolis_strength = np.array(ud.coriolis_strength)
     ud.u_wind_speed = 0.0
     ud.stepmax = steps
+    ud.inz = inz  # 2 = quasi-2D 3D (lap3D path), 1 = native 2D (lap2D path)
     ud.tout = [1e6]  # step-limited
     # smoke_agnesi carries its own hill; override per variant
     ud.orography = _agnesi(ud) if orography else None
@@ -68,8 +70,9 @@ def _max_speed_ms(mem, ud):
     return max(speeds) * ud.u_ref
 
 
-def test_resting_atmosphere_over_hill():
-    mem, ud = _make_resting_mem(orography=True, steps=5)
+@pytest.mark.parametrize("inz", [2, 1], ids=["q2d3d", "native2d"])
+def test_resting_atmosphere_over_hill(inz):
+    mem, ud = _make_resting_mem(orography=True, steps=5, inz=inz)
     mem = time_update.do(mem, ud, tout=ud.tout[0], debug_writer=_StubWriter())
     vmax = _max_speed_ms(mem, ud)
     # measured ~1e-10 m/s (the bicgstab solve floor, same as flat): with the
@@ -78,15 +81,17 @@ def test_resting_atmosphere_over_hill():
     assert vmax < 1e-8, f"spurious wind over terrain: max |v| = {vmax:.3e} m/s"
 
 
-def test_resting_atmosphere_flat_stays_still():
+@pytest.mark.parametrize("inz", [2, 1], ids=["q2d3d", "native2d"])
+def test_resting_atmosphere_flat_stays_still(inz):
     """Flat baseline: quantifies the no-terrain spurious-wind floor."""
-    mem, ud = _make_resting_mem(orography=False, steps=5)
+    mem, ud = _make_resting_mem(orography=False, steps=5, inz=inz)
     mem = time_update.do(mem, ud, tout=ud.tout[0], debug_writer=_StubWriter())
     vmax = _max_speed_ms(mem, ud)
     assert vmax < 1e-8, f"flat resting atmosphere drifted: {vmax:.3e} m/s"
 
 
-def test_uniform_flow_flat_metric_matches_plain():
+@pytest.mark.parametrize("inz", [2, 1], ids=["q2d3d", "native2d"])
+def test_uniform_flow_flat_metric_matches_plain(inz):
     """Full time loop, wind on: forced-flat metric == plain to roundoff.
 
     Exercises every metric-aware branch (divergence, gradients, elliptic,
@@ -99,6 +104,7 @@ def test_uniform_flow_flat_metric_matches_plain():
         ud.coriolis_strength = np.array(ud.coriolis_strength)
         ud.stepmax = 3
         ud.tout = [1e6]
+        ud.inz = inz
         # forced-flat metric vs true bypass (the case's own hill is overridden)
         ud.orography = (lambda xi1, xi2: 0.0 * xi1 + 0.0 * xi2) if orography else None
         elem, node = dis_grid.grid_init(ud)
@@ -120,7 +126,8 @@ def test_uniform_flow_flat_metric_matches_plain():
         assert err <= 1e-12, f"{attr}: rel {err:.2e}"
 
 
-def test_mountain_wave_smoke_conservation_and_response():
+@pytest.mark.parametrize("inz", [2, 1], ids=["q2d3d", "native2d"])
+def test_mountain_wave_smoke_conservation_and_response(inz):
     """First end-to-end terrain run: 10 m/s wind over the 400 m hill.
 
     Gates: (i) J-weighted mass and P = rho*Y are conserved by the metric
@@ -132,6 +139,7 @@ def test_mountain_wave_smoke_conservation_and_response():
     ud.coriolis_strength = np.array(ud.coriolis_strength)
     ud.stepmax = 5
     ud.tout = [1e6]
+    ud.inz = inz
     elem, node = dis_grid.grid_init(ud)
     sol = fields.CellSolField(elem.sc)
     th = thermodynamics.ThermodynamicalQuantities(ud)

@@ -191,3 +191,68 @@ def test_divergence_metric_wiring(v):
     divergence.compute_at_nodes(rhs_ref, elem, sol, ud)
 
     assert np.max(np.abs(rhs_metric - rhs_ref)) <= 1e-13
+
+
+# --- native 2D (lap2D path) -------------------------------------------------
+
+
+class _StubSol2D:
+    """Smooth, deterministic 2D fields."""
+
+    def __init__(self, elem):
+        x, y = np.meshgrid(elem.x, elem.y, indexing="ij")
+        self.rho = 1.0 + 0.1 * np.sin(x) * np.cos(y)
+        self.rhoY = self.rho * (1.0 + 0.02 * np.cos(x + y))
+        self.rhou = np.sin(2 * x) + 0.3 * y
+        self.rhov = np.cos(y) * (1.0 + 0.2 * x)
+        self.rhow = np.zeros_like(x)
+
+
+def _rhs_for_2d(ud_metric):
+    ud_metric.inz = 1
+    elem, node = dis_grid.grid_init(ud_metric)
+    sol = _StubSol2D(elem)
+    rhs = np.zeros((elem.icx - 1, elem.icy - 1))
+    divergence.compute_at_nodes(rhs, elem, sol, ud_metric)
+    return rhs
+
+
+def test_divergence_2d_flat_metric_matches_plain():
+    flat = lambda xi1, xi2: 0.0 * xi1 + 0.0 * xi2
+    rhs_plain = _rhs_for_2d(_StubUD())
+    rhs_flat = _rhs_for_2d(_StubUD(orography=flat))
+    assert np.max(np.abs(rhs_flat - rhs_plain)) <= 1e-13
+
+
+def test_divergence_2d_metric_wiring():
+    """2D sibling of test_divergence_metric_wiring (haxes = (0, None))."""
+    from pybella.flow_solver.discretisation.terrain import MetricFields
+
+    ud = _StubUD()
+    ud.inz = 1
+    ud.bdry_type = np.array([opts.BdryType.PERIODIC] * 3)
+    elem, node = dis_grid.grid_init(ud)
+    sol = _StubSol2D(elem)
+    sol.rhoY = sol.rho.copy()  # theta == 1
+
+    shape = sol.rho.shape
+    J0, g1 = 2.0, 0.3
+    elem.metric = MetricFields(
+        J=np.full(shape, J0),
+        G1=np.full(shape, g1),
+        G2=None,
+        z=np.zeros(shape),
+        vaxis=1,
+        haxes=(0, None),
+    )
+    rhs_metric = np.zeros((elem.icx - 1, elem.icy - 1))
+    divergence.compute_at_nodes(rhs_metric, elem, sol, ud)
+    elem.metric = None
+
+    rhou0 = sol.rhou.copy()
+    sol.rhou = J0 * rhou0
+    sol.rhov = sol.rhov - g1 * rhou0
+    rhs_ref = np.zeros((elem.icx - 1, elem.icy - 1))
+    divergence.compute_at_nodes(rhs_ref, elem, sol, ud)
+
+    assert np.max(np.abs(rhs_metric - rhs_ref)) <= 1e-13

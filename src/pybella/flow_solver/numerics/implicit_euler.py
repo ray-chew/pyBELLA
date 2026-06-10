@@ -211,13 +211,42 @@ def _prepare_linear_system(mem, ud, dt):
 
 
 def _prepare_2d_system(mem, ud, dt):
-    """Prepare 2D linear system."""
+    """Prepare 2D linear system.
+
+    The lap2D kernel's effective coefficients are wplus ⊙ c (c = the four
+    coefficient arrays passed as ``coriolis_params``), so with terrain the
+    2x2 tensor M = J A^T H^-1 A is folded into c — mirroring the 3D
+    ``cij = wplus[i] * h_role[i][j]`` — while wplus stays separate to keep
+    the kernel's wall coefficient-zeroing intact. ``multiply_inverse_terms``
+    returns the (h1, v) block TRANSPOSED (C-ravel of the transpose == the
+    F-ravel the wplus arrays get), so the fold un-transposes around
+    ``elliptic_tensor_2d``.
+    """
     Vec = mem.npf
     coriolis_params = coriolis.multiply_inverse_terms(
         Vec, mem, ud, dt, attrs=("u", "v", "w"), get_coeffs=True
     )
 
-    diag_inv = preconditioner.prepare_diag(mem.npf, mem.node)
+    if mem.elem.metric is not None:
+        h11_t, h22_t, h12_t, h21_t = coriolis_params
+        h2x2 = ((h11_t.T, h12_t.T), (h21_t.T, h22_t.T))
+        M = terrain.elliptic_tensor_2d(mem.elem.metric, h2x2)
+        coriolis_params = (M[0][0].T, M[1][1].T, M[0][1].T, M[1][0].T)
+        # diag: fold only the geometric factors (the legacy 2D preconditioner
+        # keeps H^-1 out of the diagonal — preserved here so a forced-flat
+        # metric preconditions bit-identically to the plain path)
+        met = mem.elem.metric
+        diag_inv = preconditioner.prepare_diag(
+            mem.npf,
+            mem.node,
+            cii=(
+                mem.npf.wplus[0] * met.J,
+                mem.npf.wplus[1] * (1.0 + met.G1 * met.G1) * met.ooJ,
+                None,
+            ),
+        )
+    else:
+        diag_inv = preconditioner.prepare_diag(mem.npf, mem.node)
     mem.npf.rhs *= diag_inv
 
     p2 = mem.npf.p2_nodes[mem.node.i2].T

@@ -139,13 +139,18 @@ def compute_at_nodes(rhs, elem, sol, ud):
     # Call appropriate JIT-compiled function
     if ndim == 2:
         if elem.metric is not None:
-            raise NotImplementedError(
-                "terrain runs are quasi-2D 3D (lap3D path); native 2D metric "
-                "divergence belongs to the lap2D cross-term follow-up"
+            # terrain: same contravariant/J-weighted construction as the 3D
+            # branch below, minus the second-horizontal leg (haxes = (0, None),
+            # vaxis = 1 — enforced by axes.validate in 2D)
+            m = elem.metric
+            f_h1, f_v = _metric_contravariant_fluxes_2d_jit(
+                sol.rho, sol.rhoY, sol.rhou, sol.rhov, m.J, m.G1
             )
-        rhs[:] = _momentum_pot_temp_divergence_2d_jit(
-            sol.rho, sol.rhou, sol.rhov, sol.rhoY, elem.dx, elem.dy
-        )
+            rhs[:] = compute_2d(f_h1, f_v, elem.dx, elem.dy)
+        else:
+            rhs[:] = _momentum_pot_temp_divergence_2d_jit(
+                sol.rho, sol.rhou, sol.rhov, sol.rhoY, elem.dx, elem.dy
+            )
     elif elem.metric is not None:
         # terrain: rhs = J grad.F with J-weighted horizontal fluxes and the
         # contravariant vertical flux F_v - G1 F_h1 - G2 F_h2 (role space);
@@ -201,6 +206,20 @@ def _metric_contravariant_fluxes_jit(rho, rhoY, mom_h1, mom_v, mom_h2, J, G1, G2
     f_h2 = mom_h2 * theta
     f_v = mom_v * theta - G1 * f_h1 - G2 * f_h2
     return J * f_h1, f_v, J * f_h2
+
+
+@nb.njit(cache=True)
+def _metric_contravariant_fluxes_2d_jit(rho, rhoY, mom_h1, mom_v, J, G1):
+    """2D restriction of :func:`_metric_contravariant_fluxes_jit`.
+
+    Returns the J-weighted horizontal flux and the contravariant vertical
+    flux f_v = theta * (mom_v - G1 mom_h1) such that the plain 2D
+    divergence of (J f_h1, f_v) equals J grad.F in physical space.
+    """
+    theta = rhoY / rho
+    f_h1 = mom_h1 * theta
+    f_v = mom_v * theta - G1 * f_h1
+    return J * f_h1, f_v
 
 
 @nb.njit(cache=True)
