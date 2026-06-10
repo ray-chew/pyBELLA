@@ -42,7 +42,7 @@ def _agnesi(ud, h0_m=400.0, a_m=5000.0):
     return lambda xi1, xi2: h0 * a**2 / (xi1**2 + a**2) + 0.0 * xi2
 
 
-def _make_resting_mem(orography=True, steps=5, inz=2):
+def _make_resting_mem(orography=True, steps=5, inz=2, sleve=False):
     ud = user_data.UserDataInit(**vars(smoke_agnesi.UserData()))
     ud.coriolis_strength = np.array(ud.coriolis_strength)
     ud.u_wind_speed = 0.0
@@ -51,6 +51,14 @@ def _make_resting_mem(orography=True, steps=5, inz=2):
     ud.tout = [1e6]  # step-limited
     # smoke_agnesi carries its own hill; override per variant
     ud.orography = _agnesi(ud) if orography else None
+    if sleve:
+        from pybella.flow_solver.discretisation import terrain
+
+        hill = ud.orography
+        ud.orography_smooth = lambda xi1, xi2: 0.5 * hill(xi1, xi2)
+        ud.vertical_transform = terrain.SLEVETransform(
+            s1=6000.0 / ud.h_ref, s2=1500.0 / ud.h_ref
+        )
     elem, node = dis_grid.grid_init(ud)
     sol = fields.CellSolField(elem.sc)
     th = thermodynamics.ThermodynamicalQuantities(ud)
@@ -79,6 +87,17 @@ def test_resting_atmosphere_over_hill(inz):
     # p2 == 0 perturbation-pressure convention the discrete rest state is
     # exact through the metric machinery, not merely truncation-small
     assert vmax < 1e-8, f"spurious wind over terrain: max |v| = {vmax:.3e} m/s"
+
+
+@pytest.mark.parametrize("inz", [2, 1], ids=["q2d3d", "native2d"])
+def test_resting_atmosphere_over_hill_sleve(inz):
+    """Balanced rest under the first eta-dependent Jacobian: field-mode
+    hydrostates at SLEVE heights, bottom BC with J varying through the
+    ghost rows, metric advection and elliptic assembly all see J(eta)."""
+    mem, ud = _make_resting_mem(orography=True, steps=5, inz=inz, sleve=True)
+    mem = time_update.do(mem, ud, tout=ud.tout[0], debug_writer=_StubWriter())
+    vmax = _max_speed_ms(mem, ud)
+    assert vmax < 1e-8, f"spurious wind over SLEVE terrain: {vmax:.3e} m/s"
 
 
 @pytest.mark.parametrize("inz", [2, 1], ids=["q2d3d", "native2d"])

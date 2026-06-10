@@ -54,7 +54,15 @@ def test_galchen_slope_is_decay_weighted():
 class _StubUD:
     """Minimal ud for grid_init + build_metric_fields."""
 
-    def __init__(self, v=1, orography=None, orography_grad=None):
+    def __init__(
+        self,
+        v=1,
+        orography=None,
+        orography_grad=None,
+        orography_smooth=None,
+        orography_smooth_grad=None,
+        vertical_transform=None,
+    ):
         self.inx, self.iny, self.inz = 9, 7, 5
         self.xmin, self.xmax = -1.0, 1.0
         self.ymin, self.ymax = 0.0, 2.0
@@ -67,6 +75,12 @@ class _StubUD:
             self.orography = orography
         if orography_grad is not None:
             self.orography_grad = orography_grad
+        if orography_smooth is not None:
+            self.orography_smooth = orography_smooth
+        if orography_smooth_grad is not None:
+            self.orography_smooth_grad = orography_smooth_grad
+        if vertical_transform is not None:
+            self.vertical_transform = vertical_transform
 
 
 def _hill(amplitude=0.05, width=0.3):
@@ -173,3 +187,178 @@ def test_flip_forward_backward_roundtrip():
     assert np.array_equal(m.G1, G10)
     assert m.vaxis == vax0
     assert m.haxes == hax0
+
+
+# --- SLEVE -------------------------------------------------------------------
+
+
+def _sleve(n=1.0):
+    # decay scales well separated and inside the [0, 2] stub domain
+    return terrain.SLEVETransform(s1=1.5, s2=0.25, n=n)
+
+
+def _ridge(amplitude=0.04, k=12.0):
+    """Small-scale ridge h2 on a smooth envelope h1 (analytic split)."""
+
+    def h1(xi1, xi2):
+        return amplitude * np.exp(-(xi1**2)) + 0.0 * xi2
+
+    def h(xi1, xi2):
+        return h1(xi1, xi2) * (1.0 + 0.5 * np.cos(k * xi1))
+
+    def dh1_1(xi1, xi2):
+        return -2.0 * xi1 * amplitude * np.exp(-(xi1**2)) + 0.0 * xi2
+
+    def dh_1(xi1, xi2):
+        return dh1_1(xi1, xi2) * (1.0 + 0.5 * np.cos(k * xi1)) - h1(
+            xi1, xi2
+        ) * 0.5 * k * np.sin(k * xi1)
+
+    zero = lambda xi1, xi2: 0.0 * xi1 + 0.0 * xi2
+    return h, (dh_1, zero), h1, (dh1_1, zero)
+
+
+@pytest.mark.parametrize("n", [1.0, 1.35])
+def test_sleve_surface_and_top(n):
+    tr = _sleve(n)
+    eta0, etat = 0.0, 2.0
+    h1 = np.array([0.0, 0.05, 0.1])
+    h2 = np.array([0.0, 0.03, -0.02])
+    z_surf = tr.z(eta0, (h1, h2), eta0, etat)
+    assert np.allclose(z_surf, eta0 + h1 + h2)
+    assert np.allclose(tr.z(etat, (h1, h2), eta0, etat), etat)
+
+
+@pytest.mark.parametrize("n", [1.0, 1.35])
+def test_sleve_jacobian_matches_fd(n):
+    tr = _sleve(n)
+    eta0, etat = 0.0, 2.0
+    h = (0.08, 0.04)
+    # stay inside (eta0, etat): the FD stencil must not straddle the
+    # surface where the below-ground linear extension kicks in
+    eta = np.linspace(eta0 + 1e-3, etat - 1e-3, 41)
+    d = 1e-7
+    fd = (tr.z(eta + d, h, eta0, etat) - tr.z(eta - d, h, eta0, etat)) / (2 * d)
+    assert np.allclose(tr.jacobian(eta, h, eta0, etat), fd, atol=1e-6)
+
+
+def test_sleve_jacobian_eta_dependent():
+    tr = _sleve()
+    eta0, etat = 0.0, 2.0
+    eta = np.linspace(eta0, etat, 9)
+    J = tr.jacobian(eta, (0.08, 0.04), eta0, etat)
+    assert np.ptp(J) > 1e-3  # the first eta-dependent Jacobian
+
+
+def test_sleve_n_gt_1_has_uniform_surface_jacobian():
+    tr = _sleve(n=1.35)
+    eta0, etat = 0.0, 2.0
+    J_surf = tr.jacobian(eta0, (0.08, 0.04), eta0, etat)
+    assert np.allclose(J_surf, 1.0)  # db_i(0) = 0 for n > 1
+
+
+@pytest.mark.parametrize("n", [1.0, 1.35])
+def test_sleve_below_ground_extension_is_finite_and_smooth(n):
+    tr = _sleve(n)
+    eta0, etat = 0.0, 2.0
+    eta_ghost = np.array([-0.4, -0.2, -1e-9])
+    for fn in (tr.z, tr.jacobian):
+        vals = fn(eta_ghost, (0.08, 0.04), eta0, etat)
+        assert np.all(np.isfinite(vals))
+    # continuity across the surface (for n > 1 the decay slope behaves as
+    # zeta^(n-1) just above ground — continuous but steep, hence the loose
+    # tolerance; n == 1 matches to machine precision)
+    assert np.allclose(
+        tr.jacobian(-1e-9, (0.08, 0.04), eta0, etat),
+        tr.jacobian(+1e-9, (0.08, 0.04), eta0, etat),
+        atol=1e-3 if n > 1.0 else 1e-9,
+    )
+
+
+def test_sleve_scale_separation():
+    """The point of SLEVE: at mid-levels the small-scale decay b2 is far
+    below b1, so pure small-scale terrain barely distorts the grid there —
+    under Gal-Chen it still carries ~half its surface slope."""
+    tr = _sleve()
+    gc = terrain.GalChenTransform()
+    eta0, etat = 0.0, 2.0
+    eta_mid = 1.0
+    dh = 1.0  # pure small-scale slope
+    g_sleve = tr.slope(eta_mid, (0.0, dh), eta0, etat)
+    g_gc = gc.slope(eta_mid, dh, eta0, etat)
+    assert abs(g_sleve) < 0.05 * abs(g_gc)
+    # and b2 <= b1 everywhere for s2 < s1
+    eta = np.linspace(eta0, etat, 33)
+    b1, _ = tr._b_db(eta, eta0, etat, tr.s1)
+    b2, _ = tr._b_db(eta, eta0, etat, tr.s2)
+    assert np.all(b2 <= b1 + 1e-12)
+
+
+def test_sleve_builder_requires_smooth_split():
+    h, grad, _, _ = _ridge()
+    ud = _StubUD(orography=h, orography_grad=grad, vertical_transform=_sleve())
+    with pytest.raises(ValueError, match="orography_smooth"):
+        dis_grid.grid_init(ud)
+
+
+def test_sleve_h_zero_gives_exact_identity_metric():
+    flat = lambda xi1, xi2: 0.0 * xi1 + 0.0 * xi2
+    ud = _StubUD(orography=flat, orography_smooth=flat, vertical_transform=_sleve())
+    elem, node = dis_grid.grid_init(ud)
+    for grid_obj in (elem, node):
+        m = grid_obj.metric
+        assert np.all(m.J == 1.0)
+        assert np.all(m.G1 == 0.0)
+        assert np.all(m.G2 == 0.0)
+
+
+def test_sleve_builder_slope_matches_fd_of_z():
+    """G1 from the builder == d z / d xi1 at fixed eta, by FD across columns."""
+    h, grad, h1, grad1 = _ridge()
+    ud = _StubUD(
+        orography=h,
+        orography_grad=grad,
+        orography_smooth=h1,
+        orography_smooth_grad=grad1,
+        vertical_transform=_sleve(),
+    )
+    ud.inx = 257  # resolve the k = 12 ridge for the cross-column FD
+    elem, _ = dis_grid.grid_init(ud)
+    m = elem.metric
+    dz_dxi1 = np.gradient(m.z, elem.dx, axis=0)
+    inner = (slice(4, -4), slice(None), slice(None))
+    assert np.allclose(m.G1[inner], dz_dxi1[inner], atol=2e-3)
+
+
+def test_sleve_jacobian_positivity_rejected():
+    # small-scale amplitude ~ s2: the residual decay overshoots J <= 0
+    h, grad, h1, grad1 = _ridge(amplitude=0.3, k=12.0)
+    ud = _StubUD(
+        orography=h,
+        orography_grad=grad,
+        orography_smooth=h1,
+        orography_smooth_grad=grad1,
+        vertical_transform=terrain.SLEVETransform(s1=1.5, s2=0.05),
+    )
+    with pytest.raises(ValueError, match="Jacobian"):
+        dis_grid.grid_init(ud)
+
+
+def test_sleve_flip_roundtrip_with_eta_dependent_J():
+    h, grad, h1, grad1 = _ridge()
+    ud = _StubUD(
+        orography=h,
+        orography_grad=grad,
+        orography_smooth=h1,
+        orography_smooth_grad=grad1,
+        vertical_transform=_sleve(),
+    )
+    elem, _ = dis_grid.grid_init(ud)
+    m = elem.metric
+    assert np.ptp(m.J, axis=m.vaxis).max() > 0.0  # genuinely eta-dependent
+    J0, G10, vax0, hax0 = m.J.copy(), m.G1.copy(), m.vaxis, m.haxes
+    m.flip_forward()
+    m.flip_backward()
+    assert np.array_equal(m.J, J0)
+    assert np.array_equal(m.G1, G10)
+    assert (m.vaxis, m.haxes) == (vax0, hax0)
