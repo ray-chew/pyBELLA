@@ -1,5 +1,6 @@
 import numba as nb
 
+from ....utils import axes
 from ....utils.slices import get_neighbor_indices
 from ...utils.boundary import cell_boundary as bdry_c
 from . import recovery, riemann_solver
@@ -53,7 +54,7 @@ def first_order_runge_kutta(mem, ud, dt):
 
     # Apply flux updates for all dimensions
     for dim in range(ndim):
-        _apply_dimensional_flux_update(mem, dim, time_step, left_idx, right_idx)
+        _apply_dimensional_flux_update(mem, ud, dim, time_step, left_idx, right_idx)
 
     bdry_c.set_ghost_cells(mem, ud)
 
@@ -109,7 +110,7 @@ def _compute_flux_and_recovery(mem, flux, ud, lmbda, split_step, tag=None):
     return flux
 
 
-def _apply_dimensional_flux_update(mem, dim, time_step, left_idx, right_idx):
+def _apply_dimensional_flux_update(mem, ud, dim, time_step, left_idx, right_idx):
     """
     Apply flux update for a specific dimension.
     """
@@ -119,8 +120,8 @@ def _apply_dimensional_flux_update(mem, dim, time_step, left_idx, right_idx):
 
     _update_solution_variables(mem.sol, flux, lmbda, left_idx, right_idx)
 
-    # Handle special case for vertical axis
-    if dim == 1:
+    # Handle special case for the vertical axis
+    if dim == axes.vertical_axis(ud):
         updt = lmbda * (flux.rhoX[left_idx] - flux.rhoX[right_idx])
         setattr(mem.sol, "pwchi", updt)
 
