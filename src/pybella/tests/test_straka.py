@@ -43,12 +43,14 @@ class UserData(object):
         self.ymin = 0.0
         self.ymax = 0.64  # [6.4 km]
 
-        # periodic in x: the x-WALL elliptic path is untested post-restructure
-        # (divergence wall-zeroing handles the vertical axis only), and with
-        # the domain at +-25.6 km the fronts (~15.5 km at t=900s) never reach
-        # the boundary, so periodic is physically equivalent here
+        # free-slip walls all around, faithful to Straka et al. (1993).
+        # x-WALLs were broken until the axial-agnosticity boundary fixes
+        # (the nodal-divergence wall zeroing was vertical-axis-only and the
+        # wall-normal momentum mirror was hardcoded to rhov); this case now
+        # exercises that path. With the domain at +-25.6 km the fronts
+        # (~15.5 km at t=900s) stay well clear of the boundary either way.
         self.bdry_type = np.empty((3), dtype=object)
-        self.bdry_type[0] = opts.BdryType.PERIODIC
+        self.bdry_type[0] = opts.BdryType.WALL
         self.bdry_type[1] = opts.BdryType.WALL
         self.bdry_type[2] = opts.BdryType.WALL
 
