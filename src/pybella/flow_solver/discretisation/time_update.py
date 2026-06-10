@@ -3,6 +3,7 @@ import logging
 import numpy as np
 
 # dependencies from pybella common
+from ...utils import axes
 from ...utils import options as opts
 
 # dependencies of the flow solver subpackage
@@ -111,7 +112,7 @@ def do(
             writer=writer,
         )
 
-        if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
+        if ud.bdry_type[axes.vertical_axis(ud)] == opts.BdryType.RAYLEIGH:
             # top rayleight damping
             bdry_r.rayleigh_damping(mem.sol, mem.npf, ud)
 
@@ -168,7 +169,7 @@ def do(
             label=str(label) + "_after_full_step",
         )
 
-        if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
+        if ud.bdry_type[axes.vertical_axis(ud)] == opts.BdryType.RAYLEIGH:
             # top rayleight damping
             bdry_r.rayleigh_damping(mem.sol, mem.npf, ud)
 

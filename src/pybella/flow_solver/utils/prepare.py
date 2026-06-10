@@ -43,7 +43,7 @@ def initialise():
     sol = fields.CellSolField(elem.sc)
 
     th = gd_thermodynamics.ThermodynamicalQuantities(ud)
-    npf = fields.NodePressureField(elem, node)
+    npf = fields.NodePressureField(elem, node, ud)
 
     io.init_logger(ud)
 

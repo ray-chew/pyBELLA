@@ -1,4 +1,5 @@
 import numpy as np
+from ....utils import axes
 from ....utils import options as opts
 from .common import get_ghost_padding
 
@@ -14,11 +15,13 @@ def set_ghost_nodes(p, node, ud, igs=None):
         else:  # ud.bdry_type[dim] == opts.BdryType.WALL:
             p[...] = np.pad(p[idx], ghost_padding, "reflect")
 
-    # if periodic_plus_one
-    if node.iicy == 2:  # implying horizontal slices
-        pn = p[:, 2, :]
-        pn = np.expand_dims(pn, axis=1)
-        p[...] = np.repeat(pn, node.icy, axis=1)
+    # quasi-2D: broadcast the single interior layer across any degenerate
+    # axis (historically hardcoded to axis 1 / iicy == 2)
+    for dim in axes.degenerate_axes(node):
+        slc = [slice(None)] * p.ndim
+        slc[dim] = node.igs[dim]
+        pn = np.expand_dims(p[tuple(slc)], axis=dim)
+        p[...] = np.repeat(pn, node.sc[dim], axis=dim)
 
 
 def periodic_plus_one(vector, pad_width, iaxis, kwargs=None):

@@ -339,7 +339,7 @@ def run_sim(dt_factor=1, omega=None, nx_factor=1):
     elem, node = dis_grid.grid_init(ud)
     sol = fs_fields.CellSolField(elem.sc)
     th = gd_thermodynamics.ThermodynamicalQuantities(ud)
-    npf = fs_fields.NodePressureField(elem, node)
+    npf = fs_fields.NodePressureField(elem, node, ud)
     sol = sol_init(sol, npf, elem, node, th, ud)
 
     mem = data_structures.ModelState(

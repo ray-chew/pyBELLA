@@ -6,6 +6,8 @@ from ..utils.boundary import node_boundary as bdry_n
 
 
 def column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
+    """2D x-y initial-condition helper (vertical = axis 1 by convention)."""
+    assert elem.ndim == 2, "column() is a 2D x-y IC helper"
     Gamma = th.gm1 / th.gamm
     gamm = th.gamm
     gm1 = th.gm1
@@ -93,9 +95,13 @@ def integrated_state(npf, elem, node, th, ud):
     Gamma_inv = 1.0 / Gamma
     gm1_inv = 1.0 / gm1
 
-    # Grid parameters
-    icy = elem.icy
-    igy = elem.igy
+    # Grid parameters along the vertical axis
+    vv = axes.vertical_axis(ud)
+    icy = elem.sc[vv]
+    igy = elem.igs[vv]
+    dyv = elem.dxyz[vv]
+    y_c = axes.coords_along(elem, vv)
+    y_n = axes.coords_along(node, vv)
 
     # Reference state at y=0
     rhoY0 = 1.0
@@ -111,16 +117,16 @@ def integrated_state(npf, elem, node, th, ud):
         # Define midpoint quadrature along vertical (y-axis)
         dys = np.hstack(
             (
-                np.ones(igy - 1) * -elem.dy,
-                [-elem.dy / 2],
-                [elem.dy / 2],
-                np.ones(icy - 3) * elem.dy,
+                np.ones(igy - 1) * -dyv,
+                [-dyv / 2],
+                [dyv / 2],
+                np.ones(icy - 3) * dyv,
             )
         )
 
         # Cell centers and midpoints for integration
-        y_ps = elem.y
-        y_ms = np.hstack((elem.y[1:igy], node.y[igy], node.y[igy], elem.y[igy:-1]))
+        y_ps = y_c
+        y_ms = np.hstack((y_c[1:igy], y_n[igy], y_n[igy], y_c[igy:-1]))
 
         # Get inverse stratification at each point
         S_ps = 1.0 / ud.stratification(y_ps)
@@ -161,19 +167,19 @@ def integrated_state(npf, elem, node, th, ud):
 
         # Ghost cells below bottom (negative heights)
         Sn_integral_p = np.zeros(igy)
-        yn_p = node.y[:igy] - node.dy
-        yn_m = node.y[1 : igy + 1] - node.dy
+        yn_p = y_n[:igy] - dyv
+        yn_m = y_n[1 : igy + 1] - dyv
 
-        Sn_integral_p[:] = -node.dy * 1.0 / ud.stratification(0.5 * (yn_p + yn_m))
+        Sn_integral_p[:] = -dyv * 1.0 / ud.stratification(0.5 * (yn_p + yn_m))
         Sn_integral_p = np.cumsum(Sn_integral_p[:igy][::-1])[::-1]
 
         # Bulk domain above reference level
-        yn_p = node.y[igy + 1 :]
+        yn_p = y_n[igy + 1 :]
         yn_m = np.zeros_like(yn_p)
         yn_m[1:] = yn_p[:-1]
 
         Sn_p = 1.0 / ud.stratification(0.5 * (yn_p + yn_m))
-        Sn_integral_p = np.hstack((Sn_integral_p, np.cumsum(elem.dy * Sn_p)))
+        Sn_integral_p = np.hstack((Sn_integral_p, np.cumsum(dyv * Sn_p)))
 
         # Calculate nodal hydrostatic fields
         pi_hydro_n = pi0 - Gamma * g * Sn_integral_p
@@ -182,7 +188,7 @@ def integrated_state(npf, elem, node, th, ud):
         # Update node solutions - below reference
         npf.HydroState_n.rhoY0[:igy] = rhoY_hydro_n[:igy]
         npf.HydroState_n.Y0[: igy + 1] = ud.stratification(
-            0.5 * (y_ps[: igy + 1] + y_ps[: igy + 1] - elem.dy)
+            0.5 * (y_ps[: igy + 1] + y_ps[: igy + 1] - dyv)
         )
         npf.HydroState_n.rho0[:igy] = rhoY_hydro_n[:igy] / npf.HydroState_n.Y0[:igy]
         npf.HydroState_n.S0[:igy] = 1.0 / npf.HydroState_n.Y0[:igy]
@@ -192,7 +198,7 @@ def integrated_state(npf, elem, node, th, ud):
         # Update node solutions - above reference
         npf.HydroState_n.rhoY0[igy + 1 :] = rhoY_hydro_n[igy:]
         npf.HydroState_n.Y0[igy + 1 :] = ud.stratification(
-            0.5 * (y_ps[igy:] + y_ps[igy:] + elem.dy)
+            0.5 * (y_ps[igy:] + y_ps[igy:] + dyv)
         )
         npf.HydroState_n.rho0[igy + 1 :] = (
             rhoY_hydro_n[igy:] / npf.HydroState_n.Y0[igy + 1 :]
@@ -220,14 +226,17 @@ def integrated_state(npf, elem, node, th, ud):
 
 
 def analytical_state(npf, elem, node, th, ud):
-    g = ud.gravity_strength[axes.vertical_axis(ud)]
+    vv = axes.vertical_axis(ud)
+    g = ud.gravity_strength[vv]
     Gamma = th.Gamma
     Hex = 1.0 / (th.Gamma * g)
-    dy = elem.dy
+    dy = elem.dxyz[vv]
+    node_y = axes.coords_along(node, vv)
+    elem_y = axes.coords_along(elem, vv)
 
-    pi_np = np.exp(-(node.y + 0.5 * dy) / Hex)
-    pi_nm = np.exp(-(node.y - 0.5 * dy) / Hex)
-    pi_n = np.exp(-(node.y) / Hex)
+    pi_np = np.exp(-(node_y + 0.5 * dy) / Hex)
+    pi_nm = np.exp(-(node_y - 0.5 * dy) / Hex)
+    pi_n = np.exp(-(node_y) / Hex)
 
     Y_n = -Gamma * g * dy / (pi_np - pi_nm)
     P_n = pi_n**th.gm1inv
@@ -241,9 +250,9 @@ def analytical_state(npf, elem, node, th, ud):
     npf.HydroState_n.Y0[...] = Y_n
     npf.HydroState_n.S0[...] = 1.0 / Y_n
 
-    pi_cp = np.exp(-(elem.y + 0.5 * dy) / Hex)
-    pi_cm = np.exp(-(elem.y - 0.5 * dy) / Hex)
-    pi_c = np.exp(-(elem.y) / Hex)
+    pi_cp = np.exp(-(elem_y + 0.5 * dy) / Hex)
+    pi_cm = np.exp(-(elem_y - 0.5 * dy) / Hex)
+    pi_c = np.exp(-(elem_y) / Hex)
 
     Y_c = -Gamma * g * dy / (pi_cp - pi_cm)
     P_c = pi_c**th.gm1inv
@@ -259,6 +268,8 @@ def analytical_state(npf, elem, node, th, ud):
 
 
 def initial_pressure(Sol, npf, elem, node, ud, th):
+    """2D x-y initial-condition helper (vertical = axis 1 by convention)."""
+    assert elem.ndim == 2, "initial_pressure() is a 2D x-y IC helper"
     Gammainv = th.Gammainv
     igy = node.igy
     igx = node.igx
