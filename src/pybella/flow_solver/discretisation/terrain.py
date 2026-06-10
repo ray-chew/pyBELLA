@@ -181,6 +181,24 @@ def elliptic_tensor(metric, h_role):
     return ((M00, M01, M02), (M10, M11, M12), (M20, M21, M22))
 
 
+def elliptic_tensor_2d(metric, h2x2):
+    """2D restriction of :func:`elliptic_tensor` to the (h1, v) block.
+
+    ``h2x2 = ((h11, h12), (h21, h22))`` is the in-plane H^-1 block (in 2D
+    the out-of-plane H^-1 rotation never enters the divergence, so the
+    composition carries exactly this 2x2 tensor). G2-free form of the same
+    M = J A^T H^-1 A; with h == 0 (J == 1, G1 == 0) it reduces bit-exactly
+    to ``h2x2``.
+    """
+    J, ooJ, G1 = metric.J, metric.ooJ, metric.G1
+    h = h2x2
+    M00 = J * h[0][0]
+    M01 = -G1 * h[0][0] + h[0][1]
+    M10 = -G1 * h[0][0] + h[1][0]
+    M11 = ooJ * (G1 * G1 * h[0][0] - G1 * (h[0][1] + h[1][0]) + h[1][1])
+    return ((M00, M01), (M10, M11))
+
+
 def terrain_is_active(ud):
     return getattr(ud, "orography", None) is not None
 
