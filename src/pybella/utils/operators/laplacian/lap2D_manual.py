@@ -4,6 +4,9 @@ from ... import options as opts
 
 
 def get_linop(npf, node, coriolis, diag_inv, ud):
+    """2D (x-y plane) stencil operator: 2D runs are x-y with vertical = axis 1
+    by convention (enforced by axes.validate), so the y_wall/y_atmosphere
+    handling below IS the vertical-role handling."""
     dx = node.dx
     dy = node.dy
 

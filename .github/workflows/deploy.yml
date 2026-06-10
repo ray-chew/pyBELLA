@@ -41,6 +41,7 @@ jobs:
           pytest ./test_scripts/test_3d_coriolis_oracle.py
           pytest ./test_scripts/test_axes.py
           pytest ./test_scripts/test_permutation_oracle.py
+          pytest ./test_scripts/test_zvert_smoke.py
 
       # - name: Upload coverage HTML report
       #   if: ${{ !env.ACT }}
