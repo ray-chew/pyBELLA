@@ -66,7 +66,9 @@ def compute_3d_components(u_field, v_field, w_field, dx, dy, dz):
     div_x = finite_difference.do_1d(u_field, dx, axis=0)
     # Average to y-cell centers, then to z-faces
     div_x = 0.5 * (div_x[:, :-1, :] + div_x[:, 1:, :])
-    div_x = -0.5 * (div_x[:, :, :-1] + div_x[:, :, 1:])  # Note: negative from original
+    # the legacy "-0.5" here was a sign error (introduced Oct 2021, archive
+    # commit 3661b9d); the divergence must be sign-symmetric in all dims
+    div_x = 0.5 * (div_x[:, :, :-1] + div_x[:, :, 1:])
 
     # Y-direction: ∂v/∂y
     div_y = finite_difference.do_1d(v_field, dy, axis=1)
@@ -181,8 +183,6 @@ def _momentum_pot_temp_divergence_3d_jit(rhs, rho, rhou, rhov, rhow, rhoY, dx, d
     rhov_theta = rhov * theta  # y-momentum flux weighted by potential temperature
     rhow_theta = rhow * theta  # z-momentum flux weighted by potential temperature
 
-    # Use generic total divergence operator
-    total_div = compute_3d_sum(rhou_theta, rhov_theta, rhow_theta, dx, dy, dz)
-
-    # Assign to inner region
-    rhs[1:-1, 1:-1, 1:-1] = total_div
+    # Use generic total divergence operator; rhs is interior-sized (node.isc),
+    # which is exactly the shape the cell-array differences produce
+    rhs[:, :, :] = compute_3d_sum(rhou_theta, rhov_theta, rhow_theta, dx, dy, dz)

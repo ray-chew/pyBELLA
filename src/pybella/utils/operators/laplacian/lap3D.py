@@ -1,27 +1,37 @@
+import numpy as np
 import numba as nb
+from ... import options as opts
 
 
 def get_linop(elem, node, npf, ud, diag_inv, dt):
+    """Build the 27-point Laplacian matvec on the node.isc box.
+
+    The solve vector is the C-order ravel of an array shaped node.isc
+    (interior nodes plus one ghost layer per side, [x, y, z]). The outer
+    ghost ring carries zero operator rows; ghost values are reconstructed
+    from periodicity inside the kernel.
+    """
     oodxyz = node.dxyz
     oodxyz = 1.0 / (oodxyz**2)
     oodx2, oody2, oodz2 = oodxyz[0], oodxyz[1], oodxyz[2]
     odx, odz = 1.0 / node.dx, 1.0 / node.dz
 
-    i0 = (slice(0, -1), slice(0, -1), slice(0, -1))
     i1 = (slice(1, -1), slice(1, -1), slice(1, -1))
-    i2 = (slice(2, -2), slice(2, -2), slice(2, -2))
 
     ndim = elem.ndim
-    periodicity = np.empty(ndim, dtype="int")
+    periodicity = np.empty(ndim, dtype="int64")
     for dim in range(ndim):
         periodicity[dim] = ud.bdry_type[dim] == opts.BdryType.PERIODIC
 
-    hplusx = npf.wplus[0][i0][i1]
-    hplusy = npf.wplus[1][i0][i1]
-    hplusz = npf.wplus[2][i0][i1]
+    # cell-valued coefficients on the (isc - 1) cell box surrounding the
+    # node box; copied because the kernel zeroes wall slices in place
+    hplusx = np.ascontiguousarray(npf.wplus[0][i1])
+    hplusy = np.ascontiguousarray(npf.wplus[1][i1])
+    hplusz = np.ascontiguousarray(npf.wplus[2][i1])
 
-    hcenter = npf.wcenter[i2]
-    diag_inv = diag_inv[i1]
+    # unknowns: interior nodes of the box
+    hcenter = np.ascontiguousarray(npf.wcenter[i1])
+    diag_inv = np.ascontiguousarray(diag_inv)
 
     corrf = dt * ud.coriolis_strength[0]
 
@@ -59,7 +69,11 @@ def lap3D(
     odz,
 ):
     shx, shy, shz = hcenter.shape
-    p = p0.reshape(shz + 2, shy + 2, shx + 2)
+    # p0 is the C-order ravel of an [x, y, z] box: reshape must keep that
+    # axis order (the old (shz+2, shy+2, shx+2) was silently wrong for
+    # shx != shz). Copy so the periodic padding below never mutates the
+    # caller's (scipy's) vector.
+    p = p0.reshape((shx + 2, shy + 2, shz + 2)).copy()
 
     coeff = 1.0 / 16
     lap = np.zeros_like(p)

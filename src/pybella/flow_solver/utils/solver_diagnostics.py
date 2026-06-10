@@ -9,7 +9,7 @@ def get_p_from_pressure_related_fields(mem, ud, psinc=False):
 
     th = mem.th
 
-    kernel = np.ones((2, 2))
+    kernel = np.ones([2] * dp2n.ndim)
     dp2c = sp.signal.fftconvolve(dp2n, kernel, mode="valid") / kernel.sum()
 
     if psinc:
