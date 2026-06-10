@@ -8,6 +8,7 @@ from ..utils.boundary import node_boundary as bdry_n
 def column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     """2D x-y initial-condition helper (vertical = axis 1 by convention)."""
     assert elem.ndim == 2, "column() is a 2D x-y IC helper"
+    assert elem.metric is None, "column() does not support terrain"
     Gamma = th.gm1 / th.gamm
     gamm = th.gamm
     gm1 = th.gm1
@@ -108,6 +109,10 @@ def integrated_state(npf, elem, node, th, ud):
     g = ud.gravity_strength[axes.vertical_axis(ud)]
     p0 = rhoY0**gamm
     pi0 = rhoY0**gm1
+
+    if g != 0.0 and elem.metric is not None:
+        _integrated_state_fields(npf, elem, node, th, ud)
+        return
 
     if g != 0.0:
         ###########################
@@ -225,20 +230,77 @@ def integrated_state(npf, elem, node, th, ud):
         npf.HydroState_n.S0[:] = 1.0
 
 
+def _integrated_state_fields(npf, elem, node, th, ud):
+    """Terrain branch of integrated_state: hydrostates as per-column fields.
+
+    The Exner pressure follows from quadrature of the inverse stratification
+    on a fine auxiliary 1D z-grid (the background depends on physical height
+    only), evaluated at the cell/node height fields z(xi, eta) by linear
+    interpolation. The pi reference (rhoY = 1) sits at z = 0, matching the
+    profile branch.
+    """
+    Gamma = th.gm1 / th.gamm
+    Gamma_inv = 1.0 / Gamma
+    gm1_inv = 1.0 / th.gm1
+
+    vv = axes.vertical_axis(ud)
+    g = ud.gravity_strength[vv]
+
+    z_c = elem.metric.z
+    z_n = node.metric.z
+    z_lo = min(z_c.min(), z_n.min(), 0.0)
+    z_hi = max(z_c.max(), z_n.max(), 0.0)
+    nfine = max(2048, 16 * int(elem.sc[vv]))
+    zf = np.linspace(z_lo, z_hi, nfine)
+
+    Sf = 1.0 / ud.stratification(zf)
+    integral = np.concatenate(
+        ([0.0], np.cumsum(0.5 * (Sf[1:] + Sf[:-1]) * np.diff(zf)))
+    )
+    integral -= np.interp(0.0, zf, integral)
+
+    rhoY0 = 1.0
+    pi0 = rhoY0**th.gm1
+
+    for states, z in ((npf.HydroState, z_c), (npf.HydroState_n, z_n)):
+        pi = pi0 - Gamma * g * np.interp(z, zf, integral)
+        S = 1.0 / ud.stratification(z)
+        states.rhoY0[...] = pi**gm1_inv
+        states.p0[...] = pi**Gamma_inv
+        states.p20[...] = pi / ud.Msq
+        states.S0[...] = S
+        states.S10[...] = 0.0
+        states.Y0[...] = 1.0 / S
+        states.rho0[...] = states.rhoY0 * S
+
+
 def analytical_state(npf, elem, node, th, ud):
+    """Isothermal hydrostatic background, discrete-exact per cell.
+
+    With terrain the same closed form is evaluated at the physical heights
+    z(xi, eta) with the local vertical cell extent dz = J * deta, so the
+    hydrostates become full per-column fields (States in field mode);
+    without terrain the expressions reduce to the legacy 1D profiles
+    bit-identically.
+    """
     vv = axes.vertical_axis(ud)
     g = ud.gravity_strength[vv]
     Gamma = th.Gamma
     Hex = 1.0 / (th.Gamma * g)
     dy = elem.dxyz[vv]
-    node_y = axes.coords_along(node, vv)
-    elem_y = axes.coords_along(elem, vv)
 
-    pi_np = np.exp(-(node_y + 0.5 * dy) / Hex)
-    pi_nm = np.exp(-(node_y - 0.5 * dy) / Hex)
-    pi_n = np.exp(-(node_y) / Hex)
+    if elem.metric is not None:
+        z_n, dz_n = node.metric.z, node.metric.J * dy
+        z_c, dz_c = elem.metric.z, elem.metric.J * dy
+    else:
+        z_n, dz_n = axes.coords_along(node, vv), dy
+        z_c, dz_c = axes.coords_along(elem, vv), dy
 
-    Y_n = -Gamma * g * dy / (pi_np - pi_nm)
+    pi_np = np.exp(-(z_n + 0.5 * dz_n) / Hex)
+    pi_nm = np.exp(-(z_n - 0.5 * dz_n) / Hex)
+    pi_n = np.exp(-(z_n) / Hex)
+
+    Y_n = -Gamma * g * dz_n / (pi_np - pi_nm)
     P_n = pi_n**th.gm1inv
     p_n = pi_n**th.Gammainv
     rho_n = P_n / Y_n
@@ -250,11 +312,11 @@ def analytical_state(npf, elem, node, th, ud):
     npf.HydroState_n.Y0[...] = Y_n
     npf.HydroState_n.S0[...] = 1.0 / Y_n
 
-    pi_cp = np.exp(-(elem_y + 0.5 * dy) / Hex)
-    pi_cm = np.exp(-(elem_y - 0.5 * dy) / Hex)
-    pi_c = np.exp(-(elem_y) / Hex)
+    pi_cp = np.exp(-(z_c + 0.5 * dz_c) / Hex)
+    pi_cm = np.exp(-(z_c - 0.5 * dz_c) / Hex)
+    pi_c = np.exp(-(z_c) / Hex)
 
-    Y_c = -Gamma * g * dy / (pi_cp - pi_cm)
+    Y_c = -Gamma * g * dz_c / (pi_cp - pi_cm)
     P_c = pi_c**th.gm1inv
     p_c = pi_c**th.Gammainv
     rho_c = P_c / Y_c
@@ -270,6 +332,7 @@ def analytical_state(npf, elem, node, th, ud):
 def initial_pressure(Sol, npf, elem, node, ud, th):
     """2D x-y initial-condition helper (vertical = axis 1 by convention)."""
     assert elem.ndim == 2, "initial_pressure() is a 2D x-y IC helper"
+    assert elem.metric is None, "initial_pressure() does not support terrain"
     Gammainv = th.Gammainv
     igy = node.igy
     igx = node.igx

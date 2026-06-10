@@ -104,17 +104,23 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
 
     v = axes.vertical_axis(ud)
     S0c = npf.HydroState.get_S0c(elem)
-    rhoY0 = axes.expand_profile(npf.HydroState.rhoY0, elem.ndim, v, elem.sc)
+    if npf.HydroState.field_mode:
+        # terrain: hydrostates are already full per-column fields
+        rhoY0 = npf.HydroState.rhoY0
+    else:
+        rhoY0 = axes.expand_profile(npf.HydroState.rhoY0, elem.ndim, v, elem.sc)
 
-    Y = 1.0 / S0c
     Sol.rhoY[...] = rhoY0
-    Sol.rho[...] = rhoY0 / Y
+    Sol.rho[...] = rhoY0 * S0c
     Sol.rhou[...] = Sol.rho * ud.u_wind_speed
     Sol.rhov[...] = 0.0
     Sol.rhow[...] = 0.0
     Sol.rhoX[...] = Sol.rho * (Sol.rho / Sol.rhoY - S0c)
 
-    npf.p2_nodes[...] = axes.expand_profile(npf.HydroState_n.p20, node.ndim, v, node.sc)
+    # hydrostatically balanced background: zero perturbation pressure
+    # (p2 is the perturbation Exner pressure; the background gradient is
+    # balanced through the S0c/dbuoy formulation)
+    npf.p2_nodes[...] = 0.0
 
     ud.nonhydrostasy = 1.0
     ud.compressibility = 1.0
