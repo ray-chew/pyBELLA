@@ -15,7 +15,13 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
     nonhydro = ud.nonhydrostasy
     g, Msq = ud.gravity_strength[axes.vertical_axis(ud)], ud.Msq
     Ginv = th.Gammainv
-    corr_h1, corr_v, corr_h2 = ud.coriolis_strength
+    # role-ordered Coriolis components (h1, v, h2); identity for vertical = 1
+    ax_h1, ax_v, ax_h2 = axes.role_perm(axes.vertical_axis(ud))
+    corr_h1, corr_v, corr_h2 = (
+        ud.coriolis_strength[ax_h1],
+        ud.coriolis_strength[ax_v],
+        ud.coriolis_strength[ax_h2],
+    )
     u0, v0, w0 = ud.u_wind_speed, ud.v_wind_speed, ud.w_wind_speed
 
     # Reusable derived quantities
@@ -53,30 +59,41 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
     drhou = rhou - u0 * rho
     drhov = rhov - v0 * rho
     drhow = rhow - w0 * rho
-    v = rhov / rho
 
-    # Momentum update (u, v, w)
-    rhou -= dt * (rhoYovG * dpdx - corr_h2 * drhov + corr_v * drhow)
-    rhov -= (
+    # role-ordered views (h1, v, h2) of the axis-indexed component tuples;
+    # in-place updates below mutate the underlying sol arrays
+    mom = (rhou, rhov, rhow)
+    dmom = (drhou, drhov, drhow)
+    dpd = (dpdx, dpdy, dpdz)
+    mom_h1, mom_v, mom_h2 = mom[ax_h1], mom[ax_v], mom[ax_h2]
+    dm_h1, dm_v, dm_h2 = dmom[ax_h1], dmom[ax_v], dmom[ax_h2]
+    dp_h1, dp_v, dp_h2 = dpd[ax_h1], dpd[ax_v], dpd[ax_h2]
+
+    vel_v = mom_v / rho
+
+    # Momentum update in role space: gravity/buoyancy acts on the vertical
+    # row, Coriolis couples the rows pairwise (cross-product structure)
+    mom_h1 -= dt * (rhoYovG * dp_h1 - corr_h2 * dm_v + corr_v * dm_h2)
+    mom_v -= (
         dt
         * (
-            rhoYovG * dpdy
+            rhoYovG * dp_v
             + (g / Msq) * dbuoy * nonhydro
-            - corr_h1 * drhow
-            + corr_h2 * drhou
+            - corr_h1 * dm_h2
+            + corr_h2 * dm_h1
         )
         * (1 - ud.is_ArakawaKonor)
     )
 
-    # the w-row applies in 2D too: dpdz is zero there, but the Coriolis terms
-    # are not. Restricting it to ndim == 3 gave 2D runs only the implicit
-    # half of the out-of-plane Coriolis rotation — found 2026-06-09 by the
-    # Baldauf-Brdar analytic oracle (w_out error pinned at ~0.44 rel-L2 with
-    # a sim/ref amplitude ratio ~0.6, independent of dt).
-    rhow -= dt * (rhoYovG * dpdz - corr_v * drhou + corr_h1 * drhov)
+    # the h2-row applies in 2D too: its pressure gradient is zero there, but
+    # the Coriolis terms are not. Restricting it to ndim == 3 gave 2D runs
+    # only the implicit half of the out-of-plane Coriolis rotation — found
+    # 2026-06-09 by the Baldauf-Brdar analytic oracle (w_out error pinned at
+    # ~0.44 rel-L2 with a sim/ref amplitude ratio ~0.6, independent of dt).
+    mom_h2 -= dt * (rhoYovG * dp_h2 - corr_v * dm_h1 + corr_h1 * dm_v)
 
-    # Scalar update (rhoX)
-    sol.rhoX[...] = (rho * (rho / rhoY - S0c)) - dt * (v * dSdy) * rho
+    # Scalar update (rhoX): stratification couples to the vertical velocity
+    sol.rhoX[...] = (rho * (rho / rhoY - S0c)) - dt * (vel_v * dSdy) * rho
 
     # Compressibility correction to p2
     dp2n[node.i1] -= dt * dpidP * npf.rhs

@@ -7,12 +7,20 @@ from ...utils import axes
 def multiply_inverse_terms(
     Vec, mem, ud, dt, attrs=("rhou", "rhov", "rhow"), get_coeffs=False
 ):
-    """Coriolis matrix multiplication."""
+    """Apply H^-1 (Coriolis/buoyancy coupling matrix inverse) to a vector field.
+
+    ``attrs`` is AXIS-indexed (u, v, w component names); the role binding
+    (h1, vertical, h2) happens here via the cyclic axis permutation, so the
+    njit kernels below — written in role symbols (wh1, wv, wh2) — stay
+    unchanged for any vertical axis.
+    """
     nonhydro = ud.nonhydrostasy
     g = ud.gravity_strength[axes.vertical_axis(ud)]
     Msq = ud.Msq
 
-    wh1, wv, wh2 = dt * ud.coriolis_strength
+    ax_h1, ax_v, ax_h2 = axes.role_perm(axes.vertical_axis(ud))
+    wdt = dt * ud.coriolis_strength
+    wh1, wv, wh2 = wdt[ax_h1], wdt[ax_v], wdt[ax_h2]
     strat = mem.npf.HydroState_n.get_dSdy(mem.elem, mem.node)
     Y = mem.sol.rhoY / mem.sol.rho
     nu = -(dt**2) * (g / Msq) * strat * Y
@@ -23,10 +31,10 @@ def multiply_inverse_terms(
         mem.cache.get_coriolis_array_views(shp)
     )
 
-    # Get vector components by view
-    VecU = getattr(Vec, attrs[0])
-    VecV = getattr(Vec, attrs[1])
-    VecW = getattr(Vec, attrs[2])
+    # Get vector components by view, in role order
+    VecU = getattr(Vec, attrs[ax_h1])
+    VecV = getattr(Vec, attrs[ax_v])
+    VecW = getattr(Vec, attrs[ax_h2])
 
     U, V, W = mem.cache.get_velocity_array_views(VecU.shape)
 
@@ -56,9 +64,37 @@ def multiply_inverse_terms(
 
     # Return coefficients
     if get_coeffs:
-        # For 2D only
+        # 2D-only path (the (h1, v) block); 2D runs force vertical = axis 1
         h11, h12, _, h21, h22, _, _, _, _, _ = mem.cache.get_coriolis_array_views(shp)
         return (h11.T, h22.T, h12.T, h21.T)
+
+
+def compute_inverse_coefficients(mem, ud, dt):
+    """Fill and return the cached role-indexed H^-1 coefficient fields.
+
+    Exactly the coefficients the apply path uses (eq. C11), exposed for the
+    full-tensor elliptic operator, which consumes them as stencil
+    coefficient fields. Returns the 10 cached views
+    (h11, h12, h13, h21, h22, h23, h31, h32, h33, denom), role-indexed,
+    shaped like the buoyancy field nu.
+    """
+    nonhydro = ud.nonhydrostasy
+    g = ud.gravity_strength[axes.vertical_axis(ud)]
+    Msq = ud.Msq
+
+    ax_h1, ax_v, ax_h2 = axes.role_perm(axes.vertical_axis(ud))
+    wdt = dt * ud.coriolis_strength
+    wh1, wv, wh2 = wdt[ax_h1], wdt[ax_v], wdt[ax_h2]
+    strat = mem.npf.HydroState_n.get_dSdy(mem.elem, mem.node)
+    Y = mem.sol.rhoY / mem.sol.rho
+    nu = -(dt**2) * (g / Msq) * strat * Y
+
+    views = mem.cache.get_coriolis_array_views(nu.shape)
+    h11, h12, h13, h21, h22, h23, h31, h32, h33, denom = views
+    _compute_coriolis_coefficients(
+        h11, h12, h13, h21, h22, h23, h31, h32, h33, denom, wh1, wh2, wv, nu, nonhydro
+    )
+    return views
 
 
 @nb.njit(cache=True)

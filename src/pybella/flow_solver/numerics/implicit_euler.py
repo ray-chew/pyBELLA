@@ -30,7 +30,8 @@ def do_explicit_part(mem, ud, dt):
     Msq = ud.Msq
 
     dbuoy = mem.sol.rhoY * (mem.sol.rhoX / mem.sol.rho)
-    mem.sol.rhov = (nonhydro * mem.sol.rhov) - dt * (g / Msq) * dbuoy
+    vmom = axes.vertical_momentum(ud)
+    setattr(mem.sol, vmom, (nonhydro * getattr(mem.sol, vmom)) - dt * (g / Msq) * dbuoy)
 
     mem.sol.mod_bg_wind(ud, -1.0)
 
@@ -142,7 +143,7 @@ def _correction_nodes(mem, ud, dt, p, updt_chi):
     mem.sol.rhou += thinv * mem.npf.u
     mem.sol.rhov += thinv * mem.npf.v
     mem.sol.rhow += thinv * mem.npf.w if ndim == 3 else 0.0
-    mem.sol.rhoX += -updt_chi * dt * dSdy * mem.sol.rhov
+    mem.sol.rhoX += -updt_chi * dt * dSdy * getattr(mem.sol, axes.vertical_momentum(ud))
 
 
 def operator_coefficients_nodes(mem, ud, dt):
