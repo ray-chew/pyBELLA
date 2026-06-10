@@ -1,6 +1,7 @@
 import numpy as np
 
 from ...utils import options as opts
+from . import terrain
 
 
 def grid_init(ud):
@@ -34,6 +35,11 @@ def grid_init(ud):
 
     elem = ElemSpaceDiscr(grid, ud)
     node = NodeSpaceDiscr(grid, ud)
+
+    # terrain metric fields (None when ud has no orography: the uniform-
+    # Cartesian path must stay bit-identical and pay no overhead)
+    elem.metric = terrain.build_metric_fields(elem, ud)
+    node.metric = terrain.build_metric_fields(node, ud)
 
     return elem, node
 
@@ -148,6 +154,10 @@ class SpaceDiscr(object):
 
         self.ndim = g.ndim
         self.normal = big
+
+        # terrain metric fields (discretisation.terrain.MetricFields);
+        # None == uniform Cartesian — every consumer branches on this
+        self.metric: terrain.MetricFields | None = None
 
         self.igx = self.ig[0] = 2
         self.igy = self.ig[1] = 2 if g.iny > 1 else 0
