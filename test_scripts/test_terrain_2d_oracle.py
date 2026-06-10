@@ -46,12 +46,18 @@ def _agnesi_hill(ud, h0_m=300.0, a_m=5000.0):
     return h
 
 
-def _make_mem(orography=None, coriolis_z=0.0):
+def _make_mem(orography=None, coriolis_z=0.0, sleve=False):
     ud = user_data.UserDataInit(**vars(smoke_agnesi.UserData()))
     ud.coriolis_strength = np.array(ud.coriolis_strength)
     ud.coriolis_strength[2] = coriolis_z
     ud.inz = 1  # collapse the degenerate axis: native 2D grid
     ud.orography = orography(ud) if orography is not None else None
+    if sleve:
+        hill = ud.orography
+        ud.orography_smooth = lambda xi1, xi2: 0.5 * hill(xi1, xi2)
+        ud.vertical_transform = terrain.SLEVETransform(
+            s1=6000.0 / ud.h_ref, s2=1500.0 / ud.h_ref
+        )
     elem, node = dis_grid.grid_init(ud)
     assert elem.ndim == 2
     sol = fields.CellSolField(elem.sc)
@@ -95,8 +101,8 @@ def _diag_inv_like_solver(mem, ud, dt):
     return preconditioner.prepare_diag(mem.npf, mem.node)
 
 
-def _operator_and_composition(orography=None, coriolis_z=0.0):
-    mem, ud = _make_mem(orography, coriolis_z)
+def _operator_and_composition(orography=None, coriolis_z=0.0, sleve=False):
+    mem, ud = _make_mem(orography, coriolis_z, sleve)
     node = mem.node
     dt = float(ud.dtfixed)
 
@@ -158,4 +164,10 @@ def test_composition_identity_with_terrain():
 
 def test_composition_identity_terrain_and_coriolis():
     lhs, comp = _operator_and_composition(_agnesi_hill, coriolis_z=0.2)
+    assert _rel_err(lhs, comp) <= 1e-12
+
+
+def test_composition_identity_terrain_sleve():
+    """Eta-dependent Jacobian through the native-2D elliptic assembly."""
+    lhs, comp = _operator_and_composition(_agnesi_hill, sleve=True)
     assert _rel_err(lhs, comp) <= 1e-12

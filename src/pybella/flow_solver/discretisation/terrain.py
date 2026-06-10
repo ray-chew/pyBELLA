@@ -42,7 +42,16 @@ class VerticalTransform:
 
     Subclasses implement elementwise, broadcastable methods; the builder
     materialises full grid-shaped arrays from them.
+
+    ``n_components`` declares how many orography fields the transform
+    consumes. Single-component transforms (the default) receive plain
+    arrays for ``h``/``dh``; two-component transforms (SLEVE) receive
+    tuples ``h = (h_smooth, h_residual)`` / ``dh = (dh_smooth,
+    dh_residual)`` — the split is built from ``ud.orography_smooth``
+    against the total ``ud.orography`` by :func:`build_metric_fields`.
     """
+
+    n_components = 1
 
     def z(self, eta, h, eta0, etat):
         """Physical height z(eta, h)."""
@@ -83,6 +92,76 @@ class GalChenTransform(VerticalTransform):
     def jacobian(self, eta, h, eta0, etat):
         # broadcast against eta so the builder always gets a full field
         return (1.0 - h / (etat - eta0)) + 0.0 * eta
+
+
+class SLEVETransform(VerticalTransform):
+    """SLEVE (Schär et al. 2002; Leuenberger et al. 2010 exponent n).
+
+    Two-scale split z = eta + h1 b1(eta) + h2 b2(eta) with per-component
+    decay (zeta = eta - eta0, H = etat - eta0)
+
+        b_i(zeta) = sinh((H/s_i)^n - (zeta/s_i)^n) / sinh((H/s_i)^n)
+
+    so b_i(0) = 1 (terrain-following surface), b_i(H) = 0 (flat top) and
+    the small-scale part h2 decays on its own scale s2 << s1 — the point
+    of SLEVE: small-scale terrain distortion leaves the grid quickly with
+    height instead of propagating to every level as under Gal-Chen.
+
+    ``s1``/``s2`` are nondimensional decay heights (same units as eta);
+    ``n > 1`` (e.g. Leuenberger's 1.35) gives db_i(0) = 0, i.e. an exactly
+    uniform Jacobian at the surface — the steep-terrain fallback. Below
+    the surface (ghost rows, zeta < 0) the decay continues linearly with
+    its surface slope, which keeps fractional ``n`` well-defined and J
+    smooth across the bottom boundary.
+
+    The first transform with an eta-dependent Jacobian — all operators
+    consume full-field J(eta) so nothing downstream changes.
+    """
+
+    n_components = 2
+
+    def __init__(self, s1, s2, n=1.0):
+        self.s1 = float(s1)
+        self.s2 = float(s2)
+        self.n = float(n)
+
+    def _b_db(self, eta, eta0, etat, s):
+        """Decay b and its eta-derivative db, linearly extended below eta0."""
+        n = self.n
+        H = etat - eta0
+        zeta = eta - eta0 + 0.0 * np.asarray(eta)
+        zc = np.maximum(zeta, 0.0)
+        arg_top = (H / s) ** n
+        oosinh = 1.0 / np.sinh(arg_top)
+        inner = arg_top - (zc / s) ** n
+        b = np.sinh(inner) * oosinh
+        db = -(n * zc ** (n - 1.0) / s**n) * np.cosh(inner) * oosinh
+        if n == 1.0:
+            db0 = -(1.0 / s) * np.cosh(arg_top) * oosinh
+        else:
+            db0 = 0.0  # n > 1: zero surface slope of the decay
+        b = np.where(zeta < 0.0, 1.0 + db0 * zeta, b)
+        db = np.where(zeta < 0.0, db0 + 0.0 * zeta, db)
+        return b, db
+
+    def z(self, eta, h, eta0, etat):
+        h1, h2 = h
+        b1, _ = self._b_db(eta, eta0, etat, self.s1)
+        b2, _ = self._b_db(eta, eta0, etat, self.s2)
+        return eta + h1 * b1 + h2 * b2
+
+    def jacobian(self, eta, h, eta0, etat):
+        h1, h2 = h
+        _, db1 = self._b_db(eta, eta0, etat, self.s1)
+        _, db2 = self._b_db(eta, eta0, etat, self.s2)
+        return 1.0 + h1 * db1 + h2 * db2
+
+    def slope(self, eta, dh, eta0, etat):
+        # two decays — the single-decay base default cannot express this
+        dh1, dh2 = dh
+        b1, _ = self._b_db(eta, eta0, etat, self.s1)
+        b2, _ = self._b_db(eta, eta0, etat, self.s2)
+        return dh1 * b1 + dh2 * b2
 
 
 class MetricFields:
@@ -228,11 +307,16 @@ def _coordinate_wrap(ud, axis):
     return lambda c: lo + np.mod(c - lo, length)
 
 
-def _effective_orography(ud, a_h1, a_h2):
-    """ud.orography with periodic-wrapped arguments (h1, h2 role order)."""
+def _effective_callable(ud, a_h1, a_h2, fn):
+    """``fn`` with periodic-wrapped arguments (h1, h2 role order)."""
     wrap1 = _coordinate_wrap(ud, a_h1)
     wrap2 = _coordinate_wrap(ud, a_h2)
-    return lambda xi1, xi2: ud.orography(wrap1(xi1), wrap2(xi2))
+    return lambda xi1, xi2: fn(wrap1(xi1), wrap2(xi2))
+
+
+def _effective_orography(ud, a_h1, a_h2):
+    """ud.orography with periodic-wrapped arguments (h1, h2 role order)."""
+    return _effective_callable(ud, a_h1, a_h2, ud.orography)
 
 
 def _coord_view(grid_obj, axis, ndim):
@@ -242,14 +326,15 @@ def _coord_view(grid_obj, axis, ndim):
     return axes.coords_along(grid_obj, axis).reshape(shape)
 
 
-def _terrain_slope(ud, heff, a_h1, a_h2, xi1, xi2, which, spacing):
+def _terrain_slope(ud, heff, grad, a_h1, a_h2, xi1, xi2, which, spacing):
     """dh/dxi_which (role index 0 or 1): analytic if provided, else FD.
 
-    Both paths wrap periodic coordinates: the analytic gradient is
-    evaluated at the wrapped points, the central difference differentiates
-    the wrapped (periodic) effective orography so the seam is consistent.
+    ``grad`` is the role-ordered tuple of analytic gradient callables for
+    the orography ``heff`` wraps (or None for FD). Both paths wrap
+    periodic coordinates: the analytic gradient is evaluated at the
+    wrapped points, the central difference differentiates the wrapped
+    (periodic) effective orography so the seam is consistent.
     """
-    grad = getattr(ud, "orography_grad", None)
     if grad is not None:
         wrap1 = _coordinate_wrap(ud, a_h1)
         wrap2 = _coordinate_wrap(ud, a_h2)
@@ -290,25 +375,59 @@ def build_metric_fields(grid_obj, ud):
     heff = _effective_orography(ud, a_h1, a_h2)
     h = heff(xi1, xi2)
 
+    grad = getattr(ud, "orography_grad", None)
+
+    def slope_of(which, spacing):
+        return _terrain_slope(ud, heff, grad, a_h1, a_h2, xi1, xi2, which, spacing)
+
+    n_comp = getattr(transform, "n_components", 1)
+    if n_comp == 2:
+        # two-scale transforms (SLEVE): h splits into a smooth part and the
+        # residual. The smooth part MUST be wrapped with the same coordinate
+        # map as the total, or the residual breaks the periodic-seam
+        # consistency of the metric. No silent default: a missing split
+        # would degenerate SLEVE into something else entirely.
+        smooth = getattr(ud, "orography_smooth", None)
+        if smooth is None:
+            raise ValueError(
+                "two-component vertical transform requires ud.orography_smooth "
+                "(the large-scale part of ud.orography; the residual is the "
+                "small-scale component)"
+            )
+        heff_s = _effective_callable(ud, a_h1, a_h2, smooth)
+        h_s = heff_s(xi1, xi2)
+        grad_s = getattr(ud, "orography_smooth_grad", None)
+
+        h_arg = (h_s, h - h_s)
+
+        def dh_of(which, spacing):
+            dh_tot = slope_of(which, spacing)
+            dh_s = _terrain_slope(
+                ud, heff_s, grad_s, a_h1, a_h2, xi1, xi2, which, spacing
+            )
+            return (dh_s, dh_tot - dh_s)
+
+    else:
+        h_arg = h
+        dh_of = slope_of
+
     def full(expr):
         return np.ascontiguousarray(
             np.broadcast_to(expr, shape).astype(np.float64, copy=False)
         )
 
-    J = full(transform.jacobian(eta, h, eta0, etat))
+    J = full(transform.jacobian(eta, h_arg, eta0, etat))
     if np.any(J <= 0.0):
         raise ValueError(
             "terrain transform produced non-positive Jacobian: "
             "orography reaches or exceeds the domain top"
         )
 
-    z = full(transform.z(eta, h, eta0, etat))
+    z = full(transform.z(eta, h_arg, eta0, etat))
 
-    dh1 = _terrain_slope(ud, heff, a_h1, a_h2, xi1, xi2, 0, grid_obj.dxyz[a_h1])
-    G1 = full(transform.slope(eta, dh1, eta0, etat))
+    G1 = full(transform.slope(eta, dh_of(0, grid_obj.dxyz[a_h1]), eta0, etat))
     if a_h2 is not None:
-        dh2 = _terrain_slope(ud, heff, a_h1, a_h2, xi1, xi2, 1, grid_obj.dxyz[a_h2])
-        G2 = full(transform.slope(eta, dh2, eta0, etat))
+        G2 = full(transform.slope(eta, dh_of(1, grid_obj.dxyz[a_h2]), eta0, etat))
     else:
         G2 = None
 

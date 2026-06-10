@@ -43,11 +43,23 @@ def _agnesi_hill(ud, h0_m=300.0, a_m=5000.0):
     return h
 
 
-def _make_mem(orography=None):
+def _sleve_config(ud):
+    """Split the oracle hill 50/50 smooth/residual (analytic, trivially
+    consistent) and pick decay scales inside the 10 km domain."""
+    hill = ud.orography
+    ud.orography_smooth = lambda xi1, xi2: 0.5 * hill(xi1, xi2)
+    ud.vertical_transform = terrain.SLEVETransform(
+        s1=6000.0 / ud.h_ref, s2=1500.0 / ud.h_ref
+    )
+
+
+def _make_mem(orography=None, sleve=False):
     ud = user_data.UserDataInit(**vars(smoke_agnesi.UserData()))
     ud.coriolis_strength = np.array(ud.coriolis_strength)
     # smoke_agnesi carries its own hill; the oracle controls terrain itself
     ud.orography = orography(ud) if orography is not None else None
+    if sleve:
+        _sleve_config(ud)
     elem, node = dis_grid.grid_init(ud)
     sol = fields.CellSolField(elem.sc)
     th = thermodynamics.ThermodynamicalQuantities(ud)
@@ -89,8 +101,8 @@ def _diag_inv_like_solver(mem, ud, dt):
     )
 
 
-def _operator_and_composition(orography=None):
-    mem, ud = _make_mem(orography)
+def _operator_and_composition(orography=None, sleve=False):
+    mem, ud = _make_mem(orography, sleve)
     node = mem.node
     dt = float(ud.dtfixed)
 
@@ -144,4 +156,10 @@ def test_flat_metric_matches_plain_operator():
 
 def test_composition_identity_with_terrain():
     lhs, comp = _operator_and_composition(_agnesi_hill)
+    assert _rel_err(lhs, comp) <= 1e-12
+
+
+def test_composition_identity_with_terrain_sleve():
+    """First eta-dependent Jacobian through the elliptic assembly."""
+    lhs, comp = _operator_and_composition(_agnesi_hill, sleve=True)
     assert _rel_err(lhs, comp) <= 1e-12
