@@ -38,6 +38,8 @@ jobs:
           pytest ./test_scripts/test_flow_solver.py
           pytest ./test_scripts/test_3d_elliptic_oracle.py
           pytest ./test_scripts/test_igw_analytic.py
+          pytest ./test_scripts/test_3d_coriolis_oracle.py
+          pytest ./test_scripts/test_axes.py
 
       # - name: Upload coverage HTML report
       #   if: ${{ !env.ACT }}

@@ -122,7 +122,6 @@ def do_implicit_part(
 
 
 def _correction_nodes(mem, ud, dt, p, updt_chi):
-    ndim = mem.node.ndim
     Gammainv = mem.th.Gammainv
 
     dSdy = mem.npf.HydroState_n.get_dSdy(mem.elem, mem.node)
@@ -142,7 +141,12 @@ def _correction_nodes(mem, ud, dt, p, updt_chi):
 
     mem.sol.rhou += thinv * mem.npf.u
     mem.sol.rhov += thinv * mem.npf.v
-    mem.sol.rhow += thinv * mem.npf.w if ndim == 3 else 0.0
+    # the w-row applies in 2D too: H^-1 rotates the pressure correction into
+    # the out-of-plane momentum whenever Coriolis is active. Restricting it
+    # to ndim == 3 dropped that component in 2D runs (implicit-side sibling
+    # of the explicit-step defect fixed 2026-06-09; quantified at 1.4e-4 by
+    # the 3D-vs-2D full-Coriolis oracle).
+    mem.sol.rhow += thinv * mem.npf.w
     mem.sol.rhoX += -updt_chi * dt * dSdy * getattr(mem.sol, axes.vertical_momentum(ud))
 
 
@@ -220,14 +224,31 @@ def _prepare_3d_system(mem, ud, dt):
     The solve vector is the full node.isc box (interior nodes plus one
     ghost layer per side) in C order. The ghost ring carries zero operator
     rows and zero rhs entries, so it stays exactly zero through BiCGSTAB.
+
+    The operator carries the full H^-1 tensor coefficients C_ij =
+    (Gamma^-1 P Theta) * h[role(i), role(j)] — the same H^-1 applied by
+    _correction_nodes — so the elliptic solve is consistent with the
+    momentum correction (the legacy operator had only ad-hoc x-z cross
+    terms). With no rotation and no buoyancy H^-1 is the identity and the
+    operator reduces bit-exactly to the plain Laplacian.
     """
-    diag_inv = preconditioner.prepare_diag(mem.npf, mem.node)
+    hv = coriolis.compute_inverse_coefficients(mem, ud, dt)
+    h_role = ((hv[0], hv[1], hv[2]), (hv[3], hv[4], hv[5]), (hv[6], hv[7], hv[8]))
+    rho_of = axes.role_of_axis(axes.vertical_axis(ud))
+    cij = [
+        [mem.npf.wplus[i] * h_role[rho_of[i]][rho_of[j]] for j in range(3)]
+        for i in range(3)
+    ]
+
+    diag_inv = preconditioner.prepare_diag(
+        mem.npf, mem.node, cii=(cij[0][0], cij[1][1], cij[2][2])
+    )
     mem.npf.rhs *= diag_inv
 
-    lap = lap3D.get_linop(mem.elem, mem.node, mem.npf, ud, diag_inv, dt)
+    lap = lap3D.get_linop(mem.elem, mem.node, mem.npf, ud, diag_inv, dt, cij)
     sh = mem.npf.rhs.size
 
-    lap = sp.sparse.linalg.LinearOperator((sh, sh), lap)
+    lap = sp.sparse.linalg.LinearOperator((sh, sh), lap, dtype=np.float64)
 
     rhs_inner = np.zeros_like(mem.npf.rhs)
     rhs_inner[mem.node.i1] = mem.npf.rhs[mem.node.i1]
