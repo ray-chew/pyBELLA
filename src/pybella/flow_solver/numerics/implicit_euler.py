@@ -18,7 +18,7 @@ def _jax_backend(ud):
     path either way — only the operator application and the Krylov
     iteration are swapped (see backends/jax_ops/elliptic_solve.py).
     """
-    return getattr(ud, "backend", "numpy") == "jax"
+    return getattr(ud, "backend", "numpy") in ("jax", "jax-device")
 
 
 class solver_counter(object):

@@ -61,7 +61,7 @@ def _laplacian(f, elem):
 
 def apply(mem, ud, dt):
     """One explicit diffusion step on velocity and theta'; updates mem.sol in place."""
-    if getattr(ud, "backend", "numpy") == "jax":
+    if getattr(ud, "backend", "numpy") in ("jax", "jax-device"):
         from ...backends.jax_ops import diffusion as jax_diffusion
 
         return jax_diffusion.apply(mem, ud, dt)

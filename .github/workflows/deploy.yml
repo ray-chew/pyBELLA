@@ -60,6 +60,7 @@ jobs:
           pytest ./test_scripts/test_jax_operator_equivalence.py
           pytest ./test_scripts/test_jax_elliptic_equivalence.py
           pytest ./test_scripts/test_jax_advection_equivalence.py
+          pytest ./test_scripts/test_jax_boundary_equivalence.py
           pytest ./test_scripts/test_jax_fullrun.py
 
       # - name: Upload coverage HTML report
@@ -104,6 +105,7 @@ jobs:
           pytest ./test_scripts/test_jax_operator_equivalence.py
           pytest ./test_scripts/test_jax_elliptic_equivalence.py
           pytest ./test_scripts/test_jax_advection_equivalence.py
+          pytest ./test_scripts/test_jax_boundary_equivalence.py
 
       - name: Run full regression cases on the JAX backend
         run: |

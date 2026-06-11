@@ -19,7 +19,7 @@ def recompute(mem, ud=None, **kwargs):
     **kwargs
         Optional pre-computed velocity components ('u', 'v', 'w')
     """
-    if ud is not None and getattr(ud, "backend", "numpy") == "jax":
+    if ud is not None and getattr(ud, "backend", "numpy") in ("jax", "jax-device"):
         from ....backends.jax_ops import advection as jax_advection
 
         return jax_advection.recompute_advective_flux(mem, **kwargs)
