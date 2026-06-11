@@ -18,6 +18,9 @@ dependencies = [
     "termcolor"
 ]
 
+[project.optional-dependencies]
+jax = ["jax>=0.4.35"]
+
 [project.scripts]
 pybella = "pybella.__main__:main"
 
