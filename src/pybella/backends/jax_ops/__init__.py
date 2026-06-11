@@ -23,6 +23,7 @@ assert jax.config.jax_enable_x64, "pyBELLA's JAX backend requires float64 (x64) 
 
 from . import (
     advection,
+    boundary,
     convolution,
     coriolis,
     diffusion,
@@ -31,4 +32,5 @@ from . import (
     finite_difference,
     gradient,
     laplacian,
+    rayleigh,
 )

@@ -239,6 +239,11 @@ def set_ghost_cells(mem, ud, step=None, sol=None):
     sol : object, optional
         Solution object, defaults to mem.sol
     """
+    if getattr(ud, "backend", "numpy") in ("jax", "jax-device"):
+        from ....backends.jax_ops import boundary as jax_boundary
+
+        return jax_boundary.set_ghost_cells(mem, ud, step=step, sol=sol)
+
     if sol is None:
         sol = mem.sol
 

@@ -35,6 +35,10 @@ def _mem_from_case(case, **ud_overrides):
     ud.coriolis_strength = np.array(ud.coriolis_strength)
     for key, val in ud_overrides.items():
         setattr(ud, key, val)
+    # production prepare.initialise calls this before grid_init (domain
+    # extension for rayleigh sponge / forcing cases)
+    if hasattr(ud, "rayleigh_bc"):
+        ud.rayleigh_bc(ud)
     elem, node = dis_grid.grid_init(ud)
     sol = fields.CellSolField(elem.sc)
     th = thermodynamics.ThermodynamicalQuantities(ud)

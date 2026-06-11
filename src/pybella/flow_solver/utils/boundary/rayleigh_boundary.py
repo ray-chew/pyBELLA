@@ -167,6 +167,11 @@ def _vertical_profile(profile, ndim, vaxis):
 
 
 def rayleigh_damping(sol, npf, ud, forcing=None):
+    if getattr(ud, "backend", "numpy") in ("jax", "jax-device"):
+        from ....backends.jax_ops import rayleigh as jax_rayleigh
+
+        return jax_rayleigh.rayleigh_damping(sol, npf, ud, forcing=forcing)
+
     u = sol.rhou / sol.rho  # [elem.i2]
     v = sol.rhov / sol.rho  # [elem.i2]
     Y = sol.rhoY / sol.rho  # [elem.i2]

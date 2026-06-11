@@ -5,6 +5,11 @@ from .common import get_ghost_padding
 
 
 def set_ghost_nodes(p, node, ud, igs=None):
+    if getattr(ud, "backend", "numpy") in ("jax", "jax-device"):
+        from ....backends.jax_ops import boundary as jax_boundary
+
+        return jax_boundary.set_ghost_nodes(p, node, ud, igs=igs)
+
     if igs is None:
         igs = node.igs
     for dim in range(node.ndim):

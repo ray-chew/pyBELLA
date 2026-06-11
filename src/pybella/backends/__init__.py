@@ -22,9 +22,18 @@ def require_jax():
         )
 
 
+BACKENDS = ("numpy", "jax", "jax-device")
+
+
 def is_jax_backend(ud):
-    """True when ud selects the JAX backend (see UserDataInit.backend)."""
-    return getattr(ud, "backend", "numpy") == "jax"
+    """True when ud selects a JAX backend — hybrid ("jax") or
+    device-resident ("jax-device"). All per-kernel seams route for both."""
+    return getattr(ud, "backend", "numpy") in ("jax", "jax-device")
+
+
+def is_device_backend(ud):
+    """True when ud selects the device-resident time loop ("jax-device")."""
+    return getattr(ud, "backend", "numpy") == "jax-device"
 
 
 def get_operators(backend="numpy"):
