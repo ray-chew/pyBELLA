@@ -81,7 +81,7 @@ def do(
 
         debug_writer.write(f"{label}_before_flux")
 
-        advective_flux.recompute(mem)
+        advective_flux.recompute(mem, ud)
 
         debug_writer.write(f"{label}_before_advect")
 
@@ -120,7 +120,7 @@ def do(
 
         debug_writer.write(f"{label}_after_ebnaimp")
 
-        advective_flux.recompute(mem)
+        advective_flux.recompute(mem, ud)
 
         debug_writer.write(f"{label}_after_half_step")
 

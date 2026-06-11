@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from collections import defaultdict
 
@@ -169,10 +171,12 @@ class UserDataInit:
         self.limiter_type_velocity = opts.LimiterType.NONE
         self.tol = 1.0e-8
         self.max_iterations = 6000
-        # numerical backend for the elliptic solve: "numpy" (scipy bicgstab,
-        # canonical) or "jax" (requires `pip install pybella[jax]`); see
-        # pybella.backends and dev notes on the JAX migration
-        self.backend = "numpy"
+        # numerical backend: "numpy" (canonical) or "jax" (requires
+        # `pip install pybella[jax]`); see pybella.backends. The env var
+        # PYBELLA_BACKEND overrides the default so unmodified regression
+        # cases can run on the JAX backend; an explicit `backend` in a
+        # case's UserData still wins (applied after defaults).
+        self.backend = os.environ.get("PYBELLA_BACKEND", "numpy")
 
         # Other attributes
         self.diag = False
