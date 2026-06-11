@@ -56,8 +56,9 @@ jobs:
           pytest ./test_scripts/test_agnesi_2d_equivalence.py
           pytest ./test_scripts/test_schaer_smoke.py
           pytest ./test_scripts/test_schaer_analytic.py
-          # skips unless jax is installed (covered by the jax-equivalence job)
+          # skip unless jax is installed (covered by the jax-equivalence job)
           pytest ./test_scripts/test_jax_operator_equivalence.py
+          pytest ./test_scripts/test_jax_elliptic_equivalence.py
 
       # - name: Upload coverage HTML report
       #   if: ${{ !env.ACT }}
@@ -99,6 +100,7 @@ jobs:
       - name: Run JAX operator equivalence
         run: |
           pytest ./test_scripts/test_jax_operator_equivalence.py
+          pytest ./test_scripts/test_jax_elliptic_equivalence.py
 
   # docs:
   #   runs-on: ubuntu-latest

@@ -169,6 +169,10 @@ class UserDataInit:
         self.limiter_type_velocity = opts.LimiterType.NONE
         self.tol = 1.0e-8
         self.max_iterations = 6000
+        # numerical backend for the elliptic solve: "numpy" (scipy bicgstab,
+        # canonical) or "jax" (requires `pip install pybella[jax]`); see
+        # pybella.backends and dev notes on the JAX migration
+        self.backend = "numpy"
 
         # Other attributes
         self.diag = False

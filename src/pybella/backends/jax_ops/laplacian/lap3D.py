@@ -137,7 +137,9 @@ def get_linop(elem, node, npf, ud, diag_inv, dt, cij):
     )
     matvec = jax.jit(matvec)
 
-    return lambda p: matvec(jnp.asarray(np.asarray(p, dtype=np.float64)))
+    # jnp.asarray (not np.asarray): the wrapper must accept jax tracers so
+    # jax bicgstab can trace through it, as well as scipy's int8 dtype probe
+    return lambda p: matvec(jnp.asarray(p, dtype=jnp.float64))
 
 
 def _lap3D(p0, C, hcenter, scales, padded, perms, diag_inv, use_cross):
