@@ -6,13 +6,14 @@ matvec into construction time in :func:`get_linop`:
 - the wall-axis coefficient slab-zeroing is data-independent and idempotent
   (the numpy kernel re-zeroes the same slabs on every call), so it is
   pre-applied to the copied coefficient boxes once;
-- the periodic ghost reconstruction is a fixed permutation of the input
-  along each periodic axis, applied in the kernel as a gather. NB: in the
-  numba kernel ``tmp = p[1, :, :]`` is a view, so the closing
-  ``p[-2] = tmp`` is a no-op — the effective permutation is
-  ``[0 -> n-3, 1 -> n-2, n-1 -> 2]`` with row ``n-2`` unchanged (columns
-  0, 1 and n-1 of the operator are dead). The golden master is that
-  actual behaviour, replicated here.
+- the periodic ghost reconstruction (tmp-swap of the duplicate rows 1 and
+  n-2 plus the ghost fills) is a fixed permutation of the input along each
+  periodic axis, applied in the kernel as a gather:
+  ``[0 -> n-3, 1 -> n-2, n-2 -> 1, n-1 -> 2]``. (Until 2026-06-10 the
+  numba ``tmp`` was a view, making the closing ``p[-2] = tmp`` a no-op;
+  both backends were fixed in lockstep — proven bit-identical end-to-end,
+  since the solver only visits periodically consistent vectors, on which
+  mirroring and exchanging duplicate rows coincide.)
 
 Like the numpy twin, the matvec returns the boxed (3D, padded) array — the
 caller (scipy/jax bicgstab) flattens it.
@@ -121,8 +122,7 @@ def get_linop(elem, node, npf, ud, diag_inv, dt, cij):
         n = padded[dim]
         perm = np.arange(n)
         if dim < ndim and periodic[dim]:
-            # see module docstring: row n-2 stays (the numba tmp is a view)
-            perm[[0, 1, -1]] = [n - 3, n - 2, 2]
+            perm[[0, 1, -2, -1]] = [n - 3, n - 2, 1, 2]
         perms.append(perm)
 
     matvec = functools.partial(

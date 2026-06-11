@@ -131,7 +131,12 @@ def lap3D(
     cnt = 0
     for bc in periodicity:
         if bc == True and cnt == 0:
-            tmp = p[1, :, :]
+            # tmp must snapshot the row: as a view, the closing write-back
+            # is a no-op and the duplicate rows 1/-2 are mirrored instead of
+            # exchanged (outcome-identical on the periodically consistent
+            # subspace the solver visits, but the operator column at row 1
+            # goes dead; fixed 2026-06-10, proven bit-identical end-to-end)
+            tmp = p[1, :, :].copy()
             p[0, :, :] = p[-3, :, :]
             p[-1, :, :] = p[2, :, :]
             p[1, :, :] = p[-2, :, :]
@@ -141,7 +146,7 @@ def lap3D(
                 c[0, :, :] = 0.0
                 c[-1, :, :] = 0.0
         if bc == True and cnt == 1:
-            tmp = p[:, 1, :]
+            tmp = p[:, 1, :].copy()
             p[:, 0, :] = p[:, -3, :]
             p[:, -1, :] = p[:, 2, :]
             p[:, 1, :] = p[:, -2, :]
@@ -151,7 +156,7 @@ def lap3D(
                 c[:, 0, :] = 0.0
                 c[:, -1, :] = 0.0
         if bc == True and cnt == 2:
-            tmp = p[:, :, 1]
+            tmp = p[:, :, 1].copy()
             p[:, :, 0] = p[:, :, -3]
             p[:, :, -1] = p[:, :, 2]
             p[:, :, 1] = p[:, :, -2]
