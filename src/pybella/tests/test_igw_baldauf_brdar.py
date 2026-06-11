@@ -133,16 +133,18 @@ class UserData(object):
             Nx=self.inx - 1,
             Ny=self.iny - 1,
             steps=[self.stepmax - 1],
-            # tolerance audit 2026-06-09 (3 reps): momenta/rhoX reproduce to
-            # ~1e-10 or better here, so hold them 3 orders tighter than the
-            # 1e-5 default (>=500x margin over observed run-to-run scatter)
+            # tolerance audit 2026-06-09 measured ~1e-10 run-to-run scatter
+            # SAME-MACHINE; the first CI run (2026-06-11, GitHub runner)
+            # showed cross-PLATFORM scatter of 2.3e-6 on rhou — different
+            # CPU/BLAS/numba reorder the bicgstab reductions. Gate at the
+            # 1e-5 default; physics is guarded by the B&B analytic oracle.
             tolerances={
                 "rho": 1e-5,
-                "rhou": 1e-8,
-                "rhov": 1e-8,
-                "rhow": 1e-8,
+                "rhou": 1e-5,
+                "rhov": 1e-5,
+                "rhow": 1e-5,
                 "rhoY": 1e-5,
-                "rhoX": 1e-8,
+                "rhoX": 1e-5,
                 "p2_nodes": 1e-5,
             },
         )
