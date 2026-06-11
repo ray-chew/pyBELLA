@@ -1,5 +1,6 @@
 import numba as nb
 
+from ....backends import is_jax_backend
 from ....utils import axes
 from ....utils.slices import get_neighbor_indices
 from ...utils.boundary import cell_boundary as bdry_c
@@ -123,6 +124,10 @@ def _compute_flux_and_recovery(mem, flux, ud, lmbda, split_step, tag=None):
     Returns:
         flux: Computed flux container
     """
+    if is_jax_backend(ud):
+        from ....backends.jax_ops import advection as jax_advection
+
+        return jax_advection.compute_flux(mem, flux, ud, lmbda, split_step, tag)
 
     Lefts, Rights = recovery.compute(mem, flux, ud, lmbda, split_step, tag)
 

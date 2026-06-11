@@ -59,6 +59,8 @@ jobs:
           # skip unless jax is installed (covered by the jax-equivalence job)
           pytest ./test_scripts/test_jax_operator_equivalence.py
           pytest ./test_scripts/test_jax_elliptic_equivalence.py
+          pytest ./test_scripts/test_jax_advection_equivalence.py
+          pytest ./test_scripts/test_jax_fullrun.py
 
       # - name: Upload coverage HTML report
       #   if: ${{ !env.ACT }}
@@ -101,6 +103,11 @@ jobs:
         run: |
           pytest ./test_scripts/test_jax_operator_equivalence.py
           pytest ./test_scripts/test_jax_elliptic_equivalence.py
+          pytest ./test_scripts/test_jax_advection_equivalence.py
+
+      - name: Run full regression cases on the JAX backend
+        run: |
+          pytest ./test_scripts/test_jax_fullrun.py
 
   # docs:
   #   runs-on: ubuntu-latest

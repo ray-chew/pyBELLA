@@ -6,16 +6,24 @@ from ....utils.operators import convolution
 from ....utils import slices
 
 
-def recompute(mem, **kwargs):
+def recompute(mem, ud=None, **kwargs):
     """Recompute the advective fluxes at the cell interfaces.
 
     Parameters
     ----------
     mem : object
         Memory object containing sol and flux attributes
+    ud : UserDataInit, optional
+        When given and ud.backend == "jax", the directional convolution
+        runs on the JAX backend.
     **kwargs
         Optional pre-computed velocity components ('u', 'v', 'w')
     """
+    if ud is not None and getattr(ud, "backend", "numpy") == "jax":
+        from ....backends.jax_ops import advection as jax_advection
+
+        return jax_advection.recompute_advective_flux(mem, **kwargs)
+
     ndim = mem.sol.rho.ndim
     inner_idx = slices.get_inner_slice(ndim)
     kernels = convolution.get_flux_kernels(ndim)
