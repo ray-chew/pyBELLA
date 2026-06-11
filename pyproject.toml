@@ -20,6 +20,10 @@ dependencies = [
 
 [project.optional-dependencies]
 jax = ["jax>=0.4.35"]
+# GPU clusters: jax's bundled CUDA wheels (hardware-agnostic code; only the
+# install extra differs). Pin the cluster env to the jax version CI last
+# passed with.
+jax-cuda = ["jax[cuda12]>=0.4.35"]
 
 [project.scripts]
 pybella = "pybella.__main__:main"
