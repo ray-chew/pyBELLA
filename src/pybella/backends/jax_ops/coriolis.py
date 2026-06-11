@@ -15,7 +15,7 @@ import jax.numpy as jnp
 from pybella.utils import axes
 
 
-@functools.partial(jax.jit, static_argnames=("nonhydro",))
+@jax.jit
 def compute_coefficients(wh1, wh2, wv, nu, nonhydro):
     """H^-1 coefficients (eq. C11); returns (h11..h33, denom)."""
     wh1_sq = wh1 * wh1
@@ -40,7 +40,7 @@ def compute_coefficients(wh1, wh2, wv, nu, nonhydro):
     return h11, h12, h13, h21, h22, h23, h31, h32, h33, denom
 
 
-@functools.partial(jax.jit, static_argnames=("nonhydro",))
+@jax.jit
 def apply_inverse(U, V, W, wh1, wh2, wv, nu, nonhydro):
     """(u, v, w) = H^-1 @ (U, V, W), role-ordered (h1, v, h2)."""
     h11, h12, h13, h21, h22, h23, h31, h32, h33, _ = compute_coefficients(
