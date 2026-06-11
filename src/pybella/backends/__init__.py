@@ -22,6 +22,11 @@ def require_jax():
         )
 
 
+def is_jax_backend(ud):
+    """True when ud selects the JAX backend (see UserDataInit.backend)."""
+    return getattr(ud, "backend", "numpy") == "jax"
+
+
 def get_operators(backend="numpy"):
     """Return the operators namespace for a backend ("numpy" or "jax").
 
