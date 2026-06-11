@@ -11,6 +11,16 @@ from ..utils.boundary import common as bdry
 from . import coriolis
 
 
+def _jax_backend(ud):
+    """True when the elliptic solve runs on the JAX backend (ud.backend).
+
+    Coefficient assembly, preconditioning and the rhs stay on the numpy
+    path either way — only the operator application and the Krylov
+    iteration are swapped (see backends/jax_ops/elliptic_solve.py).
+    """
+    return getattr(ud, "backend", "numpy") == "jax"
+
+
 class solver_counter(object):
     """
     taken from https://stackoverflow.com/questions/33512081/getting-the-number-of-iterations-of-scipys-gmres-iterative-method
@@ -104,10 +114,17 @@ def do_implicit_part(
     lap, rhs_inner = _prepare_linear_system(mem, ud, dt)
 
     # Solve using BiCGSTAB
-    counter = solver_counter()
-    p2, _ = sp.sparse.linalg.bicgstab(
-        lap, rhs_inner, atol=ud.tol, maxiter=ud.max_iterations, callback=counter
-    )
+    if _jax_backend(ud):
+        from ...backends.jax_ops import elliptic_solve
+
+        p2 = elliptic_solve.bicgstab(
+            lap, rhs_inner, atol=ud.tol, maxiter=ud.max_iterations
+        )
+    else:
+        counter = solver_counter()
+        p2, _ = sp.sparse.linalg.bicgstab(
+            lap, rhs_inner, atol=ud.tol, maxiter=ud.max_iterations, callback=counter
+        )
 
     # Reshape solution and apply
     p2_full = _reshape_solution(p2, mem, ud, nc)
@@ -249,12 +266,21 @@ def _prepare_2d_system(mem, ud, dt):
         diag_inv = preconditioner.prepare_diag(mem.npf, mem.node)
     mem.npf.rhs *= diag_inv
 
+    rhs_inner = mem.npf.rhs[mem.node.i1].T.ravel()
+
+    if _jax_backend(ud):
+        from ...backends.jax_ops.laplacian import lap2D as jax_lap2D
+
+        return (
+            jax_lap2D.get_linop(mem.npf, mem.node, coriolis_params, diag_inv, ud),
+            rhs_inner,
+        )
+
     p2 = mem.npf.p2_nodes[mem.node.i2].T
     lap = lap2D_manual.get_linop(mem.npf, mem.node, coriolis_params, diag_inv, ud)
     sh = p2.shape[0] * p2.shape[1]
 
     lap = sp.sparse.linalg.LinearOperator((sh, sh), lap)
-    rhs_inner = mem.npf.rhs[mem.node.i1].T.ravel()
 
     return lap, rhs_inner
 
@@ -290,13 +316,21 @@ def _prepare_3d_system(mem, ud, dt):
     )
     mem.npf.rhs *= diag_inv
 
+    rhs_inner = np.zeros_like(mem.npf.rhs)
+    rhs_inner[mem.node.i1] = mem.npf.rhs[mem.node.i1]
+
+    if _jax_backend(ud):
+        from ...backends.jax_ops.laplacian import lap3D as jax_lap3D
+
+        return (
+            jax_lap3D.get_linop(mem.elem, mem.node, mem.npf, ud, diag_inv, dt, cij),
+            rhs_inner.ravel(),
+        )
+
     lap = lap3D.get_linop(mem.elem, mem.node, mem.npf, ud, diag_inv, dt, cij)
     sh = mem.npf.rhs.size
 
     lap = sp.sparse.linalg.LinearOperator((sh, sh), lap, dtype=np.float64)
-
-    rhs_inner = np.zeros_like(mem.npf.rhs)
-    rhs_inner[mem.node.i1] = mem.npf.rhs[mem.node.i1]
 
     return lap, rhs_inner.ravel()
 
