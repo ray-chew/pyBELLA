@@ -22,7 +22,10 @@ jax.config.update("jax_enable_x64", True)
 assert jax.config.jax_enable_x64, "pyBELLA's JAX backend requires float64 (x64) mode"
 
 from . import (
+    advection,
     convolution,
+    coriolis,
+    diffusion,
     divergence,
     elliptic_solve,
     finite_difference,
