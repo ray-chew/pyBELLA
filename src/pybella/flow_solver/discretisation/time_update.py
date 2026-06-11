@@ -31,6 +31,15 @@ def do(
     Does a time-step for the flow solver.
 
     """
+    from ...backends import is_device_backend
+
+    if is_device_backend(ud):
+        # device-resident inner loop: state pushed once, one dt scalar sync
+        # per step, full state pulled at tout (backends/jax_ops/device_step)
+        from ...backends.jax_ops import device_step
+
+        return device_step.run_window(mem, ud, tout, writer=writer)
+
     swe_to_lake = False
 
     while (mem.time.t < tout) and (mem.time.step < ud.stepmax):

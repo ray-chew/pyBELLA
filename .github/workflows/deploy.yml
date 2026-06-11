@@ -61,7 +61,9 @@ jobs:
           pytest ./test_scripts/test_jax_elliptic_equivalence.py
           pytest ./test_scripts/test_jax_advection_equivalence.py
           pytest ./test_scripts/test_jax_boundary_equivalence.py
+          pytest ./test_scripts/test_jax_device_equivalence.py
           pytest ./test_scripts/test_jax_fullrun.py
+          pytest ./test_scripts/test_jax_device_fullrun.py
 
       # - name: Upload coverage HTML report
       #   if: ${{ !env.ACT }}
@@ -106,10 +108,12 @@ jobs:
           pytest ./test_scripts/test_jax_elliptic_equivalence.py
           pytest ./test_scripts/test_jax_advection_equivalence.py
           pytest ./test_scripts/test_jax_boundary_equivalence.py
+          pytest ./test_scripts/test_jax_device_equivalence.py
 
       - name: Run full regression cases on the JAX backend
         run: |
           pytest ./test_scripts/test_jax_fullrun.py
+          pytest ./test_scripts/test_jax_device_fullrun.py
 
   # docs:
   #   runs-on: ubuntu-latest
