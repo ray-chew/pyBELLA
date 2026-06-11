@@ -56,6 +56,8 @@ jobs:
           pytest ./test_scripts/test_agnesi_2d_equivalence.py
           pytest ./test_scripts/test_schaer_smoke.py
           pytest ./test_scripts/test_schaer_analytic.py
+          # skips unless jax is installed (covered by the jax-equivalence job)
+          pytest ./test_scripts/test_jax_operator_equivalence.py
 
       # - name: Upload coverage HTML report
       #   if: ${{ !env.ACT }}
@@ -74,6 +76,29 @@ jobs:
             logs/**/*.log
             !outputs/**/*.dat
             !outputs/**/*.h5
+
+  # JAX backend golden-master equivalence (dev_notes/jax_migration.md).
+  # Python 3.12: recent jax dropped 3.10; jax deliberately unpinned so this
+  # job doubles as an early warning when a new jax release breaks the port.
+  jax-equivalence:
+    runs-on: ubuntu-latest
+    env:
+      JAX_ENABLE_X64: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r dev-requirements.txt
+          pip install ".[jax]"
+
+      - name: Run JAX operator equivalence
+        run: |
+          pytest ./test_scripts/test_jax_operator_equivalence.py
 
   # docs:
   #   runs-on: ubuntu-latest
