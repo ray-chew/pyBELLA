@@ -19,8 +19,6 @@ Like the numpy twin, the matvec returns the boxed (3D, padded) array — the
 caller (scipy/jax bicgstab) flattens it.
 """
 
-import functools
-
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -125,21 +123,36 @@ def get_linop(elem, node, npf, ud, diag_inv, dt, cij):
             perm[[0, 1, -2, -1]] = [n - 3, n - 2, 1, 2]
         perms.append(perm)
 
-    matvec = functools.partial(
-        _lap3D,
+    # tree_util.Partial, not a closure (see lap2D.get_linop): `padded` is
+    # re-derived from hcenter's static shape inside the trace, and use_cross
+    # selects between two module-level variants, so both stay static
+    apply_fn = _lap3D_apply_cross if use_cross else _lap3D_apply_plain
+    return jax.tree_util.Partial(
+        apply_fn,
         C=tuple(tuple(jnp.asarray(C[i][j]) for j in range(3)) for i in range(3)),
         hcenter=jnp.asarray(hcenter),
         scales=(oodx2, oody2, oodz2, odx, ody, odz),
-        padded=padded,
         perms=tuple(jnp.asarray(p) for p in perms),
         diag_inv=jnp.asarray(diag_inv),
-        use_cross=use_cross,
     )
-    matvec = jax.jit(matvec)
 
-    # jnp.asarray (not np.asarray): the wrapper must accept jax tracers so
-    # jax bicgstab can trace through it, as well as scipy's int8 dtype probe
-    return lambda p: matvec(jnp.asarray(p, dtype=jnp.float64))
+
+def _lap3D_apply(p, C, hcenter, scales, perms, diag_inv, use_cross):
+    # jnp.asarray (not np.asarray): must accept jax tracers as well as
+    # eager numpy probes from the equivalence tests
+    p = jnp.asarray(p, dtype=jnp.float64)
+    padded = tuple(s + 2 for s in hcenter.shape)
+    return _lap3D(p, C, hcenter, scales, padded, perms, diag_inv, use_cross)
+
+
+@jax.jit
+def _lap3D_apply_plain(p, C, hcenter, scales, perms, diag_inv):
+    return _lap3D_apply(p, C, hcenter, scales, perms, diag_inv, False)
+
+
+@jax.jit
+def _lap3D_apply_cross(p, C, hcenter, scales, perms, diag_inv):
+    return _lap3D_apply(p, C, hcenter, scales, perms, diag_inv, True)
 
 
 def _lap3D(p0, C, hcenter, scales, padded, perms, diag_inv, use_cross):

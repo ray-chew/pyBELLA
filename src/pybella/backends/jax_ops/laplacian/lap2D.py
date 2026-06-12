@@ -14,8 +14,6 @@ The jitted matvec is then pure vectorized arithmetic over nine gathers,
 term-for-term identical to the scalar loop body.
 """
 
-import functools
-
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -120,8 +118,11 @@ def get_linop(npf, node, coriolis, diag_inv, ud):
         for name, arr in (("cxx", cxx), ("cyy", cyy), ("cxy", cxy), ("cyx", cyx))
     }
 
-    matvec = functools.partial(
-        _lap2D_gather,
+    # tree_util.Partial, not a closure: the stable function identity plus
+    # coefficient-arrays-as-pytree-leaves let elliptic_solve._solve reuse
+    # one compiled bicgstab across steps (see its docstring)
+    return jax.tree_util.Partial(
+        _lap2D_apply,
         stencil={k: jnp.asarray(v) for k, v in stencil.items()},
         hpx={k: jnp.asarray(v) for k, v in hpx.items()},
         hpy={k: jnp.asarray(v) for k, v in hpy.items()},
@@ -131,11 +132,14 @@ def get_linop(npf, node, coriolis, diag_inv, ud):
         oodx=1.0 / dx,
         oody=1.0 / dy,
     )
-    matvec = jax.jit(matvec)
 
-    # jnp.asarray (not np.asarray): the wrapper must accept jax tracers so
-    # jax bicgstab can trace through it, as well as scipy's int8 dtype probe
-    return lambda p: matvec(jnp.asarray(p, dtype=jnp.float64))
+
+@jax.jit
+def _lap2D_apply(p, stencil, hpx, hpy, cor, hcenter, dinv, oodx, oody):
+    # jnp.asarray (not np.asarray): must accept jax tracers as well as
+    # eager numpy probes from the equivalence tests
+    p = jnp.asarray(p, dtype=jnp.float64)
+    return _lap2D_gather(p, stencil, hpx, hpy, cor, hcenter, dinv, oodx, oody)
 
 
 def _lap2D_gather(p, stencil, hpx, hpy, cor, hcenter, dinv, oodx, oody):
