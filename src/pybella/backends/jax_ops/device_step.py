@@ -435,14 +435,16 @@ def _advective_flux(s, cfg):
     flux_rhoY = []
     for i, (comp, rho_comp) in enumerate(zip(components, rho_components)):
         momentum = s[rho_comp]
-        if m is not None and i == m.vaxis:
-            a_h1, a_h2 = m.haxes
-            momentum = momentum - m.G1 * s[rho_components[a_h1]]
-            if m.G2 is not None:
-                momentum = momentum - m.G2 * s[rho_components[a_h2]]
+        if m is not None:
+            # general curvilinear mass flux rhoY * (N_i . m) / rho
+            # (vertical-first contraction, mirroring the numpy
+            # advective_flux._normal_momentum assembly)
+            Ni = m.N[i]
+            cv, (ch1, ch2) = m.cart_v, m.cart_haxes
+            momentum = Ni[cv] * s[rho_components[cv]] + Ni[ch1] * s[rho_components[ch1]]
+            if ch2 is not None:
+                momentum = momentum + Ni[ch2] * s[rho_components[ch2]]
             rhoY_vel = s["rhoY"] * momentum / s["rho"]
-        elif m is not None:
-            rhoY_vel = m.J * s["rhoY"] * momentum / s["rho"]
         else:
             rhoY_vel = s["rhoY"] * momentum / s["rho"]
         conv = jax_convolution.apply_directional_convolution(
@@ -1076,17 +1078,21 @@ def _cfl_maxima(s, cfg):
     v = jnp.abs(s["rhov"] / rho)
     w = jnp.abs(s["rhow"] / rho)
     moms = (s["rhou"], s["rhov"], s["rhow"])
-    contra = moms[m.vaxis] - m.G1 * moms[m.haxes[0]]
-    slope_sq = m.G1**2
-    if m.G2 is not None:
-        contra = contra - m.G2 * moms[m.haxes[1]]
-        slope_sq = slope_sq + m.G2**2
+    # contravariant speeds |N_a . m|/(rho J) and signal bounds c |N_a|/J on
+    # every sweep axis, mirroring the numpy cfl.dynamic_timestep
     vels = [u, v, w]
-    vels[m.vaxis] = jnp.abs(contra / rho) * m.ooJ
-    u, v, w = vels
-    c_vert = c * jnp.sqrt(1.0 + slope_sq) * m.ooJ
     cs = [c, c, c]
-    cs[m.vaxis] = c_vert
+    cv, (ch1, ch2) = m.cart_v, m.cart_haxes
+    for a in range(cfg.ndim):
+        Na = m.N[a]
+        contra = Na[cv] * moms[cv] + Na[ch1] * moms[ch1]
+        norm_sq = Na[cv] ** 2 + Na[ch1] ** 2
+        if ch2 is not None:
+            contra = contra + Na[ch2] * moms[ch2]
+            norm_sq = norm_sq + Na[ch2] ** 2
+        vels[a] = jnp.abs(contra / rho) * m.ooJ
+        cs[a] = c * jnp.sqrt(norm_sq) * m.ooJ
+    u, v, w = vels
     return jnp.stack(
         [
             u.max(),

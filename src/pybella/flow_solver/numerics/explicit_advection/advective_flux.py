@@ -5,6 +5,24 @@ from numba import njit
 from ....utils.operators import convolution
 from ....utils import slices
 
+_MOMENTA = ("rhou", "rhov", "rhow")
+
+
+def _normal_momentum(sol, metric, i):
+    """Contravariant face momentum N_i . m for sweep axis i.
+
+    Cartesian-component contraction, vertical component first — the
+    bit-exact reduction order of the Phase-0 contract. Shared by the
+    numpy and JAX flux assemblies (plain elementwise numpy either way).
+    """
+    Ni = metric.N[i]
+    cv = metric.cart_v
+    ch1, ch2 = metric.cart_haxes
+    out = Ni[cv] * getattr(sol, _MOMENTA[cv]) + Ni[ch1] * getattr(sol, _MOMENTA[ch1])
+    if ch2 is not None:
+        out = out + Ni[ch2] * getattr(sol, _MOMENTA[ch2])
+    return out
+
 
 def recompute(mem, ud=None, **kwargs):
     """Recompute the advective fluxes at the cell interfaces.
@@ -44,19 +62,14 @@ def recompute(mem, ud=None, **kwargs):
             rhoY_vel = kwargs[comp]
         else:
             momentum = getattr(mem.sol, rho_comp)
-            if metric is not None and i == metric.vaxis:
-                # contravariant vertical mass flux rhoY*(w - G.u_h)/rho
-                # (J * eta_dot — what actually crosses an eta-face)
-                a_h1, a_h2 = metric.haxes
-                momentum = momentum - metric.G1 * getattr(mem.sol, rho_components[a_h1])
-                if metric.G2 is not None:
-                    momentum = momentum - metric.G2 * getattr(
-                        mem.sol, rho_components[a_h2]
-                    )
+            if metric is not None:
+                # general curvilinear mass flux rhoY * (N_i . m) / rho
+                # (J * xi_i-dot * rhoY — what actually crosses a xi_i-face);
+                # vertical-first contraction so the vertical sweep reduces
+                # bit-exactly to the legacy contravariant flux and the
+                # horizontals to the J-weighted one
+                momentum = _normal_momentum(mem.sol, metric, i)
                 rhoY_vel = mem.sol.rhoY * momentum / mem.sol.rho
-            elif metric is not None:
-                # horizontal mass fluxes carry the Jacobian (face-area weight)
-                rhoY_vel = metric.J * mem.sol.rhoY * momentum / mem.sol.rho
             else:
                 rhoY_vel = mem.sol.rhoY * momentum / mem.sol.rho
 
