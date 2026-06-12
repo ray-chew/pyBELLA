@@ -17,7 +17,6 @@ benchmarks; this script does).
 """
 
 import argparse
-import statistics
 import sys
 import time
 
@@ -122,28 +121,29 @@ def main():
         def populate(self, *a, **k):
             pass
 
-    # warm-up / compile: run 1 step
-    ud.stepmax = 1
+    # warm-up / compile: 2 steps (both Strang parities jit separately on
+    # jax-device, so a 1-step warm-up would leak a compile into the timing)
+    ud.stepmax = 2
     t0 = time.perf_counter()
     time_update.do(mem, ud, 1e9, None, None, NullDebug())
     compile_s = time.perf_counter() - t0
 
-    # timed steps, one step per call for clean per-step numbers
-    times = []
-    for k in range(args.steps):
-        ud.stepmax = mem.time.step + 1
-        t0 = time.perf_counter()
-        time_update.do(mem, ud, 1e9, None, None, NullDebug())
-        times.append(time.perf_counter() - t0)
+    # timed window: all steps in ONE do() call — the production pattern.
+    # run_window pushes the state to device on entry and pulls it back on
+    # exit, so per-call timing would charge a full host round-trip to every
+    # step; window timing keeps the state device-resident throughout.
+    ud.stepmax = mem.time.step + args.steps
+    t0 = time.perf_counter()
+    time_update.do(mem, ud, 1e9, None, None, NullDebug())
+    elapsed = time.perf_counter() - t0
 
-    med = statistics.median(times)
-    p90 = statistics.quantiles(times, n=10)[-1]
+    per = elapsed / args.steps
     print(
         f"backend={args.backend} case={args.case} res={args.res} "
         f"steps={args.steps}\n"
-        f"  first-step (incl. compile): {compile_s:.3f} s\n"
-        f"  per step: median {med * 1e3:.2f} ms, p90 {p90 * 1e3:.2f} ms, "
-        f"{1.0 / med:.2f} steps/s"
+        f"  warm-up (2 steps incl. compile): {compile_s:.3f} s\n"
+        f"  per step: mean {per * 1e3:.2f} ms over a {args.steps}-step window, "
+        f"{1.0 / per:.2f} steps/s"
     )
 
 
