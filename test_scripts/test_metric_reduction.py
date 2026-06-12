@@ -273,3 +273,232 @@ def test_tier2_tangent_fixture():
     m = tuple(rng.random(J.shape) - 0.5 for _ in range(3))
     contra_eff = m[1] - (z_x1 / xp) * m[0] - (z_x3 / yp) * m[2]
     np.testing.assert_allclose(dot(N2, m) / N2[1], contra_eff, rtol=1e-12, atol=1e-13)
+
+
+# ------------------------------------- Phase 1: MetricFields N/x machinery
+#
+# Optional: these exercise the generalized metric (tfc pt 1+). They skip
+# cleanly on a tree where only the Phase-0 contract above applies.
+
+_general_metric = pytest.mark.skipif(
+    not hasattr(terrain, "CurvilinearMap"),
+    reason="general metric machinery (tfc pt 1) not present",
+)
+
+
+@_general_metric
+@pytest.mark.parametrize("sleve", [False, True], ids=["galchen", "sleve"])
+@pytest.mark.parametrize("loc", [0, 1], ids=["cells", "nodes"])
+def test_builder_normals_match_cross_products(sleve, loc):
+    """MetricFields.N (synthesized) == cross products of the tangents,
+    bit for bit (smoke_agnesi is v = 1, so role order == Cartesian order)."""
+    m = _make_metrics(sleve=sleve)[loc]
+    N_expect = normals(*vertical_line_tangents(m))
+    a_h1, a_h2 = m.haxes
+    for axis, Ni in zip((a_h1, m.vaxis, a_h2), N_expect):
+        for k in range(3):
+            assert np.array_equal(m.N[axis][k], Ni[k])
+    # x: only the vertical coordinate is materialized (identity elsewhere)
+    assert m.x[m.cart_v] is m.z
+    assert m.x[a_h1] is None and m.x[a_h2] is None
+    assert (m.cart_v, m.cart_haxes) == (m.vaxis, m.haxes)
+
+
+@_general_metric
+def test_flip_rotates_normals_consistently():
+    """Sweep flips roll leaf axes and rotate WHICH normal sits on which
+    array axis; Cartesian components never permute, so the vertical
+    normal's slope components track the (rolled) legacy G arrays."""
+    m = _make_metrics()[0]
+    ndim = m.J.ndim
+    N0 = [[c.copy() for c in Na] for Na in m.N]
+    vax0, hax0 = m.vaxis, m.haxes
+
+    m.flip_forward()
+    one = np.ones_like(m.J)
+    # the vertical normal now lives at the shifted vaxis; components are
+    # still Cartesian: cart_h1 slot carries -G1 (rolled with the leaves)
+    assert np.array_equal(m.N[m.vaxis][m.cart_haxes[0]], -m.G1)
+    assert np.array_equal(m.N[m.vaxis][m.cart_v], one)
+    assert np.array_equal(m.N[m.vaxis][m.cart_haxes[1]], -m.G2)
+    assert np.array_equal(m.N[m.haxes[0]][m.cart_haxes[0]], m.J)
+    assert np.array_equal(m.x[m.cart_v], m.z)
+
+    # full cycle of flips is the identity (exact)
+    for _ in range(ndim - 1):
+        m.flip_forward()
+    assert (m.vaxis, m.haxes) == (vax0, hax0)
+    for a in range(ndim):
+        for k in range(ndim):
+            assert np.array_equal(m.N[a][k], N0[a][k])
+
+    # and backward inverts forward
+    m.flip_forward()
+    m.flip_backward()
+    for a in range(ndim):
+        for k in range(ndim):
+            assert np.array_equal(m.N[a][k], N0[a][k])
+
+
+# ------------------------------ Phase 1: general path (CurvilinearMap)
+
+
+class _StubUD:
+    """Minimal ud for grid_init: all-WALL so coordinate wraps are identity
+    (required for the bit-exact general-vs-legacy comparison)."""
+
+    def __init__(self, orography=None, orography_grad=None):
+        self.inx, self.iny, self.inz = 17, 9, 7
+        self.xmin, self.xmax = -1.0, 1.0
+        self.ymin, self.ymax = 0.0, 2.0
+        self.zmin, self.zmax = -0.5, 0.5
+        from pybella.utils import options as opts
+
+        self.bdry_type = np.array([opts.BdryType.WALL] * 3)
+        self.gravity_direction = 1
+        if orography is not None:
+            self.orography = orography
+        if orography_grad is not None:
+            self.orography_grad = orography_grad
+
+
+def _stub_hill(amplitude=0.05, width=0.3):
+    def h(xi1, xi2):
+        return amplitude / (1.0 + (xi1 / width) ** 2) * (1.0 + 0.2 * xi2)
+
+    def dh1(xi1, xi2):
+        return (
+            -2.0 * amplitude * xi1 / width**2 / (1.0 + (xi1 / width) ** 2) ** 2
+        ) * (1.0 + 0.2 * xi2)
+
+    def dh2(xi1, xi2):
+        return amplitude / (1.0 + (xi1 / width) ** 2) * 0.2 + 0.0 * xi1
+
+    return h, (dh1, dh2)
+
+
+def _coord(grid_obj, axis):
+    from pybella.utils import axes as _axes
+
+    shape = [1] * grid_obj.ndim
+    shape[axis] = -1
+    return _axes.coords_along(grid_obj, axis).reshape(shape)
+
+
+if hasattr(terrain, "CurvilinearMap"):
+
+    class _GalChenLineMap(terrain.CurvilinearMap):
+        """The vertical-line Gal-Chen map written as a CurvilinearMap, using
+        the same closed forms as the legacy builder (bit-exact reduction)."""
+
+        def __init__(self, hill, grads, eta0, etat):
+            self.h, (self.dh1, self.dh2) = hill, grads
+            self.eta0, self.etat = eta0, etat
+
+        def _decay(self, eta):
+            return (self.etat - eta) / (self.etat - self.eta0)
+
+        def coordinates(self, xi):
+            xi1, eta, xi2 = xi
+            z = eta + self.h(xi1, xi2) * self._decay(eta)
+            return [None, z, None]
+
+        def tangents(self, xi):
+            xi1, eta, xi2 = xi
+            b = self._decay(eta)
+            J = (1.0 - self.h(xi1, xi2) / (self.etat - self.eta0)) + 0.0 * eta
+            G1 = self.dh1(xi1, xi2) * b
+            G2 = self.dh2(xi1, xi2) * b
+            zero = 0.0 * J
+            one = 1.0 + zero
+            return [[one, G1, zero], [zero, J, zero], [zero, G2, one]]
+
+    class _Tier2StretchMap(_GalChenLineMap):
+        """x-stretched Gal-Chen: x = s(xi1), z = eta + h b(eta), y = xi3."""
+
+        def __init__(self, hill, grads, eta0, etat, ax=0.3, kx=1.1):
+            super().__init__(hill, grads, eta0, etat)
+            self.ax, self.kx = ax, kx
+
+        def coordinates(self, xi):
+            xi1, eta, xi2 = xi
+            _, z, _ = super().coordinates(xi)
+            x = xi1 + self.ax * np.sin(self.kx * xi1)
+            return [x + 0.0 * eta + 0.0 * xi2, z, None]
+
+        def tangents(self, xi):
+            xi1, eta, xi2 = xi
+            t = super().tangents(xi)
+            xp = 1.0 + self.ax * self.kx * np.cos(self.kx * xi1)
+            t[0][0] = xp + 0.0 * t[0][1]
+            return t
+
+
+@_general_metric
+def test_general_path_reduces_to_legacy_builder():
+    """build_metric_fields_from_map == build_metric_fields, bit for bit,
+    for the vertical-line Gal-Chen map (the Phase-1 reduction gate)."""
+    hill, grads = _stub_hill()
+    ud = _StubUD(orography=hill, orography_grad=grads)
+    elem, node = dis_grid.grid_init(ud)
+    cmap = _GalChenLineMap(hill, grads, eta0=ud.ymin, etat=ud.ymax)
+    for grid_obj in (elem, node):
+        legacy = grid_obj.metric
+        general = terrain.build_metric_fields_from_map(grid_obj, ud, cmap)
+        assert np.array_equal(general.J, legacy.J)
+        assert np.array_equal(general.ooJ, legacy.ooJ)
+        assert np.array_equal(general.G1, legacy.G1)
+        assert np.array_equal(general.G2, legacy.G2)
+        assert np.array_equal(general.z, legacy.z)
+        for a in range(3):
+            for k in range(3):
+                assert np.array_equal(general.N[a][k], legacy.N[a][k])
+        assert (general.vaxis, general.haxes) == (legacy.vaxis, legacy.haxes)
+
+
+@_general_metric
+def test_general_path_tier2_effective_slopes():
+    """On an x-stretched grid the general builder must produce J = x'.J_z,
+    duality-consistent normals, and effective slopes G1_eff = z_xi1 / x'."""
+    hill, grads = _stub_hill()
+    ud = _StubUD(orography=hill, orography_grad=grads)
+    elem, _ = dis_grid.grid_init(ud)
+    cmap = _Tier2StretchMap(hill, grads, eta0=ud.ymin, etat=ud.ymax)
+    m = terrain.build_metric_fields_from_map(elem, ud, cmap)
+
+    t = [
+        [np.broadcast_to(c, m.J.shape) for c in ta]
+        for ta in cmap.tangents([_coord(elem, a) for a in range(3)])
+    ]
+    # duality N_a . t_b = J delta_ab on the genuinely stretched map
+    scale = np.max(np.abs(m.J))
+    for a in range(3):
+        for b_ in range(3):
+            expect = m.J if a == b_ else 0.0
+            np.testing.assert_allclose(
+                sum(m.N[a][k] * t[b_][k] for k in range(3)),
+                expect,
+                rtol=1e-13,
+                atol=1e-14 * scale,
+            )
+    # effective slopes: -(N_v)_h / (N_v)_v == z_xi_h / x'_h
+    np.testing.assert_allclose(m.G1, t[0][1] / t[0][0], rtol=1e-13, atol=1e-15)
+    # J = x' * dz/deta * 1
+    np.testing.assert_allclose(m.J, t[0][0] * t[1][1], rtol=1e-13)
+
+
+@_general_metric
+def test_general_path_rejects_nonpositive_jacobian():
+    hill, grads = _stub_hill()
+    ud = _StubUD(orography=hill, orography_grad=grads)
+    elem, _ = dis_grid.grid_init(ud)
+
+    class _Folded(_Tier2StretchMap):
+        def tangents(self, xi):
+            t = super().tangents(xi)
+            t[0][0] = t[0][0] - 2.0  # x' < 0: orientation flips
+            return t
+
+    bad = _Folded(hill, grads, eta0=ud.ymin, etat=ud.ymax)
+    with pytest.raises(ValueError, match="Jacobian"):
+        terrain.build_metric_fields_from_map(elem, ud, bad)

@@ -172,11 +172,34 @@ class MetricFields:
     are the dz/dxi terms along the horizontal role axes ``haxes`` mapped
     by ``axes.role_perm``. ``G2`` is ``None`` in 2D. Plain float64 arrays
     only, safe to pass straight into numba kernels.
+
+    General (Klein) metric data rides alongside the legacy scalars:
+
+    ``N``
+        Area normals N_a = t_b x t_c (cyclic over computational axes).
+        ``N[a]`` is the normal of the xi_a = const surface for the CURRENT
+        array axis ``a`` (the outer index rotates with the sweep flips);
+        its entries are the ndim CARTESIAN components as grid-shaped
+        arrays (the inner index is fixed — momenta keep their identity
+        under flips, so component k always multiplies momentum k).
+    ``x``
+        Physical coordinates, Cartesian-indexed; ``x[cart_v]`` is the
+        height field (generalizes ``z``), entries are ``None`` where the
+        map is the identity along that axis (not materialized).
+    ``cart_v`` / ``cart_haxes``
+        The fixed Cartesian role axes (vaxis/haxes at build time); unlike
+        ``vaxis``/``haxes`` they never change under flips.
+
+    When ``N``/``x`` are not supplied they are synthesized from the
+    vertical-line map's normals (J, 0, 0), (-G1, 1, -G2), (0, 0, J) —
+    bit-identical to the cross products of the tangents
+    t1 = (1, G1, 0), t2 = (0, J, 0), t3 = (0, G2, 1) (the Phase-0
+    reduction contract, ``test_scripts/test_metric_reduction.py``).
     """
 
     _ARRAYS = ("J", "ooJ", "G1", "G2", "z")
 
-    def __init__(self, J, G1, G2, z, vaxis, haxes):
+    def __init__(self, J, G1, G2, z, vaxis, haxes, N=None, x=None):
         self.J = J
         self.ooJ = 1.0 / J
         self.G1 = G1
@@ -184,20 +207,59 @@ class MetricFields:
         self.z = z
         self.vaxis = vaxis
         self.haxes = haxes
+        self.cart_v = vaxis
+        self.cart_haxes = haxes
+        self.N = self._vertical_line_normals() if N is None else N
+        if x is None:
+            x = [None] * J.ndim
+            x[vaxis] = z
+        self.x = x
+
+    def _vertical_line_normals(self):
+        """Cartesian-component normals of the vertical-line map (canonical
+        orientation: array axes == Cartesian axes at construction)."""
+        ndim = self.J.ndim
+        one = np.ones_like(self.J)
+        zero = np.zeros_like(self.J)
+        a_h1, a_h2 = self.haxes
+        v = self.vaxis
+        N = [[zero] * ndim for _ in range(ndim)]
+        # N_h1 = (J along cart h1); N_v = (-G_h horizontals, 1 vertical)
+        N[a_h1][a_h1] = self.J
+        N[v][a_h1] = -self.G1
+        N[v][v] = one
+        if a_h2 is not None:
+            N[v][a_h2] = -self.G2
+            N[a_h2][a_h2] = self.J
+        return N
 
     def flip_forward(self):
-        """Mirror CellSolField.flip_forward for the advection sweeps."""
+        """Mirror CellSolField.flip_forward for the advection sweeps.
+
+        Every leaf array rolls its axes; the OUTER index of ``N`` rotates
+        with them (the normal of old array axis a lands on (a - 1) % ndim)
+        while the Cartesian component index never moves. ``cart_*`` are
+        flip-invariant by definition.
+        """
+        roll = lambda arr: np.moveaxis(arr, 0, -1)
         for key in self._ARRAYS:
             value = getattr(self, key)
             if value is not None:
-                setattr(self, key, np.moveaxis(value, 0, -1))
+                setattr(self, key, roll(value))
+        rolled = [[roll(c) for c in Na] for Na in self.N]
+        self.N = rolled[1:] + rolled[:1]
+        self.x = [None if c is None else roll(c) for c in self.x]
         self.vaxis, self.haxes = self._shift_axes(-1)
 
     def flip_backward(self):
+        roll = lambda arr: np.moveaxis(arr, -1, 0)
         for key in self._ARRAYS:
             value = getattr(self, key)
             if value is not None:
-                setattr(self, key, np.moveaxis(value, -1, 0))
+                setattr(self, key, roll(value))
+        rolled = [[roll(c) for c in Na] for Na in self.N]
+        self.N = rolled[-1:] + rolled[:-1]
+        self.x = [None if c is None else roll(c) for c in self.x]
         self.vaxis, self.haxes = self._shift_axes(+1)
 
     def _shift_axes(self, step):
@@ -432,3 +494,97 @@ def build_metric_fields(grid_obj, ud):
         G2 = None
 
     return MetricFields(J=J, G1=G1, G2=G2, z=z, vaxis=v, haxes=(a_h1, a_h2))
+
+
+class CurvilinearMap:
+    """Analytic curvilinear map x(xi) for the general metric path.
+
+    Tier 1/2 of the Klein generalization: maps that keep gravity a
+    coordinate direction, x = (x(xi_0), ..., z(..., eta, ...), ...).
+    Subclasses implement elementwise, broadcastable methods of the
+    computational coordinates ``xi`` (a list indexed by ARRAY AXIS in
+    canonical orientation, i.e. Cartesian order; entries broadcast over
+    the grid like the builder's coordinate views).
+    """
+
+    def coordinates(self, xi):
+        """Physical coordinates x_k(xi) as a Cartesian-indexed list;
+        entries may be ``None`` where the map is the identity."""
+        raise NotImplementedError
+
+    def tangents(self, xi):
+        """Tangents t_a = dx/dxi_a: a list over computational axes ``a``
+        of Cartesian-component lists (each entry broadcastable)."""
+        raise NotImplementedError
+
+
+def _cross_components(a, b):
+    """Elementwise cross product of Cartesian-component triples."""
+    return [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+    ]
+
+
+def build_metric_fields_from_map(grid_obj, ud, cmap):
+    """Build MetricFields for one grid from an analytic CurvilinearMap.
+
+    The general-path sibling of :func:`build_metric_fields`: area normals
+    N_a from cross products of the map tangents, J from the triple
+    product, physical coordinates from the map. The legacy scalars are
+    the EFFECTIVE values the unconverted consumers need —
+    z = x[v], G_h = -(N_v)_h / (N_v)_v (exact slopes for vertical-line
+    maps, effective slopes under horizontal stretching) — so the wall
+    reflection and hydrostate sampling stay correct through Tier 2.
+
+    For a vertical-line map this reproduces :func:`build_metric_fields`
+    bit-exactly (the Phase-0 reduction contract).
+    """
+    ndim = grid_obj.ndim
+    v = axes.vertical_axis(ud)
+    if ndim == 2:
+        a_h1, a_h2 = 0, None
+    else:
+        a_h1, a_h2 = axes.horizontal_axes(v)
+
+    shape = tuple(int(grid_obj.sc[dim]) for dim in range(ndim))
+    xi = [_coord_view(grid_obj, a, ndim) for a in range(ndim)]
+
+    def full(expr):
+        return np.ascontiguousarray(
+            np.broadcast_to(expr, shape).astype(np.float64, copy=False)
+        )
+
+    t = cmap.tangents(xi)
+    if ndim == 2:
+        # 2D normals: N_a = J grad xi_a is the (rotated) other tangent
+        J = full(t[0][0] * t[1][1] - t[0][1] * t[1][0])
+        N = [
+            [full(t[1][1]), full(-t[1][0])],
+            [full(-t[0][1]), full(t[0][0])],
+        ]
+    else:
+        N_raw = [
+            _cross_components(t[1], t[2]),
+            _cross_components(t[2], t[0]),
+            _cross_components(t[0], t[1]),
+        ]
+        J = full(t[0][0] * N_raw[0][0] + t[0][1] * N_raw[0][1] + t[0][2] * N_raw[0][2])
+        N = [[full(c) for c in Na] for Na in N_raw]
+    if np.any(J <= 0.0):
+        raise ValueError(
+            "curvilinear map produced non-positive Jacobian: "
+            "the map must be orientation-preserving everywhere"
+        )
+
+    x = [None if c is None else full(c) for c in cmap.coordinates(xi)]
+    z = x[v] if x[v] is not None else full(xi[v] + 0.0 * J)
+
+    # effective slopes off the vertical normal (see docstring)
+    G1 = full(-N[v][a_h1] / N[v][v])
+    G2 = full(-N[v][a_h2] / N[v][v]) if a_h2 is not None else None
+
+    return MetricFields(
+        J=J, G1=G1, G2=G2, z=z, vaxis=v, haxes=(a_h1, a_h2), N=N, x=x
+    )
