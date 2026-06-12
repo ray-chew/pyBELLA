@@ -17,9 +17,20 @@ via the residual certificate (the JAX solution satisfies scipy's stopping
 criterion measured with the *numpy* operator) plus field-level agreement.
 """
 
+import functools
+
 import numpy as np
 import jax
 import jax.numpy as jnp
+
+
+@functools.partial(jax.jit, static_argnames=("maxiter",))
+def _solve(A, b, atol, rtol, maxiter):
+    A_flat = lambda x: jnp.reshape(A(x), x.shape)
+    x, _ = jax.scipy.sparse.linalg.bicgstab(
+        A_flat, b, tol=rtol, atol=atol, maxiter=maxiter
+    )
+    return x
 
 
 def bicgstab(matvec, b, atol, maxiter, rtol=1e-5):
@@ -29,8 +40,18 @@ def bicgstab(matvec, b, atol, maxiter, rtol=1e-5):
     ``matvec`` may return the boxed array (lap3D convention); it is
     re-flattened to match the solve vector. Returns a numpy float64 vector
     like the scipy path.
+
+    get_linop returns a ``jax.tree_util.Partial`` (stable function identity,
+    coefficient arrays as pytree leaves), so repeated solves at one
+    resolution hit ``_solve``'s jit cache. A fresh closure per call would
+    re-trace bicgstab's while_loop every step; each compiled loop pins its
+    device buffers in the executable cache, which exhausts GPU memory over
+    a long window (observed as CUDA_ERROR_OUT_OF_MEMORY at 1024^2).
     """
     b = jnp.asarray(b, dtype=jnp.float64)
+    if isinstance(matvec, jax.tree_util.Partial):
+        return np.asarray(_solve(matvec, b, atol, rtol, maxiter))
+    # opaque callable: traced fresh on every call (ad-hoc operators in tests)
     A = lambda x: jnp.reshape(matvec(x), x.shape)
     x, _ = jax.scipy.sparse.linalg.bicgstab(A, b, tol=rtol, atol=atol, maxiter=maxiter)
     return np.asarray(x)
