@@ -252,15 +252,11 @@ def _prepare_2d_system(mem, ud, dt):
         # diag: fold only the geometric factors (the legacy 2D preconditioner
         # keeps H^-1 out of the diagonal — preserved here so a forced-flat
         # metric preconditions bit-identically to the plain path)
-        met = mem.elem.metric
+        geo = terrain.elliptic_diag_geometric(mem.elem.metric)
         diag_inv = preconditioner.prepare_diag(
             mem.npf,
             mem.node,
-            cii=(
-                mem.npf.wplus[0] * met.J,
-                mem.npf.wplus[1] * (1.0 + met.G1 * met.G1) * met.ooJ,
-                None,
-            ),
+            cii=(mem.npf.wplus[0] * geo[0], mem.npf.wplus[1] * geo[1], None),
         )
     else:
         diag_inv = preconditioner.prepare_diag(mem.npf, mem.node)

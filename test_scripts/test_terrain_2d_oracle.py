@@ -46,7 +46,40 @@ def _agnesi_hill(ud, h0_m=300.0, a_m=5000.0):
     return h
 
 
-def _make_mem(orography=None, coriolis_z=0.0, sleve=False):
+class _StretchedHillMap2D(terrain.CurvilinearMap):
+    """Native-2D Tier-2 map: periodic x-stretch + periodic hill, Gal-Chen z."""
+
+    def __init__(self, ud, h0_m=300.0, ax_rel=0.05):
+        self.L = ud.xmax - ud.xmin
+        self.h0 = h0_m / ud.h_ref
+        self.ax = ax_rel * self.L
+        self.eta0, self.etat = ud.ymin, ud.ymax
+
+    def _h(self, xi1):
+        return self.h0 * np.cos(np.pi * xi1 / self.L) ** 2
+
+    def _dh(self, xi1):
+        return -self.h0 * (np.pi / self.L) * np.sin(2.0 * np.pi * xi1 / self.L)
+
+    def _decay(self, eta):
+        return (self.etat - eta) / (self.etat - self.eta0)
+
+    def coordinates(self, xi):
+        xi1, eta = xi
+        x = xi1 + self.ax * np.sin(2.0 * np.pi * xi1 / self.L)
+        z = eta + self._h(xi1) * self._decay(eta)
+        return [x + 0.0 * eta, z]
+
+    def tangents(self, xi):
+        xi1, eta = xi
+        xp = 1.0 + self.ax * (2.0 * np.pi / self.L) * np.cos(2.0 * np.pi * xi1 / self.L)
+        J = (1.0 - self._h(xi1) / (self.etat - self.eta0)) + 0.0 * eta
+        G1 = self._dh(xi1) * self._decay(eta)
+        zero = 0.0 * (J + xp)
+        return [[xp + zero, G1 + zero], [zero, J + zero]]
+
+
+def _make_mem(orography=None, coriolis_z=0.0, sleve=False, cmap=None):
     ud = user_data.UserDataInit(**vars(smoke_agnesi.UserData()))
     ud.coriolis_strength = np.array(ud.coriolis_strength)
     ud.coriolis_strength[2] = coriolis_z
@@ -60,6 +93,12 @@ def _make_mem(orography=None, coriolis_z=0.0, sleve=False):
         )
     elem, node = dis_grid.grid_init(ud)
     assert elem.ndim == 2
+    if cmap is not None:
+        # general path: override with the curvilinear-map metric before any
+        # consumer (hydrostates, boundary) is built
+        m = cmap(ud)
+        elem.metric = terrain.build_metric_fields_from_map(elem, ud, m)
+        node.metric = terrain.build_metric_fields_from_map(node, ud, m)
     sol = fields.CellSolField(elem.sc)
     th = thermodynamics.ThermodynamicalQuantities(ud)
     npf = fields.NodePressureField(elem, node, ud)
@@ -88,21 +127,17 @@ def _diag_inv_like_solver(mem, ud, dt):
     """
     del ud, dt
     if mem.elem.metric is not None:
-        met = mem.elem.metric
+        geo = terrain.elliptic_diag_geometric(mem.elem.metric)
         return preconditioner.prepare_diag(
             mem.npf,
             mem.node,
-            cii=(
-                mem.npf.wplus[0] * met.J,
-                mem.npf.wplus[1] * (1.0 + met.G1 * met.G1) * met.ooJ,
-                None,
-            ),
+            cii=(mem.npf.wplus[0] * geo[0], mem.npf.wplus[1] * geo[1], None),
         )
     return preconditioner.prepare_diag(mem.npf, mem.node)
 
 
-def _operator_and_composition(orography=None, coriolis_z=0.0, sleve=False):
-    mem, ud = _make_mem(orography, coriolis_z, sleve)
+def _operator_and_composition(orography=None, coriolis_z=0.0, sleve=False, cmap=None):
+    mem, ud = _make_mem(orography, coriolis_z, sleve, cmap)
     node = mem.node
     dt = float(ud.dtfixed)
 
@@ -171,3 +206,12 @@ def test_composition_identity_terrain_sleve():
     """Eta-dependent Jacobian through the native-2D elliptic assembly."""
     lhs, comp = _operator_and_composition(_agnesi_hill, sleve=True)
     assert _rel_err(lhs, comp) <= 1e-12
+
+
+def test_composition_identity_general_map_2d():
+    """Stretched Tier-2 map through the native-2D general N-fold, with and
+    without out-of-plane Coriolis (cross terms + H^-1 off-diagonals)."""
+    lhs, comp = _operator_and_composition(cmap=_StretchedHillMap2D)
+    assert _rel_err(lhs, comp) <= 1e-12
+    lhs_c, comp_c = _operator_and_composition(cmap=_StretchedHillMap2D, coriolis_z=0.2)
+    assert _rel_err(lhs_c, comp_c) <= 1e-12
