@@ -149,8 +149,13 @@ def build_device_config(mem, ud):
             ooJ=orient(m.ooJ, ident),
             G1=orient(m.G1, ident),
             G2=orient(m.G2, ident),
+            # general (Klein) area normals: outer index = array axis,
+            # inner = Cartesian component (see terrain.MetricFields)
+            N=[[orient(c, ident) for c in Na] for Na in m.N],
             vaxis=m.vaxis,
             haxes=m.haxes,
+            cart_v=m.cart_v,
+            cart_haxes=m.cart_haxes,
         )
         cfg.node_metric_J_i1 = jnp.asarray(np.asarray(node.metric.J)[node.i1])
         cfg.node_metric_ooJ_i1 = jnp.asarray(np.asarray(node.metric.ooJ)[node.i1])
