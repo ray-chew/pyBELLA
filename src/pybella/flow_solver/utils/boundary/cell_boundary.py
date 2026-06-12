@@ -158,9 +158,13 @@ class CellBoundaryHandler:
         else:
             deta = self.mem.elem.dxyz[self.v_phys]
             if self.metric is not None:
-                # local vertical cell extent dz = J * deta across the
-                # last -> image interval
-                dz = 0.5 * (self.metric.J[nimage] + self.metric.J[nlast]) * deta
+                # local vertical cell extent dz = z_eta * deta across the
+                # last -> image interval; z_eta = J / (N_v)_v (== J for
+                # vertical-line maps, bit-exactly — on stretched grids J
+                # carries the horizontal stretch factors too)
+                m = self.metric
+                nv = m.N[m.vaxis][m.cart_v]
+                dz = 0.5 * (m.J[nimage] / nv[nimage] + m.J[nlast] / nv[nlast]) * deta
             else:
                 dz = deta
             return direction * (self.mem.th.Gamma * g) * 0.5 * dz * (1.0 / Y_last + S)

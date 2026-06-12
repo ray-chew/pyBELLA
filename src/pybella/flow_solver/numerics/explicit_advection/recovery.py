@@ -31,8 +31,9 @@ def compute(mem, flux, ud, lmbda, split_step, tag=None):
         / mem.sol.rhoY[face_inner_idx]
     )
     if mem.elem.metric is not None:
-        # the metric mass fluxes carry J (horizontal) / J*eta_dot (vertical);
-        # the slope-transport Courant velocity is the coordinate velocity,
+        # the metric mass flux is rhoY * (N_i . m / rho) = rhoY * J * xi_i-dot
+        # for every sweep axis (general curvilinear form); the slope-transport
+        # Courant velocity is the coordinate velocity xi_i-dot = (N_i . v)/J,
         # so divide J back out (metric is sweep-oriented alongside sol)
         u *= mem.elem.metric.ooJ
 

@@ -155,7 +155,11 @@ def _gravity_ops(mem, ud, y_axs, orient_perm):
                 a = np.moveaxis(a, -1, 0)
             return np.transpose(a, orient_perm)
 
-        J = canonical(metric.J)
+        # vertical thickness factor z_eta = J / (N_v)_v in the numpy FP
+        # order (divide in the metric's own orientation, then transpose)
+        z_eta = canonical(
+            np.asarray(metric.J) / np.asarray(metric.N[metric.vaxis][metric.cart_v])
+        )
         z = canonical(metric.z)
         G1 = canonical(metric.G1)
         G2 = canonical(metric.G2) if metric.G2 is not None else None
@@ -199,7 +203,8 @@ def _gravity_ops(mem, ud, y_axs, orient_perm):
             else:
                 deta = elem.dxyz[v_phys]
                 if metric is not None:
-                    dz = 0.5 * (J[nimage] + J[nlast]) * deta
+                    # z_eta = J / (N_v)_v, as in the numpy ghost fill
+                    dz = 0.5 * (z_eta[nimage] + z_eta[nlast]) * deta
                     op.dpi_coeff = jnp.asarray(
                         direction * (mem.th.Gamma * g) * 0.5 * dz
                     )

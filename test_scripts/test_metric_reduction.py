@@ -520,6 +520,44 @@ def test_elliptic_fold_spd_symmetry():
 
 
 @_general_metric
+def test_advective_flux_upwind_sign_consistency():
+    """Flux and upwind decision are monotone in the same signed quantity:
+    F_i = (rhoY/rho)(N_i . m) and the Courant velocity F_i/(rhoY J) carry
+    sign(N_i . v) — no sign inconsistency possible (Phase-4 contract).
+    Random fields, both signs, on a genuinely stretched Tier-2 map."""
+    from pybella.flow_solver.numerics.explicit_advection import advective_flux
+
+    hill, grads = _stub_hill()
+    ud = _StubUD(orography=hill, orography_grad=grads)
+    elem, _ = dis_grid.grid_init(ud)
+    cmap = _Tier2StretchMap(hill, grads, eta0=ud.ymin, etat=ud.ymax)
+    m = terrain.build_metric_fields_from_map(elem, ud, cmap)
+
+    rng = np.random.default_rng(7)
+    shape = m.J.shape
+
+    class _Sol:
+        pass
+
+    sol = _Sol()
+    sol.rho = 1.0 + 0.5 * rng.random(shape)
+    sol.rhoY = 0.8 + 0.4 * rng.random(shape)
+    sol.rhou, sol.rhov, sol.rhow = (rng.random(shape) - 0.5 for _ in range(3))
+
+    for i in range(3):
+        contra = advective_flux._normal_momentum(sol, m, i)
+        flux = sol.rhoY * contra / sol.rho
+        courant = flux / (sol.rhoY * m.J)
+        # all three share the sign of N_i . m (rho, rhoY, J > 0)
+        assert np.array_equal(np.sign(flux), np.sign(contra))
+        assert np.array_equal(np.sign(courant), np.sign(contra))
+        # and the Courant velocity is the contravariant speed (N_i . v)/J
+        np.testing.assert_allclose(
+            courant, contra / (sol.rho * m.J), rtol=1e-13, atol=1e-16
+        )
+
+
+@_general_metric
 def test_general_path_rejects_nonpositive_jacobian():
     hill, grads = _stub_hill()
     ud = _StubUD(orography=hill, orography_grad=grads)

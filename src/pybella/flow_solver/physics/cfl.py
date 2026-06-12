@@ -31,22 +31,29 @@ def dynamic_timestep(Sol, time, time_output, elem, ud, th, step):
     v = np.abs(Sol.rhov / Sol.rho)
     w = np.abs(Sol.rhow / Sol.rho)
 
-    # terrain: the vertical coordinate velocity is eta_dot = (w - G.u_h)/J
-    # and the vertical signal speed gains the slope/Jacobian factor; the
-    # metric is in the unflipped orientation here (called between steps)
-    c_vert = c
+    # terrain: the coordinate velocity along every sweep axis is
+    # xi_a-dot = (N_a . m) / (rho J) and the signal speed gains the
+    # face-area/Jacobian factor c |N_a| / J (vertical-line reduction:
+    # eta_dot = (w - G.u_h)/J with c sqrt(1 + G^2)/J on the vertical,
+    # u with c on the horizontals); the metric is in the unflipped
+    # orientation here (called between steps)
+    vels = [u, v, w]
+    cs = [c, c, c]
     if elem.metric is not None:
         m = elem.metric
         moms = (Sol.rhou, Sol.rhov, Sol.rhow)
-        contra = moms[m.vaxis] - m.G1 * moms[m.haxes[0]]
-        slope_sq = m.G1**2
-        if m.G2 is not None:
-            contra = contra - m.G2 * moms[m.haxes[1]]
-            slope_sq = slope_sq + m.G2**2
-        vels = [u, v, w]
-        vels[m.vaxis] = np.abs(contra / Sol.rho) * m.ooJ
-        u, v, w = vels
-        c_vert = c * np.sqrt(1.0 + slope_sq) * m.ooJ
+        cv = m.cart_v
+        ch1, ch2 = m.cart_haxes
+        for a in range(elem.ndim):
+            Na = m.N[a]
+            contra = Na[cv] * moms[cv] + Na[ch1] * moms[ch1]
+            norm_sq = Na[cv] ** 2 + Na[ch1] ** 2
+            if ch2 is not None:
+                contra = contra + Na[ch2] * moms[ch2]
+                norm_sq = norm_sq + Na[ch2] ** 2
+            vels[a] = np.abs(contra / Sol.rho) * m.ooJ
+            cs[a] = c * np.sqrt(norm_sq) * m.ooJ
+    u, v, w = vels
 
     # Find maximum velocities (with minimum threshold)
     u_max = max(u.max(), machine_epsilon)
@@ -54,9 +61,6 @@ def dynamic_timestep(Sol, time, time_output, elem, ud, th, step):
     w_max = max(w.max(), machine_epsilon)
 
     # Calculate acoustic velocities
-    cs = [c, c, c]
-    if elem.metric is not None:
-        cs[elem.metric.vaxis] = c_vert
     upc_max = max((u + cs[0]).max(), machine_epsilon)
     vpc_max = max((v + cs[1]).max(), machine_epsilon)
     wpc_max = max((w + cs[2]).max(), machine_epsilon)

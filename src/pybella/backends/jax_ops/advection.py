@@ -23,6 +23,7 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 
+from pybella.flow_solver.numerics.explicit_advection import advective_flux
 from pybella.utils import options as opts
 from pybella.utils import slices
 from pybella.utils.operators.convolution import get_flux_kernels
@@ -213,16 +214,11 @@ def recompute_advective_flux(mem, **kwargs):
             rhoY_vel = kwargs[comp]
         else:
             momentum = getattr(mem.sol, rho_comp)
-            if metric is not None and i == metric.vaxis:
-                a_h1, a_h2 = metric.haxes
-                momentum = momentum - metric.G1 * getattr(mem.sol, rho_components[a_h1])
-                if metric.G2 is not None:
-                    momentum = momentum - metric.G2 * getattr(
-                        mem.sol, rho_components[a_h2]
-                    )
+            if metric is not None:
+                # general curvilinear mass flux — the numpy assembly itself,
+                # so the twin stays bit-identical
+                momentum = advective_flux._normal_momentum(mem.sol, metric, i)
                 rhoY_vel = mem.sol.rhoY * momentum / mem.sol.rho
-            elif metric is not None:
-                rhoY_vel = metric.J * mem.sol.rhoY * momentum / mem.sol.rho
             else:
                 rhoY_vel = mem.sol.rhoY * momentum / mem.sol.rho
 

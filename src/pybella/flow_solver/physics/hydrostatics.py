@@ -290,8 +290,15 @@ def analytical_state(npf, elem, node, th, ud):
     dy = elem.dxyz[vv]
 
     if elem.metric is not None:
-        z_n, dz_n = node.metric.z, node.metric.J * dy
-        z_c, dz_c = elem.metric.z, elem.metric.J * dy
+        # local vertical cell extent dz = z_eta * deta with z_eta = J/(N_v)_v:
+        # on horizontally stretched grids J = x' z_eta y' is the VOLUME
+        # measure, not the height increment; for vertical-line maps
+        # (N_v)_v == 1 and this is bit-exactly the legacy J * deta
+        mn, mc = node.metric, elem.metric
+        z_eta_n = mn.J / mn.N[mn.vaxis][mn.cart_v]
+        z_eta_c = mc.J / mc.N[mc.vaxis][mc.cart_v]
+        z_n, dz_n = mn.z, z_eta_n * dy
+        z_c, dz_c = mc.z, z_eta_c * dy
     else:
         z_n, dz_n = axes.coords_along(node, vv), dy
         z_c, dz_c = axes.coords_along(elem, vv), dy
