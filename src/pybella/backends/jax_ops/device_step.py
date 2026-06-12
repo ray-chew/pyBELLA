@@ -613,10 +613,11 @@ def _divergence_rhs(s, cfg):
     )
     if cfg.terrain:
         m = cfg.metric
+        # general curvilinear contract: area normals + fixed Cartesian axes
         metric = (
-            (m.J, m.G1, None, None, None)
-            if cfg.ndim == 2
-            else (m.J, m.G1, m.G2, m.vaxis, m.haxes)
+            tuple(tuple(Na) for Na in m.N),
+            m.cart_v,
+            m.cart_haxes,
         )
     else:
         metric = None

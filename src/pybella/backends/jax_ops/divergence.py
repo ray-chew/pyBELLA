@@ -49,21 +49,22 @@ def compute_3d_sum(u_field, v_field, w_field, dx, dy, dz):
     return div_x + div_y + div_z
 
 
-def _metric_contravariant_fluxes(rho, rhoY, mom_h1, mom_v, mom_h2, J, G1, G2):
-    """Terrain-following flux components of the theta-weighted momentum."""
+def _normal_flux_3d(rho, rhoY, mom_v, mom_h1, mom_h2, n_v, n_h1, n_h2):
+    """General curvilinear flux F_a = N_a . (theta m), vertical-first.
+
+    Twin of the numpy ``_normal_flux_3d_jit``: same contraction order so
+    the vertical-line reduction stays bit-exact on both backends.
+    """
     theta = rhoY / rho
-    f_h1 = mom_h1 * theta
-    f_h2 = mom_h2 * theta
-    f_v = mom_v * theta - G1 * f_h1 - G2 * f_h2
-    return J * f_h1, f_v, J * f_h2
+    return n_v * (mom_v * theta) + n_h1 * (mom_h1 * theta) + n_h2 * (mom_h2 * theta)
 
 
-def _metric_contravariant_fluxes_2d(rho, rhoY, mom_h1, mom_v, J, G1):
-    """2D restriction of :func:`_metric_contravariant_fluxes`."""
+def _normal_fluxes_2d(rho, rhoY, mom_h1, mom_v, n1_v, n1_h1, n2_v, n2_h1):
+    """2D restriction of :func:`_normal_flux_3d` (both components)."""
     theta = rhoY / rho
     f_h1 = mom_h1 * theta
-    f_v = mom_v * theta - G1 * f_h1
-    return J * f_h1, f_v
+    f_v = mom_v * theta
+    return n1_v * f_v + n1_h1 * f_h1, n2_v * f_v + n2_h1 * f_h1
 
 
 def _momentum_pot_temp_divergence_2d(rho, rhou, rhov, rhoY, dx, dy):
@@ -109,8 +110,9 @@ def compute_at_nodes(momenta, rho, rhoY, ndim, dxyz, wall_dims=(), metric=None):
         Dims whose momentum boundary slabs are zeroed (see
         :func:`wall_zero_dims`).
     metric : None or tuple (static structure)
-        Terrain metric (J, G1, G2, vaxis, haxes) with array J/G1/G2;
-        G2/haxes ignored in 2D.
+        Terrain metric ``(N, cart_v, cart_haxes)``: the nested tuple of
+        area-normal Cartesian components (outer index = array axis) plus
+        the fixed Cartesian role axes — mirrors ``terrain.MetricFields``.
 
     Returns
     -------
@@ -130,19 +132,30 @@ def compute_at_nodes(momenta, rho, rhoY, ndim, dxyz, wall_dims=(), metric=None):
     if ndim == 2:
         rhou, rhov = momenta[0], momenta[1]
         if metric is not None:
-            J, G1 = metric[0], metric[1]
-            f_h1, f_v = _metric_contravariant_fluxes_2d(rho, rhoY, rhou, rhov, J, G1)
+            N, cv, chax = metric
+            ch1 = chax[0]
+            f_h1, f_v = _normal_fluxes_2d(
+                rho, rhoY, rhou, rhov, N[0][cv], N[0][ch1], N[1][cv], N[1][ch1]
+            )
             rhs = compute_2d(f_h1, f_v, dx, dy)
         else:
             rhs = _momentum_pot_temp_divergence_2d(rho, rhou, rhov, rhoY, dx, dy)
     elif metric is not None:
-        J, G1, G2, vaxis, haxes = metric
-        a_h1, a_h2 = haxes
-        f_h1, f_v, f_h2 = _metric_contravariant_fluxes(
-            rho, rhoY, momenta[a_h1], momenta[vaxis], momenta[a_h2], J, G1, G2
-        )
-        flux = [None, None, None]
-        flux[a_h1], flux[vaxis], flux[a_h2] = f_h1, f_v, f_h2
+        N, cv, chax = metric
+        ch1, ch2 = chax
+        flux = [
+            _normal_flux_3d(
+                rho,
+                rhoY,
+                momenta[cv],
+                momenta[ch1],
+                momenta[ch2],
+                N[a][cv],
+                N[a][ch1],
+                N[a][ch2],
+            )
+            for a in range(3)
+        ]
         rhs = compute_3d_sum(flux[0], flux[1], flux[2], dx, dy, dz)
     else:
         rhs = _momentum_pot_temp_divergence_3d(
