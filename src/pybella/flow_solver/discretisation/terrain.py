@@ -271,55 +271,80 @@ class MetricFields:
 def apply_gradient_map(metric, dp):
     """Physical gradients from computational ones: dp <- A @ dp (in place).
 
-    ``dp`` is the axis-indexed list of the three cell-gradient arrays. The
-    chain rule for z = z(xi, eta) gives, in role order (h1, v, h2),
+    General curvilinear chain rule: with N_a = J grad xi_a (the duality
+    identity, Phase 1) the physical gradient is
 
-        d/dx_h|z = d/dxi_h - (G_h / J) d/deta,   d/dz = (1/J) d/deta
+        (grad_x p)_k = sum_a A_{k a} dp/dxi_a,    A_{k a} = (N_a)_k / J.
 
-    i.e. the matrix A = [[1, -G1/J, 0], [0, 1/J, 0], [0, -G2/J, 1]]. The
-    horizontal rows are corrected before the vertical row is scaled.
+    ``dp`` is the axis-indexed list of the cell-gradient arrays (entries
+    beyond ndim — quasi-2D callers pass three — are untouched); on return
+    entry k carries the Cartesian component k (canonical orientation only,
+    like every caller). For the vertical-line metric this reduces to the
+    legacy A = [[1, -G1/J, 0], [0, 1/J, 0], [0, -G2/J, 1]] map to within
+    one ulp (the diagonal picks up J * (1/J)); with h == 0 it is the exact
+    identity. The diagonal term leads each row's contraction so the
+    reduction is deterministic on both backends.
     """
-    a_h1, a_h2 = metric.haxes
-    dp_v = dp[metric.vaxis]
-    dp[a_h1] = dp[a_h1] - metric.G1 * metric.ooJ * dp_v
-    if a_h2 is not None:
-        dp[a_h2] = dp[a_h2] - metric.G2 * metric.ooJ * dp_v
-    dp[metric.vaxis] = dp_v * metric.ooJ
+    ooJ = metric.ooJ
+    N = metric.N
+    ndim = metric.J.ndim
+    dp_in = [dp[a] for a in range(ndim)]
+    for k in range(ndim):
+        acc = (N[k][k] * ooJ) * dp_in[k]
+        for a in range(ndim):
+            if a != k:
+                acc = acc + (N[a][k] * ooJ) * dp_in[a]
+        dp[k] = acc
     return dp
 
 
-def elliptic_tensor(metric, h_role):
-    """Fold the terrain metric into the role-indexed H^-1 tensor.
+def _role_axes(metric, nroles):
+    """Role -> Cartesian/array axis map (h1, v[, h2]), from the fixed axes."""
+    if nroles == 2:
+        return (metric.cart_haxes[0], metric.cart_v)
+    return (metric.cart_haxes[0], metric.cart_v, metric.cart_haxes[1])
 
-    Returns M = J A^T H^-1 A (role order h1, v, h2), the coefficient
-    tensor of the elliptic operator: the rhs divergence measures
-    D_i((J A^T F)_i) and the momentum correction applies H^-1 A grad p,
-    so their composition carries exactly this tensor. With H^-1 == I it
-    is the classic terrain-following tensor
+
+def _fold_normals(metric, h_role, nroles):
+    """M = (1/J) N H^-1 N^T, role-indexed: M_rs = ooJ * N_r . H^-1 N_s.
+
+    ``h_role`` is the role-indexed H^-1 (its role components are the
+    Cartesian components in role positions); the contraction runs
+    role-major with the (r' == r, s' == s) diagonal term first so the
+    h == 0 reduction (N_r = e_r) returns ``h_role`` bit-exactly.
+    """
+    ooJ = metric.ooJ
+    ax = _role_axes(metric, nroles)
+    n = [[metric.N[ax[r]][ax[c]] for c in range(nroles)] for r in range(nroles)]
+    M = [[None] * nroles for _ in range(nroles)]
+    for r in range(nroles):
+        for s in range(nroles):
+            acc = (n[r][r] * h_role[r][s]) * n[s][s]
+            for rp in range(nroles):
+                for sp in range(nroles):
+                    if rp == r and sp == s:
+                        continue
+                    acc = acc + (n[r][rp] * h_role[rp][sp]) * n[s][sp]
+            M[r][s] = ooJ * acc
+    return tuple(tuple(row) for row in M)
+
+
+def elliptic_tensor(metric, h_role):
+    """Fold the metric into the role-indexed H^-1 tensor: M = (1/J) N H^-1 N^T.
+
+    Returns M = J A^T H^-1 A (role order h1, v, h2) in its general
+    curvilinear form via the duality N_a = J grad xi_a: the rhs divergence
+    measures D_a(N_a . F) and the momentum correction applies
+    H^-1 A grad p, so their composition carries exactly this tensor. For
+    the vertical-line metric and H^-1 == I it is the classic
+    terrain-following tensor
 
         [[J, -G1, 0], [-G1, (1 + G1^2 + G2^2)/J, -G2], [0, -G2, J]]
 
-    and with h == 0 (J == 1, G == 0) it reduces bit-exactly to ``h_role``.
+    to within one ulp (J (1/J) products), and with h == 0 (N_r = e_r) it
+    reduces bit-exactly to ``h_role``.
     """
-    J, ooJ, G1, G2 = metric.J, metric.ooJ, metric.G1, metric.G2
-    h = h_role
-    M00 = J * h[0][0]
-    M02 = J * h[0][2]
-    M20 = J * h[2][0]
-    M22 = J * h[2][2]
-    M01 = -G1 * h[0][0] + h[0][1] - G2 * h[0][2]
-    M10 = -G1 * h[0][0] + h[1][0] - G2 * h[2][0]
-    M12 = -G1 * h[0][2] + h[1][2] - G2 * h[2][2]
-    M21 = -G1 * h[2][0] + h[2][1] - G2 * h[2][2]
-    M11 = ooJ * (
-        G1 * G1 * h[0][0]
-        - G1 * (h[0][1] + h[1][0])
-        + G1 * G2 * (h[0][2] + h[2][0])
-        + h[1][1]
-        - G2 * (h[1][2] + h[2][1])
-        + G2 * G2 * h[2][2]
-    )
-    return ((M00, M01, M02), (M10, M11, M12), (M20, M21, M22))
+    return _fold_normals(metric, h_role, 3)
 
 
 def elliptic_tensor_2d(metric, h2x2):
@@ -327,17 +352,33 @@ def elliptic_tensor_2d(metric, h2x2):
 
     ``h2x2 = ((h11, h12), (h21, h22))`` is the in-plane H^-1 block (in 2D
     the out-of-plane H^-1 rotation never enters the divergence, so the
-    composition carries exactly this 2x2 tensor). G2-free form of the same
-    M = J A^T H^-1 A; with h == 0 (J == 1, G1 == 0) it reduces bit-exactly
-    to ``h2x2``.
+    composition carries exactly this 2x2 tensor). Same general fold
+    M = (1/J) N H^-1 N^T; with h == 0 it reduces bit-exactly to ``h2x2``.
     """
-    J, ooJ, G1 = metric.J, metric.ooJ, metric.G1
-    h = h2x2
-    M00 = J * h[0][0]
-    M01 = -G1 * h[0][0] + h[0][1]
-    M10 = -G1 * h[0][0] + h[1][0]
-    M11 = ooJ * (G1 * G1 * h[0][0] - G1 * (h[0][1] + h[1][0]) + h[1][1])
-    return ((M00, M01), (M10, M11))
+    return _fold_normals(metric, h2x2, 2)
+
+
+def elliptic_diag_geometric(metric):
+    """Role-ordered diagonal of the geometric tensor M with H^-1 == I.
+
+    M_rr = (1/J) |N_r|^2 — the terrain factors the 2D preconditioner
+    folds into its diagonal (H^-1 is deliberately excluded there, so a
+    forced-flat metric preconditions bit-identically to the plain path).
+    The vertical role reduces to the legacy (1 + G1^2 (+ G2^2)) / J
+    bit-exactly; horizontal roles give (1/J) J^2 = J to within one ulp.
+    """
+    ooJ = metric.ooJ
+    ndim = metric.J.ndim
+    ax = _role_axes(metric, ndim)
+    out = []
+    for r in range(ndim):
+        comps = metric.N[ax[r]]
+        acc = comps[ax[r]] ** 2
+        for c in range(ndim):
+            if c != ax[r]:
+                acc = acc + comps[c] ** 2
+        out.append(ooJ * acc)
+    return tuple(out)
 
 
 def terrain_is_active(ud):
@@ -585,6 +626,4 @@ def build_metric_fields_from_map(grid_obj, ud, cmap):
     G1 = full(-N[v][a_h1] / N[v][v])
     G2 = full(-N[v][a_h2] / N[v][v]) if a_h2 is not None else None
 
-    return MetricFields(
-        J=J, G1=G1, G2=G2, z=z, vaxis=v, haxes=(a_h1, a_h2), N=N, x=x
-    )
+    return MetricFields(J=J, G1=G1, G2=G2, z=z, vaxis=v, haxes=(a_h1, a_h2), N=N, x=x)

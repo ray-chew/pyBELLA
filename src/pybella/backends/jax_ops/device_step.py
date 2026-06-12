@@ -831,16 +831,12 @@ def _implicit_part(s, cfg, dt, nonhydro, compressibility, sol0=None):
             h2x2 = ((h11_t.T, h12_t.T), (h21_t.T, h22_t.T))
             M = terrain_mod.elliptic_tensor_2d(cfg.metric, h2x2)
             coriolis_params = (M[0][0].T, M[1][1].T, M[0][1].T, M[1][0].T)
-            met = cfg.metric
+            geo = terrain_mod.elliptic_diag_geometric(cfg.metric)
             diag_inv = _prepare_diag(
                 cfg,
                 None,
                 wcenter,
-                cii=[
-                    wplus_coeff * met.J,
-                    wplus_coeff * (1.0 + met.G1 * met.G1) * met.ooJ,
-                    None,
-                ],
+                cii=[wplus_coeff * geo[0], wplus_coeff * geo[1], None],
             )
         else:
             diag_inv = _prepare_diag(cfg, [wplus_coeff, wplus_coeff], wcenter)

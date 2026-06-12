@@ -53,7 +53,46 @@ def _sleve_config(ud):
     )
 
 
-def _make_mem(orography=None, sleve=False):
+class _StretchedHillMap(terrain.CurvilinearMap):
+    """Tier-2 general map: periodic x-stretch + periodic hill (Gal-Chen z).
+
+    Periodic-consistent in xi1 (stretch displacement and hill share the
+    domain period), so the metric is smooth across the x seam without the
+    legacy builder's coordinate wrap.
+    """
+
+    def __init__(self, ud, h0_m=300.0, ax_rel=0.05):
+        self.L = ud.xmax - ud.xmin
+        self.h0 = h0_m / ud.h_ref
+        self.ax = ax_rel * self.L
+        self.eta0, self.etat = ud.ymin, ud.ymax
+
+    def _h(self, xi1):
+        return self.h0 * np.cos(np.pi * xi1 / self.L) ** 2
+
+    def _dh(self, xi1):
+        return -self.h0 * (np.pi / self.L) * np.sin(2.0 * np.pi * xi1 / self.L)
+
+    def _decay(self, eta):
+        return (self.etat - eta) / (self.etat - self.eta0)
+
+    def coordinates(self, xi):
+        xi1, eta, xi2 = xi
+        x = xi1 + self.ax * np.sin(2.0 * np.pi * xi1 / self.L)
+        z = eta + self._h(xi1) * self._decay(eta)
+        return [x + 0.0 * eta + 0.0 * xi2, z, None]
+
+    def tangents(self, xi):
+        xi1, eta, xi2 = xi
+        xp = 1.0 + self.ax * (2.0 * np.pi / self.L) * np.cos(2.0 * np.pi * xi1 / self.L)
+        J = (1.0 - self._h(xi1) / (self.etat - self.eta0)) + 0.0 * eta
+        G1 = self._dh(xi1) * self._decay(eta)
+        zero = 0.0 * (J + xp + xi2)
+        one = 1.0 + zero
+        return [[xp + zero, G1 + zero, zero], [zero, J + zero, zero], [zero, zero, one]]
+
+
+def _make_mem(orography=None, sleve=False, cmap=None):
     ud = user_data.UserDataInit(**vars(smoke_agnesi.UserData()))
     ud.coriolis_strength = np.array(ud.coriolis_strength)
     # smoke_agnesi carries its own hill; the oracle controls terrain itself
@@ -61,6 +100,12 @@ def _make_mem(orography=None, sleve=False):
     if sleve:
         _sleve_config(ud)
     elem, node = dis_grid.grid_init(ud)
+    if cmap is not None:
+        # general path: override with the curvilinear-map metric before any
+        # consumer (hydrostates, boundary) is built
+        m = cmap(ud)
+        elem.metric = terrain.build_metric_fields_from_map(elem, ud, m)
+        node.metric = terrain.build_metric_fields_from_map(node, ud, m)
     sol = fields.CellSolField(elem.sc)
     th = thermodynamics.ThermodynamicalQuantities(ud)
     npf = fields.NodePressureField(elem, node, ud)
@@ -101,8 +146,8 @@ def _diag_inv_like_solver(mem, ud, dt):
     )
 
 
-def _operator_and_composition(orography=None, sleve=False):
-    mem, ud = _make_mem(orography, sleve)
+def _operator_and_composition(orography=None, sleve=False, cmap=None):
+    mem, ud = _make_mem(orography, sleve, cmap)
     node = mem.node
     dt = float(ud.dtfixed)
 
@@ -162,4 +207,12 @@ def test_composition_identity_with_terrain():
 def test_composition_identity_with_terrain_sleve():
     """First eta-dependent Jacobian through the elliptic assembly."""
     lhs, comp = _operator_and_composition(_agnesi_hill, sleve=True)
+    assert _rel_err(lhs, comp) <= 1e-12
+
+
+def test_composition_identity_general_map():
+    """Genuinely stretched Tier-2 map (terrain + x-stretching) through the
+    general N-fold: M = (1/J) N H^-1 N^T must still be exactly the
+    composition of the J-weighted divergence with the A-mapped correction."""
+    lhs, comp = _operator_and_composition(cmap=_StretchedHillMap)
     assert _rel_err(lhs, comp) <= 1e-12

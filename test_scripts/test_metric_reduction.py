@@ -488,6 +488,38 @@ def test_general_path_tier2_effective_slopes():
 
 
 @_general_metric
+def test_elliptic_fold_spd_symmetry():
+    """M = (1/J) N H^-1 N^T with symmetric H^-1 = I must be symmetric and
+    positive definite (det N = J^2 != 0) on a genuinely stretched map —
+    the solvability condition of the projection (Phase-3 gate)."""
+    hill, grads = _stub_hill()
+    ud = _StubUD(orography=hill, orography_grad=grads)
+    elem, _ = dis_grid.grid_init(ud)
+    cmap = _Tier2StretchMap(hill, grads, eta0=ud.ymin, etat=ud.ymax)
+    m = terrain.build_metric_fields_from_map(elem, ud, cmap)
+
+    one = np.ones_like(m.J)
+    zero = np.zeros_like(m.J)
+    ident = ((one, zero, zero), (zero, one, zero), (zero, zero, one))
+    M = terrain.elliptic_tensor(m, ident)
+
+    scale = np.max(np.abs(M[0][0]))
+    for r in range(3):
+        for s in range(r + 1, 3):
+            np.testing.assert_allclose(M[r][s], M[s][r], rtol=1e-13, atol=1e-14 * scale)
+
+    # Sylvester minors pointwise: M is PD wherever J > 0
+    d1 = M[0][0]
+    d2 = M[0][0] * M[1][1] - M[0][1] * M[1][0]
+    d3 = (
+        M[0][0] * (M[1][1] * M[2][2] - M[1][2] * M[2][1])
+        - M[0][1] * (M[1][0] * M[2][2] - M[1][2] * M[2][0])
+        + M[0][2] * (M[1][0] * M[2][1] - M[1][1] * M[2][0])
+    )
+    assert np.all(d1 > 0.0) and np.all(d2 > 0.0) and np.all(d3 > 0.0)
+
+
+@_general_metric
 def test_general_path_rejects_nonpositive_jacobian():
     hill, grads = _stub_hill()
     ud = _StubUD(orography=hill, orography_grad=grads)
