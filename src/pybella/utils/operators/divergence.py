@@ -139,12 +139,20 @@ def compute_at_nodes(rhs, elem, sol, ud):
     # Call appropriate JIT-compiled function
     if ndim == 2:
         if elem.metric is not None:
-            # terrain: same contravariant/J-weighted construction as the 3D
-            # branch below, minus the second-horizontal leg (haxes = (0, None),
-            # vaxis = 1 — enforced by axes.validate in 2D)
+            # terrain: general curvilinear fluxes F_a = N_a . (theta m);
+            # for the vertical-line metric this is bit-exactly the legacy
+            # J-weighted / contravariant construction (Phase-0 contract,
+            # test_scripts/test_metric_reduction.py)
             m = elem.metric
-            f_h1, f_v = _metric_contravariant_fluxes_2d_jit(
-                sol.rho, sol.rhoY, sol.rhou, sol.rhov, m.J, m.G1
+            f_h1, f_v = _normal_fluxes_2d_jit(
+                sol.rho,
+                sol.rhoY,
+                sol.rhou,
+                sol.rhov,
+                m.N[0][m.cart_v],
+                m.N[0][m.cart_haxes[0]],
+                m.N[1][m.cart_v],
+                m.N[1][m.cart_haxes[0]],
             )
             rhs[:] = compute_2d(f_h1, f_v, elem.dx, elem.dy)
         else:
@@ -152,24 +160,27 @@ def compute_at_nodes(rhs, elem, sol, ud):
                 sol.rho, sol.rhou, sol.rhov, sol.rhoY, elem.dx, elem.dy
             )
     elif elem.metric is not None:
-        # terrain: rhs = J grad.F with J-weighted horizontal fluxes and the
-        # contravariant vertical flux F_v - G1 F_h1 - G2 F_h2 (role space);
-        # the differencing stencils are unchanged
+        # terrain: rhs = J grad.F with the general curvilinear fluxes
+        # F_a = N_a . (theta m) per array axis a (Cartesian components,
+        # vertical-first contraction); the differencing stencils are
+        # unchanged
         m = elem.metric
         moms = (sol.rhou, sol.rhov, sol.rhow)
-        a_h1, a_h2 = m.haxes
-        f_h1, f_v, f_h2 = _metric_contravariant_fluxes_jit(
-            sol.rho,
-            sol.rhoY,
-            moms[a_h1],
-            moms[m.vaxis],
-            moms[a_h2],
-            m.J,
-            m.G1,
-            m.G2,
-        )
-        flux = [None, None, None]
-        flux[a_h1], flux[m.vaxis], flux[a_h2] = f_h1, f_v, f_h2
+        cv = m.cart_v
+        ch1, ch2 = m.cart_haxes
+        flux = [
+            _normal_flux_3d_jit(
+                sol.rho,
+                sol.rhoY,
+                moms[cv],
+                moms[ch1],
+                moms[ch2],
+                m.N[a][cv],
+                m.N[a][ch1],
+                m.N[a][ch2],
+            )
+            for a in range(3)
+        ]
         rhs[:, :, :] = compute_3d_sum(
             flux[0], flux[1], flux[2], elem.dx, elem.dy, elem.dz
         )
@@ -190,16 +201,42 @@ def compute_at_nodes(rhs, elem, sol, ud):
 
 
 @nb.njit(cache=True)
+def _normal_flux_3d_jit(rho, rhoY, mom_v, mom_h1, mom_h2, n_v, n_h1, n_h2):
+    """One general curvilinear flux component F_a = N_a . (theta m).
+
+    ``n_*`` are the Cartesian components of the area normal N_a of the
+    xi_a = const surface, passed vertical-first — the contraction order
+    that reduces BIT-EXACTLY to the legacy J-weighted / contravariant
+    fluxes for vertical-line metrics (Phase-0 contract,
+    ``test_scripts/test_metric_reduction.py``). The plain divergence of
+    the three F_a equals J grad.F in physical space.
+    """
+    theta = rhoY / rho
+    return n_v * (mom_v * theta) + n_h1 * (mom_h1 * theta) + n_h2 * (mom_h2 * theta)
+
+
+@nb.njit(cache=True)
+def _normal_fluxes_2d_jit(rho, rhoY, mom_h1, mom_v, n1_v, n1_h1, n2_v, n2_h1):
+    """2D restriction of :func:`_normal_flux_3d_jit` (both components).
+
+    Vertical-first contraction; reduces bit-exactly to the legacy
+    (J f_h1, f_v - G1 f_h1) pair for vertical-line metrics.
+    """
+    theta = rhoY / rho
+    f_h1 = mom_h1 * theta
+    f_v = mom_v * theta
+    return n1_v * f_v + n1_h1 * f_h1, n2_v * f_v + n2_h1 * f_h1
+
+
+@nb.njit(cache=True)
 def _metric_contravariant_fluxes_jit(rho, rhoY, mom_h1, mom_v, mom_h2, J, G1, G2):
-    """Terrain-following flux components of the theta-weighted momentum.
+    """Legacy vertical-line flux components (reduction-contract reference).
 
-    Role-ordered inputs/outputs (h1, v, h2). Returns the J-weighted
-    horizontal fluxes and the contravariant vertical flux
-
-        f_v = theta * (mom_v - G1 mom_h1 - G2 mom_h2)
-
-    such that the plain divergence of (J f_h1, f_v, J f_h2) equals
-    J grad.F in physical space.
+    Kept as the reference the general :func:`_normal_flux_3d_jit` path is
+    pinned against in ``test_scripts/test_metric_reduction.py``; the
+    production divergence no longer calls it. Role-ordered inputs/outputs
+    (h1, v, h2): J-weighted horizontal fluxes and the contravariant
+    vertical flux f_v = theta * (mom_v - G1 mom_h1 - G2 mom_h2).
     """
     theta = rhoY / rho
     f_h1 = mom_h1 * theta
@@ -212,9 +249,7 @@ def _metric_contravariant_fluxes_jit(rho, rhoY, mom_h1, mom_v, mom_h2, J, G1, G2
 def _metric_contravariant_fluxes_2d_jit(rho, rhoY, mom_h1, mom_v, J, G1):
     """2D restriction of :func:`_metric_contravariant_fluxes_jit`.
 
-    Returns the J-weighted horizontal flux and the contravariant vertical
-    flux f_v = theta * (mom_v - G1 mom_h1) such that the plain 2D
-    divergence of (J f_h1, f_v) equals J grad.F in physical space.
+    Reduction-contract reference only, like the 3D variant.
     """
     theta = rhoY / rho
     f_h1 = mom_h1 * theta

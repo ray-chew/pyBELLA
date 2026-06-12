@@ -220,10 +220,11 @@ def _divergence_case(mem, ud):
 
     if elem.metric is not None:
         m = elem.metric
+        # general curvilinear contract: area normals + fixed Cartesian axes
         metric = (
-            (m.J, m.G1, None, None, None)
-            if ndim == 2
-            else (m.J, m.G1, m.G2, m.vaxis, m.haxes)
+            tuple(tuple(jax.numpy.asarray(c) for c in Na) for Na in m.N),
+            m.cart_v,
+            m.cart_haxes,
         )
     else:
         metric = None
