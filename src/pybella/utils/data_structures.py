@@ -78,7 +78,8 @@ class EnsembleState:
         self.members.append(new_state)
 
     def set_members(self, members: List[ModelState]):
-        assert len(self.set_members == members)
+        # replacing the ensemble (e.g. forecast -> analysis) preserves its size.
+        assert len(members) == len(self.members)
         self.members = members
 
     def get_member(self, index: int) -> ModelState:

@@ -121,7 +121,8 @@ class CompareSol(object):
 
             try:
                 assert max_abs_error < self.tolerances[attribute], (
-                    "Relative L2 error for attribute %s of %s exceeds tolerance:\n"
+                    "Max-abs error for attribute %s of %s exceeds tolerance "
+                    "(the gate is per-field max-abs, not L2):\n"
                     "L2 error: %.6e\nRelative L2 error: %.6e\nMax abs error: %.6e\nTolerance: %.6e"
                     % (
                         attribute,
