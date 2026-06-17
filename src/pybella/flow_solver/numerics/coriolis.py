@@ -1,6 +1,7 @@
 import numba as nb
 
 from ...utils import axes
+from ...backends import is_jax_backend
 
 
 # Refactored main function
@@ -14,7 +15,7 @@ def multiply_inverse_terms(
     njit kernels below — written in role symbols (wh1, wv, wh2) — stay
     unchanged for any vertical axis.
     """
-    if getattr(ud, "backend", "numpy") in ("jax", "jax-device"):
+    if is_jax_backend(ud):
         from ...backends.jax_ops import coriolis as jax_coriolis
 
         return jax_coriolis.multiply_inverse_terms(
@@ -85,7 +86,7 @@ def compute_inverse_coefficients(mem, ud, dt):
     (h11, h12, h13, h21, h22, h23, h31, h32, h33, denom), role-indexed,
     shaped like the buoyancy field nu.
     """
-    if getattr(ud, "backend", "numpy") in ("jax", "jax-device"):
+    if is_jax_backend(ud):
         from ...backends.jax_ops import coriolis as jax_coriolis
 
         return jax_coriolis.compute_inverse_coefficients(mem, ud, dt)

@@ -2,6 +2,7 @@ import numpy as np
 import scipy as sp
 
 from ...utils import axes
+from ...backends import is_jax_backend
 from ...utils.operators import convolution, divergence, gradient
 from ...utils.operators.laplacian import preconditioner, lap2D_manual, lap3D
 from ..discretisation import terrain
@@ -18,7 +19,7 @@ def _jax_backend(ud):
     path either way — only the operator application and the Krylov
     iteration are swapped (see backends/jax_ops/elliptic_solve.py).
     """
-    return getattr(ud, "backend", "numpy") in ("jax", "jax-device")
+    return is_jax_backend(ud)
 
 
 class solver_counter(object):

@@ -6,6 +6,7 @@ import numpy as np
 from ....utils import axes
 from ....utils import options as opts
 from .common import get_ghost_padding
+from ....backends import is_jax_backend
 
 
 class CellBoundaryHandler:
@@ -243,7 +244,7 @@ def set_ghost_cells(mem, ud, step=None, sol=None):
     sol : object, optional
         Solution object, defaults to mem.sol
     """
-    if getattr(ud, "backend", "numpy") in ("jax", "jax-device"):
+    if is_jax_backend(ud):
         from ....backends.jax_ops import boundary as jax_boundary
 
         return jax_boundary.set_ghost_cells(mem, ud, step=step, sol=sol)

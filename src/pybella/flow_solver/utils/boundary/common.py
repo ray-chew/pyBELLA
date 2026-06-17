@@ -1,6 +1,7 @@
 import numpy as np
 
 from ....utils import options as opts
+from ....backends import is_jax_backend
 
 
 def get_ghost_padding(ndim, dim, igs):
@@ -40,7 +41,7 @@ def get_ghost_padding(ndim, dim, igs):
 
 def scale_wall_node_values(rhs, node, ud, factor=0.5):
     """Scale values at wall boundary nodes by a given factor."""
-    if getattr(ud, "backend", "numpy") in ("jax", "jax-device"):
+    if is_jax_backend(ud):
         from ....backends.jax_ops import boundary as jax_boundary
 
         return jax_boundary.scale_wall_node_values(rhs, node, ud, factor=factor)

@@ -4,6 +4,7 @@ from numba import njit
 
 from ....utils.operators import convolution
 from ....utils import slices
+from ....backends import is_jax_backend
 
 _MOMENTA = ("rhou", "rhov", "rhow")
 
@@ -37,7 +38,7 @@ def recompute(mem, ud=None, **kwargs):
     **kwargs
         Optional pre-computed velocity components ('u', 'v', 'w')
     """
-    if ud is not None and getattr(ud, "backend", "numpy") in ("jax", "jax-device"):
+    if ud is not None and is_jax_backend(ud):
         from ....backends.jax_ops import advection as jax_advection
 
         return jax_advection.recompute_advective_flux(mem, **kwargs)

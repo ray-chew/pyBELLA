@@ -29,6 +29,7 @@ import numba as nb
 import numpy as np
 
 from ..utils.boundary import cell_boundary as bdry_c
+from ...backends import is_jax_backend
 
 
 @nb.njit(cache=True)
@@ -61,7 +62,7 @@ def _laplacian(f, elem):
 
 def apply(mem, ud, dt):
     """One explicit diffusion step on velocity and theta'; updates mem.sol in place."""
-    if getattr(ud, "backend", "numpy") in ("jax", "jax-device"):
+    if is_jax_backend(ud):
         from ...backends.jax_ops import diffusion as jax_diffusion
 
         return jax_diffusion.apply(mem, ud, dt)
