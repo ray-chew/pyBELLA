@@ -27,7 +27,7 @@ import numpy as np
 
 from ..flow_solver.physics import hydrostatics
 from ..utils import options as opts
-from ..utils.data_structures import DiagnosticState
+from .case_setup import build_bdry, make_diag_state
 
 
 class UserData(object):
@@ -49,10 +49,9 @@ class UserData(object):
         # wall-normal momentum mirror was hardcoded to rhov); this case now
         # exercises that path. With the domain at +-25.6 km the fronts
         # (~15.5 km at t=900s) stay well clear of the boundary either way.
-        self.bdry_type = np.empty((3), dtype=object)
-        self.bdry_type[0] = opts.BdryType.WALL
-        self.bdry_type[1] = opts.BdryType.WALL
-        self.bdry_type[2] = opts.BdryType.WALL
+        self.bdry_type = build_bdry(
+            opts.BdryType.WALL, opts.BdryType.WALL, opts.BdryType.WALL
+        )
 
         ##########################################
         # NUMERICS
@@ -85,12 +84,12 @@ class UserData(object):
 
         self.output_timesteps = True
 
-        self.diag_state = DiagnosticState(
-            test_name="test_straka",
-            file_name="target_straka",
-            Nx=self.inx - 1,
-            Ny=self.iny - 1,
-            steps=[self.stepmax - 1],
+        self.diag_state = make_diag_state(
+            "test_straka",
+            "target_straka",
+            self.inx,
+            self.iny,
+            self.stepmax,
         )
 
         self.autogen_fn = False

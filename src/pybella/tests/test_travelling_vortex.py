@@ -7,7 +7,7 @@ from ..flow_solver.numerics import implicit_euler
 from ..flow_solver.utils import cache
 
 
-from ..utils.data_structures import DiagnosticState
+from .case_setup import build_bdry, make_diag_state
 
 import logging
 
@@ -38,10 +38,9 @@ class UserData(object):
         self.v_wind_speed = 1.0
         self.w_wind_speed = 0.0
 
-        self.bdry_type = np.empty((3), dtype=object)
-        self.bdry_type[0] = opts.BdryType.PERIODIC
-        self.bdry_type[1] = opts.BdryType.PERIODIC
-        self.bdry_type[2] = opts.BdryType.WALL
+        self.bdry_type = build_bdry(
+            opts.BdryType.PERIODIC, opts.BdryType.PERIODIC, opts.BdryType.WALL
+        )
 
         ##########################################
         # NUMERICS
@@ -71,12 +70,12 @@ class UserData(object):
         self.aux = ""
         self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
 
-        self.diag_state = DiagnosticState(
-            test_name="test_travelling_vortex",
-            file_name="target_travelling_vortex",
-            Nx=self.inx - 1,
-            Ny=self.iny - 1,
-            steps=[self.stepmax - 1],
+        self.diag_state = make_diag_state(
+            "test_travelling_vortex",
+            "target_travelling_vortex",
+            self.inx,
+            self.iny,
+            self.stepmax,
         )
 
         self.autogen_fn = False
