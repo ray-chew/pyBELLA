@@ -1,7 +1,7 @@
 import numpy as np
 
 from ..utils import options as opts
-from ..utils.data_structures import DiagnosticState
+from .case_setup import make_diag_state
 
 from ..flow_solver.utils.boundary import rayleigh_boundary as bdry_r
 from ..flow_solver.physics import hydrostatics
@@ -86,12 +86,12 @@ class UserData(object):
         self.aux = ""
         self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
 
-        self.diag_state = DiagnosticState(
-            test_name="test_lamb_wave",
-            file_name="target_lamb_wave",
-            Nx=self.inx - 1,
-            Ny=self.iny - 1,
-            steps=[self.stepmax - 1],
+        self.diag_state = make_diag_state(
+            "test_lamb_wave",
+            "target_lamb_wave",
+            self.inx,
+            self.iny,
+            self.stepmax,
         )
 
         self.stratification = self.stratification_wrapper

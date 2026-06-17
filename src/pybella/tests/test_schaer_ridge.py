@@ -38,6 +38,7 @@ from ..flow_solver.discretisation import terrain
 from ..flow_solver.utils.boundary import rayleigh_boundary as bdry_r
 
 from ..utils.data_structures import DiagnosticState
+from .case_setup import build_bdry
 
 _COMPARED_FIELDS = ("rho", "rhou", "rhov", "rhow", "rhoY", "rhoX", "p2_nodes")
 
@@ -91,10 +92,11 @@ class UserData(object):
         self.v_wind_speed = 0.0
         self.w_wind_speed = 0.0
 
-        self.bdry_type = np.empty((3), dtype=object)
-        self.bdry_type[0] = opts.BdryType.PERIODIC
-        self.bdry_type[1] = opts.BdryType.WALL  # switched to RAYLEIGH in sol_init
-        self.bdry_type[2] = opts.BdryType.PERIODIC
+        self.bdry_type = build_bdry(
+            opts.BdryType.PERIODIC,
+            opts.BdryType.WALL,  # switched to RAYLEIGH in sol_init
+            opts.BdryType.PERIODIC,
+        )
 
         self.rayleigh_bdry_switch = True
         self.rayleigh_forcing = False

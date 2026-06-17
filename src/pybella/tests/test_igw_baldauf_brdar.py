@@ -30,6 +30,7 @@ from ..flow_solver.utils import fields
 from ..flow_solver.physics import hydrostatics
 
 from ..utils.data_structures import DiagnosticState
+from .case_setup import build_bdry
 
 
 class UserData(object):
@@ -88,10 +89,9 @@ class UserData(object):
         self.zmin = -1.0
         self.zmax = 1.0
 
-        self.bdry_type = np.empty((3), dtype=object)
-        self.bdry_type[0] = opts.BdryType.PERIODIC
-        self.bdry_type[1] = opts.BdryType.WALL
-        self.bdry_type[2] = opts.BdryType.WALL
+        self.bdry_type = build_bdry(
+            opts.BdryType.PERIODIC, opts.BdryType.WALL, opts.BdryType.WALL
+        )
 
         ##########################################
         # NUMERICS

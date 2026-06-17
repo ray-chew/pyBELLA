@@ -31,6 +31,7 @@ from ..flow_solver.numerics import implicit_euler
 from ..flow_solver.utils import cache
 
 from ..utils.data_structures import DiagnosticState
+from .case_setup import build_bdry
 
 
 class UserData(object):
@@ -61,10 +62,9 @@ class UserData(object):
         self.v_wind_speed = 0.0
         self.w_wind_speed = 0.0
 
-        self.bdry_type = np.empty((3), dtype=object)
-        self.bdry_type[0] = opts.BdryType.PERIODIC
-        self.bdry_type[1] = opts.BdryType.PERIODIC
-        self.bdry_type[2] = opts.BdryType.PERIODIC
+        self.bdry_type = build_bdry(
+            opts.BdryType.PERIODIC, opts.BdryType.PERIODIC, opts.BdryType.PERIODIC
+        )
 
         # legacy case runs in the pseudo-incompressible regime
         self.is_compressible = 0
