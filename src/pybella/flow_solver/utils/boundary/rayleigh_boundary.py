@@ -4,6 +4,7 @@ from ....utils import axes
 from ....utils import io
 from ....utils import options as opts
 from . import cell_boundary as bdry_c
+from ....backends import is_jax_backend
 
 
 def get_tau_y(ud, elem, node, alpha):
@@ -167,7 +168,7 @@ def _vertical_profile(profile, ndim, vaxis):
 
 
 def rayleigh_damping(sol, npf, ud, forcing=None):
-    if getattr(ud, "backend", "numpy") in ("jax", "jax-device"):
+    if is_jax_backend(ud):
         from ....backends.jax_ops import rayleigh as jax_rayleigh
 
         return jax_rayleigh.rayleigh_damping(sol, npf, ud, forcing=forcing)
