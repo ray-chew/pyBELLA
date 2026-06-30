@@ -4,6 +4,12 @@ import numba as nb
 from ...utils import axes
 from ..utils.boundary import node_boundary as bdry_n
 
+# Fine auxiliary 1D z-grid for the terrain hydrostate quadrature: at least this
+# many points, and at least this many per vertical cell, so the trapezoidal
+# integral of 1/stratification converges well below the solver tolerance.
+_HYDRO_QUAD_MIN_POINTS = 2048
+_HYDRO_QUAD_POINTS_PER_CELL = 16
+
 
 def column(HydroState, HydroState_n, Y, Y_n, elem, node, th, ud):
     """2D x-y initial-condition helper (vertical = axis 1 by convention)."""
@@ -250,7 +256,7 @@ def _integrated_state_fields(npf, elem, node, th, ud):
     z_n = node.metric.z
     z_lo = min(z_c.min(), z_n.min(), 0.0)
     z_hi = max(z_c.max(), z_n.max(), 0.0)
-    nfine = max(2048, 16 * int(elem.sc[vv]))
+    nfine = max(_HYDRO_QUAD_MIN_POINTS, _HYDRO_QUAD_POINTS_PER_CELL * int(elem.sc[vv]))
     zf = np.linspace(z_lo, z_hi, nfine)
 
     Sf = 1.0 / ud.stratification(zf)
