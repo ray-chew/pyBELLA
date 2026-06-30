@@ -3,10 +3,13 @@ import numpy as np
 from ..utils import options as opts
 from ..flow_solver.utils.boundary import node_boundary as bdry_n
 from ..flow_solver.physics import hydrostatics
-from ..flow_solver.numerics import implicit_euler
-from ..flow_solver.utils import cache
 
-from .case_setup import build_bdry, make_diag_state
+from .case_setup import (
+    build_bdry,
+    do_initial_projection,
+    make_diag_state,
+    mirror_centers,
+)
 
 
 class UserData(object):
@@ -149,14 +152,8 @@ def _depth_field(xs, ys, xc, yc, xcm, ycm, R0, fac, Frsq):
     coe[11] = -12.0 / 23
     coe[12] = +1.0 / 24
 
-    xccs = np.zeros_like(xs)
-    yccs = np.zeros_like(ys)
-
-    xccs[...] = xc * (np.abs(xs - xc) < np.abs(xs - xcm))
-    xccs[...] += xcm * (np.abs(xs - xc) > np.abs(xs - xcm))
-
-    yccs[...] = yc * (np.abs(ys - yc) < np.abs(ys - ycm))
-    yccs[...] += ycm * (np.abs(ys - yc) > np.abs(ys - ycm))
+    xccs = mirror_centers(xs, xc, xcm)
+    yccs = mirror_centers(ys, yc, ycm)
 
     r = np.sqrt((xs - xccs) ** 2 + (ys - yccs) ** 2)
 
@@ -229,47 +226,6 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     ud.nonhydrostasy = float(ud.is_nonhydrostatic)
     ud.compressibility = float(ud.is_compressible)
 
-    if ud.initial_projection == True:
-        is_compressible = np.copy(ud.is_compressible)
-        compressibility = np.copy(ud.compressibility)
-        ud.is_compressible = 0
-        ud.compressibility = 0.0
-
-        p2aux = np.copy(npf.p2_nodes)
-
-        Sol.rhou -= u0 * Sol.rho
-        Sol.rhov -= v0 * Sol.rho
-
-        mem = obj()
-        mem.sol = Sol
-        mem.npf = npf
-        mem.elem = elem
-        mem.node = node
-        mem.th = th
-        mem.time = obj()
-        mem.time.t = ud.dtfixed
-        mem.time.step = 0
-        mem.cache = cache.FlowSolverCache()
-
-        implicit_euler.do_implicit_part(
-            mem, ud, ud.dtfixed, writer=None, label="initial_projection"
-        )
-
-        npf.p2_nodes[...] = p2aux
-        npf.dp2_nodes[...] = 0.0
-
-        Sol.rhou += u0 * Sol.rho
-        Sol.rhov += v0 * Sol.rho
-
-        ud.is_compressible = is_compressible
-        ud.compressibility = compressibility
+    do_initial_projection(Sol, npf, elem, node, th, ud, u0=u0, v0=v0)
 
     return Sol
-
-
-def T_from_p_rho(p, rho):
-    return np.divide(p, rho)
-
-
-class obj(object):
-    pass

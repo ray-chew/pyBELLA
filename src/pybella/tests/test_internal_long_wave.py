@@ -193,7 +193,3 @@ def sol_init(Sol, npf, elem, node, th, ud, seeds=None):
         npf.p2_nodes[...] = 0.0
 
     return Sol
-
-
-def T_from_p_rho(p, rho):
-    return np.divide(p, rho)

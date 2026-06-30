@@ -14,6 +14,8 @@ error-prone mechanical idioms so they are written once:
 Neither helper mutates global state; each returns a value the case assigns.
 """
 
+from types import SimpleNamespace
+
 import numpy as np
 
 from ..utils.data_structures import DiagnosticState
@@ -38,3 +40,70 @@ def make_diag_state(test_name, file_name, inx, iny, stepmax, steps=None, **kwarg
         steps=steps if steps is not None else [stepmax - 1],
         **kwargs,
     )
+
+
+def mirror_centers(coord, c, cm):
+    """Per-coordinate nearest periodic image of a vortex centre.
+
+    For each entry of ``coord`` pick whichever of the centre ``c`` or its
+    domain-wrapped image ``cm`` is closer, so the radius used by a vortex IC is
+    measured against the nearest image on a periodic domain. Returns a fresh
+    array shaped like ``coord``.
+    """
+    cc = np.zeros_like(coord)
+    cc[...] = c * (np.abs(coord - c) < np.abs(coord - cm))
+    cc[...] += cm * (np.abs(coord - c) > np.abs(coord - cm))
+    return cc
+
+
+def do_initial_projection(Sol, npf, elem, node, th, ud, *, u0, v0, w0=0.0):
+    """Project a balanced vortex IC onto the discrete incompressible constraint.
+
+    Mirrors the legacy in-case block exactly: freeze the regime to
+    incompressible, subtract the background wind ``(u0, v0, w0)``, run one
+    implicit-Euler step, then restore the nodal pressure and re-add the wind.
+    A no-op unless ``ud.initial_projection``. For 2D cases ``w0 == 0.0`` makes
+    the ``rhow`` terms an exact (``±0``) no-op, so the same helper serves 2D and
+    3D.
+    """
+    if ud.initial_projection != True:
+        return
+
+    from ..flow_solver.numerics import implicit_euler
+    from ..flow_solver.utils import cache
+
+    is_compressible = np.copy(ud.is_compressible)
+    compressibility = np.copy(ud.compressibility)
+    ud.is_compressible = 0
+    ud.compressibility = 0.0
+
+    p2aux = np.copy(npf.p2_nodes)
+
+    Sol.rhou -= u0 * Sol.rho
+    Sol.rhov -= v0 * Sol.rho
+    Sol.rhow -= w0 * Sol.rho
+
+    mem = SimpleNamespace()
+    mem.sol = Sol
+    mem.npf = npf
+    mem.elem = elem
+    mem.node = node
+    mem.th = th
+    mem.time = SimpleNamespace()
+    mem.time.t = ud.dtfixed
+    mem.time.step = 0
+    mem.cache = cache.FlowSolverCache()
+
+    implicit_euler.do_implicit_part(
+        mem, ud, ud.dtfixed, writer=None, label="initial_projection"
+    )
+
+    npf.p2_nodes[...] = p2aux
+    npf.dp2_nodes[...] = 0.0
+
+    Sol.rhou += u0 * Sol.rho
+    Sol.rhov += v0 * Sol.rho
+    Sol.rhow += w0 * Sol.rho
+
+    ud.is_compressible = is_compressible
+    ud.compressibility = compressibility
