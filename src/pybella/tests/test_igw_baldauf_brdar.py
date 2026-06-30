@@ -29,8 +29,7 @@ from ..utils import options as opts
 from ..flow_solver.utils import fields
 from ..flow_solver.physics import hydrostatics
 
-from ..utils.data_structures import DiagnosticState
-from .case_setup import build_bdry
+from .case_setup import build_bdry, make_diag_state
 
 
 class UserData(object):
@@ -127,12 +126,12 @@ class UserData(object):
         self.aux = ""
         self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
 
-        self.diag_state = DiagnosticState(
-            test_name="test_igw_baldauf_brdar",
-            file_name="target_igw_baldauf_brdar",
-            Nx=self.inx - 1,
-            Ny=self.iny - 1,
-            steps=[self.stepmax - 1],
+        self.diag_state = make_diag_state(
+            "test_igw_baldauf_brdar",
+            "target_igw_baldauf_brdar",
+            self.inx,
+            self.iny,
+            self.stepmax,
             # tolerance audit 2026-06-09 measured ~1e-10 run-to-run scatter
             # SAME-MACHINE; the first CI run (2026-06-11, GitHub runner)
             # showed cross-PLATFORM scatter of 2.3e-6 on rhou — different

@@ -28,10 +28,10 @@ import numpy as np
 from ..utils import options as opts
 from ..flow_solver.physics import hydrostatics
 
-from ..utils.data_structures import DiagnosticState
 from .case_setup import (
     build_bdry,
     do_initial_projection,
+    make_diag_state,
     mirror_centers,
 )
 
@@ -101,12 +101,12 @@ class UserData(object):
         self.aux = ""
         self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
 
-        self.diag_state = DiagnosticState(
-            test_name="test_travelling_vortex_3d_coriolis",
-            file_name="target_travelling_vortex_3d_coriolis",
-            Nx=self.inx - 1,
-            Ny=self.iny - 1,
-            steps=[self.stepmax - 1],
+        self.diag_state = make_diag_state(
+            "test_travelling_vortex_3d_coriolis",
+            "target_travelling_vortex_3d_coriolis",
+            self.inx,
+            self.iny,
+            self.stepmax,
             # 3D fields are contour-plotted as the transverse (y) mid-slice
             plot_compare=True,
         )

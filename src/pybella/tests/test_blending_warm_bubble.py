@@ -1,7 +1,7 @@
 import numpy as np
 from ..flow_solver.physics import hydrostatics
 
-from ..utils.data_structures import DiagnosticState
+from .case_setup import make_diag_state
 
 
 class UserData(object):
@@ -46,12 +46,12 @@ class UserData(object):
 
         self.output_timesteps = True
 
-        self.diag_state = DiagnosticState(
-            test_name=f"{self.output_type}_blending_warm_bubble",
-            file_name="target_blending_warm_bubble",
-            Nx=self.inx - 1,
-            Ny=self.iny - 1,
-            steps=[self.stepmax - 1],
+        self.diag_state = make_diag_state(
+            f"{self.output_type}_blending_warm_bubble",
+            "target_blending_warm_bubble",
+            self.inx,
+            self.iny,
+            self.stepmax,
             plot_compare=True,
             time_increment=True,
             # The only thing that matters here is that
