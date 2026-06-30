@@ -37,8 +37,7 @@ from ..flow_solver.physics import hydrostatics
 from ..flow_solver.discretisation import terrain
 from ..flow_solver.utils.boundary import rayleigh_boundary as bdry_r
 
-from ..utils.data_structures import DiagnosticState
-from .case_setup import build_bdry
+from .case_setup import build_bdry, make_diag_state
 
 _COMPARED_FIELDS = ("rho", "rhou", "rhov", "rhow", "rhoY", "rhoX", "p2_nodes")
 
@@ -148,12 +147,12 @@ class UserData(object):
         self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
         self.autogen_fn = False
 
-        self.diag_state = DiagnosticState(
-            test_name="test_schaer_ridge",
-            file_name="target_schaer_ridge",
-            Nx=self.inx - 1,
-            Ny=self.iny - 1,
-            steps=[self.stepmax - 1],
+        self.diag_state = make_diag_state(
+            "test_schaer_ridge",
+            "target_schaer_ridge",
+            self.inx,
+            self.iny,
+            self.stepmax,
             plot_compare=True,
             # terrain elliptic solves amplify cross-platform rounding: first
             # CI run (2026-06-11) deviated 2.4e-5 on rhou from the locally

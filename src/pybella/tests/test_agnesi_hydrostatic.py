@@ -21,8 +21,7 @@ from ..utils import axes
 from ..flow_solver.physics import hydrostatics
 from ..flow_solver.utils.boundary import rayleigh_boundary as bdry_r
 
-from ..utils.data_structures import DiagnosticState
-from .case_setup import build_bdry
+from .case_setup import build_bdry, make_diag_state
 
 _COMPARED_FIELDS = ("rho", "rhou", "rhov", "rhow", "rhoY", "rhoX", "p2_nodes")
 
@@ -122,12 +121,12 @@ class UserData(object):
         self.output_suffix = "_%i_%i" % (self.inx - 1, self.iny - 1)
         self.autogen_fn = False
 
-        self.diag_state = DiagnosticState(
-            test_name="test_agnesi_hydrostatic",
-            file_name="target_agnesi_hydrostatic",
-            Nx=self.inx - 1,
-            Ny=self.iny - 1,
-            steps=[self.stepmax - 1],
+        self.diag_state = make_diag_state(
+            "test_agnesi_hydrostatic",
+            "target_agnesi_hydrostatic",
+            self.inx,
+            self.iny,
+            self.stepmax,
             plot_compare=True,
             # terrain elliptic solves (~130 bicgstab iters/step) amplify
             # cross-platform rounding: first CI run (2026-06-11) deviated
