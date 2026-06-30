@@ -17,11 +17,9 @@ field and wave drag (``tests/agnesi_smith_analytic.py``).
 import numpy as np
 
 from ..utils import options as opts
-from ..utils import axes
 from ..flow_solver.physics import hydrostatics
-from ..flow_solver.utils.boundary import rayleigh_boundary as bdry_r
 
-from .case_setup import build_bdry, make_diag_state
+from .case_setup import apply_rayleigh_bdry, build_bdry, make_diag_state
 
 _COMPARED_FIELDS = ("rho", "rhou", "rhov", "rhow", "rhoY", "rhoX", "p2_nodes")
 
@@ -149,9 +147,7 @@ class UserData(object):
 
 
 def sol_init(Sol, npf, elem, node, th, ud, seed=None):
-    if getattr(ud, "rayleigh_bdry_switch", False):
-        ud.bdry_type[axes.vertical_axis(ud)] = opts.BdryType.RAYLEIGH
-        ud.tcy, ud.tny = bdry_r.get_tau_y(ud, elem, node, 0.5)
+    apply_rayleigh_bdry(ud, elem, node, with_tau=True)
 
     # constant-N background at physical height via fine-grid quadrature
     hydrostatics.integrated_state(npf, elem, node, th, ud)

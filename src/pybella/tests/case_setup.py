@@ -18,6 +18,8 @@ from types import SimpleNamespace
 
 import numpy as np
 
+from ..utils import axes
+from ..utils import options as opts
 from ..utils.data_structures import DiagnosticState
 
 
@@ -54,6 +56,25 @@ def mirror_centers(coord, c, cm):
     cc[...] = c * (np.abs(coord - c) < np.abs(coord - cm))
     cc[...] += cm * (np.abs(coord - c) > np.abs(coord - cm))
     return cc
+
+
+def apply_rayleigh_bdry(ud, elem=None, node=None, *, with_tau=False):
+    """Switch the vertical-axis boundary to RAYLEIGH when ``rayleigh_bdry_switch``.
+
+    The vertical axis comes from ``axes.vertical_axis(ud)``, never a hard-coded
+    index (axial-agnosticity invariant). With ``with_tau`` the sponge profiles
+    ``ud.tcy, ud.tny`` are also set in the same block via
+    ``rayleigh_boundary.get_tau_y`` (the terrain cases); the Lamb cases set their
+    sponge separately and pass ``with_tau=False``. A no-op unless
+    ``ud.rayleigh_bdry_switch`` is set.
+    """
+    if not getattr(ud, "rayleigh_bdry_switch", False):
+        return
+    ud.bdry_type[axes.vertical_axis(ud)] = opts.BdryType.RAYLEIGH
+    if with_tau:
+        from ..flow_solver.utils.boundary import rayleigh_boundary
+
+        ud.tcy, ud.tny = rayleigh_boundary.get_tau_y(ud, elem, node, 0.5)
 
 
 def do_initial_projection(Sol, npf, elem, node, th, ud, *, u0, v0, w0=0.0):

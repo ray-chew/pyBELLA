@@ -1,7 +1,8 @@
 import numpy as np
 
+from ..utils import axes
 from ..utils import options as opts
-from .case_setup import make_diag_state
+from .case_setup import apply_rayleigh_bdry, make_diag_state
 
 from ..flow_solver.utils.boundary import rayleigh_boundary as bdry_r
 from ..flow_solver.physics import hydrostatics
@@ -226,11 +227,9 @@ class UserData(object):
 
 
 def sol_init(Sol, npf, elem, node, th, ud, seeds=None):
-    if hasattr(ud, "rayleigh_bdry_switch"):
-        if ud.rayleigh_bdry_switch:
-            ud.bdry_type[1] = opts.BdryType.RAYLEIGH
+    apply_rayleigh_bdry(ud)
 
-    if ud.bdry_type[1] == opts.BdryType.RAYLEIGH:
+    if ud.bdry_type[axes.vertical_axis(ud)] == opts.BdryType.RAYLEIGH:
         ud.tcy, ud.tny = bdry_r.get_tau_y(ud, elem, node, 0.5)
 
     A0 = 1.0e-1 / ud.u_ref
