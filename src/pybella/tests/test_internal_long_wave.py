@@ -134,7 +134,7 @@ def sol_init(Sol, npf, elem, node, th, ud, seeds=None):
     xc = 0.0
     a = ud.scale_factor * 5.0e3 / ud.h_ref
 
-    hydrostatics.analytical_state(npf, elem, node, th, ud)
+    hydrostatics.integrated_state(npf, elem, node, th, ud)
 
     HySt = fields.States(node.sc)
     HyStn = fields.States(node.sc)
