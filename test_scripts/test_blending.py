@@ -6,6 +6,7 @@ import subprocess
     "ic",
     [
         "test_blending_warm_bubble",
+        "test_blending_hydrostatic",
     ],
 )
 def test_single_run(ic):

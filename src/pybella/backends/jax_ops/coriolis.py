@@ -30,7 +30,10 @@ def compute_coefficients(wh1, wh2, wv, nu, nonhydro):
     h13 = (wh1 * wh2 - nu_nh * wv) * denom
 
     h21 = (wh1 * wv - wh2) * denom
-    h22 = nonhydro * (1.0 + wv_sq) * denom
+    # h22 carries NO nonhydro factor: see numpy twin
+    # (numerics/coriolis._compute_coriolis_coefficients) and
+    # dev_notes/hydrostatic_blending.md, Phase H1a. Bit-identical for alpha_w=1.
+    h22 = (1.0 + wv_sq) * denom
     h23 = (wh2 * wv + wh1) * denom
 
     h31 = (wh1 * wh2 + nu_nh * wv) * denom

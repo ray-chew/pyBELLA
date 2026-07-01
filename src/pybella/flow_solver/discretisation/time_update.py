@@ -86,114 +86,16 @@ def do(
                     -------
                     """)
 
-        sol0 = copy.deepcopy(mem.sol)
-
-        debug_writer.write(f"{label}_before_flux")
-
-        advective_flux.recompute(mem, ud)
-
-        debug_writer.write(f"{label}_before_advect")
-
-        if ud.do_advection:
-            compute_advection.first_order_runge_kutta(
-                mem,
-                ud,
-                0.5 * dt,
-            )
-
-        debug_writer.write(f"{label}_after_advect")
-        debug_writer.populate(f"{label}_after_full_step", "p2_nodes", mem.npf.p2_nodes)
-
-        mem.npf.p2_nodes0[...] = mem.npf.p2_nodes
-
-        implicit_euler.do_explicit_part(mem, ud, 0.5 * dt)
-
-        debug_writer.write(f"{label}_after_ebnaexp")
-
-        sol0_increment = sol0 if ud.is_compressible == 0 else None
-
-        implicit_euler.do_implicit_part(
-            mem,
-            ud,
-            0.5 * dt,
-            sol0=sol0_increment,
-            label=f"{label}_after_ebnaimp",
-            writer=writer,
-        )
-
-        if ud.bdry_type[axes.vertical_axis(ud)] == opts.BdryType.RAYLEIGH:
-            # top rayleight damping
-            bdry_r.rayleigh_damping(mem.sol, mem.npf, ud)
-
-        bdry_r.apply_rayleigh_forcing(mem, ud, dt)
-
-        debug_writer.write(f"{label}_after_ebnaimp")
-
-        advective_flux.recompute(mem, ud)
-
-        debug_writer.write(f"{label}_after_half_step")
-
-        sol_half_new = copy.deepcopy(mem.sol)
-        npf_half_new = copy.deepcopy(mem.npf)
-        mem.npf.p2_nodes_half = np.copy(mem.npf.p2_nodes)
-
-        if ud.is_nonhydrostatic == 0 or (
-            ud.is_compressible == 1 and ud.is_nonhydrostatic == 1
-        ):
-            mem.npf.p2_nodes[...] = mem.npf.p2_nodes0
-
-        mem.sol = copy.deepcopy(sol0)
-
-        explicit_euler.do_forward_step(
-            mem,
-            ud,
-            0.5 * dt,
-            writer=writer,
-            label=str(label) + "_after_efna",
-        )
-
-        debug_writer.write(f"{label}_after_efna")
-
-        if ud.do_advection:
-            compute_advection.strange_splitting(
-                mem,
-                ud,
-                dt,
-                mem.time.step % 2,
-                str(label) + "_full",
-                writer,
-            )
-
-        debug_writer.write(f"{label}_after_full_advect")
-
-        implicit_euler.do_explicit_part(mem, ud, 0.5 * dt)
-
-        debug_writer.write(f"{label}_after_full_ebnaexp")
-
-        implicit_euler.do_implicit_part(
-            mem,
-            ud,
-            0.5 * dt,
-            writer=writer,
-            label=str(label) + "_after_full_step",
-        )
-
-        if ud.bdry_type[axes.vertical_axis(ud)] == opts.BdryType.RAYLEIGH:
-            # top rayleight damping
-            bdry_r.rayleigh_damping(mem.sol, mem.npf, ud)
-
-        # bottom rayleigh forcing
-        bdry_r.apply_rayleigh_forcing(
-            mem,
-            ud,
-            dt,
-            half=False,
-            sol_half_new=sol_half_new,
-            npf_half_new=npf_half_new,
-        )
-
-        if ud.diffusion:
-            diffusion.apply(mem, ud, dt)
+        # Predictor (first-order, n -> n+1/2) then corrector (second-order,
+        # n+1/2 -> n+1). The hydrostatic regime (alpha_w = 0) uses the SAME
+        # pred-corr as the nonhydrostatic one -- matching the thesis-era stepper
+        # (RKLM_Python data.py) exactly. The earlier H1c "two first-order
+        # predictor half-steps" workaround for a 2*dt mode is no longer needed:
+        # that mode was an artefact of the wrong (isothermal) buoyancy background
+        # (see dev_notes/hydrostatic_blending.md "ROOT CAUSE"); with the
+        # stratification-consistent background it does not appear.
+        predictor_state = predictor_half_step(mem, ud, dt, writer, debug_writer, label)
+        corrector_full_step(mem, ud, dt, predictor_state, writer, debug_writer, label)
 
         ######################################################
         # Blending : Do blending after timestep
@@ -236,3 +138,150 @@ def do(
         mem.time.window_step += 1
 
     return mem
+
+
+def predictor_half_step(mem, ud, dt, writer=None, debug_writer=None, label=""):
+    """First-order predictor: advance ``mem`` in place from t^n to the half-time
+    state t^{n+1/2}.
+
+    This is also the hydrostatic-balance recovery step (thesis eq. 4.35): in the
+    hydrostatic regime (``alpha_w = 0``) the implicit solve here reconstructs a
+    balanced Exner pressure and the diagnostic vertical momentum from the other
+    quantities, provided the hydrostatic background is stratification-consistent
+    (see ``dev_notes/hydrostatic_blending.md`` "ROOT CAUSE"). The schedule-driven
+    hydro blend simply runs the normal predictor+corrector with ``alpha_w`` flipped
+    by the eos schedule — no separate conversion routine is needed.
+
+    On return ``mem`` is at t^{n+1/2} and carries the half-time advective fluxes
+    the corrector's Strang sweep consumes. Returns the auxiliary snapshots the
+    corrector needs: ``(sol0, sol_half_new, npf_half_new)`` — the t^n cell state
+    and the half-time cell/node-pressure copies (for the second-order pass and
+    the bottom Rayleigh forcing). ``debug_writer`` must be a real writer (use
+    ``io.NullDebugWriter()`` when driving this outside ``do``).
+    """
+    sol0 = copy.deepcopy(mem.sol)
+
+    debug_writer.write(f"{label}_before_flux")
+
+    advective_flux.recompute(mem, ud)
+
+    debug_writer.write(f"{label}_before_advect")
+
+    if ud.do_advection:
+        compute_advection.first_order_runge_kutta(
+            mem,
+            ud,
+            0.5 * dt,
+        )
+
+    debug_writer.write(f"{label}_after_advect")
+    debug_writer.populate(f"{label}_after_full_step", "p2_nodes", mem.npf.p2_nodes)
+
+    mem.npf.p2_nodes0[...] = mem.npf.p2_nodes
+
+    implicit_euler.do_explicit_part(mem, ud, 0.5 * dt)
+
+    debug_writer.write(f"{label}_after_ebnaexp")
+
+    sol0_increment = sol0 if ud.is_compressible == 0 else None
+
+    implicit_euler.do_implicit_part(
+        mem,
+        ud,
+        0.5 * dt,
+        sol0=sol0_increment,
+        label=f"{label}_after_ebnaimp",
+        writer=writer,
+    )
+
+    if ud.bdry_type[axes.vertical_axis(ud)] == opts.BdryType.RAYLEIGH:
+        # top rayleight damping
+        bdry_r.rayleigh_damping(mem.sol, mem.npf, ud)
+
+    bdry_r.apply_rayleigh_forcing(mem, ud, dt)
+
+    debug_writer.write(f"{label}_after_ebnaimp")
+
+    advective_flux.recompute(mem, ud)
+
+    debug_writer.write(f"{label}_after_half_step")
+
+    sol_half_new = copy.deepcopy(mem.sol)
+    npf_half_new = copy.deepcopy(mem.npf)
+    mem.npf.p2_nodes_half = np.copy(mem.npf.p2_nodes)
+
+    return sol0, sol_half_new, npf_half_new
+
+
+def corrector_full_step(
+    mem, ud, dt, predictor_state, writer=None, debug_writer=None, label=""
+):
+    """Second-order corrector: from the half-time state (``mem`` carries the
+    half-time fluxes) and the ``predictor_state`` snapshots from
+    :func:`predictor_half_step`, advance ``mem`` in place to t^{n+1}.
+    """
+    sol0, sol_half_new, npf_half_new = predictor_state
+
+    # Seed the corrector pressure from p2_nodes0 (the start-of-step Exner
+    # pressure) for the compressible-nonhydrostatic path. The hydrostatic
+    # (alpha_w = 0) case is intentionally EXCLUDED: with the Phase H1a
+    # operator fix the hydrostatic predictor reconstructs a balanced Exner
+    # pressure, and resetting it here would discard that reconstruction
+    # (re-seeding from the imbalanced p2_nodes0). Keeping it lets the
+    # hydrostatic regime carry the recovered pressure into the corrector.
+    # Bit-identical for alpha_w = 1. See dev_notes/hydrostatic_blending.md.
+    if ud.is_compressible == 1 and ud.is_nonhydrostatic == 1:
+        mem.npf.p2_nodes[...] = mem.npf.p2_nodes0
+
+    mem.sol = copy.deepcopy(sol0)
+
+    explicit_euler.do_forward_step(
+        mem,
+        ud,
+        0.5 * dt,
+        writer=writer,
+        label=str(label) + "_after_efna",
+    )
+
+    debug_writer.write(f"{label}_after_efna")
+
+    if ud.do_advection:
+        compute_advection.strange_splitting(
+            mem,
+            ud,
+            dt,
+            mem.time.step % 2,
+            str(label) + "_full",
+            writer,
+        )
+
+    debug_writer.write(f"{label}_after_full_advect")
+
+    implicit_euler.do_explicit_part(mem, ud, 0.5 * dt)
+
+    debug_writer.write(f"{label}_after_full_ebnaexp")
+
+    implicit_euler.do_implicit_part(
+        mem,
+        ud,
+        0.5 * dt,
+        writer=writer,
+        label=str(label) + "_after_full_step",
+    )
+
+    if ud.bdry_type[axes.vertical_axis(ud)] == opts.BdryType.RAYLEIGH:
+        # top rayleight damping
+        bdry_r.rayleigh_damping(mem.sol, mem.npf, ud)
+
+    # bottom rayleigh forcing
+    bdry_r.apply_rayleigh_forcing(
+        mem,
+        ud,
+        dt,
+        half=False,
+        sol_half_new=sol_half_new,
+        npf_half_new=npf_half_new,
+    )
+
+    if ud.diffusion:
+        diffusion.apply(mem, ud, dt)

@@ -135,7 +135,18 @@ def _compute_coriolis_coefficients(
 
     # Row 2: V equation coefficients
     h21[...] = (wh1 * wv - wh2) * denom
-    h22[...] = nonhydro * (1.0 + wv_sq) * denom
+    # h22 is the vertical-momentum self-coupling. It must NOT carry the
+    # ``nonhydro`` (alpha_w) factor: alpha_w lives in nu_nh (the denominator
+    # inertia) and in the explicit ``nonhydro * vmom`` discard
+    # (implicit_euler.do_explicit_part). With the factor, the hydrostatic case
+    # (alpha_w = 0) zeroed h22 -> the elliptic operator's vertical coupling
+    # cij[v][v] = wplus[v] * h22 vanished, so the hydrostatic pressure solve
+    # could not reconstruct a balanced Exner pressure (it only preserved one).
+    # Dropping it gives h22 -> (1 + wv^2)/det = 1/nu_nh (no Coriolis), the
+    # vertical Laplacian coefficient the thesis hydrostatic balance prescribes
+    # (eq. 4.40/4.42). Bit-identical for alpha_w = 1 (the factor was 1 there).
+    # See dev_notes/hydrostatic_blending.md, Phase H1a.
+    h22[...] = (1.0 + wv_sq) * denom
     h23[...] = (wh2 * wv + wh1) * denom
 
     # Row 3: W equation coefficients
