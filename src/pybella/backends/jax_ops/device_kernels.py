@@ -658,10 +658,11 @@ def make_step(cfg, parity, is_nonhydrostatic):
         # half-time state (time_update line 123), before the sol restore
         flux_rhoY_half = _advective_flux(s, cfg)
 
-        # p2 reset branch (static regime structure)
-        if is_nonhydrostatic == 0 or (
-            cfg.is_compressible == 1 and is_nonhydrostatic == 1
-        ):
+        # p2 reset branch (static regime structure); hydrostatic (alpha_w = 0)
+        # excluded so the Phase H1a reconstruction is not discarded — mirrors
+        # time_update.py. Device rejects blending, so alpha_w = 0 never reaches
+        # here; kept consistent for the numpy<->jax-device contract.
+        if cfg.is_compressible == 1 and is_nonhydrostatic == 1:
             s["p2_nodes"] = p2_nodes0
 
         # restore sol to t^n for the full forward pass

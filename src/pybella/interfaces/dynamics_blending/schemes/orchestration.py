@@ -5,7 +5,6 @@ import numpy as np
 from ....flow_solver.physics import eos as gd_eos
 from .comp_psinc import do_comp_to_psinc_conv, do_psinc_to_comp_conv
 from .swe_lake import do_swe_to_lake_conv, do_lake_to_swe_conv
-from .hydro_nonhydro import do_nonhydro_to_hydro_conv, do_hydro_to_nonhydro_conv
 
 
 ######################################################
@@ -78,25 +77,6 @@ def blending_before_timestep(
                 ud.is_compressible = 0
                 ud.compressibility = 0.0
                 mem = do_comp_to_psinc_conv(mem, bld, ud, label, writer)
-            elif bld.hydro_init > 0:
-                sol, npf, t = do_nonhydro_to_hydro_conv(
-                    sol,
-                    flux,
-                    npf,
-                    bld,
-                    elem,
-                    node,
-                    th,
-                    ud,
-                    label,
-                    writer,
-                    step,
-                    window_step,
-                    t,
-                    dt,
-                )
-                ud.is_nonhydrostatic = 0
-                ud.nonhydrostasy = 0.0
         else:
             do_swe_to_lake_conv(sol, npf, elem, node, ud, th, writer, label, debug)
             swe_to_lake = True
@@ -121,29 +101,6 @@ def blending_before_timestep(
             )
             ud.is_compressible = 1
             ud.compressibility = 1.0
-    # Else, do we do nonhydrostatic-hydrostatic blending?
-    elif (
-        ud.initial_blending == True and step == ud.no_of_hy_initial and bld is not None
-    ):
-        if ud.blending_conv != "swe":
-            sol, npf = do_hydro_to_nonhydro_conv(
-                sol,
-                flux,
-                npf,
-                bld,
-                elem,
-                node,
-                th,
-                ud,
-                label,
-                writer,
-                step,
-                window_step,
-                t,
-                dt,
-            )
-            ud.is_nonhydrostatic = 1
-            ud.nonhydrostasy = 1.0
     else:
         ud.is_compressible = gd_eos.is_compressible(ud, window_step)
         ud.compressibility = gd_eos.compressibility(ud, t, window_step)

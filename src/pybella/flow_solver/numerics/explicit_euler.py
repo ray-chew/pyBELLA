@@ -77,14 +77,19 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
     # Momentum update in role space: gravity/buoyancy acts on the vertical
     # row, Coriolis couples the rows pairwise (cross-product structure)
     mom_h1 -= dt * (rhoYovG * dp_h1 - corr_h2 * dm_v + corr_v * dm_h2)
+    # The WHOLE vertical-momentum forward update carries the nonhydro (alpha_w)
+    # factor — not just the buoyancy. In the hydrostatic limit (alpha_w = 0) the
+    # vertical momentum has no prognostic time update at all: it is diagnosed by
+    # the implicit hydrostatic balance solve. Applying the vertical
+    # pressure-gradient kick here for alpha_w = 0 (as the pre-2026 refactor did)
+    # injects a spurious kick on the diagnosed w every corrector, seeding a 2*dt
+    # computational mode. Matches the thesis-era euler_forward_non_advective
+    # (rhov update * nonhydro). Bit-identical for alpha_w = 1.
+    # See dev_notes/hydrostatic_blending.md (Phase H1b).
     mom_v -= (
         dt
-        * (
-            rhoYovG * dp_v
-            + (g / Msq) * dbuoy * nonhydro
-            - corr_h1 * dm_h2
-            + corr_h2 * dm_h1
-        )
+        * (rhoYovG * dp_v + (g / Msq) * dbuoy - corr_h1 * dm_h2 + corr_h2 * dm_h1)
+        * nonhydro
         * (1 - ud.is_ArakawaKonor)
     )
 
