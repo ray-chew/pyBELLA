@@ -86,16 +86,57 @@ def do(
                     -------
                     """)
 
-        # Predictor (first-order, n -> n+1/2) then corrector (second-order,
-        # n+1/2 -> n+1). The hydrostatic regime (alpha_w = 0) uses the SAME
-        # pred-corr as the nonhydrostatic one -- matching the thesis-era stepper
-        # (RKLM_Python data.py) exactly. The earlier H1c "two first-order
-        # predictor half-steps" workaround for a 2*dt mode is no longer needed:
-        # that mode was an artefact of the wrong (isothermal) buoyancy background
-        # (see dev_notes/hydrostatic_blending.md "ROOT CAUSE"); with the
-        # stratification-consistent background it does not appear.
-        predictor_state = predictor_half_step(mem, ud, dt, writer, debug_writer, label)
-        corrector_full_step(mem, ud, dt, predictor_state, writer, debug_writer, label)
+        if ud.is_nonhydrostatic == 0:
+            # Hydrostatic regime (alpha_w = 0): the full thesis sec. 4.2.3-4.2.4
+            # one-step blend, realised on the SI-midpoint predictor/corrector.
+            # Fig. 4.2: over n -> n+1/2 run, in parallel, the two first-order
+            # updates (solid arrows, for a balanced Pw^{n+1/2} independent of the
+            # input imbalance) AND a second-order pi update (dotted arrow, from the
+            # n+1/4 midpoint); hand the balanced Pw and the second-order pi to the
+            # second-order corrector n+1/2 -> n+1.
+            sol0_n, ps1_half, ps1_npf = predictor_half_step(
+                mem, ud, 0.5 * dt, writer, debug_writer, label
+            )  # n -> n+1/4 (first-order); fluxes now at n+1/4
+            n14_sol = copy.deepcopy(mem.sol)
+            n14_npf = copy.deepcopy(mem.npf)
+            # innovation 2 (sec. 4.2.4): second-order pi update over [n, n+1/2]
+            # using the n+1/4 midpoint -> pi^{n+1/2}_2nd
+            corrector_full_step(
+                mem,
+                ud,
+                0.5 * dt,
+                (sol0_n, ps1_half, ps1_npf),
+                writer,
+                debug_writer,
+                label,
+            )
+            pi_2nd = np.copy(mem.npf.p2_nodes)
+            # innovation 1 (sec. 4.2.3): restore n+1/4, second first-order update
+            # -> balanced Pw^{n+1/2}
+            mem.sol = n14_sol
+            mem.npf = n14_npf
+            predictor_half_step(mem, ud, 0.5 * dt, writer, debug_writer, label)
+            # combine: balanced Pw^{n+1/2} (mem) + second-order pi^{n+1/2}
+            mem.npf.p2_nodes[...] = pi_2nd
+            corrector_full_step(
+                mem,
+                ud,
+                dt,
+                (sol0_n, copy.deepcopy(mem.sol), copy.deepcopy(mem.npf)),
+                writer,
+                debug_writer,
+                label,
+            )
+        else:
+            # Nonhydrostatic (alpha_w = 1): predictor (first-order, n -> n+1/2)
+            # then corrector (second-order, n+1/2 -> n+1). Bit-identical to the
+            # thesis-era stepper (RKLM_Python data.py).
+            predictor_state = predictor_half_step(
+                mem, ud, dt, writer, debug_writer, label
+            )
+            corrector_full_step(
+                mem, ud, dt, predictor_state, writer, debug_writer, label
+            )
 
         ######################################################
         # Blending : Do blending after timestep
@@ -148,9 +189,11 @@ def predictor_half_step(mem, ud, dt, writer=None, debug_writer=None, label=""):
     hydrostatic regime (``alpha_w = 0``) the implicit solve here reconstructs a
     balanced Exner pressure and the diagnostic vertical momentum from the other
     quantities, provided the hydrostatic background is stratification-consistent
-    (see ``dev_notes/hydrostatic_blending.md`` "ROOT CAUSE"). The schedule-driven
-    hydro blend simply runs the normal predictor+corrector with ``alpha_w`` flipped
-    by the eos schedule — no separate conversion routine is needed.
+    (see ``dev_notes/hydrostatic_blending.md`` "ROOT CAUSE"). The hydro regime in
+    :func:`do` invokes this twice per step (thesis sec. 4.2.3 two first-order
+    updates) plus a second-order ``pi`` update (sec. 4.2.4), not a single
+    predictor+corrector; the eos schedule flips ``alpha_w`` and no separate
+    conversion routine is needed.
 
     On return ``mem`` is at t^{n+1/2} and carries the half-time advective fluxes
     the corrector's Strang sweep consumes. Returns the auxiliary snapshots the
