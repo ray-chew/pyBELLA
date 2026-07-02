@@ -56,14 +56,9 @@ jobs:
           pytest ./test_scripts/test_agnesi_2d_equivalence.py
           pytest ./test_scripts/test_schaer_smoke.py
           pytest ./test_scripts/test_schaer_analytic.py
-          # skip unless jax is installed (covered by the jax-equivalence job)
-          pytest ./test_scripts/test_jax_operator_equivalence.py
-          pytest ./test_scripts/test_jax_elliptic_equivalence.py
-          pytest ./test_scripts/test_jax_advection_equivalence.py
-          pytest ./test_scripts/test_jax_boundary_equivalence.py
-          pytest ./test_scripts/test_jax_device_equivalence.py
-          pytest ./test_scripts/test_jax_fullrun.py
-          pytest ./test_scripts/test_jax_device_fullrun.py
+          # the test_jax_* scripts run in the jax-equivalence job (jax
+          # installed there); without jax they collect 0 tests and
+          # pytest >= 9 fails a no-tests-collected run with exit code 5
 
       # - name: Upload coverage HTML report
       #   if: ${{ !env.ACT }}
