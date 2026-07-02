@@ -27,7 +27,9 @@ Faithfulness notes:
 
 # Split into device_config (host config + lap plans), device_state (state
 
-# marshalling) and device_kernels (traced substeps + compiled step + host loop).
+# marshalling), device_kernels (traced substeps + compiled step) and
+
+# device_loop (host window driver).
 
 # Public entry points are re-exported so `device_step.run_window` is unchanged.
 
@@ -35,6 +37,8 @@ from .device_config import build_device_config
 
 from .device_state import to_device, write_back
 
-from .device_kernels import run_window, make_step
+from .device_kernels import make_step
+
+from .device_loop import run_window
 
 __all__ = ["run_window", "make_step", "build_device_config", "to_device", "write_back"]
