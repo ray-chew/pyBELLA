@@ -1,13 +1,12 @@
 import logging
 
-# to generate ensemble from one sol init instantiation
-from copy import deepcopy
-
 import numpy as np
 
 from ..utils import sim_params as params
 from ..utils import io
 from ..utils import data_structures
+from ..flow_solver.utils import fields
+from ..flow_solver.utils.boundary import cell_boundary as bdry_c
 
 from . import utils as da_utils
 from . import params as da_params
@@ -30,14 +29,17 @@ def initialise(sst):
     if rp.dap_rewrite is not None:
         dap.update_dap(rp.dap_rewrite)
 
-    # if elem.ndim == 2:
+    elem, node = es.get_grid()
+    member0 = es.get_member(0)
+
     if dap.da_type == "rloc" and sst.N > 1:
-        rloc = da_letkf.prepare_rloc(es.ud, es.elem, es.node, dap, sst.N)
+        rloc = da_letkf.prepare_rloc(sst.ud, elem, node, dap, sst.N)
     else:
         rloc = None
 
-    logging.info("Generating initial ensemble...")
-    sol_ens = data_structures.EnsembleState()
+    ##########################################################
+    # Generate the initial ensemble from member 0
+    ##########################################################
 
     # Set random seed for reproducibility
     np.random.seed(params.random_seed)
@@ -45,37 +47,38 @@ def initialise(sst):
     seeds = np.random.randint(10000, size=sst.N) if sst.N > 1 else None
 
     if sst.N > 1:
-        logging.info("Seeds used in generating initial ensemble spread = ", seeds)
+        logging.info("Generating initial ensemble...")
+        logging.info("Seeds used in generating initial ensemble spread = %s", seeds)
+        sol_ens = data_structures.EnsembleState()
         for n in range(sst.N):
-            Sol0 = deepcopy(sst.Sol)
-            npf0 = deepcopy(sst.npf)
-            Sol0 = sst.sol_init(
-                Sol0, npf0, es.elem, es.node, es.th, es.ud, seed=seeds[n]
+            # members are built from fresh containers so that sol_init runs
+            # exactly once per member (as in the reference implementation);
+            # member 0 was already initialised by the flow-solver prepare and
+            # re-running sol_init on it would double the += initialisations.
+            sol0 = fields.CellSolField(elem.sc)
+            npf0 = fields.NodePressureField(elem, node, sst.ud)
+            sol0 = sst.sol_init(
+                sol0, npf0, elem, node, member0.th, sst.ud, seed=seeds[n]
             )
-            # sol_ens[n] = [Sol0, deepcopy(es.flux), npf0, [-np.inf, es.step]]
-            sol_ens.update_member(
-                es.elem, es.node, Sol0, npf0, deepcopy(es.flux), es.th
-            )
+            # cache=None: each member gets its own FlowSolverCache
+            sol_ens.update_member(elem, node, sol0, npf0, member0.th)
 
-            sst.ensembble_state = sol_ens
-    # elif sst.restart == False:
-    # sol_ens = [[sst.sol_init(mp.Sol, mp.npf, mp.elem, mp.node, mp.th, sst.ud), mp.flux, mp.npf, [-np.inf, sst.step]]]
-    # sol_ens.update_member(mp.elem, mp.node, sst.sol_init(mp.Sol, mp.npf, mp.elem, mp.node, mp.th, sst.ud), mp.npf, deepcopy(mp.flux), mp.th)
-    # for n in range(sst.N):
-    #     sol_ens.get_member(n).time.t = -np.inf
+        for member in sol_ens.members:
+            bdry_c.set_ghost_cells(member, sst.ud)
 
-    # ens = da_utils.ensemble(sol_ens)
+        sst.ensemble_state = sol_ens
 
     ##########################################################
     # Load data assimilation observations
     ##########################################################
 
-    # where are my observations?
-    if sst.N > 1:
+    # da_times may be empty (e.g. an ensemble forecast without assimilation);
+    # then no observation file is needed.
+    if sst.N > 1 and len(dap.da_times) > 0:
         obs = dap.load_obs(dap.obs_path)
         # obs_mask, no calculations where entries are True
-        obs_mask = da_utils.sparse_obs_selector(obs, es.elem, es.node, sst.ud, dap)
-        obs_noisy, obs_covar = da_utils.obs_noiser(obs, obs_mask, dap, rloc, es.elem)
+        obs_mask = da_utils.sparse_obs_selector(obs, elem, node, sst.ud, dap)
+        obs_noisy, obs_covar = da_utils.obs_noiser(obs, obs_mask, dap, rloc, elem)
     else:
         obs, obs_noisy, obs_mask, obs_covar = None, None, None, None
 
@@ -92,7 +95,6 @@ def initialise(sst):
     sst.da_params = data_structures.DataAssimilationParameters(
         dap=dap,
         rloc=rloc,
-        # sol_ens=ens,
         obs=obs,
         obs_noisy=obs_noisy,
         obs_mask=obs_mask,
