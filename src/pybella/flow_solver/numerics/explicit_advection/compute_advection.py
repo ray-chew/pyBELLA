@@ -176,39 +176,3 @@ def _perform_dimensional_sweep(mem, ud, time_step, reverse=False, diagnostics=No
             _flip_forward(mem)
             if elem.iisc[split] > 1:
                 _explicit_step_and_flux(mem, ud, lmbda, split, diagnostics)
-
-
-# def _update_solution_variables(sol, flux, lmbda, left_idx, right_idx, variables=None):
-#     """
-#     Wrapper to update solution variables using JIT-compiled array math.
-#     """
-#     if variables is None:
-#         variables = ["rho", "rhou", "rhov", "rhow", "rhoX", "rhoY"]
-
-#     sol_arrays = [getattr(sol, var) for var in variables]
-#     flux_arrays = [getattr(flux, var) for var in variables]
-
-#     _update_solution_arrays_jit(sol_arrays, flux_arrays, lmbda, left_idx, right_idx)
-
-
-# @nb.njit(cache=True)
-# def _update_solution_arrays_jit(
-#     sol_vars, flux_vars, lmbda, left_idx, right_idx
-# ):
-#     """
-#     Vectorized update of solution variables using pre-extracted arrays.
-
-#     Parameters
-#     ----------
-#     sol_vars : List[np.ndarray]
-#         Solution arrays (e.g., sol.rho, sol.rhou, ...)
-#     flux_vars : List[np.ndarray]
-#         Corresponding flux arrays (e.g., flux.rho, flux.rhou, ...)
-#     lmbda : float
-#         CFL-like prefactor
-#     left_idx, right_idx : Tuple of index arrays
-#         Indices into inner cells (e.g., from `get_interface_indices`)
-#     """
-#     for i in range(len(sol_vars)):
-#         flux_diff = flux_vars[i][left_idx] - flux_vars[i][right_idx]
-#         sol_vars[i][...] += lmbda * flux_diff
