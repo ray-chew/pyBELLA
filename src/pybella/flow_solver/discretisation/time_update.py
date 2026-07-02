@@ -71,7 +71,6 @@ def do(
                 dt,
                 swe_to_lake,
                 lake_to_swe_pending,
-                debug_writer,
             )
         )
 
