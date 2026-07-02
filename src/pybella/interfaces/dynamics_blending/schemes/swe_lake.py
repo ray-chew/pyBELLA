@@ -1,38 +1,50 @@
-import logging
+"""SWE <-> lake blending conversions.
+
+The shallow-water cases run through the gas-dynamics solver in the 2D x-y
+plane (gamma = 2 equivalence, see ``tests/test_swe_vortex.py``); the depth
+field lives on ``sol.rho`` and the free-surface perturbation on
+``npf.p2_nodes``. ``do_swe_to_lake_conv`` freezes the free surface (SWE ->
+rigid-lid lake reference depth); ``do_lake_to_swe_conv`` releases the lid
+after a look-ahead lake step, blending the nodal pressure by
+``ud.blending_weight`` — the shallow-water analogue of the comp <-> psinc
+pair in ``comp_psinc.py``.
+
+The legacy thin-y 3D form of these routines (x, y = one-cell vertical
+shell, z) predates the ModelState refactor and is preserved in git history
+(last in "refactor pt 7"); this module is its 2D x-y port.
+"""
+
 import copy
+import logging
 
 import numpy as np
 from scipy import signal
 
-######################################################
-# SWE - Lake blending
-######################################################
+from ....utils import io
 
 
-def do_swe_to_lake_conv(sol, npf, elem, node, ud, th, writer, label, debug):
-    logging.info("swe to lake conversion...")
-
-    H1 = sol.rho[
-        :,
-        2:-2:,
-    ][:, 0, :]
-    # setattr(ud,'mean_val',H1.mean())
-
-    H10 = npf.p2_nodes[:, 2:-2, :].mean(axis=1)
-    H10 -= H10.mean()
-
-    # define 2D kernel
+def _node_to_cell(field_n):
+    """Average a nodal field onto cells (2x2 'valid' convolution)."""
     kernel = np.ones((2, 2))
     kernel /= kernel.sum()
+    return signal.convolve(field_n, kernel, mode="valid")
 
-    # do node-to-cell averaging
-    H10 = signal.convolve(H10, kernel, mode="valid")
 
-    # H1 = (H1 - ud.mean_val)
-    H1 = H1 - ud.Msq * H10
-    H1 = np.expand_dims(H1, axis=1)
-    H1 = np.repeat(H1, elem.icy, axis=1)
-    setattr(ud, "mean_val", H1)
+def do_swe_to_lake_conv(mem, ud, writer, label):
+    """Freeze the free surface: SWE depth -> lake (rigid-lid) reference depth.
+
+    Stores the reference depth on ``ud.mean_val``; it must persist across the
+    lake window — ``do_lake_to_swe_conv`` consumes it when the lid is
+    released.
+    """
+    logging.info("swe to lake conversion...")
+    sol = mem.sol
+
+    H10 = np.copy(mem.npf.p2_nodes)
+    H10 -= H10.mean()
+    H10 = _node_to_cell(H10)
+
+    setattr(ud, "mean_val", sol.rho - ud.Msq * H10)
 
     sol.rhou[...] = sol.rhou / sol.rho * ud.mean_val
     sol.rhov[...] = sol.rhov / sol.rho * ud.mean_val
@@ -40,45 +52,41 @@ def do_swe_to_lake_conv(sol, npf, elem, node, ud, th, writer, label, debug):
     sol.rhoY[...] = sol.rhoY / sol.rho * ud.mean_val
     sol.rho[...] = ud.mean_val
 
-    # boundary.set_ghostnodes_p2(npf.p2_nodes,node,ud)
 
-    if debug == True:
-        writer.write_all(sol, npf, elem, node, th, str(label) + "_after_swe_to_lake")
+def do_lake_to_swe_conv(mem, ud, label, writer, step, tout):
+    """Release the rigid lid: lake -> SWE.
 
+    Runs a look-ahead lake step to ``tout`` (structurally parallel to
+    ``do_psinc_to_comp_conv``), blends the nodal pressure between the
+    look-ahead result and the frozen pre-step state per
+    ``ud.blending_weight`` / ``ud.blending_type``, then reconstructs the SWE
+    depth and momenta from the blended pressure around ``ud.mean_val``.
 
-def do_lake_to_swe_conv(
-    sol, flux, npf, elem, node, ud, th, writer, label, debug, step, window_step, t, dt
-):
+    Unlike ``do_psinc_to_comp_conv`` the look-ahead clock advance is rolled
+    back: no golden master pins the advanced-clock behaviour here, and the
+    legacy scheduling kept the outer clock untouched.
+    """
     from ....flow_solver.discretisation import time_update
 
-    if debug == True:
-        writer.write_all(sol, npf, elem, node, th, str(label) + "_after_lake_time_step")
-
-    sol_freeze = copy.deepcopy(sol)
-    npf_freeze = copy.deepcopy(npf)
-
     logging.info("doing lake-to-swe time-update...")
-    ret = time_update.time_update(
-        sol,
-        flux,
-        npf,
-        t,
-        t + dt,
+    sol_freeze = copy.deepcopy(mem.sol)
+    npf_freeze = copy.deepcopy(mem.npf)
+    time_freeze = (mem.time.t, mem.time.step, mem.time.window_step)
+
+    ret = time_update.do(
+        mem,
         ud,
-        elem,
-        node,
-        [0, step],
-        th,
+        tout,
         bld=None,
         writer=None,
-        debug=False,
+        debug_writer=io.NullDebugWriter(),
     )
+    mem.time.t, mem.time.step, mem.time.window_step = time_freeze
 
     fac_old = ud.blending_weight
     fac_new = 1.0 - fac_old
-
-    dp2n_0 = fac_new * ret[2].p2_nodes_half + fac_old * npf_freeze.p2_nodes_half
-    dp2n_1 = fac_new * ret[2].p2_nodes + fac_old * npf_freeze.p2_nodes
+    dp2n_0 = fac_new * ret.npf.p2_nodes_half + fac_old * npf_freeze.p2_nodes_half
+    dp2n_1 = fac_new * ret.npf.p2_nodes + fac_old * npf_freeze.p2_nodes
 
     if ud.blending_type == "half":
         dp2n = dp2n_0
@@ -87,35 +95,23 @@ def do_lake_to_swe_conv(
     else:
         assert 0, "incorrect ud.blending_type"
 
-    sol = copy.deepcopy(sol_freeze)
-    npf = copy.deepcopy(npf_freeze)
+    if writer is not None:
+        writer.populate(str(label) + "_after_full_step", "dp2n", dp2n)
 
-    npf.p2_nodes[...] = dp2n
+    mem.sol = sol_freeze
+    mem.npf = npf_freeze
+    mem.npf.p2_nodes[...] = dp2n
 
-    H10 = npf.p2_nodes[:, 2:-2, :].mean(axis=1)
     logging.info("lake to swe conversion...")
+    H10 = np.copy(mem.npf.p2_nodes)
     H10 -= H10.mean()
+    H1 = ud.mean_val + ud.Msq * _node_to_cell(H10)
 
-    # define 2D kernel
-    kernel = np.ones((2, 2))
-    kernel /= kernel.sum()
-
-    # do node-to-cell averaging
-    H1 = signal.convolve(H10, kernel, mode="valid")
-    # H1 = ud.mean_val + ud.Msq * H1
-    # logging.info(colored(H1.max(), 'red'))
-
-    # project H1 back to horizontal slice with ghost cells
-    H1 = np.expand_dims(H1, axis=1)
-    H1 = np.repeat(H1, elem.icy, axis=1)
-    H1 = ud.mean_val + ud.Msq * H1
-
+    sol = mem.sol
     sol.rho[...] = H1
     sol.rhou[...] = sol.rhou / ud.mean_val * sol.rho
     sol.rhov[...] = sol.rhov / ud.mean_val * sol.rho
     sol.rhow[...] = sol.rhow / ud.mean_val * sol.rho
     sol.rhoY[...] = sol.rhoY / ud.mean_val * sol.rho
 
-    if debug == True:
-        writer.write_all(sol, npf, elem, node, th, str(label) + "_after_lake_to_swe")
-    return sol, npf
+    return mem

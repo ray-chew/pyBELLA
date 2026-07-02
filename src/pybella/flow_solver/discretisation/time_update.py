@@ -41,6 +41,7 @@ def do(
         return device_step.run_window(mem, ud, tout, writer=writer)
 
     swe_to_lake = False
+    lake_to_swe_pending = False
 
     while (mem.time.t < tout) and (mem.time.step < ud.stepmax):
         label = "%.3d" % mem.time.step
@@ -57,18 +58,21 @@ def do(
         ######################################################
         # Blending : Do blending before timestep
         ######################################################
-        swe_to_lake, mem.sol, mem.npf, mem.time.t = schemes.prepare_blending(
-            mem,
-            ud,
-            bld,
-            label,
-            writer,
-            mem.time.step,
-            mem.time.window_step,
-            mem.time.t,
-            dt,
-            swe_to_lake,
-            debug_writer,
+        swe_to_lake, lake_to_swe_pending, mem.sol, mem.npf, mem.time.t = (
+            schemes.prepare_blending(
+                mem,
+                ud,
+                bld,
+                label,
+                writer,
+                mem.time.step,
+                mem.time.window_step,
+                mem.time.t,
+                dt,
+                swe_to_lake,
+                lake_to_swe_pending,
+                debug_writer,
+            )
         )
 
         ud.is_nonhydrostatic = eos.is_nonhydrostatic(ud, mem.time.window_step)
@@ -141,14 +145,10 @@ def do(
         ######################################################
         # Blending : Do blending after timestep
         ######################################################
-        mem.sol, mem.npf = schemes.blending_after_timestep(
-            mem.sol,
-            mem.npf,
-            bld,
-            mem.elem,
-            mem.node,
-            mem.th,
+        lake_to_swe_pending = schemes.blending_after_timestep(
+            mem,
             ud,
+            bld,
             label,
             writer,
             mem.time.step,
@@ -156,7 +156,7 @@ def do(
             mem.time.t,
             dt,
             swe_to_lake,
-            debug_writer,
+            lake_to_swe_pending,
         )
 
         if writer != None:
