@@ -3,11 +3,20 @@ import logging
 import numpy as np
 import numpy.lib.stride_tricks as st
 
-import scipy.sparse as sp
+# the reference's `import scipy.sparse as sp` bindings only resolved under
+# pre-1.8 scipy; the intended objects are scipy.sparse.{eye,diags},
+# scipy.sparse.linalg.spsolve and the dense scipy.linalg.eigh
+import scipy as sp
+import scipy.linalg
+import scipy.sparse
+import scipy.sparse.linalg
 import scipy.ndimage as ndimage
 
 import dask.array as darr
 import dask
+
+# dask >= 2024 no longer exposes dask.diagnostics via `import dask`
+import dask.diagnostics
 
 import matplotlib.pyplot as plt
 
@@ -157,7 +166,7 @@ class analysis(object):
         # self.X -= self.X_mean # R in (m x k)
 
         # This is step 4 of the algorithm in Hunt et. al., 2007.
-        C = sp.spsolve(obs_covar, self.Y.T).T  # R in (k x l)
+        C = sp.sparse.linalg.spsolve(obs_covar, self.Y.T).T  # R in (k x l)
         # This applies the localisation function to the local region.
         if self.localisation_matrix is not None:
             C[...] = ((np.array(self.localisation_matrix)) @ C.T).T

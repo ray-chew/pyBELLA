@@ -32,7 +32,9 @@ def initialise(sst):
     elem, node = es.get_grid()
     member0 = es.get_member(0)
 
-    if dap.da_type == "rloc" and sst.N > 1:
+    # needed by the rloc analysis, and by obs_noiser for every da_type (its
+    # cell/node attribute partition sizes the observation covariance arrays)
+    if sst.N > 1:
         rloc = da_letkf.prepare_rloc(sst.ud, elem, node, dap, sst.N)
     else:
         rloc = None
