@@ -38,7 +38,7 @@ true and the hot path fast.
 7. **TFC curvilinear contract.** The Klein curvilinear generalization keeps
    legacy `G1/G2/z` arrays stored intentionally; the general path must reduce
    bit-exactly to the legacy formulas for a vertical-line metric. See
-   `tfc_generalization_plan.md`.
+   `dev_notes/tfc_generalization_plan.md`.
 
 ---
 
