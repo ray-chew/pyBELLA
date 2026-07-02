@@ -115,13 +115,13 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
         np.random.seed(seed)
         xc += (np.random.random() - 0.5) / 5.0
         yc += (np.random.random() - 0.5) / 5.0
-        logging.info(seed, xc, yc)
+        logging.info("seed = %s, xc = %.6f, yc = %.6f", seed, xc, yc)
 
     if "truth" in ud.aux or "obs" in ud.aux:
         np.random.seed(2233)
         xc += (np.random.random() - 0.5) / 5.0
         yc += (np.random.random() - 0.5) / 5.0
-        logging.info(seed, xc, yc)
+        logging.info("seed = %s, xc = %.6f, yc = %.6f", seed, xc, yc)
         ud.xc = xc
         ud.yc = yc
 

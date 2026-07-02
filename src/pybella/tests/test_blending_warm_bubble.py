@@ -86,6 +86,17 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
 
     x, y = np.meshgrid(x, y)
 
+    # ensemble spread and truth IC of the MWR-2022 OSSE: uniformly sampled
+    # bubble amplitude (archive rising_bubble.py); inert when seed is None
+    # and aux does not contain 'truth'
+    if seed is not None:
+        np.random.seed(seed)
+        delth += 10.0 * np.random.random()
+
+    if "truth" in ud.aux:
+        np.random.seed(1234)
+        delth += 10.0 * np.random.random()
+
     r = np.sqrt((x) ** 2 + (y - y0) ** 2) / r0
 
     p = np.repeat(npf.HydroState.p0.reshape(1, -1), elem.icx, axis=0)
