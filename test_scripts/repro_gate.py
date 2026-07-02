@@ -31,6 +31,9 @@ fast    cheap non-terrain physics, run after every commit:
         travelling_vortex_3d_coriolis (3D + Coriolis).
 terrain agnesi_hydrostatic, schaer_ridge — slow (per-process numba JIT compile
         of the 3D terrain kernels); run at phase boundaries only.
+blending
+        blending_warm_bubble, blending_hydrostatic — the dynamics-blending
+        masters; the cheap gate for edits under interfaces/dynamics_blending.
 full    every golden-master regression case (fast + terrain + the rest).
 """
 
@@ -55,6 +58,10 @@ CASE_SETS = {
         "test_agnesi_hydrostatic",
         "test_schaer_ridge",
     ],
+    "blending": [
+        "test_blending_warm_bubble",
+        "test_blending_hydrostatic",
+    ],
     "full": [
         "test_travelling_vortex",
         "test_travelling_vortex_3d_coriolis",
@@ -67,6 +74,7 @@ CASE_SETS = {
         "test_agnesi_hydrostatic",
         "test_schaer_ridge",
         "test_blending_warm_bubble",
+        "test_blending_hydrostatic",
     ],
 }
 
@@ -135,8 +143,15 @@ def cmd_check(cases, baseline, tol):
             continue
         cand_h5 = _output_h5(case)
         diff = subprocess.run(
-            ["python", os.path.join(HERE, "compare_h5_runs.py"), ref_h5, cand_h5,
-             "--tol", str(tol), "--quiet"],
+            [
+                "python",
+                os.path.join(HERE, "compare_h5_runs.py"),
+                ref_h5,
+                cand_h5,
+                "--tol",
+                str(tol),
+                "--quiet",
+            ],
             capture_output=True,
             text=True,
             cwd=REPO,
