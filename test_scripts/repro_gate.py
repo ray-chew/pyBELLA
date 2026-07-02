@@ -61,6 +61,7 @@ CASE_SETS = {
     "blending": [
         "test_blending_warm_bubble",
         "test_blending_hydrostatic",
+        "test_blending_swe",
     ],
     "full": [
         "test_travelling_vortex",
@@ -75,6 +76,7 @@ CASE_SETS = {
         "test_schaer_ridge",
         "test_blending_warm_bubble",
         "test_blending_hydrostatic",
+        "test_blending_swe",
     ],
 }
 

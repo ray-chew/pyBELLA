@@ -21,6 +21,7 @@ def blending_before_timestep(
     t,
     dt,
     swe_to_lake,
+    lake_to_swe_pending,
     debug,
 ):
     ######################################################
@@ -35,7 +36,7 @@ def blending_before_timestep(
         if (bld.bb or bld.cb) and ud.blending_conv is not None:
             # these distinguish between SWE and Euler blending
             if ud.blending_conv == "swe":
-                do_swe_to_lake_conv(sol, npf, elem, node, ud, th, writer, label, debug)
+                do_swe_to_lake_conv(mem, ud, writer, label)
                 swe_to_lake = True
             else:
                 mem = do_comp_to_psinc_conv(mem, bld, ud, label, writer)
@@ -59,7 +60,6 @@ def blending_before_timestep(
                 mem,
                 ud,
                 bld,
-                ud,
                 label,
                 writer,
                 step,
@@ -78,8 +78,12 @@ def blending_before_timestep(
                 ud.compressibility = 0.0
                 mem = do_comp_to_psinc_conv(mem, bld, ud, label, writer)
         else:
-            do_swe_to_lake_conv(sol, npf, elem, node, ud, th, writer, label, debug)
+            do_swe_to_lake_conv(mem, ud, writer, label)
             swe_to_lake = True
+            # release the lid again at the end of this same step (the
+            # initial blend is one lake step); the window-driven path
+            # instead re-derives this from bld.criterion_init per step
+            lake_to_swe_pending = True
             ud.is_compressible = 0
             ud.compressibility = 0.0
 
@@ -107,17 +111,13 @@ def blending_before_timestep(
         ud.is_nonhydrostatic = gd_eos.is_nonhydrostatic(ud, window_step)
         ud.nonhydrostasy = gd_eos.nonhydrostasy(ud, t, window_step)
 
-    return swe_to_lake, sol, npf, t
+    return swe_to_lake, lake_to_swe_pending, sol, npf, t
 
 
 def blending_after_timestep(
-    sol,
-    npf,
-    bld,
-    elem,
-    node,
-    th,
+    mem,
     ud,
+    bld,
     label,
     writer,
     step,
@@ -125,14 +125,14 @@ def blending_after_timestep(
     t,
     dt,
     swe_to_lake,
-    debug,
+    lake_to_swe_pending,
 ):
     ######################################################
     # Blending : Are we in the lake regime? And is this
     #            the window step where we go back to SWE?
     ######################################################
     if bld is not None and swe_to_lake and step > 0:
-        initialise_lake_to_swe_conv = bld.criterion_init(window_step + 1)
+        lake_to_swe_pending = bld.criterion_init(window_step + 1)
 
     ######################################################
     # Blending : If we are in the lake regime, is blending
@@ -141,32 +141,18 @@ def blending_after_timestep(
     if (
         ud.blending_conv == "swe"
         and swe_to_lake
-        and initialise_lake_to_swe_conv
+        and lake_to_swe_pending
         and bld is not None
     ):
         tmp_CFL = np.copy(ud.CFL)
         ud.CFL = 0.8
-        sol, npf = do_lake_to_swe_conv(
-            sol,
-            flux,
-            npf,
-            elem,
-            node,
-            ud,
-            th,
-            writer,
-            label,
-            debug,
-            step,
-            window_step,
-            t,
-            dt,
-        )
+        do_lake_to_swe_conv(mem, ud, label, writer, step, t + dt)
         ud.CFL = tmp_CFL
         ud.is_compressible = 1
         ud.compressibility = 1.0
+        lake_to_swe_pending = False
 
-    return sol, npf
+    return lake_to_swe_pending
 
 
 def prepare_blending(
@@ -180,13 +166,14 @@ def prepare_blending(
     t,
     dt,
     swe_to_lake,
+    lake_to_swe_pending,
     debug,
 ):
 
     if check_and_apply_initial_hydrostatic_conversion(step, ud, bld):
         ud.is_nonhydrostatic = 0
 
-    swe_to_lake, sol, npf, t = blending_before_timestep(
+    swe_to_lake, lake_to_swe_pending, sol, npf, t = blending_before_timestep(
         mem,
         ud,
         bld,
@@ -197,10 +184,11 @@ def prepare_blending(
         t,
         dt,
         swe_to_lake,
+        lake_to_swe_pending,
         debug,
     )
 
-    return swe_to_lake, sol, npf, t
+    return swe_to_lake, lake_to_swe_pending, sol, npf, t
 
 
 def check_and_apply_initial_hydrostatic_conversion(step, ud, bld):

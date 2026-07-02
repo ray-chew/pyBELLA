@@ -12,6 +12,7 @@ IC_MODULES = {
     "test_lamb_wave": "pybella.tests.test_lamb_wave",
     "test_blending_warm_bubble": "pybella.tests.test_blending_warm_bubble",
     "test_blending_hydrostatic": "pybella.tests.test_blending_hydrostatic",
+    "test_blending_swe": "pybella.tests.test_blending_swe",
     "test_unstable_lamb": "pybella.tests.test_unstable_lamb",
     "test_swe_vortex": "pybella.tests.test_swe_vortex",
     "test_straka": "pybella.tests.test_straka",
