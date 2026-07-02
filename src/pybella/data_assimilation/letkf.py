@@ -12,6 +12,7 @@ import dask
 import matplotlib.pyplot as plt
 
 from ..utils import options as opts
+from . import ensemble_access
 from . import utils
 
 debug_cnt = 0
@@ -25,7 +26,6 @@ def da_interface(results, dap, obs, attr, tout, N, ud):
 
     obs_current = np.array(obs[list(dap.da_times).index(tout)][attr])
     inf_fac = dap.inflation_factor
-    loc = dap.loc[attr]
 
     inner = (
         slice(
@@ -36,8 +36,7 @@ def da_interface(results, dap, obs, attr, tout, N, ud):
         ),
     )
 
-    local_ens = np.array([getattr(results[:, loc, ...][n], attr) for n in range(N)])
-    local_ens = np.array([mem[inner] for mem in local_ens])
+    local_ens = ensemble_access.stack_fields(results, attr, slc=inner)
     local_ens = analysis(local_ens, inf_fac, attr)
 
     obs_current = obs_current[inner]
@@ -242,11 +241,10 @@ class prepare_rloc(object):
 
         # get da parameters
         self.attr_len = len(dap.obs_attributes)
-        self.loc = dap.loc
 
-        self.loc_c = dap.loc_c
-        self.loc_f = dap.loc_f
-        self.loc_n = dap.loc_n
+        # ghost widths, for slicing/padding member fields (nodes share them)
+        self.igx = elem.igx
+        self.igy = elem.igy
 
         self.oa = dap.obs_attributes
         self.da_times = dap.da_times
@@ -286,32 +284,20 @@ class prepare_rloc(object):
 
     def sort_locs(self):
         """
-        Given a dictionary of attributes and the index (locs) of its data container, return attributes that are cell-based and node-based.
+        Partition the observed attributes into cell-based and node-based.
 
         Note
         ----
-        Face-based flux is not yet supported.
+        Face-based flux is not supported (as in the reference implementation).
 
         """
 
         cell_attributes = [
-            key
-            for key, value in self.loc.items()
-            if value == self.loc_c and key in self.oa
+            attr for attr in self.oa if not ensemble_access.is_node_attr(attr)
         ]
         node_attributes = [
-            key
-            for key, value in self.loc.items()
-            if value == self.loc_n and key in self.oa
+            attr for attr in self.oa if ensemble_access.is_node_attr(attr)
         ]
-        face_attributes = [
-            key
-            for key, value in self.loc.items()
-            if value == self.loc_f and key in self.oa
-        ]
-
-        if len(face_attributes) > 0:
-            assert 0, "r-localisation for values on faces not supported."
 
         return cell_attributes, node_attributes
 
@@ -341,7 +327,7 @@ class prepare_rloc(object):
 
         logging.info("Analysis grid type = %s" % grid_type)
         # get properties from class attributes
-        Nx, Ny, obs_attr, attr_len, loc = self.get_properties(grid_type)
+        Nx, Ny, obs_attr, attr_len = self.get_properties(grid_type)
 
         # get the size of local counterpart
         obs_X, obs_Y = self.obs_X, self.obs_Y
@@ -452,9 +438,11 @@ class prepare_rloc(object):
                 data = current[n]
                 data = data.reshape(Nx, Ny)
 
-                data = np.pad(data, 2, mode="constant")
+                data = np.pad(
+                    data, ((self.igx, self.igx), (self.igy, self.igy)), mode="constant"
+                )
 
-                setattr(results[:, loc, ...][n], attr, data)
+                ensemble_access.set_field(results[n], attr, data)
 
         return results
 
@@ -745,7 +733,7 @@ class prepare_rloc(object):
 
     def get_properties(self, type):
         """
-        For a given grid-type (cell / node), return the 2D grid-size (Nx,Ny), the attributes {rho, rhou...} observed on this grid (obs_attr), the number of attributes (attr_len), and the index location of its data container.
+        For a given grid-type (cell / node), return the 2D grid-size (Nx,Ny), the attributes {rho, rhou...} observed on this grid (obs_attr), and the number of attributes (attr_len).
 
         Returns
         -------
@@ -753,7 +741,6 @@ class prepare_rloc(object):
         Ny : int
         obs_attr : list of str
         attr_len : int
-        loc : int
 
         """
         if type != "cell" and type != "node":
@@ -766,32 +753,21 @@ class prepare_rloc(object):
             Ny = self.iicz if type == "cell" else self.iiczn
         obs_attr = self.ca if type == "cell" else self.na
         attr_len = self.cattr_len if type == "cell" else self.nattr_len
-        loc = self.loc_c if type == "cell" else self.loc_n
 
-        return Nx, Ny, obs_attr, attr_len, loc
+        return Nx, Ny, obs_attr, attr_len
 
     def get_quantity(self, results, quantity, inner=True):
         """
         Get ensemble representation of {rho, rhou...}.
 
         """
-        slc = self.i2
-        loc = self.loc[quantity]
-        pads = ((self.pad_X, self.pad_X), (self.pad_Y, self.pad_Y))
-
         if inner:
-            attribute_array = [
-                getattr(results[:, loc, ...][n], quantity)[slc] for n in range(self.N)
-            ]
-        else:
-            attribute_array = [
-                np.pad(
-                    getattr(results[:, loc, ...][n], quantity)[slc], pads, mode="wrap"
-                )
-                for n in range(self.N)
-            ]
+            return ensemble_access.stack_fields(results, quantity, slc=self.i2)
 
-        return np.array(attribute_array)
+        pads = ((self.pad_X, self.pad_X), (self.pad_Y, self.pad_Y))
+        return ensemble_access.stack_fields(
+            results, quantity, slc=self.i2, pads=pads, pad_mode="wrap"
+        )
 
     def get_loc_mat(self, bc_mask, mask_n, n, attr_len):
         loc_mat = self.loc_mat * bc_mask[n]
