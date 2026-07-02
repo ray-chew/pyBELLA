@@ -21,7 +21,10 @@ class init(object):
         # which attributes to inflate in ensemble inflation?
         self.attributes = ["rho", "rhou", "rhov"]
 
-        self.obs_path = "./output_travelling_vortex/output_travelling_vortex_ensemble=1_64_64_3.0_obs.h5"
+        # path to the observation HDF5 file; must be provided via the dap
+        # rewrite for assimilation runs, e.g.
+        #   pybella -ic <case> -N <K> queue -w '{...}' '{obs_path: <file>.h5}'
+        self.obs_path = None
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)
@@ -102,6 +105,10 @@ class init(object):
             self.obs_noise_seeds = [np.random.randint(10000)]
 
     def load_obs(self, obs_path):
+        assert obs_path is not None, (
+            "no observation file set: pass it via the dap rewrite, e.g. "
+            "pybella -ic <case> -N <K> queue -w '{...}' '{obs_path: <file>.h5}'"
+        )
         if self.N > 1:
             obs_file = h5py.File(obs_path, "r")
             obs_attributes = self.obs_attributes
