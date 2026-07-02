@@ -8,8 +8,43 @@ from .swe_lake import do_swe_to_lake_conv, do_lake_to_swe_conv
 
 
 ######################################################
-# Blending calls from data.py
+# Blending calls from time_update.do
 ######################################################
+def _window_start_conversion_due(bld, ud, window_step):
+    """First step of a blending window with a to-limit conversion configured."""
+    return (
+        bld is not None
+        and window_step == 0
+        and (bld.bb or bld.cb)
+        and ud.blending_conv is not None
+    )
+
+
+def _full_blend_due(bld, ud, window_step):
+    """Window step at which the scheduled limit -> full conversion is due."""
+    return (
+        bld is not None
+        and bld.criterion_init(window_step)
+        and bld.cb
+        and ud.blending_conv is not None
+    )
+
+
+def _initial_blend_phase(ud, bld, step):
+    """Which leg of the initial full -> limit -> full blend this step is on.
+
+    Returns "to_limit" on step 0, "to_full" on step ``no_of_pi_initial``,
+    else None (the eos regime schedule applies instead).
+    """
+    if not ud.initial_blending or bld is None:
+        return None
+    if step < 1:
+        return "to_limit"
+    if step == ud.no_of_pi_initial:
+        return "to_full"
+    return None
+
+
 def blending_before_timestep(
     mem,
     ud,
@@ -22,62 +57,36 @@ def blending_before_timestep(
     dt,
     swe_to_lake,
     lake_to_swe_pending,
-    debug,
 ):
+    # The sol/npf aliases returned below are bound BEFORE any conversion and
+    # are load-bearing: the conversion routines rebind mem.sol/mem.npf to
+    # deepcopied freezes, and time_update assigns these pre-conversion
+    # objects back — the warm-bubble golden master encodes exactly these
+    # semantics. Do not "fix" without deliberate target regeneration.
+    sol, npf = mem.sol, mem.npf
+
     ######################################################
     # Blending : Do full regime to limit regime conversion
     ######################################################
-    # do unpacking
-    elem, node, sol, npf, th, _, _ = mem
-
-    # these make sure that we are the correct window step
-    if bld is not None and window_step == 0:
-        # these make sure that blending switches are on
-        if (bld.bb or bld.cb) and ud.blending_conv is not None:
-            # these distinguish between SWE and Euler blending
-            if ud.blending_conv == "swe":
-                do_swe_to_lake_conv(mem, ud, writer, label)
-                swe_to_lake = True
-            else:
-                mem = do_comp_to_psinc_conv(mem, bld, ud, label, writer)
+    if _window_start_conversion_due(bld, ud, window_step):
+        if ud.blending_conv == "swe":
+            do_swe_to_lake_conv(mem, ud, writer, label)
+            swe_to_lake = True
+        else:
+            mem = do_comp_to_psinc_conv(mem, bld, ud, label, writer)
 
     ######################################################
-    # Blending : Do full steps or transition steps?
+    # Blending : scheduled limit regime to full regime conversion
     ######################################################
-    if bld is not None:
-        c_init = bld.criterion_init(window_step)
-    else:
-        c_init = False
-
-    ######################################################
-    # Blending : If full blending steps...
-    ######################################################
-    # check that blending switches are on
-    if c_init and bld.cb and ud.blending_conv is not None:
-        # distinguish between Euler and SWE blending
-        if ud.blending_conv != "swe":
-            do_psinc_to_comp_conv(
-                mem,
-                ud,
-                bld,
-                label,
-                writer,
-                step,
-                t + dt,
-            )
+    if _full_blend_due(bld, ud, window_step) and ud.blending_conv != "swe":
+        do_psinc_to_comp_conv(mem, ud, bld, label, writer, step, t + dt)
 
     ######################################################
     # Initial Blending
     ######################################################
-    # Is initial blending switch on, and if yes, are we in the 0th time-step?
-    if ud.initial_blending == True and step < 1 and bld is not None:
-        # Distinguish between SWE and Euler blendings
-        if ud.blending_conv != "swe":
-            if bld.psinc_init > 0:
-                ud.is_compressible = 0
-                ud.compressibility = 0.0
-                mem = do_comp_to_psinc_conv(mem, bld, ud, label, writer)
-        else:
+    phase = _initial_blend_phase(ud, bld, step)
+    if phase == "to_limit":
+        if ud.blending_conv == "swe":
             do_swe_to_lake_conv(mem, ud, writer, label)
             swe_to_lake = True
             # release the lid again at the end of this same step (the
@@ -86,23 +95,13 @@ def blending_before_timestep(
             lake_to_swe_pending = True
             ud.is_compressible = 0
             ud.compressibility = 0.0
-
-    # Elif, is initial blending switch on and are we on the 1st time-step?
-    # If we are on the first time-step, do we do comp-psinc blending?
-    elif (
-        ud.initial_blending == True and step == ud.no_of_pi_initial and bld is not None
-    ):
-        # Distinguish between SWE and Euler blendings
+        elif bld.psinc_init > 0:
+            ud.is_compressible = 0
+            ud.compressibility = 0.0
+            mem = do_comp_to_psinc_conv(mem, bld, ud, label, writer)
+    elif phase == "to_full":
         if ud.blending_conv != "swe":
-            do_psinc_to_comp_conv(
-                mem,
-                ud,
-                bld,
-                label,
-                writer,
-                step,
-                t + dt,
-            )
+            do_psinc_to_comp_conv(mem, ud, bld, label, writer, step, t + dt)
             ud.is_compressible = 1
             ud.compressibility = 1.0
     else:
@@ -167,13 +166,12 @@ def prepare_blending(
     dt,
     swe_to_lake,
     lake_to_swe_pending,
-    debug,
 ):
 
     if check_and_apply_initial_hydrostatic_conversion(step, ud, bld):
         ud.is_nonhydrostatic = 0
 
-    swe_to_lake, lake_to_swe_pending, sol, npf, t = blending_before_timestep(
+    return blending_before_timestep(
         mem,
         ud,
         bld,
@@ -185,10 +183,7 @@ def prepare_blending(
         dt,
         swe_to_lake,
         lake_to_swe_pending,
-        debug,
     )
-
-    return swe_to_lake, lake_to_swe_pending, sol, npf, t
 
 
 def check_and_apply_initial_hydrostatic_conversion(step, ud, bld):
