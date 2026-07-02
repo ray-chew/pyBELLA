@@ -19,6 +19,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# ETPF data assimilation (optimal-transport solver); the deterministic solver
+# and the LETKF never need it.
+da = ["POT"]
 jax = ["jax>=0.4.35"]
 # GPU clusters: jax's bundled CUDA wheels (hardware-agnostic code; only the
 # install extra differs). Pin the cluster env to the jax version CI last
