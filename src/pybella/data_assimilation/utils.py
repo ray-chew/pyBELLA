@@ -1,66 +1,8 @@
 import copy
 
 import numpy as np
-import scipy as sp
-
-import matplotlib.pyplot as plt
 
 from ..utils import options as opts
-from ..flow_solver.utils.boundary import node_boundary as bdry_n
-
-
-class ensemble(object):
-    def __init__(self, input_ensemble=None):
-        if input_ensemble is not None:
-            cnt = 0
-            for mem in input_ensemble:
-                setattr(self, "mem_" + str(cnt), mem)
-                # self.debug_im(mem[0].rho, cnt)
-                cnt += 1
-        else:
-            None
-
-    def initialise_members(self, ic, N):
-        for cnt in range(N):
-            mem = [copy.deepcopy(arr) for arr in ic]
-            # mem = sampler(mem)
-            setattr(self, "mem_" + str(cnt), mem)
-
-    # def state_vector(self,ensemble):
-    #     N = self.members(ensemble).shape[0]
-    #     return self.members(ensemble).reshape(N,-1)
-
-    def set_members(self, analysis_ensemble, tout):
-        cnt = 0
-        for xi in analysis_ensemble:
-            setattr(self, "mem_" + str(cnt), np.array(xi))
-            # self.debug_im(xi[0].rho, cnt, tout)
-            cnt += 1
-
-    # rethink this eveutally....
-    def ensemble_spreading(self, ens, sampler, attributes, loc=0):
-        N = self.members(ens).shape[0]
-        np.random.seed(555)
-        for attribute in attributes:
-            for n in range(N):
-                mem = getattr(self, "mem_" + str(n))
-                value = getattr(mem[loc], attribute)
-                # self.debug_im(sampler(value), n)
-                setattr(mem[loc], attribute, sampler(value))
-
-    @staticmethod
-    def members(ensemble):
-        return np.array(list(ensemble.__dict__.values()), dtype="object")
-
-    @staticmethod
-    def debug_im(value, n, tout):
-        plt.figure()
-        plt.imshow(value, origin="lower")
-        plt.savefig(
-            "./output_images/ensemble_snapshots/%.3f_%03d.png" % (tout, n),
-            bbox_inches="tight",
-        )
-        plt.close()
 
 
 def ensemble_inflation(results, attributes, factor, N, loc=0):
@@ -71,36 +13,6 @@ def ensemble_inflation(results, attributes, factor, N, loc=0):
         for n in range(N):
             inflation = mean + factor * (getattr(results[n][loc], attribute) - mean)
             setattr(results[n][loc], attribute, inflation)
-
-
-def set_p2_nodes(analysis, results, N, th, node, ud, loc_c=0, loc_n=2):
-    for n in range(N):
-        rhoY = analysis[n]
-        p2_n = getattr(results[n][loc_n], "p2_nodes")
-        rhoY_n = np.zeros_like(p2_n)
-        kernel = np.array([[1.0, 1.0], [1.0, 1.0]])
-        rhoY_n[1:-1, 1:-1] = (
-            sp.signal.fftconvolve(rhoY, kernel, mode="valid") / kernel.sum()
-        )
-        bdry_n.set_ghost_nodes(rhoY_n, node, ud)
-        p2_n = rhoY_n**th.gm1 - 1.0 + (p2_n - p2_n.mean())
-        # p2_n = rhoY_n**th.gm1 - 1.0
-        p2_n -= p2_n.mean()
-        # p2_n = np.pad(p2_n,2,mode='wrap')
-        bdry_n.set_ghost_nodes(p2_n, node, ud)
-        setattr(results[n][loc_n], "p2_nodes", p2_n)
-
-
-def set_rhoY_cells(analysis, results, N, th, ud, loc_c=0, loc_n=2):
-    for n in range(N):
-        p2n = analysis[n]
-        rhoYc0 = getattr(results[n][loc_c], "rhoY")
-        kernel = np.array([[1.0, 1.0], [1.0, 1.0]])
-        p2c = sp.signal.fftconvolve(p2n, kernel, mode="valid") / kernel.sum()
-        p2c -= p2c.mean()
-
-        rhoYc = (rhoYc0**th.gm1 + ud.Msq * p2c) ** th.gm1inv
-        setattr(results[n][loc_c], "rhoYc", rhoYc)
 
 
 def boundary_mask(ud, elem, node, pad_X, pad_Y):
@@ -250,67 +162,6 @@ def sliding_window_view(arr, window_shape, steps):
     # outshape: ([X, (...), Z], ..., [Wx, (...), Wz])
     outshape = outshape + arr.shape[: -len(steps)] + tuple(window_shape)
     return as_strided(arr, shape=outshape, strides=strides, writeable=False)
-
-
-def HSprojector_3t2D(results, elem, dap, N):
-    """
-    Projection method from 3D horizontal slice to 2D array. For use in data assimilation module.
-
-    Parameters
-    ----------
-    results : nd.array
-        An array of ensemble size k. Each ensemble member has [Sol,flux,npf,[window_step,step]].
-    dap : data assimilation input class
-        .
-    N : int
-        ensemble size.
-
-    Note
-    ----
-    I will first test this out before extending the DA algorithm to 3D.
-
-    """
-
-    slc = (
-        slice(
-            None,
-        ),
-        2,
-        slice(
-            None,
-        ),
-    )
-
-    # implying horizontal slice...
-    if elem.ndim == 3 and elem.iicy == 1:
-        for key, value in dap.loc.items():
-            # only reshape data arrays that are involved in DA.
-            if key in dap.obs_attributes:
-                for n in range(N):
-                    p_arr = getattr(results[n][value], key)[slc]
-                    setattr(results[n][value], key, p_arr)
-
-    return results
-
-
-def HSprojector_2t3D(results, elem, node, dap, N):
-    """
-    Projection method from 2D array to 3D horizontal slice. To be used after data assimilation.
-
-    """
-    if elem.ndim == 3 and elem.iicy == 1:
-        for key, value in dap.loc.items():
-            if key in dap.obs_attributes:
-                if value == 0:  # cell container
-                    ys = elem.icy
-                if value == 2:  # node container
-                    ys = node.icy
-                for n in range(N):
-                    p_arr = getattr(results[n][value], key)[:, np.newaxis, :]
-                    p_arr = np.repeat(p_arr, ys, axis=1)
-                    setattr(results[n][value], key, p_arr)
-
-    return results
 
 
 def sparse_obs_selector(obs, elem, node, ud, dap):

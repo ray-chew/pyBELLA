@@ -4,9 +4,6 @@ import h5py
 import numpy as np
 import scipy as sp
 
-from ..flow_solver.utils.boundary import cell_boundary as bdry_c
-from ..flow_solver.utils.boundary import node_boundary as bdry_n
-
 
 class init(object):
     def __init__(self, N, da_type="rloc"):
@@ -28,7 +25,6 @@ class init(object):
 
         # forward operator (projector from state space to observation space)
         self.forward_operator = np.eye(N)
-        # self.converter = self.converter
 
         ############################################
         # Parameters for sparse observations
@@ -119,38 +115,6 @@ class init(object):
             self.obs_noise_seeds = np.random.randint(10000, size=(da_depth)).squeeze()
         else:
             self.obs_noise_seeds = [np.random.randint(10000)]
-
-    @staticmethod
-    def converter(results, N, npf, elem, node, th, ud):
-        """
-        Do this after data assimilation for HS balanced vortex.
-
-        """
-        logging.info("Post DA conversion...")
-
-        g = ud.g0
-        for n in range(N):
-            bdry_c.set_ghost_cells(results[n][0], elem, ud, th, npf)
-            results[n][0].rhoY[...] = (g / 2.0 * results[n][0].rho ** 2) ** th.gamminv
-
-            igy = elem.igy
-
-            kernel = np.ones((2, 2))
-            kernel /= kernel.sum()
-
-            pn = sp.signal.convolve(results[n][0].rhoY[:, igy, :], kernel, mode="valid")
-
-            bdry_c.set_ghost_cells(results[n][0], elem, ud, th, npf)
-            pn = np.expand_dims(pn, 1)
-            pn = np.repeat(pn, node.icy, axis=1)
-
-            results[n][2].p2_nodes[1:-1, :, 1:-1] = pn
-            bdry_n.set_ghost_nodes(results[n][2].p2_nodes, node, ud)
-
-            pn = np.expand_dims(results[n][2].p2_nodes[:, igy, :], 1)
-            results[n][2].p2_nodes[...] = np.repeat(pn[...], node.icy, axis=1)
-
-        return results
 
     def load_obs(self, obs_path, loc=0):
         if self.N > 1:
