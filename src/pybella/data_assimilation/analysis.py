@@ -80,14 +80,9 @@ def do_for_window(tout, outer_step, results, sst, writer):
         ##################################################
         elif dp.dap.da_type == "rloc":
             logging.info("Starting analysis... for rloc algorithm")
-            elem, node = sst.ensemble_state.get_grid()
-            results = da_utils.HSprojector_3t2D(results, elem, dp.dap, sst.N)
             results = dp.rloc.analyse(
                 results, dp.obs, dp.obs_covar, dp.obs_mask, sst.N, tout
             )
-            results = da_utils.HSprojector_2t3D(results, elem, node, dp.dap, sst.N)
-            # if hasattr(dap, 'converter'):
-            # results = dap.converter(results, N, npf, elem, node, th, ud)
 
         ##################################################
         # ETPF
