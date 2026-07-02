@@ -85,7 +85,12 @@ class analysis(object):
         self.delta = delta
 
     def analyse(self, obs_current, obs_covar, Hx, N):
-        import pyemd
+        try:
+            import ot
+        except ImportError as e:
+            raise ImportError(
+                "the ETPF needs the POT package: pip install 'pybella[da]'"
+            ) from e
 
         logging.info("starting ETPF analysis...")
 
@@ -104,8 +109,10 @@ class analysis(object):
 
         # print(Co)
 
-        _, T = pyemd.emd_with_flow(ww, np.ones(N) / N, Co, -1)
-        T = np.array(T)
+        # exact optimal-transport plan; equivalent to the reference
+        # pyemd.emd_with_flow call (both histograms sum to one, so the
+        # extra-mass penalty there was irrelevant)
+        T = ot.emd(ww, np.ones(N) / N, Co)
         T = T * N
 
         self.X = np.dot(
