@@ -6,6 +6,7 @@ from ..flow_solver.utils.boundary import cell_boundary as bdry_c
 from ..flow_solver.utils.boundary import node_boundary as bdry_n
 
 from . import (
+    ensemble_access,
     etpf as da_etpf,
     post_processing as da_post_processing,
     letkf as da_letkf,
@@ -29,9 +30,8 @@ def do_for_window(tout, outer_step, results, sst, writer):
         # Update ensemble with forecast
         ######################################################
         for mem in results:
-            elem, node, sol, _, npf, th, _ = mem
             bdry_c.set_ghost_cells(mem, sst.ud)
-            bdry_n.set_ghost_nodes(npf.p2_nodes, node, sst.ud)
+            bdry_n.set_ghost_nodes(mem.npf.p2_nodes, mem.node, sst.ud)
 
         # ens.set_members(results, tout)
         sst.ensemble_state.set_members(results)
@@ -40,14 +40,12 @@ def do_for_window(tout, outer_step, results, sst, writer):
         # Write output before assimilating data
         ######################################################
         logging.info("Starting output...")
-        for mem in sst.ensemble_state:
-            elem, node, sol, _, npf, th, _ = mem
+        for n, mem in enumerate(sst.ensemble_state.members):
             if params.label_type == "STEP":
-                step = outer_step
-                label = "ensemble_mem=%i_%.3d" % (n, step)
+                label = "ensemble_mem=%i_%.3d" % (n, outer_step)
             else:
                 label = "ensemble_mem=%i_%.3f" % (n, tout)
-            writer.write_all(sol, npf, elem, node, th, str(label) + "_before_da")
+            writer.write_all(mem, label + "_before_da")
 
         ##################################################
         # LETKF with batch observations
@@ -72,7 +70,7 @@ def do_for_window(tout, outer_step, results, sst, writer):
             for attr in dp.dap.obs_attributes:
                 current = analysis[cnt]
                 for n in range(sst.N):
-                    setattr(results[:, dp.dap.loc[attr], ...][n], attr, current[n])
+                    ensemble_access.set_field(results[n], attr, current[n])
                 cnt += 1
 
         ##################################################
@@ -114,9 +112,7 @@ def do_for_window(tout, outer_step, results, sst, writer):
     # Update ensemble with analysis
     ######################################################
     for mem in results:
-        elem, node, sol, npf, th, _, _ = mem
         bdry_c.set_ghost_cells(mem, sst.ud)
-        p2_nodes = npf.p2_nodes
-        bdry_n.set_ghost_nodes(p2_nodes, node, sst.ud)
+        bdry_n.set_ghost_nodes(mem.npf.p2_nodes, mem.node, sst.ud)
 
     sst.ensemble_state.set_members(results)

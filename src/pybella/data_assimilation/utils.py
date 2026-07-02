@@ -3,16 +3,18 @@ import copy
 import numpy as np
 
 from ..utils import options as opts
+from . import ensemble_access
 
 
-def ensemble_inflation(results, attributes, factor, N, loc=0):
+def ensemble_inflation(results, attributes, factor, N):
     for attribute in attributes:
-        mean = [getattr(results[n][loc], attribute) for n in range(N)]
-        mean = np.array(mean)
+        mean = ensemble_access.stack_fields(results, attribute)
         mean = np.mean(mean, axis=0)
         for n in range(N):
-            inflation = mean + factor * (getattr(results[n][loc], attribute) - mean)
-            setattr(results[n][loc], attribute, inflation)
+            inflation = mean + factor * (
+                ensemble_access.get_field(results[n], attribute) - mean
+            )
+            ensemble_access.set_field(results[n], attribute, inflation)
 
 
 def boundary_mask(ud, elem, node, pad_X, pad_Y):
@@ -21,56 +23,20 @@ def boundary_mask(ud, elem, node, pad_X, pad_Y):
     """
 
     pads = [pad_X, pad_Y]
-    if elem.iicy > 1:
-        cmask = np.ones(elem.iisc).squeeze()
-        nmask = np.ones(node.iisc).squeeze()
+    cmask = np.ones(elem.iisc).squeeze()
+    nmask = np.ones(node.iisc).squeeze()
 
-        for dim in range(elem.ndim):
-            ghost_padding = [[0, 0]] * elem.ndim
-            # ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
-            ghost_padding[dim] = [pads[dim], pads[dim]]
+    for dim in range(elem.ndim):
+        ghost_padding = [[0, 0]] * elem.ndim
+        ghost_padding[dim] = [pads[dim], pads[dim]]
 
-            if ud.bdry_type[dim] == opts.BdryType.PERIODIC:
-                cmask = np.pad(
-                    cmask, ghost_padding, mode="constant", constant_values=(1.0)
-                )
-                nmask = np.pad(
-                    nmask, ghost_padding, mode="constant", constant_values=(1.0)
-                )
+        if ud.bdry_type[dim] == opts.BdryType.PERIODIC:
+            cmask = np.pad(cmask, ghost_padding, mode="constant", constant_values=(1.0))
+            nmask = np.pad(nmask, ghost_padding, mode="constant", constant_values=(1.0))
 
-            elif ud.bdry_type[dim] == opts.BdryType.WALL:
-                cmask = np.pad(
-                    cmask, ghost_padding, mode="constant", constant_values=(0.0)
-                )
-                nmask = np.pad(
-                    nmask, ghost_padding, mode="constant", constant_values=(0.0)
-                )
-
-    elif elem.iicy == 1:  # implying horizontal slices
-        cmask = np.ones(elem.iisc).squeeze()
-        nmask = np.ones(node.iisc)[:, 0, :]
-
-        ndim = elem.ndim - 1
-        for dim in range(ndim):
-            ghost_padding = [[0, 0]] * ndim
-            # ghost_padding[dim] = [elem.igs[dim],elem.igs[dim]]
-            ghost_padding[dim] = [pads[dim], pads[dim]]
-
-            if ud.bdry_type[dim] == opts.BdryType.PERIODIC:
-                cmask = np.pad(
-                    cmask, ghost_padding, mode="constant", constant_values=(1.0)
-                )
-                nmask = np.pad(
-                    nmask, ghost_padding, mode="constant", constant_values=(1.0)
-                )
-
-            elif ud.bdry_type[dim] == opts.BdryType.WALL:
-                cmask = np.pad(
-                    cmask, ghost_padding, mode="constant", constant_values=(0.0)
-                )
-                nmask = np.pad(
-                    nmask, ghost_padding, mode="constant", constant_values=(0.0)
-                )
+        elif ud.bdry_type[dim] == opts.BdryType.WALL:
+            cmask = np.pad(cmask, ghost_padding, mode="constant", constant_values=(0.0))
+            nmask = np.pad(nmask, ghost_padding, mode="constant", constant_values=(0.0))
 
     return cmask.astype("bool"), nmask.astype("bool")
 
@@ -191,12 +157,8 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
         )
 
         # get inner domain size
-        if elem.iicy == 1:  # implying horizontal slice
-            Ncx, Ncy = elem.iicx, elem.iicz
-            Nnx, Nny = node.iicx, node.iicz
-        else:
-            Ncx, Ncy = elem.iicx, elem.iicy
-            Nnx, Nny = node.iicx, node.iicy
+        Ncx, Ncy = elem.iicx, elem.iicy
+        Nnx, Nny = node.iicx, node.iicy
 
         Nc = Ncx * Ncy
         Nn = Nnx * Nny
@@ -205,16 +167,10 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
         Kc = int(np.ceil(Kc))
         Kn = int(np.ceil(Kn))
 
-        if elem.iicy == 1:  # implying horizontal slice
-            Xc, Yc = elem.x, elem.z
-            Xc, Yc = np.meshgrid(Xc, Yc)
-            Xn, Yn = node.x, node.z
-            Xn, Yn = np.meshgrid(Xn, Yn)
-        else:  # implying vertical slice
-            Xc, Yc = elem.x, elem.y
-            Xc, Yc = np.meshgrid(Xc, Yc)
-            Xn, Yn = node.x, node.y
-            Xn, Yn = np.meshgrid(Xn, Yn)
+        Xc, Yc = elem.x, elem.y
+        Xc, Yc = np.meshgrid(Xc, Yc)
+        Xn, Yn = node.x, node.y
+        Xn, Yn = np.meshgrid(Xn, Yn)
 
         mask_arr = copy.deepcopy(obs)
         # obs_noisy_interp = deepcopy(obs)
@@ -241,7 +197,12 @@ def sparse_obs_selector(obs, elem, node, ud, dap):
                 mask = np.array([0] * K + [1] * (N - K))
                 np.random.shuffle(mask)
                 mask = mask.reshape(Nx, Ny)
-                mask = np.pad(mask, (2, 2), mode="constant", constant_values=0.0)
+                mask = np.pad(
+                    mask,
+                    ((elem.igx, elem.igx), (elem.igy, elem.igy)),
+                    mode="constant",
+                    constant_values=0.0,
+                )
 
                 # values = np.ma.array(value[i0], mask=mask).compressed()
                 # X = np.ma.array(grid_x, mask=mask).compressed()

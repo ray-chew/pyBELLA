@@ -66,21 +66,6 @@ class init(object):
         # rejuvenation factor for ETPF
         self.rejuvenation_factor = 0.001
 
-        self.loc_c = 0  # container list location of cell-based arrays
-        self.loc_f = 1  # ... of face-based arrays
-        self.loc_n = 2  # ... of node-based arrays
-
-        # in which data container are the attributes involved in the DA procedure?
-        self.loc = {
-            "rho": 0,
-            "rhou": 0,
-            "rhov": 0,
-            "rhow": 0,
-            "rhoY": 0,
-            "rhoX": 0,
-            "p2_nodes": 2,
-        }
-
     def gen_obs_sparse(self):
         da_len = len(self.da_times)
         if self.sparse_obs_by_attr == True:
@@ -116,7 +101,7 @@ class init(object):
         else:
             self.obs_noise_seeds = [np.random.randint(10000)]
 
-    def load_obs(self, obs_path, loc=0):
+    def load_obs(self, obs_path):
         if self.N > 1:
             obs_file = h5py.File(obs_path, "r")
             obs_attributes = self.obs_attributes
