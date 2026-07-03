@@ -41,6 +41,7 @@ CASES = {
         # TV sol_init keys the (identical) truth/obs IC on 'obs'/'truth' in aux
         "obs_aux": "obs",
         "truth_aux": "truth",
+        "grid": (64, 64),
     },
     "bubble": {
         # the production paper case (t_ref = 1000 s, native 160x80, seeded
@@ -61,6 +62,7 @@ CASES = {
         # pseudo-incompressible one driven by initial_blending=True alone.
         "aux_base": "CFLfixed_",
         "out_glob": "./outputs/output_rising_bubble/*ensemble=1*_%s*.h5",
+        "grid": (160, 80),
     },
 }
 
@@ -122,7 +124,9 @@ def main():
     ud_common.update(cfg["ud_extra"])
     ud_common.update(args.ud)
 
-    grid = None
+    # always pin the obs lookup to the run's grid: an unpinned glob can pick
+    # a shakedown-resolution obs file over the paper one (lexical sort)
+    grid = cfg["grid"]
     if "inx" in ud_common and "iny" in ud_common:
         grid = (ud_common["inx"] - 1, ud_common["iny"] - 1)
 
