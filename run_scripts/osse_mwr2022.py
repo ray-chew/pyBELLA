@@ -70,11 +70,15 @@ OBS_ATTRS = ["rhou", "rhov"]
 ALL_RUNS = ["obs", "truth", "noda", "enda", "endab", "etpf", "etpfb"]
 
 
-def find_obs_file(case_cfg):
+def find_obs_file(case_cfg, grid=None):
     default = "./outputs/test_*%s*/*ensemble=1*_%%s*.h5" % (
         case_cfg["ic"].replace("test_", "")
     )
     pattern = case_cfg.get("out_glob", default) % case_cfg["obs_aux"]
+    if grid is not None:
+        # pin the grid so e.g. a low-resolution obs file cannot shadow the
+        # paper-resolution one (fn_gen writes _<Nx>_<Ny>_ into the suffix)
+        pattern = pattern.replace("*ensemble=1*", "*ensemble=1_%i_%i*" % grid)
     matches = sorted(glob.glob(pattern))
     assert matches, "no observation file found for pattern %s -- run 'obs' first" % (
         pattern
@@ -97,6 +101,13 @@ def main():
     ap.add_argument("case", choices=list(CASES))
     ap.add_argument("--members", type=int, default=10, help="ensemble size K")
     ap.add_argument("--runs", nargs="*", default=ALL_RUNS, choices=ALL_RUNS)
+    ap.add_argument(
+        "--ud",
+        type=json.loads,
+        default={},
+        help="extra ud overrides merged into every run, e.g. "
+        '\'{"inx": 81, "iny": 41}\' for a cheap shakedown',
+    )
     args = ap.parse_args()
 
     cfg = CASES[args.case]
@@ -109,6 +120,11 @@ def main():
         "tout": cfg["tout"],
     }
     ud_common.update(cfg["ud_extra"])
+    ud_common.update(args.ud)
+
+    grid = None
+    if "inx" in ud_common and "iny" in ud_common:
+        grid = (ud_common["inx"] - 1, ud_common["iny"] - 1)
 
     aux_base = cfg.get("aux_base", "")
 
@@ -127,7 +143,7 @@ def main():
         return {
             "da_times": cfg["tout"],
             "obs_attrs": OBS_ATTRS,
-            "obs_path": find_obs_file(cfg),
+            "obs_path": find_obs_file(cfg, grid=grid),
             "da_type": da_type,
         }
 
