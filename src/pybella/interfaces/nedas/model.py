@@ -248,8 +248,6 @@ class PyBellaModel(Model[RegularGrid]):
         kwargs = self.parse_kwargs(kwargs)
         self.run_status = "running"
 
-        member = kwargs["member"]
-        mem = self.members[member]
         fp = kwargs["forecast_period"]
         t0 = self.nondim_time(kwargs["time"])
         tout = round(t0 + fp, 3)
@@ -265,12 +263,24 @@ class PyBellaModel(Model[RegularGrid]):
         blend = self.bld if analysis_at_t0 else None
         if self.ud.initial_blending and outer_step in (0, 1):
             blend = self.bld
-        if analysis_at_t0:
-            mem.time.window_step = 0
 
-        self.members[member] = dis_time_update.do(
-            mem, self.ud, tout, blend, debug_writer=NullDebugWriter()
-        )
+        if kwargs.get("nens"):
+            # ens_run_strategy 'batch': one call advances the whole ensemble.
+            # For now a plain loop; this is the hook for JAX Phase D — stack
+            # the member states and replace the loop with one vmapped window
+            # integration on device (dis_time_update must become vmappable
+            # first: bicgstab solve + blending hooks are the hard parts).
+            members = list(range(kwargs["nens"]))
+        else:
+            members = [kwargs["member"]]
+
+        for member in members:
+            mem = self.members[member]
+            if analysis_at_t0:
+                mem.time.window_step = 0
+            self.members[member] = dis_time_update.do(
+                mem, self.ud, tout, blend, debug_writer=NullDebugWriter()
+            )
         self.run_status = "complete"
 
     # --- OSSE hooks -------------------------------------------------------------
@@ -283,11 +293,18 @@ class PyBellaModel(Model[RegularGrid]):
         (dev_notes/da_reinstatement.md, phase D1).
         """
         kwargs = self.parse_kwargs(kwargs)
-        member = kwargs["member"]
         if self._seeds is None:
             rng = np.random.RandomState(self.random_seed)
             self._seeds = rng.randint(10000, size=self.c.nens)
 
+        if kwargs.get("nens") and kwargs["member"] is None:
+            # ens_run_strategy 'batch': one call builds the whole ensemble
+            for member in range(kwargs["nens"]):
+                self._init_member(member)
+        else:
+            self._init_member(kwargs["member"])
+
+    def _init_member(self, member: int) -> None:
         sol = fields.CellSolField(self.elem.sc)
         npf = fields.NodePressureField(self.elem, self.node, self.ud)
         sol = self._sol_init(
