@@ -1,0 +1,134 @@
+# NEDAS TV OSSE — MWR Fig-10 ALL-quantities configuration (EnDA):
+# obs + state = {rho, rhou, rhov, rhoY, p2_nodes}, the params.py default set.
+# Parity target: the PINNED Fig-10 table in dev_notes/da_reinstatement.md.
+#
+# p2_nodes lives on the node grid: the filter sees a 4-node cell-centred
+# view; the analysis increment is interpolated back to nodes (adapter).
+# impact_on_state reproduces the native rloc TWO-PASS structure exactly
+# (letkf.py analyse: cell attrs updated only by cell obs, p2 only by p2 obs).
+work_dir: outputs/nedas_tv_endab_all
+
+io_mode: online
+job_submit:
+  host: local
+  parallel_mode: serial
+
+nproc: 1
+nens: 10
+
+run_preproc: True
+run_forecast: True
+run_analysis: True
+run_postproc: True
+run_diagnose: False
+interactive: False
+
+time_start: 2001-01-01T00:00:00Z
+time_end: 2001-01-01T03:15:00Z   # one cycle past the last analysis (t=3.0)
+time_analysis_start: 2001-01-01T00:15:00Z
+time_analysis_end: 2001-01-01T03:00:00Z
+cycle_period: 0.25
+obs_time_steps: [0]
+state_time_steps: [0]
+
+grid_def:
+  type: pybella
+
+model_def:
+  pybella:
+    ic: test_travelling_vortex
+    random_seed: 888
+    ud_overrides:
+      stepmax: 100000
+      aux: nedas_wdab_all
+      initial_blending: True
+      continuous_blending: True    # EnDAB
+
+state_def:
+- {name: rho,      model_src: pybella, var_type: field, err_type: normal}
+- {name: rhou,     model_src: pybella, var_type: field, err_type: normal}
+- {name: rhov,     model_src: pybella, var_type: field, err_type: normal}
+- {name: rhoY,     model_src: pybella, var_type: field, err_type: normal}
+- {name: p2_nodes, model_src: pybella, var_type: field, err_type: normal}
+
+# cell obs update only cell fields; p2 obs update only p2 (native split)
+obs_def:
+- name: rho
+  dataset_src: pybella
+  model_src: pybella
+  err: {type: normal, std: 0.0}   # err_std comes from the native VarCov chain
+  hroi: 0.086
+  vroi: 1000
+  troi: 24
+  impact_on_state: {p2_nodes: 0.0}
+- name: rhou
+  dataset_src: pybella
+  model_src: pybella
+  err: {type: normal, std: 0.0}
+  hroi: 0.086
+  vroi: 1000
+  troi: 24
+  impact_on_state: {p2_nodes: 0.0}
+- name: rhov
+  dataset_src: pybella
+  model_src: pybella
+  err: {type: normal, std: 0.0}
+  hroi: 0.086
+  vroi: 1000
+  troi: 24
+  impact_on_state: {p2_nodes: 0.0}
+- name: rhoY
+  dataset_src: pybella
+  model_src: pybella
+  err: {type: normal, std: 0.0}
+  hroi: 0.086
+  vroi: 1000
+  troi: 24
+  impact_on_state: {p2_nodes: 0.0}
+- name: p2_nodes
+  dataset_src: pybella
+  model_src: pybella
+  err: {type: normal, std: 0.0}
+  hroi: 0.086
+  vroi: 1000
+  troi: 24
+  impact_on_state: {rho: 0.0, rhou: 0.0, rhov: 0.0, rhoY: 0.0}
+
+dataset_def:
+  pybella:
+    model_src: pybella
+    obs_file: outputs/test_travelling_vortex/test_travelling_vortex_ensemble=1_64_64_3.000000_obs.h5
+    obs_attrs: [rho, rhou, rhov, rhoY, p2_nodes]   # native params.py order
+    da_times: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
+    obs_frac: 0.10
+    noise_percentage: 0.05
+
+perturb:
+
+scheme: filter
+niter: 1
+resolution_level: [0]
+character_length: [16]
+localize_scale_fac: [1]
+obs_err_scale_fac: [1]
+
+assimilator_def:
+  type: ETKF
+
+updator_def:
+  type: additive
+
+inflation_def:
+  type: post,multiplicative
+  adaptive: False
+  coef: 1.0
+
+localization_def:
+  horizontal:
+    type: gaspari_cohn
+  vertical:
+    type: gaspari_cohn
+  temporal:
+    type: exponential
+
+diag:
