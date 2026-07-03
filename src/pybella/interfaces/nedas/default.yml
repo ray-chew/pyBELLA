@@ -1,0 +1,12 @@
+# PyBellaModel defaults (NEDAS Model.__init__ parses this file; keys become
+# instance attributes, overridden by model_def.pybella in the run config).
+nproc_per_run: 1
+nproc_per_util: 1
+ens_run_strategy: scheduler   # one run() call per member
+walltime: 3600
+ens_init_dir: ''
+truth_dir: ''
+
+ic: test_travelling_vortex    # IC_MODULES key
+random_seed: 888              # member-seed chain root (archive convention)
+restart_dt: 0.25              # "hours" = nondim time units; TV OSSE cycle
