@@ -58,13 +58,6 @@ def blending_before_timestep(
     swe_to_lake,
     lake_to_swe_pending,
 ):
-    # The sol/npf aliases returned below are bound BEFORE any conversion and
-    # are load-bearing: the conversion routines rebind mem.sol/mem.npf to
-    # deepcopied freezes, and time_update assigns these pre-conversion
-    # objects back — the warm-bubble golden master encodes exactly these
-    # semantics. Do not "fix" without deliberate target regeneration.
-    sol, npf = mem.sol, mem.npf
-
     ######################################################
     # Blending : Do full regime to limit regime conversion
     ######################################################
@@ -110,7 +103,7 @@ def blending_before_timestep(
         ud.is_nonhydrostatic = gd_eos.is_nonhydrostatic(ud, window_step)
         ud.nonhydrostasy = gd_eos.nonhydrostasy(ud, t, window_step)
 
-    return swe_to_lake, lake_to_swe_pending, sol, npf, t
+    return swe_to_lake, lake_to_swe_pending
 
 
 def blending_after_timestep(
