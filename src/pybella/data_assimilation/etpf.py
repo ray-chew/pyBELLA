@@ -115,9 +115,9 @@ class analysis(object):
         T = ot.emd(ww, np.ones(N) / N, Co)
         T = T * N
 
-        self.X = np.dot(
-            self.X.T, T
-        ).T  # + self.delta * np.random.randn(self.X.shape[0],self.X.shape[1])
+        self.X = np.dot(self.X.T, T).T + self.delta * np.random.randn(
+            self.X.shape[0], self.X.shape[1]
+        )
         # print(self.X.shape)
 
     @staticmethod
