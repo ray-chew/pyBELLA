@@ -24,7 +24,10 @@ import numpy as np
 
 OBS_GLOB = "outputs/test_travelling_vortex/*ensemble=1_64_64*_obs.h5"
 DA_TIMES = [round(float(t), 3) for t in np.arange(0.25, 3.25, 0.25)]
-OBS_ATTRS = ["rhou", "rhov"]
+# the Fig-10 all-quantities set (native params.py default order); subsumes
+# the momentum-only case (masks and per-attr err stds are attr-independent)
+OBS_ATTRS = ["rho", "rhou", "rhov", "rhoY", "p2_nodes"]
+CONFIG = "run_scripts/nedas_tv_enda_all.yml"
 K = 10
 
 
@@ -50,7 +53,7 @@ def native_pipeline(obs_file):
     rloc = da_letkf.prepare_rloc(ud, elem, node, dap, K)
     mask = da_utils.sparse_obs_selector(obs, elem, node, ud, dap)
     _, obs_covar = da_utils.obs_noiser(obs, mask, dap, rloc, elem)
-    return elem, obs, mask, obs_covar, rloc
+    return elem, node, obs, mask, obs_covar, rloc
 
 
 def nedas_obs_seqs(obs_file):
@@ -61,7 +64,7 @@ def nedas_obs_seqs(obs_file):
     from NEDAS.core.context import Context
     from NEDAS.utils.conversion import dt1h
 
-    c = Context(config_file="run_scripts/nedas_tv_osse.yml", nens=K)
+    c = Context(config_file=CONFIG, nens=K)
     dataset = c.datasets["pybella"]
     dataset.obs_file = obs_file  # in case the config points elsewhere
     seqs = {}
@@ -81,26 +84,31 @@ def main():
     obs_file = matches[-1]
     print("obs file:", obs_file)
 
-    elem, obs, mask, obs_covar, rloc = native_pipeline(obs_file)
+    elem, node, obs, mask, obs_covar, rloc = native_pipeline(obs_file)
     seqs = nedas_obs_seqs(obs_file)
 
-    i2 = elem.i2
-    x1d = elem.x[elem.igx : -elem.igx]
-    y1d = elem.y[elem.igy : -elem.igy]
-    xg, yg = np.meshgrid(x1d, y1d, indexing="ij")
+    grids = {}
+    for attr in OBS_ATTRS:
+        grid = node if attr == "p2_nodes" else elem
+        x1d = grid.x[grid.igx : -grid.igx]
+        y1d = grid.y[grid.igy : -grid.igy]
+        grids[attr] = (grid, np.meshgrid(x1d, y1d, indexing="ij"))
 
     checked = 0
     for tt, t in enumerate(DA_TIMES):
         for attr in OBS_ATTRS:
             seq = seqs[(t, attr)]
-            sel = np.asarray(mask[tt][attr])[i2] == 0
+            grid, (xg, yg) = grids[attr]
+            sel = np.asarray(mask[tt][attr])[grid.i2] == 0
             assert seq["obs"].size == sel.sum(), (t, attr, "nobs mismatch")
-            assert np.array_equal(seq["obs"], np.asarray(obs[tt][attr])[i2][sel])
+            assert np.array_equal(seq["obs"], np.asarray(obs[tt][attr])[grid.i2][sel])
             assert np.array_equal(seq["x"], xg[sel]) and np.array_equal(
                 seq["y"], yg[sel]
             )
-            cidx = rloc.ca.index(attr)
-            native_sd = float(np.sqrt(obs_covar[0][tt, cidx]))
+            if attr in rloc.na:
+                native_sd = float(np.sqrt(obs_covar[1][tt, rloc.na.index(attr)]))
+            else:
+                native_sd = float(np.sqrt(obs_covar[0][tt, rloc.ca.index(attr)]))
             assert np.allclose(seq["err_std"], native_sd, rtol=0, atol=0), (
                 t,
                 attr,

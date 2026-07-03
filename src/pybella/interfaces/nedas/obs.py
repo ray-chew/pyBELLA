@@ -65,14 +65,14 @@ class PyBellaObs(Dataset):
 
     # --- native pipeline replication -------------------------------------
 
+    def _grid_of(self, attr):
+        """The pyBELLA grid an attribute lives on (node for p2, else cell)."""
+        return self._model.node if attr == "p2_nodes" else self._model.elem
+
     def _native_obs(self):
         if self._cache is not None:
             return self._cache
 
-        elem = self._model.elem
-        i2 = elem.i2
-        nx, ny = elem.iicx, elem.iicy
-        npts = nx * ny
         times = [round(float(t), 3) for t in self.da_times]
 
         # clean fields from the native obs H5
@@ -86,18 +86,31 @@ class PyBellaObs(Dataset):
                         data = data[:, 0, :]
                     clean[(t, attr)] = data
 
-        # sparsity masks: the exact native seed chain (1 = excluded)
+        # sparsity masks: the exact native seed chain (1 = excluded). One
+        # seed per TIME (sparse_obs_by_attr=False); each attr rebuilds the
+        # mask from that seed with its OWN grid size, so cell attrs share a
+        # mask and p2_nodes gets the node-grid one (utils.sparse_obs_selector).
         np.random.seed(777)
         seeds = np.random.randint(10000, size=(len(times), 1))
         if len(seeds) > 1:
             seeds = seeds.squeeze()
-        n_obs = int(np.ceil(npts * self.obs_frac))
         masks = {}
         for tt in range(len(times)):
-            np.random.seed(seeds[tt])
-            mask = np.array([0] * n_obs + [1] * (npts - n_obs))
-            np.random.shuffle(mask)
-            masks[tt] = mask.reshape(nx, ny)
+            for attr in self.obs_attrs:
+                grid = self._grid_of(attr)
+                nx, ny = grid.iicx, grid.iicy
+                key = (tt, nx, ny)
+                if key in masks:
+                    continue
+                n_obs = int(np.ceil(nx * ny * self.obs_frac))
+                np.random.seed(seeds[tt])
+                mask = np.array([0] * n_obs + [1] * (nx * ny - n_obs))
+                np.random.shuffle(mask)
+                masks[key] = mask.reshape(nx, ny)
+
+        def mask_for(tt, attr):
+            grid = self._grid_of(attr)
+            return masks[(tt, grid.iicx, grid.iicy)]
 
         # VarCov error std per attr: per-time stds averaged over times.
         # Bit-exact native replication (utils.obs_noiser): fill a
@@ -106,23 +119,28 @@ class PyBellaObs(Dataset):
         std_dev = np.zeros((len(times), len(self.obs_attrs)))
         for tt, t in enumerate(times):
             for ai, attr in enumerate(self.obs_attrs):
-                value = np.ma.array(clean[(t, attr)][i2], mask=masks[tt])
+                inner = clean[(t, attr)][self._grid_of(attr).i2]
+                value = np.ma.array(inner, mask=mask_for(tt, attr))
                 var = self.noise_percentage * ((value - value.mean()) ** 2).mean()
                 std_dev[tt, ai] = var**0.5
         mean_sd = std_dev.mean(axis=0, keepdims=True)
         sd = {attr: mean_sd[0, ai] for ai, attr in enumerate(self.obs_attrs)}
 
-        # obs positions: inner cell centres where mask == 0
-        x1d = elem.x[elem.igx : -elem.igx]
-        y1d = elem.y[elem.igy : -elem.igy]
-        xg, yg = np.meshgrid(x1d, y1d, indexing="ij")  # (nx, ny), field-aligned
+        # obs positions: inner grid points (cell centres / nodes) at mask == 0
+        coords = {}
+        for attr in self.obs_attrs:
+            grid = self._grid_of(attr)
+            x1d = grid.x[grid.igx : -grid.igx]
+            y1d = grid.y[grid.igy : -grid.igy]
+            coords[attr] = np.meshgrid(x1d, y1d, indexing="ij")  # field-aligned
 
         cache = {}
         for tt, t in enumerate(times):
-            sel = masks[tt] == 0
             time_dt = self.c.config.time_start + t * self._dt1h()
             for attr in self.obs_attrs:
-                values = clean[(t, attr)][i2][sel]
+                sel = mask_for(tt, attr) == 0
+                xg, yg = coords[attr]
+                values = clean[(t, attr)][self._grid_of(attr).i2][sel]
                 nobs = values.size
                 cache[(t, attr)] = {
                     "obs": values,

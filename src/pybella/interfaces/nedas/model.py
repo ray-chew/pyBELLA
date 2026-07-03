@@ -32,14 +32,17 @@ from ...flow_solver.physics import thermodynamics as gd_thermodynamics
 from ...flow_solver.utils import cache as fs_cache
 from ...flow_solver.utils import fields
 from ...flow_solver.utils.boundary import cell_boundary as bdry_c
+from ...flow_solver.utils.boundary import node_boundary as bdry_n
 from ...utils import axes, data_structures, options as opts, user_data
 from ...utils.io.debug import NullDebugWriter
 from ..dynamics_blending import schemes as blending_schemes
 from ..ic_config import IC_MODULES
 
-# DA-visible cell fields. p2_nodes is exposed for snapshots/diagnostics only:
-# it lives on the node grid and must never enter state_def (the analysis grid
-# is the cell grid); the MWR-parity experiments update {rhou, rhov} only.
+# DA-visible fields. p2_nodes lives on the node grid: the filter reads a
+# cell-centred 4-node-average view of it, and analysis increments are
+# interpolated back to nodes (increment-only write-back — the node field
+# never round-trips through the cell representation). Snapshots keep the
+# true node field.
 CELL_VARS = ("rho", "rhou", "rhov", "rhoY")
 NODE_VARS = ("p2_nodes",)
 
@@ -119,7 +122,7 @@ class PyBellaModel(Model[RegularGrid]):
         return round((time - self.c.config.time_start).total_seconds() / 3600.0, 3)
 
     def _inner(self, member: int, name: str) -> np.ndarray:
-        """Ghost-free (y, x) view-copy of a member field."""
+        """Ghost-free (y, x) view-copy of a member field, on its OWN grid."""
         mem = self.members[member]
         if name in NODE_VARS:
             arr, grid = mem.npf.p2_nodes, self.node
@@ -127,6 +130,32 @@ class PyBellaModel(Model[RegularGrid]):
             arr, grid = getattr(mem.sol, name), self.elem
         inner = np.asarray(arr[grid.i2])
         return inner.reshape(grid.iicx, grid.iicy).T.copy()
+
+    def _p2_cell_view(self, member: int) -> np.ndarray:
+        """p2_nodes as a cell-centred (y, x) view: 4-node average per cell.
+
+        The DA state carries this second-order cell representation; the node
+        field itself is never overwritten by the filter (see write path).
+        """
+        mem = self.members[member]
+        n = np.asarray(mem.npf.p2_nodes[self.node.i2])
+        n = n.reshape(self.node.iicx, self.node.iicy)  # (x, y), cells+1
+        cells = 0.25 * (n[:-1, :-1] + n[1:, :-1] + n[:-1, 1:] + n[1:, 1:])
+        return cells.T.copy()
+
+    def _pad_cell_increment(self, incr_xy: np.ndarray) -> np.ndarray:
+        """One ghost layer around a cell-grid increment, honouring bdry_type."""
+        padded = incr_xy
+        for dim in range(2):
+            mode = (
+                "wrap"
+                if self.ud.bdry_type[dim] == opts.BdryType.PERIODIC
+                else "edge"  # walls: one-sided (replicated) increment
+            )
+            width = [(0, 0), (0, 0)]
+            width[dim] = (1, 1)
+            padded = np.pad(padded, width, mode=mode)
+        return padded
 
     # --- grid / geometry ----------------------------------------------------
 
@@ -149,7 +178,12 @@ class PyBellaModel(Model[RegularGrid]):
         if kwargs.get("tag", "current") != "current":
             return super().read_var_from_memory(**kwargs)
         member = kwargs["member"] if kwargs["member"] is not None else 0
-        return self._inner(member, kwargs["name"])
+        name = kwargs["name"]
+        if name in NODE_VARS:
+            # the filter sees p2 through its cell-centred view; the node
+            # field is the authority and is only ever updated by increments
+            return self._p2_cell_view(member)
+        return self._inner(member, name)
 
     def write_var_to_memory(self, var, **kwargs) -> None:
         kwargs = self.parse_kwargs(kwargs)
@@ -157,13 +191,23 @@ class PyBellaModel(Model[RegularGrid]):
             super().write_var_to_memory(var, **kwargs)
             return
         name = kwargs["name"]
-        if name in NODE_VARS:
-            raise NotImplementedError(
-                "node-based fields are diagnostics-only; they cannot be "
-                "written through the (cell-grid) analysis state"
-            )
         member = kwargs["member"] if kwargs["member"] is not None else 0
         mem = self.members[member]
+        if name in NODE_VARS:
+            # increment-only write-back: interpolate the ANALYSIS INCREMENT
+            # (cell view) to nodes and add it — the node field never
+            # round-trips through the coarser cell representation
+            incr = np.asarray(var) - self._p2_cell_view(member)  # (y, x)
+            padded = self._pad_cell_increment(incr.T)  # (x, y) + 1 ghost layer
+            incr_n = 0.25 * (
+                padded[:-1, :-1] + padded[1:, :-1] + padded[:-1, 1:] + padded[1:, 1:]
+            )
+            p2 = mem.npf.p2_nodes
+            p2[self.node.i2] = np.asarray(p2[self.node.i2]) + incr_n.reshape(
+                p2[self.node.i2].shape
+            )
+            bdry_n.set_ghost_nodes(p2, mem.node, self.ud)
+            return
         arr = getattr(mem.sol, name)
         arr[self.elem.i2] = np.asarray(var).T.reshape(arr[self.elem.i2].shape)
         # analysis writes inner values only; refill the ghost frame, exactly
