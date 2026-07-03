@@ -1,8 +1,10 @@
 # NEDAS==1.2.0 run config: travelling-vortex OSSE through NEDAS (Phase N2
 # parity target — pinned native RMSE tables in dev_notes/da_reinstatement.md).
-# Launch (after pip install "pybella[nedas]"):
-#   python -c "import pybella.interfaces.nedas as pn; pn.register();
-#              from NEDAS import get_scheme; get_scheme(config_file='run_scripts/nedas_tv_osse.yml')()"
+#
+# Prerequisite (native obs file, regenerated from seeds):
+#   python run_scripts/osse_mwr2022.py tv --runs obs truth
+# Launch:
+#   python run_scripts/nedas_run.py -c run_scripts/nedas_tv_osse.yml
 # Unset keys fall back to NEDAS/config/default.yml.
 work_dir: outputs/nedas_tv_osse
 
@@ -22,12 +24,14 @@ run_diagnose: False
 interactive: False
 
 # Convention: 1 NEDAS "hour" == 1 pyBELLA nondimensional time unit.
-# Native da_times = 0.25, 0.50, ..., 3.00  ->  12 cycles of 0.25.
+# Native da_times = 0.25, 0.50, ..., 3.00 -> analyses at 00:15 .. 03:00.
+# time_end is ONE CYCLE PAST the last analysis: the filter loop exits at
+# time_end without analysing it, so 03:15 makes the t=3.0 analysis run.
 time_start: 2001-01-01T00:00:00Z
-time_end: 2001-01-01T03:00:00Z
+time_end: 2001-01-01T03:15:00Z
 time_analysis_start: 2001-01-01T00:15:00Z
 time_analysis_end: 2001-01-01T03:00:00Z
-cycle_period: 0.25       # RISK 5 in dev_notes: verify fractional-hour cycles early
+cycle_period: 0.25       # fractional-hour cycles: verified risk 5
 obs_time_steps: [0]
 state_time_steps: [0]
 
@@ -38,32 +42,50 @@ model_def:
   pybella:
     ic: test_travelling_vortex
     random_seed: 888
-    ens_init_dir: '{work_dir}/init_ens'
-    truth_dir: '{work_dir}/truth'
+    ud_overrides:
+      stepmax: 100000    # stepmax caps the CUMULATIVE step count across windows
+      aux: nedas_wda     # must not contain 'truth'/'obs' (truth-IC trigger)
+      initial_blending: True   # native enda/endab runs blend the first 2 windows
+      continuous_blending: False  # False = EnDA; True = EnDAB (blend per window)
 
-state_def:
-- name: momentum         # (rhou, rhov) vector pair — the fields the native rloc updates
+state_def:               # the fields the analysis updates == native obs_attributes
+- name: rhou
+  model_src: pybella
+  var_type: field
+  err_type: normal
+- name: rhov
   model_src: pybella
   var_type: field
   err_type: normal
 
 obs_def:
-- name: momentum
+- name: rhou
   dataset_src: pybella
   model_src: pybella
   err:
     type: normal
-    std: 0.0             # obs_file mode: err std comes from the native obs H5 (VarCov 5%)
+    std: 0.0             # unused: PyBellaObs supplies the native VarCov err_std
   hroi: 0.086            # nondim; ~5.5 cells * dx(=1/64), matched to native 11x11 rloc support
+  vroi: 1000
+  troi: 24
+- name: rhov
+  dataset_src: pybella
+  model_src: pybella
+  err:
+    type: normal
+    std: 0.0
+  hroi: 0.086
   vroi: 1000
   troi: 24
 
 dataset_def:
   pybella:
     model_src: pybella
-    obs_file: outputs/output_travelling_vortex/tv_obs_64.h5   # native osse_mwr2022.py obs
-    obs_window_min: -0.25
-    obs_window_max: 0
+    obs_file: outputs/test_travelling_vortex/test_travelling_vortex_ensemble=1_64_64_3.000000_obs.h5
+    obs_attrs: [rhou, rhov]
+    da_times: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
+    obs_frac: 0.10
+    noise_percentage: 0.05
 
 perturb:
 

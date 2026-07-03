@@ -1,12 +1,25 @@
-# PyBellaModel defaults (NEDAS Model.__init__ parses this file; keys become
-# instance attributes, overridden by model_def.pybella in the run config).
+# PyBellaModel / PyBellaObs defaults (NEDAS parses this file via parse_config;
+# keys become instance attributes, overridden by model_def.pybella /
+# dataset_def.pybella in the run config).
 nproc_per_run: 1
 nproc_per_util: 1
 ens_run_strategy: scheduler   # one run() call per member
 walltime: 3600
 ens_init_dir: ''
 truth_dir: ''
+dataset_dir: ''
 
+# --- model ---
 ic: test_travelling_vortex    # IC_MODULES key
 random_seed: 888              # member-seed chain root (archive convention)
-restart_dt: 0.25              # "hours" = nondim time units; TV OSSE cycle
+ud_overrides:                 # UserData attribute overrides (stepmax, aux, ...)
+restart_dt: 0.25              # "hours" == nondim time units; TV OSSE cycle
+
+# --- obs dataset (native OSSE obs file) ---
+obs_file: ''
+obs_attrs: [rhou, rhov]       # thesis Table 6.2: momentum-only observations
+da_times: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
+obs_frac: 0.10                # native dap.obs_frac
+noise_percentage: 0.05        # native VarCov 5%
+obs_window_min: 0
+obs_window_max: 0
