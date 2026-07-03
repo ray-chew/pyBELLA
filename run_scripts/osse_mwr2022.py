@@ -43,14 +43,24 @@ CASES = {
         "truth_aux": "truth",
     },
     "bubble": {
-        "ic": "test_blending_warm_bubble",
-        # thesis Table 6.2: t_first = 500 s, dt_obs = 50 s, t_end = 1000 s
-        "tout": [round(float(t), 3) for t in np.arange(500.0, 1050.0, 50.0)],
-        # the paper bubble is 160x80 (the case default is 64x48)
-        "ud_extra": {"inx": 161, "iny": 81},
+        # the production paper case (t_ref = 1000 s, native 160x80, seeded
+        # delth machinery); tests/test_blending_warm_bubble is only a 31-step
+        # blending smoke and is unstable at the paper grid/times
+        "ic": "rb",
+        # thesis Table 6.2: t_first = 500 s, dt_obs = 50 s, t_end = 1000 s,
+        # nondimensionalised by t_ref
+        "tout": [round(float(t), 3) for t in np.arange(0.5, 1.05, 0.05)],
+        "ud_extra": {},
         # the bubble sol_init keys the truth IC on 'truth' in aux only
         "obs_aux": "truth_obs",
         "truth_aux": "truth",
+        # rb keys behaviour on the aux substring 'CFLfixed' (2-step dt pin).
+        # Do NOT include 'imbal': it triggers the initial *hydrostatic*
+        # conversion (hydrostatic-blending experiments), which is unstable for
+        # this nonhydrostatic case; the paper's initial blending is the
+        # pseudo-incompressible one driven by initial_blending=True alone.
+        "aux_base": "CFLfixed_",
+        "out_glob": "./outputs/output_rising_bubble/*ensemble=1*_%s*.h5",
     },
 }
 
@@ -61,10 +71,10 @@ ALL_RUNS = ["obs", "truth", "noda", "enda", "endab", "etpf", "etpfb"]
 
 
 def find_obs_file(case_cfg):
-    pattern = "./outputs/test_*%s*/*ensemble=1*_%s*.h5" % (
-        case_cfg["ic"].replace("test_", ""),
-        case_cfg["obs_aux"],
+    default = "./outputs/test_*%s*/*ensemble=1*_%%s*.h5" % (
+        case_cfg["ic"].replace("test_", "")
     )
+    pattern = case_cfg.get("out_glob", default) % case_cfg["obs_aux"]
     matches = sorted(glob.glob(pattern))
     assert matches, "no observation file found for pattern %s -- run 'obs' first" % (
         pattern
@@ -100,8 +110,10 @@ def main():
     }
     ud_common.update(cfg["ud_extra"])
 
+    aux_base = cfg.get("aux_base", "")
+
     def ud_for(aux, blend=False):
-        ud = dict(ud_common, aux=aux, initial_blending=True)
+        ud = dict(ud_common, aux=aux_base + aux, initial_blending=True)
         if blend:
             # one blended (pseudo-incompressible) step after each assimilation
             ud["continuous_blending"] = True
@@ -121,7 +133,7 @@ def main():
 
     if "obs" in args.runs:
         # no initial blending for the observation run (archive queue_run.py)
-        queue(ic, 1, dict(ud_common, aux=cfg["obs_aux"]), dap_noda)
+        queue(ic, 1, dict(ud_common, aux=aux_base + cfg["obs_aux"]), dap_noda)
     if "truth" in args.runs:
         queue(ic, 1, ud_for(cfg["truth_aux"]), dap_noda)
     if "noda" in args.runs:

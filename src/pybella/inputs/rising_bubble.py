@@ -50,7 +50,7 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     g = ud.gravity_strength[axes.vertical_axis(ud)]
     # print(ud.rho_ref)
 
-    hydrostatics.state(npf, elem, node, th, ud)
+    hydrostatics.integrated_state(npf, elem, node, th, ud)
 
     x = elem.x
     y = elem.y
