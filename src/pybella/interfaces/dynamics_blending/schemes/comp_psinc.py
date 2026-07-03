@@ -32,6 +32,10 @@ def do_psinc_to_comp_conv(
     logging.info(f"Blending... step = {step}")
     sol_freeze = copy.deepcopy(mem.sol)
     npf_freeze = copy.deepcopy(mem.npf)
+    # the pressure-extraction step below is a throwaway: it must not advance
+    # the real clock (pre-ModelState code passed t/step by value; swe_lake.py
+    # applies the same freeze/restore)
+    time_freeze = (mem.time.t, mem.time.step, mem.time.window_step)
 
     ret = time_update.do(
         mem,
@@ -41,6 +45,7 @@ def do_psinc_to_comp_conv(
         writer=None,
         debug_writer=io.NullDebugWriter(),
     )
+    mem.time.t, mem.time.step, mem.time.window_step = time_freeze
 
     fac_old = ud.blending_weight
     fac_new = 1.0 - fac_old
