@@ -62,9 +62,9 @@ def do_lake_to_swe_conv(mem, ud, label, writer, step, tout):
     ``ud.blending_weight`` / ``ud.blending_type``, then reconstructs the SWE
     depth and momenta from the blended pressure around ``ud.mean_val``.
 
-    Unlike ``do_psinc_to_comp_conv`` the look-ahead clock advance is rolled
-    back: no golden master pins the advanced-clock behaviour here, and the
-    legacy scheduling kept the outer clock untouched.
+    Like ``do_psinc_to_comp_conv``, the look-ahead clock advance is rolled
+    back: the legacy scheduling passed t/step by value, so the outer clock
+    stayed untouched.
     """
     from ....flow_solver.discretisation import time_update
 
@@ -72,6 +72,10 @@ def do_lake_to_swe_conv(mem, ud, label, writer, step, tout):
     sol_freeze = copy.deepcopy(mem.sol)
     npf_freeze = copy.deepcopy(mem.npf)
     time_freeze = (mem.time.t, mem.time.step, mem.time.window_step)
+    # reference clock for the look-ahead ([0, step] in the paper-era
+    # data.time_update): window_step = 0 keeps the eos schedule in the
+    # limit (lake) regime under continuous blending
+    mem.time.window_step = 0
 
     ret = time_update.do(
         mem,
