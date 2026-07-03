@@ -46,6 +46,10 @@ class UserData(object):
 
         self.output_timesteps = True
 
+        # default 1e-5 tolerances on all 7 fields: the blended run reproduces
+        # to ~1e-7, and the loose momenta tolerances of the pre-2026-07-02
+        # master would let the psinc->comp conversion be silently discarded
+        # (momenta shift ~0.1, final p2 increment ~1e-5)
         self.diag_state = make_diag_state(
             f"{self.output_type}_blending_warm_bubble",
             "target_blending_warm_bubble",
@@ -54,17 +58,6 @@ class UserData(object):
             self.stepmax,
             plot_compare=True,
             time_increment=True,
-            # The only thing that matters here is that
-            # p2_nodes remains small
-            tolerances={
-                "rho": 1.0e-0,
-                "rhou": 1.0e-0,
-                "rhov": 1.0e-0,
-                "rhow": 1.0e-0,
-                "rhoY": 1.0e-0,
-                "rhoX": 1.0e-0,
-                "p2_nodes": 1.0e-4,
-            },
         )
 
         self.autogen_fn = False
@@ -99,7 +92,6 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
 
     r = np.sqrt((x) ** 2 + (y - y0) ** 2) / r0
 
-    p = np.repeat(npf.HydroState.p0.reshape(1, -1), elem.icx, axis=0)
     rhoY = npf.HydroState.rhoY0[np.newaxis, :]
 
     perturbation = (delth / 300.0) * (np.cos(0.5 * np.pi * r) ** 2)
@@ -117,8 +109,14 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     Sol.rhow[x_idx, y_idx] = rho * w
     Sol.rhoY[x_idx, y_idx] = rhoY
 
-    p = npf.HydroState_n.p0
-    rhoY = npf.HydroState_n.rhoY0
-    npf.p2_nodes[...] = (p - npf.HydroState_n.p0) / rhoY / ud.Msq
+    # imbalanced IC: a large Exner-pressure blob (amplitude 1.0 ~ 10x the
+    # slow signal), momenta untouched. The initial comp->psinc conversion
+    # must absorb it in one blended step -- validated against the frozen
+    # paper-era code (archive/localdab), see dev_notes/da_reinstatement.md
+    # "Addendum 2026-07-02". Unblended, this blob detonates: p2 leaves the
+    # balanced trajectory by 2-5x the total signal, which is what the
+    # p2_nodes increment tolerance below guards against.
+    xn, yn = np.meshgrid(node.x, node.y, indexing="ij")
+    npf.p2_nodes[...] = np.exp(-(xn**2 + (yn - 0.5) ** 2) / (2 * 0.15**2))
 
     return Sol

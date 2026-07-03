@@ -36,6 +36,13 @@ def do_psinc_to_comp_conv(
     # the real clock (pre-ModelState code passed t/step by value; swe_lake.py
     # applies the same freeze/restore)
     time_freeze = (mem.time.t, mem.time.step, mem.time.window_step)
+    # run it on the reference's clock ([0, step-1] in the paper-era
+    # data.time_update): window_step = 0 keeps the eos schedule in the limit
+    # regime — with the live window_step == no_of_pi_initial, continuous
+    # blending would flip the throwaway step to compressible and extract a
+    # compressible (unprojected) half-time pressure
+    mem.time.step -= 1
+    mem.time.window_step = 0
 
     ret = time_update.do(
         mem,
@@ -68,16 +75,11 @@ def do_psinc_to_comp_conv(
     mem.sol = sol_freeze
     mem.npf = npf_freeze
 
-    # elem, node, _, _, _, th, _ = mem
-
     if writer != None:
         writer.populate(str(label) + "_after_full_step", "dp2n", dp2n)
     logging.info("Converting PSINC to COMP")
     bld.convert_p2n(dp2n)
     bld.update_sol(mem, ud, "aft", label=label, writer=writer)
     bld.update_p2n(mem.npf)
-
-    # mem.time.step -= 1
-    # mem.time.window_step -= 1
 
     return mem

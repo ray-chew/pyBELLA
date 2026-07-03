@@ -58,20 +58,22 @@ def do(
         ######################################################
         # Blending : Do blending before timestep
         ######################################################
-        swe_to_lake, lake_to_swe_pending, mem.sol, mem.npf, mem.time.t = (
-            schemes.prepare_blending(
-                mem,
-                ud,
-                bld,
-                label,
-                writer,
-                mem.time.step,
-                mem.time.window_step,
-                mem.time.t,
-                dt,
-                swe_to_lake,
-                lake_to_swe_pending,
-            )
+        # the conversion routines mutate/rebind mem.sol and mem.npf in place;
+        # assigning pre-conversion aliases back here would discard the
+        # psinc -> comp conversion (the pre-refactor code threaded the
+        # CONVERTED Sol/mpv through, cf. 7f0b676~1 schemes.py)
+        swe_to_lake, lake_to_swe_pending = schemes.prepare_blending(
+            mem,
+            ud,
+            bld,
+            label,
+            writer,
+            mem.time.step,
+            mem.time.window_step,
+            mem.time.t,
+            dt,
+            swe_to_lake,
+            lake_to_swe_pending,
         )
 
         ud.is_nonhydrostatic = eos.is_nonhydrostatic(ud, mem.time.window_step)
