@@ -1,0 +1,106 @@
+# NEDAS rising-bubble OSSE (rb, 160x80, momentum-only obs) — EnDA.
+# Parity target: the PINNED bubble table in dev_notes/da_reinstatement.md.
+# Prerequisite: python run_scripts/osse_mwr2022.py bubble --runs obs truth
+# Native da_times 0.5..1.0 step 0.05 -> 0.05h cycles; the pre-analysis
+# spinup 0..0.5 runs as ten 0.05 windows (window_step is NOT reset there,
+# so the blending schedule sees the same step sequence as the native
+# single 0->0.5 window).
+work_dir: outputs/nedas_bubble_endab
+
+io_mode: online
+job_submit:
+  host: local
+  parallel_mode: serial
+
+nproc: 1
+nens: 10
+
+run_preproc: True
+run_forecast: True
+run_analysis: True
+run_postproc: True
+run_diagnose: False
+interactive: False
+
+time_start: 2001-01-01T00:00:00Z
+time_end: 2001-01-01T01:03:00Z   # one cycle past the last analysis (t=1.0)
+time_analysis_start: 2001-01-01T00:30:00Z
+time_analysis_end: 2001-01-01T01:00:00Z
+cycle_period: 0.05
+obs_time_steps: [0]
+state_time_steps: [0]
+
+grid_def:
+  type: pybella
+
+model_def:
+  pybella:
+    ic: rb
+    random_seed: 888
+    restart_dt: 0.05
+    ud_overrides:
+      stepmax: 100000
+      # 'CFLfixed' keys the rb 2-step dt pin; must NOT contain
+      # 'truth'/'obs' (truth-IC trigger) or 'imbal' (hydrostatic conversion)
+      aux: CFLfixed_nedas_wdab
+      initial_blending: True
+      continuous_blending: True    # EnDAB
+
+state_def:
+- {name: rhou, model_src: pybella, var_type: field, err_type: normal}
+- {name: rhov, model_src: pybella, var_type: field, err_type: normal}
+
+obs_def:
+- name: rhou
+  dataset_src: pybella
+  model_src: pybella
+  err: {type: normal, std: 0.0}
+  hroi: 0.0688      # 5.5 cells * dx (=2/160), matched to native 11x11 rloc
+  vroi: 1000
+  troi: 24
+- name: rhov
+  dataset_src: pybella
+  model_src: pybella
+  err: {type: normal, std: 0.0}
+  hroi: 0.0688
+  vroi: 1000
+  troi: 24
+
+dataset_def:
+  pybella:
+    model_src: pybella
+    obs_file: outputs/output_rising_bubble/output_rising_bubble_ensemble=1_160_80_1.000000_CFLfixed_truth_obs.h5
+    obs_attrs: [rhou, rhov]
+    da_times: [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]
+    obs_frac: 0.10
+    noise_percentage: 0.05
+
+perturb:
+
+scheme: filter
+niter: 1
+resolution_level: [0]
+character_length: [16]
+localize_scale_fac: [1]
+obs_err_scale_fac: [1]
+
+assimilator_def:
+  type: ETKF
+
+updator_def:
+  type: additive
+
+inflation_def:
+  type: post,multiplicative
+  adaptive: False
+  coef: 1.0
+
+localization_def:
+  horizontal:
+    type: gaspari_cohn
+  vertical:
+    type: gaspari_cohn
+  temporal:
+    type: exponential
+
+diag:
