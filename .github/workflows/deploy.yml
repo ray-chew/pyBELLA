@@ -56,6 +56,7 @@ jobs:
           pytest ./test_scripts/test_agnesi_2d_equivalence.py
           pytest ./test_scripts/test_schaer_smoke.py
           pytest ./test_scripts/test_schaer_analytic.py
+          pytest ./test_scripts/test_da_smoke.py
           # the test_jax_* scripts run in the jax-equivalence job (jax
           # installed there); without jax they collect 0 tests and
           # pytest >= 9 fails a no-tests-collected run with exit code 5
