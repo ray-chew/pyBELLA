@@ -44,6 +44,14 @@ def do_psinc_to_comp_conv(
     mem.time.step -= 1
     mem.time.window_step = 0
 
+    # exactly ONE extraction step (the paper-era [0, step-1] semantics):
+    # unbounded, the while-t<tout loop appends a spurious dt~0 step whenever
+    # the trial CFL dt undercuts the remaining time in the last ULP, and the
+    # extracted half-time pressure hangs on that branch — a knife-edge that
+    # flips between backends (and BLAS builds) in the last bit
+    stepmax_freeze = ud.stepmax
+    ud.stepmax = mem.time.step + 1
+
     ret = time_update.do(
         mem,
         ud,
@@ -52,6 +60,7 @@ def do_psinc_to_comp_conv(
         writer=None,
         debug_writer=io.NullDebugWriter(),
     )
+    ud.stepmax = stepmax_freeze
     mem.time.t, mem.time.step, mem.time.window_step = time_freeze
 
     fac_old = ud.blending_weight
