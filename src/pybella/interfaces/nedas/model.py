@@ -61,6 +61,8 @@ class PyBellaModel(Model[RegularGrid]):
     random_seed: int
     ud_overrides: dict | None
     restart_dt: float
+    ens_batch_mode: str
+    ens_devices: int
     memory: dict
 
     def __init__(self, **kwargs):
@@ -265,14 +267,35 @@ class PyBellaModel(Model[RegularGrid]):
             blend = self.bld
 
         if kwargs.get("nens"):
-            # ens_run_strategy 'batch': one call advances the whole ensemble.
-            # For now a plain loop; this is the hook for JAX Phase D — stack
-            # the member states and replace the loop with one vmapped window
-            # integration on device (dis_time_update must become vmappable
-            # first: bicgstab solve + blending hooks are the hard parts).
+            # ens_run_strategy 'batch': one call advances the whole ensemble
             members = list(range(kwargs["nens"]))
         else:
             members = [kwargs["member"]]
+
+        from ...backends import is_device_backend
+
+        if kwargs.get("nens") and is_device_backend(self.ud):
+            # Phase D2: lockstep batch-min-dt window integration of the whole
+            # ensemble on device — vmapped over members (ens_batch_mode
+            # 'vmap') or the gate comparator per-member loop with the same dt
+            # sequence ('loop'). Statistically equivalent to, but not
+            # bitwise-reproducing, the per-member-dt scheduler path (see
+            # dev_notes/nedas_interface.md D2).
+            from ...backends.jax_ops import device_batch
+
+            mems = [self.members[m] for m in members]
+            if analysis_at_t0:
+                for mem in mems:
+                    mem.time.window_step = 0
+            device_batch.run_window_batch(
+                mems,
+                self.ud,
+                tout,
+                mode=self.ens_batch_mode,
+                n_devices=self.ens_devices,
+            )
+            self.run_status = "complete"
+            return
 
         for member in members:
             mem = self.members[member]

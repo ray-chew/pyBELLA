@@ -1,0 +1,123 @@
+# NEDAS==1.2.0 run config: TV EnDA OSSE with ensemble-VMAPPED GPU forecasts
+# (Phase D2: PYBELLA_BACKEND=jax-device, JAX_ENABLE_X64=1; initial blending
+# off — the device guard rejects blending; batch-min lockstep dt, so parity
+# with the scheduler path is statistical, see dev_notes/nedas_interface.md).
+#
+# Prerequisite (native obs file, regenerated from seeds):
+#   python run_scripts/osse_mwr2022.py tv --runs obs truth
+# Launch:
+#   PYBELLA_BACKEND=jax-device JAX_ENABLE_X64=1 \
+#     python run_scripts/nedas_run.py -c run_scripts/nedas_tv_enda_vmap.yml
+# Unset keys fall back to NEDAS/config/default.yml.
+work_dir: outputs/nedas_tv_enda_vmap
+
+io_mode: online          # in-memory ModelState coupling; single process
+job_submit:
+  host: local
+  parallel_mode: serial
+
+nproc: 1
+nens: 10                 # K=10, as the native TV OSSE
+
+run_preproc: True
+run_forecast: True
+run_analysis: True
+run_postproc: True
+run_diagnose: False
+interactive: False
+
+# Convention: 1 NEDAS "hour" == 1 pyBELLA nondimensional time unit.
+# Native da_times = 0.25, 0.50, ..., 3.00 -> analyses at 00:15 .. 03:00.
+# time_end is ONE CYCLE PAST the last analysis: the filter loop exits at
+# time_end without analysing it, so 03:15 makes the t=3.0 analysis run.
+time_start: 2001-01-01T00:00:00Z
+time_end: 2001-01-01T03:15:00Z
+time_analysis_start: 2001-01-01T00:15:00Z
+time_analysis_end: 2001-01-01T03:00:00Z
+cycle_period: 0.25       # fractional-hour cycles: verified risk 5
+obs_time_steps: [0]
+state_time_steps: [0]
+
+grid_def:
+  type: pybella          # use the model (inner cell-centre) grid directly
+
+model_def:
+  pybella:
+    ic: test_travelling_vortex
+    random_seed: 888
+    ens_run_strategy: batch
+    ens_batch_mode: vmap   # 'loop' = same-dt per-member comparator; ens_devices: N shards members over GPUs
+    ud_overrides:
+      stepmax: 100000    # stepmax caps the CUMULATIVE step count across windows
+      aux: nedas_wda     # must not contain 'truth'/'obs' (truth-IC trigger)
+      initial_blending: False  # jax-device guard: no blending on device
+      continuous_blending: False  # False = EnDA; True = EnDAB (blend per window)
+
+state_def:               # the fields the analysis updates == native obs_attributes
+- name: rhou
+  model_src: pybella
+  var_type: field
+  err_type: normal
+- name: rhov
+  model_src: pybella
+  var_type: field
+  err_type: normal
+
+obs_def:
+- name: rhou
+  dataset_src: pybella
+  model_src: pybella
+  err:
+    type: normal
+    std: 0.0             # unused: PyBellaObs supplies the native VarCov err_std
+  hroi: 0.086            # nondim; ~5.5 cells * dx(=1/64), matched to native 11x11 rloc support
+  vroi: 1000
+  troi: 24
+- name: rhov
+  dataset_src: pybella
+  model_src: pybella
+  err:
+    type: normal
+    std: 0.0
+  hroi: 0.086
+  vroi: 1000
+  troi: 24
+
+dataset_def:
+  pybella:
+    model_src: pybella
+    obs_file: outputs/test_travelling_vortex/test_travelling_vortex_ensemble=1_64_64_3.000000_obs.h5
+    obs_attrs: [rhou, rhov]
+    da_times: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
+    obs_frac: 0.10
+    noise_percentage: 0.05
+
+perturb:
+
+scheme: filter
+niter: 1
+resolution_level: [0]
+character_length: [16]
+localize_scale_fac: [1]
+obs_err_scale_fac: [1]
+
+assimilator_def:
+  type: ETKF             # batch/local analysis — the LETKF-like engine
+
+updator_def:
+  type: additive
+
+inflation_def:
+  type: post,multiplicative
+  adaptive: False
+  coef: 1.0              # native TV OSSE ran inflation 1.0
+
+localization_def:
+  horizontal:
+    type: gaspari_cohn   # vs native truncated Gaussian: statistical parity only
+  vertical:
+    type: gaspari_cohn
+  temporal:
+    type: exponential
+
+diag:
