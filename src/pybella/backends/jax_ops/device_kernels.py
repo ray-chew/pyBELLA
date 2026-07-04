@@ -619,10 +619,20 @@ def _diffuse(s, cfg, dt):
 # =========================================================================
 
 
-def build_step(cfg, parity, is_nonhydrostatic):
+def build_step(cfg, parity, is_nonhydrostatic, is_compressible):
     """The raw (untraced) full-step closure for one Strang parity + regime
     structure — jitted by :func:`make_step`, vmapped over the member axis by
-    ``device_batch.make_batch_step``."""
+    ``device_batch.make_batch_step``.
+
+    Both regime ints are STATIC trace structure (Phase D4): the psinc leg of
+    a blending window compiles its own variant rather than branching at
+    runtime — the validated compressible graph is untouched.
+
+    The psinc variant (is_compressible == 0) returns ``(s, p2_half)`` — the
+    predictor half-time nodal pressure that numpy stores as
+    ``npf.p2_nodes_half`` (predictor_half_step) and the psinc->comp blend
+    conversion reads; the compressible variant returns ``s`` alone,
+    unchanged."""
 
     def step(s, dt, nonhydro, compressibility, forcing_half, forcing_full):
         sol0 = dict(s)  # free reference hold (incl. p2 for the fill helper)
@@ -634,7 +644,7 @@ def build_step(cfg, parity, is_nonhydrostatic):
         p2_nodes0 = s["p2_nodes"]
 
         s = _explicit_part(s, cfg, 0.5 * dt, nonhydro)
-        if cfg.is_compressible == 0:
+        if is_compressible == 0:
             sol0 = _ghost_fill(sol0, cfg)  # numpy fills the held copy
         s = _implicit_part(
             s,
@@ -642,7 +652,7 @@ def build_step(cfg, parity, is_nonhydrostatic):
             0.5 * dt,
             nonhydro,
             compressibility,
-            sol0=sol0 if cfg.is_compressible == 0 else None,
+            sol0=sol0 if is_compressible == 0 else None,
         )
 
         if cfg.rayleigh_bdry:
@@ -654,11 +664,16 @@ def build_step(cfg, parity, is_nonhydrostatic):
         # half-time state (time_update line 123), before the sol restore
         flux_rhoY_half = _advective_flux(s, cfg)
 
+        # numpy: predictor_half_step stores p2_nodes_half = copy(p2_nodes)
+        # at exactly this point (after the half-time flux recompute)
+        p2_half = s["p2_nodes"] if is_compressible == 0 else None
+
         # p2 reset branch (static regime structure); hydrostatic (alpha_w = 0)
         # excluded so the Phase H1a reconstruction is not discarded — mirrors
-        # time_update.py. Device rejects blending, so alpha_w = 0 never reaches
-        # here; kept consistent for the numpy<->jax-device contract.
-        if cfg.is_compressible == 1 and is_nonhydrostatic == 1:
+        # time_update.py. Device rejects the hydrostatic regime, so alpha_w = 0
+        # never reaches here; kept consistent for the numpy<->jax-device
+        # contract.
+        if is_compressible == 1 and is_nonhydrostatic == 1:
             s["p2_nodes"] = p2_nodes0
 
         # restore sol to t^n for the full forward pass
@@ -679,14 +694,19 @@ def build_step(cfg, parity, is_nonhydrostatic):
 
         if cfg.diffusion:
             s = _diffuse(s, cfg, dt)
+        if is_compressible == 0:
+            return s, p2_half
         return s
 
     return step
 
 
-def make_step(cfg, parity, is_nonhydrostatic):
+def make_step(cfg, parity, is_nonhydrostatic, is_compressible):
     """Build the jitted full step for one Strang parity + regime structure."""
-    return jax.jit(build_step(cfg, parity, is_nonhydrostatic), donate_argnums=(0,))
+    return jax.jit(
+        build_step(cfg, parity, is_nonhydrostatic, is_compressible),
+        donate_argnums=(0,),
+    )
 
 
 def _explicit_part_post(s, cfg, dt, nonhydro, compressibility):

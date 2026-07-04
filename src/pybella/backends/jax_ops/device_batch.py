@@ -37,6 +37,7 @@ from .device_config import _SOL_FIELDS
 from .device_kernels import build_step, make_step
 from .device_loop import (
     _DUMMY_FORCING,
+    _blend_conversion_due,
     _cfl_maxima_plain,
     _check_supported,
     _get_window_cache,
@@ -51,13 +52,13 @@ _batch_cfl_maxima = jax.jit(
 )
 
 
-def make_batch_step(cfg, parity, is_nonhydrostatic):
+def make_batch_step(cfg, parity, is_nonhydrostatic, is_compressible):
     """Vmapped-over-members twin of `device_kernels.make_step`.
 
     The member axis is axis 0 of every state leaf; dt, the regime scalars
     and the forcing tuples are batch-uniform (in_axes None).
     """
-    step = build_step(cfg, parity, is_nonhydrostatic)
+    step = build_step(cfg, parity, is_nonhydrostatic, is_compressible)
     return jax.jit(
         jax.vmap(step, in_axes=(0, None, None, None, None, None)),
         donate_argnums=(0,),
@@ -101,15 +102,21 @@ def _unstack(sb, k):
     return {name: sb[name][k] for name in _STATE_FIELDS}
 
 
-def run_window_batch(mems, ud, tout, mode="vmap", n_devices=1):
+def run_window_batch(mems, ud, tout, mode="vmap", n_devices=1, bld=None):
     """Advance all members of `mems` (list of ModelState) to `tout` in
     lockstep on the device; the batch twin of `device_loop.run_window`.
 
     `n_devices > 1` (vmap mode only) shards the member axis across GPUs
-    (`len(mems)` must divide evenly). No per-step writer support: the
-    batch path is for DA-member forecasts (NEDAS windows), which never
-    write per-step output.
+    (`len(mems)` must divide evenly). Blending windows segment at the
+    conversion steps exactly as in `run_window` — the schedule is
+    batch-uniform (lockstep step/window_step, shared ud), so all members
+    convert on host together and re-enter the device in the new regime.
+    No per-step writer support: the batch path is for DA-member forecasts
+    (NEDAS windows), which never write per-step output.
     """
+    from pybella.interfaces.dynamics_blending import schemes
+    from pybella.interfaces.time_stepper import prestep
+
     if mode not in ("vmap", "loop"):
         raise ValueError(f"unknown batch mode {mode!r} (expected vmap|loop)")
     if n_devices > 1:
@@ -148,38 +155,58 @@ def run_window_batch(mems, ud, tout, mode="vmap", n_devices=1):
         sb = _shard_members(sb, n_devices)
 
     while (mem0.time.t < tout) and (mem0.time.step < ud.stepmax):
-        if mode == "vmap":
-            maxima = np.asarray(
-                _batch_cfl_maxima(
-                    sb["rho"], sb["rhou"], sb["rhov"], sb["rhow"], sb["rhoY"],
-                    cfg.gamm, cfg.Msq,
-                )
+        # ONE CFL kernel for both modes (loop stacks a transient view): the
+        # batch-min dt is then bitwise-identical vmap<->loop by construction,
+        # so the vmap gate isolates the vmapped STEP's reordering alone —
+        # per-member `_cfl_maxima_plain` reduces in a different order than the
+        # vmapped kernel on GPU and would drift dt at the last ULP
+        sb_cfl = sb if mode == "vmap" else _stack(states)
+        maxima = np.asarray(
+            _batch_cfl_maxima(
+                sb_cfl["rho"], sb_cfl["rhou"], sb_cfl["rhov"], sb_cfl["rhow"],
+                sb_cfl["rhoY"], cfg.gamm, cfg.Msq,
             )
-        else:
-            maxima = np.stack(
-                [
-                    np.asarray(
-                        _cfl_maxima_plain(
-                            s["rho"], s["rhou"], s["rhov"], s["rhow"], s["rhoY"],
-                            cfg.gamm, cfg.Msq,
-                        )
-                    )
-                    for s in states
-                ]
-            )
+        )
         # every member's dt through the unchanged host path, then lockstep min
         dts = [_host_dt(maxima[k], mem, ud, tout)[0] for k, mem in enumerate(mems)]
-        dt = min(dts)
+        dt = prestep.apply_modifcations(min(dts), ud, mem0.time.step)
 
-        ud.is_compressible = eos.is_compressible(ud, mem0.time.window_step)
-        ud.compressibility = eos.compressibility(
-            ud, mem0.time.t, mem0.time.window_step
+        # blending/regime control, batch-uniform (lockstep step/window_step,
+        # shared ud): on conversion steps ALL members round-trip through host
+        # memory and convert with the unchanged numpy routines
+        label = "%.3d" % mem0.time.step
+        conversion = _blend_conversion_due(
+            bld, ud, mem0.time.step, mem0.time.window_step
         )
+        if conversion:
+            if mode == "vmap":
+                for k, mem in enumerate(mems):
+                    write_back(_unstack(sb, k), mem)
+            else:
+                for s, mem in zip(states, mems):
+                    write_back(s, mem)
+            for mem in mems:
+                schemes.prepare_blending(
+                    mem, ud, bld, label, None, mem0.time.step,
+                    mem0.time.window_step, mem0.time.t, dt, False, False,
+                )
+            states = [to_device(mem) for mem in mems]
+            sb = _stack(states) if mode == "vmap" else None
+            if n_devices > 1:
+                sb = _shard_members(sb, n_devices)
+        else:
+            # regime bookkeeping only (no state access) — once, shared ud
+            schemes.prepare_blending(
+                mem0, ud, bld, label, None, mem0.time.step,
+                mem0.time.window_step, mem0.time.t, dt, False, False,
+            )
         ud.is_nonhydrostatic = eos.is_nonhydrostatic(ud, mem0.time.window_step)
         ud.nonhydrostasy = eos.nonhydrostasy(ud, mem0.time.t, mem0.time.window_step)
-        assert (
-            int(ud.is_compressible) == cfg.is_compressible
-        ), "is_compressible changed mid-window — unsupported on jax-device"
+        if int(ud.is_nonhydrostatic) == 0:
+            raise NotImplementedError(
+                "hydrostatic regime (alpha_w = 0) step path is not "
+                "implemented on jax-device — run with backend='jax' (hybrid)"
+            )
 
         parity = mem0.time.step % 2
         args = (
@@ -189,16 +216,30 @@ def run_window_batch(mems, ud, tout, mode="vmap", n_devices=1):
             _DUMMY_FORCING,
             _DUMMY_FORCING,
         )
+        regime = (parity, int(ud.is_nonhydrostatic), int(ud.is_compressible))
+        psinc = regime[2] == 0
         if mode == "vmap":
-            key = ("batch", K, parity, int(ud.is_nonhydrostatic))
+            key = ("batch", K) + regime
             if key not in step_fns:
-                step_fns[key] = make_batch_step(cfg, parity, int(ud.is_nonhydrostatic))
-            sb = step_fns[key](sb, *args)
+                step_fns[key] = make_batch_step(cfg, *regime)
+            out = step_fns[key](sb, *args)
+            if psinc:
+                # keep npf.p2_nodes_half current per member (see run_window)
+                sb, p2_half = out
+                for k, mem in enumerate(mems):
+                    mem.npf.p2_nodes_half = np.asarray(p2_half[k])
+            else:
+                sb = out
         else:
-            key = (parity, int(ud.is_nonhydrostatic))
-            if key not in step_fns:
-                step_fns[key] = make_step(cfg, parity, int(ud.is_nonhydrostatic))
-            states = [step_fns[key](s, *args) for s in states]
+            if regime not in step_fns:
+                step_fns[regime] = make_step(cfg, *regime)
+            outs = [step_fns[regime](s, *args) for s in states]
+            if psinc:
+                states = [o[0] for o in outs]
+                for mem, o in zip(mems, outs):
+                    mem.npf.p2_nodes_half = np.asarray(o[1])
+            else:
+                states = outs
 
         logging.info(
             "device batch step %i done (K=%i, mode=%s), t = %.12f, dt = %.12f "

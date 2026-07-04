@@ -120,13 +120,25 @@ def test_seam_routes_to_device():
     assert called["n"] == 1
 
 
-def test_guard_raises_on_blending():
+def test_guard_raises_on_unsupported_blending():
+    """comp<->psinc blending is supported on jax-device via window
+    segmentation (Phase D4); the SWE/lake conversions and the 'imbal'
+    initial hydrostatic conversion are not, and must still fast-fail."""
     mem, ud = fx.make_igw_mem()
-    ud.continuous_blending = True
     try:
         ud.backend = "jax-device"
-        with pytest.raises(NotImplementedError, match="blending"):
+        ud.continuous_blending = True
+        ud.blending_conv = "swe"
+        with pytest.raises(NotImplementedError, match="SWE/lake"):
+            device_step.run_window(mem, ud, 1e9, writer=None)
+        ud.blending_conv = None
+        ud.initial_blending = True
+        ud.aux = "imbal"
+        with pytest.raises(NotImplementedError, match="imbal"):
             device_step.run_window(mem, ud, 1e9, writer=None)
     finally:
         ud.backend = "numpy"
         ud.continuous_blending = False
+        ud.initial_blending = False
+        ud.blending_conv = None
+        ud.aux = ""

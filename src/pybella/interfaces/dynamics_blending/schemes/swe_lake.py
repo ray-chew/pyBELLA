@@ -77,6 +77,11 @@ def do_lake_to_swe_conv(mem, ud, label, writer, step, tout):
     # limit (lake) regime under continuous blending
     mem.time.window_step = 0
 
+    # exactly ONE look-ahead step — same ULP knife-edge as
+    # do_psinc_to_comp_conv (see the note there)
+    stepmax_freeze = ud.stepmax
+    ud.stepmax = mem.time.step + 1
+
     ret = time_update.do(
         mem,
         ud,
@@ -85,6 +90,7 @@ def do_lake_to_swe_conv(mem, ud, label, writer, step, tout):
         writer=None,
         debug_writer=io.NullDebugWriter(),
     )
+    ud.stepmax = stepmax_freeze
     mem.time.t, mem.time.step, mem.time.window_step = time_freeze
 
     fac_old = ud.blending_weight
