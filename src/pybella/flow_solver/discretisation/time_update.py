@@ -35,10 +35,11 @@ def do(
 
     if is_device_backend(ud):
         # device-resident inner loop: state pushed once, one dt scalar sync
-        # per step, full state pulled at tout (backends/jax_ops/device_step)
+        # per step, full state pulled at tout (backends/jax_ops/device_step);
+        # blend windows segment at the conversion steps (Phase D4)
         from ...backends.jax_ops import device_step
 
-        return device_step.run_window(mem, ud, tout, writer=writer)
+        return device_step.run_window(mem, ud, tout, bld=bld, writer=writer)
 
     swe_to_lake = False
     lake_to_swe_pending = False

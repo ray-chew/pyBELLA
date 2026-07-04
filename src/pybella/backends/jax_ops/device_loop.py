@@ -102,10 +102,17 @@ def _host_dt(maxima, mem, ud, tout):
 
 def _check_supported(mem, ud, writer):
     problems = []
-    if getattr(ud, "continuous_blending", False) or getattr(
+    blending = getattr(ud, "continuous_blending", False) or getattr(
         ud, "initial_blending", False
-    ):
-        problems.append("dynamics blending")
+    )
+    # comp<->psinc blending is supported via window segmentation (Phase D4:
+    # host conversions at the known blend steps, one compiled step variant
+    # per regime); the SWE/lake conversions and the 'imbal' initial
+    # HYDROSTATIC conversion (alpha_w = 0 step path) are not implemented
+    if blending and getattr(ud, "blending_conv", None) == "swe":
+        problems.append("SWE/lake blending conversions")
+    if blending and "imbal" in getattr(ud, "aux", ""):
+        problems.append("initial hydrostatic conversion ('imbal' aux)")
     if getattr(ud, "is_ArakawaKonor", 0):
         problems.append("Arakawa-Konor")
     if getattr(ud, "acoustic_timestep", 0) == 1:
@@ -119,8 +126,6 @@ def _check_supported(mem, ud, writer):
 
     if getattr(sim_params, "debug", False):
         problems.append("debug writers (sim_params.debug)")
-    if "CFLfixed" in getattr(ud, "aux", ""):
-        problems.append("CFLfixed prestep override")
     if problems:
         raise NotImplementedError(
             "backend='jax-device' does not support: "
@@ -161,9 +166,30 @@ def _get_window_cache(mem, ud):
     return entry[2], entry[3]
 
 
-def run_window(mem, ud, tout, writer=None):
-    """Device-resident replacement for time_update.do's step loop."""
+def _blend_conversion_due(bld, ud, step, window_step):
+    """True iff prepare_blending will touch the STATE this step (a comp<->
+    psinc conversion) — the device must round-trip through host memory."""
+    from pybella.interfaces.dynamics_blending.schemes import orchestration
+
+    return (
+        orchestration._window_start_conversion_due(bld, ud, window_step)
+        or orchestration._full_blend_due(bld, ud, window_step)
+        or orchestration._initial_blend_phase(ud, bld, step) is not None
+    )
+
+
+def run_window(mem, ud, tout, bld=None, writer=None):
+    """Device-resident replacement for time_update.do's step loop.
+
+    Blending (Phase D4): the window is segmented at the blend steps — the
+    per-step regime control is the SAME `schemes.prepare_blending` the numpy
+    loop runs (it is pure host bookkeeping except on conversion steps, where
+    the state round-trips through host memory and the comp<->psinc routines
+    run unchanged); each regime compiles its own step variant (the regime
+    ints are static trace structure)."""
     from pybella.flow_solver.physics import eos
+    from pybella.interfaces.dynamics_blending import schemes
+    from pybella.interfaces.time_stepper import prestep
 
     _check_supported(mem, ud, writer)
 
@@ -192,21 +218,35 @@ def run_window(mem, ud, tout, writer=None):
 
         maxima = _cfl_maxima(s, cfg)
         dt, cfl_adv, cfl_acs = _host_dt(maxima, mem, ud, tout)
+        dt = prestep.apply_modifcations(dt, ud, mem.time.step)
 
-        # the non-blending prepare_blending path sets all four regime
-        # fields per step via eos; replicate (blending itself is guarded)
-        ud.is_compressible = eos.is_compressible(ud, mem.time.window_step)
-        ud.compressibility = eos.compressibility(ud, mem.time.t, mem.time.window_step)
+        # the SAME per-step blending/regime control as the numpy loop: on
+        # conversion steps the state round-trips through host memory and the
+        # comp<->psinc routines run unchanged; otherwise prepare_blending is
+        # the plain eos regime refresh
+        conversion = _blend_conversion_due(bld, ud, mem.time.step, mem.time.window_step)
+        if conversion:
+            write_back(s, mem)
+        schemes.prepare_blending(
+            mem, ud, bld, label, writer, mem.time.step,
+            mem.time.window_step, mem.time.t, dt, False, False,
+        )
+        if conversion:
+            s = to_device(mem)
         ud.is_nonhydrostatic = eos.is_nonhydrostatic(ud, mem.time.window_step)
         ud.nonhydrostasy = eos.nonhydrostasy(ud, mem.time.t, mem.time.window_step)
-        assert (
-            int(ud.is_compressible) == cfg.is_compressible
-        ), "is_compressible changed mid-window — unsupported on jax-device"
+        if int(ud.is_nonhydrostatic) == 0:
+            raise NotImplementedError(
+                "hydrostatic regime (alpha_w = 0) step path is not "
+                "implemented on jax-device — run with backend='jax' (hybrid)"
+            )
 
         parity = mem.time.step % 2
-        key = (parity, int(ud.is_nonhydrostatic))
+        key = (parity, int(ud.is_nonhydrostatic), int(ud.is_compressible))
         if key not in step_fns:
-            step_fns[key] = make_step(cfg, parity, int(ud.is_nonhydrostatic))
+            step_fns[key] = make_step(
+                cfg, parity, int(ud.is_nonhydrostatic), int(ud.is_compressible)
+            )
             compile_count += 1
 
         if cfg.has_forcing:
@@ -215,7 +255,7 @@ def run_window(mem, ud, tout, writer=None):
         else:
             forcing_half = forcing_full = _DUMMY_FORCING
 
-        s = step_fns[key](
+        out = step_fns[key](
             s,
             dt,
             float(ud.nonhydrostasy),
@@ -223,6 +263,14 @@ def run_window(mem, ud, tout, writer=None):
             forcing_half,
             forcing_full,
         )
+        if key[2] == 0:
+            # psinc step: keep the predictor half-time pressure current on
+            # the host container (numpy sets npf.p2_nodes_half every step;
+            # the psinc->comp blend conversion reads it)
+            s, p2_half = out
+            mem.npf.p2_nodes_half = np.asarray(p2_half)
+        else:
+            s = out
 
         if writer is not None:
             write_back(s, mem)

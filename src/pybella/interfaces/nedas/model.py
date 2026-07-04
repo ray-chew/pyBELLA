@@ -293,6 +293,7 @@ class PyBellaModel(Model[RegularGrid]):
                 tout,
                 mode=self.ens_batch_mode,
                 n_devices=self.ens_devices,
+                bld=blend,
             )
             self.run_status = "complete"
             return
