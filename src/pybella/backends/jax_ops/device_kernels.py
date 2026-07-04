@@ -619,8 +619,10 @@ def _diffuse(s, cfg, dt):
 # =========================================================================
 
 
-def make_step(cfg, parity, is_nonhydrostatic):
-    """Build the jitted full step for one Strang parity + regime structure."""
+def build_step(cfg, parity, is_nonhydrostatic):
+    """The raw (untraced) full-step closure for one Strang parity + regime
+    structure — jitted by :func:`make_step`, vmapped over the member axis by
+    ``device_batch.make_batch_step``."""
 
     def step(s, dt, nonhydro, compressibility, forcing_half, forcing_full):
         sol0 = dict(s)  # free reference hold (incl. p2 for the fill helper)
@@ -679,7 +681,12 @@ def make_step(cfg, parity, is_nonhydrostatic):
             s = _diffuse(s, cfg, dt)
         return s
 
-    return jax.jit(step, donate_argnums=(0,))
+    return step
+
+
+def make_step(cfg, parity, is_nonhydrostatic):
+    """Build the jitted full step for one Strang parity + regime structure."""
+    return jax.jit(build_step(cfg, parity, is_nonhydrostatic), donate_argnums=(0,))
 
 
 def _explicit_part_post(s, cfg, dt, nonhydro, compressibility):
