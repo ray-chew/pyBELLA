@@ -21,6 +21,21 @@ verified against src/pybella/data_assimilation/{params,utils,analysis}.py):
   is AVERAGED over times per attr. (utils.obs_noiser)
 - H5 labels: /<attr>/<attr>_ensemble_mem=0_<t:.3f>_after_full_step, full
   arrays including ghost frames. (params.init.load_obs)
+
+3D conventions (Phase E — there is NO native 3D pipeline, so these are the
+defining conventions, gated by test_scripts/test_nedas_obs3d_selfcheck.py):
+
+- Volumetric sparse mask, seed 778 (its own chain; the 2D seed-777
+  machinery above is untouched): default_rng(778) -> per-time integer
+  seeds -> per time a shuffled 0/1 mask over the inner (iicx, iicy, iicz)
+  cells with ceil(N*obs_frac) zeros (observed), shared by all attrs (all
+  cell-grid; p2_nodes is not observed in 3D).
+- Positions under the Phase E axis mapping (model.py): NEDAS x := pyBELLA
+  x, NEDAS y := pyBELLA z (horizontal), NEDAS z := pyBELLA y cell-centre
+  heights (vertical).
+- err_std: the same VarCov reduction over the observed inner points of the
+  clean 3D truth field, then max(sd, err_std_floor) — the floor guards the
+  degenerate case (a z-uniform truth keeps rhow ~ 0 for all time).
 """
 
 import h5py
@@ -44,6 +59,7 @@ class PyBellaObs(Dataset):
     da_times: list
     obs_frac: float
     noise_percentage: float
+    err_std_floor: float
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -71,6 +87,9 @@ class PyBellaObs(Dataset):
 
     def _native_obs(self):
         if self._cache is not None:
+            return self._cache
+        if self._model.elem.ndim == 3:
+            self._cache = self._native_obs_3d()
             return self._cache
 
         times = [round(float(t), 3) for t in self.da_times]
@@ -151,6 +170,69 @@ class PyBellaObs(Dataset):
                     "err_std": np.full(nobs, sd[attr]),
                 }
         self._cache = cache
+        return cache
+
+    def _native_obs_3d(self):
+        """Volumetric 3D obs (Phase E conventions — see module docstring)."""
+        times = [round(float(t), 3) for t in self.da_times]
+        elem = self._model.elem
+        nx, ny, nz = elem.iicx, elem.iicy, elem.iicz
+
+        clean = {}
+        with h5py.File(self.obs_file, "r") as f:
+            for t in times:
+                for attr in self.obs_attrs:
+                    label = "%s_ensemble_mem=0_%.3f_after_full_step" % (attr, t)
+                    clean[(t, attr)] = np.squeeze(f[attr][label][:])
+
+        # seed-778 volumetric masks: one per time, shared by all attrs
+        rng = np.random.default_rng(778)
+        time_seeds = rng.integers(0, 2**31 - 1, size=len(times))
+        n_pts = nx * ny * nz
+        n_obs = int(np.ceil(n_pts * self.obs_frac))
+        masks = []
+        for tt in range(len(times)):
+            rng_t = np.random.default_rng(int(time_seeds[tt]))
+            mask = np.array([0] * n_obs + [1] * (n_pts - n_obs))
+            rng_t.shuffle(mask)
+            masks.append(mask.reshape(nx, ny, nz))
+
+        # VarCov err std over the OBSERVED inner points, then the floor
+        std_dev = np.zeros((len(times), len(self.obs_attrs)))
+        for tt, t in enumerate(times):
+            for ai, attr in enumerate(self.obs_attrs):
+                inner = clean[(t, attr)][elem.i2]
+                value = np.ma.array(inner, mask=masks[tt])
+                var = self.noise_percentage * ((value - value.mean()) ** 2).mean()
+                std_dev[tt, ai] = var**0.5
+        mean_sd = std_dev.mean(axis=0, keepdims=True)
+        floor = float(getattr(self, "err_std_floor", 0.0) or 0.0)
+        sd = {
+            attr: max(mean_sd[0, ai], floor)
+            for ai, attr in enumerate(self.obs_attrs)
+        }
+
+        # positions: inner cell centres under the Phase E axis mapping
+        x1d = elem.x[elem.igx : -elem.igx]
+        y1d = elem.y[elem.igy : -elem.igy]
+        z1d = elem.z[elem.igz : -elem.igz]
+        xg, yg, zg = np.meshgrid(x1d, y1d, z1d, indexing="ij")  # field-aligned
+
+        cache = {}
+        for tt, t in enumerate(times):
+            time_dt = self.c.config.time_start + t * self._dt1h()
+            sel = masks[tt] == 0
+            for attr in self.obs_attrs:
+                values = clean[(t, attr)][elem.i2][sel]
+                nobs = values.size
+                cache[(t, attr)] = {
+                    "obs": values,
+                    "t": np.full(nobs, time_dt),
+                    "x": xg[sel],  # pyBELLA x  -> NEDAS x (horizontal)
+                    "y": zg[sel],  # pyBELLA z  -> NEDAS y (horizontal)
+                    "z": yg[sel],  # pyBELLA y  -> NEDAS z (vertical, centres)
+                    "err_std": np.full(nobs, sd[attr]),
+                }
         return cache
 
     @staticmethod

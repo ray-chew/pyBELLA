@@ -81,7 +81,9 @@ def fn_gen(ud, dap, N):
     suffix = ""
     suffix += "_%i" % (ud.inx - 1)
     suffix += "_%i" % (ud.iny - 1)
-    if ud.iny == 2:
+    if ud.iny == 2 or ud.inz > 1:
+        # horizontal-slice (iny==2) AND true-3D (inz>1) runs carry the z
+        # extent — 3D obs files must not collide with same-(x,y) 2D names
         suffix += "_%i" % (ud.inz - 1)
     suffix += "_%.6f" % ud.tout[-1]
     suffix = "_ensemble=%i%s" % (N, suffix)
