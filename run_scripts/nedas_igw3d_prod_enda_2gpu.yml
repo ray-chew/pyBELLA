@@ -1,0 +1,158 @@
+# NEDAS==1.2.0 run config: igw3d EnDA OSSE — the Phase E 3D DA experiment
+# (first true 3D DA; conventions in dev_notes/nedas_interface.md Phase E).
+# Case: internal long wave forced 3D (65x16x16 cells; x-cells must be ODD —
+# initial_pressure's periodic sawtooth correction). y is the VERTICAL:
+# the NEDAS horizontal plane is pyBELLA (x, z), levels run along y.
+#
+# Prerequisite (native obs+truth, regenerated from seeds):
+#   python run_scripts/osse_mwr2022.py igw3d --runs obs truth
+# Launch (numpy golden master; jax-device for the GPU ladder):
+#   python run_scripts/nedas_run.py -c run_scripts/nedas_igw3d_enda.yml
+work_dir: outputs/nedas_igw3d_prod_enda_2gpu
+
+io_mode: online          # in-memory ModelState coupling; single process
+job_submit:
+  host: local
+  parallel_mode: serial
+
+nproc: 1
+nens: 10                 # K=10, as the 2D MWR OSSEs
+
+run_preproc: True
+run_forecast: True
+run_analysis: True
+run_postproc: True
+run_diagnose: False
+interactive: False
+
+# Convention: 1 NEDAS "hour" == 1 pyBELLA nondimensional time unit.
+# da_times = 60, 120, ..., 600 -> analyses every 60 units (dtfixed=1.0
+# binds at the dev grid: 60 steps per window). time_end is ONE CYCLE PAST
+# the last analysis so the t=600 analysis runs.
+time_start: 2001-01-01T00:00:00Z
+time_end: 2001-01-28T12:00:00Z
+time_analysis_start: 2001-01-03T12:00:00Z
+time_analysis_end: 2001-01-26T00:00:00Z
+cycle_period: 60
+obs_time_steps: [0]
+state_time_steps: [0]
+
+grid_def:
+  type: pybella          # the model's (x, z) horizontal grid + y levels
+
+model_def:
+  pybella:
+    ic: test_internal_long_wave
+    random_seed: 888
+    restart_dt: 60
+    ens_run_strategy: batch
+    ens_batch_mode: vmap
+    ens_devices: 2
+    ud_overrides:
+      inx: 130           # 129 x-cells (odd)
+      iny: 33
+      inz: 33
+      stepmax: 100000
+      aux: nedas_wda     # must not contain 'imbal' (device guard) or 'truth'/'obs'
+      perturb_type: igw_theta   # seeded theta'-wave member perturbations
+      initial_blending: True
+      continuous_blending: False  # False = EnDA; True = EnDAB
+
+state_def:               # all cell quantities; p2_nodes stays out in 3D
+- name: rho
+  model_src: pybella
+  var_type: field
+  err_type: normal
+- name: rhou
+  model_src: pybella
+  var_type: field
+  err_type: normal
+- name: rhov
+  model_src: pybella
+  var_type: field
+  err_type: normal
+- name: rhow
+  model_src: pybella
+  var_type: field
+  err_type: normal
+- name: rhoY
+  model_src: pybella
+  var_type: field
+  err_type: normal
+
+obs_def:                 # hroi ~ 5.5*dx (dx = 600/65); vroi = 4*dy (dy = 1/16)
+- name: rho
+  dataset_src: pybella
+  model_src: pybella
+  err: {type: normal, std: 0.0}   # unused: PyBellaObs supplies VarCov+floor
+  hroi: 25.6
+  vroi: 0.125
+  troi: 24
+- name: rhou
+  dataset_src: pybella
+  model_src: pybella
+  err: {type: normal, std: 0.0}
+  hroi: 25.6
+  vroi: 0.125
+  troi: 24
+- name: rhov
+  dataset_src: pybella
+  model_src: pybella
+  err: {type: normal, std: 0.0}
+  hroi: 25.6
+  vroi: 0.125
+  troi: 24
+- name: rhow
+  dataset_src: pybella
+  model_src: pybella
+  err: {type: normal, std: 0.0}
+  hroi: 25.6
+  vroi: 0.125
+  troi: 24
+- name: rhoY
+  dataset_src: pybella
+  model_src: pybella
+  err: {type: normal, std: 0.0}
+  hroi: 25.6
+  vroi: 0.125
+  troi: 24
+
+dataset_def:
+  pybella:
+    model_src: pybella
+    obs_file: outputs/test_internal_long_wave/test_internal_long_wave_ensemble=1_129_32_32_600.000000_obs.h5
+    obs_attrs: [rho, rhou, rhov, rhow, rhoY]
+    da_times: [60, 120, 180, 240, 300, 360, 420, 480, 540, 600]
+    obs_frac: 0.10
+    noise_percentage: 0.05
+    err_std_floor: 1.0e-6   # z-uniform truth keeps rhow ~ 0 -> singular R without a floor
+
+perturb:
+
+scheme: filter
+niter: 1
+resolution_level: [0]
+character_length: [16]
+localize_scale_fac: [1]
+obs_err_scale_fac: [1]
+
+assimilator_def:
+  type: ETKF
+
+updator_def:
+  type: additive
+
+inflation_def:
+  type: post,multiplicative
+  adaptive: False
+  coef: 1.0
+
+localization_def:
+  horizontal:
+    type: gaspari_cohn
+  vertical:
+    type: gaspari_cohn   # ACTIVE in 3D (finite vroi, per-level z_coords)
+  temporal:
+    type: exponential
+
+diag:

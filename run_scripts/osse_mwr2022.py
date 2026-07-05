@@ -64,6 +64,24 @@ CASES = {
         "out_glob": "./outputs/output_rising_bubble/*ensemble=1*_%s*.h5",
         "grid": (160, 80),
     },
+    "igw3d": {
+        # Phase E 3D DA OSSE: the internal long wave forced 3D via grid
+        # overrides (the Phase C bench convention). x-cells must be ODD
+        # (initial_pressure's periodic sawtooth correction); dev grid
+        # 65x16x16, prod via --ud '{"inx":130,"iny":33,"inz":33}'.
+        # Truth/obs are the UNPERTURBED IC (sol_init ignores 'obs'/'truth'
+        # aux for this case; members perturb via perturb_type='igw_theta'
+        # through NEDAS). Native K-member DA is 2D-only -> obs/truth only.
+        "ic": "test_internal_long_wave",
+        "tout": [round(float(t), 3) for t in np.arange(60.0, 660.0, 60.0)],
+        # output_timesteps False: the case default writes EVERY step (fine
+        # for the 31-step regression, not for 600-step 3D OSSE inputs)
+        "ud_extra": {"inx": 66, "iny": 17, "inz": 17, "output_timesteps": False},
+        "obs_aux": "obs",
+        "truth_aux": "truth",
+        "grid": (65, 16, 16),
+        "runs_supported": ("obs", "truth"),
+    },
 }
 
 # thesis Table 6.2: momentum-only observations
@@ -79,8 +97,12 @@ def find_obs_file(case_cfg, grid=None):
     pattern = case_cfg.get("out_glob", default) % case_cfg["obs_aux"]
     if grid is not None:
         # pin the grid so e.g. a low-resolution obs file cannot shadow the
-        # paper-resolution one (fn_gen writes _<Nx>_<Ny>_ into the suffix)
-        pattern = pattern.replace("*ensemble=1*", "*ensemble=1_%i_%i*" % grid)
+        # paper-resolution one (fn_gen writes _<Nx>_<Ny>[_<Nz>]_ into the
+        # suffix; 3D cases carry the z extent)
+        pattern = pattern.replace(
+            "*ensemble=1*",
+            "*ensemble=1_%s*" % "_".join("%i" % g for g in grid),
+        )
     matches = sorted(glob.glob(pattern))
     assert matches, "no observation file found for pattern %s -- run 'obs' first" % (
         pattern
@@ -114,6 +136,11 @@ def main():
 
     cfg = CASES[args.case]
     ic, K = cfg["ic"], args.members
+    unsupported = set(args.runs) - set(cfg.get("runs_supported", ALL_RUNS))
+    assert not unsupported, "case %s does not support runs: %s" % (
+        args.case,
+        sorted(unsupported),
+    )
 
     ud_common = {
         "diag": False,  # CompareSol would gate every member against the N=1 target
@@ -129,6 +156,8 @@ def main():
     grid = cfg["grid"]
     if "inx" in ud_common and "iny" in ud_common:
         grid = (ud_common["inx"] - 1, ud_common["iny"] - 1)
+        if ud_common.get("inz", 1) > 1:
+            grid = grid + (ud_common["inz"] - 1,)
 
     aux_base = cfg.get("aux_base", "")
 

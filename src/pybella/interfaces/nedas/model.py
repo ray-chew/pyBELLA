@@ -45,6 +45,9 @@ from ..ic_config import IC_MODULES
 # true node field.
 CELL_VARS = ("rho", "rhou", "rhov", "rhoY")
 NODE_VARS = ("p2_nodes",)
+# 3D DA state (Phase E): all cell quantities, no node pressure — blending,
+# not the filter, acts on p2 (dev_notes/nedas_interface.md Phase E)
+CELL_VARS_3D = ("rho", "rhou", "rhov", "rhow", "rhoY")
 
 
 class PyBellaModel(Model[RegularGrid]):
@@ -88,22 +91,52 @@ class PyBellaModel(Model[RegularGrid]):
         self.th = gd_thermodynamics.ThermodynamicalQuantities(ud)
         self.bld = blending_schemes.Blend(ud)
 
-        if self.elem.ndim != 2:
-            raise NotImplementedError("PyBellaModel supports 2D x-y cases only")
+        if self.elem.ndim == 2:
+            # analysis-grid geometry: inner cell centres, nondimensional units
+            xc = self.elem.x[self.elem.igx : -self.elem.igx]
+            yc = self.elem.y[self.elem.igy : -self.elem.igy]
+            xx, yy = np.meshgrid(xc, yc)  # (ny, nx) — NEDAS rows-are-y convention
+            cyclic = "".join(
+                dim
+                for dim, bt in zip("xy", ud.bdry_type[:2])
+                if bt == opts.BdryType.PERIODIC
+            )
+            self.grid = RegularGrid(None, xx, yy, cyclic_dim=cyclic or None)
+            self.grid.mask = np.full(xx.shape, False)
+            levels = np.array([0])
+            var_names = CELL_VARS + NODE_VARS
+        elif self.elem.ndim == 3:
+            # Phase E convention: the NEDAS horizontal plane is the two
+            # non-vertical pyBELLA axes (x, z) — NEDAS-x := x, NEDAS-y := z —
+            # and NEDAS levels run along the vertical axis (y for these
+            # cases). z_coords(k) returns the UPPER cell interface of level k
+            # while obs carry cell-centre heights: that pairing makes NEDAS's
+            # vertical_interp reproduce level values exactly (its first-level
+            # band also assumes origin 0 — holds here, ymin = 0).
+            if axes.vertical_axis(ud) != 1:
+                raise NotImplementedError(
+                    "3D adapter pins the vertical to axis 1 (x-y-z cases)"
+                )
+            xc = self.elem.x[self.elem.igx : -self.elem.igx]
+            zc = self.elem.z[self.elem.igz : -self.elem.igz]
+            xx, zz = np.meshgrid(xc, zc)  # (iicz, iicx): NEDAS rows = pyBELLA z
+            cyclic = "".join(
+                dim
+                for dim, ax in zip("xy", (0, 2))
+                if ud.bdry_type[ax] == opts.BdryType.PERIODIC
+            )
+            self.grid = RegularGrid(None, xx, zz, cyclic_dim=cyclic or None)
+            self.grid.mask = np.full(xx.shape, False)
+            # upper cell interfaces, one per level (len iicy)
+            self._level_z = np.asarray(
+                self.node.y[self.node.igy + 1 : -self.node.igy]
+            )
+            levels = np.arange(self.elem.iicy)
+            var_names = CELL_VARS_3D
+            self._ghost_dirty = set()
+        else:
+            raise NotImplementedError("PyBellaModel supports 2D and 3D x-y(-z)")
 
-        # analysis-grid geometry: inner cell centres, nondimensional units
-        xc = self.elem.x[self.elem.igx : -self.elem.igx]
-        yc = self.elem.y[self.elem.igy : -self.elem.igy]
-        xx, yy = np.meshgrid(xc, yc)  # (ny, nx) — NEDAS rows-are-y convention
-        cyclic = "".join(
-            dim
-            for dim, bt in zip("xy", ud.bdry_type[:2])
-            if bt == opts.BdryType.PERIODIC
-        )
-        self.grid = RegularGrid(None, xx, yy, cyclic_dim=cyclic or None)
-        self.grid.mask = np.full(xx.shape, False)
-
-        levels = np.array([0])
         self.variables = {
             name: VarDesc(
                 name=name,
@@ -114,7 +147,7 @@ class PyBellaModel(Model[RegularGrid]):
                 units="nondim",
                 z_units="nondim",
             )
-            for name in CELL_VARS + NODE_VARS
+            for name in var_names
         }
 
     # --- helpers ----------------------------------------------------------
@@ -132,6 +165,24 @@ class PyBellaModel(Model[RegularGrid]):
             arr, grid = getattr(mem.sol, name), self.elem
         inner = np.asarray(arr[grid.i2])
         return inner.reshape(grid.iicx, grid.iicy).T.copy()
+
+    def _inner3(self, member: int, name: str) -> np.ndarray:
+        """Ghost-free native (x, y, z) copy of a 3D member cell field."""
+        mem = self.members[member]
+        arr = getattr(mem.sol, name)
+        inner = np.asarray(arr[self.elem.i2])
+        return inner.reshape(
+            self.elem.iicx, self.elem.iicy, self.elem.iicz
+        ).copy()
+
+    def _refill_ghosts(self, member: int) -> None:
+        """Deferred ghost refill after 3D analysis writes (n_vars x iicy
+        per-level writes per member per cycle; NEDAS only reads the inner
+        domain between them, so one refill before the member is stepped —
+        or snapshotted — is equivalent to the 2D per-write refill)."""
+        if member in self._ghost_dirty:
+            bdry_c.set_ghost_cells(self.members[member], self.ud)
+            self._ghost_dirty.discard(member)
 
     def _p2_cell_view(self, member: int) -> np.ndarray:
         """p2_nodes as a cell-centred (y, x) view: 4-node average per cell.
@@ -165,7 +216,11 @@ class PyBellaModel(Model[RegularGrid]):
         pass  # built in __init__ from UserData
 
     def z_coords(self, **kwargs) -> np.ndarray:
-        return np.zeros(self.grid.x.shape)  # 2D x-y: no vertical
+        if self.elem.ndim == 2:
+            return np.zeros(self.grid.x.shape)  # 2D x-y: no vertical
+        kwargs = self.parse_kwargs(kwargs)
+        # constant per level: the UPPER cell interface (see __init__ note)
+        return np.full(self.grid.x.shape, float(self._level_z[kwargs["k"]]))
 
     def filename(self, **kwargs):
         raise NotImplementedError(
@@ -181,6 +236,9 @@ class PyBellaModel(Model[RegularGrid]):
             return super().read_var_from_memory(**kwargs)
         member = kwargs["member"] if kwargs["member"] is not None else 0
         name = kwargs["name"]
+        if self.elem.ndim == 3:
+            # level-k slab, transposed to the NEDAS (z, x) horizontal plane
+            return self._inner3(member, name)[:, kwargs["k"], :].T.copy()
         if name in NODE_VARS:
             # the filter sees p2 through its cell-centred view; the node
             # field is the authority and is only ever updated by increments
@@ -195,6 +253,18 @@ class PyBellaModel(Model[RegularGrid]):
         name = kwargs["name"]
         member = kwargs["member"] if kwargs["member"] is not None else 0
         mem = self.members[member]
+        if self.elem.ndim == 3:
+            # per-level inner write ((z, x) -> native (x, z) at y-level k);
+            # ghost refill is deferred to _refill_ghosts (lazy — see there)
+            arr = getattr(mem.sol, name)
+            idx = (
+                slice(self.elem.igx, -self.elem.igx),
+                self.elem.igy + kwargs["k"],
+                slice(self.elem.igz, -self.elem.igz),
+            )
+            arr[idx] = np.asarray(var).T
+            self._ghost_dirty.add(member)
+            return
         if name in NODE_VARS:
             # increment-only write-back: interpolate the ANALYSIS INCREMENT
             # (cell view) to nodes and add it — the node field never
@@ -222,7 +292,12 @@ class PyBellaModel(Model[RegularGrid]):
         kwargs.pop("tag", None)  # the io backend injects tag='current'
         member = kwargs["member"]
         for name in self.variables:
-            var = self._inner(member, name)
+            if self.elem.ndim == 3:
+                # one record per name, full ghost-free NATIVE (x, y, z) array
+                # (diagnostics rely on this orientation)
+                var = self._inner3(member, name)
+            else:
+                var = self._inner(member, name)
             super().write_var_to_memory(
                 var, **{**kwargs, "tag": snap_tag, "name": name}
             )
@@ -271,6 +346,11 @@ class PyBellaModel(Model[RegularGrid]):
             members = list(range(kwargs["nens"]))
         else:
             members = [kwargs["member"]]
+
+        if self.elem.ndim == 3:
+            # deferred ghost refill after the per-level analysis writes
+            for member in members:
+                self._refill_ghosts(member)
 
         from ...backends import is_device_backend
 
