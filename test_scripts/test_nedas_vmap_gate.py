@@ -25,22 +25,39 @@ import sys
 import numpy as np
 import yaml
 
-OBS_GLOB = "outputs/test_travelling_vortex/*ensemble=1_64_64*_obs.h5"
-BASE_CONFIG = "run_scripts/nedas_tv_osse.yml"
-GATE = 1e-8
+# --case tv (default): 2-cycle noib TV — conversion-free, gate BITWISE-tight
+#   (1e-8; measured 0.0 on CPU jax and H100).
+# --case igw3d: 2-cycle 3D igw with initial blending ON — the window-0 psinc
+#   segments seed Krylov-floor-level vmap/loop diffs (D4 finding), gate 1e-7.
+CASES = {
+    "tv": {
+        "obs_glob": "outputs/test_travelling_vortex/*ensemble=1_64_64*_obs.h5",
+        "base_config": "run_scripts/nedas_tv_osse.yml",
+        "time_end": "2001-01-01T00:30:00Z",
+        "noib": True,
+        "gate": 1e-8,
+    },
+    "igw3d": {
+        "obs_glob": "outputs/test_internal_long_wave/*ensemble=1_65_16_16*_obs.h5",
+        "base_config": "run_scripts/nedas_igw3d_enda.yml",
+        "time_end": "2001-01-06T00:00:00Z",  # 2 cycles of 60 "hours"
+        "noib": False,
+        "gate": 1e-7,
+    },
+}
 WORK = {mode: f"outputs/nedas_vmap_gate_{mode}" for mode in ("vmap", "loop")}
 
 
-def build_config(mode: str) -> str:
-    with open(BASE_CONFIG) as f:
+def build_config(case: dict, mode: str) -> str:
+    with open(case["base_config"]) as f:
         cfg = yaml.safe_load(f)
     cfg["work_dir"] = WORK[mode]
-    cfg["time_end"] = "2001-01-01T00:30:00Z"  # 2 cycles: enough for a
-    # forecast->analysis->forecast round trip through the batch driver
+    cfg["time_end"] = case["time_end"]
     model = cfg["model_def"]["pybella"]
     model["ens_run_strategy"] = "batch"
     model["ens_batch_mode"] = mode
-    model["ud_overrides"]["initial_blending"] = False
+    if case["noib"]:
+        model["ud_overrides"]["initial_blending"] = False
     path = f"{WORK[mode]}_config.yml"
     with open(path, "w") as f:
         yaml.safe_dump(cfg, f)
@@ -48,8 +65,10 @@ def build_config(mode: str) -> str:
 
 
 def main() -> int:
-    if not glob.glob(OBS_GLOB):
-        print("SKIP: no TV obs file (run run_scripts/osse_mwr2022.py tv --runs obs)")
+    name = sys.argv[1] if len(sys.argv) > 1 else "tv"
+    case = CASES[name]
+    if not glob.glob(case["obs_glob"]):
+        print(f"SKIP: no {name} obs file (run osse_mwr2022.py {name} --runs obs)")
         return 0
 
     env = {
@@ -60,7 +79,12 @@ def main() -> int:
     for mode in ("vmap", "loop"):
         subprocess.run(["rm", "-rf", WORK[mode]], check=True)
         subprocess.run(
-            [sys.executable, "run_scripts/nedas_run.py", "-c", build_config(mode)],
+            [
+                sys.executable,
+                "run_scripts/nedas_run.py",
+                "-c",
+                build_config(case, mode),
+            ],
             check=True,
             env=env,
         )
@@ -77,12 +101,13 @@ def main() -> int:
         if d > worst:
             worst, worst_at = d, rel
         checked += 1
-    assert worst <= GATE, (
-        f"vmap vs loop max-abs {worst:.3e} at {worst_at} exceeds gate {GATE:.0e}"
+    gate = case["gate"]
+    assert worst <= gate, (
+        f"vmap vs loop max-abs {worst:.3e} at {worst_at} exceeds gate {gate:.0e}"
     )
     print(
-        f"PASS: {checked} member checkpoints, vmap vs loop max-abs "
-        f"{worst:.3e} (gate {GATE:.0e})"
+        f"PASS [{name}]: {checked} member checkpoints, vmap vs loop max-abs "
+        f"{worst:.3e} (gate {gate:.0e})"
     )
     return 0
 
