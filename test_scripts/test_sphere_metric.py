@@ -289,20 +289,15 @@ def test_elliptic_fold_spd_on_sphere():
     assert np.all(d1 > 0.0) and np.all(d2 > 0.0) and np.all(d3 > 0.0)
 
 
-def test_elliptic_composition_identity_on_sphere():
-    """The assembled elliptic operator == div o correction on the spherical
-    channel (zero gravity: Stage A2 owns the gravity-boundary path)."""
-    from pybella.flow_solver.numerics import implicit_euler
+def _sphere_mem(frozen=False):
+    """Full ModelState on the spherical channel with zero gravity (the
+    gravity-boundary path on the sphere lands with Stage D physics)."""
     from pybella.flow_solver.physics import hydrostatics, thermodynamics
     from pybella.flow_solver.utils import cache, fields
     from pybella.flow_solver.utils.boundary import cell_boundary as bdry_c
-    from pybella.flow_solver.utils.boundary import node_boundary as bdry_n
     from pybella.tests import smoke_agnesi
-    from pybella.utils import axes, user_data
+    from pybella.utils import user_data
     from pybella.utils.data_structures import ModelState
-    from pybella.utils.operators import divergence
-    from pybella.utils.operators.laplacian import preconditioner
-    from pybella.flow_solver.numerics import coriolis
 
     base = smoke_agnesi.UserData()
     base.grav = 0.0
@@ -314,7 +309,7 @@ def test_elliptic_composition_identity_on_sphere():
     base.zmin, base.zmax = -1.2, 1.2
     base.bdry_type[2] = opts.BdryType.WALL
     base.inx, base.iny, base.inz = 32 + 1, 8 + 1, 16 + 1
-    base.curvilinear_map = spherical.SphericalShellMap(_A, frozen_radius=False)
+    base.curvilinear_map = spherical.SphericalShellMap(_A, frozen_radius=frozen)
     ud = user_data.UserDataInit(**vars(base))
     ud.coriolis_strength = np.array(ud.coriolis_strength)
 
@@ -339,7 +334,22 @@ def test_elliptic_composition_identity_on_sphere():
     ud.compressibility = 1.0
 
     mem = ModelState(elem, node, sol, npf, th, cache.FlowSolverCache())
-    bdry_c.set_ghost_cells(mem, ud)  # zero gravity: no G1/G2 path
+    bdry_c.set_ghost_cells(mem, ud)  # zero gravity: general wall mirror
+    return mem, ud
+
+
+def test_elliptic_composition_identity_on_sphere():
+    """The assembled elliptic operator == div o correction on the spherical
+    channel (zero gravity: Stage A2 owns the gravity-boundary path)."""
+    from pybella.flow_solver.numerics import implicit_euler
+    from pybella.flow_solver.utils.boundary import node_boundary as bdry_n
+    from pybella.utils import axes
+    from pybella.utils.operators import divergence
+    from pybella.utils.operators.laplacian import preconditioner
+    from pybella.flow_solver.numerics import coriolis
+
+    mem, ud = _sphere_mem()
+    node = mem.node
 
     dt = float(ud.dtfixed)
     implicit_euler.operator_coefficients_nodes(mem, ud, dt)
@@ -411,6 +421,124 @@ def test_frozen_radius_metric_is_r_uniform():
         arrays = [m.J, m.h_v] + [c for Na in m.N for c in Na] + list(m.e_up)
         for arr in arrays:
             assert np.array_equal(arr, np.broadcast_to(arr[:, :1, :], arr.shape))
+
+
+# ------------------------------------------ Stage A2: general wall mirror
+
+
+@pytest.mark.parametrize("frozen", [False, True], ids=["true", "frozen"])
+def test_wall_mirror_zero_wall_flux(frozen):
+    """After the general ghost fill, the theta-weighted contravariant flux
+    F_b = N_b . (theta m) cancels across every wall face pair to roundoff
+    (each cell contracted with its LOCAL normal — the collocated flux
+    convention of the divergence operator)."""
+    mem, ud = _sphere_mem(frozen=frozen)
+    sol, elem = mem.sol, mem.elem
+    m = elem.metric
+    moms = [sol.rhou, sol.rhov, sol.rhow]
+    theta = sol.rhoY / sol.rho
+    igs = 2
+
+    for dim in (1, 2):  # r and phi walls
+        F = sum(m.N[dim][k] * moms[k] for k in range(3)) * theta
+        scale = np.max(np.abs(F))
+        for k_layer in range(igs):
+            for low in (True, False):
+                n = F.shape[dim]
+                if low:
+                    ig, isrc = k_layer, 2 * igs - 1 - k_layer
+                else:
+                    ig, isrc = n - 1 - k_layer, n - 2 * igs + k_layer
+                sg = [slice(None)] * 3
+                ss = [slice(None)] * 3
+                sg[dim], ss[dim] = ig, isrc
+                resid = np.max(np.abs(F[tuple(sg)] + F[tuple(ss)]))
+                assert resid <= 1e-13 * scale, (dim, k_layer, low, resid)
+
+
+def test_wall_mirror_identity_map_is_cartesian_flip():
+    """With N = identity the general mirror reduces to the Cartesian
+    component flip bit-exactly (the h == 0 limit of the A2 recipe)."""
+    from pybella.flow_solver.utils.boundary import cell_boundary as bdry_c
+
+    class _IdentityMap(terrain.CurvilinearMap):
+        vertical_line = False
+
+        def coordinates(self, xi):
+            return [xi[0] + 0.0 * (xi[1] + xi[2]), xi[1] + 0.0, xi[2] + 0.0]
+
+        def tangents(self, xi):
+            zero = 0.0 * (xi[0] + xi[1] + xi[2])
+            one = 1.0 + zero
+            return [[one, zero, zero], [zero, one, zero], [zero, zero, one]]
+
+    ud = _GridStubUD(cmap=False)
+    ud.curvilinear_map = _IdentityMap()
+    elem, _ = dis_grid.grid_init(ud)
+    metric = elem.metric
+
+    rng = np.random.default_rng(20260705)
+    shape = tuple(int(s) for s in elem.sc)
+
+    class _Sol:
+        pass
+
+    def fresh():
+        s = _Sol()
+        s.rho = 1.0 + 0.5 * rng.random(shape)
+        s.rhoY = 0.8 + 0.4 * rng.random(shape)
+        s.rhoX = rng.random(shape) - 0.5
+        s.rhou, s.rhov, s.rhow = (rng.random(shape) - 0.5 for _ in range(3))
+        return s
+
+    for dim in (1, 2):
+        sol_a = fresh()
+        sol_b = _Sol()
+        for name in ("rho", "rhoY", "rhoX", "rhou", "rhov", "rhow"):
+            setattr(sol_b, name, getattr(sol_a, name).copy())
+
+        from pybella.flow_solver.utils.boundary.common import get_ghost_padding
+        from pybella.utils import axes as _axes
+
+        pads, idx = get_ghost_padding(3, dim, elem.igs)
+        bdry_c._set_boundary(
+            sol_a, pads, "symmetric", idx, normal_mom=_axes.MOMENTA[dim]
+        )
+        bdry_c._set_boundary(sol_b, pads, "symmetric", idx)
+        bdry_c._mirror_momenta_general(sol_b, metric, dim, 3, elem.igs[dim])
+
+        for name in ("rho", "rhoY", "rhoX", "rhou", "rhov", "rhow"):
+            assert np.array_equal(getattr(sol_a, name), getattr(sol_b, name)), (
+                dim,
+                name,
+            )
+
+
+def test_zonal_flow_slides_along_walls():
+    """Zonal flow m = rho u0 cos(phi) e_lambda has zero contravariant
+    r- and phi-components; the mirror preserves that in every ghost row
+    (free slip: purely wall-parallel flow is unimpeded, no spurious
+    through-wall or radial momentum is manufactured)."""
+    mem, ud = _sphere_mem(frozen=True)
+    sol, elem = mem.sol, mem.elem
+    m = elem.metric
+    lam, r, phi = _grid_coords(elem)
+    u0 = 0.3
+    sol.rho[...] = 1.0
+    sol.rhoY[...] = 1.0
+    # e_lambda = (-sin lam, cos lam, 0); u = u0 cos(phi) e_lambda
+    sol.rhou[...] = u0 * np.cos(phi) * (-np.sin(lam)) + 0.0 * sol.rho
+    sol.rhov[...] = u0 * np.cos(phi) * np.cos(lam) + 0.0 * sol.rho
+    sol.rhow[...] = 0.0
+
+    from pybella.flow_solver.utils.boundary import cell_boundary as bdry_c
+
+    bdry_c.set_ghost_cells(mem, ud)
+    moms = [sol.rhou, sol.rhov, sol.rhow]
+    scale = u0 * _A**2
+    for a in (1, 2):  # contravariant r- and phi-momenta vanish EVERYWHERE
+        c_a = sum(m.N[a][k] * moms[k] for k in range(3))
+        assert np.max(np.abs(c_a)) <= 1e-13 * scale, (a, np.max(np.abs(c_a)))
 
 
 def test_flip_cycle_preserves_e_up():

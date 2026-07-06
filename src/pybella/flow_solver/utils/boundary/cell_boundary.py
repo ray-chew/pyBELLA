@@ -44,14 +44,25 @@ class CellBoundaryHandler:
         if bdry_type == opts.BdryType.PERIODIC:
             _set_boundary(sol, ghost_padding, "wrap", idx)
         elif bdry_type == opts.BdryType.WALL:
-            # the wall-normal momentum is the component along the wall axis
-            _set_boundary(
-                sol,
-                ghost_padding,
-                "symmetric",
-                idx,
-                normal_mom=axes.MOMENTA[current_step],
-            )
+            if self.metric is not None and not self.metric.vertical_line:
+                # curved wall (sphere): mirror the CONTRAVARIANT momentum
+                # triple with the local normals — flipping one Cartesian
+                # component is wrong where the wall is not a Cartesian plane
+                _set_boundary(sol, ghost_padding, "symmetric", idx)
+                _mirror_momenta_general(
+                    sol, self.metric, current_step, self.ndim, self.igs[current_step]
+                )
+            else:
+                # the wall-normal momentum is the component along the wall
+                # axis (Cartesian walls; vertical-line maps keep Cartesian
+                # wall planes on the non-gravity axes)
+                _set_boundary(
+                    sol,
+                    ghost_padding,
+                    "symmetric",
+                    idx,
+                    normal_mom=axes.MOMENTA[current_step],
+                )
         elif bdry_type == opts.BdryType.RAYLEIGH:
             raise AssertionError("Rayleigh boundary only defined on the gravity axis.")
 
@@ -105,13 +116,39 @@ class CellBoundaryHandler:
         Y_source = sol.rhoY[nsource] / sol.rho[nsource]
 
         vert = getattr(sol, self.vert_mom)
+        tang = None
         if self.metric is not None:
             # the metric must be oriented like the (possibly sweep-flipped)
             # solution arrays — compute_advection flips them together
             assert self.metric.vaxis == y_axs, "metric not sweep-oriented"
-            # free slip through the terrain surface: reflect the
-            # CONTRAVARIANT momentum (mom_v - G.mom_h), not the Cartesian one
-            contra_source = vert[nsource] - self._slope_terms(sol, nsource)
+            if self.metric.vertical_line:
+                # free slip through the terrain surface: reflect the
+                # CONTRAVARIANT momentum (mom_v - G.mom_h), not the
+                # Cartesian one
+                contra_source = vert[nsource] - self._slope_terms(sol, nsource)
+            else:
+                # general (sphere): the up-momentum is (N_v.m)/(N_v.e_up);
+                # the tangential VELOCITY (u - (u.e)e at the source) is
+                # copied per Cartesian component (generalizes copying the
+                # horizontal components when e_up is a Cartesian axis)
+                m = self.metric
+                Nv = m.N[m.vaxis]
+                moms = [getattr(sol, axes.MOMENTA[k]) for k in range(self.ndim)]
+                Nv_dot_m = sum(
+                    Nv[k][nsource] * moms[k][nsource] for k in range(self.ndim)
+                )
+                Nv_dot_e = sum(
+                    Nv[k][nsource] * m.e_up[k][nsource] for k in range(self.ndim)
+                )
+                contra_source = Nv_dot_m / Nv_dot_e
+                u_dot_e = (
+                    sum(moms[k][nsource] * m.e_up[k][nsource] for k in range(self.ndim))
+                    / sol.rho[nsource]
+                )
+                tang = [
+                    moms[k][nsource] / sol.rho[nsource] - u_dot_e * m.e_up[k][nsource]
+                    for k in range(self.ndim)
+                ]
             rhoYv_image = -contra_source * sol.rhoY[nsource] / sol.rho[nsource]
             # stratification at the PHYSICAL height of the image cell
             # (generalized altitude: == z for vertical-line maps)
@@ -143,6 +180,7 @@ class CellBoundaryHandler:
             "hor": {
                 m: getattr(sol, m)[nsource] / sol.rho[nsource] for m in self.hor_moms
             },
+            "tang": tang,
             "v": velocities["v"],
             "X": sol.rhoX[nsource] / sol.rho[nsource],
             "Th_slc": velocities.get("Th_slc", 1.0),
@@ -159,7 +197,11 @@ class CellBoundaryHandler:
             ) * self.ud.Msq
         else:
             deta = self.mem.elem.dxyz[self.v_phys]
-            if self.metric is not None:
+            if self.metric is not None and not self.metric.vertical_line:
+                # general map: vertical arc length per unit eta is |t_v|
+                m = self.metric
+                dz = 0.5 * (m.h_v[nimage] + m.h_v[nlast]) * deta
+            elif self.metric is not None:
                 # local vertical cell extent dz = z_eta * deta across the
                 # last -> image interval; z_eta = J / (N_v)_v (== J for
                 # vertical-line maps, bit-exactly — on stretched grids J
@@ -207,8 +249,12 @@ class CellBoundaryHandler:
     def _assign_ghost_values(self, sol, nimage, ghost_values):
         """Assign calculated values to ghost cells."""
         sol.rho[nimage] = ghost_values["rho"]
-        for m, val in ghost_values["hor"].items():
-            getattr(sol, m)[nimage] = ghost_values["rho"] * val * ghost_values["Th_slc"]
+        general = ghost_values["tang"] is not None
+        if not general:
+            for m, val in ghost_values["hor"].items():
+                getattr(sol, m)[nimage] = (
+                    ghost_values["rho"] * val * ghost_values["Th_slc"]
+                )
         sol.rhoY[nimage] = ghost_values["rhoY"]
         sol.rhoX[nimage] = ghost_values["rho"] * ghost_values["X"]
 
@@ -218,6 +264,24 @@ class CellBoundaryHandler:
             vert[nimage] = -ghost_values["v"] / (
                 ghost_values["rhoY"] / ghost_values["rho"]
             )
+        elif general:
+            # general map: momenta = tangential part + beta e_up, with beta
+            # enforcing the reflected up-momentum (N_v.m)/(N_v.e) = rho v
+            # at the image cell's own metric
+            m = self.metric
+            Nv = m.N[m.vaxis]
+            moms = [getattr(sol, axes.MOMENTA[k]) for k in range(self.ndim)]
+            for k in range(self.ndim):
+                moms[k][nimage] = (
+                    ghost_values["rho"]
+                    * ghost_values["tang"][k]
+                    * ghost_values["Th_slc"]
+                )
+            Nv_dot_mt = sum(Nv[k][nimage] * moms[k][nimage] for k in range(self.ndim))
+            Nv_dot_e = sum(Nv[k][nimage] * m.e_up[k][nimage] for k in range(self.ndim))
+            beta = ghost_values["rho"] * ghost_values["v"] - Nv_dot_mt / Nv_dot_e
+            for k in range(self.ndim):
+                moms[k][nimage] += beta * m.e_up[k][nimage]
         elif self.metric is not None:
             # rho*v carries the reflected CONTRAVARIANT momentum; rebuild the
             # Cartesian vertical momentum with the ghost cell's slope terms
@@ -273,6 +337,75 @@ def _get_dimensions_to_process(ndim, step):
         return np.arange(ndim)
     else:
         return [ndim - 1]
+
+
+def _solve_normal_system(N_at, c, ndim):
+    """Solve sum_k N[a][k] m_k = c_a per point (Cramer; det N = J^2 > 0).
+
+    ``N_at[a][k]`` are the (already indexed) normal components at the
+    target cells, ``c`` the contravariant triple to realize there.
+    """
+    if ndim == 2:
+        det = N_at[0][0] * N_at[1][1] - N_at[0][1] * N_at[1][0]
+        m0 = (c[0] * N_at[1][1] - c[1] * N_at[0][1]) / det
+        m1 = (N_at[0][0] * c[1] - N_at[1][0] * c[0]) / det
+        return [m0, m1]
+    det = (
+        N_at[0][0] * (N_at[1][1] * N_at[2][2] - N_at[1][2] * N_at[2][1])
+        - N_at[0][1] * (N_at[1][0] * N_at[2][2] - N_at[1][2] * N_at[2][0])
+        + N_at[0][2] * (N_at[1][0] * N_at[2][1] - N_at[1][1] * N_at[2][0])
+    )
+    out = []
+    for k in range(3):
+        M = [[c[a] if kk == k else N_at[a][kk] for kk in range(3)] for a in range(3)]
+        det_k = (
+            M[0][0] * (M[1][1] * M[2][2] - M[1][2] * M[2][1])
+            - M[0][1] * (M[1][0] * M[2][2] - M[1][2] * M[2][0])
+            + M[0][2] * (M[1][0] * M[2][1] - M[1][1] * M[2][0])
+        )
+        out.append(det_k / det)
+    return out
+
+
+def _mirror_momenta_general(sol, metric, dim, ndim, igs_d):
+    """Contravariant free-slip mirror of the momenta at both walls of
+    ``dim`` (general curvilinear walls, e.g. the sphere's phi/r walls).
+
+    For each ghost/source pair mirrored about the wall: the wall-normal
+    contravariant component flips, the tangential contravariant
+    components copy, each with its own LOCAL normals —
+    N_b(ghost).m(ghost) = -N_b(src).m(src) exactly, so the (collocated,
+    face-averaged) wall flux vanishes to roundoff. With N = identity
+    this is exactly the Cartesian component flip.
+
+    Scalars must already be padded (symmetric) so ghost rho/rhoY match.
+    """
+    moms = [getattr(sol, axes.MOMENTA[k]) for k in range(ndim)]
+    N = metric.N
+    n_cells = sol.rho.shape[dim]
+    for k_layer in range(igs_d):
+        for low in (True, False):
+            if low:
+                i_ghost = k_layer
+                i_src = 2 * igs_d - 1 - k_layer
+            else:
+                i_ghost = n_cells - 1 - k_layer
+                i_src = n_cells - 2 * igs_d + k_layer
+            sl_g = [slice(None)] * ndim
+            sl_s = [slice(None)] * ndim
+            sl_g[dim] = i_ghost
+            sl_s[dim] = i_src
+            sl_g, sl_s = tuple(sl_g), tuple(sl_s)
+
+            c = [
+                sum(N[a][kk][sl_s] * moms[kk][sl_s] for kk in range(ndim))
+                for a in range(ndim)
+            ]
+            c[dim] = -c[dim]
+            N_ghost = [[N[a][kk][sl_g] for kk in range(ndim)] for a in range(ndim)]
+            m_new = _solve_normal_system(N_ghost, c, ndim)
+            for kk in range(ndim):
+                moms[kk][sl_g] = m_new[kk]
 
 
 # Functional approach with helper functions
