@@ -16,13 +16,13 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
     nonhydro = ud.nonhydrostasy
     g, Msq = ud.gravity_strength[axes.vertical_axis(ud)], ud.Msq
     Ginv = th.Gammainv
-    # role-ordered Coriolis components (h1, v, h2); identity for vertical = 1
+    # role-ordered Coriolis components (h1, v, h2); identity for vertical = 1.
+    # Scalars on the legacy path; per-cell fields when ud.coriolis_field is
+    # set (spatially varying rotation, e.g. f(phi) e_r on the sphere)
+    from . import coriolis as coriolis_mod
+
     ax_h1, ax_v, ax_h2 = axes.role_perm(axes.vertical_axis(ud))
-    corr_h1, corr_v, corr_h2 = (
-        ud.coriolis_strength[ax_h1],
-        ud.coriolis_strength[ax_v],
-        ud.coriolis_strength[ax_h2],
-    )
+    corr_h1, corr_v, corr_h2 = coriolis_mod.role_components(mem, ud)
     u0, v0, w0 = ud.u_wind_speed, ud.v_wind_speed, ud.w_wind_speed
 
     # Reusable derived quantities

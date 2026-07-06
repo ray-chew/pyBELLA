@@ -80,6 +80,11 @@ def build_device_config(mem, ud):
     cfg.Gamma, cfg.Gammainv = th.Gamma, th.Gammainv
     cfg.Msq = float(ud.Msq)
     cfg.g = float(ud.gravity_strength[v])
+    if getattr(ud, "coriolis_field", None) is not None:
+        raise NotImplementedError(
+            "jax-device Coriolis with a spatially varying rotation field "
+            "(ud.coriolis_field) is not implemented yet; run the numpy backend"
+        )
     cfg.coriolis = tuple(float(c) for c in ud.coriolis_strength)
     cfg.winds = (
         float(ud.u_wind_speed),
