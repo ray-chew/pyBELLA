@@ -56,6 +56,11 @@ def apply_inverse(U, V, W, wh1, wh2, wv, nu, nonhydro):
 
 
 def _role_inputs(mem, ud, dt):
+    if getattr(ud, "coriolis_field", None) is not None:
+        raise NotImplementedError(
+            "jax Coriolis with a spatially varying rotation field "
+            "(ud.coriolis_field) is not implemented yet; run the numpy backend"
+        )
     nonhydro = ud.nonhydrostasy
     g = ud.gravity_strength[axes.vertical_axis(ud)]
     Msq = ud.Msq

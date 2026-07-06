@@ -1,7 +1,55 @@
 import numba as nb
+import numpy as np
 
 from ...utils import axes
 from ...backends import is_jax_backend
+
+
+def role_components(mem, ud):
+    """Role-ordered rotation components (w_h1, w_v, w_h2), UNSCALED by dt.
+
+    Legacy path: exactly ``ud.coriolis_strength`` indexed by the role
+    permutation — scalars, bit-identical to the historical inline reads.
+
+    Field path (``ud.coriolis_field`` set): a callable of the three
+    CARTESIAN coordinates returning the three Cartesian rotation
+    components, evaluated once per cell grid and cached on ``mem.elem``.
+    The components are Cartesian like the momenta, so the role binding is
+    the same axis permutation. Spatially varying Coriolis (f(phi) e_r on
+    the sphere, or a beta plane) enters ONLY here; the njit kernels are
+    elementwise and take scalars or full arrays unchanged.
+    """
+    ax_h1, ax_v, ax_h2 = axes.role_perm(axes.vertical_axis(ud))
+    field = getattr(ud, "coriolis_field", None)
+    if field is None:
+        w = ud.coriolis_strength
+        return w[ax_h1], w[ax_v], w[ax_h2]
+
+    elem = mem.elem
+    cached = getattr(elem, "_coriolis_field_cache", None)
+    if cached is None or cached[0] is not field:
+        shape = mem.sol.rho.shape
+        metric = elem.metric
+        if metric is not None and all(c is not None for c in metric.x):
+            coords = metric.x
+        else:
+            # identity map: physical coordinates are the grid coordinates
+            coords = []
+            for a in range(elem.ndim):
+                view_shape = [1] * elem.ndim
+                view_shape[a] = -1
+                coords.append(axes.coords_along(elem, a).reshape(view_shape))
+        w = field(*coords)
+        w = [
+            np.ascontiguousarray(
+                np.broadcast_to(c, shape).astype(np.float64, copy=False)
+            )
+            for c in w
+        ]
+        cached = (field, w)
+        elem._coriolis_field_cache = cached
+    w = cached[1]
+    return w[ax_h1], w[ax_v], w[ax_h2]
 
 
 # Refactored main function
@@ -27,8 +75,8 @@ def multiply_inverse_terms(
     Msq = ud.Msq
 
     ax_h1, ax_v, ax_h2 = axes.role_perm(axes.vertical_axis(ud))
-    wdt = dt * ud.coriolis_strength
-    wh1, wv, wh2 = wdt[ax_h1], wdt[ax_v], wdt[ax_h2]
+    w_h1, w_v, w_h2 = role_components(mem, ud)
+    wh1, wv, wh2 = dt * w_h1, dt * w_v, dt * w_h2
     strat = mem.npf.HydroState_n.get_dSdy(mem.elem, mem.node)
     Y = mem.sol.rhoY / mem.sol.rho
     nu = -(dt**2) * (g / Msq) * strat * Y
@@ -95,9 +143,8 @@ def compute_inverse_coefficients(mem, ud, dt):
     g = ud.gravity_strength[axes.vertical_axis(ud)]
     Msq = ud.Msq
 
-    ax_h1, ax_v, ax_h2 = axes.role_perm(axes.vertical_axis(ud))
-    wdt = dt * ud.coriolis_strength
-    wh1, wv, wh2 = wdt[ax_h1], wdt[ax_v], wdt[ax_h2]
+    w_h1, w_v, w_h2 = role_components(mem, ud)
+    wh1, wv, wh2 = dt * w_h1, dt * w_v, dt * w_h2
     strat = mem.npf.HydroState_n.get_dSdy(mem.elem, mem.node)
     Y = mem.sol.rhoY / mem.sol.rho
     nu = -(dt**2) * (g / Msq) * strat * Y

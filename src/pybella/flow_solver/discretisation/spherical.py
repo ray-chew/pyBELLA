@@ -90,3 +90,23 @@ class SphericalShellMap(terrain.CurvilinearMap):
 
     def height(self, xi):
         return xi[1] - self.radius
+
+    def traditional_coriolis(self, coriolis_param):
+        """``ud.coriolis_field`` callable for the traditional approximation.
+
+        Rotation-vector field w(x) = coriolis_param * sin(phi) * e_r —
+        only the locally-vertical rotation component acts (thin shell /
+        SWE). ``coriolis_param`` uses the same nondimensional convention
+        as ``ud.coriolis_strength`` (the value the H^-1 kernel consumes);
+        its absolute normalization (Omega vs 2*Omega) is pinned by the
+        f-plane equivalence oracle, not assumed here. sin(phi) = -x2/r in
+        this embedding (pole along -x2), so w_k = -c * x2 * x_k / r^2.
+        """
+        c = float(coriolis_param)
+
+        def field(x0, x1, x2):
+            oor_sq = 1.0 / (x0**2 + x1**2 + x2**2)
+            fac = -c * x2 * oor_sq
+            return (fac * x0, fac * x1, fac * x2)
+
+        return field

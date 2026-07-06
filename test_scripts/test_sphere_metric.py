@@ -541,6 +541,77 @@ def test_zonal_flow_slides_along_walls():
         assert np.max(np.abs(c_a)) <= 1e-13 * scale, (a, np.max(np.abs(c_a)))
 
 
+# -------------------------------- Stage B: spatially varying Coriolis
+#
+# The f-plane equivalence oracle (planar balanced vortex vs a small
+# spherical patch, pinning the Omega-vs-2*Omega kernel convention) lands
+# with the Stage-C SWE case; here the FIELD PATH mechanics are gated.
+
+
+def test_coriolis_field_constant_matches_scalar():
+    """A constant ud.coriolis_field must reproduce the scalar
+    ud.coriolis_strength path bit-exactly (same elementwise kernel ops)."""
+    from pybella.flow_solver.numerics import coriolis
+
+    mem, ud = _sphere_mem()
+    dt = 0.37
+    ud.coriolis_strength = np.array([0.3, 0.7, 0.2])
+    ud.coriolis_field = None
+    views = coriolis.compute_inverse_coefficients(mem, ud, dt)
+    ref = [v.copy() for v in views]
+
+    ud.coriolis_field = lambda x0, x1, x2: (
+        0.3 + 0.0 * x0,
+        0.7 + 0.0 * x0,
+        0.2 + 0.0 * x0,
+    )
+    mem.elem._coriolis_field_cache = None
+    views = coriolis.compute_inverse_coefficients(mem, ud, dt)
+    for a, b in zip(ref, views):
+        assert np.array_equal(a, b)
+
+
+def test_coriolis_field_coordinate_fallback():
+    """Without materialized physical coordinates the field is evaluated on
+    the grid coordinates (identity map)."""
+    from pybella.flow_solver.numerics import coriolis
+    from pybella.utils import axes as _axes
+
+    ud = _GridStubUD(cmap=False)
+    elem, _ = dis_grid.grid_init(ud)
+
+    class _Mem:
+        pass
+
+    class _Sol:
+        pass
+
+    mem = _Mem()
+    mem.elem = elem
+    mem.sol = _Sol()
+    mem.sol.rho = np.ones(tuple(int(s) for s in elem.sc))
+    ud.coriolis_field = lambda x0, x1, x2: (0.0 * x0, 0.0 * x0 + 1.0, 2.0 * x2)
+    w_h1, w_v, w_h2 = coriolis.role_components(mem, ud)
+    z_view = _axes.coords_along(elem, 2).reshape(1, 1, -1)
+    np.testing.assert_allclose(w_h1, 0.0)
+    np.testing.assert_allclose(w_v, 1.0)
+    np.testing.assert_allclose(w_h2, np.broadcast_to(2.0 * z_view, mem.sol.rho.shape))
+
+
+def test_traditional_coriolis_is_f_sinphi_e_r():
+    """The map's traditional-approximation field is c sin(phi) e_r."""
+    ud, elem, _ = _metrics(frozen=True)
+    m = elem.metric
+    lam, r, phi = _grid_coords(elem)
+    c = 1.7
+    field = ud.curvilinear_map.traditional_coriolis(c)
+    w = field(m.x[0], m.x[1], m.x[2])
+    er = _e_r(lam, phi)
+    expect = [np.broadcast_to(c * np.sin(phi) * er[k], m.J.shape) for k in range(3)]
+    for k in range(3):
+        np.testing.assert_allclose(w[k], expect[k], rtol=1e-13, atol=1e-14 * c)
+
+
 def test_flip_cycle_preserves_e_up():
     _, elem, _ = _metrics(frozen=False)
     m = elem.metric

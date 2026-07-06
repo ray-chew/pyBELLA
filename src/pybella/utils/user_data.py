@@ -140,6 +140,10 @@ class UserDataInit:
         # radius planet_radius / h_ref; see discretisation/spherical.py.
         self.curvilinear_map = None
         self.planet_radius = None  # [m], dimensional
+        # spatially varying rotation: callable of the Cartesian coordinates
+        # returning the 3 Cartesian rotation components (None = the scalar
+        # ud.coriolis_strength path); see numerics/coriolis.role_components
+        self.coriolis_field = None
 
         # Boundary conditions
         self.bdry_type = np.empty((3), dtype=object)
