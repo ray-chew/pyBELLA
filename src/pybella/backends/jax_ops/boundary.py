@@ -25,6 +25,8 @@ The gravity fill is **sequential across the two ghost layers per side**
 as an unrolled 4-op loop, exactly like the numpy handler.
 """
 
+import copy
+
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -321,6 +323,270 @@ def _apply_gravity_ops(fields, ops, meta):
 
 
 # --------------------------------------------------------------------------
+# general (non-vertical-line, spherical) metric fills
+#
+# Two numpy paths gain JAX twins here — both branch on
+# ``metric.vertical_line is False`` and both work off the CANONICAL metric
+# (`_canonical_metric`), re-oriented per orientation with the same cyclic
+# rule the sweep flips use (`_orient_leaf`):
+#
+#   * the general free-slip WALL mirror
+#     (`cell_boundary._mirror_momenta_general`): symmetric-pad the scalars,
+#     then per ghost/source pair flip the wall-normal contravariant momentum
+#     with the LOCAL area normals (Cramer solve, det N = J^2 > 0). Only ever
+#     invoked at canonical orientation — during a sweep it is the extremal
+#     (last-axis) split, where the arrays are back at 0 net flips; the
+#     degenerate (thin-shell) and periodic axes never reach it mid-sweep.
+#   * the well-balanced gravity ghost fill
+#     (`cell_boundary._calculate_ghost_values`, e_up branch): the radial
+#     free-slip wall on the compressible shell. Sequential across the two
+#     ghost layers (as the vertical-line fill), phys + sweep orientations.
+# --------------------------------------------------------------------------
+
+
+def _canonical_metric(metric, v_phys):
+    """Return the metric in canonical orientation (vaxis == v_phys).
+
+    The config may first be built mid-sweep (the metric flipped in place);
+    recover canonical on a deep copy so all orientations derive from a
+    single, flip-invariant snapshot of the (time-independent) geometry."""
+    ndim = np.asarray(metric.J).ndim
+    k = (v_phys - metric.vaxis) % ndim
+    if k == 0:
+        return metric
+    m = copy.deepcopy(metric)
+    for _ in range(k):
+        m.flip_backward()
+    return m
+
+
+def _orient_leaf(arr, perm):
+    """Transpose a Cartesian-component leaf array into the orientation whose
+    array axes are the cyclic ``perm`` of the canonical ones (matches one
+    ``MetricFields.flip_forward`` composition; identity for canonical)."""
+    return np.ascontiguousarray(np.transpose(np.asarray(arr), perm))
+
+
+# ------------------------------------------------ general free-slip wall
+
+
+def _solve_normal_system_jax(N_at, c, ndim):
+    """Cramer solve of sum_k N[a][k] m_k = c_a per point (det N = J^2 > 0),
+    replicating ``cell_boundary._solve_normal_system`` FP order exactly."""
+    if ndim == 2:
+        det = N_at[0][0] * N_at[1][1] - N_at[0][1] * N_at[1][0]
+        m0 = (c[0] * N_at[1][1] - c[1] * N_at[0][1]) / det
+        m1 = (N_at[0][0] * c[1] - N_at[1][0] * c[0]) / det
+        return [m0, m1]
+    det = (
+        N_at[0][0] * (N_at[1][1] * N_at[2][2] - N_at[1][2] * N_at[2][1])
+        - N_at[0][1] * (N_at[1][0] * N_at[2][2] - N_at[1][2] * N_at[2][0])
+        + N_at[0][2] * (N_at[1][0] * N_at[2][1] - N_at[1][1] * N_at[2][0])
+    )
+    out = []
+    for k in range(3):
+        M = [[c[a] if kk == k else N_at[a][kk] for kk in range(3)] for a in range(3)]
+        det_k = (
+            M[0][0] * (M[1][1] * M[2][2] - M[1][2] * M[2][1])
+            - M[0][1] * (M[1][0] * M[2][2] - M[1][2] * M[2][0])
+            + M[0][2] * (M[1][0] * M[2][1] - M[1][1] * M[2][0])
+        )
+        out.append(det_k / det)
+    return out
+
+
+class _GeneralWallOp:
+    """Static ghost/source slices for one (side, layer) of the mirror."""
+
+    __slots__ = ("src", "ghost")
+
+
+def _general_wall_ops(shape, wall_axis, ndim, ig):
+    """Ghost/source index pairs, matching ``_mirror_momenta_general``'s
+    (k_layer, low/high) traversal."""
+    n_cells = int(shape[wall_axis])
+    ops = []
+    for k_layer in range(ig):
+        for low in (True, False):
+            if low:
+                i_ghost = k_layer
+                i_src = 2 * ig - 1 - k_layer
+            else:
+                i_ghost = n_cells - 1 - k_layer
+                i_src = n_cells - 2 * ig + k_layer
+            op = _GeneralWallOp()
+            op.src = _axslice(ndim, wall_axis, i_src)
+            op.ghost = _axslice(ndim, wall_axis, i_ghost)
+            ops.append(op)
+    return ops
+
+
+def _apply_general_wall(fields, N, ops, wall_axis, ig, ndim):
+    """Symmetric-pad all fields (the ``_set_boundary(symmetric)`` call), then
+    contravariant-mirror the momenta.
+
+    The scalar (symmetric) pad is what the wall reflects; the momentum pad
+    (tangential symmetric, rhov negsym) is fully overwritten at every ghost
+    layer for a non-degenerate axis — but on the thin-shell degenerate axis
+    (one interior cell) the OUTER ghost's mirror source is itself a ghost, so
+    it must carry the padded value: the pad is kept, exactly as numpy does."""
+    fields = _no_gravity_fill(fields, wall_axis, ig, _WALL, "rhov")
+    moms = [fields[_MOMENTA[k]] for k in range(ndim)]
+    for op in ops:
+        sl_s, sl_g = op.src, op.ghost
+        c = [
+            sum(N[a][kk][sl_s] * moms[kk][sl_s] for kk in range(ndim))
+            for a in range(ndim)
+        ]
+        c[wall_axis] = -c[wall_axis]
+        N_ghost = [[N[a][kk][sl_g] for kk in range(ndim)] for a in range(ndim)]
+        m_new = _solve_normal_system_jax(N_ghost, c, ndim)
+        for kk in range(ndim):
+            moms[kk] = moms[kk].at[sl_g].set(m_new[kk])
+    for k in range(ndim):
+        fields[_MOMENTA[k]] = moms[k]
+    return fields
+
+
+# ---------------------------------------- well-balanced gravity ghost fill
+
+
+class _GeneralGravityOp:
+    """Static data for one (side, layer) general (e_up) hydrostatic fill."""
+
+    __slots__ = (
+        "nlast",
+        "nsource",
+        "nimage",
+        "direction",
+        "S",
+        "dpi_coeff",
+        "rhoY0_im",
+        "Nv_src",
+        "Nv_im",
+        "e_src",
+        "e_im",
+    )
+
+
+def _general_gravity_ops(mem, ud, y_axs, perm):
+    """Build the 4 sequential general (e_up) gravity ops for one orientation.
+
+    Mirrors ``_gravity_ops``' index math; the per-op metric slices (the
+    vertical area normal N_v, the up direction e_up, both at source/image)
+    are static and gathered here in the requested orientation."""
+    elem = mem.elem
+    ndim = elem.ndim
+    v_phys = axes.vertical_axis(ud)
+    icv = elem.sc[v_phys]
+    igv = elem.igs[v_phys]
+    g = ud.gravity_strength[v_phys]
+    if hasattr(ud, "ATMOSPHERIC_EXTENSION"):
+        raise NotImplementedError(
+            "ATMOSPHERIC_EXTENSION with a non-vertical-line (spherical) metric "
+            "is not supported on the JAX backend (unexercised in numpy too)"
+        )
+
+    mc = _canonical_metric(elem.metric, v_phys)
+    Nv = [_orient_leaf(mc.N[v_phys][k], perm) for k in range(ndim)]
+    e_up = [_orient_leaf(mc.e_up[k], perm) for k in range(ndim)]
+    height = _orient_leaf(mc.height, perm)
+    h_v = _orient_leaf(mc.h_v, perm)
+    hydro = mem.npf.HydroState
+    if hydro.field_mode and ud.is_compressible != 1:
+        raise NotImplementedError(
+            "terrain hydrostates (field_mode) with an incompressible general "
+            "ghost fill are not supported on the JAX backend"
+        )
+
+    ops = []
+    direction = -1.0
+    offset = 0
+    for _side in range(2):
+        direction *= -1
+        for cur_i in np.arange(igv)[::-1]:
+            cur_idx = int(cur_i + offset * ((icv - 1) - 2 * cur_i))
+            nlast = _axslice(ndim, y_axs, int(cur_idx + direction))
+            nsource = _axslice(
+                ndim,
+                y_axs,
+                int(offset * icv + direction * (2 * igv - (1 - offset) - cur_i)),
+            )
+            nimage = _axslice(ndim, y_axs, int(cur_idx))
+
+            op = _GeneralGravityOp()
+            op.nlast, op.nsource, op.nimage = nlast, nsource, nimage
+            op.direction = float(direction)
+            op.S = jnp.asarray(1.0 / ud.stratification(height[nimage]))
+            deta = elem.dxyz[v_phys]
+            dz = 0.5 * (h_v[nimage] + h_v[nlast]) * deta
+            op.dpi_coeff = jnp.asarray(direction * (mem.th.Gamma * g) * 0.5 * dz)
+            op.rhoY0_im = (
+                float(hydro.rhoY0[nimage[y_axs]]) if ud.is_compressible != 1 else None
+            )
+            op.Nv_src = [jnp.asarray(Nv[k][nsource]) for k in range(ndim)]
+            op.Nv_im = [jnp.asarray(Nv[k][nimage]) for k in range(ndim)]
+            op.e_src = [jnp.asarray(e_up[k][nsource]) for k in range(ndim)]
+            op.e_im = [jnp.asarray(e_up[k][nimage]) for k in range(ndim)]
+            ops.append(op)
+        offset += 1
+    return ops
+
+
+def _apply_general_gravity_ops(fields, ops, meta):
+    """Unrolled sequential general (e_up) hydrostatic fill (traced).
+
+    Twin of ``cell_boundary._calculate_ghost_values`` / ``_assign_ghost_values``
+    e_up branch: hydrostatic rho/rhoY from the along-arc pressure step, the
+    tangential velocity copied per Cartesian component, and the ghost momentum
+    rebuilt as (tangential part + beta e_up) with beta enforcing the
+    well-balanced coordinate velocity ``v`` (rhoY flux odd across the wall)."""
+    ndim = meta["ndim"]
+    compressible = meta["compressible"]
+    gm1 = meta["gm1"]
+    gm1inv = meta["gm1inv"]
+
+    for op in ops:
+        rho = fields["rho"]
+        rhoY = fields["rhoY"]
+        rhoX = fields["rhoX"]
+        nlast, nsource, nimage = op.nlast, op.nsource, op.nimage
+        moms = [fields[_MOMENTA[k]] for k in range(ndim)]
+
+        Y_last = rhoY[nlast] / rho[nlast]
+        rho_s = rho[nsource]
+        Nv_dot_m = sum(op.Nv_src[k] * moms[k][nsource] for k in range(ndim))
+        u_dot_e = sum(moms[k][nsource] * op.e_src[k] for k in range(ndim)) / rho_s
+        tang = [moms[k][nsource] / rho_s - u_dot_e * op.e_src[k] for k in range(ndim)]
+        E_image = sum(op.Nv_im[k] * op.e_im[k] for k in range(ndim))
+        Y_src = rhoY[nsource] / rho_s
+        v_coord = -Y_src * Nv_dot_m / E_image
+
+        S = op.S
+        dpi = op.dpi_coeff * (1.0 / Y_last + S)
+        if compressible:
+            rhoY_g = (rhoY[nlast] ** gm1 + dpi) ** gm1inv
+        else:
+            rhoY_g = op.rhoY0_im
+        rho_g = rhoY_g * S
+        v = v_coord / rhoY_g
+        X = rhoX[nsource] / rho_s
+
+        fields["rho"] = rho.at[nimage].set(rho_g)
+        fields["rhoY"] = rhoY.at[nimage].set(rhoY_g)
+        fields["rhoX"] = rhoX.at[nimage].set(rho_g * X)
+        for k in range(ndim):
+            moms[k] = moms[k].at[nimage].set(rho_g * tang[k])
+        Nv_dot_mt = sum(op.Nv_im[k] * moms[k][nimage] for k in range(ndim))
+        beta = rho_g * v - Nv_dot_mt / E_image
+        for k in range(ndim):
+            moms[k] = moms[k].at[nimage].add(beta * op.e_im[k])
+        for k in range(ndim):
+            fields[_MOMENTA[k]] = moms[k]
+    return fields
+
+
+# --------------------------------------------------------------------------
 # config + jitted entry kernels per (orientation, mode)
 # --------------------------------------------------------------------------
 
@@ -364,19 +630,79 @@ class BoundaryConfig:
             meta["slope_moms"] = (_MOMENTA[a_h1], _MOMENTA[a_h2])
         self.meta = meta
 
+        # general (spherical) metric: the non-vertical-line free-slip wall
+        # mirror and the e_up gravity fill replace the vertical-line kernels
+        self.general = elem.metric is not None and not elem.metric.vertical_line
+
         if any(self.gravity_on):
             # canonical ("phys") orientation: identity permutation
-            phys_ops = _gravity_ops(mem, ud, v_phys, tuple(range(ndim)))
+            ident = tuple(range(ndim))
             # sweep orientation: cyclic permutation putting v_phys last,
             # i.e. oriented axes order (v+1, ..., v) mod ndim
             sweep_perm = tuple((v_phys + 1 + i) % ndim for i in range(ndim))
-            sweep_ops = _gravity_ops(mem, ud, ndim - 1, sweep_perm)
-            self.gravity_fill = {
-                "phys": self._make_gravity_fill(phys_ops),
-                "sweep": self._make_gravity_fill(sweep_ops),
-            }
+            if self.general:
+                phys_ops = _general_gravity_ops(mem, ud, v_phys, ident)
+                sweep_ops = _general_gravity_ops(mem, ud, ndim - 1, sweep_perm)
+                self.gravity_fill = {
+                    "phys": self._make_general_gravity_fill(phys_ops),
+                    "sweep": self._make_general_gravity_fill(sweep_ops),
+                }
+            else:
+                phys_ops = _gravity_ops(mem, ud, v_phys, ident)
+                sweep_ops = _gravity_ops(mem, ud, ndim - 1, sweep_perm)
+                self.gravity_fill = {
+                    "phys": self._make_gravity_fill(phys_ops),
+                    "sweep": self._make_gravity_fill(sweep_ops),
+                }
 
         self.no_gravity_fill = self._make_no_gravity_fills()
+
+        # general free-slip WALL mirror (canonical orientation) for each
+        # non-gravity WALL axis — replaces the Cartesian normal-flip fill
+        self.general_wall_fill = {}
+        if self.general:
+            mc = _canonical_metric(elem.metric, v_phys)
+            N_canon = [
+                [jnp.asarray(np.asarray(mc.N[a][k])) for k in range(ndim)]
+                for a in range(ndim)
+            ]
+            for d in range(ndim):
+                if self.bdry_int[d] == _WALL and not self.gravity_on[d]:
+                    self.general_wall_fill[d] = self._make_general_wall_fill(
+                        N_canon, d, self.igs[d]
+                    )
+
+    def _make_general_gravity_fill(self, ops):
+        meta = {
+            "ndim": self.ndim,
+            "compressible": self.meta["compressible"],
+            "gm1": self.meta["gm1"],
+            "gm1inv": self.meta["gm1inv"],
+        }
+
+        @jax.jit
+        def fill(rho, rhou, rhov, rhow, rhoY, rhoX):
+            fields = dict(
+                rho=rho, rhou=rhou, rhov=rhov, rhow=rhow, rhoY=rhoY, rhoX=rhoX
+            )
+            fields = _apply_general_gravity_ops(fields, ops, meta)
+            return tuple(fields[n] for n in _FIELDS)
+
+        return fill
+
+    def _make_general_wall_fill(self, N, wall_axis, ig):
+        ndim = self.ndim
+
+        @jax.jit
+        def fill(rho, rhou, rhov, rhow, rhoY, rhoX):
+            fields = dict(
+                rho=rho, rhou=rhou, rhov=rhov, rhow=rhow, rhoY=rhoY, rhoX=rhoX
+            )
+            ops = _general_wall_ops(rho.shape, wall_axis, ndim, ig)
+            fields = _apply_general_wall(fields, N, ops, wall_axis, ig, ndim)
+            return tuple(fields[n] for n in _FIELDS)
+
+        return fill
 
     def _make_gravity_fill(self, ops):
         meta = self.meta
@@ -424,11 +750,6 @@ _CONFIG_CACHE = {}
 
 
 def get_boundary_config(mem, ud):
-    if mem.elem.metric is not None and not mem.elem.metric.vertical_line:
-        raise NotImplementedError(
-            "jax ghost-cell fill for non-vertical-line (spherical) metrics "
-            "is not implemented yet; run the numpy backend"
-        )
     key = (id(mem.elem), id(ud))
     cfg = _CONFIG_CACHE.get(key)
     if cfg is None or cfg.elem_ref is not mem.elem or cfg.ud_ref is not ud:
@@ -451,6 +772,15 @@ def set_ghost_cells(mem, ud, step=None, sol=None):
         if cfg.gravity_on[current_step]:
             orientation = "sweep" if step is not None else "phys"
             out = cfg.gravity_fill[orientation](*arrays)
+        elif dim == current_step and current_step in cfg.general_wall_fill:
+            # general (spherical) free-slip wall. Only reached at canonical
+            # orientation (dim == current_step): step=None fills every axis
+            # canonically, and mid-sweep the only general WALL axis is the
+            # extremal (last) split, where the arrays are at 0 net flips
+            # (degenerate/periodic axes never reach the general mirror). The
+            # mirror axis is then current_step (cell_boundary
+            # ._mirror_momenta_general is called with dim=current_step).
+            out = cfg.general_wall_fill[current_step](*arrays)
         else:
             out = cfg.no_gravity_fill[(dim, current_step)](*arrays)
         for name, val in zip(_FIELDS, out):

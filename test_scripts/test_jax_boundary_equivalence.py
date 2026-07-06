@@ -213,6 +213,36 @@ def test_cells_incompressible_branch():
     _cells_case(mem, ud)
 
 
+# ----------------------------------------------- general (spherical) metric
+
+
+def test_cells_sphere_swe_walls():
+    # thin-shell TC2: general free-slip mirror on the phi + degenerate-r walls
+    _cells_case(*fx.make_sphere_swe_mem())
+
+
+def test_cells_sphere_gw_gravity_and_wall():
+    # 3D shell: well-balanced e_up gravity fill on r + general phi wall mirror
+    _cells_case(*fx.make_sphere_gw_mem())
+
+
+def test_cells_sphere_swe_sweep_phi():
+    # phi wall reached mid-sweep at the extremal split (canonical orientation)
+    mem, ud = fx.make_sphere_swe_mem()
+    _cells_case(mem, ud, step=2, flip=3)
+
+
+def test_cells_sphere_gw_sweep_phi():
+    mem, ud = fx.make_sphere_gw_mem()
+    _cells_case(mem, ud, step=2, flip=3)
+
+
+def test_cells_sphere_gw_sweep_gravity():
+    # radial (gravity) sweep: general e_up fill in the sweep orientation
+    mem, ud = fx.make_sphere_gw_mem()
+    _cells_case(mem, ud, step=1, flip=2)
+
+
 # ------------------------------------------------------ set_ghost_nodes twin
 
 
@@ -239,6 +269,10 @@ def test_nodes_igw():
 
 def test_nodes_agnesi3d_quasi2d():
     _nodes_case(*fx.make_agnesi3d_mem(True))
+
+
+def test_nodes_sphere_gw():
+    _nodes_case(*fx.make_sphere_gw_mem())
 
 
 # ------------------------------------------------- rayleigh + scale-wall twins
