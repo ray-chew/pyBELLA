@@ -144,6 +144,12 @@ def _gravity_ops(mem, ud, y_axs, orient_perm):
     metric = elem.metric
 
     if metric is not None:
+        if not metric.vertical_line:
+            raise NotImplementedError(
+                "jax boundary fill for non-vertical-line (spherical) metrics "
+                "is not implemented yet; run the numpy backend"
+            )
+
         # the metric may be mid-sweep flipped when the config is first
         # built; undo the cyclic flips back to canonical (metric.vaxis
         # tracks where the physical vertical currently sits), then
@@ -418,6 +424,11 @@ _CONFIG_CACHE = {}
 
 
 def get_boundary_config(mem, ud):
+    if mem.elem.metric is not None and not mem.elem.metric.vertical_line:
+        raise NotImplementedError(
+            "jax ghost-cell fill for non-vertical-line (spherical) metrics "
+            "is not implemented yet; run the numpy backend"
+        )
     key = (id(mem.elem), id(ud))
     cfg = _CONFIG_CACHE.get(key)
     if cfg is None or cfg.elem_ref is not mem.elem or cfg.ud_ref is not ud:
