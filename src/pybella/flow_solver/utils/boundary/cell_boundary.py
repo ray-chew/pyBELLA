@@ -207,14 +207,27 @@ class CellBoundaryHandler:
             "Th_slc": velocities.get("Th_slc", 1.0),
         }
 
+    def _hydro_at(self, arr, idx, y_axs):
+        """Index a HydroState array at a gravity-ghost index.
+
+        Profile-mode hydrostates are 1D vertical profiles: index by the
+        vertical component of the ghost slice only. Field-mode hydrostates
+        (terrain / sphere runs) are full grid-shaped fields that vary per
+        column: index by the WHOLE ghost slice tuple, exactly like
+        ``metric.height[idx]`` / ``sol.rhoY[idx]`` in the sibling branches.
+        Indexing a field-mode array with the scalar ``idx[y_axs]`` slices
+        the wrong axis and mis-shapes the result.
+        """
+        return arr[idx] if self.mem.npf.HydroState.field_mode else arr[idx[y_axs]]
+
     def _calculate_pressure_difference(
         self, nlast, nimage, direction, g, Y_last, S, y_axs
     ):
         """Calculate pressure difference for ghost cells."""
         if hasattr(self.ud, "ATMOSPHERIC_EXTENSION"):
+            p20 = self.mem.npf.HydroState.p20
             return (
-                self.mem.npf.HydroState.p20[nimage[y_axs]]
-                - self.mem.npf.HydroState.p20[nlast[y_axs]]
+                self._hydro_at(p20, nimage, y_axs) - self._hydro_at(p20, nlast, y_axs)
             ) * self.ud.Msq
         else:
             deta = self.mem.elem.dxyz[self.v_phys]
@@ -239,7 +252,7 @@ class CellBoundaryHandler:
         if self.ud.is_compressible == 1:
             rhoY = ((sol.rhoY[nlast] ** self.mem.th.gm1) + dpi) ** self.mem.th.gm1inv
         else:
-            rhoY = self.mem.npf.HydroState.rhoY0[nimage[y_axs]]
+            rhoY = self._hydro_at(self.mem.npf.HydroState.rhoY0, nimage, y_axs)
 
         rho = rhoY * S
         return rho, rhoY
