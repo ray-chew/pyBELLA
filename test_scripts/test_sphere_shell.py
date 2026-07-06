@@ -31,17 +31,45 @@ from pybella.utils.data_structures import ModelState
 from pybella.utils.io.debug import NullDebugWriter
 
 
-def _resting_shell(a_nd, nsteps):
+def _spherical_hill(a_nd, h0_frac=0.06, sigma=0.5):
+    """2pi-periodic hill h(lambda, phi) with analytic gradients."""
+    h0 = h0_frac  # nondim (h_ref units)
+
+    def h(lam, phi):
+        return h0 * (1.0 + np.cos(lam)) / 2.0 * np.exp(-((phi / sigma) ** 2))
+
+    def dh_dlam(lam, phi):
+        return -h0 / 2.0 * np.sin(lam) * np.exp(-((phi / sigma) ** 2))
+
+    def dh_dphi(lam, phi):
+        return (
+            h0
+            * (1.0 + np.cos(lam))
+            / 2.0
+            * (-2.0 * phi / sigma**2)
+            * np.exp(-((phi / sigma) ** 2))
+        )
+
+    return h, (dh_dlam, dh_dphi)
+
+
+def _resting_shell(a_nd, nsteps, terrain_hill=False):
     base = smoke_agnesi.UserData()
     base.orography = None
     base.xmin, base.xmax = -np.pi, np.pi
-    base.ymin, base.ymax = a_nd, a_nd + 10000.0 / base.h_ref
+    depth = 10000.0 / base.h_ref
+    if terrain_hill:
+        h, grad = _spherical_hill(a_nd)
+        base.curvilinear_map = spherical.SphericalTerrainMap(a_nd, depth, h, grad)
+        base.ymin, base.ymax = 0.0, depth  # radial axis carries eta
+    else:
+        base.curvilinear_map = spherical.SphericalShellMap(a_nd, frozen_radius=False)
+        base.ymin, base.ymax = a_nd, a_nd + depth
     base.zmin, base.zmax = -1.2, 1.2
     base.bdry_type[0] = opts.BdryType.PERIODIC
     base.bdry_type[1] = opts.BdryType.WALL
     base.bdry_type[2] = opts.BdryType.WALL
     base.inx, base.iny, base.inz = 32 + 1, 8 + 1, 16 + 1
-    base.curvilinear_map = spherical.SphericalShellMap(a_nd, frozen_radius=False)
     base.stepmax = nsteps
     base.u_wind_speed = 0.0
     ud = user_data.UserDataInit(**vars(base))
@@ -84,3 +112,16 @@ def test_resting_shell_with_radial_gravity(a_nd):
     assert umax < 1.0e-8, umax
     assert drho < 1.0e-10, drho
     assert p2max < 1.0e-7, p2max
+
+
+def test_resting_atmosphere_over_spherical_hill():
+    """Stage E: the terrain-following spherical shell (Gal-Chen in r over
+    a Gaussian-belt hill) preserves the resting isothermal atmosphere —
+    the balanced-init contract of the planar terrain machinery, now on
+    curved geometry with radial gravity."""
+    mem, inner, rho0 = _resting_shell(20.0, nsteps=10, terrain_hill=True)
+    moms = (mem.sol.rhou, mem.sol.rhov, mem.sol.rhow)
+    umax = max(np.max(np.abs(m[inner] / mem.sol.rho[inner])) for m in moms)
+    drho = np.max(np.abs(mem.sol.rho[inner] - rho0)) / np.max(np.abs(rho0))
+    assert umax < 1.0e-7, umax
+    assert drho < 1.0e-9, drho

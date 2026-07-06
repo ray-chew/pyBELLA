@@ -97,6 +97,15 @@ class SphericalShellMap(terrain.CurvilinearMap):
     def height(self, xi):
         return xi[1] - self.radius
 
+    def _e_r(self, lam, phi):
+        """Radial unit vector, Cartesian components (broadcastable)."""
+        cp = np.cos(phi)
+        return (cp * np.cos(lam), cp * np.sin(lam), -np.sin(phi) + 0.0 * lam)
+
+    def up_direction(self, xi):
+        lam, _, phi = xi
+        return self._e_r(lam, phi)
+
     def traditional_coriolis(self, coriolis_param):
         """``ud.coriolis_field`` callable for the traditional approximation.
 
@@ -119,3 +128,88 @@ class SphericalShellMap(terrain.CurvilinearMap):
             return (fac * x0, fac * x1, fac * x2)
 
         return field
+
+
+class SphericalTerrainMap(SphericalShellMap):
+    """Terrain-following radial coordinate on the sphere.
+
+        r(lambda, eta, phi) = a + Z(eta, h(lambda, phi)),
+
+    with Z the existing :class:`~.terrain.VerticalTransform` (Gal-Chen by
+    default) on eta in [0, depth] (depth = r_top - a; the grid's radial
+    coordinate axis carries eta, so ``ud.ymin = 0``, ``ud.ymax = depth``).
+    Tangents by chain rule:
+
+        t_lam = r_lam e_r + r cos(phi) e_lam,
+        t_eta = r_eta e_r,
+        t_phi = r_phi e_r + r e_phi,
+
+    so the vertical coordinate lines stay RADIAL (t_eta || e_r): gravity
+    remains along ``up_direction`` = e_r while the coordinate surfaces
+    tilt with the terrain. For h == 0 the metric reduces to
+    ``SphericalShellMap`` (bit-near; gated).
+
+    The orography ``h(lambda, phi)`` is evaluated at lambda wrapped into
+    [-pi, pi) so ghost longitudes see their periodic image (the seam
+    consistency the legacy builder enforces); analytic gradient callables
+    ``orography_grad = (dh_dlam, dh_dphi)`` are REQUIRED (no FD fallback:
+    the grid spacing is not visible to the map). Single-component
+    transforms only (SLEVE needs the smooth/residual split — later).
+    """
+
+    def __init__(self, radius, depth, orography, orography_grad, transform=None):
+        super().__init__(radius, frozen_radius=False)
+        self.depth = float(depth)
+        if self.depth <= 0.0:
+            raise ValueError("shell depth (r_top - a) must be positive")
+        self.orography = orography
+        self.orography_grad = orography_grad
+        self.transform = (
+            transform if transform is not None else terrain.GalChenTransform()
+        )
+        if getattr(self.transform, "n_components", 1) != 1:
+            raise NotImplementedError(
+                "two-component transforms (SLEVE) on the sphere need the "
+                "smooth/residual orography split — not implemented yet"
+            )
+
+    @staticmethod
+    def _wrap_lam(lam):
+        return np.mod(lam + np.pi, 2.0 * np.pi) - np.pi
+
+    def _r_fields(self, lam, eta, phi):
+        lamw = self._wrap_lam(lam)
+        h = self.orography(lamw, phi)
+        dh_dlam = self.orography_grad[0](lamw, phi)
+        dh_dphi = self.orography_grad[1](lamw, phi)
+        tr = self.transform
+        Z = tr.z(eta, h, 0.0, self.depth)
+        r_eta = tr.jacobian(eta, h, 0.0, self.depth)
+        r_lam = tr.slope(eta, dh_dlam, 0.0, self.depth)
+        r_phi = tr.slope(eta, dh_dphi, 0.0, self.depth)
+        return self.radius + Z, r_lam, r_eta, r_phi
+
+    def coordinates(self, xi):
+        lam, eta, phi = xi
+        r, _, _, _ = self._r_fields(lam, eta, phi)
+        cp = np.cos(phi)
+        return [r * cp * np.cos(lam), r * cp * np.sin(lam), -r * np.sin(phi)]
+
+    def tangents(self, xi):
+        lam, eta, phi = xi
+        r, r_lam, r_eta, r_phi = self._r_fields(lam, eta, phi)
+        cl, sl = np.cos(lam), np.sin(lam)
+        cp, sp = np.cos(phi), np.sin(phi)
+        er = (cp * cl, cp * sl, -sp)
+        elam = (-sl, cl, 0.0)
+        ephi = (-sp * cl, -sp * sl, -cp)
+        zero = 0.0 * (lam + eta + phi)
+        t_lam = [r_lam * er[k] + r * cp * elam[k] + zero for k in range(3)]
+        t_eta = [r_eta * er[k] + zero for k in range(3)]
+        t_phi = [r_phi * er[k] + r * ephi[k] + zero for k in range(3)]
+        return [t_lam, t_eta, t_phi]
+
+    def height(self, xi):
+        lam, eta, phi = xi
+        r, _, _, _ = self._r_fields(lam, eta, phi)
+        return r - self.radius
