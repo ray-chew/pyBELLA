@@ -117,6 +117,7 @@ class CellBoundaryHandler:
 
         vert = getattr(sol, self.vert_mom)
         tang = None
+        v_coord = None
         if self.metric is not None:
             # the metric must be oriented like the (possibly sweep-flipped)
             # solution arrays — compute_advection flips them together
@@ -149,6 +150,21 @@ class CellBoundaryHandler:
                     moms[k][nsource] / sol.rho[nsource] - u_dot_e * m.e_up[k][nsource]
                     for k in range(self.ndim)
                 ]
+                # Well-balanced free slip: the wall mass flux vanishes iff the
+                # rhoY flux Y*(N_v.m) (Y = rhoY/rho) is ODD about the wall, so
+                # its convolution -> 0 gives a zero coordinate velocity at the
+                # wall face. The plain up-velocity reflection below builds
+                # (N_v.m)_g = rho_g v E_g with v routed through the SOURCE cell's
+                # N_v.e_up, leaving Y_g (N_v.m)_g = -Y_s (N_v.m)_s * (E_g/E_s):
+                # an O(dz) antisymmetry defect from the one-cell metric offset
+                # -> an O(dz^2) mass leak under dynamics. Using the IMAGE cell's
+                # E_g = N_v(img).e_up(img) instead makes it exact. Both are the
+                # Jacobian J for the sphere; identical at rest (N_v.m = 0).
+                E_image = sum(
+                    Nv[k][nimage] * m.e_up[k][nimage] for k in range(self.ndim)
+                )
+                Y_src = sol.rhoY[nsource] / sol.rho[nsource]
+                v_coord = -Y_src * Nv_dot_m / E_image  # * 1/rhoY_image (below)
             rhoYv_image = -contra_source * sol.rhoY[nsource] / sol.rho[nsource]
             # stratification at the PHYSICAL height of the image cell
             # (generalized altitude: == z for vertical-line maps)
@@ -173,6 +189,11 @@ class CellBoundaryHandler:
         velocities = self._calculate_velocities(
             sol, nsource, rhoYv_image, rhoY, Y_source, Y_image, direction
         )
+        if v_coord is not None:
+            # general free-slip: set v so ``_assign_ghost_values`` builds
+            # (N_v.m)_g = rho_g v E_g with Y_g (N_v.m)_g = -Y_s (N_v.m)_s
+            # exactly (rhoY here is the image rhoY, known now)
+            velocities["v"] = v_coord / rhoY
 
         return {
             "rho": rho,
