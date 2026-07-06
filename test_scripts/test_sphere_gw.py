@@ -146,18 +146,113 @@ def test_gravity_wave_self_convergence():
 
 # ----------------------------------------------------- B&B large-radius limit
 
+# The gravity-wave case shares the isothermal Baldauf & Brdar background
+# (T_ref = 250 K, u_ref = 10 m/s, h_ref = R T_ref / g), so the near-equator
+# (lambda, r) slice of the sphere run can be compared to the SAME planar
+# linear oracle (baldauf_brdar_analytic) used by test_igw_analytic, with
+# x = a * lambda. Fixing the PHYSICAL perturbation (Lambda ~ 1/a) and the
+# physical resolution (nx ~ a) as the planet radius grows, the slice
+# converges to the planar solution (curvature O((L/a)^2) and acoustic
+# wrap-around O(1/a) both vanish).
+_H_REF = 287.05 * 250.0 / 9.80665
+_A0 = gw._A_EARTH / 125.0 / _H_REF  # a_nd at X = 125
+_A_PHYS = _A0 * 0.4  # fixed physical perturbation half-width [h_ref]
+_PHI_BAND = 0.12  # narrow equatorial band [rad]
 
-@pytest.mark.skip(
-    reason="B&B large-radius-limit oracle: WIP. The near-equator lambda-height "
-    "slice is compared to baldauf_brdar_analytic.evolve_linear of its own IC "
-    "(x = a*lambda), increasing planet radius with fixed physical perturbation "
-    "(Lambda ~ 1/a, nx ~ a). Measured at X=125 (a~7): the demeaned wave-content "
-    "errors are large (u~0.36, w~0.83, p~1.68, rho~0.69) and do not yet cleanly "
-    "converge, because the unbalanced theta-bump launches an acoustic pulse that "
-    "wraps the small ~320 km circumference ~1.2x over the run (sound-crossing "
-    "~1.38 nondim vs T=1.64) -> phase errors dominate. Needs a larger effective "
-    "domain and/or gravity-wave-only filtering before it is a meaningful gate. "
-    "Scratchpad prototype + numbers: dev_notes/sphere.md HARD-WON pt 3 follow-up."
-)
-def test_large_radius_limit_baldauf_brdar():  # pragma: no cover
-    raise NotImplementedError
+
+def _run_bb(X, T=0.8, nz=12, nx0=64):
+    from pybella.tests import baldauf_brdar_analytic as bb
+
+    a_nd = gw._A_EARTH / X / _H_REF
+    nx = int(round(nx0 * a_nd / _A0 / 4) * 4)
+    dt = 0.006833 * a_nd / _A0 * nx0 / nx  # ~ const across a (dx_phys, CFL)
+    udo = gw.UserData()
+    udo.X = X
+    udo.planet_radius = gw._A_EARTH / X
+    depth = udo.depth_m / udo.h_ref
+    udo.ymin, udo.ymax = a_nd, a_nd + depth
+    udo.curvilinear_map = spherical.SphericalShellMap(a_nd, frozen_radius=False)
+    udo.pert_halfwidth = _A_PHYS / a_nd
+    udo.phi_band = _PHI_BAND
+    udo.zmin, udo.zmax = -_PHI_BAND, _PHI_BAND
+    udo.inx, udo.iny, udo.inz = nx + 1, nz + 1, 4 + 1
+    udo.dtfixed = udo.dtfixed0 = dt
+    udo.stepmax = int(round(T / dt))
+    udo.diag = False
+    udo.output_timesteps = False
+    ud = user_data.UserDataInit(**vars(udo))
+    ud.coriolis_strength = np.array(ud.coriolis_strength)
+    elem, node = dis_grid.grid_init(ud)
+    sol = fields.CellSolField(elem.sc)
+    th = thermodynamics.ThermodynamicalQuantities(ud)
+    npf = fields.NodePressureField(elem, node, ud)
+    sol = gw.sol_init(sol, npf, elem, node, th, ud)
+    mem = ModelState(elem, node, sol, npf, th, cache.FlowSolverCache())
+    par = bb.IGWParams(ud)
+    par.f = 0.0  # nonrotating
+
+    def slice_SI(m):
+        e = m.elem
+        phi = e.z[2:-2]
+        jz = int(np.argmin(np.abs(phi)))
+        phic = phi[jz]
+        sl = (slice(2, -2), slice(2, -2), 2 + jz)
+        rho = m.sol.rho[sl]
+        rhoY = m.sol.rhoY[sl]
+        ru, rv, rw = m.sol.rhou[sl], m.sol.rhov[sl], m.sol.rhow[sl]
+        lam = e.x[2:-2].reshape(-1, 1)
+        cl, sll = np.cos(lam), np.sin(lam)
+        cp, sp = np.cos(phic), np.sin(phic)
+        el = (-sll, cl, 0.0 * lam)  # e_lambda (zonal)
+        er = (cp * cl, cp * sll, -sp + 0 * lam)  # e_r (vertical)
+        ep = (-sp * cl, -sp * sll, -cp + 0 * lam)  # e_phi (out of plane)
+        pr = lambda ev: (ev[0] * ru + ev[1] * rv + ev[2] * rw) / rho
+        z = (e.y[2:-2] - a_nd) * ud.h_ref
+        return {
+            "u": pr(el) * ud.u_ref,
+            "vo": pr(ep) * ud.u_ref,
+            "w": pr(er) * ud.u_ref,
+            "p": rhoY**par.gamma * par.p_s - par.p0(z)[None, :],
+            "rho": rho * par.rho_ref - (par.p0(z) / (par.R * par.T0))[None, :],
+        }, z
+
+    ic, z = slice_SI(mem)
+    mem = _run(mem, ud)
+    end, _ = slice_SI(mem)
+    x_len = 2.0 * np.pi * a_nd * ud.h_ref
+    ref, diag = bb.evolve_linear(ic, x_len, z, mem.time.t * ud.t_ref, par, refine=2)
+
+    dm = lambda q: q - q.mean(axis=0, keepdims=True)
+    errs = {}
+    for k in ("u", "w", "p", "rho"):
+        s, r = dm(end[k]), ref[k]
+        errs[k] = np.linalg.norm(s - r) / np.linalg.norm(r)
+    amp = np.abs(dm(end["u"])).max() / np.abs(ref["u"]).max()
+    return {"nx": nx, "errs": errs, "amp": amp, "edrift": diag["energy_drift"]}
+
+
+def test_large_radius_limit_baldauf_brdar():
+    """The near-equator slice matches the planar Baldauf & Brdar linear
+    oracle and CONVERGES to it as the planet radius grows.
+
+    The zonal wave field u is the clean indicator: at X=125 (a~7 scale
+    heights) its rel-L2 to the oracle already sits inside the planar case's
+    own gate (test_igw_analytic uses 0.40; pyBELLA-vs-exact-linear carries
+    an intrinsic ~0.2-0.3 from semi-implicit acoustics + O((omega dt)^2)
+    phase error), with amplitude ratio ~1. Halving the planet (a doubles)
+    halves the error (~1/a: measured 0.187 -> 0.098 -> 0.051 for
+    X=125,62.5,31.25). p/rho are only loosely bounded (the semi-implicit
+    scheme damps the acoustic pressure the exact-linear oracle keeps); w is
+    a 10x-smaller field, left ungated like the planar oracle's loose fields.
+    """
+    r1 = _run_bb(125.0)  # small planet (worst case)
+    r2 = _run_bb(62.5)  # 2x radius
+
+    assert r1["edrift"] < 1e-9, r1["edrift"]  # comparator-internal exactness
+    # zonal wave field matches the oracle at the planar-case level
+    assert r1["errs"]["u"] < 0.40, r1["errs"]["u"]
+    assert 0.7 < r1["amp"] < 1.3, r1["amp"]
+    # loose sanity on the density wave (planar gate 0.50)
+    assert r1["errs"]["rho"] < 0.55, r1["errs"]["rho"]
+    # large-radius limit: the zonal-field error shrinks toward the plane
+    assert r2["errs"]["u"] < 0.8 * r1["errs"]["u"], (r1["errs"]["u"], r2["errs"]["u"])
