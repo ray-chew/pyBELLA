@@ -142,3 +142,22 @@ def test_gravity_wave_self_convergence():
     ratio = d1 / d2
     # 4 = exact 2nd order; gate well above 1st order (2), calibrated ~3.9
     assert ratio > 3.0, f"self-convergence ratio {ratio:.2f} (expect ~4)"
+
+
+# ----------------------------------------------------- B&B large-radius limit
+
+
+@pytest.mark.skip(
+    reason="B&B large-radius-limit oracle: WIP. The near-equator lambda-height "
+    "slice is compared to baldauf_brdar_analytic.evolve_linear of its own IC "
+    "(x = a*lambda), increasing planet radius with fixed physical perturbation "
+    "(Lambda ~ 1/a, nx ~ a). Measured at X=125 (a~7): the demeaned wave-content "
+    "errors are large (u~0.36, w~0.83, p~1.68, rho~0.69) and do not yet cleanly "
+    "converge, because the unbalanced theta-bump launches an acoustic pulse that "
+    "wraps the small ~320 km circumference ~1.2x over the run (sound-crossing "
+    "~1.38 nondim vs T=1.64) -> phase errors dominate. Needs a larger effective "
+    "domain and/or gravity-wave-only filtering before it is a meaningful gate. "
+    "Scratchpad prototype + numbers: dev_notes/sphere.md HARD-WON pt 3 follow-up."
+)
+def test_large_radius_limit_baldauf_brdar():  # pragma: no cover
+    raise NotImplementedError
