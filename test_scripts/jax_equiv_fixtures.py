@@ -22,7 +22,13 @@ from pybella.flow_solver.numerics import coriolis, implicit_euler
 from pybella.flow_solver.physics import thermodynamics
 from pybella.flow_solver.utils import cache, fields
 from pybella.flow_solver.utils.boundary import cell_boundary as bdry_c
-from pybella.tests import smoke_agnesi, test_internal_long_wave, test_lamb_wave
+from pybella.tests import (
+    smoke_agnesi,
+    test_internal_long_wave,
+    test_lamb_wave,
+    test_sphere_gw,
+    test_sphere_swe_tc2,
+)
 from pybella.utils import axes, user_data
 from pybella.utils.data_structures import ModelState
 from pybella.utils.operators.laplacian import preconditioner
@@ -85,6 +91,31 @@ def make_agnesi2d_mem():
     """Native-2D smoke_agnesi state with its Agnesi hill (inz=1)."""
     mem, ud = _mem_from_case(smoke_agnesi, inz=1)
     assert mem.elem.ndim == 2 and mem.elem.metric is not None
+    return mem, ud
+
+
+def make_sphere_swe_mem():
+    """Thin-shell Williamson TC2: a non-vertical-line spherical metric with
+    ``coriolis_field`` f(phi) e_r, general phi/r free-slip walls, e_up
+    buoyancy and no gravity. Coarsened (pole-safe phi resolution) and with
+    the initial projection skipped for fixture speed."""
+    mem, ud = _mem_from_case(
+        test_sphere_swe_tc2, inx=32 + 1, inz=48 + 1, initial_projection=False
+    )
+    assert mem.elem.metric is not None and not mem.elem.metric.vertical_line
+    assert mem.elem.metric.e_up is not None
+    assert getattr(ud, "coriolis_field", None) is not None
+    return mem, ud
+
+
+def make_sphere_gw_mem():
+    """3D compressible spherical shell (DCMIP-31 gravity wave): the true
+    r-dependent metric with radial gravity, e_up buoyancy (general H^-1),
+    a general phi free-slip wall and the well-balanced gravity ghost fill on
+    the radial axis. Coarsened for fixture speed."""
+    mem, ud = _mem_from_case(test_sphere_gw, inx=32 + 1, iny=4 + 1, inz=8 + 1)
+    assert mem.elem.metric is not None and not mem.elem.metric.vertical_line
+    assert mem.elem.metric.e_up is not None
     return mem, ud
 
 
