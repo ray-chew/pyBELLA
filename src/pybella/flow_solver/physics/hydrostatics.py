@@ -252,8 +252,9 @@ def _integrated_state_fields(npf, elem, node, th, ud):
     vv = axes.vertical_axis(ud)
     g = ud.gravity_strength[vv]
 
-    z_c = elem.metric.z
-    z_n = node.metric.z
+    # generalized altitude: == z for vertical-line maps, r - a on a sphere
+    z_c = elem.metric.height
+    z_n = node.metric.height
     z_lo = min(z_c.min(), z_n.min(), 0.0)
     z_hi = max(z_c.max(), z_n.max(), 0.0)
     nfine = max(_HYDRO_QUAD_MIN_POINTS, _HYDRO_QUAD_POINTS_PER_CELL * int(elem.sc[vv]))

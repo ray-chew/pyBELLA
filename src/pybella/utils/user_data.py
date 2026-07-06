@@ -135,6 +135,12 @@ class UserDataInit:
         # 2D runs are x-y by convention and require 1.
         self.gravity_direction = 1
 
+        # Spherical geometry (None = Cartesian). Cases set curvilinear_map
+        # to a discretisation.spherical map built with the nondimensional
+        # radius planet_radius / h_ref; see discretisation/spherical.py.
+        self.curvilinear_map = None
+        self.planet_radius = None  # [m], dimensional
+
         # Boundary conditions
         self.bdry_type = np.empty((3), dtype=object)
         self.bdry_type[0] = opts.BdryType.PERIODIC

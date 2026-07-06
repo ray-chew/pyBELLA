@@ -36,10 +36,22 @@ def grid_init(ud):
     elem = ElemSpaceDiscr(grid, ud)
     node = NodeSpaceDiscr(grid, ud)
 
-    # terrain metric fields (None when ud has no orography: the uniform-
-    # Cartesian path must stay bit-identical and pay no overhead)
-    elem.metric = terrain.build_metric_fields(elem, ud)
-    node.metric = terrain.build_metric_fields(node, ud)
+    # metric fields (None when ud has neither a curvilinear map nor
+    # orography: the uniform-Cartesian path must stay bit-identical and
+    # pay no overhead)
+    cmap = getattr(ud, "curvilinear_map", None)
+    if cmap is not None:
+        if terrain.terrain_is_active(ud):
+            raise ValueError(
+                "ud.curvilinear_map and ud.orography cannot be combined; "
+                "orography on a curvilinear map must be composed into the "
+                "map itself (SphericalTerrainMap)"
+            )
+        elem.metric = terrain.build_metric_fields_from_map(elem, ud, cmap)
+        node.metric = terrain.build_metric_fields_from_map(node, ud, cmap)
+    else:
+        elem.metric = terrain.build_metric_fields(elem, ud)
+        node.metric = terrain.build_metric_fields(node, ud)
 
     return elem, node
 

@@ -136,6 +136,11 @@ def build_device_config(mem, ud):
             haxes=m.haxes,
             cart_v=m.cart_v,
             cart_haxes=m.cart_haxes,
+            # Tier-3 (sphere) data; inert for vertical-line maps
+            height=orient(m.height, ident),
+            h_v=orient(m.h_v, ident),
+            e_up=(None if m.e_up is None else [orient(c, ident) for c in m.e_up]),
+            vertical_line=m.vertical_line,
         )
         cfg.node_metric_J_i1 = jnp.asarray(np.asarray(node.metric.J)[node.i1])
         cfg.node_metric_ooJ_i1 = jnp.asarray(np.asarray(node.metric.ooJ)[node.i1])
