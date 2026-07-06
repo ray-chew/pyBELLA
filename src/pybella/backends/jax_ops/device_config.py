@@ -64,6 +64,17 @@ def build_device_config(mem, ud):
     v = axes.vertical_axis(ud)
     cfg = _Namespace()
 
+    # The device-resident step does not yet handle non-vertical-line
+    # (spherical) metrics — the general e_up buoyancy in the forward step,
+    # the general H^-1, and the surface constraint are unported. The hybrid
+    # "jax" backend does (per-kernel seams). Guard here since the shared
+    # jax_boundary.get_boundary_config no longer fast-fails on such metrics.
+    if elem.metric is not None and not elem.metric.vertical_line:
+        raise NotImplementedError(
+            "jax-device step for non-vertical-line (spherical) metrics is not "
+            "implemented yet; run the hybrid 'jax' backend or numpy"
+        )
+
     cfg.ndim = ndim
     cfg.v_phys = v
     cfg.role_perm = axes.role_perm(v)
