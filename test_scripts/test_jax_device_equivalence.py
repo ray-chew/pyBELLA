@@ -99,6 +99,21 @@ def test_window_agnesi2d_terrain():
     _window_case(mem, ud, nsteps=2)
 
 
+def test_window_sphere_gw():
+    # 3D compressible shell: general e_up buoyancy in the forward/explicit
+    # step, general H^-1, the well-balanced gravity fill + general phi wall
+    mem, ud = fx.make_sphere_gw_mem()
+    mem_d = _window_case(mem, ud, nsteps=2)
+    assert mem_d._device_compile_count == 2  # parity 0 and 1 only
+
+
+def test_window_sphere_swe():
+    # thin-shell TC2: coriolis_field H^-1, the tangent-plane surface
+    # constraint, general free-slip phi/degenerate-r walls
+    mem, ud = fx.make_sphere_swe_mem()
+    _window_case(mem, ud, nsteps=2)
+
+
 def test_seam_routes_to_device():
     from unittest import mock
 
