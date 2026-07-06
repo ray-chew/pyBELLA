@@ -615,6 +615,44 @@ def test_traditional_coriolis_is_minus_f_sinphi_e_r():
         np.testing.assert_allclose(w[k], expect[k], rtol=1e-13, atol=1e-14 * c)
 
 
+# ------------------------- Stage D: general H^-1 (adversarial reduction)
+
+
+def test_general_hinv_reduces_to_c11_kernel():
+    """The Sherman-Morrison H^-1 kernel with e = role-v axis must equal
+    the legacy (C11) kernel TERM BY TERM over randomized (w, nu, alpha_w)
+    with alpha_w sampled continuously in [0, 1] (blending sweeps
+    intermediate values) — including the Phase-H1a h22 structure."""
+    from pybella.flow_solver.numerics import coriolis
+
+    rng = np.random.default_rng(20260705)
+    shape = (5, 4, 3)
+    for alpha_w in (1.0, 0.0, 0.37, float(rng.random())):
+        for _ in range(5):
+            wh1, wv, wh2 = (float(c) for c in rng.uniform(-0.8, 0.8, 3))
+            # nu = dt^2 N^2-like buoyancy inertia: positive under stable
+            # stratification, the only regime the hydrostatic limit runs
+            # in (negative nu near the singular manifold amplifies ulps)
+            nu = rng.uniform(0.1, 2.0, shape)
+
+            ref = [np.empty(shape) for _ in range(10)]
+            coriolis._compute_coriolis_coefficients(*ref, wh1, wh2, wv, nu, alpha_w)
+            gen = [np.empty(shape) for _ in range(10)]
+            zero = np.zeros(shape)
+            one = np.ones(shape)
+            coriolis._compute_coriolis_coefficients_general(
+                *gen, wh1, wh2, wv, zero, one, zero, nu, alpha_w
+            )
+            # h11..h33 (denom differs by definition); the scale is the
+            # matrix norm — entries the legacy kernel zeroes EXACTLY
+            # (nonhydro-prefactored rows at alpha_w = 0) carry the general
+            # kernel's cancellation residue and are compared absolutely
+            scale = max(np.max(np.abs(ref[i])) for i in range(9))
+            for i in range(9):
+                err = np.max(np.abs(gen[i] - ref[i])) / scale
+                assert err <= 1e-14, (alpha_w, i, err)
+
+
 def test_flip_cycle_preserves_e_up():
     _, elem, _ = _metrics(frozen=False)
     m = elem.metric

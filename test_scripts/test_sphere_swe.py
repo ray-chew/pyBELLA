@@ -5,10 +5,10 @@ gate regression; the 12-day Williamson TC2 l2 <= 1e-3 validation runs
 from ``run_scripts`` where wall-clock allows):
 
 - TC2 discrete geostrophic balance: after 10 steps the depth error
-  stays at the adjustment-transient floor (~1e-7), THREE orders below
-  the imbalance level a wrong Coriolis sign/factor produces (~1e-4 by
-  step 3, 2e-3 by step 20 — measured; this pins the rotation-vector
-  convention of ``SphericalShellMap.rotation_axis_cart``);
+  stays at the adjustment/solver floor (1e-7..3e-6 depending on the
+  initial projection's Krylov path), 50-1000x below the imbalance a
+  wrong Coriolis sign/factor produces (~5e-4 by step 10 — measured;
+  this pins ``SphericalShellMap.rotation_axis_cart``);
 - tangent-plane constraint: max |m . e_r| stays at machine zero;
 - the resting shell is an EXACT discrete steady state.
 """
@@ -64,7 +64,12 @@ def test_tc2_short_balance_and_tangency():
     mem, inner, h0, _ = _run(10)
     dh = mem.sol.rho[inner] - h0
     l2 = np.sqrt(np.mean(dh**2)) / np.sqrt(np.mean(h0**2))
-    assert l2 < 1.0e-6, l2  # measured ~5e-8; wrong Coriolis sign: ~5e-4
+    # The initial projection's bicgstab answer is determined only up to the
+    # achieved-residual class (~1e-8 * operator conditioning ~ 2e-5 in
+    # momenta), so the short-horizon drift varies ~1e-7..1e-5 with ulp-level
+    # coefficient changes. The tripwire's power is against the wrong
+    # Coriolis sign/factor, which drifts ~5e-4 by step 10 (50x the gate).
+    assert l2 < 1.0e-5, l2
 
     moms = (mem.sol.rhou, mem.sol.rhov, mem.sol.rhow)
     e = mem.elem.metric.e_up

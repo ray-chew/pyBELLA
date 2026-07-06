@@ -52,6 +52,18 @@ def role_components(mem, ud):
     return w[ax_h1], w[ax_v], w[ax_h2]
 
 
+def _up_role_components(mem, ud):
+    """Role-ordered (e_h1, e_v, e_h2) components of the local up direction,
+    or None on vertical-line/no-metric runs (up = the role-v axis; the
+    legacy (C11) kernel is that special case, kept verbatim)."""
+    metric = mem.elem.metric
+    if metric is None or metric.e_up is None:
+        return None
+    ax_h1, ax_v, ax_h2 = axes.role_perm(axes.vertical_axis(ud))
+    e = metric.e_up
+    return e[ax_h1], e[ax_v], e[ax_h2]
+
+
 # Refactored main function
 def multiply_inverse_terms(
     Vec, mem, ud, dt, attrs=("rhou", "rhov", "rhow"), get_coeffs=False
@@ -94,29 +106,58 @@ def multiply_inverse_terms(
 
     U, V, W = mem.cache.get_velocity_array_views(VecU.shape)
 
-    _apply_coriolis_matrix_inplace(
-        h11,
-        h12,
-        h13,
-        h21,
-        h22,
-        h23,
-        h31,
-        h32,
-        h33,
-        denom,
-        VecU,
-        VecV,
-        VecW,
-        U,
-        V,
-        W,
-        wh1,
-        wh2,
-        wv,
-        nu,
-        nonhydro,
-    )
+    e_role = _up_role_components(mem, ud)
+    if e_role is not None:
+        _compute_coriolis_coefficients_general(
+            h11,
+            h12,
+            h13,
+            h21,
+            h22,
+            h23,
+            h31,
+            h32,
+            h33,
+            denom,
+            wh1,
+            wh2,
+            wv,
+            e_role[0],
+            e_role[1],
+            e_role[2],
+            nu,
+            nonhydro,
+        )
+        U[...] = VecU
+        V[...] = VecV
+        W[...] = VecW
+        VecU[...] = h11 * U + h12 * V + h13 * W
+        VecV[...] = h21 * U + h22 * V + h23 * W
+        VecW[...] = h31 * U + h32 * V + h33 * W
+    else:
+        _apply_coriolis_matrix_inplace(
+            h11,
+            h12,
+            h13,
+            h21,
+            h22,
+            h23,
+            h31,
+            h32,
+            h33,
+            denom,
+            VecU,
+            VecV,
+            VecW,
+            U,
+            V,
+            W,
+            wh1,
+            wh2,
+            wv,
+            nu,
+            nonhydro,
+        )
 
     # Return coefficients
     if get_coeffs:
@@ -151,9 +192,46 @@ def compute_inverse_coefficients(mem, ud, dt):
 
     views = mem.cache.get_coriolis_array_views(nu.shape)
     h11, h12, h13, h21, h22, h23, h31, h32, h33, denom = views
-    _compute_coriolis_coefficients(
-        h11, h12, h13, h21, h22, h23, h31, h32, h33, denom, wh1, wh2, wv, nu, nonhydro
-    )
+    e_role = _up_role_components(mem, ud)
+    if e_role is not None:
+        _compute_coriolis_coefficients_general(
+            h11,
+            h12,
+            h13,
+            h21,
+            h22,
+            h23,
+            h31,
+            h32,
+            h33,
+            denom,
+            wh1,
+            wh2,
+            wv,
+            e_role[0],
+            e_role[1],
+            e_role[2],
+            nu,
+            nonhydro,
+        )
+    else:
+        _compute_coriolis_coefficients(
+            h11,
+            h12,
+            h13,
+            h21,
+            h22,
+            h23,
+            h31,
+            h32,
+            h33,
+            denom,
+            wh1,
+            wh2,
+            wv,
+            nu,
+            nonhydro,
+        )
     return views
 
 
@@ -200,6 +278,109 @@ def _compute_coriolis_coefficients(
     h31[...] = (wh1 * wh2 + nu_nh * wv) * denom
     h32[...] = nonhydro * (wh2 * wv - wh1) * denom
     h33[...] = (nu_nh + wh2_sq) * denom
+
+    return h11, h12, h13, h21, h22, h23, h31, h32, h33
+
+
+@nb.njit(cache=True)
+def _compute_coriolis_coefficients_general(
+    h11,
+    h12,
+    h13,
+    h21,
+    h22,
+    h23,
+    h31,
+    h32,
+    h33,
+    denom,
+    wh1,
+    wh2,
+    wv,
+    e1,
+    e2,
+    e3,
+    nu,
+    nonhydro,
+):
+    """General (C11) matrix for an arbitrary up-direction e (role comps).
+
+    Two ingredients, both reducing analytically to the legacy kernel for
+    e = role-v (gated to <= 1e-14 in test_scripts/test_sphere_metric.py):
+
+    1. H^-1 with H = I + (alpha_w - 1 + nu) e e^T + W_x — the
+       buoyancy/hydrostasy rank-one term along the LOCAL up e — via
+       Sherman-Morrison on the pure-rotation inverse:
+
+           C^-1 = (I + w w^T - W_x) / (1 + |w|^2),
+           H^-1 = C^-1 - mu (C^-1 e)(e^T C^-1) / (1 + mu e^T C^-1 e),
+
+       mu = nu + alpha_w - 1. The Phase-H1a h22 structure (no alpha_w
+       factor) falls out: denom_SM - mu * c22 = 1.
+    2. The thesis (C11) alpha_w prefactor on the (horizontal <- vertical)
+       couplings — the legacy h12/h32 are alpha_w * (H^-1)_12/(H^-1)_32,
+       so the DIAGNOSTIC up-momentum input never feeds the transverse
+       rows in the hydrostatic limit. Coordinate-free:
+
+           G = H^-1 - (1 - alpha_w) (I - e e^T) H^-1 (e e^T).
+
+    Role order: w = (wh1, wv, wh2), e = (e1, e2, e3) = (e_h1, e_v, e_h2).
+    """
+    w1 = wh1
+    w2 = wv
+    w3 = wh2
+    ooD = 1.0 / (1.0 + (w1 * w1 + w2 * w2 + w3 * w3))
+
+    c11 = (1.0 + w1 * w1) * ooD
+    c12 = (w1 * w2 + w3) * ooD
+    c13 = (w1 * w3 - w2) * ooD
+    c21 = (w2 * w1 - w3) * ooD
+    c22 = (1.0 + w2 * w2) * ooD
+    c23 = (w2 * w3 + w1) * ooD
+    c31 = (w3 * w1 + w2) * ooD
+    c32 = (w3 * w2 - w1) * ooD
+    c33 = (1.0 + w3 * w3) * ooD
+
+    # t = C^-1 e (column), s = e^T C^-1 (row)
+    t1 = c11 * e1 + c12 * e2 + c13 * e3
+    t2 = c21 * e1 + c22 * e2 + c23 * e3
+    t3 = c31 * e1 + c32 * e2 + c33 * e3
+    s1 = e1 * c11 + e2 * c21 + e3 * c31
+    s2 = e1 * c12 + e2 * c22 + e3 * c32
+    s3 = e1 * c13 + e2 * c23 + e3 * c33
+
+    mu = nu + (nonhydro - 1.0)
+    denom[...] = 1.0 / (1.0 + mu * (e1 * t1 + e2 * t2 + e3 * t3))
+
+    h11[...] = c11 - mu * t1 * s1 * denom
+    h12[...] = c12 - mu * t1 * s2 * denom
+    h13[...] = c13 - mu * t1 * s3 * denom
+    h21[...] = c21 - mu * t2 * s1 * denom
+    h22[...] = c22 - mu * t2 * s2 * denom
+    h23[...] = c23 - mu * t2 * s3 * denom
+    h31[...] = c31 - mu * t3 * s1 * denom
+    h32[...] = c32 - mu * t3 * s2 * denom
+    h33[...] = c33 - mu * t3 * s3 * denom
+
+    # (C11) alpha_w prefactor: G = H^-1 - (1-a)(I - e e^T) H^-1 (e e^T);
+    # col = H^-1 e, its e-perpendicular part scales the e-input column
+    col1 = h11 * e1 + h12 * e2 + h13 * e3
+    col2 = h21 * e1 + h22 * e2 + h23 * e3
+    col3 = h31 * e1 + h32 * e2 + h33 * e3
+    col_par = e1 * col1 + e2 * col2 + e3 * col3
+    onema = 1.0 - nonhydro
+    cp1 = onema * (col1 - col_par * e1)
+    cp2 = onema * (col2 - col_par * e2)
+    cp3 = onema * (col3 - col_par * e3)
+    h11[...] = h11 - cp1 * e1
+    h12[...] = h12 - cp1 * e2
+    h13[...] = h13 - cp1 * e3
+    h21[...] = h21 - cp2 * e1
+    h22[...] = h22 - cp2 * e2
+    h23[...] = h23 - cp2 * e3
+    h31[...] = h31 - cp3 * e1
+    h32[...] = h32 - cp3 * e2
+    h33[...] = h33 - cp3 * e3
 
     return h11, h12, h13, h21, h22, h23, h31, h32, h33
 

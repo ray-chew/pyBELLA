@@ -72,36 +72,69 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
     dm_h1, dm_v, dm_h2 = dmom[ax_h1], dmom[ax_v], dmom[ax_h2]
     dp_h1, dp_v, dp_h2 = dpd[ax_h1], dpd[ax_v], dpd[ax_h2]
 
-    vel_v = mom_v / rho
+    e_up = elem.metric.e_up if elem.metric is not None else None
 
-    # Momentum update in role space: gravity/buoyancy acts on the vertical
-    # row, Coriolis couples the rows pairwise (cross-product structure)
-    mom_h1 -= dt * (rhoYovG * dp_h1 - corr_h2 * dm_v + corr_v * dm_h2)
-    # The WHOLE vertical-momentum forward update carries the nonhydro (alpha_w)
-    # factor — not just the buoyancy. In the hydrostatic limit (alpha_w = 0) the
-    # vertical momentum has no prognostic time update at all: it is diagnosed by
-    # the implicit hydrostatic balance solve. Applying the vertical
-    # pressure-gradient kick here for alpha_w = 0 (as the pre-2026 refactor did)
-    # injects a spurious kick on the diagnosed w every corrector, seeding a 2*dt
-    # computational mode. Matches the thesis-era euler_forward_non_advective
-    # (rhov update * nonhydro). Bit-identical for alpha_w = 1.
-    # See dev_notes/hydrostatic_blending.md (Phase H1b).
-    mom_v -= (
-        dt
-        * (rhoYovG * dp_v + (g / Msq) * dbuoy - corr_h1 * dm_h2 + corr_h2 * dm_h1)
-        * nonhydro
-        * (1 - ud.is_ArakawaKonor)
-    )
+    if e_up is not None:
+        # general map (sphere): buoyancy acts along the LOCAL up e_up and
+        # the H1b nonhydro factor applies to the e-PARALLEL part of the
+        # whole tendency (the faithful generalization of "the vertical
+        # row"); the e-perpendicular part is never alpha_w-suppressed.
+        # Role-ordered e components (same axis permutation as momenta).
+        e_h1, e_v, e_h2 = e_up[ax_h1], e_up[ax_v], e_up[ax_h2]
+        # rhoX couples to the PRE-update e-parallel (radial) velocity,
+        # mirroring the legacy vel_v = mom_v / rho placement
+        vel_up = (mom_h1 * e_h1 + mom_v * e_v + mom_h2 * e_h2) / rho
+        buoy = (g / Msq) * dbuoy
+        T_h1 = rhoYovG * dp_h1 + buoy * e_h1 - corr_h2 * dm_v + corr_v * dm_h2
+        T_v = rhoYovG * dp_v + buoy * e_v - corr_h1 * dm_h2 + corr_h2 * dm_h1
+        T_h2 = rhoYovG * dp_h2 + buoy * e_h2 - corr_v * dm_h1 + corr_h1 * dm_v
+        T_dot_e = T_h1 * e_h1 + T_v * e_v + T_h2 * e_h2
+        fac_par = nonhydro * (1 - ud.is_ArakawaKonor) - 1.0
+        mom_h1 -= dt * (T_h1 + fac_par * T_dot_e * e_h1)
+        mom_v -= dt * (T_v + fac_par * T_dot_e * e_v)
+        mom_h2 -= dt * (T_h2 + fac_par * T_dot_e * e_h2)
 
-    # the h2-row applies in 2D too: its pressure gradient is zero there, but
-    # the Coriolis terms are not. Restricting it to ndim == 3 gave 2D runs
-    # only the implicit half of the out-of-plane Coriolis rotation — found
-    # 2026-06-09 by the Baldauf-Brdar analytic oracle (w_out error pinned at
-    # ~0.44 rel-L2 with a sim/ref amplitude ratio ~0.6, independent of dt).
-    mom_h2 -= dt * (rhoYovG * dp_h2 - corr_v * dm_h1 + corr_h1 * dm_v)
+        sol.rhoX[...] = (rho * (rho / rhoY - S0c)) - dt * (vel_up * dSdy) * rho
 
-    # Scalar update (rhoX): stratification couples to the vertical velocity
-    sol.rhoX[...] = (rho * (rho / rhoY - S0c)) - dt * (vel_v * dSdy) * rho
+        # Compressibility correction below is branch-shared; skip the
+        # legacy rows
+        _legacy_rows = False
+    else:
+        _legacy_rows = True
+
+    if _legacy_rows:
+        vel_v = mom_v / rho
+
+        # Momentum update in role space: gravity/buoyancy acts on the vertical
+        # row, Coriolis couples the rows pairwise (cross-product structure)
+        mom_h1 -= dt * (rhoYovG * dp_h1 - corr_h2 * dm_v + corr_v * dm_h2)
+        # The WHOLE vertical-momentum forward update carries the nonhydro
+        # (alpha_w) factor — not just the buoyancy. In the hydrostatic limit
+        # (alpha_w = 0) the vertical momentum has no prognostic time update at
+        # all: it is diagnosed by the implicit hydrostatic balance solve.
+        # Applying the vertical pressure-gradient kick here for alpha_w = 0
+        # (as the pre-2026 refactor did) injects a spurious kick on the
+        # diagnosed w every corrector, seeding a 2*dt computational mode.
+        # Matches the thesis-era euler_forward_non_advective (rhov update *
+        # nonhydro). Bit-identical for alpha_w = 1.
+        # See dev_notes/hydrostatic_blending.md (Phase H1b).
+        mom_v -= (
+            dt
+            * (rhoYovG * dp_v + (g / Msq) * dbuoy - corr_h1 * dm_h2 + corr_h2 * dm_h1)
+            * nonhydro
+            * (1 - ud.is_ArakawaKonor)
+        )
+
+        # the h2-row applies in 2D too: its pressure gradient is zero there,
+        # but the Coriolis terms are not. Restricting it to ndim == 3 gave 2D
+        # runs only the implicit half of the out-of-plane Coriolis rotation —
+        # found 2026-06-09 by the Baldauf-Brdar analytic oracle (w_out error
+        # pinned at ~0.44 rel-L2 with a sim/ref amplitude ratio ~0.6,
+        # independent of dt).
+        mom_h2 -= dt * (rhoYovG * dp_h2 - corr_v * dm_h1 + corr_h1 * dm_v)
+
+        # Scalar update (rhoX): stratification couples to the vertical velocity
+        sol.rhoX[...] = (rho * (rho / rhoY - S0c)) - dt * (vel_v * dSdy) * rho
 
     # Compressibility correction to p2; with terrain npf.rhs carries J*div F,
     # so the pointwise pi update needs the plain divergence back (1/J_n)

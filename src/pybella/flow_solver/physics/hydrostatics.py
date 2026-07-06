@@ -296,7 +296,13 @@ def analytical_state(npf, elem, node, th, ud):
     Hex = 1.0 / (th.Gamma * g)
     dy = elem.dxyz[vv]
 
-    if elem.metric is not None:
+    if elem.metric is not None and not elem.metric.vertical_line:
+        # general map (sphere): altitude is metric.height (r - a) and the
+        # vertical arc length per unit eta is |t_v| = metric.h_v
+        mn, mc = node.metric, elem.metric
+        z_n, dz_n = mn.height, mn.h_v * dy
+        z_c, dz_c = mc.height, mc.h_v * dy
+    elif elem.metric is not None:
         # local vertical cell extent dz = z_eta * deta with z_eta = J/(N_v)_v:
         # on horizontally stretched grids J = x' z_eta y' is the VOLUME
         # measure, not the height increment; for vertical-line maps
