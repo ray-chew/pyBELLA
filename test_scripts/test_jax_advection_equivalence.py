@@ -180,6 +180,47 @@ def test_coriolis_get_coeffs_and_inverse_coefficients():
         assert_close(a, b, 1e-13, f"hinv[{k}]")
 
 
+def _sphere_coriolis_case(mem, ud, label):
+    """Compare apply + inverse coefficients on a non-vertical-line metric
+    (general H^-1 kernel): the buoyancy rank-one term along e_up and, for
+    TC2, the spatially varying ``coriolis_field`` role components."""
+    dt = float(getattr(ud, "dtfixed", 5.0)) or 5.0
+
+    mem_np = copy.deepcopy(mem)
+    mem_jx = copy.deepcopy(mem)
+    try:
+        ud.backend = "numpy"
+        coriolis_np.multiply_inverse_terms(mem_np.sol, mem_np, ud, dt)
+        v_np = coriolis_np.compute_inverse_coefficients(mem_np, ud, dt)
+        v_np = [np.asarray(x).copy() for x in v_np]
+        ud.backend = "jax"
+        coriolis_np.multiply_inverse_terms(mem_jx.sol, mem_jx, ud, dt)
+        v_jx = coriolis_np.compute_inverse_coefficients(mem_jx, ud, dt)
+        v_jx = [np.asarray(x).copy() for x in v_jx]
+    finally:
+        ud.backend = "numpy"
+
+    for name in ("rhou", "rhov", "rhow"):
+        assert_close(
+            getattr(mem_jx.sol, name),
+            getattr(mem_np.sol, name),
+            1e-13,
+            f"{label}/apply/{name}",
+        )
+    for k, (a, b) in enumerate(zip(v_jx, v_np)):
+        assert_close(a, b, 1e-13, f"{label}/hinv[{k}]")
+
+
+def test_coriolis_general_sphere_swe():
+    # thin-shell TC2: coriolis_field f(phi) e_r + e_up buoyancy, general H^-1
+    _sphere_coriolis_case(*fx.make_sphere_swe_mem(), "sphere_swe")
+
+
+def test_coriolis_general_sphere_gw():
+    # 3D shell gravity wave: e_up buoyancy (nu != 0), zero rotation
+    _sphere_coriolis_case(*fx.make_sphere_gw_mem(), "sphere_gw")
+
+
 # --------------------------------------------------------------- diffusion
 
 
