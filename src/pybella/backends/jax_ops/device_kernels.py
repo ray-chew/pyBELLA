@@ -57,6 +57,10 @@ def _ghost_fill(s, cfg, split=None):
         if bcfg.gravity_on[current_step]:
             orientation = "sweep" if split is not None else "phys"
             out = bcfg.gravity_fill[orientation](*arrays)
+        elif dim == current_step and current_step in bcfg.general_wall_fill:
+            # general (spherical) free-slip wall — only reached at canonical
+            # orientation (see jax_boundary.set_ghost_cells for the argument)
+            out = bcfg.general_wall_fill[current_step](*arrays)
         else:
             out = bcfg.no_gravity_fill[(dim, current_step)](*arrays)
         for name, val in zip(_SOL_FIELDS, out):
@@ -210,12 +214,24 @@ def _advect_strang(s, cfg, dt, parity, flux_rhoY):
 
 
 def _coriolis_inputs(s, cfg, dt, nonhydro):
-    wdt_h1 = dt * cfg.coriolis[cfg.role_perm[0]]
-    wdt_v = dt * cfg.coriolis[cfg.role_perm[1]]
-    wdt_h2 = dt * cfg.coriolis[cfg.role_perm[2]]
+    # role-ordered (h1, v, h2) rotation components: scalars, or coriolis_field
+    # per-cell arrays (cfg.coriolis_role)
+    wdt_h1 = dt * cfg.coriolis_role[0]
+    wdt_v = dt * cfg.coriolis_role[1]
+    wdt_h2 = dt * cfg.coriolis_role[2]
     Y = s["rhoY"] / s["rho"]
     nu = -(dt**2) * (cfg.g / cfg.Msq) * cfg.dSdy * Y
     return wdt_h1, wdt_v, wdt_h2, nu, nonhydro
+
+
+def _e_role(cfg):
+    """Role-ordered (e_h1, e_v, e_h2) up-direction components, or None on
+    vertical-line/no-metric runs (the legacy scalar H^-1 applies)."""
+    if not cfg.general:
+        return None
+    e = cfg.metric.e_up
+    ax_h1, ax_v, ax_h2 = cfg.role_perm
+    return e[ax_h1], e[ax_v], e[ax_h2]
 
 
 def _apply_hinv(fields3, s, cfg, dt, nonhydro):
@@ -223,7 +239,14 @@ def _apply_hinv(fields3, s, cfg, dt, nonhydro):
     ax_h1, ax_v, ax_h2 = cfg.role_perm
     wh1, wv, wh2, nu, _ = _coriolis_inputs(s, cfg, dt, nonhydro)
     U, V, W = fields3[ax_h1], fields3[ax_v], fields3[ax_h2]
-    u, v, w = jax_coriolis.apply_inverse(U, V, W, wh1, wh2, wv, nu, nonhydro)
+    e_role = _e_role(cfg)
+    if e_role is None:
+        u, v, w = jax_coriolis.apply_inverse(U, V, W, wh1, wh2, wv, nu, nonhydro)
+    else:
+        e1, e2, e3 = e_role
+        u, v, w = jax_coriolis.apply_inverse_general(
+            U, V, W, wh1, wh2, wv, e1, e2, e3, nu, nonhydro
+        )
     out = [None, None, None]
     out[ax_h1], out[ax_v], out[ax_h2] = u, v, w
     return tuple(out)
@@ -231,9 +254,18 @@ def _apply_hinv(fields3, s, cfg, dt, nonhydro):
 
 def _explicit_part(s, cfg, dt, nonhydro):
     """implicit_euler.do_explicit_part twin."""
-    vmom = _MOMENTA[cfg.v_phys]
     dbuoy = s["rhoY"] * (s["rhoX"] / s["rho"])
-    s[vmom] = (nonhydro * s[vmom]) - dt * (cfg.g / cfg.Msq) * dbuoy
+    if cfg.general:
+        # general map (sphere): the alpha_w discard and the buoyancy kick act
+        # on the e_up-PARALLEL momentum, m <- m - (1-alpha)(m.e)e - dt(g/Msq)*dbuoy*e
+        e = cfg.metric.e_up
+        m_dot_e = s["rhou"] * e[0] + s["rhov"] * e[1] + s["rhow"] * e[2]
+        kick = dt * (cfg.g / cfg.Msq) * dbuoy
+        for name, ek in zip(_MOMENTA, e):
+            s[name] = s[name] + (nonhydro - 1.0) * m_dot_e * ek - kick * ek
+    else:
+        vmom = _MOMENTA[cfg.v_phys]
+        s[vmom] = (nonhydro * s[vmom]) - dt * (cfg.g / cfg.Msq) * dbuoy
 
     u0, v0, w0 = cfg.winds
     for name, w_ in zip(_MOMENTA, (u0, v0, w0)):
@@ -244,6 +276,21 @@ def _explicit_part(s, cfg, dt, nonhydro):
 
     for name, w_ in zip(_MOMENTA, (u0, v0, w0)):
         s[name] = s[name] + (+1.0) * w_ * s["rho"]
+    return s
+
+
+def _surface_constraint(s, cfg):
+    """surface_constraint.apply twin: m <- m - (m.e_up) e_up.
+
+    Active only for thin-shell SWE-on-sphere cases (cfg.constrain_to_surface);
+    a no-op otherwise, so every non-SWE device step stays bit-identical.
+    Canonical orientation (all call sites are outside the advection sweeps)."""
+    if not cfg.constrain_to_surface:
+        return s
+    e = cfg.metric.e_up
+    m_dot_e = s["rhou"] * e[0] + s["rhov"] * e[1] + s["rhow"] * e[2]
+    for name, ek in zip(_MOMENTA, e):
+        s[name] = s[name] - m_dot_e * ek
     return s
 
 
@@ -297,8 +344,8 @@ def _forward_step(s, cfg, dt, nonhydro, compressibility):
     """explicit_euler.do_forward_step twin."""
     ndim = cfg.ndim
     ax_h1, ax_v, ax_h2 = cfg.role_perm
-    corr = cfg.coriolis
-    corr_h1, corr_v, corr_h2 = corr[ax_h1], corr[ax_v], corr[ax_h2]
+    # role-ordered rotation components (scalars, or coriolis_field arrays)
+    corr_h1, corr_v, corr_h2 = cfg.coriolis_role
     u0, v0, w0 = cfg.winds
     Ginv = cfg.Gammainv
 
@@ -324,29 +371,50 @@ def _forward_step(s, cfg, dt, nonhydro, compressibility):
 
     mom = {n: s[n] for n in _MOMENTA}
     names = _MOMENTA
-    vel_v = mom[names[ax_v]] / rho
+    mom_h1, mom_v, mom_h2 = mom[names[ax_h1]], mom[names[ax_v]], mom[names[ax_h2]]
 
-    mom[names[ax_h1]] = mom[names[ax_h1]] - dt * (
-        rhoYovG * dp_h1 - corr_h2 * dm_v + corr_v * dm_h2
-    )
-    mom[names[ax_v]] = (
-        mom[names[ax_v]]
-        - dt
-        * (
-            rhoYovG * dp_v
-            + (cfg.g / cfg.Msq) * dbuoy * nonhydro
-            - corr_h1 * dm_h2
-            + corr_h2 * dm_h1
+    if cfg.general:
+        # general map (sphere): buoyancy acts along the LOCAL up e_up and the
+        # H1b nonhydro (alpha_w) factor applies to the e-PARALLEL part of the
+        # WHOLE tendency (fac_par; the e-perpendicular part is never
+        # alpha_w-suppressed). is_ArakawaKonor is guarded to 0 on the device.
+        e = cfg.metric.e_up
+        e_h1, e_v, e_h2 = e[ax_h1], e[ax_v], e[ax_h2]
+        vel_up = (mom_h1 * e_h1 + mom_v * e_v + mom_h2 * e_h2) / rho
+        buoy = (cfg.g / cfg.Msq) * dbuoy
+        T_h1 = rhoYovG * dp_h1 + buoy * e_h1 - corr_h2 * dm_v + corr_v * dm_h2
+        T_v = rhoYovG * dp_v + buoy * e_v - corr_h1 * dm_h2 + corr_h2 * dm_h1
+        T_h2 = rhoYovG * dp_h2 + buoy * e_h2 - corr_v * dm_h1 + corr_h1 * dm_v
+        T_dot_e = T_h1 * e_h1 + T_v * e_v + T_h2 * e_h2
+        fac_par = nonhydro - 1.0
+        mom[names[ax_h1]] = mom_h1 - dt * (T_h1 + fac_par * T_dot_e * e_h1)
+        mom[names[ax_v]] = mom_v - dt * (T_v + fac_par * T_dot_e * e_v)
+        mom[names[ax_h2]] = mom_h2 - dt * (T_h2 + fac_par * T_dot_e * e_h2)
+        for n in _MOMENTA:
+            s[n] = mom[n]
+        s["rhoX"] = (rho * (rho / s["rhoY"] - cfg.S0c)) - dt * (vel_up * cfg.dSdy) * rho
+    else:
+        vel_v = mom_v / rho
+        mom[names[ax_h1]] = mom_h1 - dt * (
+            rhoYovG * dp_h1 - corr_h2 * dm_v + corr_v * dm_h2
         )
-        * 1.0
-    )  # (1 - is_ArakawaKonor), guarded to 0
-    mom[names[ax_h2]] = mom[names[ax_h2]] - dt * (
-        rhoYovG * dp_h2 - corr_v * dm_h1 + corr_h1 * dm_v
-    )
-    for n in _MOMENTA:
-        s[n] = mom[n]
-
-    s["rhoX"] = (rho * (rho / s["rhoY"] - cfg.S0c)) - dt * (vel_v * cfg.dSdy) * rho
+        mom[names[ax_v]] = (
+            mom_v
+            - dt
+            * (
+                rhoYovG * dp_v
+                + (cfg.g / cfg.Msq) * dbuoy * nonhydro
+                - corr_h1 * dm_h2
+                + corr_h2 * dm_h1
+            )
+            * 1.0
+        )  # (1 - is_ArakawaKonor), guarded to 0
+        mom[names[ax_h2]] = mom_h2 - dt * (
+            rhoYovG * dp_h2 - corr_v * dm_h1 + corr_h1 * dm_v
+        )
+        for n in _MOMENTA:
+            s[n] = mom[n]
+        s["rhoX"] = (rho * (rho / s["rhoY"] - cfg.S0c)) - dt * (vel_v * cfg.dSdy) * rho
 
     dp2n = jnp.zeros_like(s["p2_nodes"])
     if cfg.terrain:
@@ -396,8 +464,14 @@ def _correction_nodes(s, cfg, dt, p, updt_chi, nonhydro):
     s["rhou"] = s["rhou"] + thinv * pu
     s["rhov"] = s["rhov"] + thinv * pv
     s["rhow"] = s["rhow"] + thinv * pw
-    vmom = _MOMENTA[cfg.v_phys]
-    s["rhoX"] = s["rhoX"] + (-updt_chi) * dt * cfg.dSdy * s[vmom]
+    if cfg.general:
+        # general map: stratification couples to the e_up-parallel momentum
+        e = cfg.metric.e_up
+        m_up = s["rhou"] * e[0] + s["rhov"] * e[1] + s["rhow"] * e[2]
+        s["rhoX"] = s["rhoX"] + (-updt_chi) * dt * cfg.dSdy * m_up
+    else:
+        vmom = _MOMENTA[cfg.v_phys]
+        s["rhoX"] = s["rhoX"] + (-updt_chi) * dt * cfg.dSdy * s[vmom]
     return s
 
 
@@ -438,7 +512,13 @@ def _fravel(a):
 
 def _coriolis_h_fields(s, cfg, dt, nonhydro):
     wh1, wv, wh2, nu, _ = _coriolis_inputs(s, cfg, dt, nonhydro)
-    return jax_coriolis.compute_coefficients(wh1, wh2, wv, nu, nonhydro)
+    e_role = _e_role(cfg)
+    if e_role is None:
+        return jax_coriolis.compute_coefficients(wh1, wh2, wv, nu, nonhydro)
+    e1, e2, e3 = e_role
+    return jax_coriolis.compute_coefficients_general(
+        wh1, wh2, wv, e1, e2, e3, nu, nonhydro
+    )
 
 
 def _implicit_part(s, cfg, dt, nonhydro, compressibility, sol0=None):
@@ -640,10 +720,12 @@ def build_step(cfg, parity, is_nonhydrostatic, is_compressible):
         flux_rhoY = _advective_flux(s, cfg)
         if cfg.do_advection:
             s = _advect_rk(s, cfg, 0.5 * dt, flux_rhoY)
+        s = _surface_constraint(s, cfg)
 
         p2_nodes0 = s["p2_nodes"]
 
         s = _explicit_part(s, cfg, 0.5 * dt, nonhydro)
+        s = _surface_constraint(s, cfg)
         if is_compressible == 0:
             sol0 = _ghost_fill(sol0, cfg)  # numpy fills the held copy
         s = _implicit_part(
@@ -659,6 +741,7 @@ def build_step(cfg, parity, is_nonhydrostatic, is_compressible):
             s = _rayleigh_damp(s, cfg)
         if cfg.has_forcing:
             s = _rayleigh_damp(s, cfg, forcing=forcing_half)
+        s = _surface_constraint(s, cfg)
 
         # the Strang advective flux is computed from the POST-implicit
         # half-time state (time_update line 123), before the sol restore
@@ -681,9 +764,11 @@ def build_step(cfg, parity, is_nonhydrostatic, is_compressible):
             s[n] = sol0[n]
 
         s = _forward_step(s, cfg, 0.5 * dt, nonhydro, compressibility)
+        s = _surface_constraint(s, cfg)
 
         if cfg.do_advection:
             s = _advect_strang(s, cfg, dt, parity, flux_rhoY_half)
+        s = _surface_constraint(s, cfg)
 
         s = _explicit_part_post(s, cfg, dt, nonhydro, compressibility)
 
@@ -691,6 +776,7 @@ def build_step(cfg, parity, is_nonhydrostatic, is_compressible):
             s = _rayleigh_damp(s, cfg)
         if cfg.has_forcing:
             s = _rayleigh_damp(s, cfg, forcing=forcing_full)
+        s = _surface_constraint(s, cfg)
 
         if cfg.diffusion:
             s = _diffuse(s, cfg, dt)
@@ -711,5 +797,6 @@ def make_step(cfg, parity, is_nonhydrostatic, is_compressible):
 
 def _explicit_part_post(s, cfg, dt, nonhydro, compressibility):
     s = _explicit_part(s, cfg, 0.5 * dt, nonhydro)
+    s = _surface_constraint(s, cfg)
     s = _implicit_part(s, cfg, 0.5 * dt, nonhydro, compressibility, sol0=None)
     return s

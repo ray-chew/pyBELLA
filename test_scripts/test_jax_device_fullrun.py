@@ -8,6 +8,14 @@ terrain-following coordinates; the remaining cases were validated when the
 phase landed — run them ad hoc with
 ``PYBELLA_BACKEND=jax-device pytest test_scripts/test_flow_solver.py``.
 
+The sphere path (non-vertical-line metric: general e_up buoyancy, general
+H^-1, ``coriolis_field``, the well-balanced gravity fill and free-slip
+walls, the tangent-plane surface constraint) is gated in-process by
+``test_sphere_tc2_device_reproduces_numpy`` — a short Williamson TC2 run
+compared jax-device-vs-numpy, not against the stored target, because the
+initial-projection Krylov floor (~2e-5 in the momenta) sits above the 1e-5
+regression tolerance (see dev_notes/sphere.md, HARD-WON pt 2).
+
 Skips cleanly when jax is not installed.
 """
 
@@ -20,6 +28,49 @@ import pytest
 pytestmark = pytest.mark.skipif(
     importlib.util.find_spec("jax") is None, reason="jax not installed"
 )
+
+
+def test_sphere_tc2_device_reproduces_numpy():
+    """The device-resident JAX sphere path reproduces numpy over a short TC2
+    horizon, at the documented initial-projection Krylov floor (same
+    argument as the hybrid gate in test_jax_fullrun.py). Exercises the
+    on-device general e_up buoyancy, general H^-1, coriolis_field, general
+    walls and the surface constraint end to end."""
+    import numpy as np
+
+    from test_jax_fullrun import _run_sphere_tc2
+
+    n = 8
+    mem_np = _run_sphere_tc2("numpy", n)
+    mem_dv = _run_sphere_tc2("jax-device", n)
+    assert getattr(mem_dv, "_device_compile_count", None) == 2  # parity 0/1
+    inner = (slice(2, -2), slice(2, -2), slice(2, -2))
+    rho = mem_np.sol.rho[inner]
+
+    for name in ("rho", "rhoY", "rhoX"):
+        d = float(
+            np.max(
+                np.abs(
+                    getattr(mem_dv.sol, name)[inner] - getattr(mem_np.sol, name)[inner]
+                )
+            )
+        )
+        assert d < 1e-5, f"{name} (absolute): {d:.3e}"
+    for name in ("rhou", "rhov", "rhow"):
+        d = float(
+            np.max(
+                np.abs(
+                    (
+                        getattr(mem_dv.sol, name)[inner]
+                        - getattr(mem_np.sol, name)[inner]
+                    )
+                    / rho
+                )
+            )
+        )
+        assert d < 6e-5, f"{name} (momentum/rho): {d:.3e}"
+    d = float(np.max(np.abs(mem_dv.npf.p2_nodes - mem_np.npf.p2_nodes)))
+    assert d < 1e-5, f"p2_nodes: {d:.3e}"
 
 
 @pytest.mark.parametrize(

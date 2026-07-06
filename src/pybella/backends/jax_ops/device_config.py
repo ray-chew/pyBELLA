@@ -64,17 +64,6 @@ def build_device_config(mem, ud):
     v = axes.vertical_axis(ud)
     cfg = _Namespace()
 
-    # The device-resident step does not yet handle non-vertical-line
-    # (spherical) metrics — the general e_up buoyancy in the forward step,
-    # the general H^-1, and the surface constraint are unported. The hybrid
-    # "jax" backend does (per-kernel seams). Guard here since the shared
-    # jax_boundary.get_boundary_config no longer fast-fails on such metrics.
-    if elem.metric is not None and not elem.metric.vertical_line:
-        raise NotImplementedError(
-            "jax-device step for non-vertical-line (spherical) metrics is not "
-            "implemented yet; run the hybrid 'jax' backend or numpy"
-        )
-
     cfg.ndim = ndim
     cfg.v_phys = v
     cfg.role_perm = axes.role_perm(v)
@@ -91,11 +80,16 @@ def build_device_config(mem, ud):
     cfg.Gamma, cfg.Gammainv = th.Gamma, th.Gammainv
     cfg.Msq = float(ud.Msq)
     cfg.g = float(ud.gravity_strength[v])
-    if getattr(ud, "coriolis_field", None) is not None:
-        raise NotImplementedError(
-            "jax-device Coriolis with a spatially varying rotation field "
-            "(ud.coriolis_field) is not implemented yet; run the numpy backend"
-        )
+    # role-ordered (h1, v, h2) Coriolis components: scalars on the legacy
+    # path, per-cell fields when ud.coriolis_field is set (f(phi) e_r on the
+    # sphere). Reuse the numpy role_components so the field build + cache is
+    # bit-identical to the hybrid path.
+    from pybella.flow_solver.numerics import coriolis as coriolis_np
+
+    w_role = coriolis_np.role_components(mem, ud)
+    cfg.coriolis_role = tuple(
+        jnp.asarray(c) if not np.isscalar(c) else float(c) for c in w_role
+    )
     cfg.coriolis = tuple(float(c) for c in ud.coriolis_strength)
     cfg.winds = (
         float(ud.u_wind_speed),
@@ -129,6 +123,12 @@ def build_device_config(mem, ud):
     if cfg.has_forcing:
         cfg.tcy_f = jnp.asarray(jax_rayleigh._vertical_profile(ud.forcing_tcy, ndim, v))
         cfg.tny_f = jnp.asarray(ud.forcing_tny)
+
+    # general (non-vertical-line, spherical) metric: e_up buoyancy, general
+    # H^-1, general free-slip walls. The tangent-plane surface constraint is
+    # active only for thin-shell SWE-on-sphere cases.
+    cfg.general = elem.metric is not None and not elem.metric.vertical_line
+    cfg.constrain_to_surface = bool(getattr(ud, "constrain_to_surface", False))
 
     # terrain metric: canonical + per-split sweep orientations
     cfg.terrain = elem.metric is not None
