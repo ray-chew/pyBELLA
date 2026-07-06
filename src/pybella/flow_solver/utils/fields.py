@@ -170,8 +170,10 @@ class States(CellSolField):
                 # node-States field: difference S0 over the physical node
                 # heights along the vertical, then average to cell centres
                 # along the horizontal axes (the field generalisation of
-                # the 1D convolve-and-broadcast below)
-                zn = node.metric.z
+                # the 1D convolve-and-broadcast below). ``height`` is the
+                # generalized altitude: identical to z for vertical-line
+                # maps, r - a on a sphere (where z is non-monotone).
+                zn = node.metric.height
                 dS = np.diff(self.S0, axis=self.vaxis) / np.diff(zn, axis=self.vaxis)
                 for dim in range(node.ndim):
                     if dim == self.vaxis:

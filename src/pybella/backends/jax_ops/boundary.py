@@ -160,7 +160,7 @@ def _gravity_ops(mem, ud, y_axs, orient_perm):
         z_eta = canonical(
             np.asarray(metric.J) / np.asarray(metric.N[metric.vaxis][metric.cart_v])
         )
-        z = canonical(metric.z)
+        z = canonical(metric.height)
         G1 = canonical(metric.G1)
         G2 = canonical(metric.G2) if metric.G2 is not None else None
     else:

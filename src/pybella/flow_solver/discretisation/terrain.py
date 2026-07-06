@@ -195,11 +195,49 @@ class MetricFields:
     bit-identical to the cross products of the tangents
     t1 = (1, G1, 0), t2 = (0, J, 0), t3 = (0, G2, 1) (the Phase-0
     reduction contract, ``test_scripts/test_metric_reduction.py``).
+
+    Beyond-vertical-line (Tier 3) metric data, all inert on the legacy
+    path:
+
+    ``height``
+        Generalized altitude (the coordinate gravity acts along). For
+        vertical-line maps this IS ``z`` (aliased); a curved map (sphere)
+        supplies e.g. ``r - a``. Consumers that mean "height above the
+        reference geopotential" read this, not ``z``.
+    ``h_v``
+        Vertical arc length per unit eta, |t_v|. For vertical-line maps
+        this IS ``J`` (aliased; t_v = (0, J, 0)), and it equals the
+        legacy ghost-spacing construction J / (N_v)_v there.
+    ``e_up``
+        Unit "up" direction as a Cartesian-component list (like one row
+        of ``N``), or ``None`` when up is the fixed Cartesian role-v axis
+        (every vertical-line map). Buoyancy/gravity consumers branch on
+        this.
+    ``vertical_line``
+        False for maps whose vertical coordinate lines are not parallel
+        Cartesian lines. Then ``G1``/``G2`` are ``None`` — the slope
+        scalars are mathematically undefined (their construction divides
+        by a Cartesian component of N_v that passes through zero on a
+        sphere) — and any remaining G1/G2 consumer must not be reached.
     """
 
-    _ARRAYS = ("J", "ooJ", "G1", "G2", "z")
+    _ARRAYS = ("J", "ooJ", "G1", "G2", "z", "height", "h_v")
 
-    def __init__(self, J, G1, G2, z, vaxis, haxes, N=None, x=None):
+    def __init__(
+        self,
+        J,
+        G1,
+        G2,
+        z,
+        vaxis,
+        haxes,
+        N=None,
+        x=None,
+        height=None,
+        h_v=None,
+        e_up=None,
+        vertical_line=True,
+    ):
         self.J = J
         self.ooJ = 1.0 / J
         self.G1 = G1
@@ -214,6 +252,10 @@ class MetricFields:
             x = [None] * J.ndim
             x[vaxis] = z
         self.x = x
+        self.height = z if height is None else height
+        self.h_v = J if h_v is None else h_v
+        self.e_up = e_up
+        self.vertical_line = vertical_line
 
     def _vertical_line_normals(self):
         """Cartesian-component normals of the vertical-line map (canonical
@@ -249,6 +291,8 @@ class MetricFields:
         rolled = [[roll(c) for c in Na] for Na in self.N]
         self.N = rolled[1:] + rolled[:1]
         self.x = [None if c is None else roll(c) for c in self.x]
+        if self.e_up is not None:
+            self.e_up = [roll(c) for c in self.e_up]
         self.vaxis, self.haxes = self._shift_axes(-1)
 
     def flip_backward(self):
@@ -260,6 +304,8 @@ class MetricFields:
         rolled = [[roll(c) for c in Na] for Na in self.N]
         self.N = rolled[-1:] + rolled[:-1]
         self.x = [None if c is None else roll(c) for c in self.x]
+        if self.e_up is not None:
+            self.e_up = [roll(c) for c in self.e_up]
         self.vaxis, self.haxes = self._shift_axes(+1)
 
     def _shift_axes(self, step):
@@ -546,7 +592,15 @@ class CurvilinearMap:
     computational coordinates ``xi`` (a list indexed by ARRAY AXIS in
     canonical orientation, i.e. Cartesian order; entries broadcast over
     the grid like the builder's coordinate views).
+
+    ``vertical_line`` (class or instance attribute, default True)
+    declares whether the map's vertical coordinate lines are parallel
+    Cartesian lines. Tier-3 maps (sphere) set it False: the builder then
+    leaves the legacy slope scalars G1/G2 unset (undefined for such maps)
+    and derives the up-direction ``e_up`` from the vertical normal.
     """
+
+    vertical_line = True
 
     def coordinates(self, xi):
         """Physical coordinates x_k(xi) as a Cartesian-indexed list;
@@ -557,6 +611,12 @@ class CurvilinearMap:
         """Tangents t_a = dx/dxi_a: a list over computational axes ``a``
         of Cartesian-component lists (each entry broadcastable)."""
         raise NotImplementedError
+
+    def height(self, xi):
+        """Generalized altitude (gravity potential coordinate) as one
+        broadcastable expression, or ``None`` to default to the vertical
+        physical coordinate x[v]. A spherical map returns ``r - a``."""
+        return None
 
 
 def _cross_components(a, b):
@@ -622,8 +682,38 @@ def build_metric_fields_from_map(grid_obj, ud, cmap):
     x = [None if c is None else full(c) for c in cmap.coordinates(xi)]
     z = x[v] if x[v] is not None else full(xi[v] + 0.0 * J)
 
-    # effective slopes off the vertical normal (see docstring)
-    G1 = full(-N[v][a_h1] / N[v][v])
-    G2 = full(-N[v][a_h2] / N[v][v]) if a_h2 is not None else None
+    vertical_line = getattr(cmap, "vertical_line", True)
+    if vertical_line:
+        # effective slopes off the vertical normal (see docstring)
+        G1 = full(-N[v][a_h1] / N[v][v])
+        G2 = full(-N[v][a_h2] / N[v][v]) if a_h2 is not None else None
+        e_up = None
+        # t_v = (0, dz/deta, 0): |t_v| is exactly the v-component (no
+        # sqrt, keeps the Phase-0 reduction bit-exact)
+        h_v = full(t[v][v] + 0.0 * J)
+    else:
+        # slope scalars are undefined ((N_v)_k passes through zero); the
+        # up direction is carried as data instead
+        G1 = None
+        G2 = None
+        norm_v = np.sqrt(sum(np.asarray(c) ** 2 for c in N[v]))
+        e_up = [full(np.asarray(c) / norm_v) for c in N[v]]
+        h_v = full(np.sqrt(sum(np.asarray(c) ** 2 for c in t[v])))
 
-    return MetricFields(J=J, G1=G1, G2=G2, z=z, vaxis=v, haxes=(a_h1, a_h2), N=N, x=x)
+    height_expr = cmap.height(xi) if hasattr(cmap, "height") else None
+    height = z if height_expr is None else full(height_expr)
+
+    return MetricFields(
+        J=J,
+        G1=G1,
+        G2=G2,
+        z=z,
+        vaxis=v,
+        haxes=(a_h1, a_h2),
+        N=N,
+        x=x,
+        height=height,
+        h_v=h_v,
+        e_up=e_up,
+        vertical_line=vertical_line,
+    )

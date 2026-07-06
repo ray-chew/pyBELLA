@@ -114,7 +114,8 @@ class CellBoundaryHandler:
             contra_source = vert[nsource] - self._slope_terms(sol, nsource)
             rhoYv_image = -contra_source * sol.rhoY[nsource] / sol.rho[nsource]
             # stratification at the PHYSICAL height of the image cell
-            S = 1.0 / self.ud.stratification(self.metric.z[nimage])
+            # (generalized altitude: == z for vertical-line maps)
+            S = 1.0 / self.ud.stratification(self.metric.height[nimage])
         else:
             rhoYv_image = -vert[nsource] * sol.rhoY[nsource] / sol.rho[nsource]
             y_coords = axes.coords_along(self.mem.elem, self.v_phys)
