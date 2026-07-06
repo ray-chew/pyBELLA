@@ -31,9 +31,11 @@ The multi-day maturation into the full Rossby wave train (paper Sect. 4) is
 the production device run, pt 3.
 """
 
+import importlib.util
 import logging
 
 import numpy as np
+import pytest
 
 logging.disable(logging.INFO)
 
@@ -51,7 +53,7 @@ from pybella.utils.io.debug import NullDebugWriter
 _RIDGE_LONS = np.array([72.0, 140.0])
 
 
-def _build(nx, ny, nz, nsteps, dt=None):
+def _build(nx, ny, nz, nsteps, dt=None, backend="numpy"):
     udo = hjr.UserData()
     udo.inx, udo.iny, udo.inz = nx + 1, ny + 1, nz + 1
     udo.stepmax = nsteps
@@ -61,6 +63,7 @@ def _build(nx, ny, nz, nsteps, dt=None):
     udo.output_timesteps = False
     ud = user_data.UserDataInit(**vars(udo))
     ud.coriolis_strength = np.array(ud.coriolis_strength)
+    ud.backend = backend
     elem, node = dis_grid.grid_init(ud)
     sol = fields.CellSolField(elem.sc)
     th = thermodynamics.ThermodynamicalQuantities(ud)
@@ -130,3 +133,65 @@ def test_ridges_initiate_the_wave():
     peak_lon = lam_deg[np.argmax(vlon)]
     dist = np.abs(((peak_lon - _RIDGE_LONS + 180.0) % 360.0) - 180.0).min()
     assert dist < 20.0, (peak_lon, dist)
+
+
+@pytest.mark.skipif(importlib.util.find_spec("jax") is None, reason="jax not installed")
+def test_ridges_device_reproduces_numpy():
+    """The device-resident JAX backend reproduces numpy for the ridge case
+    (pt 3 correctness gate for the production device path).
+
+    This is the NEW coverage the production run needs: the ridge case is the
+    UNION of two already-validated device paths -- the general non-vertical-
+    line SPHERE metric (general e_up buoyancy, general H^-1, the constant
+    ``coriolis_field``, free-slip phi walls; validated by TC2) and TERRAIN
+    following coordinates (validated by agnesi) -- now with radial GRAVITY,
+    the terrain tilt, and a field-mode COMPRESSIBLE HydroState all at once.
+    It is compressible with no initial projection, so it never hits the JAX
+    boundary's field-mode+incompressible guard (that path stays numpy-only).
+
+    Agreement is at the per-step bicgstab Krylov / ulp floor, exactly as the
+    hybrid and device TC2 gates document: the scalars agree near machine
+    precision, the momenta to the Krylov floor. p2_nodes is O(1/Msq) ~ O(700)
+    here (Msq ~ 1.4e-3), so it is compared RELATIVE to its own amplitude.
+    Measured (3 steps, 32x12x32): rho/rhoY/rhoX ~3e-7, momenta/rho ~7e-5,
+    p2 relative ~3e-6 -- and jax-device ran ~9x faster than numpy even on CPU
+    (the GPU speedup is far larger; sphere JAX was H100-validated).
+    """
+    n = 3
+    mem_np, ud_np = _build(32, 12, 32, nsteps=n)
+    mem_dv, ud_dv = _build(32, 12, 32, nsteps=n, backend="jax-device")
+    mem_np = _run(mem_np, ud_np)
+    mem_dv = _run(mem_dv, ud_dv)
+    assert getattr(mem_dv, "_device_compile_count", None) == 2  # parity 0/1
+
+    inner = (slice(2, -2), slice(2, -2), slice(2, -2))
+    rho = np.asarray(mem_np.sol.rho)[inner]
+    for name in ("rho", "rhoY", "rhoX"):
+        d = float(
+            np.max(
+                np.abs(
+                    np.asarray(getattr(mem_dv.sol, name))[inner]
+                    - np.asarray(getattr(mem_np.sol, name))[inner]
+                )
+            )
+        )
+        assert d < 1e-5, f"{name} (absolute): {d:.3e}"
+    for name in ("rhou", "rhov", "rhow"):
+        d = float(
+            np.max(
+                np.abs(
+                    (
+                        np.asarray(getattr(mem_dv.sol, name))[inner]
+                        - np.asarray(getattr(mem_np.sol, name))[inner]
+                    )
+                    / rho
+                )
+            )
+        )
+        assert d < 1e-4, f"{name} (momentum/rho): {d:.3e}"
+    p2_np = np.asarray(mem_np.npf.p2_nodes)
+    dp2 = float(np.max(np.abs(np.asarray(mem_dv.npf.p2_nodes) - p2_np)))
+    assert dp2 < 1e-4 * np.abs(p2_np).max(), f"p2_nodes (relative): {dp2:.3e}"
+
+    for name in ("rho", "rhoY", "rhou", "rhov", "rhow"):
+        assert np.all(np.isfinite(np.asarray(getattr(mem_dv.sol, name)))), name
