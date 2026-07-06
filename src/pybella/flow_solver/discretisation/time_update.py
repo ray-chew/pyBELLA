@@ -8,7 +8,7 @@ from ...utils import options as opts
 
 # dependencies of the flow solver subpackage
 from ..utils.boundary import rayleigh_boundary as bdry_r
-from ..physics import cfl, eos
+from ..physics import cfl, eos, surface_constraint
 from ..numerics.explicit_advection import advective_flux, compute_advection
 from ..numerics import diffusion, explicit_euler, implicit_euler
 
@@ -218,6 +218,7 @@ def predictor_half_step(mem, ud, dt, writer=None, debug_writer=None, label=""):
             ud,
             0.5 * dt,
         )
+    surface_constraint.apply(mem, ud)
 
     debug_writer.write(f"{label}_after_advect")
     debug_writer.populate(f"{label}_after_full_step", "p2_nodes", mem.npf.p2_nodes)
@@ -225,6 +226,7 @@ def predictor_half_step(mem, ud, dt, writer=None, debug_writer=None, label=""):
     mem.npf.p2_nodes0[...] = mem.npf.p2_nodes
 
     implicit_euler.do_explicit_part(mem, ud, 0.5 * dt)
+    surface_constraint.apply(mem, ud)
 
     debug_writer.write(f"{label}_after_ebnaexp")
 
@@ -244,6 +246,7 @@ def predictor_half_step(mem, ud, dt, writer=None, debug_writer=None, label=""):
         bdry_r.rayleigh_damping(mem.sol, mem.npf, ud)
 
     bdry_r.apply_rayleigh_forcing(mem, ud, dt)
+    surface_constraint.apply(mem, ud)
 
     debug_writer.write(f"{label}_after_ebnaimp")
 
@@ -288,6 +291,8 @@ def corrector_full_step(
         label=str(label) + "_after_efna",
     )
 
+    surface_constraint.apply(mem, ud)
+
     debug_writer.write(f"{label}_after_efna")
 
     if ud.do_advection:
@@ -300,9 +305,12 @@ def corrector_full_step(
             writer,
         )
 
+    surface_constraint.apply(mem, ud)
+
     debug_writer.write(f"{label}_after_full_advect")
 
     implicit_euler.do_explicit_part(mem, ud, 0.5 * dt)
+    surface_constraint.apply(mem, ud)
 
     debug_writer.write(f"{label}_after_full_ebnaexp")
 
@@ -327,6 +335,7 @@ def corrector_full_step(
         sol_half_new=sol_half_new,
         npf_half_new=npf_half_new,
     )
+    surface_constraint.apply(mem, ud)
 
     if ud.diffusion:
         diffusion.apply(mem, ud, dt)

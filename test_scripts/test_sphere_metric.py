@@ -598,8 +598,11 @@ def test_coriolis_field_coordinate_fallback():
     np.testing.assert_allclose(w_h2, np.broadcast_to(2.0 * z_view, mem.sol.rho.shape))
 
 
-def test_traditional_coriolis_is_f_sinphi_e_r():
-    """The map's traditional-approximation field is c sin(phi) e_r."""
+def test_traditional_coriolis_is_minus_f_sinphi_e_r():
+    """The map's traditional-approximation field is (W . e_r) e_r =
+    -c sin(phi) e_r: the embedded rotation vector is W = +c z_hat (the
+    embedding mirrors geographic space, pseudovectors flip — see
+    ``SphericalShellMap.rotation_axis_cart``)."""
     ud, elem, _ = _metrics(frozen=True)
     m = elem.metric
     lam, r, phi = _grid_coords(elem)
@@ -607,7 +610,7 @@ def test_traditional_coriolis_is_f_sinphi_e_r():
     field = ud.curvilinear_map.traditional_coriolis(c)
     w = field(m.x[0], m.x[1], m.x[2])
     er = _e_r(lam, phi)
-    expect = [np.broadcast_to(c * np.sin(phi) * er[k], m.J.shape) for k in range(3)]
+    expect = [np.broadcast_to(-c * np.sin(phi) * er[k], m.J.shape) for k in range(3)]
     for k in range(3):
         np.testing.assert_allclose(w[k], expect[k], rtol=1e-13, atol=1e-14 * c)
 
