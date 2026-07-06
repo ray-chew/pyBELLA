@@ -618,6 +618,13 @@ class CurvilinearMap:
         physical coordinate x[v]. A spherical map returns ``r - a``."""
         return None
 
+    def up_direction(self, xi):
+        """GRAVITY direction as a Cartesian-component list, or ``None``
+        to default to the vertical coordinate-surface normal N_v/|N_v|.
+        Terrain maps must override: their gravity stays radial while the
+        coordinate surfaces tilt with the slope."""
+        return None
+
 
 def _cross_components(a, b):
     """Elementwise cross product of Cartesian-component triples."""
@@ -693,11 +700,19 @@ def build_metric_fields_from_map(grid_obj, ud, cmap):
         h_v = full(t[v][v] + 0.0 * J)
     else:
         # slope scalars are undefined ((N_v)_k passes through zero); the
-        # up direction is carried as data instead
+        # up direction is carried as data instead. The GRAVITY direction
+        # is the map's up_direction hook when provided (a terrain map's
+        # gravity stays radial while its coordinate-surface normal tilts
+        # with the slope); the surface normal N_v/|N_v| is the default
+        # (they coincide for terrain-free maps).
         G1 = None
         G2 = None
-        norm_v = np.sqrt(sum(np.asarray(c) ** 2 for c in N[v]))
-        e_up = [full(np.asarray(c) / norm_v) for c in N[v]]
+        up_expr = cmap.up_direction(xi) if hasattr(cmap, "up_direction") else None
+        if up_expr is not None:
+            e_up = [full(c) for c in up_expr]
+        else:
+            norm_v = np.sqrt(sum(np.asarray(c) ** 2 for c in N[v]))
+            e_up = [full(np.asarray(c) / norm_v) for c in N[v]]
         h_v = full(np.sqrt(sum(np.asarray(c) ** 2 for c in t[v])))
 
     height_expr = cmap.height(xi) if hasattr(cmap, "height") else None

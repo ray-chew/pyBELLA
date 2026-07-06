@@ -653,6 +653,117 @@ def test_general_hinv_reduces_to_c11_kernel():
                 assert err <= 1e-14, (alpha_w, i, err)
 
 
+# --------------------------- Stage E: terrain-following on the sphere
+
+_H0_HILL = 0.15  # nondim hill height
+_SIGMA = 0.5
+
+
+def _hill():
+    def h(lam, phi):
+        return _H0_HILL * (1.0 + np.cos(lam)) / 2.0 * np.exp(-((phi / _SIGMA) ** 2))
+
+    def dh_dlam(lam, phi):
+        return -_H0_HILL / 2.0 * np.sin(lam) * np.exp(-((phi / _SIGMA) ** 2))
+
+    def dh_dphi(lam, phi):
+        return (
+            _H0_HILL
+            * (1.0 + np.cos(lam))
+            / 2.0
+            * (-2.0 * phi / _SIGMA**2)
+            * np.exp(-((phi / _SIGMA) ** 2))
+        )
+
+    return h, (dh_dlam, dh_dphi)
+
+
+def _terrain_grid(n=(32, 8, 16), depth=2.0, flat=False, phi_max=1.0):
+    h, grad = _hill()
+    if flat:
+        h = lambda lam, phi: 0.0 * lam + 0.0 * phi
+        grad = (h, h)
+    cmap = spherical.SphericalTerrainMap(_A, depth, h, grad)
+    ud = _GridStubUD(n=n, phi_max=phi_max, cmap=False)
+    ud.ymin, ud.ymax = 0.0, depth  # radial axis carries eta
+    ud.curvilinear_map = cmap
+    elem, node = dis_grid.grid_init(ud)
+    return ud, elem, node
+
+
+def test_terrain_map_h0_reduces_to_shell():
+    """h == 0: the terrain map's metric equals the true-radius shell map
+    evaluated on the corresponding r-grid (r = a + eta)."""
+    depth = 2.0
+    _, elem_t, _ = _terrain_grid(flat=True, depth=depth)
+    ud_s = _GridStubUD(cmap=True, frozen=False, phi_max=1.0)
+    ud_s.ymin, ud_s.ymax = _A, _A + depth
+    elem_s, _ = dis_grid.grid_init(ud_s)
+
+    mt, ms = elem_t.metric, elem_s.metric
+    np.testing.assert_allclose(mt.J, ms.J, rtol=1e-13)
+    np.testing.assert_allclose(mt.height, ms.height, rtol=0, atol=1e-12)
+    np.testing.assert_allclose(mt.h_v, ms.h_v, rtol=1e-13)
+    scale = np.max(np.abs(ms.J))
+    for a in range(3):
+        for k in range(3):
+            np.testing.assert_allclose(
+                mt.N[a][k], ms.N[a][k], rtol=1e-12, atol=1e-13 * scale
+            )
+    for k in range(3):
+        np.testing.assert_allclose(mt.e_up[k], ms.e_up[k], rtol=1e-13, atol=1e-14)
+
+
+def test_terrain_map_duality_and_up():
+    """Duality N_a . t_b = J delta_ab on a genuine spherical hill, and
+    the gravity direction stays RADIAL (up_direction hook), decoupled
+    from the tilted coordinate-surface normal."""
+    ud, elem, _ = _terrain_grid()
+    m = elem.metric
+    t = [
+        [np.broadcast_to(c, m.J.shape) for c in ta]
+        for ta in ud.curvilinear_map.tangents(_grid_coords(elem))
+    ]
+    scale = np.max(np.abs(m.J))
+    for a in range(3):
+        for b in range(3):
+            expect = m.J if a == b else 0.0
+            np.testing.assert_allclose(
+                sum(m.N[a][k] * t[b][k] for k in range(3)),
+                expect,
+                rtol=1e-12,
+                atol=1e-13 * scale,
+            )
+    # e_up == e_r everywhere (radial gravity), even over the slopes
+    lam, r, phi = _grid_coords(elem)
+    er = _e_r(lam, phi)
+    for k in range(3):
+        np.testing.assert_allclose(
+            m.e_up[k], np.broadcast_to(er[k], m.J.shape), rtol=1e-13, atol=1e-14
+        )
+    # ... while the surface normal N_v/|N_v| is genuinely tilted
+    norm_v = np.sqrt(sum(np.asarray(c) ** 2 for c in m.N[1]))
+    tilt = 1.0 - sum(m.N[1][k] / norm_v * m.e_up[k] for k in range(3))
+    assert np.max(tilt) > 1e-4  # the hill actually tilts the surfaces
+    # h_v is the radial arc length dZ/deta (t_eta || e_r)
+    t_eta_dot_er = sum(t[1][k] * np.broadcast_to(er[k], m.J.shape) for k in range(3))
+    np.testing.assert_allclose(m.h_v, t_eta_dot_er, rtol=1e-13)
+
+
+def test_terrain_map_metric_identity_second_order():
+    """Freestream tripwire on the wavy spherical terrain: the discrete
+    metric identity sum_a D_a N_a converges to zero at 2nd order (the
+    Tier-3 well-balancing risk the plan flags — analytic collocated
+    metrics must not leave an O(1) defect over slopes)."""
+    errs = []
+    for n in ((16, 4, 8), (32, 8, 16)):
+        _, elem, _ = _terrain_grid(n=n)
+        div = _div_normals(elem)
+        errs.append(max(np.max(np.abs(c)) for c in div) / _A**2)
+    assert errs[1] < errs[0] / 3.0
+    assert errs[1] < 5e-2
+
+
 def test_flip_cycle_preserves_e_up():
     _, elem, _ = _metrics(frozen=False)
     m = elem.metric
