@@ -42,8 +42,22 @@ def do_explicit_part(mem, ud, dt):
     Msq = ud.Msq
 
     dbuoy = mem.sol.rhoY * (mem.sol.rhoX / mem.sol.rho)
-    vmom = axes.vertical_momentum(ud)
-    setattr(mem.sol, vmom, (nonhydro * getattr(mem.sol, vmom)) - dt * (g / Msq) * dbuoy)
+    metric = mem.elem.metric
+    if metric is not None and metric.e_up is not None:
+        # general map (sphere): the alpha_w discard and the buoyancy kick
+        # act on the e_up-PARALLEL momentum component,
+        # m <- m - (1 - alpha_w)(m.e)e - dt (g/Msq) dbuoy e
+        e = metric.e_up
+        moms = (mem.sol.rhou, mem.sol.rhov, mem.sol.rhow)
+        m_dot_e = moms[0] * e[0] + moms[1] * e[1] + moms[2] * e[2]
+        kick = dt * (g / Msq) * dbuoy
+        for k in range(3):
+            moms[k][...] += (nonhydro - 1.0) * m_dot_e * e[k] - kick * e[k]
+    else:
+        vmom = axes.vertical_momentum(ud)
+        setattr(
+            mem.sol, vmom, (nonhydro * getattr(mem.sol, vmom)) - dt * (g / Msq) * dbuoy
+        )
 
     mem.sol.mod_bg_wind(ud, -1.0)
 
@@ -171,7 +185,16 @@ def _correction_nodes(mem, ud, dt, p, updt_chi):
     # of the explicit-step defect fixed 2026-06-09; quantified at 1.4e-4 by
     # the 3D-vs-2D full-Coriolis oracle).
     mem.sol.rhow += thinv * mem.npf.w
-    mem.sol.rhoX += -updt_chi * dt * dSdy * getattr(mem.sol, axes.vertical_momentum(ud))
+    metric = mem.elem.metric
+    if metric is not None and metric.e_up is not None:
+        # general map: stratification couples to the e_up-parallel momentum
+        e = metric.e_up
+        m_up = mem.sol.rhou * e[0] + mem.sol.rhov * e[1] + mem.sol.rhow * e[2]
+        mem.sol.rhoX += -updt_chi * dt * dSdy * m_up
+    else:
+        mem.sol.rhoX += (
+            -updt_chi * dt * dSdy * getattr(mem.sol, axes.vertical_momentum(ud))
+        )
 
 
 def operator_coefficients_nodes(mem, ud, dt):
