@@ -12,6 +12,8 @@ import subprocess
         "test_lamb_wave",
         "test_unstable_lamb",
         "test_swe_vortex",
+        "test_sphere_swe_tc2",
+        "test_sphere_swe_tc6",
         "test_straka",
         "test_agnesi_hydrostatic",
         "test_schaer_ridge",
