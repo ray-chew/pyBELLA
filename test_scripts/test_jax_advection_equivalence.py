@@ -137,6 +137,19 @@ def test_rk_agnesi3d_terrain():
     _rk_case(mem, ud, float(ud.dtfixed))
 
 
+def test_strang_sphere_swe():
+    # full sweep driver on the thin shell: general phi/degenerate-r walls +
+    # general (curvilinear) advective flux through the metric normals
+    mem, ud = fx.make_sphere_swe_mem()
+    _strang_case(mem, ud, float(ud.dtfixed))
+
+
+def test_strang_sphere_gw():
+    # 3D shell: adds the radial (gravity) sweep with the well-balanced fill
+    mem, ud = fx.make_sphere_gw_mem()
+    _strang_case(mem, ud, float(ud.dtfixed))
+
+
 # ---------------------------------------------------------------- coriolis
 
 
