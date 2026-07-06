@@ -26,11 +26,22 @@ the gravity boundary fill, and assert:
 The ATMOSPHERIC_EXTENSION ``p20`` sibling (same file, same one-axis-index
 pattern) is fixed by the same helper but has no field-mode case to gate: the
 only ATMOSPHERIC_EXTENSION cases (Lamb waves) are profile-mode.
+
+``test_field_mode_gravity_ghost_device_matches_numpy`` then gates the JAX
+twin: the general (spherical) device gravity fill has the same incompressible
+field-mode branch (``jax_ops/boundary._general_gravity_ops``), whose guard was
+lifted by porting the ``rhoY0[nimage]`` gather to jnp. It must reproduce the
+numpy fill bit-for-bit on the same input — this is what makes the TC2-style
+initial projection available on the device backend (the field-mode
+compressible steady path was already validated; only the projection's
+incompressible fill was newly enabled).
 """
 
+import importlib.util
 import logging
 
 import numpy as np
+import pytest
 
 logging.disable(logging.INFO)
 
@@ -41,6 +52,8 @@ from pybella.flow_solver.utils.boundary import cell_boundary as bdry_c
 from pybella.tests import test_hj_baroclinic as hj
 from pybella.utils import user_data
 from pybella.utils.data_structures import ModelState
+
+_FIELDS = ("rho", "rhou", "rhov", "rhow", "rhoY", "rhoX")
 
 
 def _build_shell(nx, ny, nz):
@@ -92,3 +105,41 @@ def test_field_mode_gravity_ghost_incompressible():
         sl[vaxis] = k
         sl = tuple(sl)
         assert np.allclose(mem.sol.rhoY[sl], rhoY0[sl]), ("row", k)
+
+
+@pytest.mark.skipif(importlib.util.find_spec("jax") is None, reason="jax not installed")
+def test_field_mode_gravity_ghost_device_matches_numpy():
+    """The JAX device fill reproduces the numpy incompressible field-mode
+    gravity ghost fill bit-for-bit (the lifted guard, ported to jnp).
+
+    Isolates the ported fill from the elliptic solve: run the SAME frozen-
+    incompressible input through the numpy and jax boundary fills and compare
+    the ghost cells directly. (End-to-end initial projection on this deep
+    compressible shell is ill-conditioned and its bicgstab Krylov floor makes
+    the two backends select different members ~O(10%) in the momenta — a
+    property of the case, which is precisely why it runs projection-free by
+    default; the fill itself is exact, as asserted here.)
+    """
+    from pybella.backends import jax_ops  # noqa: F401  (enables x64)
+
+    mem, ud = _build_shell(nx=32, ny=12, nz=32)
+    assert mem.npf.HydroState.field_mode
+    ud.is_compressible = 0
+    ud.compressibility = 0.0
+
+    snap0 = {f: np.copy(np.asarray(getattr(mem.sol, f))) for f in _FIELDS}
+
+    ud.backend = "numpy"
+    bdry_c.set_ghost_cells(mem, ud)
+    np_ghost = {f: np.copy(np.asarray(getattr(mem.sol, f))) for f in _FIELDS}
+
+    for f in _FIELDS:  # restore the exact input, then fill on the device
+        getattr(mem.sol, f)[...] = snap0[f]
+    ud.backend = "jax-device"
+    bdry_c.set_ghost_cells(mem, ud)
+
+    for f in _FIELDS:
+        dv = np.asarray(getattr(mem.sol, f))
+        assert np.all(np.isfinite(dv)), f
+        d = float(np.max(np.abs(dv - np_ghost[f])))
+        assert d < 1e-12, f"{f}: numpy-vs-device ghost diff {d:.3e}"

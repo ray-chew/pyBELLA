@@ -222,12 +222,17 @@ def _gravity_ops(mem, ud, y_axs, orient_perm):
 
             # incompressible branch reads the static hydrostate profile.
             # field_mode (terrain) + incompressible/atmosphere would index a
-            # full field with a scalar in the numpy path — unexercised; guard.
+            # full field with a scalar here. numpy handles it (cell_boundary.
+            # _hydro_at) and the general/sphere twin _general_gravity_ops does
+            # too, but no VERTICAL-LINE terrain case runs an incompressible /
+            # ATMOSPHERIC_EXTENSION fill (agnesi et al. stay compressible), so
+            # this twin keeps the guard until such a case exists.
             if hydro.field_mode and (ud.is_compressible != 1 or atmosphere):
                 raise NotImplementedError(
                     "terrain hydrostates (field_mode) with incompressible or "
-                    "ATMOSPHERIC_EXTENSION ghost fills are not supported on "
-                    "the JAX backend (unexercised in the numpy path too)"
+                    "ATMOSPHERIC_EXTENSION ghost fills are not supported on the "
+                    "vertical-line JAX boundary twin (numpy and the general "
+                    "spherical twin support them; no such case exists here)"
                 )
             op.rhoY0_im = (
                 float(hydro.rhoY0[nimage[y_axs]]) if ud.is_compressible != 1 else None
@@ -493,11 +498,14 @@ def _general_gravity_ops(mem, ud, y_axs, perm):
     height = _orient_leaf(mc.height, perm)
     h_v = _orient_leaf(mc.h_v, perm)
     hydro = mem.npf.HydroState
-    if hydro.field_mode and ud.is_compressible != 1:
-        raise NotImplementedError(
-            "terrain hydrostates (field_mode) with an incompressible general "
-            "ghost fill are not supported on the JAX backend"
-        )
+    # incompressible fill reads the hydrostatic reference rhoY0 at the image
+    # cell. A general (non-vertical-line) metric always carries field-mode
+    # (per-column) hydrostates, so orient the full canonical field like the
+    # metric leaves and gather the image slice below (twin of the field-mode
+    # branch of cell_boundary._hydro_at). rhoY0 is never sweep-flipped, so it
+    # is oriented with a plain transpose (_orient_leaf), not _canonical_metric.
+    # Used only in the incompressible regime (the do_initial_projection freeze).
+    rhoY0 = _orient_leaf(hydro.rhoY0, perm) if ud.is_compressible != 1 else None
 
     ops = []
     direction = -1.0
@@ -522,7 +530,7 @@ def _general_gravity_ops(mem, ud, y_axs, perm):
             dz = 0.5 * (h_v[nimage] + h_v[nlast]) * deta
             op.dpi_coeff = jnp.asarray(direction * (mem.th.Gamma * g) * 0.5 * dz)
             op.rhoY0_im = (
-                float(hydro.rhoY0[nimage[y_axs]]) if ud.is_compressible != 1 else None
+                jnp.asarray(rhoY0[nimage]) if ud.is_compressible != 1 else None
             )
             op.Nv_src = [jnp.asarray(Nv[k][nsource]) for k in range(ndim)]
             op.Nv_im = [jnp.asarray(Nv[k][nimage]) for k in range(ndim)]
@@ -598,6 +606,13 @@ class BoundaryConfig:
         elem = mem.elem
         self.elem_ref = elem
         self.ud_ref = ud
+        # the hydrostatic (gravity) fill bakes the is_compressible regime in
+        # statically (compressible: rhoY_g from rhoY[nlast]; incompressible:
+        # from the HydroState rhoY0 reference). do_initial_projection toggles
+        # is_compressible on the SAME ud, so the cache must rebuild on a
+        # regime change (get_boundary_config checks this) or a projection-era
+        # incompressible config would be reused for compressible stepping.
+        self.compressible_ref = ud.is_compressible == 1
         ndim = elem.ndim
         v_phys = axes.vertical_axis(ud)
         self.ndim = ndim
@@ -752,7 +767,12 @@ _CONFIG_CACHE = {}
 def get_boundary_config(mem, ud):
     key = (id(mem.elem), id(ud))
     cfg = _CONFIG_CACHE.get(key)
-    if cfg is None or cfg.elem_ref is not mem.elem or cfg.ud_ref is not ud:
+    if (
+        cfg is None
+        or cfg.elem_ref is not mem.elem
+        or cfg.ud_ref is not ud
+        or cfg.compressible_ref != (ud.is_compressible == 1)
+    ):
         cfg = BoundaryConfig(mem, ud)
         _CONFIG_CACHE[key] = cfg
     return cfg
