@@ -237,9 +237,19 @@ class MetricFields:
         h_v=None,
         e_up=None,
         vertical_line=True,
+        pole_mask=None,
     ):
         self.J = J
-        self.ooJ = 1.0 / J
+        # pole-safe reciprocal: at coordinate-singular (pole) nodes J == 0
+        # exactly (snapped in the builder); ooJ := 0 there means "no
+        # pointwise conversion at a zero-volume point" — the pole-row values
+        # are owned by the elliptic collapse / ghost machinery (Stage F).
+        self.pole_mask = pole_mask
+        if pole_mask is not None:
+            safe_J = np.where(pole_mask, 1.0, J)
+            self.ooJ = np.where(pole_mask, 0.0, 1.0 / safe_J)
+        else:
+            self.ooJ = 1.0 / J
         self.G1 = G1
         self.G2 = G2
         self.z = z
@@ -293,6 +303,8 @@ class MetricFields:
         self.x = [None if c is None else roll(c) for c in self.x]
         if self.e_up is not None:
             self.e_up = [roll(c) for c in self.e_up]
+        if self.pole_mask is not None:
+            self.pole_mask = roll(self.pole_mask)
         self.vaxis, self.haxes = self._shift_axes(-1)
 
     def flip_backward(self):
@@ -306,6 +318,8 @@ class MetricFields:
         self.x = [None if c is None else roll(c) for c in self.x]
         if self.e_up is not None:
             self.e_up = [roll(c) for c in self.e_up]
+        if self.pole_mask is not None:
+            self.pole_mask = roll(self.pole_mask)
         self.vaxis, self.haxes = self._shift_axes(+1)
 
     def _shift_axes(self, step):
@@ -680,7 +694,28 @@ def build_metric_fields_from_map(grid_obj, ud, cmap):
         ]
         J = full(t[0][0] * N_raw[0][0] + t[0][1] * N_raw[0][1] + t[0][2] * N_raw[0][2])
         N = [[full(c) for c in Na] for Na in N_raw]
-    if np.any(J <= 0.0):
+
+    # Pole-enabled maps (Stage F) allow J == 0 on the zero-measure pole
+    # NODE set (the cos(phi) -> 0 coordinate singularity); everywhere else
+    # J must still be strictly positive. Cells never sit on the pole, so
+    # the mask is all-False on the cell grid (pole_mask -> None there).
+    pole = bool(getattr(cmap, "pole", False))
+    pole_mask = None
+    if pole:
+        scale = float(np.max(np.abs(J)))
+        near_zero = np.abs(J) < 1e-10 * scale
+        J = np.where(near_zero, 0.0, J)
+        if np.any(J[~near_zero] <= 0.0):
+            raise ValueError(
+                "spherical pole map produced non-positive Jacobian away "
+                "from the poles: the map is not orientation-preserving"
+            )
+        pmask = cmap.pole_mask(xi)
+        if pmask is not None:
+            near_zero = near_zero | np.broadcast_to(pmask, near_zero.shape)
+        if near_zero.any():
+            pole_mask = np.ascontiguousarray(near_zero)
+    elif np.any(J <= 0.0):
         raise ValueError(
             "curvilinear map produced non-positive Jacobian: "
             "the map must be orientation-preserving everywhere"
@@ -731,4 +766,5 @@ def build_metric_fields_from_map(grid_obj, ud, cmap):
         h_v=h_v,
         e_up=e_up,
         vertical_line=vertical_line,
+        pole_mask=pole_mask,
     )

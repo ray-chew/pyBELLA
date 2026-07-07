@@ -629,6 +629,12 @@ class BoundaryConfig:
                 raise AssertionError(
                     "Rayleigh boundary only defined on the gravity axis."
                 )
+            if ud.bdry_type[d] == opts.BdryType.POLE:
+                # Stage F JAX twins for the pole exchange land in F7; until
+                # then a POLE axis must not silently fall through to _WALL.
+                raise NotImplementedError(
+                    "BdryType.POLE JAX ghost exchange not yet implemented (F7)"
+                )
 
         meta = {
             "vert_mom": _MOMENTA[v_phys],

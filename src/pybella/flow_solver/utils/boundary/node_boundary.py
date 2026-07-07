@@ -18,6 +18,11 @@ def set_ghost_nodes(p, node, ud, igs=None):
 
         if ud.bdry_type[dim] == opts.BdryType.PERIODIC:
             p[...] = np.pad(p[idx], ghost_padding, periodic_plus_one)
+        elif ud.bdry_type[dim] == opts.BdryType.POLE:
+            # Stage F pole node exchange + ring collapse lands in F1/F4.
+            raise NotImplementedError(
+                "BdryType.POLE node ghost exchange not yet implemented (F1)"
+            )
         else:  # ud.bdry_type[dim] == opts.BdryType.WALL:
             p[...] = np.pad(p[idx], ghost_padding, "reflect")
 

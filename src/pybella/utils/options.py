@@ -22,3 +22,11 @@ class BdryType(Enum):
     WALL = "symmetric"
     PERIODIC = "wrap"
     RAYLEIGH = "radiation"
+    #: lat-lon coordinate-singularity boundary (the pole of a spherical
+    #: map). The pole is neither a wall nor periodic: a meridional flow
+    #: crossing the pole at longitude lambda re-emerges at lambda + pi.
+    #: With GLOBAL Cartesian momenta (no local basis) the ghost fill is a
+    #: pure index remap (lambda -> lambda + pi, phi mirrored) with no
+    #: vector rotation; the pole node's longitude duplicates collapse to
+    #: one elliptic unknown. See dev_notes/sphere_poles_plan.md (Stage F).
+    POLE = "pole"

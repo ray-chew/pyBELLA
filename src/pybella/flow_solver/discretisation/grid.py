@@ -40,6 +40,7 @@ def grid_init(ud):
     # orography: the uniform-Cartesian path must stay bit-identical and
     # pay no overhead)
     cmap = getattr(ud, "curvilinear_map", None)
+    _validate_pole_config(ud, cmap)
     if cmap is not None:
         if terrain.terrain_is_active(ud):
             raise ValueError(
@@ -54,6 +55,50 @@ def grid_init(ud):
         node.metric = terrain.build_metric_fields(node, ud)
 
     return elem, node
+
+
+def _validate_pole_config(ud, cmap):
+    """Cross-check ``BdryType.POLE`` against a pole-enabled spherical map.
+
+    Stage F requires the pole boundary and the map's ``pole`` flag to be
+    set together (config typos fail loudly), and the pole geometry to be a
+    full lat-lon sphere: phi axis (axis 2) is POLE at both ends, lambda
+    (axis 0) is PERIODIC spanning exactly 2*pi with an EVEN interior cell
+    count (so the lambda -> lambda + pi remap is an integer cell shift),
+    phi extent is exactly [-pi/2, +pi/2], and the run is 3D.
+    """
+    bdry = getattr(ud, "bdry_type", None)
+    pole_in_bdry = bdry is not None and any(bt == opts.BdryType.POLE for bt in bdry)
+    map_pole = bool(getattr(cmap, "pole", False)) if cmap is not None else False
+
+    if pole_in_bdry != map_pole:
+        raise ValueError(
+            "BdryType.POLE and the curvilinear map's pole=True must be set "
+            "together (got bdry POLE=%r, map pole=%r)" % (pole_in_bdry, map_pole)
+        )
+    if not map_pole:
+        return
+
+    if ud.inz <= 1 or ud.iny <= 1:
+        raise ValueError("pole boundary requires a 3D lat-lon-radius grid")
+    if bdry[2] != opts.BdryType.POLE:
+        raise ValueError("pole boundary must be on the phi axis (axis 2)")
+    if bdry[0] != opts.BdryType.PERIODIC:
+        raise ValueError("pole geometry requires a PERIODIC longitude axis (axis 0)")
+    if bdry[1] == opts.BdryType.POLE:
+        raise ValueError("the radial axis (axis 1) cannot be a pole boundary")
+    if abs((ud.xmax - ud.xmin) - 2.0 * np.pi) > 1e-9:
+        raise ValueError("pole geometry requires longitude to span exactly 2*pi")
+    if (ud.inx - 1) % 2 != 0:
+        raise ValueError(
+            "pole geometry requires an EVEN number of interior longitude "
+            "cells (the lambda -> lambda + pi pole remap must be an integer "
+            "cell shift)"
+        )
+    if abs(ud.zmin + 0.5 * np.pi) > 1e-9 or abs(ud.zmax - 0.5 * np.pi) > 1e-9:
+        raise ValueError(
+            "pole geometry requires the latitude axis to span [-pi/2, +pi/2]"
+        )
 
 
 class Grid(object):

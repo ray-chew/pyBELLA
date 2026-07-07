@@ -63,6 +63,12 @@ class CellBoundaryHandler:
                     idx,
                     normal_mom=axes.MOMENTA[current_step],
                 )
+        elif bdry_type == opts.BdryType.POLE:
+            # Stage F pole ghost exchange (index remap lambda -> lambda + pi,
+            # phi mirrored, no vector rotation) lands in increment F1.
+            raise NotImplementedError(
+                "BdryType.POLE cell ghost exchange not yet implemented (F1)"
+            )
         elif bdry_type == opts.BdryType.RAYLEIGH:
             raise AssertionError("Rayleigh boundary only defined on the gravity axis.")
 
