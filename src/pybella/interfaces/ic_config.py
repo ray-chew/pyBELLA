@@ -16,6 +16,7 @@ IC_MODULES = {
     "test_unstable_lamb": "pybella.tests.test_unstable_lamb",
     "test_swe_vortex": "pybella.tests.test_swe_vortex",
     "test_sphere_swe_tc2": "pybella.tests.test_sphere_swe_tc2",
+    "test_sphere_swe_tc2_global": "pybella.tests.test_sphere_swe_tc2_global",
     "test_sphere_swe_tc6": "pybella.tests.test_sphere_swe_tc6",
     "test_sphere_gw": "pybella.tests.test_sphere_gw",
     "test_hj_baroclinic": "pybella.tests.test_hj_baroclinic",

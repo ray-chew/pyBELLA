@@ -150,6 +150,10 @@ def do(
         # sees the filtered interior. No-op unless ud.polar_filter is set.
         if getattr(ud, "polar_filter", None) is not None:
             polar_filter.apply(mem, ud)
+            # the filter mixes Cartesian momentum components per ring, which
+            # can nudge them off the local tangent plane; restore the
+            # constraint (no-op unless ud.constrain_to_surface) then refresh
+            surface_constraint.apply(mem, ud)
             bdry_c.set_ghost_cells(mem, ud)
 
         ######################################################
