@@ -1,0 +1,8 @@
+Stage F (poles) F1: pole ghost exchange for cells and nodes. A ``BdryType.POLE``
+axis fills its ghost slabs by a pure index remap (longitude -> longitude + pi,
+latitude mirrored across the pole) with NO vector rotation — momenta are global
+Cartesian, so every field copies component-by-component. The source is always an
+interior cell (the far side of the pole), so the fill is order-independent within
+a sweep and works at any sweep-flipped orientation via the metric's tracked
+axes. Node pole rows are forced to their longitude-ring mean (single-valued at
+the pole). Gated by ``test_scripts/test_sphere_pole_exchange.py``.
