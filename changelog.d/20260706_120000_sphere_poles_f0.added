@@ -1,0 +1,8 @@
+Stage F (poles) F0: pole-aware spherical metric build. ``SphericalShellMap``
+and ``SphericalTerrainMap`` gain a ``pole`` flag that folds ghost coordinates
+beyond |phi| = pi/2 through the pole (lambda -> lambda + pi, phi mirrored) so
+the ghost metric is a fold-copy of the far-side image cell (J > 0, no vector
+rotation); pole NODES carry J == 0 with ooJ := 0 and a stored ``pole_mask``.
+Adds ``BdryType.POLE`` with grid-init validation (even longitude cell count,
+2*pi longitude span, [-pi/2, pi/2] latitude). Gated by
+``test_scripts/test_sphere_pole_metric.py``; channel cases bit-identical.

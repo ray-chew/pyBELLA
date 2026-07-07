@@ -65,17 +65,54 @@ class SphericalShellMap(terrain.CurvilinearMap):
     #: embedded frame. Derived, and pinned by the TC2 balance gate.
     rotation_axis_cart = (0.0, 0.0, 1.0)
 
-    def __init__(self, radius, frozen_radius=False):
+    def __init__(self, radius, frozen_radius=False, pole=False):
         self.radius = float(radius)
         self.frozen_radius = bool(frozen_radius)
+        self.pole = bool(pole)
         if self.radius <= 0.0:
             raise ValueError("planet radius must be positive")
 
     def _r_eff(self, r):
         return self.radius if self.frozen_radius else r
 
-    def coordinates(self, xi):
+    def _fold_poles(self, xi):
+        """Fold ghost coordinates beyond |phi| = pi/2 through the pole.
+
+        Stage F backbone: ghost cells past the pole cover physical points
+        on the FAR side, at longitude lambda + pi. Because momenta are
+        global Cartesian (no local basis), the pole ghost is a pure index
+        remap of the coordinates — evaluating every map quantity at the
+        FOLDED coordinate reproduces the image cell's physics bit-for-bit
+        (J > 0, e_r/N_phi smooth-correct). There is DELIBERATELY no chain
+        rule (no sign flip on t_phi): the fold-copy metric is the design,
+        not an approximation. See dev_notes/sphere_poles_plan.md (F0, and
+        the fold-geometry table).
+
+        Returns ``xi`` unchanged when ``pole`` is off (bit-identity for the
+        channel cases).
+        """
+        if not self.pole:
+            return xi
         lam, r, phi = xi[0], xi[1], xi[2]
+        over = np.abs(phi) > 0.5 * np.pi
+        lam_f = np.where(over, lam + np.pi, lam)
+        phi_f = np.where(over, np.sign(phi) * np.pi - phi, phi)
+        return [lam_f, r, phi_f]
+
+    def pole_mask(self, xi):
+        """Boolean grid mask of coordinate-singular (pole) points.
+
+        The pole nodes |phi| = pi/2 where J = r^2 cos(phi) degenerates to
+        zero; ``None`` when the map is not pole-enabled. Cell centres never
+        fall exactly on the pole, so this is all-False on the cell grid.
+        """
+        if not self.pole:
+            return None
+        phi = xi[2]
+        return np.abs(np.abs(phi) - 0.5 * np.pi) < 1e-9
+
+    def coordinates(self, xi):
+        lam, r, phi = self._fold_poles(xi)
         cphi = np.cos(phi)
         return [
             r * cphi * np.cos(lam),
@@ -84,7 +121,7 @@ class SphericalShellMap(terrain.CurvilinearMap):
         ]
 
     def tangents(self, xi):
-        lam, r, phi = xi[0], xi[1], xi[2]
+        lam, r, phi = self._fold_poles(xi)
         re = self._r_eff(r)
         cl, sl = np.cos(lam), np.sin(lam)
         cp, sp = np.cos(phi), np.sin(phi)
@@ -103,7 +140,7 @@ class SphericalShellMap(terrain.CurvilinearMap):
         return (cp * np.cos(lam), cp * np.sin(lam), -np.sin(phi) + 0.0 * lam)
 
     def up_direction(self, xi):
-        lam, _, phi = xi
+        lam, _, phi = self._fold_poles(xi)
         return self._e_r(lam, phi)
 
     def traditional_coriolis(self, coriolis_param):
@@ -157,8 +194,10 @@ class SphericalTerrainMap(SphericalShellMap):
     transforms only (SLEVE needs the smooth/residual split — later).
     """
 
-    def __init__(self, radius, depth, orography, orography_grad, transform=None):
-        super().__init__(radius, frozen_radius=False)
+    def __init__(
+        self, radius, depth, orography, orography_grad, transform=None, pole=False
+    ):
+        super().__init__(radius, frozen_radius=False, pole=pole)
         self.depth = float(depth)
         if self.depth <= 0.0:
             raise ValueError("shell depth (r_top - a) must be positive")
@@ -190,13 +229,13 @@ class SphericalTerrainMap(SphericalShellMap):
         return self.radius + Z, r_lam, r_eta, r_phi
 
     def coordinates(self, xi):
-        lam, eta, phi = xi
+        lam, eta, phi = self._fold_poles(xi)
         r, _, _, _ = self._r_fields(lam, eta, phi)
         cp = np.cos(phi)
         return [r * cp * np.cos(lam), r * cp * np.sin(lam), -r * np.sin(phi)]
 
     def tangents(self, xi):
-        lam, eta, phi = xi
+        lam, eta, phi = self._fold_poles(xi)
         r, r_lam, r_eta, r_phi = self._r_fields(lam, eta, phi)
         cl, sl = np.cos(lam), np.sin(lam)
         cp, sp = np.cos(phi), np.sin(phi)
@@ -210,6 +249,6 @@ class SphericalTerrainMap(SphericalShellMap):
         return [t_lam, t_eta, t_phi]
 
     def height(self, xi):
-        lam, eta, phi = xi
+        lam, eta, phi = self._fold_poles(xi)
         r, _, _, _ = self._r_fields(lam, eta, phi)
         return r - self.radius
