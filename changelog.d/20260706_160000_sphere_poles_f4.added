@@ -1,0 +1,10 @@
+Stage F (poles) F4: elliptic pole-ring collapse. Each (radius, hemisphere)
+lat-lon pole ring — one physical point spread over every longitude node —
+collapses to a single master pressure unknown via a Galerkin scatter/gather
+wrapped around the one-sided pole operator (``lap3D`` already treats the
+non-periodic latitude axis as a wall). The reduced system embeds in the
+full-size solve vector with non-master ring entries pinned to zero, so the
+BiCGSTAB plumbing is untouched; the rhs divergence zeroes the beyond-pole
+ghost momenta to match. Non-pole cases are bit-identical. Gated by
+``test_scripts/test_sphere_pole_elliptic.py`` (resting global shell at rest,
+single-valued pole pressure, interior + ring-summed divergence to the floor).

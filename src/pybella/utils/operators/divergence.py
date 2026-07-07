@@ -127,10 +127,15 @@ def compute_at_nodes(rhs, elem, sol, ud):
     # as the uniform-Cartesian path.
     if not hasattr(ud, "ATMOSPHERIC_EXTENSION"):
         for dim in range(ndim):
-            if (
-                ud.bdry_type[dim] == opts.BdryType.WALL
-                or ud.bdry_type[dim] == opts.BdryType.RAYLEIGH
+            if ud.bdry_type[dim] in (
+                opts.BdryType.WALL,
+                opts.BdryType.RAYLEIGH,
+                opts.BdryType.POLE,
             ):
+                # POLE is one-sided like a wall for the elliptic rhs (Stage
+                # F): zero the beyond-pole ghost momenta so the pole-node
+                # divergence matches the one-sided operator; the pole-ring
+                # collapse then sums these into the master equation
                 lo, hi = axes.wall_slabs(ndim, dim)
                 for field in (sol.rhou, sol.rhov, sol.rhow):
                     field[lo] = 0.0

@@ -9,7 +9,7 @@ from ..discretisation import terrain
 from ..utils.boundary import cell_boundary as bdry_c
 from ..utils.boundary import node_boundary as bdry_n
 from ..utils.boundary import common as bdry
-from . import coriolis
+from . import coriolis, pole_collapse
 
 
 def _jax_backend(ud):
@@ -140,6 +140,13 @@ def do_implicit_part(
         p2, _ = sp.sparse.linalg.bicgstab(
             lap, rhs_inner, atol=ud.tol, maxiter=ud.max_iterations, callback=counter
         )
+
+    # Pole collapse (Stage F): the solve returns one master value per pole
+    # ring (non-master ring entries are zero); scatter it back over the ring
+    # so the pressure is single-valued at the pole before the correction.
+    coll = getattr(mem, "_pole_collapse", None)
+    if coll is not None:
+        p2 = coll.scatter(p2)
 
     # Reshape solution and apply
     p2_full = _reshape_solution(p2, mem, ud, nc)
@@ -347,12 +354,29 @@ def _prepare_3d_system(mem, ud, dt):
             rhs_inner.ravel(),
         )
 
-    lap = lap3D.get_linop(mem.elem, mem.node, mem.npf, ud, diag_inv, dt, cij)
+    raw = lap3D.get_linop(mem.elem, mem.node, mem.npf, ud, diag_inv, dt, cij)
     sh = mem.npf.rhs.size
 
-    lap = sp.sparse.linalg.LinearOperator((sh, sh), lap, dtype=np.float64)
+    # Pole-ring collapse (Stage F): one pressure unknown per (radius,
+    # hemisphere) pole ring. The pole rows are already one-sided (lap3D
+    # treats the non-periodic phi axis as a wall); wrap the matvec and rhs
+    # with the Galerkin scatter/gather so the ring duplicates solve as one
+    # master. Non-pole cases keep the bare operator (bit-identical).
+    rhs_vec = rhs_inner.ravel()
+    if pole_collapse.pole_axis_present(ud):
+        coll = pole_collapse.get(mem.node)
+        mem._pole_collapse = coll
+        # raw() returns the 3D node box; ravel to the flat solve vector the
+        # scatter/gather index maps operate on (C-order, matching rhs)
+        matvec = lambda v: coll.gather(raw(coll.scatter(v)).ravel())
+        rhs_vec = coll.gather(rhs_vec)
+    else:
+        mem._pole_collapse = None
+        matvec = raw
 
-    return lap, rhs_inner.ravel()
+    lap = sp.sparse.linalg.LinearOperator((sh, sh), matvec, dtype=np.float64)
+
+    return lap, rhs_vec
 
 
 def _reshape_solution(p2, mem, ud, nc):
