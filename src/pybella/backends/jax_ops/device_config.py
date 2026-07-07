@@ -166,18 +166,68 @@ def build_device_config(mem, ud):
 
     # boundary fill plans (canonical + sweep orientations)
     cfg.boundary = jax_boundary.get_boundary_config(mem, ud)
-    bdry_ints = tuple(
-        (
-            jax_boundary._PERIODIC
-            if ud.bdry_type[d] == opts.BdryType.PERIODIC
-            else jax_boundary._WALL
-        )
-        for d in range(ndim)
-    )
+    bdry_ints = tuple(jax_boundary._bdry_int(ud.bdry_type[d]) for d in range(ndim))
     degen = tuple((int(d), int(node.sc[d])) for d in axes.degenerate_axes(node))
     cfg.node_fill = jax_boundary._node_fill_fn(
         ndim, tuple(int(i) for i in node.igs), bdry_ints, degen
     )
+
+    # pole-ring collapse index maps (Stage F): the Galerkin scatter/gather on
+    # the flat 3D solve vector, mirroring numerics.pole_collapse.PoleCollapse.
+    # ring_complement zeroes the ring by a mask multiply (bicgstab's
+    # custom_linear_solve double-transposes the operator; an integer
+    # scatter-SET is not double-transposable, a mask multiply + scatter-ADD is)
+    from pybella.flow_solver.numerics import pole_collapse
+
+    cfg.pole_collapse = None
+    if pole_collapse.pole_axis_present(ud):
+        pc = pole_collapse.get(node)
+        ring_complement = np.ones(pc.n)
+        ring_complement[pc.ring_all] = 0.0
+        cfg.pole_collapse = _Namespace(
+            scatter_src=jnp.asarray(pc.scatter_src),
+            ring_complement=jnp.asarray(ring_complement),
+            uniq_mem=jnp.asarray(pc.uniq_mem),
+            uniq_master=jnp.asarray(pc.uniq_master),
+        )
+
+    # polar filter (Stage F): host-side static transfer factors + J weights +
+    # the longitude-CFL cap, mirroring numerics.polar_filter.apply / cfl_cap
+    from pybella.flow_solver.numerics import polar_filter as polar_filter_np
+
+    cfg.polar_filter = getattr(ud, "polar_filter", None)
+    cfg.filter_plan = None
+    cfg.filter_cap = None
+    if cfg.polar_filter is not None:
+        m = elem.metric
+        assert m is not None and not m.vertical_line, "polar filter needs a sphere"
+        lam_axis = int(m.cart_haxes[0])
+        phi_axis = int(m.cart_haxes[1])
+        v_axis = int(m.cart_v)
+        sc = [int(s) for s in elem.sc]
+        igl, igp, igr = (int(elem.igs[a]) for a in (lam_axis, phi_axis, v_axis))
+        Nlam = sc[lam_axis] - 2 * igl
+        sl = [slice(None)] * ndim
+        sl[lam_axis] = slice(igl, sc[lam_axis] - igl)
+        sl[phi_axis] = slice(igp, sc[phi_axis] - igp)
+        sl[v_axis] = slice(igr, sc[v_axis] - igr)
+        sl = tuple(sl)
+        phi_coords = axes.coords_along(elem, phi_axis)[igp : sc[phi_axis] - igp]
+        r = polar_filter_np.transfer(
+            Nlam, np.cos(phi_coords), cfg.polar_filter.phi_c, cfg.polar_filter.p
+        )
+        bidx = [None] * ndim
+        bidx[lam_axis] = slice(None)
+        bidx[phi_axis] = slice(None)
+        cfg.filter_plan = _Namespace(
+            sl=sl,
+            lam_axis=lam_axis,
+            N=Nlam,
+            r=jnp.asarray(r[tuple(bidx)]),
+            J=jnp.asarray(np.asarray(m.J)[sl]),
+        )
+        cap = polar_filter_np.cfl_cap(elem, ud)
+        cfg.filter_cap = None if cap is None else jnp.asarray(cap)
 
     # wall-node scaling masks (scale_wall_node_values as multiplicative plan)
     cfg.wall_scale_idx = []

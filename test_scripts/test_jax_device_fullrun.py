@@ -73,6 +73,36 @@ def test_sphere_tc2_device_reproduces_numpy():
     assert d < 1e-5, f"p2_nodes: {d:.3e}"
 
 
+def test_sphere_tc2_global_device_reproduces_numpy():
+    """The device-resident JAX pole-to-pole sphere path (Stage F F7b)
+    reproduces numpy over a short TC2 horizon. Exercises the on-device pole
+    ghost fold (cells + nodes), the elliptic pole-ring collapse, and the FFT
+    polar filter + surface constraint inside the device step loop, on top of
+    the whole non-vertical-line sphere path — with the initial projection off,
+    so the only floor is the pure-jax per-kernel ulp accumulation (the
+    projection Krylov floor is measured by the hybrid gate in
+    test_jax_fullrun.py); the device reproduces numpy essentially bitwise."""
+    import numpy as np
+
+    from test_jax_fullrun import _run_sphere_tc2_global
+
+    n = 6
+    mem_np = _run_sphere_tc2_global("numpy", n, initial_projection=False)
+    mem_dv = _run_sphere_tc2_global("jax-device", n, initial_projection=False)
+    assert getattr(mem_dv, "_device_compile_count", None) == 2  # parity 0/1
+    inner = (slice(2, -2), slice(2, -2), slice(2, -2))
+
+    def rel(a, b):
+        a, b = np.asarray(a), np.asarray(b)
+        return float(np.max(np.abs(a - b))) / max(1.0, float(np.max(np.abs(a))))
+
+    for name in ("rho", "rhou", "rhov", "rhow", "rhoY", "rhoX"):
+        d = rel(getattr(mem_np.sol, name)[inner], getattr(mem_dv.sol, name)[inner])
+        assert d < 1e-9, f"{name}: {d:.3e}"
+    d = rel(mem_np.npf.p2_nodes, mem_dv.npf.p2_nodes)
+    assert d < 1e-9, f"p2_nodes: {d:.3e}"
+
+
 @pytest.mark.parametrize(
     "ic",
     [

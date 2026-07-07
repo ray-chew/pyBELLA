@@ -1,0 +1,17 @@
+Stage F (poles) F7b: JAX DEVICE-RESIDENT (``backend='jax-device'``) twins of
+the pole machinery. The pole ghost fold is wired into the device ``_ghost_fill``
+(the shared ``BoundaryConfig`` pole_cell_fill, canonical + phi-sweep); the
+elliptic pole-ring collapse is applied inside the device elliptic closure
+(Galerkin scatter/gather around ``jax_lap3D._lap3D``, rhs gathered, master
+scattered back post-solve); and — the biggest device-specific piece — the FFT
+polar filter runs INSIDE the jitted step loop (``device.run_window`` returns
+before the numpy filter attach point), followed by the tangent-plane surface
+constraint and a ghost refill, mirroring ``time_update.do``. The longitude-CFL
+cap is applied in the device dt control. All are strictly guarded no-ops when
+there is no POLE axis / no ``polar_filter``, so every existing device golden
+master (TV, Straka, 3D vortex, Agnesi, channel TC2/SWE) stays bit-identical
+(the dispatch-guard proof). Gates: ``test_window_sphere_swe_global``
+(device-vs-hybrid ~1e-13, compile-count 2) and
+``test_sphere_tc2_global_device_reproduces_numpy``. The device pole path ran an
+adversarial ``pybella-jax-reviewer`` pass over the fill + collapse + filter
+twins.

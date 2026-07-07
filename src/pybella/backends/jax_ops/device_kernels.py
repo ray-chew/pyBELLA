@@ -57,6 +57,11 @@ def _ghost_fill(s, cfg, split=None):
         if bcfg.gravity_on[current_step]:
             orientation = "sweep" if split is not None else "phys"
             out = bcfg.gravity_fill[orientation](*arrays)
+        elif bcfg.bdry_int[current_step] == jax_boundary._POLE:
+            # lat-lon pole fold (Stage F): pure index remap of the phi ghost
+            # slabs, reached canonically or during the phi sweep
+            orientation = "sweep" if split is not None else "phys"
+            out = bcfg.pole_cell_fill[orientation](*arrays)
         elif dim == current_step and current_step in bcfg.general_wall_fill:
             # general (spherical) free-slip wall — only reached at canonical
             # orientation (see jax_boundary.set_ghost_cells for the argument)
@@ -294,6 +299,25 @@ def _surface_constraint(s, cfg):
     return s
 
 
+def _polar_filter(s, cfg):
+    """polar_filter.apply twin: damp the CFL-violating zonal modes near the
+    poles (FFT-in-longitude, J-weighted, k=0 kept -> ring-conserving).
+
+    A no-op unless ``ud.polar_filter`` is set (cfg.filter_plan is None), so
+    every non-sphere / channel device step stays bit-identical. Canonical
+    orientation (called at the end of the step, mirroring time_update.do)."""
+    plan = cfg.filter_plan
+    if plan is None:
+        return s
+    sl, lam, N, r, J = plan.sl, plan.lam_axis, plan.N, plan.r, plan.J
+    for name in _SOL_FIELDS:
+        f = s[name]
+        Jf = J * f[sl]
+        F = jnp.fft.rfft(Jf, axis=lam) * r
+        s[name] = f.at[sl].set(jnp.fft.irfft(F, n=N, axis=lam) / J)
+    return s
+
+
 def _divergence_rhs(s, cfg):
     """divergence.compute_at_nodes twin; adopts the wall-zeroed momenta."""
     momenta = (
@@ -315,7 +339,9 @@ def _divergence_rhs(s, cfg):
         ()
         if cfg.atmosphere
         else tuple(
-            d for d in range(cfg.ndim) if cfg.boundary.bdry_int[d] == jax_boundary._WALL
+            d
+            for d in range(cfg.ndim)
+            if cfg.boundary.bdry_int[d] in (jax_boundary._WALL, jax_boundary._POLE)
         )
     )
     rhs, momenta_out = jax_divergence.compute_at_nodes(
@@ -595,7 +621,7 @@ def _implicit_part(s, cfg, dt, nonhydro, compressibility, sol0=None):
         )
         hcenter = wcenter[i1]
 
-        def matvec(pvec):
+        def base_matvec(pvec):
             return jax_lap3D._lap3D(
                 pvec,
                 C,
@@ -609,10 +635,34 @@ def _implicit_part(s, cfg, dt, nonhydro, compressibility, sol0=None):
 
         rhs_inner = jnp.zeros_like(rhs).at[cfg.node_i1].set(rhs[cfg.node_i1]).ravel()
 
+        # Pole-ring collapse (Stage F F7b): the lap3D pole rows are already
+        # one-sided (the wall_mask slab-zeroes the non-periodic phi axis);
+        # wrap the matvec + gather the rhs with the Galerkin scatter/gather so
+        # each pole ring solves as one master. Same recipe as the hybrid
+        # jax_lap3D.wrap_pole_collapse (mask-multiply, not integer scatter-SET).
+        pc = cfg.pole_collapse
+        if pc is not None:
+
+            def matvec(pvec):
+                y = jnp.reshape(base_matvec(pvec[pc.scatter_src]), (-1,))
+                contrib = y[pc.uniq_mem]
+                y = y * pc.ring_complement
+                return y.at[pc.uniq_master].add(contrib)
+
+            rhs_c = rhs_inner[pc.uniq_mem]
+            rhs_inner = (rhs_inner * pc.ring_complement).at[pc.uniq_master].add(rhs_c)
+        else:
+            matvec = base_matvec
+
     A = lambda x: jnp.reshape(matvec(x), x.shape)
     p2, _ = jax.scipy.sparse.linalg.bicgstab(
         A, rhs_inner, tol=1e-5, atol=cfg.tol, maxiter=cfg.max_iterations
     )
+
+    # pole collapse: scatter the master value back over its ring so the
+    # pressure is single-valued at the pole (3D only; 2D never sees poles)
+    if ndim == 3 and cfg.pole_collapse is not None:
+        p2 = p2[cfg.pole_collapse.scatter_src]
 
     # reshape into the full node box
     p2_full = jnp.zeros(cfg.node_sc, dtype=jnp.float64)
@@ -780,6 +830,19 @@ def build_step(cfg, parity, is_nonhydrostatic, is_compressible):
 
         if cfg.diffusion:
             s = _diffuse(s, cfg, dt)
+
+        # Polar filter (Stage F): damp the CFL-violating zonal modes near the
+        # poles once per step, then re-apply the tangent-plane surface
+        # constraint (the filter mixes Cartesian momentum components per ring,
+        # nudging them off the local tangent plane) and refill the ghosts so
+        # the pole exchange sees the filtered interior. Mirrors the numpy
+        # attach point in time_update.do (filter -> surface -> ghost refill),
+        # which device.run_window returns BEFORE. No-op unless ud.polar_filter.
+        if cfg.polar_filter is not None:
+            s = _polar_filter(s, cfg)
+            s = _surface_constraint(s, cfg)
+            s = _ghost_fill(s, cfg)
+
         if is_compressible == 0:
             return s, p2_half
         return s
