@@ -243,6 +243,21 @@ def test_cells_sphere_gw_sweep_gravity():
     _cells_case(mem, ud, step=1, flip=2)
 
 
+# ------------------------------------------------------- lat-lon pole fold
+
+
+def test_cells_sphere_pole_global():
+    # full pole-to-pole TC2: the phi POLE fold (pure index remap of all 6
+    # fields) + the periodic lambda + degenerate-r general wall, canonical
+    _cells_case(*fx.make_sphere_swe_global_mem())
+
+
+def test_cells_sphere_pole_sweep_phi():
+    # the phi POLE fold reached mid-sweep (phi swept last: split=2, 3 flips)
+    mem, ud = fx.make_sphere_swe_global_mem()
+    _cells_case(mem, ud, step=2, flip=3)
+
+
 # ------------------------------------------------------ set_ghost_nodes twin
 
 
@@ -273,6 +288,11 @@ def test_nodes_agnesi3d_quasi2d():
 
 def test_nodes_sphere_gw():
     _nodes_case(*fx.make_sphere_gw_mem())
+
+
+def test_nodes_sphere_pole_global():
+    # pole node fold: gather (reflect about the pole node) + pole-row ring-mean
+    _nodes_case(*fx.make_sphere_swe_global_mem())
 
 
 # ------------------------------------------------- rayleigh + scale-wall twins

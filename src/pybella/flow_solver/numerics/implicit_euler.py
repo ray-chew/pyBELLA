@@ -347,21 +347,25 @@ def _prepare_3d_system(mem, ud, dt):
     rhs_inner[mem.node.i1] = mem.npf.rhs[mem.node.i1]
 
     if _jax_backend(ud):
-        if pole_collapse.pole_axis_present(ud):
-            # the JAX twin of the pole-ring collapse lands in Stage F F7;
-            # until then a pole case must run on numpy (the JAX boundary
-            # config already fast-fails earlier — this guards the elliptic
-            # path too, belt and suspenders)
-            raise NotImplementedError(
-                "pole-ring elliptic collapse has no JAX twin yet (Stage F F7); "
-                "run the numpy backend for pole cases"
-            )
         from ...backends.jax_ops.laplacian import lap3D as jax_lap3D
 
-        return (
-            jax_lap3D.get_linop(mem.elem, mem.node, mem.npf, ud, diag_inv, dt, cij),
-            rhs_inner.ravel(),
-        )
+        raw = jax_lap3D.get_linop(mem.elem, mem.node, mem.npf, ud, diag_inv, dt, cij)
+        rhs_vec = rhs_inner.ravel()
+        if pole_collapse.pole_axis_present(ud):
+            # Pole-ring collapse (Stage F F7): the JAX lap3D already assembles
+            # the pole rows one-sided (it slab-zeroes the non-periodic phi
+            # axis, exactly like numpy). Wrap the matvec + gather the rhs with
+            # the Galerkin scatter/gather so the ring duplicates solve as one
+            # master; the post-solve scatter in do_implicit_part (backend-
+            # agnostic) broadcasts the master back over the ring.
+            coll = pole_collapse.get(mem.node)
+            mem._pole_collapse = coll
+            matvec = jax_lap3D.wrap_pole_collapse(raw, coll)
+            rhs_vec = coll.gather(rhs_vec)
+        else:
+            mem._pole_collapse = None
+            matvec = raw
+        return matvec, rhs_vec
 
     raw = lap3D.get_linop(mem.elem, mem.node, mem.npf, ud, diag_inv, dt, cij)
     sh = mem.npf.rhs.size

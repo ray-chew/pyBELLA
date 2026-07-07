@@ -12,6 +12,7 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 
+from pybella.utils import options as opts
 from pybella.flow_solver.physics import cfl as cfl_np
 
 from .device_config import build_device_config
@@ -115,6 +116,11 @@ def _check_supported(mem, ud, writer):
         problems.append("initial hydrostatic conversion ('imbal' aux)")
     if getattr(ud, "is_ArakawaKonor", 0):
         problems.append("Arakawa-Konor")
+    if any(bt == opts.BdryType.POLE for bt in ud.bdry_type):
+        # the device-resident pole twins (ghost fill, elliptic collapse, polar
+        # filter in the step loop) land in Stage F F7b; until then a POLE case
+        # must run on backend='jax' (hybrid), whose pole twins are F7a
+        problems.append("BdryType.POLE (device pole twins land in Stage F F7b)")
     if getattr(ud, "acoustic_timestep", 0) == 1:
         problems.append("acoustic timestep")
     if (
@@ -228,8 +234,17 @@ def run_window(mem, ud, tout, bld=None, writer=None):
         if conversion:
             write_back(s, mem)
         schemes.prepare_blending(
-            mem, ud, bld, label, writer, mem.time.step,
-            mem.time.window_step, mem.time.t, dt, False, False,
+            mem,
+            ud,
+            bld,
+            label,
+            writer,
+            mem.time.step,
+            mem.time.window_step,
+            mem.time.t,
+            dt,
+            False,
+            False,
         )
         if conversion:
             s = to_device(mem)
