@@ -148,6 +148,23 @@ def test_seam_agnesi2d_terrain():
     _assert_fields_close(mem_np, mem_jx, "agnesi2d-terrain")
 
 
+def test_seam_sphere_pole_global():
+    """Pole-to-pole shell: the elliptic pole-ring collapse (Stage F F7) — the
+    JAX lap3D one-sided pole rows wrapped in the Galerkin scatter/gather —
+    reproduces the numpy collapse through a full do_implicit_part. The systems
+    are bit-identical (assembly is numpy on both backends), so this agrees to
+    solver tolerance and, being a single well-conditioned solve, to machine
+    precision in practice."""
+    mem, ud = fx.make_sphere_swe_global_mem()
+    from pybella.flow_solver.utils.boundary import cell_boundary as bdry_c
+
+    bdry_c.set_ghost_cells(mem, ud)
+    dt = float(ud.dtfixed) if getattr(ud, "dtfixed", 0.0) else 0.01
+    mem_np, mem_jx = _run_both_backends(mem, ud, dt)
+    assert mem_jx._pole_collapse is not None and mem_np._pole_collapse is not None
+    _assert_fields_close(mem_np, mem_jx, "sphere-pole-global")
+
+
 def test_numpy_backend_is_default():
     mem, ud = fx.make_vortex2d_mem()
     assert getattr(ud, "backend", None) == "numpy"

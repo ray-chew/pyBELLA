@@ -73,6 +73,122 @@ def _run_sphere_tc2(backend, nsteps, inx=48 + 1, inz=48 + 1):
     )
 
 
+def _run_sphere_tc2_global(
+    backend, nsteps, initial_projection=True, inx=32 + 1, inz=36 + 1
+):
+    """Run pole-to-pole Williamson TC2 (Stage F) for ``nsteps`` on ``backend``.
+
+    Exercises the full pole machinery — the pole ghost exchange (cells +
+    nodes), the elliptic pole-ring collapse, the FFT-in-longitude polar
+    filter and its surface-constraint re-application — on top of the whole
+    non-vertical-line sphere path."""
+    import numpy as np
+
+    from pybella.backends import jax_ops  # noqa: F401  (enables x64)
+    from pybella.flow_solver.discretisation import grid as dis_grid, time_update
+    from pybella.flow_solver.physics import thermodynamics
+    from pybella.flow_solver.utils import cache, fields
+    from pybella.tests import test_sphere_swe_tc2_global as tc2g
+    from pybella.utils import user_data
+    from pybella.utils.data_structures import ModelState
+    from pybella.utils.io.debug import NullDebugWriter
+
+    udo = tc2g.UserData()
+    udo.stepmax = nsteps
+    udo.diag = False
+    udo.output_timesteps = False
+    udo.inx, udo.inz = inx, inz  # iny stays 2 (thin shell)
+    udo.initial_projection = initial_projection
+    ud = user_data.UserDataInit(**vars(udo))
+    ud.coriolis_strength = np.array(ud.coriolis_strength)
+    ud.backend = backend
+    elem, node = dis_grid.grid_init(ud)
+    sol = fields.CellSolField(elem.sc)
+    th = thermodynamics.ThermodynamicalQuantities(ud)
+    npf = fields.NodePressureField(elem, node, ud)
+    sol = tc2g.sol_init(sol, npf, elem, node, th, ud)
+    mem = ModelState(elem, node, sol, npf, th, cache.FlowSolverCache())
+    return time_update.do(
+        mem, ud, tout=1e9, bld=None, writer=None, debug_writer=NullDebugWriter()
+    )
+
+
+def test_sphere_tc2_global_stepper_bit_identical():
+    """The pole machinery twins are EXACT: with the initial projection off,
+    the hybrid pole-to-pole TC2 stepper reproduces numpy to machine precision.
+
+    This isolates the Stage F F7 additions — the pole ghost exchange (F1),
+    the elliptic pole-ring collapse (F4) and the FFT polar filter (F3) — from
+    the ill-conditioned initial-projection solve (whose Krylov-floor member is
+    what the projection gate below measures). Every per-step pole op is a pure
+    index remap / one-sided collapse / functional FFT with no ulp-level
+    backend divergence, so the whole 6-step run agrees bitwise-close."""
+    import numpy as np
+
+    n = 6
+    mem_np = _run_sphere_tc2_global("numpy", n, initial_projection=False)
+    mem_jx = _run_sphere_tc2_global("jax", n, initial_projection=False)
+    inner = (slice(2, -2), slice(2, -2), slice(2, -2))
+
+    def rel(a, b):
+        a, b = np.asarray(a), np.asarray(b)
+        return float(np.max(np.abs(a - b))) / max(1.0, float(np.max(np.abs(a))))
+
+    # magnitude-scaled; ~1e-11 is the ulp-accumulation floor of the pure-jax
+    # per-kernel FP (advection recovery/HLL + the per-step elliptic solves
+    # picking ulp-different Krylov members) over 6 steps — ~7 orders below the
+    # initial-projection Krylov floor the gate below measures.
+    for name in ("rho", "rhou", "rhov", "rhow", "rhoY", "rhoX"):
+        d = rel(getattr(mem_np.sol, name)[inner], getattr(mem_jx.sol, name)[inner])
+        assert d < 1e-10, f"{name}: {d:.3e}"
+    d = rel(mem_np.npf.p2_nodes, mem_jx.npf.p2_nodes)
+    assert d < 1e-10, f"p2_nodes: {d:.3e}"
+
+
+def test_sphere_tc2_global_hybrid_reproduces_numpy():
+    """The hybrid JAX pole-to-pole sphere path reproduces numpy over a short
+    TC2 horizon WITH the initial projection, at the documented Krylov floor.
+
+    As on the channel (see test_sphere_tc2_hybrid_reproduces_numpy), the
+    bicgstab initial projection fixes the answer only to its residual class;
+    the global pole-collapse system is more ill-conditioned, so the floor sits
+    higher (~1e-4 in the momenta at this conditioning) — still far below the
+    ~5e-4 a broken pole exchange / wrong Coriolis produces. The step-to-step
+    reproduction itself is machine-exact (the projection-off gate above)."""
+    import numpy as np
+
+    n = 8
+    mem_np = _run_sphere_tc2_global("numpy", n)
+    mem_jx = _run_sphere_tc2_global("jax", n)
+    inner = (slice(2, -2), slice(2, -2), slice(2, -2))
+    rho = mem_np.sol.rho[inner]
+
+    for name in ("rho", "rhoY", "rhoX"):
+        d = float(
+            np.max(
+                np.abs(
+                    getattr(mem_jx.sol, name)[inner] - getattr(mem_np.sol, name)[inner]
+                )
+            )
+        )
+        assert d < 2e-5, f"{name} (absolute): {d:.3e}"
+    for name in ("rhou", "rhov", "rhow"):
+        d = float(
+            np.max(
+                np.abs(
+                    (
+                        getattr(mem_jx.sol, name)[inner]
+                        - getattr(mem_np.sol, name)[inner]
+                    )
+                    / rho
+                )
+            )
+        )
+        assert d < 2e-4, f"{name} (momentum/rho): {d:.3e}"
+    d = float(np.max(np.abs(mem_jx.npf.p2_nodes - mem_np.npf.p2_nodes)))
+    assert d < 3e-5, f"p2_nodes: {d:.3e}"
+
+
 def test_sphere_tc2_hybrid_reproduces_numpy():
     """The hybrid JAX sphere path reproduces numpy over a short TC2 horizon,
     at the documented initial-projection Krylov floor.

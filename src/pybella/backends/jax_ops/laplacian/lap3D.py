@@ -137,6 +137,50 @@ def get_linop(elem, node, npf, ud, diag_inv, dt, cij):
     )
 
 
+# --------------------------------------------------------------------------
+# pole-ring collapse (Stage F, F7): Galerkin master-node embedding, twin of
+# ``numerics.pole_collapse.PoleCollapse``. The wrapped operator
+# ``gather o A o scatter`` solves each pole ring as a single master unknown;
+# the non-master ring entries stay exactly zero (scatter ignores them, gather
+# re-zeroes them), so the bicgstab plumbing is untouched.
+# --------------------------------------------------------------------------
+
+
+def _collapsed_apply(v, raw, scatter_src, ring_complement, uniq_mem, uniq_master):
+    """gather(raw(scatter(v))) on the flat solve vector (traced).
+
+    The ring is zeroed by a MASK MULTIPLY (``* ring_complement``), not a
+    ``.at[ring_all].set(0.0)`` integer scatter — jax's bicgstab wraps the
+    operator in ``custom_linear_solve``, which double-transposes it, and an
+    integer scatter-SET is not double-transposable (a non-unique scatter-ADD
+    is). Same numerics as ``numerics.pole_collapse.PoleCollapse.gather``."""
+    v = jnp.asarray(v, dtype=jnp.float64)
+    y = jnp.reshape(raw(v[scatter_src]), (-1,))
+    contrib = y[uniq_mem]  # read BEFORE masking (uniq_mem lands in the ring)
+    y = y * ring_complement
+    y = y.at[uniq_master].add(contrib)
+    return y
+
+
+def wrap_pole_collapse(raw, coll):
+    """Wrap a lap3D matvec (a ``tree_util.Partial``) with the pole-ring
+    Galerkin scatter/gather from a numpy ``PoleCollapse`` (index arrays only).
+
+    Returns a ``tree_util.Partial`` so repeated solves keep a stable function
+    identity and hit ``elliptic_solve._solve``'s jit cache (see its docstring
+    on the OOM risk of per-call closures)."""
+    ring_complement = np.ones(coll.n)
+    ring_complement[coll.ring_all] = 0.0
+    return jax.tree_util.Partial(
+        _collapsed_apply,
+        raw=raw,
+        scatter_src=jnp.asarray(coll.scatter_src),
+        ring_complement=jnp.asarray(ring_complement),
+        uniq_mem=jnp.asarray(coll.uniq_mem),
+        uniq_master=jnp.asarray(coll.uniq_master),
+    )
+
+
 def _lap3D_apply(p, C, hcenter, scales, perms, diag_inv, use_cross):
     # jnp.asarray (not np.asarray): must accept jax tracers as well as
     # eager numpy probes from the equivalence tests

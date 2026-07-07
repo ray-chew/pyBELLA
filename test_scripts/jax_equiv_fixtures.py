@@ -28,8 +28,9 @@ from pybella.tests import (
     test_lamb_wave,
     test_sphere_gw,
     test_sphere_swe_tc2,
+    test_sphere_swe_tc2_global,
 )
-from pybella.utils import axes, user_data
+from pybella.utils import axes, options as opts, user_data
 from pybella.utils.data_structures import ModelState
 from pybella.utils.operators.laplacian import preconditioner
 
@@ -116,6 +117,20 @@ def make_sphere_gw_mem():
     mem, ud = _mem_from_case(test_sphere_gw, inx=32 + 1, iny=4 + 1, inz=8 + 1)
     assert mem.elem.metric is not None and not mem.elem.metric.vertical_line
     assert mem.elem.metric.e_up is not None
+    return mem, ud
+
+
+def make_sphere_swe_global_mem():
+    """Full pole-to-pole Williamson TC2 (Stage F): ``BdryType.POLE`` phi walls,
+    a pole-enabled ``SphericalShellMap`` and the FFT polar filter. Exercises
+    the pole ghost exchange (cells + nodes) and the elliptic pole-ring collapse
+    on a thin global shell. Coarsened, projection skipped for fixture speed."""
+    mem, ud = _mem_from_case(
+        test_sphere_swe_tc2_global, inx=32 + 1, inz=24 + 1, initial_projection=False
+    )
+    assert any(bt == opts.BdryType.POLE for bt in ud.bdry_type)
+    assert mem.elem.metric is not None and not mem.elem.metric.vertical_line
+    assert getattr(ud, "polar_filter", None) is not None
     return mem, ud
 
 

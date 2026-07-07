@@ -103,6 +103,17 @@ def _no_gravity_fill(fields, dim, ig, bdry_type_int, normal_mom):
 _PERIODIC = 0
 _WALL = 1
 _GRAVITY = 2  # vertical axis with g != 0: hydrostatic fill
+_POLE = 3  # lat-lon pole fold (Stage F): pure index remap, no sign flip
+
+
+def _bdry_int(bt):
+    """Static per-axis bc code (PERIODIC / POLE both distinct from WALL; every
+    other type — WALL / RAYLEIGH — folds to the wall reflection)."""
+    if bt == opts.BdryType.PERIODIC:
+        return _PERIODIC
+    if bt == opts.BdryType.POLE:
+        return _POLE
+    return _WALL
 
 
 # --------------------------------------------------------------------------
@@ -595,6 +606,87 @@ def _apply_general_gravity_ops(fields, ops, meta):
 
 
 # --------------------------------------------------------------------------
+# lat-lon pole fold (Stage F, F7): pure index remap of the phi-ghost slabs
+#
+# Twin of ``cell_boundary._apply_pole_boundary`` / ``node_boundary
+# ._apply_pole_nodes``. A ghost cell/node past |phi| = pi/2 IS the interior
+# one on the far side of the pole (longitude lambda + pi, mirror latitude);
+# with GLOBAL Cartesian momenta every field — scalars and momenta alike —
+# copies with NO vector rotation and NO sign flip. The source index maps come
+# from the SAME ``common.pole_source_indices`` the numpy path uses (twin the
+# recipe, don't re-derive the np.roll-trap-free modular-interior indexing).
+# --------------------------------------------------------------------------
+
+
+def _pole_source_indices(ncx, ncz, ig, nodal):
+    from pybella.flow_solver.utils.boundary import common as bdry_common
+
+    return bdry_common.pole_source_indices(ncx, ncz, ig, nodal=nodal)
+
+
+def _pole_cell_plan(lam_axis, phi_axis, ncx, ncz, ig, ndim):
+    """Static gather plan for one orientation of the cell pole fold.
+
+    ``ncx``/``ncz`` are the padded lambda/phi extents in this orientation
+    (identical across orientations — the fold is a permutation of the same
+    interior block); only ``lam_axis``/``phi_axis`` differ per orientation."""
+    src_lam, src_phi, _ = _pole_source_indices(ncx, ncz, ig, nodal=False)
+    return {
+        "lam_axis": int(lam_axis),
+        "phi_axis": int(phi_axis),
+        "src_lam": jnp.asarray(src_lam),
+        "src_phi": jnp.asarray(src_phi),
+        "ncz": int(ncz),
+        "ig": int(ig),
+        "ndim": int(ndim),
+    }
+
+
+def _apply_pole_cells(fields, plan):
+    """Fold the phi-ghost slabs of all 6 fields (traced): gather from interior
+    lambda (+pi shift) and mirror latitude, overwrite only the ghost slabs."""
+    lam_axis, phi_axis = plan["lam_axis"], plan["phi_axis"]
+    src_lam, src_phi = plan["src_lam"], plan["src_phi"]
+    ncz, ig, ndim = plan["ncz"], plan["ig"], plan["ndim"]
+    slabs = (slice(0, ig), slice(ncz - ig, ncz))
+    for name in _FIELDS:
+        f = fields[name]
+        gathered = jnp.take(jnp.take(f, src_lam, axis=lam_axis), src_phi, axis=phi_axis)
+        for slab in slabs:
+            idx = _axslice(ndim, phi_axis, slab)
+            f = f.at[idx].set(gathered[idx])
+        fields[name] = f
+    return fields
+
+
+def _pole_node_fill(p, dim, ig):
+    """Node pole fold on axis ``dim`` (traced): the same gather (nodal index
+    maps: reflect about the pole NODE, lambda period N vs the cell N+1 seam)
+    plus the pole-row lambda-ring MEAN over the unique nodes (the +pi seam
+    duplicate excluded), holding p2 single-valued at the pole between solves.
+    Nodes are never sweep-flipped, so lambda is array axis 0 and phi is
+    ``dim``; shapes are concrete at trace time."""
+    ndim = p.ndim
+    lam_axis, phi_axis = 0, dim
+    ncx = int(p.shape[lam_axis])
+    ncz = int(p.shape[phi_axis])
+    src_lam, src_phi, slabs = _pole_source_indices(ncx, ncz, ig, nodal=True)
+    gathered = jnp.take(jnp.take(p, src_lam, axis=lam_axis), src_phi, axis=phi_axis)
+    for slab in slabs:
+        idx = _axslice(ndim, phi_axis, slab)
+        p = p.at[idx].set(gathered[idx])
+
+    n_int = (ncx - 2 * ig) - 1  # interior lambda intervals = unique nodes
+    for pole_row in (ig, ncz - 1 - ig):
+        src = [slice(None)] * ndim
+        src[phi_axis] = slice(pole_row, pole_row + 1)
+        src[lam_axis] = slice(ig, ig + n_int)
+        mean = p[tuple(src)].mean(axis=lam_axis, keepdims=True)
+        p = p.at[_axslice(ndim, phi_axis, slice(pole_row, pole_row + 1))].set(mean)
+    return p
+
+
+# --------------------------------------------------------------------------
 # config + jitted entry kernels per (orientation, mode)
 # --------------------------------------------------------------------------
 
@@ -619,21 +711,12 @@ class BoundaryConfig:
         self.v_phys = v_phys
         self.igs = tuple(int(i) for i in elem.igs)
         self.gravity_on = [float(ud.gravity_strength[d]) != 0.0 for d in range(ndim)]
-        self.bdry_int = [
-            _PERIODIC if ud.bdry_type[d] == opts.BdryType.PERIODIC else _WALL
-            for d in range(ndim)
-        ]
+        self.bdry_int = [_bdry_int(ud.bdry_type[d]) for d in range(ndim)]
         # RAYLEIGH off the gravity axis is asserted out, matching numpy
         for d in range(ndim):
             if ud.bdry_type[d] == opts.BdryType.RAYLEIGH and not self.gravity_on[d]:
                 raise AssertionError(
                     "Rayleigh boundary only defined on the gravity axis."
-                )
-            if ud.bdry_type[d] == opts.BdryType.POLE:
-                # Stage F JAX twins for the pole exchange land in F7; until
-                # then a POLE axis must not silently fall through to _WALL.
-                raise NotImplementedError(
-                    "BdryType.POLE JAX ghost exchange not yet implemented (F7)"
                 )
 
         meta = {
@@ -692,6 +775,47 @@ class BoundaryConfig:
                     self.general_wall_fill[d] = self._make_general_wall_fill(
                         N_canon, d, self.igs[d]
                     )
+
+        # lat-lon pole fold (Stage F): the phi ghost slabs are filled by a pure
+        # index remap. Precompute the gather plan per orientation ("phys" =
+        # canonical; "sweep" = the pole axis swept last, reached in the phi
+        # advection sweep). The pole axis is the h2 (phi) array axis of the
+        # spherical metric; lambda is h1.
+        self.pole_cell_fill = None
+        pole_dims = [d for d in range(ndim) if ud.bdry_type[d] == opts.BdryType.POLE]
+        if pole_dims:
+            assert (
+                elem.metric is not None and not elem.metric.vertical_line
+            ), "POLE needs a spherical (non-vertical-line) metric"
+            mc = _canonical_metric(elem.metric, v_phys)
+            lam_phys, phi_phys = int(mc.cart_haxes[0]), int(mc.cart_haxes[1])
+            assert phi_phys == pole_dims[0], "POLE axis must be the h2 (phi) axis"
+            sc = tuple(int(x) for x in elem.sc)
+            ig = self.igs[lam_phys]
+            ncx, ncz = sc[lam_phys], sc[phi_phys]
+            # canonical orientation
+            phys_plan = _pole_cell_plan(lam_phys, phi_phys, ncx, ncz, ig, ndim)
+            # sweep of the phi axis: k = phi_phys + 1 cyclic flips place phi
+            # last; array axis a then holds canonical axis (a + k) mod ndim
+            k = phi_phys + 1
+            lam_sweep = (lam_phys - k) % ndim
+            phi_sweep = (phi_phys - k) % ndim
+            sweep_plan = _pole_cell_plan(lam_sweep, phi_sweep, ncx, ncz, ig, ndim)
+            self.pole_cell_fill = {
+                "phys": self._make_pole_cell_fill(phys_plan),
+                "sweep": self._make_pole_cell_fill(sweep_plan),
+            }
+
+    def _make_pole_cell_fill(self, plan):
+        @jax.jit
+        def fill(rho, rhou, rhov, rhow, rhoY, rhoX):
+            fields = dict(
+                rho=rho, rhou=rhou, rhov=rhov, rhow=rhow, rhoY=rhoY, rhoX=rhoX
+            )
+            fields = _apply_pole_cells(fields, plan)
+            return tuple(fields[n] for n in _FIELDS)
+
+        return fill
 
     def _make_general_gravity_fill(self, ops):
         meta = {
@@ -798,6 +922,11 @@ def set_ghost_cells(mem, ud, step=None, sol=None):
         if cfg.gravity_on[current_step]:
             orientation = "sweep" if step is not None else "phys"
             out = cfg.gravity_fill[orientation](*arrays)
+        elif cfg.bdry_int[current_step] == _POLE:
+            # lat-lon pole fold (Stage F): pure index remap of the phi ghost
+            # slabs. Reached canonically (step=None) or during the phi sweep.
+            orientation = "sweep" if step is not None else "phys"
+            out = cfg.pole_cell_fill[orientation](*arrays)
         elif dim == current_step and current_step in cfg.general_wall_fill:
             # general (spherical) free-slip wall. Only reached at canonical
             # orientation (dim == current_step): step=None fills every axis
@@ -852,6 +981,8 @@ def _node_fill_fn(ndim, igs, bdry_ints, degen):
         for dim in range(ndim):
             if bdry_ints[dim] == _PERIODIC:
                 p = _periodic_plus_one_fill(p, dim, igs[dim])
+            elif bdry_ints[dim] == _POLE:
+                p = _pole_node_fill(p, dim, igs[dim])
             else:
                 p = _reflect_fill(p, dim, igs[dim])
         for dim, sc in degen:
@@ -867,10 +998,7 @@ def set_ghost_nodes(p, node, ud, igs=None):
     """Drop-in twin of node_boundary.set_ghost_nodes (mutates p)."""
     if igs is None:
         igs = node.igs
-    bdry_ints = tuple(
-        _PERIODIC if ud.bdry_type[d] == opts.BdryType.PERIODIC else _WALL
-        for d in range(node.ndim)
-    )
+    bdry_ints = tuple(_bdry_int(ud.bdry_type[d]) for d in range(node.ndim))
     degen = tuple((int(d), int(node.sc[d])) for d in axes.degenerate_axes(node))
     fn = _node_fill_fn(node.ndim, tuple(int(i) for i in igs), bdry_ints, degen)
     p[...] = np.asarray(fn(jnp.asarray(p)))
