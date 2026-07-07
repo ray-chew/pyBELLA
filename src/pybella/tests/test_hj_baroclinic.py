@@ -206,6 +206,14 @@ def _coord(grid_obj, axis):
 
 
 def sol_init(Sol, npf, elem, node, th, ud, seed=None):
+    # latitude clamp for the analytic Ullrich fill. The channel case walls at
+    # +-80 deg, so its ghost latitudes must be clipped just inside the pole
+    # (cos^K is NaN past |phi| = 90 deg); the global (pole=True) variant folds
+    # its ghosts back to interior latitudes and puts a node exactly at the
+    # pole, so it overrides this to pi/2 (Stage F F8). Both leave the interior
+    # untouched (interior cells / non-pole nodes are strictly inside the clip).
+    phi_clip = float(getattr(ud, "phi_clip", _PHI_CLIP))
+
     # --- vertical hydrostatic balance: z-only equatorial reference ---------
     # integrated_state routes to the field-mode terrain branch (g != 0 and a
     # metric is present): a discretely well-balanced column from the
@@ -217,7 +225,7 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     # --- full analytic Ullrich state on the CELL grid ----------------------
     lam_c = _coord(elem, 0)
     phi_c = _coord(elem, 2)
-    phi_eval = np.clip(phi_c, -_PHI_CLIP, _PHI_CLIP)
+    phi_eval = np.clip(phi_c, -phi_clip, phi_clip)
     z_c = elem.metric.height * ud.h_ref  # dimensional height [m]
 
     p_c = ub.pressure(phi_eval, z_c)
@@ -241,7 +249,7 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     Sol.rhoX[...] = Sol.rho * (Sol.rho / Sol.rhoY - S0c)
 
     # --- meridional pressure structure -> Exner perturbation p2 (nodes) ----
-    phi_n = np.clip(_coord(node, 2), -_PHI_CLIP, _PHI_CLIP)
+    phi_n = np.clip(_coord(node, 2), -phi_clip, phi_clip)
     z_n = node.metric.height * ud.h_ref
     pi_full_n = (ub.pressure(phi_n, z_n) / ud.p_ref) ** th.Gamma  # (p/P0)^kappa
     npf.p2_nodes[...] = pi_full_n / ud.Msq - npf.HydroState_n.p20

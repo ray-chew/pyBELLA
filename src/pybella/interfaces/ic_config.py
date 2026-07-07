@@ -22,6 +22,8 @@ IC_MODULES = {
     "test_sphere_gw": "pybella.tests.test_sphere_gw",
     "test_hj_baroclinic": "pybella.tests.test_hj_baroclinic",
     "test_hj_baroclinic_ridges": "pybella.tests.test_hj_baroclinic_ridges",
+    "test_hj_baroclinic_global": "pybella.tests.test_hj_baroclinic_global",
+    "test_hj_baroclinic_ridges_global": "pybella.tests.test_hj_baroclinic_ridges_global",
     "test_straka": "pybella.tests.test_straka",
     "test_agnesi_hydrostatic": "pybella.tests.test_agnesi_hydrostatic",
     "test_agnesi_3d": "pybella.tests.test_agnesi_3d",
