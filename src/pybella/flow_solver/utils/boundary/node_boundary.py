@@ -1,6 +1,7 @@
 import numpy as np
 from ....utils import axes
 from ....utils import options as opts
+from . import common as bdry
 from .common import get_ghost_padding
 from ....backends import is_jax_backend
 
@@ -19,10 +20,7 @@ def set_ghost_nodes(p, node, ud, igs=None):
         if ud.bdry_type[dim] == opts.BdryType.PERIODIC:
             p[...] = np.pad(p[idx], ghost_padding, periodic_plus_one)
         elif ud.bdry_type[dim] == opts.BdryType.POLE:
-            # Stage F pole node exchange + ring collapse lands in F1/F4.
-            raise NotImplementedError(
-                "BdryType.POLE node ghost exchange not yet implemented (F1)"
-            )
+            _apply_pole_nodes(p, node, dim)
         else:  # ud.bdry_type[dim] == opts.BdryType.WALL:
             p[...] = np.pad(p[idx], ghost_padding, "reflect")
 
@@ -33,6 +31,36 @@ def set_ghost_nodes(p, node, ud, igs=None):
         slc[dim] = node.igs[dim]
         pn = np.expand_dims(p[tuple(slc)], axis=dim)
         p[...] = np.repeat(pn, node.sc[dim], axis=dim)
+
+
+def _apply_pole_nodes(p, node, dim):
+    """Pole node exchange + ring-consistency on the phi axis (Stage F, F1).
+
+    Same pure index remap as the cell fill, on the node pressure field.
+    Additionally forces the two pole-node rows (phi = +-pi/2, one physical
+    point per radius) to their lambda-ring MEAN, keeping p2 single-valued
+    at the pole between elliptic solves (the collapse in F4 produces it
+    single-valued; this holds it so between solves). Nodes are never
+    sweep-flipped, so lambda is array axis 0 and phi is ``dim``.
+    """
+    lam_axis, phi_axis = 0, dim
+    ig = int(node.igs[0])
+    ncx = p.shape[lam_axis]
+    ncz = p.shape[phi_axis]
+    src_lam, src_phi, slabs = bdry.pole_source_indices(ncx, ncz, ig, nodal=True)
+    bdry.pole_exchange_field(p, lam_axis, phi_axis, src_lam, src_phi, slabs)
+
+    # ring-consistency: each pole row -> its unique-longitude ring mean
+    # (exclude the +pi seam duplicate node); broadcast over all longitudes
+    n_int = (ncx - 2 * ig) - 1  # interior lambda intervals = unique nodes
+    for pole_row in (ig, ncz - 1 - ig):
+        src = [slice(None)] * p.ndim
+        src[phi_axis] = slice(pole_row, pole_row + 1)
+        src[lam_axis] = slice(ig, ig + n_int)
+        mean = p[tuple(src)].mean(axis=lam_axis, keepdims=True)
+        dst = [slice(None)] * p.ndim
+        dst[phi_axis] = slice(pole_row, pole_row + 1)
+        p[tuple(dst)] = mean
 
 
 def periodic_plus_one(vector, pad_width, iaxis, kwargs=None):

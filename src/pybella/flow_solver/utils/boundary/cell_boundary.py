@@ -5,6 +5,7 @@ For more details on this module, refer to the write-up :ref:`boundary_handling`.
 import numpy as np
 from ....utils import axes
 from ....utils import options as opts
+from . import common as bdry
 from .common import get_ghost_padding
 from ....backends import is_jax_backend
 
@@ -64,13 +65,31 @@ class CellBoundaryHandler:
                     normal_mom=axes.MOMENTA[current_step],
                 )
         elif bdry_type == opts.BdryType.POLE:
-            # Stage F pole ghost exchange (index remap lambda -> lambda + pi,
-            # phi mirrored, no vector rotation) lands in increment F1.
-            raise NotImplementedError(
-                "BdryType.POLE cell ghost exchange not yet implemented (F1)"
-            )
+            self._apply_pole_boundary(sol)
         elif bdry_type == opts.BdryType.RAYLEIGH:
             raise AssertionError("Rayleigh boundary only defined on the gravity axis.")
+
+    def _apply_pole_boundary(self, sol):
+        """Pole ghost exchange on the phi axis (Stage F, F1).
+
+        The pole is a coordinate singularity, not a wall: a ghost cell past
+        |phi| = pi/2 IS the interior cell on the far side of the pole
+        (longitude lambda + pi, mirror latitude). Because momenta are global
+        Cartesian, every field — scalars and momenta alike — copies with no
+        sign flip. lambda and phi array axes are read from the (possibly
+        sweep-flipped) metric orientation.
+        """
+        m = self.metric
+        assert m is not None and not m.vertical_line, "POLE needs a spherical metric"
+        lam_axis, phi_axis = m.haxes[0], m.haxes[1]
+        ig = self.igs[0]
+        ncx = sol.rho.shape[lam_axis]
+        ncz = sol.rho.shape[phi_axis]
+        src_lam, src_phi, slabs = bdry.pole_source_indices(ncx, ncz, ig, nodal=False)
+        for name in ("rho", "rhou", "rhov", "rhow", "rhoY", "rhoX"):
+            bdry.pole_exchange_field(
+                getattr(sol, name), lam_axis, phi_axis, src_lam, src_phi, slabs
+            )
 
     def apply_gravity_boundary(self, sol, dim, ghost_padding, step):
         """Apply boundary conditions for axes with gravity.

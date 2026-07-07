@@ -39,6 +39,54 @@ def get_ghost_padding(ndim, dim, igs):
     return tuple(ghost_padding), tuple(inner_domain)
 
 
+def pole_source_indices(ncx, ncz, ig, nodal):
+    """Index maps realizing the lat-lon pole fold (Stage F).
+
+    A ghost cell/node past |phi| = pi/2 covers the physical point on the
+    FAR side of the pole, at longitude lambda + pi and the mirror latitude.
+    With GLOBAL Cartesian momenta the exchange is a pure index remap (no
+    vector rotation): the source is an INTERIOR cell obtained by
+
+    * shifting longitude by half the ring (``+pi`` = N/2 cells, always
+      landing inside the interior lambda range — so the fill never reads a
+      stale lambda-ghost column, order-independent within a sweep), and
+    * mirroring latitude across the pole (cells mirror about the boundary
+      FACE, nodes reflect about the pole NODE).
+
+    ``ncx``/``ncz`` are the full padded lambda/phi extents, ``ig`` the ghost
+    width. Returns ``(src_lam, src_phi, ghost_phi_slabs)`` where ``src_lam``
+    is length ``ncx``, ``src_phi`` length ``ncz`` (identity on interior phi
+    rows — only the ghost slabs are overwritten by the caller).
+    """
+    # interior lambda period in CELLS (nodes carry the +pi seam duplicate,
+    # so their interior count is one larger); the +pi remap is N/2 cells
+    N = (ncx - 2 * ig) - (1 if nodal else 0)
+    j = np.arange(ncx)
+    src_lam = ig + ((j - ig + N // 2) % N)
+
+    src_phi = np.arange(ncz)
+    lo = np.arange(0, ig)
+    hi = np.arange(ncz - ig, ncz)
+    if nodal:  # reflect about the pole node
+        src_phi[lo] = 2 * ig - lo
+        src_phi[hi] = 2 * (ncz - 1 - ig) - hi
+    else:  # mirror about the wall face
+        src_phi[lo] = 2 * ig - 1 - lo
+        src_phi[hi] = 2 * (ncz - ig) - 1 - hi
+    return src_lam, src_phi, (slice(0, ig), slice(ncz - ig, ncz))
+
+
+def pole_exchange_field(arr, lam_axis, phi_axis, src_lam, src_phi, ghost_slabs):
+    """In-place pole fold of one field's phi-ghost slabs (see
+    :func:`pole_source_indices`). The source is gathered from interior
+    lambda/phi only, so no vector components rotate and no sign flips."""
+    gathered = np.take(np.take(arr, src_lam, axis=lam_axis), src_phi, axis=phi_axis)
+    for slab in ghost_slabs:
+        dst = [slice(None)] * arr.ndim
+        dst[phi_axis] = slab
+        arr[tuple(dst)] = gathered[tuple(dst)]
+
+
 def scale_wall_node_values(rhs, node, ud, factor=0.5):
     """Scale values at wall boundary nodes by a given factor."""
     if is_jax_backend(ud):
