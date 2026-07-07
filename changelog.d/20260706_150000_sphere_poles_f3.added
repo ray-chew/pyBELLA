@@ -1,0 +1,8 @@
+Stage F (poles) F3: FFT-in-longitude polar filter. ``ud.polar_filter`` (a
+``PolarFilter(phi_c, p)``) damps the CFL-violating zonal wavenumbers poleward
+of ``phi_c`` once per step with the classic transfer function
+r(k,phi) = min(1, [(cos phi/cos phi_c)/sin(pi k/N)]^p); it acts on the
+J-weighted conservative fields and leaves k=0 untouched, so every longitude
+ring's integral is conserved to roundoff (terrain-safe). The advective CFL is
+correspondingly relieved by cos(phi)/cos(phi_c) near the poles. ``None`` -> the
+solver is bit-identical. Gated by ``test_scripts/test_sphere_polar_filter.py``.
