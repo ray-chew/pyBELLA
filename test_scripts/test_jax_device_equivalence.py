@@ -114,6 +114,15 @@ def test_window_sphere_swe():
     _window_case(mem, ud, nsteps=2)
 
 
+def test_window_sphere_swe_global():
+    # full pole-to-pole TC2 (Stage F F7b): the device pole ghost fold in
+    # _ghost_fill, the elliptic pole-ring collapse in the device solve, and
+    # the FFT polar filter + surface constraint inside the device step loop
+    mem, ud = fx.make_sphere_swe_global_mem()
+    mem_d = _window_case(mem, ud, nsteps=2)
+    assert mem_d._device_compile_count == 2  # parity 0 and 1 only
+
+
 def test_seam_routes_to_device():
     from unittest import mock
 

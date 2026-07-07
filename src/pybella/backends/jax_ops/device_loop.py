@@ -12,7 +12,6 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 
-from pybella.utils import options as opts
 from pybella.flow_solver.physics import cfl as cfl_np
 
 from .device_config import build_device_config
@@ -66,6 +65,13 @@ def _cfl_maxima(s, cfg):
             norm_sq = norm_sq + Na[ch2] ** 2
         vels[a] = jnp.abs(contra / rho) * m.ooJ
         cs[a] = c * jnp.sqrt(norm_sq) * m.ooJ
+    # polar filter (Stage F): the surviving longitude modes have an effective
+    # speed scaled by ~cos(phi)/cos(phi_c) near the poles, so the longitude CFL
+    # is relieved by that factor — mirrors cfl.dynamic_timestep's filter cap
+    if cfg.filter_cap is not None:
+        lam_axis = m.cart_haxes[0]
+        vels[lam_axis] = vels[lam_axis] * cfg.filter_cap
+        cs[lam_axis] = cs[lam_axis] * cfg.filter_cap
     u, v, w = vels
     return jnp.stack(
         [
@@ -116,11 +122,6 @@ def _check_supported(mem, ud, writer):
         problems.append("initial hydrostatic conversion ('imbal' aux)")
     if getattr(ud, "is_ArakawaKonor", 0):
         problems.append("Arakawa-Konor")
-    if any(bt == opts.BdryType.POLE for bt in ud.bdry_type):
-        # the device-resident pole twins (ghost fill, elliptic collapse, polar
-        # filter in the step loop) land in Stage F F7b; until then a POLE case
-        # must run on backend='jax' (hybrid), whose pole twins are F7a
-        problems.append("BdryType.POLE (device pole twins land in Stage F F7b)")
     if getattr(ud, "acoustic_timestep", 0) == 1:
         problems.append("acoustic timestep")
     if (
