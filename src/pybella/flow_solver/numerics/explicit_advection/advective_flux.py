@@ -3,10 +3,33 @@ import numpy as np
 from numba import njit
 
 from ....utils.operators import convolution
+from ....utils import options as opts
 from ....utils import slices
 from ....backends import is_jax_backend
 
 _MOMENTA = ("rhou", "rhov", "rhow")
+_ALL_FLUX = ("rho", "rhou", "rhov", "rhow", "rhoY", "rhoX")
+
+
+def zero_pole_faces(container, names, ig):
+    """Zero the flux through the two pole faces (Stage F, F2).
+
+    The pole face has ZERO area in the continuum (the lat-lon meridians
+    converge to a single point), so no flux crosses it. The discrete face
+    flux, built by convolving cell values, is a nonzero O(dphi^2) residual
+    that BOTH pole-adjacent cells (at lambda and lambda + pi) would
+    subtract with the same sign — a systematic double-loss mass/tracer
+    leak (the sphere analogue of the stage-D5 radial-wall leak). Zeroing it
+    makes the pole a no-flux edge; over-pole transport is carried by the
+    LONGITUDE fluxes of the polar cells (standard lat-lon FV). The face
+    axis is the last array axis of the (sweep-oriented) flux container.
+    """
+    nfaces = getattr(container, names[0]).shape[-1]
+    lo, hi = ig, nfaces - 1 - ig
+    for name in names:
+        arr = getattr(container, name)
+        arr[..., lo] = 0.0
+        arr[..., hi] = 0.0
 
 
 def _normal_momentum(sol, metric, i):
@@ -78,3 +101,14 @@ def recompute(mem, ud=None, **kwargs):
         flux[i].rhoY[inner_idx] = convolution.apply_directional_convolution(
             rhoY_vel, kernels[comp], comp, ndim
         )
+
+        # pole axis: the advecting mass flux through the zero-area pole face
+        # must vanish (Stage F, F2), or the polar-cell reconstruction sees a
+        # spurious through-pole Courant velocity
+        if (
+            ud is not None
+            and metric is not None
+            and not metric.vertical_line
+            and ud.bdry_type[i] == opts.BdryType.POLE
+        ):
+            zero_pole_faces(flux[i], ("rhoY",), int(mem.elem.igs[i]))

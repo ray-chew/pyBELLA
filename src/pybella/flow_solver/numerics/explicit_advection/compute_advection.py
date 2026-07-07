@@ -2,9 +2,10 @@ import numba as nb
 
 from ....backends import is_jax_backend
 from ....utils import axes
+from ....utils import options as opts
 from ....utils.slices import get_neighbor_indices
 from ...utils.boundary import cell_boundary as bdry_c
-from . import recovery, riemann_solver
+from . import advective_flux, recovery, riemann_solver
 
 
 def _flip_forward(mem):
@@ -105,6 +106,14 @@ def _explicit_step_and_flux(mem, ud, lmbda, split_step, tag=None):
     flux = mem.cache.get_flux_containers(mem.elem)[split_step]
 
     flux = _compute_flux_and_recovery(mem, flux, ud, lmbda, split_step, tag)
+
+    # pole axis: kill the conservative flux through the zero-area pole faces
+    # so no mass/tracer leaks there (Stage F, F2). Over-pole transport is
+    # carried by the longitude sweep.
+    if ud.bdry_type[split_step] == opts.BdryType.POLE:
+        advective_flux.zero_pole_faces(
+            flux, advective_flux._ALL_FLUX, int(mem.elem.igs[split_step])
+        )
 
     # Consider caching neighbor indices
     left_idx, right_idx = get_neighbor_indices(mem.elem.ndim)
