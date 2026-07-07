@@ -10,7 +10,8 @@ from ...utils import options as opts
 from ..utils.boundary import rayleigh_boundary as bdry_r
 from ..physics import cfl, eos, surface_constraint
 from ..numerics.explicit_advection import advective_flux, compute_advection
-from ..numerics import diffusion, explicit_euler, implicit_euler
+from ..numerics import diffusion, explicit_euler, implicit_euler, polar_filter
+from ..utils.boundary import cell_boundary as bdry_c
 
 # for blending module
 from ...interfaces.dynamics_blending import schemes
@@ -143,6 +144,13 @@ def do(
             corrector_full_step(
                 mem, ud, dt, predictor_state, writer, debug_writer, label
             )
+
+        # Polar filter (Stage F): damp the CFL-violating zonal modes near
+        # the poles once per step, then refresh ghosts so the pole exchange
+        # sees the filtered interior. No-op unless ud.polar_filter is set.
+        if getattr(ud, "polar_filter", None) is not None:
+            polar_filter.apply(mem, ud)
+            bdry_c.set_ghost_cells(mem, ud)
 
         ######################################################
         # Blending : Do blending after timestep
