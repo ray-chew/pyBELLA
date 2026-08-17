@@ -11,15 +11,15 @@ blending setup mirrors ``test_blending_warm_bubble``:
   ``no_of_hy_initial = 1``) runs the first step in the hydrostatic regime
   (``is_nonhydrostatic = 0``), then flips to nonhydrostatic -- the hydrostatic
   elliptic operator + explicit vertical-momentum switch carry the balance, with
-  NO explicit conversion routine (thesis-era RKLM_Python mechanism);
+  NO explicit conversion routine (the mechanism inherited from the predecessor
+  RKLM_Python code);
 * ``no_of_pi_initial = 0`` disables comp<->psinc blending so only the
   hydro<->nonhydro switch is exercised.
 
 The hydrostatic background MUST use ``hydrostatics.integrated_state`` (the
 stratification-consistent quadrature), not the isothermal ``analytical_state`` --
 this case is constant-N. The isothermal background gave N^2 3.19x too large and a
-huge spurious ``rhoX`` that broke the blend; see
-``dev_notes/hydrostatic_blending.md`` "ROOT CAUSE".
+huge spurious ``rhoX`` that broke the blend.
 
 Like the warm-bubble case this is a *reproducibility gate*: all dynamic fields
 are un-gated (tol 1.0) and only ``p2_nodes`` is gated (the blending must keep the
@@ -98,7 +98,7 @@ class UserData(object):
         self.is_compressible = 1
         self.is_nonhydrostatic = 1
 
-        # Schedule-driven blend (thesis-era RKLM_Python mechanism): the eos
+        # Schedule-driven blend (inherited from RKLM_Python): the eos
         # schedule (physics/eos.py) sets is_nonhydrostatic = 0 for the first
         # ``no_of_hy_initial`` steps then flips to 1 -- the hydrostatic elliptic
         # operator + explicit vertical-momentum switch carry the balance, with

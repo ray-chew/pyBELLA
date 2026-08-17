@@ -28,7 +28,7 @@ import yaml
 # --case tv (default): 2-cycle noib TV — conversion-free, gate BITWISE-tight
 #   (1e-8; measured 0.0 on CPU jax and H100).
 # --case igw3d: 2-cycle 3D igw with initial blending ON — the window-0 psinc
-#   segments seed Krylov-floor-level vmap/loop diffs (D4 finding), gate 1e-7.
+#   segments seed Krylov-floor-level vmap/loop diffs, gate 1e-7.
 CASES = {
     "tv": {
         "obs_glob": "outputs/test_travelling_vortex/*ensemble=1_64_64*_obs.h5",
@@ -102,9 +102,9 @@ def main() -> int:
             worst, worst_at = d, rel
         checked += 1
     gate = case["gate"]
-    assert worst <= gate, (
-        f"vmap vs loop max-abs {worst:.3e} at {worst_at} exceeds gate {gate:.0e}"
-    )
+    assert (
+        worst <= gate
+    ), f"vmap vs loop max-abs {worst:.3e} at {worst_at} exceeds gate {gate:.0e}"
     print(
         f"PASS [{name}]: {checked} member checkpoints, vmap vs loop max-abs "
         f"{worst:.3e} (gate {gate:.0e})"

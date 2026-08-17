@@ -157,8 +157,8 @@ def apply_rayleigh_forcing(
 def _vertical_profile(profile, ndim, vaxis):
     """Broadcast a 1D vertical sponge profile against ndim cell fields.
 
-    Reproduces the legacy implicit (1, -1) broadcast for 2D x-y exactly;
-    scalars (the inactive 0.0 sentinels) pass through.
+    For 2D x-y this is exactly the implicit (1, -1) reshape; scalars (the
+    inactive 0.0 sentinels) pass through.
     """
     if not isinstance(profile, np.ndarray) or profile.ndim != 1:
         return profile

@@ -1,9 +1,9 @@
 """JAX backend equivalence: every jax_ops twin vs its numpy golden master.
 
-Component 1 of the JAX migration (dev_notes/jax_migration.md): the pure
-operator layer. Inputs are realistic coefficient fields captured from small
-real cases (see jax_equiv_fixtures), covering periodic/WALL/atmosphere
-boundaries and the terrain metric, plus synthetic fields for shape coverage.
+The pure operator layer. Inputs are realistic coefficient fields captured
+from small real cases (see jax_equiv_fixtures), covering
+periodic/WALL/atmosphere boundaries and the terrain metric, plus synthetic
+fields for shape coverage.
 
 Tolerances (x64), scaled by field magnitude: XLA's CPU codegen lowers
 float64 division to reciprocal-multiply (verified: jax output equals

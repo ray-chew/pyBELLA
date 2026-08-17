@@ -11,9 +11,11 @@ def get_linop(elem, node, npf, ud, diag_inv, dt, cij):
     cell-to-node i-difference, and C_ij the (axis-indexed) coefficient
     fields (Gamma^-1 P Theta) * H^-1 — the same H^-1 the momentum
     correction applies, making the elliptic operator consistent with it.
-    The legacy operator used bare diagonal coefficients plus hand-coded
-    x-z `corrf` cross terms; with H^-1 = identity (no rotation, no
-    buoyancy) this operator reproduces it exactly.
+    On a uniform-Cartesian grid with H^-1 = identity (no rotation, no
+    buoyancy) the off-diagonal C_ij vanish and the operator reduces to
+    the plain diagonal-coefficient Laplacian (``use_cross`` below is then
+    False). A metric does NOT vanish with H^-1: the caller folds it in as
+    J A^T H^-1 A, whose -G1/-G2 off-diagonals keep the cross terms alive.
 
     The solve vector is the C-order ravel of an array shaped node.isc
     (interior nodes plus one ghost layer per side, [x, y, z]). The outer
@@ -131,11 +133,9 @@ def lap3D(
     cnt = 0
     for bc in periodicity:
         if bc == True and cnt == 0:
-            # tmp must snapshot the row: as a view, the closing write-back
-            # is a no-op and the duplicate rows 1/-2 are mirrored instead of
-            # exchanged (outcome-identical on the periodically consistent
-            # subspace the solver visits, but the operator column at row 1
-            # goes dead; fixed 2026-06-10, proven bit-identical end-to-end)
+            # tmp must be a COPY, not a view: as a view the closing
+            # write-back is a no-op, rows 1/-2 get mirrored instead of
+            # exchanged and the operator column at row 1 goes dead
             tmp = p[1, :, :].copy()
             p[0, :, :] = p[-3, :, :]
             p[-1, :, :] = p[2, :, :]
@@ -191,7 +191,7 @@ def lap3D(
         + z_fluxes[botrights[2]]
     )
 
-    # diagonal blocks: D_i(C_ii F_i), exactly the legacy structure
+    # diagonal blocks: D_i(C_ii F_i)
     q = c00 * x_flx
     qm = q[:-1, :, :]
     x_flxm = qm[toplefts[0]] + qm[toprights[0]] + qm[botlefts[0]] + qm[botrights[0]]

@@ -18,9 +18,9 @@ x = 0 km, z = 3 km with radii (4 km, 2 km):
 Non-dimensionalisation: h_ref = 10 km, t_ref = 1000 s (u_ref = 10 m/s),
 T_ref = 300 K, p_ref = 1e5 Pa; K* = K t_ref / h_ref^2 = 7.5e-4.
 
-This is the suite's only nonlinear, advection-dominated gravity+wall case
-(regression_harness.md gap #4). It supersedes the legacy
-``rising_bubble_cold`` IC.
+This is the suite's only nonlinear, advection-dominated gravity+wall case.
+It supersedes the ``rising_bubble_cold`` IC (recoverable from the git tag
+``archive/full_coriolis``).
 """
 
 import numpy as np

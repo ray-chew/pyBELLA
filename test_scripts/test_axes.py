@@ -1,4 +1,4 @@
-"""Unit tests for the axis-geometry module (axial-agnosticity Phase 0)."""
+"""Unit tests for the axis-geometry module."""
 
 import numpy as np
 import pytest
@@ -73,7 +73,8 @@ def test_expand_profile_reproduces_legacy_for_v1(ndim):
     counts = (4, 7, 5)[:ndim]
     prof = rng.standard_normal(counts[1])
 
-    # legacy construction (fields.py get_dSdy / get_S0c)
+    # the hand-rolled expand/repeat construction fields.py used to inline;
+    # get_dSdy / get_S0c now call axes.expand_profile, which must match it
     legacy = prof
     for dim in range(0, ndim, 2):
         legacy = np.expand_dims(legacy, dim)

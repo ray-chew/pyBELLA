@@ -16,7 +16,7 @@ class UserData(object):
     """
     Balanced shallow-water vortex — demonstration-grade SWE regression case.
 
-    Port of the legacy ``balanced_shallow_water_2D.py`` (git tag
+    Port of ``RKLM_Python/inputs/balanced_shallow_water_2D.py`` (git tag
     ``archive/full_coriolis``). The shallow-water equations are run through
     the gas-dynamics solver via the gamma = 2 equivalence::
 
@@ -27,11 +27,11 @@ class UserData(object):
     with Msq = 1 (h_ref = t_ref = T_ref = R_gas = 1) and zero vertical
     gravity; the SWE gravity g enters only through the pressure law.
 
-    Deviations from the legacy case (kept to demo scope):
+    Deviations from that case (kept to demo scope):
 
     - grid reduced from 150x150 to 64x64, run shortened to t = 31000 s
       (31 steps of dt = 1000 s),
-    - x and y boundaries set periodic (legacy used walls; the mirror-image
+    - x and y boundaries set periodic (the original used walls; the mirror-image
       vortex construction assumes periodicity),
     - the nodal pressure is evaluated analytically on the node grid instead
       of cubic scattered-data interpolation of the cell field, so the golden

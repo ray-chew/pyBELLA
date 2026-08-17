@@ -1,10 +1,10 @@
-"""Stage F, increment F5: Williamson TC2 on the FULL pole-to-pole sphere.
+"""Williamson TC2 on the FULL pole-to-pole sphere.
 
-The acid test that the pole ghost exchange (F1), pole-face flux closure
-(F2), polar filter (F3) and elliptic pole collapse (F4) compose in a real
-forecast. TC2's steady zonal flow vanishes at the poles and is
-longitude-independent, so the exact state is pole-regular and the filter is
-a no-op — any drift is our discretisation.
+The acid test that the pole ghost exchange, the pole-face flux closure, the
+polar filter and the elliptic pole collapse compose in a real forecast.
+TC2's steady zonal flow vanishes at the poles and is longitude-independent,
+so the exact state is pole-regular and the filter is a no-op — any drift is
+our discretisation.
 
 Short tripwires (a coarse resolution keeps CI fast; the 12-day l2 <= 1e-3
 Williamson validation runs from run_scripts). Gates:

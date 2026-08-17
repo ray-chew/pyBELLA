@@ -67,8 +67,7 @@ def compute_3d_components(u_field, v_field, w_field, dx, dy, dz):
     div_x = finite_difference.do_1d(u_field, dx, axis=0)
     # Average to y-cell centers, then to z-faces
     div_x = 0.5 * (div_x[:, :-1, :] + div_x[:, 1:, :])
-    # the legacy "-0.5" here was a sign error (introduced Oct 2021, archive
-    # commit 3661b9d); the divergence must be sign-symmetric in all dims
+    # +0.5 here, not -0.5: the divergence must be sign-symmetric in all dims
     div_x = 0.5 * (div_x[:, :, :-1] + div_x[:, :, 1:])
 
     # Y-direction: ∂v/∂y
@@ -120,8 +119,8 @@ def compute_at_nodes(rhs, elem, sol, ud):
     ndim = elem.ndim
 
     # Handle boundary conditions: zero the momenta in the two boundary
-    # slabs of every WALL/RAYLEIGH axis (historically vertical-only, which
-    # left the x-WALL elliptic path broken). The slabs are the ghost
+    # slabs of EVERY WALL/RAYLEIGH axis — restricting this to the vertical
+    # axis silently breaks the x-WALL elliptic path. The slabs are the ghost
     # layers, so with terrain this also zeroes the ghost contravariant
     # fluxes (they are formed from the momenta) — the same wall treatment
     # as the uniform-Cartesian path.
@@ -132,10 +131,10 @@ def compute_at_nodes(rhs, elem, sol, ud):
                 opts.BdryType.RAYLEIGH,
                 opts.BdryType.POLE,
             ):
-                # POLE is one-sided like a wall for the elliptic rhs (Stage
-                # F): zero the beyond-pole ghost momenta so the pole-node
-                # divergence matches the one-sided operator; the pole-ring
-                # collapse then sums these into the master equation
+                # POLE is one-sided like a wall for the elliptic rhs: zero
+                # the beyond-pole ghost momenta so the pole-node divergence
+                # matches the one-sided operator; the pole-ring collapse
+                # then sums these into the master equation
                 lo, hi = axes.wall_slabs(ndim, dim)
                 for field in (sol.rhou, sol.rhov, sol.rhow):
                     field[lo] = 0.0
@@ -145,9 +144,9 @@ def compute_at_nodes(rhs, elem, sol, ud):
     if ndim == 2:
         if elem.metric is not None:
             # terrain: general curvilinear fluxes F_a = N_a . (theta m);
-            # for the vertical-line metric this is bit-exactly the legacy
-            # J-weighted / contravariant construction (Phase-0 contract,
-            # test_scripts/test_metric_reduction.py)
+            # for a vertical-line metric this is bit-exactly the J-weighted
+            # / contravariant construction
+            # (test_scripts/test_metric_reduction.py)
             m = elem.metric
             f_h1, f_v = _normal_fluxes_2d_jit(
                 sol.rho,
@@ -211,10 +210,9 @@ def _normal_flux_3d_jit(rho, rhoY, mom_v, mom_h1, mom_h2, n_v, n_h1, n_h2):
 
     ``n_*`` are the Cartesian components of the area normal N_a of the
     xi_a = const surface, passed vertical-first — the contraction order
-    that reduces BIT-EXACTLY to the legacy J-weighted / contravariant
-    fluxes for vertical-line metrics (Phase-0 contract,
-    ``test_scripts/test_metric_reduction.py``). The plain divergence of
-    the three F_a equals J grad.F in physical space.
+    that reduces BIT-EXACTLY to the J-weighted / contravariant fluxes for
+    vertical-line metrics (``test_scripts/test_metric_reduction.py``). The
+    plain divergence of the three F_a equals J grad.F in physical space.
     """
     theta = rhoY / rho
     return n_v * (mom_v * theta) + n_h1 * (mom_h1 * theta) + n_h2 * (mom_h2 * theta)
@@ -224,7 +222,7 @@ def _normal_flux_3d_jit(rho, rhoY, mom_v, mom_h1, mom_h2, n_v, n_h1, n_h2):
 def _normal_fluxes_2d_jit(rho, rhoY, mom_h1, mom_v, n1_v, n1_h1, n2_v, n2_h1):
     """2D restriction of :func:`_normal_flux_3d_jit` (both components).
 
-    Vertical-first contraction; reduces bit-exactly to the legacy
+    Vertical-first contraction; reduces bit-exactly to the
     (J f_h1, f_v - G1 f_h1) pair for vertical-line metrics.
     """
     theta = rhoY / rho
@@ -235,11 +233,11 @@ def _normal_fluxes_2d_jit(rho, rhoY, mom_h1, mom_v, n1_v, n1_h1, n2_v, n2_h1):
 
 @nb.njit(cache=True)
 def _metric_contravariant_fluxes_jit(rho, rhoY, mom_h1, mom_v, mom_h2, J, G1, G2):
-    """Legacy vertical-line flux components (reduction-contract reference).
+    """Vertical-line flux components, retained as a test reference.
 
     Kept as the reference the general :func:`_normal_flux_3d_jit` path is
-    pinned against in ``test_scripts/test_metric_reduction.py``; the
-    production divergence no longer calls it. Role-ordered inputs/outputs
+    pinned against in ``test_scripts/test_metric_reduction.py``; no
+    production code path calls it. Role-ordered inputs/outputs
     (h1, v, h2): J-weighted horizontal fluxes and the contravariant
     vertical flux f_v = theta * (mom_v - G1 mom_h1 - G2 mom_h2).
     """
@@ -254,7 +252,8 @@ def _metric_contravariant_fluxes_jit(rho, rhoY, mom_h1, mom_v, mom_h2, J, G1, G2
 def _metric_contravariant_fluxes_2d_jit(rho, rhoY, mom_h1, mom_v, J, G1):
     """2D restriction of :func:`_metric_contravariant_fluxes_jit`.
 
-    Reduction-contract reference only, like the 3D variant.
+    Test reference only, like the 3D variant — not called by production
+    code.
     """
     theta = rhoY / rho
     f_h1 = mom_h1 * theta

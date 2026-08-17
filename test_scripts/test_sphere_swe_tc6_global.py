@@ -1,7 +1,7 @@
-"""Stage F, increment F6: TC6 Rossby-Haurwitz on the full pole-to-pole sphere.
+"""TC6 Rossby-Haurwitz on the full pole-to-pole sphere.
 
 TC6 has real longitude structure at all latitudes, so this exercises the
-pole ghost exchange (F1), pole-face flux closure (F2) and polar filter (F3)
+pole ghost exchange, the pole-face flux closure and the polar filter
 under genuine dynamics (TC2 is longitude-independent). Short tripwires (the
 7-day RH-4 phase-speed validation runs from run_scripts):
 

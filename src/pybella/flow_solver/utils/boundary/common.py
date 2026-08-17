@@ -40,7 +40,7 @@ def get_ghost_padding(ndim, dim, igs):
 
 
 def pole_source_indices(ncx, ncz, ig, nodal):
-    """Index maps realizing the lat-lon pole fold (Stage F).
+    """Index maps realizing the lat-lon pole fold.
 
     A ghost cell/node past |phi| = pi/2 covers the physical point on the
     FAR side of the pole, at longitude lambda + pi and the mirror latitude.

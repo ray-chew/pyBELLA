@@ -4,21 +4,21 @@ Two gates:
 
 1. **Path comparison** (15 golden-master steps, 128x64): native 2D (lap2D
    with terrain-folded cross terms) vs the proven quasi-2D 3D path (lap3D
-   full tensor). The two laplacian families carry *historically different
-   wall discretizations* — measured on a FLAT wall-bounded impulse, the
-   pre-existing 2D-vs-3D gap is already ~13% rel-L2 in w / ~19% in p2
-   after 5 steps (2026-06-10, solver-tolerance independent). The gates
-   here sit just above that honest cross-discretization floor: they catch
-   sign/axis/J-factor errors (which blow up by orders of magnitude), not
-   stencil-convention differences the flat solver already had.
+   full tensor). The two laplacian families carry *different wall
+   discretizations* — measured on a FLAT wall-bounded impulse, the
+   2D-vs-3D gap is already ~13% rel-L2 in w / ~19% in p2 after 5 steps
+   (solver-tolerance independent). The gates here sit just above that
+   honest cross-discretization floor: they catch sign/axis/J-factor
+   errors (which blow up by orders of magnitude), not stencil-convention
+   differences the flat solver already had.
 
 2. **Absolute physics** (the strong gate): the native-2D run passes the
    same Smith (1980) analytic-oracle thresholds as the 3D path —
    wrongness, not just change. Same reduced config as
    ``test_agnesi_analytic`` (96x48, t U / a = 12), roughly halved runtime
-   in 2D. Calibration 2026-06-10 (native 2D): w 0.40, u' 0.43,
-   drag_ratio 0.98, flux_constancy 0.04 — within a percent of the 3D
-   path's values, which is the real equivalence statement.
+   in 2D. Calibration (native 2D): w 0.40, u' 0.43, drag_ratio 0.98,
+   flux_constancy 0.04 — within a percent of the 3D path's values, which
+   is the real equivalence statement.
 """
 
 import numpy as np
@@ -75,8 +75,8 @@ def test_native_2d_matches_quasi_2d_3d():
     mem3, _ = _run(inz=2)
     mem2, _ = _run(inz=1)
 
-    # measured 2026-06-10: rho 4.9e-6, rhou 9.4e-5, rhov 8.8e-2 (wave
-    # perturbation on a near-zero field), rhoY 4.9e-6, rhoX 1.1e-3
+    # measured: rho 4.9e-6, rhou 9.4e-5, rhov 8.8e-2 (wave perturbation
+    # on a near-zero field), rhoY 4.9e-6, rhoX 1.1e-3
     for attr, tol in (
         ("rho", 2e-5),
         ("rhou", 4e-4),

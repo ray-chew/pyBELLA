@@ -108,8 +108,8 @@ def _explicit_step_and_flux(mem, ud, lmbda, split_step, tag=None):
     flux = _compute_flux_and_recovery(mem, flux, ud, lmbda, split_step, tag)
 
     # pole axis: kill the conservative flux through the zero-area pole faces
-    # so no mass/tracer leaks there (Stage F, F2). Over-pole transport is
-    # carried by the longitude sweep.
+    # so no mass/tracer leaks there. Over-pole transport is carried by the
+    # longitude sweep.
     if ud.bdry_type[split_step] == opts.BdryType.POLE:
         advective_flux.zero_pole_faces(
             flux, advective_flux._ALL_FLUX, int(mem.elem.igs[split_step])

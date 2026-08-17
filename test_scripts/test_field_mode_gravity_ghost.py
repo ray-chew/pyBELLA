@@ -12,8 +12,8 @@ if the axis lengths happen to match — fills the ghosts with silent garbage.
 The incompressible branch runs only during ``do_initial_projection`` (which
 freezes the regime to incompressible), so no prior case hit it: the SWE
 sphere cases that project have ``grav = 0``, so the gravity ghost fill never
-runs. Hughes & Jablonowski's adjusted ridge balance (pt 2) may need the
-projection.
+runs. Hughes & Jablonowski's adjusted ridge balance
+(``test_hj_baroclinic_ridges``) may need the projection.
 
 Build the H&J compressible field-mode shell, freeze it incompressible, run
 the gravity boundary fill, and assert:

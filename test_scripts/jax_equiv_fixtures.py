@@ -121,7 +121,7 @@ def make_sphere_gw_mem():
 
 
 def make_sphere_swe_global_mem():
-    """Full pole-to-pole Williamson TC2 (Stage F): ``BdryType.POLE`` phi walls,
+    """Full pole-to-pole Williamson TC2: ``BdryType.POLE`` phi walls,
     a pole-enabled ``SphericalShellMap`` and the FFT polar filter. Exercises
     the pole ghost exchange (cells + nodes) and the elliptic pole-ring collapse
     on a thin global shell. Coarsened, projection skipped for fixture speed."""

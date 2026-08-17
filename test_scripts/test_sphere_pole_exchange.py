@@ -1,4 +1,4 @@
-"""Stage F, increment F1 gates: pole ghost exchange (cells + nodes).
+"""Gates for the pole ghost exchange (cells + nodes).
 
 The pole ghost fill is a PURE INDEX REMAP (lambda -> lambda + pi, phi
 mirrored across the pole) with NO vector rotation, because momenta are

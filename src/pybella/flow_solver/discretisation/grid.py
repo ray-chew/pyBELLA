@@ -37,8 +37,8 @@ def grid_init(ud):
     node = NodeSpaceDiscr(grid, ud)
 
     # metric fields (None when ud has neither a curvilinear map nor
-    # orography: the uniform-Cartesian path must stay bit-identical and
-    # pay no overhead)
+    # orography. The uniform-Cartesian path MUST stay bit-identical and
+    # pay no overhead — keep the None case free of metric arithmetic.)
     cmap = getattr(ud, "curvilinear_map", None)
     _validate_pole_config(ud, cmap)
     if cmap is not None:
@@ -60,12 +60,20 @@ def grid_init(ud):
 def _validate_pole_config(ud, cmap):
     """Cross-check ``BdryType.POLE`` against a pole-enabled spherical map.
 
-    Stage F requires the pole boundary and the map's ``pole`` flag to be
-    set together (config typos fail loudly), and the pole geometry to be a
-    full lat-lon sphere: phi axis (axis 2) is POLE at both ends, lambda
-    (axis 0) is PERIODIC spanning exactly 2*pi with an EVEN interior cell
-    count (so the lambda -> lambda + pi remap is an integer cell shift),
-    phi extent is exactly [-pi/2, +pi/2], and the run is 3D.
+    The pole-to-pole sphere is enabled by two independent switches -- the
+    ``BdryType.POLE`` boundary and the map's ``pole=True`` -- so setting
+    only one of them is a config typo and must fail.
+
+    It also has to be a COMPLETE lat-lon sphere, since the cross-pole
+    ghost exchange assumes a closed surface. The case must therefore set:
+
+    - a 3D lat-lon-radius grid (``inz > 1`` and ``iny > 1``),
+    - ``bdry_type[2] = POLE`` (latitude phi is axis 2), the radial axis 1
+      not a pole,
+    - ``bdry_type[0] = PERIODIC`` with longitude lambda spanning exactly
+      2*pi, and an EVEN interior cell count ``inx - 1`` so the cross-pole
+      lambda -> lambda + pi remap is an integer cell shift,
+    - latitude spanning exactly [-pi/2, +pi/2] (``zmin``, ``zmax``).
     """
     bdry = getattr(ud, "bdry_type", None)
     pole_in_bdry = bdry is not None and any(bt == opts.BdryType.POLE for bt in bdry)
@@ -213,7 +221,7 @@ class SpaceDiscr(object):
         self.normal = big
 
         # terrain metric fields (discretisation.terrain.MetricFields);
-        # None == uniform Cartesian — every consumer branches on this
+        # None == uniform Cartesian
         self.metric: terrain.MetricFields | None = None
 
         self.igx = self.ig[0] = 2

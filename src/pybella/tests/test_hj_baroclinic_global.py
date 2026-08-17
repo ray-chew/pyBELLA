@@ -1,5 +1,5 @@
 """Hughes & Jablonowski (2023) mountain baroclinic wave on the FULL
-pole-to-pole sphere (Stage F, F8) — pt-1 flat background.
+pole-to-pole sphere — pt-1 flat background.
 
 The +-80 deg channel :mod:`test_hj_baroclinic` extended to |phi| <= pi/2:
 ``BdryType.POLE`` latitude walls, a pole-enabled deep ``SphericalShellMap``
@@ -18,8 +18,9 @@ in the channel case):
 
 Everything else is pt 1 verbatim: the well-balanced Ullrich IC written in
 ``metric.height`` (``hj.sol_init``), the constant embedded Coriolis vector
-``2 Omega_nd (0, 0, +1)`` (pseudovector -- do NOT re-derive), option (c)
-balance (no projection). Gate: ``test_scripts/test_hj_baroclinic_global.py``.
+``2 Omega_nd (0, 0, +1)`` (pseudovector -- do NOT re-derive), and no initial
+projection (the small gradient-wind residual is accepted). Gate:
+``test_scripts/test_hj_baroclinic_global.py``.
 """
 
 import numpy as np

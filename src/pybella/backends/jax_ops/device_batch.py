@@ -5,8 +5,7 @@ lockstep on the device: the batch state is the same 7-leaf dict pytree as
 `device_state` with a leading member axis, and the full compiled step —
 bicgstab included — is vmapped over that axis (`lax.while_loop` under vmap
 select-freezes converged lanes, so the solve keeps per-member convergence
-with a batch-max iteration count). Design rationale and the dt-policy
-decision live in dev_notes/nedas_interface.md (Phase D2).
+with a batch-max iteration count).
 
 dt policy: batch-min, host-controlled. Per step one vmapped CFL-maxima
 kernel yields (K, 6) maxima in a single D2H pull; the host computes every
@@ -17,8 +16,8 @@ bitwise-reproducible against the per-member-dt scheduler path (statistical
 gate only — the cross-member dt spread is ~3e-4 relative on the TV OSSE).
 
 ``mode="loop"`` runs the identical driver — same batch-min dt sequence —
-with the unbatched compiled step per member: the vmap gate comparator
-(differences are then pure vmap/jit reordering).
+with the unbatched compiled step per member: the reference the vmapped path
+is checked against (differences are then pure vmap/jit reordering).
 
 Blending stays host-side and unsupported here exactly as in `device_loop`
 (`_check_supported`); the regime scalars are batch-uniform by construction
@@ -157,14 +156,20 @@ def run_window_batch(mems, ud, tout, mode="vmap", n_devices=1, bld=None):
     while (mem0.time.t < tout) and (mem0.time.step < ud.stepmax):
         # ONE CFL kernel for both modes (loop stacks a transient view): the
         # batch-min dt is then bitwise-identical vmap<->loop by construction,
-        # so the vmap gate isolates the vmapped STEP's reordering alone —
-        # per-member `_cfl_maxima_plain` reduces in a different order than the
-        # vmapped kernel on GPU and would drift dt at the last ULP
+        # so the vmap-vs-loop comparison isolates the vmapped STEP's
+        # reordering alone — per-member `_cfl_maxima_plain` reduces in a
+        # different order than the vmapped kernel on GPU and would drift dt
+        # at the last ULP
         sb_cfl = sb if mode == "vmap" else _stack(states)
         maxima = np.asarray(
             _batch_cfl_maxima(
-                sb_cfl["rho"], sb_cfl["rhou"], sb_cfl["rhov"], sb_cfl["rhow"],
-                sb_cfl["rhoY"], cfg.gamm, cfg.Msq,
+                sb_cfl["rho"],
+                sb_cfl["rhou"],
+                sb_cfl["rhov"],
+                sb_cfl["rhow"],
+                sb_cfl["rhoY"],
+                cfg.gamm,
+                cfg.Msq,
             )
         )
         # every member's dt through the unchanged host path, then lockstep min
@@ -187,8 +192,17 @@ def run_window_batch(mems, ud, tout, mode="vmap", n_devices=1, bld=None):
                     write_back(s, mem)
             for mem in mems:
                 schemes.prepare_blending(
-                    mem, ud, bld, label, None, mem0.time.step,
-                    mem0.time.window_step, mem0.time.t, dt, False, False,
+                    mem,
+                    ud,
+                    bld,
+                    label,
+                    None,
+                    mem0.time.step,
+                    mem0.time.window_step,
+                    mem0.time.t,
+                    dt,
+                    False,
+                    False,
                 )
             states = [to_device(mem) for mem in mems]
             sb = _stack(states) if mode == "vmap" else None
@@ -197,8 +211,17 @@ def run_window_batch(mems, ud, tout, mode="vmap", n_devices=1, bld=None):
         else:
             # regime bookkeeping only (no state access) — once, shared ud
             schemes.prepare_blending(
-                mem0, ud, bld, label, None, mem0.time.step,
-                mem0.time.window_step, mem0.time.t, dt, False, False,
+                mem0,
+                ud,
+                bld,
+                label,
+                None,
+                mem0.time.step,
+                mem0.time.window_step,
+                mem0.time.t,
+                dt,
+                False,
+                False,
             )
         ud.is_nonhydrostatic = eos.is_nonhydrostatic(ud, mem0.time.window_step)
         ud.nonhydrostasy = eos.nonhydrostasy(ud, mem0.time.t, mem0.time.window_step)
@@ -244,7 +267,12 @@ def run_window_batch(mems, ud, tout, mode="vmap", n_devices=1, bld=None):
         logging.info(
             "device batch step %i done (K=%i, mode=%s), t = %.12f, dt = %.12f "
             "(member dt spread %.3e)",
-            mem0.time.step, K, mode, mem0.time.t, dt, max(dts) - min(dts),
+            mem0.time.step,
+            K,
+            mode,
+            mem0.time.t,
+            dt,
+            max(dts) - min(dts),
         )
         t_new = mem0.time.t + dt
         for mem in mems:

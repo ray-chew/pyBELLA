@@ -109,9 +109,9 @@ class analysis(object):
 
         # print(Co)
 
-        # exact optimal-transport plan; equivalent to the reference
-        # pyemd.emd_with_flow call (both histograms sum to one, so the
-        # extra-mass penalty there was irrelevant)
+        # exact optimal-transport plan; equivalent here to
+        # pyemd.emd_with_flow (both histograms sum to one, so its
+        # extra-mass penalty never engages)
         T = ot.emd(ww, np.ones(N) / N, Co)
         T = T * N
 

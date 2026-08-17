@@ -9,12 +9,11 @@ a flipped Coriolis or buoyancy sign, a broken dispersion relation, or wrong
 wave amplitudes blow these bounds by an order of magnitude (a pure sign
 error alone gives rel L2 ~ 1.4-2.0).
 
-Measured rel-L2 (2026-06-10, regression config, AFTER the 2D out-of-plane
-Coriolis fixes in BOTH explicit_euler.do_forward_step and the implicit
-correction's w-row): u 0.285, vo 0.045, w 0.556, p 0.670, rho 0.346.
-Gates are >=1.4x above. The residual was shown
-to decompose into (validated by refinement studies, see
-dev_notes/regression_harness.md):
+Measured rel-L2 (regression config, AFTER the 2D out-of-plane Coriolis
+fixes in BOTH explicit_euler.do_forward_step and the implicit correction's
+w-row): u 0.285, vo 0.045, w 0.556, p 0.670, rho 0.346. Gates are >=1.4x
+above. The residual was shown to decompose into (validated by refinement
+studies):
 
 - temporal:  O((omega dt)^2) phase error — at dt = 125 s:
   u 0.133, vo 0.028, w 0.272, rho 0.221;

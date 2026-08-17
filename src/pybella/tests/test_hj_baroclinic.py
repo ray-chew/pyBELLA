@@ -26,7 +26,7 @@ each part the way it expects:
 
 * **Full Coriolis: the constant rotation vector ``2 Omega`` in the embedded
   frame**, ``2 Omega_nd * (0, 0, +1)`` (the mirrored-embedding pseudovector
-  flip; NOT the geographic pole — see ``dev_notes/sphere.md`` and
+  flip; NOT the geographic pole — see
   ``SphericalShellMap.rotation_axis_cart``). The wrong sign anti-balances
   and blows up immediately.
 
@@ -45,7 +45,7 @@ the SWE sphere cases that project have ``grav = 0``. That path indexes the
 3D field-mode ``HydroState.rhoY0`` with only the vertical component
 ``nimage[y_axs]`` (correct for the 1D profile mode, wrong for field mode);
 projection here would need that fixed first. pt 2's adjusted ridge balance
-may want it — see dev_notes/hughes_jablonowski.md.)
+may want it.)
 
 Nondimensionalization mirrors the sphere gravity-wave case
 (``h_ref = R_gas T_ref / grav`` -> ``gravity_strength[1] = 1``), with
@@ -69,7 +69,7 @@ from .case_setup import build_bdry, do_initial_projection, make_diag_state
 # --- reference scales (shared thermodynamics with the sphere GW case) ------
 _T_REF = 250.0  # [K]
 _U_REF = 10.0  # [m/s]
-_PHI_MAX = np.deg2rad(80.0)  # channel walls in latitude (poles are Stage F)
+_PHI_MAX = np.deg2rad(80.0)  # channel walls in latitude (see the global case)
 _DEPTH_M = 30.0e3  # shell depth r_top - a [m] (model top ~30 km)
 
 # Ullrich formulas use cos(phi) ** K with fractional K, so a negative cosine
@@ -210,7 +210,7 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     # +-80 deg, so its ghost latitudes must be clipped just inside the pole
     # (cos^K is NaN past |phi| = 90 deg); the global (pole=True) variant folds
     # its ghosts back to interior latitudes and puts a node exactly at the
-    # pole, so it overrides this to pi/2 (Stage F F8). Both leave the interior
+    # pole, so it overrides this to pi/2. Both leave the interior
     # untouched (interior cells / non-pole nodes are strictly inside the clip).
     phi_clip = float(getattr(ud, "phi_clip", _PHI_CLIP))
 

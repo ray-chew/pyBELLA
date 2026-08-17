@@ -5,8 +5,8 @@ Runs the ``smoke_zvert`` case (z-vertical, met convention) via the real
 ``prepare.initialise`` (incl. ``axes.validate``), hydrostatics along z,
 axis-2 gravity ghost cells / wall zeroing, and the full time loop, which
 the in-process permutation oracle bypasses. No golden master: physics
-agnosticity is proven by ``test_permutation_oracle.py``; a permanent
-z-vertical regression case is deferred to the terrain-following work.
+agnosticity is proven by ``test_permutation_oracle.py``; there is no
+permanent z-vertical regression case.
 """
 
 import subprocess

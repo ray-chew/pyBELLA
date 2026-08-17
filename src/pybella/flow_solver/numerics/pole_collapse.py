@@ -1,4 +1,4 @@
-"""Elliptic pole-ring collapse (Stage F, F4).
+"""Elliptic pole-ring collapse.
 
 At a lat-lon pole every longitude node of a given radius is ONE physical
 point, so leaving them as independent pressure unknowns makes the discrete
@@ -16,14 +16,26 @@ rhs and every operator output has them zeroed), so the BiCGSTAB plumbing
 and the reshape are untouched. The pole rows are assembled ONE-SIDED
 (``lap3D`` already treats the non-periodic phi axis as a wall: it zeroes the
 beyond-pole coefficient slabs and does no ghost exchange), which sidesteps
-the fold's sign trap on the cross-metric terms — see
-dev_notes/sphere_poles_plan.md (F4).
+the fold's sign trap on the cross-metric terms.
 
-The solve box is ``node.isc`` = the full node array minus one layer per
-side, so box index ``b`` maps to full-node index ``b + 1``: the pole phi
-rows (full-node phi = igz and icz-1-igz, i.e. |phi| = pi/2) land at box-phi
-``1`` and ``Lphi - 2``, and the longitude +pi seam duplicate lands at box
-``Llam - 2`` (excluded from the ring-sum so each physical node counts once).
+Where the bare integers below come from. The solve runs not on the full
+node array but on ``node.isc``, the same (lambda, r, phi) array with one
+layer stripped from each side; call its shape (Llam, Lr, Lphi). An index
+into it is one less than the matching full-node index.
+
+``node.isc`` still keeps ONE ghost layer per side, so along each axis
+index 0 and index L-1 are ghosts and the interior runs 1 .. L-2 — which
+is where the -2 in the table comes from, not a second stripping. The
+three positions the collapse needs:
+
+                                  full node         node.isc
+    south pole row                phi = igz         phi = 1
+    north pole row                phi = icz-1-igz   phi = Lphi - 2
+    lambda = +pi seam duplicate   lam = icx-1-igx   lam = Llam - 2
+
+The seam column is a second copy of a longitude the box already holds, so
+``scatter`` writes to it (it must carry the master's value like the rest of
+the ring) but ``gather`` skips it, or that wedge would be counted twice.
 """
 
 import numpy as np

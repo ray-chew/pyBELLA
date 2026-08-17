@@ -1,4 +1,4 @@
-"""Hughes & Jablonowski (2023) on the FULL pole-to-pole sphere (Stage F, F8).
+"""Hughes & Jablonowski (2023) on the FULL pole-to-pole sphere.
 
 The global (``BdryType.POLE`` + polar filter) analogues of the +-80 deg
 channel gates ``test_hj_baroclinic`` (flat-background steadiness) and
@@ -14,7 +14,7 @@ docstrings) and the filter (phi_c = 70 deg, poleward of the 45 deg N ridges).
 * ridges: the two midlatitude ridges drive a meridional-wind response FAR
   above the flat adjustment, LONGITUDE-LOCALISED at 72 / 140 deg E — the
   ridge-triggered signature, without blowing up.
-* device: a short jax-device-vs-numpy reproduction (F7b) — the ridge-global
+* device: a short jax-device-vs-numpy reproduction — the ridge-global
   case is the union of already-validated device paths + the poles.
 
 Coarse numpy smoke; the production multi-day device run stays GPU-gated (pt 3
@@ -140,18 +140,18 @@ def test_global_ridges_initiate_the_wave():
 @pytest.mark.skipif(importlib.util.find_spec("jax") is None, reason="jax not installed")
 def test_ridges_global_device_reproduces_numpy():
     """The device-resident JAX backend reproduces numpy for the pole-to-pole
-    ridge case (F8 device gate). This is the union of already-validated device
-    paths — the general sphere metric with radial gravity + field-mode
-    compressible HydroState (channel ridges) and the pole machinery (F7b: pole
-    ghost fold, elliptic collapse, polar filter in the step loop). Compressible
+    ridge case. This is the union of already-validated device paths — the
+    general sphere metric with radial gravity + field-mode compressible
+    HydroState (channel ridges) and the pole machinery (pole ghost fold,
+    elliptic collapse, polar filter in the step loop). Compressible
     with no projection, so it never hits the field-mode+incompressible guard.
 
     Agreement is at the per-step bicgstab Krylov floor, which for THIS case
     sits higher than any other sphere gate: the deep compressible shell + the
     terrain tilt + the pole-ring collapse together make the elliptic system the
-    worst-conditioned in the suite (dev_notes/sphere_poles_plan.md F8), so the
-    two backends' ulp-different systems select Krylov members further apart,
-    and XLA's run-to-run CPU reduction-order variation makes the gap fluctuate.
+    worst-conditioned in the suite, so the two backends' ulp-different systems
+    select Krylov members further apart, and XLA's run-to-run CPU
+    reduction-order variation makes the gap fluctuate.
     Measured (3 steps, 32x12x32): scalars ~9e-6, momenta/rho ~1e-4, p2 relative
     ~1.4e-4. Thresholds sit ~3-5x above that floor and ~100x below the ~1e-2 a
     genuinely broken device path produces (e.g. a missing pole ghost branch) —

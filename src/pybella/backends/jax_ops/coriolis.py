@@ -32,8 +32,8 @@ def compute_coefficients(wh1, wh2, wv, nu, nonhydro):
 
     h21 = (wh1 * wv - wh2) * denom
     # h22 carries NO nonhydro factor: see numpy twin
-    # (numerics/coriolis._compute_coriolis_coefficients) and
-    # dev_notes/hydrostatic_blending.md, Phase H1a. Bit-identical for alpha_w=1.
+    # (numerics/coriolis._compute_coriolis_coefficients). Bit-identical for
+    # alpha_w=1.
     h22 = (1.0 + wv_sq) * denom
     h23 = (wh2 * wv + wh1) * denom
 
@@ -142,7 +142,7 @@ def _role_inputs(mem, ud, dt):
     spatially varying rotation field (``ud.coriolis_field``) and the local
     up-direction ``e`` are built once, cached on ``mem.elem`` and bit-
     identical to the numpy path. ``e_role`` is None on vertical-line/no-
-    metric runs (the legacy scalar kernel applies).
+    metric runs (the scalar, axis-aligned kernel applies).
     """
     nonhydro = ud.nonhydrostasy
     g = ud.gravity_strength[axes.vertical_axis(ud)]
@@ -159,7 +159,11 @@ def _role_inputs(mem, ud, dt):
 
 
 def _coeffs(wh1, wh2, wv, nu, nonhydro, e_role):
-    """H^-1 coefficient tuple (h11..h33, denom) — general or legacy."""
+    """H^-1 coefficient tuple (h11..h33, denom).
+
+    General (arbitrary up-direction ``e``) when ``e_role`` is given, else the
+    scalar, axis-aligned kernel.
+    """
     if e_role is None:
         return compute_coefficients(
             jnp.asarray(wh1), jnp.asarray(wh2), jnp.asarray(wv), nu, nonhydro

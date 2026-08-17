@@ -9,9 +9,7 @@ after a look-ahead lake step, blending the nodal pressure by
 ``ud.blending_weight`` — the shallow-water analogue of the comp <-> psinc
 pair in ``comp_psinc.py``.
 
-The legacy thin-y 3D form of these routines (x, y = one-cell vertical
-shell, z) predates the ModelState refactor and is preserved in git history
-(last in "refactor pt 7"); this module is its 2D x-y port.
+These routines are 2D x-y only.
 """
 
 import copy
@@ -63,8 +61,8 @@ def do_lake_to_swe_conv(mem, ud, label, writer, step, tout):
     depth and momenta from the blended pressure around ``ud.mean_val``.
 
     Like ``do_psinc_to_comp_conv``, the look-ahead clock advance is rolled
-    back: the legacy scheduling passed t/step by value, so the outer clock
-    stayed untouched.
+    back: the look-ahead must be invisible to the outer clock, so ``t``,
+    ``step`` and ``window_step`` are frozen and restored.
     """
     from ....flow_solver.discretisation import time_update
 
@@ -72,9 +70,8 @@ def do_lake_to_swe_conv(mem, ud, label, writer, step, tout):
     sol_freeze = copy.deepcopy(mem.sol)
     npf_freeze = copy.deepcopy(mem.npf)
     time_freeze = (mem.time.t, mem.time.step, mem.time.window_step)
-    # reference clock for the look-ahead ([0, step] in the paper-era
-    # data.time_update): window_step = 0 keeps the eos schedule in the
-    # limit (lake) regime under continuous blending
+    # reference clock for the look-ahead: window_step = 0 keeps the eos
+    # schedule in the limit (lake) regime under continuous blending
     mem.time.window_step = 0
 
     # exactly ONE look-ahead step — same ULP knife-edge as

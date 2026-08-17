@@ -54,9 +54,9 @@ def initialise(sst):
         sol_ens = data_structures.EnsembleState()
         for n in range(sst.N):
             # members are built from fresh containers so that sol_init runs
-            # exactly once per member (as in the reference implementation);
-            # member 0 was already initialised by the flow-solver prepare and
-            # re-running sol_init on it would double the += initialisations.
+            # exactly once per member; member 0 was already initialised by the
+            # flow-solver prepare and re-running sol_init on it would double
+            # the += initialisations.
             sol0 = fields.CellSolField(elem.sc)
             npf0 = fields.NodePressureField(elem, node, sst.ud)
             sol0 = sst.sol_init(

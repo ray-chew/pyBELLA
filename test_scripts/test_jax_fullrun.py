@@ -1,4 +1,5 @@
-"""Full regression runs on the JAX backend (components 2+3 end-to-end).
+"""Full regression runs on the hybrid JAX backend (elliptic solve plus the
+advection / Coriolis / diffusion kernels, end-to-end).
 
 Runs complete production cases with ``PYBELLA_BACKEND=jax`` — the env var
 flips ``ud.backend`` without touching the case files — and asserts a zero
@@ -12,7 +13,7 @@ regression tolerance over full runs, not just single steps.
 The four cases cover: 2D periodic advection+elliptic (vortex), explicit
 diffusion + x-WALLs (Straka), 3D elliptic + full Coriolis (3D vortex), and
 terrain-following coordinates (Agnesi). The remaining regression cases were
-validated once on this backend when the port landed; run them ad hoc with
+validated once on this backend; run them ad hoc with
 ``PYBELLA_BACKEND=jax pytest test_scripts/test_flow_solver.py``.
 
 The sphere path (non-vertical-line metric: ``coriolis_field`` H^-1, general
@@ -20,7 +21,7 @@ free-slip walls, tangent-plane surface constraint) is gated in-process by
 ``test_sphere_tc2_hybrid_reproduces_numpy`` — a short Williamson TC2 run
 compared jax-vs-numpy, not against the stored target, because the initial-
 projection Krylov floor (~2e-5 in the momenta) sits above the 1e-5
-regression tolerance (see dev_notes/sphere.md, HARD-WON pt 2).
+regression tolerance.
 
 Skips cleanly when jax is not installed.
 """
@@ -76,7 +77,7 @@ def _run_sphere_tc2(backend, nsteps, inx=48 + 1, inz=48 + 1):
 def _run_sphere_tc2_global(
     backend, nsteps, initial_projection=True, inx=32 + 1, inz=36 + 1
 ):
-    """Run pole-to-pole Williamson TC2 (Stage F) for ``nsteps`` on ``backend``.
+    """Run pole-to-pole Williamson TC2 for ``nsteps`` on ``backend``.
 
     Exercises the full pole machinery — the pole ghost exchange (cells +
     nodes), the elliptic pole-ring collapse, the FFT-in-longitude polar
@@ -117,8 +118,8 @@ def test_sphere_tc2_global_stepper_bit_identical():
     """The pole machinery twins are EXACT: with the initial projection off,
     the hybrid pole-to-pole TC2 stepper reproduces numpy to machine precision.
 
-    This isolates the Stage F F7 additions — the pole ghost exchange (F1),
-    the elliptic pole-ring collapse (F4) and the FFT polar filter (F3) — from
+    This isolates the pole machinery — the pole ghost exchange, the elliptic
+    pole-ring collapse and the FFT polar filter — from
     the ill-conditioned initial-projection solve (whose Krylov-floor member is
     what the projection gate below measures). Every per-step pole op is a pure
     index remap / one-sided collapse / functional FFT with no ulp-level
@@ -199,7 +200,7 @@ def test_sphere_tc2_hybrid_reproduces_numpy():
     member — so the momenta agree to ~1e-5 (not machine precision) while the
     tightly-set scalars agree to ~1e-6. Both are far below the ~5e-4 a wrong
     ``rotation_axis_cart`` / Coriolis factor produces, so this is a genuine
-    end-to-end gate. See dev_notes/sphere.md (HARD-WON pt 2)."""
+    end-to-end gate."""
     import numpy as np
 
     n = 8

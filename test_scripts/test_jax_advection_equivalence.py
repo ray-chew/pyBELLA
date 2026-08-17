@@ -1,4 +1,4 @@
-"""JAX advection / coriolis / diffusion equivalence (component 3).
+"""JAX advection / coriolis / diffusion equivalence.
 
 The backend seam for advection sits inside
 ``compute_advection._compute_flux_and_recovery``: the numpy driver (sweeps,

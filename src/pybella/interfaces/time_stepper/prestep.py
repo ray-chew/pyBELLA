@@ -2,9 +2,9 @@
 Pre-step modifications for the time stepper.
 """
 
-# Legacy warm-bubble fixed timestep, in seconds (nondimensionalised by ud.t_ref
+# Warm-bubble startup timestep, in seconds (nondimensionalised by ud.t_ref
 # at use). Pins dt for the first two steps of "CFLfixed" cases — e.g.
-# test_blending_warm_bubble — to reproduce the reference run's startup.
+# test_blending_warm_bubble — to the value their regression targets carry.
 _CFLFIXED_DT_SECONDS = 21.69
 
 

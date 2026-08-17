@@ -54,11 +54,11 @@ def _sleve_config(ud):
 
 
 class _StretchedHillMap(terrain.CurvilinearMap):
-    """Tier-2 general map: periodic x-stretch + periodic hill (Gal-Chen z).
+    """General map: periodic x-stretch + periodic hill (Gal-Chen z).
 
     Periodic-consistent in xi1 (stretch displacement and hill share the
     domain period), so the metric is smooth across the x seam without the
-    legacy builder's coordinate wrap.
+    periodic coordinate wrap that the orography-driven builder applies.
     """
 
     def __init__(self, ud, h0_m=300.0, ax_rel=0.05):
@@ -211,7 +211,7 @@ def test_composition_identity_with_terrain_sleve():
 
 
 def test_composition_identity_general_map():
-    """Genuinely stretched Tier-2 map (terrain + x-stretching) through the
+    """Genuinely stretched map (terrain + x-stretching) through the
     general N-fold: M = (1/J) N H^-1 N^T must still be exactly the
     composition of the J-weighted divergence with the A-mapped correction."""
     lhs, comp = _operator_and_composition(cmap=_StretchedHillMap)

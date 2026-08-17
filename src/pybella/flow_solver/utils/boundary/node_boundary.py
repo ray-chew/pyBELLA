@@ -24,8 +24,8 @@ def set_ghost_nodes(p, node, ud, igs=None):
         else:  # ud.bdry_type[dim] == opts.BdryType.WALL:
             p[...] = np.pad(p[idx], ghost_padding, "reflect")
 
-    # quasi-2D: broadcast the single interior layer across any degenerate
-    # axis (historically hardcoded to axis 1 / iicy == 2)
+    # quasi-2D: broadcast the single interior layer across ANY degenerate
+    # axis, not only axis 1
     for dim in axes.degenerate_axes(node):
         slc = [slice(None)] * p.ndim
         slc[dim] = node.igs[dim]
@@ -34,14 +34,14 @@ def set_ghost_nodes(p, node, ud, igs=None):
 
 
 def _apply_pole_nodes(p, node, dim):
-    """Pole node exchange + ring-consistency on the phi axis (Stage F, F1).
+    """Pole node exchange + ring-consistency on the phi axis.
 
     Same pure index remap as the cell fill, on the node pressure field.
     Additionally forces the two pole-node rows (phi = +-pi/2, one physical
     point per radius) to their lambda-ring MEAN, keeping p2 single-valued
-    at the pole between elliptic solves (the collapse in F4 produces it
-    single-valued; this holds it so between solves). Nodes are never
-    sweep-flipped, so lambda is array axis 0 and phi is ``dim``.
+    at the pole between elliptic solves (the elliptic pole-ring collapse
+    produces it single-valued; this holds it so between solves). Nodes are
+    never sweep-flipped, so lambda is array axis 0 and phi is ``dim``.
     """
     lam_axis, phi_axis = 0, dim
     ig = int(node.igs[0])
@@ -65,7 +65,8 @@ def _apply_pole_nodes(p, node, dim):
 
 def periodic_plus_one(vector, pad_width, iaxis, kwargs=None):
     """
-    Taken from the reference:
+    ``np.pad`` callback implementing the periodic fill; the signature is
+    the one numpy.pad requires (see References).
 
     Parameters
     ----------

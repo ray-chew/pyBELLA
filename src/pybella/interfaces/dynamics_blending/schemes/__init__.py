@@ -1,8 +1,8 @@
-"""Dynamics-regime blending, split from the former single ``schemes.py``.
+"""Dynamics-regime blending.
 
-Public names are re-exported here so existing ``schemes.<name>`` call sites
+Public names are re-exported here: the call sites
 (``flow_solver/discretisation/time_update.py`` and this package's ``prepare.py``)
-are unchanged. Submodules:
+address the whole package as ``schemes.<name>``. Submodules:
 
 * ``blending``       -- the ``Blend`` interface (pressure smoothing, rescale).
 * ``comp_psinc``     -- compressible <-> pseudo-incompressible conversions.
@@ -12,8 +12,7 @@ are unchanged. Submodules:
 Nonhydrostatic <-> hydrostatic blending needs NO explicit conversion routine:
 the eos schedule (``physics/eos.py``) flips ``is_nonhydrostatic`` and the
 hydrostatic elliptic operator + explicit vertical-momentum switch carry the
-balance (the thesis-era RKLM_Python mechanism). See
-``dev_notes/hydrostatic_blending.md``.
+balance. Gated by ``tests/test_blending_hydrostatic.py``.
 """
 
 from .blending import Blend

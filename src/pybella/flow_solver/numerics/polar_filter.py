@@ -1,4 +1,4 @@
-"""FFT-in-longitude polar filter (Stage F, F3).
+"""FFT-in-longitude polar filter.
 
 Near a lat-lon pole the zonal grid spacing a*cos(phi)*dlambda shrinks to
 zero, so the high zonal wavenumbers have an effective Courant number > 1

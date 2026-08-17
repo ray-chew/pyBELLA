@@ -3,9 +3,10 @@ import logging
 import numpy as np
 import numpy.lib.stride_tricks as st
 
-# the reference's `import scipy.sparse as sp` bindings only resolved under
-# pre-1.8 scipy; the intended objects are scipy.sparse.{eye,diags},
-# scipy.sparse.linalg.spsolve and the dense scipy.linalg.eigh
+# `sp` is used below as sp.sparse.{eye,diags}, sp.sparse.linalg.spsolve and
+# the dense sp.linalg.eigh. Current scipy resolves those lazily from the bare
+# `import scipy`, but the explicit submodule imports keep the binding
+# independent of that behaviour — do not collapse them.
 import scipy as sp
 import scipy.linalg
 import scipy.sparse
@@ -297,7 +298,7 @@ class prepare_rloc(object):
 
         Note
         ----
-        Face-based flux is not supported (as in the reference implementation).
+        Face-based flux attributes are not supported by this layer.
 
         """
 

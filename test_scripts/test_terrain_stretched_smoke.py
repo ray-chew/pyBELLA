@@ -1,4 +1,4 @@
-"""Tier-2 physics gates: terrain + horizontal stretching, end to end.
+"""Physics gates: terrain + horizontal stretching, end to end.
 
 First full runs on a genuinely curvilinear (general-path) grid: the
 x-stretched Gal-Chen map exercises the N-flux advection, the A-mapped
@@ -6,7 +6,8 @@ gradients, the general elliptic fold, the contravariant CFL, the
 effective-slope wall reflection and the z_eta-based ghost/hydrostate
 thickness all at once.
 
-Gates (the vertical-line smoke bars, re-pointed at Tier 2):
+Gates (the same bars as the pure terrain-following smoke tests, now on a
+stretched grid):
 1. resting atmosphere stays at rest (< 1e-8 m/s — the p2 == 0
    perturbation convention makes discrete rest metric-independent),
 2. mountain-wave smoke: J-weighted mass and P = rho*Y conserved to
@@ -28,7 +29,7 @@ from pybella.utils.data_structures import ModelState
 
 pytestmark = pytest.mark.skipif(
     not hasattr(terrain, "build_metric_fields_from_map"),
-    reason="general metric machinery (tfc pt 1) not present",
+    reason="general curvilinear-map metric machinery not present",
 )
 
 
@@ -44,7 +45,7 @@ class _StubWriter:
 
 
 class _StretchedHillMap(terrain.CurvilinearMap):
-    """Periodic x-stretch + periodic hill, Gal-Chen z (Tier-2 map).
+    """Periodic x-stretch + periodic hill, Gal-Chen z.
 
     Periodic-consistent in xi1: stretch displacement and hill share the
     domain period, so the metric is smooth across the x seam.
@@ -98,7 +99,8 @@ def _make_mem(wind=True, steps=5, inz=2):
     ud.stepmax = steps
     ud.inz = inz
     ud.tout = [1e6]  # step-limited
-    ud.orography = None  # the general map below replaces the legacy builder
+    # the curvilinear map below replaces the orography-driven metric build
+    ud.orography = None
     elem, node = dis_grid.grid_init(ud)
     cmap = _StretchedHillMap(ud)
     elem.metric = terrain.build_metric_fields_from_map(elem, ud, cmap)

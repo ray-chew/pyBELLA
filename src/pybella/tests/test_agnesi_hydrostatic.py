@@ -127,10 +127,10 @@ class UserData(object):
             self.stepmax,
             plot_compare=True,
             # terrain elliptic solves (~130 bicgstab iters/step) amplify
-            # cross-platform rounding: first CI run (2026-06-11) deviated
-            # 7.0e-5 on rhou / 5.1e-6 on rho from the locally generated
-            # target (local same-machine scatter is ~1e-7). Gate well above
-            # platform noise; physics is guarded by the Smith (1980) oracle.
+            # cross-platform rounding: a CI runner deviated 7.0e-5 on rhou /
+            # 5.1e-6 on rho from a locally generated target (local
+            # same-machine scatter is ~1e-7). Gate well above platform noise;
+            # physics is guarded by the Smith (1980) oracle.
             tolerances={k: 5e-4 for k in _COMPARED_FIELDS},
         )
 

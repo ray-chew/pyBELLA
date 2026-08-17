@@ -47,9 +47,9 @@ class UserData(object):
         self.output_timesteps = True
 
         # default 1e-5 tolerances on all 7 fields: the blended run reproduces
-        # to ~1e-7, and the loose momenta tolerances of the pre-2026-07-02
-        # master would let the psinc->comp conversion be silently discarded
-        # (momenta shift ~0.1, final p2 increment ~1e-5)
+        # to ~1e-7, and looser momenta tolerances would let the psinc->comp
+        # conversion be silently discarded (momenta shift ~0.1, final p2
+        # increment ~1e-5)
         self.diag_state = make_diag_state(
             f"{self.output_type}_blending_warm_bubble",
             "target_blending_warm_bubble",
@@ -80,8 +80,9 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     x, y = np.meshgrid(x, y)
 
     # ensemble spread and truth IC of the MWR-2022 OSSE: uniformly sampled
-    # bubble amplitude (archive rising_bubble.py); inert when seed is None
-    # and aux does not contain 'truth'
+    # bubble amplitude (git tag archive/full_coriolis,
+    # RKLM_Python/inputs/rising_bubble.py); inert when seed is None and aux
+    # does not contain 'truth'
     if seed is not None:
         np.random.seed(seed)
         delth += 10.0 * np.random.random()
@@ -112,10 +113,9 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     # imbalanced IC: a large Exner-pressure blob (amplitude 1.0 ~ 10x the
     # slow signal), momenta untouched. The initial comp->psinc conversion
     # must absorb it in one blended step -- validated against the frozen
-    # paper-era code (archive/localdab), see dev_notes/da_reinstatement.md
-    # "Addendum 2026-07-02". Unblended, this blob detonates: p2 leaves the
-    # balanced trajectory by 2-5x the total signal, which is what the
-    # p2_nodes increment tolerance below guards against.
+    # paper-era code (git tag archive/localdab). Unblended, this blob
+    # detonates: p2 leaves the balanced trajectory by 2-5x the total signal,
+    # which is what the p2_nodes increment tolerance below guards against.
     xn, yn = np.meshgrid(node.x, node.y, indexing="ij")
     npf.p2_nodes[...] = np.exp(-(xn**2 + (yn - 0.5) ** 2) / (2 * 0.15**2))
 

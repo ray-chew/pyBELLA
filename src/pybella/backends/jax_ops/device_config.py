@@ -80,10 +80,10 @@ def build_device_config(mem, ud):
     cfg.Gamma, cfg.Gammainv = th.Gamma, th.Gammainv
     cfg.Msq = float(ud.Msq)
     cfg.g = float(ud.gravity_strength[v])
-    # role-ordered (h1, v, h2) Coriolis components: scalars on the legacy
-    # path, per-cell fields when ud.coriolis_field is set (f(phi) e_r on the
-    # sphere). Reuse the numpy role_components so the field build + cache is
-    # bit-identical to the hybrid path.
+    # role-ordered (h1, v, h2) Coriolis components: three scalars for a
+    # constant rotation vector, per-cell fields when ud.coriolis_field is set
+    # (f(phi) e_r on the sphere). Reuse the numpy role_components so the
+    # field build + cache is bit-identical to the hybrid path.
     from pybella.flow_solver.numerics import coriolis as coriolis_np
 
     w_role = coriolis_np.role_components(mem, ud)
@@ -152,7 +152,9 @@ def build_device_config(mem, ud):
             haxes=m.haxes,
             cart_v=m.cart_v,
             cart_haxes=m.cart_haxes,
-            # Tier-3 (sphere) data; inert for vertical-line maps
+            # height is the generalized altitude (== z for vertical-line
+            # maps, r - a on a sphere); h_v and e_up are read only off the
+            # general (non-vertical-line) map path
             height=orient(m.height, ident),
             h_v=orient(m.h_v, ident),
             e_up=(None if m.e_up is None else [orient(c, ident) for c in m.e_up]),
@@ -172,8 +174,8 @@ def build_device_config(mem, ud):
         ndim, tuple(int(i) for i in node.igs), bdry_ints, degen
     )
 
-    # pole-ring collapse index maps (Stage F): the Galerkin scatter/gather on
-    # the flat 3D solve vector, mirroring numerics.pole_collapse.PoleCollapse.
+    # pole-ring collapse index maps: the Galerkin scatter/gather on the flat
+    # 3D solve vector, mirroring numerics.pole_collapse.PoleCollapse.
     # ring_complement zeroes the ring by a mask multiply (bicgstab's
     # custom_linear_solve double-transposes the operator; an integer
     # scatter-SET is not double-transposable, a mask multiply + scatter-ADD is)
@@ -191,8 +193,8 @@ def build_device_config(mem, ud):
             uniq_master=jnp.asarray(pc.uniq_master),
         )
 
-    # polar filter (Stage F): host-side static transfer factors + J weights +
-    # the longitude-CFL cap, mirroring numerics.polar_filter.apply / cfl_cap
+    # polar filter: host-side static transfer factors + J weights + the
+    # longitude-CFL cap, mirroring numerics.polar_filter.apply / cfl_cap
     from pybella.flow_solver.numerics import polar_filter as polar_filter_np
 
     cfg.polar_filter = getattr(ud, "polar_filter", None)

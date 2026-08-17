@@ -1,12 +1,12 @@
-"""Stage F, increment F0 gates: pole-aware metric build.
+"""Gates for the pole-aware metric build.
 
 The pole extends the +-80 deg spherical channel to the full pole-to-pole
-sphere. The backbone (dev_notes/sphere_poles_plan.md): ghost cells past
-|phi| = pi/2 cover physical points on the FAR side of the pole, at
-longitude lambda + pi. Evaluating the map at the FOLDED coordinate makes
-the ghost metric a fold-COPY of the image cell (J > 0, no vector
-rotation); the pole NODES |phi| = pi/2 carry J == 0 exactly (the cos(phi)
-coordinate singularity) with ooJ := 0 and a stored pole mask.
+sphere. The backbone: ghost cells past |phi| = pi/2 cover physical points
+on the FAR side of the pole, at longitude lambda + pi. Evaluating the map
+at the FOLDED coordinate makes the ghost metric a fold-COPY of the image
+cell (J > 0, no vector rotation); the pole NODES |phi| = pi/2 carry J == 0
+exactly (the cos(phi) coordinate singularity) with ooJ := 0 and a stored
+pole mask.
 
 These gates pin:
 1. J > 0 in every cell; J == 0 exactly at (and only at) the |phi| = pi/2

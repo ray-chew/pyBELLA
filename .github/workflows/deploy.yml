@@ -51,11 +51,29 @@ jobs:
           pytest ./test_scripts/test_terrain_elliptic_oracle.py
           pytest ./test_scripts/test_terrain_2d_oracle.py
           pytest ./test_scripts/test_terrain_resting_atmosphere.py
+          pytest ./test_scripts/test_metric_reduction.py
+          pytest ./test_scripts/test_freestream.py
+          pytest ./test_scripts/test_terrain_stretched_smoke.py
           pytest ./test_scripts/test_agnesi_smoke.py
           pytest ./test_scripts/test_agnesi_analytic.py
           pytest ./test_scripts/test_agnesi_2d_equivalence.py
           pytest ./test_scripts/test_schaer_smoke.py
           pytest ./test_scripts/test_schaer_analytic.py
+          # sphere, pole-to-pole (Stage F; dev_notes/sphere_poles_plan.md).
+          # The jax jobs below gate the global sphere cases for jax-vs-numpy
+          # EQUIVALENCE only — these gate the numpy physics itself, so a numpy
+          # pole regression can no longer pass silently.
+          pytest ./test_scripts/test_sphere_metric.py
+          pytest ./test_scripts/test_sphere_shell.py
+          pytest ./test_scripts/test_sphere_swe.py
+          pytest ./test_scripts/test_hj_background.py
+          pytest ./test_scripts/test_sphere_pole_metric.py
+          pytest ./test_scripts/test_sphere_pole_exchange.py
+          pytest ./test_scripts/test_sphere_tc1_pole.py
+          pytest ./test_scripts/test_sphere_polar_filter.py
+          pytest ./test_scripts/test_sphere_pole_elliptic.py
+          pytest ./test_scripts/test_sphere_swe_global.py
+          pytest ./test_scripts/test_sphere_swe_tc6_global.py
           pytest ./test_scripts/test_da_smoke.py
           # the test_jax_* scripts run in the jax-equivalence job (jax
           # installed there); without jax they collect 0 tests and
@@ -110,6 +128,33 @@ jobs:
         run: |
           pytest ./test_scripts/test_jax_fullrun.py
           pytest ./test_scripts/test_jax_device_fullrun.py
+
+  # Sphere gates too slow for every-push CI (measured on a 24-core box, numpy,
+  # warm numba cache): sphere_gw ~7.4 min, hj_baroclinic ~2.6 min,
+  # hj_baroclinic_ridges ~3.3 min, hj_baroclinic_global ~16.7 min (numpy-only;
+  # ~19.5 min with the jax device gate). Manual trigger for now — add a
+  # `schedule:` trigger to this workflow to make it nightly.
+  sphere-slow-gates:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r dev-requirements.txt
+          pip install .
+
+      - name: Run the long-running sphere / baroclinic-wave gates
+        run: |
+          pytest ./test_scripts/test_sphere_gw.py
+          pytest ./test_scripts/test_hj_baroclinic.py
+          pytest ./test_scripts/test_hj_baroclinic_ridges.py
+          pytest ./test_scripts/test_hj_baroclinic_global.py
 
   # docs:
   #   runs-on: ubuntu-latest

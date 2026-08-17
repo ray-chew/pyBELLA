@@ -2,12 +2,11 @@
 
 The DA algorithms operate on stacked ``(N, ...)`` arrays; the ensemble members
 (``ModelState``) own the storage. This module is the single place that knows on
-which container a DA attribute lives (``CellSolField`` vs ``NodePressureField``),
-replacing the pre-refactor ``results[:, loc, ...]`` container-index convention.
+which container a DA attribute lives (``CellSolField`` vs ``NodePressureField``).
 
 Rebinding semantics are intentional: ``set_field`` re-binds the attribute to the
-analysis array, exactly as the reference implementation did
-(``setattr(results[n][loc], attr, data)``).
+analysis array (``setattr(container, attr, data)``) rather than writing into the
+existing buffer, so callers must re-read through ``get_field`` after an analysis.
 """
 
 import numpy as np

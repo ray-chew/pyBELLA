@@ -9,11 +9,9 @@ matvec into construction time in :func:`get_linop`:
 - the periodic ghost reconstruction (tmp-swap of the duplicate rows 1 and
   n-2 plus the ghost fills) is a fixed permutation of the input along each
   periodic axis, applied in the kernel as a gather:
-  ``[0 -> n-3, 1 -> n-2, n-2 -> 1, n-1 -> 2]``. (Until 2026-06-10 the
-  numba ``tmp`` was a view, making the closing ``p[-2] = tmp`` a no-op;
-  both backends were fixed in lockstep — proven bit-identical end-to-end,
-  since the solver only visits periodically consistent vectors, on which
-  mirroring and exchanging duplicate rows coincide.)
+  ``[0 -> n-3, 1 -> n-2, n-2 -> 1, n-1 -> 2]``. Both backends EXCHANGE the
+  duplicate rows, they do not mirror them; the two coincide only on
+  periodically consistent vectors, which is all the solver ever visits.
 
 Like the numpy twin, the matvec returns the boxed (3D, padded) array — the
 caller (scipy/jax bicgstab) flattens it.
@@ -138,7 +136,7 @@ def get_linop(elem, node, npf, ud, diag_inv, dt, cij):
 
 
 # --------------------------------------------------------------------------
-# pole-ring collapse (Stage F, F7): Galerkin master-node embedding, twin of
+# pole-ring collapse: Galerkin master-node embedding, twin of
 # ``numerics.pole_collapse.PoleCollapse``. The wrapped operator
 # ``gather o A o scatter`` solves each pole ring as a single master unknown;
 # the non-master ring entries stay exactly zero (scatter ignores them, gather

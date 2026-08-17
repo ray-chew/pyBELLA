@@ -10,8 +10,8 @@ the two metric quantities every operator consumes:
     J   = dz/deta                  (Jacobian; cell "thickness" weight)
     G_i = dz/dxi_i at fixed eta    (slope terms, i in {h1, h2})
 
-Gal-Chen--Somerville (:class:`GalChenTransform`) is the first concrete
-transform; SLEVE drops in later as another subclass — all metric arrays are
+Gal-Chen--Somerville (:class:`GalChenTransform`) and SLEVE
+(:class:`SLEVETransform`) are the concrete transforms — all metric arrays are
 stored as full grid-shaped fields even where Gal-Chen makes them separable,
 so no operator changes are needed for an eta-dependent Jacobian.
 
@@ -19,8 +19,8 @@ Activation contract (h == 0 bypass): terrain is active iff ``ud.orography``
 is defined (a callable ``h(xi_h1, xi_h2)`` in nondimensional units, mirroring
 the ``ud.stratification`` convention). Without it :func:`build_metric_fields`
 returns ``None``, ``elem.metric``/``node.metric`` are ``None``, and every
-consumer takes the uniform-Cartesian code path untouched — bit-identity with
-the pre-terrain solver by construction.
+consumer takes the uniform-Cartesian code path untouched — no metric
+arithmetic runs at all, so such cases are bit-identical by construction.
 
 Slopes prefer an analytic gradient ``ud.orography_grad = (dh_dxi1, dh_dxi2)``
 (role-ordered callables); otherwise they are central differences of the
@@ -173,7 +173,8 @@ class MetricFields:
     by ``axes.role_perm``. ``G2`` is ``None`` in 2D. Plain float64 arrays
     only, safe to pass straight into numba kernels.
 
-    General (Klein) metric data rides alongside the legacy scalars:
+    General curvilinear metric data rides alongside the vertical-line
+    scalars ``J``, ``G1``, ``G2``, ``z``:
 
     ``N``
         Area normals N_a = t_b x t_c (cyclic over computational axes).
@@ -193,32 +194,50 @@ class MetricFields:
     When ``N``/``x`` are not supplied they are synthesized from the
     vertical-line map's normals (J, 0, 0), (-G1, 1, -G2), (0, 0, J) —
     bit-identical to the cross products of the tangents
-    t1 = (1, G1, 0), t2 = (0, J, 0), t3 = (0, G2, 1) (the Phase-0
-    reduction contract, ``test_scripts/test_metric_reduction.py``).
+    t1 = (1, G1, 0), t2 = (0, J, 0), t3 = (0, G2, 1) (asserted in
+    ``test_scripts/test_metric_reduction.py``).
 
-    Beyond-vertical-line (Tier 3) metric data, all inert on the legacy
-    path:
+    The remaining fields exist for maps that are NOT "vertical-line" —
+    maps whose vertical coordinate lines are not parallel Cartesian
+    lines, so that "up" is no longer one fixed array axis.
+    Terrain-following coordinates ARE vertical-line (the eta lines stay
+    vertical; only their spacing and the surfaces they cut tilt), and
+    there these fields are aliases of ``J``/``z`` or ``None`` — nothing
+    on that path behaves differently. The spherical shell is the case
+    that needs them: gravity points along the local radial direction
+    e_r, which varies from cell to cell.
 
     ``height``
-        Generalized altitude (the coordinate gravity acts along). For
-        vertical-line maps this IS ``z`` (aliased); a curved map (sphere)
-        supplies e.g. ``r - a``. Consumers that mean "height above the
-        reference geopotential" read this, not ``z``.
+        Generalized altitude — the coordinate gravity acts along. On a
+        vertical-line map this IS ``z`` (aliased); a spherical map
+        supplies ``r - a``. Consumers meaning "height above the
+        reference geopotential" must read this, not ``z``.
     ``h_v``
-        Vertical arc length per unit eta, |t_v|. For vertical-line maps
-        this IS ``J`` (aliased; t_v = (0, J, 0)), and it equals the
-        legacy ghost-spacing construction J / (N_v)_v there.
+        Vertical arc length per unit eta, |t_v| — how much physical
+        distance one computational vertical step covers, so that
+        ``h_v * deta`` is a real dz (ghost-cell extrapolation and
+        hydrostatic integration both need that). On a terrain map with
+        no horizontal stretching it coincides with ``J``.
     ``e_up``
         Unit "up" direction as a Cartesian-component list (like one row
-        of ``N``), or ``None`` when up is the fixed Cartesian role-v axis
-        (every vertical-line map). Buoyancy/gravity consumers branch on
-        this.
+        of ``N``), or ``None`` when up is simply the fixed Cartesian
+        role-v axis (every vertical-line map). Buoyancy/gravity
+        consumers branch on this.
     ``vertical_line``
-        False for maps whose vertical coordinate lines are not parallel
-        Cartesian lines. Then ``G1``/``G2`` are ``None`` — the slope
-        scalars are mathematically undefined (their construction divides
-        by a Cartesian component of N_v that passes through zero on a
-        sphere) — and any remaining G1/G2 consumer must not be reached.
+        True when the curve traced by varying eta at fixed horizontal
+        coordinates is parallel to one fixed Cartesian axis. Terrain
+        tilts the eta = const SURFACES but not those LINES, so terrain
+        maps are True; the radial lines of a sphere point a different
+        way at each (lambda, phi), so it is False -- and "up" becomes
+        per-cell data (``e_up``) instead of a global axis.
+
+        False also costs the slope scalars. ``G1``/``G2`` are read off
+        the surface normal as rise over run, G = -(N_v)_h / (N_v)_v,
+        which presumes the coordinate surface is a graph over the
+        horizontal plane. A sphere is not: the denominator vanishes on
+        two whole meridians. They are then ``None`` and operators use
+        ``N``, ``e_up`` and ``h_v`` instead — never add a G1/G2 consumer
+        reachable on such a map.
     """
 
     _ARRAYS = ("J", "ooJ", "G1", "G2", "z", "height", "h_v")
@@ -243,7 +262,7 @@ class MetricFields:
         # pole-safe reciprocal: at coordinate-singular (pole) nodes J == 0
         # exactly (snapped in the builder); ooJ := 0 there means "no
         # pointwise conversion at a zero-volume point" — the pole-row values
-        # are owned by the elliptic collapse / ghost machinery (Stage F).
+        # are owned by the elliptic collapse / ghost machinery.
         self.pole_mask = pole_mask
         if pole_mask is not None:
             safe_J = np.where(pole_mask, 1.0, J)
@@ -331,19 +350,25 @@ class MetricFields:
 def apply_gradient_map(metric, dp):
     """Physical gradients from computational ones: dp <- A @ dp (in place).
 
-    General curvilinear chain rule: with N_a = J grad xi_a (the duality
-    identity, Phase 1) the physical gradient is
+    ``dp`` arrives as differences per GRID STEP; physics needs them per
+    unit LENGTH. A step is not a unit length, and stepping sideways along
+    a tilted layer also climbs, so that difference carries some of p's
+    vertical variation and the climb must come back out. The conversion
+    factor is grad xi_a, which N_a = J grad xi_a puts in the metric:
 
         (grad_x p)_k = sum_a A_{k a} dp/dxi_a,    A_{k a} = (N_a)_k / J.
 
-    ``dp`` is the axis-indexed list of the cell-gradient arrays (entries
-    beyond ndim — quasi-2D callers pass three — are untouched); on return
-    entry k carries the Cartesian component k (canonical orientation only,
-    like every caller). For the vertical-line metric this reduces to the
-    legacy A = [[1, -G1/J, 0], [0, 1/J, 0], [0, -G2/J, 1]] map to within
-    one ulp (the diagonal picks up J * (1/J)); with h == 0 it is the exact
-    identity. The diagonal term leads each row's contraction so the
-    reduction is deterministic on both backends.
+    Vertical-line case: (grad p)_h = dp/dxi_h - (G_h/J) dp/deta (minus
+    the climb), (grad p)_v = (1/J) dp/deta (rescale). With h == 0, A is
+    the exact identity. Terrain keeps A sparse — off the diagonal only
+    the eta column is filled — while a sphere populates every entry.
+
+    ``dp`` is axis-indexed (entries beyond ndim untouched — quasi-2D
+    callers pass three); on return entry k carries Cartesian component k.
+    Canonical orientation only, as every caller uses: ``N`` is indexed by
+    array axis and the metric's axes rotate under the sweep flips. Each
+    row leads with its diagonal term to fix the summation order, so numpy
+    and JAX stay bit-identical.
     """
     ooJ = metric.ooJ
     N = metric.N
@@ -422,10 +447,13 @@ def elliptic_diag_geometric(metric):
     """Role-ordered diagonal of the geometric tensor M with H^-1 == I.
 
     M_rr = (1/J) |N_r|^2 — the terrain factors the 2D preconditioner
-    folds into its diagonal (H^-1 is deliberately excluded there, so a
-    forced-flat metric preconditions bit-identically to the plain path).
-    The vertical role reduces to the legacy (1 + G1^2 (+ G2^2)) / J
-    bit-exactly; horizontal roles give (1/J) J^2 = J to within one ulp.
+    folds into its diagonal. H^-1 is deliberately excluded: the
+    preconditioner only needs the right magnitude, and leaving it out
+    means a forced-flat metric preconditions bit-identically to the
+    uniform-Cartesian path. The vertical role gives exactly
+    (1 + G1^2 (+ G2^2)) / J; the horizontal roles give (1/J) J^2, which
+    is J only to within one ulp — worth knowing if you diff against a
+    flat reference.
     """
     ooJ = metric.ooJ
     ndim = metric.J.ndim
@@ -450,9 +478,13 @@ def get_transform(ud):
     return transform if transform is not None else GalChenTransform()
 
 
-def vertical_extent(ud, v):
-    """(eta0, etat): domain extent along the vertical axis v."""
-    return ((ud.xmin, ud.xmax), (ud.ymin, ud.ymax), (ud.zmin, ud.zmax))[v]
+def domain_extent(ud, axis):
+    """(lo, hi): domain extent along ``axis``.
+
+    Called with the vertical axis it gives the transforms' (eta0, etat);
+    called with a horizontal axis it gives the periodic wrap length.
+    """
+    return ((ud.xmin, ud.xmax), (ud.ymin, ud.ymax), (ud.zmin, ud.zmax))[axis]
 
 
 def _coordinate_wrap(ud, axis):
@@ -465,7 +497,7 @@ def _coordinate_wrap(ud, axis):
     """
     if axis is None or ud.bdry_type[axis] != opts.BdryType.PERIODIC:
         return lambda c: c
-    lo, hi = vertical_extent(ud, axis)
+    lo, hi = domain_extent(ud, axis)
     length = hi - lo
     return lambda c: lo + np.mod(c - lo, length)
 
@@ -520,12 +552,12 @@ def build_metric_fields(grid_obj, ud):
     ndim = grid_obj.ndim
     v = axes.vertical_axis(ud)
     transform = get_transform(ud)
-    eta0, etat = vertical_extent(ud, v)
+    eta0, etat = domain_extent(ud, v)
 
     if ndim == 2:
         # axes.validate enforces v == 1 in 2D: x horizontal, no second
-        # horizontal (terrain runs are quasi-2D 3D for now, but the metric
-        # build supports native 2D for the planned lap2D cross-term work)
+        # horizontal (terrain runs are usually quasi-2D 3D, but the metric
+        # build also supports genuinely 2D grids)
         a_h1, a_h2 = 0, None
     else:
         a_h1, a_h2 = axes.horizontal_axes(v)
@@ -598,20 +630,22 @@ def build_metric_fields(grid_obj, ud):
 
 
 class CurvilinearMap:
-    """Analytic curvilinear map x(xi) for the general metric path.
+    """Analytic map from computational coordinates xi to physical x.
 
-    Tier 1/2 of the Klein generalization: maps that keep gravity a
-    coordinate direction, x = (x(xi_0), ..., z(..., eta, ...), ...).
-    Subclasses implement elementwise, broadcastable methods of the
-    computational coordinates ``xi`` (a list indexed by ARRAY AXIS in
-    canonical orientation, i.e. Cartesian order; entries broadcast over
-    the grid like the builder's coordinate views).
+    Subclass this to give the solver a non-Cartesian grid. You supply the
+    map and its derivatives; :func:`build_metric_fields_from_map` derives
+    everything else (normals, Jacobian, effective slopes, arc lengths).
+    ``SphericalShellMap`` is the worked example.
 
-    ``vertical_line`` (class or instance attribute, default True)
-    declares whether the map's vertical coordinate lines are parallel
-    Cartesian lines. Tier-3 maps (sphere) set it False: the builder then
-    leaves the legacy slope scalars G1/G2 unset (undefined for such maps)
-    and derives the up-direction ``e_up`` from the vertical normal.
+    All methods are elementwise and broadcastable. ``xi`` arrives as a
+    list indexed by ARRAY AXIS in canonical orientation; entries broadcast
+    over the grid like the builder's coordinate views.
+
+    Set the ``vertical_line`` attribute False (class or instance) if the
+    map's vertical coordinate lines are not parallel Cartesian lines, as
+    on a sphere, where they are radial. The builder then leaves G1/G2
+    unset — the slope scalars do not exist for such a map — and derives
+    the up-direction ``e_up`` from the vertical normal.
     """
 
     vertical_line = True
@@ -652,16 +686,19 @@ def _cross_components(a, b):
 def build_metric_fields_from_map(grid_obj, ud, cmap):
     """Build MetricFields for one grid from an analytic CurvilinearMap.
 
-    The general-path sibling of :func:`build_metric_fields`: area normals
-    N_a from cross products of the map tangents, J from the triple
-    product, physical coordinates from the map. The legacy scalars are
-    the EFFECTIVE values the unconverted consumers need —
-    z = x[v], G_h = -(N_v)_h / (N_v)_v (exact slopes for vertical-line
-    maps, effective slopes under horizontal stretching) — so the wall
-    reflection and hydrostate sampling stay correct through Tier 2.
+    The counterpart of :func:`build_metric_fields`, which reads the same
+    quantities off ``ud.orography`` instead. Everything comes from the
+    map: area normals N_a as cross products of its tangents, J as the
+    triple product, physical coordinates directly.
 
-    For a vertical-line map this reproduces :func:`build_metric_fields`
-    bit-exactly (the Phase-0 reduction contract).
+    G1/G2 and z are also filled in, since the wall reflection and
+    hydrostate sampling still read them: z = x[v], and
+    G_h = -(N_v)_h / (N_v)_v, which is the exact slope for a
+    vertical-line map and the effective one under horizontal stretching.
+
+    A vertical-line map reproduces :func:`build_metric_fields`
+    bit-exactly, so switching a flat or terrain case onto this path
+    changes nothing.
     """
     ndim = grid_obj.ndim
     v = axes.vertical_axis(ud)
@@ -695,7 +732,7 @@ def build_metric_fields_from_map(grid_obj, ud, cmap):
         J = full(t[0][0] * N_raw[0][0] + t[0][1] * N_raw[0][1] + t[0][2] * N_raw[0][2])
         N = [[full(c) for c in Na] for Na in N_raw]
 
-    # Pole-enabled maps (Stage F) allow J == 0 on the zero-measure pole
+    # Pole-enabled maps allow J == 0 on the zero-measure pole
     # NODE set (the cos(phi) -> 0 coordinate singularity); everywhere else
     # J must still be strictly positive. Cells never sit on the pole, so
     # the mask is all-False on the cell grid (pole_mask -> None there).
@@ -731,7 +768,7 @@ def build_metric_fields_from_map(grid_obj, ud, cmap):
         G2 = full(-N[v][a_h2] / N[v][v]) if a_h2 is not None else None
         e_up = None
         # t_v = (0, dz/deta, 0): |t_v| is exactly the v-component (no
-        # sqrt, keeps the Phase-0 reduction bit-exact)
+        # sqrt, so this path stays bit-identical to build_metric_fields)
         h_v = full(t[v][v] + 0.0 * J)
     else:
         # slope scalars are undefined ((N_v)_k passes through zero); the

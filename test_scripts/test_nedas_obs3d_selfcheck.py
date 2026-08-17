@@ -1,4 +1,4 @@
-"""Self-anchored 3D obs gate (Phase E): PyBellaObs 3D vs an independent
+"""Self-anchored 3D obs gate: PyBellaObs 3D vs an independent
 re-derivation of its own documented conventions.
 
 There is NO native 3D pipeline to be byte-identical to (the frozen
@@ -100,14 +100,19 @@ def main() -> int:
                 seq = cache[(t, attr)]
                 assert seq["obs"].size == n_obs, (t, attr, "n_obs mismatch")
                 assert np.array_equal(seq["obs"], cleans[(t, attr)][sel]), (
-                    t, attr, "obs values differ from clean field at mask points"
+                    t,
+                    attr,
+                    "obs values differ from clean field at mask points",
                 )
                 assert np.array_equal(seq["x"], xg[sel]), (t, attr, "x")
                 assert np.array_equal(seq["y"], zg[sel]), (t, attr, "y (pyB z)")
                 assert np.array_equal(seq["z"], yg[sel]), (t, attr, "z (pyB y)")
                 want_sd = max(mean_sd[0, ai], ERR_FLOOR)
                 assert np.all(seq["err_std"] == want_sd), (
-                    t, attr, seq["err_std"][0], want_sd
+                    t,
+                    attr,
+                    seq["err_std"][0],
+                    want_sd,
                 )
                 s2 = cache2[(t, attr)]
                 for k in ("obs", "x", "y", "z", "err_std"):
@@ -116,8 +121,7 @@ def main() -> int:
 
     print(
         "PASS: %d (time, attr) 3D obs records match the re-derived seed-778 "
-        "mask, clean values, axis-mapped positions and VarCov+floor err_std"
-        % checked
+        "mask, clean values, axis-mapped positions and VarCov+floor err_std" % checked
     )
     return 0
 

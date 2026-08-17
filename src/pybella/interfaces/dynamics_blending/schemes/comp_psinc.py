@@ -33,22 +33,21 @@ def do_psinc_to_comp_conv(
     sol_freeze = copy.deepcopy(mem.sol)
     npf_freeze = copy.deepcopy(mem.npf)
     # the pressure-extraction step below is a throwaway: it must not advance
-    # the real clock (pre-ModelState code passed t/step by value; swe_lake.py
-    # applies the same freeze/restore)
+    # the real clock, so t/step/window_step are frozen and restored
+    # (swe_lake.py applies the same freeze/restore)
     time_freeze = (mem.time.t, mem.time.step, mem.time.window_step)
-    # run it on the reference's clock ([0, step-1] in the paper-era
-    # data.time_update): window_step = 0 keeps the eos schedule in the limit
-    # regime — with the live window_step == no_of_pi_initial, continuous
+    # run it on a rewound clock: window_step = 0 keeps the eos schedule in the
+    # limit regime — with the live window_step == no_of_pi_initial, continuous
     # blending would flip the throwaway step to compressible and extract a
     # compressible (unprojected) half-time pressure
     mem.time.step -= 1
     mem.time.window_step = 0
 
-    # exactly ONE extraction step (the paper-era [0, step-1] semantics):
-    # unbounded, the while-t<tout loop appends a spurious dt~0 step whenever
-    # the trial CFL dt undercuts the remaining time in the last ULP, and the
-    # extracted half-time pressure hangs on that branch — a knife-edge that
-    # flips between backends (and BLAS builds) in the last bit
+    # exactly ONE extraction step: unbounded, the while-t<tout loop appends a
+    # spurious dt~0 step whenever the trial CFL dt undercuts the remaining
+    # time in the last ULP, and the extracted half-time pressure hangs on that
+    # branch — a knife-edge that flips between backends (and BLAS builds) in
+    # the last bit
     stepmax_freeze = ud.stepmax
     ud.stepmax = mem.time.step + 1
 

@@ -1,7 +1,8 @@
 """Baldauf & Brdar (2013) linear internal gravity wave test.
 
-Ported from the legacy ``igw_baldauf_brdar`` initial condition
-(recoverable from the git tag ``archive/full_coriolis``). The case is a
+Ported from the ``igw_baldauf_brdar`` initial condition of the predecessor
+RKLM_Python code (recoverable from the git tag ``archive/full_coriolis``).
+The case is a
 small thermal perturbation on an isothermal (constant Brunt-Väisälä
 frequency) hydrostatic background in a periodic channel, for which
 Baldauf & Brdar (QJRMS, 2013) derive an analytic linear solution.
@@ -132,8 +133,7 @@ class UserData(object):
             self.inx,
             self.iny,
             self.stepmax,
-            # tolerance audit 2026-06-09 measured ~1e-10 run-to-run scatter
-            # SAME-MACHINE; the first CI run (2026-06-11, GitHub runner)
+            # run-to-run scatter is ~1e-10 SAME-MACHINE, but a GitHub runner
             # showed cross-PLATFORM scatter of 2.3e-6 on rhou — different
             # CPU/BLAS/numba reorder the bicgstab reductions. Gate at the
             # 1e-5 default; physics is guarded by the B&B analytic oracle.

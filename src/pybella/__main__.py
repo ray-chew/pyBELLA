@@ -13,7 +13,6 @@ from .flow_solver.discretisation import time_update as dis_time_update
 from .interfaces.dynamics_blending import prepare as blending_prepare
 from .interfaces.postprocessing import strip_target_file as strip_target
 
-
 # dependencies of the data assimilation subpackage
 from .data_assimilation import prepare as da_prepare, analysis as da_analysis
 

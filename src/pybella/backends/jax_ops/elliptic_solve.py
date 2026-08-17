@@ -1,12 +1,12 @@
 """JAX elliptic solve: bicgstab with scipy-matching convergence semantics.
 
-Component 2 of the JAX migration. The seam sits at the linear-solver level
-(`implicit_euler.do_implicit_part`): host-side coefficient assembly (ghost
-cells, operator coefficients, terrain folding, diagonal preconditioning,
-rhs construction) stays on the canonical numpy path, so both backends solve
-the same preconditioned system (bit-identical up to the ulp-level Coriolis
-coefficients, which component 3 routed through the JAX twin); the operator
-application and the Krylov iteration run in JAX.
+The seam sits at the linear-solver level (`implicit_euler.do_implicit_part`):
+host-side coefficient assembly (ghost cells, operator coefficients, terrain
+folding, diagonal preconditioning, rhs construction) stays on the canonical
+numpy path, so both backends solve the same preconditioned system
+(bit-identical up to the ulp-level Coriolis coefficients, which the JAX
+Coriolis twin supplies); the operator application and the Krylov iteration
+run in JAX.
 
 Convergence matching: scipy's ``bicgstab(A, b, atol=ud.tol)`` stops at
 ``||r|| <= max(rtol * ||b||, atol)`` with ``rtol = 1e-5`` (scipy default);

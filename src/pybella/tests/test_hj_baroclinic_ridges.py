@@ -37,7 +37,7 @@ INITIATES near the ridges (a longitude-localised meridional-wind response
 well above the flat-background pt-1 adjustment) and does not blow up; the
 production multi-day device run is pt 3.
 
-Balance option (c), as in pt 1: accept the small residual (no projection).
+As in pt 1, no initial projection: the small residual is accepted.
 The now-fixed field-mode gravity ghost fill
 (``cell_boundary._calculate_ghost_values``, regression
 ``test_scripts/test_field_mode_gravity_ghost.py``) makes the TC2-style

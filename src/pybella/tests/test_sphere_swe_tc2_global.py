@@ -1,13 +1,13 @@
-"""Williamson TC2 on the FULL pole-to-pole sphere (Stage F acid test).
+"""Williamson TC2 on the FULL pole-to-pole sphere.
 
 The +-80 deg channel :mod:`test_sphere_swe_tc2` extended to |phi| <= pi/2:
 ``BdryType.POLE`` latitude walls, a pole-enabled ``SphericalShellMap`` and the
 FFT-in-longitude polar filter. TC2's steady zonal flow u0 cos(phi) e_lambda
 VANISHES at the poles and every field is longitude-independent, so the filter
 is a no-op and the exact steady state is pole-regular — any drift is our
-discretisation. This is the acid test that the pole ghost exchange (F1), the
-pole-face flux closure (F2), the polar filter (F3) and the elliptic pole
-collapse (F4) compose correctly in a real forecast.
+discretisation. This is the acid test that the pole ghost exchange, the
+pole-face flux closure, the polar filter and the elliptic pole collapse
+compose correctly in a real forecast.
 """
 
 import numpy as np
@@ -42,14 +42,23 @@ class UserData(tc2.UserData):
         )
         self.polar_filter = polar_filter.PolarFilter(np.deg2rad(60.0))
 
+        # own target-regeneration switch: the global case has its own reference,
+        # so flipping the channel's flag must NOT regenerate this one (and vice
+        # versa). Set True + re-run to rebuild ``target_sphere_swe_tc2_global``.
+        self.diag = True
+        self.diag_updt_targets = False
+
         self.output_base_name = "_sphere_swe_tc2_global"
         self.output_type = "test" if not self.diag_updt_targets else "target"
         self.output_suffix = "_%i_%i" % (self.inx - 1, self.inz - 1)
+        # the reference filename is built from (Nx, Ny) = (inx - 1, <arg> - 1)
+        # and MUST match ``output_suffix`` above, which on the sphere is
+        # (nlambda, nphi) -> pass ``inz``, not ``iny`` (the radial axis).
         self.diag_state = make_diag_state(
             "test_sphere_swe_tc2_global",
             "target_sphere_swe_tc2_global",
             self.inx,
-            self.iny,
+            self.inz,
             self.stepmax,
             plot_compare=True,
         )

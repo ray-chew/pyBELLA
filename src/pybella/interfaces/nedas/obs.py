@@ -22,15 +22,15 @@ verified against src/pybella/data_assimilation/{params,utils,analysis}.py):
 - H5 labels: /<attr>/<attr>_ensemble_mem=0_<t:.3f>_after_full_step, full
   arrays including ghost frames. (params.init.load_obs)
 
-3D conventions (Phase E — there is NO native 3D pipeline, so these are the
-defining conventions, gated by test_scripts/test_nedas_obs3d_selfcheck.py):
+3D conventions (there is NO native 3D pipeline, so these are the defining
+conventions, gated by test_scripts/test_nedas_obs3d_selfcheck.py):
 
 - Volumetric sparse mask, seed 778 (its own chain; the 2D seed-777
   machinery above is untouched): default_rng(778) -> per-time integer
   seeds -> per time a shuffled 0/1 mask over the inner (iicx, iicy, iicz)
   cells with ceil(N*obs_frac) zeros (observed), shared by all attrs (all
   cell-grid; p2_nodes is not observed in 3D).
-- Positions under the Phase E axis mapping (model.py): NEDAS x := pyBELLA
+- Positions under the 3D axis mapping (model.py): NEDAS x := pyBELLA
   x, NEDAS y := pyBELLA z (horizontal), NEDAS z := pyBELLA y cell-centre
   heights (vertical).
 - err_std: the same VarCov reduction over the observed inner points of the
@@ -173,7 +173,7 @@ class PyBellaObs(Dataset):
         return cache
 
     def _native_obs_3d(self):
-        """Volumetric 3D obs (Phase E conventions — see module docstring)."""
+        """Volumetric 3D obs (conventions in the module docstring)."""
         times = [round(float(t), 3) for t in self.da_times]
         elem = self._model.elem
         nx, ny, nz = elem.iicx, elem.iicy, elem.iicz
@@ -208,11 +208,10 @@ class PyBellaObs(Dataset):
         mean_sd = std_dev.mean(axis=0, keepdims=True)
         floor = float(getattr(self, "err_std_floor", 0.0) or 0.0)
         sd = {
-            attr: max(mean_sd[0, ai], floor)
-            for ai, attr in enumerate(self.obs_attrs)
+            attr: max(mean_sd[0, ai], floor) for ai, attr in enumerate(self.obs_attrs)
         }
 
-        # positions: inner cell centres under the Phase E axis mapping
+        # positions: inner cell centres under the 3D axis mapping (model.py)
         x1d = elem.x[elem.igx : -elem.igx]
         y1d = elem.y[elem.igy : -elem.igy]
         z1d = elem.z[elem.igz : -elem.igz]

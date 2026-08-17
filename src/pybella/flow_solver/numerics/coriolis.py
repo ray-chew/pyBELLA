@@ -8,16 +8,13 @@ from ...backends import is_jax_backend
 def role_components(mem, ud):
     """Role-ordered rotation components (w_h1, w_v, w_h2), UNSCALED by dt.
 
-    Legacy path: exactly ``ud.coriolis_strength`` indexed by the role
-    permutation — scalars, bit-identical to the historical inline reads.
+    Uniform-rotation path (``ud.coriolis_field`` unset): exactly
+    ``ud.coriolis_strength`` indexed by the role permutation — three
+    scalars.
 
     Field path (``ud.coriolis_field`` set): a callable of the three
     CARTESIAN coordinates returning the three Cartesian rotation
-    components, evaluated once per cell grid and cached on ``mem.elem``.
-    The components are Cartesian like the momenta, so the role binding is
-    the same axis permutation. Spatially varying Coriolis (f(phi) e_r on
-    the sphere, or a beta plane) enters ONLY here; the njit kernels are
-    elementwise and take scalars or full arrays unchanged.
+    components.
     """
     ax_h1, ax_v, ax_h2 = axes.role_perm(axes.vertical_axis(ud))
     field = getattr(ud, "coriolis_field", None)
@@ -54,8 +51,8 @@ def role_components(mem, ud):
 
 def _up_role_components(mem, ud):
     """Role-ordered (e_h1, e_v, e_h2) components of the local up direction,
-    or None on vertical-line/no-metric runs (up = the role-v axis; the
-    legacy (C11) kernel is that special case, kept verbatim)."""
+    or None on vertical-line/no-metric runs (up = the role-v axis;
+    ``_compute_coriolis_coefficients`` (eq. C11) is exactly that case)."""
     metric = mem.elem.metric
     if metric is None or metric.e_up is None:
         return None
@@ -64,7 +61,6 @@ def _up_role_components(mem, ud):
     return e[ax_h1], e[ax_v], e[ax_h2]
 
 
-# Refactored main function
 def multiply_inverse_terms(
     Vec, mem, ud, dt, attrs=("rhou", "rhov", "rhow"), get_coeffs=False
 ):
@@ -270,7 +266,6 @@ def _compute_coriolis_coefficients(
     # Dropping it gives h22 -> (1 + wv^2)/det = 1/nu_nh (no Coriolis), the
     # vertical Laplacian coefficient the thesis hydrostatic balance prescribes
     # (eq. 4.40/4.42). Bit-identical for alpha_w = 1 (the factor was 1 there).
-    # See dev_notes/hydrostatic_blending.md, Phase H1a.
     h22[...] = (1.0 + wv_sq) * denom
     h23[...] = (wh2 * wv + wh1) * denom
 
@@ -305,7 +300,8 @@ def _compute_coriolis_coefficients_general(
 ):
     """General (C11) matrix for an arbitrary up-direction e (role comps).
 
-    Two ingredients, both reducing analytically to the legacy kernel for
+    Two ingredients, both reducing analytically to
+    ``_compute_coriolis_coefficients`` (the axis-aligned kernel) for
     e = role-v (gated to <= 1e-14 in test_scripts/test_sphere_metric.py):
 
     1. H^-1 with H = I + (alpha_w - 1 + nu) e e^T + W_x — the
@@ -315,12 +311,14 @@ def _compute_coriolis_coefficients_general(
            C^-1 = (I + w w^T - W_x) / (1 + |w|^2),
            H^-1 = C^-1 - mu (C^-1 e)(e^T C^-1) / (1 + mu e^T C^-1 e),
 
-       mu = nu + alpha_w - 1. The Phase-H1a h22 structure (no alpha_w
-       factor) falls out: denom_SM - mu * c22 = 1.
+       mu = nu + alpha_w - 1. The axis-aligned kernel's h22 structure (no
+       alpha_w factor on the vertical self-coupling) falls out:
+       denom_SM - mu * c22 = 1.
     2. The thesis (C11) alpha_w prefactor on the (horizontal <- vertical)
-       couplings — the legacy h12/h32 are alpha_w * (H^-1)_12/(H^-1)_32,
-       so the DIAGNOSTIC up-momentum input never feeds the transverse
-       rows in the hydrostatic limit. Coordinate-free:
+       couplings — in the axis-aligned kernel h12 = alpha_w * (H^-1)_12
+       and h32 = alpha_w * (H^-1)_32, so the DIAGNOSTIC up-momentum input
+       never feeds the transverse rows in the hydrostatic limit.
+       Coordinate-free:
 
            G = H^-1 - (1 - alpha_w) (I - e e^T) H^-1 (e e^T).
 
