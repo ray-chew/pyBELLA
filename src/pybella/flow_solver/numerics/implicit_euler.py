@@ -141,7 +141,7 @@ def do_implicit_part(
             lap, rhs_inner, atol=ud.tol, maxiter=ud.max_iterations, callback=counter
         )
 
-    # Pole collapse (Stage F): the solve returns one master value per pole
+    # Pole collapse: the solve returns one master value per pole
     # ring (non-master ring entries are zero); scatter it back over the ring
     # so the pressure is single-valued at the pole before the correction.
     coll = getattr(mem, "_pole_collapse", None)
@@ -189,7 +189,7 @@ def _correction_nodes(mem, ud, dt, p, updt_chi):
     # the w-row applies in 2D too: H^-1 rotates the pressure correction into
     # the out-of-plane momentum whenever Coriolis is active. Restricting it
     # to ndim == 3 dropped that component in 2D runs (implicit-side sibling
-    # of the explicit-step defect fixed 2026-06-09; quantified at 1.4e-4 by
+    # of the same omission in explicit_euler.py; quantified at 1.4e-4 by
     # the 3D-vs-2D full-Coriolis oracle).
     mem.sol.rhow += thinv * mem.npf.w
     metric = mem.elem.metric
@@ -280,9 +280,9 @@ def _prepare_2d_system(mem, ud, dt):
         h2x2 = ((h11_t.T, h12_t.T), (h21_t.T, h22_t.T))
         M = terrain.elliptic_tensor_2d(mem.elem.metric, h2x2)
         coriolis_params = (M[0][0].T, M[1][1].T, M[0][1].T, M[1][0].T)
-        # diag: fold only the geometric factors (the legacy 2D preconditioner
-        # keeps H^-1 out of the diagonal — preserved here so a forced-flat
-        # metric preconditions bit-identically to the plain path)
+        # diag: fold only the geometric factors (the no-metric 2D
+        # preconditioner keeps H^-1 out of the diagonal — preserved here so a
+        # forced-flat metric preconditions bit-identically to the plain path)
         geo = terrain.elliptic_diag_geometric(mem.elem.metric)
         diag_inv = preconditioner.prepare_diag(
             mem.npf,
@@ -322,9 +322,8 @@ def _prepare_3d_system(mem, ud, dt):
     The operator carries the full H^-1 tensor coefficients C_ij =
     (Gamma^-1 P Theta) * h[role(i), role(j)] — the same H^-1 applied by
     _correction_nodes — so the elliptic solve is consistent with the
-    momentum correction (the legacy operator had only ad-hoc x-z cross
-    terms). With no rotation and no buoyancy H^-1 is the identity and the
-    operator reduces bit-exactly to the plain Laplacian.
+    momentum correction. With no rotation and no buoyancy H^-1 is the
+    identity and the operator reduces bit-exactly to the plain Laplacian.
     """
     hv = coriolis.compute_inverse_coefficients(mem, ud, dt)
     h_role = ((hv[0], hv[1], hv[2]), (hv[3], hv[4], hv[5]), (hv[6], hv[7], hv[8]))
@@ -352,7 +351,7 @@ def _prepare_3d_system(mem, ud, dt):
         raw = jax_lap3D.get_linop(mem.elem, mem.node, mem.npf, ud, diag_inv, dt, cij)
         rhs_vec = rhs_inner.ravel()
         if pole_collapse.pole_axis_present(ud):
-            # Pole-ring collapse (Stage F F7): the JAX lap3D already assembles
+            # Pole-ring collapse (JAX path): the JAX lap3D already assembles
             # the pole rows one-sided (it slab-zeroes the non-periodic phi
             # axis, exactly like numpy). Wrap the matvec + gather the rhs with
             # the Galerkin scatter/gather so the ring duplicates solve as one
@@ -370,7 +369,7 @@ def _prepare_3d_system(mem, ud, dt):
     raw = lap3D.get_linop(mem.elem, mem.node, mem.npf, ud, diag_inv, dt, cij)
     sh = mem.npf.rhs.size
 
-    # Pole-ring collapse (Stage F): one pressure unknown per (radius,
+    # Pole-ring collapse: one pressure unknown per (radius,
     # hemisphere) pole ring. The pole rows are already one-sided (lap3D
     # treats the non-periodic phi axis as a wall); wrap the matvec and rhs
     # with the Galerkin scatter/gather so the ring duplicates solve as one

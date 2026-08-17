@@ -1,8 +1,7 @@
 """PyBellaModel — NEDAS Model adapter wrapping the pyBELLA solver.
 
-Contract verified against NEDAS==1.2.0 source (NEDAS/core/model.py); design
-rationale and the risk register live in dev_notes/nedas_interface.md
-("Phase N0/N1 findings"). Conventions pinned here:
+Contract verified against NEDAS==1.2.0 source (NEDAS/core/model.py).
+Conventions pinned here:
 
 - NEDAS fields are ghost-free 2D arrays in (y, x) order. pyBELLA 2D fields
   are (x, y) with 2-cell ghost frames. read_var/write_var own ALL
@@ -45,8 +44,8 @@ from ..ic_config import IC_MODULES
 # true node field.
 CELL_VARS = ("rho", "rhou", "rhov", "rhoY")
 NODE_VARS = ("p2_nodes",)
-# 3D DA state (Phase E): all cell quantities, no node pressure — blending,
-# not the filter, acts on p2 (dev_notes/nedas_interface.md Phase E)
+# 3D DA state: all cell quantities, no node pressure — blending,
+# not the filter, acts on p2
 CELL_VARS_3D = ("rho", "rhou", "rhov", "rhow", "rhoY")
 
 
@@ -55,7 +54,7 @@ class PyBellaModel(Model[RegularGrid]):
 
     Config keys (default.yml next to this file; override via model_def.pybella):
         ic: IC_MODULES key of the case (e.g. 'test_travelling_vortex')
-        random_seed: member-seed chain root (archive convention: 888)
+        random_seed: member-seed chain root (the OSSE runs used 888)
         ud_overrides: dict of UserData attribute overrides (stepmax, aux,
             initial_blending, continuous_blending, ...)
     """
@@ -106,7 +105,7 @@ class PyBellaModel(Model[RegularGrid]):
             levels = np.array([0])
             var_names = CELL_VARS + NODE_VARS
         elif self.elem.ndim == 3:
-            # Phase E convention: the NEDAS horizontal plane is the two
+            # 3D axis convention: the NEDAS horizontal plane is the two
             # non-vertical pyBELLA axes (x, z) — NEDAS-x := x, NEDAS-y := z —
             # and NEDAS levels run along the vertical axis (y for these
             # cases). z_coords(k) returns the UPPER cell interface of level k
@@ -128,9 +127,7 @@ class PyBellaModel(Model[RegularGrid]):
             self.grid = RegularGrid(None, xx, zz, cyclic_dim=cyclic or None)
             self.grid.mask = np.full(xx.shape, False)
             # upper cell interfaces, one per level (len iicy)
-            self._level_z = np.asarray(
-                self.node.y[self.node.igy + 1 : -self.node.igy]
-            )
+            self._level_z = np.asarray(self.node.y[self.node.igy + 1 : -self.node.igy])
             levels = np.arange(self.elem.iicy)
             var_names = CELL_VARS_3D
             self._ghost_dirty = set()
@@ -171,9 +168,7 @@ class PyBellaModel(Model[RegularGrid]):
         mem = self.members[member]
         arr = getattr(mem.sol, name)
         inner = np.asarray(arr[self.elem.i2])
-        return inner.reshape(
-            self.elem.iicx, self.elem.iicy, self.elem.iicz
-        ).copy()
+        return inner.reshape(self.elem.iicx, self.elem.iicy, self.elem.iicz).copy()
 
     def _refill_ghosts(self, member: int) -> None:
         """Deferred ghost refill after 3D analysis writes (n_vars x iicy
@@ -355,12 +350,13 @@ class PyBellaModel(Model[RegularGrid]):
         from ...backends import is_device_backend
 
         if kwargs.get("nens") and is_device_backend(self.ud):
-            # Phase D2: lockstep batch-min-dt window integration of the whole
-            # ensemble on device — vmapped over members (ens_batch_mode
-            # 'vmap') or the gate comparator per-member loop with the same dt
-            # sequence ('loop'). Statistically equivalent to, but not
-            # bitwise-reproducing, the per-member-dt scheduler path (see
-            # dev_notes/nedas_interface.md D2).
+            # device batch path: lockstep batch-min-dt window integration of
+            # the whole ensemble on device — vmapped over members
+            # (ens_batch_mode 'vmap') or the per-member loop that 'vmap' is
+            # validated against, on the same dt sequence ('loop'). Every
+            # member advances on the ensemble-min dt, not its own CFL dt:
+            # statistically equivalent to, but not bitwise-reproducing, the
+            # per-member-dt scheduler path.
             from ...backends.jax_ops import device_batch
 
             mems = [self.members[m] for m in members]
@@ -390,11 +386,11 @@ class PyBellaModel(Model[RegularGrid]):
     # --- OSSE hooks -------------------------------------------------------------
 
     def generate_init_ensemble(self, **kwargs) -> None:
-        """Build one member from FRESH containers with the archive seed chain.
+        """Build one member from FRESH containers, seeded from the member chain.
 
-        sol_init must run exactly once per member on fresh fields — re-running
-        it on an initialised member double-applies the += initialisations
-        (dev_notes/da_reinstatement.md, phase D1).
+        Seeds come from ``RandomState(random_seed).randint(...)``. sol_init must
+        run exactly once per member on fresh fields — re-running it on an
+        initialised member double-applies the += initialisations.
         """
         kwargs = self.parse_kwargs(kwargs)
         if self._seeds is None:

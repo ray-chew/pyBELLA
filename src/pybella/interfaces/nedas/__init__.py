@@ -1,4 +1,4 @@
-"""NEDAS adapter for pyBELLA (Phase N1 skeleton — design in dev_notes/nedas_interface.md).
+"""NEDAS adapter for pyBELLA.
 
 NEDAS (github.com/nansencenter/NEDAS, pinned ==1.2.0) drives pyBELLA as an
 ensemble-DA "model": per-member ModelState forecasts via

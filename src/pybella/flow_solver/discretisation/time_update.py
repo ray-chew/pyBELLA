@@ -37,7 +37,7 @@ def do(
     if is_device_backend(ud):
         # device-resident inner loop: state pushed once, one dt scalar sync
         # per step, full state pulled at tout (backends/jax_ops/device_step);
-        # blend windows segment at the conversion steps (Phase D4)
+        # blend windows segment at the conversion steps
         from ...backends.jax_ops import device_step
 
         return device_step.run_window(mem, ud, tout, bld=bld, writer=writer)
@@ -60,10 +60,10 @@ def do(
         ######################################################
         # Blending : Do blending before timestep
         ######################################################
-        # the conversion routines mutate/rebind mem.sol and mem.npf in place;
-        # assigning pre-conversion aliases back here would discard the
-        # psinc -> comp conversion (the pre-refactor code threaded the
-        # CONVERTED Sol/mpv through, cf. 7f0b676~1 schemes.py)
+        # the conversion routines mutate/rebind mem.sol and mem.npf in place,
+        # and the CONVERTED state is what the step must use: never assign a
+        # pre-conversion alias back onto mem after this call, or the
+        # psinc -> comp conversion is silently discarded
         swe_to_lake, lake_to_swe_pending = schemes.prepare_blending(
             mem,
             ud,
@@ -137,7 +137,7 @@ def do(
         else:
             # Nonhydrostatic (alpha_w = 1): predictor (first-order, n -> n+1/2)
             # then corrector (second-order, n+1/2 -> n+1). Bit-identical to the
-            # thesis-era stepper (RKLM_Python data.py).
+            # predecessor RKLM_Python implementation this solver was ported from.
             predictor_state = predictor_half_step(
                 mem, ud, dt, writer, debug_writer, label
             )
@@ -145,7 +145,7 @@ def do(
                 mem, ud, dt, predictor_state, writer, debug_writer, label
             )
 
-        # Polar filter (Stage F): damp the CFL-violating zonal modes near
+        # Polar filter: damp the CFL-violating zonal modes near
         # the poles once per step, then refresh ghosts so the pole exchange
         # sees the filtered interior. No-op unless ud.polar_filter is set.
         if getattr(ud, "polar_filter", None) is not None:
@@ -202,12 +202,11 @@ def predictor_half_step(mem, ud, dt, writer=None, debug_writer=None, label=""):
     This is also the hydrostatic-balance recovery step (thesis eq. 4.35): in the
     hydrostatic regime (``alpha_w = 0``) the implicit solve here reconstructs a
     balanced Exner pressure and the diagnostic vertical momentum from the other
-    quantities, provided the hydrostatic background is stratification-consistent
-    (see ``dev_notes/hydrostatic_blending.md`` "ROOT CAUSE"). The hydro regime in
-    :func:`do` invokes this twice per step (thesis sec. 4.2.3 two first-order
-    updates) plus a second-order ``pi`` update (sec. 4.2.4), not a single
-    predictor+corrector; the eos schedule flips ``alpha_w`` and no separate
-    conversion routine is needed.
+    quantities, provided the hydrostatic background is
+    stratification-consistent. The hydro regime in :func:`do` invokes this twice
+    per step (thesis sec. 4.2.3 two first-order updates) plus a second-order
+    ``pi`` update (sec. 4.2.4), not a single predictor+corrector; the eos
+    schedule flips ``alpha_w`` and no separate conversion routine is needed.
 
     On return ``mem`` is at t^{n+1/2} and carries the half-time advective fluxes
     the corrector's Strang sweep consumes. Returns the auxiliary snapshots the
@@ -284,12 +283,11 @@ def corrector_full_step(
 
     # Seed the corrector pressure from p2_nodes0 (the start-of-step Exner
     # pressure) for the compressible-nonhydrostatic path. The hydrostatic
-    # (alpha_w = 0) case is intentionally EXCLUDED: with the Phase H1a
-    # operator fix the hydrostatic predictor reconstructs a balanced Exner
-    # pressure, and resetting it here would discard that reconstruction
-    # (re-seeding from the imbalanced p2_nodes0). Keeping it lets the
-    # hydrostatic regime carry the recovered pressure into the corrector.
-    # Bit-identical for alpha_w = 1. See dev_notes/hydrostatic_blending.md.
+    # (alpha_w = 0) case is intentionally EXCLUDED: the hydrostatic predictor
+    # reconstructs a balanced Exner pressure, and resetting it here would
+    # discard that reconstruction (re-seeding from the imbalanced p2_nodes0).
+    # Keeping it lets the hydrostatic regime carry the recovered pressure into
+    # the corrector. Bit-identical for alpha_w = 1.
     if ud.is_compressible == 1 and ud.is_nonhydrostatic == 1:
         mem.npf.p2_nodes[...] = mem.npf.p2_nodes0
 

@@ -152,11 +152,11 @@ class UserData(object):
             self.iny,
             self.stepmax,
             plot_compare=True,
-            # terrain elliptic solves amplify cross-platform rounding: first
-            # CI run (2026-06-11) deviated 2.4e-5 on rhou from the locally
-            # generated target (local same-machine scatter is ~1e-7). Gate
-            # well above platform noise; physics is guarded by the linear
-            # FFT oracle + SLEVE discriminator.
+            # terrain elliptic solves amplify cross-platform rounding: a CI
+            # runner deviated 2.4e-5 on rhou from a locally generated target
+            # (local same-machine scatter is ~1e-7). Gate well above platform
+            # noise; physics is guarded by the linear FFT oracle + SLEVE
+            # discriminator.
             tolerances={k: 5e-4 for k in _COMPARED_FIELDS},
         )
 

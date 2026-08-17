@@ -37,14 +37,20 @@ class UserData(tc6.UserData):
         )
         self.polar_filter = polar_filter.PolarFilter(np.deg2rad(60.0))
 
+        # own target-regeneration switch, independent of the channel case
+        self.diag = True
+        self.diag_updt_targets = False
+
         self.output_base_name = "_sphere_swe_tc6_global"
         self.output_type = "test" if not self.diag_updt_targets else "target"
         self.output_suffix = "_%i_%i" % (self.inx - 1, self.inz - 1)
+        # (Nx, Ny) must match ``output_suffix`` = (nlambda, nphi); see the TC2
+        # global case for the rationale.
         self.diag_state = make_diag_state(
             "test_sphere_swe_tc6_global",
             "target_sphere_swe_tc6_global",
             self.inx,
-            self.iny,
+            self.inz,
             self.stepmax,
             plot_compare=True,
         )

@@ -42,10 +42,10 @@ def run_to_steady_state(steps=240):
 
     The wave field below ~5 km is quasi-steady by then (vertical group
     speed ~ U^2 / (N a) = 1 m/s); the comparison window stays below that.
-    Calibration (2026-06-10, this config): w 0.40, u' 0.43, drag_ratio
-    0.98, flux_constancy 0.04. The full-resolution 128x64 run at
-    t U / a = 20 gives w 0.39 / u' 0.31 / drag 1.04 — resolution is not
-    the limiter, residual spin-up transients are.
+    Calibration (this config): w 0.40, u' 0.43, drag_ratio 0.98,
+    flux_constancy 0.04. The full-resolution 128x64 run at t U / a = 20
+    gives w 0.39 / u' 0.31 / drag 1.04 — resolution is not the limiter,
+    residual spin-up transients are.
     """
     ud = user_data.UserDataInit(**vars(case.UserData()))
     ud.coriolis_strength = np.array(ud.coriolis_strength)

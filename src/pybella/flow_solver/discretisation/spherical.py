@@ -1,4 +1,4 @@
-"""Spherical lat-lon geometry as a curvilinear map (Tier 3, sphere slice).
+"""Spherical lat-lon geometry as a curvilinear map.
 
 The sphere enters the solver the same way terrain does: as metric data
 (J, area normals N_a) built from a :class:`~.terrain.CurvilinearMap`.
@@ -8,9 +8,10 @@ kernel changes — only the map is new.
 Computational axes (canonical orientation, matching the slab convention
 h1 = x, v = y, h2 = z with ``gravity_direction = 1``):
 
-    axis 0 (x): lambda, longitude in radians  (PERIODIC on the channel)
+    axis 0 (x): lambda, longitude in radians  (PERIODIC)
     axis 1 (y): r, radius (nondimensional)    (the gravity/radial axis)
-    axis 2 (z): phi, latitude in radians      (WALL at +-phi_max)
+    axis 2 (z): phi, latitude in radians      (WALL at +-phi_max on a
+                latitude channel; POLE at +-pi/2 with ``pole=True``)
 
 Embedding into the fixed Cartesian frame (components = momenta indices):
 
@@ -26,15 +27,20 @@ radial unit vector is e_r = (cos(phi)cos(lambda), cos(phi)sin(lambda),
 -sin(phi)); the planetary rotation axis (toward the north pole) is the
 constant Cartesian vector (0, 0, -1).
 
-``frozen_radius=True`` evaluates the horizontal tangents at r~ = a
-instead of r: J and all normals become exactly r-independent — the
-thin-shell (SWE) degeneracy, consistent with the quasi-2D broadcast
-machinery. The price is that the discrete metric identity sum_a D_a N_a
-= 0 acquires a defect, but the defect is PURELY RADIAL (-2 a cos(phi)
-e_r, from the missing d(r^2)/dr), so it never contaminates tangential
-fluxes; asserted in ``test_scripts/test_sphere_metric.py``. The true
-r-dependent map (``frozen_radius=False``) is what the 3D compressible
-shell uses.
+``frozen_radius=True`` is the thin-shell approximation: the horizontal
+tangents use the fixed radius a instead of each cell's own r, so J and
+every normal stop depending on r. Shallow water wants this — the layer
+is thin enough that r = a everywhere in it, and the quasi-2D machinery
+broadcasts one layer anyway.
+
+It does break the identity sum_a D_a N_a = 0, which says a cell's face
+vectors must cancel; without it, a uniform flow would create or destroy
+mass. The leftover is exactly the radial growth term that went missing,
+-2 a cos(phi) e_r, so it points straight up and the horizontal faces
+still cancel perfectly. Harmless with no vertical dynamics, not harmless
+with them — so the 3D compressible shell uses ``frozen_radius=False``
+and keeps the identity exact. Both cases are checked in
+``test_scripts/test_sphere_metric.py``.
 """
 
 import numpy as np
@@ -58,11 +64,11 @@ class SphericalShellMap(terrain.CurvilinearMap):
 
     #: direction of the geometric NORTH pole, fixed Cartesian components
     pole_axis_cart = (0.0, 0.0, -1.0)
-    #: planetary ROTATION vector direction. NOT the north-pole direction:
-    #: this embedding is a mirror image of geographic space (x2 = -r sin
-    #: phi), and angular velocity is a pseudovector — eastward motion
-    #: dx/dt = Omega dx/dlambda corresponds to W = +Omega z_hat in the
-    #: embedded frame. Derived, and pinned by the TC2 balance gate.
+    #: planetary ROTATION vector direction. Points the OPPOSITE way to
+    #: the north pole above, and that is correct, not a typo: x2 = -r sin
+    #: phi makes this embedding a mirror image of geographic space, and a
+    #: mirror reverses the right-hand rule, so the spin arrow flips while
+    #: the pole does not.
     rotation_axis_cart = (0.0, 0.0, 1.0)
 
     def __init__(self, radius, frozen_radius=False, pole=False):
@@ -78,15 +84,17 @@ class SphericalShellMap(terrain.CurvilinearMap):
     def _fold_poles(self, xi):
         """Fold ghost coordinates beyond |phi| = pi/2 through the pole.
 
-        Stage F backbone: ghost cells past the pole cover physical points
-        on the FAR side, at longitude lambda + pi. Because momenta are
-        global Cartesian (no local basis), the pole ghost is a pure index
-        remap of the coordinates — evaluating every map quantity at the
-        FOLDED coordinate reproduces the image cell's physics bit-for-bit
-        (J > 0, e_r/N_phi smooth-correct). There is DELIBERATELY no chain
-        rule (no sign flip on t_phi): the fold-copy metric is the design,
-        not an approximation. See dev_notes/sphere_poles_plan.md (F0, and
-        the fold-geometry table).
+        A ghost cell past the pole covers a real point on the FAR side, at
+        longitude lambda + pi. Evaluating the map at that folded point puts
+        the image cell's own values in the ghost, verbatim — no rotation or
+        sign flip, since momenta are global Cartesian and carry no local
+        north/east basis to correct. (Negating ``t_phi`` would flip the
+        sign of J, and with it every flux in that row.)
+
+        e_r and N_phi then continue smoothly through the pole — leaning
+        one way before it, upright at it, the other way after — instead of
+        reflecting back on themselves as they would under a wall mirror.
+        Gated by ``test_scripts/test_sphere_pole_metric.py``.
 
         Returns ``xi`` unchanged when ``pole`` is off (bit-identity for the
         channel cases).
@@ -146,16 +154,23 @@ class SphericalShellMap(terrain.CurvilinearMap):
     def traditional_coriolis(self, coriolis_param):
         """``ud.coriolis_field`` callable for the traditional approximation.
 
-        The locally-vertical component of the planetary rotation (thin
-        shell / SWE): w(x) = (W . e_r) e_r with W = coriolis_param *
-        rotation_axis_cart. In this mirrored embedding W . e_r =
-        -coriolis_param * sin(phi) (see ``rotation_axis_cart``), so
-        w_k = +c * x2 * x_k / r^2. ``coriolis_param`` uses the same
-        nondimensional convention as ``ud.coriolis_strength`` (the value
-        the H^-1 kernel consumes, the FULL Coriolis parameter: pass
-        2*Omega_nd for a planet of rotation rate Omega). Both the sign
-        and the factor are pinned empirically by the TC2 balance gate
-        (the wrong sign or a factor 2 breaks geostrophy immediately).
+        On a thin shell only the locally-vertical part of the planetary
+        rotation matters, so the rotation vector W is replaced by its
+        radial projection — the usual f = 2 Omega sin(latitude):
+
+            w(x) = (W . e_r) e_r,   W = coriolis_param * rotation_axis_cart
+
+        ``field`` below evaluates that in Cartesian position, with no phi
+        left in it, using sin(phi) = -x2/r and e_r = x/r:
+
+            W . e_r = -c sin(phi) = c x2 / r     =>   w_k = c x2 x_k / r^2
+
+        Pass the FULL Coriolis parameter — 2*Omega_nd for a planet
+        spinning at Omega, the same convention as ``ud.coriolis_strength``
+        and what the H^-1 kernel consumes. Sign and factor are both pinned
+        by the Williamson-TC2 balance regression
+        (``tests/test_sphere_swe_tc2.py``): either one wrong and
+        geostrophy fails immediately.
         """
         c = float(coriolis_param)
 
@@ -184,14 +199,16 @@ class SphericalTerrainMap(SphericalShellMap):
     so the vertical coordinate lines stay RADIAL (t_eta || e_r): gravity
     remains along ``up_direction`` = e_r while the coordinate surfaces
     tilt with the terrain. For h == 0 the metric reduces to
-    ``SphericalShellMap`` (bit-near; gated).
+    ``SphericalShellMap`` (bit-near; asserted in
+    ``test_scripts/test_sphere_metric.py``).
 
     The orography ``h(lambda, phi)`` is evaluated at lambda wrapped into
-    [-pi, pi) so ghost longitudes see their periodic image (the seam
-    consistency the legacy builder enforces); analytic gradient callables
-    ``orography_grad = (dh_dlam, dh_dphi)`` are REQUIRED (no FD fallback:
-    the grid spacing is not visible to the map). Single-component
-    transforms only (SLEVE needs the smooth/residual split — later).
+    [-pi, pi) so ghost longitudes see their periodic image (the same
+    periodic-seam consistency ``build_metric_fields`` enforces); analytic
+    gradient callables ``orography_grad = (dh_dlam, dh_dphi)`` are
+    REQUIRED (no FD fallback: the grid spacing is not visible to the
+    map). Single-component transforms only (SLEVE needs the
+    smooth/residual split — not implemented).
     """
 
     def __init__(
@@ -208,8 +225,10 @@ class SphericalTerrainMap(SphericalShellMap):
         )
         if getattr(self.transform, "n_components", 1) != 1:
             raise NotImplementedError(
-                "two-component transforms (SLEVE) on the sphere need the "
-                "smooth/residual orography split — not implemented yet"
+                "SphericalTerrainMap does not support two-component "
+                "transforms yet: it passes a single orography to the "
+                "transform, but SLEVE needs a (smooth, residual) pair. "
+                "Use GalChenTransform."
             )
 
     @staticmethod

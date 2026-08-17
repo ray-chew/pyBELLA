@@ -6,8 +6,8 @@ t U / a = 12) twice — once with the case's SLEVE transform, once forced to
 Gal-Chen — and asserts:
 
 1. SLEVE vs the linear FFT oracle (``tests/schaer_linear_analytic.py``):
-   field, drag and flux-constancy gates. Calibration 2026-06-10: w 0.312,
-   u' 0.307, drag_ratio 1.104, flux_constancy 0.043. (At 800 steps the
+   field, drag and flux-constancy gates. Calibration: w 0.312, u' 0.307,
+   drag_ratio 1.104, flux_constancy 0.043. (At 800 steps the
    periodic-domain mean-flow deceleration drags drag_ratio to ~1.2 — the
    metrics are quoted at the 480-step quasi-steady window on purpose.)
 2. The discriminator: the small-scale spectral fraction of w at 4-9 km —

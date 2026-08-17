@@ -1,4 +1,4 @@
-"""JAX elliptic solve (component 2): seam + solver equivalence vs scipy.
+"""JAX elliptic solve: seam + solver equivalence vs scipy.
 
 Two layers of validation:
 
@@ -149,8 +149,8 @@ def test_seam_agnesi2d_terrain():
 
 
 def test_seam_sphere_pole_global():
-    """Pole-to-pole shell: the elliptic pole-ring collapse (Stage F F7) — the
-    JAX lap3D one-sided pole rows wrapped in the Galerkin scatter/gather —
+    """Pole-to-pole shell: the elliptic pole-ring collapse — the JAX lap3D
+    one-sided pole rows wrapped in the Galerkin scatter/gather —
     reproduces the numpy collapse through a full do_implicit_part. The systems
     are bit-identical (assembly is numpy on both backends), so this agrees to
     solver tolerance and, being a single well-conditioned solve, to machine

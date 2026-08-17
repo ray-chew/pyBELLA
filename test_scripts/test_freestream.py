@@ -4,15 +4,16 @@ A uniform flow (constant rho, rhoY, velocity) has zero physical
 divergence, so the metric divergence rhs = Sum_a D_a (N_a . f) with
 f = theta * m = const must vanish up to the discrete metric defect
 c . Sum_a D_a N_a — the discrete analogue of the metric identity
-Sum_a d_a N_a = 0 (Klein's p. 9 compatibility question). With analytic
-collocated metrics (decision 1, option 1) the identity holds to
-truncation only; this test measures the defect directly on a wavy,
-genuinely 3D Tier-2 map and trips if it stops converging at second
-order or exceeds an absolute bound.
+Sum_a d_a N_a = 0 (the geometric conservation law, i.e. the
+freestream-preservation condition). With analytically evaluated,
+collocated metrics the identity holds to truncation only; this test
+measures the defect directly on a wavy, genuinely 3D stretched map and
+trips if it stops converging at second order or exceeds an absolute
+bound.
 
-If a future strongly distorted (Tier-3) grid trips this, the planned
-fallback is discrete face-based normals (freestream-exact by
-construction) — see tfc_generalization_plan.md, Phase 2.
+If a future strongly distorted grid (e.g. the spherical maps) trips
+this, the fallback is discrete face-based normals, which are
+freestream-exact by construction.
 """
 
 import numpy as np
@@ -26,7 +27,7 @@ from pybella.utils.operators import divergence
 
 pytestmark = pytest.mark.skipif(
     not hasattr(terrain, "build_metric_fields_from_map"),
-    reason="general metric machinery (tfc pt 1) not present",
+    reason="general curvilinear-map metric machinery not present",
 )
 
 
@@ -47,7 +48,7 @@ class _StubUD:
 
 
 class _WavyMap(terrain.CurvilinearMap):
-    """Genuinely 3D Tier-2 map: stretched x and y, wavy Gal-Chen z."""
+    """Genuinely 3D map: stretched x and y, wavy Gal-Chen z."""
 
     eta0, etat = 0.0, 2.0
 

@@ -70,7 +70,7 @@ class CellBoundaryHandler:
             raise AssertionError("Rayleigh boundary only defined on the gravity axis.")
 
     def _apply_pole_boundary(self, sol):
-        """Pole ghost exchange on the phi axis (Stage F, F1).
+        """Pole ghost exchange on the phi axis.
 
         The pole is a coordinate singularity, not a wall: a ghost cell past
         |phi| = pi/2 IS the interior cell on the far side of the pole
@@ -481,8 +481,9 @@ def _pad_field(sol, field_name, idx, pads, mode):
 def _set_boundary(sol, pads, btype, idx, normal_mom="rhov"):
     """
     Functional approach to setting the boundary. ``normal_mom`` names the
-    wall-normal momentum component (mirrored with a sign flip); historically
-    this was hardcoded to rhov, which broke walls on non-vertical axes.
+    wall-normal momentum component (mirrored with a sign flip); it must
+    follow the wall's axis — pinning it to rhov breaks walls on any
+    non-vertical axis.
     """
     tangential = ["rho", "rhoY", "rhoX"] + [
         m for m in ("rhou", "rhov", "rhow") if m != normal_mom
@@ -512,7 +513,8 @@ def _set_boundary(sol, pads, btype, idx, normal_mom="rhov"):
 
 def _negative_symmetric(vector, pad_width, iaxis, kwargs=None):
     """
-    Taken from the reference:
+    ``np.pad`` callback mirroring with a sign flip; the signature is the
+    one numpy.pad requires (see References).
 
     Parameters
     ----------

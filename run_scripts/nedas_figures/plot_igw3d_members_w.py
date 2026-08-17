@@ -17,7 +17,11 @@ import numpy as np
 
 T = float(sys.argv[1])
 STATE = sys.argv[2] if len(sys.argv) > 2 else "prior"
-OUT = sys.argv[3] if len(sys.argv) > 3 else f"outputs/e_figs/w_members_t{int(T)}_{STATE}.png"
+OUT = (
+    sys.argv[3]
+    if len(sys.argv) > 3
+    else f"outputs/e_figs/w_members_t{int(T)}_{STATE}.png"
+)
 
 TRUTH = sorted(
     __import__("glob").glob(
@@ -56,13 +60,15 @@ fields = {
 }
 
 # shared symmetric scale (robust: 99.5th pct over everything)
-lim = max(
-    np.percentile(np.abs(np.array(fields[lab])), 99.5) for lab in fields
-)
+lim = max(np.percentile(np.abs(np.array(fields[lab])), 99.5) for lab in fields)
 
 nrows = K + 1
 fig, axes = plt.subplots(
-    nrows, 2, figsize=(11.5, 0.62 * nrows + 1.2), sharex=True, sharey=True,
+    nrows,
+    2,
+    figsize=(11.5, 0.62 * nrows + 1.2),
+    sharex=True,
+    sharey=True,
     constrained_layout=True,
 )
 x = np.linspace(XLIM[0], XLIM[1], wt.shape[1] + 1)
@@ -74,13 +80,24 @@ for j, lab in enumerate(runs):
     for i in range(nrows):
         ax = axes[i, j]
         pm = ax.pcolormesh(
-            x, y, fields[lab][i], cmap="RdBu_r", vmin=-lim, vmax=lim,
+            x,
+            y,
+            fields[lab][i],
+            cmap="RdBu_r",
+            vmin=-lim,
+            vmax=lim,
             rasterized=True,
         )
         ax.tick_params(length=2, labelsize=7)
         if j == 0:
-            ax.set_ylabel(row_labels[i], rotation=0, ha="right", va="center",
-                          fontsize=9, labelpad=12)
+            ax.set_ylabel(
+                row_labels[i],
+                rotation=0,
+                ha="right",
+                va="center",
+                fontsize=9,
+                labelpad=12,
+            )
 for ax in axes[-1]:
     ax.set_xlabel("x (nondim)", fontsize=9)
 

@@ -1,7 +1,7 @@
-"""Phase-0 reduction contract for the curvilinear metric generalization.
+"""Reduction contract for the general curvilinear metric.
 
-Executable definition of "reduces to the current terrain code" for the
-planned Klein-style metric (J, N1, N2, N3): for the vertical-line map
+Executable definition of "reduces to the vertical-line terrain code"
+for the general metric (J, N1, N2, N3): for the vertical-line map
 z = z(xi_h1, eta, xi_h2) (x, y identity) the tangents in role order
 (h1, v, h2) are
 
@@ -12,22 +12,23 @@ with J = dz/deta and G_h = dz/dxi_h, and the area normals N_i = t_j x t_k
 
     N1 = (J, 0, 0),   N2 = (-G1, 1, -G2),   N3 = (0, 0, J)
 
-so the general flux components F_i = N_i . f reproduce today's
+so the general flux components F_i = N_i . f reproduce
 ``_metric_contravariant_fluxes_jit`` BIT-EXACTLY:
 
     F1 = J f_h1,   F2 = f_v - G1 f_h1 - G2 f_h2,   F3 = J f_h2.
 
 The bit-exact contraction order is part of the contract: vertical
-component first, then h1, then h2 (see ``general_flux``) — Phase 2's
-general flux assembly must keep this order so the reduction stays exact.
+component first, then h1, then h2 (see ``general_flux``) — any general
+flux assembly must keep this order so the reduction stays exact.
 
 Also asserted: the duality N_i . t_j = J delta_ij (equivalent to
 N_i = J grad xi_i, the bridge to the gradient/elliptic picture),
-det N = J^2 (nonsingularity), and a Tier-2 fixture
-x = (x(xi1), z(xi1, eta, xi3), y(xi3)) pinning the identities Phase 4's
-stretched-grid gate depends on — in particular the effective-slope
-identity -(N2)_h / (N2)_v = z_xi_h / x'_h that keeps the contravariant
-wall reflection (cell_boundary._slope_terms) correct on stretched grids.
+det N = J^2 (nonsingularity), and a horizontally stretched fixture
+x = (x(xi1), z(xi1, eta, xi3), y(xi3)) pinning the identities the
+stretched-grid advection and wall-reflection tests depend on — in
+particular the effective-slope identity -(N2)_h / (N2)_v = z_xi_h / x'_h
+that keeps the contravariant wall reflection
+(cell_boundary._slope_terms) correct on stretched grids.
 """
 
 import numpy as np
@@ -61,11 +62,12 @@ def normals(t1, t2, t3):
 
 
 def general_flux(N_i, f):
-    """The Phase-2 contraction contract: F_i = N_i . f, vertical first.
+    """The contraction contract: F_i = N_i . f, vertical first.
 
     Role-component order is (h1, v, h2); summing v + h1 + h2 left-to-right
-    makes the vertical-line reduction bit-exact against the legacy kernel
-    (1*f_v == f_v, x + (-y) == x - y, 0 + x == x in IEEE arithmetic).
+    makes the reduction bit-exact against the vertical-line kernel
+    ``divergence._metric_contravariant_fluxes_jit`` (1*f_v == f_v,
+    x + (-y) == x - y, 0 + x == x in IEEE arithmetic).
     """
     return N_i[1] * f[1] + N_i[0] * f[0] + N_i[2] * f[2]
 
@@ -116,7 +118,7 @@ def _random_fields(rng, shape):
     return rho, rhoY, moms
 
 
-# ----------------------------------------- vertical-line maps (Tier 1)
+# ------------------------------------------------- vertical-line maps
 
 
 @pytest.mark.parametrize("sleve", [False, True], ids=["galchen", "sleve"])
@@ -202,11 +204,11 @@ def test_flux_reduction_2d_bit_exact():
     assert np.array_equal(N1[1] * f[1] + N1[0] * f[0], f_h1_leg)
 
 
-# ------------------------------------------------ Tier-2 fixture (stretch)
+# ------------------------------------- horizontally stretched fixture
 
 
 def _tier2_map():
-    """Analytic Tier-2 map x = (x(xi1), z(xi1, eta, xi3), y(xi3)).
+    """Analytic stretched map x = (x(xi1), z(xi1, eta, xi3), y(xi3)).
 
     Gal-Chen z over a 2D hill, with smooth monotone horizontal stretches;
     returns role-component tangents plus the analytic pieces.
@@ -240,7 +242,7 @@ def test_tier2_tangent_fixture():
     N1, N2, N3 = normals(t1, t2, t3)
     J = dot(t1, N1)
 
-    # closed forms of the Tier-2 normals and Jacobian
+    # closed forms of this map's normals and Jacobian
     np.testing.assert_allclose(J, xp * z_eta * yp, rtol=1e-14)
     assert np.all(J > 0.0)
     np.testing.assert_allclose(N1[0], z_eta * yp, rtol=1e-14)
@@ -250,7 +252,7 @@ def test_tier2_tangent_fixture():
     np.testing.assert_allclose(N2[2], -(xp * z_x3), rtol=1e-14)
     np.testing.assert_allclose(N3[2], xp * z_eta, rtol=1e-14)
 
-    # duality and nonsingularity at Tier 2 (now with real FP cancellation)
+    # duality and nonsingularity on the stretched map (real FP cancellation)
     T = (t1, t2, t3)
     N = (N1, N2, N3)
     scale = np.max(np.abs(J))
@@ -275,14 +277,14 @@ def test_tier2_tangent_fixture():
     np.testing.assert_allclose(dot(N2, m) / N2[1], contra_eff, rtol=1e-12, atol=1e-13)
 
 
-# ------------------------------------- Phase 1: MetricFields N/x machinery
+# ------------------------------------------- MetricFields N/x machinery
 #
-# Optional: these exercise the generalized metric (tfc pt 1+). They skip
-# cleanly on a tree where only the Phase-0 contract above applies.
+# Optional: these exercise the generalized metric (terrain.CurvilinearMap).
+# They skip cleanly on a tree that only has the algebraic contract above.
 
 _general_metric = pytest.mark.skipif(
     not hasattr(terrain, "CurvilinearMap"),
-    reason="general metric machinery (tfc pt 1) not present",
+    reason="general curvilinear-map metric machinery not present",
 )
 
 
@@ -308,7 +310,7 @@ def test_builder_normals_match_cross_products(sleve, loc):
 def test_flip_rotates_normals_consistently():
     """Sweep flips roll leaf axes and rotate WHICH normal sits on which
     array axis; Cartesian components never permute, so the vertical
-    normal's slope components track the (rolled) legacy G arrays."""
+    normal's slope components track the (rolled) G1/G2 slope arrays."""
     m = _make_metrics()[0]
     ndim = m.J.ndim
     N0 = [[c.copy() for c in Na] for Na in m.N]
@@ -340,12 +342,12 @@ def test_flip_rotates_normals_consistently():
             assert np.array_equal(m.N[a][k], N0[a][k])
 
 
-# ------------------------------ Phase 1: general path (CurvilinearMap)
+# --------------------------------------- general path (CurvilinearMap)
 
 
 class _StubUD:
     """Minimal ud for grid_init: all-WALL so coordinate wraps are identity
-    (required for the bit-exact general-vs-legacy comparison)."""
+    (required for the bit-exact comparison against build_metric_fields)."""
 
     def __init__(self, orography=None, orography_grad=None):
         self.inx, self.iny, self.inz = 17, 9, 7
@@ -389,7 +391,7 @@ if hasattr(terrain, "CurvilinearMap"):
 
     class _GalChenLineMap(terrain.CurvilinearMap):
         """The vertical-line Gal-Chen map written as a CurvilinearMap, using
-        the same closed forms as the legacy builder (bit-exact reduction)."""
+        the same closed forms as ``build_metric_fields`` (bit-exact)."""
 
         def __init__(self, hill, grads, eta0, etat):
             self.h, (self.dh1, self.dh2) = hill, grads
@@ -437,7 +439,7 @@ if hasattr(terrain, "CurvilinearMap"):
 @_general_metric
 def test_general_path_reduces_to_legacy_builder():
     """build_metric_fields_from_map == build_metric_fields, bit for bit,
-    for the vertical-line Gal-Chen map (the Phase-1 reduction gate)."""
+    for the vertical-line Gal-Chen map."""
     hill, grads = _stub_hill()
     ud = _StubUD(orography=hill, orography_grad=grads)
     elem, node = dis_grid.grid_init(ud)
@@ -491,7 +493,7 @@ def test_general_path_tier2_effective_slopes():
 def test_elliptic_fold_spd_symmetry():
     """M = (1/J) N H^-1 N^T with symmetric H^-1 = I must be symmetric and
     positive definite (det N = J^2 != 0) on a genuinely stretched map —
-    the solvability condition of the projection (Phase-3 gate)."""
+    the solvability condition of the projection."""
     hill, grads = _stub_hill()
     ud = _StubUD(orography=hill, orography_grad=grads)
     elem, _ = dis_grid.grid_init(ud)
@@ -523,8 +525,8 @@ def test_elliptic_fold_spd_symmetry():
 def test_advective_flux_upwind_sign_consistency():
     """Flux and upwind decision are monotone in the same signed quantity:
     F_i = (rhoY/rho)(N_i . m) and the Courant velocity F_i/(rhoY J) carry
-    sign(N_i . v) — no sign inconsistency possible (Phase-4 contract).
-    Random fields, both signs, on a genuinely stretched Tier-2 map."""
+    sign(N_i . v) — no sign inconsistency possible.
+    Random fields, both signs, on a genuinely stretched map."""
     from pybella.flow_solver.numerics.explicit_advection import advective_flux
 
     hill, grads = _stub_hill()

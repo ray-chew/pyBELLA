@@ -80,9 +80,9 @@ def apply_rayleigh_bdry(ud, elem=None, node=None, *, with_tau=False):
 def do_initial_projection(Sol, npf, elem, node, th, ud, *, u0, v0, w0=0.0):
     """Project a balanced vortex IC onto the discrete incompressible constraint.
 
-    Mirrors the legacy in-case block exactly: freeze the regime to
-    incompressible, subtract the background wind ``(u0, v0, w0)``, run one
-    implicit-Euler step, then restore the nodal pressure and re-add the wind.
+    Freeze the regime to incompressible, subtract the background wind
+    ``(u0, v0, w0)``, run one implicit-Euler step, then restore the nodal
+    pressure and re-add the wind.
     A no-op unless ``ud.initial_projection``. For 2D cases ``w0 == 0.0`` makes
     the ``rhow`` terms an exact (``±0``) no-op, so the same helper serves 2D and
     3D.

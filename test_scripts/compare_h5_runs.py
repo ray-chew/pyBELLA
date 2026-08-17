@@ -1,16 +1,16 @@
-"""Bit-for-bit comparison of two pyBELLA output H5 files (Phase gate tool).
+"""Bit-for-bit comparison of two pyBELLA output H5 files.
 
 CompareSol's per-field tolerances (1e-5) are necessary but not sufficient for
-the axial-agnosticity refactor's pure phases, which must be *bit-identical*
-for the default vertical axis. This walks every dataset common to two run
-files and reports max |a - b|; exit code 1 if any dataset differs (or is
+a behaviour-preserving change, whose output must be *bit-identical* on every
+configuration it claims not to alter. This walks every dataset common to two
+run files and reports max |a - b|; exit code 1 if any dataset differs (or is
 missing from one side).
 
 Usage:
     python test_scripts/compare_h5_runs.py baseline.h5 candidate.h5 [--tol 0]
 
 Typical workflow: copy ./outputs/test_<case>/<case>_<N>_<M>.h5 for all cases
-into a scratch baseline dir before starting a phase, rerun the suite after,
+into a scratch baseline dir before starting a refactor, rerun the suite after,
 then compare pairwise.
 """
 

@@ -136,7 +136,7 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     xc = 0.0
     a = ud.scale_factor * 5.0e3 / ud.h_ref
 
-    # ensemble-member perturbation of the theta' wave (Phase E 3D DA OSSE):
+    # ensemble-member perturbation of the theta' wave (3D DA OSSE):
     # seeded amplitude/position shifts + a z-modulation used by the 3D
     # branch; inert for every shipped config (seed None / perturb_type
     # default 'pos_perturb')
@@ -215,9 +215,10 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
 
 
 # ---------------------------------------------------------------------------
-# 3D branch (Phase E 3D DA OSSE). Faithful transcriptions of the 2D path with
-# z as a trailing broadcast axis: with zamp == 0 every z-slab of every field
-# is BITWISE identical to the 2D IC (test_scripts/test_igw3d_ic_oracle.py).
+# 3D branch (used by the 3D data-assimilation OSSE). Faithful transcriptions
+# of the 2D path with z as a trailing broadcast axis: with zamp == 0 every
+# z-slab of every field is BITWISE identical to the 2D IC
+# (test_scripts/test_igw3d_ic_oracle.py).
 # hydrostatics.column/initial_pressure stay untouched (they assert ndim == 2);
 # the twins live here because they are igw-IC helpers, not solver code.
 # ---------------------------------------------------------------------------
@@ -242,9 +243,9 @@ def _sol_init_3d(Sol, npf, elem, node, th, ud, u0, v0, w0, delth, xc, a, zamp, z
     Y = ud.stratification(y) + delth * zmod * ud.molly(x) * np.sin(np.pi * y) / (
         1.0 + (x - xc) ** 2 / (a**2)
     )
-    Yn = ud.stratification(yn) + delth * zmod_n * ud.molly(xn) * np.sin(
-        np.pi * yn
-    ) / (1.0 + (xn - xc) ** 2 / (a**2))
+    Yn = ud.stratification(yn) + delth * zmod_n * ud.molly(xn) * np.sin(np.pi * yn) / (
+        1.0 + (xn - xc) ** 2 / (a**2)
+    )
 
     _column3(HySt, HyStn, Y, Yn, elem, node, th, ud)
 
@@ -426,9 +427,9 @@ def _initial_pressure3(Sol, npf, elem, node, ud, th):
     x_idx = slice(igx, -igx + 1)
     y_idx = slice(igy, -igy + 1)
 
-    npf.p2_cells[x_idx, y_idx, :] += pibot[x_idx][:, None, :] - 1.0 * npf.HydroState.p20[
-        y_idx
-    ].reshape(1, -1, 1)
+    npf.p2_cells[x_idx, y_idx, :] += pibot[x_idx][
+        :, None, :
+    ] - 1.0 * npf.HydroState.p20[y_idx].reshape(1, -1, 1)
 
     icxn = node.icx
     icyn = node.icy
@@ -449,10 +450,7 @@ def _initial_pressure3(Sol, npf, elem, node, ud, th):
     bdpdx[1:] = np.sum(
         Pc
         * thc
-        * (
-            npf.p2_nodes[1:-1, igy:-igy, :-1]
-            - npf.p2_nodes[:-2, igy:-igy, :-1]
-        )
+        * (npf.p2_nodes[1:-1, igy:-igy, :-1] - npf.p2_nodes[:-2, igy:-igy, :-1])
         * dy,
         axis=1,
     )
@@ -461,7 +459,9 @@ def _initial_pressure3(Sol, npf, elem, node, ud, th):
     coeff = np.zeros((node.icx, icz))
     pibot = np.zeros((node.icx, icz))
 
-    coeff[igx + 1 : -igx + 1] = np.cumsum(coeff[igx:-igx] + dx / beta[igx + 1 :], axis=0)
+    coeff[igx + 1 : -igx + 1] = np.cumsum(
+        coeff[igx:-igx] + dx / beta[igx + 1 :], axis=0
+    )
     pibot[igx + 1 : -igx + 1] = np.cumsum(
         pibot[igx:-igx] - dx * bdpdx[igx + 1 :] / beta[igx + 1 :], axis=0
     )
@@ -476,9 +476,9 @@ def _initial_pressure3(Sol, npf, elem, node, ud, th):
 
     x_idx = slice(igx, -igx + 1)
     y_idx = slice(igy, -igy + 1)
-    npf.p2_nodes[x_idx, y_idx, :] += pibot_n[x_idx][:, None, :] - 1.0 * npf.HydroState_n.p20[
-        y_idx
-    ].reshape(1, -1, 1)
+    npf.p2_nodes[x_idx, y_idx, :] += pibot_n[x_idx][
+        :, None, :
+    ] - 1.0 * npf.HydroState_n.p20[y_idx].reshape(1, -1, 1)
 
     npf.dp2_nodes[...] = npf.p2_nodes
 
@@ -490,9 +490,7 @@ def _initial_pressure3(Sol, npf, elem, node, ud, th):
     )
 
     assert ((node.icx + 1) % 2) == 1
-    delp2 = 0.5 * (
-        npf.p2_nodes[-igx - 1, igy:-igy, :] - npf.p2_nodes[igx, igy:-igy, :]
-    )
+    delp2 = 0.5 * (npf.p2_nodes[-igx - 1, igy:-igy, :] - npf.p2_nodes[igx, igy:-igy, :])
     delp2 = delp2[None, :, :]
     sgn = np.ones((npf.p2_nodes.shape[0] - 2 * igx, 1, 1))
     sgn[1::2] *= -1

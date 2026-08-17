@@ -1,4 +1,4 @@
-"""Physics gates for shallow water on the spherical channel (sphere pt 3).
+"""Physics gates for shallow water on the spherical channel.
 
 Short-horizon TRIPWIRES (the golden masters in ``test_flow_solver.py``
 gate regression; the 12-day Williamson TC2 l2 <= 1e-3 validation runs

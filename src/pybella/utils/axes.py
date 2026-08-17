@@ -1,12 +1,12 @@
-"""Axis geometry for the axial-agnosticity refactor — single source of truth.
+"""Axis geometry — the single source of truth for the role/array-axis map.
 
 The solver's dynamics is written in **role space** ``(h1, v, h2)`` — first
 horizontal, vertical, second horizontal. The cyclic permutation
 
     role_perm(v) = ((v - 1) % 3, v, (v + 1) % 3)
 
-maps roles onto array axes; ``v = 1`` (today's y-vertical convention) gives
-the identity, so all existing configurations bind unchanged.
+maps roles onto array axes; ``v = 1`` (the default y-vertical convention)
+gives the identity, so y-vertical configurations remain unchanged.
 
 Only *cyclic* (even) permutations are allowed: the rotation vector is a
 pseudovector, so odd axis swaps would flip every Coriolis cross-term sign.
@@ -82,7 +82,8 @@ def wall_slabs(ndim, axis, depth=2):
     """Index tuples selecting the low/high boundary slabs along an axis.
 
     wall_slabs(3, 1) -> ((:, :2, :), (:, -2:, :)) as slice tuples — the
-    generalisation of the hardcoded ``[:, :2, ...]`` / ``[:, -2:, ...]``.
+    any-axis form of the axis-1-specific ``[:, :2, ...]`` / ``[:, -2:, ...]``
+    slabs.
     """
     lo = [slice(None)] * ndim
     hi = [slice(None)] * ndim
@@ -94,10 +95,10 @@ def wall_slabs(ndim, axis, depth=2):
 def expand_profile(profile_1d, ndim, vaxis, counts):
     """Broadcast a 1D vertical profile to the full grid by repetition.
 
-    Reproduces the legacy ``for dim in range(0, ndim, 2): expand_dims +
-    repeat`` construction exactly for vaxis == 1 (ascending non-vertical
-    dims), generalised to any vertical axis. ``counts[dim]`` is the target
-    size along each non-vertical dim (e.g. ``elem.sc``).
+    Equivalent to ``for dim in range(0, ndim, 2): expand_dims + repeat``
+    when vaxis == 1 (ascending non-vertical dims), generalised to any
+    vertical axis. ``counts[dim]`` is the target size along each
+    non-vertical dim (e.g. ``elem.sc``).
     """
     out = profile_1d
     for dim in range(ndim):
@@ -114,7 +115,7 @@ def degenerate_axes(node):
 
 
 def permute_axes(arr, sigma):
-    """Move reference axis i to twin axis sigma[i] (for permutation oracles)."""
+    """Move reference axis i to twin axis sigma[i] (for permutation checks)."""
     n = arr.ndim
     return np.moveaxis(arr, list(range(n)), list(sigma[:n]))
 

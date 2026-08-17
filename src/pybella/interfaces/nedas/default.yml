@@ -6,9 +6,9 @@ nproc_per_util: 1
 ens_run_strategy: scheduler   # one run() call per member
 # JAX device backend + ens_run_strategy 'batch': 'vmap' = one vmapped
 # lockstep window integration over the member axis; 'loop' = the same
-# batch-min-dt driver stepping members one by one (the vmap gate
-# comparator). Ignored for the numpy/jax (hybrid) backends and the
-# scheduler strategy. See dev_notes/nedas_interface.md Phase D2.
+# batch-min-dt driver stepping members one by one (the reference path
+# 'vmap' is validated against). Ignored for the numpy/jax (hybrid)
+# backends and the scheduler strategy.
 ens_batch_mode: vmap
 # vmap mode only: shard the member axis over this many GPUs (one process,
 # NamedSharding; nens must divide evenly). 1 = single device.
@@ -20,13 +20,13 @@ dataset_dir: ''
 
 # --- model ---
 ic: test_travelling_vortex    # IC_MODULES key
-random_seed: 888              # member-seed chain root (archive convention)
+random_seed: 888              # member-seed chain root (value used by the OSSE runs)
 ud_overrides:                 # UserData attribute overrides (stepmax, aux, ...)
 restart_dt: 0.25              # "hours" == nondim time units; TV OSSE cycle
 
 # --- obs dataset (native OSSE obs file) ---
 obs_file: ''
-obs_attrs: [rhou, rhov]       # thesis Table 6.2: momentum-only observations
+obs_attrs: [rhou, rhov]       # Chew (2022) thesis Table 6.2: momentum-only obs
 da_times: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
 obs_frac: 0.10                # native dap.obs_frac
 noise_percentage: 0.05        # native VarCov 5%

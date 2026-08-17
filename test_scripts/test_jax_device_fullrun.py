@@ -1,11 +1,11 @@
-"""Full regression runs on the device-resident JAX backend (phase B gate).
+"""Full regression runs on the device-resident JAX backend.
 
 Complete production cases under ``PYBELLA_BACKEND=jax-device`` must pass
 ``CompareSol.test_do`` against the *same stored golden-master targets* as
 the numpy and hybrid backends. The four CI cases cover 2D periodic
 advection+elliptic, diffusion + x-WALLs, 3D elliptic + full Coriolis, and
-terrain-following coordinates; the remaining cases were validated when the
-phase landed — run them ad hoc with
+terrain-following coordinates; the remaining cases were validated once on
+this backend — run them ad hoc with
 ``PYBELLA_BACKEND=jax-device pytest test_scripts/test_flow_solver.py``.
 
 The sphere path (non-vertical-line metric: general e_up buoyancy, general
@@ -14,7 +14,7 @@ walls, the tangent-plane surface constraint) is gated in-process by
 ``test_sphere_tc2_device_reproduces_numpy`` — a short Williamson TC2 run
 compared jax-device-vs-numpy, not against the stored target, because the
 initial-projection Krylov floor (~2e-5 in the momenta) sits above the 1e-5
-regression tolerance (see dev_notes/sphere.md, HARD-WON pt 2).
+regression tolerance.
 
 Skips cleanly when jax is not installed.
 """
@@ -74,9 +74,9 @@ def test_sphere_tc2_device_reproduces_numpy():
 
 
 def test_sphere_tc2_global_device_reproduces_numpy():
-    """The device-resident JAX pole-to-pole sphere path (Stage F F7b)
-    reproduces numpy over a short TC2 horizon. Exercises the on-device pole
-    ghost fold (cells + nodes), the elliptic pole-ring collapse, and the FFT
+    """The device-resident JAX pole-to-pole sphere path reproduces numpy over
+    a short TC2 horizon. Exercises the on-device pole ghost fold
+    (cells + nodes), the elliptic pole-ring collapse, and the FFT
     polar filter + surface constraint inside the device step loop, on top of
     the whole non-vertical-line sphere path — with the initial projection off,
     so the only floor is the pure-jax per-kernel ulp accumulation (the

@@ -10,8 +10,8 @@ the full time loop — which the in-process permutation oracle deliberately
 bypasses. No target, no CompareSol: the pytest only asserts a clean run.
 
 Physics agnosticity itself is proven by ``test_permutation_oracle.py``;
-a permanent z-vertical golden-master case is deferred to the
-terrain-following work (decision 2026-06-10).
+there is no permanent z-vertical golden-master case, so this smoke run is
+what guards the production entry path.
 """
 
 import numpy as np

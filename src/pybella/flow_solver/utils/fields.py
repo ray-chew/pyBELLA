@@ -134,8 +134,9 @@ class States(CellSolField):
             Tuple containing the number of cells in the respective directions including ghost cells.
         field_mode : bool
             False (default): 1D vertical profiles, broadcast horizontally on
-            demand. True (terrain-following runs): full grid-shaped fields —
-            hydrostates vary per column when the physical height does.
+            demand. True (terrain-following runs): full grid-shaped fields.
+            A given eta level sits at a different physical height in each
+            column, so the hydrostate must vary per column too.
 
         Notes
         -----
@@ -170,9 +171,10 @@ class States(CellSolField):
                 # node-States field: difference S0 over the physical node
                 # heights along the vertical, then average to cell centres
                 # along the horizontal axes (the field generalisation of
-                # the 1D convolve-and-broadcast below). ``height`` is the
-                # generalized altitude: identical to z for vertical-line
-                # maps, r - a on a sphere (where z is non-monotone).
+                # the 1D convolve-and-broadcast below). Read ``height``,
+                # the generalized altitude, NOT ``z``: they agree for
+                # vertical-line maps, but on a sphere height is r - a
+                # while z is a horizontal Cartesian component.
                 zn = node.metric.height
                 dS = np.diff(self.S0, axis=self.vaxis) / np.diff(zn, axis=self.vaxis)
                 for dim in range(node.ndim):

@@ -1,4 +1,4 @@
-"""Stage-D gates: 3D compressible spherical shell with RADIAL gravity.
+"""Gates for the 3D compressible spherical shell with RADIAL gravity.
 
 The resting isothermal atmosphere on the true-radius shell must stay at
 rest to the solve floor. This exercises the whole radial-gravity chain
@@ -115,7 +115,7 @@ def test_resting_shell_with_radial_gravity(a_nd):
 
 
 def test_resting_atmosphere_over_spherical_hill():
-    """Stage E: the terrain-following spherical shell (Gal-Chen in r over
+    """The terrain-following spherical shell (Gal-Chen in r over
     a Gaussian-belt hill) preserves the resting isothermal atmosphere —
     the balanced-init contract of the planar terrain machinery, now on
     curved geometry with radial gravity."""

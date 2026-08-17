@@ -1,4 +1,4 @@
-"""3D IC oracle for the internal-long-wave case (Phase E 3D DA OSSE).
+"""3D IC oracle for the internal-long-wave case (the 3D data-assimilation OSSE).
 
 The 3D branch of ``test_internal_long_wave.sol_init`` is a transcription of
 the 2D path with z as a trailing broadcast axis. For an UNPERTURBED IC
@@ -51,8 +51,8 @@ def main() -> int:
 
     worst = 0.0
     for name in FIELDS:
-        f2 = np.asarray(getattr(sol2, name))            # (nx, ny)
-        f3 = np.asarray(getattr(sol3, name))            # (nx, ny, nz)
+        f2 = np.asarray(getattr(sol2, name))  # (nx, ny)
+        f3 = np.asarray(getattr(sol3, name))  # (nx, ny, nz)
         d = float(np.max(np.abs(f3 - f2[:, :, None])))
         worst = max(worst, d)
         assert d == 0.0, f"{name}: 3D z-slabs differ from 2D by {d:.3e}"

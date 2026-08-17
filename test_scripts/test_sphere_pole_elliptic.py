@@ -1,10 +1,10 @@
-"""Stage F, increment F4 gates: elliptic pole-ring collapse.
+"""Gates for the elliptic pole-ring collapse.
 
 At a lat-lon pole every longitude node of a given radius is one physical
 point; left independent, the discrete Helmholtz system is rank-deficient
-there. F4 collapses each (radius, hemisphere) pole ring to ONE master
-pressure unknown (a Galerkin scatter/gather around the one-sided pole
-operator). These gates pin, on the GLOBAL (pole-to-pole) shell:
+there. ``pole_collapse`` collapses each (radius, hemisphere) pole ring to
+ONE master pressure unknown (a Galerkin scatter/gather around the one-sided
+pole operator). These gates pin, on the GLOBAL (pole-to-pole) shell:
 
 1. a resting global shell stays at rest to the Krylov floor (the pole rows
    inject no spurious momentum) over several implicit solves;

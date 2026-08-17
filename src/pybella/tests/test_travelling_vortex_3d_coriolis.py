@@ -1,11 +1,11 @@
 """Travelling vortex in the horizontal (x-z) plane with full Coriolis force.
 
-Port of the legacy ``travelling_vortex_3D_Coriolis`` initial condition
+Port of the ``travelling_vortex_3D_Coriolis`` initial condition
 (recoverable from the git tag ``archive/full_coriolis``,
 ``RKLM_Python/inputs/travelling_vortex_3D_Coriolis.py``) onto the current API.
 
-Relative to the 2D travelling vortex (``test_travelling_vortex``), the legacy
-case changes:
+Relative to the 2D travelling vortex (``test_travelling_vortex``), that case
+changes:
 
 - the vortex lives in the x-z plane (u and w carry the swirl, v = 0) on a
   quasi-2D 64 x 1 x 64 grid over the unit cube,
@@ -68,15 +68,15 @@ class UserData(object):
             opts.BdryType.PERIODIC, opts.BdryType.PERIODIC, opts.BdryType.PERIODIC
         )
 
-        # legacy case runs in the pseudo-incompressible regime
+        # the archived case runs in the pseudo-incompressible regime
         self.is_compressible = 0
 
         ##########################################
         # NUMERICS
         ##########################################
         self.CFL = 0.95
-        # legacy file used dtfixed = 2.1 * 1.200930e-2; a round 0.01 keeps the
-        # regression run at exactly 100 steps (000..099) to tout = 1.0
+        # the archived file used dtfixed = 2.1 * 1.200930e-2; a round 0.01 keeps
+        # the regression run at exactly 100 steps (000..099) to tout = 1.0
         self.dtfixed = 0.01
         self.dtfixed0 = 0.01
 
@@ -220,14 +220,14 @@ def sol_init(Sol, npf, elem, node, th, ud, seed=None):
     rho[...] += rho0 * (r >= R0)
 
     # broadcast the (icx, 1, icz) slabs over the full y extent (incl. ghosts),
-    # as the legacy file did via np.repeat
+    # as the archived file did via np.repeat
     Sol.rho[...] = rho
     Sol.rhou[...] = rho * u
     Sol.rhov[...] = rho * v
     Sol.rhow[...] = rho * w
 
     # neutral stratification, pseudo-incompressible: rhoY = 1 everywhere
-    # (the legacy file left npf.p2_cells unset)
+    # (the archived file left npf.p2_cells unset)
     Sol.rhoY[...] = 1.0
 
     # nodal balanced pressure

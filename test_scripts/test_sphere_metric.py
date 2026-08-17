@@ -1,8 +1,8 @@
-"""Stage-A gates for the spherical lat-lon metric (sphere pt 0).
+"""Gates for the spherical lat-lon metric.
 
-The sphere enters as metric data from ``SphericalShellMap`` (a Tier-3
-``CurvilinearMap``: vertical coordinate lines are radial, not parallel
-Cartesian lines). These gates pin, on the spherical channel:
+The sphere enters as metric data from ``SphericalShellMap`` (a
+``CurvilinearMap`` whose vertical coordinate lines are radial, not
+parallel Cartesian lines). These gates pin, on the spherical channel:
 
 1. closed forms: J = r~^2 cos(phi), N_r = J e_r, e_up = e_r, |t_r| = 1,
    height = r - a, G1/G2 unset, coordinates = the documented embedding;
@@ -10,7 +10,7 @@ Cartesian lines). These gates pin, on the spherical channel:
 3. the discrete metric identity sum_a D_a N_a: -> 0 at 2nd order for the
    true map; for the frozen-radius (thin-shell/SWE) map the defect is
    PURELY RADIAL and equals -2 a cos(phi) e_r — tangential fluxes are
-   never contaminated (the D1 shell-degeneracy contract);
+   never contaminated;
 4. gradient-map completeness: apply_gradient_map inverts the exact
    chain rule to roundoff (sum_a (N_a)_k (t_a)_j = J delta_kj);
 5. flux-divergence oracle: discrete sum_a D_a(N_a . f) -> J div f at
@@ -291,7 +291,8 @@ def test_elliptic_fold_spd_on_sphere():
 
 def _sphere_mem(frozen=False):
     """Full ModelState on the spherical channel with zero gravity (the
-    gravity-boundary path on the sphere lands with Stage D physics)."""
+    gravity-boundary path on the sphere is exercised by
+    ``test_sphere_shell.py``)."""
     from pybella.flow_solver.physics import hydrostatics, thermodynamics
     from pybella.flow_solver.utils import cache, fields
     from pybella.flow_solver.utils.boundary import cell_boundary as bdry_c
@@ -340,7 +341,8 @@ def _sphere_mem(frozen=False):
 
 def test_elliptic_composition_identity_on_sphere():
     """The assembled elliptic operator == div o correction on the spherical
-    channel (zero gravity: Stage A2 owns the gravity-boundary path)."""
+    channel (zero gravity; the gravity-boundary path on the sphere is
+    exercised by ``test_sphere_shell.py``)."""
     from pybella.flow_solver.numerics import implicit_euler
     from pybella.flow_solver.utils.boundary import node_boundary as bdry_n
     from pybella.utils import axes
@@ -423,7 +425,7 @@ def test_frozen_radius_metric_is_r_uniform():
             assert np.array_equal(arr, np.broadcast_to(arr[:, :1, :], arr.shape))
 
 
-# ------------------------------------------ Stage A2: general wall mirror
+# ------------------------------------------------- general wall mirror
 
 
 @pytest.mark.parametrize("frozen", [False, True], ids=["true", "frozen"])
@@ -458,7 +460,8 @@ def test_wall_mirror_zero_wall_flux(frozen):
 
 def test_wall_mirror_identity_map_is_cartesian_flip():
     """With N = identity the general mirror reduces to the Cartesian
-    component flip bit-exactly (the h == 0 limit of the A2 recipe)."""
+    component flip bit-exactly (the flat-metric limit of the general
+    mirror)."""
     from pybella.flow_solver.utils.boundary import cell_boundary as bdry_c
 
     class _IdentityMap(terrain.CurvilinearMap):
@@ -541,11 +544,12 @@ def test_zonal_flow_slides_along_walls():
         assert np.max(np.abs(c_a)) <= 1e-13 * scale, (a, np.max(np.abs(c_a)))
 
 
-# -------------------------------- Stage B: spatially varying Coriolis
+# ------------------------------------------ spatially varying Coriolis
 #
-# The f-plane equivalence oracle (planar balanced vortex vs a small
-# spherical patch, pinning the Omega-vs-2*Omega kernel convention) lands
-# with the Stage-C SWE case; here the FIELD PATH mechanics are gated.
+# Here only the FIELD PATH mechanics are gated. The Coriolis sign and
+# magnitude convention on the sphere is pinned physically by the TC2
+# geostrophic-balance tripwire in ``test_sphere_swe.py``, which a wrong
+# sign/factor breaks by ~50x the gate.
 
 
 def test_coriolis_field_constant_matches_scalar():
@@ -615,14 +619,16 @@ def test_traditional_coriolis_is_minus_f_sinphi_e_r():
         np.testing.assert_allclose(w[k], expect[k], rtol=1e-13, atol=1e-14 * c)
 
 
-# ------------------------- Stage D: general H^-1 (adversarial reduction)
+# -------------------------------- general H^-1 (adversarial reduction)
 
 
 def test_general_hinv_reduces_to_c11_kernel():
     """The Sherman-Morrison H^-1 kernel with e = role-v axis must equal
-    the legacy (C11) kernel TERM BY TERM over randomized (w, nu, alpha_w)
-    with alpha_w sampled continuously in [0, 1] (blending sweeps
-    intermediate values) — including the Phase-H1a h22 structure."""
+    the axis-aligned (C11) kernel ``_compute_coriolis_coefficients`` TERM
+    BY TERM over randomized (w, nu, alpha_w) with alpha_w sampled
+    continuously in [0, 1] (blending sweeps intermediate values) —
+    including the h22 vertical self-coupling, which must NOT carry
+    alpha_w."""
     from pybella.flow_solver.numerics import coriolis
 
     rng = np.random.default_rng(20260705)
@@ -644,7 +650,7 @@ def test_general_hinv_reduces_to_c11_kernel():
                 *gen, wh1, wh2, wv, zero, one, zero, nu, alpha_w
             )
             # h11..h33 (denom differs by definition); the scale is the
-            # matrix norm — entries the legacy kernel zeroes EXACTLY
+            # matrix norm — entries the axis-aligned kernel zeroes EXACTLY
             # (nonhydro-prefactored rows at alpha_w = 0) carry the general
             # kernel's cancellation residue and are compared absolutely
             scale = max(np.max(np.abs(ref[i])) for i in range(9))
@@ -653,7 +659,7 @@ def test_general_hinv_reduces_to_c11_kernel():
                 assert err <= 1e-14, (alpha_w, i, err)
 
 
-# --------------------------- Stage E: terrain-following on the sphere
+# ------------------------------------- terrain-following on the sphere
 
 _H0_HILL = 0.15  # nondim hill height
 _SIGMA = 0.5
@@ -753,8 +759,9 @@ def test_terrain_map_duality_and_up():
 def test_terrain_map_metric_identity_second_order():
     """Freestream tripwire on the wavy spherical terrain: the discrete
     metric identity sum_a D_a N_a converges to zero at 2nd order (the
-    Tier-3 well-balancing risk the plan flags — analytic collocated
-    metrics must not leave an O(1) defect over slopes)."""
+    well-balancing risk of a genuinely curved, non-vertical-line map —
+    analytically evaluated collocated metrics must not leave an O(1)
+    defect over slopes)."""
     errs = []
     for n in ((16, 4, 8), (32, 8, 16)):
         _, elem, _ = _terrain_grid(n=n)

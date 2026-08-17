@@ -53,9 +53,9 @@ def dynamic_timestep(Sol, time, time_output, elem, ud, th, step):
                 norm_sq = norm_sq + Na[ch2] ** 2
             vels[a] = np.abs(contra / Sol.rho) * m.ooJ
             cs[a] = c * np.sqrt(norm_sq) * m.ooJ
-        # polar filter (Stage F): the longitude modes that survive the
-        # filter have an effective speed scaled by ~cos(phi)/cos(phi_c), so
-        # the longitude CFL is relieved by that factor near the poles
+        # polar filter: the longitude modes that survive the filter have an
+        # effective speed scaled by ~cos(phi)/cos(phi_c), so the longitude
+        # CFL is relieved by that factor near the poles
         from ..numerics import polar_filter as _pf  # local: physics->numerics
 
         cap = _pf.cfl_cap(elem, ud)

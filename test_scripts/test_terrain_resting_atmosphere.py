@@ -9,7 +9,7 @@ different physical height carry truncation error), so the gate is a small
 velocity bound, not machine zero.
 
 Also pins the h == 0 equivalence of the field-mode hydrostates against the
-legacy 1D profiles (exact for the analytical state, quadrature-tight for
+1D column profiles (exact for the analytical state, quadrature-tight for
 the integrated state).
 """
 
@@ -205,7 +205,7 @@ def test_field_mode_hydrostates_match_profiles_when_flat():
         return npf0, npf1, elem0, v
 
     # analytical_state: identical expressions either way -> exact.
-    # integrated_state: the legacy profile uses coarse per-cell trapezoids,
+    # integrated_state: the 1D profile uses coarse per-cell trapezoids,
     # the field branch a fine-grid quadrature — they differ by the COARSE
     # scheme's truncation (~1.5e-5 here); the bound guards wiring errors
     # (axis, sign, reference level), not quadrature equivalence.

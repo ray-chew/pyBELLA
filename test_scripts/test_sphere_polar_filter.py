@@ -1,4 +1,4 @@
-"""Stage F, increment F3 gates: FFT-in-longitude polar filter.
+"""Gates for the FFT-in-longitude polar filter.
 
 Gates:
 1. no-op on a longitude-independent state (only k=0 survives) -> the

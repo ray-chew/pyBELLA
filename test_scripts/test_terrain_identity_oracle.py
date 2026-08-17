@@ -4,17 +4,17 @@ Two guarantees, two mechanisms:
 
 1. **Bypass identity (bit-exact).** No registered golden-master case
    defines ``orography``, so ``elem.metric is None`` and every solver
-   call site takes the pre-terrain code path untouched. The 9-case
+   call site takes the uniform-Cartesian path untouched. The 9-case
    golden-master suite (``test_flow_solver.py``) is the authority; this
    file just pins the precondition.
 
 2. **Forced-flat identity (~1e-13).** The metric machinery switched ON
    with ``h == 0`` is algebraically the identity (J == 1, G == 0) but
    multiplies extra factors through the operators. As each metric-aware
-   operator lands (Phases 1-6 of the terrain plan), a comparison of the
-   flat-metric path against the plain path is added here — run in both
-   the compressible and pseudo-incompressible regimes to cover the
-   pi-update / wcenter consistency factors.
+   operator lands, a comparison of the flat-metric path against the
+   uniform-Cartesian path is added here — run in both the compressible
+   and pseudo-incompressible regimes to cover the pi-update / wcenter
+   consistency factors.
 """
 
 import importlib
@@ -55,10 +55,10 @@ def test_golden_master_cases_have_no_orography():
         )
 
 
-# --- forced-flat operator comparisons (fleshed out per terrain phase) -------
+# --- forced-flat operator comparisons (one per metric-aware operator) ------
 #
-# Phase 3: elliptic operator C_ij and wcenter
-# Phase 6: advective fluxes + CFL
+# Not yet covered here: elliptic operator C_ij and wcenter; advective
+# fluxes + CFL.
 
 
 class _StubUD:

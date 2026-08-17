@@ -1,8 +1,9 @@
 # Initial-condition registry: -ic keys -> module paths providing UserData + sol_init.
 #
-# Legacy pre-restructure ICs (acoustic waves, SWE variants, baroclinic instability, ...)
-# were removed when the old RKLM_Python/inputs tree was dropped; they remain recoverable
-# from the git tag `archive/full_coriolis` and are mostly small tweaks of the cases below.
+# ICs from the original RKLM_Python/inputs tree (acoustic waves, SWE variants,
+# baroclinic instability, ...) were removed when that tree was dropped; they remain
+# recoverable from the git tag `archive/full_coriolis` and are mostly small tweaks
+# of the cases below.
 IC_MODULES = {
     "rb": "pybella.inputs.rising_bubble",
     "test_travelling_vortex": "pybella.tests.test_travelling_vortex",

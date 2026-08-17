@@ -1,4 +1,4 @@
-"""JAX boundary-fill equivalence (Phase A of the device-resident plan).
+"""JAX boundary-fill equivalence: the jax_ops fills vs their numpy twins.
 
 Layer 1 — micro-tests: the jnp slice-assign fills vs the raw np.pad modes
 and custom callbacks (`_negative_symmetric`, `periodic_plus_one`) on random

@@ -14,6 +14,12 @@ import subprocess
         "test_swe_vortex",
         "test_sphere_swe_tc2",
         "test_sphere_swe_tc6",
+        # pole-to-pole (BdryType.POLE + polar filter + elliptic ring collapse).
+        # The JAX jobs already gate these for jax-vs-numpy EQUIVALENCE; these
+        # entries gate the numpy physics against a stored reference, so a numpy
+        # pole regression cannot pass silently.
+        "test_sphere_swe_tc2_global",
+        "test_sphere_swe_tc6_global",
         "test_straka",
         "test_agnesi_hydrostatic",
         "test_schaer_ridge",

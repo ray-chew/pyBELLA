@@ -58,8 +58,8 @@ def _ghost_fill(s, cfg, split=None):
             orientation = "sweep" if split is not None else "phys"
             out = bcfg.gravity_fill[orientation](*arrays)
         elif bcfg.bdry_int[current_step] == jax_boundary._POLE:
-            # lat-lon pole fold (Stage F): pure index remap of the phi ghost
-            # slabs, reached canonically or during the phi sweep
+            # lat-lon pole fold: pure index remap of the phi ghost slabs,
+            # reached canonically or during the phi sweep
             orientation = "sweep" if split is not None else "phys"
             out = bcfg.pole_cell_fill[orientation](*arrays)
         elif dim == current_step and current_step in bcfg.general_wall_fill:
@@ -231,7 +231,7 @@ def _coriolis_inputs(s, cfg, dt, nonhydro):
 
 def _e_role(cfg):
     """Role-ordered (e_h1, e_v, e_h2) up-direction components, or None on
-    vertical-line/no-metric runs (the legacy scalar H^-1 applies)."""
+    vertical-line/no-metric runs (the scalar, axis-aligned H^-1 applies)."""
     if not cfg.general:
         return None
     e = cfg.metric.e_up
@@ -401,7 +401,7 @@ def _forward_step(s, cfg, dt, nonhydro, compressibility):
 
     if cfg.general:
         # general map (sphere): buoyancy acts along the LOCAL up e_up and the
-        # H1b nonhydro (alpha_w) factor applies to the e-PARALLEL part of the
+        # nonhydro (alpha_w) factor applies to the e-PARALLEL part of the
         # WHOLE tendency (fac_par; the e-perpendicular part is never
         # alpha_w-suppressed). is_ArakawaKonor is guarded to 0 on the device.
         e = cfg.metric.e_up
@@ -635,8 +635,8 @@ def _implicit_part(s, cfg, dt, nonhydro, compressibility, sol0=None):
 
         rhs_inner = jnp.zeros_like(rhs).at[cfg.node_i1].set(rhs[cfg.node_i1]).ravel()
 
-        # Pole-ring collapse (Stage F F7b): the lap3D pole rows are already
-        # one-sided (the wall_mask slab-zeroes the non-periodic phi axis);
+        # Pole-ring collapse: the lap3D pole rows are already one-sided
+        # (the wall_mask slab-zeroes the non-periodic phi axis);
         # wrap the matvec + gather the rhs with the Galerkin scatter/gather so
         # each pole ring solves as one master. Same recipe as the hybrid
         # jax_lap3D.wrap_pole_collapse (mask-multiply, not integer scatter-SET).
@@ -754,9 +754,9 @@ def build_step(cfg, parity, is_nonhydrostatic, is_compressible):
     structure — jitted by :func:`make_step`, vmapped over the member axis by
     ``device_batch.make_batch_step``.
 
-    Both regime ints are STATIC trace structure (Phase D4): the psinc leg of
-    a blending window compiles its own variant rather than branching at
-    runtime — the validated compressible graph is untouched.
+    Both regime ints are STATIC trace structure: the psinc leg of a blending
+    window compiles its own variant rather than branching at runtime — the
+    validated compressible graph is untouched.
 
     The psinc variant (is_compressible == 0) returns ``(s, p2_half)`` — the
     predictor half-time nodal pressure that numpy stores as
@@ -802,10 +802,10 @@ def build_step(cfg, parity, is_nonhydrostatic, is_compressible):
         p2_half = s["p2_nodes"] if is_compressible == 0 else None
 
         # p2 reset branch (static regime structure); hydrostatic (alpha_w = 0)
-        # excluded so the Phase H1a reconstruction is not discarded — mirrors
-        # time_update.py. Device rejects the hydrostatic regime, so alpha_w = 0
-        # never reaches here; kept consistent for the numpy<->jax-device
-        # contract.
+        # excluded so the hydrostatic predictor's balanced-Exner
+        # reconstruction is not discarded — mirrors time_update.py. Device
+        # rejects the hydrostatic regime, so alpha_w = 0 never reaches here;
+        # kept consistent for the numpy<->jax-device contract.
         if is_compressible == 1 and is_nonhydrostatic == 1:
             s["p2_nodes"] = p2_nodes0
 
@@ -831,8 +831,8 @@ def build_step(cfg, parity, is_nonhydrostatic, is_compressible):
         if cfg.diffusion:
             s = _diffuse(s, cfg, dt)
 
-        # Polar filter (Stage F): damp the CFL-violating zonal modes near the
-        # poles once per step, then re-apply the tangent-plane surface
+        # Polar filter: damp the CFL-violating zonal modes near the poles
+        # once per step, then re-apply the tangent-plane surface
         # constraint (the filter mixes Cartesian momentum components per ring,
         # nudging them off the local tangent plane) and refill the ghosts so
         # the pole exchange sees the filtered interior. Mirrors the numpy

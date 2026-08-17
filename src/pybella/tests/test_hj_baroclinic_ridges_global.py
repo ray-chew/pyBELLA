@@ -1,5 +1,5 @@
 """Hughes & Jablonowski (2023) mountain baroclinic wave on the FULL
-pole-to-pole sphere (Stage F, F8) — pt-2 with the two midlatitude ridges.
+pole-to-pole sphere — pt-2 with the two midlatitude ridges.
 
 The global flat background (:mod:`test_hj_baroclinic_global`) with the two
 H&J ridges (Eq. 1, h0 = 2000 m at 72E / 140E, 45N) embedded as GEOMETRY via a

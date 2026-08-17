@@ -9,8 +9,8 @@ correction.
 Checks, on the smoke_agnesi configuration collapsed to native 2D (inz = 1):
 
 1. flat baseline: the composition identity holds for the plain 2D solver
-   (the lap2D family was never proven this way — this gates the phase),
-2. the same with out-of-plane Coriolis (exercises the legacy cxy/cyx path),
+   (guards the test's own assembly against phantom mismatches),
+2. the same with out-of-plane Coriolis (exercises the cxy/cyx path),
 3. forced-flat metric == plain lap2D application (bypass contract),
 4. terrain (witch-of-Agnesi hill): composition identity, with and without
    Coriolis (terrain cross terms + H^-1 off-diagonals folded together).
@@ -47,7 +47,7 @@ def _agnesi_hill(ud, h0_m=300.0, a_m=5000.0):
 
 
 class _StretchedHillMap2D(terrain.CurvilinearMap):
-    """Native-2D Tier-2 map: periodic x-stretch + periodic hill, Gal-Chen z."""
+    """Native-2D general map: periodic x-stretch + periodic hill, Gal-Chen z."""
 
     def __init__(self, ud, h0_m=300.0, ax_rel=0.05):
         self.L = ud.xmax - ud.xmin
@@ -122,8 +122,8 @@ def _smooth_p_box(node):
 def _diag_inv_like_solver(mem, ud, dt):
     """Replicate the diag_inv construction of _prepare_2d_system.
 
-    Geometric factors only — the legacy 2D preconditioner keeps H^-1 out
-    of the diagonal, and the terrain branch preserves that.
+    Geometric factors only — the no-metric 2D preconditioner keeps H^-1
+    out of the diagonal, and the terrain branch preserves that.
     """
     del ud, dt
     if mem.elem.metric is not None:
@@ -209,7 +209,7 @@ def test_composition_identity_terrain_sleve():
 
 
 def test_composition_identity_general_map_2d():
-    """Stretched Tier-2 map through the native-2D general N-fold, with and
+    """Stretched general map through the native-2D N-fold, with and
     without out-of-plane Coriolis (cross terms + H^-1 off-diagonals)."""
     lhs, comp = _operator_and_composition(cmap=_StretchedHillMap2D)
     assert _rel_err(lhs, comp) <= 1e-12

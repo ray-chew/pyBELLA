@@ -1,4 +1,4 @@
-"""Stage-D5 physics gates: nonhydrostatic gravity wave on the small-planet
+"""Physics gates: nonhydrostatic gravity wave on the small-planet
 compressible shell (``pybella.tests.test_sphere_gw``).
 
 The gates prove the general (curved-metric) radial-gravity chain is both

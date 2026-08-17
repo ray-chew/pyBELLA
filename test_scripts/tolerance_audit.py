@@ -1,4 +1,4 @@
-"""Tolerance audit utility (regression_harness.md gap #1).
+"""Tolerance audit utility.
 
 Runs every regression case N times, harvests CompareSol's per-field max-abs
 errors from the run logs, and prints a table of observed error vs current

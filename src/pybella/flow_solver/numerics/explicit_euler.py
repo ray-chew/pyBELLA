@@ -17,8 +17,9 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
     g, Msq = ud.gravity_strength[axes.vertical_axis(ud)], ud.Msq
     Ginv = th.Gammainv
     # role-ordered Coriolis components (h1, v, h2); identity for vertical = 1.
-    # Scalars on the legacy path; per-cell fields when ud.coriolis_field is
-    # set (spatially varying rotation, e.g. f(phi) e_r on the sphere)
+    # Three scalars when ud.coriolis_field is unset (uniform rotation);
+    # per-cell fields when set (spatially varying rotation, e.g. f(phi) e_r
+    # on the sphere)
     from . import coriolis as coriolis_mod
 
     ax_h1, ax_v, ax_h2 = axes.role_perm(axes.vertical_axis(ud))
@@ -76,13 +77,14 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
 
     if e_up is not None:
         # general map (sphere): buoyancy acts along the LOCAL up e_up and
-        # the H1b nonhydro factor applies to the e-PARALLEL part of the
-        # whole tendency (the faithful generalization of "the vertical
+        # the nonhydro (alpha_w) factor applies to the e-PARALLEL part of
+        # the whole tendency (the faithful generalization of "the vertical
         # row"); the e-perpendicular part is never alpha_w-suppressed.
         # Role-ordered e components (same axis permutation as momenta).
         e_h1, e_v, e_h2 = e_up[ax_h1], e_up[ax_v], e_up[ax_h2]
         # rhoX couples to the PRE-update e-parallel (radial) velocity,
-        # mirroring the legacy vel_v = mom_v / rho placement
+        # mirroring the axis-aligned branch below, where vel_v = mom_v / rho
+        # is likewise read before the momentum update
         vel_up = (mom_h1 * e_h1 + mom_v * e_v + mom_h2 * e_h2) / rho
         buoy = (g / Msq) * dbuoy
         T_h1 = rhoYovG * dp_h1 + buoy * e_h1 - corr_h2 * dm_v + corr_v * dm_h2
@@ -97,7 +99,7 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
         sol.rhoX[...] = (rho * (rho / rhoY - S0c)) - dt * (vel_up * dSdy) * rho
 
         # Compressibility correction below is branch-shared; skip the
-        # legacy rows
+        # axis-aligned momentum rows
         _legacy_rows = False
     else:
         _legacy_rows = True
@@ -113,11 +115,11 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
         # (alpha_w = 0) the vertical momentum has no prognostic time update at
         # all: it is diagnosed by the implicit hydrostatic balance solve.
         # Applying the vertical pressure-gradient kick here for alpha_w = 0
-        # (as the pre-2026 refactor did) injects a spurious kick on the
-        # diagnosed w every corrector, seeding a 2*dt computational mode.
-        # Matches the thesis-era euler_forward_non_advective (rhov update *
-        # nonhydro). Bit-identical for alpha_w = 1.
-        # See dev_notes/hydrostatic_blending.md (Phase H1b).
+        # injects a spurious kick on the diagnosed w every corrector, seeding
+        # a 2*dt computational mode. Matches euler_forward_non_advective in the
+        # archived reference implementation (git tag archive/thesis), which
+        # likewise multiplies the whole rhov update by nonhydro.
+        # Bit-identical for alpha_w = 1.
         mom_v -= (
             dt
             * (rhoYovG * dp_v + (g / Msq) * dbuoy - corr_h1 * dm_h2 + corr_h2 * dm_h1)
@@ -128,9 +130,8 @@ def do_forward_step(mem, ud, dt, writer=None, label=None, debug=False):
         # the h2-row applies in 2D too: its pressure gradient is zero there,
         # but the Coriolis terms are not. Restricting it to ndim == 3 gave 2D
         # runs only the implicit half of the out-of-plane Coriolis rotation —
-        # found 2026-06-09 by the Baldauf-Brdar analytic oracle (w_out error
-        # pinned at ~0.44 rel-L2 with a sim/ref amplitude ratio ~0.6,
-        # independent of dt).
+        # caught by the Baldauf-Brdar analytic oracle (w_out error pinned at
+        # ~0.44 rel-L2 with a sim/ref amplitude ratio ~0.6, independent of dt).
         mom_h2 -= dt * (rhoYovG * dp_h2 - corr_v * dm_h1 + corr_h1 * dm_v)
 
         # Scalar update (rhoX): stratification couples to the vertical velocity

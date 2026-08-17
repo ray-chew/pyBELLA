@@ -65,8 +65,8 @@ def _cfl_maxima(s, cfg):
             norm_sq = norm_sq + Na[ch2] ** 2
         vels[a] = jnp.abs(contra / rho) * m.ooJ
         cs[a] = c * jnp.sqrt(norm_sq) * m.ooJ
-    # polar filter (Stage F): the surviving longitude modes have an effective
-    # speed scaled by ~cos(phi)/cos(phi_c) near the poles, so the longitude CFL
+    # polar filter: the surviving longitude modes have an effective speed
+    # scaled by ~cos(phi)/cos(phi_c) near the poles, so the longitude CFL
     # is relieved by that factor — mirrors cfl.dynamic_timestep's filter cap
     if cfg.filter_cap is not None:
         lam_axis = m.cart_haxes[0]
@@ -112,8 +112,8 @@ def _check_supported(mem, ud, writer):
     blending = getattr(ud, "continuous_blending", False) or getattr(
         ud, "initial_blending", False
     )
-    # comp<->psinc blending is supported via window segmentation (Phase D4:
-    # host conversions at the known blend steps, one compiled step variant
+    # comp<->psinc blending is supported via window segmentation (host
+    # conversions at the known blend steps, one compiled step variant
     # per regime); the SWE/lake conversions and the 'imbal' initial
     # HYDROSTATIC conversion (alpha_w = 0 step path) are not implemented
     if blending and getattr(ud, "blending_conv", None) == "swe":
@@ -188,8 +188,8 @@ def _blend_conversion_due(bld, ud, step, window_step):
 def run_window(mem, ud, tout, bld=None, writer=None):
     """Device-resident replacement for time_update.do's step loop.
 
-    Blending (Phase D4): the window is segmented at the blend steps — the
-    per-step regime control is the SAME `schemes.prepare_blending` the numpy
+    Blending: the window is segmented at the blend steps — the per-step
+    regime control is the SAME `schemes.prepare_blending` the numpy
     loop runs (it is pure host bookkeeping except on conversion steps, where
     the state round-trips through host memory and the comp<->psinc routines
     run unchanged); each regime compiles its own step variant (the regime

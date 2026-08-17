@@ -131,18 +131,13 @@ class UserDataInit:
         self.blending_type = "half"  # half, full
         self.blending_weight = 0.0 / 16
 
-        # Vertical/gravity axis (array axis index; see utils/axes.py).
-        # 2D runs are x-y by convention and require 1.
+        # Vertical/gravity axis
         self.gravity_direction = 1
 
-        # Spherical geometry (None = Cartesian). Cases set curvilinear_map
-        # to a discretisation.spherical map built with the nondimensional
-        # radius planet_radius / h_ref; see discretisation/spherical.py.
+        # Spherical geometry (None = Cartesian).
         self.curvilinear_map = None
         self.planet_radius = None  # [m], dimensional
-        # spatially varying rotation: callable of the Cartesian coordinates
-        # returning the 3 Cartesian rotation components (None = the scalar
-        # ud.coriolis_strength path); see numerics/coriolis.role_components
+        # spatially varying rotation
         self.coriolis_field = None
 
         # Boundary conditions
@@ -181,11 +176,8 @@ class UserDataInit:
         self.limiter_type_velocity = opts.LimiterType.NONE
         self.tol = 1.0e-8
         self.max_iterations = 6000
-        # numerical backend: "numpy" (canonical) or "jax" (requires
-        # `pip install pybella[jax]`); see pybella.backends. The env var
-        # PYBELLA_BACKEND overrides the default so unmodified regression
-        # cases can run on the JAX backend; an explicit `backend` in a
-        # case's UserData still wins (applied after defaults).
+        # numerical backend: "numpy" (default) or "jax" (requires
+        # `pip install pybella[jax]`)
         self.backend = os.environ.get("PYBELLA_BACKEND", "numpy")
 
         # Other attributes

@@ -24,6 +24,7 @@ from datetime import datetime
 import h5py
 import numpy as np
 
+
 def _inner(ndim):
     return (slice(2, -2),) * ndim  # gate-checked cases: 2 ghosts per axis
 
@@ -95,20 +96,18 @@ def main():
                 # imbalance shows as an acoustic w burst that EnDAB blends
                 # away and EnDA does not
                 if "rho" in stacks and "rhov" in stacks:
-                    (rhos, rho_t) = stacks["rho"]
-                    (rhovs, rhov_t) = stacks["rhov"]
+                    rhos, rho_t = stacks["rho"]
+                    rhovs, rhov_t = stacks["rhov"]
                     w = rhovs / rhos
                     w_truth = rhov_t / rho_t
                     w_rows.append(
                         {
                             "t": t,
                             "state": state,
-                            "rmse_w": np.sqrt(
-                                ((w.mean(axis=0) - w_truth) ** 2).mean()
-                            ),
-                            "ens_mean_maxw": np.abs(w).max(
-                                axis=tuple(range(1, w.ndim))
-                            ).mean(),
+                            "rmse_w": np.sqrt(((w.mean(axis=0) - w_truth) ** 2).mean()),
+                            "ens_mean_maxw": np.abs(w)
+                            .max(axis=tuple(range(1, w.ndim)))
+                            .mean(),
                             "truth_maxw": np.abs(w_truth).max(),
                             "K": len(mem_dirs),
                         }
@@ -129,7 +128,12 @@ def main():
             writer = csv.DictWriter(
                 fh,
                 fieldnames=[
-                    "t", "state", "rmse_w", "ens_mean_maxw", "truth_maxw", "K",
+                    "t",
+                    "state",
+                    "rmse_w",
+                    "ens_mean_maxw",
+                    "truth_maxw",
+                    "K",
                 ],
             )
             writer.writeheader()

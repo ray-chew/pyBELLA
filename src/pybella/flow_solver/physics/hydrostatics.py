@@ -287,7 +287,7 @@ def analytical_state(npf, elem, node, th, ud):
     With terrain the same closed form is evaluated at the physical heights
     z(xi, eta) with the local vertical cell extent dz = J * deta, so the
     hydrostates become full per-column fields (States in field mode);
-    without terrain the expressions reduce to the legacy 1D profiles
+    without terrain the expressions reduce to the 1D column profiles
     bit-identically.
     """
     vv = axes.vertical_axis(ud)
@@ -306,7 +306,7 @@ def analytical_state(npf, elem, node, th, ud):
         # local vertical cell extent dz = z_eta * deta with z_eta = J/(N_v)_v:
         # on horizontally stretched grids J = x' z_eta y' is the VOLUME
         # measure, not the height increment; for vertical-line maps
-        # (N_v)_v == 1 and this is bit-exactly the legacy J * deta
+        # (N_v)_v == 1 and this is bit-exactly J * deta
         mn, mc = node.metric, elem.metric
         z_eta_n = mn.J / mn.N[mn.vaxis][mn.cart_v]
         z_eta_c = mc.J / mc.N[mc.vaxis][mc.cart_v]

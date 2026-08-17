@@ -1,4 +1,5 @@
-"""Device-resident step equivalence (phase B of the device plan).
+"""Device-resident step equivalence: ``device_step.run_window`` vs the
+hybrid path.
 
 Validation ladder below the full-run gate (test_jax_device_fullrun.py):
 
@@ -26,7 +27,7 @@ from pybella.flow_solver.discretisation import time_update  # noqa: E402
 
 import jax_equiv_fixtures as fx  # noqa: E402
 
-TOL = 1e-5  # Krylov convergence-slack floor (see component-2 measurement)
+TOL = 1e-5  # Krylov convergence-slack floor (test_jax_elliptic_equivalence)
 
 
 class _NullDebug:
@@ -115,7 +116,7 @@ def test_window_sphere_swe():
 
 
 def test_window_sphere_swe_global():
-    # full pole-to-pole TC2 (Stage F F7b): the device pole ghost fold in
+    # full pole-to-pole TC2: the device pole ghost fold in
     # _ghost_fill, the elliptic pole-ring collapse in the device solve, and
     # the FFT polar filter + surface constraint inside the device step loop
     mem, ud = fx.make_sphere_swe_global_mem()
@@ -146,7 +147,7 @@ def test_seam_routes_to_device():
 
 def test_guard_raises_on_unsupported_blending():
     """comp<->psinc blending is supported on jax-device via window
-    segmentation (Phase D4); the SWE/lake conversions and the 'imbal'
+    segmentation; the SWE/lake conversions and the 'imbal'
     initial hydrostatic conversion are not, and must still fast-fail."""
     mem, ud = fx.make_igw_mem()
     try:

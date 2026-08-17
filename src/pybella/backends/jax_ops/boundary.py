@@ -103,7 +103,7 @@ def _no_gravity_fill(fields, dim, ig, bdry_type_int, normal_mom):
 _PERIODIC = 0
 _WALL = 1
 _GRAVITY = 2  # vertical axis with g != 0: hydrostatic fill
-_POLE = 3  # lat-lon pole fold (Stage F): pure index remap, no sign flip
+_POLE = 3  # lat-lon pole fold: pure index remap, no sign flip
 
 
 def _bdry_int(bt):
@@ -606,7 +606,7 @@ def _apply_general_gravity_ops(fields, ops, meta):
 
 
 # --------------------------------------------------------------------------
-# lat-lon pole fold (Stage F, F7): pure index remap of the phi-ghost slabs
+# lat-lon pole fold: pure index remap of the phi-ghost slabs
 #
 # Twin of ``cell_boundary._apply_pole_boundary`` / ``node_boundary
 # ._apply_pole_nodes``. A ghost cell/node past |phi| = pi/2 IS the interior
@@ -776,8 +776,8 @@ class BoundaryConfig:
                         N_canon, d, self.igs[d]
                     )
 
-        # lat-lon pole fold (Stage F): the phi ghost slabs are filled by a pure
-        # index remap. Precompute the gather plan per orientation ("phys" =
+        # lat-lon pole fold: the phi ghost slabs are filled by a pure index
+        # remap. Precompute the gather plan per orientation ("phys" =
         # canonical; "sweep" = the pole axis swept last, reached in the phi
         # advection sweep). The pole axis is the h2 (phi) array axis of the
         # spherical metric; lambda is h1.
@@ -923,8 +923,8 @@ def set_ghost_cells(mem, ud, step=None, sol=None):
             orientation = "sweep" if step is not None else "phys"
             out = cfg.gravity_fill[orientation](*arrays)
         elif cfg.bdry_int[current_step] == _POLE:
-            # lat-lon pole fold (Stage F): pure index remap of the phi ghost
-            # slabs. Reached canonically (step=None) or during the phi sweep.
+            # lat-lon pole fold: pure index remap of the phi ghost slabs.
+            # Reached canonically (step=None) or during the phi sweep.
             orientation = "sweep" if step is not None else "phys"
             out = cfg.pole_cell_fill[orientation](*arrays)
         elif dim == current_step and current_step in cfg.general_wall_fill:

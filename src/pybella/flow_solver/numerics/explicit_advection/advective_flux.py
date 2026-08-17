@@ -12,17 +12,16 @@ _ALL_FLUX = ("rho", "rhou", "rhov", "rhow", "rhoY", "rhoX")
 
 
 def zero_pole_faces(container, names, ig):
-    """Zero the flux through the two pole faces (Stage F, F2).
+    """Zero the flux through the two pole faces.
 
-    The pole face has ZERO area in the continuum (the lat-lon meridians
-    converge to a single point), so no flux crosses it. The discrete face
+    The pole face has ZERO area in the continuum, so no flux crosses it. The discrete face
     flux, built by convolving cell values, is a nonzero O(dphi^2) residual
     that BOTH pole-adjacent cells (at lambda and lambda + pi) would
     subtract with the same sign — a systematic double-loss mass/tracer
-    leak (the sphere analogue of the stage-D5 radial-wall leak). Zeroing it
-    makes the pole a no-flux edge; over-pole transport is carried by the
-    LONGITUDE fluxes of the polar cells (standard lat-lon FV). The face
-    axis is the last array axis of the (sweep-oriented) flux container.
+    leak. Zeroing it makes the pole a no-flux edge; over-pole transport is
+    carried by the LONGITUDE fluxes of the polar cells (standard lat-lon
+    FV). The face axis is the last array axis of the (sweep-oriented) flux
+    container.
     """
     nfaces = getattr(container, names[0]).shape[-1]
     lo, hi = ig, nfaces - 1 - ig
@@ -35,9 +34,11 @@ def zero_pole_faces(container, names, ig):
 def _normal_momentum(sol, metric, i):
     """Contravariant face momentum N_i . m for sweep axis i.
 
-    Cartesian-component contraction, vertical component first — the
-    bit-exact reduction order of the Phase-0 contract. Shared by the
-    numpy and JAX flux assemblies (plain elementwise numpy either way).
+    Cartesian-component contraction, vertical component first. IEEE
+    addition is not associative, so the order is fixed deliberately:
+    leading with the vertical term reproduces the terrain formula
+    m_v - G1 m_h1 - G2 m_h2 bit-exactly, and matches the device
+    backend's separate jnp implementation of the same contraction.
     """
     Ni = metric.N[i]
     cv = metric.cart_v
@@ -90,8 +91,8 @@ def recompute(mem, ud=None, **kwargs):
                 # general curvilinear mass flux rhoY * (N_i . m) / rho
                 # (J * xi_i-dot * rhoY — what actually crosses a xi_i-face);
                 # vertical-first contraction so the vertical sweep reduces
-                # bit-exactly to the legacy contravariant flux and the
-                # horizontals to the J-weighted one
+                # bit-exactly to the vertical-line contravariant flux and
+                # the horizontals to the J-weighted one
                 momentum = _normal_momentum(mem.sol, metric, i)
                 rhoY_vel = mem.sol.rhoY * momentum / mem.sol.rho
             else:
@@ -103,8 +104,8 @@ def recompute(mem, ud=None, **kwargs):
         )
 
         # pole axis: the advecting mass flux through the zero-area pole face
-        # must vanish (Stage F, F2), or the polar-cell reconstruction sees a
-        # spurious through-pole Courant velocity
+        # must vanish, or the polar-cell reconstruction sees a spurious
+        # through-pole Courant velocity
         if (
             ud is not None
             and metric is not None

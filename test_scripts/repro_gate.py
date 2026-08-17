@@ -30,7 +30,7 @@ fast    cheap non-terrain physics, run after every commit:
         travelling_vortex (2D elliptic), straka (diffusion + x-walls),
         travelling_vortex_3d_coriolis (3D + Coriolis).
 terrain agnesi_hydrostatic, schaer_ridge — slow (per-process numba JIT compile
-        of the 3D terrain kernels); run at phase boundaries only.
+        of the 3D terrain kernels); run before and after a refactor only.
 blending
         blending_warm_bubble, blending_hydrostatic — the dynamics-blending
         masters; the cheap gate for edits under interfaces/dynamics_blending.

@@ -1,4 +1,4 @@
-"""Stage F, increment F2 gates: pole-face flux closure + over-pole advection.
+"""Gates for the pole-face flux closure + over-pole advection.
 
 Williamson et al. (1992) test case 1 — a cosine bell advected by solid-body
 rotation — with the rotation axis in the EQUATORIAL plane so the bell is
@@ -9,7 +9,7 @@ elliptic solve, no polar filter yet).
 
 The pole face has zero area in the continuum; the discrete flux there is a
 symmetric O(dphi^2) residual that BOTH pole-adjacent cells subtract with the
-same sign — a double-loss leak. F2 zeroes that flux. Gates:
+same sign — a double-loss leak. The advection sweep zeroes that flux. Gates:
 
 1. J-weighted total tracer conserved to MACHINE precision every step (the
    pole-face-closure theorem; without the zeroing it leaks ~O(dphi^2));
@@ -167,7 +167,7 @@ def test_bell_crosses_pole_bounded():
     assert res["rhoX_max"] < 1.5, res["rhoX_max"]  # no growth beyond ~1
     # ~11% undershoot: the unlimited scheme (LimiterType.NONE) has no
     # monotonicity, and the pole ring is barely resolved without the polar
-    # filter (F3). Bounded, not a closure defect (conservation is exact).
+    # filter. Bounded, not a closure defect (conservation is exact).
     assert res["rhoX_min"] > -0.2, res["rhoX_min"]
 
     # the bell mass-centroid should have rotated ~quarter turn toward the
