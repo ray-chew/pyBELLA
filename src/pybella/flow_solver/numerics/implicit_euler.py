@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import scipy as sp
 
@@ -34,6 +36,85 @@ class solver_counter(object):
     def __call__(self, rk=None):
         self.niter += 1
         self.rk = rk
+
+
+def _bicgstab_with_restarts(lap, rhs, ud, label):
+    """scipy bicgstab, restarted from the current iterate on breakdown.
+
+    BiCGSTAB breaks down (``info < 0``: rho or omega ~ 0) when the residual
+    loses its component along the fixed shadow residual r0. On the sphere the
+    pure-Neumann initial projection is ill-conditioned enough (a cluster of
+    near-null modes from the 1/cos(phi) metric; cond ~1e5-1e6 already on the
+    coarse grids) that this happens routinely after a few hundred iterations,
+    at a relative residual of 1e-4 .. 5e-2 — i.e. an unconverged iterate that
+    depends on the BLAS thread count. Restarting with ``x0`` = that iterate
+    gives a fresh r0 and recovers: one restart converged every sphere SWE
+    case, and the thread-1 / thread-24 answers then agree to ~1e-7 (they
+    differed by 1e-3 before). Non-breakdown exits (converged, or maxiter) are
+    passed straight to ``_check_solver_info``."""
+    x0 = None
+    counter = solver_counter()
+    for attempt in range(_MAX_RESTARTS + 1):
+        p2, info = sp.sparse.linalg.bicgstab(
+            lap,
+            rhs,
+            x0=x0,
+            atol=ud.tol,
+            rtol=ud.rtol,
+            maxiter=ud.max_iterations,
+            callback=counter,
+        )
+        if info >= 0 or attempt == _MAX_RESTARTS:
+            break
+        if _residual_ok(lap, rhs, p2, ud):
+            break
+        x0 = p2
+    _check_solver_info(info, counter, lap, rhs, p2, ud, label)
+    return p2
+
+
+def _residual_ok(lap, rhs, p2, ud):
+    r = float(np.linalg.norm(rhs - lap @ p2))
+    b = float(np.linalg.norm(rhs))
+    return r <= _SOLVER_SLACK * max(ud.rtol * b, ud.tol)
+
+
+# breakdown restarts before a solve is declared failed
+_MAX_RESTARTS = 5
+
+
+def _check_solver_info(info, counter, lap, rhs, p2, ud, label):
+    """Never let a failed elliptic solve pass silently.
+
+    scipy's bicgstab returns ``info < 0`` on breakdown and ``info > 0`` when
+    ``maxiter`` was hit; both leave ``p2`` as whatever iterate the method had,
+    which the momentum correction then applies as if it were the solution.
+    That is how the pole-to-pole initial projection produced a 5e-2 relative
+    residual and a golden master that depended on the BLAS thread count.
+
+    Breakdown is judged by the residual actually achieved, not by ``info``
+    alone: bicgstab's rho / omega tests also trip when the iterate is
+    already essentially converged (internal_long_wave stops at 2.4e-5 vs
+    rtol 1e-5), which is harmless. Within ``_SOLVER_SLACK`` of the stopping
+    criterion the solve is accepted; beyond it, breakdown raises and maxiter
+    warns."""
+    if info == 0 or _residual_ok(lap, rhs, p2, ud):
+        return
+    r = float(np.linalg.norm(rhs - lap @ p2))
+    b = float(np.linalg.norm(rhs))
+    msg = (
+        f"elliptic solve '{label}': bicgstab info={info} after "
+        f"{counter.niter} iterations, |r|/|b| = {r / max(b, 1e-300):.2e} "
+        f"(rtol={ud.rtol:g}, atol={ud.tol:g}, maxiter={ud.max_iterations})"
+    )
+    if info < 0:
+        raise RuntimeError(msg + " — solver breakdown")
+    logging.warning(msg + " — maxiter reached")
+
+
+# achieved residual may exceed the bicgstab stopping criterion by this factor
+# before a non-zero ``info`` is treated as a failed solve
+_SOLVER_SLACK = 10.0
 
 
 def do_explicit_part(mem, ud, dt):
@@ -133,13 +214,10 @@ def do_implicit_part(
         from ...backends.jax_ops import elliptic_solve
 
         p2 = elliptic_solve.bicgstab(
-            lap, rhs_inner, atol=ud.tol, maxiter=ud.max_iterations
+            lap, rhs_inner, atol=ud.tol, rtol=ud.rtol, maxiter=ud.max_iterations
         )
     else:
-        counter = solver_counter()
-        p2, _ = sp.sparse.linalg.bicgstab(
-            lap, rhs_inner, atol=ud.tol, maxiter=ud.max_iterations, callback=counter
-        )
+        p2 = _bicgstab_with_restarts(lap, rhs_inner, ud, label)
 
     # Pole collapse: the solve returns one master value per pole
     # ring (non-master ring entries are zero); scatter it back over the ring

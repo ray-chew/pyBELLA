@@ -656,7 +656,7 @@ def _implicit_part(s, cfg, dt, nonhydro, compressibility, sol0=None):
 
     A = lambda x: jnp.reshape(matvec(x), x.shape)
     p2, _ = jax.scipy.sparse.linalg.bicgstab(
-        A, rhs_inner, tol=1e-5, atol=cfg.tol, maxiter=cfg.max_iterations
+        A, rhs_inner, tol=cfg.rtol, atol=cfg.tol, maxiter=cfg.max_iterations
     )
 
     # pole collapse: scatter the master value back over its ring so the

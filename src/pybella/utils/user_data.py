@@ -174,7 +174,12 @@ class UserDataInit:
         self.do_advection = True
         self.limiter_type_scalars = opts.LimiterType.NONE
         self.limiter_type_velocity = opts.LimiterType.NONE
+        # elliptic solve (scipy/jax bicgstab) stopping rule:
+        #   ||r|| <= max(rtol * ||b||, atol)   with atol = tol.
+        # rtol is the scipy default; it usually dominates atol, so tightening
+        # tol alone does not tighten the solve — lower rtol for that.
         self.tol = 1.0e-8
+        self.rtol = 1.0e-5
         self.max_iterations = 6000
         # numerical backend: "numpy" (default) or "jax" (requires
         # `pip install pybella[jax]`)
