@@ -104,6 +104,7 @@ def build_device_config(mem, ud):
     cfg.rayleigh_bdry = ud.bdry_type[v] == opts.BdryType.RAYLEIGH
     cfg.has_forcing = bool(getattr(ud, "rayleigh_forcing", False))
     cfg.tol = float(ud.tol)
+    cfg.rtol = float(ud.rtol)
     cfg.max_iterations = int(ud.max_iterations)
 
     # hydrostatic profiles (force lazy inits; never traced)
