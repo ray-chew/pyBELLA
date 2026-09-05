@@ -1,8 +1,0 @@
-Stage F (poles) F6: TC6 Rossby-Haurwitz on the full pole-to-pole sphere
-(``test_sphere_swe_tc6_global``, registered). Unlike TC2, TC6 carries genuine
-longitude structure at all latitudes, so it exercises the pole ghost exchange
-and polar filter under real dynamics. Over a short run the wave stays bounded,
-J-weighted mass is conserved to machine precision (pole-face closure under
-dynamics), and the RH-4 zonal-wavenumber signature is preserved. The 7-day
-phase-speed validation runs from run_scripts. Gated by
-``test_scripts/test_sphere_swe_tc6_global.py``.
