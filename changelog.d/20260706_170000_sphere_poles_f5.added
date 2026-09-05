@@ -1,9 +1,0 @@
-Stage F (poles) F5: Williamson TC2 on the full pole-to-pole sphere
-(``test_sphere_swe_tc2_global``, registered). The +-80 deg channel extended to
-|phi| <= pi/2 with POLE latitude walls, a pole-enabled shell map and the polar
-filter — the acid test that the pole ghost exchange, pole-face flux closure,
-polar filter and elliptic pole collapse compose in a real forecast. The steady
-zonal flow stays steady at the Krylov floor (l2(h) ~ 6e-6 over 10 steps),
-the resting global shell is exact, and the tangent-plane constraint holds to
-machine precision (surface_constraint is re-applied after the filter). Gated by
-``test_scripts/test_sphere_swe_global.py``.

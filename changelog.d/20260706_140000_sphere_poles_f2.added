@@ -1,9 +1,0 @@
-Stage F (poles) F2: pole-face flux closure. The lat-lon pole face has zero
-area in the continuum, but the discrete advective flux there is a symmetric
-O(dphi^2) residual that both pole-adjacent cells subtract with the same sign
-— a double-loss mass/tracer leak. The advection now zeroes the flux through
-the two pole faces (both the conservative HLL flux and the advecting mass
-flux), making the pole a no-flux edge; over-pole transport is carried by the
-longitude sweep. Gated by ``test_scripts/test_sphere_tc1_pole.py`` (Williamson
-TC1 cosine bell over the pole): J-weighted tracer conserved to machine
-precision, bell crosses the pole bounded, equatorial-rotation reference twin.
