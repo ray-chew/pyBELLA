@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use pyBELLA, please cite it using the metadata below."
+type: software
+title: "pyBELLA"
+abstract: >-
+  pyBELLA is a compressible atmospheric flow solver with blended dynamics,
+  switching between compressible, pseudo-incompressible, hydrostatic, lake and
+  shallow-water regimes, together with an ensemble data-assimilation layer
+  (ETPF, LETKF and a NEDAS interface). Geometries range from uniform Cartesian
+  grids through terrain-following coordinates to the full pole-to-pole sphere.
+  It is written in Python with numba kernels and an optional JAX backend.
+authors:
+  - given-names: Ray
+    family-names: Chew
+  - given-names: Tommaso
+    family-names: Benacchio
+  - given-names: Rupert
+    family-names: Klein
+version: 0.6.0
+date-released: 2026-09-27
+license: BSD-3-Clause
+repository-code: "https://github.com/ray-chew/pyBELLA"
+url: "https://github.com/ray-chew/pyBELLA"
+keywords:
+  - atmospheric dynamics
+  - numerical weather prediction
+  - blended soundproof-compressible model
+  - pseudo-incompressible
+  - data assimilation
+  - terrain-following coordinates
+  - JAX

@@ -1,9 +1,10 @@
-0.51.0 (2026-09-04)
--------------------
+0.6.0 (2026-09-27)
+------------------
 
 Infrastructure
 ^^^^^^^^^^^^^^
 
+- Added ``CITATION.cff`` so the release can be cited from its repository URL. (citation_cff)
 - Added `test_scripts/test_da_smoke.py` to CI: a seeded 2-cycle, N=4
   travelling-vortex OSSE for both LETKF (rloc) and ETPF, asserting that the
   analysis ensemble mean beats the forecast against the regenerated truth on
@@ -888,6 +889,35 @@ Changed
 Fixed
 ^^^^^
 
+- Elliptic solve: silent bicgstab breakdown fixed. scipy's ``info`` return was
+  discarded, so a breakdown (``info < 0``) or a maxiter exit handed the
+  unconverged iterate to the momentum correction as if it were the solution. On
+  the sphere the pure-Neumann initial projection is ill-conditioned enough (a
+  cluster of near-null modes from the 1/cos(phi) metric; condition 1e5-1e6 on
+  the coarse grids vs 1e3 Cartesian) that BiCGSTAB broke down after a few
+  hundred iterations on every sphere SWE case, at relative residuals of 1e-4 to
+  5e-2 that depended on the BLAS thread count — all four sphere golden masters
+  embedded a failed projection, and CI (single-threaded runner) rightly
+  disagreed with them by up to 1.4e-3. The solve now restarts from the current
+  iterate with a fresh shadow residual on breakdown (one restart converges every
+  case; thread-1 and thread-24 answers then agree to ~1e-7), the achieved
+  residual is checked after every solve (raise on breakdown, warn on maxiter,
+  within a 10x slack of the stopping criterion), ``ud.rtol`` exposes the
+  relative tolerance that actually governs convergence (scipy default 1e-5,
+  unchanged), and the hybrid JAX solve mirrors the restart and residual check.
+  The four sphere SWE golden masters are regenerated from converged projections. (elliptic_solve_breakdown_restart)
+- JAX sphere full-run gates made jax-release independent. The channel and
+  global Williamson TC2 jax-vs-numpy checks that include the bicgstab initial
+  projection compared the two backends at ~1e-5, but the projection only fixes
+  the answer to its residual class (scipy default ``rtol=1e-5``, not overridden
+  by ``ud.tol``), and jax 0.11.1 lands on a different member than 0.10.1 —
+  ~6e-4 in the channel momenta and 5.8e-4 in the global p2 with identical
+  numpy/scipy on the same machine — so the unpinned CI job failed on the jax
+  bump alone. The precision gates are now the projection-OFF
+  ``*_stepper_bit_identical`` runs (new for the channel, hybrid + device; the
+  global one already existed), which agree to ~1e-16 under both releases; the
+  projection-ON runs remain as loose sanity checks (scalars 5e-4, momenta 2e-3,
+  p2 2e-3) and report all seven fields in one assertion. (jax_sphere_gate_version_floor)
 - Fixed the psinc->comp blending conversion being silently discarded:
   `time_update.do` assigned the pre-conversion `sol`/`npf` aliases returned by
   `prepare_blending` back onto the model state, undoing the conversion's rebind
