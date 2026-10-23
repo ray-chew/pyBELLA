@@ -59,6 +59,7 @@ jobs:
           pytest ./test_scripts/test_agnesi_2d_equivalence.py
           pytest ./test_scripts/test_schaer_smoke.py
           pytest ./test_scripts/test_schaer_analytic.py
+          pytest ./test_scripts/test_linear_oracle.py
           # sphere, pole-to-pole (Stage F; dev_notes/sphere_poles_plan.md).
           # The jax jobs below gate the global sphere cases for jax-vs-numpy
           # EQUIVALENCE only — these gate the numpy physics itself, so a numpy
